@@ -3,6 +3,7 @@ use crate::resourses::event::Event;
 use super::*;
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
+#[serde(deny_unknown_fields)]
 pub struct PackedStatus {
     pub name: String,
     #[serde(default)]
@@ -23,14 +24,15 @@ impl PackedStatus {
     pub fn unpack(mut self, entity: Option<Entity>, world: &mut World) -> Result<Entity> {
         let entity = self.representation.unwrap().unpack(entity, world);
         if self.state.get_int(VarName::Charges).is_err() {
-            self.state
-                .insert(VarName::Charges, VarValue::Int(1))
-                .insert(
-                    VarName::Description,
-                    VarValue::String(self.description.to_owned()),
-                )
-                .insert(VarName::Name, VarValue::String(self.name.to_owned()));
+            self.state.insert(VarName::Charges, VarValue::Int(1));
         }
+        self.state
+            .insert(
+                VarName::Description,
+                VarValue::String(self.description.to_owned()),
+            )
+            .insert(VarName::Name, VarValue::String(self.name.to_owned()))
+            .insert(VarName::Position, VarValue::Vec2(default()));
         world
             .get_entity_mut(entity)
             .context("Entity doesn't exist")?

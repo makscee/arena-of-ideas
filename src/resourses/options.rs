@@ -1,3 +1,5 @@
+use rand::seq::SliceRandom;
+
 use super::*;
 
 #[derive(AssetCollection, Resource)]
@@ -19,6 +21,9 @@ pub struct Statuses(Vec<PackedStatus>);
 impl Statuses {
     pub fn get(&self, name: &str) -> Option<&PackedStatus> {
         self.0.iter().find(|x| x.name.eq(name))
+    }
+    pub fn random(&self) -> &PackedStatus {
+        self.0.choose(&mut rand::thread_rng()).unwrap()
     }
 }
 

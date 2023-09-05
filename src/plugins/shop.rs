@@ -65,7 +65,7 @@ impl ShopPlugin {
 
         for i in 1..3 {
             let pos = UnitPlugin::get_slot_position(Faction::Shop, units_len + i as usize);
-            let status = Options::get_statuses(world).get("Test").unwrap().clone();
+            let status = Options::get_statuses(world).random().clone();
             let name = status.name.to_owned();
             let description = status.description.to_owned();
             let charges = status.state.get_int(VarName::Charges).unwrap_or(1);
@@ -233,7 +233,7 @@ impl OfferProduct {
 impl ShopOffer {
     pub fn draw_buy_panel(entity: Entity, world: &mut World) {
         let so = world.get::<ShopOffer>(entity).unwrap().clone();
-        let window = draw_entity_panel(entity, vec2(0.0, -1.5), "buy_panel", world);
+        let window = entity_panel(entity, vec2(0.0, -1.5), "buy_panel", world);
         let ctx = &egui_context(world);
         window.show(ctx, |ui: &mut egui::Ui| {
             ui.set_enabled(ShopPlugin::can_afford(so.price, world));
@@ -252,7 +252,7 @@ impl ShopOffer {
             })
         });
         if !so.description.is_empty() {
-            let window = draw_entity_panel(entity, vec2(0.0, 1.1), "desc_panel", world);
+            let window = entity_panel(entity, vec2(0.0, 1.1), "desc_panel", world);
             window.show(ctx, |ui| {
                 ui.label(so.description);
             });

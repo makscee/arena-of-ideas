@@ -26,7 +26,7 @@ pub fn world_to_screen(pos: Vec3, world: &mut World) -> Vec2 {
     camera.world_to_viewport(transform, pos).unwrap_or_default()
 }
 
-pub fn draw_entity_panel(
+pub fn entity_panel(
     entity: Entity,
     side: Vec2,
     name: &str,

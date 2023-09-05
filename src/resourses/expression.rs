@@ -1,3 +1,6 @@
+use rand::{Rng, SeedableRng};
+use rand_chacha::ChaCha8Rng;
+
 use super::*;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -16,7 +19,10 @@ pub enum Expression {
     StringVec(Box<Expression>),
 
     Sin(Box<Expression>),
+    Cos(Box<Expression>),
+    UnitVec(Box<Expression>),
     GameTime,
+    Random,
 
     Sum(Box<Expression>, Box<Expression>),
     Sub(Box<Expression>, Box<Expression>),
@@ -34,6 +40,10 @@ pub enum Expression {
 impl Expression {
     pub fn get_value(&self, context: &Context, world: &World) -> Result<VarValue> {
         match self {
+            Expression::Random => {
+                let mut rng = ChaCha8Rng::seed_from_u64(context.owner().to_bits());
+                Ok(VarValue::Float(rng.gen_range(0.0..1.0)))
+            }
             Expression::Float(x) => Ok(VarValue::Float(*x)),
             Expression::Int(x) => Ok(VarValue::Int(*x)),
             Expression::Bool(x) => Ok(VarValue::Bool(*x)),
@@ -58,6 +68,12 @@ impl Expression {
                 Ok(VarValue::String(format!("({x:.1}:{y:.1})")))
             }
             Expression::Sin(x) => Ok(VarValue::Float(x.get_float(context, world)?.sin())),
+            Expression::Cos(x) => Ok(VarValue::Float(x.get_float(context, world)?.cos())),
+            Expression::UnitVec(x) => {
+                let x = x.get_float(context, world)?;
+                let x = vec2(x.cos(), x.sin());
+                Ok(VarValue::Vec2(x))
+            }
             Expression::GameTime => Ok(VarValue::Float(GameTimer::get(world).get_t())),
             Expression::Sum(a, b) => {
                 VarValue::sum(&a.get_value(context, world)?, &b.get_value(context, world)?)

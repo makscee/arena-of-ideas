@@ -104,6 +104,7 @@ impl VarValue {
             (VarValue::Float(a), VarValue::Float(b)) => Ok(VarValue::Float(a * b)),
             (VarValue::Int(a), VarValue::Int(b)) => Ok(VarValue::Int(a * b)),
             (VarValue::Vec2(a), VarValue::Vec2(b)) => Ok(VarValue::Vec2(*a * *b)),
+            (VarValue::Vec2(a), VarValue::Float(b)) => Ok(VarValue::Vec2(*a * *b)),
             _ => Err(anyhow!("{a:?} * {b:?} not supported")),
         }
     }
