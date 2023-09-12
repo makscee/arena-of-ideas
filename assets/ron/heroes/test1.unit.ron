@@ -1,8 +1,16 @@
+#![enable(implicit_some)]
 (
     hp: 2,
     atk: 1,
+    house: "Warriors",
     name: "Test",
-    description: "This is a test\ndescription",
+    description: "This is a test description",
+    trigger: BattleStart(
+        (
+            effect: UseAbility("Strength"),
+            target: Owner,
+        ),
+    ),
     representation: (
         material: Shape(
             shape: Circle,

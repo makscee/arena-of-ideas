@@ -10,6 +10,7 @@ pub enum VarName {
     Position,
     Hp,
     Atk,
+    House,
     Dmg,
     Name,
     Description,

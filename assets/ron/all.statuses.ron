@@ -37,12 +37,16 @@
                 ),
             ),
             trigger: AfterDamageTaken(
-                effect: Debug(
-                    Sum(
-                        String(
-                            "Damage taken ",
+                (
+                    effect: Debug(
+                        Sum(
+                            String(
+                                "Damage taken ",
+                            ),
+                            Context(
+                                Name,
+                            ),
                         ),
-                        Context(Name),
                     ),
                 ),
             ),
@@ -83,12 +87,16 @@
                 ),
             ),
             trigger: AfterDamageTaken(
-                effect: Debug(
-                    Sum(
-                        String(
-                            "Damage taken ",
+                (
+                    effect: Debug(
+                        Sum(
+                            String(
+                                "Damage taken ",
+                            ),
+                            Context(
+                                Name,
+                            ),
                         ),
-                        Context(Name),
                     ),
                 ),
             ),

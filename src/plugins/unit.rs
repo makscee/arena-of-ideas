@@ -210,7 +210,7 @@ impl UnitPlugin {
                     ui.label(description);
                 });
             }
-            let statuses = Status::collect_all_statuses(hovered, world);
+            let statuses = Status::collect_entity_statuses(hovered, world);
             if !statuses.is_empty() {
                 entity_panel(hovered, vec2(1.0, 0.0), "Statuses", world)
                     .title_bar(true)
@@ -219,15 +219,17 @@ impl UnitPlugin {
                         ui.vertical_centered(|ui| {
                             for status in statuses {
                                 let state = VarState::get(status, world);
-                                let name = state.get_string(VarName::Name).unwrap();
-                                let description = state.get_string(VarName::Description).unwrap();
-                                let charges = state.get_int(VarName::Charges).unwrap_or(1);
-                                let name = format!("{name} ({charges})");
-                                CollapsingHeader::new(
-                                    RichText::new(name).color(hex_color!("#2196F3")),
-                                )
-                                .default_open(true)
-                                .show(ui, |ui| ui.label(description));
+                                if let Ok(name) = state.get_string(VarName::Name) {
+                                    let description =
+                                        state.get_string(VarName::Description).unwrap();
+                                    let charges = state.get_int(VarName::Charges).unwrap_or(1);
+                                    let name = format!("{name} ({charges})");
+                                    CollapsingHeader::new(
+                                        RichText::new(name).color(hex_color!("#2196F3")),
+                                    )
+                                    .default_open(true)
+                                    .show(ui, |ui| ui.label(description));
+                                }
                             }
                         })
                     });

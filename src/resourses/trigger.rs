@@ -1,29 +1,41 @@
 use super::*;
 
 use event::Event;
+use strum_macros::Display;
 
-#[derive(Deserialize, Serialize, Clone, Debug)]
+#[derive(Deserialize, Serialize, Clone, Debug, Default, Display)]
 pub enum Trigger {
-    AfterDamageTaken { effect: Effect },
+    AfterDamageTaken(EffectWrapped),
+    BattleStart(EffectWrapped),
+    #[default]
+    Noop,
 }
 
 impl Trigger {
-    pub fn catch_event(
-        &self,
-        event: &Event,
-        status_entity: Entity,
-        world: &mut World,
-    ) -> Result<()> {
+    pub fn catch_event(&self, event: &Event) -> Option<Trigger> {
         match self {
-            Trigger::AfterDamageTaken { effect } => match event {
-                Event::DamageTaken { unit, value } => {
-                    let context = Context::from_owner(*unit, world)
-                        .set_status(status_entity, world)
-                        .set_var(VarName::Value, VarValue::Int(*value));
-                    ActionPlugin::queue_effect(effect.clone(), context, world);
-                }
+            Trigger::Noop => None,
+            Trigger::AfterDamageTaken(..) => match event {
+                Event::DamageTaken { .. } => Some(self.clone()),
+                _ => None,
+            },
+            Trigger::BattleStart(..) => match event {
+                Event::BattleStart => Some(self.clone()),
+                _ => None,
             },
         }
-        Ok(())
+    }
+
+    pub fn fire(self, context: &Context, status: Entity, world: &mut World) {
+        match self {
+            Trigger::AfterDamageTaken(effect) | Trigger::BattleStart(effect) => {
+                let context = context
+                    .clone()
+                    .set_owner(world.get::<Parent>(status).unwrap().get(), world)
+                    .set_status(status, world);
+                ActionPlugin::queue_effect(effect, context, world);
+            }
+            Trigger::Noop => panic!("Can't fire {self}"),
+        }
     }
 }

@@ -34,7 +34,7 @@ impl ActionPlugin {
         }
     }
 
-    pub fn queue_effect(effect: Effect, context: Context, world: &mut World) {
+    pub fn queue_effect(effect: EffectWrapped, context: Context, world: &mut World) {
         let action = Action { context, effect };
         world
             .get_resource_mut::<ActionQueue>()
@@ -46,7 +46,7 @@ impl ActionPlugin {
 #[derive(Debug)]
 pub struct Action {
     pub context: Context,
-    pub effect: Effect,
+    pub effect: EffectWrapped,
 }
 
 impl Action {

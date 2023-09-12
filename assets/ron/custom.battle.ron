@@ -4,83 +4,9 @@
             (
                 hp: 2,
                 atk: 1,
+                house: "Warriors",
                 name: "Test",
-                representation: (
-                    material: Shape(
-                        shape: Circle,
-                        color: ("#4527A0"),
-                        size: Vec2E(
-                            State(
-                                Radius,
-                            ),
-                        ),
-                    ),
-                ),
-                state: (
-                    {
-                        Radius: (
-                            [
-                                (
-                                    t: 0.0,
-                                    value: Float(
-                                        0.0001,
-                                    ),
-                                ),
-                                (
-                                    t: 0.0,
-                                    duration: 0.5,
-                                    tween: QuartOut,
-                                    value: Float(
-                                        0.7,
-                                    ),
-                                ),
-                            ],
-                        ),
-                    },
-                ),
-            ),
-            (
-                hp: 5,
-                atk: 1,
-                name: "Test2",
-                representation: (
-                    material: Shape(
-                        shape: Circle,
-                        color: ("#4527A0"),
-                        size: Vec2E(
-                            State(
-                                Radius,
-                            ),
-                        ),
-                    ),
-                ),
-                state: (
-                    {
-                        Radius: (
-                            [
-                                (
-                                    t: 0.0,
-                                    value: Float(
-                                        0.0001,
-                                    ),
-                                ),
-                                (
-                                    t: 0.0,
-                                    duration: 0.5,
-                                    tween: QuartOut,
-                                    value: Float(
-                                        0.7,
-                                    ),
-                                ),
-                            ],
-                        ),
-                    },
-                ),
-            ),
-            (
-                hp: 5,
-                atk: 1,
-                name: "Test2",
+                description: "This is a test\ndescription",
                 representation: (
                     material: Shape(
                         shape: Circle,
@@ -120,85 +46,20 @@
     right: (
         units: [
             (
-                hp: 5,
+                hp: 10,
                 atk: 1,
-                name: "Test2",
-                representation: (
-                    material: Shape(
-                        shape: Circle,
-                        color: ("#4527A0"),
-                        size: Vec2E(
-                            State(
-                                Radius,
+                house: "Warriors",
+                name: "Test",
+                description: "This is a test\ndescription",
+                trigger: BattleStart(
+                    (
+                        effect: Debug(
+                            String(
+                                "Battle start trigger",
                             ),
                         ),
                     ),
                 ),
-                state: (
-                    {
-                        Radius: (
-                            [
-                                (
-                                    t: 0.0,
-                                    value: Float(
-                                        0.0001,
-                                    ),
-                                ),
-                                (
-                                    t: 0.0,
-                                    duration: 0.5,
-                                    tween: QuartOut,
-                                    value: Float(
-                                        0.7,
-                                    ),
-                                ),
-                            ],
-                        ),
-                    },
-                ),
-            ),
-            (
-                hp: 5,
-                atk: 1,
-                name: "Test2",
-                representation: (
-                    material: Shape(
-                        shape: Circle,
-                        color: ("#4527A0"),
-                        size: Vec2E(
-                            State(
-                                Radius,
-                            ),
-                        ),
-                    ),
-                ),
-                state: (
-                    {
-                        Radius: (
-                            [
-                                (
-                                    t: 0.0,
-                                    value: Float(
-                                        0.0001,
-                                    ),
-                                ),
-                                (
-                                    t: 0.0,
-                                    duration: 0.5,
-                                    tween: QuartOut,
-                                    value: Float(
-                                        0.7,
-                                    ),
-                                ),
-                            ],
-                        ),
-                    },
-                ),
-            ),
-            (
-                hp: 50,
-                atk: 2,
-                name: "Survivor",
                 representation: (
                     material: Shape(
                         shape: Circle,

@@ -152,8 +152,16 @@ impl RepresentationMaterial {
 }
 
 impl Representation {
-    pub fn unpack(mut self, parent: Option<Entity>, world: &mut World) -> Entity {
-        let entity = world.spawn_empty().id();
+    pub fn unpack(
+        mut self,
+        entity: Option<Entity>,
+        parent: Option<Entity>,
+        world: &mut World,
+    ) -> Entity {
+        let entity = match entity {
+            Some(value) => value,
+            None => world.spawn_empty().id(),
+        };
         self.material.unpack(entity, world);
         let mut entity = world.entity_mut(entity);
         entity.get_mut::<Transform>().unwrap().translation.z += 0.0000001; // children always rendered on top of parents
@@ -162,7 +170,7 @@ impl Representation {
         }
         let entity = entity.id();
         for (i, child) in self.children.drain(..).enumerate() {
-            let entity = child.unpack(Some(entity), world);
+            let entity = child.unpack(None, Some(entity), world);
             world.get_mut::<Transform>(entity).unwrap().translation.z += 0.001 * i as f32;
         }
         world.entity_mut(entity).insert(self);

@@ -1,3 +1,4 @@
+mod ability;
 mod anim;
 mod battle_state;
 mod context;
@@ -6,6 +7,7 @@ pub mod event;
 mod expression;
 mod game_state;
 mod game_timer;
+mod house;
 mod options;
 mod packed_team;
 mod packed_unit;
@@ -15,6 +17,7 @@ mod trigger;
 mod vars;
 
 use super::*;
+pub use ability::*;
 pub use anim::*;
 pub use battle_state::*;
 pub use context::*;
@@ -23,6 +26,7 @@ pub use event::*;
 pub use expression::*;
 pub use game_state::*;
 pub use game_timer::*;
+pub use house::*;
 pub use options::*;
 pub use packed_team::*;
 pub use packed_unit::*;

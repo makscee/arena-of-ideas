@@ -1,0 +1,28 @@
+#![enable(implicit_some)]
+(
+    name: "Warriors",
+    color: ("#4E342E"),
+    statuses: [
+        (
+            name: "Strength",
+            description: "+1 ATK",
+            trigger: Noop,
+            representation: (
+                material: Shape(
+                    shape: Circle,
+                    color: ("#4E342E"),
+                    size: Vec2E(State(Radius)),
+                ),
+            ),
+        ),
+    ],
+    abilities: [
+        (
+            name: "Strength",
+            description: "Give +1 ATK",
+            effect: Debug(
+                String("Use Strength"),
+            ),
+        ),
+    ],
+)

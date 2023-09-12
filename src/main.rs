@@ -7,6 +7,7 @@ mod utils;
 
 use std::time::Duration;
 
+use crate::resourses::event::Event;
 use anyhow::Context as _;
 use anyhow::{anyhow, Result};
 use bevy::{
@@ -77,6 +78,7 @@ fn main() {
         )
         .add_plugins(Material2dPlugin::<LineShapeMaterial>::default())
         .add_plugins(RonAssetPlugin::<PackedUnit>::new(&["unit.ron"]))
+        .add_plugins(RonAssetPlugin::<House>::new(&["house.ron"]))
         .add_plugins(RonAssetPlugin::<BattleState>::new(&["battle.ron"]))
         .add_plugins(RonAssetPlugin::<Representation>::new(&["rep.ron"]))
         .add_plugins(RonAssetPlugin::<Animations>::new(&["anim.ron"]))

@@ -8,38 +8,39 @@ pub struct Context {
 
 #[derive(Debug, Clone, AsRefStr)]
 pub enum ContextLayer {
-    Caster { entity: Entity },
-    Target { entity: Entity },
-    Owner { entity: Entity },
-    Var { var: VarName, value: VarValue },
-    Status { entity: Entity },
+    Caster(Entity),
+    Target(Entity),
+    Owner(Entity),
+    Status(Entity),
+    Var(VarName, VarValue),
+    Text(String),
 }
 
 impl ContextLayer {
     pub fn get_owner(&self) -> Option<Entity> {
         match self {
-            ContextLayer::Owner { entity } => Some(*entity),
+            ContextLayer::Owner(entity) => Some(*entity),
             _ => None,
         }
     }
     pub fn get_caster(&self) -> Option<Entity> {
         match self {
-            ContextLayer::Caster { entity } => Some(*entity),
+            ContextLayer::Caster(entity) => Some(*entity),
             _ => None,
         }
     }
     pub fn get_target(&self) -> Option<Entity> {
         match self {
-            ContextLayer::Target { entity } => Some(*entity),
+            ContextLayer::Target(entity) => Some(*entity),
             _ => None,
         }
     }
     pub fn get_var(&self, var: VarName, world: &World) -> Option<VarValue> {
         match self {
-            ContextLayer::Owner { entity } | ContextLayer::Status { entity } => {
+            ContextLayer::Owner(entity) | ContextLayer::Status(entity) => {
                 VarState::get(*entity, world).get_value_last(var).ok()
             }
-            ContextLayer::Var { var: v, value } => match var.eq(v) {
+            ContextLayer::Var(v, value) => match var.eq(v) {
                 true => Some(value.clone()),
                 false => None,
             },
@@ -49,18 +50,24 @@ impl ContextLayer {
 }
 
 impl Context {
-    pub fn empty() -> Self {
+    pub fn new_empty() -> Self {
         Self { layers: default() }
+    }
+
+    pub fn new_named(name: String) -> Self {
+        Self {
+            layers: vec![ContextLayer::Text(name)],
+        }
     }
 
     pub fn add_layer(mut self, layer: ContextLayer, world: &World) -> Self {
         match &layer {
-            ContextLayer::Owner { entity } => {
+            ContextLayer::Owner(entity) => {
                 let entity = *entity;
                 if let Some(parent) = world.get::<Parent>(entity) {
                     let parent = parent.get();
                     if world.get::<VarState>(parent).is_some() {
-                        self = self.add_layer(ContextLayer::Owner { entity: parent }, world);
+                        self = self.add_layer(ContextLayer::Owner(parent), world);
                     }
                 }
             }
@@ -82,16 +89,16 @@ impl Context {
     }
 
     pub fn set_var(mut self, var: VarName, value: VarValue) -> Self {
-        self.layers.push(ContextLayer::Var { var, value });
+        self.layers.push(ContextLayer::Var(var, value));
         self
     }
 
     pub fn from_owner(entity: Entity, world: &World) -> Self {
-        Self::empty().add_layer(ContextLayer::Owner { entity }, world)
+        Self::new_empty().add_layer(ContextLayer::Owner(entity), world)
     }
 
-    pub fn set_owner(mut self, entity: Entity, world: &World) -> Self {
-        self.add_layer(ContextLayer::Owner { entity }, world)
+    pub fn set_owner(self, entity: Entity, world: &World) -> Self {
+        self.add_layer(ContextLayer::Owner(entity), world)
     }
 
     pub fn owner(&self) -> Entity {
@@ -110,11 +117,11 @@ impl Context {
     }
 
     pub fn from_caster(entity: Entity, world: &World) -> Self {
-        Self::empty().add_layer(ContextLayer::Caster { entity }, world)
+        Self::new_empty().add_layer(ContextLayer::Caster(entity), world)
     }
 
-    pub fn set_caster(mut self, entity: Entity, world: &World) -> Self {
-        self.add_layer(ContextLayer::Caster { entity }, world)
+    pub fn set_caster(self, entity: Entity, world: &World) -> Self {
+        self.add_layer(ContextLayer::Caster(entity), world)
     }
 
     pub fn caster(&self) -> Entity {
@@ -133,11 +140,11 @@ impl Context {
     }
 
     pub fn from_target(entity: Entity, world: &World) -> Self {
-        Self::empty().add_layer(ContextLayer::Target { entity }, world)
+        Self::new_empty().add_layer(ContextLayer::Target(entity), world)
     }
 
-    pub fn set_target(mut self, entity: Entity, world: &World) -> Self {
-        self.add_layer(ContextLayer::Target { entity }, world)
+    pub fn set_target(self, entity: Entity, world: &World) -> Self {
+        self.add_layer(ContextLayer::Target(entity), world)
     }
 
     pub fn target(&self) -> Entity {
@@ -155,7 +162,7 @@ impl Context {
         result
     }
 
-    pub fn set_status(mut self, entity: Entity, world: &World) -> Self {
-        self.add_layer(ContextLayer::Status { entity }, world)
+    pub fn set_status(self, entity: Entity, world: &World) -> Self {
+        self.add_layer(ContextLayer::Status(entity), world)
     }
 }

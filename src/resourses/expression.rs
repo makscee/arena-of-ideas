@@ -125,4 +125,8 @@ impl Expression {
     pub fn get_string(&self, context: &Context, world: &World) -> Result<String> {
         self.get_value(context, world)?.get_string()
     }
+
+    pub fn get_entity(&self, context: &Context, world: &World) -> Result<Entity> {
+        self.get_value(context, world)?.get_entity()
+    }
 }

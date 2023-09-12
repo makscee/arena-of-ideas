@@ -5,6 +5,9 @@ use super::*;
 pub struct PackedUnit {
     pub hp: i32,
     pub atk: i32,
+    pub house: String,
+    #[serde(default)]
+    pub trigger: Trigger,
     pub name: String,
     #[serde(default)]
     pub description: String,
@@ -12,12 +15,14 @@ pub struct PackedUnit {
     pub state: VarState,
 }
 
+const LOCAL_TRIGGER: &str = "_local";
+
 impl PackedUnit {
     pub fn unpack(mut self, parent: Entity, slot: Option<usize>, world: &mut World) -> Entity {
         debug!("Unpack unit {:?}", &self);
         let entity = Options::get_unit_rep(world)
             .clone()
-            .unpack(Some(parent), world);
+            .unpack(None, Some(parent), world);
         world
             .entity_mut(entity)
             .insert(PickableBundle::default())
@@ -25,12 +30,13 @@ impl PackedUnit {
             .insert(On::<Pointer<Over>>::run(UnitPlugin::hover_unit))
             .insert(On::<Pointer<Out>>::run(UnitPlugin::unhover_unit));
         {
-            let entity = self.representation.unpack(Some(entity), world);
+            let entity = self.representation.unpack(None, Some(entity), world);
             world.entity_mut(entity).insert(UnitRepresentation);
         }
         self.state
             .insert(VarName::Hp, VarValue::Int(self.hp))
             .insert(VarName::Atk, VarValue::Int(self.atk))
+            .insert(VarName::House, VarValue::String(self.house.clone()))
             .insert(VarName::Name, VarValue::String(self.name.clone()))
             .insert(VarName::Position, VarValue::Vec2(default()))
             .insert(
@@ -43,9 +49,10 @@ impl PackedUnit {
             );
         world
             .entity_mut(entity)
-            .insert(Unit)
-            .insert(Name::new(self.name))
-            .insert(self.state);
+            .insert((Unit, Name::new(self.name), self.state));
+        Status::spawn(LOCAL_TRIGGER.to_owned(), self.trigger, world)
+            .insert(VarState::default())
+            .set_parent(entity);
         entity
     }
 
@@ -62,10 +69,25 @@ impl PackedUnit {
         let atk = state.get_int(VarName::Atk).unwrap();
         let name = state.get_string(VarName::Name).unwrap();
         let description = state.get_string(VarName::Description).unwrap();
+        let house = state.get_string(VarName::House).unwrap();
+        let trigger = Status::collect_entity_statuses(entity, world)
+            .into_iter()
+            .filter_map(
+                |e| match world.get::<Status>(e).unwrap().name.eq(LOCAL_TRIGGER) {
+                    true => Some(Status::get_trigger(e, world).clone()),
+                    false => None,
+                },
+            )
+            .at_most_one()
+            .unwrap()
+            .unwrap();
+
         Self {
             hp,
             atk,
+            house,
             name,
+            trigger,
             representation,
             state,
             description,

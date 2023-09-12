@@ -1,6 +1,7 @@
 (
     hp: 2,
     atk: 1,
+    house: "Warriors",
     name: "Test 2",
     representation: (
         material: Shape(

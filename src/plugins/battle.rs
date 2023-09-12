@@ -19,6 +19,7 @@ impl BattlePlugin {
     }
 
     pub fn run_battle(world: &mut World) {
+        Event::BattleStart.send(world);
         while let Some((left, right)) = Self::get_strikers(world) {
             Self::run_strike(left, right, world);
         }
@@ -69,9 +70,7 @@ impl BattlePlugin {
             let context = Context::from_caster(caster, world)
                 .set_target(target, world)
                 .set_owner(caster, world);
-            let effect = Effect::Damage {
-                value: Some(Expression::Int(1)),
-            };
+            let effect = Effect::Damage(None).wrap();
             ActionPlugin::queue_effect(effect, context, world);
             ActionPlugin::spin(world);
         }

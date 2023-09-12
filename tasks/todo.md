@@ -50,3 +50,7 @@ Bevy transition
         Battle transition {cm:2023-09-05T23:33:05}
     Status panel {cm:2023-09-05T23:33:08}
     Status save to PackedUnit
+    Status default rep
+    Content
+        5 Warriors
+        3 Enemies
