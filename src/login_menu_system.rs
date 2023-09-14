@@ -6,6 +6,7 @@ pub struct UserName(String);
 #[derive(Resource, Default)]
 pub struct Password(String);
 
+#[allow(dead_code)]
 pub fn ui_example_system(
     mut contexts: EguiContexts,
     mut name: ResMut<UserName>,

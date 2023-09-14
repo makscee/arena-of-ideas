@@ -27,5 +27,7 @@ tween = "2.0.1"
 rand = "0.8.5"
 color-hex = "0.2.0"
 rand_chacha = "0.3.1"
+colored = "2.0.0"
+
 [profile.dev.package."*"]
 opt-level = 3

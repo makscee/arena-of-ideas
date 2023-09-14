@@ -34,16 +34,16 @@ impl PackedUnit {
             world.entity_mut(entity).insert(UnitRepresentation);
         }
         self.state
-            .insert(VarName::Hp, VarValue::Int(self.hp))
-            .insert(VarName::Atk, VarValue::Int(self.atk))
-            .insert(VarName::House, VarValue::String(self.house.clone()))
-            .insert(VarName::Name, VarValue::String(self.name.clone()))
-            .insert(VarName::Position, VarValue::Vec2(default()))
-            .insert(
+            .init(VarName::Hp, VarValue::Int(self.hp))
+            .init(VarName::Atk, VarValue::Int(self.atk))
+            .init(VarName::House, VarValue::String(self.house.clone()))
+            .init(VarName::Name, VarValue::String(self.name.clone()))
+            .init(VarName::Position, VarValue::Vec2(default()))
+            .init(
                 VarName::Slot,
                 VarValue::Int(slot.unwrap_or_default() as i32),
             )
-            .insert(
+            .init(
                 VarName::Description,
                 VarValue::String(self.description.to_owned()),
             );

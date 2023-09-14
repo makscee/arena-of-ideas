@@ -1,3 +1,4 @@
+#![enable(implicit_some)]
 (
     left: (
         units: [
@@ -5,8 +6,16 @@
                 hp: 2,
                 atk: 1,
                 house: "Warriors",
-                name: "Test",
-                description: "This is a test\ndescription",
+                name: "Test 1",
+                description: "This is a test description",
+                trigger: BattleStart(
+                    (
+                        effect: UseAbility(
+                            "Strength",
+                        ),
+                        target: Owner,
+                    ),
+                ),
                 representation: (
                     material: Shape(
                         shape: Circle,
@@ -49,7 +58,7 @@
                 hp: 10,
                 atk: 1,
                 house: "Warriors",
-                name: "Test",
+                name: "Test 2",
                 description: "This is a test\ndescription",
                 trigger: BattleStart(
                     (

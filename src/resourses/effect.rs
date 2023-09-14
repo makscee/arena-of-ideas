@@ -1,11 +1,10 @@
 use super::*;
-use event::Event;
-use strum_macros::Display;
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, Display)]
 pub enum Effect {
     Damage(Option<Expression>),
     UseAbility(String),
+    AddStatus(String),
     Debug(Expression),
     #[default]
     Noop,
@@ -28,13 +27,12 @@ pub struct EffectWrapped {
 }
 
 impl EffectWrapped {
-    pub fn process(self, mut context: Context, world: &mut World) -> Result<()> {
-        debug!("Processing {}", &self.effect);
-        if let Some(entity) = self.target {
-            let entity = entity.get_entity(&context, world)?;
-            context = context.set_target(entity, world);
+    pub fn invoke(&self, context: &mut Context, world: &mut World) -> Result<()> {
+        debug!("Processing {}\n{}", &self.effect, context);
+        if let Some(entity) = &self.target {
+            context.set_target(entity.get_entity(&context, world)?, world);
         }
-        match self.effect {
+        match &self.effect {
             Effect::Damage(value) => {
                 let target = context.get_target().context("Target not found")?;
                 let value = match value {
@@ -54,7 +52,7 @@ impl EffectWrapped {
             }
             Effect::Debug(msg) => {
                 let msg = msg.get_string(&context, world)?;
-                debug!("Debug effect: {msg}",);
+                debug!("Debug effect: {msg}");
             }
             Effect::Noop => {}
             Effect::UseAbility(ability) => {
@@ -63,7 +61,10 @@ impl EffectWrapped {
                     .context("House not found")?
                     .get_string()?;
                 let effect = Pools::get_ability(&ability, &house, world).effect.clone();
-                ActionPlugin::queue_effect(effect.wrap(), context, world);
+                ActionPlugin::push_front(effect, context.clone(), world);
+            }
+            Effect::AddStatus(status) => {
+                Status::change_charges(&status, context.target(), 1, world)?;
             }
         }
         Ok(())

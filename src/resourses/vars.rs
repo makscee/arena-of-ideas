@@ -25,7 +25,7 @@ pub enum VarName {
     G,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Reflect)]
+#[derive(Serialize, Deserialize, Clone, Debug, Reflect, PartialEq)]
 pub enum VarValue {
     Float(f32),
     Int(i32),

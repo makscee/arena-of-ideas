@@ -97,7 +97,7 @@ impl UnitPlugin {
             .enumerate()
             .collect_vec()
         {
-            VarState::get_mut(unit, world).insert(VarName::Slot, VarValue::Int(slot as i32 + 1));
+            VarState::get_mut(unit, world).init(VarName::Slot, VarValue::Int(slot as i32 + 1));
         }
     }
 
@@ -111,7 +111,7 @@ impl UnitPlugin {
         for unit in query.iter() {
             commands.entity(unit).despawn_recursive();
         }
-        state.set(GameState::Shop);
+        state.set(GameState::Battle);
         *time = Time::new(Instant::now());
         game_timer.reset();
     }

@@ -14,7 +14,7 @@ impl PackedTeam {
     pub fn unpack(mut self, faction: Faction, world: &mut World) {
         Self::despawn(faction, world);
         self.state
-            .insert(VarName::Faction, VarValue::Faction(faction));
+            .init(VarName::Faction, VarValue::Faction(faction));
         let team = Self::spawn(faction, world).insert(self.state).id();
         for (i, unit) in self.units.into_iter().enumerate() {
             unit.unpack(team, Some(i + 1), world);

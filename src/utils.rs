@@ -11,7 +11,6 @@ pub fn just_pressed(key: KeyCode, world: &World) -> bool {
         .unwrap()
         .just_pressed(key)
 }
-
 pub fn egui_context(world: &mut World) -> Context {
     world
         .query::<&mut EguiContext>()
@@ -20,12 +19,10 @@ pub fn egui_context(world: &mut World) -> Context {
         .get_mut()
         .clone()
 }
-
 pub fn world_to_screen(pos: Vec3, world: &mut World) -> Vec2 {
     let (camera, transform) = world.query::<(&Camera, &GlobalTransform)>().single(world);
     camera.world_to_viewport(transform, pos).unwrap_or_default()
 }
-
 pub fn entity_panel(
     entity: Entity,
     side: Vec2,
@@ -51,7 +48,6 @@ pub fn entity_panel(
         .resizable(false)
         .pivot(align)
 }
-
 pub fn entity_screen_pos(entity: Entity, offset: Vec2, world: &mut World) -> Vec2 {
     let pos = world
         .get::<GlobalTransform>(entity)
@@ -59,4 +55,7 @@ pub fn entity_screen_pos(entity: Entity, offset: Vec2, world: &mut World) -> Vec
         .unwrap_or_default()
         + vec3(offset.x, offset.y, 0.0);
     world_to_screen(pos, world)
+}
+pub fn get_insert_t(world: &World) -> f32 {
+    world.get_resource::<GameTimer>().unwrap().get_insert_t()
 }

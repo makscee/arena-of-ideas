@@ -2,43 +2,10 @@ mod components;
 mod login_menu_system;
 mod materials;
 mod plugins;
+mod prelude;
 pub mod resourses;
 mod utils;
-
-use std::time::Duration;
-
-use crate::resourses::event::Event;
-use anyhow::Context as _;
-use anyhow::{anyhow, Result};
-use bevy::{
-    asset::ChangeWatcher,
-    input::common_conditions::input_toggle_active,
-    log::LogPlugin,
-    math::{vec2, vec3},
-    prelude::*,
-    reflect::{TypePath, TypeUuid},
-    render::{camera::ScalingMode, render_resource::AsBindGroup},
-    sprite::{Material2d, Material2dPlugin, MaterialMesh2dBundle},
-    utils::*,
-};
-use bevy_asset_loader::prelude::*;
-use bevy_common_assets::ron::RonAssetPlugin;
-use bevy_egui::egui;
-use bevy_egui::{
-    egui::{CentralPanel, TextEdit},
-    EguiContexts,
-};
-use bevy_mod_picking::prelude::*;
-use components::*;
-use ecolor::hex_color;
-use itertools::Itertools;
-use login_menu_system::*;
-use materials::*;
-use plugins::*;
-use resourses::*;
-use serde::*;
-use std::mem;
-use utils::*;
+use prelude::*;
 
 fn main() {
     App::new()
@@ -61,7 +28,7 @@ fn main() {
                 ..default()
             }),))
         .add_loading_state(
-            LoadingState::new(GameState::AssetLoading).continue_to_state(GameState::Shop),
+            LoadingState::new(GameState::AssetLoading).continue_to_state(GameState::Battle),
         )
         .add_dynamic_collection_to_loading_state::<_, StandardDynamicAssetCollection>(
             GameState::AssetLoading,

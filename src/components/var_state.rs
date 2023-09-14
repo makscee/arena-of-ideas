@@ -1,5 +1,3 @@
-use std::mem;
-
 use super::*;
 
 #[derive(Component, Serialize, Deserialize, Clone, Debug, Reflect, Default)]
@@ -35,14 +33,20 @@ pub enum Tween {
 
 impl VarState {
     pub fn new_with(var: VarName, value: VarValue) -> Self {
-        mem::take(Self::default().insert(var, value))
+        mem::take(Self::default().init(var, value))
     }
 
     pub fn get(entity: Entity, world: &World) -> &Self {
-        world.get::<Self>(entity).unwrap()
+        world
+            .get::<Self>(entity)
+            .with_context(|| format!("VarState not found for {entity:?}"))
+            .unwrap()
     }
     pub fn get_mut(entity: Entity, world: &mut World) -> Mut<Self> {
-        world.get_mut::<Self>(entity).unwrap()
+        world
+            .get_mut::<Self>(entity)
+            .with_context(|| format!("VarState not found for {entity:?}"))
+            .unwrap()
     }
 
     pub fn change_int(entity: Entity, var: VarName, delta: i32, world: &mut World) -> Result<()> {
@@ -59,7 +63,13 @@ impl VarState {
         let mut state = Self::get_mut(entity, world);
         state.0.entry(var).or_insert(default()).push(change);
     }
-    pub fn insert(&mut self, var: VarName, value: VarValue) -> &mut Self {
+    pub fn insert_simple(&mut self, var: VarName, value: VarValue, t: f32) {
+        self.0
+            .entry(var)
+            .or_insert(default())
+            .push(Change::new(value).set_t(t));
+    }
+    pub fn init(&mut self, var: VarName, value: VarValue) -> &mut Self {
         self.0.insert(var, History::new(value));
         self
     }
@@ -95,16 +105,21 @@ impl VarState {
         let mut result = None;
         loop {
             if let Some(state) = world.get::<VarState>(entity) {
-                if let Ok(value) = state.get_value_at(var, t) {
+                if let Ok(mut value) = state.get_value_at(var, t) {
+                    if let Some(children) = world.get::<Children>(entity) {
+                        for child in children.to_vec() {
+                            if let Some(delta) = world.get::<VarStateDelta>(child) {
+                                value = delta.process(var, value, t);
+                            }
+                        }
+                    }
                     result = Some(value);
                     break;
                 }
             }
-            if result.is_none() {
-                if let Some(parent) = world.get::<Parent>(entity) {
-                    entity = parent.get();
-                    continue;
-                }
+            if let Some(parent) = world.get::<Parent>(entity) {
+                entity = parent.get();
+                continue;
             }
             break;
         }

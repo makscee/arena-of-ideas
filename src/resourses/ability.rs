@@ -4,5 +4,5 @@ use super::*;
 pub struct Ability {
     pub name: String,
     pub description: String,
-    pub effect: Effect,
+    pub effect: EffectWrapped,
 }

@@ -11,15 +11,16 @@ impl Plugin for BattlePlugin {
 impl BattlePlugin {
     pub fn enter(world: &mut World) {
         let bs = Options::get_custom_battle(world).clone();
-        // bs.unpack(world);
-        bs.right.unpack(Faction::Right, world);
-        ShopPlugin::unpack_active_team(Faction::Left, world);
+        bs.unpack(world);
+        // bs.right.unpack(Faction::Right, world);
+        // ShopPlugin::unpack_active_team(Faction::Left, world);
         UnitPlugin::translate_to_slots(world);
         Self::run_battle(world);
     }
 
     pub fn run_battle(world: &mut World) {
         Event::BattleStart.send(world);
+        ActionPlugin::spin(world);
         while let Some((left, right)) = Self::get_strikers(world) {
             Self::run_strike(left, right, world);
         }
@@ -67,11 +68,13 @@ impl BattlePlugin {
         debug!("Strike {left:?} {right:?}");
         let units = vec![(left, right), (right, left)];
         for (caster, target) in units {
-            let context = Context::from_caster(caster, world)
-                .set_target(target, world)
-                .set_owner(caster, world);
+            let context = mem::take(
+                Context::from_caster(caster, world)
+                    .set_target(target, world)
+                    .set_owner(caster, world),
+            );
             let effect = Effect::Damage(None).wrap();
-            ActionPlugin::queue_effect(effect, context, world);
+            ActionPlugin::push_back(effect, context, world);
             ActionPlugin::spin(world);
         }
     }

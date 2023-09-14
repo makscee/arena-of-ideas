@@ -2,6 +2,18 @@
 (
     [
         (
+            name: "Strength",
+            description: "+1 ATK",
+            trigger: ChangeVar(Atk, Int(3)),
+            representation: (
+                material: Shape(
+                    shape: Circle,
+                    color: ("#8D6E63"),
+                    size: Vec2E(Float(1.1)),
+                ),
+            ),
+        ),
+        (
             name: "Test",
             description: "This is a test status description",
             representation: (

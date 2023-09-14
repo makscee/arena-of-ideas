@@ -1,7 +1,7 @@
 use super::*;
-use strum_macros::AsRefStr;
 
-#[derive(Debug, Clone)]
+/// All data that is needed to invoke an Effect
+#[derive(Debug, Clone, Default)]
 pub struct Context {
     pub layers: Vec<ContextLayer>,
 }
@@ -38,7 +38,20 @@ impl ContextLayer {
     pub fn get_var(&self, var: VarName, world: &World) -> Option<VarValue> {
         match self {
             ContextLayer::Owner(entity) | ContextLayer::Status(entity) => {
-                VarState::get(*entity, world).get_value_last(var).ok()
+                VarState::get(*entity, world)
+                    .get_value_last(var)
+                    .ok()
+                    .and_then(|mut value| {
+                        if let Some(children) = world.get::<Children>(*entity) {
+                            let children = children.to_vec();
+                            for child in children {
+                                if let Some(delta) = world.get::<VarStateDelta>(child) {
+                                    value = delta.process_last(var, value);
+                                }
+                            }
+                        }
+                        Some(value)
+                    })
             }
             ContextLayer::Var(v, value) => match var.eq(v) {
                 true => Some(value.clone()),
@@ -60,20 +73,20 @@ impl Context {
         }
     }
 
-    pub fn add_layer(mut self, layer: ContextLayer, world: &World) -> Self {
+    pub fn stack(&mut self, layer: ContextLayer, world: &World) -> &mut Self {
         match &layer {
             ContextLayer::Owner(entity) => {
                 let entity = *entity;
                 if let Some(parent) = world.get::<Parent>(entity) {
                     let parent = parent.get();
                     if world.get::<VarState>(parent).is_some() {
-                        self = self.add_layer(ContextLayer::Owner(parent), world);
+                        self.stack(ContextLayer::Owner(parent), world);
                     }
                 }
+                self.layers.push(layer);
             }
-            _ => {}
+            _ => self.layers.push(layer),
         }
-        self.layers.push(layer);
         self
     }
 
@@ -94,11 +107,11 @@ impl Context {
     }
 
     pub fn from_owner(entity: Entity, world: &World) -> Self {
-        Self::new_empty().add_layer(ContextLayer::Owner(entity), world)
+        mem::take(Self::new_empty().stack(ContextLayer::Owner(entity), world))
     }
 
-    pub fn set_owner(self, entity: Entity, world: &World) -> Self {
-        self.add_layer(ContextLayer::Owner(entity), world)
+    pub fn set_owner(&mut self, entity: Entity, world: &World) -> &mut Self {
+        self.stack(ContextLayer::Owner(entity), world)
     }
 
     pub fn owner(&self) -> Entity {
@@ -117,11 +130,11 @@ impl Context {
     }
 
     pub fn from_caster(entity: Entity, world: &World) -> Self {
-        Self::new_empty().add_layer(ContextLayer::Caster(entity), world)
+        mem::take(Self::new_empty().stack(ContextLayer::Caster(entity), world))
     }
 
-    pub fn set_caster(self, entity: Entity, world: &World) -> Self {
-        self.add_layer(ContextLayer::Caster(entity), world)
+    pub fn set_caster(&mut self, entity: Entity, world: &World) -> &mut Self {
+        self.stack(ContextLayer::Caster(entity), world)
     }
 
     pub fn caster(&self) -> Entity {
@@ -140,11 +153,11 @@ impl Context {
     }
 
     pub fn from_target(entity: Entity, world: &World) -> Self {
-        Self::new_empty().add_layer(ContextLayer::Target(entity), world)
+        mem::take(Self::new_empty().stack(ContextLayer::Target(entity), world))
     }
 
-    pub fn set_target(self, entity: Entity, world: &World) -> Self {
-        self.add_layer(ContextLayer::Target(entity), world)
+    pub fn set_target(&mut self, entity: Entity, world: &World) -> &mut Self {
+        self.stack(ContextLayer::Target(entity), world)
     }
 
     pub fn target(&self) -> Entity {
@@ -162,7 +175,37 @@ impl Context {
         result
     }
 
-    pub fn set_status(self, entity: Entity, world: &World) -> Self {
-        self.add_layer(ContextLayer::Status(entity), world)
+    pub fn set_status(&mut self, entity: Entity, world: &World) -> &mut Self {
+        self.stack(ContextLayer::Status(entity), world)
+    }
+}
+
+impl std::fmt::Display for ContextLayer {
+    fn fmt(&self, f: &mut __private::Formatter<'_>) -> std::fmt::Result {
+        let self_text = format!("{}:", self.as_ref()).bold();
+        match self {
+            ContextLayer::Caster(entity)
+            | ContextLayer::Target(entity)
+            | ContextLayer::Owner(entity)
+            | ContextLayer::Status(entity) => write!(f, "{self_text} {entity:?}"),
+            ContextLayer::Var(var, value) => write!(f, "{self_text} {var} -> {value:?}"),
+            ContextLayer::Text(text) => write!(f, "{self_text} {text}"),
+        }
+    }
+}
+
+impl std::fmt::Display for Context {
+    fn fmt(&self, f: &mut __private::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "o:{:?} t:{:?}\n>>>\n{}\n<<<\n",
+            self.get_owner(),
+            self.get_target(),
+            self.layers
+                .iter()
+                .rev()
+                .map(|x| x.to_string())
+                .join("\n<- "),
+        )
     }
 }
