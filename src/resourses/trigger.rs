@@ -10,6 +10,7 @@ pub enum Trigger {
     TurnStart(EffectWrapped),
     BeforeStrike(EffectWrapped),
     AllyDeath(EffectWrapped),
+    AfterKill(EffectWrapped),
     ChangeVar(VarName, Expression),
     #[default]
     Noop,
@@ -39,14 +40,18 @@ impl Trigger {
                 Event::Death(..) => Some(self.clone()),
                 _ => None,
             },
+            Trigger::AfterKill(..) => match event {
+                Event::Kill { .. } => Some(self.clone()),
+                _ => None,
+            },
         }
     }
 
     pub fn fire(self, event: &Event, context: &Context, status: Entity, world: &mut World) {
-        let context = mem::take(
+        let mut context = mem::take(
             context
                 .clone()
-                .set_owner(world.get::<Parent>(status).unwrap().get(), world)
+                .set_owner(get_parent(status, world), world)
                 .set_status(status, world),
         );
         match self {
@@ -65,6 +70,14 @@ impl Trigger {
                 if UnitPlugin::get_faction(dead, world).eq(&UnitPlugin::get_faction(owner, world)) {
                     ActionPlugin::push_back(effect, context, world);
                 }
+            }
+            Trigger::AfterKill(effect) => {
+                let target = match event {
+                    Event::Kill { killer: _, target } => *target,
+                    _ => panic!(),
+                };
+                context.set_target(target, world);
+                ActionPlugin::push_back(effect, context, world);
             }
             _ => panic!("Trigger {self} can not be fired"),
         }

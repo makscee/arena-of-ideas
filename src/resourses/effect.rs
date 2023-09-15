@@ -9,6 +9,7 @@ pub enum Effect {
     AddStatus(String),
     Debug(Expression),
     List(Vec<Box<EffectWrapped>>),
+    AoeFaction(Expression, Box<EffectWrapped>),
     #[default]
     Noop,
 }
@@ -53,6 +54,12 @@ impl EffectWrapped {
                 };
                 debug!("Damage {value} {target:?}");
                 VarState::change_int(target, VarName::Hp, -value, world)?;
+                VarState::push_back(
+                    target,
+                    VarName::LastAttacker,
+                    Change::new(VarValue::Entity(context.owner())),
+                    world,
+                );
                 Event::DamageTaken {
                     unit: target,
                     value,
@@ -86,6 +93,16 @@ impl EffectWrapped {
             Effect::List(effects) => {
                 for effect in effects {
                     ActionPlugin::push_front(effect.deref().clone(), context.clone(), world)
+                }
+            }
+            Effect::AoeFaction(faction, effect) => {
+                for unit in UnitPlugin::collect_faction(faction.get_faction(context, world)?, world)
+                {
+                    ActionPlugin::push_front(
+                        effect.deref().clone(),
+                        context.clone().set_target(unit, world).take(),
+                        world,
+                    )
                 }
             }
         }

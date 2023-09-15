@@ -25,6 +25,7 @@ pub enum VarName {
     Charges,
     Value,
     G,
+    LastAttacker,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Reflect, PartialEq)]

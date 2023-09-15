@@ -177,6 +177,10 @@ impl Context {
     pub fn set_status(&mut self, entity: Entity, world: &World) -> &mut Self {
         self.stack(ContextLayer::Status(entity), world)
     }
+
+    pub fn take(&mut self) -> Self {
+        mem::take(self)
+    }
 }
 
 impl std::fmt::Display for ContextLayer {

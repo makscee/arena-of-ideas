@@ -7,6 +7,7 @@ pub enum Event {
     TurnStart,
     BeforeStrike(Entity),
     Death(Entity),
+    Kill { killer: Entity, target: Entity },
 }
 
 impl Event {
@@ -22,6 +23,7 @@ impl Event {
                 Status::collect_all_statuses(world)
             }
             Event::BeforeStrike(unit) => Status::collect_entity_statuses(*unit, world),
+            Event::Kill { killer, .. } => Status::collect_entity_statuses(*killer, world),
         };
         Status::notify(statuses, &self, &context, world);
     }

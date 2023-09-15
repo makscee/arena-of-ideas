@@ -91,6 +91,9 @@ impl VarState {
     pub fn get_faction(&self, var: VarName) -> Result<Faction> {
         self.get_value_last(var)?.get_faction()
     }
+    pub fn get_entity(&self, var: VarName) -> Result<Entity> {
+        self.get_value_last(var)?.get_entity()
+    }
     pub fn get_vec2(&self, var: VarName) -> Result<Vec2> {
         self.get_value_last(var)?.get_vec2()
     }

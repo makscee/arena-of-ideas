@@ -36,6 +36,8 @@ pub enum Expression {
     State(VarName),
     Context(VarName),
     SlotPosition,
+
+    OwnerFaction,
 }
 
 impl Expression {
@@ -115,6 +117,10 @@ impl Expression {
                 )
                 .context("No unit in slot")?,
             )),
+            Expression::OwnerFaction => Ok(VarValue::Faction(UnitPlugin::get_faction(
+                context.owner(),
+                world,
+            ))),
         }
     }
 
@@ -140,5 +146,9 @@ impl Expression {
 
     pub fn get_entity(&self, context: &Context, world: &mut World) -> Result<Entity> {
         self.get_value(context, world)?.get_entity()
+    }
+
+    pub fn get_faction(&self, context: &Context, world: &mut World) -> Result<Faction> {
+        self.get_value(context, world)?.get_faction()
     }
 }

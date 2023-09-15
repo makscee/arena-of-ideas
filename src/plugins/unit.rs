@@ -92,7 +92,7 @@ impl UnitPlugin {
         for unit in query.iter() {
             commands.entity(unit).despawn_recursive();
         }
-        state.set(GameState::Battle);
+        state.set(GameState::Shop);
         *time = Time::new(Instant::now());
         game_timer.save();
         game_timer.reset();
@@ -132,7 +132,15 @@ impl UnitPlugin {
             Change::new(VarValue::Bool(false)),
             world,
         );
-        Event::Death(entity).send(world)
+        Event::Death(entity).send(world);
+        let killer = VarState::get(entity, world)
+            .get_entity(VarName::LastAttacker)
+            .unwrap();
+        Event::Kill {
+            killer,
+            target: entity,
+        }
+        .send(world);
     }
 
     pub fn is_dead(entity: Entity, world: &World) -> bool {

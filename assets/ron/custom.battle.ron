@@ -3,64 +3,27 @@
     left: (
         units: [
             (
-                hp: 1,
-                atk: 1,
-                house: "Warriors",
-                name: "E",
-                representation: (
-                    material: Text(
-                        text: String("E"),
-                    ),
-                ),
-            ),
-            (
-                hp: 3,
+                hp: 4,
                 atk: 2,
                 house: "Warriors",
-                name: "Commander",
-                description: "Battle Start: give Strength to adjacent allies",
-                trigger: BattleStart(
+                name: "Champion",
+                description: "On kill: give Strength to all allies",
+                trigger: AfterKill(
                     (
-                        effect: List(
-                            [
-                                (
-                                    effect: UseAbility(
-                                        "Strength",
-                                    ),
-                                    target: SlotUnit(
-                                        Sum(
-                                            Context(
-                                                Slot,
-                                            ),
-                                            Int(
-                                                1,
-                                            ),
-                                        ),
-                                    ),
+                        effect: AoeFaction(
+                            OwnerFaction,
+                            (
+                                effect: UseAbility(
+                                    "Strength",
                                 ),
-                                (
-                                    effect: UseAbility(
-                                        "Strength",
-                                    ),
-                                    target: SlotUnit(
-                                        Sub(
-                                            Context(
-                                                Slot,
-                                            ),
-                                            Int(
-                                                1,
-                                            ),
-                                        ),
-                                    ),
-                                ),
-                            ],
+                            ),
                         ),
                     ),
                 ),
                 representation: (
                     material: Shape(
                         shape: Rectangle,
-                        color: ("#76FF03"),
+                        color: ("#00B0FF"),
                         size: Vec2E(
                             Sum(
                                 Mul(
@@ -77,6 +40,31 @@
                             ),
                         ),
                     ),
+                    children: [
+                        (
+                            material: Shape(
+                                shape: Rectangle,
+                                color: (
+                                    "#00B0FF",
+                                ),
+                                size: Vec2E(
+                                    Sum(
+                                        Mul(
+                                            Sin(
+                                                GameTime,
+                                            ),
+                                            Float(
+                                                1.0,
+                                            ),
+                                        ),
+                                        Float(
+                                            0.4,
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ],
                     mapping: (
                         {
                             Rotation: Mul(
