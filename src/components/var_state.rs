@@ -37,10 +37,12 @@ impl VarState {
     }
 
     pub fn get(entity: Entity, world: &World) -> &Self {
+        Self::try_get(entity, world).unwrap()
+    }
+    pub fn try_get(entity: Entity, world: &World) -> Result<&Self> {
         world
             .get::<Self>(entity)
             .with_context(|| format!("VarState not found for {entity:?}"))
-            .unwrap()
     }
     pub fn get_mut(entity: Entity, world: &mut World) -> Mut<Self> {
         world
@@ -124,6 +126,13 @@ impl VarState {
             break;
         }
         result.context("Var was not found")
+    }
+    pub fn get_value(entity: Entity, var: VarName, t: f32, world: &World) -> Result<VarValue> {
+        if let Ok(state) = Self::try_get(entity, world) {
+            state.get_value_at(var, t)
+        } else {
+            Err(anyhow!("Var was not found"))
+        }
     }
     pub fn duration(&self) -> f32 {
         self.0

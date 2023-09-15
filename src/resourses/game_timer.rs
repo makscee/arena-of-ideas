@@ -6,9 +6,27 @@ pub struct GameTimer {
     insert_head: f32,
     end: f32,
     batches: Vec<f32>,
+    paused: bool,
+    save: f32,
 }
 
 impl GameTimer {
+    pub fn pause(&mut self, value: bool) {
+        self.paused = value;
+    }
+
+    pub fn paused(&self) -> bool {
+        self.paused
+    }
+
+    pub fn save(&mut self) {
+        self.save = self.play_head
+    }
+
+    pub fn head_to_save(&mut self) {
+        self.set_t(self.save)
+    }
+
     pub fn get_mut(world: &mut World) -> Mut<GameTimer> {
         world.get_resource_mut::<GameTimer>().unwrap()
     }
@@ -18,6 +36,9 @@ impl GameTimer {
     }
 
     pub fn advance(&mut self, delta: f32) {
+        if self.paused {
+            return;
+        }
         self.play_head += delta;
     }
 
@@ -32,6 +53,10 @@ impl GameTimer {
 
     pub fn get_t(&self) -> f32 {
         self.play_head
+    }
+
+    pub fn set_t(&mut self, t: f32) {
+        self.play_head = t;
     }
 
     pub fn start_batch(&mut self) {

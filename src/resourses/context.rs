@@ -37,26 +37,25 @@ impl ContextLayer {
     }
     pub fn get_var(&self, var: VarName, world: &World) -> Option<VarValue> {
         match self {
-            ContextLayer::Owner(entity) | ContextLayer::Status(entity) => {
-                VarState::get(*entity, world)
-                    .get_value_last(var)
-                    .ok()
-                    .and_then(|mut value| {
-                        if let Some(children) = world.get::<Children>(*entity) {
-                            let children = children.to_vec();
-                            for child in children {
-                                if let Some(delta) = world.get::<VarStateDelta>(child) {
-                                    value = delta.process_last(var, value);
-                                }
+            ContextLayer::Owner(entity) => VarState::get(*entity, world)
+                .get_value_last(var)
+                .ok()
+                .and_then(|mut value| {
+                    if let Some(children) = world.get::<Children>(*entity) {
+                        let children = children.to_vec();
+                        for child in children {
+                            if let Some(delta) = world.get::<VarStateDelta>(child) {
+                                value = delta.process_last(var, value);
                             }
                         }
-                        Some(value)
-                    })
-            }
+                    }
+                    Some(value)
+                }),
             ContextLayer::Var(v, value) => match var.eq(v) {
                 true => Some(value.clone()),
                 false => None,
             },
+            ContextLayer::Status(entity) => VarState::get(*entity, world).get_value_last(var).ok(),
             _ => None,
         }
     }

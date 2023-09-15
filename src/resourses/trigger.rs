@@ -7,6 +7,7 @@ use strum_macros::Display;
 pub enum Trigger {
     AfterDamageTaken(EffectWrapped),
     BattleStart(EffectWrapped),
+    TurnStart(EffectWrapped),
     ChangeVar(VarName, Expression),
     #[default]
     Noop,
@@ -24,12 +25,18 @@ impl Trigger {
                 Event::BattleStart => Some(self.clone()),
                 _ => None,
             },
+            Trigger::TurnStart(..) => match event {
+                Event::TurnStart => Some(self.clone()),
+                _ => None,
+            },
         }
     }
 
     pub fn fire(self, context: &Context, status: Entity, world: &mut World) {
         match self {
-            Trigger::AfterDamageTaken(effect) | Trigger::BattleStart(effect) => {
+            Trigger::AfterDamageTaken(effect)
+            | Trigger::BattleStart(effect)
+            | Trigger::TurnStart(effect) => {
                 let context = mem::take(
                     context
                         .clone()

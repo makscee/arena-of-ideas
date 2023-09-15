@@ -1,11 +1,11 @@
 #![enable(implicit_some)]
 (
-    hp: 2,
-    atk: 1,
+    hp: 3,
+    atk: 0,
     house: "Warriors",
-    name: "Test",
-    description: "This is a test description",
-    trigger: BattleStart(
+    name: "Mentee",
+    description: "Turn start: gain Strength",
+    trigger: TurnStart(
         (
             effect: UseAbility("Strength"),
             target: Owner,
@@ -13,10 +13,11 @@
     ),
     representation: (
         material: Shape(
-            shape: Circle,
-            color: ("#4527A0"),
+            shape: Rectangle,
+            color: ("#BF360C"),
             size: Vec2E(State(Radius)),
         ),
+        mapping: ({Rotation: Sin(GameTime)}),
     ),
     state: (
         {
@@ -30,7 +31,7 @@
                         t: 0.0,
                         duration: 0.5,
                         tween: QuartOut,
-                        value: Float(0.7),
+                        value: Float(1.0),
                     ),
                 ],
             ),

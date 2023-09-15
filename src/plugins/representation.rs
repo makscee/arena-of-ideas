@@ -21,13 +21,11 @@ impl RepresentationPlugin {
             .collect_vec();
         let t = GameTimer::get_mut(world).get_t();
         for (entity, rep) in reps {
-            let mut position = world
-                .get::<VarState>(entity)
-                .and_then(|x| {
-                    x.get_value_at(VarName::Position, t)
-                        .map(|x| x.get_vec2().unwrap())
-                        .ok()
-                })
+            let mut position = VarState::get_value(entity, VarName::Position, t, world)
+                .map(|x| x.get_vec2().unwrap())
+                .unwrap_or_default();
+            let mut rotation = VarState::get_value(entity, VarName::Rotation, t, world)
+                .map(|x| x.get_float().unwrap())
                 .unwrap_or_default();
             let context = Context::from_owner(entity, world);
             for (key, value) in rep.mapping.iter() {
@@ -35,12 +33,16 @@ impl RepresentationPlugin {
                     VarName::Position => {
                         position = value.get_vec2(&context, world).unwrap();
                     }
+                    VarName::Rotation => {
+                        rotation = value.get_float(&context, world).unwrap();
+                    }
                     _ => continue,
                 };
             }
             let mut transform = world.get_mut::<Transform>(entity).unwrap();
             transform.translation.x = position.x;
             transform.translation.y = position.y;
+            transform.rotation = Quat::from_rotation_z(rotation);
             rep.material.update(entity, world);
         }
     }

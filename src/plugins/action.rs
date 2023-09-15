@@ -72,9 +72,10 @@ impl Action {
                     let status = world.get::<Status>(entity).unwrap();
                     match status.trigger.clone() {
                         Trigger::ChangeVar(var, e) => {
-                            if let Ok(delta) =
-                                e.get_value(&Context::from_owner(parent, world), world)
-                            {
+                            if let Ok(delta) = e.get_value(
+                                &Context::from_owner(parent, world).set_status(entity, world),
+                                world,
+                            ) {
                                 let t = get_insert_t(world);
                                 let mut state_delta =
                                     world.get_mut::<VarStateDelta>(entity).unwrap();

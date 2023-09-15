@@ -16,6 +16,10 @@ impl BattlePlugin {
         // ShopPlugin::unpack_active_team(Faction::Left, world);
         UnitPlugin::translate_to_slots(world);
         Self::run_battle(world);
+        world
+            .get_resource_mut::<GameTimer>()
+            .unwrap()
+            .head_to_save();
     }
 
     pub fn run_battle(world: &mut World) {
@@ -46,6 +50,8 @@ impl BattlePlugin {
     }
 
     fn before_strike(left: Entity, right: Entity, world: &mut World) {
+        Event::TurnStart.send(world);
+        ActionPlugin::spin(world);
         debug!("Before strike {left:?} {right:?}");
         let units = vec![(left, -1.0), (right, 1.0)];
         GameTimer::get_mut(world).start_batch();

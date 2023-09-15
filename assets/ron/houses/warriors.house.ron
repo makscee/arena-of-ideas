@@ -6,7 +6,10 @@
         (
             name: "Strength",
             description: "+1 ATK",
-            trigger: ChangeVar(Atk, Int(1)),
+            trigger: ChangeVar(
+                Atk,
+                Context(Charges),
+            ),
             representation: (
                 material: Shape(
                     shape: Circle,

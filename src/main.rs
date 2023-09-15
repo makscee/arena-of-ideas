@@ -63,6 +63,7 @@ fn main() {
         .init_resource::<Password>()
         .init_resource::<GameTimer>()
         .register_type::<VarState>()
+        .register_type::<VarStateDelta>()
         .run();
 }
 
@@ -78,17 +79,15 @@ fn update(mut timer: ResMut<GameTimer>, time: Res<Time>) {
 
 fn input(
     input: Res<Input<KeyCode>>,
-    mut time: ResMut<Time>,
+    mut timer: ResMut<GameTimer>,
     mut state: ResMut<NextState<GameState>>,
 ) {
     if input.just_pressed(KeyCode::Space) {
-        if time.is_paused() {
-            time.unpause()
-        } else {
-            time.pause()
-        }
+        let paused = timer.paused();
+        timer.pause(!paused);
     }
     if input.just_pressed(KeyCode::R) {
+        timer.reset();
         state.set(GameState::Restart);
     }
 }
@@ -96,12 +95,16 @@ fn input(
 fn detect_changes(
     mut unit_events: EventReader<AssetEvent<PackedUnit>>,
     mut rep_events: EventReader<AssetEvent<Representation>>,
+    mut battle_state_events: EventReader<AssetEvent<BattleState>>,
     mut state: ResMut<NextState<GameState>>,
 ) {
     if unit_events.into_iter().any(|x| match x {
         AssetEvent::Modified { .. } => true,
         _ => false,
     }) || rep_events.into_iter().any(|x| match x {
+        AssetEvent::Modified { .. } => true,
+        _ => false,
+    }) || battle_state_events.into_iter().any(|x| match x {
         AssetEvent::Modified { .. } => true,
         _ => false,
     }) {

@@ -8,6 +8,7 @@ pub enum VarName {
     Size,
     Radius,
     Position,
+    Rotation,
     Hp,
     Atk,
     House,
