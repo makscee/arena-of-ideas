@@ -3,51 +3,93 @@
     left: (
         units: [
             (
-    hp: 4,
-    atk: 0,
-    house: "Warriors",
-    name: "Berserker",
-    description: "Before Strike: gain Strength x3",
-    trigger: TurnStart(
-        (
-            effect: UseAbility("Strength"),
-            target: Owner,
-            vars: [(Charges, Int(3))],
-        ),
-    ),
-    representation: (
-        material: Shape(
-            shape: Rectangle,
-            color: ("#E91E63"),
-            size: Vec2E(State(Radius)),
-        ),
-        mapping: ({Rotation: Mul(Sin(Mul(GameTime, Float(40.0))), Float(0.1))}),
-    ),
-    state: (
-        {
-            Radius: (
-                [
-                    (
-                        t: 0.0,
-                        value: Float(0.0001),
+                hp: 1,
+                atk: 1,
+                house: "Warriors",
+                name: "E",
+                representation: (
+                    material: Text(
+                        text: String("E"),
                     ),
-                    (
-                        t: 0.0,
-                        duration: 0.5,
-                        tween: QuartOut,
-                        value: Float(1.2),
-                    ),
-                ],
+                ),
             ),
-        },
-    ),
-),
+            (
+                hp: 3,
+                atk: 2,
+                house: "Warriors",
+                name: "Avenger",
+                description: "Ally Died: gain Strength x2",
+                trigger: AllyDeath(
+                    (
+                        effect: UseAbility(
+                            "Strength",
+                        ),
+                        target: Owner,
+                        vars: [
+                            (
+                                Charges,
+                                Int(2),
+                            ),
+                        ],
+                    ),
+                ),
+                representation: (
+                    material: Shape(
+                        shape: Rectangle,
+                        color: ("#DD2C00"),
+                        size: Vec2E(
+                            State(
+                                Radius,
+                            ),
+                        ),
+                    ),
+                    mapping: (
+                        {
+                            Rotation: Mul(
+                                Sin(
+                                    Mul(
+                                        GameTime,
+                                        Float(
+                                            0.2,
+                                        ),
+                                    ),
+                                ),
+                                Float(
+                                    10.9,
+                                ),
+                            ),
+                        },
+                    ),
+                ),
+                state: (
+                    {
+                        Radius: (
+                            [
+                                (
+                                    t: 0.0,
+                                    value: Float(
+                                        0.0001,
+                                    ),
+                                ),
+                                (
+                                    t: 0.0,
+                                    duration: 0.5,
+                                    tween: QuartOut,
+                                    value: Float(
+                                        0.5,
+                                    ),
+                                ),
+                            ],
+                        ),
+                    },
+                ),
+            ),
         ],
     ),
     right: (
         units: [
             (
-                hp: 10,
+                hp: 5,
                 atk: 1,
                 house: "Warriors",
                 name: "Test 2",

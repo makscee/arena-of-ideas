@@ -132,6 +132,7 @@ impl UnitPlugin {
             Change::new(VarValue::Bool(false)),
             world,
         );
+        Event::Death(entity).send(world)
     }
 
     pub fn is_dead(entity: Entity, world: &World) -> bool {
@@ -217,6 +218,14 @@ impl UnitPlugin {
                     });
             }
         }
+    }
+
+    pub fn get_faction(unit: Entity, world: &World) -> Faction {
+        Context::from_owner(unit, world)
+            .get_var(VarName::Faction, world)
+            .unwrap()
+            .get_faction()
+            .unwrap()
     }
 }
 

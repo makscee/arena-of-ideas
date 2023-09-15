@@ -117,7 +117,7 @@ impl Status {
 
     pub fn notify(statuses: Vec<Entity>, event: &Event, context: &Context, world: &mut World) {
         for (status, trigger) in Self::collect_event_triggers(statuses, event, world) {
-            trigger.fire(context, status, world)
+            trigger.fire(event, context, status, world)
         }
     }
 }

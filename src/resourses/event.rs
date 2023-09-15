@@ -6,6 +6,7 @@ pub enum Event {
     BattleStart,
     TurnStart,
     BeforeStrike(Entity),
+    Death(Entity),
 }
 
 impl Event {
@@ -17,8 +18,9 @@ impl Event {
                 context.set_var(VarName::Value, VarValue::Int(*value));
                 Status::collect_entity_statuses(*unit, world)
             }
-            Event::BattleStart => Status::collect_all_statuses(world),
-            Event::TurnStart => Status::collect_all_statuses(world),
+            Event::BattleStart | Event::TurnStart | Event::Death(..) => {
+                Status::collect_all_statuses(world)
+            }
             Event::BeforeStrike(unit) => Status::collect_entity_statuses(*unit, world),
         };
         Status::notify(statuses, &self, &context, world);

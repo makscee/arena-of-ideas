@@ -12,6 +12,7 @@ pub struct PackedUnit {
     #[serde(default)]
     pub description: String,
     pub representation: Representation,
+    #[serde(default)]
     pub state: VarState,
 }
 

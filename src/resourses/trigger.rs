@@ -9,6 +9,7 @@ pub enum Trigger {
     BattleStart(EffectWrapped),
     TurnStart(EffectWrapped),
     BeforeStrike(EffectWrapped),
+    AllyDeath(EffectWrapped),
     ChangeVar(VarName, Expression),
     #[default]
     Noop,
@@ -34,22 +35,36 @@ impl Trigger {
                 Event::BeforeStrike(..) => Some(self.clone()),
                 _ => None,
             },
+            Trigger::AllyDeath(..) => match event {
+                Event::Death(..) => Some(self.clone()),
+                _ => None,
+            },
         }
     }
 
-    pub fn fire(self, context: &Context, status: Entity, world: &mut World) {
+    pub fn fire(self, event: &Event, context: &Context, status: Entity, world: &mut World) {
+        let context = mem::take(
+            context
+                .clone()
+                .set_owner(world.get::<Parent>(status).unwrap().get(), world)
+                .set_status(status, world),
+        );
         match self {
             Trigger::AfterDamageTaken(effect)
             | Trigger::BattleStart(effect)
             | Trigger::TurnStart(effect)
             | Trigger::BeforeStrike(effect) => {
-                let context = mem::take(
-                    context
-                        .clone()
-                        .set_owner(world.get::<Parent>(status).unwrap().get(), world)
-                        .set_status(status, world),
-                );
                 ActionPlugin::push_back(effect, context, world);
+            }
+            Trigger::AllyDeath(effect) => {
+                let dead = match event {
+                    Event::Death(unit) => *unit,
+                    _ => panic!(),
+                };
+                let owner = get_parent(status, world);
+                if UnitPlugin::get_faction(dead, world).eq(&UnitPlugin::get_faction(owner, world)) {
+                    ActionPlugin::push_back(effect, context, world);
+                }
             }
             _ => panic!("Trigger {self} can not be fired"),
         }
