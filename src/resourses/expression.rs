@@ -31,6 +31,7 @@ pub enum Expression {
     Owner,
     Caster,
     Target,
+    SlotUnit(Box<Expression>),
 
     State(VarName),
     Context(VarName),
@@ -38,7 +39,7 @@ pub enum Expression {
 }
 
 impl Expression {
-    pub fn get_value(&self, context: &Context, world: &World) -> Result<VarValue> {
+    pub fn get_value(&self, context: &Context, world: &mut World) -> Result<VarValue> {
         match self {
             Expression::Random => {
                 let mut rng = ChaCha8Rng::seed_from_u64(context.owner().to_bits());
@@ -103,30 +104,41 @@ impl Expression {
                 context.owner(),
                 world,
             )?)),
+            Expression::SlotUnit(index) => Ok(VarValue::Entity(
+                UnitPlugin::find_unit(
+                    context
+                        .get_var(VarName::Faction, world)
+                        .unwrap()
+                        .get_faction()?,
+                    index.get_int(context, world)? as usize,
+                    world,
+                )
+                .context("No unit in slot")?,
+            )),
         }
     }
 
-    pub fn get_float(&self, context: &Context, world: &World) -> Result<f32> {
+    pub fn get_float(&self, context: &Context, world: &mut World) -> Result<f32> {
         self.get_value(context, world)?.get_float()
     }
 
-    pub fn get_int(&self, context: &Context, world: &World) -> Result<i32> {
+    pub fn get_int(&self, context: &Context, world: &mut World) -> Result<i32> {
         self.get_value(context, world)?.get_int()
     }
 
-    pub fn get_vec2(&self, context: &Context, world: &World) -> Result<Vec2> {
+    pub fn get_vec2(&self, context: &Context, world: &mut World) -> Result<Vec2> {
         self.get_value(context, world)?.get_vec2()
     }
 
-    pub fn get_bool(&self, context: &Context, world: &World) -> Result<bool> {
+    pub fn get_bool(&self, context: &Context, world: &mut World) -> Result<bool> {
         self.get_value(context, world)?.get_bool()
     }
 
-    pub fn get_string(&self, context: &Context, world: &World) -> Result<String> {
+    pub fn get_string(&self, context: &Context, world: &mut World) -> Result<String> {
         self.get_value(context, world)?.get_string()
     }
 
-    pub fn get_entity(&self, context: &Context, world: &World) -> Result<Entity> {
+    pub fn get_entity(&self, context: &Context, world: &mut World) -> Result<Entity> {
         self.get_value(context, world)?.get_entity()
     }
 }

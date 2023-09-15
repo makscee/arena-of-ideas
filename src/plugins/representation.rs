@@ -27,6 +27,9 @@ impl RepresentationPlugin {
             let mut rotation = VarState::get_value(entity, VarName::Rotation, t, world)
                 .map(|x| x.get_float().unwrap())
                 .unwrap_or_default();
+            let mut scale = VarState::get_value(entity, VarName::Size, t, world)
+                .map(|x| x.get_vec2().unwrap())
+                .unwrap_or(Vec2::ONE);
             let context = Context::from_owner(entity, world);
             for (key, value) in rep.mapping.iter() {
                 match key {
@@ -36,6 +39,9 @@ impl RepresentationPlugin {
                     VarName::Rotation => {
                         rotation = value.get_float(&context, world).unwrap();
                     }
+                    VarName::Scale => {
+                        scale = value.get_vec2(&context, world).unwrap();
+                    }
                     _ => continue,
                 };
             }
@@ -43,6 +49,8 @@ impl RepresentationPlugin {
             transform.translation.x = position.x;
             transform.translation.y = position.y;
             transform.rotation = Quat::from_rotation_z(rotation);
+            transform.scale.x = scale.x;
+            transform.scale.y = scale.y;
             rep.material.update(entity, world);
         }
     }

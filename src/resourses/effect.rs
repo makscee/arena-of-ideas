@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use super::*;
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, Display)]
@@ -6,6 +8,7 @@ pub enum Effect {
     UseAbility(String),
     AddStatus(String),
     Debug(Expression),
+    List(Vec<Box<EffectWrapped>>),
     #[default]
     Noop,
 }
@@ -79,6 +82,11 @@ impl EffectWrapped {
                     .unwrap_or(VarValue::Int(1))
                     .get_int()?;
                 Status::change_charges(&status, &house, context.target(), charges, world)?;
+            }
+            Effect::List(effects) => {
+                for effect in effects {
+                    ActionPlugin::push_front(effect.deref().clone(), context.clone(), world)
+                }
             }
         }
         Ok(())

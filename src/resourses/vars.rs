@@ -6,6 +6,7 @@ use super::*;
 #[derive(Hash, Eq, PartialEq, Serialize, Deserialize, Clone, Copy, Debug, Reflect, Display)]
 pub enum VarName {
     Size,
+    Scale,
     Radius,
     Position,
     Rotation,
