@@ -70,7 +70,7 @@ impl ShopPlugin {
 
         for i in 1..3 {
             let pos = UnitPlugin::get_slot_position(Faction::Shop, units_len + i as usize);
-            let status = Options::get_statuses(world).random().clone();
+            let status = Pools::get_status("Strength", "Warriors", world).clone();
             let name = status.name.to_owned();
             let description = status.description.to_owned();
             let charges = status.state.get_int(VarName::Charges).unwrap_or(1);
@@ -79,6 +79,7 @@ impl ShopPlugin {
             world.entity_mut(entity).insert(ShopOffer {
                 product: OfferProduct::Status {
                     name: name.to_owned(),
+                    house: "Warriors".to_owned(),
                     charges,
                 },
                 name,
@@ -224,16 +225,24 @@ pub struct ShopOffer {
 #[derive(Clone, Debug)]
 pub enum OfferProduct {
     Unit,
-    Status { name: String, charges: i32 },
+    Status {
+        name: String,
+        house: String,
+        charges: i32,
+    },
 }
 
 impl OfferProduct {
     pub fn do_buy(&self, entity: Entity, world: &mut World) -> Result<()> {
         match self {
             OfferProduct::Unit => ShopPlugin::buy_unit(entity, world),
-            OfferProduct::Status { name, charges } => {
+            OfferProduct::Status {
+                name,
+                charges,
+                house,
+            } => {
                 for unit in UnitPlugin::collect_faction(Faction::Team, world) {
-                    Status::change_charges(name, unit, *charges, world).unwrap();
+                    Status::change_charges(name, house, unit, *charges, world).unwrap();
                 }
                 world.entity_mut(entity).despawn_recursive();
                 Ok(())

@@ -10,30 +10,11 @@ impl Plugin for UnitPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<HoveredUnit>()
             .add_systems(OnEnter(GameState::Restart), Self::despawn)
-            .add_systems(Update, Self::test_system)
             .add_systems(Update, Self::ui);
     }
 }
 
 impl UnitPlugin {
-    fn test_system(world: &mut World) {
-        if !world
-            .get_resource::<Input<KeyCode>>()
-            .unwrap()
-            .just_pressed(KeyCode::T)
-        {
-            return;
-        }
-        let units = world
-            .query_filtered::<Entity, With<Unit>>()
-            .iter(world)
-            .collect_vec();
-        for unit in units {
-            debug!("Change charges of {unit:?}");
-            Status::change_charges("Test", unit, 1, world).unwrap();
-        }
-    }
-
     pub fn find_unit(faction: Faction, slot: usize, world: &mut World) -> Option<Entity> {
         Self::collect_faction(faction, world).into_iter().find(|e| {
             VarState::get(*e, world).get_int(VarName::Slot).unwrap() == slot as i32

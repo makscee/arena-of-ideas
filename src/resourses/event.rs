@@ -15,7 +15,7 @@ impl Event {
                 Status::collect_entity_statuses(*unit, world)
             }
             Event::BattleStart => Status::collect_all_statuses(world),
-            _ => panic!("Event {self} can not be sent"),
+            // _ => panic!("Event {self} can not be sent"),
         };
         Status::notify(statuses, &self, &context, world);
     }

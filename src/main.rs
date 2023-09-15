@@ -49,7 +49,6 @@ fn main() {
         .add_plugins(RonAssetPlugin::<BattleState>::new(&["battle.ron"]))
         .add_plugins(RonAssetPlugin::<Representation>::new(&["rep.ron"]))
         .add_plugins(RonAssetPlugin::<Animations>::new(&["anim.ron"]))
-        .add_plugins(RonAssetPlugin::<Statuses>::new(&["statuses.ron"]))
         .add_plugins((
             ActionPlugin,
             UnitPlugin,

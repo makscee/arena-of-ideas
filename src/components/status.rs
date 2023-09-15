@@ -57,23 +57,21 @@ impl Status {
     }
 
     pub fn change_charges(
-        status_name: &str,
+        status: &str,
+        house: &str,
         unit: Entity,
         delta: i32,
         world: &mut World,
     ) -> Result<Entity> {
         for entity in Self::collect_entity_statuses(unit, world) {
-            if let Some(status) = world.entity_mut(entity).get_mut::<Status>() {
-                if status.name.eq(status_name) {
+            if let Some(s) = world.entity_mut(entity).get_mut::<Status>() {
+                if s.name.eq(status) {
                     VarState::change_int(entity, VarName::Charges, delta, world)?;
                     return Ok(entity);
                 }
             }
         }
-        let mut status = Options::get_statuses(world)
-            .get(status_name)
-            .unwrap()
-            .clone();
+        let mut status = Pools::get_status(status, house, world).clone();
         status.state.init(VarName::Charges, VarValue::Int(delta));
         status.unpack(Some(unit), world)
     }

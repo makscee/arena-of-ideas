@@ -54,4 +54,12 @@ impl Pools {
             .find(|a| a.name.eq(ability))
             .unwrap()
     }
+
+    pub fn get_status<'a>(status: &str, house: &str, world: &'a World) -> &'a PackedStatus {
+        Self::get_house(house, world)
+            .statuses
+            .iter()
+            .find(|s| s.name.eq(status))
+            .unwrap()
+    }
 }

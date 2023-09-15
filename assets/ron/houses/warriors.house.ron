@@ -10,8 +10,8 @@
             representation: (
                 material: Shape(
                     shape: Circle,
-                    color: ("#4E342E"),
-                    size: Vec2E(State(Radius)),
+                    color: ("#8D6E63"),
+                    size: Vec2E(Float(1.1)),
                 ),
             ),
         ),

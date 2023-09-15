@@ -64,7 +64,11 @@ impl EffectWrapped {
                 ActionPlugin::push_front(effect, context.clone(), world);
             }
             Effect::AddStatus(status) => {
-                Status::change_charges(&status, context.target(), 1, world)?;
+                let house = context
+                    .get_var(VarName::House, world)
+                    .context("House not found")?
+                    .get_string()?;
+                Status::change_charges(&status, &house, context.target(), 1, world)?;
             }
         }
         Ok(())
