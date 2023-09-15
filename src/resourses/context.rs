@@ -100,7 +100,7 @@ impl Context {
         result
     }
 
-    pub fn set_var(mut self, var: VarName, value: VarValue) -> Self {
+    pub fn set_var(&mut self, var: VarName, value: VarValue) -> &mut Self {
         self.layers.push(ContextLayer::Var(var, value));
         self
     }

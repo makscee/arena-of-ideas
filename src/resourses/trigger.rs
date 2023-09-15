@@ -8,6 +8,7 @@ pub enum Trigger {
     AfterDamageTaken(EffectWrapped),
     BattleStart(EffectWrapped),
     TurnStart(EffectWrapped),
+    BeforeStrike(EffectWrapped),
     ChangeVar(VarName, Expression),
     #[default]
     Noop,
@@ -29,6 +30,10 @@ impl Trigger {
                 Event::TurnStart => Some(self.clone()),
                 _ => None,
             },
+            Trigger::BeforeStrike(..) => match event {
+                Event::BeforeStrike(..) => Some(self.clone()),
+                _ => None,
+            },
         }
     }
 
@@ -36,7 +41,8 @@ impl Trigger {
         match self {
             Trigger::AfterDamageTaken(effect)
             | Trigger::BattleStart(effect)
-            | Trigger::TurnStart(effect) => {
+            | Trigger::TurnStart(effect)
+            | Trigger::BeforeStrike(effect) => {
                 let context = mem::take(
                     context
                         .clone()

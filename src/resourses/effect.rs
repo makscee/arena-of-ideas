@@ -24,6 +24,7 @@ pub struct EffectWrapped {
     pub effect: Effect,
     pub owner: Option<Expression>,
     pub target: Option<Expression>,
+    pub vars: Option<Vec<(VarName, VarValue)>>,
 }
 
 impl EffectWrapped {
@@ -31,6 +32,11 @@ impl EffectWrapped {
         debug!("Processing {}\n{}", &self.effect, context);
         if let Some(entity) = &self.target {
             context.set_target(entity.get_entity(&context, world)?, world);
+        }
+        if let Some(vars) = &self.vars {
+            for (var, value) in vars {
+                context.set_var(*var, value.clone());
+            }
         }
         match &self.effect {
             Effect::Damage(value) => {
@@ -68,7 +74,11 @@ impl EffectWrapped {
                     .get_var(VarName::House, world)
                     .context("House not found")?
                     .get_string()?;
-                Status::change_charges(&status, &house, context.target(), 1, world)?;
+                let charges = context
+                    .get_var(VarName::Charges, world)
+                    .unwrap_or(VarValue::Int(1))
+                    .get_int()?;
+                Status::change_charges(&status, &house, context.target(), charges, world)?;
             }
         }
         Ok(())

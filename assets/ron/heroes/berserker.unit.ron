@@ -3,18 +3,19 @@
     hp: 3,
     atk: 0,
     house: "Warriors",
-    name: "Mentee",
-    description: "Turn Start: gain Strength",
+    name: "Berserker",
+    description: "Before Strike: gain Strength x3",
     trigger: TurnStart(
         (
             effect: UseAbility("Strength"),
             target: Owner,
+            vars: [(Charges, Int(3))],
         ),
     ),
     representation: (
         material: Shape(
             shape: Rectangle,
-            color: ("#BF360C"),
+            color: ("#E91E63"),
             size: Vec2E(State(Radius)),
         ),
         mapping: ({Rotation: Sin(GameTime)}),

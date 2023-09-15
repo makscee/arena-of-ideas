@@ -51,8 +51,9 @@ impl BattlePlugin {
 
     fn before_strike(left: Entity, right: Entity, world: &mut World) {
         Event::TurnStart.send(world);
+        Event::BeforeStrike(left).send(world);
+        Event::BeforeStrike(right).send(world);
         ActionPlugin::spin(world);
-        debug!("Before strike {left:?} {right:?}");
         let units = vec![(left, -1.0), (right, 1.0)];
         GameTimer::get_mut(world).start_batch();
         for (caster, dir) in units {

@@ -3,60 +3,45 @@
     left: (
         units: [
             (
-                hp: 10,
-                atk: 0,
-                house: "Warriors",
-                name: "Mentee",
-                description: "Turn start: gain Strength",
-                trigger: TurnStart(
+    hp: 4,
+    atk: 0,
+    house: "Warriors",
+    name: "Berserker",
+    description: "Before Strike: gain Strength x3",
+    trigger: TurnStart(
+        (
+            effect: UseAbility("Strength"),
+            target: Owner,
+            vars: [(Charges, Int(3))],
+        ),
+    ),
+    representation: (
+        material: Shape(
+            shape: Rectangle,
+            color: ("#E91E63"),
+            size: Vec2E(State(Radius)),
+        ),
+        mapping: ({Rotation: Mul(Sin(Mul(GameTime, Float(40.0))), Float(0.1))}),
+    ),
+    state: (
+        {
+            Radius: (
+                [
                     (
-                        effect: UseAbility(
-                            "Strength",
-                        ),
-                        target: Owner,
+                        t: 0.0,
+                        value: Float(0.0001),
                     ),
-                ),
-                representation: (
-                    material: Shape(
-                        shape: Rectangle,
-                        color: ("#BF360C"),
-                        size: Vec2E(
-                            State(
-                                Radius,
-                            ),
-                        ),
+                    (
+                        t: 0.0,
+                        duration: 0.5,
+                        tween: QuartOut,
+                        value: Float(1.2),
                     ),
-                    mapping: (
-                        {
-                            Rotation: Sin(
-                                GameTime,
-                            ),
-                        },
-                    ),
-                ),
-                state: (
-                    {
-                        Radius: (
-                            [
-                                (
-                                    t: 0.0,
-                                    value: Float(
-                                        0.0001,
-                                    ),
-                                ),
-                                (
-                                    t: 0.0,
-                                    duration: 0.5,
-                                    tween: QuartOut,
-                                    value: Float(
-                                        1.0,
-                                    ),
-                                ),
-                            ],
-                        ),
-                    },
-                ),
+                ],
             ),
+        },
+    ),
+),
         ],
     ),
     right: (
