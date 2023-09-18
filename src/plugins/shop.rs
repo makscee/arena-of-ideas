@@ -27,6 +27,7 @@ impl ShopPlugin {
             PackedTeam::spawn(Faction::Team, world);
         }
         Self::fill_showcase(world);
+        Self::change_g(10, world).unwrap();
     }
 
     fn leave_state(world: &mut World) {
@@ -79,7 +80,6 @@ impl ShopPlugin {
             world.entity_mut(entity).insert(ShopOffer {
                 product: OfferProduct::Status {
                     name: name.to_owned(),
-                    house: "Warriors".to_owned(),
                     charges,
                 },
                 name,
@@ -98,6 +98,7 @@ impl ShopPlugin {
     pub fn pack_active_team(world: &mut World) {
         let team = PackedTeam::pack(Faction::Team, world);
         let mut active_team = world.get_resource_mut::<ActiveTeam>().unwrap();
+        debug!("Active team packed: {team:?}");
         active_team.team = Some(team);
     }
 
@@ -156,6 +157,8 @@ impl ShopPlugin {
                         .get_resource_mut::<NextState<GameState>>()
                         .unwrap()
                         .set(GameState::Battle);
+                    GameTimer::get_mut(world).clear_save();
+                    GameTimer::get_mut(world).reset();
                 }
             });
     }
@@ -209,7 +212,7 @@ impl ShopPlugin {
     }
 }
 
-#[derive(Resource, Default)]
+#[derive(Resource, Default, Debug)]
 pub struct ActiveTeam {
     pub team: Option<PackedTeam>,
 }
@@ -225,24 +228,16 @@ pub struct ShopOffer {
 #[derive(Clone, Debug)]
 pub enum OfferProduct {
     Unit,
-    Status {
-        name: String,
-        house: String,
-        charges: i32,
-    },
+    Status { name: String, charges: i32 },
 }
 
 impl OfferProduct {
     pub fn do_buy(&self, entity: Entity, world: &mut World) -> Result<()> {
         match self {
             OfferProduct::Unit => ShopPlugin::buy_unit(entity, world),
-            OfferProduct::Status {
-                name,
-                charges,
-                house,
-            } => {
+            OfferProduct::Status { name, charges } => {
                 for unit in UnitPlugin::collect_faction(Faction::Team, world) {
-                    Status::change_charges(name, house, unit, *charges, world).unwrap();
+                    Status::change_charges(name, unit, *charges, world).unwrap();
                 }
                 world.entity_mut(entity).despawn_recursive();
                 Ok(())

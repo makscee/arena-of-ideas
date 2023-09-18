@@ -14,6 +14,8 @@ pub struct PackedUnit {
     pub representation: Representation,
     #[serde(default)]
     pub state: VarState,
+    #[serde(default)]
+    pub statuses: Vec<(String, i32)>,
 }
 
 const LOCAL_TRIGGER: &str = "_local";
@@ -54,6 +56,9 @@ impl PackedUnit {
         Status::spawn(LOCAL_TRIGGER.to_owned(), self.trigger, world)
             .insert(VarState::default())
             .set_parent(entity);
+        for (status, charges) in self.statuses {
+            Status::change_charges(&status, entity, charges, world).unwrap();
+        }
         entity
     }
 
@@ -71,17 +76,22 @@ impl PackedUnit {
         let name = state.get_string(VarName::Name).unwrap();
         let description = state.get_string(VarName::Description).unwrap();
         let house = state.get_string(VarName::House).unwrap();
-        let trigger = Status::collect_entity_statuses(entity, world)
-            .into_iter()
-            .filter_map(
-                |e| match world.get::<Status>(e).unwrap().name.eq(LOCAL_TRIGGER) {
-                    true => Some(Status::get_trigger(e, world).clone()),
-                    false => None,
-                },
-            )
-            .at_most_one()
-            .unwrap()
-            .unwrap();
+        let mut trigger = None;
+        let mut statuses = Vec::default();
+        for entity in Status::collect_entity_statuses(entity, world) {
+            let status = world.get::<Status>(entity).unwrap();
+            if status.name.eq(LOCAL_TRIGGER) {
+                trigger = Some(status.trigger.clone());
+            } else {
+                statuses.push((
+                    status.name.to_owned(),
+                    VarState::get(entity, world)
+                        .get_int(VarName::Charges)
+                        .unwrap(),
+                ));
+            }
+        }
+        let trigger = trigger.unwrap();
 
         Self {
             hp,
@@ -92,6 +102,7 @@ impl PackedUnit {
             representation,
             state,
             description,
+            statuses,
         }
     }
 }

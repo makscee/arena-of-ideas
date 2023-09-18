@@ -28,7 +28,7 @@ fn main() {
                 ..default()
             }),))
         .add_loading_state(
-            LoadingState::new(GameState::AssetLoading).continue_to_state(GameState::Battle),
+            LoadingState::new(GameState::AssetLoading).continue_to_state(GameState::Shop),
         )
         .add_dynamic_collection_to_loading_state::<_, StandardDynamicAssetCollection>(
             GameState::AssetLoading,

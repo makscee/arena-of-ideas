@@ -80,15 +80,11 @@ impl EffectWrapped {
                 ActionPlugin::push_front(effect, context.clone(), world);
             }
             Effect::AddStatus(status) => {
-                let house = context
-                    .get_var(VarName::House, world)
-                    .context("House not found")?
-                    .get_string()?;
                 let charges = context
                     .get_var(VarName::Charges, world)
                     .unwrap_or(VarValue::Int(1))
                     .get_int()?;
-                Status::change_charges(&status, &house, context.target(), charges, world)?;
+                Status::change_charges(&status, context.target(), charges, world)?;
             }
             Effect::List(effects) => {
                 for effect in effects {

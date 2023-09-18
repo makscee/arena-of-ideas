@@ -58,7 +58,6 @@ impl Status {
 
     pub fn change_charges(
         status: &str,
-        house: &str,
         unit: Entity,
         delta: i32,
         world: &mut World,

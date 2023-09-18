@@ -23,6 +23,10 @@ impl GameTimer {
         self.save = self.play_head
     }
 
+    pub fn clear_save(&mut self) {
+        self.save = 0.0
+    }
+
     pub fn head_to_save(&mut self) {
         self.set_t(self.save)
     }
