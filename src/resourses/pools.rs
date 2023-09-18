@@ -6,6 +6,7 @@ pub struct Pools {
     pub heroes: HashMap<String, Handle<PackedUnit>>,
     #[asset(key = "pool.houses", collection(typed, mapped))]
     pub houses: HashMap<String, Handle<House>>,
+    pub statuses: HashMap<String, PackedStatus>,
 }
 
 impl Pools {
@@ -55,11 +56,48 @@ impl Pools {
             .unwrap()
     }
 
-    pub fn get_status<'a>(status: &str, house: &str, world: &'a World) -> &'a PackedStatus {
-        Self::get_house(house, world)
-            .statuses
-            .iter()
-            .find(|s| s.name.eq(status))
+    pub fn get_status<'a>(status: &str, world: &'a World) -> &'a PackedStatus {
+        world
+            .get_resource::<Pools>()
             .unwrap()
+            .statuses
+            .get(status)
+            .unwrap()
+    }
+}
+
+pub struct PoolsPlugin;
+
+impl PoolsPlugin {
+    pub fn setup(world: &mut World) {
+        debug!("status setup");
+        let statuses = world
+            .get_resource::<Pools>()
+            .unwrap()
+            .houses
+            .values()
+            .map(|handle| {
+                world
+                    .get_resource::<Assets<House>>()
+                    .unwrap()
+                    .get(handle)
+                    .unwrap()
+                    .statuses
+                    .clone()
+            })
+            .flatten()
+            .collect_vec();
+        let pool = &mut world.get_resource_mut::<Pools>().unwrap().statuses;
+        for (key, value) in statuses.into_iter().map(|s| (s.name.clone(), s)) {
+            if pool.insert(key.clone(), value).is_some() {
+                panic!("Duplicate status name: {key}")
+            }
+        }
+    }
+}
+
+impl Plugin for PoolsPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(OnExit(GameState::AssetLoading), Self::setup);
     }
 }

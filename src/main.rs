@@ -34,10 +34,10 @@ fn main() {
             GameState::AssetLoading,
             "ron/dynamic.assets.ron",
         )
-        .add_systems(PreUpdate, update)
-        .add_systems(PostUpdate, detect_changes)
         .add_collection_to_loading_state::<_, Options>(GameState::AssetLoading)
         .add_collection_to_loading_state::<_, Pools>(GameState::AssetLoading)
+        .add_systems(PreUpdate, update)
+        .add_systems(PostUpdate, detect_changes)
         .add_plugins(DefaultPickingPlugins)
         .add_plugins(
             bevy_inspector_egui::quick::WorldInspectorPlugin::new()
@@ -50,6 +50,7 @@ fn main() {
         .add_plugins(RonAssetPlugin::<Representation>::new(&["rep.ron"]))
         .add_plugins(RonAssetPlugin::<Animations>::new(&["anim.ron"]))
         .add_plugins((
+            PoolsPlugin,
             ActionPlugin,
             UnitPlugin,
             RepresentationPlugin,

@@ -51,7 +51,8 @@ Bevy transition
     Status panel {cm:2023-09-05T23:33:08}
     Status save to PackedUnit
     Status default rep
+    Fix "struct Vertex" error
     Status modify state & support history {cm:2023-09-14T18:04:28}
     Content
-        5 Warriors
+        5 Warriors {cm:2023-09-18T15:33:50}
         3 Enemies

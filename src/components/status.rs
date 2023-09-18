@@ -71,7 +71,7 @@ impl Status {
                 }
             }
         }
-        let mut status = Pools::get_status(status, house, world).clone();
+        let mut status = Pools::get_status(status, world).clone();
         status.state.init(VarName::Charges, VarValue::Int(delta));
         status.unpack(Some(unit), world)
     }
