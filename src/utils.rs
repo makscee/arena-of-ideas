@@ -59,6 +59,9 @@ pub fn entity_screen_pos(entity: Entity, offset: Vec2, world: &mut World) -> Vec
 pub fn get_insert_t(world: &World) -> f32 {
     world.get_resource::<GameTimer>().unwrap().get_insert_t()
 }
+pub fn get_t(world: &World) -> f32 {
+    world.get_resource::<GameTimer>().unwrap().get_t()
+}
 pub fn get_parent(entity: Entity, world: &World) -> Entity {
     world.get::<Parent>(entity).unwrap().get()
 }

@@ -52,7 +52,8 @@ impl PackedUnit {
             );
         world
             .entity_mut(entity)
-            .insert((Unit, Name::new(self.name), self.state));
+            .insert((Unit, Name::new(self.name)));
+        self.state.insert_to_entity(entity, world);
         Status::spawn(LOCAL_TRIGGER.to_owned(), self.trigger, world)
             .insert(VarState::default())
             .set_parent(entity);

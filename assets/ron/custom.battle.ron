@@ -129,34 +129,8 @@
                     material: Shape(
                         shape: Circle,
                         color: ("#4527A0"),
-                        size: Vec2E(
-                            State(
-                                Radius,
-                            ),
-                        ),
+                        size: Vec2(0.7, 0.7),
                     ),
-                ),
-                state: (
-                    {
-                        Radius: (
-                            [
-                                (
-                                    t: 0.0,
-                                    value: Float(
-                                        0.0001,
-                                    ),
-                                ),
-                                (
-                                    t: 0.0,
-                                    duration: 0.5,
-                                    tween: QuartOut,
-                                    value: Float(
-                                        0.7,
-                                    ),
-                                ),
-                            ],
-                        ),
-                    },
                 ),
             ),
         ],

@@ -91,7 +91,9 @@ impl Expression {
                 let t = GameTimer::get(world).get_t();
                 VarState::find_value(context.owner(), *var, t, world)
             }
-            Expression::Context(var) => context.get_var(*var, world).context("Var not found"),
+            Expression::Context(var) => context
+                .get_var(*var, world)
+                .with_context(|| format!("Var {var} was not found")),
             Expression::Owner => Ok(VarValue::Entity(
                 context.get_owner().context("Owner not found")?,
             )),

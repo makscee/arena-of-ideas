@@ -19,7 +19,7 @@ impl RepresentationPlugin {
             .iter(world)
             .map(|(e, r)| (e, r.clone()))
             .collect_vec();
-        let t = GameTimer::get_mut(world).get_t();
+        let t = get_t(world);
         for (entity, rep) in reps {
             let mut position = VarState::get_value(entity, VarName::Position, t, world)
                 .map(|x| x.get_vec2().unwrap())

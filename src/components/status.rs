@@ -38,9 +38,8 @@ impl PackedStatus {
             Trigger::ChangeVar(_, _) => true,
             _ => false,
         };
-        let entity = Status::spawn(self.name, self.trigger, world)
-            .insert(self.state)
-            .id();
+        let entity = Status::spawn(self.name, self.trigger, world).id();
+        self.state.insert_to_entity(entity, world);
         if add_delta {
             world.entity_mut(entity).insert(VarStateDelta::default());
         }

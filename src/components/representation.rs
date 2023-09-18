@@ -101,9 +101,10 @@ impl RepresentationMaterial {
     }
 
     pub fn update(&self, entity: Entity, world: &mut World) {
-        let t = GameTimer::get_mut(world).get_t();
+        let t = get_t(world);
         if let Some(state) = world.get::<VarState>(entity) {
             let visible = state.get_bool_at(VarName::Visible, t).unwrap_or(true);
+            let visible = visible && state.birth < t;
             Self::set_visible(entity, visible, world);
             if !visible {
                 return;

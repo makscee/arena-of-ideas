@@ -1,7 +1,11 @@
 use super::*;
 
 #[derive(Component, Serialize, Deserialize, Clone, Debug, Reflect, Default)]
-pub struct VarState(HashMap<VarName, History>);
+pub struct VarState {
+    pub history: HashMap<VarName, History>,
+    #[serde(default)]
+    pub birth: f32,
+}
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, Reflect)]
 pub struct History(Vec<Change>);
@@ -36,6 +40,11 @@ impl VarState {
         mem::take(Self::default().init(var, value))
     }
 
+    pub fn insert_to_entity(mut self, entity: Entity, world: &mut World) {
+        self.birth = get_insert_t(world);
+        world.entity_mut(entity).insert(self);
+    }
+
     pub fn get(entity: Entity, world: &World) -> &Self {
         Self::try_get(entity, world).unwrap()
     }
@@ -58,28 +67,36 @@ impl VarState {
     }
 
     pub fn push_back(entity: Entity, var: VarName, mut change: Change, world: &mut World) {
-        let mut timer = world.get_resource_mut::<GameTimer>().unwrap();
-        let end = timer.get_insert_t();
-        change.t += end;
-        timer.register_insert(change.total_duration());
-        let mut state = Self::get_mut(entity, world);
-        state.0.entry(var).or_insert(default()).push(change);
-    }
-    pub fn insert_simple(&mut self, var: VarName, value: VarValue, t: f32) {
-        self.0
+        let end = get_insert_t(world);
+        change.t += end - Self::get(entity, world).birth;
+        world
+            .get_resource_mut::<GameTimer>()
+            .unwrap()
+            .register_insert(change.total_duration());
+        Self::get_mut(entity, world)
+            .history
             .entry(var)
             .or_insert(default())
-            .push(Change::new(value).set_t(t));
+            .push(change);
+    }
+    pub fn insert_simple(&mut self, var: VarName, value: VarValue, t: f32) {
+        self.history
+            .entry(var)
+            .or_insert(default())
+            .push(Change::new(value).set_t(t - self.birth));
     }
     pub fn init(&mut self, var: VarName, value: VarValue) -> &mut Self {
-        self.0.insert(var, History::new(value));
+        self.history.insert(var, History::new(value));
         self
     }
     pub fn get_value_at(&self, var: VarName, t: f32) -> Result<VarValue> {
-        self.0.get(&var).context("No key in state")?.find_value(t)
+        self.history
+            .get(&var)
+            .context("No key in state")?
+            .find_value(t - self.birth)
     }
     pub fn get_value_last(&self, var: VarName) -> Result<VarValue> {
-        self.0
+        self.history
             .get(&var)
             .with_context(|| format!("Var not found {var}"))?
             .get_last()
@@ -128,17 +145,17 @@ impl VarState {
             }
             break;
         }
-        result.context("Var was not found")
+        result.with_context(|| format!("Var {var} was not found"))
     }
     pub fn get_value(entity: Entity, var: VarName, t: f32, world: &World) -> Result<VarValue> {
         if let Ok(state) = Self::try_get(entity, world) {
             state.get_value_at(var, t)
         } else {
-            Err(anyhow!("Var was not found"))
+            Err(anyhow!("Var {var} was not found"))
         }
     }
     pub fn duration(&self) -> f32 {
-        self.0
+        self.history
             .values()
             .map(|x| x.duration())
             .max_by(|x, y| x.total_cmp(y))
