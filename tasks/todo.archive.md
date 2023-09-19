@@ -174,3 +174,55 @@ Build {c} {cm:2023-09-05T21:44:24}
         Buy {cm:2023-08-15T15:08:24}
         Click {cm:2023-08-15T15:08:24}
         Music {cm:2023-08-15T15:08:24}
+Bevy transition {cm:2023-09-19T18:36:21}
+    Representation {cm:2023-08-18T16:46:36}
+        chaining {cm:2023-08-16T13:52:35}
+        uniform animating {cm:2023-08-18T16:26:32}
+    Options {cm:2023-08-18T22:42:16}
+    Rep hot reload {cm:2023-08-19T02:49:11}
+    Unit Rep with name & stats {cm:2023-08-22T15:41:20}
+    Unit strike animation {cm:2023-08-22T15:41:26}
+    Simplest Battle {cm:2023-09-03T17:40:57}
+        Team {cm:2023-08-22T16:50:47}
+        Battle Config {cm:2023-08-22T16:50:46}
+        Factions {cm:2023-08-29T14:50:21}
+        Slots {cm:2023-08-29T14:50:26}
+        Context {cm:2023-08-29T16:05:47}
+        Action Queue {cm:2023-08-29T16:05:48}
+        Effects: Damage {cm:2023-08-29T16:05:51}
+        Team Battle {cm:2023-08-30T18:46:06}
+            Battle run {cm:2023-08-30T16:59:42}
+            Death {cm:2023-08-30T18:46:04}
+            Game Timer {cm:2023-08-30T18:46:05}
+        Animation Assets {cm:2023-08-31T01:00:23}
+        Statuses {cm:2023-09-01T17:44:33}
+            Entity {cm:2023-09-01T17:44:33}
+            Attach/Detach {cm:2023-09-01T17:44:33}
+            Rendering {cm:2023-09-01T17:44:33}
+        Events {cm:2023-09-01T18:58:55}
+        Triggers {cm:2023-09-01T18:58:55}
+    Shop {cm:2023-09-19T15:15:49}
+        Unit description {cm:2023-09-05T01:20:09}
+        Showcase {cm:2023-09-05T01:20:09}
+        Buying {cm:2023-09-05T01:20:09}
+        Money {cm:2023-09-05T15:06:49}
+        Stats window {cm:2023-09-05T15:06:50}
+        Reroll {cm:2023-09-05T16:03:37}
+        Status in showcase {cm:2023-09-05T17:18:44}
+        Battle transition {cm:2023-09-05T23:33:05}
+    Status panel {cm:2023-09-05T23:33:08}
+    Status save to PackedUnit {cm:2023-09-18T16:17:03}
+    Status default rep {cm:2023-09-19T18:35:20}
+    Status fix hover not timed {cm:2023-09-18T17:44:56}
+    Status modify state & support history {cm:2023-09-14T18:04:28}
+    5 Warriors {cm:2023-09-18T15:33:50}
+    Enemies generation {cm:2023-09-19T17:50:52}
+        Enemy Pool {cm:2023-09-19T15:56:04}
+        Simulations {cm:2023-09-19T16:13:42}
+        3 enemy templates {cm:2023-09-19T17:50:44}
+    Simulation tests {start:2023-09-19T16:21:26} {cm:2023-09-19T17:09:57} {duration:48m}
+Socials {c} {cm:2023-09-19T23:21:55}
+    Build on itch.io {cm:2023-09-01T16:13:35}
+    Build post on tg {cm:2023-09-01T16:13:36}
+    Build devlog on yt {cm:2023-09-19T23:21:53}
+Floating text vfx {start:2023-09-19T23:22:57} {cm:2023-09-20T00:47:52} {duration:01h24m}

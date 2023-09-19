@@ -68,11 +68,12 @@ impl VarState {
 
     pub fn push_back(entity: Entity, var: VarName, mut change: Change, world: &mut World) {
         let end = get_insert_t(world);
-        change.t += end - Self::get(entity, world).birth;
+        let birth = Self::get(entity, world).birth;
+        change.t += end - birth;
         world
             .get_resource_mut::<GameTimer>()
             .unwrap()
-            .register_insert(change.total_duration());
+            .register_insert(change.total_duration() + birth);
         Self::get_mut(entity, world)
             .history
             .entry(var)

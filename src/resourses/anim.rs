@@ -9,14 +9,20 @@ pub enum Anim {
         value: Expression,
         #[serde(default)]
         t: f32,
+        #[serde(default = "default_zero_f32_e")]
         duration: Expression,
         #[serde(default)]
         tween: Tween,
     },
 }
 
+fn default_zero_f32_e() -> Expression {
+    Expression::Float(0.0)
+}
+
 impl Anim {
     pub fn apply(self, context: &Context, world: &mut World) -> Result<()> {
+        debug!("{}\n{context:#?}", "Apply animation".purple());
         match self {
             Anim::Sequence(list) => {
                 for anim in list {

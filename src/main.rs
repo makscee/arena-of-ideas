@@ -54,6 +54,7 @@ fn main() {
         .add_plugins(RonAssetPlugin::<Representation>::new(&["rep.ron"]))
         .add_plugins(RonAssetPlugin::<Animations>::new(&["anim.ron"]))
         .add_plugins(RonAssetPlugin::<TestScenario>::new(&["scenario.ron"]))
+        .add_plugins(RonAssetPlugin::<Vfx>::new(&["vfx.ron"]))
         .add_plugins((
             PoolsPlugin,
             ActionPlugin,

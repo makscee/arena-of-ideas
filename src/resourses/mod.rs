@@ -16,6 +16,7 @@ mod status_library;
 mod test_scenarios;
 mod trigger;
 mod vars;
+mod vfx;
 
 use super::*;
 pub use ability::*;
@@ -36,3 +37,4 @@ pub use status_library::*;
 pub use test_scenarios::*;
 pub use trigger::*;
 pub use vars::*;
+pub use vfx::*;

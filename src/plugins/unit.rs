@@ -83,7 +83,7 @@ impl UnitPlugin {
     }
 
     fn despawn(
-        query: Query<Entity, Or<(&Unit, &Corpse, &ShopOffer)>>,
+        query: Query<Entity, Or<(&Unit, &Corpse, &ShopOffer, &Representation)>>,
         mut commands: Commands,
         mut state: ResMut<NextState<GameState>>,
         mut time: ResMut<Time>,

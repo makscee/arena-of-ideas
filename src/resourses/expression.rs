@@ -35,6 +35,7 @@ pub enum Expression {
     SlotUnit(Box<Expression>),
 
     State(VarName),
+    StateLast(VarName),
     Context(VarName),
     SlotPosition,
 
@@ -94,8 +95,11 @@ impl Expression {
                 VarValue::mul(&a.get_value(context, world)?, &b.get_value(context, world)?)
             }
             Expression::State(var) => {
-                let t = GameTimer::get(world).get_t();
+                let t = get_t(world);
                 VarState::find_value(context.owner(), *var, t, world)
+            }
+            Expression::StateLast(var) => {
+                VarState::get(context.owner(), world).get_value_last(*var)
             }
             Expression::Context(var) => context
                 .get_var(*var, world)

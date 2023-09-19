@@ -3,7 +3,7 @@
     left: (
         units: [
             (
-                hp: 1,
+                hp: 10,
                 atk: 1,
                 house: "Warriors",
                 name: "E",
@@ -18,12 +18,17 @@
     right: (
         units: [
             (
-                hp: 5,
-                atk: 5,
+                hp: 10,
+                atk: 3,
                 name: "Snake",
                 description: "Kill after dealing any damage",
-                trigger: AfterDamageDealt(
-                    (effect: Kill),
+                trigger: BattleStart(
+                    (
+                        effect: AddStatus(
+                            "Strength",
+                        ),
+                        target: Owner,
+                    ),
                 ),
                 representation: (
                     material: Shape(

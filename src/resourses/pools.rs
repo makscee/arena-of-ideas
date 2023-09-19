@@ -4,15 +4,18 @@ use super::*;
 pub struct Pools {
     #[asset(key = "pool.heroes", collection(typed, mapped))]
     heroes_handles: HashMap<String, Handle<PackedUnit>>,
+    pub heroes: HashMap<String, PackedUnit>,
     #[asset(key = "pool.enemies", collection(typed, mapped))]
     enemies_handles: HashMap<String, Handle<PackedUnit>>,
+    pub enemies: HashMap<String, PackedUnit>,
     #[asset(key = "pool.houses", collection(typed, mapped))]
     houses_handles: HashMap<String, Handle<House>>,
-    pub statuses: HashMap<String, PackedStatus>,
     pub houses: HashMap<String, House>,
+    pub statuses: HashMap<String, PackedStatus>,
     pub abilities: HashMap<String, Ability>,
-    pub heroes: HashMap<String, PackedUnit>,
-    pub enemies: HashMap<String, PackedUnit>,
+    #[asset(key = "pool.vfx", collection(typed, mapped))]
+    vfx_handles: HashMap<String, Handle<Vfx>>,
+    pub vfx: HashMap<String, Vfx>,
 }
 
 impl Pools {
@@ -29,6 +32,10 @@ impl Pools {
     pub fn get_ability<'a>(name: &str, world: &'a World) -> &'a Ability {
         Self::get(world).abilities.get(name).unwrap()
     }
+    pub fn get_vfx<'a>(name: &str, world: &'a World) -> Vfx {
+        let name = &format!("ron/vfx/{name}.vfx.ron");
+        Self::get(world).vfx.get(name).unwrap().clone()
+    }
 }
 
 pub struct PoolsPlugin;
@@ -40,6 +47,7 @@ impl PoolsPlugin {
         Self::setup_abilities(world);
         Self::setup_heroes(world);
         Self::setup_enemies(world);
+        Self::setup_vfx(world);
     }
 
     pub fn setup_houses(world: &mut World) {
@@ -61,6 +69,28 @@ impl PoolsPlugin {
         );
         debug!("Setup houses: {houses:#?}");
         world.get_resource_mut::<Pools>().unwrap().houses = houses;
+    }
+
+    pub fn setup_vfx(world: &mut World) {
+        let vfx = HashMap::from_iter(
+            world
+                .get_resource::<Pools>()
+                .unwrap()
+                .vfx_handles
+                .iter()
+                .map(|(path, handle)| {
+                    let vfx = world
+                        .get_resource::<Assets<Vfx>>()
+                        .unwrap()
+                        .get(handle)
+                        .unwrap()
+                        .clone();
+
+                    (path.to_owned(), vfx)
+                }),
+        );
+        debug!("Setup vfx: {vfx:#?}");
+        world.get_resource_mut::<Pools>().unwrap().vfx = vfx;
     }
 
     pub fn setup_statuses(world: &mut World) {

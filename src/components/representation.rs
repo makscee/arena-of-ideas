@@ -27,16 +27,16 @@ impl VarMapping {
 pub enum RepresentationMaterial {
     Shape {
         shape: Shape,
-        #[serde(default = "default_one_vec2")]
+        #[serde(default = "default_one_vec2_e")]
         size: Expression,
-        #[serde(default = "default_color")]
+        #[serde(default = "default_color_e")]
         color: Expression,
     },
     Text {
-        #[serde(default = "default_one_f32")]
+        #[serde(default = "default_one_f32_e")]
         size: Expression,
         text: Expression,
-        #[serde(default = "default_color")]
+        #[serde(default = "default_color_e")]
         color: Expression,
         #[serde(default = "default_font_size")]
         font_size: f32,
@@ -46,13 +46,13 @@ pub enum RepresentationMaterial {
 fn default_font_size() -> f32 {
     32.0
 }
-fn default_one_f32() -> Expression {
+fn default_one_f32_e() -> Expression {
     Expression::Float(1.0)
 }
-fn default_one_vec2() -> Expression {
+fn default_one_vec2_e() -> Expression {
     Expression::Vec2(1.0, 1.0)
 }
-fn default_color() -> Expression {
+fn default_color_e() -> Expression {
     Expression::Hex("#ff00ff".to_owned())
 }
 
