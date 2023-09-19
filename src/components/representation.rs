@@ -29,15 +29,15 @@ pub enum RepresentationMaterial {
         shape: Shape,
         #[serde(default = "default_one_vec2")]
         size: Expression,
-        #[serde(default)]
-        color: HexColor,
+        #[serde(default = "default_color")]
+        color: Expression,
     },
     Text {
         #[serde(default = "default_one_f32")]
         size: Expression,
         text: Expression,
-        #[serde(default)]
-        color: HexColor,
+        #[serde(default = "default_color")]
+        color: Expression,
         #[serde(default = "default_font_size")]
         font_size: f32,
     },
@@ -52,14 +52,17 @@ fn default_one_f32() -> Expression {
 fn default_one_vec2() -> Expression {
     Expression::Vec2(1.0, 1.0)
 }
+fn default_color() -> Expression {
+    Expression::Hex("#ff00ff".to_owned())
+}
 
 impl RepresentationMaterial {
     pub fn unpack(&self, entity: Entity, world: &mut World) {
         match self {
-            RepresentationMaterial::Shape { shape, color, .. } => {
+            RepresentationMaterial::Shape { shape, .. } => {
                 let mut materials = world.resource_mut::<Assets<LineShapeMaterial>>();
                 let material = LineShapeMaterial {
-                    color: color.clone().into(),
+                    color: Color::PINK,
                     shape: *shape,
                     ..default()
                 };
@@ -73,15 +76,13 @@ impl RepresentationMaterial {
                     ..default()
                 });
             }
-            RepresentationMaterial::Text {
-                color, font_size, ..
-            } => {
+            RepresentationMaterial::Text { font_size, .. } => {
                 world.entity_mut(entity).insert(Text2dBundle {
                     text: Text::from_section(
                         "".to_owned(),
                         TextStyle {
                             font_size: *font_size,
-                            color: color.clone().into(),
+                            color: Color::PINK,
                             ..default()
                         },
                     ),
@@ -114,6 +115,7 @@ impl RepresentationMaterial {
         match self {
             RepresentationMaterial::Shape { shape, size, color } => {
                 let size = size.get_vec2(&context, world).unwrap();
+                let color = color.get_color(&context, world).unwrap();
                 let handle = world
                     .get::<Handle<LineShapeMaterial>>(entity)
                     .unwrap()
@@ -122,7 +124,7 @@ impl RepresentationMaterial {
                     .get_resource_mut::<Assets<LineShapeMaterial>>()
                     .unwrap();
                 if let Some(mat) = materials.get_mut(&handle) {
-                    mat.color = color.clone().into();
+                    mat.color = color;
                     if mat.size != size {
                         mat.size = size;
                         let mesh = world.entity(entity).get::<Mesh2dHandle>().unwrap().clone();
@@ -140,10 +142,16 @@ impl RepresentationMaterial {
                 size,
                 text,
                 font_size,
-                ..
+                color,
             } => {
+                let color = color.get_color(&context, world).unwrap();
                 world.get_mut::<Text>(entity).unwrap().sections[0].value =
                     text.get_string(&context, world).unwrap();
+                world.get_mut::<Text>(entity).unwrap().sections[0].style = TextStyle {
+                    font_size: *font_size,
+                    color,
+                    ..default()
+                };
                 world.get_mut::<Transform>(entity).unwrap().scale =
                     vec3(1.0 / *font_size, 1.0 / *font_size, 1.0)
                         * size.get_float(&context, world).unwrap();

@@ -7,7 +7,7 @@
     representation: (
         material: Shape(
             shape: Circle,
-            color: ("#827717"),
+            color: Hex("#827717"),
             size: Vec2(0.8, 0.8),
         ),
     ),

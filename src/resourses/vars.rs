@@ -26,6 +26,7 @@ pub enum VarName {
     Value,
     G,
     LastAttacker,
+    Color,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Reflect, PartialEq)]
@@ -37,6 +38,7 @@ pub enum VarValue {
     String(String),
     Faction(Faction),
     Entity(Entity),
+    Color(Color),
 }
 
 impl VarValue {
@@ -75,6 +77,12 @@ impl VarValue {
         match self {
             VarValue::Faction(value) => Ok(*value),
             _ => Err(anyhow!("Faction not supported by {self:?}")),
+        }
+    }
+    pub fn get_color(&self) -> Result<Color> {
+        match self {
+            VarValue::Color(value) => Ok(*value),
+            _ => Err(anyhow!("Color not supported by {self:?}")),
         }
     }
     pub fn get_entity(&self) -> Result<Entity> {

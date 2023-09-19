@@ -8,7 +8,7 @@
     representation: (
         material: Shape(
             shape: Circle,
-            color: ("#76FF03"),
+            color: Hex("#76FF03"),
             size: Vec2(0.8, 0.8),
         ),
     ),

@@ -11,6 +11,7 @@ pub struct PackedStatus {
     #[serde(default)]
     pub description: String,
     pub trigger: Trigger,
+    #[serde(default)]
     pub representation: Option<Representation>,
     #[serde(default)]
     pub state: VarState,
@@ -43,9 +44,12 @@ impl PackedStatus {
         if add_delta {
             world.entity_mut(entity).insert(VarStateDelta::default());
         }
-        self.representation
-            .unwrap()
+        Options::get_status_rep(world)
+            .clone()
             .unpack(Some(entity), owner, world);
+        if let Some(rep) = self.representation {
+            rep.unpack(None, Some(entity), world);
+        }
         Ok(entity)
     }
 }

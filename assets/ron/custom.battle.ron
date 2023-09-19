@@ -3,17 +3,6 @@
     left: (
         units: [
             (
-                hp: 10000,
-                atk: 1,
-                house: "Warriors",
-                name: "E",
-                representation: (
-                    material: Text(
-                        text: String("E"),
-                    ),
-                ),
-            ),
-            (
                 hp: 1,
                 atk: 1,
                 house: "Warriors",
@@ -39,7 +28,7 @@
                 representation: (
                     material: Shape(
                         shape: Circle,
-                        color: ("#76FF03"),
+                        color: Hex("#76FF03"),
                         size: Vec2(0.8, 0.8),
                     ),
                 ),

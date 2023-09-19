@@ -10,13 +10,6 @@
                 Atk,
                 Context(Charges),
             ),
-            representation: (
-                material: Shape(
-                    shape: Circle,
-                    color: ("#8D6E63"),
-                    size: Vec2E(Float(1.1)),
-                ),
-            ),
         ),
     ],
     abilities: [

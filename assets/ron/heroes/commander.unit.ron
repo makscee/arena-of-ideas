@@ -42,7 +42,7 @@
     representation: (
         material: Shape(
             shape: Rectangle,
-            color: ("#76FF03"),
+            color: Hex("#76FF03"),
             size: Vec2E(
                 Sum(
                     Mul(

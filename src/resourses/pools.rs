@@ -67,7 +67,15 @@ impl PoolsPlugin {
         let statuses = Pools::get(world)
             .houses
             .iter()
-            .map(|(_, h)| h.statuses.clone())
+            .map(|(_, h)| {
+                let mut statuses = h.statuses.clone();
+                for status in statuses.iter_mut() {
+                    status
+                        .state
+                        .init(VarName::Color, VarValue::Color(h.color.clone().into()));
+                }
+                statuses
+            })
             .flatten()
             .collect_vec();
         let pool = &mut Pools::get_mut(world).statuses;

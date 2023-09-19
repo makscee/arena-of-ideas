@@ -43,8 +43,9 @@ pub enum Expression {
     FactionCount(Box<Expression>),
 
     Equals(Vec<Box<Expression>>),
-}
 
+    Hex(String),
+}
 impl Expression {
     pub fn get_value(&self, context: &Context, world: &mut World) -> Result<VarValue> {
         match self {
@@ -142,34 +143,32 @@ impl Expression {
                 }
                 Ok(VarValue::Bool(var_values.into_iter().all_equal()))
             }
+            Expression::Hex(color) => Ok(VarValue::Color(Color::hex(color)?)),
         }
     }
 
     pub fn get_float(&self, context: &Context, world: &mut World) -> Result<f32> {
         self.get_value(context, world)?.get_float()
     }
-
     pub fn get_int(&self, context: &Context, world: &mut World) -> Result<i32> {
         self.get_value(context, world)?.get_int()
     }
-
     pub fn get_vec2(&self, context: &Context, world: &mut World) -> Result<Vec2> {
         self.get_value(context, world)?.get_vec2()
     }
-
     pub fn get_bool(&self, context: &Context, world: &mut World) -> Result<bool> {
         self.get_value(context, world)?.get_bool()
     }
-
     pub fn get_string(&self, context: &Context, world: &mut World) -> Result<String> {
         self.get_value(context, world)?.get_string()
     }
-
     pub fn get_entity(&self, context: &Context, world: &mut World) -> Result<Entity> {
         self.get_value(context, world)?.get_entity()
     }
-
     pub fn get_faction(&self, context: &Context, world: &mut World) -> Result<Faction> {
         self.get_value(context, world)?.get_faction()
+    }
+    pub fn get_color(&self, context: &Context, world: &mut World) -> Result<Color> {
+        self.get_value(context, world)?.get_color()
     }
 }

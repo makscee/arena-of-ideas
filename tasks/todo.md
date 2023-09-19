@@ -51,11 +51,11 @@ Bevy transition
     Status save to PackedUnit {cm:2023-09-18T16:17:03}
     Status default rep
     Status fix hover not timed {cm:2023-09-18T17:44:56}
-    Fix "struct Vertex" error
     Status modify state & support history {cm:2023-09-14T18:04:28}
     5 Warriors {cm:2023-09-18T15:33:50}
-    Enemies generation
+    Enemies generation {cm:2023-09-19T17:50:52}
         Enemy Pool {cm:2023-09-19T15:56:04}
         Simulations {cm:2023-09-19T16:13:42}
-        3 enemy templates
+        3 enemy templates {cm:2023-09-19T17:50:44}
     Simulation tests {start:2023-09-19T16:21:26} {cm:2023-09-19T17:09:57} {duration:48m}
+Fix "struct Vertex" error

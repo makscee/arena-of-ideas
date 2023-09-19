@@ -20,7 +20,7 @@
     representation: (
         material: Shape(
             shape: Rectangle,
-            color: ("#00B0FF"),
+            color: Hex("#00B0FF"),
             size: Vec2E(
                 Sum(
                     Mul(
@@ -35,7 +35,7 @@
             (
                 material: Shape(
                     shape: Rectangle,
-                    color: ("#00B0FF"),
+                    color: Hex("#00B0FF"),
                     size: Vec2E(
                         Sum(
                             Mul(

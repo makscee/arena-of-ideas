@@ -14,7 +14,7 @@
     representation: (
         material: Shape(
             shape: Rectangle,
-            color: ("#BF360C"),
+            color: Hex("#BF360C"),
             size: Vec2E(State(Radius)),
         ),
         mapping: ({Rotation: Sin(GameTime)}),

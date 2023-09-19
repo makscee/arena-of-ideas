@@ -15,7 +15,7 @@
     representation: (
         material: Shape(
             shape: Rectangle,
-            color: ("#DD2C00"),
+            color: Hex("#DD2C00"),
             size: Vec2E(State(Radius)),
         ),
         mapping: (

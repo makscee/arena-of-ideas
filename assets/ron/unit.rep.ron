@@ -1,13 +1,13 @@
 (
     material: Shape(
         shape: Circle,
-        color: ("#B0BEC5"),
+        color: Hex("#B0BEC5"),
     ),
     children: [
         (
             material: Shape(
                 shape: Circle,
-                color: ("#FF3D00"),
+                color: Hex("#FF3D00"),
                 size: Vec2E(Float(0.3)),
             ),
             mapping: (
@@ -22,7 +22,7 @@
                             State(Hp),
                         ),
                         size: Float(0.6),
-                        color: ("#FF3D00"),
+                        color: Hex("#FF3D00"),
                     ),
                 ),
             ],
@@ -30,7 +30,7 @@
         (
             material: Shape(
                 shape: Circle,
-                color: ("#FBC02D"),
+                color: Hex("#FBC02D"),
                 size: Vec2E(Float(0.3)),
             ),
             mapping: (
@@ -45,7 +45,7 @@
                             State(Atk),
                         ),
                         size: Float(0.6),
-                        color: ("#FBC02D"),
+                        color: Hex("#FBC02D"),
                     ),
                 ),
             ],
@@ -53,7 +53,7 @@
         (
             material: Text(
                 text: State(Name),
-                color: ("#ECEFF1"),
+                color: Hex("#ECEFF1"),
                 size: Float(0.25),
             ),
             mapping: (
