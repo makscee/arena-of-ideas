@@ -1,3 +1,4 @@
+#![enable(implicit_some)]
 (
     left: (
         units: [(hp: 1, atk: 1, name: "left")],

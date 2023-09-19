@@ -1,3 +1,5 @@
+use colored::ColoredString;
+
 use super::*;
 
 #[derive(Debug, AssetCollection, Resource)]
@@ -32,29 +34,38 @@ impl Plugin for TestPlugin {
 impl TestPlugin {
     pub fn run_tests(world: &mut World) {
         let scenarios = Self::get_all_scenarios(world);
-        let mut failures: Vec<String> = default();
+        let mut failure: Vec<ColoredString> = default();
+        let mut success: Vec<ColoredString> = default();
         for (name, scenario) in scenarios {
             match scenario.run(world) {
                 Ok(value) => debug!(
                     "Test run {}",
                     match value {
-                        true => "Success".green().bold(),
+                        true => {
+                            let str = format!("{} {}", "Success".bold(), name.dimmed()).green();
+                            success.push(str.clone());
+                            str
+                        }
                         false => {
-                            failures.push(format!("Failre {}", name.to_owned()));
-                            "Falure".red().bold()
+                            let str = format!("{} {}", "Failure".bold(), name).red();
+                            failure.push(str.clone());
+                            str
                         }
                     }
                 ),
                 Err(err) => {
-                    let str = format!("Error {err}");
-                    failures.push(str.clone());
-                    debug!("Test fail: {}", str.clone().red().bold())
+                    let str = format!("Error {err}").red().bold();
+                    failure.push(str.clone());
+                    debug!("Test fail: {}", str.clone())
                 }
             }
         }
         debug!(
-            "Tests run complete with {} failures.\n{failures:#?}",
-            failures.len()
+            "Tests run complete with {} successes and {} failures.\n{}\n{}",
+            success.len(),
+            failure.len(),
+            success.into_iter().join("\n"),
+            failure.into_iter().join("\n"),
         );
     }
 
