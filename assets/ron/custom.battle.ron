@@ -3,89 +3,7 @@
     left: (
         units: [
             (
-                hp: 4,
-                atk: 2,
-                house: "Warriors",
-                name: "Champion",
-                description: "On kill: give Strength to all allies",
-                trigger: AfterKill(
-                    (
-                        effect: AoeFaction(
-                            OwnerFaction,
-                            (
-                                effect: UseAbility(
-                                    "Strength",
-                                ),
-                            ),
-                        ),
-                    ),
-                ),
-                representation: (
-                    material: Shape(
-                        shape: Rectangle,
-                        color: ("#00B0FF"),
-                        size: Vec2E(
-                            Sum(
-                                Mul(
-                                    Sin(
-                                        GameTime,
-                                    ),
-                                    Float(
-                                        0.3,
-                                    ),
-                                ),
-                                Float(
-                                    0.7,
-                                ),
-                            ),
-                        ),
-                    ),
-                    children: [
-                        (
-                            material: Shape(
-                                shape: Rectangle,
-                                color: (
-                                    "#00B0FF",
-                                ),
-                                size: Vec2E(
-                                    Sum(
-                                        Mul(
-                                            Sin(
-                                                GameTime,
-                                            ),
-                                            Float(
-                                                1.0,
-                                            ),
-                                        ),
-                                        Float(
-                                            0.4,
-                                        ),
-                                    ),
-                                ),
-                            ),
-                        ),
-                    ],
-                    mapping: (
-                        {
-                            Rotation: Mul(
-                                Sin(
-                                    Mul(
-                                        GameTime,
-                                        Float(
-                                            0.1,
-                                        ),
-                                    ),
-                                ),
-                                Float(
-                                    40.9,
-                                ),
-                            ),
-                        },
-                    ),
-                ),
-            ),
-            (
-                hp: 1,
+                hp: 10000,
                 atk: 1,
                 house: "Warriors",
                 name: "E",
@@ -112,24 +30,17 @@
         units: [
             (
                 hp: 5,
-                atk: 1,
-                house: "Warriors",
-                name: "Test 2",
-                description: "This is a test\ndescription",
-                trigger: BattleStart(
-                    (
-                        effect: Debug(
-                            String(
-                                "Battle start trigger",
-                            ),
-                        ),
-                    ),
+                atk: 5,
+                name: "Snake",
+                description: "Kill after dealing any damage",
+                trigger: AfterDamageDealt(
+                    (effect: Kill),
                 ),
                 representation: (
                     material: Shape(
                         shape: Circle,
-                        color: ("#4527A0"),
-                        size: Vec2(0.7, 0.7),
+                        color: ("#76FF03"),
+                        size: Vec2(0.8, 0.8),
                     ),
                 ),
             ),

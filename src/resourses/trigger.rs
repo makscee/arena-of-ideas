@@ -6,6 +6,7 @@ use strum_macros::Display;
 #[derive(Deserialize, Serialize, Clone, Debug, Default, Display)]
 pub enum Trigger {
     AfterDamageTaken(EffectWrapped),
+    AfterDamageDealt(EffectWrapped),
     BattleStart(EffectWrapped),
     TurnStart(EffectWrapped),
     BeforeStrike(EffectWrapped),
@@ -22,6 +23,10 @@ impl Trigger {
             Trigger::Noop | Trigger::ChangeVar(..) => None,
             Trigger::AfterDamageTaken(..) => match event {
                 Event::DamageTaken { .. } => Some(self.clone()),
+                _ => None,
+            },
+            Trigger::AfterDamageDealt(..) => match event {
+                Event::DamageDealt { .. } => Some(self.clone()),
                 _ => None,
             },
             Trigger::BattleStart(..) => match event {
@@ -56,6 +61,7 @@ impl Trigger {
         );
         match self {
             Trigger::AfterDamageTaken(effect)
+            | Trigger::AfterDamageDealt(effect)
             | Trigger::BattleStart(effect)
             | Trigger::TurnStart(effect)
             | Trigger::BeforeStrike(effect) => {
@@ -73,7 +79,7 @@ impl Trigger {
             }
             Trigger::AfterKill(effect) => {
                 let target = match event {
-                    Event::Kill { killer: _, target } => *target,
+                    Event::Kill { owner: _, target } => *target,
                     _ => panic!(),
                 };
                 context.set_target(target, world);

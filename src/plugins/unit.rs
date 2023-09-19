@@ -147,7 +147,7 @@ impl UnitPlugin {
             .get_entity(VarName::LastAttacker)
             .unwrap();
         Event::Kill {
-            killer,
+            owner: killer,
             target: entity,
         }
         .send(world);

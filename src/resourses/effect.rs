@@ -5,6 +5,7 @@ use super::*;
 #[derive(Serialize, Deserialize, Clone, Debug, Default, Display)]
 pub enum Effect {
     Damage(Option<Expression>),
+    Kill,
     UseAbility(String),
     AddStatus(String),
     Debug(Expression),
@@ -61,10 +62,20 @@ impl EffectWrapped {
                     world,
                 );
                 Event::DamageTaken {
-                    unit: target,
+                    owner: target,
                     value,
                 }
                 .send(world);
+                Event::DamageDealt {
+                    owner: context.owner(),
+                    target,
+                    value,
+                }
+                .send(world);
+            }
+            Effect::Kill => {
+                let target = context.get_target().context("Target not found")?;
+                VarState::change_int(target, VarName::Hp, -9999999, world)?;
             }
             Effect::Debug(msg) => {
                 let msg = msg.get_string(&context, world)?;

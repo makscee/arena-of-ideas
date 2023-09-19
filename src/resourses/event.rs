@@ -2,12 +2,23 @@ use super::*;
 
 #[derive(Debug, Display)]
 pub enum Event {
-    DamageTaken { unit: Entity, value: i32 },
+    DamageTaken {
+        owner: Entity,
+        value: i32,
+    },
+    DamageDealt {
+        owner: Entity,
+        target: Entity,
+        value: i32,
+    },
     BattleStart,
     TurnStart,
     BeforeStrike(Entity),
     Death(Entity),
-    Kill { killer: Entity, target: Entity },
+    Kill {
+        owner: Entity,
+        target: Entity,
+    },
 }
 
 impl Event {
@@ -15,15 +26,28 @@ impl Event {
         debug!("Send event {self}");
         let mut context = Context::new_named(self.to_string());
         let statuses = match &self {
-            Event::DamageTaken { unit, value } => {
+            Event::DamageTaken { owner, value } => {
                 context.set_var(VarName::Value, VarValue::Int(*value));
-                Status::collect_entity_statuses(*unit, world)
+                Status::collect_entity_statuses(*owner, world)
             }
             Event::BattleStart | Event::TurnStart | Event::Death(..) => {
                 Status::collect_all_statuses(world)
             }
             Event::BeforeStrike(unit) => Status::collect_entity_statuses(*unit, world),
-            Event::Kill { killer, .. } => Status::collect_entity_statuses(*killer, world),
+            Event::Kill { owner, target } => {
+                context.set_target(*target, world);
+                Status::collect_entity_statuses(*owner, world)
+            }
+            Event::DamageDealt {
+                owner,
+                target,
+                value,
+            } => {
+                context
+                    .set_target(*target, world)
+                    .set_var(VarName::Value, VarValue::Int(*value));
+                Status::collect_entity_statuses(*owner, world)
+            }
         };
         Status::notify(statuses, &self, &context, world);
     }

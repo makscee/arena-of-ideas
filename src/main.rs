@@ -28,7 +28,7 @@ fn main() {
                 ..default()
             }),))
         .add_loading_state(
-            LoadingState::new(GameState::AssetLoading).continue_to_state(GameState::Shop),
+            LoadingState::new(GameState::AssetLoading).continue_to_state(GameState::Battle),
         )
         .add_loading_state(
             LoadingState::new(GameState::ScenariosLoading).continue_to_state(GameState::BattleTest),
