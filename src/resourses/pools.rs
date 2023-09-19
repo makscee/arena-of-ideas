@@ -3,66 +3,31 @@ use super::*;
 #[derive(AssetCollection, Resource, Debug)]
 pub struct Pools {
     #[asset(key = "pool.heroes", collection(typed, mapped))]
-    pub heroes: HashMap<String, Handle<PackedUnit>>,
+    heroes_handles: HashMap<String, Handle<PackedUnit>>,
+    #[asset(key = "pool.enemies", collection(typed, mapped))]
+    enemies_handles: HashMap<String, Handle<PackedUnit>>,
     #[asset(key = "pool.houses", collection(typed, mapped))]
-    pub houses: HashMap<String, Handle<House>>,
+    houses_handles: HashMap<String, Handle<House>>,
     pub statuses: HashMap<String, PackedStatus>,
+    pub houses: HashMap<String, House>,
+    pub abilities: HashMap<String, Ability>,
+    pub heroes: HashMap<String, PackedUnit>,
+    pub enemies: HashMap<String, PackedUnit>,
 }
 
 impl Pools {
-    pub fn heroes(world: &World) -> HashMap<String, &PackedUnit> {
-        let result = world
-            .get_resource::<Pools>()
-            .unwrap()
-            .heroes
-            .iter()
-            .map(|(name, handle)| {
-                (
-                    name.to_owned(),
-                    world
-                        .get_resource::<Assets<PackedUnit>>()
-                        .unwrap()
-                        .get(handle)
-                        .unwrap(),
-                )
-            });
-        HashMap::from_iter(result)
+    pub fn get<'a>(world: &'a World) -> &'a Self {
+        world.get_resource::<Pools>().unwrap()
+    }
+    pub fn get_mut(world: &mut World) -> Mut<Self> {
+        world.get_resource_mut::<Pools>().unwrap()
     }
 
-    pub fn get_house<'a>(name: &str, world: &'a World) -> &'a House {
-        world
-            .get_resource::<Assets<House>>()
-            .unwrap()
-            .get(
-                world
-                    .get_resource::<Pools>()
-                    .unwrap()
-                    .houses
-                    .get(&Self::full_file_name(name))
-                    .unwrap(),
-            )
-            .unwrap()
+    pub fn get_status<'a>(name: &str, world: &'a World) -> &'a PackedStatus {
+        Self::get(world).statuses.get(name).unwrap()
     }
-
-    fn full_file_name(name: &str) -> String {
-        format!("ron/houses/{}.house.ron", name.to_lowercase())
-    }
-
-    pub fn get_ability<'a>(ability: &str, house: &str, world: &'a World) -> &'a Ability {
-        Self::get_house(house, world)
-            .abilities
-            .iter()
-            .find(|a| a.name.eq(ability))
-            .unwrap()
-    }
-
-    pub fn get_status<'a>(status: &str, world: &'a World) -> &'a PackedStatus {
-        world
-            .get_resource::<Pools>()
-            .unwrap()
-            .statuses
-            .get(status)
-            .unwrap()
+    pub fn get_ability<'a>(name: &str, world: &'a World) -> &'a Ability {
+        Self::get(world).abilities.get(name).unwrap()
     }
 }
 
@@ -70,27 +35,110 @@ pub struct PoolsPlugin;
 
 impl PoolsPlugin {
     pub fn setup(world: &mut World) {
-        debug!("status setup");
-        let statuses = world
-            .get_resource::<Pools>()
-            .unwrap()
+        Self::setup_houses(world);
+        Self::setup_statuses(world);
+        Self::setup_abilities(world);
+        Self::setup_heroes(world);
+        Self::setup_enemies(world);
+    }
+
+    pub fn setup_houses(world: &mut World) {
+        let houses = HashMap::from_iter(
+            world
+                .get_resource::<Pools>()
+                .unwrap()
+                .houses_handles
+                .values()
+                .map(|handle| {
+                    let house = world
+                        .get_resource::<Assets<House>>()
+                        .unwrap()
+                        .get(handle)
+                        .unwrap()
+                        .clone();
+                    (house.name.to_owned(), house)
+                }),
+        );
+        debug!("Setup houses: {houses:#?}");
+        world.get_resource_mut::<Pools>().unwrap().houses = houses;
+    }
+
+    pub fn setup_statuses(world: &mut World) {
+        let statuses = Pools::get(world)
             .houses
-            .values()
-            .map(|handle| {
-                world
-                    .get_resource::<Assets<House>>()
-                    .unwrap()
-                    .get(handle)
-                    .unwrap()
-                    .statuses
-                    .clone()
-            })
+            .iter()
+            .map(|(_, h)| h.statuses.clone())
             .flatten()
             .collect_vec();
-        let pool = &mut world.get_resource_mut::<Pools>().unwrap().statuses;
+        let pool = &mut Pools::get_mut(world).statuses;
+        debug!("Setup statuses: {statuses:#?}");
         for (key, value) in statuses.into_iter().map(|s| (s.name.clone(), s)) {
             if pool.insert(key.clone(), value).is_some() {
                 panic!("Duplicate status name: {key}")
+            }
+        }
+    }
+
+    pub fn setup_abilities(world: &mut World) {
+        let abilities = Pools::get(world)
+            .houses
+            .iter()
+            .map(|(_, h)| h.abilities.clone())
+            .flatten()
+            .collect_vec();
+        let pool = &mut Pools::get_mut(world).abilities;
+        debug!("Setup abilities: {abilities:#?}");
+        for (key, value) in abilities.into_iter().map(|s| (s.name.clone(), s)) {
+            if pool.insert(key.clone(), value).is_some() {
+                panic!("Duplicate ability name: {key}")
+            }
+        }
+    }
+
+    pub fn setup_heroes(world: &mut World) {
+        let heroes = world
+            .get_resource::<Pools>()
+            .unwrap()
+            .heroes_handles
+            .values()
+            .map(|handle| {
+                world
+                    .get_resource::<Assets<PackedUnit>>()
+                    .unwrap()
+                    .get(handle)
+                    .unwrap()
+                    .clone()
+            })
+            .collect_vec();
+        let pool = &mut Pools::get_mut(world).heroes;
+        debug!("Setup heroes: {heroes:#?}");
+        for (key, value) in heroes.into_iter().map(|s| (s.name.clone(), s)) {
+            if pool.insert(key.clone(), value).is_some() {
+                panic!("Duplicate hero name: {key}")
+            }
+        }
+    }
+
+    pub fn setup_enemies(world: &mut World) {
+        let enemies = world
+            .get_resource::<Pools>()
+            .unwrap()
+            .enemies_handles
+            .values()
+            .map(|handle| {
+                world
+                    .get_resource::<Assets<PackedUnit>>()
+                    .unwrap()
+                    .get(handle)
+                    .unwrap()
+                    .clone()
+            })
+            .collect_vec();
+        let pool = &mut Pools::get_mut(world).enemies;
+        debug!("Setup enemies: {enemies:#?}");
+        for (key, value) in enemies.into_iter().map(|s| (s.name.clone(), s)) {
+            if pool.insert(key.clone(), value).is_some() {
+                panic!("Duplicate enemy name: {key}")
             }
         }
     }

@@ -72,11 +72,7 @@ impl EffectWrapped {
             }
             Effect::Noop => {}
             Effect::UseAbility(ability) => {
-                let house = context
-                    .get_var(VarName::House, world)
-                    .context("House not found")?
-                    .get_string()?;
-                let effect = Pools::get_ability(&ability, &house, world).effect.clone();
+                let effect = Pools::get_ability(&ability, world).effect.clone();
                 ActionPlugin::push_front(effect, context.clone(), world);
             }
             Effect::AddStatus(status) => {

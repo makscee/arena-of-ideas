@@ -39,7 +39,7 @@ impl PackedStatus {
             _ => false,
         };
         let entity = Status::spawn(self.name, self.trigger, world).id();
-        self.state.insert_to_entity(entity, world);
+        self.state.attach(entity, world);
         if add_delta {
             world.entity_mut(entity).insert(VarStateDelta::default());
         }

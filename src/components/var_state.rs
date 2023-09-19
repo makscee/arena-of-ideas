@@ -40,7 +40,7 @@ impl VarState {
         mem::take(Self::default().init(var, value))
     }
 
-    pub fn insert_to_entity(mut self, entity: Entity, world: &mut World) {
+    pub fn attach(mut self, entity: Entity, world: &mut World) {
         self.birth = get_insert_t(world);
         world.entity_mut(entity).insert(self);
     }

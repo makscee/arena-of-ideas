@@ -2,7 +2,7 @@ use super::*;
 
 use bevy_egui::egui::{self, Align2};
 use bevy_egui::egui::{pos2, Button, Color32, RichText, Window};
-use rand::seq::SliceRandom;
+use rand::seq::IteratorRandom;
 
 pub struct ShopPlugin;
 
@@ -49,9 +49,13 @@ impl ShopPlugin {
 
     fn fill_showcase(world: &mut World) {
         let mut units = Vec::default();
-        let pool = Pools::heroes(world).into_values().collect_vec();
         for _ in 0..3 {
-            let unit = (*pool.choose(&mut rand::thread_rng()).unwrap()).clone();
+            let unit = Pools::get(world)
+                .heroes
+                .values()
+                .choose(&mut rand::thread_rng())
+                .unwrap()
+                .clone();
             units.push(unit);
         }
         let team = PackedTeam::spawn(Faction::Shop, world).id();

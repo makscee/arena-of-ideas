@@ -2,6 +2,7 @@
     {
         "unit.rep": File(path: "ron/unit.rep.ron"),
         "pool.heroes": Folder(path: "ron/heroes"),
+        "pool.enemies": Folder(path: "ron/enemies"),
         "pool.houses": Folder(path: "ron/houses"),
         "custom.battle": File(
             path: "ron/custom.battle.ron",

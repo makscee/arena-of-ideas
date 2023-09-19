@@ -38,7 +38,7 @@ Bevy transition
             Rendering {cm:2023-09-01T17:44:33}
         Events {cm:2023-09-01T18:58:55}
         Triggers {cm:2023-09-01T18:58:55}
-    Shop
+    Shop {cm:2023-09-19T15:15:49}
         Unit description {cm:2023-09-05T01:20:09}
         Showcase {cm:2023-09-05T01:20:09}
         Buying {cm:2023-09-05T01:20:09}
@@ -46,7 +46,6 @@ Bevy transition
         Stats window {cm:2023-09-05T15:06:50}
         Reroll {cm:2023-09-05T16:03:37}
         Status in showcase {cm:2023-09-05T17:18:44}
-        Single status apply
         Battle transition {cm:2023-09-05T23:33:05}
     Status panel {cm:2023-09-05T23:33:08}
     Status save to PackedUnit {cm:2023-09-18T16:17:03}
@@ -54,6 +53,8 @@ Bevy transition
     Status fix hover not timed {cm:2023-09-18T17:44:56}
     Fix "struct Vertex" error
     Status modify state & support history {cm:2023-09-14T18:04:28}
-    Content
-        5 Warriors {cm:2023-09-18T15:33:50}
-        3 Enemies
+    5 Warriors {cm:2023-09-18T15:33:50}
+    Enemies generation
+        Enemy Pool
+        3 enemy templates
+        Simulations
