@@ -13,6 +13,7 @@ pub enum Expression {
     Vec2(f32, f32),
     Vec2EE(Box<Expression>, Box<Expression>),
     Vec2E(Box<Expression>),
+    Faction(Faction),
 
     StringInt(Box<Expression>),
     StringFloat(Box<Expression>),
@@ -38,6 +39,10 @@ pub enum Expression {
     SlotPosition,
 
     OwnerFaction,
+
+    FactionCount(Box<Expression>),
+
+    Equals(Vec<Box<Expression>>),
 }
 
 impl Expression {
@@ -123,6 +128,20 @@ impl Expression {
                 context.owner(),
                 world,
             ))),
+            Expression::Faction(faction) => Ok(VarValue::Faction(*faction)),
+            Expression::FactionCount(faction) => Ok(VarValue::Int(
+                UnitPlugin::collect_faction(faction.get_faction(context, world)?, world).len()
+                    as i32,
+            )),
+            Expression::Equals(values) => {
+                let mut var_values: Vec<VarValue> = default();
+                for value in values {
+                    let value = value.get_value(context, world)?;
+                    dbg!(&value);
+                    var_values.push(value);
+                }
+                Ok(VarValue::Bool(var_values.into_iter().all_equal()))
+            }
         }
     }
 

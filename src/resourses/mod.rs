@@ -13,6 +13,7 @@ mod packed_team;
 mod packed_unit;
 mod pools;
 mod status_library;
+mod test_scenarios;
 mod trigger;
 mod vars;
 
@@ -32,5 +33,6 @@ pub use packed_team::*;
 pub use packed_unit::*;
 pub use pools::*;
 pub use status_library::*;
+pub use test_scenarios::*;
 pub use trigger::*;
 pub use vars::*;

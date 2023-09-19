@@ -5,17 +5,23 @@ use super::*;
 pub struct PackedUnit {
     pub hp: i32,
     pub atk: i32,
+    #[serde(default = "default_house")]
     pub house: String,
     #[serde(default)]
     pub trigger: Trigger,
     pub name: String,
     #[serde(default)]
     pub description: String,
-    pub representation: Representation,
+    #[serde(default)]
+    pub representation: Option<Representation>,
     #[serde(default)]
     pub state: VarState,
     #[serde(default)]
     pub statuses: Vec<(String, i32)>,
+}
+
+fn default_house() -> String {
+    "empty".to_owned()
 }
 
 const LOCAL_TRIGGER: &str = "_local";
@@ -33,8 +39,10 @@ impl PackedUnit {
             .insert(On::<Pointer<Over>>::run(UnitPlugin::hover_unit))
             .insert(On::<Pointer<Out>>::run(UnitPlugin::unhover_unit));
         {
-            let entity = self.representation.unpack(None, Some(entity), world);
-            world.entity_mut(entity).insert(UnitRepresentation);
+            if let Some(rep) = self.representation {
+                let entity = rep.unpack(None, Some(entity), world);
+                world.entity_mut(entity).insert(UnitRepresentation);
+            }
         }
         self.state
             .init(VarName::Hp, VarValue::Int(self.hp))
@@ -64,13 +72,17 @@ impl PackedUnit {
     }
 
     pub fn pack(entity: Entity, world: &World) -> Self {
-        let rep_entity = *world
+        let rep_entity = world
             .get::<Children>(entity)
             .unwrap()
             .into_iter()
-            .find(|x| world.get::<UnitRepresentation>(**x).is_some())
-            .unwrap();
-        let representation = Representation::pack(rep_entity, world);
+            .find(|x| world.get::<UnitRepresentation>(**x).is_some());
+        let representation = {
+            match rep_entity {
+                Some(rep_entity) => Some(Representation::pack(*rep_entity, world)),
+                None => None,
+            }
+        };
         let state = VarState::get(entity, world).clone();
         let hp = state.get_int(VarName::Hp).unwrap();
         let atk = state.get_int(VarName::Atk).unwrap();

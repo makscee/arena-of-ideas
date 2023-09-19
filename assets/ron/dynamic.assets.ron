@@ -4,12 +4,10 @@
         "pool.heroes": Folder(path: "ron/heroes"),
         "pool.enemies": Folder(path: "ron/enemies"),
         "pool.houses": Folder(path: "ron/houses"),
+        "test.scenarios": Folder(path: "ron/scenarios"),
         "custom.battle": File(
             path: "ron/custom.battle.ron",
         ),
         "anim": File(path: "ron/all.anim.ron"),
-        "statuses": File(
-            path: "ron/all.statuses.ron",
-        ),
     },
 )

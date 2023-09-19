@@ -4,8 +4,10 @@ use super::*;
 pub enum GameState {
     #[default]
     AssetLoading,
+    ScenariosLoading,
     Next,
     Restart,
     Battle,
     Shop,
+    BattleTest,
 }

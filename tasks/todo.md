@@ -58,4 +58,4 @@ Bevy transition
         Enemy Pool {cm:2023-09-19T15:56:04}
         Simulations {cm:2023-09-19T16:13:42}
         3 enemy templates
-    Simulation tests
+    Simulation tests {start:2023-09-19T16:21:26} {cm:2023-09-19T17:09:57} {duration:48m}

@@ -30,12 +30,16 @@ fn main() {
         .add_loading_state(
             LoadingState::new(GameState::AssetLoading).continue_to_state(GameState::Shop),
         )
+        .add_loading_state(
+            LoadingState::new(GameState::ScenariosLoading).continue_to_state(GameState::BattleTest),
+        )
         .add_dynamic_collection_to_loading_state::<_, StandardDynamicAssetCollection>(
             GameState::AssetLoading,
             "ron/dynamic.assets.ron",
         )
         .add_collection_to_loading_state::<_, Options>(GameState::AssetLoading)
         .add_collection_to_loading_state::<_, Pools>(GameState::AssetLoading)
+        .add_collection_to_loading_state::<_, TestScenarios>(GameState::ScenariosLoading)
         .add_systems(PreUpdate, update)
         .add_systems(PostUpdate, detect_changes)
         .add_plugins(DefaultPickingPlugins)
@@ -49,6 +53,7 @@ fn main() {
         .add_plugins(RonAssetPlugin::<BattleState>::new(&["battle.ron"]))
         .add_plugins(RonAssetPlugin::<Representation>::new(&["rep.ron"]))
         .add_plugins(RonAssetPlugin::<Animations>::new(&["anim.ron"]))
+        .add_plugins(RonAssetPlugin::<TestScenario>::new(&["scenario.ron"]))
         .add_plugins((
             PoolsPlugin,
             ActionPlugin,
@@ -56,6 +61,7 @@ fn main() {
             RepresentationPlugin,
             ShopPlugin,
             BattlePlugin,
+            TestPlugin,
         ))
         // .add_systems(Update, ui_example_system)
         .add_systems(Startup, setup)
@@ -91,6 +97,10 @@ fn input(
         timer.reset();
         state.set(GameState::Restart);
     }
+    if input.just_pressed(KeyCode::T) {
+        timer.reset();
+        state.set(GameState::ScenariosLoading);
+    }
 }
 
 fn input_world(world: &mut World) {
@@ -101,6 +111,7 @@ fn input_world(world: &mut World) {
         let left = battle.left.clone();
         let right = battle.right.clone();
         dbg!(SimulationPlugin::run(left, right, world));
+        UnitPlugin::clear_world(world);
     }
 }
 
