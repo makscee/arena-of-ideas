@@ -59,7 +59,7 @@ fn main() {
         ))
         // .add_systems(Update, ui_example_system)
         .add_systems(Startup, setup)
-        .add_systems(Update, input)
+        .add_systems(Update, (input, input_world))
         .init_resource::<UserName>()
         .init_resource::<Password>()
         .init_resource::<GameTimer>()
@@ -90,6 +90,17 @@ fn input(
     if input.just_pressed(KeyCode::R) {
         timer.reset();
         state.set(GameState::Restart);
+    }
+}
+
+fn input_world(world: &mut World) {
+    let input = world.get_resource::<Input<KeyCode>>().unwrap();
+    if input.just_pressed(KeyCode::C) {
+        UnitPlugin::clear_world(world);
+        let battle = Options::get_custom_battle(world);
+        let left = battle.left.clone();
+        let right = battle.right.clone();
+        dbg!(SimulationPlugin::run(left, right, world));
     }
 }
 

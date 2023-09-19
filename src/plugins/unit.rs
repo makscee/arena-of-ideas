@@ -98,6 +98,16 @@ impl UnitPlugin {
         game_timer.reset();
     }
 
+    pub fn clear_world(world: &mut World) {
+        let entities = world
+            .query_filtered::<Entity, Or<(&Unit, &Corpse)>>()
+            .iter(world)
+            .collect_vec();
+        for entity in entities {
+            world.entity_mut(entity).despawn_recursive();
+        }
+    }
+
     pub fn translate_unit(entity: Entity, position: Vec2, world: &mut World) {
         VarState::push_back(
             entity,

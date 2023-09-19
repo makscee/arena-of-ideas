@@ -22,11 +22,36 @@ impl BattlePlugin {
             .head_to_save();
     }
 
-    pub fn run_battle(world: &mut World) {
+    pub fn run_battle(world: &mut World) -> BattleResult {
         Event::BattleStart.send(world);
         ActionPlugin::spin(world);
         while let Some((left, right)) = Self::get_strikers(world) {
             Self::run_strike(left, right, world);
+        }
+        ActionPlugin::spin(world);
+        Self::get_result(world)
+    }
+
+    fn get_result(world: &mut World) -> BattleResult {
+        let mut result: HashMap<Faction, usize> = default();
+        for unit in world.query_filtered::<Entity, With<Unit>>().iter(world) {
+            let team = get_parent(unit, world);
+            let faction = VarState::get(team, world)
+                .get_faction(VarName::Faction)
+                .unwrap();
+            *result.entry(faction).or_default() += 1;
+        }
+        match result.len() {
+            0 => BattleResult::Even,
+            1 => {
+                let (faction, count) = result.iter().exactly_one().unwrap();
+                match faction {
+                    Faction::Left => BattleResult::Left(*count),
+                    Faction::Right => BattleResult::Right(*count),
+                    _ => panic!("Non-battle winning faction"),
+                }
+            }
+            _ => panic!("Non-unique winning faction"),
         }
     }
 
@@ -100,4 +125,11 @@ impl BattlePlugin {
         }
         GameTimer::get_mut(world).end_batch();
     }
+}
+
+#[derive(Debug)]
+pub enum BattleResult {
+    Left(usize),
+    Right(usize),
+    Even,
 }

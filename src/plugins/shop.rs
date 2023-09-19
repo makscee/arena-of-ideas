@@ -42,7 +42,7 @@ impl ShopPlugin {
             UnitPlugin::despawn_all(world);
             Self::unpack_active_team(Faction::Team, world);
         }
-        if just_pressed(KeyCode::C, world) {
+        if just_pressed(KeyCode::G, world) {
             Self::change_g(10, world).unwrap();
         }
     }

@@ -11,15 +11,6 @@ pub struct PackedTeam {
 }
 
 impl PackedTeam {
-    pub fn unpack(mut self, faction: Faction, world: &mut World) {
-        Self::despawn(faction, world);
-        self.state
-            .init(VarName::Faction, VarValue::Faction(faction));
-        let team = Self::spawn(faction, world).insert(self.state).id();
-        for (i, unit) in self.units.into_iter().enumerate() {
-            unit.unpack(team, Some(i + 1), world);
-        }
-    }
     pub fn pack(faction: Faction, world: &mut World) -> Self {
         let mut team = PackedTeam::default();
         for (entity, _) in UnitPlugin::collect_factions(HashSet::from([faction]), world) {
@@ -27,9 +18,17 @@ impl PackedTeam {
         }
         team
     }
+    pub fn unpack(mut self, faction: Faction, world: &mut World) {
+        self.state
+            .init(VarName::Faction, VarValue::Faction(faction));
+        let team = Self::spawn(faction, world).id();
+        self.state.attach(team, world);
+        for (i, unit) in self.units.into_iter().enumerate() {
+            unit.unpack(team, Some(i + 1), world);
+        }
+    }
     pub fn spawn(faction: Faction, world: &mut World) -> EntityMut {
         Self::despawn(faction, world);
-
         world.spawn((
             VarState::new_with(VarName::Faction, VarValue::Faction(faction)),
             Team,

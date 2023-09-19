@@ -55,6 +55,7 @@ Bevy transition
     Status modify state & support history {cm:2023-09-14T18:04:28}
     5 Warriors {cm:2023-09-18T15:33:50}
     Enemies generation
-        Enemy Pool
+        Enemy Pool {cm:2023-09-19T15:56:04}
+        Simulations {cm:2023-09-19T16:13:42}
         3 enemy templates
-        Simulations
+    Simulation tests

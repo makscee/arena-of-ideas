@@ -64,7 +64,7 @@ impl Action {
         match self.effect.invoke(&mut self.context, world) {
             Ok(_) => {
                 for entity in world
-                    .query_filtered::<Entity, (With<Status>, With<VarStateDelta>)>()
+                    .query_filtered::<Entity, (With<Status>, With<VarStateDelta>, With<Parent>)>()
                     .iter(world)
                     .collect_vec()
                 {
