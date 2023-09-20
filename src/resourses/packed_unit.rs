@@ -37,7 +37,10 @@ impl PackedUnit {
             .insert(PickableBundle::default())
             .insert(RaycastPickTarget::default())
             .insert(On::<Pointer<Over>>::run(UnitPlugin::hover_unit))
-            .insert(On::<Pointer<Out>>::run(UnitPlugin::unhover_unit));
+            .insert(On::<Pointer<Out>>::run(UnitPlugin::unhover_unit))
+            .insert(On::<Pointer<DragStart>>::run(UnitPlugin::drag_unit_start))
+            .insert(On::<Pointer<DragEnd>>::run(UnitPlugin::drag_unit_end))
+            .insert(On::<Pointer<Drag>>::run(UnitPlugin::drag_unit));
         {
             if let Some(rep) = self.representation {
                 let entity = rep.unpack(None, Some(entity), world);

@@ -9,6 +9,7 @@ pub struct UnitPlugin;
 impl Plugin for UnitPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<HoveredUnit>()
+            .init_resource::<DraggedUnit>()
             .add_systems(OnEnter(GameState::Restart), Self::despawn)
             .add_systems(Update, Self::ui);
     }
@@ -197,6 +198,30 @@ impl UnitPlugin {
         hovered.0 = None;
     }
 
+    pub fn drag_unit_start(event: Listener<Pointer<DragStart>>, mut dragged: ResMut<DraggedUnit>) {
+        debug!("Drag unit start {:?}", event.target);
+        dragged.0 = Some(event.target);
+    }
+
+    pub fn drag_unit_end(event: Listener<Pointer<DragEnd>>, mut dragged: ResMut<DraggedUnit>) {
+        debug!("Drag unit end {:?}", event.target);
+        dragged.0 = None;
+    }
+
+    pub fn drag_unit(
+        event: Listener<Pointer<Drag>>,
+        mut query_transform: Query<&mut Transform>,
+        query_camera: Query<(&Camera, &GlobalTransform)>,
+    ) {
+        let entity = event.target;
+        if let Ok(mut transform) = query_transform.get_mut(entity) {
+            let (camera, camera_transform) = query_camera.single();
+            let delta = screen_to_world(event.delta, camera, camera_transform)
+                - screen_to_world(Vec2::ZERO, camera, camera_transform);
+            transform.translation += delta.extend(0.0);
+        }
+    }
+
     fn ui(world: &mut World) {
         let ctx = &egui_context(world);
         if let Some(hovered) = world.get_resource::<HoveredUnit>().unwrap().0 {
@@ -289,4 +314,7 @@ pub enum Faction {
 }
 
 #[derive(Resource, Default)]
-pub struct HoveredUnit(Option<Entity>);
+pub struct HoveredUnit(pub Option<Entity>);
+
+#[derive(Resource, Default)]
+pub struct DraggedUnit(pub Option<Entity>);

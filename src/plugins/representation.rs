@@ -20,6 +20,7 @@ impl RepresentationPlugin {
             .map(|(e, r)| (e, r.clone()))
             .collect_vec();
         let t = get_t(world);
+        let dragged = world.get_resource::<DraggedUnit>().unwrap().0;
         for (entity, rep) in reps {
             let mut position = VarState::get_value(entity, VarName::Position, t, world)
                 .map(|x| x.get_vec2().unwrap())
@@ -46,8 +47,10 @@ impl RepresentationPlugin {
                 };
             }
             let mut transform = world.get_mut::<Transform>(entity).unwrap();
-            transform.translation.x = position.x;
-            transform.translation.y = position.y;
+            if dragged != Some(entity) {
+                transform.translation.x = position.x;
+                transform.translation.y = position.y;
+            }
             transform.rotation = Quat::from_rotation_z(rotation);
             transform.scale.x = scale.x;
             transform.scale.y = scale.y;

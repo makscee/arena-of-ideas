@@ -23,6 +23,9 @@ pub fn world_to_screen(pos: Vec3, world: &mut World) -> Vec2 {
     let (camera, transform) = world.query::<(&Camera, &GlobalTransform)>().single(world);
     camera.world_to_viewport(transform, pos).unwrap_or_default()
 }
+pub fn screen_to_world(pos: Vec2, camera: &Camera, transform: &GlobalTransform) -> Vec2 {
+    camera.viewport_to_world_2d(transform, pos).unwrap()
+}
 pub fn entity_panel(
     entity: Entity,
     side: Vec2,
