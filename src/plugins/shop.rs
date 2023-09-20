@@ -58,7 +58,7 @@ impl ShopPlugin {
                 .clone();
             units.push(unit);
         }
-        let team = PackedTeam::spawn(Faction::Shop, world).id();
+        let team = PackedTeam::spawn(Faction::Shop, world);
         let units_len = units.len();
         for unit in units {
             let description = unit.description.to_owned();

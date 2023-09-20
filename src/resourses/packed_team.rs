@@ -1,5 +1,3 @@
-use bevy::ecs::world::EntityMut;
-
 use super::*;
 
 #[derive(Deserialize, TypeUuid, TypePath, Debug, Clone, Default)]
@@ -9,6 +7,8 @@ pub struct PackedTeam {
     #[serde(default)]
     pub state: VarState,
 }
+
+pub const MAX_SLOTS: usize = 6;
 
 impl PackedTeam {
     pub fn pack(faction: Faction, world: &mut World) -> Self {
@@ -21,21 +21,36 @@ impl PackedTeam {
     pub fn unpack(mut self, faction: Faction, world: &mut World) {
         self.state
             .init(VarName::Faction, VarValue::Faction(faction));
-        let team = Self::spawn(faction, world).id();
+        let team = Self::spawn(faction, world);
         self.state.attach(team, world);
         for (i, unit) in self.units.into_iter().enumerate() {
             unit.unpack(team, Some(i + 1), world);
         }
     }
-    pub fn spawn(faction: Faction, world: &mut World) -> EntityMut {
+    pub fn spawn(faction: Faction, world: &mut World) -> Entity {
         Self::despawn(faction, world);
-        world.spawn((
-            VarState::new_with(VarName::Faction, VarValue::Faction(faction)),
-            Team,
-            Transform::default(),
-            GlobalTransform::default(),
-            VisibilityBundle::default(),
-        ))
+        let team = world
+            .spawn((
+                VarState::new_with(VarName::Faction, VarValue::Faction(faction)),
+                Team,
+                Transform::default(),
+                GlobalTransform::default(),
+                VisibilityBundle::default(),
+            ))
+            .id();
+        match faction {
+            Faction::Team => {
+                for slot in 1..=MAX_SLOTS {
+                    let pos = UnitPlugin::get_slot_position(Faction::Team, slot);
+                    let rep = Options::get_slot_rep(world)
+                        .clone()
+                        .unpack(None, Some(team), world);
+                    VarState::new_with(VarName::Position, VarValue::Vec2(pos)).attach(rep, world);
+                }
+            }
+            _ => {}
+        }
+        team
     }
     pub fn despawn(faction: Faction, world: &mut World) {
         if let Some(team) = Self::entity(faction, world) {

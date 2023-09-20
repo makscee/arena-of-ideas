@@ -6,6 +6,8 @@ pub struct Options {
     pub unit: Handle<Representation>,
     #[asset(key = "status.rep")]
     pub status: Handle<Representation>,
+    #[asset(key = "slot.rep")]
+    pub slot: Handle<Representation>,
     #[asset(key = "custom.battle")]
     pub custom_battle: Handle<BattleState>,
     #[asset(key = "anim")]
@@ -41,6 +43,13 @@ impl Options {
             .get_resource::<Assets<Representation>>()
             .unwrap()
             .get(&world.get_resource::<Options>().unwrap().status)
+            .unwrap()
+    }
+    pub fn get_slot_rep(world: &World) -> &Representation {
+        world
+            .get_resource::<Assets<Representation>>()
+            .unwrap()
+            .get(&world.get_resource::<Options>().unwrap().slot)
             .unwrap()
     }
     pub fn get_custom_battle(world: &World) -> &BattleState {

@@ -245,18 +245,18 @@ impl UnitPlugin {
                         ui.vertical_centered(|ui| {
                             for status in statuses {
                                 let state = VarState::get(status, world);
+                                let t = get_t(world);
+                                if state.birth > t {
+                                    continue;
+                                }
                                 if let Ok(name) = state.get_string(VarName::Name) {
                                     let description =
                                         state.get_string(VarName::Description).unwrap();
-                                    let charges = VarState::get_value(
-                                        status,
-                                        VarName::Charges,
-                                        get_t(world),
-                                        world,
-                                    )
-                                    .unwrap()
-                                    .get_int()
-                                    .unwrap();
+                                    let charges =
+                                        VarState::get_value(status, VarName::Charges, t, world)
+                                            .unwrap()
+                                            .get_int()
+                                            .unwrap();
                                     let name = format!("{name} ({charges})");
                                     CollapsingHeader::new(
                                         RichText::new(name).color(hex_color!("#2196F3")),
