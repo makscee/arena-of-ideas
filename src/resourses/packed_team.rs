@@ -41,11 +41,7 @@ impl PackedTeam {
         match faction {
             Faction::Team => {
                 for slot in 1..=MAX_SLOTS {
-                    let pos = UnitPlugin::get_slot_position(Faction::Team, slot);
-                    let rep = Options::get_slot_rep(world)
-                        .clone()
-                        .unpack(None, Some(team), world);
-                    VarState::new_with(VarName::Position, VarValue::Vec2(pos)).attach(rep, world);
+                    UnitPlugin::spawn_slot(slot, Faction::Team, world);
                 }
             }
             _ => {}

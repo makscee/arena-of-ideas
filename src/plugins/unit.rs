@@ -198,14 +198,24 @@ impl UnitPlugin {
         hovered.0 = None;
     }
 
-    pub fn drag_unit_start(event: Listener<Pointer<DragStart>>, mut dragged: ResMut<DraggedUnit>) {
+    pub fn drag_unit_start(
+        event: Listener<Pointer<DragStart>>,
+        mut dragged: ResMut<DraggedUnit>,
+        mut commands: Commands,
+    ) {
         debug!("Drag unit start {:?}", event.target);
         dragged.0 = Some(event.target);
+        commands.entity(event.target).insert(Pickable::IGNORE);
     }
 
-    pub fn drag_unit_end(event: Listener<Pointer<DragEnd>>, mut dragged: ResMut<DraggedUnit>) {
+    pub fn drag_unit_end(
+        event: Listener<Pointer<DragEnd>>,
+        mut dragged: ResMut<DraggedUnit>,
+        mut commands: Commands,
+    ) {
         debug!("Drag unit end {:?}", event.target);
         dragged.0 = None;
+        commands.entity(event.target).insert(Pickable::default());
     }
 
     pub fn drag_unit(
@@ -220,6 +230,53 @@ impl UnitPlugin {
                 - screen_to_world(Vec2::ZERO, camera, camera_transform);
             transform.translation += delta.extend(0.0);
         }
+    }
+
+    pub fn drop_unit(
+        event: Listener<Pointer<Drop>>,
+        mut unit_query: Query<&mut VarState, (With<Unit>, Without<Team>, Without<Slot>)>,
+        slot_query: Query<&VarState, With<Slot>>,
+        team_query: Query<(&VarState, &Children), With<Team>>,
+        timer: Res<GameTimer>,
+    ) {
+        let unit = event.dropped;
+        dbg!(&event);
+        if !unit_query.contains(unit) {
+            debug!("Non unit dropped {unit:?}");
+            return;
+        }
+        let (slot, position) = {
+            let slot = slot_query.get(event.target).unwrap();
+            (
+                slot.get_int(VarName::Slot).unwrap(),
+                slot.get_vec2(VarName::Position).unwrap(),
+            )
+        };
+        let team_units = team_query
+            .iter()
+            .find(|(state, _)| {
+                state
+                    .get_faction(VarName::Faction)
+                    .unwrap()
+                    .eq(&Faction::Team)
+            })
+            .unwrap()
+            .1
+            .to_vec();
+        for unit in team_units {
+            if let Ok(state) = unit_query.get(unit) {
+                if slot == state.get_int(VarName::Slot).unwrap() {
+                    debug!("Slot occupied {slot} {unit:?}");
+                    return;
+                }
+            }
+        }
+        let t = timer.get_insert_t();
+        unit_query
+            .get_mut(unit)
+            .unwrap()
+            .insert_simple(VarName::Slot, VarValue::Int(slot), t)
+            .insert_simple(VarName::Position, VarValue::Vec2(position), t);
     }
 
     fn ui(world: &mut World) {
@@ -278,6 +335,24 @@ impl UnitPlugin {
             .get_faction()
             .unwrap()
     }
+
+    pub fn spawn_slot(slot: usize, faction: Faction, world: &mut World) -> Entity {
+        let pos = UnitPlugin::get_slot_position(Faction::Team, slot);
+        let team = PackedTeam::entity(faction, world);
+        let rep = Options::get_slot_rep(world)
+            .clone()
+            .unpack(None, team, world);
+        let mut state = VarState::new_with(VarName::Position, VarValue::Vec2(pos));
+        state.init(VarName::Slot, VarValue::Int(slot as i32));
+        state.attach(rep, world);
+        world.get_mut::<Transform>(rep).unwrap().translation.z -= 100.0;
+        world
+            .entity_mut(rep)
+            .insert(Slot)
+            .insert((RaycastPickTarget::default(), PickableBundle::default()))
+            .insert(On::<Pointer<Drop>>::run(Self::drop_unit));
+        rep
+    }
 }
 
 #[derive(Resource, Debug)]
@@ -291,6 +366,9 @@ pub struct UnitRepresentation;
 
 #[derive(Component)]
 pub struct Corpse;
+
+#[derive(Component)]
+pub struct Slot;
 
 #[derive(
     Serialize,
@@ -316,5 +394,5 @@ pub enum Faction {
 #[derive(Resource, Default)]
 pub struct HoveredUnit(pub Option<Entity>);
 
-#[derive(Resource, Default)]
+#[derive(Resource, Default, Debug)]
 pub struct DraggedUnit(pub Option<Entity>);

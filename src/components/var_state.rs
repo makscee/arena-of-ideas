@@ -80,11 +80,12 @@ impl VarState {
             .or_insert(default())
             .push(change);
     }
-    pub fn insert_simple(&mut self, var: VarName, value: VarValue, t: f32) {
+    pub fn insert_simple(&mut self, var: VarName, value: VarValue, t: f32) -> &mut Self {
         self.history
             .entry(var)
             .or_insert(default())
             .push(Change::new(value).set_t(t - self.birth));
+        self
     }
     pub fn init(&mut self, var: VarName, value: VarValue) -> &mut Self {
         self.history.insert(var, History::new(value));

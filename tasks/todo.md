@@ -5,5 +5,3 @@ Ladder {c}
     Resource
     Generation
     Game loop
-Team reorder
-Slots representation

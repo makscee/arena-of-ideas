@@ -226,3 +226,5 @@ Socials {c} {cm:2023-09-19T23:21:55}
     Build post on tg {cm:2023-09-01T16:13:36}
     Build devlog on yt {cm:2023-09-19T23:21:53}
 Floating text vfx {start:2023-09-19T23:22:57} {cm:2023-09-20T00:47:52} {duration:01h24m}
+Slots representation {cm:2023-09-20T16:39:28}
+Team reorder {cm:2023-09-20T18:13:10}
