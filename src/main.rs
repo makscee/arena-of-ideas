@@ -115,6 +115,10 @@ fn input_world(world: &mut World) {
         let right = battle.right.clone();
         dbg!(SimulationPlugin::run(left, right, world));
         UnitPlugin::clear_world(world);
+    } else if input.just_pressed(KeyCode::S) {
+        Save::default().save(world).unwrap();
+        UnitPlugin::despawn_all(world);
+        change_state(GameState::Restart, world);
     }
 }
 

@@ -200,4 +200,14 @@ impl Representation {
             }
         }
     }
+
+    pub fn despawn_all(world: &mut World) {
+        for entity in world
+            .query_filtered::<Entity, With<Representation>>()
+            .iter(world)
+            .collect_vec()
+        {
+            world.entity_mut(entity).despawn_recursive()
+        }
+    }
 }

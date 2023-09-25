@@ -229,3 +229,7 @@ Floating text vfx {start:2023-09-19T23:22:57} {cm:2023-09-20T00:47:52} {duration
 Slots representation {cm:2023-09-20T16:39:28}
 Team reorder {cm:2023-09-20T18:13:10}
 Save system {cm:2023-09-25T15:26:37}
+Ladder {cm:2023-09-25T17:05:25}
+    Resource {cm:2023-09-25T15:28:53}
+    Generation {cm:2023-09-25T17:05:24}
+    Game loop {cm:2023-09-25T16:15:37}

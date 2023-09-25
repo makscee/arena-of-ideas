@@ -49,6 +49,7 @@ pub use colored::Colorize;
 pub use ecolor::hex_color;
 pub use itertools::Itertools;
 pub use log::*;
+pub use rand::*;
 pub use serde::*;
 pub use std::mem;
 pub use strum_macros::{AsRefStr, Display};

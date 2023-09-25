@@ -31,6 +31,11 @@ impl BattlePlugin {
         UnitPlugin::despawn_all(world);
         let mut save = Save::get(world).unwrap();
         save.current_level += 1;
+        if save.current_level >= Options::get_initial_ladder(world).teams.len() {
+            let team =
+                RatingPlugin::generate_weakest_opponent(&Save::get(world).unwrap().team, world);
+            save.add_ladder_level(team);
+        }
         save.save(world).unwrap();
     }
 
@@ -140,6 +145,15 @@ impl BattlePlugin {
     }
 
     pub fn ui(world: &mut World) {
+        Window::new("")
+            .title_bar(false)
+            .show(&egui_context(world), |ui| {
+                if ui.button("Skip").clicked() {
+                    let mut timer = GameTimer::get_mut(world);
+                    let end = timer.end();
+                    timer.set_t(end);
+                }
+            });
         if !GameTimer::get(world).ended() {
             return;
         }

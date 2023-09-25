@@ -11,6 +11,7 @@ pub struct Save {
 
 impl Save {
     pub fn save(&self, world: &mut World) -> Result<(), SetError> {
+        debug!("Saving {self:?}");
         world
             .get_resource_mut::<PkvStore>()
             .unwrap()
@@ -28,6 +29,11 @@ impl Save {
     }
     pub fn set_ladder(&mut self, ladder: Ladder) -> &mut Self {
         self.ladder = ladder;
+        self
+    }
+    pub fn add_ladder_level(&mut self, team: PackedTeam) -> &mut Self {
+        debug!("New ladder level: {team:?}");
+        self.ladder.teams.push(team);
         self
     }
     pub fn set_current_level(&mut self, ind: usize) -> &mut Self {

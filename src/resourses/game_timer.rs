@@ -55,6 +55,10 @@ impl GameTimer {
         self.insert_head
     }
 
+    pub fn set_insert_t(&mut self, t: f32) {
+        self.insert_head = t
+    }
+
     pub fn get_t(&self) -> f32 {
         self.play_head
     }
@@ -80,6 +84,10 @@ impl GameTimer {
         self.insert_head = default();
         self.end = default();
         self.batches.clear();
+    }
+
+    pub fn end(&self) -> f32 {
+        self.end
     }
 
     pub fn ended(&self) -> bool {

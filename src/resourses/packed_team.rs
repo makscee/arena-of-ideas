@@ -11,6 +11,12 @@ pub struct PackedTeam {
 pub const MAX_SLOTS: usize = 6;
 
 impl PackedTeam {
+    pub fn new(units: Vec<PackedUnit>) -> Self {
+        Self {
+            units,
+            state: default(),
+        }
+    }
     pub fn pack(faction: Faction, world: &mut World) -> Self {
         let mut team = PackedTeam::default();
         for (entity, _) in UnitPlugin::collect_factions(HashSet::from([faction]), world) {
