@@ -29,6 +29,9 @@ impl BattlePlugin {
 
     pub fn leave(world: &mut World) {
         UnitPlugin::despawn_all(world);
+        let mut save = Save::get(world).unwrap();
+        save.current_level += 1;
+        save.save(world).unwrap();
     }
 
     pub fn run_battle(world: &mut World) -> BattleResult {
