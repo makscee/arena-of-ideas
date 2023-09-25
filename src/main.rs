@@ -11,6 +11,7 @@ fn main() {
     App::new()
         .add_state::<GameState>()
         .insert_resource(ClearColor(Color::rgb(0.1, 0.1, 0.1)))
+        .insert_resource(PkvStore::new("makscee", "arena_of_ideas"))
         .add_plugins((DefaultPlugins
             .set(AssetPlugin {
                 watch_for_changes: ChangeWatcher::with_delay(Duration::from_millis(100)),
@@ -28,7 +29,7 @@ fn main() {
                 ..default()
             }),))
         .add_loading_state(
-            LoadingState::new(GameState::AssetLoading).continue_to_state(GameState::Battle),
+            LoadingState::new(GameState::AssetLoading).continue_to_state(GameState::Shop),
         )
         .add_loading_state(
             LoadingState::new(GameState::ScenariosLoading).continue_to_state(GameState::BattleTest),

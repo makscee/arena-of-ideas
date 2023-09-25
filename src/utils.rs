@@ -2,6 +2,8 @@ use bevy_egui::{
     egui::{Align2, Context, Id, Pos2},
     EguiContext,
 };
+use bevy_pkv::GetError;
+use bevy_pkv::SetError;
 
 use super::*;
 
@@ -67,4 +69,28 @@ pub fn get_t(world: &World) -> f32 {
 }
 pub fn get_parent(entity: Entity, world: &World) -> Entity {
     world.get::<Parent>(entity).unwrap().get()
+}
+pub fn save_ladder(ladder: &Ladder, world: &mut World) -> Result<(), SetError> {
+    world
+        .get_resource_mut::<PkvStore>()
+        .unwrap()
+        .set("ladder", ladder)
+}
+pub fn load_ladder(world: &World) -> Result<Ladder, GetError> {
+    world
+        .get_resource::<PkvStore>()
+        .unwrap()
+        .get::<Ladder>("ladder")
+}
+pub fn save_active_team(team: &PackedTeam, world: &mut World) -> Result<(), SetError> {
+    world
+        .get_resource_mut::<PkvStore>()
+        .unwrap()
+        .set("active_team", team)
+}
+pub fn load_active_team(world: &World) -> Result<PackedTeam, GetError> {
+    world
+        .get_resource::<PkvStore>()
+        .unwrap()
+        .get::<PackedTeam>("active_team")
 }

@@ -44,6 +44,7 @@ pub use bevy_egui::{
     EguiContexts,
 };
 pub use bevy_mod_picking::prelude::*;
+pub use bevy_pkv::PkvStore;
 pub use colored::Colorize;
 pub use ecolor::hex_color;
 pub use itertools::Itertools;

@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Deserialize, TypeUuid, TypePath, Debug, Clone)]
+#[derive(Deserialize, Serialize, TypeUuid, TypePath, Debug, Clone)]
 #[uuid = "028620be-3b01-4e20-b62e-a631f0db4777"]
 pub struct PackedUnit {
     pub hp: i32,

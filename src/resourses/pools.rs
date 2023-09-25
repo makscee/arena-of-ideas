@@ -67,7 +67,7 @@ impl PoolsPlugin {
                     (house.name.to_owned(), house)
                 }),
         );
-        debug!("Setup houses: {houses:#?}");
+        debug!("Setup {} houses", houses.len());
         world.get_resource_mut::<Pools>().unwrap().houses = houses;
     }
 
@@ -89,7 +89,7 @@ impl PoolsPlugin {
                     (path.to_owned(), vfx)
                 }),
         );
-        debug!("Setup vfx: {vfx:#?}");
+        debug!("Setup {} vfx", vfx.len());
         world.get_resource_mut::<Pools>().unwrap().vfx = vfx;
     }
 
@@ -109,7 +109,7 @@ impl PoolsPlugin {
             .flatten()
             .collect_vec();
         let pool = &mut Pools::get_mut(world).statuses;
-        debug!("Setup statuses: {statuses:#?}");
+        debug!("Setup {} statuses", statuses.len());
         for (key, value) in statuses.into_iter().map(|s| (s.name.clone(), s)) {
             if pool.insert(key.clone(), value).is_some() {
                 panic!("Duplicate status name: {key}")
@@ -125,7 +125,7 @@ impl PoolsPlugin {
             .flatten()
             .collect_vec();
         let pool = &mut Pools::get_mut(world).abilities;
-        debug!("Setup abilities: {abilities:#?}");
+        debug!("Setup {} abilities", abilities.len());
         for (key, value) in abilities.into_iter().map(|s| (s.name.clone(), s)) {
             if pool.insert(key.clone(), value).is_some() {
                 panic!("Duplicate ability name: {key}")
@@ -149,7 +149,7 @@ impl PoolsPlugin {
             })
             .collect_vec();
         let pool = &mut Pools::get_mut(world).heroes;
-        debug!("Setup heroes: {heroes:#?}");
+        debug!("Setup {} heroes", heroes.len());
         for (key, value) in heroes.into_iter().map(|s| (s.name.clone(), s)) {
             if pool.insert(key.clone(), value).is_some() {
                 panic!("Duplicate hero name: {key}")
@@ -173,7 +173,7 @@ impl PoolsPlugin {
             })
             .collect_vec();
         let pool = &mut Pools::get_mut(world).enemies;
-        debug!("Setup enemies: {enemies:#?}");
+        debug!("Setup {} enemies", enemies.len());
         for (key, value) in enemies.into_iter().map(|s| (s.name.clone(), s)) {
             if pool.insert(key.clone(), value).is_some() {
                 panic!("Duplicate enemy name: {key}")

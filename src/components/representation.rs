@@ -114,7 +114,7 @@ impl RepresentationMaterial {
         let context = Context::from_owner(entity, world);
         match self {
             RepresentationMaterial::Shape { shape, size, color } => {
-                let size = size.get_vec2(&context, world).unwrap();
+                let size = size.get_vec2(&context, world).unwrap_or_default();
                 let color = color.get_color(&context, world).unwrap();
                 let handle = world
                     .get::<Handle<LineShapeMaterial>>(entity)
@@ -146,7 +146,7 @@ impl RepresentationMaterial {
             } => {
                 let color = color.get_color(&context, world).unwrap();
                 world.get_mut::<Text>(entity).unwrap().sections[0].value =
-                    text.get_string(&context, world).unwrap();
+                    text.get_string(&context, world).unwrap_or_default();
                 world.get_mut::<Text>(entity).unwrap().sections[0].style = TextStyle {
                     font_size: *font_size,
                     color,

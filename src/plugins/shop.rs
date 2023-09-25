@@ -8,8 +8,7 @@ pub struct ShopPlugin;
 
 impl Plugin for ShopPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<ActiveTeam>()
-            .add_systems(OnEnter(GameState::Shop), Self::enter_state)
+        app.add_systems(OnEnter(GameState::Shop), Self::enter_state)
             .add_systems(OnExit(GameState::Shop), Self::leave_state)
             .add_systems(PostUpdate, Self::input)
             .add_systems(Update, Self::ui.run_if(in_state(GameState::Shop)));
@@ -21,11 +20,7 @@ impl ShopPlugin {
     pub const REROLL_PRICE: i32 = 1;
 
     fn enter_state(world: &mut World) {
-        if let Some(team) = &world.resource::<ActiveTeam>().team {
-            team.clone().unpack(Faction::Team, world);
-        } else {
-            PackedTeam::spawn(Faction::Team, world);
-        }
+        Self::unpack_active_team(Faction::Team, world);
         Self::fill_showcase(world);
         Self::change_g(10, world).unwrap();
     }
@@ -101,20 +96,18 @@ impl ShopPlugin {
 
     pub fn pack_active_team(world: &mut World) {
         let team = PackedTeam::pack(Faction::Team, world);
-        let mut active_team = world.get_resource_mut::<ActiveTeam>().unwrap();
-        debug!("Active team packed: {team:?}");
-        active_team.team = Some(team);
+        save_active_team(&team, world).unwrap();
+        debug!("Active team saved: {team:#?}");
     }
 
     pub fn unpack_active_team(faction: Faction, world: &mut World) {
-        world
-            .get_resource::<ActiveTeam>()
-            .unwrap()
-            .team
-            .clone()
-            .expect("Tried to unpack emtpy Active Team")
-            .unpack(faction, world);
-        UnitPlugin::translate_to_slots(world);
+        if let Ok(team) = load_active_team(world) {
+            debug!("Unpacking saved team {team:#?}");
+            team.unpack(faction, world);
+            UnitPlugin::translate_to_slots(world);
+        } else {
+            PackedTeam::spawn(faction, world);
+        }
     }
 
     pub fn ui(world: &mut World) {
@@ -214,11 +207,6 @@ impl ShopPlugin {
             .iter(world)
             .collect_vec()
     }
-}
-
-#[derive(Resource, Default, Debug)]
-pub struct ActiveTeam {
-    pub team: Option<PackedTeam>,
 }
 
 #[derive(Component, Clone, Debug)]
