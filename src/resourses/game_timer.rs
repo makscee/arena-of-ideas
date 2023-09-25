@@ -81,4 +81,8 @@ impl GameTimer {
         self.end = default();
         self.batches.clear();
     }
+
+    pub fn ended(&self) -> bool {
+        self.play_head > self.end
+    }
 }

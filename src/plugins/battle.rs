@@ -1,10 +1,14 @@
+use bevy_egui::egui::{Align2, Vec2, Window};
+
 use super::*;
 
 pub struct BattlePlugin;
 
 impl Plugin for BattlePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::Battle), Self::enter);
+        app.add_systems(OnEnter(GameState::Battle), Self::enter)
+            .add_systems(OnExit(GameState::Battle), Self::leave)
+            .add_systems(Update, Self::ui.run_if(in_state(GameState::Battle)));
     }
 }
 
@@ -21,6 +25,10 @@ impl BattlePlugin {
             .get_resource_mut::<GameTimer>()
             .unwrap()
             .head_to_save();
+    }
+
+    pub fn leave(world: &mut World) {
+        UnitPlugin::despawn_all(world);
     }
 
     pub fn run_battle(world: &mut World) -> BattleResult {
@@ -126,6 +134,24 @@ impl BattlePlugin {
                 .unwrap();
         }
         GameTimer::get_mut(world).end_batch();
+    }
+
+    pub fn ui(world: &mut World) {
+        if !GameTimer::get(world).ended() {
+            return;
+        }
+        Window::new("Battle over")
+            .anchor(Align2::CENTER_CENTER, Vec2::ZERO)
+            .show(&egui_context(world), |ui| {
+                ui.horizontal(|ui| {
+                    if ui.button("Ok").clicked() {
+                        change_state(GameState::Shop, world);
+                    }
+                    if ui.button("Replay").clicked() {
+                        GameTimer::get_mut(world).set_t(0.0);
+                    }
+                })
+            });
     }
 }
 

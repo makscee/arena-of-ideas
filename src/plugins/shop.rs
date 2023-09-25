@@ -154,10 +154,7 @@ impl ShopPlugin {
             .anchor(Align2::RIGHT_BOTTOM, egui::vec2(0.0, 0.0))
             .show(ctx, |ui| {
                 if ui.button("Go").clicked() {
-                    world
-                        .get_resource_mut::<NextState<GameState>>()
-                        .unwrap()
-                        .set(GameState::Battle);
+                    change_state(GameState::Battle, world);
                     GameTimer::get_mut(world).clear_save();
                     GameTimer::get_mut(world).reset();
                 }

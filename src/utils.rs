@@ -68,3 +68,9 @@ pub fn get_t(world: &World) -> f32 {
 pub fn get_parent(entity: Entity, world: &World) -> Entity {
     world.get::<Parent>(entity).unwrap().get()
 }
+pub fn change_state(next: GameState, world: &mut World) {
+    world
+        .get_resource_mut::<NextState<GameState>>()
+        .unwrap()
+        .set(next);
+}
