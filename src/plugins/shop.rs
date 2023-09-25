@@ -2,6 +2,7 @@ use super::*;
 
 use bevy_egui::egui::{self, Align2};
 use bevy_egui::egui::{pos2, Button, Color32, RichText, Window};
+use bevy_pkv::SetError;
 use rand::seq::IteratorRandom;
 
 pub struct ShopPlugin;
@@ -21,19 +22,20 @@ impl ShopPlugin {
 
     fn enter_state(world: &mut World) {
         Self::unpack_active_team(Faction::Team, world);
+        UnitPlugin::translate_to_slots(world);
         Self::fill_showcase(world);
         Self::change_g(10, world).unwrap();
     }
 
     fn leave_state(world: &mut World) {
-        Self::pack_active_team(world);
+        Self::pack_active_team(world).unwrap();
         UnitPlugin::despawn_all(world);
         Self::clear_showcase(world);
     }
 
     fn input(world: &mut World) {
         if just_pressed(KeyCode::P, world) {
-            Self::pack_active_team(world);
+            Self::pack_active_team(world).unwrap();
             UnitPlugin::despawn_all(world);
             Self::unpack_active_team(Faction::Team, world);
         }
@@ -94,17 +96,19 @@ impl ShopPlugin {
         }
     }
 
-    pub fn pack_active_team(world: &mut World) {
+    pub fn pack_active_team(world: &mut World) -> Result<(), SetError> {
         let team = PackedTeam::pack(Faction::Team, world);
-        save_active_team(&team, world).unwrap();
         debug!("Active team saved: {team:#?}");
+        Save::get(world)
+            .unwrap_or_default()
+            .set_team(team)
+            .save(world)
     }
 
     pub fn unpack_active_team(faction: Faction, world: &mut World) {
-        if let Ok(team) = load_active_team(world) {
-            debug!("Unpacking saved team {team:#?}");
-            team.unpack(faction, world);
-            UnitPlugin::translate_to_slots(world);
+        if let Ok(save) = Save::get(world) {
+            debug!("Unpacking saved team {:#?}", save.team);
+            save.team.unpack(faction, world);
         } else {
             PackedTeam::spawn(faction, world);
         }

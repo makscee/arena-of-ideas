@@ -164,13 +164,13 @@ impl UnitPlugin {
     }
 
     pub fn despawn_all(world: &mut World) {
-        for unit in world
-            .query_filtered::<Entity, Or<(&Unit, &Corpse)>>()
+        for team in world
+            .query_filtered::<Entity, With<Team>>()
             .iter(world)
             .collect_vec()
         {
-            debug!("Despawn {unit:?}");
-            world.entity_mut(unit).despawn_recursive()
+            debug!("Despawn {team:?}");
+            world.entity_mut(team).despawn_recursive()
         }
     }
 

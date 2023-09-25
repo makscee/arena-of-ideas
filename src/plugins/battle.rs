@@ -10,10 +10,11 @@ impl Plugin for BattlePlugin {
 
 impl BattlePlugin {
     pub fn enter(world: &mut World) {
-        let bs = Options::get_custom_battle(world).clone();
-        bs.unpack(world);
+        // let bs = Options::get_custom_battle(world).clone();
+        // bs.unpack(world);
         // bs.right.unpack(Faction::Right, world);
-        // ShopPlugin::unpack_active_team(Faction::Left, world);
+        ShopPlugin::unpack_active_team(Faction::Left, world);
+        Ladder::current_level(world).unpack(Faction::Right, world);
         UnitPlugin::translate_to_slots(world);
         Self::run_battle(world);
         world
