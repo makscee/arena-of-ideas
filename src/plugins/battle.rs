@@ -21,7 +21,6 @@ impl BattlePlugin {
         // Ladder::current_level(world).unpack(Faction::Right, world);
         UnitPlugin::translate_to_slots(world);
         Self::run_battle(world);
-        GameTimer::get_mut(world).head_to_save();
         world
             .get_resource_mut::<GameTimer>()
             .unwrap()

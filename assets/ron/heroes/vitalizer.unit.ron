@@ -5,6 +5,18 @@
     house: "Medics",
     name: "Vitalizer",
     description: "Before Death: give Vitality to all allies",
+    trigger: BeforeDeath(
+        (
+            effect: AoeFaction(
+                OwnerFaction,
+                (
+                    effect: UseAbility(
+                        "Vitality",
+                    ),
+                ),
+            ),
+        ),
+    ),
     representation: (
         material: Shape(
             shape: Circle,

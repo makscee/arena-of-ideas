@@ -11,6 +11,7 @@ pub enum Trigger {
     TurnStart(EffectWrapped),
     BeforeStrike(EffectWrapped),
     AllyDeath(EffectWrapped),
+    BeforeDeath(EffectWrapped),
     AfterKill(EffectWrapped),
     ChangeVar(VarName, Expression),
     #[default]
@@ -45,6 +46,10 @@ impl Trigger {
                 Event::Death(..) => Some(self.clone()),
                 _ => None,
             },
+            Trigger::BeforeDeath(..) => match event {
+                Event::Death(..) => Some(self.clone()),
+                _ => None,
+            },
             Trigger::AfterKill(..) => match event {
                 Event::Kill { .. } => Some(self.clone()),
                 _ => None,
@@ -74,6 +79,16 @@ impl Trigger {
                 };
                 let owner = get_parent(status, world);
                 if UnitPlugin::get_faction(dead, world).eq(&UnitPlugin::get_faction(owner, world)) {
+                    ActionPlugin::push_back(effect, context, world);
+                }
+            }
+            Trigger::BeforeDeath(effect) => {
+                let dead = match event {
+                    Event::Death(unit) => *unit,
+                    _ => panic!(),
+                };
+                let owner = get_parent(status, world);
+                if dead.eq(&owner) {
                     ActionPlugin::push_back(effect, context, world);
                 }
             }

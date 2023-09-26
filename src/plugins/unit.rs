@@ -95,7 +95,6 @@ impl UnitPlugin {
         }
         state.set(GameState::Battle);
         *time = Time::new(Instant::now());
-        game_timer.save();
         game_timer.reset();
     }
 

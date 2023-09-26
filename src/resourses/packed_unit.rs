@@ -9,6 +9,7 @@ pub struct PackedUnit {
     pub house: String,
     #[serde(default)]
     pub trigger: Trigger,
+    #[serde(default = "default_text")]
     pub name: String,
     #[serde(default)]
     pub description: String,
@@ -21,6 +22,9 @@ pub struct PackedUnit {
 }
 
 fn default_house() -> String {
+    "Enemies".to_owned()
+}
+fn default_text() -> String {
     "empty".to_owned()
 }
 
