@@ -263,6 +263,13 @@ impl Tween {
                 VarValue::Int(((*a + (*b - *a)) as f32 * t) as i32)
             }
             (VarValue::Vec2(a), VarValue::Vec2(b)) => VarValue::Vec2(*a + (*b - *a) * t),
+            (VarValue::Color(a), VarValue::Color(b)) => {
+                let mut sub = *b;
+                sub.set_r(b.r() - a.r());
+                sub.set_g(b.g() - a.g());
+                sub.set_b(b.b() - a.b());
+                VarValue::Color(*a + sub * t)
+            }
             (VarValue::String(a), VarValue::String(b)) => VarValue::String(match t > 0.5 {
                 true => a.into(),
                 false => b.into(),

@@ -93,7 +93,7 @@ impl UnitPlugin {
         for unit in query.iter() {
             commands.entity(unit).despawn_recursive();
         }
-        state.set(GameState::Shop);
+        state.set(GameState::Battle);
         *time = Time::new(Instant::now());
         game_timer.save();
         game_timer.reset();

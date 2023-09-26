@@ -3,41 +3,23 @@
     left: (
         units: [
             (
-                hp: 10,
+                hp: 1,
                 atk: 1,
-                house: "Warriors",
-                name: "E",
-                representation: (
-                    material: Text(
-                        text: String("E"),
-                    ),
-                ),
-            ),
-        ],
-    ),
-    right: (
-        units: [
-            (
-                hp: 10,
-                atk: 3,
-                name: "Snake",
-                description: "Kill after dealing any damage",
-                trigger: BattleStart(
-                    (
-                        effect: AddStatus(
-                            "Strength",
-                        ),
-                        target: Owner,
-                    ),
-                ),
+                house: "Medics",
+                name: "Vitalizer",
+                description: "Before Death: give Vitality to all allies",
                 representation: (
                     material: Shape(
                         shape: Circle,
-                        color: Hex("#76FF03"),
+                        color: State(
+                            HouseColor,
+                        ),
+                        thickness: Float(5.0),
                         size: Vec2(0.8, 0.8),
                     ),
                 ),
             ),
         ],
     ),
+    right: (units: []),
 )

@@ -3,6 +3,7 @@
     hp: 5,
     atk: 5,
     name: "Snake",
+    house: "Enemies",
     description: "Kill after dealing any damage",
     trigger: AfterDamageDealt((effect: Kill)),
     representation: (

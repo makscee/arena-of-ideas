@@ -2,7 +2,7 @@
 (
     hp: 5,
     atk: 5,
-    house: "Warriors",
+    house: "Enemies",
     name: "Rat",
     representation: (
         material: Shape(

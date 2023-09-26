@@ -47,6 +47,9 @@ impl PackedUnit {
                 world.entity_mut(entity).insert(UnitRepresentation);
             }
         }
+        let house = dbg!(&Pools::get(world).houses)
+            .get(dbg!(&self.house))
+            .unwrap();
         self.state
             .init(VarName::Hp, VarValue::Int(self.hp))
             .init(VarName::Atk, VarValue::Int(self.atk))
@@ -60,6 +63,10 @@ impl PackedUnit {
             .init(
                 VarName::Description,
                 VarValue::String(self.description.to_owned()),
+            )
+            .init(
+                VarName::HouseColor,
+                VarValue::Color(house.color.clone().into()),
             );
         world
             .entity_mut(entity)

@@ -13,6 +13,7 @@ pub enum VarName {
     Hp,
     Atk,
     House,
+    HouseColor,
     Dmg,
     Name,
     Description,

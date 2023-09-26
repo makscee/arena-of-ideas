@@ -29,6 +29,8 @@ pub enum RepresentationMaterial {
         shape: Shape,
         #[serde(default = "default_one_vec2_e")]
         size: Expression,
+        #[serde(default = "default_one_f32_e")]
+        thickness: Expression,
         #[serde(default = "default_color_e")]
         color: Expression,
     },
@@ -113,8 +115,14 @@ impl RepresentationMaterial {
         }
         let context = Context::from_owner(entity, world);
         match self {
-            RepresentationMaterial::Shape { shape, size, color } => {
+            RepresentationMaterial::Shape {
+                shape,
+                size,
+                color,
+                thickness,
+            } => {
                 let size = size.get_vec2(&context, world).unwrap_or_default();
+                let thickness = thickness.get_float(&context, world).unwrap_or_default();
                 let color = color.get_color(&context, world).unwrap();
                 let handle = world
                     .get::<Handle<LineShapeMaterial>>(entity)
@@ -125,6 +133,7 @@ impl RepresentationMaterial {
                     .unwrap();
                 if let Some(mat) = materials.get_mut(&handle) {
                     mat.color = color;
+                    mat.thickness = thickness;
                     if mat.size != size {
                         mat.size = size;
                         let mesh = world.entity(entity).get::<Mesh2dHandle>().unwrap().clone();

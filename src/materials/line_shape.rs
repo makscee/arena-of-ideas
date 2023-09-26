@@ -70,7 +70,7 @@ impl Default for LineShapeMaterial {
     fn default() -> Self {
         Self {
             color: Color::PINK,
-            thickness: 0.03,
+            thickness: 1.0,
             size: default(),
             shape: default(),
         }
