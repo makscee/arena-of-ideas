@@ -6,114 +6,57 @@
                 hp: 2,
                 atk: 1,
                 house: "Medics",
-                name: "Nurturer",
-                description: "Battle Start: give Vitality x2 to adjacent allies",
-                trigger: BattleStart(
+                name: "Siphoner",
+                description: "After Kill: give Vitality to all allies",
+                trigger: AfterKill(
                     (
-                        effect: List(
-                            [
-                                (
-                                    effect: UseAbility(
-                                        "Vitality",
-                                    ),
-                                    vars: [
-                                        (
-                                            Charges,
-                                            Int(
-                                                2,
-                                            ),
-                                        ),
-                                    ],
-                                    target: SlotUnit(
-                                        Sum(
-                                            Context(
-                                                Slot,
-                                            ),
-                                            Int(
-                                                1,
-                                            ),
-                                        ),
-                                    ),
+                        effect: AoeFaction(
+                            OwnerFaction,
+                            (
+                                effect: UseAbility(
+                                    "Vitality",
                                 ),
-                                (
-                                    effect: UseAbility(
-                                        "Vitality",
-                                    ),
-                                    vars: [
-                                        (
-                                            Charges,
-                                            Int(
-                                                2,
-                                            ),
-                                        ),
-                                    ],
-                                    target: SlotUnit(
-                                        Sub(
-                                            Context(
-                                                Slot,
-                                            ),
-                                            Int(
-                                                1,
-                                            ),
-                                        ),
-                                    ),
-                                ),
-                            ],
+                            ),
                         ),
                     ),
                 ),
                 representation: (
                     material: Shape(
                         shape: Circle,
-                        color: State(
-                            HouseColor,
-                        ),
-                        thickness: Sum(
-                            Mul(
-                                Sin(
-                                    Mul(
+                        size: Vec2E(
+                            Sum(
+                                Mul(
+                                    Sin(
                                         GameTime,
-                                        Float(
-                                            2.0,
-                                        ),
+                                    ),
+                                    Float(
+                                        0.1,
                                     ),
                                 ),
                                 Float(
-                                    1.5,
+                                    0.5,
                                 ),
                             ),
-                            Float(2.3),
                         ),
-                        size: Vec2(0.6, 0.6),
                     ),
                     children: [
                         (
                             material: Shape(
                                 shape: Circle,
-                                color: State(
-                                    HouseColor,
-                                ),
-                                thickness: Sum(
-                                    Mul(
-                                        Sin(
-                                            Mul(
+                                size: Vec2E(
+                                    Sum(
+                                        Mul(
+                                            Sin(
                                                 GameTime,
-                                                Float(
-                                                    2.2,
-                                                ),
+                                            ),
+                                            Float(
+                                                0.6,
                                             ),
                                         ),
                                         Float(
-                                            1.5,
+                                            0.4,
                                         ),
                                     ),
-                                    Float(
-                                        2.3,
-                                    ),
-                                ),
-                                size: Vec2(
-                                    0.3,
-                                    0.3,
                                 ),
                             ),
                         ),

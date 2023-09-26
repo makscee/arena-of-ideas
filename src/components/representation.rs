@@ -55,7 +55,7 @@ fn default_one_vec2_e() -> Expression {
     Expression::Vec2(1.0, 1.0)
 }
 fn default_color_e() -> Expression {
-    Expression::Hex("#ff00ff".to_owned())
+    Expression::State(VarName::HouseColor)
 }
 
 impl RepresentationMaterial {
@@ -123,7 +123,12 @@ impl RepresentationMaterial {
             } => {
                 let size = size.get_vec2(&context, world).unwrap_or_default();
                 let thickness = thickness.get_float(&context, world).unwrap_or_default();
-                let color = color.get_color(&context, world).unwrap();
+                let color = color.get_color(&context, world).unwrap_or(Color::Rgba {
+                    red: 1.0,
+                    green: 0.0,
+                    blue: 1.0,
+                    alpha: 1.0,
+                });
                 let handle = world
                     .get::<Handle<LineShapeMaterial>>(entity)
                     .unwrap()
