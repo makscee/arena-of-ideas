@@ -3,20 +3,62 @@
     left: (
         units: [
             (
-                hp: 1,
+                hp: 2,
                 atk: 1,
                 house: "Medics",
-                name: "Vitalizer",
-                description: "Before Death: give Vitality to all allies",
-                trigger: BeforeDeath(
+                name: "Nurturer",
+                description: "Battle Start: give Vitality x2 to adjacent allies",
+                trigger: BattleStart(
                     (
-                        effect: AoeFaction(
-                            OwnerFaction,
-                            (
-                                effect: UseAbility(
-                                    "Vitality",
+                        effect: List(
+                            [
+                                (
+                                    effect: UseAbility(
+                                        "Vitality",
+                                    ),
+                                    vars: [
+                                        (
+                                            Charges,
+                                            Int(
+                                                2,
+                                            ),
+                                        ),
+                                    ],
+                                    target: SlotUnit(
+                                        Sum(
+                                            Context(
+                                                Slot,
+                                            ),
+                                            Int(
+                                                1,
+                                            ),
+                                        ),
+                                    ),
                                 ),
-                            ),
+                                (
+                                    effect: UseAbility(
+                                        "Vitality",
+                                    ),
+                                    vars: [
+                                        (
+                                            Charges,
+                                            Int(
+                                                2,
+                                            ),
+                                        ),
+                                    ],
+                                    target: SlotUnit(
+                                        Sub(
+                                            Context(
+                                                Slot,
+                                            ),
+                                            Int(
+                                                1,
+                                            ),
+                                        ),
+                                    ),
+                                ),
+                            ],
                         ),
                     ),
                 ),
@@ -26,13 +68,60 @@
                         color: State(
                             HouseColor,
                         ),
-                        thickness: Float(5.0),
-                        size: Vec2(0.8, 0.8),
+                        thickness: Sum(
+                            Mul(
+                                Sin(
+                                    Mul(
+                                        GameTime,
+                                        Float(
+                                            2.0,
+                                        ),
+                                    ),
+                                ),
+                                Float(
+                                    1.5,
+                                ),
+                            ),
+                            Float(2.3),
+                        ),
+                        size: Vec2(0.6, 0.6),
                     ),
+                    children: [
+                        (
+                            material: Shape(
+                                shape: Circle,
+                                color: State(
+                                    HouseColor,
+                                ),
+                                thickness: Sum(
+                                    Mul(
+                                        Sin(
+                                            Mul(
+                                                GameTime,
+                                                Float(
+                                                    2.2,
+                                                ),
+                                            ),
+                                        ),
+                                        Float(
+                                            1.5,
+                                        ),
+                                    ),
+                                    Float(
+                                        2.3,
+                                    ),
+                                ),
+                                size: Vec2(
+                                    0.3,
+                                    0.3,
+                                ),
+                            ),
+                        ),
+                    ],
                 ),
             ),
             (hp: 1, atk: 1),
         ],
     ),
-    right: (units: [(hp: 1, atk: 1)]),
+    right: (units: []),
 )
