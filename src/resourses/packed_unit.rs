@@ -2,6 +2,7 @@ use super::*;
 
 #[derive(Deserialize, Serialize, TypeUuid, TypePath, Debug, Clone)]
 #[uuid = "028620be-3b01-4e20-b62e-a631f0db4777"]
+#[serde(deny_unknown_fields)]
 pub struct PackedUnit {
     pub hp: i32,
     pub atk: i32,
@@ -51,9 +52,7 @@ impl PackedUnit {
                 world.entity_mut(entity).insert(UnitRepresentation);
             }
         }
-        let house = dbg!(&Pools::get(world).houses)
-            .get(dbg!(&self.house))
-            .unwrap();
+        let house = Pools::get(world).houses.get(&self.house).unwrap();
         self.state
             .init(VarName::Hp, VarValue::Int(self.hp))
             .init(VarName::Atk, VarValue::Int(self.atk))
@@ -80,7 +79,9 @@ impl PackedUnit {
             .insert(VarState::default())
             .set_parent(entity);
         for (status, charges) in self.statuses {
-            Status::change_charges(&status, entity, charges, world).unwrap();
+            if let Ok(entity) = Status::change_charges(&status, entity, charges, world) {
+                Status::apply_delta(entity, world);
+            }
         }
         entity
     }

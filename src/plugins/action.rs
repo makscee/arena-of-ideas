@@ -68,24 +68,7 @@ impl Action {
                     .iter(world)
                     .collect_vec()
                 {
-                    let parent = world.get::<Parent>(entity).unwrap().get();
-                    let status = world.get::<Status>(entity).unwrap();
-                    match status.trigger.clone() {
-                        Trigger::ChangeVar(var, e) => {
-                            if let Ok(delta) = e.get_value(
-                                &Context::from_owner(parent, world).set_status(entity, world),
-                                world,
-                            ) {
-                                let t = get_insert_t(world);
-                                let mut state_delta =
-                                    world.get_mut::<VarStateDelta>(entity).unwrap();
-                                if state_delta.need_update(var, &delta) {
-                                    state_delta.state.insert_simple(var, delta, t);
-                                }
-                            }
-                        }
-                        _ => {}
-                    }
+                    Status::apply_delta(entity, world);
                 }
             }
             Err(err) => error!(

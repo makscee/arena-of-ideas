@@ -1,11 +1,3 @@
-+Medics
-    @ability [Vitality] "+1" HP {cm:2023-09-27T15:06:38}
-    @hero
-        Vitalizer - Before Death: give [Vitality] to all allies {cm:2023-09-26T17:56:25}
-        Nurturer - Turn end: give [Vitality] to adjacent allies {cm:2023-09-26T17:56:28}
-        Alchemist - Give [Vitality] to random ally for each damage recieved {cm:2023-09-27T15:36:35}
-        Siphoner - On Kill: give [Vitality] to all allies {cm:2023-09-26T18:01:56}
-        Life Link - Before Death, transfer [Vitality] to a random surviving ally
 +Hunters
     @ability [Shoot] Deal ATK damage X times to random enemy
     @hero

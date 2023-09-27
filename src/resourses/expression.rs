@@ -41,8 +41,8 @@ pub enum Expression {
     SlotPosition,
 
     OwnerFaction,
-
     FactionCount(Box<Expression>),
+    StatusCharges(Box<Expression>),
 
     Equals(Vec<Box<Expression>>),
 
@@ -162,6 +162,18 @@ impl Expression {
                 Ok(VarValue::Bool(var_values.into_iter().all_equal()))
             }
             Expression::Hex(color) => Ok(VarValue::Color(Color::hex(color)?)),
+            Expression::StatusCharges(name) => {
+                let status_name = name.get_string(context, world)?;
+                for status in Status::collect_entity_statuses(context.owner(), world) {
+                    let state = VarState::get(status, world);
+                    if let Ok(name) = state.get_string(VarName::Name) {
+                        if name.eq(&status_name) {
+                            return Ok(VarValue::Int(state.get_int(VarName::Charges)?));
+                        }
+                    }
+                }
+                return Err(anyhow!("Can't find status"));
+            }
         }
     }
 

@@ -122,4 +122,28 @@ impl Status {
             trigger.fire(event, context, status, world)
         }
     }
+
+    pub fn apply_delta(entity: Entity, world: &mut World) {
+        if let Some(parent) = world.get::<Parent>(entity) {
+            let parent = parent.get();
+            let status = world.get::<Status>(entity).unwrap();
+            match &status.trigger {
+                Trigger::ChangeVar(var, e) => {
+                    let e = e.clone();
+                    let var = *var;
+                    if let Ok(delta) = e.get_value(
+                        &Context::from_owner(parent, world).set_status(entity, world),
+                        world,
+                    ) {
+                        let t = get_insert_t(world);
+                        let mut state_delta = world.get_mut::<VarStateDelta>(entity).unwrap();
+                        if state_delta.need_update(var, &delta) {
+                            state_delta.state.insert_simple(var, delta, t);
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
 }
