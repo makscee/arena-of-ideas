@@ -156,7 +156,6 @@ impl Expression {
                 let mut var_values: Vec<VarValue> = default();
                 for value in values {
                     let value = value.get_value(context, world)?;
-                    dbg!(&value);
                     var_values.push(value);
                 }
                 Ok(VarValue::Bool(var_values.into_iter().all_equal()))

@@ -7,7 +7,30 @@ pub mod resourses;
 mod utils;
 use prelude::*;
 
+use clap::{Parser, ValueEnum};
+
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    /// Mode to run in: Test, Shop or CustomBattle
+    #[arg(short, long)]
+    mode: RunMode,
+}
+
+#[derive(Debug, Clone, ValueEnum)]
+enum RunMode {
+    CustomBattle,
+    Shop,
+    Test,
+}
+
 fn main() {
+    let args = Args::parse();
+    let next_state = match args.mode {
+        RunMode::CustomBattle => GameState::Battle,
+        RunMode::Shop => GameState::Shop,
+        RunMode::Test => GameState::ScenariosLoading,
+    };
     App::new()
         .add_state::<GameState>()
         .insert_resource(ClearColor(Color::rgb(0.1, 0.1, 0.1)))
@@ -28,9 +51,7 @@ fn main() {
                 }),
                 ..default()
             }),))
-        .add_loading_state(
-            LoadingState::new(GameState::AssetLoading).continue_to_state(GameState::Battle),
-        )
+        .add_loading_state(LoadingState::new(GameState::AssetLoading).continue_to_state(next_state))
         .add_loading_state(
             LoadingState::new(GameState::ScenariosLoading).continue_to_state(GameState::BattleTest),
         )

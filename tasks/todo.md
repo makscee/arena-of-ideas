@@ -8,3 +8,4 @@ Line vfx
 20 heroes
 7 enemies
 4 representation materials
+Tests launch task

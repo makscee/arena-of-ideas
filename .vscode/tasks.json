@@ -7,10 +7,53 @@
 			"problemMatcher": [
 				"$rustc"
 			],
-			"label": "rust: cargo run",
+			"label": "Custom Battle",
+			"args": [
+				"--",
+				"--mode",
+				"custom-battle"
+			],
 			"group": {
 				"kind": "build",
 				"isDefault": true
+			},
+			"env": {
+				"RUST_BACKTRACE": "1"
+			}
+		},
+		{
+			"type": "cargo",
+			"command": "run",
+			"problemMatcher": [
+				"$rustc"
+			],
+			"label": "Shop",
+			"args": [
+				"--",
+				"--mode",
+				"shop"
+			],
+			"group": {
+				"kind": "build"
+			},
+			"env": {
+				"RUST_BACKTRACE": "1"
+			}
+		},
+		{
+			"type": "cargo",
+			"command": "run",
+			"problemMatcher": [
+				"$rustc"
+			],
+			"label": "Test Scenarios",
+			"args": [
+				"--",
+				"--mode",
+				"test"
+			],
+			"group": {
+				"kind": "build"
 			},
 			"env": {
 				"RUST_BACKTRACE": "1"

@@ -67,6 +67,10 @@ impl TestPlugin {
             success.into_iter().join("\n"),
             failure.into_iter().join("\n"),
         );
+        let mut events = world
+            .get_resource_mut::<bevy::prelude::Events<bevy::app::AppExit>>()
+            .unwrap();
+        events.send(bevy::app::AppExit);
     }
 
     pub fn get_all_scenarios(world: &World) -> Vec<(String, TestScenario)> {
