@@ -154,10 +154,10 @@ impl UnitPlugin {
     }
 
     pub fn is_dead(entity: Entity, world: &World) -> bool {
-        world
-            .get::<VarState>(entity)
+        Context::from_owner(entity, world)
+            .get_var(VarName::Hp, world)
             .unwrap()
-            .get_int(VarName::Hp)
+            .get_int()
             .unwrap()
             <= 0
     }
@@ -171,6 +171,7 @@ impl UnitPlugin {
             debug!("Despawn {team:?}");
             world.entity_mut(team).despawn_recursive()
         }
+        Representation::despawn_all(world);
     }
 
     pub fn translate_to_slots(world: &mut World) {

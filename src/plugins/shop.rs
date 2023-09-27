@@ -11,6 +11,13 @@ impl Plugin for ShopPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(GameState::Shop), Self::enter_state)
             .add_systems(OnExit(GameState::Shop), Self::leave_state)
+            .add_systems(
+                OnTransition {
+                    from: GameState::Battle,
+                    to: GameState::Shop,
+                },
+                Self::level_finished,
+            )
             .add_systems(PostUpdate, Self::input)
             .add_systems(Update, Self::ui.run_if(in_state(GameState::Shop)));
     }
@@ -25,6 +32,17 @@ impl ShopPlugin {
         UnitPlugin::translate_to_slots(world);
         Self::fill_showcase(world);
         Self::change_g(10, world).unwrap();
+    }
+
+    fn level_finished(world: &mut World) {
+        let mut save = Save::get(world).unwrap();
+        save.current_level += 1;
+        if save.current_level >= Options::get_initial_ladder(world).teams.len() {
+            let team =
+                RatingPlugin::generate_weakest_opponent(&Save::get(world).unwrap().team, world);
+            save.add_ladder_level(team);
+        }
+        save.save(world).unwrap();
     }
 
     fn leave_state(world: &mut World) {

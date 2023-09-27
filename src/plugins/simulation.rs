@@ -8,7 +8,6 @@ impl SimulationPlugin {
         right.unpack(Faction::Right, world);
         let result = BattlePlugin::run_battle(world);
         UnitPlugin::despawn_all(world);
-        Representation::despawn_all(world);
         GameTimer::get_mut(world).reset();
         result
     }

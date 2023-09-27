@@ -29,14 +29,6 @@ impl BattlePlugin {
 
     pub fn leave(world: &mut World) {
         UnitPlugin::despawn_all(world);
-        let mut save = Save::get(world).unwrap();
-        save.current_level += 1;
-        if save.current_level >= Options::get_initial_ladder(world).teams.len() {
-            let team =
-                RatingPlugin::generate_weakest_opponent(&Save::get(world).unwrap().team, world);
-            save.add_ladder_level(team);
-        }
-        save.save(world).unwrap();
     }
 
     pub fn run_battle(world: &mut World) -> BattleResult {

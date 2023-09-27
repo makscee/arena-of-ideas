@@ -1,4 +1,4 @@
-use rand::{Rng, SeedableRng};
+use rand::{seq::IteratorRandom, Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 
 use super::*;
@@ -23,7 +23,7 @@ pub enum Expression {
     Cos(Box<Expression>),
     UnitVec(Box<Expression>),
     GameTime,
-    Random,
+    RandomFloat,
 
     Sum(Box<Expression>, Box<Expression>),
     Sub(Box<Expression>, Box<Expression>),
@@ -33,6 +33,7 @@ pub enum Expression {
     Caster,
     Target,
     SlotUnit(Box<Expression>),
+    RandomUnit,
 
     State(VarName),
     StateLast(VarName),
@@ -50,7 +51,7 @@ pub enum Expression {
 impl Expression {
     pub fn get_value(&self, context: &Context, world: &mut World) -> Result<VarValue> {
         match self {
-            Expression::Random => {
+            Expression::RandomFloat => {
                 let mut rng = ChaCha8Rng::seed_from_u64(context.owner().to_bits());
                 Ok(VarValue::Float(rng.gen_range(0.0..1.0)))
             }
@@ -128,6 +129,19 @@ impl Expression {
                     world,
                 )
                 .context("No unit in slot")?,
+            )),
+            Expression::RandomUnit => Ok(VarValue::Entity(
+                UnitPlugin::collect_faction(
+                    context
+                        .get_var(VarName::Faction, world)
+                        .unwrap()
+                        .get_faction()?,
+                    world,
+                )
+                .into_iter()
+                .filter(|x| !x.eq(&context.owner()))
+                .choose(&mut thread_rng())
+                .context("No other units found")?,
             )),
             Expression::OwnerFaction => Ok(VarValue::Faction(UnitPlugin::get_faction(
                 context.owner(),

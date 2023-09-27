@@ -29,18 +29,18 @@ pub struct EffectWrapped {
     pub effect: Effect,
     pub owner: Option<Expression>,
     pub target: Option<Expression>,
-    pub vars: Option<Vec<(VarName, VarValue)>>,
+    pub vars: Option<Vec<(VarName, Expression)>>,
 }
 
 impl EffectWrapped {
     pub fn invoke(&self, context: &mut Context, world: &mut World) -> Result<()> {
-        debug!("Processing {}\n{}", &self.effect, context);
+        debug!("Processing {:?}\n{}", &self.effect, context);
         if let Some(entity) = &self.target {
             context.set_target(entity.get_entity(&context, world)?, world);
         }
         if let Some(vars) = &self.vars {
             for (var, value) in vars {
-                context.set_var(*var, value.clone());
+                context.set_var(*var, value.get_value(context, world)?);
             }
         }
         match &self.effect {
