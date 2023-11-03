@@ -70,6 +70,7 @@ fn main() {
                 .run_if(input_toggle_active(false, KeyCode::Escape)),
         )
         .add_plugins(Material2dPlugin::<LineShapeMaterial>::default())
+        .add_plugins(Material2dPlugin::<CurveMaterial>::default())
         .add_plugins(RonAssetPlugin::<PackedUnit>::new(&["unit.ron"]))
         .add_plugins(RonAssetPlugin::<House>::new(&["house.ron"]))
         .add_plugins(RonAssetPlugin::<BattleState>::new(&["battle.ron"]))

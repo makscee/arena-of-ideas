@@ -2,6 +2,7 @@
 (
     left: (
         units: [
+            (hp: 1, atk: 1),
             (
                 hp: 1,
                 atk: 0,
@@ -9,21 +10,10 @@
                 name: "Life Link",
                 description: "Before Death: transfer Vitality to a random ally",
                 statuses: [("Vitality", 3)],
-                trigger: BeforeDeath(
+                trigger: BattleStart(
                     (
-                        effect: UseAbility(
-                            "Vitality",
-                        ),
-                        vars: [
-                            (
-                                Charges,
-                                StatusCharges(
-                                    String(
-                                        "Vitality",
-                                    ),
-                                ),
-                            ),
-                        ],
+                        effect: Curve,
+                        vars: [(Color, Hex("#ff0000"))],
                         target: RandomUnit,
                     ),
                 ),
@@ -99,7 +89,6 @@
                     ],
                 ),
             ),
-            (hp: 1, atk: 1),
         ],
     ),
     right: (units: []),

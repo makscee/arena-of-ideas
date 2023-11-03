@@ -9,9 +9,11 @@
 			],
 			"label": "Custom Battle",
 			"args": [
+				"--features",
+				"bevy/dynamic_linking",
 				"--",
 				"--mode",
-				"custom-battle"
+				"custom-battle",
 			],
 			"group": {
 				"kind": "build",
@@ -29,6 +31,8 @@
 			],
 			"label": "Shop",
 			"args": [
+				"--features",
+				"bevy/dynamic_linking",
 				"--",
 				"--mode",
 				"shop"

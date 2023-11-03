@@ -16,6 +16,12 @@ impl Plugin for UnitPlugin {
 }
 
 impl UnitPlugin {
+    pub fn get_unit_position(entity: Entity, world: &World) -> Result<Vec2> {
+        VarState::get(entity, world)
+            .get_value_last(VarName::Position)?
+            .get_vec2()
+    }
+
     pub fn find_unit(faction: Faction, slot: usize, world: &mut World) -> Option<Entity> {
         Self::collect_faction(faction, world).into_iter().find(|e| {
             VarState::get(*e, world).get_int(VarName::Slot).unwrap() == slot as i32

@@ -28,6 +28,8 @@ pub enum VarName {
     G,
     LastAttacker,
     Color,
+    Thickness,
+    Curvature,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Reflect, PartialEq)]

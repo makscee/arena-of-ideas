@@ -5,7 +5,7 @@ use super::*;
 
 #[derive(AsBindGroup, TypeUuid, TypePath, Debug, Clone)]
 #[uuid = "ec09cb82-5a6b-43cd-ab8a-56d0979f7cc4"]
-#[bind_group_data(CustomMaterialKey)]
+#[bind_group_data(LineShapeMaterialKey)]
 pub struct LineShapeMaterial {
     #[uniform(0)]
     pub color: Color,
@@ -54,11 +54,11 @@ impl Material2d for LineShapeMaterial {
 }
 
 #[derive(Eq, PartialEq, Hash, Clone, Copy)]
-pub struct CustomMaterialKey {
+pub struct LineShapeMaterialKey {
     shape: Shape,
 }
 
-impl From<&LineShapeMaterial> for CustomMaterialKey {
+impl From<&LineShapeMaterial> for LineShapeMaterialKey {
     fn from(material: &LineShapeMaterial) -> Self {
         Self {
             shape: material.shape,

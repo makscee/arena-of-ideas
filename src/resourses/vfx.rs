@@ -28,4 +28,11 @@ impl Vfx {
         self.state.init(var, value);
         self
     }
+
+    pub fn attach_context(mut self, context: &Context) -> Self {
+        for (var, value) in context.get_all_vars() {
+            self = self.set_var(var, value);
+        }
+        self
+    }
 }

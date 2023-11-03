@@ -89,6 +89,19 @@ impl Context {
         self
     }
 
+    pub fn get_all_vars(&self) -> HashMap<VarName, VarValue> {
+        let mut result: HashMap<VarName, VarValue> = default();
+        for layer in self.layers.iter().rev() {
+            match layer {
+                ContextLayer::Var(var, value) => {
+                    result.insert(*var, value.clone());
+                }
+                _ => {}
+            }
+        }
+        result
+    }
+
     pub fn get_var(&self, var: VarName, world: &World) -> Option<VarValue> {
         let mut result = None;
         for layer in self.layers.iter().rev() {

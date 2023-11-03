@@ -9,6 +9,8 @@ pub enum Effect {
     UseAbility(String),
     AddStatus(String),
     Debug(Expression),
+    Text(Expression),
+    Curve,
     List(Vec<Box<EffectWrapped>>),
     AoeFaction(Expression, Box<EffectWrapped>),
     #[default]
@@ -147,6 +149,28 @@ impl EffectWrapped {
                         world,
                     )
                 }
+            }
+            Effect::Text(text) => {
+                let text = text.get_string(context, world)?;
+                Pools::get_vfx("text", world)
+                    .clone()
+                    .set_var(
+                        VarName::Position,
+                        VarValue::Vec2(UnitPlugin::get_unit_position(context.owner(), world)?),
+                    )
+                    .set_var(VarName::Text, VarValue::String(text))
+                    .set_var(VarName::Color, VarValue::Color(Color::PINK))
+                    .unpack(world)?;
+            }
+            Effect::Curve => {
+                let delta = UnitPlugin::get_unit_position(context.target(), world)?
+                    - UnitPlugin::get_unit_position(context.owner(), world)?;
+
+                Pools::get_vfx("curve", world)
+                    .clone()
+                    .attach_context(context)
+                    .set_var(VarName::Position, VarValue::Vec2(delta))
+                    .unpack(world)?;
             }
         }
         Ok(())

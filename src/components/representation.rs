@@ -1,4 +1,7 @@
-use bevy::sprite::Mesh2dHandle;
+use bevy::{
+    prelude::{Bezier, CubicGenerator},
+    sprite::Mesh2dHandle,
+};
 
 use super::*;
 
@@ -42,6 +45,14 @@ pub enum RepresentationMaterial {
         color: Expression,
         #[serde(default = "default_font_size")]
         font_size: f32,
+    },
+    Curve {
+        #[serde(default = "default_one_f32_e")]
+        thickness: Expression,
+        #[serde(default = "default_one_f32_e")]
+        curvature: Expression,
+        #[serde(default = "default_color_e")]
+        color: Expression,
     },
 }
 
@@ -88,6 +99,22 @@ impl RepresentationMaterial {
                             ..default()
                         },
                     ),
+                    ..default()
+                });
+            }
+            RepresentationMaterial::Curve { .. } => {
+                let mut materials = world.resource_mut::<Assets<CurveMaterial>>();
+                let material = CurveMaterial {
+                    color: Color::PINK,
+                    ..default()
+                };
+                let material = materials.add(material);
+                let mesh = world
+                    .resource_mut::<Assets<Mesh>>()
+                    .add(Mesh::new(PrimitiveTopology::TriangleStrip));
+                world.entity_mut(entity).insert(MaterialMesh2dBundle {
+                    material,
+                    mesh: mesh.into(),
                     ..default()
                 });
             }
@@ -169,6 +196,54 @@ impl RepresentationMaterial {
                 world.get_mut::<Transform>(entity).unwrap().scale =
                     vec3(1.0 / *font_size, 1.0 / *font_size, 1.0)
                         * size.get_float(&context, world).unwrap();
+            }
+            RepresentationMaterial::Curve {
+                thickness,
+                curvature,
+                color,
+            } => {
+                let thickness = thickness.get_float(&context, world).unwrap() * 0.1;
+                let curvature = curvature.get_float(&context, world).unwrap();
+                let color = color.get_color(&context, world).unwrap();
+
+                let delta = context
+                    .get_var(VarName::Position, world)
+                    .unwrap()
+                    .get_vec2()
+                    .unwrap();
+                let control_delta = vec2(0.0, curvature);
+                let curve =
+                    Bezier::new([[Vec2::ZERO, control_delta, delta + control_delta, delta]])
+                        .to_curve();
+                let mut points: Vec<Vec3> = default();
+                let mut uvs: Vec<Vec2> = default();
+                const SEGMENTS: usize = 30;
+                for t in 0..SEGMENTS {
+                    let t = t as f32 / SEGMENTS as f32;
+                    let position = curve.position(t).extend(0.0);
+                    let velocity = curve.velocity(t);
+                    points.push(position);
+                    points.push(
+                        position + (Vec2::Y.rotate(velocity.normalize()) * thickness).extend(0.0),
+                    );
+                    uvs.push(vec2(t, -1.0));
+                    uvs.push(vec2(t, 1.0));
+                }
+
+                let handle = world.get::<Handle<CurveMaterial>>(entity).unwrap().clone();
+                let mut materials = world.get_resource_mut::<Assets<CurveMaterial>>().unwrap();
+                if let Some(mat) = materials.get_mut(&handle) {
+                    mat.color = color;
+                    let mesh = world.entity(entity).get::<Mesh2dHandle>().unwrap().clone();
+                    if let Some(mesh) = world
+                        .get_resource_mut::<Assets<Mesh>>()
+                        .unwrap()
+                        .get_mut(&mesh.0)
+                    {
+                        mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, points);
+                        mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, uvs);
+                    }
+                }
             }
         }
     }

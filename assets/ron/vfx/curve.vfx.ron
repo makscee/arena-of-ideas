@@ -1,0 +1,38 @@
+(
+    anim: Sequence(
+        [
+            Change(
+                var: Curvature,
+                value: Float(0.6),
+            ),
+            Change(
+                var: Thickness,
+                value: Float(1.5),
+            ),
+            Change(
+                var: Curvature,
+                value: Float(1.0),
+                duration: Float(0.3),
+                tween: QuadOut,
+            ),
+            Change(
+                var: Thickness,
+                value: Float(0.0),
+                duration: Float(0.3),
+                tween: Linear,
+            ),
+            Change(
+                var: Visible,
+                value: Bool(false),
+                t: 0.3,
+            ),
+        ],
+    ),
+    representation: (
+        material: Curve(
+            color: State(Color),
+            curvature: State(Curvature),
+            thickness: State(Thickness),
+        ),
+    ),
+)
