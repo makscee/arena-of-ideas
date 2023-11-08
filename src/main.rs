@@ -1,96 +1,165 @@
-use geng::prelude::*;
-use geng::ui;
-
 mod components;
-pub mod game;
-mod resources;
-mod systems;
+mod login_menu_system;
+mod materials;
+mod plugins;
+mod prelude;
+pub mod resourses;
+mod utils;
+use prelude::*;
 
-use anyhow::{Error, Result};
-use components::*;
-use game::*;
-use geng::Key::*;
-use legion::query::*;
-use legion::EntityStore;
-use resources::{Resources, *};
-use std::path::PathBuf;
-use systems::*;
+use clap::{Parser, ValueEnum};
 
-type Time = f32;
-
-fn setup_geng() -> Geng {
-    geng::setup_panic_handler();
-    let geng = Geng::new_with(geng::ContextOptions {
-        title: "Arena of Ideas".to_owned(),
-        antialias: true,
-        shader_prefix: Some((
-            include_str!("vertex_prefix.glsl").to_owned(),
-            include_str!("fragment_prefix.glsl").to_owned(),
-        )),
-        target_ui_resolution: Some(vec2(1920.0, 1080.0)),
-        window_size: Some(vec2(1920, 1080)),
-        ..default()
-    });
-    geng
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    /// Mode to run in: Test, Shop or CustomBattle
+    #[arg(short, long)]
+    mode: RunMode,
 }
 
-fn static_path() -> PathBuf {
-    run_dir().join("static")
+#[derive(Debug, Clone, ValueEnum)]
+enum RunMode {
+    CustomBattle,
+    Shop,
+    Test,
 }
-fn ratings_path() -> PathBuf {
-    run_dir().join("ratings")
-}
-fn ts_nano() -> i64 {
-    chrono::prelude::Utc::now().timestamp_nanos()
-}
-fn mix(a: f32, b: f32, t: f32) -> f32 {
-    a * (1.0 - t) + b * t
-}
-fn mix_vec(a: vec2<f32>, b: vec2<f32>, t: f32) -> vec2<f32> {
-    vec2(mix(a.x, b.x, t), mix(a.y, b.y, t))
-}
-fn new_entity() -> legion::Entity {
-    legion::world::Allocate::new().next().unwrap()
-}
-fn options_color(key: &str) -> Rgba<f32> {
-    OPTIONS_COLORS.with(|map| {
-        map.borrow()
-            .get(key)
-            .expect(&format!("Color Key \"{key}\" not found in options.json"))
-            .clone()
-    })
-}
-fn global_time() -> Time {
-    GLOBAL_TIME.with(|value| *value.borrow())
-}
+
 fn main() {
-    let timer = Instant::now();
-    logger::init();
+    let args = Args::parse();
+    let next_state = match args.mode {
+        RunMode::CustomBattle => GameState::Battle,
+        RunMode::Shop => GameState::Shop,
+        RunMode::Test => GameState::ScenariosLoading,
+    };
+    App::new()
+        .add_state::<GameState>()
+        .insert_resource(ClearColor(Color::rgb(0.1, 0.1, 0.1)))
+        .insert_resource(PkvStore::new("makscee", "arena_of_ideas"))
+        .add_plugins((DefaultPlugins
+            .set(AssetPlugin {
+                watch_for_changes: ChangeWatcher::with_delay(Duration::from_millis(100)),
+                ..default()
+            })
+            .set(LogPlugin {
+                level: bevy::log::Level::DEBUG,
+                filter: "info,debug,wgpu_core=warn,wgpu_hal=warn,naga=warn".into(),
+            })
+            .set(WindowPlugin {
+                primary_window: Some(Window {
+                    title: "Arena of Ideas".into(),
+                    ..default()
+                }),
+                ..default()
+            }),))
+        .add_loading_state(LoadingState::new(GameState::AssetLoading).continue_to_state(next_state))
+        .add_loading_state(
+            LoadingState::new(GameState::ScenariosLoading).continue_to_state(GameState::BattleTest),
+        )
+        .add_dynamic_collection_to_loading_state::<_, StandardDynamicAssetCollection>(
+            GameState::AssetLoading,
+            "ron/dynamic.assets.ron",
+        )
+        .add_collection_to_loading_state::<_, Options>(GameState::AssetLoading)
+        .add_collection_to_loading_state::<_, Pools>(GameState::AssetLoading)
+        .add_collection_to_loading_state::<_, TestScenarios>(GameState::ScenariosLoading)
+        .add_systems(PreUpdate, update)
+        .add_systems(PostUpdate, detect_changes)
+        .add_plugins(DefaultPickingPlugins)
+        .add_plugins(
+            bevy_inspector_egui::quick::WorldInspectorPlugin::new()
+                .run_if(input_toggle_active(false, KeyCode::Escape)),
+        )
+        .add_plugins(Material2dPlugin::<LineShapeMaterial>::default())
+        .add_plugins(Material2dPlugin::<CurveMaterial>::default())
+        .add_plugins(RonAssetPlugin::<PackedUnit>::new(&["unit.ron"]))
+        .add_plugins(RonAssetPlugin::<House>::new(&["house.ron"]))
+        .add_plugins(RonAssetPlugin::<BattleState>::new(&["battle.ron"]))
+        .add_plugins(RonAssetPlugin::<Representation>::new(&["rep.ron"]))
+        .add_plugins(RonAssetPlugin::<Animations>::new(&["anim.ron"]))
+        .add_plugins(RonAssetPlugin::<TestScenario>::new(&["scenario.ron"]))
+        .add_plugins(RonAssetPlugin::<Vfx>::new(&["vfx.ron"]))
+        .add_plugins(RonAssetPlugin::<Ladder>::new(&["ladder.ron"]))
+        .add_plugins((
+            PoolsPlugin,
+            ActionPlugin,
+            UnitPlugin,
+            RepresentationPlugin,
+            ShopPlugin,
+            BattlePlugin,
+            TestPlugin,
+        ))
+        // .add_systems(Update, ui_example_system)
+        .add_systems(Startup, setup)
+        .add_systems(Update, (input, input_world))
+        .init_resource::<UserName>()
+        .init_resource::<Password>()
+        .init_resource::<GameTimer>()
+        .register_type::<VarState>()
+        .register_type::<VarStateDelta>()
+        .run();
+}
 
-    let options = Options::do_load();
-    let mut world = legion::World::default();
-    let mut resources = Resources::new(options);
+fn setup(mut commands: Commands) {
+    let mut camera = Camera2dBundle::default();
+    camera.projection.scaling_mode = ScalingMode::FixedVertical(15.0);
+    commands.spawn((camera, RaycastPickCamera::default()));
+}
 
-    let mut watcher = FileWatcherSystem::new();
-    resources.load(&mut watcher);
-    let geng = setup_geng();
-    resources.load_geng(&mut watcher, &geng);
-    Game::init_world(&mut resources, &mut world);
+fn update(mut timer: ResMut<GameTimer>, time: Res<Time>) {
+    timer.advance(time.delta_seconds());
+}
 
-    let mut theme = geng.ui_theme();
-    theme.font = resources.fonts.get_font(0);
-    theme.hover_color = Rgba::BLACK;
-    geng.set_ui_theme(theme);
-    if resources.options.rate_heroes {
-        // RatingSystem::simulate_walkthrough(&mut world, &mut resources);
-        RatingSystem::calculate_hero_ratings(&mut world, &mut resources);
-    } else if resources.options.generate_ladder {
-        panic!();
-        // RatingSystem::simulate_enemy_ratings_calculation(&mut world, &mut resources);
-        // RatingSystem::generate_hero_ladder(&mut world, &mut resources);
-    } else {
-        let game = Game::new(world, resources, watcher);
-        debug!("Game load in: {:?}", timer.elapsed());
-        geng.clone().run(game);
+fn input(
+    input: Res<Input<KeyCode>>,
+    mut timer: ResMut<GameTimer>,
+    mut state: ResMut<NextState<GameState>>,
+) {
+    if input.just_pressed(KeyCode::Space) {
+        let paused = timer.paused();
+        timer.pause(!paused);
+    }
+    if input.just_pressed(KeyCode::R) {
+        timer.reset();
+        state.set(GameState::Restart);
+    }
+    if input.just_pressed(KeyCode::T) {
+        timer.reset();
+        state.set(GameState::ScenariosLoading);
+    }
+}
+
+fn input_world(world: &mut World) {
+    let input = world.get_resource::<Input<KeyCode>>().unwrap();
+    if input.just_pressed(KeyCode::C) {
+        UnitPlugin::clear_world(world);
+        let battle = Options::get_custom_battle(world);
+        let left = battle.left.clone();
+        let right = battle.right.clone();
+        dbg!(SimulationPlugin::run(left, right, world));
+        UnitPlugin::clear_world(world);
+    } else if input.just_pressed(KeyCode::S) {
+        Save::default().save(world).unwrap();
+        UnitPlugin::despawn_all(world);
+        change_state(GameState::Restart, world);
+    }
+}
+
+fn detect_changes(
+    mut unit_events: EventReader<AssetEvent<PackedUnit>>,
+    mut rep_events: EventReader<AssetEvent<Representation>>,
+    mut battle_state_events: EventReader<AssetEvent<BattleState>>,
+    mut state: ResMut<NextState<GameState>>,
+) {
+    if unit_events.into_iter().any(|x| match x {
+        AssetEvent::Modified { .. } => true,
+        _ => false,
+    }) || rep_events.into_iter().any(|x| match x {
+        AssetEvent::Modified { .. } => true,
+        _ => false,
+    }) || battle_state_events.into_iter().any(|x| match x {
+        AssetEvent::Modified { .. } => true,
+        _ => false,
+    }) {
+        state.set(GameState::Restart)
     }
 }

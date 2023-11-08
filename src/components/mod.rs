@@ -1,23 +1,25 @@
+mod representation;
+mod status;
+mod var_state;
+mod var_state_delta;
+
 use super::*;
+pub use representation::*;
+pub use status::*;
+pub use var_state::*;
+pub use var_state_delta::*;
 
-mod context_state;
-mod corpse;
-mod entity;
-mod shader;
-mod slot;
-mod tape_entity;
-mod team;
-mod unit;
-mod vars;
-mod world;
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct HexColor(String);
 
-pub use context_state::*;
-pub use corpse::*;
-pub use entity::*;
-pub use shader::*;
-pub use slot::*;
-pub use tape_entity::*;
-pub use team::*;
-pub use unit::*;
-pub use vars::*;
-pub use world::*;
+impl Into<Color> for HexColor {
+    fn into(self) -> Color {
+        Color::hex(&self.0).unwrap()
+    }
+}
+
+impl Default for HexColor {
+    fn default() -> Self {
+        Self("#ff00ff".into())
+    }
+}

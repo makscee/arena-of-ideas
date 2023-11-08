@@ -1,0 +1,121 @@
+#![enable(implicit_some)]
+(
+    teams: [
+        (
+            units: [
+                (
+                    hp: 1,
+                    atk: 1,
+                    house: "Warriors",
+                    name: "Bug",
+                    representation: (
+                        material: Shape(
+                            shape: Circle,
+                            color: Hex(
+                                "#4E342E",
+                            ),
+                            size: Vec2(
+                                0.5,
+                                0.5,
+                            ),
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        (
+            units: [
+                (
+                    hp: 1,
+                    atk: 1,
+                    house: "Warriors",
+                    name: "Bug",
+                    representation: (
+                        material: Shape(
+                            shape: Circle,
+                            color: Hex(
+                                "#4E342E",
+                            ),
+                            size: Vec2(
+                                0.5,
+                                0.5,
+                            ),
+                        ),
+                    ),
+                ),
+                (
+                    hp: 1,
+                    atk: 1,
+                    house: "Warriors",
+                    name: "Bug",
+                    representation: (
+                        material: Shape(
+                            shape: Circle,
+                            color: Hex(
+                                "#4E342E",
+                            ),
+                            size: Vec2(
+                                0.5,
+                                0.5,
+                            ),
+                        ),
+                    ),
+                ),
+                (
+                    hp: 1,
+                    atk: 1,
+                    house: "Warriors",
+                    name: "Bug",
+                    representation: (
+                        material: Shape(
+                            shape: Circle,
+                            color: Hex(
+                                "#4E342E",
+                            ),
+                            size: Vec2(
+                                0.5,
+                                0.5,
+                            ),
+                        ),
+                    ),
+                ),
+                (
+                    hp: 1,
+                    atk: 1,
+                    house: "Warriors",
+                    name: "Bug",
+                    representation: (
+                        material: Shape(
+                            shape: Circle,
+                            color: Hex(
+                                "#4E342E",
+                            ),
+                            size: Vec2(
+                                0.5,
+                                0.5,
+                            ),
+                        ),
+                    ),
+                ),
+                (
+                    hp: 1,
+                    atk: 1,
+                    house: "Warriors",
+                    name: "Bug",
+                    representation: (
+                        material: Shape(
+                            shape: Circle,
+                            color: Hex(
+                                "#4E342E",
+                            ),
+                            size: Vec2(
+                                0.5,
+                                0.5,
+                            ),
+                        ),
+                    ),
+                ),
+            ],
+        ),
+    ],
+)

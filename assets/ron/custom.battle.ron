@@ -1,0 +1,95 @@
+#![enable(implicit_some)]
+(
+    left: (
+        units: [
+            (hp: 1, atk: 1),
+            (
+                hp: 1,
+                atk: 0,
+                house: "Medics",
+                name: "Life Link",
+                description: "Before Death: transfer Vitality to a random ally",
+                statuses: [("Vitality", 3)],
+                trigger: BattleStart(
+                    (
+                        effect: Curve,
+                        vars: [(Color, Hex("#ff0000"))],
+                        target: RandomUnit,
+                    ),
+                ),
+                representation: (
+                    material: Shape(
+                        shape: Circle,
+                        color: State(
+                            HouseColor,
+                        ),
+                        thickness: Float(1.0),
+                        size: Vec2(0.3, 0.3),
+                    ),
+                    mapping: (
+                        {
+                            Position: Vec2EE(
+                                Mul(
+                                    Sin(
+                                        Mul(
+                                            GameTime,
+                                            Float(
+                                                3.0,
+                                            ),
+                                        ),
+                                    ),
+                                    Float(
+                                        0.3,
+                                    ),
+                                ),
+                                Float(
+                                    0.0,
+                                ),
+                            ),
+                        },
+                    ),
+                    children: [
+                        (
+                            material: Shape(
+                                shape: Circle,
+                                color: State(
+                                    HouseColor,
+                                ),
+                                thickness: Float(
+                                    1.0,
+                                ),
+                                size: Vec2(
+                                    0.3,
+                                    0.3,
+                                ),
+                            ),
+                            mapping: (
+                                {
+                                    Position: Vec2EE(
+                                        Mul(
+                                            Sin(
+                                                Mul(
+                                                    GameTime,
+                                                    Float(
+                                                        2.0,
+                                                    ),
+                                                ),
+                                            ),
+                                            Float(
+                                                0.3,
+                                            ),
+                                        ),
+                                        Float(
+                                            0.0,
+                                        ),
+                                    ),
+                                },
+                            ),
+                        ),
+                    ],
+                ),
+            ),
+        ],
+    ),
+    right: (units: []),
+)

@@ -1,0 +1,67 @@
+#![enable(implicit_some)]
+(
+    hp: 3,
+    atk: 3,
+    house: "Warriors",
+    name: "Champion",
+    description: "After Kill: give Strength to all allies",
+    trigger: AfterKill(
+        (
+            effect: AoeFaction(
+                OwnerFaction,
+                (
+                    effect: UseAbility(
+                        "Strength",
+                    ),
+                ),
+            ),
+        ),
+    ),
+    representation: (
+        material: Shape(
+            shape: Rectangle,
+            size: Vec2E(
+                Sum(
+                    Mul(
+                        Sin(GameTime),
+                        Float(0.3),
+                    ),
+                    Float(0.7),
+                ),
+            ),
+        ),
+        children: [
+            (
+                material: Shape(
+                    shape: Rectangle,
+                    size: Vec2E(
+                        Sum(
+                            Mul(
+                                Sin(
+                                    GameTime,
+                                ),
+                                Float(
+                                    1.0,
+                                ),
+                            ),
+                            Float(0.4),
+                        ),
+                    ),
+                ),
+            ),
+        ],
+        mapping: (
+            {
+                Rotation: Mul(
+                    Sin(
+                        Mul(
+                            GameTime,
+                            Float(0.1),
+                        ),
+                    ),
+                    Float(40.9),
+                ),
+            },
+        ),
+    ),
+)

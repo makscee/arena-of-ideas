@@ -1,0 +1,7 @@
+(
+    material: Shape(
+        shape: Rectangle,
+        color: Hex("#03A9F4"),
+        size: Vec2E(Float(2.6)),
+    ),
+)

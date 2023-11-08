@@ -1,0 +1,41 @@
+#![enable(implicit_some)]
+(
+    hp: 3,
+    atk: 0,
+    house: "Warriors",
+    name: "Berserker",
+    description: "Before Strike: gain Strength x3",
+    trigger: TurnStart(
+        (
+            effect: UseAbility("Strength"),
+            target: Owner,
+            vars: [(Charges, Int(3))],
+        ),
+    ),
+    representation: (
+        material: Shape(
+            shape: Rectangle,
+            color: Hex("#E91E63"),
+            size: Vec2E(State(Radius)),
+        ),
+        mapping: ({Rotation: Sin(GameTime)}),
+    ),
+    state: (
+        history: {
+            Radius: (
+                [
+                    (
+                        t: 0.0,
+                        value: Float(0.0001),
+                    ),
+                    (
+                        t: 0.0,
+                        duration: 0.5,
+                        tween: QuartOut,
+                        value: Float(1.0),
+                    ),
+                ],
+            ),
+        },
+    ),
+)

@@ -1,0 +1,24 @@
+#![enable(implicit_some)]
+(
+    name: "Warriors",
+    color: ("#4E342E"),
+    statuses: [
+        (
+            name: "Strength",
+            description: "+1 ATK",
+            trigger: ChangeVar(
+                Atk,
+                Context(Charges),
+            ),
+        ),
+    ],
+    abilities: [
+        (
+            name: "Strength",
+            description: "Give +1 ATK",
+            effect: (
+                effect: AddStatus("Strength"),
+            ),
+        ),
+    ],
+)

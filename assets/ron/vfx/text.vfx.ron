@@ -1,0 +1,26 @@
+(
+    anim: Sequence(
+        [
+            Change(
+                var: Position,
+                value: Sum(
+                    StateLast(Position),
+                    Vec2(0.0, 2.0),
+                ),
+                duration: Float(0.5),
+                tween: QuartOut,
+            ),
+            Change(
+                var: Visible,
+                value: Bool(false),
+                t: 0.7,
+            ),
+        ],
+    ),
+    representation: (
+        material: Text(
+            text: State(Text),
+            color: State(Color),
+        ),
+    ),
+)

@@ -1,0 +1,7 @@
+(
+    material: Shape(
+        shape: Circle,
+        color: State(Color),
+        size: Vec2E(Float(1.1)),
+    ),
+)

@@ -4,17 +4,72 @@
 		{
 			"type": "cargo",
 			"command": "run",
-			"args": [],
 			"problemMatcher": [
 				"$rustc"
 			],
-			"label": "Run Game",
+			"label": "Custom Battle",
+			"args": [
+				"--features",
+				"bevy/dynamic_linking",
+				"--",
+				"--mode",
+				"custom-battle",
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"env": {
+				"RUST_BACKTRACE": "1"
+			}
+		},
+		{
+			"type": "cargo",
+			"command": "run",
+			"problemMatcher": [
+				"$rustc"
+			],
+			"label": "Shop",
+			"args": [
+				"--features",
+				"bevy/dynamic_linking",
+				"--",
+				"--mode",
+				"shop"
+			],
 			"group": {
 				"kind": "build"
 			},
 			"env": {
-				"LOG": "debug"
+				"RUST_BACKTRACE": "1"
 			}
+		},
+		{
+			"type": "cargo",
+			"command": "run",
+			"problemMatcher": [
+				"$rustc"
+			],
+			"label": "Test Scenarios",
+			"args": [
+				"--",
+				"--mode",
+				"test"
+			],
+			"group": {
+				"kind": "build"
+			},
+			"env": {
+				"RUST_BACKTRACE": "1"
+			}
+		},
+		{
+			"label": "Format Ron",
+			"type": "shell",
+			"group": {
+				"kind": "build"
+			},
+			"command": "find . -iname '*.ron' -exec ronfmt \"{}\" \\;"
 		},
 		{
 			"label": "Flamegraph Run Debug",

@@ -112,7 +112,7 @@
         "prefix": "global_time_expression",
         "body": [
             "{",
-            "    \"type\": \"GlobalTime\"",
+            "    \"type\": \"GameTime\"",
             "}"
         ],
         "description": "Expression Global Time"

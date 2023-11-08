@@ -1,0 +1,40 @@
+#![enable(implicit_some)]
+(
+    hp: 3,
+    atk: 0,
+    house: "Warriors",
+    name: "Mentee",
+    description: "Turn Start: gain Strength",
+    trigger: TurnStart(
+        (
+            effect: UseAbility("Strength"),
+            target: Owner,
+        ),
+    ),
+    representation: (
+        material: Shape(
+            shape: Rectangle,
+            color: Hex("#BF360C"),
+            size: Vec2E(State(Radius)),
+        ),
+        mapping: ({Rotation: Sin(GameTime)}),
+    ),
+    state: (
+        history: {
+            Radius: (
+                [
+                    (
+                        t: 0.0,
+                        value: Float(0.0001),
+                    ),
+                    (
+                        t: 0.0,
+                        duration: 0.5,
+                        tween: QuartOut,
+                        value: Float(1.0),
+                    ),
+                ],
+            ),
+        },
+    ),
+)

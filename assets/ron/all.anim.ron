@@ -1,0 +1,44 @@
+(
+    {
+        BeforeStrike: Sequence(
+            [
+                Change(
+                    var: Position,
+                    value: Sum(
+                        Vec2EE(
+                            Mul(
+                                Float(
+                                    2.0,
+                                ),
+                                Context(
+                                    Direction,
+                                ),
+                            ),
+                            Float(0.0),
+                        ),
+                        SlotPosition,
+                    ),
+                    duration: Float(0.5),
+                    tween: QuartInOut,
+                ),
+                Change(
+                    var: Position,
+                    value: Vec2EE(
+                        Context(
+                            Direction,
+                        ),
+                        Float(0.0),
+                    ),
+                    duration: Float(0.05),
+                ),
+            ],
+        ),
+        AfterStrike: Change(
+            var: Position,
+            value: SlotPosition,
+            t: 0.3,
+            duration: Float(0.5),
+            tween: QuartOut,
+        ),
+    },
+)
