@@ -47,6 +47,8 @@ pub enum Expression {
     Equals(Vec<Box<Expression>>),
 
     Hex(String),
+
+    Beat,
 }
 impl Expression {
     pub fn get_value(&self, context: &Context, world: &mut World) -> Result<VarValue> {
@@ -172,6 +174,22 @@ impl Expression {
                     }
                 }
                 return Err(anyhow!("Can't find status"));
+            }
+            Expression::Beat => {
+                const BPM: usize = 100;
+                let ts = GameTimer::get(world).get_t();
+                let beat = (ts * BPM as f32 / 60.0) as usize;
+
+                let t = ts * BPM as f32 / 60.0;
+                let t = t - t.floor();
+                let start = match beat % 2 == 0 {
+                    true => -1.0,
+                    false => 1.0,
+                };
+                let start = VarValue::Float(start);
+                let result =
+                    Tween::QuartOut.f(&start, &VarValue::Float(0.0), t, BPM as f32 / 60.0 * 0.5);
+                return result;
             }
         }
     }

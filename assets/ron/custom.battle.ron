@@ -13,7 +13,14 @@
                 trigger: BattleStart(
                     (
                         effect: Curve,
-                        vars: [(Color, Hex("#ff0000"))],
+                        vars: [
+                            (
+                                Color,
+                                Hex(
+                                    "#ff0000",
+                                ),
+                            ),
+                        ],
                         target: RandomUnit,
                     ),
                 ),
