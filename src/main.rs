@@ -45,15 +45,6 @@ fn register_callbacks() {
     once_on_connect(on_connected);
 }
 
-fn select_input_device() -> cpal::Device {
-    // todo implement user selection
-    beat_detector::record::audio_input_device_list()
-        .into_iter()
-        .next()
-        .expect("At least one audio input device must be available.")
-        .1
-}
-
 fn main() {
     // register_callbacks();
     // connect(SPACETIMEDB_URI, DB_NAME, None).expect("Failed to connect");

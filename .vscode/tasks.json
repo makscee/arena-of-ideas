@@ -16,7 +16,8 @@
 				"custom-battle",
 			],
 			"group": {
-				"kind": "build"
+				"kind": "build",
+				"isDefault": true
 			},
 			"env": {
 				"RUST_BACKTRACE": "1"
@@ -37,8 +38,7 @@
 				"shop"
 			],
 			"group": {
-				"kind": "build",
-				"isDefault": true
+				"kind": "build"
 			},
 			"env": {
 				"RUST_BACKTRACE": "1"

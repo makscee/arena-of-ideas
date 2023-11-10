@@ -163,13 +163,14 @@ impl EffectWrapped {
                     .unpack(world)?;
             }
             Effect::Curve => {
-                let delta = UnitPlugin::get_unit_position(context.target(), world)?
-                    - UnitPlugin::get_unit_position(context.owner(), world)?;
+                let owner_pos = UnitPlugin::get_unit_position(context.owner(), world)?;
+                let delta = UnitPlugin::get_unit_position(context.target(), world)? - owner_pos;
 
                 Pools::get_vfx("curve", world)
                     .clone()
                     .attach_context(context)
-                    .set_var(VarName::Position, VarValue::Vec2(delta))
+                    .set_var(VarName::Delta, VarValue::Vec2(delta))
+                    .set_var(VarName::Position, VarValue::Vec2(owner_pos))
                     .unpack(world)?;
             }
         }
