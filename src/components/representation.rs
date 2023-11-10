@@ -207,7 +207,7 @@ impl RepresentationMaterial {
                 let color = color.get_color(&context, world).unwrap();
 
                 let delta = context
-                    .get_var(VarName::Position, world)
+                    .get_var(VarName::Delta, world)
                     .unwrap()
                     .get_vec2()
                     .unwrap();

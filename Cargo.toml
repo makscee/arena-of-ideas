@@ -30,6 +30,7 @@ rand_chacha = "0.3.1"
 colored = "2.0.0"
 bevy_pkv = "0.8.0"
 clap = { version = "4.4.5", features = ["derive"] }
+spacetimedb-sdk = "0.7.2"
 
 [profile.dev.package."*"]
 opt-level = 3

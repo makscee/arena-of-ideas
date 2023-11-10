@@ -1,6 +1,12 @@
 (
     material: Shape(
         shape: Circle,
+        size: Vec2E(
+            Sum(
+                Mul(Beat, Float(0.1)),
+                Float(1.0),
+            ),
+        ),
         color: Hex("#B0BEC5"),
     ),
     children: [

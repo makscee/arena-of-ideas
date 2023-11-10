@@ -1,13 +1,22 @@
 mod components;
 mod login_menu_system;
 mod materials;
+mod module_bindings;
 mod plugins;
 mod prelude;
 pub mod resourses;
 mod utils;
+use materials::prelude::module_bindings::connect;
 use prelude::*;
+pub use spacetimedb_sdk;
 
 use clap::{Parser, ValueEnum};
+use spacetimedb_sdk::{
+    identity::{once_on_connect, Credentials},
+    Address,
+};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -24,7 +33,23 @@ enum RunMode {
     Test,
 }
 
+const SPACETIMEDB_URI: &str = "http://localhost:3001";
+const DB_NAME: &str = "aoi";
+
+fn on_connected(creds: &Credentials, _client_address: Address) {
+    println!("{creds:?} {_client_address:?}");
+}
+/// Register all the callbacks our app will use to respond to database events.
+fn register_callbacks() {
+    // When we receive our `Credentials`, save them to a file.
+    once_on_connect(on_connected);
+}
+
 fn main() {
+    // register_callbacks();
+    // connect(SPACETIMEDB_URI, DB_NAME, None).expect("Failed to connect");
+    // loop {}
+    // return;
     let args = Args::parse();
     let next_state = match args.mode {
         RunMode::CustomBattle => GameState::Battle,
