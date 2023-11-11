@@ -43,6 +43,7 @@ pub use bevy_egui::{
     egui::{CentralPanel, TextEdit},
     EguiContexts,
 };
+pub use bevy_kira_audio::prelude::*;
 pub use bevy_mod_picking::prelude::*;
 pub use bevy_pkv::PkvStore;
 pub use colored::Colorize;

@@ -94,6 +94,7 @@ fn main() {
             bevy_inspector_egui::quick::WorldInspectorPlugin::new()
                 .run_if(input_toggle_active(false, KeyCode::Escape)),
         )
+        .add_plugins(AudioPlugin)
         .add_plugins(Material2dPlugin::<LineShapeMaterial>::default())
         .add_plugins(Material2dPlugin::<CurveMaterial>::default())
         .add_plugins(RonAssetPlugin::<PackedUnit>::new(&["unit.ron"]))

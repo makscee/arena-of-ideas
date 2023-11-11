@@ -3,7 +3,19 @@
         shape: Circle,
         size: Vec2E(
             Sum(
-                Mul(Beat, Float(0.1)),
+                Mul(
+                    If(
+                        Even(
+                            State(Slot),
+                        ),
+                        Beat,
+                        Mul(
+                            Beat,
+                            Float(-1.0),
+                        ),
+                    ),
+                    Float(0.1),
+                ),
                 Float(1.0),
             ),
         ),

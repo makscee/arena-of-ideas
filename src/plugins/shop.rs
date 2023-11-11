@@ -19,8 +19,20 @@ impl Plugin for ShopPlugin {
                 Self::level_finished,
             )
             .add_systems(PostUpdate, Self::input)
-            .add_systems(Update, Self::ui.run_if(in_state(GameState::Shop)));
+            .add_systems(
+                Update,
+                (
+                    Self::ui.run_if(in_state(GameState::Shop)),
+                    Self::update_track_time,
+                ),
+            );
     }
+}
+
+#[derive(Resource)]
+pub struct ShopBgAudioData {
+    pub handle: Handle<AudioInstance>,
+    pub position: Option<f64>,
 }
 
 impl ShopPlugin {
@@ -32,6 +44,30 @@ impl ShopPlugin {
         UnitPlugin::translate_to_slots(world);
         Self::fill_showcase(world);
         Self::change_g(10, world).unwrap();
+        Self::start_background_music(world);
+    }
+
+    fn start_background_music(world: &mut World) {
+        let track = world
+            .resource::<AssetServer>()
+            .load("ron/audio/shop_bg.ogg.ron");
+        let audio = world.resource::<Audio>();
+        let handle = audio.play(track).looped().handle();
+        let handle = ShopBgAudioData {
+            handle,
+            position: Some(0.0),
+        };
+        world.insert_resource(handle);
+    }
+
+    fn stop_background_music(world: &mut World) {
+        let handle = world.resource::<ShopBgAudioData>().handle.clone();
+        if let Some(instance) = world
+            .resource_mut::<Assets<AudioInstance>>()
+            .get_mut(&handle)
+        {
+            instance.stop(AudioTween::linear(Duration::new(1, 0)));
+        }
     }
 
     fn level_finished(world: &mut World) {
@@ -49,6 +85,7 @@ impl ShopPlugin {
         Self::pack_active_team(world).unwrap();
         UnitPlugin::despawn_all(world);
         Self::clear_showcase(world);
+        Self::stop_background_music(world);
     }
 
     fn input(world: &mut World) {
@@ -129,6 +166,32 @@ impl ShopPlugin {
             save.team.unpack(faction, world);
         } else {
             PackedTeam::spawn(faction, world);
+        }
+    }
+
+    pub fn update_track_time(world: &mut World) {
+        if let Some(data) = world.get_resource::<ShopBgAudioData>() {
+            let handle = data.handle.clone();
+            let pressed_pause = world
+                .resource::<Input<KeyCode>>()
+                .just_pressed(KeyCode::Space);
+            if let Some(instance) = world
+                .resource_mut::<Assets<AudioInstance>>()
+                .get_mut(&handle)
+            {
+                if pressed_pause {
+                    match instance.state() {
+                        PlaybackState::Playing { .. } => {
+                            instance.pause(AudioTween::linear(Duration::from_secs(1)));
+                        }
+                        _ => {
+                            instance.resume(AudioTween::linear(Duration::from_secs(1)));
+                        }
+                    }
+                }
+                let position = instance.state().position();
+                world.insert_resource(ShopBgAudioData { handle, position })
+            }
         }
     }
 

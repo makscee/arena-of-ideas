@@ -22,6 +22,7 @@ pub enum Expression {
     Sin(Box<Expression>),
     Cos(Box<Expression>),
     UnitVec(Box<Expression>),
+    Even(Box<Expression>),
     GameTime,
     RandomFloat,
 
@@ -49,6 +50,8 @@ pub enum Expression {
     Hex(String),
 
     Beat,
+
+    If(Box<Expression>, Box<Expression>, Box<Expression>),
 }
 impl Expression {
     pub fn get_value(&self, context: &Context, world: &mut World) -> Result<VarValue> {
@@ -86,6 +89,10 @@ impl Expression {
                 let x = x.get_float(context, world)?;
                 let x = vec2(x.cos(), x.sin());
                 Ok(VarValue::Vec2(x))
+            }
+            Expression::Even(x) => {
+                let x = x.get_int(context, world)?;
+                Ok(VarValue::Bool(x % 2 == 0))
             }
             Expression::GameTime => Ok(VarValue::Float(GameTimer::get(world).get_t())),
             Expression::Sum(a, b) => {
@@ -177,7 +184,10 @@ impl Expression {
             }
             Expression::Beat => {
                 const BPM: usize = 100;
-                let ts = GameTimer::get(world).get_t();
+                let ts = world
+                    .resource::<ShopBgAudioData>()
+                    .position
+                    .unwrap_or_default() as f32;
                 let beat = (ts * BPM as f32 / 60.0) as usize;
 
                 let t = ts * BPM as f32 / 60.0;
@@ -190,6 +200,13 @@ impl Expression {
                 let result =
                     Tween::QuartOut.f(&start, &VarValue::Float(0.0), t, BPM as f32 / 60.0 * 0.5);
                 return result;
+            }
+            Expression::If(cond, th, el) => {
+                if cond.get_bool(context, world)? {
+                    th.get_value(context, world)
+                } else {
+                    el.get_value(context, world)
+                }
             }
         }
     }
