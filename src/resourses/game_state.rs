@@ -3,11 +3,21 @@ use super::*;
 #[derive(Clone, Eq, PartialEq, Debug, Hash, Default, States)]
 pub enum GameState {
     #[default]
-    AssetLoading,
-    ScenariosLoading,
-    Next,
+    Loading,
+    MainMenu,
+    TestsLoading,
+    BattleTest,
     Restart,
+    CustomBattle,
     Battle,
     Shop,
-    BattleTest,
+}
+
+impl GameState {
+    pub fn change(next: GameState, world: &mut World) {
+        world
+            .get_resource_mut::<NextState<GameState>>()
+            .unwrap()
+            .set(next);
+    }
 }

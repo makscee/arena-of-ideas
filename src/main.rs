@@ -6,7 +6,6 @@ mod plugins;
 mod prelude;
 pub mod resourses;
 mod utils;
-use materials::prelude::module_bindings::connect;
 use prelude::*;
 pub use spacetimedb_sdk;
 
@@ -15,8 +14,6 @@ use spacetimedb_sdk::{
     identity::{once_on_connect, Credentials},
     Address,
 };
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -54,8 +51,9 @@ fn main() {
     let next_state = match args.mode {
         RunMode::CustomBattle => GameState::Battle,
         RunMode::Shop => GameState::Shop,
-        RunMode::Test => GameState::ScenariosLoading,
+        RunMode::Test => GameState::TestsLoading,
     };
+    let next_state = GameState::MainMenu;
     App::new()
         .add_state::<GameState>()
         .insert_resource(ClearColor(Color::rgb(0.1, 0.1, 0.1)))
@@ -69,24 +67,24 @@ fn main() {
                 level: bevy::log::Level::DEBUG,
                 filter: "info,debug,wgpu_core=warn,wgpu_hal=warn,naga=warn".into(),
             })
-            .set(WindowPlugin {
-                primary_window: Some(Window {
+            .set(bevy::window::WindowPlugin {
+                primary_window: Some(bevy::prelude::Window {
                     title: "Arena of Ideas".into(),
                     ..default()
                 }),
                 ..default()
             }),))
-        .add_loading_state(LoadingState::new(GameState::AssetLoading).continue_to_state(next_state))
+        .add_loading_state(LoadingState::new(GameState::Loading).continue_to_state(next_state))
         .add_loading_state(
-            LoadingState::new(GameState::ScenariosLoading).continue_to_state(GameState::BattleTest),
+            LoadingState::new(GameState::TestsLoading).continue_to_state(GameState::BattleTest),
         )
         .add_dynamic_collection_to_loading_state::<_, StandardDynamicAssetCollection>(
-            GameState::AssetLoading,
+            GameState::Loading,
             "ron/dynamic.assets.ron",
         )
-        .add_collection_to_loading_state::<_, Options>(GameState::AssetLoading)
-        .add_collection_to_loading_state::<_, Pools>(GameState::AssetLoading)
-        .add_collection_to_loading_state::<_, TestScenarios>(GameState::ScenariosLoading)
+        .add_collection_to_loading_state::<_, Options>(GameState::Loading)
+        .add_collection_to_loading_state::<_, Pools>(GameState::Loading)
+        .add_collection_to_loading_state::<_, TestScenarios>(GameState::TestsLoading)
         .add_systems(PreUpdate, update)
         .add_systems(PostUpdate, detect_changes)
         .add_plugins(DefaultPickingPlugins)
@@ -99,13 +97,15 @@ fn main() {
         .add_plugins(Material2dPlugin::<CurveMaterial>::default())
         .add_plugins(RonAssetPlugin::<PackedUnit>::new(&["unit.ron"]))
         .add_plugins(RonAssetPlugin::<House>::new(&["house.ron"]))
-        .add_plugins(RonAssetPlugin::<BattleState>::new(&["battle.ron"]))
+        .add_plugins(RonAssetPlugin::<CustomBattleData>::new(&["battle.ron"]))
         .add_plugins(RonAssetPlugin::<Representation>::new(&["rep.ron"]))
         .add_plugins(RonAssetPlugin::<Animations>::new(&["anim.ron"]))
         .add_plugins(RonAssetPlugin::<TestScenario>::new(&["scenario.ron"]))
         .add_plugins(RonAssetPlugin::<Vfx>::new(&["vfx.ron"]))
         .add_plugins(RonAssetPlugin::<Ladder>::new(&["ladder.ron"]))
         .add_plugins((
+            MainMenuPlugin,
+            CustomBattlePlugin,
             PoolsPlugin,
             ActionPlugin,
             UnitPlugin,
@@ -122,6 +122,7 @@ fn main() {
         .init_resource::<GameTimer>()
         .register_type::<VarState>()
         .register_type::<VarStateDelta>()
+        .add_systems(Update, show_build_version)
         .run();
 }
 
@@ -150,7 +151,7 @@ fn input(
     }
     if input.just_pressed(KeyCode::T) {
         timer.reset();
-        state.set(GameState::ScenariosLoading);
+        state.set(GameState::TestsLoading);
     }
 }
 
@@ -166,14 +167,14 @@ fn input_world(world: &mut World) {
     } else if input.just_pressed(KeyCode::S) {
         Save::default().save(world).unwrap();
         UnitPlugin::despawn_all(world);
-        change_state(GameState::Restart, world);
+        GameState::change(GameState::Restart, world);
     }
 }
 
 fn detect_changes(
     mut unit_events: EventReader<AssetEvent<PackedUnit>>,
     mut rep_events: EventReader<AssetEvent<Representation>>,
-    mut battle_state_events: EventReader<AssetEvent<BattleState>>,
+    mut battle_state_events: EventReader<AssetEvent<CustomBattleData>>,
     mut state: ResMut<NextState<GameState>>,
 ) {
     if unit_events.into_iter().any(|x| match x {
@@ -188,4 +189,12 @@ fn detect_changes(
     }) {
         state.set(GameState::Restart)
     }
+}
+
+const VERSION: &str = env!("CARGO_PKG_VERSION");
+fn show_build_version(world: &mut World) {
+    let ctx = &egui_context(world);
+    Area::new("build version")
+        .anchor(Align2::LEFT_BOTTOM, [10.0, -10.0])
+        .show(ctx, |ui| ui.label(format!("arena-of-ideas {VERSION}")));
 }

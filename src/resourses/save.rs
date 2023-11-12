@@ -1,5 +1,3 @@
-use bevy_pkv::{GetError, SetError};
-
 use super::*;
 
 #[derive(Serialize, Deserialize, Debug, Default)]
@@ -10,18 +8,20 @@ pub struct Save {
 }
 
 impl Save {
-    pub fn save(&self, world: &mut World) -> Result<(), SetError> {
+    pub fn save(&self, world: &mut World) -> Result<()> {
         debug!("Saving {self:?}");
         world
             .get_resource_mut::<PkvStore>()
             .unwrap()
             .set("save", self)
+            .map_err(|e| anyhow!("{}", e.to_string()))
     }
-    pub fn get(world: &World) -> Result<Save, GetError> {
+    pub fn get(world: &World) -> Result<Save> {
         world
             .get_resource::<PkvStore>()
             .unwrap()
             .get::<Save>("save")
+            .map_err(|e| anyhow!("{}", e.to_string()))
     }
     pub fn set_team(&mut self, team: PackedTeam) -> &mut Self {
         self.team = team;

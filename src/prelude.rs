@@ -33,14 +33,13 @@ pub use bevy::{
     time::*,
     transform::components::*,
     utils::*,
-    window::*,
     DefaultPlugins,
 };
 pub use bevy_asset_loader::prelude::*;
 pub use bevy_common_assets::ron::RonAssetPlugin;
 pub use bevy_egui::egui;
 pub use bevy_egui::{
-    egui::{CentralPanel, TextEdit},
+    egui::{Align2, Area, Button, CentralPanel, Label, RichText, TextEdit, Ui, Window},
     EguiContexts,
 };
 pub use bevy_kira_audio::prelude::*;

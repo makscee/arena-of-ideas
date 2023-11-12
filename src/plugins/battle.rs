@@ -12,19 +12,33 @@ impl Plugin for BattlePlugin {
     }
 }
 
+#[derive(Resource, Clone)]
+pub struct BattleData {
+    pub left: Option<PackedTeam>,
+    pub right: Option<PackedTeam>,
+    pub result: BattleResult,
+}
+
 impl BattlePlugin {
     pub fn enter(world: &mut World) {
-        let bs = Options::get_custom_battle(world).clone();
-        bs.unpack(world);
-        // bs.right.unpack(Faction::Right, world);
-        // ShopPlugin::unpack_active_team(Faction::Left, world);
-        // Ladder::current_level(world).unpack(Faction::Right, world);
+        GameTimer::get_mut(world).reset();
+        let data = world.resource::<BattleData>().clone();
+        data.left.unwrap().unpack(Faction::Left, world);
+        data.right.unwrap().unpack(Faction::Right, world);
         UnitPlugin::translate_to_slots(world);
         Self::run_battle(100, world);
         world
             .get_resource_mut::<GameTimer>()
             .unwrap()
             .head_to_save();
+    }
+
+    pub fn load_teams(left: PackedTeam, right: PackedTeam, world: &mut World) {
+        world.insert_resource(BattleData {
+            left: Some(left),
+            right: Some(right),
+            result: default(),
+        });
     }
 
     pub fn leave(world: &mut World) {
@@ -157,7 +171,7 @@ impl BattlePlugin {
             .show(&egui_context(world), |ui| {
                 ui.horizontal(|ui| {
                     if ui.button("Ok").clicked() {
-                        change_state(GameState::Shop, world);
+                        GameState::change(GameState::Shop, world);
                     }
                     if ui.button("Replay").clicked() {
                         GameTimer::get_mut(world).set_t(0.0);
@@ -167,8 +181,10 @@ impl BattlePlugin {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default, Clone)]
 pub enum BattleResult {
+    #[default]
+    Tbd,
     Left(usize),
     Right(usize),
     Even,

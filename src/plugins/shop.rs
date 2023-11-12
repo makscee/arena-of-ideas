@@ -2,7 +2,6 @@ use super::*;
 
 use bevy_egui::egui::{self, Align2};
 use bevy_egui::egui::{pos2, Button, Color32, RichText, Window};
-use bevy_pkv::SetError;
 use rand::seq::IteratorRandom;
 
 pub struct ShopPlugin;
@@ -40,7 +39,11 @@ impl ShopPlugin {
     pub const REROLL_PRICE: i32 = 1;
 
     fn enter_state(world: &mut World) {
-        Self::unpack_active_team(Faction::Team, world);
+        if let Ok(team) = Self::active_team(world) {
+            team.unpack(Faction::Team, world);
+        } else {
+            PackedTeam::spawn(Faction::Team, world);
+        }
         UnitPlugin::translate_to_slots(world);
         Self::fill_showcase(world);
         Self::change_g(10, world).unwrap();
@@ -86,14 +89,13 @@ impl ShopPlugin {
         UnitPlugin::despawn_all(world);
         Self::clear_showcase(world);
         Self::stop_background_music(world);
+
+        let left = Self::active_team(world).unwrap();
+        let right = Ladder::current_level(world);
+        BattlePlugin::load_teams(left, right, world);
     }
 
     fn input(world: &mut World) {
-        if just_pressed(KeyCode::P, world) {
-            Self::pack_active_team(world).unwrap();
-            UnitPlugin::despawn_all(world);
-            Self::unpack_active_team(Faction::Team, world);
-        }
         if just_pressed(KeyCode::G, world) {
             Self::change_g(10, world).unwrap();
         }
@@ -151,22 +153,17 @@ impl ShopPlugin {
         }
     }
 
-    pub fn pack_active_team(world: &mut World) -> Result<(), SetError> {
+    pub fn pack_active_team(world: &mut World) -> Result<()> {
         let team = PackedTeam::pack(Faction::Team, world);
-        debug!("Active team saved: {team:#?}");
-        Save::get(world)
-            .unwrap_or_default()
+        debug!("Active team saved.");
+        Save::get(world)?
             .set_team(team)
             .save(world)
+            .map_err(|e| anyhow!("{}", e.to_string()))
     }
 
-    pub fn unpack_active_team(faction: Faction, world: &mut World) {
-        if let Ok(save) = Save::get(world) {
-            debug!("Unpacking saved team {:#?}", save.team);
-            save.team.unpack(faction, world);
-        } else {
-            PackedTeam::spawn(faction, world);
-        }
+    pub fn active_team(world: &mut World) -> Result<PackedTeam> {
+        Ok(Save::get(world)?.team)
     }
 
     pub fn update_track_time(world: &mut World) {
@@ -235,7 +232,7 @@ impl ShopPlugin {
             .anchor(Align2::RIGHT_BOTTOM, egui::vec2(0.0, 0.0))
             .show(ctx, |ui| {
                 if ui.button("Go").clicked() {
-                    change_state(GameState::Battle, world);
+                    GameState::change(GameState::Battle, world);
                     GameTimer::get_mut(world).clear_save();
                     GameTimer::get_mut(world).reset();
                 }

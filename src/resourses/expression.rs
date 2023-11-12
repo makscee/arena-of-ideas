@@ -184,10 +184,10 @@ impl Expression {
             }
             Expression::Beat => {
                 const BPM: usize = 100;
-                let ts = world
-                    .resource::<ShopBgAudioData>()
-                    .position
-                    .unwrap_or_default() as f32;
+                let ts = match world.get_resource::<ShopBgAudioData>() {
+                    Some(data) => data.position.unwrap_or_default() as f32,
+                    None => GameTimer::get(world).get_t(),
+                };
                 let beat = (ts * BPM as f32 / 60.0) as usize;
 
                 let t = ts * BPM as f32 / 60.0;

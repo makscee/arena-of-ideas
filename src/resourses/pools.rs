@@ -184,6 +184,6 @@ impl PoolsPlugin {
 
 impl Plugin for PoolsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnExit(GameState::AssetLoading), Self::setup);
+        app.add_systems(OnExit(GameState::Loading), Self::setup);
     }
 }

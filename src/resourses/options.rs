@@ -11,7 +11,7 @@ pub struct Options {
     #[asset(key = "initial.ladder")]
     pub initial_ladder: Handle<Ladder>,
     #[asset(key = "custom.battle")]
-    pub custom_battle: Handle<BattleState>,
+    pub custom_battle: Handle<CustomBattleData>,
     #[asset(key = "anim")]
     pub animations: Handle<Animations>,
 }
@@ -54,9 +54,9 @@ impl Options {
             .get(&world.get_resource::<Options>().unwrap().slot)
             .unwrap()
     }
-    pub fn get_custom_battle(world: &World) -> &BattleState {
+    pub fn get_custom_battle(world: &World) -> &CustomBattleData {
         world
-            .get_resource::<Assets<BattleState>>()
+            .get_resource::<Assets<CustomBattleData>>()
             .unwrap()
             .get(&world.get_resource::<Options>().unwrap().custom_battle)
             .unwrap()
