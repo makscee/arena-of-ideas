@@ -12,6 +12,7 @@ impl CustomBattlePlugin {
     fn on_enter(world: &mut World) {
         Self::load_teams(world);
         GameState::change(GameState::Battle, world);
+        PersistentData::save_last_state(GameState::CustomBattle, world);
     }
 
     fn load_teams(world: &mut World) {

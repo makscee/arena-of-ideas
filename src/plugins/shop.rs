@@ -8,7 +8,7 @@ pub struct ShopPlugin;
 
 impl Plugin for ShopPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::Shop), Self::enter_state)
+        app.add_systems(OnEnter(GameState::Shop), Self::on_enter)
             .add_systems(OnExit(GameState::Shop), Self::leave_state)
             .add_systems(
                 OnTransition {
@@ -38,7 +38,7 @@ impl ShopPlugin {
     pub const UNIT_PRICE: i32 = 3;
     pub const REROLL_PRICE: i32 = 1;
 
-    fn enter_state(world: &mut World) {
+    fn on_enter(world: &mut World) {
         if let Ok(team) = Self::active_team(world) {
             team.unpack(Faction::Team, world);
         } else {
@@ -48,6 +48,8 @@ impl ShopPlugin {
         Self::fill_showcase(world);
         Self::change_g(10, world).unwrap();
         Self::start_background_music(world);
+
+        PersistentData::save_last_state(GameState::Shop, world);
     }
 
     fn start_background_music(world: &mut World) {

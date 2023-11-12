@@ -147,9 +147,6 @@ fn input(
         let paused = timer.paused();
         timer.pause(!paused);
     }
-    if input.just_pressed(KeyCode::R) {
-        state.set(GameState::Restart);
-    }
 }
 
 fn input_world(world: &mut World) {
@@ -163,6 +160,13 @@ fn input_world(world: &mut World) {
         UnitPlugin::clear_world(world);
     } else if input.just_pressed(KeyCode::S) {
         Save::default().save(world).unwrap();
+        GameState::change(GameState::Restart, world);
+    } else if input.just_pressed(KeyCode::R) {
+        if input.pressed(KeyCode::ShiftLeft) {
+            let mut pd = PersistentData::load(world);
+            pd.last_state = None;
+            pd.save(world).unwrap();
+        }
         GameState::change(GameState::Restart, world);
     }
 }

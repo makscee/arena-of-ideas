@@ -6,11 +6,20 @@ pub struct MainMenuPlugin;
 
 impl Plugin for MainMenuPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, Self::ui.run_if(in_state(GameState::MainMenu)));
+        app.add_systems(Update, Self::ui.run_if(in_state(GameState::MainMenu)))
+            .add_systems(OnEnter(GameState::MainMenu), Self::on_enter);
     }
 }
 
 impl MainMenuPlugin {
+    fn on_enter(world: &mut World) {
+        if SettingsData::get(world).last_state_on_load {
+            if let Some(state) = PersistentData::load(world).last_state {
+                GameState::change(state, world);
+            }
+        }
+    }
+
     pub fn ui(world: &mut World) {
         let ctx = &egui_context(world);
         Window::new("Menu")

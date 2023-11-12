@@ -33,6 +33,7 @@ impl Plugin for TestPlugin {
 
 impl TestPlugin {
     pub fn run_tests(world: &mut World) {
+        // PersistentData::save_last_state(GameState::TestsLoading, world);
         let scenarios = Self::get_all_scenarios(world);
         let mut failure: Vec<ColoredString> = default();
         let mut success: Vec<ColoredString> = default();
