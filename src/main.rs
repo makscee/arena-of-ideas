@@ -105,6 +105,7 @@ fn main() {
         .add_plugins(RonAssetPlugin::<Ladder>::new(&["ladder.ron"]))
         .add_plugins((
             MainMenuPlugin,
+            RestartPlugin,
             CustomBattlePlugin,
             PoolsPlugin,
             ActionPlugin,
@@ -146,12 +147,7 @@ fn input(
         timer.pause(!paused);
     }
     if input.just_pressed(KeyCode::R) {
-        timer.reset();
         state.set(GameState::Restart);
-    }
-    if input.just_pressed(KeyCode::T) {
-        timer.reset();
-        state.set(GameState::TestsLoading);
     }
 }
 
@@ -166,7 +162,6 @@ fn input_world(world: &mut World) {
         UnitPlugin::clear_world(world);
     } else if input.just_pressed(KeyCode::S) {
         Save::default().save(world).unwrap();
-        UnitPlugin::despawn_all(world);
         GameState::change(GameState::Restart, world);
     }
 }

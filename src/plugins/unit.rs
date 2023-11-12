@@ -1,4 +1,3 @@
-use bevy::utils::Instant;
 use bevy_egui::egui::{CollapsingHeader, RichText};
 use strum_macros::Display;
 
@@ -10,7 +9,6 @@ impl Plugin for UnitPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<HoveredUnit>()
             .init_resource::<DraggedUnit>()
-            .add_systems(OnEnter(GameState::Restart), Self::despawn)
             .add_systems(Update, Self::ui);
     }
 }
@@ -87,21 +85,6 @@ impl UnitPlugin {
         {
             VarState::get_mut(unit, world).init(VarName::Slot, VarValue::Int(slot as i32 + 1));
         }
-    }
-
-    fn despawn(
-        query: Query<Entity, Or<(&Unit, &Corpse, &ShopOffer, &Representation)>>,
-        mut commands: Commands,
-        mut state: ResMut<NextState<GameState>>,
-        mut time: ResMut<Time>,
-        mut game_timer: ResMut<GameTimer>,
-    ) {
-        for unit in query.iter() {
-            commands.entity(unit).despawn_recursive();
-        }
-        state.set(GameState::Battle);
-        *time = Time::new(Instant::now());
-        game_timer.reset();
     }
 
     pub fn clear_world(world: &mut World) {

@@ -1,3 +1,5 @@
+use bevy_egui::egui::Sense;
+
 use super::*;
 
 pub struct MainMenuPlugin;
@@ -13,10 +15,22 @@ impl MainMenuPlugin {
         let ctx = &egui_context(world);
         Window::new("Menu")
             .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
+            .resizable(false)
+            .title_bar(false)
             .show(ctx, |ui| {
                 ui.vertical_centered(|ui| {
-                    let btn = Self::menu_button("Shop".to_owned(), ui);
+                    let btn = Self::menu_button("Continue".to_owned(), ui);
+                    let btn = if Save::get(world).is_ok_and(|s| s.current_level > 0) {
+                        btn
+                    } else {
+                        btn.sense(Sense::focusable_noninteractive())
+                    };
                     if ui.add(btn).clicked() {
+                        GameState::change(GameState::Shop, world);
+                    }
+                    let btn = Self::menu_button("New Game".to_owned(), ui);
+                    if ui.add(btn).clicked() {
+                        Save::default().save(world).unwrap();
                         GameState::change(GameState::Shop, world);
                     }
                     let btn = Self::menu_button("Custom Battle".to_owned(), ui);
