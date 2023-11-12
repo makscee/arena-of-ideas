@@ -11,15 +11,13 @@ impl Save {
     pub fn save(&self, world: &mut World) -> Result<()> {
         debug!("Saving {self:?}");
         world
-            .get_resource_mut::<PkvStore>()
-            .unwrap()
+            .resource_mut::<PkvStore>()
             .set("save", self)
             .map_err(|e| anyhow!("{}", e.to_string()))
     }
     pub fn get(world: &World) -> Result<Save> {
         world
-            .get_resource::<PkvStore>()
-            .unwrap()
+            .resource::<PkvStore>()
             .get::<Save>("save")
             .map_err(|e| anyhow!("{}", e.to_string()))
     }

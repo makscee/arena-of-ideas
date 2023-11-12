@@ -114,6 +114,7 @@ fn main() {
             ShopPlugin,
             BattlePlugin,
             TestPlugin,
+            SettingsPlugin,
         ))
         // .add_systems(Update, ui_example_system)
         .add_systems(Startup, setup)
