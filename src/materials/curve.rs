@@ -7,6 +7,8 @@ use super::*;
 pub struct CurveMaterial {
     #[uniform(0)]
     pub color: Color,
+    #[uniform(0)]
+    pub aa: f32,
 }
 
 impl Material2d for CurveMaterial {
@@ -26,6 +28,9 @@ impl Material2d for CurveMaterial {
 
 impl Default for CurveMaterial {
     fn default() -> Self {
-        Self { color: Color::PINK }
+        Self {
+            color: Color::PINK,
+            aa: 0.0,
+        }
     }
 }

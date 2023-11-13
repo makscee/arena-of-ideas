@@ -29,6 +29,8 @@ pub enum Expression {
     Sum(Box<Expression>, Box<Expression>),
     Sub(Box<Expression>, Box<Expression>),
     Mul(Box<Expression>, Box<Expression>),
+    GreaterThen(Box<Expression>, Box<Expression>),
+    LessThen(Box<Expression>, Box<Expression>),
 
     Owner,
     Caster,
@@ -39,6 +41,7 @@ pub enum Expression {
     State(VarName),
     StateLast(VarName),
     Context(VarName),
+    Age,
     SlotPosition,
 
     OwnerFaction,
@@ -112,6 +115,9 @@ impl Expression {
             Expression::StateLast(var) => {
                 VarState::get(context.owner(), world).get_value_last(*var)
             }
+            Expression::Age => Ok(VarValue::Float(
+                get_t(world) - VarState::find(context.owner(), world).birth,
+            )),
             Expression::Context(var) => context
                 .get_var(*var, world)
                 .with_context(|| format!("Var {var} was not found")),
@@ -212,6 +218,18 @@ impl Expression {
                     el.get_value(context, world)
                 }
             }
+            Expression::GreaterThen(a, b) => Ok(VarValue::Bool(
+                match VarValue::cmp(&a.get_value(context, world)?, &b.get_value(context, world)?)? {
+                    std::cmp::Ordering::Greater => true,
+                    _ => false,
+                },
+            )),
+            Expression::LessThen(a, b) => Ok(VarValue::Bool(
+                match VarValue::cmp(&a.get_value(context, world)?, &b.get_value(context, world)?)? {
+                    std::cmp::Ordering::Less => true,
+                    _ => false,
+                },
+            )),
         }
     }
 

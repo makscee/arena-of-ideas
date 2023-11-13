@@ -4,7 +4,7 @@
         units: [
             (
                 name: "Wizard",
-                hp: 15,
+                hp: 50,
                 atk: 1,
                 house: "Mages",
                 description: "Turn Start: use Magic Missle",
@@ -32,10 +32,5 @@
             ),
         ],
     ),
-    right: (
-        units: [
-            (hp: 60, atk: 1),
-            (hp: 60, atk: 1),
-        ],
-    ),
+    right: (units: [(hp: 60, atk: 1)]),
 )

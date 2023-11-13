@@ -4,6 +4,7 @@
 
 struct CurveMaterial {
     color: vec4<f32>,
+    aa: f32,
 };
 
 @group(1) @binding(0)
@@ -12,6 +13,5 @@ var<uniform> material: CurveMaterial;
 @fragment
 fn fragment(in: MeshVertexOutput) -> @location(0) vec4<f32> {
     let color = material.color.rgb;
-
-    return vec4<f32>(color, 1.0 - abs(in.uv.y));
+    return vec4<f32>(color, smoothstep(1.0, 1.0 - material.aa, abs(in.uv.y)));
 }

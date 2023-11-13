@@ -3,16 +3,16 @@
         [
             Change(
                 var: T,
-                value: Float(0.0),
+                value: Float(0.5),
             ),
             Change(
                 var: Thickness,
-                value: Float(0.5),
+                value: Float(1.5),
             ),
             Change(
                 var: T,
                 value: Float(1.0),
-                duration: Float(0.1),
+                duration: Float(0.2),
             ),
             Change(
                 var: Thickness,
@@ -32,17 +32,38 @@
             color: State(Color),
             curvature: Float(0.6),
             thickness: State(Thickness),
+            aa: Float(0.5),
             dilations: [
                 (
                     Float(0.0),
-                    Float(-0.1),
+                    Float(-1.0),
                 ),
-                (State(T), Float(20.0)),
-                (
-                    Float(1.0),
-                    Float(-0.1),
-                ),
+                (Float(1.0), Float(3.0)),
             ],
         ),
+        children: [
+            (
+                material: Curve(
+                    color: Hex("#ffffff"),
+                    curvature: Float(0.6),
+                    thickness: Mul(
+                        Float(0.3),
+                        State(Thickness),
+                    ),
+                    aa: Float(0.1),
+                    dilations: [
+                        (
+                            Float(0.0),
+                            Float(-1.0),
+                        ),
+                        (
+                            Float(1.0),
+                            Float(4.0),
+                        ),
+                    ],
+                ),
+                mapping: {Visible: LessThen(Age, Float(0.1))},
+            ),
+        ],
     ),
 )

@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 use anyhow::anyhow;
 use strum_macros::Display;
 
@@ -123,6 +125,15 @@ impl VarValue {
             (VarValue::Vec2(a), VarValue::Vec2(b)) => Ok(VarValue::Vec2(*a * *b)),
             (VarValue::Vec2(a), VarValue::Float(b)) => Ok(VarValue::Vec2(*a * *b)),
             _ => Err(anyhow!("{a:?} * {b:?} not supported")),
+        }
+    }
+
+    pub fn cmp(a: &VarValue, b: &VarValue) -> Result<Ordering> {
+        match (a, b) {
+            (VarValue::Float(a), VarValue::Float(b)) => Ok(a.total_cmp(b)),
+            (VarValue::Int(a), VarValue::Int(b)) => Ok(a.cmp(b)),
+            (VarValue::Bool(a), VarValue::Bool(b)) => Ok(a.cmp(b)),
+            _ => Err(anyhow!("Comparing {a:?} and {b:?} not supported")),
         }
     }
 }

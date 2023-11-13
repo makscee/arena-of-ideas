@@ -53,11 +53,27 @@ impl VarState {
             .get::<Self>(entity)
             .with_context(|| format!("VarState not found for {entity:?}"))
     }
+    pub fn find(entity: Entity, world: &World) -> &Self {
+        Self::try_find(entity, world).unwrap()
+    }
+    pub fn try_find(mut entity: Entity, world: &World) -> Result<&Self> {
+        loop {
+            let state = Self::try_get(entity, world);
+            if state.is_ok() {
+                return state;
+            }
+            if let Some(parent) = world.get::<Parent>(entity) {
+                entity = parent.get();
+            }
+        }
+    }
     pub fn get_mut(entity: Entity, world: &mut World) -> Mut<Self> {
+        Self::try_get_mut(entity, world).unwrap()
+    }
+    pub fn try_get_mut(entity: Entity, world: &mut World) -> Result<Mut<Self>> {
         world
             .get_mut::<Self>(entity)
             .with_context(|| format!("VarState not found for {entity:?}"))
-            .unwrap()
     }
 
     pub fn change_int(entity: Entity, var: VarName, delta: i32, world: &mut World) -> Result<()> {
@@ -273,6 +289,10 @@ impl Tween {
             (VarValue::String(a), VarValue::String(b)) => VarValue::String(match t > 0.5 {
                 true => a.into(),
                 false => b.into(),
+            }),
+            (VarValue::Bool(a), VarValue::Bool(b)) => VarValue::Bool(match t > 0.5 {
+                true => *a,
+                false => *b,
             }),
             _ => panic!("Tweening not supported for {a:?} and {b:?}"),
         };

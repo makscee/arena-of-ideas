@@ -13,16 +13,7 @@ pub struct Representation {
     #[serde(default)]
     pub children: Vec<Box<Representation>>,
     #[serde(default)]
-    pub mapping: VarMapping,
-}
-
-#[derive(Serialize, Deserialize, Debug, Component, Clone, Default)]
-pub struct VarMapping(HashMap<VarName, Expression>);
-
-impl VarMapping {
-    pub fn iter<'a>(&'a self) -> impl Iterator<Item = (&'a VarName, &'a Expression)> {
-        self.0.iter()
-    }
+    pub mapping: HashMap<VarName, Expression>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -53,6 +44,8 @@ pub enum RepresentationMaterial {
         dilations: Vec<(Expression, Expression)>,
         #[serde(default = "default_one_f32_e")]
         curvature: Expression,
+        #[serde(default = "default_zero_f32_e")]
+        aa: Expression,
         #[serde(default = "default_color_e")]
         color: Expression,
     },
@@ -63,6 +56,9 @@ fn default_font_size() -> f32 {
 }
 fn default_one_f32_e() -> Expression {
     Expression::Float(1.0)
+}
+fn default_zero_f32_e() -> Expression {
+    Expression::Float(0.0)
 }
 fn default_one_vec2_e() -> Expression {
     Expression::Vec2(1.0, 1.0)
@@ -134,7 +130,7 @@ impl RepresentationMaterial {
 
     pub fn update(&self, entity: Entity, world: &mut World) {
         let t = get_t(world);
-        if let Some(state) = world.get::<VarState>(entity) {
+        if let Ok(state) = VarState::try_find(entity, world) {
             let visible = state.get_bool_at(VarName::Visible, t).unwrap_or(true);
             let visible = visible && state.birth < t;
             Self::set_visible(entity, visible, world);
@@ -204,9 +200,11 @@ impl RepresentationMaterial {
                 curvature,
                 color,
                 dilations,
+                aa,
             } => {
-                let thickness = thickness.get_float(&context, world).unwrap() * 0.1;
+                let thickness = thickness.get_float(&context, world).unwrap() * 0.05;
                 let curvature = curvature.get_float(&context, world).unwrap();
+                let aa = aa.get_float(&context, world).unwrap();
                 let color = color.get_color(&context, world).unwrap();
                 let mut dilations = dilations
                     .into_iter()
@@ -219,7 +217,7 @@ impl RepresentationMaterial {
                     .sorted_by(|a, b| a.0.total_cmp(&b.0))
                     .collect_vec();
                 if dilations.get(0).is_none() || dilations[0].0 != 0.0 {
-                    dilations.insert(0, (0.0, 1.0));
+                    dilations.insert(0, (0.0, 0.0));
                 }
                 if dilations.last().unwrap().0 != 1.0 {
                     dilations.push((1.0, dilations.last().unwrap().1));
@@ -241,7 +239,7 @@ impl RepresentationMaterial {
                     let t = t as f32 / SEGMENTS as f32;
                     let position = curve.position(t).extend(0.0);
                     let velocity = curve.velocity(t);
-                    let mut dilation = 1.0;
+                    let mut dilation = 0.0;
                     for ind in 0..dilations.len() - 1 {
                         let (p1, v1) = dilations[ind];
                         let (p2, v2) = dilations[ind + 1];
@@ -249,10 +247,16 @@ impl RepresentationMaterial {
                             dilation = v1 + (t - p1) / (p2 - p1) * (v2 - v1);
                         }
                     }
-                    points.push(position);
                     points.push(
                         position
-                            + (Vec2::Y.rotate(velocity.normalize()) * thickness * dilation)
+                            + (Vec2::NEG_Y.rotate(velocity.normalize())
+                                * thickness
+                                * (1.0 + dilation))
+                                .extend(0.0),
+                    );
+                    points.push(
+                        position
+                            + (Vec2::Y.rotate(velocity.normalize()) * thickness * (1.0 + dilation))
                                 .extend(0.0),
                     );
                     uvs.push(vec2(t, -1.0));
@@ -263,6 +267,7 @@ impl RepresentationMaterial {
                 let mut materials = world.get_resource_mut::<Assets<CurveMaterial>>().unwrap();
                 if let Some(mat) = materials.get_mut(&handle) {
                     mat.color = color;
+                    mat.aa = aa;
                     let mesh = world.entity(entity).get::<Mesh2dHandle>().unwrap().clone();
                     if let Some(mesh) = world
                         .get_resource_mut::<Assets<Mesh>>()
@@ -290,6 +295,7 @@ impl Representation {
             None => world.spawn_empty().id(),
         };
         self.material.unpack(entity, world);
+        VarState::default().attach(entity, world);
         let mut entity = world.entity_mut(entity);
         entity.get_mut::<Transform>().unwrap().translation.z += 0.0000001; // children always rendered on top of parents
         if let Some(parent) = parent {
@@ -325,7 +331,9 @@ impl Representation {
             .iter(world)
             .collect_vec()
         {
-            world.entity_mut(entity).despawn_recursive()
+            if let Some(entity) = world.get_entity_mut(entity) {
+                entity.despawn_recursive()
+            }
         }
     }
 }

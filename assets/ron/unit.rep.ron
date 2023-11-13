@@ -28,11 +28,7 @@
                 color: Hex("#FF3D00"),
                 size: Vec2E(Float(0.3)),
             ),
-            mapping: (
-                {
-                    Position: Vec2(0.8, -1.05),
-                },
-            ),
+            mapping: {Position: Vec2(0.8, -1.05)},
             children: [
                 (
                     material: Text(
@@ -51,11 +47,9 @@
                 color: Hex("#FBC02D"),
                 size: Vec2E(Float(0.3)),
             ),
-            mapping: (
-                {
-                    Position: Vec2(-0.8, -1.05),
-                },
-            ),
+            mapping: {
+                Position: Vec2(-0.8, -1.05),
+            },
             children: [
                 (
                     material: Text(
@@ -74,11 +68,7 @@
                 color: Hex("#ECEFF1"),
                 size: Float(0.25),
             ),
-            mapping: (
-                {
-                    Position: Vec2(0.0, -1.1),
-                },
-            ),
+            mapping: {Position: Vec2(0.0, -1.1)},
         ),
     ],
 )

@@ -22,30 +22,27 @@ impl RepresentationPlugin {
         let t = get_t(world);
         let dragged = world.get_resource::<DraggedUnit>().unwrap().0;
         for (entity, rep) in reps {
-            let mut position = VarState::get_value(entity, VarName::Position, t, world)
+            let context = Context::from_owner(entity, world);
+            let mapping: HashMap<VarName, VarValue> = HashMap::from_iter(
+                rep.mapping
+                    .iter()
+                    .map(|(var, value)| (*var, value.get_value(&context, world).unwrap())),
+            );
+            let mut state = VarState::get_mut(entity, world);
+            for (var, value) in mapping {
+                state.init(var, value);
+            }
+
+            let position = VarState::get_value(entity, VarName::Position, t, world)
                 .map(|x| x.get_vec2().unwrap())
                 .unwrap_or_default();
-            let mut rotation = VarState::get_value(entity, VarName::Rotation, t, world)
+            let rotation = VarState::get_value(entity, VarName::Rotation, t, world)
                 .map(|x| x.get_float().unwrap())
                 .unwrap_or_default();
-            let mut scale = VarState::get_value(entity, VarName::Size, t, world)
+            let scale = VarState::get_value(entity, VarName::Size, t, world)
                 .map(|x| x.get_vec2().unwrap())
                 .unwrap_or(Vec2::ONE);
-            let context = Context::from_owner(entity, world);
-            for (key, value) in rep.mapping.iter() {
-                match key {
-                    VarName::Position => {
-                        position = value.get_vec2(&context, world).unwrap();
-                    }
-                    VarName::Rotation => {
-                        rotation = value.get_float(&context, world).unwrap();
-                    }
-                    VarName::Scale => {
-                        scale = value.get_vec2(&context, world).unwrap();
-                    }
-                    _ => continue,
-                };
-            }
+
             let mut transform = world.get_mut::<Transform>(entity).unwrap();
             if dragged != Some(entity) {
                 transform.translation.x = position.x;
