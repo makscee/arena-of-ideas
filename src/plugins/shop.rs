@@ -9,7 +9,7 @@ pub struct ShopPlugin;
 impl Plugin for ShopPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(GameState::Shop), Self::on_enter)
-            .add_systems(OnExit(GameState::Shop), Self::leave_state)
+            .add_systems(OnExit(GameState::Shop), Self::on_leave)
             .add_systems(
                 OnTransition {
                     from: GameState::Battle,
@@ -18,20 +18,8 @@ impl Plugin for ShopPlugin {
                 Self::level_finished,
             )
             .add_systems(PostUpdate, Self::input)
-            .add_systems(
-                Update,
-                (
-                    Self::ui.run_if(in_state(GameState::Shop)),
-                    Self::update_track_time,
-                ),
-            );
+            .add_systems(Update, (Self::ui.run_if(in_state(GameState::Shop)),));
     }
-}
-
-#[derive(Resource)]
-pub struct ShopBgAudioData {
-    pub handle: Handle<AudioInstance>,
-    pub position: Option<f64>,
 }
 
 impl ShopPlugin {
@@ -47,32 +35,8 @@ impl ShopPlugin {
         UnitPlugin::translate_to_slots(world);
         Self::fill_showcase(world);
         Self::change_g(10, world).unwrap();
-        Self::start_background_music(world);
 
         PersistentData::save_last_state(GameState::Shop, world);
-    }
-
-    fn start_background_music(world: &mut World) {
-        let track = world
-            .resource::<AssetServer>()
-            .load("ron/audio/shop_bg.ogg.ron");
-        let audio = world.resource::<Audio>();
-        let handle = audio.play(track).looped().handle();
-        let handle = ShopBgAudioData {
-            handle,
-            position: Some(0.0),
-        };
-        world.insert_resource(handle);
-    }
-
-    fn stop_background_music(world: &mut World) {
-        let handle = world.resource::<ShopBgAudioData>().handle.clone();
-        if let Some(instance) = world
-            .resource_mut::<Assets<AudioInstance>>()
-            .get_mut(&handle)
-        {
-            instance.stop(AudioTween::linear(Duration::new(1, 0)));
-        }
     }
 
     fn level_finished(world: &mut World) {
@@ -86,11 +50,10 @@ impl ShopPlugin {
         save.save(world).unwrap();
     }
 
-    fn leave_state(world: &mut World) {
+    fn on_leave(world: &mut World) {
         Self::pack_active_team(world).unwrap();
         UnitPlugin::despawn_all(world);
         Self::clear_showcase(world);
-        Self::stop_background_music(world);
 
         let left = Self::active_team(world).unwrap();
         let right = Ladder::current_level(world);
@@ -166,32 +129,6 @@ impl ShopPlugin {
 
     pub fn active_team(world: &mut World) -> Result<PackedTeam> {
         Ok(Save::get(world)?.team)
-    }
-
-    pub fn update_track_time(world: &mut World) {
-        if let Some(data) = world.get_resource::<ShopBgAudioData>() {
-            let handle = data.handle.clone();
-            let pressed_pause = world
-                .resource::<Input<KeyCode>>()
-                .just_pressed(KeyCode::Space);
-            if let Some(instance) = world
-                .resource_mut::<Assets<AudioInstance>>()
-                .get_mut(&handle)
-            {
-                if pressed_pause {
-                    match instance.state() {
-                        PlaybackState::Playing { .. } => {
-                            instance.pause(AudioTween::linear(Duration::from_secs(1)));
-                        }
-                        _ => {
-                            instance.resume(AudioTween::linear(Duration::from_secs(1)));
-                        }
-                    }
-                }
-                let position = instance.state().position();
-                world.insert_resource(ShopBgAudioData { handle, position })
-            }
-        }
     }
 
     pub fn ui(world: &mut World) {

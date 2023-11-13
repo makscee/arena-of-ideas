@@ -42,7 +42,9 @@ pub use bevy_egui::{
     egui::{Align2, Area, Button, CentralPanel, Label, RichText, TextEdit, Ui, Window},
     EguiContexts,
 };
-pub use bevy_kira_audio::prelude::*;
+pub use bevy_kira_audio::{
+    Audio, AudioChannel, AudioControl, AudioInstance, AudioTween, PlaybackState,
+};
 pub use bevy_mod_picking::prelude::*;
 pub use bevy_pkv::PkvStore;
 pub use colored::Colorize;

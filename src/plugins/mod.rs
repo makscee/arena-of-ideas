@@ -1,6 +1,7 @@
 use super::*;
 
 mod action;
+mod audio;
 mod battle;
 mod custom_battle;
 mod main_menu;
@@ -13,6 +14,7 @@ mod simulation;
 mod unit;
 
 pub use action::*;
+pub use audio::*;
 pub use battle::*;
 pub use custom_battle::*;
 pub use main_menu::*;

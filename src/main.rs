@@ -92,7 +92,7 @@ fn main() {
             bevy_inspector_egui::quick::WorldInspectorPlugin::new()
                 .run_if(input_toggle_active(false, KeyCode::Escape)),
         )
-        .add_plugins(AudioPlugin)
+        .add_plugins(bevy_kira_audio::AudioPlugin)
         .add_plugins(Material2dPlugin::<LineShapeMaterial>::default())
         .add_plugins(Material2dPlugin::<CurveMaterial>::default())
         .add_plugins(RonAssetPlugin::<PackedUnit>::new(&["unit.ron"]))
@@ -115,6 +115,7 @@ fn main() {
             BattlePlugin,
             TestPlugin,
             SettingsPlugin,
+            AudioPlugin,
         ))
         // .add_systems(Update, ui_example_system)
         .add_systems(Startup, setup)
@@ -138,11 +139,7 @@ fn update(mut timer: ResMut<GameTimer>, time: Res<Time>) {
     timer.advance(time.delta_seconds());
 }
 
-fn input(
-    input: Res<Input<KeyCode>>,
-    mut timer: ResMut<GameTimer>,
-    mut state: ResMut<NextState<GameState>>,
-) {
+fn input(input: Res<Input<KeyCode>>, mut timer: ResMut<GameTimer>) {
     if input.just_pressed(KeyCode::Space) {
         let paused = timer.paused();
         timer.pause(!paused);

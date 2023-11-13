@@ -349,3 +349,4 @@ First Build @content {cm:2023-09-26T14:48:48}
         Life Link - Before Death: transfer [Vitality] to a random ally {cm:2023-09-27T16:07:06}
 Tests launch task {cm:2023-09-27T17:27:04}
 Line vfx {start:2023-11-02T12:49:33} {cm:2023-11-03T18:26:39} {duration:1d_05h37m}
+db + client initial {start:2023-11-04T13:42:32} {cm:2023-11-13T13:49:33} {duration:9d_07m}
