@@ -1,0 +1,13 @@
+#![enable(implicit_some)]
+(
+    name: "Mages",
+    color: ("#283593"),
+    statuses: [],
+    abilities: [
+        (
+            name: "Magic Missle",
+            description: "Deal 1 DMG to random enemy",
+            effect: (effect: Noop),
+        ),
+    ],
+)

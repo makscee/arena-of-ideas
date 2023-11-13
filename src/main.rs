@@ -172,6 +172,7 @@ fn detect_changes(
     mut unit_events: EventReader<AssetEvent<PackedUnit>>,
     mut rep_events: EventReader<AssetEvent<Representation>>,
     mut battle_state_events: EventReader<AssetEvent<CustomBattleData>>,
+    mut vfx_events: EventReader<AssetEvent<Vfx>>,
     mut state: ResMut<NextState<GameState>>,
 ) {
     if unit_events.into_iter().any(|x| match x {
@@ -183,8 +184,11 @@ fn detect_changes(
     }) || battle_state_events.into_iter().any(|x| match x {
         AssetEvent::Modified { .. } => true,
         _ => false,
+    }) || vfx_events.into_iter().any(|x| match x {
+        AssetEvent::Modified { .. } => true,
+        _ => false,
     }) {
-        state.set(GameState::Restart)
+        state.set(GameState::Loading)
     }
 }
 

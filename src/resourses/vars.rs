@@ -31,6 +31,7 @@ pub enum VarName {
     Thickness,
     Curvature,
     Delta,
+    T,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Reflect, PartialEq)]

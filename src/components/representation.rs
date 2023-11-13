@@ -49,6 +49,8 @@ pub enum RepresentationMaterial {
     Curve {
         #[serde(default = "default_one_f32_e")]
         thickness: Expression,
+        #[serde(default)]
+        dilations: Vec<(Expression, Expression)>,
         #[serde(default = "default_one_f32_e")]
         curvature: Expression,
         #[serde(default = "default_color_e")]
@@ -201,10 +203,27 @@ impl RepresentationMaterial {
                 thickness,
                 curvature,
                 color,
+                dilations,
             } => {
                 let thickness = thickness.get_float(&context, world).unwrap() * 0.1;
                 let curvature = curvature.get_float(&context, world).unwrap();
                 let color = color.get_color(&context, world).unwrap();
+                let mut dilations = dilations
+                    .into_iter()
+                    .map(|(t, v)| {
+                        (
+                            t.get_float(&context, world).unwrap(),
+                            v.get_float(&context, world).unwrap(),
+                        )
+                    })
+                    .sorted_by(|a, b| a.0.total_cmp(&b.0))
+                    .collect_vec();
+                if dilations.get(0).is_none() || dilations[0].0 != 0.0 {
+                    dilations.insert(0, (0.0, 1.0));
+                }
+                if dilations.last().unwrap().0 != 1.0 {
+                    dilations.push((1.0, dilations.last().unwrap().1));
+                }
 
                 let delta = context
                     .get_var(VarName::Delta, world)
@@ -222,9 +241,19 @@ impl RepresentationMaterial {
                     let t = t as f32 / SEGMENTS as f32;
                     let position = curve.position(t).extend(0.0);
                     let velocity = curve.velocity(t);
+                    let mut dilation = 1.0;
+                    for ind in 0..dilations.len() - 1 {
+                        let (p1, v1) = dilations[ind];
+                        let (p2, v2) = dilations[ind + 1];
+                        if p1 <= t && p2 >= t {
+                            dilation = v1 + (t - p1) / (p2 - p1) * (v2 - v1);
+                        }
+                    }
                     points.push(position);
                     points.push(
-                        position + (Vec2::Y.rotate(velocity.normalize()) * thickness).extend(0.0),
+                        position
+                            + (Vec2::Y.rotate(velocity.normalize()) * thickness * dilation)
+                                .extend(0.0),
                     );
                     uvs.push(vec2(t, -1.0));
                     uvs.push(vec2(t, 1.0));

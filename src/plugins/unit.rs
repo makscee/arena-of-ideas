@@ -380,6 +380,16 @@ pub enum Faction {
     Shop,
 }
 
+impl Faction {
+    pub fn opposite(&self) -> Self {
+        match self {
+            Faction::Left => Faction::Right,
+            Faction::Right => Faction::Left,
+            _ => panic!("Tried to get opposite of {self}"),
+        }
+    }
+}
+
 #[derive(Resource, Default)]
 pub struct HoveredUnit(pub Option<Entity>);
 

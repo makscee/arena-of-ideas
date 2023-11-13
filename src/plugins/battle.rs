@@ -105,6 +105,7 @@ impl BattlePlugin {
     }
 
     fn before_strike(left: Entity, right: Entity, world: &mut World) {
+        GameTimer::get_mut(world).head_to_batch_start();
         Event::TurnStart.send(world);
         Event::BeforeStrike(left).send(world);
         Event::BeforeStrike(right).send(world);

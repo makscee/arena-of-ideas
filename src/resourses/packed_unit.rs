@@ -70,7 +70,8 @@ impl PackedUnit {
             .init(
                 VarName::HouseColor,
                 VarValue::Color(house.color.clone().into()),
-            );
+            )
+            .init(VarName::Color, VarValue::Color(house.color.clone().into()));
         world
             .entity_mut(entity)
             .insert((Unit, Name::new(self.name)));

@@ -2,14 +2,36 @@
 (
     left: (
         units: [
-            (hp: 10, atk: 1),
-            (hp: 1, atk: 1),
+            (
+                name: "Wizard",
+                hp: 15,
+                atk: 1,
+                house: "Mages",
+                description: "Turn Start: use Magic Missle",
+                trigger: TurnStart(
+                    (
+                        effect: Damage(Int(2)),
+                        vars: [
+                            (
+                                Faction,
+                                OppositeFaction,
+                            ),
+                        ],
+                        target: RandomUnit,
+                        then: (
+                            effect: Vfx(
+                                "magic_missle",
+                            ),
+                        ),
+                    ),
+                ),
+            ),
         ],
     ),
     right: (
         units: [
-            (hp: 10, atk: 1),
-            (hp: 3, atk: 1),
+            (hp: 60, atk: 1),
+            (hp: 60, atk: 1),
         ],
     ),
 )

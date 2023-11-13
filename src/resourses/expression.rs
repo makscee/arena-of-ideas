@@ -42,6 +42,7 @@ pub enum Expression {
     SlotPosition,
 
     OwnerFaction,
+    OppositeFaction,
     FactionCount(Box<Expression>),
     StatusCharges(Box<Expression>),
 
@@ -156,6 +157,9 @@ impl Expression {
                 context.owner(),
                 world,
             ))),
+            Expression::OppositeFaction => Ok(VarValue::Faction(
+                UnitPlugin::get_faction(context.owner(), world).opposite(),
+            )),
             Expression::Faction(faction) => Ok(VarValue::Faction(*faction)),
             Expression::FactionCount(faction) => Ok(VarValue::Int(
                 UnitPlugin::collect_faction(faction.get_faction(context, world)?, world).len()

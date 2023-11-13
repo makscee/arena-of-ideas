@@ -1,0 +1,42 @@
+(
+    anim: Sequence(
+        [
+            Change(
+                var: T,
+                value: Float(0.0),
+            ),
+            Change(
+                var: Thickness,
+                value: Float(0.5),
+            ),
+            Change(
+                var: T,
+                value: Float(1.0),
+                duration: Float(0.1),
+            ),
+            Change(
+                var: Thickness,
+                value: Float(0.0),
+                duration: Float(0.3),
+                tween: Linear,
+            ),
+            Change(
+                var: Visible,
+                value: Bool(false),
+                t: 0.3,
+            ),
+        ],
+    ),
+    representation: (
+        material: Curve(
+            color: State(Color),
+            curvature: Float(0.6),
+            thickness: State(Thickness),
+            dilations: [
+                (Float(0.0), Float(-0.1)),
+                (State(T), Float(20.0)),
+                (Float(1.0), Float(-0.1)),
+            ],
+        ),
+    ),
+)

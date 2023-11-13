@@ -10,7 +10,7 @@ pub enum Effect {
     AddStatus(String),
     Debug(Expression),
     Text(Expression),
-    Curve,
+    Vfx(String),
     List(Vec<Box<EffectWrapped>>),
     AoeFaction(Expression, Box<EffectWrapped>),
     #[default]
@@ -32,18 +32,22 @@ pub struct EffectWrapped {
     pub owner: Option<Expression>,
     pub target: Option<Expression>,
     pub vars: Option<Vec<(VarName, Expression)>>,
+    pub then: Option<Box<EffectWrapped>>,
 }
 
 impl EffectWrapped {
     pub fn invoke(&self, context: &mut Context, world: &mut World) -> Result<()> {
         debug!("Processing {:?}\n{}", &self.effect, context);
-        if let Some(entity) = &self.target {
-            context.set_target(entity.get_entity(&context, world)?, world);
-        }
         if let Some(vars) = &self.vars {
             for (var, value) in vars {
                 context.set_var(*var, value.get_value(context, world)?);
             }
+        }
+        if let Some(entity) = &self.target {
+            context.set_target(entity.get_entity(&context, world)?, world);
+        }
+        if let Some(entity) = &self.owner {
+            context.set_owner(entity.get_entity(&context, world)?, world);
         }
         match &self.effect {
             Effect::Damage(value) => {
@@ -162,17 +166,26 @@ impl EffectWrapped {
                     .set_var(VarName::Color, VarValue::Color(Color::PINK))
                     .unpack(world)?;
             }
-            Effect::Curve => {
+            Effect::Vfx(name) => {
                 let owner_pos = UnitPlugin::get_unit_position(context.owner(), world)?;
                 let delta = UnitPlugin::get_unit_position(context.target(), world)? - owner_pos;
 
-                Pools::get_vfx("curve", world)
+                Pools::get_vfx(name, world)
                     .clone()
                     .attach_context(context)
                     .set_var(VarName::Delta, VarValue::Vec2(delta))
                     .set_var(VarName::Position, VarValue::Vec2(owner_pos))
+                    .set_var(
+                        VarName::Color,
+                        context
+                            .get_var(VarName::Color, world)
+                            .context("Color not found in context")?,
+                    )
                     .unpack(world)?;
             }
+        }
+        if let Some(then) = &self.then {
+            ActionPlugin::push_front(then.deref().clone(), context.clone(), world)
         }
         Ok(())
     }

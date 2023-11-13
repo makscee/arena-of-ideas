@@ -84,7 +84,8 @@ impl PoolsPlugin {
                         .unwrap()
                         .get(handle)
                         .unwrap()
-                        .clone();
+                        .clone()
+                        .sort_history();
 
                     (path.to_owned(), vfx)
                 }),

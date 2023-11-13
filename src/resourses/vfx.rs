@@ -7,11 +7,15 @@ pub struct Vfx {
     pub representation: Representation,
     #[serde(default)]
     pub state: VarState,
+    pub parent: Option<Entity>,
 }
 
 impl Vfx {
     pub fn unpack(self, world: &mut World) -> Result<()> {
         let entity = self.representation.unpack(None, None, world);
+        if let Some(parent) = self.parent {
+            world.entity_mut(entity).set_parent(parent);
+        }
         self.state.attach(entity, world);
         let t = get_insert_t(world);
         let result = self.anim.apply(
@@ -29,10 +33,22 @@ impl Vfx {
         self
     }
 
+    pub fn set_parent(mut self, parent: Entity) -> Self {
+        self.parent = Some(parent);
+        self
+    }
+
     pub fn attach_context(mut self, context: &Context) -> Self {
         for (var, value) in context.get_all_vars() {
             self = self.set_var(var, value);
         }
+        self
+    }
+
+    pub fn sort_history(mut self) -> Self {
+        self.state.history.iter_mut().for_each(|(_, h)| {
+            h.0.sort_by(|a, b| a.t.total_cmp(&b.t));
+        });
         self
     }
 }

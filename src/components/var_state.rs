@@ -8,7 +8,7 @@ pub struct VarState {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, Reflect)]
-pub struct History(Vec<Change>);
+pub struct History(pub Vec<Change>);
 
 #[derive(Serialize, Deserialize, Clone, Debug, Reflect)]
 pub struct Change {
