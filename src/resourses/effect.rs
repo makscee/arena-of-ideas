@@ -11,45 +11,19 @@ pub enum Effect {
     Debug(Expression),
     Text(Expression),
     Vfx(String),
-    List(Vec<Box<EffectWrapped>>),
-    AoeFaction(Expression, Box<EffectWrapped>),
+    List(Vec<Box<Effect>>),
+    AoeFaction(Expression, Box<Effect>),
     #[default]
     Noop,
+    WithTarget(Expression, Box<Effect>),
+    WithOwner(Expression, Box<Effect>),
+    WithVar(VarName, Expression, Box<Effect>),
 }
 
 impl Effect {
-    pub fn wrap(self) -> EffectWrapped {
-        EffectWrapped {
-            effect: self,
-            ..default()
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, Default)]
-pub struct EffectWrapped {
-    pub effect: Effect,
-    pub owner: Option<Expression>,
-    pub target: Option<Expression>,
-    pub vars: Option<Vec<(VarName, Expression)>>,
-    pub then: Option<Box<EffectWrapped>>,
-}
-
-impl EffectWrapped {
     pub fn invoke(&self, context: &mut Context, world: &mut World) -> Result<()> {
-        debug!("Processing {:?}\n{}", &self.effect, context);
-        if let Some(vars) = &self.vars {
-            for (var, value) in vars {
-                context.set_var(*var, value.get_value(context, world)?);
-            }
-        }
-        if let Some(entity) = &self.target {
-            context.set_target(entity.get_entity(&context, world)?, world);
-        }
-        if let Some(entity) = &self.owner {
-            context.set_owner(entity.get_entity(&context, world)?, world);
-        }
-        match &self.effect {
+        debug!("Processing {:?}\n{}", self, context);
+        match self {
             Effect::Damage(value) => {
                 let target = context.get_target().context("Target not found")?;
                 let owner = context.get_owner().context("Owner not found")?;
@@ -183,9 +157,27 @@ impl EffectWrapped {
                     )
                     .unpack(world)?;
             }
-        }
-        if let Some(then) = &self.then {
-            ActionPlugin::push_front(then.deref().clone(), context.clone(), world)
+            Effect::WithTarget(target, effect) => ActionPlugin::push_front(
+                effect.deref().clone(),
+                context
+                    .set_target(target.get_entity(context, world)?, world)
+                    .clone(),
+                world,
+            ),
+            Effect::WithOwner(owner, effect) => ActionPlugin::push_front(
+                effect.deref().clone(),
+                context
+                    .set_target(owner.get_entity(context, world)?, world)
+                    .clone(),
+                world,
+            ),
+            Effect::WithVar(var, value, effect) => ActionPlugin::push_front(
+                effect.deref().clone(),
+                context
+                    .set_var(*var, value.get_value(context, world)?)
+                    .clone(),
+                world,
+            ),
         }
         Ok(())
     }

@@ -135,7 +135,7 @@ impl BattlePlugin {
                     .set_target(target, world)
                     .set_owner(caster, world),
             );
-            let effect = Effect::Damage(None).wrap();
+            let effect = Effect::Damage(None);
             ActionPlugin::push_back(effect, context, world);
             ActionPlugin::spin(world);
         }

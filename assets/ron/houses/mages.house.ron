@@ -7,7 +7,7 @@
         (
             name: "Magic Missle",
             description: "Deal 1 DMG to random enemy",
-            effect: (effect: Noop),
+            effect: Noop,
         ),
     ],
 )

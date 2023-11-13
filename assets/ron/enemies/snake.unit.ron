@@ -5,7 +5,7 @@
     name: "Snake",
     house: "Enemies",
     description: "Kill after dealing any damage",
-    trigger: AfterDamageDealt((effect: Kill)),
+    trigger: AfterDamageDealt(Kill),
     representation: (
         material: Shape(
             shape: Circle,

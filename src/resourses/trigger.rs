@@ -5,14 +5,14 @@ use strum_macros::Display;
 
 #[derive(Deserialize, Serialize, Clone, Debug, Default, Display)]
 pub enum Trigger {
-    AfterDamageTaken(EffectWrapped),
-    AfterDamageDealt(EffectWrapped),
-    BattleStart(EffectWrapped),
-    TurnStart(EffectWrapped),
-    BeforeStrike(EffectWrapped),
-    AllyDeath(EffectWrapped),
-    BeforeDeath(EffectWrapped),
-    AfterKill(EffectWrapped),
+    AfterDamageTaken(Effect),
+    AfterDamageDealt(Effect),
+    BattleStart(Effect),
+    TurnStart(Effect),
+    BeforeStrike(Effect),
+    AllyDeath(Effect),
+    BeforeDeath(Effect),
+    AfterKill(Effect),
     ChangeVar(VarName, Expression),
     #[default]
     Noop,

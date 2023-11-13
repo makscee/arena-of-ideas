@@ -33,9 +33,15 @@
             curvature: Float(0.6),
             thickness: State(Thickness),
             dilations: [
-                (Float(0.0), Float(-0.1)),
+                (
+                    Float(0.0),
+                    Float(-0.1),
+                ),
                 (State(T), Float(20.0)),
-                (Float(1.0), Float(-0.1)),
+                (
+                    Float(1.0),
+                    Float(-0.1),
+                ),
             ],
         ),
     ),

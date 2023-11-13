@@ -34,8 +34,8 @@ impl ActionPlugin {
         }
     }
 
-    pub fn push_back(effect: EffectWrapped, context: Context, world: &mut World) {
-        debug!("Push back {:?}", effect.effect);
+    pub fn push_back(effect: Effect, context: Context, world: &mut World) {
+        debug!("Push back {:?}", effect);
         let action = Action { context, effect };
         world
             .get_resource_mut::<ActionQueue>()
@@ -43,8 +43,8 @@ impl ActionPlugin {
             .push_back(action);
     }
 
-    pub fn push_front(effect: EffectWrapped, context: Context, world: &mut World) {
-        debug!("Push front {:?}", effect.effect);
+    pub fn push_front(effect: Effect, context: Context, world: &mut World) {
+        debug!("Push front {:?}", effect);
         let action = Action { context, effect };
         world
             .get_resource_mut::<ActionQueue>()
@@ -56,7 +56,7 @@ impl ActionPlugin {
 #[derive(Debug)]
 pub struct Action {
     pub context: Context,
-    pub effect: EffectWrapped,
+    pub effect: Effect,
 }
 
 impl Action {
@@ -73,7 +73,7 @@ impl Action {
             }
             Err(err) => error!(
                 "Effect process error {err}\n{}\n---\n{}",
-                self.effect.effect, self.context
+                self.effect, self.context
             ),
         }
     }

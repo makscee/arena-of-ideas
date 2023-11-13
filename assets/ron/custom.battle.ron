@@ -9,18 +9,22 @@
                 house: "Mages",
                 description: "Turn Start: use Magic Missle",
                 trigger: TurnStart(
-                    (
-                        effect: Damage(Int(2)),
-                        vars: [
-                            (
-                                Faction,
-                                OppositeFaction,
-                            ),
-                        ],
-                        target: RandomUnit,
-                        then: (
-                            effect: Vfx(
-                                "magic_missle",
+                    WithVar(
+                        Faction,
+                        OppositeFaction,
+                        WithTarget(
+                            RandomUnit,
+                            List(
+                                [
+                                    Damage(
+                                        Int(
+                                            2,
+                                        ),
+                                    ),
+                                    Vfx(
+                                        "magic_missle",
+                                    ),
+                                ],
                             ),
                         ),
                     ),

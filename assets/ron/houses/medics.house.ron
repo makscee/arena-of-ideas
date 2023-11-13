@@ -16,9 +16,7 @@
         (
             name: "Vitality",
             description: "Give +1 HP",
-            effect: (
-                effect: AddStatus("Vitality"),
-            ),
+            effect: AddStatus("Vitality"),
         ),
     ],
 )
