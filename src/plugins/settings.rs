@@ -1,12 +1,11 @@
-use bevy_egui::egui::CollapsingHeader;
-
 use super::*;
 
 pub struct SettingsPlugin;
 
-#[derive(Resource, Serialize, Deserialize, Debug, Default, Copy, Clone, Eq, PartialEq)]
+#[derive(Resource, Serialize, Deserialize, Debug, Default, Copy, Clone, PartialEq)]
 pub struct SettingsData {
     pub last_state_on_load: bool,
+    pub master_volume: f64,
 }
 
 impl Plugin for SettingsPlugin {
@@ -19,7 +18,8 @@ impl Plugin for SettingsPlugin {
 const PKV_SETTINGS_KEY: &str = "settings";
 impl SettingsPlugin {
     fn init(world: &mut World) {
-        SettingsData::load(world);
+        let data = SettingsData::load(world);
+        Self::updated(data, world);
     }
 
     fn ui(world: &mut World) {
@@ -30,14 +30,22 @@ impl SettingsPlugin {
             .resizable(false)
             .show(&egui_context(world), |ui| {
                 CollapsingHeader::new(RichText::new("Settings").size(25.0)).show(ui, |ui| {
-                    ui.horizontal(|ui| {
+                    ui.vertical(|ui| {
                         ui.checkbox(&mut data.last_state_on_load, "load from last state");
+                        let master_volume =
+                            Slider::new(&mut data.master_volume, 0.0..=1.0).text("master volume");
+                        ui.add(master_volume);
                     })
                 })
             });
         if !data.eq(SettingsData::get(world)) {
-            data.save(world).unwrap();
+            Self::updated(data, world);
         }
+    }
+
+    fn updated(data: SettingsData, world: &mut World) {
+        data.save(world).unwrap();
+        AudioPlugin::update_settings(&data, world);
     }
 }
 

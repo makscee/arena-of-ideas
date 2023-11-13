@@ -38,4 +38,9 @@ impl AudioPlugin {
         let channel = world.resource::<AudioChannel<BackgroundChannel>>();
         channel.state(&instance).position()
     }
+
+    pub fn update_settings(settings: &SettingsData, world: &mut World) {
+        let channel = world.resource::<AudioChannel<BackgroundChannel>>();
+        channel.set_volume(settings.master_volume);
+    }
 }
