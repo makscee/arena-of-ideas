@@ -155,4 +155,13 @@ impl VarValue {
             _ => Err(anyhow!("Comparing {a:?} and {b:?} not supported")),
         }
     }
+
+    pub fn abs(self) -> Result<VarValue> {
+        match self {
+            VarValue::Float(x) => Ok(VarValue::Float(x.abs())),
+            VarValue::Int(x) => Ok(VarValue::Int(x.abs())),
+            VarValue::Vec2(x) => Ok(VarValue::Vec2(x.abs())),
+            _ => Err(anyhow!("Abs {self:?} not supported")),
+        }
+    }
 }

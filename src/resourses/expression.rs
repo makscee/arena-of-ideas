@@ -33,6 +33,7 @@ pub enum Expression {
     LessThen(Box<Expression>, Box<Expression>),
     Min(Box<Expression>, Box<Expression>),
     Max(Box<Expression>, Box<Expression>),
+    Abs(Box<Expression>),
 
     Owner,
     Caster,
@@ -240,6 +241,7 @@ impl Expression {
                 &a.get_value(context, world)?,
                 &b.get_value(context, world)?,
             )?),
+            Expression::Abs(x) => x.get_value(context, world)?.abs(),
         }
     }
 
