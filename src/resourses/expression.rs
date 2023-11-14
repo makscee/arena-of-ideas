@@ -31,6 +31,8 @@ pub enum Expression {
     Mul(Box<Expression>, Box<Expression>),
     GreaterThen(Box<Expression>, Box<Expression>),
     LessThen(Box<Expression>, Box<Expression>),
+    Min(Box<Expression>, Box<Expression>),
+    Max(Box<Expression>, Box<Expression>),
 
     Owner,
     Caster,
@@ -230,6 +232,14 @@ impl Expression {
                     _ => false,
                 },
             )),
+            Expression::Min(a, b) => Ok(VarValue::min(
+                &a.get_value(context, world)?,
+                &b.get_value(context, world)?,
+            )?),
+            Expression::Max(a, b) => Ok(VarValue::min(
+                &a.get_value(context, world)?,
+                &b.get_value(context, world)?,
+            )?),
         }
     }
 

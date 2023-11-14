@@ -34,6 +34,7 @@ pub enum VarName {
     Curvature,
     Delta,
     T,
+    Alpha,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Reflect, PartialEq)]
@@ -133,6 +134,24 @@ impl VarValue {
             (VarValue::Float(a), VarValue::Float(b)) => Ok(a.total_cmp(b)),
             (VarValue::Int(a), VarValue::Int(b)) => Ok(a.cmp(b)),
             (VarValue::Bool(a), VarValue::Bool(b)) => Ok(a.cmp(b)),
+            _ => Err(anyhow!("Comparing {a:?} and {b:?} not supported")),
+        }
+    }
+
+    pub fn min(a: &VarValue, b: &VarValue) -> Result<VarValue> {
+        match (a, b) {
+            (VarValue::Float(a), VarValue::Float(b)) => Ok(VarValue::Float(a.min(*b))),
+            (VarValue::Int(a), VarValue::Int(b)) => Ok(VarValue::Int(*(a.min(b)))),
+            (VarValue::Bool(a), VarValue::Bool(b)) => Ok(VarValue::Bool(*a && *b)),
+            _ => Err(anyhow!("Comparing {a:?} and {b:?} not supported")),
+        }
+    }
+
+    pub fn max(a: &VarValue, b: &VarValue) -> Result<VarValue> {
+        match (a, b) {
+            (VarValue::Float(a), VarValue::Float(b)) => Ok(VarValue::Float(a.max(*b))),
+            (VarValue::Int(a), VarValue::Int(b)) => Ok(VarValue::Int(*(a.max(b)))),
+            (VarValue::Bool(a), VarValue::Bool(b)) => Ok(VarValue::Bool(*a || *b)),
             _ => Err(anyhow!("Comparing {a:?} and {b:?} not supported")),
         }
     }

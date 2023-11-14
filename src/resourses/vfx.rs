@@ -17,14 +17,12 @@ impl Vfx {
             world.entity_mut(entity).set_parent(parent);
         }
         self.state.attach(entity, world);
-        let t = get_insert_t(world);
         let result = self.anim.apply(
             &Context::new_named("vfx".to_owned())
                 .set_owner(entity, world)
                 .take(),
             world,
         );
-        // GameTimer::get_mut(world).set_insert_t(t);
         result
     }
 

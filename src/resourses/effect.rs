@@ -53,15 +53,21 @@ impl Effect {
                     value,
                 }
                 .send(world);
+                GameTimer::get_mut(world).start_batch();
                 Pools::get_vfx("text", world)
                     .clone()
                     .set_var(
                         VarName::Position,
-                        VarState::get(context.target(), world).get_value_last(VarName::Position)?,
+                        VarValue::Vec2(UnitPlugin::get_unit_position(context.target(), world)?),
                     )
                     .set_var(VarName::Text, VarValue::String(format!("-{value}")))
                     .set_var(VarName::Color, VarValue::Color(Color::ORANGE_RED))
                     .unpack(world)?;
+                GameTimer::get_mut(world).head_to_batch_start();
+                Pools::get_vfx("pain", world)
+                    .set_parent(context.target())
+                    .unpack(world)?;
+                GameTimer::get_mut(world).end_batch();
             }
             Effect::Kill => {
                 let target = context.get_target().context("Target not found")?;
@@ -70,7 +76,7 @@ impl Effect {
                     .clone()
                     .set_var(
                         VarName::Position,
-                        VarState::get(context.target(), world).get_value_last(VarName::Position)?,
+                        VarValue::Vec2(UnitPlugin::get_unit_position(context.target(), world)?),
                     )
                     .set_var(VarName::Text, VarValue::String(format!("Kill")))
                     .set_var(VarName::Color, VarValue::Color(Color::RED))

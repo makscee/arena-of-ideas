@@ -6,6 +6,7 @@ struct LineShapeMaterial {
     color: vec4<f32>,
     size: vec2<f32>,
     thickness: f32,
+    alpha: f32,
 };
 
 @group(1) @binding(0)
@@ -32,8 +33,13 @@ fn fragment(in: MeshVertexOutput) -> @location(0) vec4<f32> {
     let sdf = sdf(uv, material.size) - AA;
     let thickness = material.thickness * 0.03;
     var v = f32(sdf > -thickness);
+#ifdef LINE
     v = min(v, smoothstep(0.0, AA, -sdf)) * v;
     v = max(v, smoothstep(AA, 0.0, -sdf - thickness));
+#endif
+#ifdef OPAQUE
+    v = f32(sdf < 0.0);
+#endif
     v = max(v, smoothstep(thickness + GLOW, thickness, -sdf) * 0.1);
-    return vec4<f32>(material.color.rgb, v);
+    return vec4<f32>(material.color.rgb, v * material.alpha);
 }

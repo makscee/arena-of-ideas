@@ -20,11 +20,16 @@ pub struct Representation {
 #[serde(deny_unknown_fields)]
 pub enum RepresentationMaterial {
     Shape {
+        #[serde(default)]
         shape: Shape,
+        #[serde(default)]
+        fill: Fill,
         #[serde(default = "default_one_vec2_e")]
         size: Expression,
         #[serde(default = "default_one_f32_e")]
         thickness: Expression,
+        #[serde(default = "default_one_f32_e")]
+        alpha: Expression,
         #[serde(default = "default_color_e")]
         color: Expression,
     },
@@ -70,11 +75,12 @@ fn default_color_e() -> Expression {
 impl RepresentationMaterial {
     pub fn unpack(&self, entity: Entity, world: &mut World) {
         match self {
-            RepresentationMaterial::Shape { shape, .. } => {
-                let mut materials = world.resource_mut::<Assets<LineShapeMaterial>>();
-                let material = LineShapeMaterial {
+            RepresentationMaterial::Shape { shape, fill, .. } => {
+                let mut materials = world.resource_mut::<Assets<ShapeMaterial>>();
+                let material = ShapeMaterial {
                     color: Color::PINK,
                     shape: *shape,
+                    fill: *fill,
                     ..default()
                 };
                 let material = materials.add(material);
@@ -145,25 +151,24 @@ impl RepresentationMaterial {
                 size,
                 color,
                 thickness,
+                alpha,
+                ..
             } => {
                 let size = size.get_vec2(&context, world).unwrap_or_default();
                 let thickness = thickness.get_float(&context, world).unwrap_or_default();
+                let alpha = alpha.get_float(&context, world).unwrap_or_default();
                 let color = color.get_color(&context, world).unwrap_or(Color::Rgba {
                     red: 1.0,
                     green: 0.0,
                     blue: 1.0,
                     alpha: 1.0,
                 });
-                let handle = world
-                    .get::<Handle<LineShapeMaterial>>(entity)
-                    .unwrap()
-                    .clone();
-                let mut materials = world
-                    .get_resource_mut::<Assets<LineShapeMaterial>>()
-                    .unwrap();
+                let handle = world.get::<Handle<ShapeMaterial>>(entity).unwrap().clone();
+                let mut materials = world.get_resource_mut::<Assets<ShapeMaterial>>().unwrap();
                 if let Some(mat) = materials.get_mut(&handle) {
                     mat.color = color;
                     mat.thickness = thickness;
+                    mat.alpha = alpha;
                     if mat.size != size {
                         mat.size = size;
                         let mesh = world.entity(entity).get::<Mesh2dHandle>().unwrap().clone();
