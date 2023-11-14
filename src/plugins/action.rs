@@ -26,12 +26,22 @@ impl ActionPlugin {
         Self::process_queue(world);
     }
 
-    pub fn spin(world: &mut World) {
+    pub fn spin(world: &mut World) -> bool {
+        let t = get_insert_t(world);
+        GameTimer::get_mut(world).start_batch();
+        let mut inserted = false;
         loop {
-            if !Self::process_queue(world) {
+            GameTimer::get_mut(world).head_to_batch_start();
+            let processed = Self::process_queue(world);
+            if t != get_insert_t(world) {
+                inserted = true;
+            }
+            if !processed {
                 break;
             }
         }
+        GameTimer::get_mut(world).end_batch();
+        inserted
     }
 
     pub fn push_back(effect: Effect, context: Context, world: &mut World) {

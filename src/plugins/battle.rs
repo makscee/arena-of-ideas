@@ -91,7 +91,7 @@ impl BattlePlugin {
     pub fn run_strike(left: Entity, right: Entity, btime: f32, world: &mut World) {
         GameTimer::get_mut(world).start_batch();
         UnitPlugin::translate_to_slots(world);
-        Self::before_strike(left, right, world);
+        Self::before_strike(left, right, btime, world);
         GameTimer::get_mut(world).advance_end(btime).end_batch();
 
         GameTimer::get_mut(world).start_batch();
@@ -104,12 +104,18 @@ impl BattlePlugin {
         GameTimer::get_mut(world).advance_end(btime).end_batch();
     }
 
-    fn before_strike(left: Entity, right: Entity, world: &mut World) {
+    fn before_strike(left: Entity, right: Entity, btime: f32, world: &mut World) {
         GameTimer::get_mut(world).head_to_batch_start();
         Event::TurnStart.send(world);
         Event::BeforeStrike(left).send(world);
         Event::BeforeStrike(right).send(world);
-        ActionPlugin::spin(world);
+        if ActionPlugin::spin(world) {
+            GameTimer::get_mut(world)
+                .head_to_batch_start()
+                .advance_end(btime)
+                .end_batch()
+                .start_batch();
+        }
         let units = vec![(left, -1.0), (right, 1.0)];
         for (caster, dir) in units {
             GameTimer::get_mut(world).head_to_batch_start();

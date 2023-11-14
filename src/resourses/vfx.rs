@@ -24,7 +24,7 @@ impl Vfx {
                 .take(),
             world,
         );
-        GameTimer::get_mut(world).set_insert_t(t);
+        // GameTimer::get_mut(world).set_insert_t(t);
         result
     }
 
