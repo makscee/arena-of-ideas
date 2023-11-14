@@ -38,6 +38,10 @@
                     Float(0.0),
                     Float(-1.0),
                 ),
+                (
+                    Mul(Age, Float(2.0)),
+                    Float(-1.0),
+                ),
                 (Float(1.0), Float(3.0)),
             ],
         ),
@@ -57,12 +61,26 @@
                             Float(-1.0),
                         ),
                         (
+                            Mul(
+                                Age,
+                                Float(
+                                    2.0,
+                                ),
+                            ),
+                            Float(-1.0),
+                        ),
+                        (
                             Float(1.0),
-                            Float(4.0),
+                            Float(7.0),
                         ),
                     ],
                 ),
-                mapping: {Visible: LessThen(Age, Float(0.1))},
+                mapping: {
+                    Visible: LessThen(
+                        Age,
+                        Float(0.1),
+                    ),
+                },
             ),
         ],
     ),

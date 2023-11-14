@@ -110,15 +110,17 @@ impl UnitPlugin {
 
     /// Iter over all Units
     /// For any hp < 0 replace Unit marker with Corpse marker
-    pub fn run_death_check(world: &mut World) {
+    pub fn run_death_check(world: &mut World) -> bool {
         let dead = world
             .query_filtered::<Entity, With<Unit>>()
             .iter(world)
             .filter(|e| Self::is_dead(*e, world))
             .collect_vec();
+        let has_dead = !dead.is_empty();
         for unit in dead {
             Self::turn_into_corpse(unit, world);
         }
+        has_dead
     }
 
     pub fn turn_into_corpse(entity: Entity, world: &mut World) {

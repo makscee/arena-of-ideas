@@ -88,11 +88,20 @@ impl BattlePlugin {
         None
     }
 
+    fn stricker_death_check(left: Entity, right: Entity, world: &mut World) -> bool {
+        UnitPlugin::run_death_check(world)
+            && (UnitPlugin::is_dead(left, world) || UnitPlugin::is_dead(right, world))
+    }
+
     pub fn run_strike(left: Entity, right: Entity, btime: f32, world: &mut World) {
         GameTimer::get_mut(world).start_batch();
         UnitPlugin::translate_to_slots(world);
         Self::before_strike(left, right, btime, world);
         GameTimer::get_mut(world).advance_end(btime).end_batch();
+
+        if Self::stricker_death_check(left, right, world) {
+            return;
+        }
 
         GameTimer::get_mut(world).start_batch();
         Self::strike(left, right, world);
