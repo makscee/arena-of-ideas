@@ -1,10 +1,10 @@
 #![enable(implicit_some)]
 (
     name: "Wizard",
-    hp: 50,
+    hp: 3,
     atk: 1,
     house: "Mages",
-    description: "Turn Start: use Magic Missle",
+    description: "Turn Start: use [Magic Missle]",
     trigger: TurnStart(
         WithVar(
             Faction,

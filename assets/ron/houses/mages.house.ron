@@ -1,7 +1,7 @@
 #![enable(implicit_some)]
 (
     name: "Mages",
-    color: ("#283593"),
+    color: ("#2196F3"),
     statuses: [],
     abilities: [
         (

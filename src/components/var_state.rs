@@ -141,6 +141,9 @@ impl VarState {
     pub fn get_string(&self, var: VarName) -> Result<String> {
         self.get_value_last(var)?.get_string()
     }
+    pub fn get_color(&self, var: VarName) -> Result<Color> {
+        self.get_value_last(var)?.get_color()
+    }
     pub fn find_value(mut entity: Entity, var: VarName, t: f32, world: &World) -> Result<VarValue> {
         let mut result = None;
         loop {

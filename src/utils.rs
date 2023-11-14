@@ -59,6 +59,10 @@ pub fn entity_screen_pos(entity: Entity, offset: Vec2, world: &mut World) -> Vec
         + vec3(offset.x, offset.y, 0.0);
     world_to_screen(pos, world)
 }
+pub fn cursor_pos(world: &mut World) -> Option<Vec2> {
+    let window = world.query::<&bevy::window::Window>().single(world);
+    window.cursor_position()
+}
 pub fn get_insert_t(world: &World) -> f32 {
     world.get_resource::<GameTimer>().unwrap().get_insert_t()
 }

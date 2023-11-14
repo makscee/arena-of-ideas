@@ -1,6 +1,7 @@
 use super::*;
 
-use bevy_egui::egui::{self, Align2};
+use bevy_egui::egui::text::LayoutJob;
+use bevy_egui::egui::{self, Align2, FontFamily, FontId, TextFormat, WidgetText};
 use bevy_egui::egui::{pos2, Button, Color32, RichText, Window};
 use rand::seq::IteratorRandom;
 
@@ -278,9 +279,51 @@ impl ShopOffer {
             })
         });
         if !so.description.is_empty() {
+            let color = VarState::get(entity, world)
+                .get_color(VarName::HouseColor)
+                .unwrap_or(Color::WHITE)
+                .as_rgba_u8();
+            let color = Color32::from_rgb(color[0], color[1], color[2]);
             let window = entity_panel(entity, vec2(0.0, 1.1), "desc_panel", world);
             window.show(ctx, |ui| {
-                ui.label(so.description);
+                let mut source = so.description.clone();
+                let mut lines: Vec<(String, Color32)> = default();
+                while let Some(pos) = source.find("[") {
+                    let left = &source[..pos];
+                    let pos2 = source.find("]").unwrap();
+                    let mid = &source[pos + 1..pos2];
+                    if let Some(cursor_pos) = cursor_pos(world) {
+                        let cursor_pos = [cursor_pos.x, cursor_pos.y];
+                        let ability = Pools::get_ability(mid, world);
+                        if world.resource::<HoveredUnit>().0 == Some(entity) {
+                            Window::new(RichText::new(mid).color(color).strong())
+                                .fixed_pos(cursor_pos)
+                                .collapsible(false)
+                                .show(ctx, |ui| {
+                                    ui.label(&ability.description);
+                                });
+                        }
+                    }
+
+                    lines.push((left.to_owned(), Color32::WHITE));
+                    lines.push((mid.to_owned(), color));
+                    source = source[pos2 + 1..].to_owned();
+                }
+                lines.push((source, Color32::WHITE));
+
+                let mut job = LayoutJob::default();
+                for (text, color) in lines {
+                    job.append(
+                        &text,
+                        0.0,
+                        TextFormat {
+                            font_id: FontId::new(14.0, FontFamily::Proportional),
+                            color,
+                            ..Default::default()
+                        },
+                    );
+                }
+                ui.label(WidgetText::LayoutJob(job));
             });
         }
     }
