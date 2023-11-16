@@ -300,7 +300,9 @@ impl Representation {
             None => world.spawn_empty().id(),
         };
         self.material.unpack(entity, world);
-        VarState::default().attach(entity, world);
+        if !world.entity(entity).contains::<VarState>() {
+            VarState::default().attach(entity, world);
+        }
         let mut entity = world.entity_mut(entity);
         entity.get_mut::<Transform>().unwrap().translation.z += 0.0000001; // children always rendered on top of parents
         if let Some(parent) = parent {

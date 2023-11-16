@@ -14,45 +14,51 @@ pub enum Trigger {
     BeforeDeath(Effect),
     AfterKill(Effect),
     ChangeVar(VarName, Expression),
+    List(Vec<Box<Trigger>>),
     #[default]
     Noop,
 }
 
 impl Trigger {
-    pub fn catch_event(&self, event: &Event) -> Option<Trigger> {
+    pub fn catch_event(&self, event: &Event) -> Vec<Trigger> {
         match self {
-            Trigger::Noop | Trigger::ChangeVar(..) => None,
+            Trigger::Noop | Trigger::ChangeVar(..) => default(),
+            Trigger::List(triggers) => triggers
+                .into_iter()
+                .map(|t| t.catch_event(event))
+                .flatten()
+                .collect_vec(),
             Trigger::AfterDamageTaken(..) => match event {
-                Event::DamageTaken { .. } => Some(self.clone()),
-                _ => None,
+                Event::DamageTaken { .. } => vec![self.clone()],
+                _ => default(),
             },
             Trigger::AfterDamageDealt(..) => match event {
-                Event::DamageDealt { .. } => Some(self.clone()),
-                _ => None,
+                Event::DamageDealt { .. } => vec![self.clone()],
+                _ => default(),
             },
             Trigger::BattleStart(..) => match event {
-                Event::BattleStart => Some(self.clone()),
-                _ => None,
+                Event::BattleStart => vec![self.clone()],
+                _ => default(),
             },
             Trigger::TurnStart(..) => match event {
-                Event::TurnStart => Some(self.clone()),
-                _ => None,
+                Event::TurnStart => vec![self.clone()],
+                _ => default(),
             },
             Trigger::BeforeStrike(..) => match event {
-                Event::BeforeStrike(..) => Some(self.clone()),
-                _ => None,
+                Event::BeforeStrike(..) => vec![self.clone()],
+                _ => default(),
             },
             Trigger::AllyDeath(..) => match event {
-                Event::Death(..) => Some(self.clone()),
-                _ => None,
+                Event::Death(..) => vec![self.clone()],
+                _ => default(),
             },
             Trigger::BeforeDeath(..) => match event {
-                Event::Death(..) => Some(self.clone()),
-                _ => None,
+                Event::Death(..) => vec![self.clone()],
+                _ => default(),
             },
             Trigger::AfterKill(..) => match event {
-                Event::Kill { .. } => Some(self.clone()),
-                _ => None,
+                Event::Kill { .. } => vec![self.clone()],
+                _ => default(),
             },
         }
     }
@@ -101,6 +107,18 @@ impl Trigger {
                 ActionPlugin::push_back(effect, context, world);
             }
             _ => panic!("Trigger {self} can not be fired"),
+        }
+    }
+
+    pub fn collect_delta_triggers(&self) -> Vec<Trigger> {
+        match self {
+            Trigger::ChangeVar(_, _) => vec![self.clone()],
+            Trigger::List(triggers) => triggers
+                .into_iter()
+                .map(|t| t.collect_delta_triggers())
+                .flatten()
+                .collect_vec(),
+            _ => default(),
         }
     }
 }

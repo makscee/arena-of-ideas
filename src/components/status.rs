@@ -35,10 +35,7 @@ impl PackedStatus {
             )
             .init(VarName::Name, VarValue::String(self.name.to_owned()))
             .init(VarName::Position, VarValue::Vec2(default()));
-        let add_delta = match &self.trigger {
-            Trigger::ChangeVar(_, _) => true,
-            _ => false,
-        };
+        let add_delta = !self.trigger.collect_delta_triggers().is_empty();
         let entity = Status::spawn(self.name, self.trigger, world).id();
         self.state.attach(entity, world);
         if add_delta {
@@ -109,11 +106,14 @@ impl Status {
     ) -> Vec<(Entity, Trigger)> {
         statuses
             .into_iter()
-            .filter_map(|status| {
+            .map(|status| {
                 Self::get_trigger(status, world)
                     .catch_event(event)
+                    .into_iter()
                     .map(|t| (status, t))
+                    .collect_vec()
             })
+            .flatten()
             .collect_vec()
     }
 
@@ -127,22 +127,24 @@ impl Status {
         if let Some(parent) = world.get::<Parent>(entity) {
             let parent = parent.get();
             let status = world.get::<Status>(entity).unwrap();
-            match &status.trigger {
-                Trigger::ChangeVar(var, e) => {
-                    let e = e.clone();
-                    let var = *var;
-                    if let Ok(delta) = e.get_value(
-                        &Context::from_owner(parent, world).set_status(entity, world),
-                        world,
-                    ) {
-                        let t = get_insert_t(world);
-                        let mut state_delta = world.get_mut::<VarStateDelta>(entity).unwrap();
-                        if state_delta.need_update(var, &delta) {
-                            state_delta.state.insert_simple(var, delta, t);
+            for trigger in status.trigger.collect_delta_triggers() {
+                match &trigger {
+                    Trigger::ChangeVar(var, e) => {
+                        let e = e.clone();
+                        let var = *var;
+                        if let Ok(delta) = e.get_value(
+                            &Context::from_owner(parent, world).set_status(entity, world),
+                            world,
+                        ) {
+                            let t = get_insert_t(world);
+                            let mut state_delta = world.get_mut::<VarStateDelta>(entity).unwrap();
+                            if state_delta.need_update(var, &delta) {
+                                state_delta.state.insert_simple(var, delta, t);
+                            }
                         }
                     }
+                    _ => {}
                 }
-                _ => {}
             }
         }
     }

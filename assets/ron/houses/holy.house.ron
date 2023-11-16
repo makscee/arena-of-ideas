@@ -1,0 +1,30 @@
+#![enable(implicit_some)]
+(
+    name: "Holy",
+    color: ("#FFF176"),
+    statuses: [
+        (
+            name: "Blessing",
+            description: "+1 HP +1 ATK",
+            trigger: List(
+                [
+                    ChangeVar(
+                        Hp,
+                        Context(Charges),
+                    ),
+                    ChangeVar(
+                        Atk,
+                        Context(Charges),
+                    ),
+                ],
+            ),
+        ),
+    ],
+    abilities: [
+        (
+            name: "Blessing",
+            description: "Give +1/+1",
+            effect: AddStatus("Blessing"),
+        ),
+    ],
+)

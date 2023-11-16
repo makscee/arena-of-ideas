@@ -1,5 +1,5 @@
 (
-    anim: Sequence(
+    anim: Run(
         [
             Change(
                 var: Position,

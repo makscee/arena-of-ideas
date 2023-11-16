@@ -3,29 +3,16 @@
     left: (
         units: [
             (
-                name: "Wizard",
-                hp: 50,
+                name: "Priest",
+                hp: 10,
                 atk: 1,
-                house: "Mages",
-                description: "Turn Start: use Magic Missle",
-                trigger: TurnStart(
-                    WithVar(
-                        Faction,
-                        OppositeFaction,
-                        WithTarget(
-                            RandomUnit,
-                            List(
-                                [
-                                    Damage(
-                                        Int(
-                                            2,
-                                        ),
-                                    ),
-                                    Vfx(
-                                        "magic_missle",
-                                    ),
-                                ],
-                            ),
+                house: "Holy",
+                description: "Battle Start: apply [Blessing] to all allies",
+                trigger: BattleStart(
+                    AoeFaction(
+                        OwnerFaction,
+                        UseAbility(
+                            "Blessing",
                         ),
                     ),
                 ),
@@ -52,184 +39,7 @@
                             ),
                         ),
                     ),
-                    children: [
-                        (
-                            material: Shape(
-                                shape: Circle,
-                                fill: Opaque,
-                                size: Vec2E(
-                                    Float(
-                                        0.2,
-                                    ),
-                                ),
-                            ),
-                            mapping: {
-                                Position: Mul(
-                                    Vec2EE(
-                                        Sin(
-                                            GameTime,
-                                        ),
-                                        Cos(
-                                            GameTime,
-                                        ),
-                                    ),
-                                    Mul(
-                                        Cos(
-                                            Mul(
-                                                GameTime,
-                                                Float(
-                                                    3.3,
-                                                ),
-                                            ),
-                                        ),
-                                        Sum(
-                                            Float(
-                                                0.5,
-                                            ),
-                                            Beat,
-                                        ),
-                                    ),
-                                ),
-                            },
-                        ),
-                        (
-                            material: Shape(
-                                shape: Circle,
-                                fill: Opaque,
-                                size: Vec2E(
-                                    Float(
-                                        0.2,
-                                    ),
-                                ),
-                            ),
-                            mapping: {
-                                Position: Mul(
-                                    Vec2EE(
-                                        Sin(
-                                            Sum(
-                                                GameTime,
-                                                Float(
-                                                    3.0,
-                                                ),
-                                            ),
-                                        ),
-                                        Cos(
-                                            GameTime,
-                                        ),
-                                    ),
-                                    Mul(
-                                        Cos(
-                                            Mul(
-                                                GameTime,
-                                                Float(
-                                                    2.3,
-                                                ),
-                                            ),
-                                        ),
-                                        Sum(
-                                            Float(
-                                                0.5,
-                                            ),
-                                            Beat,
-                                        ),
-                                    ),
-                                ),
-                            },
-                        ),
-                        (
-                            material: Shape(
-                                shape: Circle,
-                                fill: Opaque,
-                                size: Vec2E(
-                                    Float(
-                                        0.2,
-                                    ),
-                                ),
-                            ),
-                            mapping: {
-                                Position: Mul(
-                                    Vec2EE(
-                                        Sin(
-                                            Sum(
-                                                GameTime,
-                                                Float(
-                                                    2.0,
-                                                ),
-                                            ),
-                                        ),
-                                        Cos(
-                                            GameTime,
-                                        ),
-                                    ),
-                                    Mul(
-                                        Cos(
-                                            Mul(
-                                                GameTime,
-                                                Float(
-                                                    1.3,
-                                                ),
-                                            ),
-                                        ),
-                                        Sum(
-                                            Float(
-                                                0.5,
-                                            ),
-                                            Beat,
-                                        ),
-                                    ),
-                                ),
-                            },
-                        ),
-                        (
-                            material: Shape(
-                                shape: Circle,
-                                fill: Opaque,
-                                size: Vec2E(
-                                    Float(
-                                        0.2,
-                                    ),
-                                ),
-                            ),
-                            mapping: {
-                                Position: Mul(
-                                    Vec2EE(
-                                        Sin(
-                                            Sum(
-                                                GameTime,
-                                                Float(
-                                                    5.0,
-                                                ),
-                                            ),
-                                        ),
-                                        Cos(
-                                            Sum(
-                                                GameTime,
-                                                Float(
-                                                    -5.0,
-                                                ),
-                                            ),
-                                        ),
-                                    ),
-                                    Mul(
-                                        Cos(
-                                            Mul(
-                                                GameTime,
-                                                Float(
-                                                    2.3,
-                                                ),
-                                            ),
-                                        ),
-                                        Sum(
-                                            Float(
-                                                0.5,
-                                            ),
-                                            Beat,
-                                        ),
-                                    ),
-                                ),
-                            },
-                        ),
-                    ],
+                    children: [],
                 ),
             ),
         ],

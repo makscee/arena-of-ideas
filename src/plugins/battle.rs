@@ -26,6 +26,7 @@ impl BattlePlugin {
         data.left.unwrap().unpack(Faction::Left, world);
         data.right.unwrap().unpack(Faction::Right, world);
         UnitPlugin::translate_to_slots(world);
+        GameTimer::get_mut(world).advance(1.0);
         Self::run_battle(100, world);
         world
             .get_resource_mut::<GameTimer>()
@@ -48,7 +49,15 @@ impl BattlePlugin {
     pub fn run_battle(bpm: usize, world: &mut World) -> BattleResult {
         let btime = 60.0 / bpm as f32;
         Event::BattleStart.send(world);
-        ActionPlugin::spin(world);
+        GameTimer::get_mut(world).start_batch();
+        if ActionPlugin::spin(world) {
+            GameTimer::get_mut(world)
+                .head_to_batch_start()
+                .advance_end(btime * 4.0)
+                .end_batch()
+                .start_batch();
+        }
+        GameTimer::get_mut(world).end_batch();
         while let Some((left, right)) = Self::get_strikers(world) {
             Self::run_strike(left, right, btime, world);
         }

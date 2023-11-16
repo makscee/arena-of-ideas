@@ -37,7 +37,7 @@ pub enum VarName {
     Alpha,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Reflect, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, Reflect, PartialEq, Display)]
 pub enum VarValue {
     Float(f32),
     Int(i32),
