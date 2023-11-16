@@ -280,38 +280,36 @@ impl UnitPlugin {
                 .get_string(VarName::Description)
                 .unwrap_or_default();
             if !description.is_empty() {
-                entity_panel(hovered, vec2(0.0, 1.0), "hover_desc", world).show(ctx, |ui| {
-                    ui.label(description);
-                });
+                show_description_panels(hovered, &description, world);
             }
-            let statuses = Status::collect_entity_statuses(hovered, world);
+            let t = get_t(world);
+            let statuses = Status::collect_entity_statuses(hovered, world)
+                .into_iter()
+                .filter_map(|entity| {
+                    let state = VarState::get(entity, world);
+                    if state.get_string(VarName::Name).is_err() {
+                        return None;
+                    }
+                    if state.birth > t {
+                        return None;
+                    }
+                    let name = state.get_string(VarName::Name).unwrap();
+                    let description = state.get_string(VarName::Description).unwrap();
+                    let charges = state.get_int(VarName::Charges).unwrap();
+                    let color: Color32 = Pools::get_status_house(&name, world).color.clone().into();
+                    Some((name, description, color, charges))
+                })
+                .collect_vec();
             if !statuses.is_empty() {
-                entity_panel(hovered, vec2(1.0, 0.0), "Statuses", world)
+                entity_panel(hovered, vec2(1.0, 0.0), Some(150.0), "Statuses", world)
                     .title_bar(true)
                     .show(ctx, |ui| {
-                        ui.set_width(150.0);
                         ui.vertical_centered(|ui| {
-                            for status in statuses {
-                                let state = VarState::get(status, world);
-                                let t = get_t(world);
-                                if state.birth > t {
-                                    continue;
-                                }
-                                if let Ok(name) = state.get_string(VarName::Name) {
-                                    let description =
-                                        state.get_string(VarName::Description).unwrap();
-                                    let charges =
-                                        VarState::get_value(status, VarName::Charges, t, world)
-                                            .unwrap()
-                                            .get_int()
-                                            .unwrap();
-                                    let name = format!("{name} ({charges})");
-                                    CollapsingHeader::new(
-                                        RichText::new(name).color(hex_color!("#2196F3")),
-                                    )
+                            for (name, description, color, charges) in statuses {
+                                let name = format!("{name} ({charges})");
+                                CollapsingHeader::new(RichText::new(name).color(color))
                                     .default_open(true)
                                     .show(ui, |ui| ui.label(description));
-                                }
                             }
                         })
                     });

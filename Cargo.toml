@@ -13,6 +13,9 @@ bevy = { version = "0.11.0", default-features = false, features = [
     "bevy_winit",
     "multi-threaded",
     "filesystem_watcher",
+    "bevy_ui",
+    "bevy_text",
+    "default_font",
 ] }
 ecolor = { version = "0.22.0", features = ["color-hex"] }
 bevy_asset_loader = { version = "0.17.0", features = [
@@ -21,7 +24,11 @@ bevy_asset_loader = { version = "0.17.0", features = [
 bevy_common_assets = { version = "0.7.0", features = ["ron"] }
 bevy-inspector-egui = "0.19.0"
 bevy_egui = "0.21"
-bevy_mod_picking = "0.15.0"
+bevy_mod_picking = { version = "0.15.0", default-features = false, features = [
+    "backend_raycast",
+    "backend_bevy_ui",
+    "selection",
+] }
 log = "0.4.19"
 serde = "1"
 serde_json = "1.0.104"

@@ -42,8 +42,8 @@ pub use bevy_common_assets::ron::RonAssetPlugin;
 pub use bevy_egui::egui;
 pub use bevy_egui::{
     egui::{
-        Align2, Area, Button, CentralPanel, CollapsingHeader, Label, RichText, Slider, TextEdit,
-        Ui, Window,
+        pos2, text::LayoutJob, Align2, Area, Button, CentralPanel, CollapsingHeader, Color32,
+        FontFamily, FontId, Label, RichText, Slider, TextEdit, TextFormat, Ui, WidgetText, Window,
     },
     EguiContexts,
 };
