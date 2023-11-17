@@ -23,11 +23,13 @@ impl RepresentationPlugin {
         let dragged = world.get_resource::<DraggedUnit>().unwrap().0;
         for (entity, rep) in reps {
             let context = Context::from_owner(entity, world);
-            let mapping: HashMap<VarName, VarValue> = HashMap::from_iter(
-                rep.mapping
-                    .iter()
-                    .map(|(var, value)| (*var, value.get_value(&context, world).unwrap())),
-            );
+            let mapping: HashMap<VarName, VarValue> =
+                HashMap::from_iter(rep.mapping.iter().filter_map(|(var, value)| {
+                    match value.get_value(&context, world) {
+                        Ok(value) => Some((*var, value)),
+                        Err(_) => None,
+                    }
+                }));
             let mut state = VarState::get_mut(entity, world);
             for (var, value) in mapping {
                 state.init(var, value);

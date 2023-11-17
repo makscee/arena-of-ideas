@@ -33,6 +33,7 @@ impl ActionPlugin {
         loop {
             GameTimer::get_mut(world).head_to_batch_start();
             let processed = Self::process_queue(world);
+            UnitPlugin::run_death_check(world);
             if t != get_insert_t(world) {
                 inserted = true;
             }

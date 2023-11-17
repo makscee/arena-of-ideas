@@ -84,7 +84,7 @@ impl BattlePlugin {
                     _ => panic!("Non-battle winning faction"),
                 }
             }
-            _ => panic!("Non-unique winning faction"),
+            _ => panic!("Non-unique winning faction {result:#?}"),
         }
     }
 
@@ -115,7 +115,6 @@ impl BattlePlugin {
         GameTimer::get_mut(world).start_batch();
         Self::strike(left, right, world);
         Self::after_strike(left, right, world);
-        UnitPlugin::run_death_check(world);
         UnitPlugin::fill_slot_gaps(Faction::Left, world);
         UnitPlugin::fill_slot_gaps(Faction::Right, world);
         ActionPlugin::spin(world);

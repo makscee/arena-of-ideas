@@ -42,7 +42,7 @@ impl Pools {
             .iter()
             .find(|(_, h)| h.abilities.iter().any(|a| a.name.eq(name)))
             .map(|(_, h)| h)
-            .unwrap()
+            .unwrap_or_else(|| panic!("Failed to find house for {name}"))
     }
     pub fn get_status_house<'a>(name: &str, world: &'a World) -> &'a House {
         Self::get(world)

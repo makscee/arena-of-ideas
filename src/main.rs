@@ -6,6 +6,7 @@ mod plugins;
 mod prelude;
 pub mod resourses;
 mod utils;
+use bevy::diagnostic::{DiagnosticsStore, FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 use prelude::*;
 pub use spacetimedb_sdk;
 
@@ -58,22 +59,25 @@ fn main() {
         .add_state::<GameState>()
         .insert_resource(ClearColor(Color::rgb(0.1, 0.1, 0.1)))
         .insert_resource(PkvStore::new("makscee", "arena_of_ideas"))
-        .add_plugins((DefaultPlugins
-            .set(AssetPlugin {
-                watch_for_changes: ChangeWatcher::with_delay(Duration::from_millis(100)),
-                ..default()
-            })
-            .set(LogPlugin {
-                level: bevy::log::Level::DEBUG,
-                filter: "info,debug,wgpu_core=warn,wgpu_hal=warn,naga=warn".into(),
-            })
-            .set(bevy::window::WindowPlugin {
-                primary_window: Some(bevy::prelude::Window {
-                    title: "Arena of Ideas".into(),
+        .add_plugins((
+            DefaultPlugins
+                .set(AssetPlugin {
+                    watch_for_changes: ChangeWatcher::with_delay(Duration::from_millis(100)),
+                    ..default()
+                })
+                .set(LogPlugin {
+                    level: bevy::log::Level::DEBUG,
+                    filter: "info,debug,wgpu_core=warn,wgpu_hal=warn,naga=warn".into(),
+                })
+                .set(bevy::window::WindowPlugin {
+                    primary_window: Some(bevy::prelude::Window {
+                        title: "Arena of Ideas".into(),
+                        ..default()
+                    }),
                     ..default()
                 }),
-                ..default()
-            }),))
+            FrameTimeDiagnosticsPlugin,
+        ))
         .add_loading_state(LoadingState::new(GameState::Loading).continue_to_state(next_state))
         .add_loading_state(
             LoadingState::new(GameState::TestsLoading).continue_to_state(GameState::BattleTest),
@@ -197,5 +201,15 @@ fn show_build_version(world: &mut World) {
     let ctx = &egui_context(world);
     Area::new("build version")
         .anchor(Align2::LEFT_BOTTOM, [10.0, -10.0])
-        .show(ctx, |ui| ui.label(format!("arena-of-ideas {VERSION}")));
+        .show(ctx, |ui| {
+            if let Some(fps) = world
+                .resource::<DiagnosticsStore>()
+                .get(FrameTimeDiagnosticsPlugin::FPS)
+            {
+                if let Some(fps) = fps.smoothed() {
+                    ui.label(format!("fps: {fps:.0}"));
+                }
+            }
+            ui.label(format!("arena-of-ideas {VERSION}"));
+        });
 }

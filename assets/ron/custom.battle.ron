@@ -2,103 +2,85 @@
 (
     left: (
         units: [
+            (hp: 1, atk: 1),
             (
-                name: "Wizard",
-                hp: 3,
+                name: "Priest",
+                hp: 1,
                 atk: 1,
-                house: "Mages",
-                description: "Turn Start: use [Magic Missle]",
-                trigger: TurnStart(
-                    UseAbility(
-                        "Magic Missile",
+                house: "Holy",
+                description: "Battle Start: apply [Blessing] to all allies",
+                trigger: BattleStart(
+                    AoeFaction(
+                        OwnerFaction,
+                        UseAbility(
+                            "Blessing",
+                        ),
                     ),
                 ),
                 representation: (
-                    material: Shape(
-                        shape: Circle,
-                        thickness: Sum(
-                            Float(2.5),
-                            Cos(
-                                GameTime,
-                            ),
-                        ),
-                        size: Vec2E(
-                            Sum(
-                                Float(
-                                    0.7,
+                    material: Repeat(
+                        count: Int(4),
+                        source: (
+                            material: Shape(
+                                shape: Circle,
+                                thickness: Sum(
+                                    Float(
+                                        2.5,
+                                    ),
+                                    Cos(
+                                        GameTime,
+                                    ),
                                 ),
-                                Mul(
-                                    Beat,
+                                size: Vec2E(
+                                    Sum(
+                                        Float(
+                                            0.5,
+                                        ),
+                                        Mul(
+                                            Beat,
+                                            Float(
+                                                0.3,
+                                            ),
+                                        ),
+                                    ),
+                                ),
+                            ),
+                            mapping: {
+                                Position: Mul(
+                                    UnitVec(
+                                        Mul(
+                                            Sum(
+                                                GameTime,
+                                                Mul(
+                                                    Mul(
+                                                        PI,
+                                                        Float(
+                                                            0.5,
+                                                        ),
+                                                    ),
+                                                    IntFloat(
+                                                        State(
+                                                            Index,
+                                                        ),
+                                                    ),
+                                                ),
+                                            ),
+                                            Float(
+                                                3.0,
+                                            ),
+                                        ),
+                                    ),
                                     Float(
                                         0.3,
                                     ),
                                 ),
-                            ),
+                            },
+                            children: [],
                         ),
                     ),
-                    children: [
-                        (
-                            material: Repeat(
-                                count: Int(10),
-                                source: (
-                                    material: Shape(
-                                        shape: Circle,
-                                        fill: Opaque,
-                                        size: Vec2E(
-                                            Float(
-                                                0.2,
-                                            ),
-                                        ),
-                                    ),
-                                    mapping: {
-                                        Position: Mul(
-                                            Vec2EE(
-                                                Sin(
-                                                    Sum(
-                                                        GameTime,
-                                                        IntFloat(
-                                                            State(
-                                                                Index,
-                                                            ),
-                                                        ),
-                                                    ),
-                                                ),
-                                                Cos(
-                                                    GameTime,
-                                                ),
-                                            ),
-                                            Mul(
-                                                Cos(
-                                                    Mul(
-                                                        Sum(
-                                                            GameTime,
-                                                            IntFloat(
-                                                                State(
-                                                                    Index,
-                                                                ),
-                                                            ),
-                                                        ),
-                                                        Float(
-                                                            1.3,
-                                                        ),
-                                                    ),
-                                                ),
-                                                Sum(
-                                                    Float(
-                                                        0.5,
-                                                    ),
-                                                    Beat,
-                                                ),
-                                            ),
-                                        ),
-                                    },
-                                ),
-                            ),
-                        ),
-                    ],
                 ),
             ),
         ],
     ),
-    right: (units: [(hp: 60, atk: 1)]),
+    right: (units: [(hp: 1, atk: 1)]),
 )

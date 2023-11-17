@@ -1,3 +1,5 @@
+use std::f32::consts::PI;
+
 use rand::{seq::IteratorRandom, Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 
@@ -27,6 +29,7 @@ pub enum Expression {
     Even(Box<Expression>),
     GameTime,
     RandomFloat,
+    PI,
 
     Sum(Box<Expression>, Box<Expression>),
     Sub(Box<Expression>, Box<Expression>),
@@ -105,6 +108,7 @@ impl Expression {
                 Ok(VarValue::Bool(x % 2 == 0))
             }
             Expression::GameTime => Ok(VarValue::Float(GameTimer::get(world).get_t())),
+            Expression::PI => Ok(VarValue::Float(PI)),
             Expression::Sum(a, b) => {
                 VarValue::sum(&a.get_value(context, world)?, &b.get_value(context, world)?)
             }

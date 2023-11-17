@@ -24,7 +24,14 @@
         (
             name: "Blessing",
             description: "Give +1/+1",
-            effect: AddStatus("Blessing"),
+            effect: List(
+                [
+                    AddStatus(
+                        "Blessing",
+                    ),
+                    Vfx("apply_status"),
+                ],
+            ),
         ),
     ],
 )
