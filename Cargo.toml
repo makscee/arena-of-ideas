@@ -45,6 +45,7 @@ bevy_pkv = "0.8.0"
 clap = { version = "4.4.5", features = ["derive"] }
 spacetimedb-sdk = "0.7.2"
 bevy_kira_audio = { version = "0.17.0", features = ["settings_loader"] }
+strum = "0.25.0"
 
 [profile.dev.package."*"]
 opt-level = 3

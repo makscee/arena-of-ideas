@@ -4,15 +4,19 @@
         units: [
             (
                 name: "Priest",
-                hp: 10,
+                hp: 1,
                 atk: 1,
                 house: "Holy",
                 description: "Battle Start: apply [Blessing] to all allies",
                 trigger: BattleStart(
                     AoeFaction(
                         OwnerFaction,
-                        UseAbility(
-                            "Blessing",
+                        WithVar(
+                            Charges,
+                            Int(3),
+                            UseAbility(
+                                "Blessing",
+                            ),
                         ),
                     ),
                 ),

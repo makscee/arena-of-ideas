@@ -297,19 +297,31 @@ impl UnitPlugin {
                     let description = state.get_string(VarName::Description).unwrap();
                     let charges = state.get_int(VarName::Charges).unwrap();
                     let color: Color32 = Pools::get_status_house(&name, world).color.clone().into();
-                    Some((name, description, color, charges))
+                    Some((entity, name, description, color, charges))
                 })
                 .collect_vec();
             if !statuses.is_empty() {
                 entity_panel(hovered, vec2(1.0, 0.0), Some(150.0), "Statuses", world)
                     .title_bar(true)
                     .show(ctx, |ui| {
-                        ui.vertical_centered(|ui| {
-                            for (name, description, color, charges) in statuses {
+                        ui.vertical(|ui| {
+                            for (entity, name, description, color, charges) in statuses {
                                 let name = format!("{name} ({charges})");
-                                CollapsingHeader::new(RichText::new(name).color(color))
-                                    .default_open(true)
-                                    .show(ui, |ui| ui.label(description));
+                                ui.heading(RichText::new(name).color(color).strong());
+                                let lines = parse_vars(&description, entity, t, world);
+                                let mut job = LayoutJob::default();
+                                for (text, color) in lines {
+                                    job.append(
+                                        &text,
+                                        0.0,
+                                        TextFormat {
+                                            font_id: FontId::new(14.0, FontFamily::Proportional),
+                                            color,
+                                            ..Default::default()
+                                        },
+                                    );
+                                }
+                                ui.label(WidgetText::LayoutJob(job));
                             }
                         })
                     });

@@ -5,7 +5,7 @@
     statuses: [
         (
             name: "Blessing",
-            description: "+1 HP +1 ATK",
+            description: "+{Charges}/+{Charges}",
             trigger: List(
                 [
                     ChangeVar(

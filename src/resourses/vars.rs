@@ -1,11 +1,13 @@
 use std::cmp::Ordering;
 
 use anyhow::anyhow;
-use strum_macros::Display;
+use strum_macros::{Display, EnumString};
 
 use super::*;
 
-#[derive(Hash, Eq, PartialEq, Serialize, Deserialize, Clone, Copy, Debug, Reflect, Display)]
+#[derive(
+    Hash, Eq, PartialEq, Serialize, Deserialize, Clone, Copy, Debug, Reflect, Display, EnumString,
+)]
 pub enum VarName {
     Size,
     Scale,
@@ -78,6 +80,11 @@ impl VarValue {
     pub fn get_string(&self) -> Result<String> {
         match self {
             VarValue::String(value) => Ok(value.into()),
+            VarValue::Int(value) => Ok(value.to_string()),
+            VarValue::Float(value) => Ok(value.to_string()),
+            VarValue::Vec2(value) => Ok(value.to_string()),
+            VarValue::Bool(value) => Ok(value.to_string()),
+            VarValue::Faction(value) => Ok(value.to_string()),
             _ => Err(anyhow!("String not supported by {self:?}")),
         }
     }
