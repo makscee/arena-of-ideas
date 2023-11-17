@@ -19,6 +19,8 @@ pub enum Expression {
     StringFloat(Box<Expression>),
     StringVec(Box<Expression>),
 
+    IntFloat(Box<Expression>),
+
     Sin(Box<Expression>),
     Cos(Box<Expression>),
     UnitVec(Box<Expression>),
@@ -90,6 +92,7 @@ impl Expression {
                 let Vec2 { x, y } = x.get_vec2(context, world)?;
                 Ok(VarValue::String(format!("({x:.1}:{y:.1})")))
             }
+            Expression::IntFloat(x) => Ok(VarValue::Float(x.get_int(context, world)? as f32)),
             Expression::Sin(x) => Ok(VarValue::Float(x.get_float(context, world)?.sin())),
             Expression::Cos(x) => Ok(VarValue::Float(x.get_float(context, world)?.cos())),
             Expression::UnitVec(x) => {

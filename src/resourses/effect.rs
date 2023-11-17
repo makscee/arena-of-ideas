@@ -94,10 +94,18 @@ impl Effect {
                     .clone()
                     .set_var(
                         VarName::Position,
-                        VarState::get(context.target(), world).get_value_last(VarName::Position)?,
+                        VarState::get(context.owner(), world).get_value_last(VarName::Position)?,
                     )
                     .set_var(VarName::Text, VarValue::String(format!("Use {ability}")))
-                    .set_var(VarName::Color, VarValue::Color(Color::PURPLE))
+                    .set_var(
+                        VarName::Color,
+                        VarValue::Color(
+                            Pools::get_ability_house(&ability, world)
+                                .color
+                                .clone()
+                                .into(),
+                        ),
+                    )
                     .unpack(world)?;
             }
             Effect::AddStatus(status) => {

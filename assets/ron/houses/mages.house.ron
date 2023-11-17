@@ -5,9 +5,25 @@
     statuses: [],
     abilities: [
         (
-            name: "Magic Missle",
+            name: "Magic Missile",
             description: "Deal 1 DMG to random enemy",
-            effect: Noop,
+            effect: WithVar(
+                Faction,
+                OppositeFaction,
+                WithTarget(
+                    RandomUnit,
+                    List(
+                        [
+                            Damage(
+                                Int(1),
+                            ),
+                            Vfx(
+                                "magic_missle",
+                            ),
+                        ],
+                    ),
+                ),
+            ),
         ),
     ],
 )

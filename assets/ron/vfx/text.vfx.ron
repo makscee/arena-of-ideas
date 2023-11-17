@@ -21,6 +21,7 @@
         material: Text(
             text: State(Text),
             color: State(Color),
+            size: Float(0.5),
         ),
     ),
 )

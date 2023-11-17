@@ -37,6 +37,7 @@ pub enum VarName {
     Delta,
     T,
     Alpha,
+    Index,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Reflect, PartialEq, Display)]

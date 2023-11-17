@@ -19,6 +19,10 @@ pub struct Representation {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(deny_unknown_fields)]
 pub enum RepresentationMaterial {
+    Repeat {
+        count: Expression,
+        source: Box<Representation>,
+    },
     Shape {
         #[serde(default)]
         shape: Shape,
@@ -121,6 +125,20 @@ impl RepresentationMaterial {
                     mesh: mesh.into(),
                     ..default()
                 });
+            }
+            RepresentationMaterial::Repeat { count, source } => {
+                for i in 0..count
+                    .get_int(&Context::from_owner(entity, world), world)
+                    .unwrap()
+                {
+                    let child = source.clone().unpack(None, Some(entity), world);
+                    world.entity_mut(entity).insert((
+                        Transform::default(),
+                        GlobalTransform::default(),
+                        VisibilityBundle::default(),
+                    ));
+                    VarState::get_mut(child, world).init(VarName::Index, VarValue::Int(i));
+                }
             }
         }
     }
@@ -284,6 +302,7 @@ impl RepresentationMaterial {
                     }
                 }
             }
+            RepresentationMaterial::Repeat { .. } => {}
         }
     }
 }
