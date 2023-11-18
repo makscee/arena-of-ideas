@@ -18,66 +18,58 @@
                     ),
                 ),
                 representation: (
-                    material: Repeat(
-                        count: Int(4),
-                        source: (
-                            material: Shape(
-                                shape: Circle,
-                                thickness: Sum(
-                                    Float(
-                                        2.5,
-                                    ),
-                                    Cos(
-                                        GameTime,
-                                    ),
-                                ),
-                                size: Vec2E(
-                                    Sum(
-                                        Float(
-                                            0.5,
-                                        ),
-                                        Mul(
-                                            Beat,
-                                            Float(
-                                                0.3,
-                                            ),
-                                        ),
-                                    ),
-                                ),
+                    count: 4,
+                    material: Shape(
+                        shape: Circle,
+                        thickness: Sum(
+                            Float(2.5),
+                            Cos(
+                                GameTime,
                             ),
-                            mapping: {
-                                Position: Mul(
-                                    UnitVec(
-                                        Mul(
-                                            Sum(
-                                                GameTime,
-                                                Mul(
-                                                    Mul(
-                                                        PI,
-                                                        Float(
-                                                            0.5,
-                                                        ),
-                                                    ),
-                                                    IntFloat(
-                                                        State(
-                                                            Index,
-                                                        ),
-                                                    ),
-                                                ),
-                                            ),
-                                            Float(
-                                                3.0,
-                                            ),
-                                        ),
-                                    ),
+                        ),
+                        size: Vec2E(
+                            Sum(
+                                Float(
+                                    0.5,
+                                ),
+                                Mul(
+                                    Beat,
                                     Float(
                                         0.3,
                                     ),
                                 ),
-                            },
-                            children: [],
+                            ),
                         ),
                     ),
+                    mapping: {
+                        Position: Mul(
+                            UnitVec(
+                                Mul(
+                                    Sum(
+                                        GameTime,
+                                        Mul(
+                                            Mul(
+                                                PI,
+                                                Float(
+                                                    0.5,
+                                                ),
+                                            ),
+                                            IntFloat(
+                                                State(
+                                                    Index,
+                                                ),
+                                            ),
+                                        ),
+                                    ),
+                                    Float(
+                                        3.0,
+                                    ),
+                                ),
+                            ),
+                            Float(0.3),
+                        ),
+                    },
+                    children: [],
                 ),
             ),
         ],

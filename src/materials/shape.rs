@@ -19,14 +19,18 @@ pub struct ShapeMaterial {
     pub fill: Fill,
 }
 
-#[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Hash, Display, Serialize, Deserialize)]
+#[derive(
+    Debug, Clone, Copy, Default, Eq, PartialEq, Hash, Display, Serialize, Deserialize, EnumIter,
+)]
 pub enum Shape {
     #[default]
     Rectangle,
     Circle,
 }
 
-#[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Hash, Display, Serialize, Deserialize)]
+#[derive(
+    Debug, Clone, Copy, Default, Eq, PartialEq, Hash, Display, Serialize, Deserialize, EnumIter,
+)]
 pub enum Fill {
     #[default]
     Line,

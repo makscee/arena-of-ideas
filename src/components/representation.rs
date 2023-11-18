@@ -2,10 +2,13 @@ use bevy::{
     prelude::{Bezier, CubicGenerator},
     sprite::Mesh2dHandle,
 };
+use bevy_egui::egui::ComboBox;
 
 use super::*;
 
-#[derive(Serialize, TypeUuid, TypePath, Deserialize, Debug, Component, Resource, Clone)]
+#[derive(
+    Serialize, TypeUuid, TypePath, Deserialize, Debug, Component, Resource, Clone, Default,
+)]
 #[uuid = "cc360991-638e-4066-af03-f4f8abbbc450"]
 #[serde(deny_unknown_fields)]
 pub struct Representation {
@@ -14,15 +17,15 @@ pub struct Representation {
     pub children: Vec<Box<Representation>>,
     #[serde(default)]
     pub mapping: HashMap<VarName, Expression>,
+    #[serde(default)]
+    pub count: usize,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Display, Default, EnumIter)]
 #[serde(deny_unknown_fields)]
 pub enum RepresentationMaterial {
-    Repeat {
-        count: Expression,
-        source: Box<Representation>,
-    },
+    #[default]
+    None,
     Shape {
         #[serde(default)]
         shape: Shape,
@@ -79,6 +82,13 @@ fn default_color_e() -> Expression {
 impl RepresentationMaterial {
     pub fn unpack(&self, entity: Entity, world: &mut World) {
         match self {
+            RepresentationMaterial::None => {
+                world.entity_mut(entity).insert((
+                    Transform::default(),
+                    GlobalTransform::default(),
+                    VisibilityBundle::default(),
+                ));
+            }
             RepresentationMaterial::Shape { shape, fill, .. } => {
                 let mut materials = world.resource_mut::<Assets<ShapeMaterial>>();
                 let material = ShapeMaterial {
@@ -126,20 +136,6 @@ impl RepresentationMaterial {
                     ..default()
                 });
             }
-            RepresentationMaterial::Repeat { count, source } => {
-                for i in 0..count
-                    .get_int(&Context::from_owner(entity, world), world)
-                    .unwrap()
-                {
-                    let child = source.clone().unpack(None, Some(entity), world);
-                    world.entity_mut(entity).insert((
-                        Transform::default(),
-                        GlobalTransform::default(),
-                        VisibilityBundle::default(),
-                    ));
-                    VarState::get_mut(child, world).init(VarName::Index, VarValue::Int(i));
-                }
-            }
         }
     }
 
@@ -164,6 +160,7 @@ impl RepresentationMaterial {
         }
         let context = Context::from_owner(entity, world);
         match self {
+            RepresentationMaterial::None => {}
             RepresentationMaterial::Shape {
                 shape,
                 size,
@@ -302,8 +299,129 @@ impl RepresentationMaterial {
                     }
                 }
             }
-            RepresentationMaterial::Repeat { .. } => {}
         }
+    }
+
+    pub fn show_tree(&mut self, lookup: &mut String, ui: &mut Ui) {
+        CollapsingHeader::new(self.to_string())
+            .default_open(true)
+            .show(ui, |ui| {
+                let input = ui.add(TextEdit::singleline(lookup));
+                if input.has_focus() || input.lost_focus() {
+                    let mut need_clear = false;
+                    ui.horizontal_wrapped(|ui| {
+                        RepresentationMaterial::iter()
+                            .filter_map(|e| {
+                                match e
+                                    .to_string()
+                                    .to_lowercase()
+                                    .starts_with(lookup.to_lowercase().as_str())
+                                {
+                                    true => Some(e),
+                                    false => None,
+                                }
+                            })
+                            .for_each(|e| {
+                                let button = ui.button(e.to_string());
+                                if button.gained_focus() || button.clicked() {
+                                    *self = e;
+                                    need_clear = true;
+                                }
+                            })
+                    });
+                    if need_clear {
+                        *lookup = String::default();
+                    }
+                }
+                match self {
+                    RepresentationMaterial::None => {}
+                    RepresentationMaterial::Shape {
+                        shape,
+                        fill,
+                        size,
+                        thickness,
+                        alpha,
+                        color,
+                    } => {
+                        ComboBox::from_label("Shape")
+                            .selected_text(shape.to_string())
+                            .show_ui(ui, |ui| {
+                                for option in Shape::iter() {
+                                    let text = option.to_string();
+                                    ui.selectable_value(shape, option, text);
+                                }
+                            });
+                        ComboBox::from_label("Fill")
+                            .selected_text(fill.to_string())
+                            .show_ui(ui, |ui| {
+                                for option in Fill::iter() {
+                                    let text = option.to_string();
+                                    ui.selectable_value(fill, option, text);
+                                }
+                            });
+                        ui.horizontal(|ui| {
+                            ui.label("size");
+                            size.show_tree(lookup, "size", ui);
+                        });
+                        ui.horizontal(|ui| {
+                            ui.label("thickness");
+                            thickness.show_tree(lookup, "thickness", ui);
+                        });
+                        ui.horizontal(|ui| {
+                            ui.label("alpha");
+                            alpha.show_tree(lookup, "alpha", ui);
+                        });
+                        ui.horizontal(|ui| {
+                            ui.label("color");
+                            color.show_tree(lookup, "color", ui);
+                        });
+                    }
+                    RepresentationMaterial::Text {
+                        size,
+                        text,
+                        color,
+                        font_size,
+                    } => {
+                        ui.horizontal(|ui| {
+                            ui.label("size");
+                            size.show_tree(lookup, "size", ui);
+                        });
+                        ui.horizontal(|ui| {
+                            ui.label("text");
+                            text.show_tree(lookup, "text", ui);
+                        });
+                        ui.horizontal(|ui| {
+                            ui.label("color");
+                            color.show_tree(lookup, "color", ui);
+                        });
+                        ui.add(Slider::new(font_size, 16.0..=48.0));
+                    }
+                    RepresentationMaterial::Curve {
+                        thickness,
+                        dilations,
+                        curvature,
+                        aa,
+                        color,
+                    } => {
+                        ui.horizontal(|ui| {
+                            ui.label("thickness");
+                            thickness.show_tree(lookup, "thickness", ui);
+                        });
+                        ui.horizontal(|ui| {
+                            ui.label("curvature");
+                            curvature.show_tree(lookup, "curvature", ui);
+                        });
+                        ui.horizontal(|ui| {
+                            ui.label("aa");
+                            aa.show_tree(lookup, "aa", ui);
+                        });
+                        ui.horizontal(|ui| {
+                            ui.label("color");
+                            color.show_tree(lookup, "color", ui);
+                        });
+                    }
+                }
+            });
     }
 }
 
@@ -318,10 +436,21 @@ impl Representation {
             Some(value) => value,
             None => world.spawn_empty().id(),
         };
+        if self.count > 0 {
+            let entity = Representation::default().unpack(Some(entity), parent, world);
+            for i in 0..self.count {
+                let mut rep = self.clone();
+                rep.count = 0;
+                let entity = rep.unpack(None, Some(entity), world);
+                VarState::get_mut(entity, world).init(VarName::Index, VarValue::Int(i as i32));
+            }
+            return entity;
+        }
         self.material.unpack(entity, world);
         if !world.entity(entity).contains::<VarState>() {
             VarState::default().attach(entity, world);
         }
+        VarState::get_mut(entity, world).init(VarName::Index, VarValue::Int(self.count as i32));
         let mut entity = world.entity_mut(entity);
         entity.get_mut::<Transform>().unwrap().translation.z += 0.0000001; // children always rendered on top of parents
         if let Some(parent) = parent {
@@ -361,5 +490,37 @@ impl Representation {
                 entity.despawn_recursive()
             }
         }
+    }
+
+    pub fn show_tree(
+        &mut self,
+        lookup: &mut String,
+        id: impl std::hash::Hash,
+        ui: &mut Ui,
+    ) -> bool {
+        let mut delete = false;
+        CollapsingHeader::new("Representation")
+            .id_source(id)
+            .default_open(true)
+            .show(ui, |ui| {
+                if ui.button("delete").clicked() {
+                    delete = true;
+                }
+                self.material.show_tree(lookup, ui);
+                let mut deletes = Vec::default();
+                for (i, rep) in self.children.iter_mut().enumerate() {
+                    if rep.show_tree(lookup, i, ui) {
+                        deletes.push(i);
+                    }
+                }
+                deletes.into_iter().rev().for_each(|i| {
+                    self.children.remove(i);
+                });
+                if ui.button("+").clicked() {
+                    self.children.push(default());
+                }
+                ui.add(Slider::new(&mut self.count, 0..=10).text("Count"));
+            });
+        delete
     }
 }

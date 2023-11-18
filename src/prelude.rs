@@ -7,6 +7,7 @@ pub use crate::plugins::*;
 pub use crate::resourses::*;
 pub use anyhow::Context as _;
 pub use anyhow::{anyhow, Result};
+
 pub use bevy::{
     app::*,
     asset::*,
@@ -59,5 +60,6 @@ pub use log::*;
 pub use rand::{thread_rng, Rng};
 pub use serde::*;
 pub use std::mem;
-pub use strum_macros::{AsRefStr, Display};
+pub use strum::IntoEnumIterator;
+pub use strum_macros::{AsRefStr, Display, EnumIter, EnumString};
 pub use utils::*;

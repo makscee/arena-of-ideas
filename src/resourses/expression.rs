@@ -1,36 +1,56 @@
-use std::f32::consts::PI;
+use std::{f32::consts::PI, hash::Hash};
 
+use bevy_egui::egui::ComboBox;
+use hex::encode;
 use rand::{seq::IteratorRandom, Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 
 use super::*;
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default, Display, PartialEq, EnumIter)]
 pub enum Expression {
+    #[default]
+    Zero,
+    GameTime,
+    RandomFloat,
+    PI,
+    Owner,
+    Caster,
+    Target,
+    RandomUnit,
+    Age,
+    SlotPosition,
+    OwnerFaction,
+    OppositeFaction,
+    Beat,
+
     Float(f32),
     Int(i32),
     Bool(bool),
     String(String),
-    Entity(Entity),
-    Vec2(f32, f32),
-    Vec2EE(Box<Expression>, Box<Expression>),
-    Vec2E(Box<Expression>),
+    Hex(String),
     Faction(Faction),
+    State(VarName),
+    StateLast(VarName),
+    Context(VarName),
 
+    Vec2(f32, f32),
+
+    Vec2E(Box<Expression>),
     StringInt(Box<Expression>),
     StringFloat(Box<Expression>),
     StringVec(Box<Expression>),
-
     IntFloat(Box<Expression>),
-
     Sin(Box<Expression>),
     Cos(Box<Expression>),
     UnitVec(Box<Expression>),
     Even(Box<Expression>),
-    GameTime,
-    RandomFloat,
-    PI,
+    Abs(Box<Expression>),
+    SlotUnit(Box<Expression>),
+    FactionCount(Box<Expression>),
+    StatusCharges(Box<Expression>),
 
+    Vec2EE(Box<Expression>, Box<Expression>),
     Sum(Box<Expression>, Box<Expression>),
     Sub(Box<Expression>, Box<Expression>),
     Mul(Box<Expression>, Box<Expression>),
@@ -38,36 +58,15 @@ pub enum Expression {
     LessThen(Box<Expression>, Box<Expression>),
     Min(Box<Expression>, Box<Expression>),
     Max(Box<Expression>, Box<Expression>),
-    Abs(Box<Expression>),
-
-    Owner,
-    Caster,
-    Target,
-    SlotUnit(Box<Expression>),
-    RandomUnit,
-
-    State(VarName),
-    StateLast(VarName),
-    Context(VarName),
-    Age,
-    SlotPosition,
-
-    OwnerFaction,
-    OppositeFaction,
-    FactionCount(Box<Expression>),
-    StatusCharges(Box<Expression>),
-
-    Equals(Vec<Box<Expression>>),
-
-    Hex(String),
-
-    Beat,
 
     If(Box<Expression>, Box<Expression>, Box<Expression>),
+
+    Equals(Vec<Box<Expression>>),
 }
 impl Expression {
     pub fn get_value(&self, context: &Context, world: &mut World) -> Result<VarValue> {
         match self {
+            Expression::Zero => Ok(VarValue::Int(0)),
             Expression::RandomFloat => {
                 let mut rng = ChaCha8Rng::seed_from_u64(context.owner().to_bits());
                 Ok(VarValue::Float(rng.gen_range(0.0..1.0)))
@@ -140,7 +139,6 @@ impl Expression {
             Expression::Target => Ok(VarValue::Entity(
                 context.get_target().context("Target not found")?,
             )),
-            Expression::Entity(x) => Ok(VarValue::Entity(*x)),
             Expression::SlotPosition => Ok(VarValue::Vec2(UnitPlugin::get_entity_slot_position(
                 context.owner(),
                 world,
@@ -275,5 +273,130 @@ impl Expression {
     }
     pub fn get_color(&self, context: &Context, world: &mut World) -> Result<Color> {
         self.get_value(context, world)?.get_color()
+    }
+
+    pub fn show_tree(&mut self, lookup: &mut String, id: impl Hash, ui: &mut Ui) {
+        CollapsingHeader::new(self.to_string())
+            .id_source(id)
+            .default_open(true)
+            .show(ui, |ui| {
+                let input = ui.add(TextEdit::singleline(lookup));
+                if input.has_focus() || input.lost_focus() {
+                    let mut need_clear = false;
+                    ui.horizontal_wrapped(|ui| {
+                        Expression::iter()
+                            .filter_map(|e| {
+                                match e
+                                    .to_string()
+                                    .to_lowercase()
+                                    .starts_with(lookup.to_lowercase().as_str())
+                                {
+                                    true => Some(e),
+                                    false => None,
+                                }
+                            })
+                            .for_each(|e| {
+                                let button = ui.button(e.to_string());
+                                if button.gained_focus() || button.clicked() {
+                                    *self = e;
+                                    need_clear = true;
+                                }
+                            })
+                    });
+                    if need_clear {
+                        *lookup = String::default();
+                    }
+                }
+
+                match self {
+                    Expression::Zero
+                    | Expression::GameTime
+                    | Expression::RandomFloat
+                    | Expression::PI
+                    | Expression::Owner
+                    | Expression::Caster
+                    | Expression::Target
+                    | Expression::RandomUnit
+                    | Expression::Age
+                    | Expression::SlotPosition
+                    | Expression::OwnerFaction
+                    | Expression::OppositeFaction
+                    | Expression::Beat => {
+                        ui.label(self.to_string());
+                    }
+                    Expression::Float(x) => {
+                        ui.add(Slider::new(x, -100.0..=100.0));
+                    }
+                    Expression::Int(x) => {
+                        ui.add(Slider::new(x, -100..=100));
+                    }
+                    Expression::Bool(x) => {
+                        ui.checkbox(x, "");
+                    }
+                    Expression::Hex(x) | Expression::String(x) => {
+                        let mut color = HexColor(x.to_owned()).into();
+                        if ui.color_edit_button_srgba(&mut color).changed() {
+                            *x = encode(color.to_array());
+                        }
+                    }
+                    Expression::Faction(x) => {
+                        ComboBox::from_label("Faction")
+                            .selected_text(x.to_string())
+                            .show_ui(ui, |ui| {
+                                for option in Faction::iter() {
+                                    let text = option.to_string();
+                                    ui.selectable_value(x, option, text);
+                                }
+                            });
+                    }
+                    Expression::State(x) => {
+                        ui.label(x.to_string());
+                    }
+                    Expression::StateLast(x) => {
+                        ui.label(x.to_string());
+                    }
+                    Expression::Context(x) => {
+                        ui.label(x.to_string());
+                    }
+                    Expression::Vec2(x, y) => {
+                        ui.label(format!("{x}:{y}"));
+                    }
+
+                    Expression::Vec2E(x)
+                    | Expression::StringInt(x)
+                    | Expression::StringFloat(x)
+                    | Expression::StringVec(x)
+                    | Expression::IntFloat(x)
+                    | Expression::Sin(x)
+                    | Expression::Cos(x)
+                    | Expression::UnitVec(x)
+                    | Expression::Even(x)
+                    | Expression::Abs(x)
+                    | Expression::SlotUnit(x)
+                    | Expression::FactionCount(x)
+                    | Expression::StatusCharges(x) => {
+                        x.show_tree(lookup, 0, ui);
+                    }
+                    Expression::Vec2EE(a, b)
+                    | Expression::Sum(a, b)
+                    | Expression::Sub(a, b)
+                    | Expression::Mul(a, b)
+                    | Expression::GreaterThen(a, b)
+                    | Expression::LessThen(a, b)
+                    | Expression::Min(a, b)
+                    | Expression::Max(a, b) => {
+                        a.show_tree(lookup, "a", ui);
+                        b.show_tree(lookup, "b", ui);
+                    }
+                    Expression::If(i, t, e) => {
+                        i.show_tree(lookup, "i", ui);
+                        t.show_tree(lookup, "t", ui);
+                        e.show_tree(lookup, "e", ui);
+                    }
+                    Expression::Equals(list) => {
+                        list.into_iter().for_each(|e| e.show_tree(lookup, 0, ui))
+                    }
+                }
+            });
     }
 }

@@ -6,7 +6,7 @@ mod plugins;
 mod prelude;
 pub mod resourses;
 mod utils;
-use bevy::diagnostic::{DiagnosticsStore, FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
+use bevy::diagnostic::{DiagnosticsStore, FrameTimeDiagnosticsPlugin};
 use prelude::*;
 pub use spacetimedb_sdk;
 
@@ -120,10 +120,11 @@ fn main() {
             TestPlugin,
             SettingsPlugin,
             AudioPlugin,
+            HeroEditorPlugin,
         ))
         // .add_systems(Update, ui_example_system)
         .add_systems(Startup, setup)
-        .add_systems(Update, (input, input_world))
+        .add_systems(Update, input_world)
         .init_resource::<UserName>()
         .init_resource::<Password>()
         .init_resource::<GameTimer>()
@@ -143,26 +144,12 @@ fn update(mut timer: ResMut<GameTimer>, time: Res<Time>) {
     timer.advance(time.delta_seconds());
 }
 
-fn input(input: Res<Input<KeyCode>>, mut timer: ResMut<GameTimer>) {
-    if input.just_pressed(KeyCode::Space) {
-        let paused = timer.paused();
-        timer.pause(!paused);
-    }
-}
-
 fn input_world(world: &mut World) {
     let input = world.get_resource::<Input<KeyCode>>().unwrap();
-    if input.just_pressed(KeyCode::C) {
-        UnitPlugin::clear_world(world);
-        let battle = Options::get_custom_battle(world);
-        let left = battle.left.clone();
-        let right = battle.right.clone();
-        dbg!(SimulationPlugin::run(left, right, world));
-        UnitPlugin::clear_world(world);
-    } else if input.just_pressed(KeyCode::S) {
-        Save::default().save(world).unwrap();
-        GameState::change(GameState::Restart, world);
-    } else if input.just_pressed(KeyCode::R) {
+    if !input.pressed(KeyCode::ControlLeft) {
+        return;
+    }
+    if input.just_pressed(KeyCode::R) {
         if input.pressed(KeyCode::ShiftLeft) {
             let mut pd = PersistentData::load(world);
             pd.last_state = None;

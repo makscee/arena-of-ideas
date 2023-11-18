@@ -46,6 +46,10 @@ impl MainMenuPlugin {
                     if ui.add(btn).clicked() {
                         GameState::change(GameState::CustomBattle, world);
                     }
+                    let btn = Self::menu_button("Hero Editor".to_owned(), ui);
+                    if ui.add(btn).clicked() {
+                        GameState::change(GameState::HeroEditor, world);
+                    }
                     let btn = Self::menu_button("Run Tests".to_owned(), ui);
                     if ui.add(btn).clicked() {
                         GameState::change(GameState::TestsLoading, world);

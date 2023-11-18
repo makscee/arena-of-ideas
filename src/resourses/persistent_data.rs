@@ -3,6 +3,7 @@ use super::*;
 #[derive(Serialize, Deserialize, Default, Clone)]
 pub struct PersistentData {
     pub last_state: Option<GameState>,
+    pub hero_editor_data: HeroEditorData,
 }
 
 const PERSISTENT_DATA_KEY: &str = "persistent_data";

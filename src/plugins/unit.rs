@@ -1,6 +1,3 @@
-use bevy_egui::egui::{CollapsingHeader, RichText};
-use strum_macros::Display;
-
 use super::*;
 
 pub struct UnitPlugin;
@@ -384,8 +381,13 @@ pub struct Slot;
     PartialOrd,
     Ord,
     Display,
+    Default,
+    AsRefStr,
+    EnumString,
+    EnumIter,
 )]
 pub enum Faction {
+    #[default]
     Left,
     Right,
     Team,

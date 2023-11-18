@@ -15,7 +15,7 @@ impl Plugin for ShopPlugin {
                 },
                 Self::level_finished,
             )
-            .add_systems(PostUpdate, Self::input)
+            .add_systems(PostUpdate, Self::input.run_if(in_state(GameState::Shop)))
             .add_systems(Update, (Self::ui.run_if(in_state(GameState::Shop)),));
     }
 }

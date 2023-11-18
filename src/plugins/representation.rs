@@ -6,8 +6,11 @@ impl Plugin for RepresentationPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
-            Self::injector_system
-                .run_if(in_state(GameState::Battle).or_else(in_state(GameState::Shop))),
+            Self::injector_system.run_if(
+                in_state(GameState::Battle)
+                    .or_else(in_state(GameState::Shop))
+                    .or_else(in_state(GameState::HeroEditor)),
+            ),
         );
     }
 }

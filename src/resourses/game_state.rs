@@ -11,6 +11,7 @@ pub enum GameState {
     CustomBattle,
     Battle,
     Shop,
+    HeroEditor,
 }
 
 impl GameState {

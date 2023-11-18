@@ -6,9 +6,22 @@ use strum_macros::{Display, EnumString};
 use super::*;
 
 #[derive(
-    Hash, Eq, PartialEq, Serialize, Deserialize, Clone, Copy, Debug, Reflect, Display, EnumString,
+    Hash,
+    Eq,
+    PartialEq,
+    Serialize,
+    Deserialize,
+    Clone,
+    Copy,
+    Debug,
+    Reflect,
+    Display,
+    EnumString,
+    Default,
 )]
 pub enum VarName {
+    #[default]
+    Value,
     Size,
     Scale,
     Radius,
@@ -28,7 +41,6 @@ pub enum VarName {
     Visible,
     Direction,
     Charges,
-    Value,
     G,
     LastAttacker,
     Color,

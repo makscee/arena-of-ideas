@@ -11,7 +11,7 @@ pub use var_state::*;
 pub use var_state_delta::*;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct HexColor(String);
+pub struct HexColor(pub String);
 
 impl Into<Color> for HexColor {
     fn into(self) -> Color {
