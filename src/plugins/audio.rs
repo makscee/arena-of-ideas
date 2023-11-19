@@ -33,7 +33,7 @@ impl AudioPlugin {
         channel.stop();
     }
 
-    pub fn background_position(world: &mut World) -> Option<f64> {
+    pub fn background_position(world: &World) -> Option<f64> {
         let instance = world.resource::<BackgroundChannel>().handle.clone();
         let channel = world.resource::<AudioChannel<BackgroundChannel>>();
         channel.state(&instance).position()

@@ -1,4 +1,4 @@
-use std::{f32::consts::PI, hash::Hash};
+use std::f32::consts::PI;
 
 use bevy_egui::egui::ComboBox;
 use hex::encode;
@@ -58,10 +58,9 @@ pub enum Expression {
     LessThen(Box<Expression>, Box<Expression>),
     Min(Box<Expression>, Box<Expression>),
     Max(Box<Expression>, Box<Expression>),
+    Equals(Box<Expression>, Box<Expression>),
 
     If(Box<Expression>, Box<Expression>, Box<Expression>),
-
-    Equals(Vec<Box<Expression>>),
 }
 impl Expression {
     pub fn get_value(&self, context: &Context, world: &mut World) -> Result<VarValue> {
@@ -179,14 +178,10 @@ impl Expression {
                 UnitPlugin::collect_faction(faction.get_faction(context, world)?, world).len()
                     as i32,
             )),
-            Expression::Equals(values) => {
-                let mut var_values: Vec<VarValue> = default();
-                for value in values {
-                    let value = value.get_value(context, world)?;
-                    var_values.push(value);
-                }
-                Ok(VarValue::Bool(var_values.into_iter().all_equal()))
-            }
+            Expression::Equals(a, b) => Ok(VarValue::Bool(
+                a.get_value(context, world)?
+                    .eq(&b.get_value(context, world)?),
+            )),
             Expression::Hex(color) => Ok(VarValue::Color(Color::hex(color)?)),
             Expression::StatusCharges(name) => {
                 let status_name = name.get_string(context, world)?;
@@ -242,12 +237,77 @@ impl Expression {
                 &a.get_value(context, world)?,
                 &b.get_value(context, world)?,
             )?),
-            Expression::Max(a, b) => Ok(VarValue::min(
+            Expression::Max(a, b) => Ok(VarValue::max(
                 &a.get_value(context, world)?,
                 &b.get_value(context, world)?,
             )?),
             Expression::Abs(x) => x.get_value(context, world)?.abs(),
         }
+    }
+
+    pub fn get_inner(&mut self) -> Vec<&mut Box<Expression>> {
+        match self {
+            Expression::Zero
+            | Expression::GameTime
+            | Expression::RandomFloat
+            | Expression::PI
+            | Expression::Owner
+            | Expression::Caster
+            | Expression::Target
+            | Expression::RandomUnit
+            | Expression::Age
+            | Expression::SlotPosition
+            | Expression::OwnerFaction
+            | Expression::OppositeFaction
+            | Expression::Beat
+            | Expression::Float(..)
+            | Expression::Int(..)
+            | Expression::Bool(..)
+            | Expression::String(..)
+            | Expression::Hex(..)
+            | Expression::Faction(..)
+            | Expression::State(..)
+            | Expression::StateLast(..)
+            | Expression::Context(..)
+            | Expression::Vec2(..) => default(),
+            Expression::StringInt(x)
+            | Expression::StringFloat(x)
+            | Expression::StringVec(x)
+            | Expression::IntFloat(x)
+            | Expression::Sin(x)
+            | Expression::Cos(x)
+            | Expression::UnitVec(x)
+            | Expression::Even(x)
+            | Expression::Abs(x)
+            | Expression::SlotUnit(x)
+            | Expression::FactionCount(x)
+            | Expression::StatusCharges(x)
+            | Expression::Vec2E(x) => vec![x],
+
+            Expression::Vec2EE(a, b)
+            | Expression::Sum(a, b)
+            | Expression::Sub(a, b)
+            | Expression::Mul(a, b)
+            | Expression::GreaterThen(a, b)
+            | Expression::LessThen(a, b)
+            | Expression::Min(a, b)
+            | Expression::Equals(a, b)
+            | Expression::Max(a, b) => vec![a, b],
+            Expression::If(a, b, c) => vec![a, b, c],
+        }
+    }
+
+    pub fn set_inner(mut self, mut other: Expression) -> Self {
+        let inner_self = self.get_inner();
+        let inner_other = other.get_inner();
+        for (i, e) in inner_self.into_iter().enumerate() {
+            if inner_other.len() <= i {
+                break;
+            }
+            let oe = inner_other.get(i).unwrap().as_ref().clone();
+            *e = Box::new(oe);
+        }
+        self
     }
 
     pub fn get_float(&self, context: &Context, world: &mut World) -> Result<f32> {
@@ -275,21 +335,77 @@ impl Expression {
         self.get_value(context, world)?.get_color()
     }
 
-    pub fn show_tree(&mut self, lookup: &mut String, id: impl Hash, ui: &mut Ui) {
-        CollapsingHeader::new(self.to_string())
-            .id_source(id)
-            .default_open(true)
-            .show(ui, |ui| {
-                let input = ui.add(TextEdit::singleline(lookup));
-                if input.has_focus() || input.lost_focus() {
+    pub fn show_tree_root(
+        &mut self,
+        entity: Option<Entity>,
+        editing_data: &mut EditingData,
+        name: String,
+        ui: &mut Ui,
+        world: &mut World,
+    ) -> bool {
+        let mut changed = false;
+        ui.horizontal(|ui| {
+            ui.label(name.clone());
+            changed = self.show_tree(editing_data, name, ui);
+            if let Some(entity) = entity {
+                let text = match self.get_value(&Context::from_owner(entity, world), world) {
+                    Ok(value) => RichText::new(format!("{value:?}")).color(hex_color!("#00ACC1")),
+                    Err(err) => RichText::new(err.to_string()).color(hex_color!("#F44336")),
+                };
+                ui.label(text);
+            }
+        });
+        changed
+    }
+
+    pub fn show_tree(&mut self, editing_data: &mut EditingData, name: String, ui: &mut Ui) -> bool {
+        let mut changed = false;
+        let hovered = if let Some(hovered) = editing_data.hovered.as_ref() {
+            hovered.eq(&name)
+        } else {
+            false
+        };
+        let color = match hovered {
+            true => hex_color!("#FF9100"),
+            false => hex_color!("#1E88E5"),
+        };
+        ui.style_mut().visuals.hyperlink_color = color;
+        let mut now_hovered = false;
+        ui.horizontal(|ui| {
+            if ui.link("-").clicked() {
+                changed = true;
+                let first: Expression = if let Some(first) = self.get_inner().first() {
+                    first.as_ref().clone()
+                } else {
+                    default()
+                };
+                *self = first;
+            }
+            let left = ui.link(RichText::new("("));
+            if left.clicked() {
+                let abs = Expression::Abs(Box::new(self.clone()));
+                *self = abs;
+                changed = true;
+            }
+            now_hovered |= left.hovered();
+            ui.vertical(|ui| {
+                let link = ui.link(RichText::new(format!("{self}")));
+                if link.clicked() {
+                    changed = true;
+                    editing_data.lookup.clear();
+                    link.request_focus();
+                }
+                now_hovered |= link.hovered();
+                if link.has_focus() || link.lost_focus() {
                     let mut need_clear = false;
                     ui.horizontal_wrapped(|ui| {
+                        ui.label(editing_data.lookup.to_owned());
                         Expression::iter()
                             .filter_map(|e| {
                                 match e
                                     .to_string()
                                     .to_lowercase()
-                                    .starts_with(lookup.to_lowercase().as_str())
+                                    .starts_with(editing_data.lookup.to_lowercase().as_str())
                                 {
                                     true => Some(e),
                                     false => None,
@@ -298,105 +414,139 @@ impl Expression {
                             .for_each(|e| {
                                 let button = ui.button(e.to_string());
                                 if button.gained_focus() || button.clicked() {
-                                    *self = e;
+                                    *self = e.set_inner(self.clone());
                                     need_clear = true;
+                                    changed = true;
                                 }
                             })
                     });
                     if need_clear {
-                        *lookup = String::default();
-                    }
-                }
-
-                match self {
-                    Expression::Zero
-                    | Expression::GameTime
-                    | Expression::RandomFloat
-                    | Expression::PI
-                    | Expression::Owner
-                    | Expression::Caster
-                    | Expression::Target
-                    | Expression::RandomUnit
-                    | Expression::Age
-                    | Expression::SlotPosition
-                    | Expression::OwnerFaction
-                    | Expression::OppositeFaction
-                    | Expression::Beat => {
-                        ui.label(self.to_string());
-                    }
-                    Expression::Float(x) => {
-                        ui.add(Slider::new(x, -100.0..=100.0));
-                    }
-                    Expression::Int(x) => {
-                        ui.add(Slider::new(x, -100..=100));
-                    }
-                    Expression::Bool(x) => {
-                        ui.checkbox(x, "");
-                    }
-                    Expression::Hex(x) | Expression::String(x) => {
-                        let mut color = HexColor(x.to_owned()).into();
-                        if ui.color_edit_button_srgba(&mut color).changed() {
-                            *x = encode(color.to_array());
-                        }
-                    }
-                    Expression::Faction(x) => {
-                        ComboBox::from_label("Faction")
-                            .selected_text(x.to_string())
-                            .show_ui(ui, |ui| {
-                                for option in Faction::iter() {
-                                    let text = option.to_string();
-                                    ui.selectable_value(x, option, text);
-                                }
-                            });
-                    }
-                    Expression::State(x) => {
-                        ui.label(x.to_string());
-                    }
-                    Expression::StateLast(x) => {
-                        ui.label(x.to_string());
-                    }
-                    Expression::Context(x) => {
-                        ui.label(x.to_string());
-                    }
-                    Expression::Vec2(x, y) => {
-                        ui.label(format!("{x}:{y}"));
-                    }
-
-                    Expression::Vec2E(x)
-                    | Expression::StringInt(x)
-                    | Expression::StringFloat(x)
-                    | Expression::StringVec(x)
-                    | Expression::IntFloat(x)
-                    | Expression::Sin(x)
-                    | Expression::Cos(x)
-                    | Expression::UnitVec(x)
-                    | Expression::Even(x)
-                    | Expression::Abs(x)
-                    | Expression::SlotUnit(x)
-                    | Expression::FactionCount(x)
-                    | Expression::StatusCharges(x) => {
-                        x.show_tree(lookup, 0, ui);
-                    }
-                    Expression::Vec2EE(a, b)
-                    | Expression::Sum(a, b)
-                    | Expression::Sub(a, b)
-                    | Expression::Mul(a, b)
-                    | Expression::GreaterThen(a, b)
-                    | Expression::LessThen(a, b)
-                    | Expression::Min(a, b)
-                    | Expression::Max(a, b) => {
-                        a.show_tree(lookup, "a", ui);
-                        b.show_tree(lookup, "b", ui);
-                    }
-                    Expression::If(i, t, e) => {
-                        i.show_tree(lookup, "i", ui);
-                        t.show_tree(lookup, "t", ui);
-                        e.show_tree(lookup, "e", ui);
-                    }
-                    Expression::Equals(list) => {
-                        list.into_iter().for_each(|e| e.show_tree(lookup, 0, ui))
+                        editing_data.lookup.clear();
                     }
                 }
             });
+        });
+
+        match self {
+            Expression::Zero
+            | Expression::GameTime
+            | Expression::RandomFloat
+            | Expression::PI
+            | Expression::Owner
+            | Expression::Caster
+            | Expression::Target
+            | Expression::RandomUnit
+            | Expression::Age
+            | Expression::SlotPosition
+            | Expression::OwnerFaction
+            | Expression::OppositeFaction
+            | Expression::Beat => {}
+            Expression::Float(x) => {
+                changed |= ui
+                    .add(Slider::new(x, -10.0..=10.0).clamp_to_range(false))
+                    .changed();
+            }
+            Expression::Int(x) => {
+                changed |= ui
+                    .add(Slider::new(x, -10..=10).clamp_to_range(false))
+                    .changed();
+            }
+            Expression::Bool(x) => {
+                changed |= ui.checkbox(x, "").changed();
+            }
+            Expression::String(x) => {
+                ui.text_edit_singleline(x);
+            }
+            Expression::Hex(x) => {
+                let c = Color::hex(x.to_owned()).unwrap_or_default().as_rgba_u8();
+                let mut c = Color32::from_rgb(c[0], c[1], c[2]);
+                if ui.color_edit_button_srgba(&mut c).changed() {
+                    *x = encode(c.to_array());
+                    changed = true;
+                }
+            }
+            Expression::Faction(x) => {
+                ComboBox::from_id_source(&name)
+                    .selected_text(x.to_string())
+                    .show_ui(ui, |ui| {
+                        for option in Faction::iter() {
+                            let text = option.to_string();
+                            changed |= ui.selectable_value(x, option, text).changed();
+                        }
+                    });
+            }
+            Expression::State(x) => {
+                ComboBox::from_id_source(&name)
+                    .selected_text(x.to_string())
+                    .show_ui(ui, |ui| {
+                        for option in VarName::iter() {
+                            let text = option.to_string();
+                            changed |= ui.selectable_value(x, option, text).changed();
+                        }
+                    });
+            }
+            Expression::StateLast(x) => {
+                ui.label(x.to_string());
+            }
+            Expression::Context(x) => {
+                ui.label(x.to_string());
+            }
+            Expression::Vec2(x, y) => {
+                ui.label(format!("{x}:{y}"));
+            }
+
+            Expression::Vec2E(x)
+            | Expression::StringInt(x)
+            | Expression::StringFloat(x)
+            | Expression::StringVec(x)
+            | Expression::IntFloat(x)
+            | Expression::Sin(x)
+            | Expression::Cos(x)
+            | Expression::UnitVec(x)
+            | Expression::Even(x)
+            | Expression::Abs(x)
+            | Expression::SlotUnit(x)
+            | Expression::FactionCount(x)
+            | Expression::StatusCharges(x) => {
+                changed |= x.show_tree(editing_data, name.clone() + "/x", ui);
+            }
+            Expression::Vec2EE(a, b)
+            | Expression::Sum(a, b)
+            | Expression::Sub(a, b)
+            | Expression::Mul(a, b)
+            | Expression::GreaterThen(a, b)
+            | Expression::LessThen(a, b)
+            | Expression::Min(a, b)
+            | Expression::Max(a, b)
+            | Expression::Equals(a, b) => {
+                ui.vertical(|ui| {
+                    ui.horizontal(|ui| {
+                        changed |= a.show_tree(editing_data, name.clone() + "/a", ui);
+                    });
+                    ui.horizontal(|ui| {
+                        changed |= b.show_tree(editing_data, name.clone() + "/b", ui);
+                    });
+                });
+            }
+            Expression::If(i, t, e) => {
+                changed |= i.show_tree(editing_data, name.clone() + "/i", ui);
+                changed |= t.show_tree(editing_data, name.clone() + "/t", ui);
+                changed |= e.show_tree(editing_data, name.clone() + "/e", ui);
+            }
+        }
+        ui.style_mut().visuals.hyperlink_color = color;
+        let right = ui.link(RichText::new(")"));
+        if right.clicked() {
+            for inner in self.get_inner() {
+                *inner = Box::new(Expression::Zero);
+            }
+            changed = true;
+        }
+        now_hovered |= right.hovered();
+        if now_hovered && !editing_data.hovered.as_ref().eq(&Some(&name)) {
+            editing_data.hovered = Some(name.clone());
+            changed = true;
+        }
+        changed
     }
 }

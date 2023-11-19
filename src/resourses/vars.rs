@@ -17,10 +17,14 @@ use super::*;
     Reflect,
     Display,
     EnumString,
+    EnumIter,
     Default,
+    PartialOrd,
+    Ord,
 )]
 pub enum VarName {
     #[default]
+    None,
     Value,
     Size,
     Scale,

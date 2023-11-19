@@ -39,13 +39,13 @@ impl RepresentationPlugin {
             }
 
             let position = VarState::get_value(entity, VarName::Position, t, world)
-                .map(|x| x.get_vec2().unwrap())
+                .and_then(|x| x.get_vec2())
                 .unwrap_or_default();
             let rotation = VarState::get_value(entity, VarName::Rotation, t, world)
-                .map(|x| x.get_float().unwrap())
+                .and_then(|x| x.get_float())
                 .unwrap_or_default();
             let scale = VarState::get_value(entity, VarName::Size, t, world)
-                .map(|x| x.get_vec2().unwrap())
+                .and_then(|x| x.get_vec2())
                 .unwrap_or(Vec2::ONE);
 
             let mut transform = world.get_mut::<Transform>(entity).unwrap();

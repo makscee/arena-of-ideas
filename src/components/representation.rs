@@ -7,7 +7,16 @@ use bevy_egui::egui::ComboBox;
 use super::*;
 
 #[derive(
-    Serialize, TypeUuid, TypePath, Deserialize, Debug, Component, Resource, Clone, Default,
+    Serialize,
+    TypeUuid,
+    TypePath,
+    Deserialize,
+    Debug,
+    Component,
+    Resource,
+    Clone,
+    Default,
+    PartialEq,
 )]
 #[uuid = "cc360991-638e-4066-af03-f4f8abbbc450"]
 #[serde(deny_unknown_fields)]
@@ -21,7 +30,7 @@ pub struct Representation {
     pub count: usize,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Display, Default, EnumIter)]
+#[derive(Serialize, Deserialize, Debug, Clone, Display, Default, EnumIter, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub enum RepresentationMaterial {
     #[default]
@@ -203,7 +212,7 @@ impl RepresentationMaterial {
                 font_size,
                 color,
             } => {
-                let color = color.get_color(&context, world).unwrap();
+                let color = color.get_color(&context, world).unwrap_or_default();
                 world.get_mut::<Text>(entity).unwrap().sections[0].value =
                     text.get_string(&context, world).unwrap_or_default();
                 world.get_mut::<Text>(entity).unwrap().sections[0].style = TextStyle {
@@ -222,10 +231,10 @@ impl RepresentationMaterial {
                 dilations,
                 aa,
             } => {
-                let thickness = thickness.get_float(&context, world).unwrap() * 0.05;
-                let curvature = curvature.get_float(&context, world).unwrap();
-                let aa = aa.get_float(&context, world).unwrap();
-                let color = color.get_color(&context, world).unwrap();
+                let thickness = thickness.get_float(&context, world).unwrap_or(1.0) * 0.05;
+                let curvature = curvature.get_float(&context, world).unwrap_or(1.0);
+                let aa = aa.get_float(&context, world).unwrap_or(1.0);
+                let color = color.get_color(&context, world).unwrap_or_default();
                 let mut dilations = dilations
                     .into_iter()
                     .map(|(t, v)| {
@@ -302,37 +311,25 @@ impl RepresentationMaterial {
         }
     }
 
-    pub fn show_tree(&mut self, lookup: &mut String, ui: &mut Ui) {
+    pub fn show_tree(
+        &mut self,
+        entity: Option<Entity>,
+        editing_data: &mut EditingData,
+        ui: &mut Ui,
+        world: &mut World,
+    ) -> bool {
+        let mut changed = false;
         CollapsingHeader::new(self.to_string())
             .default_open(true)
             .show(ui, |ui| {
-                let input = ui.add(TextEdit::singleline(lookup));
-                if input.has_focus() || input.lost_focus() {
-                    let mut need_clear = false;
-                    ui.horizontal_wrapped(|ui| {
-                        RepresentationMaterial::iter()
-                            .filter_map(|e| {
-                                match e
-                                    .to_string()
-                                    .to_lowercase()
-                                    .starts_with(lookup.to_lowercase().as_str())
-                                {
-                                    true => Some(e),
-                                    false => None,
-                                }
-                            })
-                            .for_each(|e| {
-                                let button = ui.button(e.to_string());
-                                if button.gained_focus() || button.clicked() {
-                                    *self = e;
-                                    need_clear = true;
-                                }
-                            })
+                ComboBox::from_label("type")
+                    .selected_text(self.to_string())
+                    .show_ui(ui, |ui| {
+                        for option in RepresentationMaterial::iter() {
+                            let text = option.to_string();
+                            changed |= ui.selectable_value(self, option, text).clicked();
+                        }
                     });
-                    if need_clear {
-                        *lookup = String::default();
-                    }
-                }
                 match self {
                     RepresentationMaterial::None => {}
                     RepresentationMaterial::Shape {
@@ -348,7 +345,7 @@ impl RepresentationMaterial {
                             .show_ui(ui, |ui| {
                                 for option in Shape::iter() {
                                     let text = option.to_string();
-                                    ui.selectable_value(shape, option, text);
+                                    changed |= ui.selectable_value(shape, option, text).clicked();
                                 }
                             });
                         ComboBox::from_label("Fill")
@@ -356,25 +353,36 @@ impl RepresentationMaterial {
                             .show_ui(ui, |ui| {
                                 for option in Fill::iter() {
                                     let text = option.to_string();
-                                    ui.selectable_value(fill, option, text);
+                                    changed |= ui.selectable_value(fill, option, text).clicked();
                                 }
                             });
-                        ui.horizontal(|ui| {
-                            ui.label("size");
-                            size.show_tree(lookup, "size", ui);
-                        });
-                        ui.horizontal(|ui| {
-                            ui.label("thickness");
-                            thickness.show_tree(lookup, "thickness", ui);
-                        });
-                        ui.horizontal(|ui| {
-                            ui.label("alpha");
-                            alpha.show_tree(lookup, "alpha", ui);
-                        });
-                        ui.horizontal(|ui| {
-                            ui.label("color");
-                            color.show_tree(lookup, "color", ui);
-                        });
+
+                        changed |=
+                            size.show_tree_root(entity, editing_data, "size".to_owned(), ui, world);
+
+                        changed |= thickness.show_tree_root(
+                            entity,
+                            editing_data,
+                            "thickness".to_owned(),
+                            ui,
+                            world,
+                        );
+
+                        changed |= alpha.show_tree_root(
+                            entity,
+                            editing_data,
+                            "alpha".to_owned(),
+                            ui,
+                            world,
+                        );
+
+                        changed |= color.show_tree_root(
+                            entity,
+                            editing_data,
+                            "color".to_owned(),
+                            ui,
+                            world,
+                        );
                     }
                     RepresentationMaterial::Text {
                         size,
@@ -382,19 +390,19 @@ impl RepresentationMaterial {
                         color,
                         font_size,
                     } => {
-                        ui.horizontal(|ui| {
-                            ui.label("size");
-                            size.show_tree(lookup, "size", ui);
-                        });
-                        ui.horizontal(|ui| {
-                            ui.label("text");
-                            text.show_tree(lookup, "text", ui);
-                        });
-                        ui.horizontal(|ui| {
-                            ui.label("color");
-                            color.show_tree(lookup, "color", ui);
-                        });
-                        ui.add(Slider::new(font_size, 16.0..=48.0));
+                        changed |=
+                            size.show_tree_root(entity, editing_data, "size".to_owned(), ui, world);
+                        changed |=
+                            text.show_tree_root(entity, editing_data, "text".to_owned(), ui, world);
+
+                        changed |= color.show_tree_root(
+                            entity,
+                            editing_data,
+                            "color".to_owned(),
+                            ui,
+                            world,
+                        );
+                        changed |= ui.add(Slider::new(font_size, 16.0..=48.0)).changed();
                     }
                     RepresentationMaterial::Curve {
                         thickness,
@@ -404,24 +412,27 @@ impl RepresentationMaterial {
                         color,
                     } => {
                         ui.horizontal(|ui| {
-                            ui.label("thickness");
-                            thickness.show_tree(lookup, "thickness", ui);
+                            ui.label("thickness:");
+                            changed |=
+                                thickness.show_tree(editing_data, "thickness".to_owned(), ui);
                         });
                         ui.horizontal(|ui| {
-                            ui.label("curvature");
-                            curvature.show_tree(lookup, "curvature", ui);
+                            ui.label("curvature:");
+                            changed |=
+                                curvature.show_tree(editing_data, "curvature".to_owned(), ui);
                         });
                         ui.horizontal(|ui| {
-                            ui.label("aa");
-                            aa.show_tree(lookup, "aa", ui);
+                            ui.label("aa:");
+                            changed |= aa.show_tree(editing_data, "aa".to_owned(), ui);
                         });
                         ui.horizontal(|ui| {
-                            ui.label("color");
-                            color.show_tree(lookup, "color", ui);
+                            ui.label("color:");
+                            changed |= color.show_tree(editing_data, "color".to_owned(), ui);
                         });
                     }
-                }
+                };
             });
+        changed
     }
 }
 
@@ -494,33 +505,90 @@ impl Representation {
 
     pub fn show_tree(
         &mut self,
-        lookup: &mut String,
+        entity: Option<Entity>,
+        editing_data: &mut EditingData,
         id: impl std::hash::Hash,
         ui: &mut Ui,
-    ) -> bool {
+        world: &mut World,
+    ) -> (bool, bool) {
         let mut delete = false;
+        let mut changed = false;
         CollapsingHeader::new("Representation")
             .id_source(id)
             .default_open(true)
             .show(ui, |ui| {
                 if ui.button("delete").clicked() {
                     delete = true;
+                    changed = true;
                 }
-                self.material.show_tree(lookup, ui);
+                changed |= self.material.show_tree(entity, editing_data, ui, world);
                 let mut deletes = Vec::default();
                 for (i, rep) in self.children.iter_mut().enumerate() {
-                    if rep.show_tree(lookup, i, ui) {
+                    let (child_changed, child_delete) =
+                        rep.show_tree(entity, editing_data, i, ui, world);
+                    if child_delete {
                         deletes.push(i);
                     }
+                    changed |= child_changed || child_delete;
                 }
                 deletes.into_iter().rev().for_each(|i| {
                     self.children.remove(i);
                 });
+                CollapsingHeader::new("Mapping")
+                    .default_open(true)
+                    .show(ui, |ui| {
+                        let mut renames: HashMap<VarName, VarName> = default();
+                        let mut deletes: Vec<VarName> = default();
+                        for (var, e) in self.mapping.iter_mut().sorted_by_key(|x| x.0) {
+                            let mut x = var.clone();
+                            ui.horizontal(|ui| {
+                                if ui.button("-").clicked() {
+                                    deletes.push(*var);
+                                }
+                                ComboBox::from_label(var.to_string())
+                                    .selected_text(x.to_string())
+                                    .show_ui(ui, |ui| {
+                                        for option in VarName::iter() {
+                                            let text = option.to_string();
+                                            changed |=
+                                                ui.selectable_value(&mut x, option, text).changed();
+                                        }
+                                    });
+                                changed |= e.show_tree_root(
+                                    entity,
+                                    editing_data,
+                                    var.to_string(),
+                                    ui,
+                                    world,
+                                );
+                                if !x.eq(var) {
+                                    renames.insert(x, *var);
+                                }
+                            });
+                        }
+                        for (to, from) in renames {
+                            if let Some(value) = self.mapping.remove(&from) {
+                                self.mapping.insert(to, value);
+                                changed = true;
+                            }
+                        }
+                        for var in deletes {
+                            self.mapping.remove(&var);
+                            changed = true;
+                        }
+                        if ui.button("+").clicked() {
+                            self.mapping.insert(default(), default());
+                            changed = true;
+                        }
+                    });
                 if ui.button("+").clicked() {
                     self.children.push(default());
+                    changed = true;
                 }
-                ui.add(Slider::new(&mut self.count, 0..=10).text("Count"));
+                changed |= ui
+                    .add(Slider::new(&mut self.count, 0..=10).text("Count"))
+                    .changed();
             });
-        delete
+        (changed, delete)
     }
 }
