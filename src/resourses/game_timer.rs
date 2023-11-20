@@ -52,6 +52,9 @@ impl GameTimer {
     }
 
     pub fn advance_end(&mut self, delta: f32) -> &mut Self {
+        if self.end < self.play_head {
+            self.end = self.play_head;
+        }
         self.end += delta;
         self
     }

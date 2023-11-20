@@ -189,3 +189,16 @@ impl VarValue {
         }
     }
 }
+
+impl VarName {
+    pub fn show_editor(&mut self, ui: &mut Ui) {
+        ComboBox::from_id_source(*self)
+            .selected_text(self.to_string())
+            .show_ui(ui, |ui| {
+                for option in VarName::iter() {
+                    let text = option.to_string();
+                    ui.selectable_value(self, option, text);
+                }
+            });
+    }
+}

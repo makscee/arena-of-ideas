@@ -372,7 +372,8 @@ impl Expression {
         ui.style_mut().visuals.hyperlink_color = color;
         let mut now_hovered = false;
         ui.horizontal(|ui| {
-            if ui.link("-").clicked() {
+            let minus = ui.link("-");
+            if minus.clicked() {
                 let first: Expression = if let Some(first) = self.get_inner().first() {
                     first.as_ref().clone()
                 } else {
@@ -385,7 +386,7 @@ impl Expression {
                 let abs = Expression::Abs(Box::new(self.clone()));
                 *self = abs;
             }
-            now_hovered |= left.hovered();
+            now_hovered |= left.hovered() || minus.hovered();
             ui.vertical(|ui| {
                 let link = ui.link(RichText::new(format!("{self}")));
                 if link.clicked() {
@@ -421,121 +422,121 @@ impl Expression {
                     }
                 }
             });
-        });
 
-        match self {
-            Expression::Zero
-            | Expression::GameTime
-            | Expression::RandomFloat
-            | Expression::PI
-            | Expression::Owner
-            | Expression::Caster
-            | Expression::Target
-            | Expression::RandomUnit
-            | Expression::Age
-            | Expression::SlotPosition
-            | Expression::OwnerFaction
-            | Expression::OppositeFaction
-            | Expression::Beat => {}
-            Expression::Float(x) => {
-                ui.add(DragValue::new(x).speed(0.1));
-            }
-            Expression::Int(x) => {
-                ui.add(DragValue::new(x));
-            }
-            Expression::Bool(x) => {
-                ui.checkbox(x, "");
-            }
-            Expression::String(x) => {
-                ui.text_edit_singleline(x);
-            }
-            Expression::Hex(x) => {
-                let c = Color::hex(x.to_owned()).unwrap_or_default().as_rgba_u8();
-                let mut c = Color32::from_rgb(c[0], c[1], c[2]);
-                if ui.color_edit_button_srgba(&mut c).changed() {
-                    *x = encode(c.to_array());
+            match self {
+                Expression::Zero
+                | Expression::GameTime
+                | Expression::RandomFloat
+                | Expression::PI
+                | Expression::Owner
+                | Expression::Caster
+                | Expression::Target
+                | Expression::RandomUnit
+                | Expression::Age
+                | Expression::SlotPosition
+                | Expression::OwnerFaction
+                | Expression::OppositeFaction
+                | Expression::Beat => {}
+                Expression::Float(x) => {
+                    ui.add(DragValue::new(x).speed(0.1));
+                }
+                Expression::Int(x) => {
+                    ui.add(DragValue::new(x));
+                }
+                Expression::Bool(x) => {
+                    ui.checkbox(x, "");
+                }
+                Expression::String(x) => {
+                    ui.text_edit_singleline(x);
+                }
+                Expression::Hex(x) => {
+                    let c = Color::hex(x.to_owned()).unwrap_or_default().as_rgba_u8();
+                    let mut c = Color32::from_rgb(c[0], c[1], c[2]);
+                    if ui.color_edit_button_srgba(&mut c).changed() {
+                        *x = encode(c.to_array());
+                    }
+                }
+                Expression::Faction(x) => {
+                    ComboBox::from_id_source(&name)
+                        .selected_text(x.to_string())
+                        .show_ui(ui, |ui| {
+                            for option in Faction::iter() {
+                                let text = option.to_string();
+                                ui.selectable_value(x, option, text).changed();
+                            }
+                        });
+                }
+                Expression::State(x) => {
+                    ComboBox::from_id_source(&name)
+                        .selected_text(x.to_string())
+                        .show_ui(ui, |ui| {
+                            for option in VarName::iter() {
+                                let text = option.to_string();
+                                ui.selectable_value(x, option, text).changed();
+                            }
+                        });
+                }
+                Expression::StateLast(x) => {
+                    ui.label(x.to_string());
+                }
+                Expression::Context(x) => {
+                    ui.label(x.to_string());
+                }
+                Expression::Vec2(x, y) => {
+                    ui.add(DragValue::new(x).speed(0.1));
+                    ui.add(DragValue::new(y).speed(0.1));
+                }
+
+                Expression::Vec2E(x)
+                | Expression::StringInt(x)
+                | Expression::StringFloat(x)
+                | Expression::StringVec(x)
+                | Expression::IntFloat(x)
+                | Expression::Sin(x)
+                | Expression::Cos(x)
+                | Expression::UnitVec(x)
+                | Expression::Even(x)
+                | Expression::Abs(x)
+                | Expression::SlotUnit(x)
+                | Expression::FactionCount(x)
+                | Expression::StatusCharges(x) => {
+                    x.show_editor(editing_data, format!("{name}/x"), ui);
+                }
+                Expression::Vec2EE(a, b)
+                | Expression::Sum(a, b)
+                | Expression::Sub(a, b)
+                | Expression::Mul(a, b)
+                | Expression::GreaterThen(a, b)
+                | Expression::LessThen(a, b)
+                | Expression::Min(a, b)
+                | Expression::Max(a, b)
+                | Expression::Equals(a, b) => {
+                    ui.vertical(|ui| {
+                        ui.horizontal(|ui| {
+                            a.show_editor(editing_data, format!("{name}/a"), ui);
+                        });
+                        ui.horizontal(|ui| {
+                            b.show_editor(editing_data, format!("{name}/b"), ui);
+                        });
+                    });
+                }
+                Expression::If(i, t, e) => {
+                    i.show_editor(editing_data, format!("{name}/i"), ui);
+                    t.show_editor(editing_data, format!("{name}/t"), ui);
+                    e.show_editor(editing_data, format!("{name}/e"), ui);
                 }
             }
-            Expression::Faction(x) => {
-                ComboBox::from_id_source(&name)
-                    .selected_text(x.to_string())
-                    .show_ui(ui, |ui| {
-                        for option in Faction::iter() {
-                            let text = option.to_string();
-                            ui.selectable_value(x, option, text).changed();
-                        }
-                    });
+            ui.style_mut().visuals.hyperlink_color = color;
+            let right = ui.link(RichText::new(")"));
+            if right.clicked() {
+                for inner in self.get_inner() {
+                    *inner = Box::new(Expression::Zero);
+                }
             }
-            Expression::State(x) => {
-                ComboBox::from_id_source(&name)
-                    .selected_text(x.to_string())
-                    .show_ui(ui, |ui| {
-                        for option in VarName::iter() {
-                            let text = option.to_string();
-                            ui.selectable_value(x, option, text).changed();
-                        }
-                    });
+            now_hovered |= right.hovered();
+            if now_hovered && !editing_data.hovered.as_ref().eq(&Some(&name)) {
+                editing_data.hovered = Some(name.clone());
             }
-            Expression::StateLast(x) => {
-                ui.label(x.to_string());
-            }
-            Expression::Context(x) => {
-                ui.label(x.to_string());
-            }
-            Expression::Vec2(x, y) => {
-                ui.add(DragValue::new(x).speed(0.1));
-                ui.add(DragValue::new(y).speed(0.1));
-            }
-
-            Expression::Vec2E(x)
-            | Expression::StringInt(x)
-            | Expression::StringFloat(x)
-            | Expression::StringVec(x)
-            | Expression::IntFloat(x)
-            | Expression::Sin(x)
-            | Expression::Cos(x)
-            | Expression::UnitVec(x)
-            | Expression::Even(x)
-            | Expression::Abs(x)
-            | Expression::SlotUnit(x)
-            | Expression::FactionCount(x)
-            | Expression::StatusCharges(x) => {
-                x.show_editor(editing_data, name.clone() + "/x", ui);
-            }
-            Expression::Vec2EE(a, b)
-            | Expression::Sum(a, b)
-            | Expression::Sub(a, b)
-            | Expression::Mul(a, b)
-            | Expression::GreaterThen(a, b)
-            | Expression::LessThen(a, b)
-            | Expression::Min(a, b)
-            | Expression::Max(a, b)
-            | Expression::Equals(a, b) => {
-                ui.vertical(|ui| {
-                    ui.horizontal(|ui| {
-                        a.show_editor(editing_data, name.clone() + "/a", ui);
-                    });
-                    ui.horizontal(|ui| {
-                        b.show_editor(editing_data, name.clone() + "/b", ui);
-                    });
-                });
-            }
-            Expression::If(i, t, e) => {
-                i.show_editor(editing_data, name.clone() + "/i", ui);
-                t.show_editor(editing_data, name.clone() + "/t", ui);
-                e.show_editor(editing_data, name.clone() + "/e", ui);
-            }
-        }
-        ui.style_mut().visuals.hyperlink_color = color;
-        let right = ui.link(RichText::new(")"));
-        if right.clicked() {
-            for inner in self.get_inner() {
-                *inner = Box::new(Expression::Zero);
-            }
-        }
-        now_hovered |= right.hovered();
-        if now_hovered && !editing_data.hovered.as_ref().eq(&Some(&name)) {
-            editing_data.hovered = Some(name.clone());
-        }
+        });
     }
 }

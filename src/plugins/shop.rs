@@ -52,7 +52,7 @@ impl ShopPlugin {
 
     fn on_leave(world: &mut World) {
         Self::pack_active_team(world).unwrap();
-        UnitPlugin::despawn_all(world);
+        UnitPlugin::despawn_all_teams(world);
         Self::clear_showcase(world);
 
         let left = Self::active_team(world).unwrap();

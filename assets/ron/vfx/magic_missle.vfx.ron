@@ -1,5 +1,5 @@
 (
-    anim: Sequence(
+    anim: Run(
         [
             Change(
                 var: T,
@@ -23,7 +23,7 @@
             Change(
                 var: Visible,
                 value: Bool(false),
-                t: 0.3,
+                t: 1.3,
             ),
         ],
     ),

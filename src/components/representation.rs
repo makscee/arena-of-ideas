@@ -609,14 +609,7 @@ impl Representation {
                                 if ui.button("-").clicked() {
                                     deletes.push(*var);
                                 }
-                                ComboBox::from_id_source(x)
-                                    .selected_text(x.to_string())
-                                    .show_ui(ui, |ui| {
-                                        for option in VarName::iter() {
-                                            let text = option.to_string();
-                                            ui.selectable_value(&mut x, option, text);
-                                        }
-                                    });
+                                x.show_editor(ui);
                                 e.show_editor_root(
                                     entity,
                                     editing_data,

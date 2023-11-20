@@ -84,14 +84,24 @@ impl UnitPlugin {
         }
     }
 
-    pub fn clear_world(world: &mut World) {
-        let entities = world
-            .query_filtered::<Entity, Or<(&Unit, &Corpse)>>()
-            .iter(world)
-            .collect_vec();
-        for entity in entities {
-            world.entity_mut(entity).despawn_recursive();
-        }
+    pub fn place_into_slot(entity: Entity, world: &mut World) -> Result<()> {
+        let context = Context::from_owner(entity, world);
+        let faction = context
+            .get_var(VarName::Faction, world)
+            .context("No faction var")?
+            .get_faction()?;
+        let slot = context
+            .get_var(VarName::Slot, world)
+            .context("No slot var")?
+            .get_int()?;
+        let pos = Self::get_slot_position(faction, slot as usize);
+        VarState::push_back(
+            entity,
+            VarName::Position,
+            Change::new(VarValue::Vec2(pos)),
+            world,
+        );
+        Ok(())
     }
 
     pub fn translate_unit(entity: Entity, position: Vec2, world: &mut World) {
@@ -150,16 +160,24 @@ impl UnitPlugin {
             <= 0
     }
 
-    pub fn despawn_all(world: &mut World) {
+    pub fn despawn_all_teams(world: &mut World) {
         for team in world
             .query_filtered::<Entity, With<Team>>()
             .iter(world)
             .collect_vec()
         {
-            debug!("Despawn {team:?}");
             world.entity_mut(team).despawn_recursive()
         }
-        Representation::despawn_all(world);
+    }
+
+    pub fn despawn_all_units(world: &mut World) {
+        for entity in world
+            .query_filtered::<Entity, Or<(&Unit, &Corpse)>>()
+            .iter(world)
+            .collect_vec()
+        {
+            world.entity_mut(entity).despawn_recursive();
+        }
     }
 
     pub fn translate_to_slots(world: &mut World) {

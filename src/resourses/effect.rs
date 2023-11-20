@@ -2,22 +2,22 @@ use std::ops::Deref;
 
 use super::*;
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default, Display, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default, Display, PartialEq, EnumIter)]
 pub enum Effect {
-    Damage(Option<Expression>),
-    Kill,
-    UseAbility(String),
-    AddStatus(String),
-    Debug(Expression),
-    Text(Expression),
-    Vfx(String),
-    List(Vec<Box<Effect>>),
-    AoeFaction(Expression, Box<Effect>),
     #[default]
     Noop,
+    Kill,
+    Debug(Expression),
+    Text(Expression),
+    Damage(Option<Expression>),
+    AoeFaction(Expression, Box<Effect>),
     WithTarget(Expression, Box<Effect>),
     WithOwner(Expression, Box<Effect>),
+    List(Vec<Box<Effect>>),
     WithVar(VarName, Expression, Box<Effect>),
+    UseAbility(String),
+    AddStatus(String),
+    Vfx(String),
 }
 
 impl Effect {
@@ -202,5 +202,122 @@ impl Effect {
             ),
         }
         Ok(())
+    }
+
+    pub fn show_editor(
+        &mut self,
+        editing_data: &mut EditingData,
+        name: String,
+        ui: &mut Ui,
+        world: &mut World,
+    ) {
+        let hovered = if let Some(hovered) = editing_data.hovered.as_ref() {
+            hovered.eq(&name)
+        } else {
+            false
+        };
+        let color = match hovered {
+            true => hex_color!("#FF9100"),
+            false => hex_color!("#1E88E5"),
+        };
+        ui.style_mut().visuals.hyperlink_color = color;
+        let mut now_hovered = false;
+        ui.horizontal(|ui| {
+            ui.vertical(|ui| {
+                let link = ui.link(RichText::new(format!("( {self}")));
+                if link.clicked() {
+                    editing_data.lookup.clear();
+                    link.request_focus();
+                }
+                now_hovered |= link.hovered();
+                if link.has_focus() || link.lost_focus() {
+                    let mut need_clear = false;
+                    ui.horizontal_wrapped(|ui| {
+                        ui.label(editing_data.lookup.to_owned());
+                        Effect::iter()
+                            .filter_map(|e| {
+                                match e
+                                    .to_string()
+                                    .to_lowercase()
+                                    .starts_with(editing_data.lookup.to_lowercase().as_str())
+                                {
+                                    true => Some(e),
+                                    false => None,
+                                }
+                            })
+                            .for_each(|e| {
+                                let button = ui.button(e.to_string());
+                                if button.gained_focus() || button.clicked() {
+                                    *self = e;
+                                    need_clear = true;
+                                }
+                            })
+                    });
+                    if need_clear {
+                        editing_data.lookup.clear();
+                    }
+                }
+            });
+
+            match self {
+                Effect::Noop | Effect::Kill => {}
+                Effect::Debug(e) | Effect::Text(e) => {
+                    e.show_editor(editing_data, format!("{name}/e"), ui);
+                }
+                Effect::Damage(e) => {
+                    let mut is_some = e.is_some();
+                    if ui.checkbox(&mut is_some, "").changed() {
+                        if is_some {
+                            *e = Some(default());
+                        } else {
+                            *e = None;
+                        }
+                    }
+                    if let Some(e) = e {
+                        e.show_editor(editing_data, format!("{name}/e"), ui);
+                    }
+                }
+                Effect::AoeFaction(exp, e)
+                | Effect::WithTarget(exp, e)
+                | Effect::WithOwner(exp, e) => {
+                    ui.vertical(|ui| {
+                        exp.show_editor(editing_data, format!("{name}/exp"), ui);
+                        e.show_editor(editing_data, format!("{name}/e"), ui, world);
+                    });
+                }
+                Effect::List(list) => {
+                    ui.vertical(|ui| {
+                        for (i, e) in list.into_iter().enumerate() {
+                            e.show_editor(editing_data, format!("{name}/{i}"), ui, world);
+                        }
+                    });
+                }
+                Effect::WithVar(var, exp, e) => {
+                    ui.vertical(|ui| {
+                        var.show_editor(ui);
+                        exp.show_editor(editing_data, format!("{name}/exp"), ui);
+                        e.show_editor(editing_data, format!("{name}/e"), ui, world);
+                    });
+                }
+                Effect::AddStatus(name) | Effect::Vfx(name) => {
+                    ui.text_edit_singleline(name);
+                }
+                Effect::UseAbility(name) => {
+                    ComboBox::from_id_source("ability")
+                        .selected_text(name.clone())
+                        .show_ui(ui, |ui| {
+                            for ability in Pools::get(world).abilities.keys() {
+                                ui.selectable_value(name, ability.to_owned(), ability);
+                            }
+                        });
+                }
+            }
+            ui.style_mut().visuals.hyperlink_color = color;
+            let right = ui.link(RichText::new(")"));
+            now_hovered |= right.hovered();
+            if now_hovered && !editing_data.hovered.as_ref().eq(&Some(&name)) {
+                editing_data.hovered = Some(name.clone());
+            }
+        });
     }
 }

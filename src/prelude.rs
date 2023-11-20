@@ -44,7 +44,8 @@ pub use bevy_egui::egui;
 pub use bevy_egui::{
     egui::{
         pos2, text::LayoutJob, Align2, Area, Button, CentralPanel, CollapsingHeader, Color32,
-        FontFamily, FontId, Label, RichText, Slider, TextEdit, TextFormat, Ui, WidgetText, Window,
+        ComboBox, FontFamily, FontId, Label, RichText, Slider, TextEdit, TextFormat, Ui,
+        WidgetText, Window,
     },
     EguiContexts,
 };

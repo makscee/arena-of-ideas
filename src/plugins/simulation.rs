@@ -7,7 +7,7 @@ impl SimulationPlugin {
         left.unpack(Faction::Left, world);
         right.unpack(Faction::Right, world);
         let result = BattlePlugin::run_battle(100, world);
-        UnitPlugin::despawn_all(world);
+        UnitPlugin::despawn_all_teams(world);
         GameTimer::get_mut(world).reset();
         result
     }

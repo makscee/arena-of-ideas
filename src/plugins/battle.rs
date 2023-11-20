@@ -43,7 +43,7 @@ impl BattlePlugin {
     }
 
     pub fn leave(world: &mut World) {
-        UnitPlugin::despawn_all(world);
+        UnitPlugin::despawn_all_teams(world);
     }
 
     pub fn run_battle(bpm: usize, world: &mut World) -> BattleResult {
@@ -98,8 +98,7 @@ impl BattlePlugin {
     }
 
     fn stricker_death_check(left: Entity, right: Entity, world: &mut World) -> bool {
-        UnitPlugin::run_death_check(world)
-            && (UnitPlugin::is_dead(left, world) || UnitPlugin::is_dead(right, world))
+        UnitPlugin::is_dead(left, world) || UnitPlugin::is_dead(right, world)
     }
 
     pub fn run_strike(left: Entity, right: Entity, btime: f32, world: &mut World) {
@@ -132,6 +131,9 @@ impl BattlePlugin {
                 .advance_end(btime)
                 .end_batch()
                 .start_batch();
+        }
+        if Self::stricker_death_check(left, right, world) {
+            return;
         }
         let units = vec![(left, -1.0), (right, 1.0)];
         for (caster, dir) in units {

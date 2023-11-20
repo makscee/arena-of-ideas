@@ -63,6 +63,7 @@ impl PackedUnit {
             .init(VarName::House, VarValue::String(self.house.clone()))
             .init(VarName::Name, VarValue::String(self.name.clone()))
             .init(VarName::Position, VarValue::Vec2(default()))
+            .init(VarName::Index, VarValue::Int(0))
             .init(
                 VarName::Slot,
                 VarValue::Int(slot.unwrap_or_default() as i32),
@@ -177,6 +178,8 @@ impl PackedUnit {
 
                 self.representation
                     .show_editor(entity, editing_data, 0, ui, world);
+                self.trigger
+                    .show_editor(editing_data, "trigger".to_owned(), ui, world);
             });
     }
 }

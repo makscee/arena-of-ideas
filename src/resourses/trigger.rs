@@ -1,5 +1,6 @@
 use super::*;
 
+use bevy_egui::egui::ComboBox;
 use event::Event;
 use strum_macros::Display;
 
@@ -122,98 +123,48 @@ impl Trigger {
         }
     }
 
-    pub fn show_editor_root(
+    pub fn show_editor(
         &mut self,
-        entity: Option<Entity>,
         editing_data: &mut EditingData,
         name: String,
-        show_name: bool,
         ui: &mut Ui,
         world: &mut World,
     ) {
         ui.horizontal(|ui| {
-            if show_name {
-                ui.label(name.clone());
-            }
-            self.show_editor(editing_data, name, ui);
-        });
-    }
-
-    pub fn show_editor(&mut self, editing_data: &mut EditingData, name: String, ui: &mut Ui) {
-        let hovered = if let Some(hovered) = editing_data.hovered.as_ref() {
-            hovered.eq(&name)
-        } else {
-            false
-        };
-        let color = match hovered {
-            true => hex_color!("#FF9100"),
-            false => hex_color!("#1E88E5"),
-        };
-        ui.style_mut().visuals.hyperlink_color = color;
-        let mut now_hovered = false;
-        ui.horizontal(|ui| {
-            let left = ui.link(RichText::new("("));
-            if left.clicked() {
-                let ts = Trigger::TurnStart(Effect::Noop);
-                *self = ts;
-            }
-            now_hovered |= left.hovered();
-            ui.vertical(|ui| {
-                let link = ui.link(RichText::new(format!("{self}")));
-                if link.clicked() {
-                    editing_data.lookup.clear();
-                    link.request_focus();
-                }
-                now_hovered |= link.hovered();
-                if link.has_focus() || link.lost_focus() {
-                    let mut need_clear = false;
-                    ui.horizontal_wrapped(|ui| {
-                        ui.label(editing_data.lookup.to_owned());
-                        Trigger::iter()
-                            .filter_map(|e| {
-                                match e
-                                    .to_string()
-                                    .to_lowercase()
-                                    .starts_with(editing_data.lookup.to_lowercase().as_str())
-                                {
-                                    true => Some(e),
-                                    false => None,
-                                }
-                            })
-                            .for_each(|e| {
-                                let button = ui.button(e.to_string());
-                                if button.gained_focus() || button.clicked() {
-                                    *self = e;
-                                    need_clear = true;
-                                }
-                            })
-                    });
-                    if need_clear {
-                        editing_data.lookup.clear();
+            ComboBox::from_id_source(&name)
+                .selected_text(self.to_string())
+                .show_ui(ui, |ui| {
+                    for option in Trigger::iter() {
+                        let text = option.to_string();
+                        ui.selectable_value(self, option, text).changed();
                     }
+                });
+            match self {
+                Trigger::AfterDamageTaken(effect)
+                | Trigger::AfterDamageDealt(effect)
+                | Trigger::BattleStart(effect)
+                | Trigger::TurnStart(effect)
+                | Trigger::BeforeStrike(effect)
+                | Trigger::AllyDeath(effect)
+                | Trigger::BeforeDeath(effect)
+                | Trigger::AfterKill(effect) => {
+                    effect.show_editor(editing_data, format!("{name}/{effect}"), ui, world);
                 }
-            });
+                Trigger::ChangeVar(var, exp) => {
+                    ui.vertical(|ui| {
+                        var.show_editor(ui);
+                        exp.show_editor(editing_data, format!("{name}/exp"), ui);
+                    });
+                }
+                Trigger::List(list) => {
+                    ui.vertical(|ui| {
+                        list.into_iter().enumerate().for_each(|(i, t)| {
+                            t.show_editor(editing_data, format!("{name} {i}"), ui, world);
+                        });
+                    });
+                }
+                Trigger::Noop => {}
+            }
         });
-
-        match self {
-            Trigger::AfterDamageTaken(e)
-            | Trigger::AfterDamageDealt(e)
-            | Trigger::BattleStart(e)
-            | Trigger::TurnStart(e)
-            | Trigger::BeforeStrike(e)
-            | Trigger::AllyDeath(e)
-            | Trigger::BeforeDeath(e)
-            | Trigger::AfterKill(e) => todo!(),
-            Trigger::ChangeVar(_, _) => todo!(),
-            Trigger::List(_) => todo!(),
-            Trigger::Noop => todo!(),
-        }
-        ui.style_mut().visuals.hyperlink_color = color;
-        let right = ui.link(RichText::new(")"));
-        if right.clicked() {}
-        now_hovered |= right.hovered();
-        if now_hovered && !editing_data.hovered.as_ref().eq(&Some(&name)) {
-            editing_data.hovered = Some(name.clone());
-        }
     }
 }
