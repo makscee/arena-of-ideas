@@ -22,7 +22,7 @@ impl SettingsPlugin {
         Self::updated(data, world);
     }
 
-    fn ui(world: &mut World) {
+    pub fn ui(world: &mut World) {
         let mut data = *SettingsData::get(world);
         Window::new("Settings")
             .anchor(Align2::RIGHT_TOP, [-10.0, 10.0])

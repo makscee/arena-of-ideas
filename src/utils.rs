@@ -169,3 +169,14 @@ pub fn head_to_batch_start(world: &mut World) {
 pub fn get_parent(entity: Entity, world: &World) -> Entity {
     world.get::<Parent>(entity).unwrap().get()
 }
+pub fn save_to_clipboard(text: &str, world: &mut World) {
+    world
+        .resource_mut::<bevy_egui::EguiClipboard>()
+        .set_contents(&text);
+    debug!("Saved to clipboard:\n{text}");
+}
+pub fn get_from_clipboard(world: &mut World) -> Option<String> {
+    world
+        .resource_mut::<bevy_egui::EguiClipboard>()
+        .get_contents()
+}

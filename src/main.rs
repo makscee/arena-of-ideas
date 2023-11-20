@@ -122,7 +122,6 @@ fn main() {
             AudioPlugin,
             HeroEditorPlugin,
         ))
-        // .add_systems(Update, ui_example_system)
         .add_systems(Startup, setup)
         .add_systems(Update, input_world)
         .init_resource::<UserName>()

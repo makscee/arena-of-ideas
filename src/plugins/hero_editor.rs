@@ -1,4 +1,5 @@
-use bevy_egui::egui::{Frame, Key, TopBottomPanel};
+use bevy_egui::egui::{Context, Frame, Key, SidePanel, TopBottomPanel};
+use ron::ser::{to_string_pretty, PrettyConfig};
 
 use super::*;
 
@@ -8,7 +9,8 @@ impl Plugin for HeroEditorPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
-            (Self::ui, Self::input).run_if(in_state(GameState::HeroEditor)),
+            (Self::ui.before(SettingsPlugin::ui), Self::input)
+                .run_if(in_state(GameState::HeroEditor)),
         )
         .add_systems(OnEnter(GameState::HeroEditor), Self::on_enter);
     }
@@ -25,6 +27,7 @@ impl HeroEditorPlugin {
 
     fn ui(world: &mut World) {
         let ctx = &egui_context(world);
+        Self::side_ui(ctx, world);
         let mut pd = PersistentData::load(world);
         let rep = &mut pd.hero_editor_data.rep.clone();
         let editing_data = &mut pd.hero_editor_data.editing_data.clone();
@@ -70,6 +73,77 @@ impl HeroEditorPlugin {
         }
     }
 
+    fn side_ui(ctx: &Context, world: &mut World) {
+        SidePanel::new(egui::panel::Side::Right, "hero editor bottom").show(ctx, |ui| {
+            ui.vertical(|ui| {
+                if ui.button("Clear").clicked() {
+                    let mut pd = PersistentData::load(world);
+                    pd.hero_editor_data.clear();
+                    pd.save(world).unwrap();
+                    Self::respawn_direct(pd.hero_editor_data.rep, world);
+                }
+                if ui.button("Save to Clipboard").clicked() {
+                    let rep = PersistentData::load(world).hero_editor_data.rep;
+                    save_to_clipboard(&to_string_pretty(&rep, PrettyConfig::new()).unwrap(), world);
+                }
+                if ui.button("Load from Clipboard").clicked() {
+                    let rep = get_from_clipboard(world);
+                    if let Some(rep) = rep {
+                        let rep = ron::from_str::<Representation>(&rep);
+                        if let Ok(rep) = rep {
+                            let mut pd = PersistentData::load(world);
+                            debug!("Loaded {rep:#?}");
+                            pd.hero_editor_data.rep = rep;
+                            pd.save(world).unwrap();
+                            Self::respawn_direct(pd.hero_editor_data.rep, world);
+                        } else {
+                            error!("Failed to parse {rep:?}");
+                        }
+                    } else {
+                        error!("Clipboard is empty");
+                    }
+                }
+                if let Ok((mut transform, mut projection)) = world
+                    .query_filtered::<(&mut Transform, &mut OrthographicProjection), With<Camera>>()
+                    .get_single_mut(world)
+                {
+                    let mut pos = transform.translation.xy();
+                    let mut changed = ui
+                        .add(
+                            Slider::new(&mut pos.x, 10.0..=-10.0)
+                                .text("cam x")
+                                .clamp_to_range(false),
+                        )
+                        .changed();
+                    changed |= ui
+                        .add(
+                            Slider::new(&mut pos.y, 10.0..=-10.0)
+                                .text("cam y")
+                                .clamp_to_range(false),
+                        )
+                        .changed();
+                    if changed {
+                        transform.translation = pos.extend(transform.translation.z);
+                    }
+                    let mut scale = projection.scale;
+
+                    if ui
+                        .add(
+                            Slider::new(&mut scale, 2.0..=0.00001)
+                                .text("cam scale")
+                                .clamp_to_range(false),
+                        )
+                        .changed()
+                    {
+                        let delta = transform.translation * (scale / projection.scale);
+                        transform.translation = delta;
+                        projection.scale = scale;
+                    }
+                }
+            })
+        });
+    }
+
     fn input(world: &mut World) {
         let input = world.resource::<Input<KeyCode>>();
         if input.just_pressed(KeyCode::Return) && input.pressed(KeyCode::ShiftLeft) {
@@ -104,4 +178,12 @@ pub struct HeroEditorData {
 pub struct EditingData {
     pub lookup: String,
     pub hovered: Option<String>,
+}
+
+impl HeroEditorData {
+    fn clear(&mut self) {
+        self.rep = default();
+        self.editing_data.hovered = None;
+        self.editing_data.lookup.clear();
+    }
 }
