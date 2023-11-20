@@ -85,10 +85,52 @@ fn default_one_vec2_e() -> Expression {
     Expression::Vec2(1.0, 1.0)
 }
 fn default_color_e() -> Expression {
-    Expression::State(VarName::HouseColor)
+    Expression::Hex("#ff00ff".to_owned())
 }
 
 impl RepresentationMaterial {
+    pub fn fill_default(&mut self) -> &mut Self {
+        match self {
+            RepresentationMaterial::None => {}
+            RepresentationMaterial::Shape {
+                shape,
+                fill,
+                size,
+                thickness,
+                alpha,
+                color,
+            } => {
+                *size = default_one_vec2_e();
+                *thickness = default_one_f32_e();
+                *alpha = default_one_f32_e();
+                *color = default_color_e();
+            }
+            RepresentationMaterial::Text {
+                size,
+                text,
+                color,
+                font_size,
+            } => {
+                *size = default_one_f32_e();
+                *color = default_color_e();
+                *font_size = 16.0;
+                *text = Expression::String("empty".to_owned());
+            }
+            RepresentationMaterial::Curve {
+                thickness,
+                dilations,
+                curvature,
+                aa,
+                color,
+            } => {
+                *thickness = default_one_f32_e();
+                *color = default_color_e();
+                *curvature = default_one_f32_e();
+            }
+        }
+        self
+    }
+
     pub fn unpack(&self, entity: Entity, world: &mut World) {
         match self {
             RepresentationMaterial::None => {
@@ -254,9 +296,8 @@ impl RepresentationMaterial {
 
                 let delta = context
                     .get_var(VarName::Delta, world)
-                    .unwrap()
-                    .get_vec2()
-                    .unwrap();
+                    .and_then(|x| x.get_vec2().ok())
+                    .unwrap_or(vec2(1.0, 0.0));
                 let control_delta = vec2(0.0, curvature);
                 let curve =
                     Bezier::new([[Vec2::ZERO, control_delta, delta + control_delta, delta]])
@@ -326,7 +367,9 @@ impl RepresentationMaterial {
                     .show_ui(ui, |ui| {
                         for option in RepresentationMaterial::iter() {
                             let text = option.to_string();
-                            ui.selectable_value(self, option, text);
+                            if ui.selectable_value(self, option, text).changed() {
+                                self.fill_default();
+                            }
                         }
                     });
                 match self {
@@ -571,7 +614,6 @@ impl Representation {
                                     .show_ui(ui, |ui| {
                                         for option in VarName::iter() {
                                             let text = option.to_string();
-
                                             ui.selectable_value(&mut x, option, text);
                                         }
                                     });

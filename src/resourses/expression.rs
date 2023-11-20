@@ -1,6 +1,6 @@
 use std::f32::consts::PI;
 
-use bevy_egui::egui::ComboBox;
+use bevy_egui::egui::{ComboBox, DragValue};
 use hex::encode;
 use rand::{seq::IteratorRandom, Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
@@ -438,10 +438,10 @@ impl Expression {
             | Expression::OppositeFaction
             | Expression::Beat => {}
             Expression::Float(x) => {
-                ui.add(Slider::new(x, -1.0..=1.0).clamp_to_range(false));
+                ui.add(DragValue::new(x).speed(0.1));
             }
             Expression::Int(x) => {
-                ui.add(Slider::new(x, -10..=10).clamp_to_range(false));
+                ui.add(DragValue::new(x));
             }
             Expression::Bool(x) => {
                 ui.checkbox(x, "");
@@ -483,7 +483,8 @@ impl Expression {
                 ui.label(x.to_string());
             }
             Expression::Vec2(x, y) => {
-                ui.label(format!("{x}:{y}"));
+                ui.add(DragValue::new(x).speed(0.1));
+                ui.add(DragValue::new(y).speed(0.1));
             }
 
             Expression::Vec2E(x)

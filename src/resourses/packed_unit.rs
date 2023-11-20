@@ -1,6 +1,8 @@
+use bevy_egui::egui::{ComboBox, DragValue};
+
 use super::*;
 
-#[derive(Deserialize, Serialize, TypeUuid, TypePath, Debug, Clone)]
+#[derive(Deserialize, Serialize, TypeUuid, TypePath, Debug, Clone, PartialEq, Default)]
 #[uuid = "028620be-3b01-4e20-b62e-a631f0db4777"]
 #[serde(deny_unknown_fields)]
 pub struct PackedUnit {
@@ -15,7 +17,7 @@ pub struct PackedUnit {
     #[serde(default)]
     pub description: String,
     #[serde(default)]
-    pub representation: Option<Representation>,
+    pub representation: Representation,
     #[serde(default)]
     pub state: VarState,
     #[serde(default)]
@@ -47,12 +49,14 @@ impl PackedUnit {
             .insert(On::<Pointer<DragEnd>>::run(UnitPlugin::drag_unit_end))
             .insert(On::<Pointer<Drag>>::run(UnitPlugin::drag_unit));
         {
-            if let Some(rep) = self.representation {
-                let entity = rep.unpack(None, Some(entity), world);
-                world.entity_mut(entity).insert(UnitRepresentation);
-            }
+            let entity = self.representation.unpack(None, Some(entity), world);
+            world.entity_mut(entity).insert(UnitRepresentation);
         }
-        let house = Pools::get(world).houses.get(&self.house).unwrap();
+        let house_color = Pools::get(world)
+            .houses
+            .get(&self.house)
+            .and_then(|h| Some(h.color.clone()))
+            .unwrap_or_default();
         self.state
             .init(VarName::Hp, VarValue::Int(self.hp))
             .init(VarName::Atk, VarValue::Int(self.atk))
@@ -69,9 +73,9 @@ impl PackedUnit {
             )
             .init(
                 VarName::HouseColor,
-                VarValue::Color(house.color.clone().into()),
+                VarValue::Color(house_color.clone().into()),
             )
-            .init(VarName::Color, VarValue::Color(house.color.clone().into()));
+            .init(VarName::Color, VarValue::Color(house_color.into()));
         world
             .entity_mut(entity)
             .insert((Unit, Name::new(self.name)));
@@ -95,8 +99,8 @@ impl PackedUnit {
             .find(|x| world.get::<UnitRepresentation>(**x).is_some());
         let representation = {
             match rep_entity {
-                Some(rep_entity) => Some(Representation::pack(*rep_entity, world)),
-                None => None,
+                Some(rep_entity) => Representation::pack(*rep_entity, world),
+                None => default(),
             }
         };
         let state = VarState::get(entity, world).clone();
@@ -133,5 +137,46 @@ impl PackedUnit {
             description,
             statuses,
         }
+    }
+
+    pub fn show_editor(
+        &mut self,
+        entity: Option<Entity>,
+        editing_data: &mut EditingData,
+        ui: &mut Ui,
+        world: &mut World,
+    ) {
+        CollapsingHeader::new("Hero")
+            .default_open(true)
+            .show(ui, |ui| {
+                ui.horizontal(|ui| {
+                    ui.add(
+                        TextEdit::singleline(&mut self.name)
+                            .desired_width(80.0)
+                            .hint_text("name"),
+                    );
+                    ui.add(
+                        TextEdit::singleline(&mut self.description)
+                            .desired_width(100.0)
+                            .hint_text("description"),
+                    );
+                    ui.label("hp:");
+                    ui.add(DragValue::new(&mut self.hp));
+                    ui.label("atk:");
+                    ui.add(DragValue::new(&mut self.atk));
+                    let houses = Pools::get(world).houses.keys().cloned().collect_vec();
+                    ui.label("house:");
+                    ComboBox::from_id_source("house")
+                        .selected_text(self.house.clone())
+                        .show_ui(ui, |ui| {
+                            for house in houses {
+                                ui.selectable_value(&mut self.house, house.to_owned(), house);
+                            }
+                        })
+                });
+
+                self.representation
+                    .show_editor(entity, editing_data, 0, ui, world);
+            });
     }
 }

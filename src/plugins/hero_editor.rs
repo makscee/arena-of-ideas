@@ -22,6 +22,7 @@ impl HeroEditorPlugin {
         pd.hero_editor_data.editing_data.lookup.clear();
         pd.hero_editor_data.editing_data.hovered = None;
         pd.save(world).unwrap();
+        PackedTeam::spawn(Faction::Team, world);
         Self::respawn(world);
     }
 
@@ -29,15 +30,13 @@ impl HeroEditorPlugin {
         let ctx = &egui_context(world);
         Self::side_ui(ctx, world);
         let mut pd = PersistentData::load(world);
-        let rep = &mut pd.hero_editor_data.rep.clone();
+        let hero = &mut pd.hero_editor_data.hero.clone();
         let editing_data = &mut pd.hero_editor_data.editing_data.clone();
         let entity = Self::entity(world);
         let panel = TopBottomPanel::new(egui::panel::TopBottomSide::Top, "Hero Editor")
             .frame(Frame::side_top_panel(&ctx.style()).multiply_with_opacity(0.9));
         let response = panel
-            .show(ctx, |ui| {
-                rep.show_editor(entity, editing_data, 0, ui, world)
-            })
+            .show(ctx, |ui| hero.show_editor(entity, editing_data, ui, world))
             .response;
         response.ctx.input(|reader| {
             for event in &reader.events {
@@ -64,10 +63,10 @@ impl HeroEditorPlugin {
             pd.hero_editor_data.editing_data = editing_data.to_owned();
             changed = true;
         }
-        if !pd.hero_editor_data.rep.eq(&rep) {
-            pd.hero_editor_data.rep = rep.to_owned();
+        if !pd.hero_editor_data.hero.eq(&hero) {
+            pd.hero_editor_data.hero = hero.to_owned();
             pd.save(world).unwrap();
-            Self::respawn_direct(pd.hero_editor_data.rep, world);
+            Self::respawn_direct(pd.hero_editor_data.hero, world);
         } else if changed {
             pd.save(world).unwrap();
         }
@@ -80,24 +79,24 @@ impl HeroEditorPlugin {
                     let mut pd = PersistentData::load(world);
                     pd.hero_editor_data.clear();
                     pd.save(world).unwrap();
-                    Self::respawn_direct(pd.hero_editor_data.rep, world);
+                    Self::respawn_direct(pd.hero_editor_data.hero, world);
                 }
                 if ui.button("Save to Clipboard").clicked() {
-                    let rep = PersistentData::load(world).hero_editor_data.rep;
+                    let rep = PersistentData::load(world).hero_editor_data.hero;
                     save_to_clipboard(&to_string_pretty(&rep, PrettyConfig::new()).unwrap(), world);
                 }
                 if ui.button("Load from Clipboard").clicked() {
-                    let rep = get_from_clipboard(world);
-                    if let Some(rep) = rep {
-                        let rep = ron::from_str::<Representation>(&rep);
-                        if let Ok(rep) = rep {
+                    let hero = get_from_clipboard(world);
+                    if let Some(hero) = hero {
+                        let hero = ron::from_str::<PackedUnit>(&hero);
+                        if let Ok(hero) = hero {
                             let mut pd = PersistentData::load(world);
-                            debug!("Loaded {rep:#?}");
-                            pd.hero_editor_data.rep = rep;
+                            debug!("Loaded {hero:#?}");
+                            pd.hero_editor_data.hero = hero;
                             pd.save(world).unwrap();
-                            Self::respawn_direct(pd.hero_editor_data.rep, world);
+                            Self::respawn_direct(pd.hero_editor_data.hero, world);
                         } else {
-                            error!("Failed to parse {rep:?}");
+                            error!("Failed to parse {hero:?}");
                         }
                     } else {
                         error!("Clipboard is empty");
@@ -158,19 +157,23 @@ impl HeroEditorPlugin {
             .last()
     }
 
-    fn respawn_direct(rep: Representation, world: &mut World) {
+    fn respawn_direct(unit: PackedUnit, world: &mut World) {
         Representation::despawn_all(world);
-        rep.unpack(None, None, world);
+        unit.unpack(
+            PackedTeam::entity(Faction::Team, world).unwrap(),
+            None,
+            world,
+        );
     }
 
     fn respawn(world: &mut World) {
-        Self::respawn_direct(PersistentData::load(world).hero_editor_data.rep, world);
+        Self::respawn_direct(PersistentData::load(world).hero_editor_data.hero, world);
     }
 }
 
 #[derive(Serialize, Deserialize, Default, Clone)]
 pub struct HeroEditorData {
-    pub rep: Representation,
+    pub hero: PackedUnit,
     pub editing_data: EditingData,
 }
 
@@ -182,7 +185,7 @@ pub struct EditingData {
 
 impl HeroEditorData {
     fn clear(&mut self) {
-        self.rep = default();
+        self.hero = default();
         self.editing_data.hovered = None;
         self.editing_data.lookup.clear();
     }

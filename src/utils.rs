@@ -96,9 +96,13 @@ pub fn parse_description(
 
     for (str, extr) in str_extract_brackets(source, ("[", "]")) {
         if extr {
-            let color = Pools::get_ability_house(&str, world).color.clone().into();
-            description.push((str.to_owned(), color));
-            definitions.push((str, color));
+            if let Some(house) = Pools::get_ability_house(&str, world) {
+                let color = house.color.clone().into();
+                description.push((str.to_owned(), color));
+                definitions.push((str, color));
+            } else {
+                error!("Failed to find house for ability {str}");
+            }
         } else {
             description.push((str, Color32::GRAY));
         }

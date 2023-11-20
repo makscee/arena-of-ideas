@@ -1,16 +1,16 @@
 use super::*;
 
-#[derive(Component, Serialize, Deserialize, Clone, Debug, Reflect, Default)]
+#[derive(Component, Serialize, Deserialize, Clone, Debug, Reflect, Default, PartialEq)]
 pub struct VarState {
     pub history: HashMap<VarName, History>,
     #[serde(default)]
     pub birth: f32,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default, Reflect)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default, Reflect, PartialEq)]
 pub struct History(pub Vec<Change>);
 
-#[derive(Serialize, Deserialize, Clone, Debug, Reflect)]
+#[derive(Serialize, Deserialize, Clone, Debug, Reflect, PartialEq)]
 pub struct Change {
     pub t: f32,
     #[serde(default)]
@@ -20,7 +20,7 @@ pub struct Change {
     pub value: VarValue,
 }
 
-#[derive(Serialize, Deserialize, Clone, Copy, Debug, Default, Reflect)]
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, Default, Reflect, PartialEq)]
 pub enum Tween {
     #[default]
     Linear,

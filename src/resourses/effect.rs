@@ -2,7 +2,7 @@ use std::ops::Deref;
 
 use super::*;
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default, Display)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default, Display, PartialEq)]
 pub enum Effect {
     Damage(Option<Expression>),
     Kill,
@@ -101,6 +101,9 @@ impl Effect {
                         VarName::Color,
                         VarValue::Color(
                             Pools::get_ability_house(&ability, world)
+                                .with_context(|| {
+                                    format!("Failed to find house for ability {ability}")
+                                })?
                                 .color
                                 .clone()
                                 .into(),

@@ -36,13 +36,12 @@ impl Pools {
         let name = &format!("ron/vfx/{name}.vfx.ron");
         Self::get(world).vfx.get(name).unwrap().clone()
     }
-    pub fn get_ability_house<'a>(name: &str, world: &'a World) -> &'a House {
+    pub fn get_ability_house<'a>(name: &str, world: &'a World) -> Option<&'a House> {
         Self::get(world)
             .houses
             .iter()
             .find(|(_, h)| h.abilities.iter().any(|a| a.name.eq(name)))
             .map(|(_, h)| h)
-            .unwrap_or_else(|| panic!("Failed to find house for {name}"))
     }
     pub fn get_status_house<'a>(name: &str, world: &'a World) -> &'a House {
         Self::get(world)
