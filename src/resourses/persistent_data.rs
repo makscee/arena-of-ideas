@@ -22,9 +22,13 @@ impl PersistentData {
             .map_err(|e| anyhow!("{}", e.to_string()))
     }
 
-    pub fn save_last_state(state: GameState, world: &mut World) {
-        let mut pd = Self::load(world);
-        pd.last_state = Some(state);
-        pd.save(world).unwrap();
+    pub fn set_last_state(mut self, state: GameState) -> Self {
+        self.last_state = Some(state);
+        self
+    }
+
+    pub fn set_hero_editor_data(mut self, data: HeroEditorData) -> Self {
+        self.hero_editor_data = data;
+        self
     }
 }

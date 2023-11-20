@@ -33,8 +33,10 @@ impl ShopPlugin {
         UnitPlugin::translate_to_slots(world);
         Self::fill_showcase(world);
         Self::change_g(10, world).unwrap();
-
-        PersistentData::save_last_state(GameState::Shop, world);
+        PersistentData::load(world)
+            .set_last_state(GameState::Shop)
+            .save(world)
+            .unwrap();
     }
 
     fn level_finished(world: &mut World) {

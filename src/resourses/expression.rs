@@ -335,18 +335,20 @@ impl Expression {
         self.get_value(context, world)?.get_color()
     }
 
-    pub fn show_tree_root(
+    pub fn show_editor_root(
         &mut self,
         entity: Option<Entity>,
         editing_data: &mut EditingData,
         name: String,
+        show_name: bool,
         ui: &mut Ui,
         world: &mut World,
-    ) -> bool {
-        let mut changed = false;
+    ) {
         ui.horizontal(|ui| {
-            ui.label(name.clone());
-            changed = self.show_tree(editing_data, name, ui);
+            if show_name {
+                ui.label(name.clone());
+            }
+            self.show_editor(editing_data, name, ui);
             if let Some(entity) = entity {
                 let text = match self.get_value(&Context::from_owner(entity, world), world) {
                     Ok(value) => RichText::new(format!("{value:?}")).color(hex_color!("#00ACC1")),
@@ -355,11 +357,9 @@ impl Expression {
                 ui.label(text);
             }
         });
-        changed
     }
 
-    pub fn show_tree(&mut self, editing_data: &mut EditingData, name: String, ui: &mut Ui) -> bool {
-        let mut changed = false;
+    pub fn show_editor(&mut self, editing_data: &mut EditingData, name: String, ui: &mut Ui) {
         let hovered = if let Some(hovered) = editing_data.hovered.as_ref() {
             hovered.eq(&name)
         } else {
@@ -373,7 +373,6 @@ impl Expression {
         let mut now_hovered = false;
         ui.horizontal(|ui| {
             if ui.link("-").clicked() {
-                changed = true;
                 let first: Expression = if let Some(first) = self.get_inner().first() {
                     first.as_ref().clone()
                 } else {
@@ -385,13 +384,11 @@ impl Expression {
             if left.clicked() {
                 let abs = Expression::Abs(Box::new(self.clone()));
                 *self = abs;
-                changed = true;
             }
             now_hovered |= left.hovered();
             ui.vertical(|ui| {
                 let link = ui.link(RichText::new(format!("{self}")));
                 if link.clicked() {
-                    changed = true;
                     editing_data.lookup.clear();
                     link.request_focus();
                 }
@@ -416,7 +413,6 @@ impl Expression {
                                 if button.gained_focus() || button.clicked() {
                                     *self = e.set_inner(self.clone());
                                     need_clear = true;
-                                    changed = true;
                                 }
                             })
                     });
@@ -442,17 +438,13 @@ impl Expression {
             | Expression::OppositeFaction
             | Expression::Beat => {}
             Expression::Float(x) => {
-                changed |= ui
-                    .add(Slider::new(x, -10.0..=10.0).clamp_to_range(false))
-                    .changed();
+                ui.add(Slider::new(x, -1.0..=1.0).clamp_to_range(false));
             }
             Expression::Int(x) => {
-                changed |= ui
-                    .add(Slider::new(x, -10..=10).clamp_to_range(false))
-                    .changed();
+                ui.add(Slider::new(x, -10..=10).clamp_to_range(false));
             }
             Expression::Bool(x) => {
-                changed |= ui.checkbox(x, "").changed();
+                ui.checkbox(x, "");
             }
             Expression::String(x) => {
                 ui.text_edit_singleline(x);
@@ -462,7 +454,6 @@ impl Expression {
                 let mut c = Color32::from_rgb(c[0], c[1], c[2]);
                 if ui.color_edit_button_srgba(&mut c).changed() {
                     *x = encode(c.to_array());
-                    changed = true;
                 }
             }
             Expression::Faction(x) => {
@@ -471,7 +462,7 @@ impl Expression {
                     .show_ui(ui, |ui| {
                         for option in Faction::iter() {
                             let text = option.to_string();
-                            changed |= ui.selectable_value(x, option, text).changed();
+                            ui.selectable_value(x, option, text).changed();
                         }
                     });
             }
@@ -481,7 +472,7 @@ impl Expression {
                     .show_ui(ui, |ui| {
                         for option in VarName::iter() {
                             let text = option.to_string();
-                            changed |= ui.selectable_value(x, option, text).changed();
+                            ui.selectable_value(x, option, text).changed();
                         }
                     });
             }
@@ -508,7 +499,7 @@ impl Expression {
             | Expression::SlotUnit(x)
             | Expression::FactionCount(x)
             | Expression::StatusCharges(x) => {
-                changed |= x.show_tree(editing_data, name.clone() + "/x", ui);
+                x.show_editor(editing_data, name.clone() + "/x", ui);
             }
             Expression::Vec2EE(a, b)
             | Expression::Sum(a, b)
@@ -521,17 +512,17 @@ impl Expression {
             | Expression::Equals(a, b) => {
                 ui.vertical(|ui| {
                     ui.horizontal(|ui| {
-                        changed |= a.show_tree(editing_data, name.clone() + "/a", ui);
+                        a.show_editor(editing_data, name.clone() + "/a", ui);
                     });
                     ui.horizontal(|ui| {
-                        changed |= b.show_tree(editing_data, name.clone() + "/b", ui);
+                        b.show_editor(editing_data, name.clone() + "/b", ui);
                     });
                 });
             }
             Expression::If(i, t, e) => {
-                changed |= i.show_tree(editing_data, name.clone() + "/i", ui);
-                changed |= t.show_tree(editing_data, name.clone() + "/t", ui);
-                changed |= e.show_tree(editing_data, name.clone() + "/e", ui);
+                i.show_editor(editing_data, name.clone() + "/i", ui);
+                t.show_editor(editing_data, name.clone() + "/t", ui);
+                e.show_editor(editing_data, name.clone() + "/e", ui);
             }
         }
         ui.style_mut().visuals.hyperlink_color = color;
@@ -540,13 +531,10 @@ impl Expression {
             for inner in self.get_inner() {
                 *inner = Box::new(Expression::Zero);
             }
-            changed = true;
         }
         now_hovered |= right.hovered();
         if now_hovered && !editing_data.hovered.as_ref().eq(&Some(&name)) {
             editing_data.hovered = Some(name.clone());
-            changed = true;
         }
-        changed
     }
 }

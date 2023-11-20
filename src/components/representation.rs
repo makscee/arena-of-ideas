@@ -311,14 +311,13 @@ impl RepresentationMaterial {
         }
     }
 
-    pub fn show_tree(
+    pub fn show_editor(
         &mut self,
         entity: Option<Entity>,
         editing_data: &mut EditingData,
         ui: &mut Ui,
         world: &mut World,
-    ) -> bool {
-        let mut changed = false;
+    ) {
         CollapsingHeader::new(self.to_string())
             .default_open(true)
             .show(ui, |ui| {
@@ -327,7 +326,7 @@ impl RepresentationMaterial {
                     .show_ui(ui, |ui| {
                         for option in RepresentationMaterial::iter() {
                             let text = option.to_string();
-                            changed |= ui.selectable_value(self, option, text).clicked();
+                            ui.selectable_value(self, option, text);
                         }
                     });
                 match self {
@@ -340,46 +339,54 @@ impl RepresentationMaterial {
                         alpha,
                         color,
                     } => {
-                        ComboBox::from_label("Shape")
-                            .selected_text(shape.to_string())
-                            .show_ui(ui, |ui| {
-                                for option in Shape::iter() {
-                                    let text = option.to_string();
-                                    changed |= ui.selectable_value(shape, option, text).clicked();
-                                }
-                            });
-                        ComboBox::from_label("Fill")
-                            .selected_text(fill.to_string())
-                            .show_ui(ui, |ui| {
-                                for option in Fill::iter() {
-                                    let text = option.to_string();
-                                    changed |= ui.selectable_value(fill, option, text).clicked();
-                                }
-                            });
+                        ui.horizontal(|ui| {
+                            ComboBox::from_label("Shape")
+                                .selected_text(shape.to_string())
+                                .show_ui(ui, |ui| {
+                                    for option in Shape::iter() {
+                                        let text = option.to_string();
+                                        ui.selectable_value(shape, option, text);
+                                    }
+                                });
+                            ComboBox::from_label("Fill")
+                                .selected_text(fill.to_string())
+                                .show_ui(ui, |ui| {
+                                    for option in Fill::iter() {
+                                        let text = option.to_string();
+                                        ui.selectable_value(fill, option, text);
+                                    }
+                                });
+                        });
 
-                        changed |=
-                            size.show_tree_root(entity, editing_data, "size".to_owned(), ui, world);
-
-                        changed |= thickness.show_tree_root(
+                        size.show_editor_root(
+                            entity,
+                            editing_data,
+                            "size".to_owned(),
+                            true,
+                            ui,
+                            world,
+                        );
+                        thickness.show_editor_root(
                             entity,
                             editing_data,
                             "thickness".to_owned(),
+                            true,
                             ui,
                             world,
                         );
-
-                        changed |= alpha.show_tree_root(
+                        alpha.show_editor_root(
                             entity,
                             editing_data,
                             "alpha".to_owned(),
+                            true,
                             ui,
                             world,
                         );
-
-                        changed |= color.show_tree_root(
+                        color.show_editor_root(
                             entity,
                             editing_data,
                             "color".to_owned(),
+                            true,
                             ui,
                             world,
                         );
@@ -390,19 +397,31 @@ impl RepresentationMaterial {
                         color,
                         font_size,
                     } => {
-                        changed |=
-                            size.show_tree_root(entity, editing_data, "size".to_owned(), ui, world);
-                        changed |=
-                            text.show_tree_root(entity, editing_data, "text".to_owned(), ui, world);
-
-                        changed |= color.show_tree_root(
+                        size.show_editor_root(
                             entity,
                             editing_data,
-                            "color".to_owned(),
+                            "size".to_owned(),
+                            true,
                             ui,
                             world,
                         );
-                        changed |= ui.add(Slider::new(font_size, 16.0..=48.0)).changed();
+                        text.show_editor_root(
+                            entity,
+                            editing_data,
+                            "text".to_owned(),
+                            true,
+                            ui,
+                            world,
+                        );
+                        color.show_editor_root(
+                            entity,
+                            editing_data,
+                            "color".to_owned(),
+                            true,
+                            ui,
+                            world,
+                        );
+                        ui.add(Slider::new(font_size, 16.0..=48.0));
                     }
                     RepresentationMaterial::Curve {
                         thickness,
@@ -411,28 +430,34 @@ impl RepresentationMaterial {
                         aa,
                         color,
                     } => {
-                        ui.horizontal(|ui| {
-                            ui.label("thickness:");
-                            changed |=
-                                thickness.show_tree(editing_data, "thickness".to_owned(), ui);
-                        });
-                        ui.horizontal(|ui| {
-                            ui.label("curvature:");
-                            changed |=
-                                curvature.show_tree(editing_data, "curvature".to_owned(), ui);
-                        });
-                        ui.horizontal(|ui| {
-                            ui.label("aa:");
-                            changed |= aa.show_tree(editing_data, "aa".to_owned(), ui);
-                        });
-                        ui.horizontal(|ui| {
-                            ui.label("color:");
-                            changed |= color.show_tree(editing_data, "color".to_owned(), ui);
-                        });
+                        thickness.show_editor_root(
+                            entity,
+                            editing_data,
+                            "thickness".to_owned(),
+                            true,
+                            ui,
+                            world,
+                        );
+                        curvature.show_editor_root(
+                            entity,
+                            editing_data,
+                            "curvature".to_owned(),
+                            true,
+                            ui,
+                            world,
+                        );
+                        aa.show_editor_root(entity, editing_data, "aa".to_owned(), true, ui, world);
+                        color.show_editor_root(
+                            entity,
+                            editing_data,
+                            "color".to_owned(),
+                            true,
+                            ui,
+                            world,
+                        );
                     }
                 };
             });
-        changed
     }
 }
 
@@ -503,33 +528,29 @@ impl Representation {
         }
     }
 
-    pub fn show_tree(
+    pub fn show_editor(
         &mut self,
         entity: Option<Entity>,
         editing_data: &mut EditingData,
         id: impl std::hash::Hash,
         ui: &mut Ui,
         world: &mut World,
-    ) -> (bool, bool) {
+    ) -> bool {
         let mut delete = false;
-        let mut changed = false;
         CollapsingHeader::new("Representation")
             .id_source(id)
             .default_open(true)
             .show(ui, |ui| {
                 if ui.button("delete").clicked() {
                     delete = true;
-                    changed = true;
                 }
-                changed |= self.material.show_tree(entity, editing_data, ui, world);
+                self.material.show_editor(entity, editing_data, ui, world);
                 let mut deletes = Vec::default();
                 for (i, rep) in self.children.iter_mut().enumerate() {
-                    let (child_changed, child_delete) =
-                        rep.show_tree(entity, editing_data, i, ui, world);
+                    let child_delete = rep.show_editor(entity, editing_data, i, ui, world);
                     if child_delete {
                         deletes.push(i);
                     }
-                    changed |= child_changed || child_delete;
                 }
                 deletes.into_iter().rev().for_each(|i| {
                     self.children.remove(i);
@@ -545,19 +566,20 @@ impl Representation {
                                 if ui.button("-").clicked() {
                                     deletes.push(*var);
                                 }
-                                ComboBox::from_label(var.to_string())
+                                ComboBox::from_id_source(x)
                                     .selected_text(x.to_string())
                                     .show_ui(ui, |ui| {
                                         for option in VarName::iter() {
                                             let text = option.to_string();
-                                            changed |=
-                                                ui.selectable_value(&mut x, option, text).changed();
+
+                                            ui.selectable_value(&mut x, option, text);
                                         }
                                     });
-                                changed |= e.show_tree_root(
+                                e.show_editor_root(
                                     entity,
                                     editing_data,
                                     var.to_string(),
+                                    false,
                                     ui,
                                     world,
                                 );
@@ -569,26 +591,20 @@ impl Representation {
                         for (to, from) in renames {
                             if let Some(value) = self.mapping.remove(&from) {
                                 self.mapping.insert(to, value);
-                                changed = true;
                             }
                         }
                         for var in deletes {
                             self.mapping.remove(&var);
-                            changed = true;
                         }
                         if ui.button("+").clicked() {
                             self.mapping.insert(default(), default());
-                            changed = true;
                         }
                     });
                 if ui.button("+").clicked() {
                     self.children.push(default());
-                    changed = true;
                 }
-                changed |= ui
-                    .add(Slider::new(&mut self.count, 0..=10).text("Count"))
-                    .changed();
+                ui.add(Slider::new(&mut self.count, 0..=20).text("Count"));
             });
-        (changed, delete)
+        delete
     }
 }

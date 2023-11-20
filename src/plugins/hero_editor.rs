@@ -16,21 +16,24 @@ impl Plugin for HeroEditorPlugin {
 
 impl HeroEditorPlugin {
     fn on_enter(world: &mut World) {
-        PersistentData::save_last_state(GameState::HeroEditor, world);
+        let mut pd = PersistentData::load(world).set_last_state(GameState::HeroEditor);
+        pd.hero_editor_data.editing_data.lookup.clear();
+        pd.hero_editor_data.editing_data.hovered = None;
+        pd.save(world).unwrap();
+        Self::respawn(world);
     }
 
     fn ui(world: &mut World) {
         let ctx = &egui_context(world);
         let mut pd = PersistentData::load(world);
-        let rep = &mut pd.hero_editor_data.rep;
-        let editing_data = &mut pd.hero_editor_data.editing_data;
-        let mut changed = false;
+        let rep = &mut pd.hero_editor_data.rep.clone();
+        let editing_data = &mut pd.hero_editor_data.editing_data.clone();
         let entity = Self::entity(world);
         let panel = TopBottomPanel::new(egui::panel::TopBottomSide::Top, "Hero Editor")
             .frame(Frame::side_top_panel(&ctx.style()).multiply_with_opacity(0.9));
         let response = panel
             .show(ctx, |ui| {
-                (changed, _) = rep.show_tree(entity, editing_data, 0, ui, world);
+                rep.show_editor(entity, editing_data, 0, ui, world)
             })
             .response;
         response.ctx.input(|reader| {
@@ -38,7 +41,6 @@ impl HeroEditorPlugin {
                 match event {
                     egui::Event::Text(s) => {
                         editing_data.lookup.push_str(s);
-                        changed = true;
                     }
                     egui::Event::Key {
                         key,
@@ -48,17 +50,23 @@ impl HeroEditorPlugin {
                     } => {
                         if *pressed && key.eq(&Key::Backspace) {
                             editing_data.lookup.pop();
-                            changed = true;
                         }
                     }
                     _ => {}
                 }
             }
         });
-        if changed {
+        let mut changed = false;
+        if !pd.hero_editor_data.editing_data.eq(&editing_data) {
+            pd.hero_editor_data.editing_data = editing_data.to_owned();
+            changed = true;
+        }
+        if !pd.hero_editor_data.rep.eq(&rep) {
+            pd.hero_editor_data.rep = rep.to_owned();
             pd.save(world).unwrap();
-            Self::respawn(world);
-            debug!("Save pd");
+            Self::respawn_direct(pd.hero_editor_data.rep, world);
+        } else if changed {
+            pd.save(world).unwrap();
         }
     }
 
@@ -76,12 +84,13 @@ impl HeroEditorPlugin {
             .last()
     }
 
-    fn respawn(world: &mut World) {
+    fn respawn_direct(rep: Representation, world: &mut World) {
         Representation::despawn_all(world);
-        PersistentData::load(world)
-            .hero_editor_data
-            .rep
-            .unpack(None, None, world);
+        rep.unpack(None, None, world);
+    }
+
+    fn respawn(world: &mut World) {
+        Self::respawn_direct(PersistentData::load(world).hero_editor_data.rep, world);
     }
 }
 
@@ -91,7 +100,7 @@ pub struct HeroEditorData {
     pub editing_data: EditingData,
 }
 
-#[derive(Serialize, Deserialize, Default, Clone)]
+#[derive(Serialize, Deserialize, Default, Clone, PartialEq)]
 pub struct EditingData {
     pub lookup: String,
     pub hovered: Option<String>,
