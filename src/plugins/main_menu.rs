@@ -13,6 +13,15 @@ impl Plugin for MainMenuPlugin {
 
 impl MainMenuPlugin {
     fn on_enter(world: &mut World) {
+        if let Ok(camera) = world
+            .query_filtered::<Entity, With<Camera>>()
+            .get_single(world)
+        {
+            world.entity_mut(camera).despawn_recursive();
+        }
+        let mut camera = Camera2dBundle::default();
+        camera.projection.scaling_mode = ScalingMode::FixedVertical(15.0);
+        world.spawn((camera, RaycastPickCamera::default()));
         if SettingsData::get(world).last_state_on_load {
             if let Some(state) = PersistentData::load(world).last_state {
                 GameState::change(state, world);

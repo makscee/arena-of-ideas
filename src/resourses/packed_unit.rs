@@ -95,7 +95,7 @@ impl PackedUnit {
         }
         world
             .entity_mut(entity)
-            .insert((Name::new(self.name.clone()), Unit { source: self }));
+            .insert((Name::new(self.name.clone()), Unit));
         entity
     }
 

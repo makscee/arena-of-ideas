@@ -122,7 +122,6 @@ fn main() {
             AudioPlugin,
             HeroEditorPlugin,
         ))
-        .add_systems(Startup, setup)
         .add_systems(Update, input_world)
         .init_resource::<UserName>()
         .init_resource::<Password>()
@@ -131,12 +130,6 @@ fn main() {
         .register_type::<VarStateDelta>()
         .add_systems(Update, show_build_version)
         .run();
-}
-
-fn setup(mut commands: Commands) {
-    let mut camera = Camera2dBundle::default();
-    camera.projection.scaling_mode = ScalingMode::FixedVertical(15.0);
-    commands.spawn((camera, RaycastPickCamera::default()));
 }
 
 fn update(mut timer: ResMut<GameTimer>, time: Res<Time>) {

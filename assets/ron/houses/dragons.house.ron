@@ -1,0 +1,42 @@
+#![enable(implicit_some)]
+(
+    name: "Dragons",
+    color: ("#558B2F"),
+    statuses: [
+        (
+            name: "Growth",
+            description: "+{Charges}/+{Charges}",
+            trigger: List(
+                [
+                    ChangeVar(
+                        Hp,
+                        Context(Charges),
+                    ),
+                    ChangeVar(
+                        Atk,
+                        Context(Charges),
+                    ),
+                ],
+            ),
+        ),
+    ],
+    abilities: [
+        (
+            name: "Grow",
+            description: "Gain +1/+1",
+            effect: WithTarget(
+                Owner,
+                List(
+                    [
+                        AddStatus(
+                            "Growth",
+                        ),
+                        Vfx(
+                            "apply_status",
+                        ),
+                    ],
+                ),
+            ),
+        ),
+    ],
+)

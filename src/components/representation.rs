@@ -93,12 +93,11 @@ impl RepresentationMaterial {
         match self {
             RepresentationMaterial::None => {}
             RepresentationMaterial::Shape {
-                shape,
-                fill,
                 size,
                 thickness,
                 alpha,
                 color,
+                ..
             } => {
                 *size = default_one_vec2_e();
                 *thickness = default_one_f32_e();
@@ -118,10 +117,9 @@ impl RepresentationMaterial {
             }
             RepresentationMaterial::Curve {
                 thickness,
-                dilations,
                 curvature,
-                aa,
                 color,
+                ..
             } => {
                 *thickness = default_one_f32_e();
                 *color = default_color_e();
@@ -520,8 +518,9 @@ impl Representation {
             for i in 0..self.count {
                 let mut rep = self.clone();
                 rep.count = 0;
-                let entity = rep.unpack(None, Some(entity), world);
-                VarState::get_mut(entity, world).init(VarName::Index, VarValue::Int(i as i32));
+                rep.mapping
+                    .insert(VarName::Index, Expression::Int(i as i32));
+                rep.unpack(None, Some(entity), world);
             }
             return entity;
         }

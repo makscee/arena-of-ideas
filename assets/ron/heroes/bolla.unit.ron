@@ -1,0 +1,29 @@
+#![enable(implicit_some)]
+(
+    hp: 1,
+    atk: 1,
+    house: "Dragons",
+    trigger: TurnStart(UseAbility("Grow")),
+    name: "Bolla",
+    description: "Turn Start: [Grow]",
+    representation: (
+        material: Shape(
+            shape: Circle,
+            fill: Opaque,
+            size: Vec2E(Float(0.5)),
+            thickness: Float(1.0),
+            alpha: Float(0.2),
+            color: State(Color),
+        ),
+        children: [],
+        mapping: {
+            Position: Mul(UnitVec(Sum(GameTime, Mul(IntFloat(State(Index)), Sum(Float(1.04), Mul(Sin(GameTime), Float(0.24)))))), Float(0.19)),
+        },
+        count: 6,
+    ),
+    state: (
+        history: {},
+        birth: 0.0,
+    ),
+    statuses: [],
+)

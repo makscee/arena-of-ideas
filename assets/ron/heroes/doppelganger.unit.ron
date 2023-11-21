@@ -3,7 +3,12 @@
     hp: 2,
     atk: 3,
     house: "Shifters",
-    trigger: BattleStart(WithTarget(RandomAdjacentUnit, UseAbility("Copy"))),
+    trigger: BattleStart(
+        WithTarget(
+            RandomAdjacentUnit,
+            UseAbility("Copy"),
+        ),
+    ),
     name: "Doppelganger",
     description: "Battle Start: use [Copy]",
     representation: (
@@ -16,13 +21,23 @@
         ),
         children: [],
         mapping: {
-            Position: Mul(UnitVec(Mul(IntFloat(State(Index)), Mul(PI, Float(0.5)))), Mul(Beat, Float(0.5))),
+            Position: Mul(
+                UnitVec(
+                    Mul(
+                        IntFloat(
+                            State(Index),
+                        ),
+                        Mul(
+                            PI,
+                            Float(0.5),
+                        ),
+                    ),
+                ),
+                Mul(Beat, Float(0.5)),
+            ),
         },
         count: 4,
     ),
-    state: (
-        history: {},
-        birth: 0.0,
-    ),
+    state: (history: {}, birth: 0.0),
     statuses: [],
 )

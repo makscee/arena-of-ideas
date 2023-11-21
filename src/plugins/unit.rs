@@ -375,9 +375,7 @@ impl UnitPlugin {
 pub struct UnitHandle(pub Handle<PackedUnit>);
 
 #[derive(Component)]
-pub struct Unit {
-    pub source: PackedUnit,
-}
+pub struct Unit;
 
 #[derive(Component)]
 pub struct UnitRepresentation;

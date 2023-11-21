@@ -216,11 +216,12 @@ impl Effect {
                         VarState::push_back(owner, var, Change::new(value), world);
                     }
                 }
-                let source = &world.get::<Unit>(target).unwrap().source;
-                source
-                    .representation
-                    .clone()
-                    .unpack(None, Some(owner), world);
+                Representation::pack(target, world).unpack(None, Some(owner), world);
+                // let source = &world.get::<Unit>(target).unwrap().source;
+                // source
+                //     .representation
+                //     .clone()
+                //     .unpack(None, Some(owner), world);
                 // if let Some(entity) = PackedUnit::get_representation_entity(owner, world) {
                 //     world.get_entity_mut(entity).unwrap().despawn_recursive();
                 // }

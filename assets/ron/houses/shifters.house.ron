@@ -2,8 +2,7 @@
 (
     name: "Shifters",
     color: ("#F5F5F5"),
-    statuses: [
-    ],
+    statuses: [],
     abilities: [
         (
             name: "Copy",
