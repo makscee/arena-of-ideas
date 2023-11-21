@@ -26,8 +26,8 @@ impl Pools {
         world.get_resource_mut::<Pools>().unwrap()
     }
 
-    pub fn get_status<'a>(name: &str, world: &'a World) -> &'a PackedStatus {
-        Self::get(world).statuses.get(name).unwrap()
+    pub fn get_status<'a>(name: &str, world: &'a World) -> Option<&'a PackedStatus> {
+        Self::get(world).statuses.get(name)
     }
     pub fn get_ability<'a>(name: &str, world: &'a World) -> &'a Ability {
         Self::get(world).abilities.get(name).unwrap()

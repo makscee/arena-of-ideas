@@ -291,8 +291,8 @@ impl UnitPlugin {
             if world.get::<ShopOffer>(hovered).is_some() {
                 return;
             }
-            let description = VarState::get(hovered, world)
-                .get_string(VarName::Description)
+            let description = VarState::try_get(hovered, world)
+                .and_then(|s| s.get_string(VarName::Description))
                 .unwrap_or_default();
             if !description.is_empty() {
                 show_description_panels(hovered, &description, world);
@@ -375,7 +375,9 @@ impl UnitPlugin {
 pub struct UnitHandle(pub Handle<PackedUnit>);
 
 #[derive(Component)]
-pub struct Unit;
+pub struct Unit {
+    pub source: PackedUnit,
+}
 
 #[derive(Component)]
 pub struct UnitRepresentation;

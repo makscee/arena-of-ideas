@@ -1,0 +1,19 @@
+#![enable(implicit_some)]
+(
+    name: "Shifters",
+    color: ("#F5F5F5"),
+    statuses: [
+    ],
+    abilities: [
+        (
+            name: "Copy",
+            description: "Fully copy target",
+            effect: List(
+                [
+                    FullCopy,
+                    Vfx("apply_status"),
+                ],
+            ),
+        ),
+    ],
+)

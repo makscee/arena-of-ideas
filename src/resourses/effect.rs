@@ -7,6 +7,7 @@ pub enum Effect {
     #[default]
     Noop,
     Kill,
+    FullCopy,
     Debug(Expression),
     Text(Expression),
     Damage(Option<Expression>),
@@ -200,6 +201,52 @@ impl Effect {
                     .clone(),
                 world,
             ),
+            Effect::FullCopy => {
+                let owner = context.owner();
+                let target = context.target();
+                let history = VarState::get(target, world).history.clone();
+                for (var, history) in history.into_iter() {
+                    if var.eq(&VarName::Position)
+                        || var.eq(&VarName::Slot)
+                        || var.eq(&VarName::Name)
+                    {
+                        continue;
+                    }
+                    if let Some(value) = history.get_last() {
+                        VarState::push_back(owner, var, Change::new(value), world);
+                    }
+                }
+                let source = &world.get::<Unit>(target).unwrap().source;
+                source
+                    .representation
+                    .clone()
+                    .unpack(None, Some(owner), world);
+                // if let Some(entity) = PackedUnit::get_representation_entity(owner, world) {
+                //     world.get_entity_mut(entity).unwrap().despawn_recursive();
+                // }
+                for entity in Status::collect_entity_statuses(owner, world) {
+                    world.entity_mut(entity).despawn_recursive();
+                }
+                for entity in Status::collect_entity_statuses(target, world) {
+                    let status = world.get::<Status>(entity).unwrap();
+                    if let Some(status) = Pools::get_status(&status.name, world) {
+                        let status = status.clone().unpack(Some(owner), world);
+                        for (var, history) in
+                            VarState::get(entity, world).history.clone().into_iter()
+                        {
+                            if let Some(value) = history.get_last() {
+                                VarState::push_back(status, var, Change::new(value), world);
+                            }
+                        }
+                    } else {
+                        status
+                            .clone()
+                            .spawn(world)
+                            .insert(VarState::default())
+                            .set_parent(owner);
+                    }
+                }
+            }
         }
         Ok(())
     }
@@ -260,7 +307,7 @@ impl Effect {
             });
 
             match self {
-                Effect::Noop | Effect::Kill => {}
+                Effect::Noop | Effect::Kill | Effect::FullCopy => {}
                 Effect::Debug(e) | Effect::Text(e) => {
                     e.show_editor(editing_data, format!("{name}/e"), ui);
                 }

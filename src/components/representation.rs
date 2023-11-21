@@ -85,7 +85,7 @@ fn default_one_vec2_e() -> Expression {
     Expression::Vec2(1.0, 1.0)
 }
 fn default_color_e() -> Expression {
-    Expression::Hex("#ff00ff".to_owned())
+    Expression::State(VarName::Color)
 }
 
 impl RepresentationMaterial {

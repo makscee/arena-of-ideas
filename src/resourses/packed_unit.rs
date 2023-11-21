@@ -31,7 +31,7 @@ fn default_text() -> String {
     "empty".to_owned()
 }
 
-const LOCAL_TRIGGER: &str = "_local";
+pub const LOCAL_TRIGGER: &str = "_local";
 
 impl PackedUnit {
     pub fn unpack(mut self, parent: Entity, slot: Option<usize>, world: &mut World) -> Entity {
@@ -49,7 +49,10 @@ impl PackedUnit {
             .insert(On::<Pointer<DragEnd>>::run(UnitPlugin::drag_unit_end))
             .insert(On::<Pointer<Drag>>::run(UnitPlugin::drag_unit));
         {
-            let entity = self.representation.unpack(None, Some(entity), world);
+            let entity = self
+                .representation
+                .clone()
+                .unpack(None, Some(entity), world);
             world.entity_mut(entity).insert(UnitRepresentation);
         }
         let house_color = Pools::get(world)
@@ -77,30 +80,38 @@ impl PackedUnit {
                 VarValue::Color(house_color.clone().into()),
             )
             .init(VarName::Color, VarValue::Color(house_color.into()));
-        world
-            .entity_mut(entity)
-            .insert((Unit, Name::new(self.name)));
-        self.state.attach(entity, world);
-        Status::spawn(LOCAL_TRIGGER.to_owned(), self.trigger, world)
-            .insert(VarState::default())
-            .set_parent(entity);
-        for (status, charges) in self.statuses {
-            if let Ok(entity) = Status::change_charges(&status, entity, charges, world) {
+        self.state.clone().attach(entity, world);
+        Status {
+            name: LOCAL_TRIGGER.to_owned(),
+            trigger: self.trigger.clone(),
+        }
+        .spawn(world)
+        .insert(VarState::default())
+        .set_parent(entity);
+        for (status, charges) in self.statuses.iter() {
+            if let Ok(entity) = Status::change_charges(status, entity, *charges, world) {
                 Status::apply_delta(entity, world);
             }
         }
+        world
+            .entity_mut(entity)
+            .insert((Name::new(self.name.clone()), Unit { source: self }));
         entity
     }
 
-    pub fn pack(entity: Entity, world: &World) -> Self {
-        let rep_entity = world
+    pub fn get_representation_entity(entity: Entity, world: &World) -> Option<Entity> {
+        world
             .get::<Children>(entity)
             .unwrap()
             .into_iter()
-            .find(|x| world.get::<UnitRepresentation>(**x).is_some());
+            .find(|x| world.get::<UnitRepresentation>(**x).is_some())
+            .copied()
+    }
+
+    pub fn pack(entity: Entity, world: &World) -> Self {
         let representation = {
-            match rep_entity {
-                Some(rep_entity) => Representation::pack(*rep_entity, world),
+            match Self::get_representation_entity(entity, world) {
+                Some(entity) => Representation::pack(entity, world),
                 None => default(),
             }
         };

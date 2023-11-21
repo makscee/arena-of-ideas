@@ -133,6 +133,7 @@ impl Trigger {
         ui.horizontal(|ui| {
             ComboBox::from_id_source(&name)
                 .selected_text(self.to_string())
+                .width(150.0)
                 .show_ui(ui, |ui| {
                     for option in Trigger::iter() {
                         let text = option.to_string();

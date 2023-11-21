@@ -17,14 +17,14 @@ pub struct PackedStatus {
     pub state: VarState,
 }
 
-#[derive(Component)]
+#[derive(Component, Clone)]
 pub struct Status {
     pub name: String,
     pub trigger: Trigger,
 }
 
 impl PackedStatus {
-    pub fn unpack(mut self, owner: Option<Entity>, world: &mut World) -> Result<Entity> {
+    pub fn unpack(mut self, owner: Option<Entity>, world: &mut World) -> Entity {
         if self.state.get_int(VarName::Charges).is_err() {
             self.state.init(VarName::Charges, VarValue::Int(1));
         }
@@ -36,7 +36,7 @@ impl PackedStatus {
             .init(VarName::Name, VarValue::String(self.name.to_owned()))
             .init(VarName::Position, VarValue::Vec2(default()));
         let add_delta = !self.trigger.collect_delta_triggers().is_empty();
-        let entity = Status::spawn(self.name, self.trigger, world).id();
+        let entity = Status::spawn_new(self.name, self.trigger, world).id();
         self.state.attach(entity, world);
         if add_delta {
             world.entity_mut(entity).insert(VarStateDelta::default());
@@ -47,13 +47,17 @@ impl PackedStatus {
         if let Some(rep) = self.representation {
             rep.unpack(None, Some(entity), world);
         }
-        Ok(entity)
+        entity
     }
 }
 
 impl Status {
-    pub fn spawn(name: String, trigger: Trigger, world: &mut World) -> EntityMut {
-        world.spawn((Name::from(name.clone()), Status { name, trigger }))
+    pub fn spawn_new(name: String, trigger: Trigger, world: &mut World) -> EntityMut {
+        Status { name, trigger }.spawn(world)
+    }
+
+    pub fn spawn(self, world: &mut World) -> EntityMut {
+        world.spawn((Name::from(self.name.clone()), self))
     }
 
     pub fn change_charges(
@@ -70,9 +74,9 @@ impl Status {
                 }
             }
         }
-        let mut status = Pools::get_status(status, world).clone();
+        let mut status = Pools::get_status(status, world).unwrap().clone();
         status.state.init(VarName::Charges, VarValue::Int(delta));
-        status.unpack(Some(unit), world)
+        Ok(status.unpack(Some(unit), world))
     }
 
     pub fn collect_entity_statuses(entity: Entity, world: &World) -> Vec<Entity> {

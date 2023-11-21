@@ -18,6 +18,7 @@ pub enum Expression {
     Caster,
     Target,
     RandomUnit,
+    RandomAdjacentUnit,
     Age,
     SlotPosition,
     OwnerFaction,
@@ -166,6 +167,20 @@ impl Expression {
                 .choose(&mut thread_rng())
                 .context("No other units found")?,
             )),
+            Expression::RandomAdjacentUnit => {
+                let slot = context.get_var(VarName::Slot, world).unwrap().get_int()? as usize;
+                let faction = context
+                    .get_var(VarName::Faction, world)
+                    .unwrap()
+                    .get_faction()?;
+                Ok(VarValue::Entity(
+                    UnitPlugin::find_unit(faction, slot - 1, world)
+                        .into_iter()
+                        .chain(UnitPlugin::find_unit(faction, slot + 1, world).into_iter())
+                        .choose(&mut thread_rng())
+                        .context("No adjacent units found")?,
+                ))
+            }
             Expression::OwnerFaction => Ok(VarValue::Faction(UnitPlugin::get_faction(
                 context.owner(),
                 world,
@@ -255,6 +270,7 @@ impl Expression {
             | Expression::Caster
             | Expression::Target
             | Expression::RandomUnit
+            | Expression::RandomAdjacentUnit
             | Expression::Age
             | Expression::SlotPosition
             | Expression::OwnerFaction
@@ -432,6 +448,7 @@ impl Expression {
                 | Expression::Caster
                 | Expression::Target
                 | Expression::RandomUnit
+                | Expression::RandomAdjacentUnit
                 | Expression::Age
                 | Expression::SlotPosition
                 | Expression::OwnerFaction

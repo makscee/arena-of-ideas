@@ -24,7 +24,7 @@ impl HeroEditorPlugin {
         pd.save(world).unwrap();
         PackedTeam::spawn(Faction::Left, world);
         PackedTeam::spawn(Faction::Right, world);
-        Self::apply_camera(&mut pd, world);
+        Self::apply_camera(&mut pd, true, world);
         Self::respawn(world);
     }
 
@@ -73,6 +73,15 @@ impl HeroEditorPlugin {
         }
     }
 
+    fn get_unit_from_clipboard(world: &mut World) -> Result<PackedUnit> {
+        let hero = get_from_clipboard(world);
+        if let Some(hero) = hero {
+            let hero = ron::from_str::<PackedUnit>(&hero);
+            return hero.map_err(|e| anyhow!("{e}"));
+        }
+        Err(anyhow!("Clipboard is empty"))
+    }
+
     fn side_ui(pd: &mut PersistentData, ctx: &Context, world: &mut World) {
         SidePanel::new(egui::panel::Side::Right, "hero editor bottom").show(ctx, |ui| {
             ui.vertical(|ui| {
@@ -88,19 +97,30 @@ impl HeroEditorPlugin {
                     );
                 }
                 if ui.button("Load from Clipboard").clicked() {
-                    let hero = get_from_clipboard(world);
-                    if let Some(hero) = hero {
-                        let hero = ron::from_str::<PackedUnit>(&hero);
-                        if let Ok(hero) = hero {
+                    match Self::get_unit_from_clipboard(world) {
+                        Ok(hero) => {
                             let mut pd = PersistentData::load(world);
                             debug!("Loaded {hero:#?}");
                             pd.hero_editor_data.hero = hero;
                             Self::respawn_direct(&mut pd, world);
-                        } else {
-                            error!("Failed to parse {hero:?}");
                         }
-                    } else {
-                        error!("Clipboard is empty");
+                        Err(e) => error!("Failed to get hero: {e}"),
+                    }
+                }
+                let spawn_ally = ui.button("Spawn ally from Clipboard").clicked();
+                let spawn_enemy = ui.button("Spawn enemy from Clipboard").clicked();
+                if spawn_ally || spawn_enemy {
+                    let faction = match spawn_ally {
+                        true => Faction::Left,
+                        false => Faction::Right,
+                    };
+                    match Self::get_unit_from_clipboard(world) {
+                        Ok(hero) => {
+                            hero.unpack(PackedTeam::entity(faction, world).unwrap(), None, world);
+                            UnitPlugin::fill_slot_gaps(faction, world);
+                            UnitPlugin::translate_to_slots(world);
+                        }
+                        Err(e) => error!("Failed to get hero: {e}"),
                     }
                 }
                 let mut changed = false;
@@ -129,11 +149,14 @@ impl HeroEditorPlugin {
                     )
                     .changed();
                 if changed {
-                    Self::apply_camera(pd, world);
+                    Self::apply_camera(pd, false, world);
                 }
 
                 if ui.button("Send Battle Start").clicked() {
                     Event::BattleStart.send(world);
+                }
+                if ui.button("Send Turn Start").clicked() {
+                    Event::TurnStart.send(world);
                 }
                 if ui.button("Spawn enemy").clicked() {
                     PackedUnit {
@@ -186,13 +209,16 @@ impl HeroEditorPlugin {
         Self::respawn_direct(&mut PersistentData::load(world), world);
     }
 
-    fn apply_camera(data: &mut PersistentData, world: &mut World) {
+    fn apply_camera(data: &mut PersistentData, initial: bool, world: &mut World) {
         if let Ok((mut transform, mut projection)) = world
             .query_filtered::<(&mut Transform, &mut OrthographicProjection), With<Camera>>()
             .get_single_mut(world)
         {
             let ed = &mut data.hero_editor_data.editing_data;
-            let delta = ed.camera_pos * ed.camera_scale / projection.scale;
+            let delta = match initial {
+                true => ed.camera_pos,
+                false => ed.camera_pos * ed.camera_scale / projection.scale,
+            };
             let z = transform.translation.z;
             transform.translation = delta.extend(z);
             ed.camera_pos = delta;

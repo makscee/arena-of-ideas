@@ -94,11 +94,11 @@ impl ShopPlugin {
 
         for i in 1..3 {
             let pos = UnitPlugin::get_slot_position(Faction::Shop, units_len + i as usize);
-            let status = Pools::get_status("Strength", world).clone();
+            let status = Pools::get_status("Strength", world).unwrap().clone();
             let name = status.name.to_owned();
             let description = status.description.to_owned();
             let charges = status.state.get_int(VarName::Charges).unwrap_or(1);
-            let entity = status.unpack(None, world).unwrap();
+            let entity = status.unpack(None, world);
             VarState::get_mut(entity, world).init(VarName::Position, VarValue::Vec2(pos));
             world.entity_mut(entity).insert(ShopOffer {
                 product: OfferProduct::Status {

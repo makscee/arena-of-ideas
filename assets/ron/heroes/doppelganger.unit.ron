@@ -1,0 +1,28 @@
+#![enable(implicit_some)]
+(
+    hp: 2,
+    atk: 3,
+    house: "Shifters",
+    trigger: BattleStart(WithTarget(RandomAdjacentUnit, UseAbility("Copy"))),
+    name: "Doppelganger",
+    description: "Battle Start: use [Copy]",
+    representation: (
+        material: Shape(
+            shape: Circle,
+            fill: Line,
+            size: Vec2E(Float(0.72)),
+            thickness: Float(2.0),
+            alpha: Float(0.4),
+        ),
+        children: [],
+        mapping: {
+            Position: Mul(UnitVec(Mul(IntFloat(State(Index)), Mul(PI, Float(0.5)))), Mul(Beat, Float(0.5))),
+        },
+        count: 4,
+    ),
+    state: (
+        history: {},
+        birth: 0.0,
+    ),
+    statuses: [],
+)
