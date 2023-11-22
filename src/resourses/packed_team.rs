@@ -22,6 +22,7 @@ impl PackedTeam {
         let units = UnitPlugin::collect_factions(HashSet::from([faction]), world)
             .into_iter()
             .map(|(u, _)| PackedUnit::pack(u, world))
+            .sorted_by_key(|u| u.state.get_int(VarName::Slot).unwrap_or_default())
             .collect_vec();
         PackedTeam { units, state }
     }

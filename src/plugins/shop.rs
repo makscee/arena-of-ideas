@@ -1,6 +1,5 @@
 use super::*;
 
-use bevy_egui::egui::Layout;
 use rand::seq::IteratorRandom;
 
 pub struct ShopPlugin;

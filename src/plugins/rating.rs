@@ -27,12 +27,13 @@ impl RatingPlugin {
             let enemy = &mut enemies[ind];
             match SimulationPlugin::run(team.clone(), enemy.clone(), world) {
                 Ok(result) => match result {
-                    BattleResult::Right(_) => candidates.push(enemies.remove(ind)),
-                    _ => {
-                        for _ in 0..(1..=5).into_iter().choose(&mut thread_rng()).unwrap() {
+                    BattleResult::Right(..) => candidates.push(enemies.remove(ind)),
+                    BattleResult::Left(count) => {
+                        for _ in 0..(0..=count).into_iter().choose(&mut thread_rng()).unwrap() {
                             Self::strenghten(enemy, world);
                         }
                     }
+                    _ => Self::strenghten(enemy, world),
                 },
                 Err(err) => panic!("Battle Run error: {err}"),
             }

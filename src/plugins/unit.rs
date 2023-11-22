@@ -246,7 +246,6 @@ impl UnitPlugin {
         timer: Res<GameTimer>,
     ) {
         let unit = event.dropped;
-        dbg!(&event);
         if !unit_query.contains(unit) {
             debug!("Non unit dropped {unit:?}");
             return;
