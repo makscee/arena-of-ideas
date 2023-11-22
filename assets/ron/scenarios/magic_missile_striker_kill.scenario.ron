@@ -42,4 +42,14 @@
             ),
         ],
     ),
+    condition: And(
+        Equals(
+            FactionCount(Faction(Left)),
+            Int(1),
+        ),
+        Equals(
+            FactionCount(Faction(Right)),
+            Int(0),
+        ),
+    ),
 )

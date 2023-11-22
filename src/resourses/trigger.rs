@@ -10,6 +10,7 @@ pub enum Trigger {
     AfterDamageDealt(Effect),
     BattleStart(Effect),
     TurnStart(Effect),
+    TurnEnd(Effect),
     BeforeStrike(Effect),
     AllyDeath(Effect),
     BeforeDeath(Effect),
@@ -45,6 +46,10 @@ impl Trigger {
                 Event::TurnStart => vec![self.clone()],
                 _ => default(),
             },
+            Trigger::TurnEnd(..) => match event {
+                Event::TurnEnd => vec![self.clone()],
+                _ => default(),
+            },
             Trigger::BeforeStrike(..) => match event {
                 Event::BeforeStrike(..) => vec![self.clone()],
                 _ => default(),
@@ -76,6 +81,7 @@ impl Trigger {
             | Trigger::AfterDamageDealt(effect)
             | Trigger::BattleStart(effect)
             | Trigger::TurnStart(effect)
+            | Trigger::TurnEnd(effect)
             | Trigger::BeforeStrike(effect) => {
                 ActionPlugin::push_back(effect, context, world);
             }
@@ -107,7 +113,9 @@ impl Trigger {
                 context.set_target(target, world);
                 ActionPlugin::push_back(effect, context, world);
             }
-            _ => panic!("Trigger {self} can not be fired"),
+            Trigger::ChangeVar(_, _) | Trigger::List(_) | Trigger::Noop => {
+                panic!("Trigger {self} can not be fired")
+            }
         }
     }
 
@@ -145,6 +153,7 @@ impl Trigger {
                 | Trigger::AfterDamageDealt(effect)
                 | Trigger::BattleStart(effect)
                 | Trigger::TurnStart(effect)
+                | Trigger::TurnEnd(effect)
                 | Trigger::BeforeStrike(effect)
                 | Trigger::AllyDeath(effect)
                 | Trigger::BeforeDeath(effect)

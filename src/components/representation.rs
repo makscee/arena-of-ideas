@@ -30,6 +30,22 @@ pub struct Representation {
     pub count: usize,
 }
 
+#[derive(Resource)]
+pub struct SkipVisual(pub bool);
+
+impl SkipVisual {
+    pub fn active(world: &mut World) -> bool {
+        world
+            .get_resource::<SkipVisual>()
+            .and_then(|s| Some(s.0))
+            .unwrap_or_default()
+    }
+
+    pub fn set_active(value: bool, world: &mut World) {
+        world.insert_resource(SkipVisual(value));
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, Display, Default, EnumIter, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub enum RepresentationMaterial {

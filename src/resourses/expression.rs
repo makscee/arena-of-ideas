@@ -60,6 +60,8 @@ pub enum Expression {
     Min(Box<Expression>, Box<Expression>),
     Max(Box<Expression>, Box<Expression>),
     Equals(Box<Expression>, Box<Expression>),
+    And(Box<Expression>, Box<Expression>),
+    Or(Box<Expression>, Box<Expression>),
 
     If(Box<Expression>, Box<Expression>, Box<Expression>),
 }
@@ -197,6 +199,12 @@ impl Expression {
                 a.get_value(context, world)?
                     .eq(&b.get_value(context, world)?),
             )),
+            Expression::And(a, b) => Ok(VarValue::Bool(
+                a.get_bool(context, world)? && b.get_bool(context, world)?,
+            )),
+            Expression::Or(a, b) => Ok(VarValue::Bool(
+                a.get_bool(context, world)? || b.get_bool(context, world)?,
+            )),
             Expression::Hex(color) => Ok(VarValue::Color(Color::hex(color)?)),
             Expression::StatusCharges(name) => {
                 let status_name = name.get_string(context, world)?;
@@ -308,6 +316,8 @@ impl Expression {
             | Expression::LessThen(a, b)
             | Expression::Min(a, b)
             | Expression::Equals(a, b)
+            | Expression::And(a, b)
+            | Expression::Or(a, b)
             | Expression::Max(a, b) => vec![a, b],
             Expression::If(a, b, c) => vec![a, b, c],
         }
@@ -527,7 +537,9 @@ impl Expression {
                 | Expression::LessThen(a, b)
                 | Expression::Min(a, b)
                 | Expression::Max(a, b)
-                | Expression::Equals(a, b) => {
+                | Expression::Equals(a, b)
+                | Expression::And(a, b)
+                | Expression::Or(a, b) => {
                     ui.vertical(|ui| {
                         ui.horizontal(|ui| {
                             a.show_editor(editing_data, format!("{name}/a"), ui);

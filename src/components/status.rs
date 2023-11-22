@@ -41,13 +41,28 @@ impl PackedStatus {
         if add_delta {
             world.entity_mut(entity).insert(VarStateDelta::default());
         }
-        Options::get_status_rep(world)
-            .clone()
-            .unpack(Some(entity), owner, world);
-        if let Some(rep) = self.representation {
-            rep.unpack(None, Some(entity), world);
+        if let Some(owner) = owner {
+            world.entity_mut(entity).set_parent(owner);
+        }
+        if !SkipVisual::active(world) {
+            Options::get_status_rep(world)
+                .clone()
+                .unpack(Some(entity), None, world);
+            if let Some(rep) = self.representation {
+                rep.unpack(None, Some(entity), world);
+            }
         }
         entity
+    }
+
+    pub fn apply_to_team(name: &str, charges: i32, team: &mut PackedTeam) {
+        for unit in team.units.iter_mut() {
+            if let Some((_, i)) = unit.statuses.iter_mut().find(|(s, _)| s.eq(name)) {
+                *i += charges;
+            } else {
+                unit.statuses.push((name.to_owned(), charges));
+            }
+        }
     }
 }
 

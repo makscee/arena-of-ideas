@@ -1,8 +1,14 @@
 use super::*;
 
+use bevy_egui::egui::Layout;
 use rand::seq::IteratorRandom;
 
 pub struct ShopPlugin;
+
+#[derive(Resource)]
+pub struct ShopData {
+    pub next_level: PackedTeam,
+}
 
 impl Plugin for ShopPlugin {
     fn build(&self, app: &mut App) {
@@ -32,22 +38,38 @@ impl ShopPlugin {
         }
         UnitPlugin::translate_to_slots(world);
         Self::fill_showcase(world);
-        Self::change_g(10, world).unwrap();
+        Self::change_g(4, world).unwrap();
         PersistentData::load(world)
             .set_last_state(GameState::Shop)
             .save(world)
             .unwrap();
+        world.insert_resource(ShopData {
+            next_level: Ladder::current_level(world),
+        });
     }
 
     fn level_finished(world: &mut World) {
-        let mut save = Save::get(world).unwrap();
-        save.current_level += 1;
-        if save.current_level >= Options::get_initial_ladder(world).teams.len() {
-            let team =
-                RatingPlugin::generate_weakest_opponent(&Save::get(world).unwrap().team, world);
-            save.add_ladder_level(team);
+        match world.resource::<BattleData>().result {
+            BattleResult::Even | BattleResult::Left(_) => {
+                let mut save = Save::get(world).unwrap();
+                save.current_level += 1;
+                if save.current_level
+                    >= Options::get_initial_ladder(world).teams.len() + save.ladder.teams.len()
+                {
+                    let teams = RatingPlugin::generate_weakest_opponent(
+                        &Save::get(world).unwrap().team,
+                        3,
+                        world,
+                    );
+                    save.add_ladder_levels(teams);
+                }
+                save.save(world).unwrap();
+            }
+            BattleResult::Right(_) => {
+                GameState::MainMenu.change(world);
+            }
+            BattleResult::Tbd => panic!("Battle was not finished"),
         }
-        save.save(world).unwrap();
     }
 
     fn on_leave(world: &mut World) {
@@ -120,7 +142,6 @@ impl ShopPlugin {
 
     pub fn pack_active_team(world: &mut World) -> Result<()> {
         let team = PackedTeam::pack(Faction::Team, world);
-        debug!("Active team saved.");
         Save::get(world)?
             .set_team(team)
             .save(world)
@@ -136,15 +157,58 @@ impl ShopPlugin {
         for entity in Self::all_offers(world) {
             ShopOffer::draw_buy_panel(entity, world);
         }
+        let pos = UnitPlugin::get_slot_position(Faction::Shop, 0);
+        let pos = world_to_screen(pos.extend(0.0), world);
+        let pos = pos2(pos.x, pos.y);
         if let Some(team_state) = PackedTeam::state(Faction::Team, world) {
             let g = team_state.get_int(VarName::G).unwrap_or_default();
-            Window::new("Stats").show(&ctx, |ui| {
-                ui.label(RichText::new(format!("G: {g}")).color(Color32::KHAKI));
-            });
+            Area::new("g")
+                .fixed_pos(pos + egui::vec2(0.0, -60.0))
+                .show(ctx, |ui| {
+                    ui.label(
+                        RichText::new(format!("{g} g"))
+                            .size(40.0)
+                            .strong()
+                            .color(hex_color!("#FFC107")),
+                    );
+                });
         }
-        let pos = UnitPlugin::get_slot_position(Faction::Shop, 0);
-        let pos = vec3(pos.x, pos.y, 0.0);
-        let pos = world_to_screen(pos, world);
+        Window::new("Next Enemy")
+            .collapsible(false)
+            .resizable(false)
+            .anchor(Align2::RIGHT_CENTER, [-20.0, 0.0])
+            .default_width(150.0)
+            .show(ctx, |ui| {
+                ui.vertical_centered(|ui| {
+                    let team = &world.resource::<ShopData>().next_level;
+                    let unit = &team.units[0];
+
+                    ui.heading(
+                        RichText::new(format!("{} {}/{}", unit.name, unit.hp, unit.atk))
+                            .size(20.0)
+                            .color(hex_color!("#B71C1C")),
+                    );
+
+                    ui.label(RichText::new(format!("x{}", team.units.len())).size(25.0));
+                    if !unit.statuses.is_empty() {
+                        let (name, charges) = &unit.statuses[0];
+                        ui.label(RichText::new(format!("with {name} ({charges})")));
+                    }
+
+                    let btn = Button::new(
+                        RichText::new("Go")
+                            .size(25.0)
+                            .color(hex_color!("#B71C1C"))
+                            .text_style(egui::TextStyle::Button),
+                    )
+                    .min_size(egui::vec2(100.0, 0.0));
+                    if ui.add(btn).clicked() {
+                        GameState::change(GameState::Battle, world);
+                        GameTimer::get_mut(world).clear_save();
+                        GameTimer::get_mut(world).reset();
+                    }
+                });
+            });
         Window::new("reroll")
             .fixed_pos(pos2(pos.x, pos.y))
             .collapsible(false)
@@ -166,15 +230,6 @@ impl ShopPlugin {
                         Self::buy_reroll(world).unwrap();
                     }
                 })
-            });
-        Window::new("battle")
-            .anchor(Align2::RIGHT_BOTTOM, egui::vec2(0.0, 0.0))
-            .show(ctx, |ui| {
-                if ui.button("Go").clicked() {
-                    GameState::change(GameState::Battle, world);
-                    GameTimer::get_mut(world).clear_save();
-                    GameTimer::get_mut(world).reset();
-                }
             });
     }
 

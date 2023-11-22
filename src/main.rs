@@ -26,8 +26,8 @@ struct Args {
 
 #[derive(Debug, Clone, ValueEnum)]
 enum RunMode {
-    CustomBattle,
-    Shop,
+    Regular,
+    Clean,
     Test,
 }
 
@@ -50,11 +50,10 @@ fn main() {
     // return;
     let args = Args::parse();
     let next_state = match args.mode {
-        RunMode::CustomBattle => GameState::Battle,
-        RunMode::Shop => GameState::Shop,
+        RunMode::Regular => GameState::MainMenu,
+        RunMode::Clean => GameState::MainMenuClean,
         RunMode::Test => GameState::TestsLoading,
     };
-    let next_state = GameState::MainMenu;
     App::new()
         .add_state::<GameState>()
         .insert_resource(ClearColor(Color::rgb(0.1, 0.1, 0.1)))

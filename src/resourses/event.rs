@@ -13,6 +13,7 @@ pub enum Event {
     },
     BattleStart,
     TurnStart,
+    TurnEnd,
     BeforeStrike(Entity),
     Death(Entity),
     Kill {
@@ -23,14 +24,14 @@ pub enum Event {
 
 impl Event {
     pub fn send(self, world: &mut World) {
-        debug!("Send event {self}");
+        debug!("Send event {self:?}");
         let mut context = Context::new_named(self.to_string());
         let statuses = match &self {
             Event::DamageTaken { owner, value } => {
                 context.set_var(VarName::Value, VarValue::Int(*value));
                 Status::collect_entity_statuses(*owner, world)
             }
-            Event::BattleStart | Event::TurnStart | Event::Death(..) => {
+            Event::BattleStart | Event::TurnStart | Event::TurnEnd | Event::Death(..) => {
                 Status::collect_all_statuses(world)
             }
             Event::BeforeStrike(unit) => Status::collect_entity_statuses(*unit, world),

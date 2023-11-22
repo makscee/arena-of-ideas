@@ -29,9 +29,9 @@ impl Save {
         self.ladder = ladder;
         self
     }
-    pub fn add_ladder_level(&mut self, team: PackedTeam) -> &mut Self {
-        debug!("New ladder level: {team:?}");
-        self.ladder.teams.push(team);
+    pub fn add_ladder_levels(&mut self, mut teams: Vec<PackedTeam>) -> &mut Self {
+        debug!("New ladder levels: {teams:#?}");
+        self.ladder.teams.append(&mut teams);
         self
     }
     pub fn set_current_level(&mut self, ind: usize) -> &mut Self {

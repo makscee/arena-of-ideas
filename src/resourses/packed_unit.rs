@@ -35,10 +35,13 @@ pub const LOCAL_TRIGGER: &str = "_local";
 
 impl PackedUnit {
     pub fn unpack(mut self, parent: Entity, slot: Option<usize>, world: &mut World) -> Entity {
-        debug!("Unpack unit {:?}", &self);
-        let entity = Options::get_unit_rep(world)
-            .clone()
-            .unpack(None, Some(parent), world);
+        let entity = if SkipVisual::active(world) {
+            world.spawn_empty().set_parent(parent).id()
+        } else {
+            Options::get_unit_rep(world)
+                .clone()
+                .unpack(None, Some(parent), world)
+        };
         world
             .entity_mut(entity)
             .insert(PickableBundle::default())
@@ -48,7 +51,7 @@ impl PackedUnit {
             .insert(On::<Pointer<DragStart>>::run(UnitPlugin::drag_unit_start))
             .insert(On::<Pointer<DragEnd>>::run(UnitPlugin::drag_unit_end))
             .insert(On::<Pointer<Drag>>::run(UnitPlugin::drag_unit));
-        {
+        if !SkipVisual::active(world) {
             let entity = self
                 .representation
                 .clone()
@@ -96,6 +99,7 @@ impl PackedUnit {
         world
             .entity_mut(entity)
             .insert((Name::new(self.name.clone()), Unit));
+        debug!("Unpacked unit {entity:?} {}", self.name);
         entity
     }
 

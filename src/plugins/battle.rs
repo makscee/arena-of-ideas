@@ -22,12 +22,14 @@ pub struct BattleData {
 impl BattlePlugin {
     pub fn enter(world: &mut World) {
         GameTimer::get_mut(world).reset();
-        let data = world.resource::<BattleData>().clone();
-        data.left.unwrap().unpack(Faction::Left, world);
-        data.right.unwrap().unpack(Faction::Right, world);
+        let mut data = world.resource::<BattleData>().clone();
+        data.left.clone().unwrap().unpack(Faction::Left, world);
+        data.right.clone().unwrap().unpack(Faction::Right, world);
         UnitPlugin::translate_to_slots(world);
         GameTimer::get_mut(world).advance(1.0);
-        Self::run_battle(100, world);
+        let result = Self::run_battle(100, world).unwrap();
+        data.result = result;
+        world.insert_resource(data.to_owned());
         world
             .get_resource_mut::<GameTimer>()
             .unwrap()
@@ -44,9 +46,10 @@ impl BattlePlugin {
 
     pub fn leave(world: &mut World) {
         UnitPlugin::despawn_all_teams(world);
+        Representation::despawn_all(world);
     }
 
-    pub fn run_battle(bpm: usize, world: &mut World) -> BattleResult {
+    pub fn run_battle(bpm: usize, world: &mut World) -> Result<BattleResult> {
         let btime = 60.0 / bpm as f32;
         Event::BattleStart.send(world);
         GameTimer::get_mut(world).start_batch();
@@ -60,12 +63,14 @@ impl BattlePlugin {
         GameTimer::get_mut(world).end_batch();
         while let Some((left, right)) = Self::get_strikers(world) {
             Self::run_strike(left, right, btime, world);
+            UnitPlugin::fill_slot_gaps(Faction::Left, world);
+            UnitPlugin::fill_slot_gaps(Faction::Right, world);
         }
         ActionPlugin::spin(world);
         Self::get_result(world)
     }
 
-    fn get_result(world: &mut World) -> BattleResult {
+    fn get_result(world: &mut World) -> Result<BattleResult> {
         let mut result: HashMap<Faction, usize> = default();
         for unit in world.query_filtered::<Entity, With<Unit>>().iter(world) {
             let team = get_parent(unit, world);
@@ -75,16 +80,16 @@ impl BattlePlugin {
             *result.entry(faction).or_default() += 1;
         }
         match result.len() {
-            0 => BattleResult::Even,
+            0 => Ok(BattleResult::Even),
             1 => {
                 let (faction, count) = result.iter().exactly_one().unwrap();
                 match faction {
-                    Faction::Left => BattleResult::Left(*count),
-                    Faction::Right => BattleResult::Right(*count),
+                    Faction::Left => Ok(BattleResult::Left(*count)),
+                    Faction::Right => Ok(BattleResult::Right(*count)),
                     _ => panic!("Non-battle winning faction"),
                 }
             }
-            _ => panic!("Non-unique winning faction {result:#?}"),
+            _ => Err(anyhow!("Non-unique winning faction {result:#?}")),
         }
     }
 
@@ -114,6 +119,9 @@ impl BattlePlugin {
         GameTimer::get_mut(world).start_batch();
         Self::strike(left, right, world);
         Self::after_strike(left, right, world);
+        ActionPlugin::spin(world);
+        Event::TurnEnd.send(world);
+        ActionPlugin::spin(world);
         UnitPlugin::fill_slot_gaps(Faction::Left, world);
         UnitPlugin::fill_slot_gaps(Faction::Right, world);
         ActionPlugin::spin(world);
@@ -182,8 +190,18 @@ impl BattlePlugin {
     pub fn ui(world: &mut World) {
         Window::new("")
             .title_bar(false)
+            .resizable(false)
+            .collapsible(false)
+            .anchor(Align2::LEFT_CENTER, [10.0, 0.0])
             .show(&egui_context(world), |ui| {
-                if ui.button("Skip").clicked() {
+                if ui
+                    .button(
+                        RichText::new("Skip")
+                            .size(20.0)
+                            .text_style(egui::TextStyle::Button),
+                    )
+                    .clicked()
+                {
                     let mut timer = GameTimer::get_mut(world);
                     let end = timer.end();
                     timer.set_t(end);
@@ -192,18 +210,46 @@ impl BattlePlugin {
         if !GameTimer::get(world).ended() {
             return;
         }
-        Window::new("Battle over")
-            .anchor(Align2::CENTER_CENTER, Vec2::ZERO)
-            .show(&egui_context(world), |ui| {
-                ui.horizontal(|ui| {
-                    if ui.button("Ok").clicked() {
-                        GameState::change(GameState::Shop, world);
-                    }
-                    if ui.button("Replay").clicked() {
-                        GameTimer::get_mut(world).set_t(0.0);
-                    }
-                })
+        let (text, color) = match world.resource::<BattleData>().result {
+            BattleResult::Even | BattleResult::Left(_) => ("Victory", hex_color!("#00E5FF")),
+            BattleResult::Right(_) => ("Defeat", hex_color!("#FF1744")),
+            BattleResult::Tbd => panic!("No battle result found"),
+        };
+        Window::new(
+            RichText::new(text)
+                .color(color)
+                .size(30.0)
+                .text_style(egui::TextStyle::Heading),
+        )
+        .collapsible(false)
+        .resizable(false)
+        .anchor(Align2::CENTER_CENTER, [0.0, -150.0])
+        .show(&egui_context(world), |ui| {
+            ui.set_width(300.0);
+            ui.vertical_centered_justified(|ui| {
+                if ui
+                    .button(
+                        RichText::new("Replay")
+                            .size(20.0)
+                            .color(hex_color!("#78909C"))
+                            .text_style(egui::TextStyle::Button),
+                    )
+                    .clicked()
+                {
+                    GameTimer::get_mut(world).set_t(0.0);
+                }
+                if ui
+                    .button(
+                        RichText::new("Ok")
+                            .size(20.0)
+                            .text_style(egui::TextStyle::Button),
+                    )
+                    .clicked()
+                {
+                    GameState::change(GameState::Shop, world);
+                }
             });
+        });
     }
 }
 

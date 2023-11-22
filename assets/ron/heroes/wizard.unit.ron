@@ -4,8 +4,8 @@
     hp: 3,
     atk: 1,
     house: "Mages",
-    description: "Turn Start: use [Magic Missile]",
-    trigger: TurnStart(
+    description: "Turn End: use [Magic Missile]",
+    trigger: TurnEnd(
         UseAbility("Magic Missile"),
     ),
     representation: (

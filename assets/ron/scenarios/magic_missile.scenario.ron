@@ -3,8 +3,8 @@
     left: (
         units: [
             (
-                hp: 1,
-                atk: 0,
+                hp: 3,
+                atk: 1,
                 trigger: BeforeStrike(
                     WithVar(
                         Faction,
@@ -33,13 +33,19 @@
                 atk: 1,
             ),
             (
-                hp: 1,
-                atk: 1,
-            ),
-            (
-                hp: 1,
-                atk: 1,
+                hp: 2,
+                atk: 3,
             ),
         ],
+    ),
+    condition: And(
+        Equals(
+            FactionCount(Faction(Left)),
+            Int(0),
+        ),
+        Equals(
+            FactionCount(Faction(Right)),
+            Int(0),
+        ),
     ),
 )

@@ -18,11 +18,12 @@ impl PackedTeam {
         }
     }
     pub fn pack(faction: Faction, world: &mut World) -> Self {
-        let mut team = PackedTeam::default();
-        for (entity, _) in UnitPlugin::collect_factions(HashSet::from([faction]), world) {
-            team.units.push(PackedUnit::pack(entity, world));
-        }
-        team
+        let state = VarState::get(Self::entity(faction, world).unwrap(), world).clone();
+        let units = UnitPlugin::collect_factions(HashSet::from([faction]), world)
+            .into_iter()
+            .map(|(u, _)| PackedUnit::pack(u, world))
+            .collect_vec();
+        PackedTeam { units, state }
     }
     pub fn unpack(mut self, faction: Faction, world: &mut World) {
         self.state

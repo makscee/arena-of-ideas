@@ -7,13 +7,13 @@
 			"problemMatcher": [
 				"$rustc"
 			],
-			"label": "Custom Battle",
+			"label": "Clean",
 			"args": [
 				"--features",
 				"bevy/dynamic_linking",
 				"--",
 				"--mode",
-				"custom-battle",
+				"clean",
 			],
 			"group": {
 				"kind": "build"
@@ -28,13 +28,13 @@
 			"problemMatcher": [
 				"$rustc"
 			],
-			"label": "Shop",
+			"label": "Regular",
 			"args": [
 				"--features",
 				"bevy/dynamic_linking",
 				"--",
 				"--mode",
-				"shop"
+				"regular"
 			],
 			"group": {
 				"kind": "build",

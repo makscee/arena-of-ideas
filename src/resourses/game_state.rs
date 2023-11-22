@@ -5,6 +5,7 @@ pub enum GameState {
     #[default]
     Loading,
     MainMenu,
+    MainMenuClean,
     TestsLoading,
     BattleTest,
     Restart,
@@ -15,11 +16,11 @@ pub enum GameState {
 }
 
 impl GameState {
-    pub fn change(next: GameState, world: &mut World) {
-        debug!("Change state to {next}");
+    pub fn change(self, world: &mut World) {
+        debug!("Change state to {self}");
         world
             .get_resource_mut::<NextState<GameState>>()
             .unwrap()
-            .set(next);
+            .set(self);
     }
 }

@@ -7,11 +7,19 @@ pub struct MainMenuPlugin;
 impl Plugin for MainMenuPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Update, Self::ui.run_if(in_state(GameState::MainMenu)))
-            .add_systems(OnEnter(GameState::MainMenu), Self::on_enter);
+            .add_systems(OnEnter(GameState::MainMenu), Self::on_enter)
+            .add_systems(OnEnter(GameState::MainMenuClean), Self::on_enter_clean);
     }
 }
 
 impl MainMenuPlugin {
+    fn on_enter_clean(world: &mut World) {
+        let mut sd = SettingsData::load(world);
+        sd.last_state_on_load = false;
+        sd.save(world).unwrap();
+        GameState::change(GameState::MainMenu, world);
+    }
+
     fn on_enter(world: &mut World) {
         if let Ok(camera) = world
             .query_filtered::<Entity, With<Camera>>()

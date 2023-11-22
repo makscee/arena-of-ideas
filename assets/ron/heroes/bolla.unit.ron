@@ -3,9 +3,9 @@
     hp: 1,
     atk: 1,
     house: "Dragons",
-    trigger: TurnStart(UseAbility("Grow")),
+    trigger: TurnEnd(UseAbility("Grow")),
     name: "Bolla",
-    description: "Turn Start: [Grow]",
+    description: "Turn End: [Grow]",
     representation: (
         material: Shape(
             shape: Circle,
@@ -17,13 +17,37 @@
         ),
         children: [],
         mapping: {
-            Position: Mul(UnitVec(Sum(GameTime, Mul(IntFloat(State(Index)), Sum(Float(1.04), Mul(Sin(GameTime), Float(0.24)))))), Float(0.19)),
+            Position: Mul(
+                UnitVec(
+                    Sum(
+                        GameTime,
+                        Mul(
+                            IntFloat(
+                                State(
+                                    Index,
+                                ),
+                            ),
+                            Sum(
+                                Float(
+                                    1.04,
+                                ),
+                                Mul(
+                                    Sin(
+                                        GameTime,
+                                    ),
+                                    Float(
+                                        0.24,
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+                Float(0.19),
+            ),
         },
         count: 6,
     ),
-    state: (
-        history: {},
-        birth: 0.0,
-    ),
+    state: (history: {}, birth: 0.0),
     statuses: [],
 )

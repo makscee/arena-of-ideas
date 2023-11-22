@@ -1,7 +1,7 @@
 #![enable(implicit_some)]
 (
-    hp: 5,
-    atk: 5,
+    hp: 3,
+    atk: 3,
     name: "Snake",
     house: "Enemies",
     description: "Kill after dealing any damage",

@@ -12,6 +12,9 @@ pub struct Vfx {
 
 impl Vfx {
     pub fn unpack(self, world: &mut World) -> Result<()> {
+        if SkipVisual::active(world) {
+            return Ok(());
+        }
         let entity = self.representation.unpack(None, None, world);
         if let Some(parent) = self.parent {
             world.entity_mut(entity).set_parent(parent);

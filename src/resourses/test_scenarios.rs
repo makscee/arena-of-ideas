@@ -1,4 +1,4 @@
-use colored::ColoredString;
+use colored::{Color, ColoredString};
 
 use super::*;
 
@@ -18,8 +18,12 @@ pub struct TestScenario {
 
 impl TestScenario {
     pub fn run(self, world: &mut World) -> Result<bool> {
-        SimulationPlugin::run(self.left, self.right, world);
-        self.condition.get_bool(&Context::default(), world)
+        let result = match SimulationPlugin::run(self.left, self.right, world) {
+            Ok(_) => self.condition.get_bool(&Context::default(), world),
+            Err(e) => Err(anyhow!("{e}")),
+        };
+        SimulationPlugin::clear(world);
+        result
     }
 }
 
@@ -37,25 +41,42 @@ impl TestPlugin {
         let scenarios = Self::get_all_scenarios(world);
         let mut failure: Vec<ColoredString> = default();
         let mut success: Vec<ColoredString> = default();
-        for (name, scenario) in scenarios {
+        let path_color = Color::TrueColor {
+            r: 50,
+            g: 50,
+            b: 50,
+        };
+        for (path, scenario) in scenarios {
             match scenario.run(world) {
                 Ok(value) => debug!(
                     "Test run {}",
                     match value {
                         true => {
-                            let str = format!("{} {}", "Success".bold(), name.dimmed()).green();
+                            let str =
+                                format!("{} {}", "Success".bold(), path.color(path_color)).green();
                             success.push(str.clone());
                             str
                         }
                         false => {
-                            let str = format!("{} {}", "Failure".bold(), name).red();
+                            let str = format!(
+                                "{} {}",
+                                "Condition Failure".bold(),
+                                path.color(path_color)
+                            )
+                            .red();
                             failure.push(str.clone());
                             str
                         }
                     }
                 ),
                 Err(err) => {
-                    let str = format!("Error {err}").red().bold();
+                    let str = format!(
+                        "{} {}\n{}",
+                        "Error".bold(),
+                        path.color(path_color),
+                        err.to_string()
+                    )
+                    .red();
                     failure.push(str.clone());
                     debug!("Test fail: {}", str.clone())
                 }
