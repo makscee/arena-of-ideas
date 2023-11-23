@@ -9,6 +9,7 @@ impl Plugin for RepresentationPlugin {
             Self::injector_system.run_if(
                 in_state(GameState::Battle)
                     .or_else(in_state(GameState::Shop))
+                    .or_else(in_state(GameState::HeroGallery))
                     .or_else(in_state(GameState::HeroEditor)),
             ),
         );

@@ -13,6 +13,7 @@ pub enum GameState {
     Battle,
     Shop,
     HeroEditor,
+    HeroGallery,
 }
 
 impl GameState {

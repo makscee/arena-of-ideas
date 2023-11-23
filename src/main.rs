@@ -120,6 +120,7 @@ fn main() {
             SettingsPlugin,
             AudioPlugin,
             HeroEditorPlugin,
+            HeroGallery,
         ))
         .add_systems(Update, input_world)
         .init_resource::<UserName>()
