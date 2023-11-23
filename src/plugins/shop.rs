@@ -203,7 +203,6 @@ impl ShopPlugin {
                     .min_size(egui::vec2(100.0, 0.0));
                     if ui.add(btn).clicked() {
                         GameState::change(GameState::Battle, world);
-                        GameTimer::get_mut(world).clear_save();
                         GameTimer::get_mut(world).reset();
                     }
                 });

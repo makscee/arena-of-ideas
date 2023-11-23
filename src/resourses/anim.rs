@@ -22,7 +22,6 @@ fn default_zero_f32_e() -> Expression {
 
 impl Anim {
     pub fn apply(self, context: &Context, world: &mut World) -> Result<()> {
-        // debug!("{}\n{context:#?}", "Apply animation".purple());
         match self {
             Anim::Sequence(list) => {
                 for anim in list {
@@ -30,12 +29,12 @@ impl Anim {
                 }
             }
             Anim::Run(list) => {
-                GameTimer::get_mut(world).start_batch();
+                start_batch(world);
                 for anim in list {
-                    GameTimer::get_mut(world).head_to_batch_start();
+                    to_batch_start(world);
                     anim.apply(context, world)?;
                 }
-                GameTimer::get_mut(world).end_batch();
+                end_batch(world);
             }
             Anim::Change {
                 var,

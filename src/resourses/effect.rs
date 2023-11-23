@@ -54,7 +54,7 @@ impl Effect {
                     value,
                 }
                 .send(world);
-                GameTimer::get_mut(world).start_batch();
+                start_batch(world);
                 Pools::get_vfx("text", world)
                     .clone()
                     .set_var(
@@ -64,11 +64,11 @@ impl Effect {
                     .set_var(VarName::Text, VarValue::String(format!("-{value}")))
                     .set_var(VarName::Color, VarValue::Color(Color::ORANGE_RED))
                     .unpack(world)?;
-                GameTimer::get_mut(world).head_to_batch_start();
+                to_batch_start(world);
                 Pools::get_vfx("pain", world)
                     .set_parent(context.target())
                     .unpack(world)?;
-                GameTimer::get_mut(world).end_batch();
+                end_batch(world);
             }
             Effect::Kill => {
                 let target = context.get_target().context("Target not found")?;
@@ -120,7 +120,7 @@ impl Effect {
                 let color = Pools::get_status_house(&status, world).color.clone().into();
                 start_batch(world);
                 Status::change_charges(&status, context.target(), charges, world)?;
-                head_to_batch_start(world);
+                to_batch_start(world);
                 Pools::get_vfx("text", world)
                     .clone()
                     .set_var(
@@ -133,12 +133,12 @@ impl Effect {
                     )
                     .set_var(VarName::Color, VarValue::Color(color))
                     .unpack(world)?;
-                head_to_batch_start(world);
+                to_batch_start(world);
                 end_batch(world);
             }
-            Effect::List(effects) => {
-                for effect in effects {
-                    ActionPlugin::push_front(effect.deref().clone(), context.clone(), world)
+            Effect::List(list) => {
+                for effect in list {
+                    ActionPlugin::push_front(effect.deref().clone(), context.clone(), world);
                 }
             }
             Effect::AoeFaction(faction, effect) => {
@@ -148,7 +148,7 @@ impl Effect {
                         effect.deref().clone(),
                         context.clone().set_target(unit, world).take(),
                         world,
-                    )
+                    );
                 }
             }
             Effect::Text(text) => {

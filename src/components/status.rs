@@ -109,8 +109,22 @@ impl Status {
 
     pub fn collect_all_statuses(world: &mut World) -> Vec<Entity> {
         world
-            .query_filtered::<Entity, With<Status>>()
+            .query_filtered::<&Children, With<Unit>>()
             .iter(world)
+            .collect_vec()
+            .into_iter()
+            .map(|c| {
+                c.into_iter()
+                    .filter_map(|e| {
+                        if world.get::<Status>(*e).is_some() {
+                            Some(*e)
+                        } else {
+                            None
+                        }
+                    })
+                    .collect_vec()
+            })
+            .flatten()
             .collect_vec()
     }
 
@@ -155,7 +169,7 @@ impl Status {
                             &Context::from_owner(parent, world).set_status(entity, world),
                             world,
                         ) {
-                            let t = get_insert_t(world);
+                            let t = get_insert_head(world);
                             let mut state_delta = world.get_mut::<VarStateDelta>(entity).unwrap();
                             if state_delta.need_update(var, &delta) {
                                 state_delta.state.insert_simple(var, delta, t);

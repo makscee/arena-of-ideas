@@ -5,9 +5,7 @@
     atk: 1,
     house: "Mages",
     description: "Turn End: use [Magic Missile]",
-    trigger: TurnEnd(
-        UseAbility("Magic Missile"),
-    ),
+    trigger: TurnEnd(UseAbility("Magic Missile")),
     representation: (
         material: Shape(
             shape: Circle,

@@ -5,23 +5,41 @@
                 var: Position,
                 value: Sum(
                     StateLast(Position),
-                    Vec2(0.0, 2.0),
+                    Vec2(0.0, 1.0),
                 ),
-                duration: Float(0.5),
-                tween: QuartOut,
+            ),
+            Change(
+                var: Position,
+                value: Sum(
+                    StateLast(Position),
+                    Vec2(0.0, 5.0),
+                ),
+                duration: Float(1.0),
+                tween: Linear,
             ),
             Change(
                 var: Visible,
                 value: Bool(false),
-                t: 0.7,
+                t: 1.0,
             ),
+            Change(
+                var: Alpha,
+                value: Float(1.0),
+            ),
+            Change(
+                var: Alpha,
+                value: Float(0.0),
+                t: 0.7,
+                duration: Float(0.3),
+            )
         ],
     ),
     representation: (
         material: Text(
             text: State(Text),
             color: State(Color),
-            size: Float(0.5),
+            size: Sub(Float(1.0), Mul(Age, Float(0.4))),
+            alpha: State(Alpha),
         ),
     ),
 )

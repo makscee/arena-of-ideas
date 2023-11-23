@@ -25,15 +25,9 @@ impl BattlePlugin {
         let mut data = world.resource::<BattleData>().clone();
         data.left.clone().unwrap().unpack(Faction::Left, world);
         data.right.clone().unwrap().unpack(Faction::Right, world);
-        UnitPlugin::translate_to_slots(world);
-        GameTimer::get_mut(world).advance(1.0);
         let result = Self::run_battle(100, world).unwrap();
         data.result = result;
         world.insert_resource(data.to_owned());
-        world
-            .get_resource_mut::<GameTimer>()
-            .unwrap()
-            .head_to_save();
     }
 
     pub fn load_teams(left: PackedTeam, right: PackedTeam, world: &mut World) {
@@ -50,23 +44,17 @@ impl BattlePlugin {
     }
 
     pub fn run_battle(bpm: usize, world: &mut World) -> Result<BattleResult> {
-        let btime = 60.0 / bpm as f32;
+        let bt = 60.0 / bpm as f32;
+        UnitPlugin::translate_to_slots(world);
+        GameTimer::get_mut(world).advance_insert(bt * 2.0);
         Event::BattleStart.send(world);
-        GameTimer::get_mut(world).start_batch();
-        if ActionPlugin::spin(world) {
-            GameTimer::get_mut(world)
-                .head_to_batch_start()
-                .advance_end(btime * 4.0)
-                .end_batch()
-                .start_batch();
-        }
-        GameTimer::get_mut(world).end_batch();
+        ActionPlugin::spin(bt, bt * 0.1, world);
         while let Some((left, right)) = Self::get_strikers(world) {
-            Self::run_strike(left, right, btime, world);
+            Self::run_strike(left, right, bt, world);
             UnitPlugin::fill_slot_gaps(Faction::Left, world);
             UnitPlugin::fill_slot_gaps(Faction::Right, world);
         }
-        ActionPlugin::spin(world);
+        ActionPlugin::spin(bt, bt * 0.2, world);
         Self::get_result(world)
     }
 
@@ -106,11 +94,11 @@ impl BattlePlugin {
         UnitPlugin::is_dead(left, world) || UnitPlugin::is_dead(right, world)
     }
 
-    pub fn run_strike(left: Entity, right: Entity, btime: f32, world: &mut World) {
+    pub fn run_strike(left: Entity, right: Entity, bt: f32, world: &mut World) {
         GameTimer::get_mut(world).start_batch();
         UnitPlugin::translate_to_slots(world);
-        Self::before_strike(left, right, btime, world);
-        GameTimer::get_mut(world).advance_end(btime).end_batch();
+        Self::before_strike(left, right, bt, world);
+        GameTimer::get_mut(world).advance_insert(bt).end_batch();
 
         if Self::stricker_death_check(left, right, world) {
             return;
@@ -119,33 +107,29 @@ impl BattlePlugin {
         GameTimer::get_mut(world).start_batch();
         Self::strike(left, right, world);
         Self::after_strike(left, right, world);
-        ActionPlugin::spin(world);
+        ActionPlugin::spin(0.0, bt * 0.1, world);
         Event::TurnEnd.send(world);
-        ActionPlugin::spin(world);
+        ActionPlugin::spin(0.0, bt * 0.1, world);
         UnitPlugin::fill_slot_gaps(Faction::Left, world);
         UnitPlugin::fill_slot_gaps(Faction::Right, world);
-        ActionPlugin::spin(world);
-        GameTimer::get_mut(world).advance_end(btime).end_batch();
+        ActionPlugin::spin(bt, 0.0, world);
+        GameTimer::get_mut(world).advance_insert(bt).end_batch();
     }
 
-    fn before_strike(left: Entity, right: Entity, btime: f32, world: &mut World) {
-        GameTimer::get_mut(world).head_to_batch_start();
+    fn before_strike(left: Entity, right: Entity, bt: f32, world: &mut World) {
+        debug!("Before strike {left:?} {right:?}");
+        GameTimer::get_mut(world).to_batch_start();
         Event::TurnStart.send(world);
         Event::BeforeStrike(left).send(world);
         Event::BeforeStrike(right).send(world);
-        if ActionPlugin::spin(world) {
-            GameTimer::get_mut(world)
-                .head_to_batch_start()
-                .advance_end(btime)
-                .end_batch()
-                .start_batch();
-        }
+        ActionPlugin::spin(0.0, 0.0, world);
         if Self::stricker_death_check(left, right, world) {
             return;
         }
         let units = vec![(left, -1.0), (right, 1.0)];
+        start_batch(world);
         for (caster, dir) in units {
-            GameTimer::get_mut(world).head_to_batch_start();
+            to_batch_start(world);
             Options::get_animations(world)
                 .get(AnimationType::BeforeStrike)
                 .clone()
@@ -156,13 +140,15 @@ impl BattlePlugin {
                 )
                 .unwrap();
         }
+        end_batch(world);
     }
 
     fn strike(left: Entity, right: Entity, world: &mut World) {
         debug!("Strike {left:?} {right:?}");
         let units = vec![(left, right), (right, left)];
+        ActionPlugin::push_back_cluster(default(), world);
         for (caster, target) in units {
-            GameTimer::get_mut(world).head_to_batch_start();
+            GameTimer::get_mut(world).to_batch_start();
             let context = mem::take(
                 Context::from_caster(caster, world)
                     .set_target(target, world)
@@ -170,21 +156,23 @@ impl BattlePlugin {
             );
             let effect = Effect::Damage(None);
             ActionPlugin::push_back(effect, context, world);
-            ActionPlugin::spin(world);
         }
+        ActionPlugin::spin(0.0, 0.0, world);
     }
 
     fn after_strike(left: Entity, right: Entity, world: &mut World) {
         debug!("After strike {left:?} {right:?}");
         let units = vec![left, right];
+        start_batch(world);
         for caster in units {
-            GameTimer::get_mut(world).head_to_batch_start();
+            to_batch_start(world);
             Options::get_animations(world)
                 .get(AnimationType::AfterStrike)
                 .clone()
                 .apply(&Context::from_owner(caster, world), world)
                 .unwrap();
         }
+        end_batch(world);
     }
 
     pub fn ui(world: &mut World) {
@@ -192,7 +180,7 @@ impl BattlePlugin {
             .title_bar(false)
             .resizable(false)
             .collapsible(false)
-            .anchor(Align2::LEFT_CENTER, [10.0, 0.0])
+            .anchor(Align2::LEFT_CENTER, [10.0, 100.0])
             .show(&egui_context(world), |ui| {
                 if ui
                     .button(
@@ -202,9 +190,7 @@ impl BattlePlugin {
                     )
                     .clicked()
                 {
-                    let mut timer = GameTimer::get_mut(world);
-                    let end = timer.end();
-                    timer.set_t(end);
+                    GameTimer::get_mut(world).skip_to_end();
                 }
             });
         if !GameTimer::get(world).ended() {
@@ -236,7 +222,7 @@ impl BattlePlugin {
                     )
                     .clicked()
                 {
-                    GameTimer::get_mut(world).set_t(0.0);
+                    GameTimer::get_mut(world).play_head_to(0.0);
                 }
                 if ui
                     .button(

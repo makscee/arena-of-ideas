@@ -1,3 +1,5 @@
+use std::ops::Neg;
+
 use super::*;
 
 #[derive(Resource, Default)]
@@ -7,7 +9,6 @@ pub struct GameTimer {
     end: f32,
     batches: Vec<f32>,
     paused: bool,
-    save: f32,
 }
 
 impl GameTimer {
@@ -20,21 +21,6 @@ impl GameTimer {
         self.paused
     }
 
-    pub fn save(&mut self) -> &mut Self {
-        self.save = self.play_head;
-        self
-    }
-
-    pub fn clear_save(&mut self) -> &mut Self {
-        self.save = 0.0;
-        self
-    }
-
-    pub fn head_to_save(&mut self) -> &mut Self {
-        self.set_t(self.save);
-        self
-    }
-
     pub fn get_mut(world: &mut World) -> Mut<GameTimer> {
         world.get_resource_mut::<GameTimer>().unwrap()
     }
@@ -43,53 +29,48 @@ impl GameTimer {
         world.get_resource::<GameTimer>().unwrap()
     }
 
-    pub fn advance(&mut self, delta: f32) -> &mut Self {
-        if self.paused {
-            return self;
-        }
-        self.play_head += delta;
-        self
-    }
-
-    pub fn advance_end(&mut self, delta: f32) -> &mut Self {
-        if self.end < self.play_head {
-            self.end = self.play_head;
-        }
-        self.end += delta;
-        self
-    }
-
-    pub fn register_insert(&mut self, end: f32) -> &mut Self {
-        self.insert_head = end;
-        // self.end = self.end.max(end);
-        self
-    }
-
-    pub fn get_insert_t(&self) -> f32 {
-        self.insert_head
-    }
-
-    pub fn set_insert_t(&mut self, t: f32) -> &mut Self {
-        self.insert_head = t;
-        self
-    }
-
-    pub fn insert_to_end(&mut self) -> &mut Self {
-        self.insert_head = self.end;
-        self
-    }
-
-    pub fn get_t(&self) -> f32 {
+    pub fn play_head(&self) -> f32 {
         self.play_head
     }
 
-    pub fn set_t(&mut self, t: f32) -> &mut Self {
+    pub fn play_head_to(&mut self, t: f32) -> &mut Self {
         self.play_head = t;
         self
     }
 
+    pub fn advance_play(&mut self, delta: f32) -> &mut Self {
+        if self.paused {
+            return self;
+        }
+        self.play_head += delta;
+        self.insert_head = self.insert_head.max(self.play_head);
+        self
+    }
+
+    pub fn insert_head(&self) -> f32 {
+        self.insert_head
+    }
+
+    pub fn insert_head_to(&mut self, t: f32) -> &mut Self {
+        self.advance_insert(t - self.insert_head);
+        self
+    }
+
+    pub fn advance_insert(&mut self, delta: f32) -> &mut Self {
+        if delta < 0.0 {
+            panic!();
+        }
+        self.insert_head += dbg!(delta);
+        self.end = self.end.max(self.insert_head);
+        self
+    }
+
+    pub fn end(&self) -> f32 {
+        self.end
+    }
+
     pub fn start_batch(&mut self) -> &mut Self {
-        self.batches.push(self.end.max(self.play_head));
+        self.batches.push(self.insert_head);
         self
     }
 
@@ -98,21 +79,19 @@ impl GameTimer {
         self
     }
 
-    pub fn head_to_batch_start(&mut self) -> &mut Self {
+    pub fn to_batch_start(&mut self) -> &mut Self {
         self.insert_head = *self.batches.last().unwrap();
         self
     }
 
     pub fn reset(&mut self) -> &mut Self {
-        self.play_head = default();
-        self.insert_head = default();
-        self.end = default();
-        self.batches.clear();
+        *self = default();
         self
     }
 
-    pub fn end(&self) -> f32 {
-        self.end
+    pub fn skip_to_end(&mut self) -> &mut Self {
+        self.play_head = self.end;
+        self
     }
 
     pub fn ended(&self) -> bool {

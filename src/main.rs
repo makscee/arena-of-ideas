@@ -132,7 +132,7 @@ fn main() {
 }
 
 fn update(mut timer: ResMut<GameTimer>, time: Res<Time>) {
-    timer.advance(time.delta_seconds());
+    timer.advance_play(time.delta_seconds());
 }
 
 fn input_world(world: &mut World) {

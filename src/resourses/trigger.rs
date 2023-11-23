@@ -83,6 +83,7 @@ impl Trigger {
             | Trigger::TurnStart(effect)
             | Trigger::TurnEnd(effect)
             | Trigger::BeforeStrike(effect) => {
+                ActionPlugin::push_back_cluster(default(), world);
                 ActionPlugin::push_back(effect, context, world);
             }
             Trigger::AllyDeath(effect) => {
@@ -92,6 +93,7 @@ impl Trigger {
                 };
                 let owner = get_parent(status, world);
                 if UnitPlugin::get_faction(dead, world).eq(&UnitPlugin::get_faction(owner, world)) {
+                    ActionPlugin::push_back_cluster(default(), world);
                     ActionPlugin::push_back(effect, context, world);
                 }
             }
@@ -102,6 +104,7 @@ impl Trigger {
                 };
                 let owner = get_parent(status, world);
                 if dead.eq(&owner) {
+                    ActionPlugin::push_back_cluster(default(), world);
                     ActionPlugin::push_back(effect, context, world);
                 }
             }
@@ -111,6 +114,7 @@ impl Trigger {
                     _ => panic!(),
                 };
                 context.set_target(target, world);
+                ActionPlugin::push_back_cluster(default(), world);
                 ActionPlugin::push_back(effect, context, world);
             }
             Trigger::ChangeVar(_, _) | Trigger::List(_) | Trigger::Noop => {

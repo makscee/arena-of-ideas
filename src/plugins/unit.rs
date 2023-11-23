@@ -185,13 +185,13 @@ impl UnitPlugin {
             HashSet::from([Faction::Left, Faction::Right, Faction::Team, Faction::Shop]),
             world,
         );
-        GameTimer::get_mut(world).start_batch();
+        start_batch(world);
         for (unit, faction) in units.into_iter() {
             let slot = VarState::get(unit, world).get_int(VarName::Slot).unwrap() as usize;
-            GameTimer::get_mut(world).head_to_batch_start();
+            to_batch_start(world);
             UnitPlugin::translate_unit(unit, UnitPlugin::get_slot_position(faction, slot), world);
         }
-        GameTimer::get_mut(world).end_batch();
+        end_batch(world);
     }
 
     pub fn hover_unit(event: Listener<Pointer<Over>>, mut hovered: ResMut<HoveredUnit>) {
@@ -276,7 +276,7 @@ impl UnitPlugin {
                 }
             }
         }
-        let t = timer.get_insert_t();
+        let t = timer.insert_head();
         unit_query
             .get_mut(unit)
             .unwrap()
@@ -296,7 +296,7 @@ impl UnitPlugin {
             if !description.is_empty() {
                 show_description_panels(hovered, &description, world);
             }
-            let t = get_t(world);
+            let t = get_play_head(world);
             let statuses = Status::collect_entity_statuses(hovered, world)
                 .into_iter()
                 .filter_map(|entity| {

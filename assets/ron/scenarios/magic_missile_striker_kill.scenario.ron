@@ -24,22 +24,10 @@
     ),
     right: (
         units: [
-            (
-                hp: 1,
-                atk: 1,
-            ),
-            (
-                hp: 1,
-                atk: 1,
-            ),
-            (
-                hp: 1,
-                atk: 1,
-            ),
-            (
-                hp: 1,
-                atk: 1,
-            ),
+            (hp: 1, atk: 1),
+            (hp: 1, atk: 1),
+            (hp: 1, atk: 1),
+            (hp: 1, atk: 1),
         ],
     ),
     condition: And(

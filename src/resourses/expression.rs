@@ -108,7 +108,7 @@ impl Expression {
                 let x = x.get_int(context, world)?;
                 Ok(VarValue::Bool(x % 2 == 0))
             }
-            Expression::GameTime => Ok(VarValue::Float(GameTimer::get(world).get_t())),
+            Expression::GameTime => Ok(VarValue::Float(GameTimer::get(world).play_head())),
             Expression::PI => Ok(VarValue::Float(PI)),
             Expression::Sum(a, b) => {
                 VarValue::sum(&a.get_value(context, world)?, &b.get_value(context, world)?)
@@ -120,14 +120,14 @@ impl Expression {
                 VarValue::mul(&a.get_value(context, world)?, &b.get_value(context, world)?)
             }
             Expression::State(var) => {
-                let t = get_t(world);
+                let t = get_play_head(world);
                 VarState::find_value(context.owner(), *var, t, world)
             }
             Expression::StateLast(var) => {
                 VarState::get(context.owner(), world).get_value_last(*var)
             }
             Expression::Age => Ok(VarValue::Float(
-                get_t(world) - VarState::find(context.owner(), world).birth,
+                get_play_head(world) - VarState::find(context.owner(), world).birth,
             )),
             Expression::Context(var) => context
                 .get_var(*var, world)
@@ -222,7 +222,7 @@ impl Expression {
                 const BPM: usize = 100;
                 let ts = match AudioPlugin::background_position(world) {
                     Some(data) => data as f32,
-                    None => GameTimer::get(world).get_t(),
+                    None => GameTimer::get(world).play_head(),
                 };
                 let beat = (ts * BPM as f32 / 60.0) as usize;
 

@@ -71,6 +71,8 @@ pub enum RepresentationMaterial {
         text: Expression,
         #[serde(default = "default_color_e")]
         color: Expression,
+        #[serde(default = "default_one_f32_e")]
+        alpha: Expression,
         #[serde(default = "default_font_size")]
         font_size: f32,
     },
@@ -125,6 +127,7 @@ impl RepresentationMaterial {
                 text,
                 color,
                 font_size,
+                ..
             } => {
                 *size = default_one_f32_e();
                 *color = default_color_e();
@@ -214,7 +217,7 @@ impl RepresentationMaterial {
     }
 
     pub fn update(&self, entity: Entity, world: &mut World) {
-        let t = get_t(world);
+        let t = get_play_head(world);
         if let Ok(state) = VarState::try_find(entity, world) {
             let visible = state.get_bool_at(VarName::Visible, t).unwrap_or(true);
             let visible = visible && state.birth < t;
@@ -265,10 +268,15 @@ impl RepresentationMaterial {
             RepresentationMaterial::Text {
                 size,
                 text,
-                font_size,
                 color,
+                alpha,
+                font_size,
             } => {
-                let color = color.get_color(&context, world).unwrap_or_default();
+                let color = color
+                    .get_color(&context, world)
+                    .unwrap_or_default()
+                    .set_a(alpha.get_float(&context, world).unwrap_or(1.0))
+                    .to_owned();
                 world.get_mut::<Text>(entity).unwrap().sections[0].value =
                     text.get_string(&context, world).unwrap_or_default();
                 world.get_mut::<Text>(entity).unwrap().sections[0].style = TextStyle {
@@ -452,6 +460,7 @@ impl RepresentationMaterial {
                         size,
                         text,
                         color,
+                        alpha,
                         font_size,
                     } => {
                         size.show_editor_root(
@@ -474,6 +483,14 @@ impl RepresentationMaterial {
                             entity,
                             editing_data,
                             "color".to_owned(),
+                            true,
+                            ui,
+                            world,
+                        );
+                        alpha.show_editor_root(
+                            entity,
+                            editing_data,
+                            "alpha".to_owned(),
                             true,
                             ui,
                             world,
