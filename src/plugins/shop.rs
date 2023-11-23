@@ -30,14 +30,13 @@ impl ShopPlugin {
     pub const REROLL_PRICE: i32 = 1;
 
     fn on_enter(world: &mut World) {
-        if let Ok(team) = Self::active_team(world) {
-            team.unpack(Faction::Team, world);
-        } else {
-            PackedTeam::spawn(Faction::Team, world);
+        let save = Save::get(world).unwrap();
+        save.team.unpack(Faction::Team, world);
+        if save.current_level == 0 {
+            Self::change_g(4, world).unwrap();
         }
         UnitPlugin::translate_to_slots(world);
         Self::fill_showcase(world);
-        Self::change_g(4, world).unwrap();
         PersistentData::load(world)
             .set_last_state(GameState::Shop)
             .save(world)
@@ -52,6 +51,9 @@ impl ShopPlugin {
             BattleResult::Even | BattleResult::Left(_) => {
                 let mut save = Save::get(world).unwrap();
                 save.current_level += 1;
+                let g = save.team.state.get_int(VarName::G).unwrap() + 4;
+                save.team.state.init(VarName::G, VarValue::Int(g));
+
                 if save.current_level
                     >= Options::get_initial_ladder(world).teams.len() + save.ladder.teams.len()
                 {
@@ -62,9 +64,11 @@ impl ShopPlugin {
                     );
                     save.add_ladder_levels(teams);
                 }
+
                 save.save(world).unwrap();
             }
             BattleResult::Right(_) => {
+                Save::default().save(world).unwrap();
                 GameState::MainMenu.change(world);
             }
             BattleResult::Tbd => panic!("Battle was not finished"),

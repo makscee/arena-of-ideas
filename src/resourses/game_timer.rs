@@ -60,7 +60,7 @@ impl GameTimer {
         if delta < 0.0 {
             panic!();
         }
-        self.insert_head += dbg!(delta);
+        self.insert_head += delta;
         self.end = self.end.max(self.insert_head);
         self
     }

@@ -6,8 +6,8 @@ pub struct BattlePlugin;
 
 impl Plugin for BattlePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::Battle), Self::enter)
-            .add_systems(OnExit(GameState::Battle), Self::leave)
+        app.add_systems(OnEnter(GameState::Battle), Self::on_enter)
+            .add_systems(OnExit(GameState::Battle), Self::on_leave)
             .add_systems(Update, Self::ui.run_if(in_state(GameState::Battle)));
     }
 }
@@ -20,7 +20,7 @@ pub struct BattleData {
 }
 
 impl BattlePlugin {
-    pub fn enter(world: &mut World) {
+    pub fn on_enter(world: &mut World) {
         GameTimer::get_mut(world).reset();
         let mut data = world.resource::<BattleData>().clone();
         data.left.clone().unwrap().unpack(Faction::Left, world);
@@ -38,7 +38,7 @@ impl BattlePlugin {
         });
     }
 
-    pub fn leave(world: &mut World) {
+    pub fn on_leave(world: &mut World) {
         UnitPlugin::despawn_all_teams(world);
         Representation::despawn_all(world);
     }

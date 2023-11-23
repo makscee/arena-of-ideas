@@ -2,146 +2,15 @@
 (
     left: (
         units: [
-            (
-                name: "Priest",
-                hp: 1,
-                atk: 1,
-                house: "Holy",
-                description: "Battle Start: apply [Blessing] to all allies",
-                trigger: BattleStart(
-                    AoeFaction(
-                        OwnerFaction,
-                        UseAbility(
-                            "Blessing",
-                        ),
-                    ),
-                ),
-                representation: (
-                    count: 4,
-                    material: Shape(
-                        shape: Circle,
-                        thickness: Sum(
-                            Float(2.5),
-                            Cos(
-                                GameTime,
-                            ),
-                        ),
-                        size: Vec2E(
-                            Sum(
-                                Float(
-                                    0.5,
-                                ),
-                                Mul(
-                                    Beat,
-                                    Float(
-                                        0.3,
-                                    ),
-                                ),
-                            ),
-                        ),
-                    ),
-                    mapping: {
-                        Position: Mul(
-                            UnitVec(
-                                Mul(
-                                    Sum(
-                                        GameTime,
-                                        Mul(
-                                            Mul(
-                                                PI,
-                                                Float(
-                                                    0.5,
-                                                ),
-                                            ),
-                                            IntFloat(
-                                                State(
-                                                    Index,
-                                                ),
-                                            ),
-                                        ),
-                                    ),
-                                    Float(
-                                        3.0,
-                                    ),
-                                ),
-                            ),
-                            Float(0.3),
-                        ),
-                    },
-                    children: [],
-                ),
-            ),(
-                name: "Priest",
-                hp: 1,
-                atk: 1,
-                house: "Holy",
-                description: "Battle Start: apply [Blessing] to all allies",
-                trigger: BattleStart(
-                    AoeFaction(
-                        OwnerFaction,
-                        UseAbility(
-                            "Blessing",
-                        ),
-                    ),
-                ),
-                representation: (
-                    count: 4,
-                    material: Shape(
-                        shape: Circle,
-                        thickness: Sum(
-                            Float(2.5),
-                            Cos(
-                                GameTime,
-                            ),
-                        ),
-                        size: Vec2E(
-                            Sum(
-                                Float(
-                                    0.5,
-                                ),
-                                Mul(
-                                    Beat,
-                                    Float(
-                                        0.3,
-                                    ),
-                                ),
-                            ),
-                        ),
-                    ),
-                    mapping: {
-                        Position: Mul(
-                            UnitVec(
-                                Mul(
-                                    Sum(
-                                        GameTime,
-                                        Mul(
-                                            Mul(
-                                                PI,
-                                                Float(
-                                                    0.5,
-                                                ),
-                                            ),
-                                            IntFloat(
-                                                State(
-                                                    Index,
-                                                ),
-                                            ),
-                                        ),
-                                    ),
-                                    Float(
-                                        3.0,
-                                    ),
-                                ),
-                            ),
-                            Float(0.3),
-                        ),
-                    },
-                    children: [],
-                ),
-            ),
+            (hp: 5, atk: 1),
+            (hp: 5, atk: 1),
         ],
     ),
     right: (
-        units: [(hp: 5, atk: 1),(hp: 5, atk: 1),(hp: 5, atk: 1),],
+        units: [
+            (hp: 5, atk: 1),
+            (hp: 5, atk: 1),
+            (hp: 5, atk: 1),
+        ],
     ),
 )

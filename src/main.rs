@@ -16,16 +16,16 @@ use spacetimedb_sdk::{
     Address,
 };
 
-#[derive(Parser, Debug)]
+#[derive(Parser, Debug, Default)]
 #[command(author, version, about, long_about = None)]
 struct Args {
-    /// Mode to run in: Test, Shop or CustomBattle
     #[arg(short, long)]
     mode: RunMode,
 }
 
-#[derive(Debug, Clone, ValueEnum)]
+#[derive(Debug, Clone, ValueEnum, Default)]
 enum RunMode {
+    #[default]
     Regular,
     Clean,
     Test,
@@ -48,7 +48,7 @@ fn main() {
     // connect(SPACETIMEDB_URI, DB_NAME, None).expect("Failed to connect");
     // loop {}
     // return;
-    let args = Args::parse();
+    let args = Args::try_parse().unwrap_or_default();
     let next_state = match args.mode {
         RunMode::Regular => GameState::MainMenu,
         RunMode::Clean => GameState::MainMenuClean,

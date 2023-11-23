@@ -31,14 +31,17 @@
                 value: Float(0.0),
                 t: 0.7,
                 duration: Float(0.3),
-            )
+            ),
         ],
     ),
     representation: (
         material: Text(
             text: State(Text),
             color: State(Color),
-            size: Sub(Float(1.0), Mul(Age, Float(0.4))),
+            size: Sub(
+                Float(1.0),
+                Mul(Age, Float(0.4)),
+            ),
             alpha: State(Alpha),
         ),
     ),
