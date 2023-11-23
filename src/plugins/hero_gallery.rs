@@ -5,7 +5,8 @@ pub struct HeroGallery;
 impl Plugin for HeroGallery {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(GameState::HeroGallery), Self::on_enter)
-            .add_systems(OnExit(GameState::HeroGallery), Self::on_leave);
+            .add_systems(OnExit(GameState::HeroGallery), Self::on_leave)
+            .add_systems(Update, Self::ui.run_if(in_state(GameState::HeroGallery)));
     }
 }
 
@@ -27,5 +28,16 @@ impl HeroGallery {
     fn on_leave(world: &mut World) {
         UnitPlugin::despawn_all_teams(world);
         Representation::despawn_all(world);
+    }
+
+    fn ui(world: &mut World) {
+        for unit in UnitPlugin::collect_faction(Faction::Left, world) {
+            let description = VarState::try_get(unit, world)
+                .and_then(|s| s.get_string(VarName::Description))
+                .unwrap_or_default();
+            if !description.is_empty() {
+                show_description_panels(unit, &description, world);
+            }
+        }
     }
 }
