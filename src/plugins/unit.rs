@@ -206,22 +206,28 @@ impl UnitPlugin {
 
     pub fn drag_unit_start(
         event: Listener<Pointer<DragStart>>,
+        mut team: Query<Entity, With<ActiveTeam>>,
         mut dragged: ResMut<DraggedUnit>,
         mut commands: Commands,
     ) {
         debug!("Drag unit start {:?}", event.target);
         dragged.0 = Some(event.target);
-        commands.entity(event.target).insert(Pickable::IGNORE);
+        for entity in team.iter_mut() {
+            commands.entity(entity).insert(Pickable::IGNORE);
+        }
     }
 
     pub fn drag_unit_end(
         event: Listener<Pointer<DragEnd>>,
         mut dragged: ResMut<DraggedUnit>,
+        mut team: Query<Entity, With<ActiveTeam>>,
         mut commands: Commands,
     ) {
         debug!("Drag unit end {:?}", event.target);
         dragged.0 = None;
-        commands.entity(event.target).insert(Pickable::default());
+        for entity in team.iter_mut() {
+            commands.entity(entity).insert(Pickable::default());
+        }
     }
 
     pub fn drag_unit(
@@ -240,7 +246,7 @@ impl UnitPlugin {
 
     pub fn drop_unit(
         event: Listener<Pointer<Drop>>,
-        mut unit_query: Query<&mut VarState, (With<Unit>, Without<Team>, Without<Slot>)>,
+        mut unit_query: Query<&mut VarState, (With<ActiveTeam>, Without<Team>, Without<Slot>)>,
         slot_query: Query<&VarState, With<Slot>>,
         team_query: Query<(&VarState, &Children), With<Team>>,
         timer: Res<GameTimer>,
@@ -268,15 +274,24 @@ impl UnitPlugin {
             .unwrap()
             .1
             .to_vec();
+        let prev_slot = unit_query
+            .get_mut(unit)
+            .unwrap()
+            .get_value_last(VarName::Slot)
+            .unwrap()
+            .get_int()
+            .unwrap();
+        let prev_pos = UnitPlugin::get_slot_position(Faction::Team, prev_slot as usize);
+        let t = timer.insert_head();
         for unit in team_units {
-            if let Ok(state) = unit_query.get(unit) {
+            if let Ok(mut state) = unit_query.get_mut(unit) {
                 if slot == state.get_int(VarName::Slot).unwrap() {
-                    debug!("Slot occupied {slot} {unit:?}");
-                    return;
+                    state
+                        .insert_simple(VarName::Slot, VarValue::Int(prev_slot), t)
+                        .insert_simple(VarName::Position, VarValue::Vec2(prev_pos), t);
                 }
             }
         }
-        let t = timer.insert_head();
         unit_query
             .get_mut(unit)
             .unwrap()
@@ -426,3 +441,6 @@ pub struct HoveredUnit(pub Option<Entity>);
 
 #[derive(Resource, Default, Debug)]
 pub struct DraggedUnit(pub Option<Entity>);
+
+#[derive(Component)]
+pub struct ActiveTeam;

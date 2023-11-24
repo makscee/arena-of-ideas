@@ -247,6 +247,7 @@ impl ShopPlugin {
         world
             .entity_mut(unit)
             .set_parent(team)
+            .insert(ActiveTeam)
             .remove::<ShopOffer>();
         VarState::push_back(unit, VarName::Slot, Change::new(VarValue::Int(0)), world);
         UnitPlugin::fill_slot_gaps(Faction::Team, world);

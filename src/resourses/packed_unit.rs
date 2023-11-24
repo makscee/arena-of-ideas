@@ -96,6 +96,13 @@ impl PackedUnit {
                 Status::apply_delta(entity, world);
             }
         }
+        if VarState::get_mut(parent, world)
+            .get_faction(VarName::Faction)
+            .unwrap()
+            == Faction::Team
+        {
+            world.entity_mut(entity).insert(ActiveTeam);
+        }
         world
             .entity_mut(entity)
             .insert((Name::new(self.name.clone()), Unit));
