@@ -176,6 +176,17 @@ impl ShopPlugin {
                     );
                 });
         }
+        Area::new("level number")
+            .anchor(Align2::CENTER_TOP, [0.0, 20.0])
+            .show(ctx, |ui| {
+                let current_level = Save::get(world).unwrap().current_level + 1;
+                ui.label(
+                    RichText::new(format!("Level {current_level}"))
+                        .size(40.0)
+                        .color(hex_color!("#0091EA"))
+                        .text_style(egui::TextStyle::Heading),
+                );
+            });
         Window::new("Next Enemy")
             .collapsible(false)
             .resizable(false)
