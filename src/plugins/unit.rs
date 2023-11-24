@@ -1,5 +1,7 @@
 use super::*;
 
+pub const SACRIFICE_SLOT: usize = 6;
+
 pub struct UnitPlugin;
 
 impl Plugin for UnitPlugin {
@@ -28,8 +30,8 @@ impl UnitPlugin {
         match faction {
             Faction::Left => vec2(slot as f32 * -3.0, 0.0),
             Faction::Right => vec2(slot as f32 * 3.0, 0.0),
-            Faction::Team => vec2(slot as f32 * -3.0 + 7.5, -3.0),
-            Faction::Shop => vec2(slot as f32 * -3.0 + 7.5, 3.0),
+            Faction::Team => vec2(slot as f32 * -3.0 + 14.5, -3.0),
+            Faction::Shop => vec2(slot as f32 * -3.0 + 9.5, 3.0),
         }
     }
 

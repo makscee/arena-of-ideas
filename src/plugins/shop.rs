@@ -4,9 +4,17 @@ use rand::seq::IteratorRandom;
 
 pub struct ShopPlugin;
 
-#[derive(Resource)]
+#[derive(Resource, Clone)]
 pub struct ShopData {
-    pub next_level: PackedTeam,
+    pub next_team: PackedTeam,
+    pub next_level_num: usize,
+    pub phase: ShopPhase,
+}
+
+#[derive(Clone, PartialEq)]
+pub enum ShopPhase {
+    Buy,
+    Sacrifice { selected: HashSet<usize> },
 }
 
 impl Plugin for ShopPlugin {
@@ -31,6 +39,7 @@ impl ShopPlugin {
 
     fn on_enter(world: &mut World) {
         let save = Save::get(world).unwrap();
+        let team_len = save.team.units.len();
         save.team.unpack(Faction::Team, world);
         if save.current_level == 0 {
             Self::change_g(4, world).unwrap();
@@ -41,8 +50,16 @@ impl ShopPlugin {
             .set_last_state(GameState::Shop)
             .save(world)
             .unwrap();
+        let phase = match team_len < SACRIFICE_SLOT {
+            true => ShopPhase::Buy,
+            false => ShopPhase::Sacrifice {
+                selected: default(),
+            },
+        };
         world.insert_resource(ShopData {
-            next_level: Ladder::current_level(world),
+            next_team: Ladder::current_level(world),
+            next_level_num: save.current_level + 1,
+            phase,
         });
     }
 
@@ -157,12 +174,89 @@ impl ShopPlugin {
 
     pub fn ui(world: &mut World) {
         let ctx = &egui_context(world);
-        for entity in Self::all_offers(world) {
-            ShopOffer::draw_buy_panel(entity, world);
-        }
+        let mut data = world.resource::<ShopData>().clone();
+        let mut sacrifice_accepted = false;
+
         let pos = UnitPlugin::get_slot_position(Faction::Shop, 0);
         let pos = world_to_screen(pos.extend(0.0), world);
         let pos = pos2(pos.x, pos.y);
+        match &mut data.phase {
+            ShopPhase::Buy => {
+                for entity in Self::all_offers(world) {
+                    ShopOffer::draw_buy_panel(entity, world);
+                }
+                Window::new("reroll")
+                    .fixed_pos(pos2(pos.x, pos.y))
+                    .collapsible(false)
+                    .title_bar(false)
+                    .resizable(false)
+                    .default_width(10.0)
+                    .show(ctx, |ui| {
+                        ui.set_enabled(Self::reroll_affordable(world));
+                        ui.vertical_centered(|ui| {
+                            let btn = Button::new(
+                                RichText::new(format!("-{}g", Self::REROLL_PRICE))
+                                    .size(20.0)
+                                    .color(hex_color!("#00E5FF"))
+                                    .text_style(egui::TextStyle::Button),
+                            )
+                            .min_size(egui::vec2(100.0, 0.0));
+                            ui.label("Reroll");
+                            if ui.add(btn).clicked() {
+                                Self::buy_reroll(world).unwrap();
+                            }
+                        })
+                    });
+            }
+            ShopPhase::Sacrifice { selected } => {
+                for unit in UnitPlugin::collect_faction(Faction::Team, world) {
+                    let slot = VarState::get(unit, world).get_int(VarName::Slot).unwrap() as usize;
+                    entity_panel(unit, vec2(0.0, -1.5), None, "sacrifice", world).show(ctx, |ui| {
+                        if ui.button("Sacrifice").clicked() {
+                            selected.insert(slot);
+                        }
+                    });
+                    if selected.contains(&slot) {
+                        entity_panel(unit, default(), None, "cross", world).show(ctx, |ui| {
+                            ui.label(RichText::new("X").color(hex_color!("#D50000")).size(80.0));
+                        });
+                    }
+                }
+                Area::new("accept sacrifice")
+                    .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
+                    .show(ctx, |ui| {
+                        ui.set_enabled(
+                            Save::get(world).unwrap().team.units.len() - selected.len()
+                                < SACRIFICE_SLOT,
+                        );
+                        if ui
+                            .button(
+                                RichText::new(format!("Accept Sacrifice +{} g", selected.len()))
+                                    .color(hex_color!("#D50000"))
+                                    .size(30.0)
+                                    .text_style(egui::TextStyle::Button),
+                            )
+                            .clicked()
+                        {
+                            for entity in UnitPlugin::collect_faction(Faction::Team, world) {
+                                if selected.contains(
+                                    &(VarState::get(entity, world).get_int(VarName::Slot).unwrap()
+                                        as usize),
+                                ) {
+                                    world.entity_mut(entity).despawn_recursive();
+                                }
+                            }
+                            Self::change_g(selected.len() as i32, world).unwrap();
+                            sacrifice_accepted = true;
+                        }
+                    });
+            }
+        }
+        if sacrifice_accepted {
+            UnitPlugin::fill_slot_gaps(Faction::Team, world);
+            UnitPlugin::translate_to_slots(world);
+            data.phase = ShopPhase::Buy;
+        }
         if let Some(team_state) = PackedTeam::state(Faction::Team, world) {
             let g = team_state.get_int(VarName::G).unwrap_or_default();
             Area::new("g")
@@ -179,7 +273,7 @@ impl ShopPlugin {
         Area::new("level number")
             .anchor(Align2::CENTER_TOP, [0.0, 20.0])
             .show(ctx, |ui| {
-                let current_level = Save::get(world).unwrap().current_level + 1;
+                let current_level = data.next_level_num;
                 ui.label(
                     RichText::new(format!("Level {current_level}"))
                         .size(40.0)
@@ -194,7 +288,7 @@ impl ShopPlugin {
             .default_width(150.0)
             .show(ctx, |ui| {
                 ui.vertical_centered(|ui| {
-                    let team = &world.resource::<ShopData>().next_level;
+                    let team = &data.next_team;
                     let unit = &team.units[0];
 
                     ui.heading(
@@ -208,7 +302,7 @@ impl ShopPlugin {
                         let (name, charges) = &unit.statuses[0];
                         ui.label(RichText::new(format!("with {name} ({charges})")));
                     }
-
+                    ui.set_enabled(data.phase.eq(&ShopPhase::Buy));
                     let btn = Button::new(
                         RichText::new("Go")
                             .size(25.0)
@@ -222,28 +316,7 @@ impl ShopPlugin {
                     }
                 });
             });
-        Window::new("reroll")
-            .fixed_pos(pos2(pos.x, pos.y))
-            .collapsible(false)
-            .title_bar(false)
-            .resizable(false)
-            .default_width(10.0)
-            .show(ctx, |ui| {
-                ui.set_enabled(Self::reroll_affordable(world));
-                ui.vertical_centered(|ui| {
-                    let btn = Button::new(
-                        RichText::new(format!("-{}g", Self::REROLL_PRICE))
-                            .size(20.0)
-                            .color(hex_color!("#00E5FF"))
-                            .text_style(egui::TextStyle::Button),
-                    )
-                    .min_size(egui::vec2(100.0, 0.0));
-                    ui.label("Reroll");
-                    if ui.add(btn).clicked() {
-                        Self::buy_reroll(world).unwrap();
-                    }
-                })
-            });
+        world.insert_resource(data);
     }
 
     pub fn reroll_affordable(world: &mut World) -> bool {
@@ -315,9 +388,20 @@ impl OfferProduct {
         match self {
             OfferProduct::Unit => ShopPlugin::buy_unit(entity, world),
             OfferProduct::Status { name, charges } => {
-                for unit in UnitPlugin::collect_faction(Faction::Team, world) {
-                    Status::change_charges(name, unit, *charges, world).unwrap();
+                ActionPlugin::push_back_cluster(default(), world);
+                for unit in UnitPlugin::collect_faction(Faction::Team, world)
+                    .into_iter()
+                    .rev()
+                {
+                    ActionPlugin::push_back(
+                        Effect::AddStatus(name.clone()),
+                        Context::from_target(unit, world)
+                            .set_var(VarName::Charges, VarValue::Int(*charges))
+                            .take(),
+                        world,
+                    );
                 }
+                ActionPlugin::spin(0.0, 0.2, world);
                 world.entity_mut(entity).despawn_recursive();
                 Ok(())
             }

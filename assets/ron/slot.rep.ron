@@ -1,7 +1,20 @@
 (
     material: Shape(
         shape: Rectangle,
-        color: Hex("#03A9F4"),
+        color: If(
+            LessThen(
+                State(Slot),
+                Int(6),
+            ),
+            Hex("#03A9F4"),
+            Hex("#B71C1C"),
+        ),
         size: Vec2E(Float(2.6)),
     ),
+    mapping: {
+        Visible: LessThen(
+            Sub(State(Slot), Int(2)),
+            FactionCount(Faction(Team)),
+        ),
+    },
 )

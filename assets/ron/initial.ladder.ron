@@ -6,7 +6,6 @@
                 (
                     hp: 1,
                     atk: 1,
-                    house: "Warriors",
                     name: "Bug",
                     representation: (
                         material: Shape(
@@ -28,7 +27,6 @@
                 (
                     hp: 1,
                     atk: 1,
-                    house: "Warriors",
                     name: "Bug",
                     representation: (
                         material: Shape(
@@ -46,7 +44,6 @@
                 (
                     hp: 1,
                     atk: 1,
-                    house: "Warriors",
                     name: "Bug",
                     representation: (
                         material: Shape(
@@ -64,7 +61,6 @@
                 (
                     hp: 1,
                     atk: 1,
-                    house: "Warriors",
                     name: "Bug",
                     representation: (
                         material: Shape(
@@ -82,7 +78,6 @@
                 (
                     hp: 1,
                     atk: 1,
-                    house: "Warriors",
                     name: "Bug",
                     representation: (
                         material: Shape(
@@ -100,7 +95,6 @@
                 (
                     hp: 1,
                     atk: 1,
-                    house: "Warriors",
                     name: "Bug",
                     representation: (
                         material: Shape(
@@ -111,6 +105,54 @@
                             size: Vec2(
                                 0.5,
                                 0.5,
+                            ),
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        (
+            units: [
+                (
+                    hp: 3,
+                    atk: 3,
+                    name: "Snake",
+                    house: "Enemies",
+                    description: "Kill after dealing any damage",
+                    trigger: AfterDamageDealt(
+                        Kill,
+                    ),
+                    representation: (
+                        material: Shape(
+                            shape: Circle,
+                            color: Hex(
+                                "#76FF03",
+                            ),
+                            size: Vec2(
+                                0.8,
+                                0.8,
+                            ),
+                        ),
+                    ),
+                ),
+                (
+                    hp: 3,
+                    atk: 3,
+                    name: "Snake",
+                    house: "Enemies",
+                    description: "Kill after dealing any damage",
+                    trigger: AfterDamageDealt(
+                        Kill,
+                    ),
+                    representation: (
+                        material: Shape(
+                            shape: Circle,
+                            color: Hex(
+                                "#76FF03",
+                            ),
+                            size: Vec2(
+                                0.8,
+                                0.8,
                             ),
                         ),
                     ),

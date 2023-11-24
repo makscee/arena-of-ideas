@@ -43,6 +43,7 @@ pub fn entity_panel(
         (1, 0) => Align2::LEFT_CENTER,
         (0, -1) => Align2::CENTER_TOP,
         (0, 1) => Align2::CENTER_BOTTOM,
+        (0, 0) => Align2::CENTER_CENTER,
         _ => panic!(),
     };
 

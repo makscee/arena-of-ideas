@@ -8,8 +8,6 @@ pub struct PackedTeam {
     pub state: VarState,
 }
 
-pub const MAX_SLOTS: usize = 6;
-
 impl PackedTeam {
     pub fn new(units: Vec<PackedUnit>) -> Self {
         Self {
@@ -48,7 +46,7 @@ impl PackedTeam {
             .id();
         match faction {
             Faction::Team => {
-                for slot in 1..=MAX_SLOTS {
+                for slot in 1..=10 {
                     UnitPlugin::spawn_slot(slot, Faction::Team, world);
                 }
             }
