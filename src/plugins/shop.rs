@@ -19,17 +19,23 @@ pub enum ShopPhase {
 
 impl Plugin for ShopPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::Shop), Self::on_enter)
-            .add_systems(OnExit(GameState::Shop), Self::on_leave)
-            .add_systems(
-                OnTransition {
-                    from: GameState::Battle,
-                    to: GameState::Shop,
-                },
-                Self::level_finished,
-            )
-            .add_systems(PostUpdate, Self::input.run_if(in_state(GameState::Shop)))
-            .add_systems(Update, (Self::ui.run_if(in_state(GameState::Shop)),));
+        app.add_systems(
+            OnTransition {
+                from: GameState::MainMenu,
+                to: GameState::Shop,
+            },
+            Self::on_enter,
+        )
+        .add_systems(OnExit(GameState::Shop), Self::on_leave)
+        .add_systems(
+            OnTransition {
+                from: GameState::Battle,
+                to: GameState::Shop,
+            },
+            Self::level_finished.before(Self::on_enter),
+        )
+        .add_systems(PostUpdate, Self::input.run_if(in_state(GameState::Shop)))
+        .add_systems(Update, (Self::ui.run_if(in_state(GameState::Shop)),));
     }
 }
 
@@ -64,32 +70,20 @@ impl ShopPlugin {
     }
 
     fn level_finished(world: &mut World) {
-        match world.resource::<BattleData>().result {
-            BattleResult::Even | BattleResult::Left(_) => {
-                let mut save = Save::get(world).unwrap();
-                save.current_level += 1;
-                let g = save.team.state.get_int(VarName::G).unwrap() + 4;
-                save.team.state.init(VarName::G, VarValue::Int(g));
+        let mut save = Save::get(world).unwrap();
+        save.current_level += 1;
+        let g = save.team.state.get_int(VarName::G).unwrap() + 4;
+        save.team.state.init(VarName::G, VarValue::Int(g));
 
-                if save.current_level
-                    >= Options::get_initial_ladder(world).teams.len() + save.ladder.teams.len()
-                {
-                    let teams = RatingPlugin::generate_weakest_opponent(
-                        &Save::get(world).unwrap().team,
-                        3,
-                        world,
-                    );
-                    save.add_ladder_levels(teams);
-                }
-
-                save.save(world).unwrap();
-            }
-            BattleResult::Right(_) => {
-                Save::default().save(world).unwrap();
-                GameState::MainMenu.change(world);
-            }
-            BattleResult::Tbd => panic!("Battle was not finished"),
+        if save.current_level
+            >= Options::get_initial_ladder(world).teams.len() + save.ladder.teams.len()
+        {
+            let teams =
+                RatingPlugin::generate_weakest_opponent(&Save::get(world).unwrap().team, 3, world);
+            save.add_ladder_levels(teams);
         }
+        save.save(world).unwrap();
+        Self::on_enter(world);
     }
 
     fn on_leave(world: &mut World) {

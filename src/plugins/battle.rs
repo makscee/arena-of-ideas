@@ -196,10 +196,14 @@ impl BattlePlugin {
         if !GameTimer::get(world).ended() {
             return;
         }
-        let (text, color) = match world.resource::<BattleData>().result {
-            BattleResult::Even | BattleResult::Left(_) => ("Victory", hex_color!("#00E5FF")),
-            BattleResult::Right(_) => ("Defeat", hex_color!("#FF1744")),
+        let victory = match world.resource::<BattleData>().result {
+            BattleResult::Left(_) | BattleResult::Even => true,
+            BattleResult::Right(_) => false,
             BattleResult::Tbd => panic!("No battle result found"),
+        };
+        let (text, color) = match victory {
+            true => ("Victory", hex_color!("#00E5FF")),
+            false => ("Defeat", hex_color!("#FF1744")),
         };
         Window::new(
             RichText::new(text)
@@ -232,7 +236,15 @@ impl BattlePlugin {
                     )
                     .clicked()
                 {
-                    GameState::change(GameState::Shop, world);
+                    if victory {
+                        GameState::change(GameState::Shop, world);
+                    } else {
+                        Save::default().save(world).unwrap();
+                        let mut pd = PersistentData::load(world);
+                        pd.last_state = None;
+                        pd.save(world).unwrap();
+                        GameState::change(GameState::MainMenu, world);
+                    }
                 }
             });
         });
