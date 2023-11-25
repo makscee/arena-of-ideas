@@ -17,4 +17,10 @@ impl Ladder {
             save.ladder.teams[ind - initial.teams.len()].clone()
         }
     }
+
+    pub fn is_on_last_level(world: &World) -> bool {
+        let save = Save::get(world).unwrap();
+        save.current_level + 1
+            == Options::get_initial_ladder(world).teams.len() + save.ladder.teams.len()
+    }
 }

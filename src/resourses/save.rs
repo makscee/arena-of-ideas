@@ -34,8 +34,4 @@ impl Save {
         self.ladder.teams.append(&mut teams);
         self
     }
-    pub fn set_current_level(&mut self, ind: usize) -> &mut Self {
-        self.current_level = ind;
-        self
-    }
 }

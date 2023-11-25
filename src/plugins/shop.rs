@@ -71,17 +71,15 @@ impl ShopPlugin {
 
     fn level_finished(world: &mut World) {
         let mut save = Save::get(world).unwrap();
-        save.current_level += 1;
         let g = save.team.state.get_int(VarName::G).unwrap() + 4;
         save.team.state.init(VarName::G, VarValue::Int(g));
 
-        if save.current_level
-            >= Options::get_initial_ladder(world).teams.len() + save.ladder.teams.len()
-        {
+        if Ladder::is_on_last_level(world) {
             let teams =
                 RatingPlugin::generate_weakest_opponent(&Save::get(world).unwrap().team, 3, world);
             save.add_ladder_levels(teams);
         }
+        save.current_level += 1;
         save.save(world).unwrap();
         Self::on_enter(world);
     }
@@ -269,10 +267,17 @@ impl ShopPlugin {
             .show(ctx, |ui| {
                 let current_level = data.next_level_num;
                 ui.label(
-                    RichText::new(format!("Level {current_level}"))
-                        .size(40.0)
-                        .color(hex_color!("#0091EA"))
-                        .text_style(egui::TextStyle::Heading),
+                    RichText::new(format!(
+                        "Level {current_level} {}",
+                        if Ladder::is_on_last_level(world) {
+                            "(last)"
+                        } else {
+                            ""
+                        }
+                    ))
+                    .size(40.0)
+                    .color(hex_color!("#0091EA"))
+                    .text_style(egui::TextStyle::Heading),
                 );
             });
         Window::new("Next Enemy")
