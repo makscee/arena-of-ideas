@@ -17,6 +17,7 @@ impl Plugin for RepresentationPlugin {
 }
 
 impl RepresentationPlugin {
+
     fn injector_system(world: &mut World) {
         let reps = world
             .query::<(Entity, &Representation)>()

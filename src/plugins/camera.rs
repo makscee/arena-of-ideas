@@ -25,8 +25,8 @@ const SCALE_CHANGE_SPEED: f32 = 3.0;
 impl CameraPlugin {
     fn respawn_camera(mut commands: Commands, data: Option<ResMut<CameraData>>) {
         let mut camera = Camera2dBundle::default();
-        camera.projection.scaling_mode = ScalingMode::FixedHorizontal(15.0);
-        let entity = commands.spawn(camera).id();
+        camera.projection.scaling_mode = ScalingMode::FixedVertical(15.0);
+        let entity = commands.spawn((camera, RaycastPickCamera::default())).id();
         if let Some(data) = data {
             commands.entity(data.entity).despawn_recursive();
         }

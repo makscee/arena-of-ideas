@@ -153,6 +153,16 @@ impl VarValue {
         }
     }
 
+    pub fn div(a: &VarValue, b: &VarValue) -> Result<VarValue> {
+        match (a, b) {
+            (VarValue::Float(a), VarValue::Float(b)) => Ok(VarValue::Float(a / b)),
+            (VarValue::Int(a), VarValue::Int(b)) => Ok(VarValue::Int(a / b)),
+            (VarValue::Vec2(a), VarValue::Vec2(b)) => Ok(VarValue::Vec2(*a / *b)),
+            (VarValue::Vec2(a), VarValue::Float(b)) => Ok(VarValue::Vec2(*a / *b)),
+            _ => Err(anyhow!("{a:?} * {b:?} not supported")),
+        }
+    }
+
     pub fn cmp(a: &VarValue, b: &VarValue) -> Result<Ordering> {
         match (a, b) {
             (VarValue::Float(a), VarValue::Float(b)) => Ok(a.total_cmp(b)),

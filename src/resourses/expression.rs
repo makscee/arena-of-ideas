@@ -44,6 +44,9 @@ pub enum Expression {
     IntFloat(Box<Expression>),
     Sin(Box<Expression>),
     Cos(Box<Expression>),
+    Sign(Box<Expression>),
+    Fract(Box<Expression>),
+    Floor(Box<Expression>),
     UnitVec(Box<Expression>),
     Even(Box<Expression>),
     Abs(Box<Expression>),
@@ -55,6 +58,7 @@ pub enum Expression {
     Sum(Box<Expression>, Box<Expression>),
     Sub(Box<Expression>, Box<Expression>),
     Mul(Box<Expression>, Box<Expression>),
+    Div(Box<Expression>, Box<Expression>),
     GreaterThen(Box<Expression>, Box<Expression>),
     LessThen(Box<Expression>, Box<Expression>),
     Min(Box<Expression>, Box<Expression>),
@@ -99,6 +103,9 @@ impl Expression {
             Expression::IntFloat(x) => Ok(VarValue::Float(x.get_int(context, world)? as f32)),
             Expression::Sin(x) => Ok(VarValue::Float(x.get_float(context, world)?.sin())),
             Expression::Cos(x) => Ok(VarValue::Float(x.get_float(context, world)?.cos())),
+            Expression::Sign(x) => Ok(VarValue::Float(x.get_float(context, world)?.signum())),
+            Expression::Fract(x) => Ok(VarValue::Float(x.get_float(context, world)?.fract())),
+            Expression::Floor(x) => Ok(VarValue::Float(x.get_float(context, world)?.floor())),
             Expression::UnitVec(x) => {
                 let x = x.get_float(context, world)?;
                 let x = vec2(x.cos(), x.sin());
@@ -118,6 +125,9 @@ impl Expression {
             }
             Expression::Mul(a, b) => {
                 VarValue::mul(&a.get_value(context, world)?, &b.get_value(context, world)?)
+            }
+            Expression::Div(a, b) => {
+                VarValue::div(&a.get_value(context, world)?, &b.get_value(context, world)?)
             }
             Expression::State(var) => {
                 let t = get_play_head(world);
@@ -300,6 +310,9 @@ impl Expression {
             | Expression::IntFloat(x)
             | Expression::Sin(x)
             | Expression::Cos(x)
+            | Expression::Sign(x)
+            | Expression::Fract(x)
+            | Expression::Floor(x)
             | Expression::UnitVec(x)
             | Expression::Even(x)
             | Expression::Abs(x)
@@ -312,6 +325,7 @@ impl Expression {
             | Expression::Sum(a, b)
             | Expression::Sub(a, b)
             | Expression::Mul(a, b)
+            | Expression::Div(a, b)
             | Expression::GreaterThen(a, b)
             | Expression::LessThen(a, b)
             | Expression::Min(a, b)
@@ -493,7 +507,7 @@ impl Expression {
                             }
                         });
                 }
-                Expression::State(x) => {
+                Expression::State(x) | Expression::StateLast(x) => {
                     ComboBox::from_id_source(&name)
                         .selected_text(x.to_string())
                         .show_ui(ui, |ui| {
@@ -502,9 +516,6 @@ impl Expression {
                                 ui.selectable_value(x, option, text).changed();
                             }
                         });
-                }
-                Expression::StateLast(x) => {
-                    ui.label(x.to_string());
                 }
                 Expression::Context(x) => {
                     ui.label(x.to_string());
@@ -521,6 +532,9 @@ impl Expression {
                 | Expression::IntFloat(x)
                 | Expression::Sin(x)
                 | Expression::Cos(x)
+                | Expression::Sign(x)
+                | Expression::Fract(x)
+                | Expression::Floor(x)
                 | Expression::UnitVec(x)
                 | Expression::Even(x)
                 | Expression::Abs(x)
@@ -533,6 +547,7 @@ impl Expression {
                 | Expression::Sum(a, b)
                 | Expression::Sub(a, b)
                 | Expression::Mul(a, b)
+                | Expression::Div(a, b)
                 | Expression::GreaterThen(a, b)
                 | Expression::LessThen(a, b)
                 | Expression::Min(a, b)

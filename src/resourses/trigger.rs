@@ -13,6 +13,7 @@ pub enum Trigger {
     TurnEnd(Effect),
     BeforeStrike(Effect),
     AllyDeath(Effect),
+    AnyDeath(Effect),
     BeforeDeath(Effect),
     AfterKill(Effect),
     ChangeVar(VarName, Expression),
@@ -54,7 +55,7 @@ impl Trigger {
                 Event::BeforeStrike(..) => vec![self.clone()],
                 _ => default(),
             },
-            Trigger::AllyDeath(..) => match event {
+            Trigger::AllyDeath(..) | Trigger::AnyDeath(..) => match event {
                 Event::Death(..) => vec![self.clone()],
                 _ => default(),
             },
@@ -82,7 +83,8 @@ impl Trigger {
             | Trigger::BattleStart(effect)
             | Trigger::TurnStart(effect)
             | Trigger::TurnEnd(effect)
-            | Trigger::BeforeStrike(effect) => {
+            | Trigger::BeforeStrike(effect)
+            | Trigger::AnyDeath(effect) => {
                 ActionPlugin::push_back_cluster(default(), world);
                 ActionPlugin::push_back(effect, context, world);
             }
@@ -160,6 +162,7 @@ impl Trigger {
                 | Trigger::TurnEnd(effect)
                 | Trigger::BeforeStrike(effect)
                 | Trigger::AllyDeath(effect)
+                | Trigger::AnyDeath(effect)
                 | Trigger::BeforeDeath(effect)
                 | Trigger::AfterKill(effect) => {
                     effect.show_editor(editing_data, format!("{name}/{effect}"), ui, world);
