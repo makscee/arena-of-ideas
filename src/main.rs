@@ -121,6 +121,7 @@ fn main() {
             AudioPlugin,
             HeroEditorPlugin,
             HeroGallery,
+            CameraPlugin,
         ))
         .add_systems(Update, input_world)
         .init_resource::<UserName>()

@@ -2,12 +2,18 @@
 (
     left: (
         units: [
-            (hp: 5, atk: 1),
-            (hp: 5, atk: 1),
+            (hp: 15, atk: 5),
+            (hp: 15, atk: 5),
         ],
     ),
     right: (
         units: [
+            (hp: 5, atk: 1),
+            (hp: 5, atk: 1),
+            (hp: 5, atk: 1),
+            (hp: 5, atk: 1),
+            (hp: 5, atk: 1),
+            (hp: 5, atk: 1),
             (hp: 5, atk: 1),
             (hp: 5, atk: 1),
             (hp: 5, atk: 1),
