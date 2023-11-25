@@ -202,8 +202,14 @@ impl BattlePlugin {
             BattleResult::Tbd => panic!("No battle result found"),
         };
         let (text, color) = match victory {
-            true => ("Victory", hex_color!("#00E5FF")),
-            false => ("Defeat", hex_color!("#FF1744")),
+            true => ("Victory".to_owned(), hex_color!("#00E5FF")),
+            false => (
+                format!(
+                    "Defeat. Reached level {}",
+                    Save::get(world).unwrap().current_level + 1
+                ),
+                hex_color!("#FF1744"),
+            ),
         };
         Window::new(
             RichText::new(text)
@@ -215,7 +221,7 @@ impl BattlePlugin {
         .resizable(false)
         .anchor(Align2::CENTER_CENTER, [0.0, -150.0])
         .show(&egui_context(world), |ui| {
-            ui.set_width(300.0);
+            ui.set_min_width(300.0);
             ui.vertical_centered_justified(|ui| {
                 if ui
                     .button(
