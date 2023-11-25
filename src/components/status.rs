@@ -82,9 +82,12 @@ impl Status {
         world: &mut World,
     ) -> Result<Entity> {
         for entity in Self::collect_entity_statuses(unit, world) {
-            if let Some(s) = world.entity_mut(entity).get_mut::<Status>() {
+            if let Some(s) = world.entity(entity).get::<Status>() {
                 if s.name.eq(status) {
                     VarState::change_int(entity, VarName::Charges, delta, world)?;
+                    if VarState::get(entity, world).get_int(VarName::Charges)? <= 0 {
+                        world.entity_mut(entity).despawn_recursive();
+                    }
                     return Ok(entity);
                 }
             }

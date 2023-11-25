@@ -32,6 +32,7 @@ pub enum Expression {
     Hex(String),
     Faction(Faction),
     State(VarName),
+    TargetState(VarName),
     StateLast(VarName),
     Context(VarName),
 
@@ -133,6 +134,10 @@ impl Expression {
                 let t = get_play_head(world);
                 VarState::find_value(context.owner(), *var, t, world)
             }
+            Expression::TargetState(var) => {
+                let t = get_play_head(world);
+                VarState::find_value(context.target(), *var, t, world)
+            }
             Expression::StateLast(var) => {
                 VarState::get(context.owner(), world).get_value_last(*var)
             }
@@ -180,15 +185,35 @@ impl Expression {
                 .context("No other units found")?,
             )),
             Expression::RandomAdjacentUnit => {
-                let slot = context.get_var(VarName::Slot, world).unwrap().get_int()? as usize;
+                let own_slot = context.get_var(VarName::Slot, world).unwrap().get_int()?;
                 let faction = context
                     .get_var(VarName::Faction, world)
                     .unwrap()
                     .get_faction()?;
+                let mut min_distance = i32::MAX;
+                for unit in UnitPlugin::collect_faction(faction, world) {
+                    let state = VarState::get(unit, world);
+                    if state.get_int(VarName::Hp)? <= 0 {
+                        continue;
+                    }
+                    let slot = state.get_int(VarName::Slot)?;
+                    let delta = (slot - own_slot).abs();
+                    if delta == 0 {
+                        continue;
+                    }
+                    min_distance = min_distance.min(delta);
+                }
                 Ok(VarValue::Entity(
-                    UnitPlugin::find_unit(faction, slot - 1, world)
+                    UnitPlugin::find_unit(faction, (own_slot - min_distance) as usize, world)
                         .into_iter()
-                        .chain(UnitPlugin::find_unit(faction, slot + 1, world).into_iter())
+                        .chain(
+                            UnitPlugin::find_unit(
+                                faction,
+                                (own_slot + min_distance) as usize,
+                                world,
+                            )
+                            .into_iter(),
+                        )
                         .choose(&mut thread_rng())
                         .context("No adjacent units found")?,
                 ))
@@ -301,6 +326,7 @@ impl Expression {
             | Expression::Hex(..)
             | Expression::Faction(..)
             | Expression::State(..)
+            | Expression::TargetState(..)
             | Expression::StateLast(..)
             | Expression::Context(..)
             | Expression::Vec2(..) => default(),
@@ -507,7 +533,7 @@ impl Expression {
                             }
                         });
                 }
-                Expression::State(x) | Expression::StateLast(x) => {
+                Expression::State(x) | Expression::TargetState(x) | Expression::StateLast(x) => {
                     ComboBox::from_id_source(&name)
                         .selected_text(x.to_string())
                         .show_ui(ui, |ui| {

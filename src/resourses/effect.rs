@@ -73,6 +73,12 @@ impl Effect {
             Effect::Kill => {
                 let target = context.get_target().context("Target not found")?;
                 VarState::change_int(target, VarName::Hp, -9999999, world)?;
+                VarState::push_back(
+                    target,
+                    VarName::LastAttacker,
+                    Change::new(VarValue::Entity(context.owner())),
+                    world,
+                );
                 Pools::get_vfx("text", world)
                     .clone()
                     .set_var(

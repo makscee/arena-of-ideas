@@ -151,13 +151,17 @@ impl HeroEditorPlugin {
                 if changed {
                     Self::apply_camera(pd, false, world);
                 }
-
-                if ui.button("Send Battle Start").clicked() {
-                    Event::BattleStart.send(world);
-                }
-                if ui.button("Send Turn Start").clicked() {
-                    Event::TurnStart.send(world);
-                }
+                CollapsingHeader::new("Triggers").show(ui, |ui| {
+                    if ui.button("Send Battle Start").clicked() {
+                        Event::BattleStart.send(world);
+                    }
+                    if ui.button("Send Turn Start").clicked() {
+                        Event::TurnStart.send(world);
+                    }
+                    if ui.button("Send Turn End").clicked() {
+                        Event::TurnEnd.send(world);
+                    }
+                });
                 if ui.button("Spawn enemy").clicked() {
                     PackedUnit {
                         hp: 5,

@@ -1,0 +1,57 @@
+#![enable(implicit_some)]
+(
+    name: "Demons",
+    color: ("#880E4F"),
+    statuses: [
+        (
+            name: "Dark Satiety",
+            description: "+{Charges}/+{Charges}\nTurn End: lose 2 charges",
+            trigger: List(
+                [
+                    ChangeVar(
+                        Hp,
+                        Context(Charges),
+                    ),
+                    ChangeVar(
+                        Atk,
+                        Context(Charges),
+                    ),
+                    TurnEnd(
+                        WithTarget(
+                            Owner,
+                            WithVar(
+                                Charges,
+                                Int(-2),
+                                AddStatus(
+                                    "Dark Satiety",
+                                ),
+                            ),
+                        ),
+                    ),
+                ],
+            ),
+        ),
+    ],
+    abilities: [
+        (
+            name: "Devour",
+            description: "Kill target and gain [Dark Satiety] for each HP",
+            effect: List(
+                [
+                    WithVar(
+                        Charges,
+                        TargetState(Hp),
+                        WithTarget(
+                            Owner,
+                            AddStatus(
+                                "Dark Satiety",
+                            ),
+                        ),
+                    ),
+                    Kill,
+                    Vfx("apply_status"),
+                ],
+            ),
+        ),
+    ],
+)
