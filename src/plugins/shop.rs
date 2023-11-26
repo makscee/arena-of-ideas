@@ -26,14 +26,8 @@ impl Plugin for ShopPlugin {
             },
             Self::on_enter,
         )
+        .add_systems(OnEnter(GameState::Shop), Self::on_enter)
         .add_systems(OnExit(GameState::Shop), Self::on_leave)
-        .add_systems(
-            OnTransition {
-                from: GameState::Battle,
-                to: GameState::Shop,
-            },
-            Self::level_finished.before(Self::on_enter),
-        )
         .add_systems(PostUpdate, Self::input.run_if(in_state(GameState::Shop)))
         .add_systems(Update, (Self::ui.run_if(in_state(GameState::Shop)),));
     }
@@ -45,7 +39,7 @@ impl ShopPlugin {
 
     fn on_enter(world: &mut World) {
         let save = Save::get(world).unwrap();
-        if Ladder::is_on_last_level(world) {
+        if Ladder::levels_left(world) == 0 {
             let teams =
                 RatingPlugin::generate_weakest_opponent(&Save::get(world).unwrap().team, 3, world);
             Save::get(world)
@@ -75,19 +69,6 @@ impl ShopPlugin {
             next_level_num: next_level_num + 1,
             phase,
         });
-    }
-
-    fn level_finished(world: &mut World) {
-        if Ladder::is_on_last_level(world) {
-            let teams =
-                RatingPlugin::generate_weakest_opponent(&Save::get(world).unwrap().team, 3, world);
-            Save::get(world)
-                .unwrap()
-                .add_ladder_levels(teams)
-                .save(world)
-                .unwrap();
-        }
-        Self::on_enter(world);
     }
 
     fn on_leave(world: &mut World) {
@@ -275,7 +256,7 @@ impl ShopPlugin {
                 ui.label(
                     RichText::new(format!(
                         "Level {current_level} {}",
-                        if Ladder::is_on_last_level(world) {
+                        if Ladder::levels_left(world) == 1 {
                             "(last)"
                         } else {
                             ""

@@ -21,9 +21,9 @@ impl Ladder {
         )
     }
 
-    pub fn is_on_last_level(world: &World) -> bool {
+    pub fn levels_left(world: &World) -> usize {
         let save = Save::get(world).unwrap();
-        save.current_level + 1
-            == Options::get_initial_ladder(world).teams.len() + save.ladder.teams.len()
+        Options::get_initial_ladder(world).teams.len() + save.ladder.teams.len()
+            - save.current_level
     }
 }
