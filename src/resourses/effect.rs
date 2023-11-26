@@ -274,7 +274,7 @@ impl Effect {
         };
         let color = match hovered {
             true => hex_color!("#FF9100"),
-            false => hex_color!("#1E88E5"),
+            false => hex_color!("#9575CD"),
         };
         ui.style_mut().visuals.hyperlink_color = color;
         let mut now_hovered = false;
