@@ -263,12 +263,12 @@ impl Effect {
     pub fn show_editor(
         &mut self,
         editing_data: &mut EditingData,
-        name: String,
+        path: String,
         ui: &mut Ui,
         world: &mut World,
     ) {
         let hovered = if let Some(hovered) = editing_data.hovered.as_ref() {
-            hovered.eq(&name)
+            hovered.eq(&path)
         } else {
             false
         };
@@ -318,7 +318,7 @@ impl Effect {
             match self {
                 Effect::Noop | Effect::Kill | Effect::FullCopy => {}
                 Effect::Debug(e) | Effect::Text(e) => {
-                    e.show_editor(editing_data, format!("{name}/e"), ui);
+                    e.show_editor(editing_data, format!("{path}/e"), ui);
                 }
                 Effect::Damage(e) => {
                     let mut is_some = e.is_some();
@@ -330,36 +330,48 @@ impl Effect {
                         }
                     }
                     if let Some(e) = e {
-                        e.show_editor(editing_data, format!("{name}/e"), ui);
+                        e.show_editor(editing_data, format!("{path}/e"), ui);
                     }
                 }
                 Effect::AoeFaction(exp, e)
                 | Effect::WithTarget(exp, e)
                 | Effect::WithOwner(exp, e) => {
                     ui.vertical(|ui| {
-                        exp.show_editor(editing_data, format!("{name}/exp"), ui);
-                        e.show_editor(editing_data, format!("{name}/e"), ui, world);
+                        exp.show_editor(editing_data, format!("{path}/exp"), ui);
+                        e.show_editor(editing_data, format!("{path}/e"), ui, world);
                     });
                 }
                 Effect::List(list) => {
                     ui.vertical(|ui| {
+                        let mut delete: Option<usize> = None;
                         for (i, e) in list.into_iter().enumerate() {
-                            e.show_editor(editing_data, format!("{name}/{i}"), ui, world);
+                            ui.horizontal(|ui| {
+                                if ui.link("-").clicked() {
+                                    delete = Some(i);
+                                }
+                                e.show_editor(editing_data, format!("{path}/{i}"), ui, world);
+                            });
+                        }
+                        if let Some(delete) = delete {
+                            list.remove(delete);
+                        }
+                        if ui.button("+").clicked() {
+                            list.push(default());
                         }
                     });
                 }
                 Effect::WithVar(var, exp, e) => {
                     ui.vertical(|ui| {
                         var.show_editor(ui);
-                        exp.show_editor(editing_data, format!("{name}/exp"), ui);
-                        e.show_editor(editing_data, format!("{name}/e"), ui, world);
+                        exp.show_editor(editing_data, format!("{path}/exp"), ui);
+                        e.show_editor(editing_data, format!("{path}/e"), ui, world);
                     });
                 }
                 Effect::AddStatus(name) | Effect::Vfx(name) => {
                     ui.text_edit_singleline(name);
                 }
                 Effect::UseAbility(name) => {
-                    ComboBox::from_id_source("ability")
+                    ComboBox::from_id_source(format!("{path}/ability"))
                         .selected_text(name.clone())
                         .show_ui(ui, |ui| {
                             for ability in Pools::get(world).abilities.keys() {
@@ -371,8 +383,8 @@ impl Effect {
             ui.style_mut().visuals.hyperlink_color = color;
             let right = ui.link(RichText::new(")"));
             now_hovered |= right.hovered();
-            if now_hovered && !editing_data.hovered.as_ref().eq(&Some(&name)) {
-                editing_data.hovered = Some(name.clone());
+            if now_hovered && !editing_data.hovered.as_ref().eq(&Some(&path)) {
+                editing_data.hovered = Some(path.clone());
             }
         });
     }
