@@ -5,7 +5,6 @@
             (
                 hp: 1,
                 atk: 1,
-                house: "Demons",
                 trigger: BattleStart(
                     List(
                         [
@@ -44,5 +43,15 @@
             (hp: 5, atk: 1),
             (hp: 5, atk: 1),
         ],
+    ),
+    condition: And(
+        Equals(
+            FactionCount(Faction(Left)),
+            Int(1),
+        ),
+        Equals(
+            FactionCount(Faction(Right)),
+            Int(0),
+        ),
     ),
 )

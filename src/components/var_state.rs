@@ -279,7 +279,7 @@ impl Tween {
         let v = match (a, b) {
             (VarValue::Float(a), VarValue::Float(b)) => VarValue::Float(*a + (*b - *a) * t),
             (VarValue::Int(a), VarValue::Int(b)) => {
-                VarValue::Int(((*a + (*b - *a)) as f32 * t) as i32)
+                VarValue::Int(*a + ((*b - *a) as f32 * t) as i32)
             }
             (VarValue::Vec2(a), VarValue::Vec2(b)) => VarValue::Vec2(*a + (*b - *a) * t),
             (VarValue::Color(a), VarValue::Color(b)) => {

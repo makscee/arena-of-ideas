@@ -7,15 +7,18 @@ pub struct Ladder {
 }
 
 impl Ladder {
-    pub fn current_level(world: &World) -> PackedTeam {
+    pub fn current_level(world: &World) -> (PackedTeam, usize) {
         let save = Save::get(world).unwrap();
         let ind = save.current_level;
         let initial = Options::get_initial_ladder(world);
-        if ind < initial.teams.len() {
-            initial.teams[ind].clone()
-        } else {
-            save.ladder.teams[ind - initial.teams.len()].clone()
-        }
+        (
+            if ind < initial.teams.len() {
+                initial.teams[ind].clone()
+            } else {
+                save.ladder.teams[ind - initial.teams.len()].clone()
+            },
+            ind,
+        )
     }
 
     pub fn is_on_last_level(world: &World) -> bool {

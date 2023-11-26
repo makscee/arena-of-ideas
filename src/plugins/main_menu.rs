@@ -36,6 +36,7 @@ impl MainMenuPlugin {
 
     pub fn ui(world: &mut World) {
         let ctx = &egui_context(world);
+        let mut save = Save::get(world).unwrap();
         Window::new("Menu")
             .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
             .resizable(false)
@@ -43,17 +44,21 @@ impl MainMenuPlugin {
             .show(ctx, |ui| {
                 ui.vertical_centered(|ui| {
                     let btn = Self::menu_button("Continue".to_owned(), ui);
-                    let btn = if Save::get(world).is_ok_and(|s| s.current_level > 0) {
-                        btn
-                    } else {
-                        btn.sense(Sense::focusable_noninteractive())
-                    };
-                    if ui.add(btn).clicked() {
+                    let can_continue = save.current_level > 0;
+                    if ui.add_enabled(can_continue, btn).clicked() {
                         GameState::change(GameState::Shop, world);
                     }
-                    let btn = Self::menu_button("New Game".to_owned(), ui);
+                    let btn = Self::menu_button("New Ladder".to_owned(), ui);
                     if ui.add(btn).clicked() {
                         Save::default().save(world).unwrap();
+                        GameState::change(GameState::Shop, world);
+                    }
+                    let has_old = !save.ladder.teams.is_empty();
+                    let btn = Self::menu_button("Old Ladder".to_owned(), ui);
+                    if ui.add_enabled(has_old, btn).clicked() {
+                        save.current_level = 0;
+                        save.team = default();
+                        save.save(world).unwrap();
                         GameState::change(GameState::Shop, world);
                     }
                     let btn = Self::menu_button("Custom Battle".to_owned(), ui);

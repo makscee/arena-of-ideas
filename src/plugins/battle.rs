@@ -1,4 +1,4 @@
-use bevy_egui::egui::{Align2, Vec2, Window};
+use bevy_egui::egui::{Align2, Window};
 
 use super::*;
 
@@ -16,6 +16,7 @@ impl Plugin for BattlePlugin {
 pub struct BattleData {
     pub left: Option<PackedTeam>,
     pub right: Option<PackedTeam>,
+    pub level: Option<usize>,
     pub result: BattleResult,
 }
 
@@ -27,13 +28,33 @@ impl BattlePlugin {
         data.right.clone().unwrap().unpack(Faction::Right, world);
         let result = Self::run_battle(100, world).unwrap();
         data.result = result;
+        match result {
+            BattleResult::Left(_) | BattleResult::Even => {
+                let mut sd = Save::get(world).unwrap();
+                sd.current_level += 1;
+                sd.save(world).unwrap();
+            }
+            BattleResult::Right(_) => {
+                Save::default().save(world).unwrap();
+                let mut pd = PersistentData::load(world);
+                pd.last_state = None;
+                pd.save(world).unwrap();
+            }
+            BattleResult::Tbd => panic!("Battle result fail"),
+        }
         world.insert_resource(data.to_owned());
     }
 
-    pub fn load_teams(left: PackedTeam, right: PackedTeam, world: &mut World) {
+    pub fn load_teams(
+        left: PackedTeam,
+        right: PackedTeam,
+        level: Option<usize>,
+        world: &mut World,
+    ) {
         world.insert_resource(BattleData {
             left: Some(left),
             right: Some(right),
+            level,
             result: default(),
         });
     }
@@ -196,7 +217,8 @@ impl BattlePlugin {
         if !GameTimer::get(world).ended() {
             return;
         }
-        let victory = match world.resource::<BattleData>().result {
+        let bd = world.resource::<BattleData>();
+        let victory = match bd.result {
             BattleResult::Left(_) | BattleResult::Even => true,
             BattleResult::Right(_) => false,
             BattleResult::Tbd => panic!("No battle result found"),
@@ -204,10 +226,7 @@ impl BattlePlugin {
         let (text, color) = match victory {
             true => ("Victory".to_owned(), hex_color!("#00E5FF")),
             false => (
-                format!(
-                    "Defeat. Reached level {}",
-                    Save::get(world).unwrap().current_level + 1
-                ),
+                format!("Defeat. Reached level {}", bd.level.unwrap() + 1),
                 hex_color!("#FF1744"),
             ),
         };
@@ -245,10 +264,6 @@ impl BattlePlugin {
                     if victory {
                         GameState::change(GameState::Shop, world);
                     } else {
-                        Save::default().save(world).unwrap();
-                        let mut pd = PersistentData::load(world);
-                        pd.last_state = None;
-                        pd.save(world).unwrap();
                         GameState::change(GameState::MainMenu, world);
                     }
                 }
@@ -257,7 +272,7 @@ impl BattlePlugin {
     }
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, Copy)]
 pub enum BattleResult {
     #[default]
     Tbd,

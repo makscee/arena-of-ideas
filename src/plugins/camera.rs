@@ -45,7 +45,7 @@ impl CameraPlugin {
         time: Res<Time>,
     ) {
         let mut camera = camera.single_mut();
-        let mut width = 0.0_f32;
+        let mut width = 15.0_f32;
         for (t, cv) in visible.iter() {
             if cv.is_visible_in_hierarchy() {
                 width = width.max((t.translation.x.abs() + 1.5) * 2.0);

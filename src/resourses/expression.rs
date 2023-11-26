@@ -190,7 +190,7 @@ impl Expression {
                     .get_var(VarName::Faction, world)
                     .unwrap()
                     .get_faction()?;
-                let mut min_distance = i32::MAX;
+                let mut min_distance = 999999;
                 for unit in UnitPlugin::collect_faction(faction, world) {
                     let state = VarState::get(unit, world);
                     if state.get_int(VarName::Hp)? <= 0 {

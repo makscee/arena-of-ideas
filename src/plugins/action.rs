@@ -36,10 +36,11 @@ impl ActionPlugin {
 
     pub fn spin(cluster_delay: f32, action_delay: f32, world: &mut World) -> bool {
         let mut inserted = false;
+        let mut died = false;
         loop {
             let t = get_end(world);
             if Self::process_queue(action_delay, world) {
-                UnitPlugin::run_death_check(world);
+                died |= UnitPlugin::run_death_check(world);
                 let end = get_end(world);
                 if t != end {
                     inserted = true;
@@ -51,6 +52,10 @@ impl ActionPlugin {
             } else {
                 break;
             }
+        }
+        if died {
+            UnitPlugin::fill_slot_gaps(Faction::Left, world);
+            UnitPlugin::fill_slot_gaps(Faction::Right, world);
         }
         GameTimer::get_mut(world).end_batch();
         inserted

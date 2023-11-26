@@ -45,11 +45,18 @@ impl ShopPlugin {
 
     fn on_enter(world: &mut World) {
         let save = Save::get(world).unwrap();
+        if Ladder::is_on_last_level(world) {
+            let teams =
+                RatingPlugin::generate_weakest_opponent(&Save::get(world).unwrap().team, 3, world);
+            Save::get(world)
+                .unwrap()
+                .add_ladder_levels(teams)
+                .save(world)
+                .unwrap();
+        }
         let team_len = save.team.units.len();
         save.team.unpack(Faction::Team, world);
-        if save.current_level == 0 {
-            Self::change_g(4, world).unwrap();
-        }
+        Self::change_g(4, world).unwrap();
         UnitPlugin::translate_to_slots(world);
         Self::fill_showcase(world);
         PersistentData::load(world)
@@ -62,25 +69,24 @@ impl ShopPlugin {
                 selected: default(),
             },
         };
+        let (next_team, next_level_num) = Ladder::current_level(world);
         world.insert_resource(ShopData {
-            next_team: Ladder::current_level(world),
-            next_level_num: save.current_level + 1,
+            next_team,
+            next_level_num: next_level_num + 1,
             phase,
         });
     }
 
     fn level_finished(world: &mut World) {
-        let mut save = Save::get(world).unwrap();
-        let g = save.team.state.get_int(VarName::G).unwrap() + 4;
-        save.team.state.init(VarName::G, VarValue::Int(g));
-
         if Ladder::is_on_last_level(world) {
             let teams =
                 RatingPlugin::generate_weakest_opponent(&Save::get(world).unwrap().team, 3, world);
-            save.add_ladder_levels(teams);
+            Save::get(world)
+                .unwrap()
+                .add_ladder_levels(teams)
+                .save(world)
+                .unwrap();
         }
-        save.current_level += 1;
-        save.save(world).unwrap();
         Self::on_enter(world);
     }
 
@@ -90,8 +96,8 @@ impl ShopPlugin {
         Self::clear_showcase(world);
 
         let left = Self::active_team(world).unwrap();
-        let right = Ladder::current_level(world);
-        BattlePlugin::load_teams(left, right, world);
+        let (right, ind) = Ladder::current_level(world);
+        BattlePlugin::load_teams(left, right, Some(ind), world);
     }
 
     fn input(world: &mut World) {
