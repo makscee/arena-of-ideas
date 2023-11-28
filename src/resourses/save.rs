@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Serialize, Deserialize, Debug, Default)]
+#[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub struct Save {
     pub team: PackedTeam,
     pub ladder: Ladder,
@@ -33,5 +33,20 @@ impl Save {
         debug!("New ladder levels: {teams:#?}");
         self.ladder.teams.append(&mut teams);
         self
+    }
+
+    pub fn store_current(world: &mut World) -> Result<()> {
+        PersistentData::load(world)
+            .set_stored_save(Self::get(world)?)
+            .save(world)?;
+        Ok(())
+    }
+
+    pub fn load_stored(world: &mut World) -> Result<()> {
+        let save = PersistentData::load(world).stored_save;
+        world
+            .resource_mut::<PkvStore>()
+            .set("save", &save)
+            .map_err(|e| anyhow!("{}", e.to_string()))
     }
 }

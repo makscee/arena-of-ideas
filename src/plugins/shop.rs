@@ -85,6 +85,13 @@ impl ShopPlugin {
         if just_pressed(KeyCode::G, world) {
             Self::change_g(10, world).unwrap();
         }
+        if just_pressed(KeyCode::S, world) {
+            Save::store_current(world).unwrap();
+        }
+        if just_pressed(KeyCode::L, world) {
+            Save::load_stored(world).unwrap();
+            Self::on_enter(world);
+        }
     }
 
     fn fill_showcase(world: &mut World) {
@@ -250,7 +257,7 @@ impl ShopPlugin {
                 });
         }
         Area::new("level number")
-            .anchor(Align2::CENTER_TOP, [0.0, 20.0])
+            .anchor(Align2::CENTER_TOP, [-400.0, 20.0])
             .show(ctx, |ui| {
                 let current_level = data.next_level_num;
                 ui.label(

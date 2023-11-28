@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Serialize, Deserialize, Debug, TypeUuid, TypePath, Default)]
+#[derive(Serialize, Deserialize, Debug, TypeUuid, TypePath, Default, Clone)]
 #[uuid = "f3c66fac-ac86-4248-a84b-7b76e99a5b63"]
 pub struct Ladder {
     pub teams: Vec<PackedTeam>,

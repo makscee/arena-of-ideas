@@ -4,6 +4,7 @@ use super::*;
 pub struct PersistentData {
     pub last_state: Option<GameState>,
     pub hero_editor_data: HeroEditorData,
+    pub stored_save: Save,
 }
 
 const PERSISTENT_DATA_KEY: &str = "persistent_data";
@@ -29,6 +30,11 @@ impl PersistentData {
 
     pub fn set_hero_editor_data(mut self, data: HeroEditorData) -> Self {
         self.hero_editor_data = data;
+        self
+    }
+
+    pub fn set_stored_save(mut self, save: Save) -> Self {
+        self.stored_save = save;
         self
     }
 }
