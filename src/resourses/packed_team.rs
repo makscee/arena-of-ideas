@@ -78,5 +78,36 @@ impl PackedTeam {
     }
 }
 
+impl ToString for PackedTeam {
+    fn to_string(&self) -> String {
+        let mut result = String::with_capacity(30);
+        let mut i = 0;
+        while i < self.units.len() {
+            if !result.is_empty() {
+                result.push_str(", ");
+            }
+            let name = self.units[i].name.clone();
+            let statuses = self.units[i].statuses_string();
+            let mut count = 1;
+            for c in i + 1..self.units.len() {
+                count = c - i + 1;
+                if !self.units[c].name.eq(&name) || !self.units[c].statuses_string().eq(&statuses) {
+                    break;
+                }
+            }
+            if count > 1 {
+                result.push_str(&format!("{name} x{count}"));
+            } else {
+                result.push_str(&format!("{name}"));
+            }
+            if !statuses.is_empty() {
+                result.push_str(&format!(" with {statuses}"));
+            }
+            i += count;
+        }
+        result
+    }
+}
+
 #[derive(Component)]
 pub struct Team;

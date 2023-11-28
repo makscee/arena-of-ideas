@@ -204,4 +204,11 @@ impl PackedUnit {
                     .show_editor(editing_data, "trigger".to_owned(), ui, world);
             });
     }
+
+    pub fn statuses_string(&self) -> String {
+        self.statuses
+            .iter()
+            .map(|(name, charges)| format!("{name} ({charges})"))
+            .join(",")
+    }
 }

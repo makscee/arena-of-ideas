@@ -9,6 +9,7 @@ pub struct ShopData {
     pub next_team: PackedTeam,
     pub next_level_num: usize,
     pub phase: ShopPhase,
+    pub generated_levels: Vec<String>,
 }
 
 #[derive(Clone, PartialEq)]
@@ -39,9 +40,13 @@ impl ShopPlugin {
 
     fn on_enter(world: &mut World) {
         let save = Save::get(world).unwrap();
+        let mut generated_levels: Vec<String> = default();
         if Ladder::levels_left(world) == 0 {
             let teams =
                 RatingPlugin::generate_weakest_opponent(&Save::get(world).unwrap().team, 3, world);
+            for team in teams.iter() {
+                generated_levels.push(team.to_string());
+            }
             Save::get(world)
                 .unwrap()
                 .add_ladder_levels(teams)
@@ -68,6 +73,7 @@ impl ShopPlugin {
             next_team,
             next_level_num: next_level_num + 1,
             phase,
+            generated_levels,
         });
     }
 
@@ -309,6 +315,20 @@ impl ShopPlugin {
                     }
                 });
             });
+        if !data.generated_levels.is_empty() {
+            Window::new("3 new levels generated")
+                .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
+                .show(ctx, |ui| {
+                    ui.vertical_centered(|ui| {
+                        for line in data.generated_levels.iter() {
+                            ui.label(line);
+                        }
+                        if ui.button("Ok").clicked() {
+                            data.generated_levels.clear();
+                        }
+                    });
+                });
+        }
         world.insert_resource(data);
     }
 
