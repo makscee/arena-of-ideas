@@ -12,6 +12,9 @@ impl Plugin for UnitPlugin {
     }
 }
 
+#[derive(Resource, Debug)]
+pub struct ClosestSlot(usize, f32);
+
 impl UnitPlugin {
     pub fn get_unit_position(entity: Entity, world: &World) -> Result<Vec2> {
         VarState::get(entity, world)
@@ -33,6 +36,17 @@ impl UnitPlugin {
             Faction::Team => vec2(slot as f32 * -3.0 + 14.5, -3.0),
             Faction::Shop => vec2(slot as f32 * -3.0 + 9.5, 3.0),
         }
+    }
+
+    pub fn get_closest_slot(pos: Vec2, faction: Faction) -> (usize, f32) {
+        let mut closest_slot = (0, f32::MAX);
+        for slot in 0..10 {
+            let dist = (Self::get_slot_position(faction, slot).x - pos.x).abs();
+            if dist < closest_slot.1 {
+                closest_slot = (slot, dist);
+            }
+        }
+        closest_slot
     }
 
     pub fn get_entity_slot_position(entity: Entity, world: &World) -> Result<Vec2> {
@@ -76,13 +90,20 @@ impl UnitPlugin {
     }
 
     pub fn fill_slot_gaps(faction: Faction, world: &mut World) {
-        for (slot, unit) in Self::collect_faction(faction, world)
+        Self::make_slot_gap(faction, i32::MAX, world);
+    }
+
+    pub fn make_slot_gap(faction: Faction, slot: i32, world: &mut World) {
+        let dragged = world.resource::<DraggedUnit>().0;
+        for (unit, ind) in Self::collect_faction(faction, world)
             .into_iter()
+            .filter(|u| dragged != Some(*u))
             .sorted_by_key(|x| VarState::get(*x, world).get_int(VarName::Slot).unwrap())
-            .enumerate()
+            .zip(1..)
             .collect_vec()
         {
-            VarState::get_mut(unit, world).init(VarName::Slot, VarValue::Int(slot as i32 + 1));
+            let slot = ind + if ind >= slot { 1 } else { 0 };
+            VarState::get_mut(unit, world).init(VarName::Slot, VarValue::Int(slot));
         }
     }
 
@@ -197,12 +218,10 @@ impl UnitPlugin {
     }
 
     pub fn hover_unit(event: Listener<Pointer<Over>>, mut hovered: ResMut<HoveredUnit>) {
-        debug!("Hover unit start {:?}", event.target);
         hovered.0 = Some(event.target);
     }
 
-    pub fn unhover_unit(event: Listener<Pointer<Out>>, mut hovered: ResMut<HoveredUnit>) {
-        debug!("Hover unit end {:?}", event.target);
+    pub fn unhover_unit(_event: Listener<Pointer<Out>>, mut hovered: ResMut<HoveredUnit>) {
         hovered.0 = None;
     }
 
@@ -217,88 +236,68 @@ impl UnitPlugin {
         for entity in team.iter_mut() {
             commands.entity(entity).insert(Pickable::IGNORE);
         }
+        commands.insert_resource(ClosestSlot(0, f32::MAX));
     }
 
     pub fn drag_unit_end(
         event: Listener<Pointer<DragEnd>>,
         mut dragged: ResMut<DraggedUnit>,
+        closest_slot: Res<ClosestSlot>,
+        timer: Res<GameTimer>,
         mut team: Query<Entity, With<ActiveTeam>>,
+        mut state: Query<&mut VarState>,
         mut commands: Commands,
     ) {
         debug!("Drag unit end {:?}", event.target);
+        let unit = event.target;
         dragged.0 = None;
         for entity in team.iter_mut() {
             commands.entity(entity).insert(Pickable::default());
         }
+        let mut state = state.get_mut(unit).unwrap();
+        state.insert_simple(
+            VarName::Slot,
+            VarValue::Int(closest_slot.0 as i32),
+            timer.insert_head(),
+        );
+        commands.add(|world: &mut World| {
+            Self::fill_slot_gaps(Faction::Team, world);
+            Self::translate_to_slots(world);
+        });
     }
 
     pub fn drag_unit(
         event: Listener<Pointer<Drag>>,
         mut query_transform: Query<&mut Transform>,
+        mut query_state: Query<&mut VarState>,
         query_camera: Query<(&Camera, &GlobalTransform)>,
+        dragged: Res<DraggedUnit>,
+        mut commands: Commands,
     ) {
-        let entity = event.target;
-        if let Ok(mut transform) = query_transform.get_mut(entity) {
-            let (camera, camera_transform) = query_camera.single();
-            let delta = screen_to_world(event.delta, camera, camera_transform)
-                - screen_to_world(Vec2::ZERO, camera, camera_transform);
-            transform.translation += delta.extend(0.0);
-        }
-    }
-
-    pub fn drop_unit(
-        event: Listener<Pointer<Drop>>,
-        mut unit_query: Query<&mut VarState, (With<ActiveTeam>, Without<Team>, Without<Slot>)>,
-        slot_query: Query<&VarState, With<Slot>>,
-        team_query: Query<(&VarState, &Children), With<Team>>,
-        timer: Res<GameTimer>,
-    ) {
-        let unit = event.dropped;
-        if !unit_query.contains(unit) {
-            debug!("Non unit dropped {unit:?}");
-            return;
-        }
-        let (slot, position) = {
-            let slot = slot_query.get(event.target).unwrap();
-            (
-                slot.get_int(VarName::Slot).unwrap(),
-                slot.get_vec2(VarName::Position).unwrap(),
-            )
-        };
-        let team_units = team_query
-            .iter()
-            .find(|(state, _)| {
-                state
-                    .get_faction(VarName::Faction)
-                    .unwrap()
-                    .eq(&Faction::Team)
-            })
-            .unwrap()
-            .1
-            .to_vec();
-        let prev_slot = unit_query
-            .get_mut(unit)
-            .unwrap()
-            .get_value_last(VarName::Slot)
-            .unwrap()
-            .get_int()
-            .unwrap();
-        let prev_pos = UnitPlugin::get_slot_position(Faction::Team, prev_slot as usize);
-        let t = timer.insert_head();
-        for unit in team_units {
-            if let Ok(mut state) = unit_query.get_mut(unit) {
-                if slot == state.get_int(VarName::Slot).unwrap() {
-                    state
-                        .insert_simple(VarName::Slot, VarValue::Int(prev_slot), t)
-                        .insert_simple(VarName::Position, VarValue::Vec2(prev_pos), t);
-                }
+        if let Some(entity) = dragged.0 {
+            if let Ok(mut transform) = query_transform.get_mut(entity) {
+                let (camera, camera_transform) = query_camera.single();
+                let delta = screen_to_world(event.delta, camera, camera_transform)
+                    - screen_to_world(Vec2::ZERO, camera, camera_transform);
+                transform.translation += delta.extend(0.0);
+                query_state.get_mut(entity).unwrap().init(
+                    VarName::Position,
+                    VarValue::Vec2(transform.translation.xy()),
+                );
             }
+            commands.add(|world: &mut World| {
+                if let Some(cursor_pos) = CameraPlugin::cursor_world_pos(world) {
+                    if let Some(prev_closest) = world.get_resource::<ClosestSlot>() {
+                        let closest_slot = Self::get_closest_slot(cursor_pos, Faction::Team);
+                        if prev_closest.0 != closest_slot.0 {
+                            Self::make_slot_gap(Faction::Team, closest_slot.0 as i32, world);
+                            Self::translate_to_slots(world);
+                            world.insert_resource(ClosestSlot(closest_slot.0, closest_slot.1));
+                        }
+                    }
+                }
+            });
         }
-        unit_query
-            .get_mut(unit)
-            .unwrap()
-            .insert_simple(VarName::Slot, VarValue::Int(slot), t)
-            .insert_simple(VarName::Position, VarValue::Vec2(position), t);
     }
 
     fn ui(world: &mut World) {
@@ -378,11 +377,7 @@ impl UnitPlugin {
         state.init(VarName::Slot, VarValue::Int(slot as i32));
         state.attach(rep, world);
         world.get_mut::<Transform>(rep).unwrap().translation.z -= 100.0;
-        world
-            .entity_mut(rep)
-            .insert(Slot)
-            .insert((RaycastPickTarget::default(), PickableBundle::default()))
-            .insert(On::<Pointer<Drop>>::run(Self::drop_unit));
+        world.entity_mut(rep).insert(Slot);
         rep
     }
 }

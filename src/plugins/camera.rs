@@ -23,6 +23,19 @@ pub struct CameraData {
 const SCALE_CHANGE_SPEED: f32 = 3.0;
 
 impl CameraPlugin {
+    pub fn cursor_world_pos(world: &mut World) -> Option<Vec2> {
+        if let Some(cursor_pos) = cursor_pos(world) {
+            let cam = world.resource::<CameraData>().entity;
+            Some(screen_to_world(
+                cursor_pos,
+                world.get::<Camera>(cam).unwrap(),
+                world.get::<GlobalTransform>(cam).unwrap(),
+            ))
+        } else {
+            None
+        }
+    }
+
     fn respawn_camera(mut commands: Commands, data: Option<ResMut<CameraData>>) {
         let mut camera = Camera2dBundle::default();
         camera.projection.scaling_mode = ScalingMode::FixedVertical(15.0);
