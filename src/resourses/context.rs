@@ -4,6 +4,7 @@ use super::*;
 #[derive(Debug, Clone, Default)]
 pub struct Context {
     pub layers: Vec<ContextLayer>,
+    pub order: usize,
 }
 
 #[derive(Debug, Clone, AsRefStr)]
@@ -64,12 +65,13 @@ impl ContextLayer {
 
 impl Context {
     pub fn new_empty() -> Self {
-        Self { layers: default() }
+        Self { ..default() }
     }
 
     pub fn new_named(name: String) -> Self {
         Self {
             layers: vec![ContextLayer::Text(name)],
+            ..default()
         }
     }
 
@@ -194,6 +196,11 @@ impl Context {
 
     pub fn take(&mut self) -> Self {
         mem::take(self)
+    }
+
+    pub fn incr_order(&mut self) -> &mut Self {
+        self.order += 1;
+        self
     }
 }
 

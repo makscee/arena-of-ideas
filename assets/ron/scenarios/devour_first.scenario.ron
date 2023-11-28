@@ -10,12 +10,14 @@
                         Faction,
                         OppositeFaction,
                         WithTarget(
-                            SlotUnit(Int(1)),
+                            SlotUnit(
+                                Int(1),
+                            ),
                             UseAbility(
                                 "Devour",
                             ),
                         ),
-                    )
+                    ),
                 ),
             ),
         ],

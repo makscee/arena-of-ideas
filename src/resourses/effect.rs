@@ -96,7 +96,7 @@ impl Effect {
             Effect::Noop => {}
             Effect::UseAbility(ability) => {
                 let effect = Pools::get_ability(&ability, world).effect.clone();
-                ActionPlugin::push_front(effect, context.clone(), world);
+                ActionCluster::get(world).push_action_front(effect, context.clone());
                 Pools::get_vfx("text", world)
                     .clone()
                     .set_var(
@@ -144,17 +144,15 @@ impl Effect {
             }
             Effect::List(list) => {
                 for effect in list {
-                    ActionPlugin::push_front(effect.deref().clone(), context.clone(), world);
+                    ActionCluster::get(world)
+                        .push_action_front(effect.deref().clone(), context.clone());
                 }
             }
             Effect::AoeFaction(faction, effect) => {
                 for unit in UnitPlugin::collect_faction(faction.get_faction(context, world)?, world)
                 {
-                    ActionPlugin::push_front(
-                        effect.deref().clone(),
-                        context.clone().set_target(unit, world).take(),
-                        world,
-                    );
+                    let context = context.clone().set_target(unit, world).take();
+                    ActionCluster::get(world).push_action_front(effect.deref().clone(), context);
                 }
             }
             Effect::Text(text) => {
@@ -186,27 +184,24 @@ impl Effect {
                     )
                     .unpack(world)?;
             }
-            Effect::WithTarget(target, effect) => ActionPlugin::push_front(
-                effect.deref().clone(),
-                context
+            Effect::WithTarget(target, effect) => {
+                let context = context
                     .set_target(target.get_entity(context, world)?, world)
-                    .clone(),
-                world,
-            ),
-            Effect::WithOwner(owner, effect) => ActionPlugin::push_front(
-                effect.deref().clone(),
-                context
-                    .set_target(owner.get_entity(context, world)?, world)
-                    .clone(),
-                world,
-            ),
-            Effect::WithVar(var, value, effect) => ActionPlugin::push_front(
-                effect.deref().clone(),
-                context
+                    .clone();
+                ActionCluster::get(world).push_action_front(effect.deref().clone(), context);
+            }
+            Effect::WithOwner(owner, effect) => {
+                let context = context
+                    .set_owner(owner.get_entity(context, world)?, world)
+                    .clone();
+                ActionCluster::get(world).push_action_front(effect.deref().clone(), context);
+            }
+            Effect::WithVar(var, value, effect) => {
+                let context = context
                     .set_var(*var, value.get_value(context, world)?)
-                    .clone(),
-                world,
-            ),
+                    .clone();
+                ActionCluster::get(world).push_action_front(effect.deref().clone(), context);
+            }
             Effect::FullCopy => {
                 let owner = context.owner();
                 let target = context.target();

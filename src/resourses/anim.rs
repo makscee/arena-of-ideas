@@ -21,20 +21,23 @@ fn default_zero_f32_e() -> Expression {
 }
 
 impl Anim {
-    pub fn apply(self, context: &Context, world: &mut World) -> Result<()> {
+    pub fn apply(
+        self,
+        timeframe: Option<f32>,
+        mut context: Context,
+        world: &mut World,
+    ) -> Result<()> {
         match self {
             Anim::Sequence(list) => {
                 for anim in list {
-                    anim.apply(context, world)?;
+                    anim.apply(timeframe, context.clone(), world)?;
+                    context.incr_order();
                 }
             }
             Anim::Run(list) => {
-                start_batch(world);
                 for anim in list {
-                    to_batch_start(world);
-                    anim.apply(context, world)?;
+                    anim.apply(timeframe, context.clone(), world)?;
                 }
-                end_batch(world);
             }
             Anim::Change {
                 var,
@@ -43,16 +46,21 @@ impl Anim {
                 value,
                 tween,
             } => {
-                let entity = context.owner();
-                let duration = duration.get_float(context, world)?;
-                let value = value.get_value(context, world)?;
+                let factor = timeframe.unwrap_or(1.0);
+                let duration = duration.get_float(&context, world)? * factor;
+                let value = value.get_value(&context, world)?;
                 let change = Change {
-                    t,
+                    t: factor * t,
                     duration,
                     tween,
                     value,
                 };
-                VarState::push_back(entity, var, change, world);
+                ActionCluster::get(world).push_change(
+                    var,
+                    change,
+                    timeframe.unwrap_or_default(),
+                    context,
+                );
             }
         }
         Ok(())

@@ -401,20 +401,17 @@ impl OfferProduct {
         match self {
             OfferProduct::Unit => ShopPlugin::buy_unit(entity, world),
             OfferProduct::Status { name, charges } => {
-                ActionPlugin::push_back_cluster(default(), world);
                 for unit in UnitPlugin::collect_faction(Faction::Team, world)
                     .into_iter()
                     .rev()
                 {
-                    ActionPlugin::push_back(
-                        Effect::AddStatus(name.clone()),
-                        Context::from_target(unit, world)
-                            .set_var(VarName::Charges, VarValue::Int(*charges))
-                            .take(),
-                        world,
-                    );
+                    let context = Context::from_target(unit, world)
+                        .set_var(VarName::Charges, VarValue::Int(*charges))
+                        .take();
+                    ActionCluster::get(world)
+                        .push_action_back(Effect::AddStatus(name.clone()), context);
                 }
-                ActionPlugin::spin(0.0, 0.2, world);
+                ActionPlugin::spin(0.2, world);
                 world.entity_mut(entity).despawn_recursive();
                 Ok(())
             }

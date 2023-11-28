@@ -85,8 +85,7 @@ impl Trigger {
             | Trigger::TurnEnd(effect)
             | Trigger::BeforeStrike(effect)
             | Trigger::AnyDeath(effect) => {
-                ActionPlugin::push_back_cluster(default(), world);
-                ActionPlugin::push_back(effect, context, world);
+                ActionPlugin::new_cluster(effect, context, world);
             }
             Trigger::AllyDeath(effect) => {
                 let dead = match event {
@@ -95,8 +94,7 @@ impl Trigger {
                 };
                 let owner = get_parent(status, world);
                 if UnitPlugin::get_faction(dead, world).eq(&UnitPlugin::get_faction(owner, world)) {
-                    ActionPlugin::push_back_cluster(default(), world);
-                    ActionPlugin::push_back(effect, context, world);
+                    ActionPlugin::new_cluster(effect, context, world);
                 }
             }
             Trigger::BeforeDeath(effect) => {
@@ -106,8 +104,7 @@ impl Trigger {
                 };
                 let owner = get_parent(status, world);
                 if dead.eq(&owner) {
-                    ActionPlugin::push_back_cluster(default(), world);
-                    ActionPlugin::push_back(effect, context, world);
+                    ActionPlugin::new_cluster(effect, context, world);
                 }
             }
             Trigger::AfterKill(effect) => {
@@ -116,8 +113,7 @@ impl Trigger {
                     _ => panic!(),
                 };
                 context.set_target(target, world);
-                ActionPlugin::push_back_cluster(default(), world);
-                ActionPlugin::push_back(effect, context, world);
+                ActionPlugin::new_cluster(effect, context, world);
             }
             Trigger::ChangeVar(_, _) | Trigger::List(_) | Trigger::Noop => {
                 panic!("Trigger {self} can not be fired")

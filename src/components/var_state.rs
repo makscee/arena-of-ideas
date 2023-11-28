@@ -175,13 +175,6 @@ impl VarState {
             Err(anyhow!("Var {var} was not found"))
         }
     }
-    pub fn duration(&self) -> f32 {
-        self.history
-            .values()
-            .map(|x| x.duration())
-            .max_by(|x, y| x.total_cmp(y))
-            .unwrap_or_default()
-    }
 }
 
 impl History {
@@ -218,12 +211,6 @@ impl History {
             cur_change.duration,
         )
     }
-    pub fn duration(&self) -> f32 {
-        self.0
-            .last()
-            .map(|x| x.total_duration())
-            .unwrap_or_default()
-    }
     pub fn get_last(&self) -> Option<VarValue> {
         self.0.last().and_then(|x| Some(x.value.clone()))
     }
@@ -250,8 +237,10 @@ impl Change {
         self.t = t;
         self
     }
-    pub fn total_duration(&self) -> f32 {
-        self.t + self.duration
+    pub fn adjust_time(mut self, factor: f32) -> Self {
+        self.t *= factor;
+        self.duration *= factor;
+        self
     }
 }
 

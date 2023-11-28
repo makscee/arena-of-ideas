@@ -12,105 +12,166 @@ impl Plugin for ActionPlugin {
 }
 
 impl ActionPlugin {
-    fn process_queue(action_delay: f32, world: &mut World) -> bool {
-        start_batch(world);
+    fn process_cluster(timeframe: f32, world: &mut World) -> bool {
         let mut processed = false;
-        while let Some(action) = world.resource_mut::<ActionQueue>().pop_action() {
-            to_batch_start(world);
+        let mut order = 0;
+        while let Some(mut action) = ActionCluster::get(world).pop_next_action() {
+            debug!("Invoke {action:?}");
+            action.context.order = order;
             action.invoke(world);
             processed = true;
-            GameTimer::get_mut(world)
-                .to_batch_start()
-                .advance_insert(action_delay)
-                .end_batch()
-                .start_batch();
+            order += 1;
         }
-        end_batch(world);
-        world.resource_mut::<ActionQueue>().remove_empty_front();
+        let cluster = ActionCluster::take(world).unwrap();
+        if !cluster.changes.is_empty() {
+            cluster.commit(timeframe, world);
+            processed = true;
+        }
+        processed
+    }
+
+    pub fn spin(timeframe: f32, world: &mut World) -> bool {
+        let mut processed = false;
+        while ActionQueue::start_next_cluster(world) {
+            start_batch(world);
+            if Self::process_cluster(timeframe, world) {
+                processed = true;
+                GameTimer::get_mut(world)
+                    .to_batch_start()
+                    .advance_insert(timeframe);
+            }
+            end_batch(world);
+        }
+
+        UnitPlugin::run_death_check(world);
+        UnitPlugin::fill_slot_gaps(Faction::Left, world);
+        UnitPlugin::fill_slot_gaps(Faction::Right, world);
         processed
     }
 
     fn process_checker(world: &mut World) {
-        Self::spin(0.1, 0.02, world);
+        Self::spin(0.1, world);
     }
 
-    pub fn spin(cluster_delay: f32, action_delay: f32, world: &mut World) -> bool {
-        let mut inserted = false;
-        let mut died = false;
-        loop {
-            let t = get_end(world);
-            if Self::process_queue(action_delay, world) {
-                died |= UnitPlugin::run_death_check(world);
-                let end = get_end(world);
-                if t != end {
-                    inserted = true;
-                    if cluster_delay > 0.0 {
-                        let insert = ((end / cluster_delay).floor() + 1.0) * cluster_delay;
-                        GameTimer::get_mut(world).insert_head_to(insert);
-                    }
-                }
-            } else {
-                break;
-            }
-        }
-        if died {
-            UnitPlugin::fill_slot_gaps(Faction::Left, world);
-            UnitPlugin::fill_slot_gaps(Faction::Right, world);
-        }
-        GameTimer::get_mut(world).end_batch();
-        inserted
-    }
-
-    pub fn push_back_cluster(cluster: ActionCluster, world: &mut World) {
-        world
-            .get_resource_mut::<ActionQueue>()
-            .unwrap()
-            .push_back(cluster);
-    }
-
-    pub fn push_back(effect: Effect, context: Context, world: &mut World) {
+    pub fn new_cluster(effect: Effect, context: Context, world: &mut World) {
         world
             .resource_mut::<ActionQueue>()
-            .last_mut()
-            .unwrap()
-            .actions
-            .push_back(Action { effect, context });
+            .0
+            .push_back(ActionCluster {
+                actions: [Action { effect, context }].into(),
+                changes: default(),
+            });
     }
 
-    pub fn push_front_cluster(cluster: ActionCluster, world: &mut World) {
-        world
-            .get_resource_mut::<ActionQueue>()
-            .unwrap()
-            .push_front(cluster);
-    }
-
-    pub fn push_front(effect: Effect, context: Context, world: &mut World) {
+    pub fn new_cluster_many(actions: Vec<Action>, world: &mut World) {
         world
             .resource_mut::<ActionQueue>()
-            .first_mut()
-            .unwrap()
-            .actions
-            .push_front(Action { effect, context });
+            .0
+            .push_back(ActionCluster {
+                actions: actions.into(),
+                changes: default(),
+            });
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Resource)]
 pub struct ActionCluster {
     pub actions: VecDeque<Action>,
+    pub changes: HashMap<usize, Vec<QueuedChange>>,
+}
+
+#[derive(Debug)]
+pub struct QueuedChange {
+    pub entity: Entity,
+    pub var: VarName,
+    pub change: Change,
+    pub timeframe: f32,
+}
+
+impl ActionCluster {
+    pub fn get(world: &mut World) -> Mut<Self> {
+        world.get_resource_or_insert_with(|| default())
+    }
+    pub fn take(world: &mut World) -> Option<Self> {
+        world.remove_resource::<ActionCluster>()
+    }
+
+    pub fn push_action_front(&mut self, effect: Effect, context: Context) -> &mut Self {
+        self.actions.push_front(Action { effect, context });
+        self
+    }
+
+    pub fn push_action_back(&mut self, effect: Effect, context: Context) -> &mut Self {
+        self.actions.push_back(Action { effect, context });
+        self
+    }
+
+    pub fn pop_next_action(&mut self) -> Option<Action> {
+        self.actions.pop_front()
+    }
+
+    /// Spread changes according to order trying to fit within timeframe
+    pub fn commit(mut self, timeframe: f32, world: &mut World) {
+        if !self.actions.is_empty() {
+            panic!("All actions should be processed before commit");
+        }
+        let total_duration: f32 = self
+            .changes
+            .values()
+            .map(|c| {
+                c.iter()
+                    .map(|c| c.timeframe)
+                    .reduce(f32::max)
+                    .unwrap_or_default()
+            })
+            .sum();
+        let factor = (timeframe / total_duration).min(1.0);
+        for (_, changes) in self.changes.drain().sorted_by_key(|(c, _)| *c) {
+            start_batch(world);
+            let mut step = 0.0_f32;
+            for QueuedChange {
+                entity,
+                var,
+                change,
+                timeframe,
+            } in changes
+            {
+                step = step.max(timeframe);
+                let change = change.adjust_time(factor);
+                VarState::push_back(entity, var, change, world);
+                to_batch_start(world);
+            }
+            GameTimer::get_mut(world)
+                .to_batch_start()
+                .advance_insert(step)
+                .end_batch();
+        }
+    }
+
+    pub fn push_change(
+        &mut self,
+        var: VarName,
+        change: Change,
+        timeframe: f32,
+        context: Context,
+    ) -> &mut Self {
+        self.changes
+            .entry(context.order)
+            .or_default()
+            .push(QueuedChange {
+                entity: context.owner(),
+                var,
+                change,
+                timeframe,
+            });
+        self
+    }
 }
 
 #[derive(Debug)]
 pub struct Action {
     pub effect: Effect,
     pub context: Context,
-}
-
-impl ActionCluster {
-    pub fn single(context: Context, effect: Effect) -> Self {
-        Self {
-            actions: [Action { context, effect }].into(),
-        }
-    }
 }
 
 impl Action {
@@ -138,30 +199,17 @@ impl Action {
 pub struct ActionQueue(VecDeque<ActionCluster>);
 
 impl ActionQueue {
-    pub fn push_back(&mut self, action: ActionCluster) {
-        self.0.push_back(action)
-    }
-    pub fn push_front(&mut self, action: ActionCluster) {
-        self.0.push_front(action)
-    }
-    pub fn last_mut(&mut self) -> Option<&mut ActionCluster> {
-        self.0.back_mut()
-    }
-    pub fn first_mut(&mut self) -> Option<&mut ActionCluster> {
-        self.0.front_mut()
-    }
-    pub fn pop_action(&mut self) -> Option<Action> {
-        if let Some(action) = self.first_mut() {
-            action.actions.pop_front()
-        } else {
-            None
+    fn start_next_cluster(world: &mut World) -> bool {
+        let cluster = ActionCluster::get(world);
+        if !cluster.actions.is_empty() || !cluster.changes.is_empty() {
+            return true;
         }
-    }
-    pub fn remove_empty_front(&mut self) {
-        if let Some(front) = self.0.front() {
-            if front.actions.is_empty() {
-                self.0.pop_front();
-            }
+        let mut q = world.resource_mut::<ActionQueue>();
+        if let Some(cluster) = q.0.pop_front() {
+            world.insert_resource(cluster);
+            true
+        } else {
+            false
         }
     }
 }

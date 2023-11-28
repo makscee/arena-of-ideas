@@ -69,13 +69,13 @@ impl BattlePlugin {
         UnitPlugin::translate_to_slots(world);
         GameTimer::get_mut(world).advance_insert(bt * 2.0);
         Event::BattleStart.send(world);
-        ActionPlugin::spin(bt, bt * 0.1, world);
+        ActionPlugin::spin(bt, world);
         while let Some((left, right)) = Self::get_strikers(world) {
             Self::run_strike(left, right, bt, world);
             UnitPlugin::fill_slot_gaps(Faction::Left, world);
             UnitPlugin::fill_slot_gaps(Faction::Right, world);
         }
-        ActionPlugin::spin(bt, bt * 0.2, world);
+        ActionPlugin::spin(bt, world);
         Self::get_result(world)
     }
 
@@ -128,12 +128,12 @@ impl BattlePlugin {
         GameTimer::get_mut(world).start_batch();
         Self::strike(left, right, world);
         Self::after_strike(left, right, world);
-        ActionPlugin::spin(0.0, bt * 0.1, world);
+        ActionPlugin::spin(bt, world);
         Event::TurnEnd.send(world);
-        ActionPlugin::spin(0.0, bt * 0.1, world);
+        ActionPlugin::spin(bt, world);
         UnitPlugin::fill_slot_gaps(Faction::Left, world);
         UnitPlugin::fill_slot_gaps(Faction::Right, world);
-        ActionPlugin::spin(bt, 0.0, world);
+        ActionPlugin::spin(bt, world);
         GameTimer::get_mut(world).advance_insert(bt).end_batch();
     }
 
@@ -143,7 +143,7 @@ impl BattlePlugin {
         Event::TurnStart.send(world);
         Event::BeforeStrike(left).send(world);
         Event::BeforeStrike(right).send(world);
-        ActionPlugin::spin(0.0, 0.0, world);
+        ActionPlugin::spin(bt, world);
         if Self::stricker_death_check(left, right, world) {
             return;
         }
@@ -155,8 +155,10 @@ impl BattlePlugin {
                 .get(AnimationType::BeforeStrike)
                 .clone()
                 .apply(
-                    &Context::from_owner(caster, world)
-                        .set_var(VarName::Direction, VarValue::Float(dir)),
+                    None,
+                    Context::from_owner(caster, world)
+                        .set_var(VarName::Direction, VarValue::Float(dir))
+                        .take(),
                     world,
                 )
                 .unwrap();
@@ -167,7 +169,7 @@ impl BattlePlugin {
     fn strike(left: Entity, right: Entity, world: &mut World) {
         debug!("Strike {left:?} {right:?}");
         let units = vec![(left, right), (right, left)];
-        ActionPlugin::push_back_cluster(default(), world);
+        let mut actions: Vec<Action> = default();
         for (caster, target) in units {
             GameTimer::get_mut(world).to_batch_start();
             let context = mem::take(
@@ -176,9 +178,10 @@ impl BattlePlugin {
                     .set_owner(caster, world),
             );
             let effect = Effect::Damage(None);
-            ActionPlugin::push_back(effect, context, world);
+            actions.push(Action { effect, context });
         }
-        ActionPlugin::spin(0.0, 0.0, world);
+        ActionPlugin::new_cluster_many(actions, world);
+        ActionPlugin::spin(1.0, world);
     }
 
     fn after_strike(left: Entity, right: Entity, world: &mut World) {
@@ -190,7 +193,7 @@ impl BattlePlugin {
             Options::get_animations(world)
                 .get(AnimationType::AfterStrike)
                 .clone()
-                .apply(&Context::from_owner(caster, world), world)
+                .apply(None, Context::from_owner(caster, world), world)
                 .unwrap();
         }
         end_batch(world);
