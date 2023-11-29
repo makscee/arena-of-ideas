@@ -110,7 +110,7 @@ pub struct QueuedChange {
 }
 
 #[derive(Debug)]
-enum ChangeType {
+pub enum ChangeType {
     Var { var: VarName, change: VarChange },
     Birth,
 }
@@ -122,14 +122,17 @@ impl ChangeType {
                 VarState::push_back(entity, var, change, world);
             }
             ChangeType::Birth => {
-                VarState::get_mut(entity, world).birth = get_insert_head(world);
+                let ts = get_insert_head(world);
+                if let Ok(mut s) = VarState::try_get_mut(entity, world) {
+                    s.birth = ts;
+                }
             }
         }
     }
 
     fn adust_time(&mut self, factor: f32) -> &mut Self {
         match self {
-            ChangeType::Var { var, change } => {
+            ChangeType::Var { change, .. } => {
                 change.adjust_time(factor);
             }
             _ => {}
@@ -139,7 +142,7 @@ impl ChangeType {
 
     fn timeframe(&self) -> f32 {
         match self {
-            ChangeType::Var { var, change } => change.timeframe,
+            ChangeType::Var { change, .. } => change.timeframe,
             ChangeType::Birth => 0.0,
         }
     }

@@ -128,13 +128,14 @@ impl UnitPlugin {
     }
 
     pub fn translate_unit(entity: Entity, position: Vec2, world: &mut World) {
-        VarState::push_back(
+        ActionCluster::current(world).push_change(
             entity,
-            VarName::Position,
-            VarChange::new(VarValue::Vec2(position))
-                .set_duration(0.3)
-                .set_tween(Tween::QuartOut),
-            world,
+            ChangeType::Var {
+                var: VarName::Position,
+                change: VarChange::new(VarValue::Vec2(position))
+                    .set_duration(0.3)
+                    .set_tween(Tween::QuartOut),
+            },
         );
     }
 
@@ -208,13 +209,10 @@ impl UnitPlugin {
             HashSet::from([Faction::Left, Faction::Right, Faction::Team, Faction::Shop]),
             world,
         );
-        start_batch(world);
         for (unit, faction) in units.into_iter() {
             let slot = VarState::get(unit, world).get_int(VarName::Slot).unwrap() as usize;
-            to_batch_start(world);
             UnitPlugin::translate_unit(unit, UnitPlugin::get_slot_position(faction, slot), world);
         }
-        end_batch(world);
     }
 
     pub fn hover_unit(event: Listener<Pointer<Over>>, mut hovered: ResMut<HoveredUnit>) {
@@ -266,37 +264,22 @@ impl UnitPlugin {
         });
     }
 
-    pub fn drag_unit(
-        event: Listener<Pointer<Drag>>,
-        mut query_transform: Query<&mut Transform>,
-        mut query_state: Query<&mut VarState>,
-        query_camera: Query<(&Camera, &GlobalTransform)>,
-        dragged: Res<DraggedUnit>,
-        mut commands: Commands,
-    ) {
-        if let Some(entity) = dragged.0 {
-            if let Ok(mut transform) = query_transform.get_mut(entity) {
-                let (camera, camera_transform) = query_camera.single();
-                let delta = screen_to_world(event.delta, camera, camera_transform)
-                    - screen_to_world(Vec2::ZERO, camera, camera_transform);
-                transform.translation += delta.extend(0.0);
-                query_state.get_mut(entity).unwrap().init(
-                    VarName::Position,
-                    VarValue::Vec2(transform.translation.xy()),
-                );
-            }
-            commands.add(|world: &mut World| {
-                if let Some(cursor_pos) = CameraPlugin::cursor_world_pos(world) {
-                    if let Some(prev_closest) = world.get_resource::<ClosestSlot>() {
-                        let closest_slot = Self::get_closest_slot(cursor_pos, Faction::Team);
-                        if prev_closest.0 != closest_slot.0 {
-                            Self::make_slot_gap(Faction::Team, closest_slot.0 as i32, world);
-                            Self::translate_to_slots(world);
-                            world.insert_resource(ClosestSlot(closest_slot.0, closest_slot.1));
-                        }
+    pub fn drag_unit(world: &mut World) {
+        if let Some(dragged) = world.resource::<DraggedUnit>().0 {
+            if let Some(cursor_pos) = CameraPlugin::cursor_world_pos(world) {
+                let mut transform = world.get_mut::<Transform>(dragged).unwrap();
+                transform.translation = cursor_pos.extend(0.0);
+                VarState::get_mut(dragged, world)
+                    .init(VarName::Position, VarValue::Vec2(cursor_pos));
+                if let Some(prev_closest) = world.get_resource::<ClosestSlot>() {
+                    let closest_slot = Self::get_closest_slot(cursor_pos, Faction::Team);
+                    if prev_closest.0 != closest_slot.0 {
+                        Self::make_slot_gap(Faction::Team, closest_slot.0 as i32, world);
+                        Self::translate_to_slots(world);
+                        world.insert_resource(ClosestSlot(closest_slot.0, closest_slot.1));
                     }
                 }
-            });
+            }
         }
     }
 

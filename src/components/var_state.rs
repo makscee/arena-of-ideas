@@ -87,7 +87,11 @@ impl VarState {
 
     pub fn push_back(entity: Entity, var: VarName, mut change: VarChange, world: &mut World) {
         let head = get_insert_head(world);
-        let birth = Self::get(entity, world).birth;
+        let birth = if let Ok(state) = Self::try_get(entity, world) {
+            state.birth
+        } else {
+            return;
+        };
         change.t += head - birth;
         GameTimer::get_mut(world).advance_insert(change.duration);
         Self::get_mut(entity, world)

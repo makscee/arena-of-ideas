@@ -39,6 +39,7 @@ impl ShopPlugin {
     pub const REROLL_PRICE: i32 = 1;
 
     fn on_enter(world: &mut World) {
+        GameTimer::get_mut(world).reset();
         let save = Save::get(world).unwrap();
         let mut generated_levels: Vec<String> = default();
         if Ladder::levels_left(world) == 0 {
@@ -311,7 +312,6 @@ impl ShopPlugin {
                     .min_size(egui::vec2(100.0, 0.0));
                     if ui.add(btn).clicked() {
                         GameState::change(GameState::Battle, world);
-                        GameTimer::get_mut(world).reset();
                     }
                 });
             });
