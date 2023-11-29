@@ -21,7 +21,13 @@ pub enum ShopPhase {
 impl Plugin for ShopPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(GameState::Shop), Self::on_enter)
-            .add_systems(OnExit(GameState::Shop), Self::on_leave)
+            .add_systems(
+                OnTransition {
+                    from: GameState::Shop,
+                    to: GameState::Battle,
+                },
+                Self::on_battle_transition,
+            )
             .add_systems(PostUpdate, Self::input.run_if(in_state(GameState::Shop)))
             .add_systems(Update, (Self::ui.run_if(in_state(GameState::Shop)),));
     }
@@ -72,7 +78,7 @@ impl ShopPlugin {
         });
     }
 
-    fn on_leave(world: &mut World) {
+    fn on_battle_transition(world: &mut World) {
         Self::pack_active_team(world).unwrap();
         UnitPlugin::despawn_all_teams(world);
         Self::clear_showcase(world);
@@ -333,6 +339,15 @@ impl ShopPlugin {
                     });
                 });
         }
+        Area::new("exit")
+            .anchor(Align2::LEFT_TOP, [20.0, 20.0])
+            .show(ctx, |ui| {
+                if ui.button(RichText::new("Exit").size(25.0)).clicked() {
+                    GameState::MainMenuClean.change(world);
+                    UnitPlugin::despawn_all_teams(world);
+                    Self::clear_showcase(world);
+                }
+            });
         world.insert_resource(data);
     }
 

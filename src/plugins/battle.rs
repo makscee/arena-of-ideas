@@ -32,7 +32,10 @@ impl BattlePlugin {
                 sd.save(world).unwrap();
             }
             BattleResult::Right(_) => {
-                Save::default().save(world).unwrap();
+                let mut save = Save::get(world).unwrap();
+                save.team = default();
+                save.current_level = 0;
+                save.save(world).unwrap();
                 let mut pd = PersistentData::load(world);
                 if pd.last_state == Some(GameState::Shop) {
                     pd.last_state = None;

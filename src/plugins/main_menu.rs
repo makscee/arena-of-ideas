@@ -54,7 +54,18 @@ impl MainMenuPlugin {
                         GameState::change(GameState::Shop, world);
                     }
                     let has_old = !save.ladder.teams.is_empty();
-                    let btn = Self::menu_button("Old Ladder".to_owned(), ui);
+                    let btn = Self::menu_button(
+                        if has_old {
+                            format!(
+                                "Old Ladder: {} levels",
+                                save.ladder.teams.len()
+                                    + Options::get_initial_ladder(world).teams.len()
+                            )
+                        } else {
+                            "Old Ladder".to_owned()
+                        },
+                        ui,
+                    );
                     if ui.add_enabled(has_old, btn).clicked() {
                         save.current_level = 0;
                         save.team = default();

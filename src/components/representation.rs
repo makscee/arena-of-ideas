@@ -218,7 +218,7 @@ impl RepresentationMaterial {
 
     pub fn update(&self, entity: Entity, world: &mut World) {
         let t = get_play_head(world);
-        if let Ok(state) = VarState::try_find(entity, world) {
+        if let Ok(state) = VarState::try_get(entity, world) {
             let visible = state.get_bool_at(VarName::Visible, t).unwrap_or(true);
             let visible = visible && state.birth < t;
             Self::set_visible(entity, visible, world);

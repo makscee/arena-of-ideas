@@ -1,0 +1,42 @@
+#![enable(implicit_some)]
+(
+    left: (
+        units: [
+            (
+                hp: 1,
+                atk: 1,
+                trigger: BattleStart(
+                    WithTarget(
+                        RandomAdjacentUnit,
+                        UseAbility(
+                            "Devour",
+                        ),
+                    ),
+                ),
+            ),
+            (
+                hp: 1,
+                atk: 1,
+                trigger: BattleStart(
+                    WithTarget(
+                        RandomAdjacentUnit,
+                        UseAbility(
+                            "Devour",
+                        ),
+                    ),
+                ),
+            ),
+        ],
+    ),
+    right: (units: [(hp: 2, atk: 2)]),
+    condition: And(
+        Equals(
+            FactionCount(Faction(Left)),
+            Int(0),
+        ),
+        Equals(
+            FactionCount(Faction(Right)),
+            Int(0),
+        ),
+    ),
+)

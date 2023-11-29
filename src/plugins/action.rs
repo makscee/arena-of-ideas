@@ -256,6 +256,9 @@ impl Action {
             effect,
             mut context,
         } = self;
+        if UnitPlugin::is_dead(context.owner(), world) {
+            return;
+        }
         match effect.invoke(&mut context, world) {
             Ok(_) => {
                 for entity in world

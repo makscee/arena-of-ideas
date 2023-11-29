@@ -19,7 +19,9 @@
             description: "Give +1 HP",
             effect: List(
                 [
-                    AddStatus("Vitality"),
+                    AddStatus(
+                        "Vitality",
+                    ),
                     Vfx("apply_status"),
                 ],
             ),

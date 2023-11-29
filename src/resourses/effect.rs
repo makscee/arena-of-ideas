@@ -45,7 +45,15 @@ impl Effect {
                 debug!("Value after map {value:?}");
                 let value = value.get_int()?;
                 if value > 0 {
-                    VarState::change_int(target, VarName::Hp, -value, world)?;
+                    let new_hp = VarState::get(target, world).get_int(VarName::Hp)? - value;
+                    {
+                        let context = context.clone().set_owner(target, world).take();
+                        ActionCluster::current(world).push_var_change(
+                            VarName::Hp,
+                            VarChange::new(VarValue::Int(new_hp)),
+                            context,
+                        );
+                    }
                     VarState::push_back(
                         target,
                         VarName::LastAttacker,

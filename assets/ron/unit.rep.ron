@@ -47,9 +47,7 @@
                 color: Hex("#FBC02D"),
                 size: Vec2E(Float(0.3)),
             ),
-            mapping: {
-                Position: Vec2(-0.9, -0.9),
-            },
+            mapping: {Position: Vec2(-0.9, -0.9)},
             children: [
                 (
                     material: Text(
