@@ -86,7 +86,12 @@ impl Status {
                 if s.name.eq(status) {
                     VarState::change_int(entity, VarName::Charges, delta, world)?;
                     if VarState::get(entity, world).get_int(VarName::Charges)? <= 0 {
-                        world.entity_mut(entity).despawn_recursive();
+                        VarState::push_back(
+                            entity,
+                            VarName::Visible,
+                            VarChange::new(VarValue::Bool(false)),
+                            world,
+                        );
                     }
                     return Ok(entity);
                 }
@@ -108,6 +113,16 @@ impl Status {
             }
         }
         default()
+    }
+
+    pub fn filter_active_statuses(entities: Vec<Entity>, t: f32, world: &World) -> Vec<Entity> {
+        entities
+            .into_iter()
+            .filter(|entity| {
+                VarState::find_value(*entity, VarName::Charges, t, world)
+                    .is_ok_and(|x| x.get_int().unwrap() > 0)
+            })
+            .collect_vec()
     }
 
     pub fn collect_all_statuses(world: &mut World) -> Vec<Entity> {
@@ -159,28 +174,55 @@ impl Status {
         }
     }
 
-    pub fn apply_delta(entity: Entity, world: &mut World) {
-        if let Some(parent) = world.get::<Parent>(entity) {
+    pub fn refresh_entity_mapping(status: Entity, world: &mut World) {
+        if let Some(parent) = world.get::<Parent>(status) {
             let parent = parent.get();
-            let status = world.get::<Status>(entity).unwrap();
-            for trigger in status.trigger.collect_delta_triggers() {
+            let s = world.get::<Status>(status).unwrap();
+            for trigger in s.trigger.collect_delta_triggers() {
                 match &trigger {
-                    Trigger::ChangeVar(var, e) => {
+                    Trigger::DeltaVar(var, e) => {
                         let e = e.clone();
                         let var = *var;
                         if let Ok(delta) = e.get_value(
-                            &Context::from_owner(parent, world).set_status(entity, world),
+                            &Context::from_owner(parent, world).set_status(status, world),
                             world,
                         ) {
                             let t = get_insert_head(world);
-                            let mut state_delta = world.get_mut::<VarStateDelta>(entity).unwrap();
-                            if state_delta.need_update(var, &delta) {
-                                state_delta.state.insert_simple(var, delta, t);
+                            let mut state_mapping = world.get_mut::<VarStateDelta>(status).unwrap();
+                            if state_mapping.need_update(var, &delta) {
+                                state_mapping.state.insert_simple(var, delta, t);
                             }
                         }
                     }
                     _ => {}
                 }
+            }
+        }
+    }
+
+    pub fn map_var(
+        status: Entity,
+        var: VarName,
+        value: &mut VarValue,
+        context: &Context,
+        world: &mut World,
+    ) {
+        let s = world.get::<Status>(status).unwrap();
+        for trigger in s.trigger.collect_map_triggers() {
+            debug!("trigger {trigger:?}");
+            match &trigger {
+                Trigger::MapVar(v, e) => {
+                    debug!("Map trigger {v} {e:?}");
+                    if !var.eq(v) {
+                        continue;
+                    }
+                    let e = e.clone();
+                    if let Ok(v) = e.get_value(context.clone().set_var(var, value.clone()), world) {
+                        debug!("Value mapped {value:?} into {v:?}");
+                        *value = v;
+                    }
+                }
+                _ => {}
             }
         }
     }

@@ -296,7 +296,8 @@ impl UnitPlugin {
                 show_description_panels(hovered, &description, world);
             }
             let t = get_play_head(world);
-            let statuses = Status::collect_entity_statuses(hovered, world)
+            let statuses = Status::collect_entity_statuses(hovered, world);
+            let statuses = Status::filter_active_statuses(statuses, t, world)
                 .into_iter()
                 .filter_map(|entity| {
                     let state = VarState::get(entity, world);
@@ -306,9 +307,9 @@ impl UnitPlugin {
                     if state.birth > t {
                         return None;
                     }
-                    let name = state.get_string(VarName::Name).unwrap();
-                    let description = state.get_string(VarName::Description).unwrap();
-                    let charges = state.get_int(VarName::Charges).unwrap();
+                    let name = state.get_string_at(VarName::Name, t).unwrap();
+                    let description = state.get_string_at(VarName::Description, t).unwrap();
+                    let charges = state.get_int_at(VarName::Charges, t).unwrap();
                     let color: Color32 = Pools::get_status_house(&name, world).color.clone().into();
                     Some((entity, name, description, color, charges))
                 })

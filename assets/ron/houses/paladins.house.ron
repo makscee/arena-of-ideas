@@ -1,0 +1,38 @@
+#![enable(implicit_some)]
+(
+    name: "Paladins",
+    color: ("#F06292"),
+    statuses: [
+        (
+            name: "Shield",
+            description: "Block next incoming damage",
+            trigger: List(
+                [
+                    MapVar(
+                        IncomingDamage,
+                        Int(0),
+                    ),
+                    AfterIncomingDamage(
+                        WithTarget(
+                            Owner,
+                            WithVar(
+                                Charges,
+                                Int(-1),
+                                AddStatus(
+                                    "Shield",
+                                ),
+                            ),
+                        ),
+                    ),
+                ],
+            ),
+        ),
+    ],
+    abilities: [
+        (
+            name: "Shield",
+            description: "Block next incoming damage",
+            effect: AddStatus("Shield"),
+        ),
+    ],
+)

@@ -2,8 +2,17 @@ use super::*;
 
 #[derive(Debug, Display)]
 pub enum Event {
+    IncomingDamage {
+        owner: Entity,
+        value: i32,
+    },
     DamageTaken {
         owner: Entity,
+        value: i32,
+    },
+    OutgoingDamage {
+        owner: Entity,
+        target: Entity,
         value: i32,
     },
     DamageDealt {
@@ -27,7 +36,7 @@ impl Event {
         debug!("Send event {self:?}");
         let mut context = Context::new_named(self.to_string());
         let statuses = match &self {
-            Event::DamageTaken { owner, value } => {
+            Event::DamageTaken { owner, value } | Event::IncomingDamage { owner, value } => {
                 context.set_var(VarName::Value, VarValue::Int(*value));
                 Status::collect_entity_statuses(*owner, world)
             }
@@ -39,7 +48,12 @@ impl Event {
                 context.set_target(*target, world);
                 Status::collect_entity_statuses(*owner, world)
             }
-            Event::DamageDealt {
+            Event::OutgoingDamage {
+                owner,
+                target,
+                value,
+            }
+            | Event::DamageDealt {
                 owner,
                 target,
                 value,
@@ -50,7 +64,28 @@ impl Event {
                 Status::collect_entity_statuses(*owner, world)
             }
         };
+        let statuses = Status::filter_active_statuses(statuses, get_insert_head(world), world);
         Status::notify(statuses, &self, &context, world);
+        self
+    }
+
+    pub fn map(self, value: &mut VarValue, world: &mut World) -> Self {
+        debug!("Map event {self:?}");
+        let (var, context, statuses) = match &self {
+            Event::IncomingDamage { owner, .. } => (
+                VarName::IncomingDamage,
+                Context::new_named(self.to_string())
+                    .set_owner(*owner, world)
+                    .take(),
+                Status::collect_entity_statuses(*owner, world),
+            ),
+            _ => panic!("Can't map {self}"),
+        };
+        let statuses = Status::filter_active_statuses(statuses, get_insert_head(world), world);
+        for status in statuses {
+            Status::map_var(status, var, value, &context, world);
+            debug!("Map {var} {value:?}");
+        }
         self
     }
 

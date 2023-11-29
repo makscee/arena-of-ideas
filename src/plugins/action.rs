@@ -263,7 +263,7 @@ impl Action {
                     .iter(world)
                     .collect_vec()
                 {
-                    Status::apply_delta(entity, world);
+                    Status::refresh_entity_mapping(entity, world);
                 }
             }
             Err(err) => error!("Effect process error {err}\n{effect}\n---\n{context}"),

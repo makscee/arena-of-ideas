@@ -6,10 +6,10 @@
         (
             name: "Strength",
             description: "+1 ATK",
-            trigger: ChangeVar(
-                Atk,
+            trigger: DeltaVar(
+                        Atk,
                 Context(Charges),
-            ),
+                    ),
         ),
     ],
     abilities: [

@@ -93,7 +93,7 @@ impl PackedUnit {
         .set_parent(entity);
         for (status, charges) in self.statuses.iter() {
             if let Ok(entity) = Status::change_charges(status, entity, *charges, world) {
-                Status::apply_delta(entity, world);
+                Status::refresh_entity_mapping(entity, world);
             }
         }
         if VarState::get_mut(parent, world)

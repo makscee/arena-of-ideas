@@ -6,10 +6,10 @@
         (
             name: "Vitality",
             description: "+1 HP",
-            trigger: ChangeVar(
-                Hp,
+            trigger: DeltaVar(
+                        Hp,
                 Context(Charges),
-            ),
+                    ),
         ),
     ],
     abilities: [

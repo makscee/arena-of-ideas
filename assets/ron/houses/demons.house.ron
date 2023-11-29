@@ -8,11 +8,11 @@
             description: "+{Charges}/+{Charges}\nTurn End: lose 2 charges",
             trigger: List(
                 [
-                    ChangeVar(
+                    DeltaVar(
                         Hp,
                         Context(Charges),
                     ),
-                    ChangeVar(
+                    DeltaVar(
                         Atk,
                         Context(Charges),
                     ),

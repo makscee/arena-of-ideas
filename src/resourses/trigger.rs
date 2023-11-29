@@ -6,6 +6,7 @@ use strum_macros::Display;
 
 #[derive(Deserialize, Serialize, Clone, Debug, Default, Display, PartialEq, EnumIter)]
 pub enum Trigger {
+    AfterIncomingDamage(Effect),
     AfterDamageTaken(Effect),
     AfterDamageDealt(Effect),
     BattleStart(Effect),
@@ -16,7 +17,8 @@ pub enum Trigger {
     AnyDeath(Effect),
     BeforeDeath(Effect),
     AfterKill(Effect),
-    ChangeVar(VarName, Expression),
+    DeltaVar(VarName, Expression),
+    MapVar(VarName, Expression),
     List(Vec<Box<Trigger>>),
     #[default]
     Noop,
@@ -25,12 +27,16 @@ pub enum Trigger {
 impl Trigger {
     pub fn catch_event(&self, event: &Event) -> Vec<Trigger> {
         match self {
-            Trigger::Noop | Trigger::ChangeVar(..) => default(),
+            Trigger::Noop | Trigger::DeltaVar(..) | Trigger::MapVar(..) => default(),
             Trigger::List(triggers) => triggers
                 .into_iter()
                 .map(|t| t.catch_event(event))
                 .flatten()
                 .collect_vec(),
+            Trigger::AfterIncomingDamage(..) => match event {
+                Event::IncomingDamage { .. } => vec![self.clone()],
+                _ => default(),
+            },
             Trigger::AfterDamageTaken(..) => match event {
                 Event::DamageTaken { .. } => vec![self.clone()],
                 _ => default(),
@@ -81,13 +87,13 @@ impl Trigger {
             Trigger::AfterDamageTaken(effect)
             | Trigger::AfterDamageDealt(effect)
             | Trigger::BattleStart(effect)
-            // | Trigger::TurnEnd(effect)
             | Trigger::BeforeStrike(effect)
             | Trigger::AnyDeath(effect) => {
                 ActionPlugin::new_cluster(effect, context, world);
             }
-            Trigger::TurnStart(effect)|
-            Trigger::TurnEnd(effect) => {
+            Trigger::TurnStart(effect)
+            | Trigger::TurnEnd(effect)
+            | Trigger::AfterIncomingDamage(effect) => {
                 ActionCluster::current(world).push_action_back(effect, context);
             }
             Trigger::AllyDeath(effect) => {
@@ -118,7 +124,7 @@ impl Trigger {
                 context.set_target(target, world);
                 ActionPlugin::new_cluster(effect, context, world);
             }
-            Trigger::ChangeVar(_, _) | Trigger::List(_) | Trigger::Noop => {
+            Trigger::DeltaVar(_, _) | Trigger::MapVar(_, _) | Trigger::List(_) | Trigger::Noop => {
                 panic!("Trigger {self} can not be fired")
             }
         }
@@ -126,10 +132,22 @@ impl Trigger {
 
     pub fn collect_delta_triggers(&self) -> Vec<Trigger> {
         match self {
-            Trigger::ChangeVar(_, _) => vec![self.clone()],
+            Trigger::DeltaVar(_, _) => vec![self.clone()],
             Trigger::List(triggers) => triggers
                 .into_iter()
                 .map(|t| t.collect_delta_triggers())
+                .flatten()
+                .collect_vec(),
+            _ => default(),
+        }
+    }
+
+    pub fn collect_map_triggers(&self) -> Vec<Trigger> {
+        match self {
+            Trigger::MapVar(_, _) => vec![self.clone()],
+            Trigger::List(triggers) => triggers
+                .into_iter()
+                .map(|t| t.collect_map_triggers())
                 .flatten()
                 .collect_vec(),
             _ => default(),
@@ -156,6 +174,7 @@ impl Trigger {
             match self {
                 Trigger::AfterDamageTaken(effect)
                 | Trigger::AfterDamageDealt(effect)
+                | Trigger::AfterIncomingDamage(effect)
                 | Trigger::BattleStart(effect)
                 | Trigger::TurnStart(effect)
                 | Trigger::TurnEnd(effect)
@@ -166,7 +185,7 @@ impl Trigger {
                 | Trigger::AfterKill(effect) => {
                     effect.show_editor(editing_data, format!("{name}/{effect}"), ui, world);
                 }
-                Trigger::ChangeVar(var, exp) => {
+                Trigger::DeltaVar(var, exp) | Trigger::MapVar(var, exp) => {
                     ui.vertical(|ui| {
                         var.show_editor(ui);
                         exp.show_editor(editing_data, format!("{name}/exp"), ui);

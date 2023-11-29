@@ -29,32 +29,44 @@ impl Effect {
             Effect::Damage(value) => {
                 let target = context.get_target().context("Target not found")?;
                 let owner = context.get_owner().context("Owner not found")?;
-                let value = match value {
-                    Some(value) => value.get_int(&context, world)?,
+                let mut value = match value {
+                    Some(value) => value.get_value(context, world)?,
                     None => context
                         .get_var(VarName::Atk, world)
-                        .context("Can't find ATK")?
-                        .get_int()?,
+                        .context("Can't find ATK")?,
                 };
                 debug!("Damage {value} {target:?}");
-                VarState::change_int(target, VarName::Hp, -value, world)?;
-                VarState::push_back(
-                    target,
-                    VarName::LastAttacker,
-                    VarChange::new(VarValue::Entity(context.owner())),
-                    world,
-                );
-                Event::DamageTaken {
+                Event::IncomingDamage {
                     owner: target,
-                    value,
+                    value: value.get_int()?,
                 }
-                .send(world);
-                Event::DamageDealt {
-                    owner,
-                    target,
-                    value,
+                .send(world)
+                .map(&mut value, world);
+                debug!("Value after map {value:?}");
+                let value = value.get_int()?;
+                if value > 0 {
+                    VarState::change_int(target, VarName::Hp, -value, world)?;
+                    VarState::push_back(
+                        target,
+                        VarName::LastAttacker,
+                        VarChange::new(VarValue::Entity(context.owner())),
+                        world,
+                    );
+                    Event::DamageTaken {
+                        owner: target,
+                        value,
+                    }
+                    .send(world);
+                    Event::DamageDealt {
+                        owner,
+                        target,
+                        value,
+                    }
+                    .send(world);
+                    Pools::get_vfx("pain", world)
+                        .set_parent(context.target())
+                        .unpack(world)?;
                 }
-                .send(world);
                 Pools::get_vfx("text", world)
                     .clone()
                     .set_var(
@@ -63,9 +75,6 @@ impl Effect {
                     )
                     .set_var(VarName::Text, VarValue::String(format!("-{value}")))
                     .set_var(VarName::Color, VarValue::Color(Color::ORANGE_RED))
-                    .unpack(world)?;
-                Pools::get_vfx("pain", world)
-                    .set_parent(context.target())
                     .unpack(world)?;
             }
             Effect::Kill => {
