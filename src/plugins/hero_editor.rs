@@ -26,6 +26,7 @@ impl HeroEditorPlugin {
         PackedTeam::spawn(Faction::Right, world);
         Self::apply_camera(&mut pd, true, world);
         Self::respawn(world);
+        ActionPlugin::set_timeframe(0.001, world);
     }
 
     fn ui(world: &mut World) {
@@ -239,12 +240,23 @@ pub struct HeroEditorData {
     pub editing_data: EditingData,
 }
 
-#[derive(Serialize, Deserialize, Default, Clone, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct EditingData {
     pub lookup: String,
     pub hovered: Option<String>,
     pub camera_pos: Vec2,
     pub camera_scale: f32,
+}
+
+impl Default for EditingData {
+    fn default() -> Self {
+        Self {
+            lookup: default(),
+            hovered: default(),
+            camera_pos: default(),
+            camera_scale: 1.0,
+        }
+    }
 }
 
 impl HeroEditorData {

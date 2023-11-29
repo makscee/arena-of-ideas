@@ -28,7 +28,7 @@
                 color: Hex("#FF3D00"),
                 size: Vec2E(Float(0.3)),
             ),
-            mapping: {Position: Vec2(0.8, -1.05)},
+            mapping: {Position: Vec2(0.9, -0.9)},
             children: [
                 (
                     material: Text(
@@ -48,7 +48,7 @@
                 size: Vec2E(Float(0.3)),
             ),
             mapping: {
-                Position: Vec2(-0.8, -1.05),
+                Position: Vec2(-0.9, -0.9),
             },
             children: [
                 (

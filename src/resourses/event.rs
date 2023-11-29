@@ -24,6 +24,7 @@ pub enum Event {
     TurnStart,
     TurnEnd,
     BeforeStrike(Entity),
+    AfterStrike(Entity),
     Death(Entity),
     Kill {
         owner: Entity,
@@ -43,7 +44,9 @@ impl Event {
             Event::BattleStart | Event::TurnStart | Event::TurnEnd | Event::Death(..) => {
                 Status::collect_all_statuses(world)
             }
-            Event::BeforeStrike(unit) => Status::collect_entity_statuses(*unit, world),
+            Event::BeforeStrike(unit) | Event::AfterStrike(unit) => {
+                Status::collect_entity_statuses(*unit, world)
+            }
             Event::Kill { owner, target } => {
                 context.set_target(*target, world);
                 Status::collect_entity_statuses(*owner, world)
@@ -70,7 +73,6 @@ impl Event {
     }
 
     pub fn map(self, value: &mut VarValue, world: &mut World) -> Self {
-        debug!("Map event {self:?}");
         let (var, context, statuses) = match &self {
             Event::IncomingDamage { owner, .. } => (
                 VarName::IncomingDamage,
@@ -84,7 +86,6 @@ impl Event {
         let statuses = Status::filter_active_statuses(statuses, get_insert_head(world), world);
         for status in statuses {
             Status::map_var(status, var, value, &context, world);
-            debug!("Map {var} {value:?}");
         }
         self
     }

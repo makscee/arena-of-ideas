@@ -1,0 +1,54 @@
+(
+    hp: 2,
+    atk: 2,
+    house: "Paladins",
+    trigger: BattleStart(
+        WithTarget(
+            SlotUnit(Int(1)),
+            UseAbility("Shield"),
+        ),
+    ),
+    name: "Protector",
+    description: "Battle Start: give [Shield] to ally striker",
+    representation: (
+        material: Shape(
+            shape: Circle,
+            fill: Line,
+            size: Vec2E(Float(0.67)),
+            thickness: Float(0.37),
+            alpha: Float(0.36),
+            color: State(Color),
+        ),
+        children: [],
+        mapping: {
+            Position: Mul(
+                UnitVec(
+                    Sum(
+                        IntFloat(
+                            State(Index),
+                        ),
+                        Sum(
+                            GameTime,
+                            Sin(
+                                Mul(
+                                    RandomFloat,
+                                    GameTime,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+                Mul(
+                    Sin(
+                        Mul(
+                            GameTime,
+                            Float(0.3),
+                        ),
+                    ),
+                    Float(0.19),
+                ),
+            ),
+        },
+        count: 16,
+    ),
+)

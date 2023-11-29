@@ -2,7 +2,11 @@
 (
     left: (
         units: [
-            (hp: 1, atk: 5, statuses: [("Shield", 2)])
+            (
+                hp: 1,
+                atk: 5,
+                statuses: [("Shield", 2)],
+            ),
         ],
     ),
     right: (

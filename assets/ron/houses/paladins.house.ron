@@ -32,7 +32,12 @@
         (
             name: "Shield",
             description: "Block next incoming damage",
-            effect: AddStatus("Shield"),
+            effect: List(
+                [
+                    AddStatus("Shield"),
+                    Vfx("apply_status"),
+                ],
+            ),
         ),
     ],
 )

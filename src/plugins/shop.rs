@@ -20,17 +20,10 @@ pub enum ShopPhase {
 
 impl Plugin for ShopPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
-            OnTransition {
-                from: GameState::MainMenu,
-                to: GameState::Shop,
-            },
-            Self::on_enter,
-        )
-        .add_systems(OnEnter(GameState::Shop), Self::on_enter)
-        .add_systems(OnExit(GameState::Shop), Self::on_leave)
-        .add_systems(PostUpdate, Self::input.run_if(in_state(GameState::Shop)))
-        .add_systems(Update, (Self::ui.run_if(in_state(GameState::Shop)),));
+        app.add_systems(OnEnter(GameState::Shop), Self::on_enter)
+            .add_systems(OnExit(GameState::Shop), Self::on_leave)
+            .add_systems(PostUpdate, Self::input.run_if(in_state(GameState::Shop)))
+            .add_systems(Update, (Self::ui.run_if(in_state(GameState::Shop)),));
     }
 }
 
@@ -130,12 +123,20 @@ impl ShopPlugin {
 
         for i in 1..3 {
             let pos = UnitPlugin::get_slot_position(Faction::Shop, units_len + i as usize);
-            let status = Pools::get_status("Strength", world).unwrap().clone();
+            let status = Pools::get(world)
+                .statuses
+                .values()
+                .filter(|s| s.shop_charges > 0)
+                .choose(&mut thread_rng())
+                .unwrap()
+                .clone();
             let name = status.name.to_owned();
             let description = status.description.to_owned();
-            let charges = status.state.get_int(VarName::Charges).unwrap_or(1);
+            let charges = status.shop_charges;
             let entity = status.unpack(None, world);
-            VarState::get_mut(entity, world).init(VarName::Position, VarValue::Vec2(pos));
+            VarState::get_mut(entity, world)
+                .init(VarName::Position, VarValue::Vec2(pos))
+                .init(VarName::Charges, VarValue::Int(charges));
             world.entity_mut(entity).insert(ShopOffer {
                 product: OfferProduct::Status {
                     name: name.to_owned(),
@@ -443,7 +444,20 @@ impl ShopOffer {
             })
         });
         if !so.description.is_empty() {
-            show_description_panels(entity, &so.description, world);
+            match &so.product {
+                OfferProduct::Unit => {
+                    show_description_panels(entity, &so.name, &so.description, world);
+                }
+                OfferProduct::Status { name, .. } => {
+                    let description =
+                        parse_vars(&so.description, entity, get_play_head(world), world);
+                    entity_panel(entity, vec2(0.0, 1.0), None, &name, world)
+                        .title_bar(true)
+                        .show(ctx, |ui| {
+                            show_lines(ui, description);
+                        });
+                }
+            }
         }
     }
 }

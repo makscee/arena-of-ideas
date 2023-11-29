@@ -5,18 +5,26 @@
     statuses: [
         (
             name: "Strength",
-            description: "+1 ATK",
+            description: "+{Charges} ATK",
             trigger: DeltaVar(
-                        Atk,
+                Atk,
                 Context(Charges),
-                    ),
+            ),
+            shop_charges: 1,
         ),
     ],
     abilities: [
         (
             name: "Strength",
             description: "Give +1 ATK",
-            effect: AddStatus("Strength"),
+            effect: List(
+                [
+                    AddStatus(
+                        "Strength",
+                    ),
+                    Vfx("apply_status"),
+                ],
+            ),
         ),
     ],
 )

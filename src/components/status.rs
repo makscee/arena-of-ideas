@@ -15,6 +15,8 @@ pub struct PackedStatus {
     pub representation: Option<Representation>,
     #[serde(default)]
     pub state: VarState,
+    #[serde(default)]
+    pub shop_charges: i32,
 }
 
 #[derive(Component, Clone)]
@@ -85,21 +87,37 @@ impl Status {
             if let Some(s) = world.entity(entity).get::<Status>() {
                 if s.name.eq(status) {
                     VarState::change_int(entity, VarName::Charges, delta, world)?;
-                    if VarState::get(entity, world).get_int(VarName::Charges)? <= 0 {
-                        VarState::push_back(
-                            entity,
-                            VarName::Visible,
-                            VarChange::new(VarValue::Bool(false)),
-                            world,
-                        );
-                    }
+                    VarState::push_back(
+                        entity,
+                        VarName::Visible,
+                        VarChange::new(VarValue::Bool(
+                            VarState::get(entity, world).get_int(VarName::Charges)? > 0,
+                        )),
+                        world,
+                    );
+
                     return Ok(entity);
                 }
             }
         }
         let mut status = Pools::get_status(status, world).unwrap().clone();
         status.state.init(VarName::Charges, VarValue::Int(delta));
-        Ok(status.unpack(Some(unit), world))
+        let entity = status.unpack(Some(unit), world);
+        Self::reindex_statuses(unit, world)?;
+        Ok(entity)
+    }
+
+    fn reindex_statuses(unit: Entity, world: &mut World) -> Result<()> {
+        let mut ind: i32 = 0;
+        let t = get_insert_head(world);
+        for entity in Self::collect_entity_statuses(unit, world) {
+            let mut state = VarState::get_mut(entity, world);
+            if state.get_int(VarName::Charges).is_ok_and(|x| x > 0) {
+                state.insert_simple(VarName::Index, VarValue::Int(ind), t);
+                ind += 1;
+            }
+        }
+        Ok(())
     }
 
     pub fn collect_entity_statuses(entity: Entity, world: &World) -> Vec<Entity> {
@@ -121,6 +139,7 @@ impl Status {
             .filter(|entity| {
                 VarState::find_value(*entity, VarName::Charges, t, world)
                     .is_ok_and(|x| x.get_int().unwrap() > 0)
+                    || world.get::<Status>(*entity).unwrap().name.eq(LOCAL_TRIGGER)
             })
             .collect_vec()
     }

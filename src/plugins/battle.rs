@@ -126,7 +126,6 @@ impl BattlePlugin {
         }
         Self::strike(left, right, world);
         Self::after_strike(left, right, world);
-        ActionPlugin::spin(world);
         Event::TurnEnd.send(world).spin(world);
     }
 
@@ -179,6 +178,8 @@ impl BattlePlugin {
                 .apply(Context::from_owner(caster, world), world)
                 .unwrap();
         }
+        Event::AfterStrike(left).send(world).spin(world);
+        Event::AfterStrike(right).send(world).spin(world);
     }
 
     pub fn ui(world: &mut World) {

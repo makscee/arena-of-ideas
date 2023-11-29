@@ -132,9 +132,7 @@ impl Effect {
                     .unwrap_or(VarValue::Int(1))
                     .get_int()?;
                 let color = Pools::get_status_house(&status, world).color.clone().into();
-                start_batch(world);
                 Status::change_charges(&status, context.target(), charges, world)?;
-                to_batch_start(world);
                 Pools::get_vfx("text", world)
                     .clone()
                     .set_var(
@@ -147,8 +145,6 @@ impl Effect {
                     )
                     .set_var(VarName::Color, VarValue::Color(color))
                     .unpack(world)?;
-                to_batch_start(world);
-                end_batch(world);
             }
             Effect::List(list) => {
                 for effect in list {

@@ -36,7 +36,7 @@ impl HeroGallery {
                 .and_then(|s| s.get_string(VarName::Description))
                 .unwrap_or_default();
             if !description.is_empty() {
-                show_description_panels(unit, &description, world);
+                show_description_panels(unit, &description, "", world);
             }
         }
     }

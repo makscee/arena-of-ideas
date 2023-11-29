@@ -56,10 +56,10 @@ pub fn entity_panel(
         .resizable(false)
         .pivot(align)
 }
-pub fn show_description_panels(entity: Entity, description: &str, world: &mut World) {
+pub fn show_description_panels(entity: Entity, name: &str, description: &str, world: &mut World) {
     let (description, definitions) = parse_description(description, world);
     let ctx = egui_context(world);
-    entity_panel(entity, vec2(0.0, 1.0), None, "Ability", world)
+    entity_panel(entity, vec2(0.0, 1.0), None, name, world)
         .title_bar(true)
         .show(&ctx, |ui| {
             let mut job = LayoutJob::default();
@@ -87,6 +87,21 @@ pub fn show_description_panels(entity: Entity, description: &str, world: &mut Wo
                 }
             });
     }
+}
+pub fn show_lines(ui: &mut Ui, lines: Vec<(String, Color32)>) {
+    let mut job = LayoutJob::default();
+    for (text, color) in lines {
+        job.append(
+            &text,
+            0.0,
+            TextFormat {
+                font_id: FontId::new(14.0, FontFamily::Proportional),
+                color,
+                ..Default::default()
+            },
+        );
+    }
+    ui.label(WidgetText::LayoutJob(job));
 }
 pub fn parse_description(
     source: &str,
@@ -117,19 +132,22 @@ pub fn parse_vars(
     t: f32,
     world: &mut World,
 ) -> Vec<(String, Color32)> {
-    let state = VarState::get(entity, world);
-    str_extract_brackets(source, ("{", "}"))
-        .into_iter()
-        .map(|(str, extr)| match extr {
-            true => (
-                state
-                    .get_string_at(VarName::from_str(&str).unwrap(), t)
-                    .unwrap(),
-                Color32::GREEN,
-            ),
-            false => (str, Color32::GRAY),
-        })
-        .collect_vec()
+    if let Ok(state) = VarState::try_get(entity, world) {
+        str_extract_brackets(source, ("{", "}"))
+            .into_iter()
+            .map(|(str, extr)| match extr {
+                true => (
+                    state
+                        .get_string_at(VarName::from_str(&str).unwrap(), t)
+                        .unwrap(),
+                    Color32::WHITE,
+                ),
+                false => (str, Color32::GRAY),
+            })
+            .collect_vec()
+    } else {
+        default()
+    }
 }
 fn str_extract_brackets(mut source: &str, pattern: (&str, &str)) -> Vec<(String, bool)> {
     let mut lines: Vec<(String, bool)> = default();

@@ -165,14 +165,13 @@ impl UnitPlugin {
             world,
         );
         Event::Death(entity).send(world);
-        let killer = VarState::get(entity, world)
-            .get_entity(VarName::LastAttacker)
-            .unwrap();
-        Event::Kill {
-            owner: killer,
-            target: entity,
+        if let Ok(killer) = VarState::get(entity, world).get_entity(VarName::LastAttacker) {
+            Event::Kill {
+                owner: killer,
+                target: entity,
+            }
+            .send(world);
         }
-        .send(world);
     }
 
     pub fn is_dead(entity: Entity, world: &World) -> bool {
@@ -286,14 +285,11 @@ impl UnitPlugin {
     fn ui(world: &mut World) {
         let ctx = &egui_context(world);
         if let Some(hovered) = world.get_resource::<HoveredUnit>().unwrap().0 {
-            if world.get::<ShopOffer>(hovered).is_some() {
-                return;
-            }
             let description = VarState::try_get(hovered, world)
                 .and_then(|s| s.get_string(VarName::Description))
                 .unwrap_or_default();
             if !description.is_empty() {
-                show_description_panels(hovered, &description, world);
+                show_description_panels(hovered, "Ability", &description, world);
             }
             let t = get_play_head(world);
             let statuses = Status::collect_entity_statuses(hovered, world);
@@ -323,19 +319,7 @@ impl UnitPlugin {
                                 let name = format!("{name} ({charges})");
                                 ui.heading(RichText::new(name).color(color).strong());
                                 let lines = parse_vars(&description, entity, t, world);
-                                let mut job = LayoutJob::default();
-                                for (text, color) in lines {
-                                    job.append(
-                                        &text,
-                                        0.0,
-                                        TextFormat {
-                                            font_id: FontId::new(14.0, FontFamily::Proportional),
-                                            color,
-                                            ..Default::default()
-                                        },
-                                    );
-                                }
-                                ui.label(WidgetText::LayoutJob(job));
+                                show_lines(ui, lines);
                             }
                         })
                     });

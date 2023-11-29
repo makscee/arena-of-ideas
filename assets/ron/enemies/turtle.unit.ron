@@ -1,0 +1,28 @@
+(
+    hp: 8,
+    atk: 2,
+    house: "Enemies",
+    trigger: AfterStrike(WithTarget(Owner, UseAbility("Shield"))),
+    name: "Turtle",
+    description: "After Strike: gain [Shield]",
+    representation: (
+        material: Shape(
+            shape: Circle,
+            fill: Line,
+            size: Vec2(1.0, 1.0),
+            thickness: Mul(Abs(Sin(Sum(Mul(GameTime, Float(0.45)), Mul(IntFloat(State(Index)), Float(0.15))))), Float(1.7)),
+            alpha: Float(0.68),
+            color: State(Color),
+        ),
+        children: [],
+        mapping: {
+            Size: Vec2E(Mul(IntFloat(State(Index)), Float(0.1))),
+        },
+        count: 12,
+    ),
+    state: (
+        history: {},
+        birth: 0.0,
+    ),
+    statuses: [],
+)

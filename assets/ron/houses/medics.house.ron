@@ -5,18 +5,24 @@
     statuses: [
         (
             name: "Vitality",
-            description: "+1 HP",
+            description: "+{Charges} HP",
             trigger: DeltaVar(
-                        Hp,
+                Hp,
                 Context(Charges),
-                    ),
+            ),
+            shop_charges: 2,
         ),
     ],
     abilities: [
         (
             name: "Vitality",
             description: "Give +1 HP",
-            effect: AddStatus("Vitality"),
+            effect: List(
+                [
+                    AddStatus("Vitality"),
+                    Vfx("apply_status"),
+                ],
+            ),
         ),
     ],
 )

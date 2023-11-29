@@ -30,6 +30,7 @@
                     ),
                 ],
             ),
+            shop_charges: 4,
         ),
     ],
     abilities: [
