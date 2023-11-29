@@ -81,11 +81,14 @@ impl Trigger {
             Trigger::AfterDamageTaken(effect)
             | Trigger::AfterDamageDealt(effect)
             | Trigger::BattleStart(effect)
-            | Trigger::TurnStart(effect)
-            | Trigger::TurnEnd(effect)
+            // | Trigger::TurnEnd(effect)
             | Trigger::BeforeStrike(effect)
             | Trigger::AnyDeath(effect) => {
                 ActionPlugin::new_cluster(effect, context, world);
+            }
+            Trigger::TurnStart(effect)|
+            Trigger::TurnEnd(effect) => {
+                ActionCluster::current(world).push_action_back(effect, context);
             }
             Trigger::AllyDeath(effect) => {
                 let dead = match event {

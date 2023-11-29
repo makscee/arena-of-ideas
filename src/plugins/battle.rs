@@ -72,6 +72,7 @@ impl BattlePlugin {
         data.left.unwrap().unpack(Faction::Left, world);
         data.right.unwrap().unpack(Faction::Right, world);
         UnitPlugin::translate_to_slots(world);
+        ActionPlugin::spin(world);
         GameTimer::get_mut(world).insert_head_to(0.0);
         Event::BattleStart.send(world).spin(world);
         while let Some((left, right)) = Self::get_strikers(world) {

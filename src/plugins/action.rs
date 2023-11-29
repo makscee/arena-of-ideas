@@ -25,7 +25,6 @@ impl ActionPlugin {
     fn process_cluster(timeframe: f32, world: &mut World) -> bool {
         let mut processed = false;
         while let Some(action) = ActionCluster::current(world).pop_next_action() {
-            debug!("Invoke {action:?}");
             action.invoke(world);
             processed = true;
         }
@@ -106,9 +105,44 @@ pub struct ActionCluster {
 
 #[derive(Debug)]
 pub struct QueuedChange {
-    pub entity: Entity,
-    pub var: VarName,
-    pub change: Change,
+    entity: Entity,
+    change: ChangeType,
+}
+
+#[derive(Debug)]
+enum ChangeType {
+    Var { var: VarName, change: VarChange },
+    Birth,
+}
+
+impl ChangeType {
+    fn process(self, entity: Entity, world: &mut World) {
+        match self {
+            ChangeType::Var { var, change } => {
+                VarState::push_back(entity, var, change, world);
+            }
+            ChangeType::Birth => {
+                VarState::get_mut(entity, world).birth = get_insert_head(world);
+            }
+        }
+    }
+
+    fn adust_time(&mut self, factor: f32) -> &mut Self {
+        match self {
+            ChangeType::Var { var, change } => {
+                change.adjust_time(factor);
+            }
+            _ => {}
+        };
+        self
+    }
+
+    fn timeframe(&self) -> f32 {
+        match self {
+            ChangeType::Var { var, change } => change.timeframe,
+            ChangeType::Birth => 0.0,
+        }
+    }
 }
 
 impl ActionCluster {
@@ -156,7 +190,7 @@ impl ActionCluster {
             .values()
             .map(|c| {
                 c.iter()
-                    .map(|c| c.change.timeframe)
+                    .map(|c| c.change.timeframe())
                     .reduce(f32::max)
                     .unwrap_or_default()
             })
@@ -166,14 +200,9 @@ impl ActionCluster {
         let factor = (timeframe / total_duration).min(1.0);
         for (_, changes) in self.changes.drain().sorted_by_key(|(c, _)| *c) {
             start_batch(world);
-            for QueuedChange {
-                entity,
-                var,
-                change,
-            } in changes
-            {
-                let change = change.adjust_time(factor);
-                VarState::push_back(entity, var, change, world);
+            for QueuedChange { entity, mut change } in changes {
+                change.adust_time(factor);
+                change.process(entity, world);
                 to_batch_start(world);
             }
             GameTimer::get_mut(world)
@@ -183,15 +212,26 @@ impl ActionCluster {
         }
     }
 
-    pub fn push_change(&mut self, var: VarName, change: Change, context: Context) -> &mut Self {
+    pub fn push_change(&mut self, entity: Entity, change: ChangeType) -> &mut Self {
         self.changes
             .entry(self.order)
             .or_default()
-            .push(QueuedChange {
-                entity: context.owner(),
-                var,
-                change,
-            });
+            .push(QueuedChange { entity, change });
+        self
+    }
+
+    pub fn push_var_change(
+        &mut self,
+        var: VarName,
+        change: VarChange,
+        context: Context,
+    ) -> &mut Self {
+        self.push_change(context.owner(), ChangeType::Var { var, change });
+        self
+    }
+
+    pub fn push_state_birth(&mut self, entity: Entity) -> &mut Self {
+        self.push_change(entity, ChangeType::Birth);
         self
     }
 

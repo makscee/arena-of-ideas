@@ -40,7 +40,7 @@ impl Effect {
                 VarState::push_back(
                     target,
                     VarName::LastAttacker,
-                    Change::new(VarValue::Entity(context.owner())),
+                    VarChange::new(VarValue::Entity(context.owner())),
                     world,
                 );
                 Event::DamageTaken {
@@ -73,7 +73,7 @@ impl Effect {
                 VarState::push_back(
                     target,
                     VarName::LastAttacker,
-                    Change::new(VarValue::Entity(context.owner())),
+                    VarChange::new(VarValue::Entity(context.owner())),
                     world,
                 );
                 Pools::get_vfx("text", world)
@@ -213,7 +213,7 @@ impl Effect {
                         continue;
                     }
                     if let Some(value) = history.get_last() {
-                        VarState::push_back(owner, var, Change::new(value), world);
+                        VarState::push_back(owner, var, VarChange::new(value), world);
                     }
                 }
                 if !SkipVisual::active(world) {
@@ -238,7 +238,7 @@ impl Effect {
                             VarState::get(entity, world).history.clone().into_iter()
                         {
                             if let Some(value) = history.get_last() {
-                                VarState::push_back(status, var, Change::new(value), world);
+                                VarState::push_back(status, var, VarChange::new(value), world);
                             }
                         }
                     } else {

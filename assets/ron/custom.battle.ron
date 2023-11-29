@@ -1,215 +1,211 @@
 #![enable(implicit_some)]
 (
     left: (
-        units: [
-            (
-                name: "Priest",
-                hp: 1,
-                atk: 1,
-                house: "Holy",
-                description: "Battle Start: apply [Blessing] to all allies",
-                trigger: BattleStart(
-                    AoeFaction(
-                        OwnerFaction,
-                        UseAbility(
-                            "Blessing",
-                        ),
-                    ),
-                ),
-                representation: (
-                    count: 4,
-                    material: Shape(
-                        shape: Circle,
-                        thickness: Sum(
-                            Float(2.5),
-                            Cos(
-                                GameTime,
+        units: [(
+    hp: 1,
+    atk: 1,
+    house: "Dragons",
+    trigger: TurnEnd(UseAbility("Grow")),
+    name: "Bolla",
+    description: "Turn End: [Grow]",
+    representation: (
+        material: Shape(
+            shape: Circle,
+            fill: Opaque,
+            size: Vec2E(Float(0.5)),
+            thickness: Float(1.0),
+            alpha: Float(0.2),
+            color: State(Color),
+        ),
+        children: [],
+        mapping: {
+            Position: Mul(
+                UnitVec(
+                    Sum(
+                        GameTime,
+                        Mul(
+                            IntFloat(
+                                State(
+                                    Index,
+                                ),
                             ),
-                        ),
-                        size: Vec2E(
                             Sum(
                                 Float(
-                                    0.5,
+                                    1.04,
                                 ),
                                 Mul(
-                                    Beat,
-                                    Float(
-                                        0.3,
-                                    ),
-                                ),
-                            ),
-                        ),
-                    ),
-                    mapping: {
-                        Position: Mul(
-                            UnitVec(
-                                Mul(
-                                    Sum(
+                                    Sin(
                                         GameTime,
-                                        Mul(
-                                            Mul(
-                                                PI,
-                                                Float(
-                                                    0.5,
-                                                ),
-                                            ),
-                                            IntFloat(
-                                                State(
-                                                    Index,
-                                                ),
-                                            ),
-                                        ),
                                     ),
                                     Float(
-                                        3.0,
+                                        0.24,
                                     ),
                                 ),
                             ),
-                            Float(0.3),
-                        ),
-                    },
-                    children: [],
-                ),
-            ),
-            (
-                name: "Priest",
-                hp: 1,
-                atk: 1,
-                house: "Holy",
-                description: "Battle Start: apply [Blessing] to all allies",
-                trigger: BattleStart(
-                    AoeFaction(
-                        OwnerFaction,
-                        UseAbility(
-                            "Blessing",
                         ),
                     ),
                 ),
-                representation: (
-                    count: 4,
-                    material: Shape(
-                        shape: Circle,
-                        thickness: Sum(
-                            Float(2.5),
-                            Cos(
-                                GameTime,
+                Float(0.19),
+            ),
+        },
+        count: 6,
+    ),
+    state: (history: {}, birth: 0.0),
+    statuses: [],
+),(
+    hp: 1,
+    atk: 1,
+    house: "Dragons",
+    trigger: TurnEnd(UseAbility("Grow")),
+    name: "Bolla",
+    description: "Turn End: [Grow]",
+    representation: (
+        material: Shape(
+            shape: Circle,
+            fill: Opaque,
+            size: Vec2E(Float(0.5)),
+            thickness: Float(1.0),
+            alpha: Float(0.2),
+            color: State(Color),
+        ),
+        children: [],
+        mapping: {
+            Position: Mul(
+                UnitVec(
+                    Sum(
+                        GameTime,
+                        Mul(
+                            IntFloat(
+                                State(
+                                    Index,
+                                ),
                             ),
-                        ),
-                        size: Vec2E(
                             Sum(
                                 Float(
-                                    0.5,
+                                    1.04,
                                 ),
                                 Mul(
-                                    Beat,
-                                    Float(
-                                        0.3,
-                                    ),
-                                ),
-                            ),
-                        ),
-                    ),
-                    mapping: {
-                        Position: Mul(
-                            UnitVec(
-                                Mul(
-                                    Sum(
+                                    Sin(
                                         GameTime,
-                                        Mul(
-                                            Mul(
-                                                PI,
-                                                Float(
-                                                    0.5,
-                                                ),
-                                            ),
-                                            IntFloat(
-                                                State(
-                                                    Index,
-                                                ),
-                                            ),
-                                        ),
                                     ),
                                     Float(
-                                        3.0,
+                                        0.24,
                                     ),
                                 ),
                             ),
-                            Float(0.3),
-                        ),
-                    },
-                    children: [],
-                ),
-            ),
-            (
-                name: "Priest",
-                hp: 1,
-                atk: 1,
-                house: "Holy",
-                description: "Battle Start: apply [Blessing] to all allies",
-                trigger: BattleStart(
-                    AoeFaction(
-                        OwnerFaction,
-                        UseAbility(
-                            "Blessing",
                         ),
                     ),
                 ),
-                representation: (
-                    count: 4,
-                    material: Shape(
-                        shape: Circle,
-                        thickness: Sum(
-                            Float(2.5),
-                            Cos(
-                                GameTime,
+                Float(0.19),
+            ),
+        },
+        count: 6,
+    ),
+    state: (history: {}, birth: 0.0),
+    statuses: [],
+),(
+    hp: 1,
+    atk: 1,
+    house: "Dragons",
+    trigger: TurnEnd(UseAbility("Grow")),
+    name: "Bolla",
+    description: "Turn End: [Grow]",
+    representation: (
+        material: Shape(
+            shape: Circle,
+            fill: Opaque,
+            size: Vec2E(Float(0.5)),
+            thickness: Float(1.0),
+            alpha: Float(0.2),
+            color: State(Color),
+        ),
+        children: [],
+        mapping: {
+            Position: Mul(
+                UnitVec(
+                    Sum(
+                        GameTime,
+                        Mul(
+                            IntFloat(
+                                State(
+                                    Index,
+                                ),
                             ),
-                        ),
-                        size: Vec2E(
                             Sum(
                                 Float(
-                                    0.5,
+                                    1.04,
                                 ),
                                 Mul(
-                                    Beat,
+                                    Sin(
+                                        GameTime,
+                                    ),
                                     Float(
-                                        0.3,
+                                        0.24,
                                     ),
                                 ),
                             ),
                         ),
                     ),
-                    mapping: {
-                        Position: Mul(
-                            UnitVec(
+                ),
+                Float(0.19),
+            ),
+        },
+        count: 6,
+    ),
+    state: (history: {}, birth: 0.0),
+    statuses: [],
+),(
+    hp: 1,
+    atk: 1,
+    house: "Dragons",
+    trigger: TurnEnd(UseAbility("Grow")),
+    name: "Bolla",
+    description: "Turn End: [Grow]",
+    representation: (
+        material: Shape(
+            shape: Circle,
+            fill: Opaque,
+            size: Vec2E(Float(0.5)),
+            thickness: Float(1.0),
+            alpha: Float(0.2),
+            color: State(Color),
+        ),
+        children: [],
+        mapping: {
+            Position: Mul(
+                UnitVec(
+                    Sum(
+                        GameTime,
+                        Mul(
+                            IntFloat(
+                                State(
+                                    Index,
+                                ),
+                            ),
+                            Sum(
+                                Float(
+                                    1.04,
+                                ),
                                 Mul(
-                                    Sum(
+                                    Sin(
                                         GameTime,
-                                        Mul(
-                                            Mul(
-                                                PI,
-                                                Float(
-                                                    0.5,
-                                                ),
-                                            ),
-                                            IntFloat(
-                                                State(
-                                                    Index,
-                                                ),
-                                            ),
-                                        ),
                                     ),
                                     Float(
-                                        3.0,
+                                        0.24,
                                     ),
                                 ),
                             ),
-                            Float(0.3),
                         ),
-                    },
-                    children: [],
+                    ),
                 ),
+                Float(0.19),
             ),
-        ],
+        },
+        count: 6,
+    ),
+    state: (history: {}, birth: 0.0),
+    statuses: [],
+),],
     ),
     right: (
         units: [

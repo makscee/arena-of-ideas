@@ -8,10 +8,10 @@ pub struct VarState {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, Reflect, PartialEq)]
-pub struct History(pub Vec<Change>);
+pub struct History(pub Vec<VarChange>);
 
 #[derive(Serialize, Deserialize, Clone, Debug, Reflect, PartialEq)]
-pub struct Change {
+pub struct VarChange {
     pub t: f32,
     #[serde(default)]
     pub duration: f32, // over what period the change will be applied
@@ -45,6 +45,7 @@ impl VarState {
     pub fn attach(mut self, entity: Entity, world: &mut World) {
         self.birth = get_insert_head(world);
         world.entity_mut(entity).insert(self);
+        ActionCluster::current(world).push_state_birth(entity);
     }
 
     pub fn get(entity: Entity, world: &World) -> &Self {
@@ -80,11 +81,11 @@ impl VarState {
 
     pub fn change_int(entity: Entity, var: VarName, delta: i32, world: &mut World) -> Result<()> {
         let value = Self::get(entity, world).get_int(var).unwrap_or_default() + delta;
-        Self::push_back(entity, var, Change::new(VarValue::Int(value)), world);
+        Self::push_back(entity, var, VarChange::new(VarValue::Int(value)), world);
         Ok(())
     }
 
-    pub fn push_back(entity: Entity, var: VarName, mut change: Change, world: &mut World) {
+    pub fn push_back(entity: Entity, var: VarName, mut change: VarChange, world: &mut World) {
         let head = get_insert_head(world);
         let birth = Self::get(entity, world).birth;
         change.t += head - birth;
@@ -99,7 +100,7 @@ impl VarState {
         self.history
             .entry(var)
             .or_insert(default())
-            .push(Change::new(value).set_t(t - self.birth));
+            .push(VarChange::new(value).set_t(t - self.birth));
         self
     }
     pub fn init(&mut self, var: VarName, value: VarValue) -> &mut Self {
@@ -177,11 +178,17 @@ impl VarState {
             Err(anyhow!("Var {var} was not found"))
         }
     }
+    pub fn simplify(&mut self) -> &mut Self {
+        for history in self.history.values_mut() {
+            history.simplify()
+        }
+        self
+    }
 }
 
 impl History {
     pub fn new(value: VarValue) -> Self {
-        Self(vec![Change {
+        Self(vec![VarChange {
             t: 0.0,
             duration: 0.0,
             tween: default(),
@@ -189,7 +196,7 @@ impl History {
             value,
         }])
     }
-    pub fn push(&mut self, change: Change) {
+    pub fn push(&mut self, change: VarChange) {
         self.0.push(change)
     }
     pub fn find_value(&self, t: f32) -> Result<VarValue> {
@@ -217,9 +224,14 @@ impl History {
     pub fn get_last(&self) -> Option<VarValue> {
         self.0.last().and_then(|x| Some(x.value.clone()))
     }
+    pub fn simplify(&mut self) {
+        if let Some(value) = self.get_last() {
+            self.0 = vec![VarChange::new(value)];
+        }
+    }
 }
 
-impl Change {
+impl VarChange {
     pub fn new(value: VarValue) -> Self {
         Self {
             t: default(),
@@ -241,7 +253,7 @@ impl Change {
         self.t = t;
         self
     }
-    pub fn adjust_time(mut self, factor: f32) -> Self {
+    pub fn adjust_time(&mut self, factor: f32) -> &mut Self {
         self.t *= factor;
         self.duration *= factor;
         self

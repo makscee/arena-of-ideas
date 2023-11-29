@@ -346,7 +346,7 @@ impl ShopPlugin {
             .set_parent(team)
             .insert(ActiveTeam)
             .remove::<ShopOffer>();
-        VarState::push_back(unit, VarName::Slot, Change::new(VarValue::Int(0)), world);
+        VarState::push_back(unit, VarName::Slot, VarChange::new(VarValue::Int(0)), world);
         UnitPlugin::fill_slot_gaps(Faction::Team, world);
         UnitPlugin::translate_to_slots(world);
         Self::change_g(-Self::UNIT_PRICE, world)

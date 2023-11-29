@@ -47,14 +47,14 @@ impl Anim {
                 let duration = duration.get_float(&context, world)?;
                 let timeframe = timeframe.get_float(&context, world)?;
                 let value = value.get_value(&context, world)?;
-                let change = Change {
+                let change = VarChange {
                     t,
                     duration,
                     timeframe,
                     tween,
                     value,
                 };
-                ActionCluster::current(world).push_change(var, change, context);
+                ActionCluster::current(world).push_var_change(var, change, context);
             }
         }
         Ok(())

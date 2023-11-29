@@ -121,7 +121,7 @@ impl UnitPlugin {
         VarState::push_back(
             entity,
             VarName::Position,
-            Change::new(VarValue::Vec2(pos)),
+            VarChange::new(VarValue::Vec2(pos)),
             world,
         );
         Ok(())
@@ -131,7 +131,7 @@ impl UnitPlugin {
         VarState::push_back(
             entity,
             VarName::Position,
-            Change::new(VarValue::Vec2(position))
+            VarChange::new(VarValue::Vec2(position))
                 .set_duration(0.3)
                 .set_tween(Tween::QuartOut),
             world,
@@ -160,7 +160,7 @@ impl UnitPlugin {
         VarState::push_back(
             unit.id(),
             VarName::Visible,
-            Change::new(VarValue::Bool(false)),
+            VarChange::new(VarValue::Bool(false)),
             world,
         );
         Event::Death(entity).send(world);
