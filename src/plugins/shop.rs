@@ -39,7 +39,6 @@ impl ShopPlugin {
     pub const REROLL_PRICE: i32 = 1;
 
     fn on_enter(world: &mut World) {
-        GameTimer::get_mut(world).reset();
         let save = Save::get(world).unwrap();
         let mut generated_levels: Vec<String> = default();
         if Ladder::levels_left(world) == 0 {
@@ -54,6 +53,8 @@ impl ShopPlugin {
                 .save(world)
                 .unwrap();
         }
+        GameTimer::get_mut(world).reset();
+        ActionPlugin::set_timeframe(0.05, world);
         let team_len = save.team.units.len();
         save.team.unpack(Faction::Team, world);
         Self::change_g(4, world).unwrap();
@@ -317,11 +318,13 @@ impl ShopPlugin {
             });
         if !data.generated_levels.is_empty() {
             Window::new("3 new levels generated")
+                .collapsible(false)
+                .resizable(false)
                 .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
                 .show(ctx, |ui| {
                     ui.vertical_centered(|ui| {
                         for line in data.generated_levels.iter() {
-                            ui.label(line);
+                            ui.heading(line);
                         }
                         if ui.button("Ok").clicked() {
                             data.generated_levels.clear();

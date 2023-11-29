@@ -15,6 +15,7 @@ pub enum Effect {
     WithTarget(Expression, Box<Effect>),
     WithOwner(Expression, Box<Effect>),
     List(Vec<Box<Effect>>),
+    ListSpread(Vec<Box<Effect>>),
     WithVar(VarName, Expression, Box<Effect>),
     UseAbility(String),
     AddStatus(String),
@@ -144,6 +145,11 @@ impl Effect {
                 for effect in list {
                     ActionCluster::current(world)
                         .push_action_front(effect.deref().clone(), context.clone());
+                }
+            }
+            Effect::ListSpread(list) => {
+                for effect in list {
+                    ActionPlugin::new_cluster(effect.deref().clone(), context.clone(), world);
                 }
             }
             Effect::AoeFaction(faction, effect) => {
@@ -335,7 +341,7 @@ impl Effect {
                         e.show_editor(editing_data, format!("{path}/e"), ui, world);
                     });
                 }
-                Effect::List(list) => {
+                Effect::List(list) | Effect::ListSpread(list) => {
                     ui.vertical(|ui| {
                         let mut delete: Option<usize> = None;
                         for (i, e) in list.into_iter().enumerate() {

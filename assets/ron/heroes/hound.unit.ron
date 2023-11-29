@@ -4,7 +4,7 @@
     atk: 1,
     house: "Demons",
     trigger: BattleStart(
-        List(
+        ListSpread(
             [
                 WithVar(
                     Faction,
