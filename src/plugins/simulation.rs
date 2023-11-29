@@ -5,8 +5,7 @@ pub struct SimulationPlugin;
 impl SimulationPlugin {
     pub fn run(left: PackedTeam, right: PackedTeam, world: &mut World) -> Result<BattleResult> {
         SkipVisual::set_active(true, world);
-        left.unpack(Faction::Left, world);
-        right.unpack(Faction::Right, world);
+        BattlePlugin::load_teams(left, right, None, world);
         let result = BattlePlugin::run_battle(100, world);
         SkipVisual::set_active(false, world);
         result

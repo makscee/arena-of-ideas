@@ -7,8 +7,6 @@ pub struct Vfx {
     pub representation: Representation,
     #[serde(default)]
     pub state: VarState,
-    #[serde(default)]
-    pub timeframe: f32,
     pub parent: Option<Entity>,
 }
 
@@ -22,13 +20,7 @@ impl Vfx {
             world.entity_mut(entity).set_parent(parent);
         }
         self.state.attach(entity, world);
-        let timeframe = if self.timeframe == 0.0 {
-            None
-        } else {
-            Some(self.timeframe)
-        };
         let result = self.anim.apply(
-            timeframe,
             Context::new_named("vfx".to_owned())
                 .set_owner(entity, world)
                 .take(),

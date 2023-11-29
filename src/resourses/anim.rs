@@ -11,6 +11,8 @@ pub enum Anim {
         t: f32,
         #[serde(default = "default_zero_f32_e")]
         duration: Expression,
+        #[serde(default = "default_zero_f32_e")]
+        timeframe: Expression,
         #[serde(default)]
         tween: Tween,
     },
@@ -21,46 +23,38 @@ fn default_zero_f32_e() -> Expression {
 }
 
 impl Anim {
-    pub fn apply(
-        self,
-        timeframe: Option<f32>,
-        mut context: Context,
-        world: &mut World,
-    ) -> Result<()> {
+    pub fn apply(self, mut context: Context, world: &mut World) -> Result<()> {
         match self {
             Anim::Sequence(list) => {
                 for anim in list {
-                    anim.apply(timeframe, context.clone(), world)?;
-                    context.incr_order();
+                    anim.apply(context.clone(), world)?;
+                    ActionCluster::current(world).order += 1;
                 }
             }
             Anim::Run(list) => {
                 for anim in list {
-                    anim.apply(timeframe, context.clone(), world)?;
+                    anim.apply(context.clone(), world)?;
                 }
             }
             Anim::Change {
                 var,
                 t,
                 duration,
+                timeframe,
                 value,
                 tween,
             } => {
-                let factor = timeframe.unwrap_or(1.0);
-                let duration = duration.get_float(&context, world)? * factor;
+                let duration = duration.get_float(&context, world)?;
+                let timeframe = timeframe.get_float(&context, world)?;
                 let value = value.get_value(&context, world)?;
                 let change = Change {
-                    t: factor * t,
+                    t,
                     duration,
+                    timeframe,
                     tween,
                     value,
                 };
-                ActionCluster::get(world).push_change(
-                    var,
-                    change,
-                    timeframe.unwrap_or_default(),
-                    context,
-                );
+                ActionCluster::current(world).push_change(var, change, context);
             }
         }
         Ok(())

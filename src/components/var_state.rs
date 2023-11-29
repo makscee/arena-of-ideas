@@ -16,6 +16,8 @@ pub struct Change {
     #[serde(default)]
     pub duration: f32, // over what period the change will be applied
     #[serde(default)]
+    pub timeframe: f32,
+    #[serde(default)]
     pub tween: Tween,
     pub value: VarValue,
 }
@@ -183,6 +185,7 @@ impl History {
             t: 0.0,
             duration: 0.0,
             tween: default(),
+            timeframe: default(),
             value,
         }])
     }
@@ -221,6 +224,7 @@ impl Change {
         Self {
             t: default(),
             duration: default(),
+            timeframe: default(),
             tween: default(),
             value,
         }

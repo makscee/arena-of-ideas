@@ -54,7 +54,6 @@ impl Effect {
                     value,
                 }
                 .send(world);
-                start_batch(world);
                 Pools::get_vfx("text", world)
                     .clone()
                     .set_var(
@@ -64,11 +63,9 @@ impl Effect {
                     .set_var(VarName::Text, VarValue::String(format!("-{value}")))
                     .set_var(VarName::Color, VarValue::Color(Color::ORANGE_RED))
                     .unpack(world)?;
-                to_batch_start(world);
                 Pools::get_vfx("pain", world)
                     .set_parent(context.target())
                     .unpack(world)?;
-                end_batch(world);
             }
             Effect::Kill => {
                 let target = context.get_target().context("Target not found")?;
@@ -96,7 +93,7 @@ impl Effect {
             Effect::Noop => {}
             Effect::UseAbility(ability) => {
                 let effect = Pools::get_ability(&ability, world).effect.clone();
-                ActionCluster::get(world).push_action_front(effect, context.clone());
+                ActionCluster::current(world).push_action_front(effect, context.clone());
                 Pools::get_vfx("text", world)
                     .clone()
                     .set_var(
@@ -117,6 +114,7 @@ impl Effect {
                         ),
                     )
                     .unpack(world)?;
+                ActionCluster::current(world).incr_order();
             }
             Effect::AddStatus(status) => {
                 let charges = context
@@ -144,7 +142,7 @@ impl Effect {
             }
             Effect::List(list) => {
                 for effect in list {
-                    ActionCluster::get(world)
+                    ActionCluster::current(world)
                         .push_action_front(effect.deref().clone(), context.clone());
                 }
             }
@@ -152,7 +150,8 @@ impl Effect {
                 for unit in UnitPlugin::collect_faction(faction.get_faction(context, world)?, world)
                 {
                     let context = context.clone().set_target(unit, world).take();
-                    ActionCluster::get(world).push_action_front(effect.deref().clone(), context);
+                    ActionCluster::current(world)
+                        .push_action_front(effect.deref().clone(), context);
                 }
             }
             Effect::Text(text) => {
@@ -188,19 +187,19 @@ impl Effect {
                 let context = context
                     .set_target(target.get_entity(context, world)?, world)
                     .clone();
-                ActionCluster::get(world).push_action_front(effect.deref().clone(), context);
+                ActionCluster::current(world).push_action_front(effect.deref().clone(), context);
             }
             Effect::WithOwner(owner, effect) => {
                 let context = context
                     .set_owner(owner.get_entity(context, world)?, world)
                     .clone();
-                ActionCluster::get(world).push_action_front(effect.deref().clone(), context);
+                ActionCluster::current(world).push_action_front(effect.deref().clone(), context);
             }
             Effect::WithVar(var, value, effect) => {
                 let context = context
                     .set_var(*var, value.get_value(context, world)?)
                     .clone();
-                ActionCluster::get(world).push_action_front(effect.deref().clone(), context);
+                ActionCluster::current(world).push_action_front(effect.deref().clone(), context);
             }
             Effect::FullCopy => {
                 let owner = context.owner();

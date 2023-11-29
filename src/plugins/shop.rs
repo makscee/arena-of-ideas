@@ -408,10 +408,9 @@ impl OfferProduct {
                     let context = Context::from_target(unit, world)
                         .set_var(VarName::Charges, VarValue::Int(*charges))
                         .take();
-                    ActionCluster::get(world)
+                    ActionCluster::current(world)
                         .push_action_back(Effect::AddStatus(name.clone()), context);
                 }
-                ActionPlugin::spin(0.2, world);
                 world.entity_mut(entity).despawn_recursive();
                 Ok(())
             }

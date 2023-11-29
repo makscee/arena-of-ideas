@@ -179,7 +179,7 @@ impl HeroEditorPlugin {
                 }
                 if ui.button("Run Strike").clicked() {
                     if let Some((left, right)) = BattlePlugin::get_strikers(world) {
-                        BattlePlugin::run_strike(left, right, 60.0 / 100.0, world);
+                        BattlePlugin::run_strike(left, right, world);
                     }
                 }
                 if ui.button("Clear").clicked() {
@@ -232,14 +232,14 @@ impl HeroEditorPlugin {
     }
 }
 
-#[derive(Serialize, Deserialize, Default, Clone)]
+#[derive(Serialize, Deserialize, Default, Clone, Debug)]
 pub struct HeroEditorData {
     pub hero: PackedUnit,
     pub hero_entity: Option<Entity>,
     pub editing_data: EditingData,
 }
 
-#[derive(Serialize, Deserialize, Default, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Default, Clone, PartialEq, Debug)]
 pub struct EditingData {
     pub lookup: String,
     pub hovered: Option<String>,

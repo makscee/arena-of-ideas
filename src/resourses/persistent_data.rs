@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Serialize, Deserialize, Default, Clone)]
+#[derive(Serialize, Deserialize, Default, Clone, Debug)]
 pub struct PersistentData {
     pub last_state: Option<GameState>,
     pub hero_editor_data: HeroEditorData,

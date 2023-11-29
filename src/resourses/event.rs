@@ -23,7 +23,7 @@ pub enum Event {
 }
 
 impl Event {
-    pub fn send(self, world: &mut World) {
+    pub fn send(self, world: &mut World) -> Self {
         debug!("Send event {self:?}");
         let mut context = Context::new_named(self.to_string());
         let statuses = match &self {
@@ -51,5 +51,10 @@ impl Event {
             }
         };
         Status::notify(statuses, &self, &context, world);
+        self
+    }
+
+    pub fn spin(self, world: &mut World) {
+        ActionPlugin::spin(world);
     }
 }

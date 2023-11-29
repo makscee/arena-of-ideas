@@ -4,7 +4,6 @@ use super::*;
 #[derive(Debug, Clone, Default)]
 pub struct Context {
     pub layers: Vec<ContextLayer>,
-    pub order: usize,
 }
 
 #[derive(Debug, Clone, AsRefStr)]
@@ -196,11 +195,6 @@ impl Context {
 
     pub fn take(&mut self) -> Self {
         mem::take(self)
-    }
-
-    pub fn incr_order(&mut self) -> &mut Self {
-        self.order += 1;
-        self
     }
 }
 

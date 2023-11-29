@@ -57,9 +57,6 @@ impl GameTimer {
     }
 
     pub fn advance_insert(&mut self, delta: f32) -> &mut Self {
-        if delta < 0.0 {
-            panic!();
-        }
         self.insert_head += delta;
         self.end = self.end.max(self.insert_head);
         self
