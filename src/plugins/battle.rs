@@ -66,11 +66,12 @@ impl BattlePlugin {
     }
 
     pub fn run_battle(bpm: usize, world: &mut World) -> Result<BattleResult> {
-        ActionPlugin::set_timeframe(60.0 / bpm as f32, world);
-        const SHIFT_LEFT: f32 = -1.5;
+        let timeframe = AudioPlugin::beat_timeframe();
+        ActionPlugin::set_timeframe(timeframe, world);
+        let shift_left = -AudioPlugin::to_next_beat(world);
         GameTimer::get_mut(world)
-            .advance_insert(SHIFT_LEFT)
-            .advance_play(SHIFT_LEFT);
+            .advance_insert(shift_left)
+            .advance_play(shift_left);
         let data = world.resource::<BattleData>().clone();
         data.left.unwrap().unpack(Faction::Left, world);
         data.right.unwrap().unpack(Faction::Right, world);
@@ -186,23 +187,7 @@ impl BattlePlugin {
     }
 
     pub fn ui(world: &mut World) {
-        Window::new("")
-            .title_bar(false)
-            .resizable(false)
-            .collapsible(false)
-            .anchor(Align2::LEFT_CENTER, [10.0, 100.0])
-            .show(&egui_context(world), |ui| {
-                if ui
-                    .button(
-                        RichText::new("Skip")
-                            .size(20.0)
-                            .text_style(egui::TextStyle::Button),
-                    )
-                    .clicked()
-                {
-                    GameTimer::get_mut(world).skip_to_end();
-                }
-            });
+        let ctx = &egui_context(world);
         if !GameTimer::get(world).ended() {
             return;
         }
@@ -228,7 +213,7 @@ impl BattlePlugin {
         .collapsible(false)
         .resizable(false)
         .anchor(Align2::CENTER_CENTER, [0.0, -150.0])
-        .show(&egui_context(world), |ui| {
+        .show(ctx, |ui| {
             ui.set_min_width(300.0);
             ui.vertical_centered_justified(|ui| {
                 if ui
@@ -240,7 +225,8 @@ impl BattlePlugin {
                     )
                     .clicked()
                 {
-                    GameTimer::get_mut(world).play_head_to(0.0);
+                    let t = -AudioPlugin::to_next_beat(world);
+                    GameTimer::get_mut(world).play_head_to(t);
                 }
                 if ui
                     .button(

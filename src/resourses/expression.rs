@@ -254,22 +254,16 @@ impl Expression {
                 return Err(anyhow!("Can't find status"));
             }
             Expression::Beat => {
-                const BPM: usize = 100;
-                let ts = match AudioPlugin::background_position(world) {
-                    Some(data) => data as f32,
-                    None => GameTimer::get(world).play_head(),
-                };
-                let beat = (ts * BPM as f32 / 60.0) as usize;
-
-                let t = ts * BPM as f32 / 60.0;
-                let t = t - t.floor();
+                let beat = AudioPlugin::beat_index(world);
+                let to_next = AudioPlugin::to_next_beat(world);
+                let timeframe = AudioPlugin::beat_timeframe();
                 let start = match beat % 2 == 0 {
                     true => -1.0,
                     false => 1.0,
                 };
                 let start = VarValue::Float(start);
-                let result =
-                    Tween::QuartOut.f(&start, &VarValue::Float(0.0), t, BPM as f32 / 60.0 * 0.5);
+                let t = timeframe - to_next;
+                let result = Tween::QuartOut.f(&start, &VarValue::Float(0.0), t, timeframe * 0.5);
                 return result;
             }
             Expression::If(cond, th, el) => {

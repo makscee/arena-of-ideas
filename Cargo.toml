@@ -44,6 +44,7 @@ spacetimedb-sdk = "0.7.2"
 bevy_kira_audio = { version = "0.17.0", features = ["settings_loader"] }
 strum = "0.25.0"
 hex = "0.4.3"
+kira = "0.8.5"
 
 [profile.dev.package."*"]
 opt-level = 3

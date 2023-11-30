@@ -133,8 +133,12 @@ fn main() {
         .run();
 }
 
-fn update(mut timer: ResMut<GameTimer>, time: Res<Time>) {
-    timer.advance_play(time.delta_seconds());
+fn update(mut timer: ResMut<GameTimer>, time: Res<Time>, audio: Res<AudioData>) {
+    if let Some(play_delta) = audio.play_delta {
+        timer.advance_play(play_delta);
+    } else {
+        timer.advance_play(time.delta_seconds());
+    }
 }
 
 fn input_world(world: &mut World) {
