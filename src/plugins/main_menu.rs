@@ -45,11 +45,15 @@ impl MainMenuPlugin {
                 ui.vertical_centered(|ui| {
                     let btn = Self::menu_button("Continue".to_owned(), ui);
                     let can_continue = save.current_level > 0;
-                    if ui.add_enabled(can_continue, btn).clicked() {
+                    if ui
+                        .add_enabled(can_continue, btn)
+                        .on_hover_text("Continue last game")
+                        .clicked()
+                    {
                         GameState::change(GameState::Shop, world);
                     }
                     let btn = Self::menu_button("New Ladder".to_owned(), ui);
-                    if ui.add(btn).clicked() {
+                    if ui.add(btn).on_hover_text("Generate new levels infinitely until defeat.\nNew levels generated considering your teams strength").clicked() {
                         Save::default().save(world).unwrap();
                         GameState::change(GameState::Shop, world);
                     }
@@ -66,7 +70,12 @@ impl MainMenuPlugin {
                         },
                         ui,
                     );
-                    if ui.add_enabled(has_old, btn).clicked() {
+                    if ui
+                        .add_enabled(has_old, btn)
+                        .on_hover_text("Play last ladder starting from level 1")
+                        .on_disabled_hover_text("Play new ladder, then continue it after defeat")
+                        .clicked()
+                    {
                         save.current_level = 0;
                         save.team = default();
                         save.save(world).unwrap();
@@ -87,6 +96,12 @@ impl MainMenuPlugin {
                     let btn = Self::menu_button("Run Tests".to_owned(), ui);
                     if ui.add(btn).clicked() {
                         GameState::change(GameState::TestsLoading, world);
+                    }
+                    let btn = Self::menu_button("Reset".to_owned(), ui);
+                    if ui.add(btn).clicked() {
+                        Save::default().save(world).unwrap();
+                        PersistentData::default().save(world).unwrap();
+                        SettingsData::default().save(world).unwrap();
                     }
                     ui.add_space(15.0);
                 });

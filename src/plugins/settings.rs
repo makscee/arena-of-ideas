@@ -2,10 +2,19 @@ use super::*;
 
 pub struct SettingsPlugin;
 
-#[derive(Resource, Serialize, Deserialize, Debug, Default, Copy, Clone, PartialEq)]
+#[derive(Resource, Serialize, Deserialize, Debug, Copy, Clone, PartialEq)]
 pub struct SettingsData {
     pub last_state_on_load: bool,
     pub master_volume: f64,
+}
+
+impl Default for SettingsData {
+    fn default() -> Self {
+        Self {
+            last_state_on_load: Default::default(),
+            master_volume: 0.5,
+        }
+    }
 }
 
 impl Plugin for SettingsPlugin {
