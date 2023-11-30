@@ -1,4 +1,4 @@
-use bevy_kira_audio::AudioApp;
+use bevy_kira_audio::{AudioApp, AudioSource};
 
 use super::*;
 
@@ -15,6 +15,8 @@ pub struct AudioData {
     pub prev_pos: Option<f32>,
     pub need_rate: f64,
     pub cur_rate: f64,
+    pub background: Handle<AudioSource>,
+    pub background_filtered: Handle<AudioSource>,
 }
 const RATE_CHANGE_SPEED: f64 = 2.0;
 
@@ -25,6 +27,8 @@ impl Default for AudioData {
             prev_pos: default(),
             need_rate: 1.0,
             cur_rate: default(),
+            background: default(),
+            background_filtered: default(),
         }
     }
 }
@@ -33,24 +37,12 @@ impl Plugin for AudioPlugin {
     fn build(&self, app: &mut App) {
         app.add_audio_channel::<BackgroundChannel>()
             .insert_resource(BackgroundChannel { handle: default() })
-            .add_systems(
-                OnTransition {
-                    from: GameState::MainMenu,
-                    to: GameState::Shop,
-                },
-                Self::start_background,
-            )
-            .add_systems(
-                OnTransition {
-                    from: GameState::MainMenu,
-                    to: GameState::CustomBattle,
-                },
-                Self::start_background,
-            )
+            .add_systems(Startup, Self::setup)
+            .add_systems(OnEnter(GameState::Shop), Self::start_filtered_background)
+            .add_systems(OnEnter(GameState::Battle), Self::start_normal_background)
             .add_systems(OnEnter(GameState::MainMenu), Self::stop_background)
             .add_systems(Update, Self::update)
-            .add_systems(Update, Self::ui.run_if(in_state(GameState::Battle)))
-            .init_resource::<AudioData>();
+            .add_systems(Update, Self::ui.run_if(in_state(GameState::Battle)));
     }
 }
 
@@ -79,16 +71,42 @@ impl AudioPlugin {
         world.insert_resource(data);
     }
 
+    fn setup(world: &mut World) {
+        let bg: Handle<AudioSource> = world.resource::<AssetServer>().load("ron/audio/bg.ogg.ron");
+        let bg_filtered: Handle<AudioSource> = world
+            .resource::<AssetServer>()
+            .load("ron/audio/bg_filtered.ogg.ron");
+
+        let data = AudioData {
+            background: bg,
+            background_filtered: bg_filtered,
+            ..default()
+        };
+        world.insert_resource(data);
+    }
+
     fn background_channel(world: &World) -> &AudioChannel<BackgroundChannel> {
         world.resource::<AudioChannel<BackgroundChannel>>()
     }
 
-    fn start_background(world: &mut World) {
-        let track = world
-            .resource::<AssetServer>()
-            .load("ron/audio/shop_bg.ogg.ron");
+    fn start_filtered_background(world: &mut World) {
+        Self::start_background(true, world);
+    }
+
+    fn start_normal_background(world: &mut World) {
+        Self::start_background(false, world);
+    }
+
+    fn start_background(filtered: bool, world: &mut World) {
+        let audio = if filtered {
+            world.resource::<AudioData>().background_filtered.clone()
+        } else {
+            world.resource::<AudioData>().background.clone()
+        };
+        let pos = Self::background_position(world).unwrap_or_default();
+        Self::stop_background(world);
         let channel = Self::background_channel(world);
-        let handle = channel.play(track).looped().handle();
+        let handle = channel.play(audio).looped().start_from(pos).handle();
         world.insert_resource(BackgroundChannel { handle });
     }
 
@@ -98,10 +116,10 @@ impl AudioPlugin {
     }
 
     pub fn background_position(world: &World) -> Option<f64> {
-        let instance = world.resource::<BackgroundChannel>().handle.clone();
+        let instance = &world.resource::<BackgroundChannel>().handle;
         let channel = world.resource::<AudioChannel<BackgroundChannel>>();
 
-        channel.state(&instance).position()
+        channel.state(instance).position()
     }
 
     pub fn update_settings(settings: &SettingsData, world: &mut World) {
