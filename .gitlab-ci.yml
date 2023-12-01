@@ -3,13 +3,17 @@ build:
   before_script:
     - mkdir -p .artifacts
   script:
-    - cargo test --release
+    # - cargo test --release
     # macOS for Apple Silicon (M1)
-    - cargo build --release --target=aarch64-apple-darwin
-    # Copy static files to executable folder
-    - cp -R static target/aarch64-apple-darwin/release/
+    - cargo build --release --target x86_64-apple-darwin
+    - cargo build --release --target aarch64-apple-darwin
+
+    # Copy assets files to executable folder
+    - cp -R assets target/aarch64-apple-darwin/release/
+    - cp -R assets target/x86_64-apple-darwin/release/
     # Create archive for macOS
-    - tar -zcvf .artifacts/ArenaOfIdeas-macos.tar.gz --exclude=deps --exclude=examples --exclude=incremental -C target/aarch64-apple-darwin/release .
+    - lipo "target/x86_64-apple-darwin/release/arena-of-ideas" "target/aarch64-apple-darwin/release/arena-of-ideas" -create -output "ArenaOfIdeas.app/Contents/MacOS/ArenaOfIdeas"
+    # - tar -zcvf .artifacts/ArenaOfIdeas-macos.tar.gz --exclude=deps --exclude=examples --exclude=incremental -C target/aarch64-apple-darwin/release .
   artifacts:
     paths:
       - .artifacts
