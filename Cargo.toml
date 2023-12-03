@@ -3,6 +3,9 @@ name = "arena-of-ideas"
 version = "0.3.0"
 edition = "2021"
 
+[workspace]
+members = ["server"]
+
 [dependencies]
 bevy = { version = "0.11.0", default-features = false, features = [
     "bevy_core_pipeline",

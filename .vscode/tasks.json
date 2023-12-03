@@ -88,6 +88,14 @@
 			"command": "sudo cargo flamegraph"
 		},
 		{
+			"label": "Mac lipo",
+			"type": "shell",
+			"group": {
+				"kind": "build"
+			},
+			"command": "lipo \"target/x86_64-apple-darwin/release/arena-of-ideas\" \"target/aarch64-apple-darwin/release/arena-of-ideas\" -create -output \"ArenaOfIdeas.app/Contents/MacOS/ArenaOfIdeas\""
+		},
+		{
 			"type": "cargo",
 			"command": "test",
 			"args": [
@@ -130,7 +138,7 @@
 			"args": [
 				"--release",
 				"--target",
-				"x86_64-pc-windows-gnu"
+				"x86_64-pc-windows-msvc"
 			],
 			"problemMatcher": [
 				"$rustc"

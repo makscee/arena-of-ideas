@@ -15,11 +15,11 @@ impl Save {
             .set("save", self)
             .map_err(|e| anyhow!("{}", e.to_string()))
     }
-    pub fn get(world: &World) -> Result<Save> {
+    pub fn get(world: &World) -> Save {
         world
             .resource::<PkvStore>()
             .get::<Save>("save")
-            .map_err(|e| anyhow!("{}", e.to_string()))
+            .unwrap_or_default()
     }
     pub fn set_team(&mut self, team: PackedTeam) -> &mut Self {
         self.team = team;
@@ -37,7 +37,7 @@ impl Save {
 
     pub fn store_current(world: &mut World) -> Result<()> {
         PersistentData::load(world)
-            .set_stored_save(Self::get(world)?)
+            .set_stored_save(Self::get(world))
             .save(world)?;
         Ok(())
     }

@@ -36,7 +36,7 @@ impl MainMenuPlugin {
 
     pub fn ui(world: &mut World) {
         let ctx = &egui_context(world);
-        let mut save = Save::get(world).unwrap();
+        let mut save = Save::get(world);
         Window::new("Menu")
             .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
             .resizable(false)

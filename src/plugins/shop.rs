@@ -38,16 +38,14 @@ impl ShopPlugin {
     pub const REROLL_PRICE: i32 = 1;
 
     fn on_enter(world: &mut World) {
-        let save = Save::get(world).unwrap();
+        let save = Save::get(world);
         let mut generated_levels: Vec<String> = default();
         if Ladder::levels_left(world) == 0 {
-            let teams =
-                RatingPlugin::generate_weakest_opponent(&Save::get(world).unwrap().team, 3, world);
+            let teams = RatingPlugin::generate_weakest_opponent(&Save::get(world).team, 3, world);
             for team in teams.iter() {
                 generated_levels.push(team.to_string());
             }
             Save::get(world)
-                .unwrap()
                 .add_ladder_levels(teams)
                 .save(world)
                 .unwrap();
@@ -163,14 +161,14 @@ impl ShopPlugin {
 
     pub fn pack_active_team(world: &mut World) -> Result<()> {
         let team = PackedTeam::pack(Faction::Team, world);
-        Save::get(world)?
+        Save::get(world)
             .set_team(team)
             .save(world)
             .map_err(|e| anyhow!("{}", e.to_string()))
     }
 
     pub fn active_team(world: &mut World) -> Result<PackedTeam> {
-        Ok(Save::get(world)?.team)
+        Ok(Save::get(world).team)
     }
 
     pub fn ui(world: &mut World) {
@@ -214,7 +212,11 @@ impl ShopPlugin {
                     let slot = VarState::get(unit, world).get_int(VarName::Slot).unwrap() as usize;
                     entity_panel(unit, vec2(0.0, -1.5), None, "sacrifice", world).show(ctx, |ui| {
                         if ui.button("Sacrifice").clicked() {
-                            selected.insert(slot);
+                            if selected.contains(&slot) {
+                                selected.remove(&slot);
+                            } else {
+                                selected.insert(slot);
+                            }
                         }
                     });
                     if selected.contains(&slot) {
@@ -227,8 +229,7 @@ impl ShopPlugin {
                     .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
                     .show(ctx, |ui| {
                         ui.set_enabled(
-                            Save::get(world).unwrap().team.units.len() - selected.len()
-                                < SACRIFICE_SLOT,
+                            Save::get(world).team.units.len() - selected.len() < SACRIFICE_SLOT,
                         );
                         if ui
                             .button(

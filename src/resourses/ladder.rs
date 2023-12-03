@@ -8,7 +8,7 @@ pub struct Ladder {
 
 impl Ladder {
     pub fn current_level(world: &World) -> (PackedTeam, usize) {
-        let save = Save::get(world).unwrap();
+        let save = Save::get(world);
         let ind = save.current_level;
         let initial = Options::get_initial_ladder(world);
         (
@@ -22,7 +22,7 @@ impl Ladder {
     }
 
     pub fn levels_left(world: &World) -> usize {
-        let save = Save::get(world).unwrap();
+        let save = Save::get(world);
         Options::get_initial_ladder(world).teams.len() + save.ladder.teams.len()
             - save.current_level
     }

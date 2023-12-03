@@ -5,6 +5,21 @@ pub struct User {
     #[primarykey]
     identity: Identity,
     name: Option<String>,
+    email: Option<String>,
+}
+
+#[spacetimedb(reducer)]
+pub fn add_user(ctx: ReducerContext) -> Result<(), String> {
+    if User::filter_by_identity(&ctx.sender).is_some() {
+        Err("User already added".to_string())
+    } else {
+        User::insert(User {
+            identity: ctx.sender,
+            name: None,
+            email: None,
+        })?;
+        Ok(())
+    }
 }
 
 #[spacetimedb(reducer)]

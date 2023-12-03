@@ -27,12 +27,12 @@ impl BattlePlugin {
         world.resource_mut::<BattleData>().result = result;
         match result {
             BattleResult::Left(_) | BattleResult::Even => {
-                let mut sd = Save::get(world).unwrap();
+                let mut sd = Save::get(world);
                 sd.current_level += 1;
                 sd.save(world).unwrap();
             }
             BattleResult::Right(_) => {
-                let mut save = Save::get(world).unwrap();
+                let mut save = Save::get(world);
                 save.team = default();
                 save.current_level = 0;
                 save.save(world).unwrap();

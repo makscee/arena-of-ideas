@@ -116,6 +116,13 @@ impl AudioPlugin {
     }
 
     pub fn background_position(world: &World) -> Option<f64> {
+        if world
+            .resource::<State<GameState>>()
+            .get()
+            .eq(&GameState::HeroGallery)
+        {
+            return Some(get_play_head(world) as f64);
+        }
         let instance = &world.resource::<BackgroundChannel>().handle;
         let channel = world.resource::<AudioChannel<BackgroundChannel>>();
 
