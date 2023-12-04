@@ -1,6 +1,4 @@
 use super::*;
 
 #[derive(Resource)]
-pub struct StatusLibrary {
-    
-}
+pub struct StatusLibrary {}
