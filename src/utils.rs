@@ -180,9 +180,6 @@ pub fn get_insert_head(world: &World) -> f32 {
 pub fn get_play_head(world: &World) -> f32 {
     GameTimer::get(world).play_head()
 }
-pub fn get_end(world: &World) -> f32 {
-    GameTimer::get(world).end()
-}
 pub fn start_batch(world: &mut World) {
     GameTimer::get_mut(world).start_batch();
 }

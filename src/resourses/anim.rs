@@ -23,7 +23,7 @@ fn default_zero_f32_e() -> Expression {
 }
 
 impl Anim {
-    pub fn apply(self, mut context: Context, world: &mut World) -> Result<()> {
+    pub fn apply(self, context: Context, world: &mut World) -> Result<()> {
         match self {
             Anim::Sequence(list) => {
                 for anim in list {

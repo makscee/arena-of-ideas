@@ -161,10 +161,6 @@ impl ActionCluster {
         world.resource_mut::<ActionCluster>()
     }
 
-    pub fn is_empty(&self) -> bool {
-        self.actions.is_empty() && self.changes.is_empty()
-    }
-
     pub fn take(world: &mut World) -> Option<Self> {
         world.remove_resource::<ActionCluster>()
     }
@@ -276,19 +272,3 @@ impl Action {
 
 #[derive(Resource, Default)]
 pub struct ActionQueue(VecDeque<ActionCluster>);
-
-impl ActionQueue {
-    fn start_next_cluster(world: &mut World) -> bool {
-        let cluster = ActionCluster::current(world);
-        if !cluster.actions.is_empty() || !cluster.changes.is_empty() {
-            return true;
-        }
-        let mut q = world.resource_mut::<ActionQueue>();
-        if let Some(cluster) = q.0.pop_front() {
-            world.insert_resource(cluster);
-            true
-        } else {
-            false
-        }
-    }
-}

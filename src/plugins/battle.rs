@@ -23,7 +23,7 @@ pub struct BattleData {
 impl BattlePlugin {
     pub fn on_enter(world: &mut World) {
         GameTimer::get_mut(world).reset();
-        let result = Self::run_battle(100, world).unwrap();
+        let result = Self::run_battle(world).unwrap();
         world.resource_mut::<BattleData>().result = result;
         match result {
             BattleResult::Left(_) | BattleResult::Even => {
@@ -65,7 +65,7 @@ impl BattlePlugin {
         Representation::despawn_all(world);
     }
 
-    pub fn run_battle(bpm: usize, world: &mut World) -> Result<BattleResult> {
+    pub fn run_battle(world: &mut World) -> Result<BattleResult> {
         let timeframe = AudioPlugin::beat_timeframe();
         ActionPlugin::set_timeframe(timeframe, world);
         let shift_left = -AudioPlugin::to_next_beat(world);

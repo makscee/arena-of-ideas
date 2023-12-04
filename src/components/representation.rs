@@ -499,7 +499,7 @@ impl RepresentationMaterial {
                     }
                     RepresentationMaterial::Curve {
                         thickness,
-                        dilations,
+                        dilations: _,
                         curvature,
                         aa,
                         color,

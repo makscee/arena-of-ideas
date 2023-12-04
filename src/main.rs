@@ -11,10 +11,10 @@ use prelude::*;
 pub use spacetimedb_sdk;
 
 use clap::{Parser, ValueEnum};
-use spacetimedb_sdk::{
-    identity::{once_on_connect, Credentials},
-    Address,
-};
+// use spacetimedb_sdk::{
+//     identity::{once_on_connect, Credentials},
+//     Address,
+// };
 
 #[derive(Parser, Debug, Default)]
 #[command(author, version, about, long_about = None)]
@@ -31,17 +31,17 @@ enum RunMode {
     Test,
 }
 
-const SPACETIMEDB_URI: &str = "http://localhost:3001";
-const DB_NAME: &str = "aoi";
+// const SPACETIMEDB_URI: &str = "http://localhost:3001";
+// const DB_NAME: &str = "aoi";
 
-fn on_connected(creds: &Credentials, _client_address: Address) {
-    println!("{creds:?} {_client_address:?}");
-}
-/// Register all the callbacks our app will use to respond to database events.
-fn register_callbacks() {
-    // When we receive our `Credentials`, save them to a file.
-    once_on_connect(on_connected);
-}
+// fn on_connected(creds: &Credentials, _client_address: Address) {
+//     println!("{creds:?} {_client_address:?}");
+// }
+// /// Register all the callbacks our app will use to respond to database events.
+// fn register_callbacks() {
+//     // When we receive our `Credentials`, save them to a file.
+//     once_on_connect(on_connected);
+// }
 
 fn main() {
     // register_callbacks();

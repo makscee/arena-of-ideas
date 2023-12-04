@@ -207,7 +207,7 @@ impl HeroEditorPlugin {
         pd.hero_editor_data.hero_entity = Some(unit);
         UnitPlugin::fill_slot_gaps(Faction::Left, world);
         UnitPlugin::place_into_slot(unit, world).unwrap();
-        pd.save(world);
+        pd.save(world).unwrap();
     }
 
     fn respawn(world: &mut World) {

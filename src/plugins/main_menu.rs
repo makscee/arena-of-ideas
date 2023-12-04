@@ -1,5 +1,3 @@
-use bevy_egui::egui::Sense;
-
 use super::*;
 
 pub struct MainMenuPlugin;

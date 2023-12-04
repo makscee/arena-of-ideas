@@ -6,7 +6,7 @@ impl SimulationPlugin {
     pub fn run(left: PackedTeam, right: PackedTeam, world: &mut World) -> Result<BattleResult> {
         SkipVisual::set_active(true, world);
         BattlePlugin::load_teams(left, right, None, world);
-        let result = BattlePlugin::run_battle(100, world);
+        let result = BattlePlugin::run_battle(world);
         SkipVisual::set_active(false, world);
         result
     }
