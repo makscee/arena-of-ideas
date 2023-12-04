@@ -91,10 +91,6 @@ fn main() {
         .add_systems(PreUpdate, update)
         .add_systems(PostUpdate, detect_changes)
         .add_plugins(DefaultPickingPlugins)
-        .add_plugins(
-            bevy_inspector_egui::quick::WorldInspectorPlugin::new()
-                .run_if(input_toggle_active(false, KeyCode::Escape)),
-        )
         .add_plugins(bevy_kira_audio::AudioPlugin)
         .add_plugins(Material2dPlugin::<ShapeMaterial>::default())
         .add_plugins(Material2dPlugin::<CurveMaterial>::default())

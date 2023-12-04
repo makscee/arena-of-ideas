@@ -23,7 +23,6 @@ bevy_asset_loader = { version = "0.17.0", features = [
     "standard_dynamic_assets",
 ] }
 bevy_common_assets = { version = "0.7.0", features = ["ron"] }
-bevy-inspector-egui = "0.20.0"
 bevy_mod_picking = { version = "0.15.0", default-features = false, features = [
     "backend_raycast",
     "backend_bevy_ui",
