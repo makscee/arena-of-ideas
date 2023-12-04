@@ -258,7 +258,7 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - check-if-upload-to-itch-is-configured
-      - release-wasm
+      #- release-wasm
       - release-linux
       - release-windows
       - release-macOS-intel
