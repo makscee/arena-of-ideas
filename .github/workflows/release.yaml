@@ -4,6 +4,9 @@ on:
   push:
     tags:
       - '*'
+  workflow_dispatch:
+    tags:
+      - '*'
 
 env:
   # update with the name of the main binary
