@@ -90,6 +90,7 @@ fn main() {
         .add_collection_to_loading_state::<_, TestScenarios>(GameState::TestsLoading)
         .add_systems(PreUpdate, update)
         .add_systems(PostUpdate, detect_changes)
+        .add_plugins(bevy::egui::EguiPlugin)
         .add_plugins(DefaultPickingPlugins)
         .add_plugins(bevy_kira_audio::AudioPlugin)
         .add_plugins(Material2dPlugin::<ShapeMaterial>::default())
