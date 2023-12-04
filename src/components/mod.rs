@@ -4,7 +4,6 @@ mod var_state;
 mod var_state_delta;
 
 use super::*;
-use ecolor::Color32;
 pub use representation::*;
 pub use status::*;
 pub use var_state::*;

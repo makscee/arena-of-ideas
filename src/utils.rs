@@ -4,7 +4,6 @@ use bevy_egui::{
     egui::{Align2, Context, Id, Pos2},
     EguiContext,
 };
-use ecolor::Color32;
 
 use super::*;
 
