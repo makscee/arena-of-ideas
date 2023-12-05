@@ -252,8 +252,10 @@ impl Action {
             effect,
             mut context,
         } = self;
-        if UnitPlugin::is_dead(context.owner(), world) {
-            return;
+        if let Some(owner) = context.get_owner() {
+            if UnitPlugin::is_dead(owner, world) {
+                return;
+            }
         }
         match effect.invoke(&mut context, world) {
             Ok(_) => {
