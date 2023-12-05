@@ -1,3 +1,5 @@
+use crate::module_bindings::add_user_ladder;
+
 use super::*;
 
 use rand::seq::IteratorRandom;
@@ -39,16 +41,17 @@ impl ShopPlugin {
 
     fn on_enter(world: &mut World) {
         let save = Save::get(world);
+        debug!("Shop start, current ladder: {:?}", save.ladder);
         let mut generated_levels: Vec<String> = default();
         if Ladder::levels_left(world) == 0 {
             let teams = RatingPlugin::generate_weakest_opponent(&Save::get(world).team, 3, world);
             for team in teams.iter() {
                 generated_levels.push(team.to_string());
             }
-            Save::get(world)
-                .add_ladder_levels(teams)
-                .save(world)
-                .unwrap();
+            let mut save = Save::get(world);
+            save.add_ladder_levels(&teams);
+            add_user_ladder(save.ladder.levels.clone());
+            save.save(world).unwrap();
         }
         GameTimer::get_mut(world).reset();
         ActionPlugin::set_timeframe(0.05, world);
@@ -67,7 +70,7 @@ impl ShopPlugin {
                 selected: default(),
             },
         };
-        let (next_team, next_level_num) = Ladder::current_level(world);
+        let (next_team, next_level_num) = Ladder::load_current(world);
         world.insert_resource(ShopData {
             next_team,
             next_level_num: next_level_num + 1,
@@ -82,7 +85,7 @@ impl ShopPlugin {
         Self::clear_showcase(world);
 
         let left = Self::active_team(world).unwrap();
-        let (right, ind) = Ladder::current_level(world);
+        let (right, ind) = Ladder::load_current(world);
         BattlePlugin::load_teams(left, right, Some(ind), world);
     }
 
@@ -278,12 +281,8 @@ impl ShopPlugin {
                 let current_level = data.next_level_num;
                 ui.label(
                     RichText::new(format!(
-                        "Level {current_level} {}",
-                        if Ladder::levels_left(world) == 1 {
-                            "(last)"
-                        } else {
-                            ""
-                        }
+                        "Level {current_level}/{}",
+                        Ladder::total_levels(world)
                     ))
                     .size(40.0)
                     .color(hex_color!("#0091EA"))

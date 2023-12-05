@@ -81,3 +81,6 @@ pub use spacetimedb_sdk::{
     identity::{identity, once_on_connect, Credentials},
     Address,
 };
+
+pub use crate::module_bindings::Ladder as LadderTable;
+pub use spacetimedb_sdk::table::*;

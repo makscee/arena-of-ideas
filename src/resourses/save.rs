@@ -29,9 +29,14 @@ impl Save {
         self.ladder = ladder;
         self
     }
-    pub fn add_ladder_levels(&mut self, mut teams: Vec<PackedTeam>) -> &mut Self {
-        debug!("New ladder levels: {teams:#?}");
-        self.ladder.teams.append(&mut teams);
+    pub fn add_ladder_levels(&mut self, levels: &Vec<PackedTeam>) -> &mut Self {
+        debug!("New ladder levels: {levels:#?}");
+        self.ladder.levels.append(
+            &mut levels
+                .into_iter()
+                .map(|t| t.to_ladder_string())
+                .collect_vec(),
+        );
         self
     }
 

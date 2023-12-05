@@ -117,6 +117,14 @@
 			"command": "spacetime generate --lang rust --out-dir src/module_bindings --project-path server"
 		},
 		{
+			"label": "STDB: Run SQL",
+			"type": "shell",
+			"group": {
+				"kind": "build"
+			},
+			"command": "spacetime sql aoi --interactive"
+		},
+		{
 			"label": "Flamegraph: Run Debug",
 			"type": "shell",
 			"group": {

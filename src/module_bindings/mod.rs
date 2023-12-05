@@ -20,10 +20,14 @@ use spacetimedb_sdk::{
 };
 use std::sync::Arc;
 
+pub mod add_user_ladder_reducer;
+pub mod ladder;
 pub mod set_email_reducer;
 pub mod set_name_reducer;
 pub mod user;
 
+pub use add_user_ladder_reducer::*;
+pub use ladder::*;
 pub use set_email_reducer::*;
 pub use set_name_reducer::*;
 pub use user::*;
@@ -31,6 +35,7 @@ pub use user::*;
 #[allow(unused)]
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub enum ReducerEvent {
+    AddUserLadder(add_user_ladder_reducer::AddUserLadderArgs),
     SetEmail(set_email_reducer::SetEmailArgs),
     SetName(set_name_reducer::SetNameArgs),
 }
@@ -46,6 +51,8 @@ impl SpacetimeModule for Module {
     ) {
         let table_name = &table_update.table_name[..];
         match table_name {
+            "Ladder" => client_cache
+                .handle_table_update_with_primary_key::<ladder::Ladder>(callbacks, table_update),
             "User" => client_cache
                 .handle_table_update_with_primary_key::<user::User>(callbacks, table_update),
             _ => {
@@ -60,6 +67,7 @@ impl SpacetimeModule for Module {
         reducer_event: Option<Arc<AnyReducerEvent>>,
         state: &Arc<ClientCache>,
     ) {
+        reminders.invoke_callbacks::<ladder::Ladder>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<user::User>(worker, &reducer_event, state);
     }
     fn handle_event(
@@ -74,6 +82,12 @@ impl SpacetimeModule for Module {
         };
         #[allow(clippy::match_single_binding)]
         match &function_call.reducer[..] {
+            "add_user_ladder" => _reducer_callbacks
+                .handle_event_of_type::<add_user_ladder_reducer::AddUserLadderArgs, ReducerEvent>(
+                    event,
+                    _state,
+                    ReducerEvent::AddUserLadder,
+                ),
             "set_email" => _reducer_callbacks
                 .handle_event_of_type::<set_email_reducer::SetEmailArgs, ReducerEvent>(
                     event,
@@ -100,6 +114,9 @@ impl SpacetimeModule for Module {
     ) {
         let table_name = &new_subs.table_name[..];
         match table_name {
+            "Ladder" => {
+                client_cache.handle_resubscribe_for_type::<ladder::Ladder>(callbacks, new_subs)
+            }
             "User" => client_cache.handle_resubscribe_for_type::<user::User>(callbacks, new_subs),
             _ => {
                 spacetimedb_sdk::log::error!("TableRowOperation on unknown table {:?}", table_name)

@@ -1,4 +1,5 @@
 use bevy_egui::egui::InnerResponse;
+use rand::seq::IteratorRandom;
 
 use super::*;
 pub struct MainMenuPlugin;
@@ -48,34 +49,53 @@ impl MainMenuPlugin {
             {
                 GameState::change(GameState::Shop, world);
             }
+            let btn = Self::menu_button("Random Ladder");
+            let text = r#"Play ladder that belongs to other random player"#;
+            if ui.add(btn).on_hover_text(text).clicked() {
+                if let Some(ladder) = LadderTable::iter().choose(&mut thread_rng()) {
+                    let mut save = Save::get(world);
+                    save.current_level = 0;
+                    save.ladder.levels = ladder.levels;
+                    save.save(world).unwrap();
+
+                    GameState::change(GameState::Shop, world);
+                }
+            }
             let btn = Self::menu_button("New Ladder");
-            let text = r#"Generate new levels infinitely until defeat.\
-            New levels generated considering your teams strength"#;
+            let text = r#"Generate new levels infinitely until defeat.
+New levels generated considering your teams strength"#;
 
             if ui.add(btn).on_hover_text(text).clicked() {
                 Save::default().save(world).unwrap();
                 GameState::change(GameState::Shop, world);
             }
-            let has_old = !save.ladder.teams.is_empty();
-            let name = if has_old {
-                format!(
-                    "Old Ladder: {} levels",
-                    save.ladder.teams.len() + Options::get_initial_ladder(world).teams.len()
-                )
-            } else {
-                "Old Ladder".to_owned()
-            };
-            let btn = Self::menu_button(&name);
-            if ui
-                .add_enabled(has_old, btn)
-                .on_hover_text("Play last ladder starting from level 1")
-                .on_disabled_hover_text("Play new ladder, then continue it after defeat")
-                .clicked()
-            {
-                save.current_level = 0;
-                save.team = default();
-                save.save(world).unwrap();
-                GameState::change(GameState::Shop, world);
+            if let Ok(identity) = identity() {
+                let (enabled, name, levels) = if let Ok(ladder) =
+                    LadderTable::filter_by_owner(identity).exactly_one()
+                {
+                    (
+                        true,
+                        format!(
+                            "My Best Ladder ({})",
+                            ladder.levels.len() + Options::get_initial_ladder(world).levels.len()
+                        ),
+                        ladder.levels.clone(),
+                    )
+                } else {
+                    (false, "My Best Ladder".to_owned(), default())
+                };
+                let btn = Self::menu_button(&name);
+                if ui
+                    .add_enabled(enabled, btn)
+                    .on_hover_text("Play own longest ladder starting from level 1")
+                    .clicked()
+                {
+                    save.current_level = 0;
+                    save.team = default();
+                    save.ladder.levels = levels;
+                    save.save(world).unwrap();
+                    GameState::change(GameState::Shop, world);
+                }
             }
             let btn = Self::menu_button("Custom Battle");
             if ui.add(btn).clicked() {

@@ -72,5 +72,5 @@ impl LoginPlugin {
 }
 
 fn subscribe_to_tables() {
-    subscribe(&["SELECT * FROM User;"]).unwrap();
+    subscribe(&["SELECT * FROM User;SELECT * FROM Ladder;"]).unwrap();
 }
