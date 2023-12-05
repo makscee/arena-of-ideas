@@ -6,15 +6,8 @@ mod plugins;
 mod prelude;
 pub mod resourses;
 mod utils;
-use bevy::diagnostic::{DiagnosticsStore, FrameTimeDiagnosticsPlugin};
-use prelude::*;
-pub use spacetimedb_sdk;
 
-use clap::{Parser, ValueEnum};
-// use spacetimedb_sdk::{
-//     identity::{once_on_connect, Credentials},
-//     Address,
-// };
+pub use prelude::*;
 
 #[derive(Parser, Debug, Default)]
 #[command(author, version, about, long_about = None)]
@@ -24,33 +17,19 @@ struct Args {
 }
 
 #[derive(Debug, Clone, ValueEnum, Default)]
-enum RunMode {
+pub enum RunMode {
     #[default]
     Regular,
     Clean,
+    Login,
     Test,
 }
 
-// const SPACETIMEDB_URI: &str = "http://localhost:3001";
-// const DB_NAME: &str = "aoi";
-
-// fn on_connected(creds: &Credentials, _client_address: Address) {
-//     println!("{creds:?} {_client_address:?}");
-// }
-// /// Register all the callbacks our app will use to respond to database events.
-// fn register_callbacks() {
-//     // When we receive our `Credentials`, save them to a file.
-//     once_on_connect(on_connected);
-// }
-
 fn main() {
-    // register_callbacks();
-    // connect(SPACETIMEDB_URI, DB_NAME, None).expect("Failed to connect");
-    // loop {}
-    // return;
     let args = Args::try_parse().unwrap_or_default();
     let next_state = match args.mode {
         RunMode::Regular => GameState::MainMenu,
+        RunMode::Login => GameState::Login,
         RunMode::Clean => GameState::MainMenuClean,
         RunMode::Test => GameState::TestsLoading,
     };
@@ -120,6 +99,7 @@ fn main() {
             HeroGallery,
             CameraPlugin,
         ))
+        .add_plugins(LoginPlugin)
         .add_systems(Update, input_world)
         .init_resource::<UserName>()
         .init_resource::<Password>()

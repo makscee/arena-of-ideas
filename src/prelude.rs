@@ -33,7 +33,7 @@ pub use bevy::{
     render::{
         camera::{Camera, OrthographicProjection, ScalingMode},
         color::*,
-        mesh::*,
+        mesh::{Mesh, MeshVertexBufferLayout, PrimitiveTopology},
         render_resource::AsBindGroup,
         view::*,
     },
@@ -47,6 +47,7 @@ pub use bevy::{
 pub use bevy_asset_loader::prelude::*;
 pub use bevy_common_assets::ron::RonAssetPlugin;
 pub use bevy_egui::egui;
+pub use bevy_egui::egui::{Frame, Margin};
 pub use bevy_egui::{
     egui::{
         pos2, text::LayoutJob, Align2, Area, Button, CentralPanel, CollapsingHeader, Color32,
@@ -70,3 +71,13 @@ pub use std::mem;
 pub use strum::IntoEnumIterator;
 pub use strum_macros::{AsRefStr, Display, EnumIter, EnumString};
 pub use utils::*;
+
+pub use bevy::diagnostic::{DiagnosticsStore, FrameTimeDiagnosticsPlugin};
+pub use clap::{Parser, ValueEnum};
+pub use materials::prelude::module_bindings::connect;
+pub use spacetimedb_sdk;
+pub use spacetimedb_sdk::identity::Identity;
+pub use spacetimedb_sdk::{
+    identity::{identity, once_on_connect, Credentials},
+    Address,
+};
