@@ -93,7 +93,31 @@
 			"command": "find . -iname '*.ron' -exec ronfmt \"{}\" \\;"
 		},
 		{
-			"label": "Flamegraph Run Debug",
+			"label": "STDB: Publish",
+			"type": "shell",
+			"group": {
+				"kind": "build"
+			},
+			"command": "spacetime publish -c aoi -p server"
+		},
+		{
+			"label": "STDB: Start",
+			"type": "shell",
+			"group": {
+				"kind": "build"
+			},
+			"command": "spacetime start --listen-addr 127.0.0.1:3001"
+		},
+		{
+			"label": "STDB: Generate Bindings",
+			"type": "shell",
+			"group": {
+				"kind": "build"
+			},
+			"command": "spacetime generate --lang rust --out-dir src/module_bindings --project-path server"
+		},
+		{
+			"label": "Flamegraph: Run Debug",
 			"type": "shell",
 			"group": {
 				"kind": "build"
@@ -101,7 +125,7 @@
 			"command": "sudo cargo flamegraph --dev -- --mode regular"
 		},
 		{
-			"label": "Flamegraph Run Release",
+			"label": "Flamegraph: Run Release",
 			"type": "shell",
 			"group": {
 				"kind": "build"
