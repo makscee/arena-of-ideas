@@ -16,6 +16,7 @@ use spacetimedb_sdk::{
 pub struct User {
     pub identity: Identity,
     pub name: Option<String>,
+    pub email: Option<String>,
 }
 
 impl TableType for User {
@@ -38,5 +39,9 @@ impl User {
     #[allow(unused)]
     pub fn filter_by_name(name: Option<String>) -> TableIter<Self> {
         Self::filter(|row| row.name == name)
+    }
+    #[allow(unused)]
+    pub fn filter_by_email(email: Option<String>) -> TableIter<Self> {
+        Self::filter(|row| row.email == email)
     }
 }

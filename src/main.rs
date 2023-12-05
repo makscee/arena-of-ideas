@@ -99,7 +99,7 @@ fn main() {
             HeroGallery,
             CameraPlugin,
         ))
-        .add_plugins(LoginPlugin)
+        .add_plugins((LoginPlugin, ProfilePlugin))
         .add_systems(Update, input_world)
         .init_resource::<UserName>()
         .init_resource::<Password>()

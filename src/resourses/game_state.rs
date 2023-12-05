@@ -15,6 +15,7 @@ pub enum GameState {
     HeroEditor,
     HeroGallery,
     Login,
+    Profile,
 }
 
 impl GameState {
