@@ -9,8 +9,7 @@ impl Plugin for HeroEditorPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
-            (Self::ui.before(SettingsPlugin::ui), Self::input)
-                .run_if(in_state(GameState::HeroEditor)),
+            (Self::input).run_if(in_state(GameState::HeroEditor)),
         )
         .add_systems(OnEnter(GameState::HeroEditor), Self::on_enter);
     }

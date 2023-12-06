@@ -6,8 +6,11 @@ pub struct ProfilePlugin;
 
 impl Plugin for ProfilePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, Self::ui.run_if(in_state(GameState::Profile)))
-            .add_systems(OnEnter(GameState::Profile), Self::on_enter);
+        app.add_systems(
+            Update,
+            Self::edit_state_ui.run_if(in_state(GameState::Profile)),
+        )
+        .add_systems(OnEnter(GameState::Profile), Self::on_enter);
     }
 }
 
@@ -23,7 +26,39 @@ impl ProfilePlugin {
         });
     }
 
-    fn ui(world: &mut World) {
+    pub fn ui(ui: &mut Ui, world: &mut World) {
+        CollapsingHeader::new(RichText::new("Profile").size(25.0)).show(ui, |ui| {
+            ui.vertical(|ui| {
+                if let Ok(identity) = identity() {
+                    let initial_len = Options::get_initial_ladder(world).levels.len();
+                    let own_ladder_length = TableLadder::filter_by_creator(identity.clone())
+                        .find(|l| l.status.eq(&module_bindings::LadderStatus::Fresh))
+                        .map(|l| l.levels.len())
+                        .unwrap_or_default()
+                        + initial_len;
+                    let beaten_ladders = TableLadder::filter_by_owner(identity.clone())
+                        .filter(|l| l.status.eq(&module_bindings::LadderStatus::Beaten))
+                        .collect_vec();
+                    ui.label(format!("Own ladder length: {own_ladder_length}"));
+                    ui.label(format!("Beaten ladders count: {}", beaten_ladders.len()));
+                    for (i, ladder) in beaten_ladders.into_iter().enumerate() {
+                        ui.collapsing(
+                            format!("{}. {} levels", i + 1, ladder.levels.len() + initial_len),
+                            |ui| {
+                                for level in ladder.levels.iter() {
+                                    ui.label(
+                                        PackedTeam::from_ladder_string(level, world).to_string(),
+                                    );
+                                }
+                            },
+                        );
+                    }
+                }
+            })
+        });
+    }
+
+    fn edit_state_ui(world: &mut World) {
         let ctx = &egui_context(world);
         Window::new("Profile")
             .collapsible(false)

@@ -19,8 +19,7 @@ impl Default for SettingsData {
 
 impl Plugin for SettingsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, Self::init)
-            .add_systems(Update, Self::ui);
+        app.add_systems(Startup, Self::init);
     }
 }
 
@@ -31,22 +30,16 @@ impl SettingsPlugin {
         Self::updated(data, world);
     }
 
-    pub fn ui(world: &mut World) {
+    pub fn ui(ui: &mut Ui, world: &mut World) {
         let mut data = *SettingsData::get(world);
-        Window::new("Settings")
-            .anchor(Align2::RIGHT_TOP, [-10.0, 10.0])
-            .title_bar(false)
-            .resizable(false)
-            .show(&egui_context(world), |ui| {
-                CollapsingHeader::new(RichText::new("Settings").size(25.0)).show(ui, |ui| {
-                    ui.vertical(|ui| {
-                        ui.checkbox(&mut data.last_state_on_load, "load from last state");
-                        let master_volume =
-                            Slider::new(&mut data.master_volume, 0.0..=1.0).text("master volume");
-                        ui.add(master_volume);
-                    })
-                })
-            });
+        CollapsingHeader::new(RichText::new("Settings").size(25.0)).show(ui, |ui| {
+            ui.vertical(|ui| {
+                ui.checkbox(&mut data.last_state_on_load, "load from last state");
+                let master_volume =
+                    Slider::new(&mut data.master_volume, 0.0..=1.0).text("master volume");
+                ui.add(master_volume);
+            })
+        });
         if !data.eq(SettingsData::get(world)) {
             Self::updated(data, world);
         }

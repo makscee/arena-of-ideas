@@ -31,7 +31,10 @@ impl Plugin for ShopPlugin {
             .add_systems(PostUpdate, Self::input.run_if(in_state(GameState::Shop)))
             .add_systems(
                 Update,
-                ((Self::ui, Self::win.run_if(input_just_pressed(KeyCode::V)))
+                ((
+                    Self::ui.after(PanelsPlugin::ui),
+                    Self::win.run_if(input_just_pressed(KeyCode::V)),
+                )
                     .run_if(in_state(GameState::Shop)),),
             );
     }
