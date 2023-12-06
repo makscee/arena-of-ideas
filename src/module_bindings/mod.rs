@@ -20,24 +20,35 @@ use spacetimedb_sdk::{
 };
 use std::sync::Arc;
 
-pub mod add_user_ladder_reducer;
+pub mod add_ladder_levels_reducer;
+pub mod beat_ladder_reducer;
+pub mod finish_building_ladder_reducer;
 pub mod ladder;
+pub mod ladder_status;
 pub mod set_email_reducer;
 pub mod set_name_reducer;
+pub mod start_new_ladder_reducer;
 pub mod user;
 
-pub use add_user_ladder_reducer::*;
+pub use add_ladder_levels_reducer::*;
+pub use beat_ladder_reducer::*;
+pub use finish_building_ladder_reducer::*;
 pub use ladder::*;
+pub use ladder_status::*;
 pub use set_email_reducer::*;
 pub use set_name_reducer::*;
+pub use start_new_ladder_reducer::*;
 pub use user::*;
 
 #[allow(unused)]
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub enum ReducerEvent {
-    AddUserLadder(add_user_ladder_reducer::AddUserLadderArgs),
+    AddLadderLevels(add_ladder_levels_reducer::AddLadderLevelsArgs),
+    BeatLadder(beat_ladder_reducer::BeatLadderArgs),
+    FinishBuildingLadder(finish_building_ladder_reducer::FinishBuildingLadderArgs),
     SetEmail(set_email_reducer::SetEmailArgs),
     SetName(set_name_reducer::SetNameArgs),
+    StartNewLadder(start_new_ladder_reducer::StartNewLadderArgs),
 }
 
 #[allow(unused)]
@@ -81,30 +92,15 @@ impl SpacetimeModule for Module {
             return None;
         };
         #[allow(clippy::match_single_binding)]
-        match &function_call.reducer[..] {
-            "add_user_ladder" => _reducer_callbacks
-                .handle_event_of_type::<add_user_ladder_reducer::AddUserLadderArgs, ReducerEvent>(
-                    event,
-                    _state,
-                    ReducerEvent::AddUserLadder,
-                ),
-            "set_email" => _reducer_callbacks
-                .handle_event_of_type::<set_email_reducer::SetEmailArgs, ReducerEvent>(
-                    event,
-                    _state,
-                    ReducerEvent::SetEmail,
-                ),
-            "set_name" => _reducer_callbacks
-                .handle_event_of_type::<set_name_reducer::SetNameArgs, ReducerEvent>(
-                    event,
-                    _state,
-                    ReducerEvent::SetName,
-                ),
-            unknown => {
-                spacetimedb_sdk::log::error!("Event on an unknown reducer: {:?}", unknown);
-                None
-            }
-        }
+match &function_call.reducer[..] {
+						"add_ladder_levels" => _reducer_callbacks.handle_event_of_type::<add_ladder_levels_reducer::AddLadderLevelsArgs, ReducerEvent>(event, _state, ReducerEvent::AddLadderLevels),
+			"beat_ladder" => _reducer_callbacks.handle_event_of_type::<beat_ladder_reducer::BeatLadderArgs, ReducerEvent>(event, _state, ReducerEvent::BeatLadder),
+			"finish_building_ladder" => _reducer_callbacks.handle_event_of_type::<finish_building_ladder_reducer::FinishBuildingLadderArgs, ReducerEvent>(event, _state, ReducerEvent::FinishBuildingLadder),
+			"set_email" => _reducer_callbacks.handle_event_of_type::<set_email_reducer::SetEmailArgs, ReducerEvent>(event, _state, ReducerEvent::SetEmail),
+			"set_name" => _reducer_callbacks.handle_event_of_type::<set_name_reducer::SetNameArgs, ReducerEvent>(event, _state, ReducerEvent::SetName),
+			"start_new_ladder" => _reducer_callbacks.handle_event_of_type::<start_new_ladder_reducer::StartNewLadderArgs, ReducerEvent>(event, _state, ReducerEvent::StartNewLadder),
+			unknown => { spacetimedb_sdk::log::error!("Event on an unknown reducer: {:?}", unknown); None }
+}
     }
     fn handle_resubscribe(
         &self,

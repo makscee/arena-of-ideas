@@ -82,5 +82,5 @@ pub use spacetimedb_sdk::{
     Address,
 };
 
-pub use crate::module_bindings::Ladder as LadderTable;
+pub use crate::module_bindings::Ladder as TableLadder;
 pub use spacetimedb_sdk::table::*;

@@ -10,7 +10,7 @@
         ),
     ),
     name: "Doppelganger",
-    description: "Battle Start: use [Copy]",
+    description: "Battle Start: use [Copy] on random adjacent ally",
     representation: (
         material: Shape(
             shape: Circle,

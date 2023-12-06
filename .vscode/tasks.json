@@ -98,7 +98,7 @@
 			"group": {
 				"kind": "build"
 			},
-			"command": "spacetime publish -c aoi -p server"
+			"command": "spacetime publish aoi -p server"
 		},
 		{
 			"label": "STDB: Start",

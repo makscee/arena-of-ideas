@@ -9,7 +9,7 @@
         ),
     ),
     name: "Protector",
-    description: "Battle Start: give [Shield] to ally striker",
+    description: "Battle Start: give [Shield] to front ally",
     representation: (
         material: Shape(
             shape: Circle,

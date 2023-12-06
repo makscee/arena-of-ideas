@@ -138,7 +138,7 @@ pub fn parse_vars(
                 true => (
                     state
                         .get_string_at(VarName::from_str(&str).unwrap(), t)
-                        .unwrap(),
+                        .unwrap_or_default(),
                     Color32::WHITE,
                 ),
                 false => (str, Color32::GRAY),

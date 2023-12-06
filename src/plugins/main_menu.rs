@@ -1,6 +1,8 @@
 use bevy_egui::egui::InnerResponse;
 use rand::seq::IteratorRandom;
 
+use crate::module_bindings::start_new_ladder;
+
 use super::*;
 pub struct MainMenuPlugin;
 
@@ -30,7 +32,7 @@ impl MainMenuPlugin {
 
     pub fn ui(world: &mut World) {
         let ctx = &egui_context(world);
-        let mut save = Save::get(world);
+        let save = Save::get(world);
         Self::menu_window("Menu", ctx, |ui| {
             let can_continue = save.current_level > 0;
             if ui
@@ -52,10 +54,14 @@ impl MainMenuPlugin {
             let btn = Self::menu_button("Random Ladder");
             let text = r#"Play ladder that belongs to other random player"#;
             if ui.add(btn).on_hover_text(text).clicked() {
-                if let Some(ladder) = LadderTable::iter().choose(&mut thread_rng()) {
-                    let mut save = Save::get(world);
-                    save.current_level = 0;
-                    save.ladder.levels = ladder.levels;
+                if let Some(ladder) = TableLadder::iter()
+                    .filter(|l| !l.status.eq(&module_bindings::LadderStatus::Building))
+                    .choose(&mut thread_rng())
+                {
+                    let mut save = Save::default();
+                    save.mode = GameMode::RandomLadder {
+                        ladder_id: ladder.id,
+                    };
                     save.save(world).unwrap();
 
                     GameState::change(GameState::Shop, world);
@@ -66,52 +72,29 @@ impl MainMenuPlugin {
 New levels generated considering your teams strength"#;
 
             if ui.add(btn).on_hover_text(text).clicked() {
-                Save::default().save(world).unwrap();
+                start_new_ladder();
+                let mut save = Save::default();
+                save.mode = GameMode::NewLadder;
+                save.save(world).unwrap();
                 GameState::change(GameState::Shop, world);
             }
-            if let Ok(identity) = identity() {
-                let (enabled, name, levels) = if let Ok(ladder) =
-                    LadderTable::filter_by_owner(identity).exactly_one()
-                {
-                    (
-                        true,
-                        format!(
-                            "My Best Ladder ({})",
-                            ladder.levels.len() + Options::get_initial_ladder(world).levels.len()
-                        ),
-                        ladder.levels.clone(),
-                    )
-                } else {
-                    (false, "My Best Ladder".to_owned(), default())
-                };
-                let btn = Self::menu_button(&name);
-                if ui
-                    .add_enabled(enabled, btn)
-                    .on_hover_text("Play own longest ladder starting from level 1")
-                    .clicked()
-                {
-                    save.current_level = 0;
-                    save.team = default();
-                    save.ladder.levels = levels;
-                    save.save(world).unwrap();
-                    GameState::change(GameState::Shop, world);
+            if cfg!(debug_assertions) {
+                let btn = Self::menu_button("Custom Battle");
+                if ui.add(btn).clicked() {
+                    GameState::change(GameState::CustomBattle, world);
                 }
-            }
-            let btn = Self::menu_button("Custom Battle");
-            if ui.add(btn).clicked() {
-                GameState::change(GameState::CustomBattle, world);
+                let btn = Self::menu_button("Hero Editor");
+                if ui.add(btn).clicked() {
+                    GameState::change(GameState::HeroEditor, world);
+                }
+                let btn = Self::menu_button("Run Tests");
+                if ui.add(btn).clicked() {
+                    GameState::change(GameState::TestsLoading, world);
+                }
             }
             let btn = Self::menu_button("Hero Gallery");
             if ui.add(btn).clicked() {
                 GameState::change(GameState::HeroGallery, world);
-            }
-            let btn = Self::menu_button("Hero Editor");
-            if ui.add(btn).clicked() {
-                GameState::change(GameState::HeroEditor, world);
-            }
-            let btn = Self::menu_button("Run Tests");
-            if ui.add(btn).clicked() {
-                GameState::change(GameState::TestsLoading, world);
             }
             let btn = Self::menu_button("Profile");
             if ui.add(btn).clicked() {

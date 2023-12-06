@@ -1,7 +1,6 @@
-use crate::module_bindings::add_user_ladder;
-
 use super::*;
 
+use bevy::input::common_conditions::input_just_pressed;
 use rand::seq::IteratorRandom;
 
 pub struct ShopPlugin;
@@ -11,7 +10,6 @@ pub struct ShopData {
     pub next_team: PackedTeam,
     pub next_level_num: usize,
     pub phase: ShopPhase,
-    pub generated_levels: Vec<String>,
 }
 
 #[derive(Clone, PartialEq)]
@@ -31,7 +29,11 @@ impl Plugin for ShopPlugin {
                 Self::on_battle_transition,
             )
             .add_systems(PostUpdate, Self::input.run_if(in_state(GameState::Shop)))
-            .add_systems(Update, (Self::ui.run_if(in_state(GameState::Shop)),));
+            .add_systems(
+                Update,
+                ((Self::ui, Self::win.run_if(input_just_pressed(KeyCode::V)))
+                    .run_if(in_state(GameState::Shop)),),
+            );
     }
 }
 
@@ -39,20 +41,17 @@ impl ShopPlugin {
     pub const UNIT_PRICE: i32 = 3;
     pub const REROLL_PRICE: i32 = 1;
 
+    fn win(world: &mut World) {
+        Self::on_battle_transition(world);
+        let mut sd = Save::get(world);
+        sd.current_level += 1;
+        sd.save(world).unwrap();
+        Self::on_enter(world);
+    }
+
     fn on_enter(world: &mut World) {
         let save = Save::get(world);
-        debug!("Shop start, current ladder: {:?}", save.ladder);
-        let mut generated_levels: Vec<String> = default();
-        if Ladder::levels_left(world) == 0 {
-            let teams = RatingPlugin::generate_weakest_opponent(&Save::get(world).team, 3, world);
-            for team in teams.iter() {
-                generated_levels.push(team.to_string());
-            }
-            let mut save = Save::get(world);
-            save.add_ladder_levels(&teams);
-            add_user_ladder(save.ladder.levels.clone());
-            save.save(world).unwrap();
-        }
+        debug!("Shop start, current ladder: {:?}", save.mode);
         GameTimer::get_mut(world).reset();
         ActionPlugin::set_timeframe(0.05, world);
         let team_len = save.team.units.len();
@@ -75,7 +74,6 @@ impl ShopPlugin {
             next_team,
             next_level_num: next_level_num + 1,
             phase,
-            generated_levels,
         });
     }
 
@@ -323,22 +321,6 @@ impl ShopPlugin {
                     }
                 });
             });
-        if !data.generated_levels.is_empty() {
-            Window::new("3 new levels generated")
-                .collapsible(false)
-                .resizable(false)
-                .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
-                .show(ctx, |ui| {
-                    ui.vertical_centered(|ui| {
-                        for line in data.generated_levels.iter() {
-                            ui.heading(line);
-                        }
-                        if ui.button("Ok").clicked() {
-                            data.generated_levels.clear();
-                        }
-                    });
-                });
-        }
         Area::new("exit")
             .anchor(Align2::LEFT_TOP, [20.0, 20.0])
             .show(ctx, |ui| {
@@ -358,7 +340,7 @@ impl ShopPlugin {
         Self::get_g(world) >= price
     }
 
-    pub fn buy_unit(unit: Entity, world: &mut World) -> Result<()> {
+    pub fn buy_unit(unit: Entity, world: &mut World) {
         let team = PackedTeam::entity(Faction::Team, world).unwrap();
         world
             .entity_mut(unit)
@@ -368,7 +350,6 @@ impl ShopPlugin {
         VarState::push_back(unit, VarName::Slot, VarChange::new(VarValue::Int(0)), world);
         UnitPlugin::fill_slot_gaps(Faction::Team, world);
         UnitPlugin::translate_to_slots(world);
-        Self::change_g(-Self::UNIT_PRICE, world)
     }
 
     pub fn buy_reroll(world: &mut World) -> Result<()> {
@@ -416,7 +397,7 @@ pub enum OfferProduct {
 }
 
 impl OfferProduct {
-    pub fn do_buy(&self, entity: Entity, world: &mut World) -> Result<()> {
+    pub fn do_buy(&self, entity: Entity, world: &mut World) {
         match self {
             OfferProduct::Unit => ShopPlugin::buy_unit(entity, world),
             OfferProduct::Status { name, charges } => {
@@ -431,7 +412,6 @@ impl OfferProduct {
                         .push_action_back(Effect::AddStatus(name.clone()), context);
                 }
                 world.entity_mut(entity).despawn_recursive();
-                Ok(())
             }
         }
     }
@@ -454,7 +434,8 @@ impl ShopOffer {
                 .min_size(egui::vec2(100.0, 0.0));
                 ui.label("Buy");
                 if ui.add(btn).clicked() {
-                    so.product.do_buy(entity, world).unwrap();
+                    so.product.do_buy(entity, world);
+                    ShopPlugin::change_g(-so.price, world).unwrap();
                 }
             })
         });

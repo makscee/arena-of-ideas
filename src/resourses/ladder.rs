@@ -13,10 +13,10 @@ impl Ladder {
         let initial = Options::get_initial_ladder(world);
         (
             PackedTeam::from_ladder_string(
-                if ind < initial.levels.len() {
-                    &initial.levels[ind]
+                &if ind < initial.levels.len() {
+                    initial.levels[ind].clone()
                 } else {
-                    &save.ladder.levels[ind - initial.levels.len()]
+                    save.ladder().unwrap().levels[ind - initial.levels.len()].clone()
                 },
                 world,
             ),
@@ -30,6 +30,12 @@ impl Ladder {
     }
 
     pub fn total_levels(world: &World) -> usize {
-        Options::get_initial_ladder(world).levels.len() + Save::get(world).ladder.levels.len()
+        let ladder_len = Save::get(world)
+            .get_ladder_id()
+            .ok()
+            .and_then(|lid| TableLadder::filter_by_id(lid))
+            .and_then(|l| Some(l.levels.len()))
+            .unwrap_or_default();
+        Options::get_initial_ladder(world).levels.len() + ladder_len
     }
 }

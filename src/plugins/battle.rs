@@ -1,5 +1,7 @@
 use bevy_egui::egui::{Align2, Window};
 
+use crate::module_bindings::{beat_ladder, finish_building_ladder};
+
 use super::*;
 
 pub struct BattlePlugin;
@@ -18,32 +20,42 @@ pub struct BattleData {
     pub right: Option<PackedTeam>,
     pub level: Option<usize>,
     pub result: BattleResult,
+    pub end: BattleEnd,
+}
+
+#[derive(Clone, Copy)]
+pub enum BattleEnd {
+    Defeat(usize, usize, bool),
+    LadderBeaten(usize),
+    LadderGenerate(usize),
+    Victory(usize, usize),
 }
 
 impl BattlePlugin {
     pub fn on_enter(world: &mut World) {
         GameTimer::get_mut(world).reset();
         let result = Self::run_battle(world).unwrap();
-        world.resource_mut::<BattleData>().result = result;
-        match result {
-            BattleResult::Left(_) | BattleResult::Even => {
-                let mut sd = Save::get(world);
-                sd.current_level += 1;
-                sd.save(world).unwrap();
-            }
+        let mut save = Save::get(world);
+        save.current_level += 1;
+        let level = save.current_level;
+        let total = Ladder::total_levels(world);
+        let mut bd = world.resource_mut::<BattleData>();
+        bd.end = match result {
+            BattleResult::Tbd => panic!("Failed to get BattleResult"),
+            BattleResult::Left(_) | BattleResult::Even => match level == total {
+                true => match save.mode {
+                    GameMode::NewLadder => BattleEnd::LadderGenerate(level),
+                    GameMode::RandomLadder { .. } => BattleEnd::LadderBeaten(level),
+                },
+                false => BattleEnd::Victory(level, total),
+            },
             BattleResult::Right(_) => {
-                let mut save = Save::get(world);
-                save.team = default();
-                save.current_level = 0;
-                save.save(world).unwrap();
-                let mut pd = PersistentData::load(world);
-                if pd.last_state == Some(GameState::Shop) {
-                    pd.last_state = None;
-                }
-                pd.save(world).unwrap();
+                let finish_building = save.mode == GameMode::NewLadder;
+                BattleEnd::Defeat(level, total, finish_building)
             }
-            BattleResult::Tbd => panic!("Battle result fail"),
-        }
+        };
+        bd.result = result;
+        save.save(world).unwrap();
     }
 
     pub fn load_teams(
@@ -57,6 +69,7 @@ impl BattlePlugin {
             right: Some(right),
             level,
             result: default(),
+            end: BattleEnd::Defeat(0, 0, false),
         });
     }
 
@@ -191,19 +204,26 @@ impl BattlePlugin {
         if !GameTimer::get(world).ended() {
             return;
         }
-        let bd = world.resource::<BattleData>();
-        let victory = match bd.result {
-            BattleResult::Left(_) | BattleResult::Even => true,
-            BattleResult::Right(_) => false,
-            BattleResult::Tbd => panic!("No battle result found"),
+        let end = world.resource::<BattleData>().end.clone();
+        let text = match end {
+            BattleEnd::Defeat(level, total, finished_building) => {
+                if finished_building {
+                    format!("Defeat. New ladder is {level} levels")
+                } else {
+                    format!("Defeat. Reached level {level}/{total}")
+                }
+            }
+            BattleEnd::LadderBeaten(level) => format!("Victory! Ladder beaten! {level}/{level}"),
+            BattleEnd::LadderGenerate(..) => format!("Victory! New levels will be generated."),
+            BattleEnd::Victory(level, total) => format!("Victory! {level}/{total}"),
         };
-        let (text, color) = match victory {
-            true => ("Victory".to_owned(), hex_color!("#00E5FF")),
-            false => (
-                format!("Defeat. Reached level {}", bd.level.unwrap_or_default() + 1),
-                hex_color!("#FF1744"),
-            ),
+        let color = match end {
+            BattleEnd::Defeat(..) => hex_color!("#FF1744"),
+            BattleEnd::LadderBeaten(_)
+            | BattleEnd::LadderGenerate(_)
+            | BattleEnd::Victory(_, _) => hex_color!("#00E5FF"),
         };
+
         Window::new(
             RichText::new(text)
                 .color(color)
@@ -236,10 +256,35 @@ impl BattlePlugin {
                     )
                     .clicked()
                 {
-                    if victory {
-                        GameState::change(GameState::Shop, world);
-                    } else {
-                        GameState::change(GameState::MainMenu, world);
+                    match end {
+                        BattleEnd::Defeat(level, total, new) => {
+                            if new {
+                                finish_building_ladder((total - level) as u32);
+                            }
+                            Save::default().save(world).unwrap();
+                            GameState::MainMenu.change(world);
+                        }
+                        BattleEnd::LadderBeaten(_) => {
+                            let save = Save::get(world);
+                            let level =
+                                RatingPlugin::generate_weakest_opponent(&save.team, 1, world)[0]
+                                    .to_ladder_string();
+                            beat_ladder(save.get_ladder_id().unwrap(), level);
+                            Save::default().save(world).unwrap();
+                            GameState::MainMenu.change(world);
+                        }
+                        BattleEnd::LadderGenerate(_) => {
+                            let teams = RatingPlugin::generate_weakest_opponent(
+                                &Save::get(world).team,
+                                3,
+                                world,
+                            );
+                            Save::get(world).add_ladder_levels(&teams);
+                            GameState::Shop.change(world);
+                        }
+                        BattleEnd::Victory(_, _) => {
+                            GameState::Shop.change(world);
+                        }
                     }
                 }
             });
