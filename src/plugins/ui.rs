@@ -77,7 +77,8 @@ impl UiPlugin {
             style.visuals.window_fill = black();
             style.visuals.window_stroke.color = white();
             style.visuals.window_stroke.width = 1.0;
-            style.spacing.window_margin = 8.0.into();
+            // style.spacing.window_margin = 8.0.into();
+            style.spacing.window_margin = 0.0.into();
             // dbg!(style.visuals.widgets.hovered);
             style.visuals.widgets.inactive = WidgetVisuals {
                 bg_fill: white(),
@@ -109,19 +110,34 @@ impl UiPlugin {
 
     fn ui(world: &mut World) {
         let ctx = &egui_context(world);
+
         Window::new(RichText::new("Main Menu").size(14.0).color(white()))
             .min_width(100.0)
+            .title_bar(false)
             .collapsible(false)
             .show(ctx, |ui| {
+                let v = &ui.style().visuals.clone();
                 ui.vertical_centered_justified(|ui| {
-                    // Frame::none().fill(white()).show(ui, |ui| {
-                    //     ui.with_layout(
-                    //         Layout::left_to_right(egui::Align::Min)
-                    //             .with_main_align(egui::Align::Min)
-                    //             .with_main_justify(true),
-                    //         |ui| ui.colored_label(black(), "Main Menu"),
-                    //     )
-                    // });
+                    Frame::none()
+                        .fill(white())
+                        .rounding(v.window_rounding)
+                        .stroke(v.window_stroke)
+                        .show(ui, |ui| {
+                            ui.with_layout(
+                                Layout::top_down(egui::Align::Min).with_cross_justify(true),
+                                |ui| {
+                                    Frame::none()
+                                        .inner_margin(Margin::symmetric(10.0, 0.0))
+                                        .show(ui, |ui| {
+                                            ui.label(
+                                                RichText::new("Main Menu")
+                                                    .size(15.0)
+                                                    .color(black()),
+                                            );
+                                        })
+                                },
+                            );
+                        });
                     frame(ui, |ui| line(ui, [Button::new("Continue")].into()));
                     frame(ui, |ui| {
                         line(
@@ -139,6 +155,7 @@ fn frame<R>(ui: &mut Ui, add_contents: impl FnOnce(&mut Ui) -> R) -> InnerRespon
     Frame::none()
         .stroke(Stroke::new(1.0, dark_gray()))
         .inner_margin(6.0)
+        .outer_margin(6.0)
         .show(ui, |ui| {
             ui.with_layout(Layout::left_to_right(egui::Align::Min), add_contents)
                 .inner
