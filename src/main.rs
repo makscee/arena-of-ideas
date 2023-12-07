@@ -1,5 +1,4 @@
 mod components;
-mod login_menu_system;
 mod materials;
 mod module_bindings;
 mod plugins;
@@ -99,10 +98,8 @@ fn main() {
             HeroGallery,
             CameraPlugin,
         ))
-        .add_plugins((LoginPlugin, ProfilePlugin, PanelsPlugin))
+        .add_plugins((LoginPlugin, ProfilePlugin, PanelsPlugin, UiPlugin))
         .add_systems(Update, input_world)
-        .init_resource::<UserName>()
-        .init_resource::<Password>()
         .init_resource::<GameTimer>()
         .register_type::<VarState>()
         .register_type::<VarStateDelta>()

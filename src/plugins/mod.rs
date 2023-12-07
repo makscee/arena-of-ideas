@@ -17,6 +17,7 @@ mod restart;
 mod settings;
 mod shop;
 mod simulation;
+mod ui;
 mod unit;
 
 pub use action::*;
@@ -36,4 +37,5 @@ pub use restart::*;
 pub use settings::*;
 pub use shop::*;
 pub use simulation::*;
+pub use ui::*;
 pub use unit::*;
