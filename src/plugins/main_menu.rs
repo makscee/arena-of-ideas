@@ -33,78 +33,88 @@ impl MainMenuPlugin {
     pub fn ui(world: &mut World) {
         let ctx = &egui_context(world);
         let save = Save::get(world);
-        Self::menu_window("Menu", ctx, |ui| {
-            let can_continue = save.current_level > 0;
-            if ui
-                .add_enabled(
-                    can_continue,
-                    Button::new(
-                        RichText::new("Continue")
-                            .size(20.0)
-                            .text_style(egui::TextStyle::Heading)
-                            .color(hex_color!("#ffffff")),
-                    )
-                    .min_size(egui::vec2(200.0, 0.0)),
-                )
-                .on_hover_text("Continue last game")
-                .clicked()
-            {
-                GameState::change(GameState::Shop, world);
-            }
-            let btn = Self::menu_button("Random Ladder");
-            let text = r#"Play ladder that belongs to other random player"#;
-            if ui.add(btn).on_hover_text(text).clicked() {
-                if let Some(ladder) = TableLadder::iter()
-                    .filter(|l| !l.status.eq(&module_bindings::LadderStatus::Building))
-                    .choose(&mut thread_rng())
-                {
-                    let mut save = Save::default();
-                    save.mode = GameMode::RandomLadder {
-                        ladder_id: ladder.id,
-                    };
-                    save.save(world).unwrap();
 
+        let mut window = window("MAIN MENU");
+        window.0 = window.0.anchor(Align2::CENTER_CENTER, [0.0, 0.0]);
+        window.show(ctx, |ui| {
+            frame(ui, |ui| {
+                ui.set_enabled(save.current_level > 0);
+                if ui.button("CONTINUE").clicked() {
                     GameState::change(GameState::Shop, world);
                 }
-            }
-            let btn = Self::menu_button("New Ladder");
-            let text = r#"Generate new levels infinitely until defeat.
-New levels generated considering your teams strength"#;
+            });
+            frame(ui, |ui| {
+                ui.columns(2, |ui| {
+                    ui[0].vertical_centered_justified(|ui| {
+                        if ui.button("RANDOM LADDDER").on_hover_text("Play ladder that belongs to other random player").clicked() {
+                            if let Some(ladder) = TableLadder::iter()
+                                .filter(|l| !l.status.eq(&module_bindings::LadderStatus::Building))
+                                .choose(&mut thread_rng())
+                            {
+                                let mut save = Save::default();
+                                save.mode = GameMode::RandomLadder {
+                                    ladder_id: ladder.id,
+                                };
+                                save.save(world).unwrap();
+                                GameState::change(GameState::Shop, world);
+                            }
+                        }
+                    });
+                    ui[1].vertical_centered_justified(|ui| {
+                        if ui
+                            .button("NEW LADDDER")
+                            .on_hover_text(
+                                "Generate new levels infinitely until defeat. New levels generated considering your teams strength",
+                            )
+                            .clicked()
+                        {
+                            start_new_ladder();
+                            let mut save = Save::default();
+                            save.mode = GameMode::NewLadder;
+                            save.save(world).unwrap();
+                            GameState::change(GameState::Shop, world);
+                        }
+                    });
+                });
+            });
 
-            if ui.add(btn).on_hover_text(text).clicked() {
-                start_new_ladder();
-                let mut save = Save::default();
-                save.mode = GameMode::NewLadder;
-                save.save(world).unwrap();
-                GameState::change(GameState::Shop, world);
-            }
+            frame(ui, |ui| {
+                if ui.button("PROFILE").clicked() {
+                    GameState::change(GameState::Profile, world);
+                }
+            });
+            frame(ui, |ui| {
+                if ui.button("HERO GALLERY").clicked() {
+                    GameState::change(GameState::HeroGallery, world);
+                }
+            });
+            frame(ui, |ui| {
+                if ui.button("RESET").clicked() {
+                    Save::default().save(world).unwrap();
+                    PersistentData::default().save(world).unwrap();
+                    SettingsData::default().save(world).unwrap();
+                }
+            });
             if cfg!(debug_assertions) {
-                let btn = Self::menu_button("Custom Battle");
-                if ui.add(btn).clicked() {
-                    GameState::change(GameState::CustomBattle, world);
-                }
-                let btn = Self::menu_button("Hero Editor");
-                if ui.add(btn).clicked() {
-                    GameState::change(GameState::HeroEditor, world);
-                }
-                let btn = Self::menu_button("Run Tests");
-                if ui.add(btn).clicked() {
-                    GameState::change(GameState::TestsLoading, world);
-                }
-            }
-            let btn = Self::menu_button("Hero Gallery");
-            if ui.add(btn).clicked() {
-                GameState::change(GameState::HeroGallery, world);
-            }
-            let btn = Self::menu_button("Profile");
-            if ui.add(btn).clicked() {
-                GameState::change(GameState::Profile, world);
-            }
-            let btn = Self::menu_button("Reset");
-            if ui.add(btn).clicked() {
-                Save::default().save(world).unwrap();
-                PersistentData::default().save(world).unwrap();
-                SettingsData::default().save(world).unwrap();
+                frame(ui, |ui| {
+                    ui.columns(3, |ui| {
+                        ui[0].vertical_centered_justified(|ui| {
+                            if ui.button("CUSTOM BATTLE").clicked() {
+                                GameState::change(GameState::CustomBattle, world);
+                            }
+                        });
+                        ui[1].vertical_centered_justified(|ui| {
+                            if ui.button("HERO EDITOR").clicked() {
+                                GameState::change(GameState::HeroEditor, world);
+                            }
+                        });
+                        ui[2].vertical_centered_justified(|ui| {
+                            if ui.button("RUN TESTS").clicked() {
+                                GameState::change(GameState::TestsLoading, world);
+                            }
+                        });
+                    })
+                });
             }
         });
     }

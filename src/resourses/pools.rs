@@ -22,6 +22,9 @@ impl Pools {
     pub fn get<'a>(world: &'a World) -> &'a Self {
         world.get_resource::<Pools>().unwrap()
     }
+    pub fn try_get<'a>(world: &'a World) -> Option<&'a Self> {
+        world.get_resource::<Pools>()
+    }
     pub fn get_mut(world: &mut World) -> Mut<Self> {
         world.get_resource_mut::<Pools>().unwrap()
     }
@@ -50,6 +53,11 @@ impl Pools {
             .find(|(_, h)| h.statuses.iter().any(|s| s.name.eq(name)))
             .map(|(_, h)| h)
             .unwrap()
+    }
+    pub fn get_house_color(name: &str, world: &World) -> Option<Color> {
+        Self::try_get(world)
+            .and_then(|p| p.houses.get(name))
+            .and_then(|h| Some(h.color.clone().into()))
     }
 }
 

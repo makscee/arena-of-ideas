@@ -5,7 +5,7 @@
     statuses: [
         (
             name: "Shield",
-            description: "Block next incoming damage",
+            description: "Block next incoming damage {Charges} times",
             trigger: List(
                 [
                     MapVar(

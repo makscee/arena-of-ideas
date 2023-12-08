@@ -59,14 +59,18 @@ impl LoginPlugin {
 
     fn ui(world: &mut World) {
         let ctx = &egui_context(world);
-        MainMenuPlugin::menu_window("Login", ctx, |ui| {
-            if identity().is_err() {
-                if ui.add(MainMenuPlugin::menu_button("Connect")).clicked() {
-                    let creds = world.resource::<CurrentCredentials>().creds.clone();
-                    connect(SPACETIMEDB_URI, DB_NAME, creds).expect("Failed to connect");
-                    subscribe_to_tables();
+        let mut w = window("LOGIN");
+        w.0 = w.0.anchor(Align2::CENTER_CENTER, [0.0, 0.0]);
+        w.show(ctx, |ui| {
+            frame(ui, |ui| {
+                if identity().is_err() {
+                    if ui.button("CONNECT").clicked() {
+                        let creds = world.resource::<CurrentCredentials>().creds.clone();
+                        connect(SPACETIMEDB_URI, DB_NAME, creds).expect("Failed to connect");
+                        subscribe_to_tables();
+                    }
                 }
-            }
+            });
         });
     }
 }
