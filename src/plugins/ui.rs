@@ -119,7 +119,7 @@ impl UiPlugin {
                 bg_stroke: Stroke::new(1.0, yellow()),
                 rounding: Rounding::same(3.0),
                 fg_stroke: Stroke::new(1.0, yellow()),
-                expansion: 0.0,
+                expansion: 5.0,
             };
             style.visuals.widgets.noninteractive = WidgetVisuals {
                 bg_fill: black(),

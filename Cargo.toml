@@ -43,7 +43,7 @@ rand_chacha = "0.3.1"
 colored = "2.0.0"
 bevy_pkv = "0.8.0"
 clap = { version = "4.4.5", features = ["derive"] }
-spacetimedb-sdk = "0.7.2"
+spacetimedb-sdk = "0.8.0"
 bevy_kira_audio = { version = "0.17.0", features = ["settings_loader"] }
 strum = "0.25.0"
 hex = "0.4.3"
