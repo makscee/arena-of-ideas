@@ -65,14 +65,29 @@ impl LoginPlugin {
         w.show(ctx, |ui| {
             frame(ui, |ui| {
                 if identity().is_err() {
-                    if ui.button("CONNECT").clicked() {
-                        let creds = world.resource::<CurrentCredentials>().creds.clone();
-                        connect(SPACETIMEDB_URI, DB_NAME, creds).expect("Failed to connect");
-                        subscribe_to_tables();
+                    if ui.button_primary("CONNECT").clicked() {
+                        Self::connect(world);
+                    }
+                    ui.set_enabled(world.resource::<CurrentCredentials>().creds.is_some());
+                    if ui.button("NEW IDENTITY").clicked() {
+                        Self::clear_saved_credentials(world);
                     }
                 }
             });
         });
+    }
+
+    fn connect(world: &mut World) {
+        let creds = world.resource::<CurrentCredentials>().creds.clone();
+        connect(SPACETIMEDB_URI, DB_NAME, creds).expect("Failed to connect");
+        subscribe_to_tables();
+    }
+
+    fn clear_saved_credentials(world: &mut World) {
+        let mut path = home::home_dir().expect("Failed to get home dir");
+        path.push(CREDS_DIR);
+        std::fs::remove_dir_all(path).expect("Failed to clear credentials dir");
+        world.resource_mut::<CurrentCredentials>().creds = None;
     }
 }
 

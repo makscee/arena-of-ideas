@@ -1,4 +1,3 @@
-use bevy_egui::egui::InnerResponse;
 use rand::seq::IteratorRandom;
 
 use crate::module_bindings::start_new_ladder;
@@ -38,8 +37,14 @@ impl MainMenuPlugin {
         window.0 = window.0.anchor(Align2::CENTER_CENTER, [0.0, 0.0]);
         window.show(ctx, |ui| {
             frame(ui, |ui| {
-                ui.set_enabled(save.current_level > 0);
-                if ui.button("CONTINUE").clicked() {
+                let enabled = save.current_level > 0;
+                ui.set_enabled(enabled);
+                let btn = if enabled {
+                    ui.button_primary("CONTINUE")
+                } else {
+                    ui.button("CONTINUE")
+                };
+                if btn.clicked() {
                     GameState::change(GameState::Shop, world);
                 }
             });
@@ -117,34 +122,5 @@ impl MainMenuPlugin {
                 });
             }
         });
-    }
-
-    pub fn menu_window<R>(
-        name: &str,
-        ctx: &egui::Context,
-        add_contents: impl FnOnce(&mut Ui) -> R,
-    ) -> Option<InnerResponse<Option<()>>> {
-        Window::new(name)
-            .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
-            .resizable(false)
-            .collapsible(false)
-            .show(ctx, |ui| {
-                let s = ui.style_mut();
-                s.spacing.item_spacing.y = 20.0;
-                ui.add_space(15.0);
-                ui.vertical_centered(add_contents);
-                ui.add_space(0.0);
-            })
-    }
-
-    pub fn menu_button(name: &str) -> Button {
-        let btn = Button::new(
-            RichText::new(name)
-                .size(20.0)
-                .text_style(egui::TextStyle::Heading)
-                .color(hex_color!("#ffffff")),
-        )
-        .min_size(egui::vec2(200.0, 0.0));
-        btn
     }
 }

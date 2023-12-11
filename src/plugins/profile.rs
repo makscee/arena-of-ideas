@@ -40,8 +40,6 @@ impl ProfilePlugin {
                     .collect_vec();
                 frame(ui, |ui| {
                     text_dots_text("Own ladder length", &own_ladder_length.to_string(), ui);
-                });
-                frame(ui, |ui| {
                     text_dots_text(
                         "Beaten ladders count",
                         &beaten_ladders.len().to_string(),

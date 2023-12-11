@@ -94,10 +94,10 @@ impl UiPlugin {
             // dbg!(style.visuals.widgets.hovered);
             style.visuals.widgets.inactive = WidgetVisuals {
                 bg_fill: white(),
-                weak_bg_fill: white(),
+                weak_bg_fill: black(),
                 bg_stroke: Stroke::new(1.0, white()),
                 rounding: Rounding::same(0.0),
-                fg_stroke: Stroke::new(1.0, black()),
+                fg_stroke: Stroke::new(1.0, white()),
                 expansion: 0.0,
             };
             style.visuals.widgets.active = WidgetVisuals {
@@ -110,7 +110,7 @@ impl UiPlugin {
             };
             style.visuals.widgets.hovered = WidgetVisuals {
                 bg_fill: white(),
-                weak_bg_fill: white(),
+                weak_bg_fill: black(),
                 bg_stroke: Stroke::new(1.0, yellow()),
                 rounding: Rounding::same(0.0),
                 fg_stroke: Stroke::new(1.0, yellow()),
@@ -359,16 +359,19 @@ fn str_extract_brackets(mut source: &str, pattern: (&str, &str)) -> Vec<(String,
     lines
 }
 
-pub trait ButtonExtensions {
-    fn button_secondary(&mut self, text: impl Into<WidgetText>) -> Response;
+pub trait PrimarySecondaryExtensions {
+    fn button_primary(&mut self, text: impl Into<WidgetText>) -> Response;
 }
 
-impl ButtonExtensions for Ui {
-    fn button_secondary(&mut self, text: impl Into<WidgetText>) -> Response {
+impl PrimarySecondaryExtensions for Ui {
+    fn button_primary(&mut self, text: impl Into<WidgetText>) -> Response {
         let style = self.style_mut();
-        style.visuals.widgets.inactive.weak_bg_fill = black();
-        style.visuals.widgets.hovered.weak_bg_fill = black();
-        style.visuals.widgets.inactive.fg_stroke = Stroke::new(1.0, white());
-        Button::new(text).min_size(egui::Vec2::ZERO).ui(self)
+        let prev_style = style.clone();
+        style.visuals.widgets.inactive.weak_bg_fill = white();
+        style.visuals.widgets.hovered.weak_bg_fill = white();
+        style.visuals.widgets.inactive.fg_stroke = Stroke::new(1.0, black());
+        let response = Button::new(text).min_size(egui::Vec2::ZERO).ui(self);
+        self.set_style(prev_style);
+        response
     }
 }

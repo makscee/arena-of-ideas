@@ -73,9 +73,9 @@ impl PanelsPlugin {
                             ui[ind].vertical_centered_justified(|ui| {
                                 let name = t.name();
                                 let btn = if *value {
-                                    ui.button(name)
+                                    ui.button_primary(name)
                                 } else {
-                                    ui.button_secondary(name)
+                                    ui.button(name)
                                 };
                                 if btn.clicked() {
                                     t.click(world);
