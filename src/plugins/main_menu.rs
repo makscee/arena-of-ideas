@@ -99,17 +99,17 @@ impl MainMenuPlugin {
                 frame(ui, |ui| {
                     ui.columns(3, |ui| {
                         ui[0].vertical_centered_justified(|ui| {
-                            if ui.button("CUSTOM BATTLE").clicked() {
+                            if ui.button("CUSTOM").clicked() {
                                 GameState::change(GameState::CustomBattle, world);
                             }
                         });
                         ui[1].vertical_centered_justified(|ui| {
-                            if ui.button("HERO EDITOR").clicked() {
+                            if ui.button("EDITOR").clicked() {
                                 GameState::change(GameState::HeroEditor, world);
                             }
                         });
                         ui[2].vertical_centered_justified(|ui| {
-                            if ui.button("RUN TESTS").clicked() {
+                            if ui.button("TESTS").clicked() {
                                 GameState::change(GameState::TestsLoading, world);
                             }
                         });
