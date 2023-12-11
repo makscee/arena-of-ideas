@@ -49,9 +49,10 @@ pub use bevy_egui::egui;
 pub use bevy_egui::egui::{Frame, Margin};
 pub use bevy_egui::{
     egui::{
-        pos2, text::LayoutJob, Align2, Area, Button, CentralPanel, CollapsingHeader, Color32,
-        ComboBox, FontFamily, FontId, Label, RichText, Slider, TextEdit, TextFormat, Ui,
-        WidgetText, Window,
+        pos2, style::WidgetVisuals, text::LayoutJob, Align2, Area, Button, CentralPanel,
+        CollapsingHeader, Color32, ComboBox, FontData, FontDefinitions, FontFamily, FontId,
+        InnerResponse, Label, Layout, Painter, Pos2, Response, RichText, Rounding, Slider, Stroke,
+        TextEdit, TextFormat, TextStyle, TopBottomPanel, Ui, Widget, WidgetText, Window,
     },
     EguiContexts,
 };

@@ -179,7 +179,7 @@ impl RepresentationMaterial {
                 world.entity_mut(entity).insert(Text2dBundle {
                     text: Text::from_section(
                         "".to_owned(),
-                        TextStyle {
+                        bevy::text::TextStyle {
                             font_size: *font_size,
                             color: Color::PINK,
                             ..default()
@@ -279,7 +279,7 @@ impl RepresentationMaterial {
                     .to_owned();
                 world.get_mut::<Text>(entity).unwrap().sections[0].value =
                     text.get_string(&context, world).unwrap_or_default();
-                world.get_mut::<Text>(entity).unwrap().sections[0].style = TextStyle {
+                world.get_mut::<Text>(entity).unwrap().sections[0].style = bevy::text::TextStyle {
                     font_size: *font_size,
                     color,
                     ..default()

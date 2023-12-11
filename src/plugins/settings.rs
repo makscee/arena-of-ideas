@@ -30,15 +30,17 @@ impl SettingsPlugin {
         Self::updated(data, world);
     }
 
-    pub fn ui(ui: &mut Ui, world: &mut World) {
+    pub fn ui(world: &mut World) {
         let mut data = *SettingsData::get(world);
-        CollapsingHeader::new(RichText::new("Settings").size(25.0)).show(ui, |ui| {
-            ui.vertical(|ui| {
+        window("SETTINGS").show(&egui_context(world), |ui| {
+            frame(ui, |ui| {
                 ui.checkbox(&mut data.last_state_on_load, "load from last state");
+            });
+            frame(ui, |ui| {
                 let master_volume =
                     Slider::new(&mut data.master_volume, 0.0..=1.0).text("master volume");
                 ui.add(master_volume);
-            })
+            });
         });
         if !data.eq(SettingsData::get(world)) {
             Self::updated(data, world);

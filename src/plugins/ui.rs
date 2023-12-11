@@ -1,10 +1,5 @@
 use std::str::FromStr;
 
-use bevy_egui::egui::{
-    style::WidgetVisuals, FontData, FontDefinitions, InnerResponse, Layout, Painter, Pos2,
-    Response, Rounding, Shape, Stroke, TextStyle, Vec2, Widget,
-};
-
 use super::*;
 
 fn light_gray() -> Color32 {
@@ -100,32 +95,32 @@ impl UiPlugin {
             style.visuals.widgets.inactive = WidgetVisuals {
                 bg_fill: white(),
                 weak_bg_fill: white(),
-                bg_stroke: Stroke::NONE,
-                rounding: Rounding::same(3.0),
+                bg_stroke: Stroke::new(1.0, white()),
+                rounding: Rounding::same(0.0),
                 fg_stroke: Stroke::new(1.0, black()),
                 expansion: 0.0,
             };
-            style.visuals.widgets.hovered = WidgetVisuals {
+            style.visuals.widgets.active = WidgetVisuals {
                 bg_fill: yellow(),
                 weak_bg_fill: yellow(),
                 bg_stroke: Stroke::NONE,
-                rounding: Rounding::same(3.0),
+                rounding: Rounding::same(0.0),
                 fg_stroke: Stroke::new(1.0, white()),
-                expansion: 0.0,
+                expansion: 2.0,
             };
-            style.visuals.widgets.active = WidgetVisuals {
+            style.visuals.widgets.hovered = WidgetVisuals {
                 bg_fill: white(),
                 weak_bg_fill: white(),
                 bg_stroke: Stroke::new(1.0, yellow()),
-                rounding: Rounding::same(3.0),
+                rounding: Rounding::same(0.0),
                 fg_stroke: Stroke::new(1.0, yellow()),
-                expansion: 5.0,
+                expansion: 0.0,
             };
             style.visuals.widgets.noninteractive = WidgetVisuals {
                 bg_fill: black(),
                 weak_bg_fill: black(),
                 bg_stroke: Stroke::NONE,
-                rounding: Rounding::same(3.0),
+                rounding: Rounding::same(0.0),
                 fg_stroke: Stroke::new(1.0, light_gray()),
                 expansion: 0.0,
             };
@@ -187,7 +182,7 @@ impl UiPlugin {
                         .rect
                         .width();
                     let bottom = rect.bottom() - 6.0;
-                    let line = Shape::dotted_line(
+                    let line = egui::Shape::dotted_line(
                         &[[left, bottom].into(), [right, bottom].into()],
                         light_gray(),
                         8.0,
@@ -211,16 +206,8 @@ pub fn show_unit_card(unit: &PackedUnit, world: &mut World) {
                 ui.heading(RichText::new(&unit.name).color(house_color));
             });
             ui.label(&unit.description);
-            text_dots_text(
-                ("hp", light_gray()),
-                (&unit.hp.to_string(), light_gray()),
-                ui,
-            );
-            text_dots_text(
-                ("atk", light_gray()),
-                (&unit.atk.to_string(), light_gray()),
-                ui,
-            );
+            text_dots_text("hp", &unit.hp.to_string(), ui);
+            text_dots_text("atk", &unit.atk.to_string(), ui);
         });
         if !unit.statuses.is_empty() {
             frame(ui, |ui| {
@@ -229,7 +216,7 @@ pub fn show_unit_card(unit: &PackedUnit, world: &mut World) {
                 });
                 for (name, charges) in unit.statuses.iter() {
                     let c = Pools::get_status_house(name, world).color.clone().into();
-                    text_dots_text((name, c), (&charges.to_string(), white()), ui);
+                    text_dots_text_colored((name, c), (&charges.to_string(), white()), ui);
                     if let Some(status) = Pools::get_status(name, world) {
                         let state = VarState::new_with(VarName::Charges, VarValue::Int(*charges));
                         ui.label(status.description.inject_vars(&state));
@@ -240,7 +227,7 @@ pub fn show_unit_card(unit: &PackedUnit, world: &mut World) {
     });
 }
 
-pub fn text_dots_text(text1: (&str, Color32), text2: (&str, Color32), ui: &mut Ui) {
+pub fn text_dots_text_colored(text1: (&str, Color32), text2: (&str, Color32), ui: &mut Ui) {
     ui.horizontal(|ui| {
         let rect = ui.max_rect();
         let left = rect.left()
@@ -257,7 +244,7 @@ pub fn text_dots_text(text1: (&str, Color32), text2: (&str, Color32), ui: &mut U
             .rect
             .width();
         let bottom = rect.bottom() - 6.0;
-        let line = Shape::dotted_line(
+        let line = egui::Shape::dotted_line(
             &[[left, bottom].into(), [right, bottom].into()],
             light_gray(),
             8.0,
@@ -265,6 +252,10 @@ pub fn text_dots_text(text1: (&str, Color32), text2: (&str, Color32), ui: &mut U
         );
         ui.painter().add(line);
     });
+}
+
+pub fn text_dots_text(text1: &str, text2: &str, ui: &mut Ui) {
+    text_dots_text_colored((text1, light_gray()), (text2, white()), ui);
 }
 
 pub struct GameWindow<'a>(pub Window<'a>, &'a str);
@@ -318,6 +309,7 @@ pub fn frame<R>(ui: &mut Ui, add_contents: impl FnOnce(&mut Ui) -> R) -> InnerRe
         .stroke(Stroke::new(1.0, dark_gray()))
         .inner_margin(6.0)
         .outer_margin(6.0)
+        .rounding(0.0)
         .show(ui, |ui| ui.vertical_centered_justified(add_contents).inner)
 }
 
@@ -365,4 +357,18 @@ fn str_extract_brackets(mut source: &str, pattern: (&str, &str)) -> Vec<(String,
     }
     lines.push((source.to_owned(), false));
     lines
+}
+
+pub trait ButtonExtensions {
+    fn button_secondary(&mut self, text: impl Into<WidgetText>) -> Response;
+}
+
+impl ButtonExtensions for Ui {
+    fn button_secondary(&mut self, text: impl Into<WidgetText>) -> Response {
+        let style = self.style_mut();
+        style.visuals.widgets.inactive.weak_bg_fill = black();
+        style.visuals.widgets.hovered.weak_bg_fill = black();
+        style.visuals.widgets.inactive.fg_stroke = Stroke::new(1.0, white());
+        Button::new(text).min_size(egui::Vec2::ZERO).ui(self)
+    }
 }

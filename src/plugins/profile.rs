@@ -22,25 +22,31 @@ struct ProfileEditData {
 impl ProfilePlugin {
     fn on_enter(world: &mut World) {
         world.insert_resource(ProfileEditData {
-            user: User::filter_by_identity(identity().unwrap()).expect("User not loaded"),
+            user: User::filter_by_identity(identity().unwrap()).expect("User not found"),
         });
     }
 
-    pub fn ui(ui: &mut Ui, world: &mut World) {
-        CollapsingHeader::new(RichText::new("Profile").size(25.0)).show(ui, |ui| {
-            ui.vertical(|ui| {
-                if let Ok(identity) = identity() {
-                    let initial_len = Options::get_initial_ladder(world).levels.len();
-                    let own_ladder_length = TableLadder::filter_by_creator(identity.clone())
-                        .find(|l| l.status.eq(&module_bindings::LadderStatus::Fresh))
-                        .map(|l| l.levels.len())
-                        .unwrap_or_default()
-                        + initial_len;
-                    let beaten_ladders = TableLadder::filter_by_owner(identity.clone())
-                        .filter(|l| l.status.eq(&module_bindings::LadderStatus::Beaten))
-                        .collect_vec();
-                    ui.label(format!("Own ladder length: {own_ladder_length}"));
-                    ui.label(format!("Beaten ladders count: {}", beaten_ladders.len()));
+    pub fn ui(world: &mut World) {
+        window("PROFILE").show(&egui_context(world), |ui| {
+            if let Ok(identity) = identity() {
+                let initial_len = Options::get_initial_ladder(world).levels.len();
+                let own_ladder_length = TableLadder::filter_by_creator(identity.clone())
+                    .find(|l| l.status.eq(&module_bindings::LadderStatus::Fresh))
+                    .map(|l| l.levels.len())
+                    .unwrap_or_default()
+                    + initial_len;
+                let beaten_ladders = TableLadder::filter_by_owner(identity.clone())
+                    .filter(|l| l.status.eq(&module_bindings::LadderStatus::Beaten))
+                    .collect_vec();
+                frame(ui, |ui| {
+                    text_dots_text("Own ladder length", &own_ladder_length.to_string(), ui);
+                });
+                frame(ui, |ui| {
+                    text_dots_text(
+                        "Beaten ladders count",
+                        &beaten_ladders.len().to_string(),
+                        ui,
+                    );
                     for (i, ladder) in beaten_ladders.into_iter().enumerate() {
                         ui.collapsing(
                             format!("{}. {} levels", i + 1, ladder.levels.len() + initial_len),
@@ -53,8 +59,8 @@ impl ProfilePlugin {
                             },
                         );
                     }
-                }
-            })
+                });
+            }
         });
     }
 
