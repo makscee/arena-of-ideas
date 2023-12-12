@@ -32,15 +32,7 @@ impl HeroGallery {
 
     fn ui(world: &mut World) {
         for unit in UnitPlugin::collect_faction(Faction::Left, world) {
-            let description = VarState::try_get(unit, world)
-                .and_then(|s| s.get_string(VarName::Description))
-                .unwrap_or_default();
-            if !description.is_empty() {
-                let name = VarState::get(unit, world)
-                    .get_string(VarName::Name)
-                    .unwrap();
-                show_description_panels(unit, &name, &description, world);
-            }
+            UnitCardData::from_entity(unit, world).unwrap().show(world);
         }
     }
 }

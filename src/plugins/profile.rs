@@ -39,10 +39,14 @@ impl ProfilePlugin {
                     .filter(|l| l.status.eq(&module_bindings::LadderStatus::Beaten))
                     .collect_vec();
                 frame(ui, |ui| {
-                    text_dots_text("Own ladder length", &own_ladder_length.to_string(), ui);
                     text_dots_text(
-                        "Beaten ladders count",
-                        &beaten_ladders.len().to_string(),
+                        &"Own ladder length".to_colored(),
+                        &own_ladder_length.to_string().add_color(white()),
+                        ui,
+                    );
+                    text_dots_text(
+                        &"Beaten ladders count".to_colored(),
+                        &beaten_ladders.len().to_string().add_color(white()),
                         ui,
                     );
                     for (i, ladder) in beaten_ladders.into_iter().enumerate() {

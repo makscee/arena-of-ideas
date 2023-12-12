@@ -20,15 +20,15 @@ pub enum RunMode {
     #[default]
     Regular,
     Clean,
-    Login,
     Test,
+    Custom,
 }
 
 fn main() {
     let args = Args::try_parse().unwrap_or_default();
     let next_state = match args.mode {
-        RunMode::Regular => GameState::MainMenu,
-        RunMode::Login => GameState::Login,
+        RunMode::Regular => GameState::Login,
+        RunMode::Custom => GameState::CustomBattle,
         RunMode::Clean => GameState::MainMenuClean,
         RunMode::Test => GameState::TestsLoading,
     };

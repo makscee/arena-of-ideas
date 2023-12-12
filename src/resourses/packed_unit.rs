@@ -42,15 +42,20 @@ impl PackedUnit {
                 .clone()
                 .unpack(None, Some(parent), world)
         };
-        world
-            .entity_mut(entity)
-            .insert(PickableBundle::default())
+        let is_team = VarState::get(parent, world)
+            .get_faction(VarName::Faction)
+            .unwrap()
+            .eq(&Faction::Team);
+        let mut emut = world.entity_mut(entity);
+        emut.insert(PickableBundle::default())
             .insert(RaycastPickTarget::default())
             .insert(On::<Pointer<Over>>::run(UnitPlugin::hover_unit))
-            .insert(On::<Pointer<Out>>::run(UnitPlugin::unhover_unit))
-            .insert(On::<Pointer<DragStart>>::run(UnitPlugin::drag_unit_start))
-            .insert(On::<Pointer<DragEnd>>::run(UnitPlugin::drag_unit_end))
-            .insert(On::<Pointer<Drag>>::run(UnitPlugin::drag_unit));
+            .insert(On::<Pointer<Out>>::run(UnitPlugin::unhover_unit));
+        if is_team {
+            emut.insert(On::<Pointer<DragStart>>::run(UnitPlugin::drag_unit_start))
+                .insert(On::<Pointer<DragEnd>>::run(UnitPlugin::drag_unit_end))
+                .insert(On::<Pointer<Drag>>::run(UnitPlugin::drag_unit));
+        }
         if !SkipVisual::active(world) {
             let entity = self
                 .representation

@@ -1,3 +1,5 @@
+use bevy_egui::egui::Id;
+
 use super::*;
 
 pub const SACRIFICE_SLOT: usize = 6;
@@ -283,46 +285,9 @@ impl UnitPlugin {
     }
 
     fn ui(world: &mut World) {
-        let ctx = &egui_context(world);
         if let Some(hovered) = world.get_resource::<HoveredUnit>().unwrap().0 {
-            let description = VarState::try_get(hovered, world)
-                .and_then(|s| s.get_string(VarName::Description))
-                .unwrap_or_default();
-            if !description.is_empty() {
-                show_description_panels(hovered, "Ability", &description, world);
-            }
-            let t = get_play_head(world);
-            let statuses = Status::collect_entity_statuses(hovered, world);
-            let statuses = Status::filter_active_statuses(statuses, t, world)
-                .into_iter()
-                .filter_map(|entity| {
-                    let state = VarState::get(entity, world);
-                    if state.get_string(VarName::Name).is_err() {
-                        return None;
-                    }
-                    if state.birth > t {
-                        return None;
-                    }
-                    let name = state.get_string_at(VarName::Name, t).unwrap();
-                    let description = state.get_string_at(VarName::Description, t).unwrap();
-                    let charges = state.get_int_at(VarName::Charges, t).unwrap();
-                    let color: Color32 = Pools::get_status_house(&name, world).color.clone().into();
-                    Some((entity, name, description, color, charges))
-                })
-                .collect_vec();
-            if !statuses.is_empty() {
-                entity_panel(hovered, vec2(1.0, 0.0), Some(150.0), "Statuses", world)
-                    .title_bar(true)
-                    .show(ctx, |ui| {
-                        ui.vertical(|ui| {
-                            for (entity, name, description, color, charges) in statuses {
-                                let name = format!("{name} ({charges})");
-                                ui.heading(RichText::new(name).color(color).strong());
-                                let lines = parse_vars(&description, entity, t, world);
-                                show_lines(ui, lines);
-                            }
-                        })
-                    });
+            if let Ok(card) = UnitCardData::from_entity(hovered, world) {
+                card.show(world);
             }
         }
     }
@@ -349,9 +314,6 @@ impl UnitPlugin {
         rep
     }
 }
-
-#[derive(Resource, Debug)]
-pub struct UnitHandle(pub Handle<PackedUnit>);
 
 #[derive(Component)]
 pub struct Unit;
@@ -409,3 +371,109 @@ pub struct DraggedUnit(pub Option<Entity>);
 
 #[derive(Component)]
 pub struct ActiveTeam;
+
+pub struct UnitCardData {
+    pub name: ColoredString,
+    pub hp: i32,
+    pub atk: i32,
+    pub description: ColoredString,
+    pub statuses: Vec<(ColoredString, i32)>,
+    pub pos: Vec2,
+    pub id: Id,
+}
+
+impl UnitCardData {
+    pub fn from_entity(entity: Entity, world: &mut World) -> Result<Self> {
+        let t = get_play_head(world);
+        let statuses = Status::collect_entity_statuses(entity, world)
+            .into_iter()
+            .filter_map(|e| {
+                let state = VarState::get(e, world);
+                let name = state.get_string_at(VarName::Name, t);
+                if let Ok(name) = name {
+                    let color: Color32 = Pools::get_status_house(&name, world).color.clone().into();
+                    Some((
+                        state
+                            .get_string_at(VarName::Name, t)
+                            .unwrap()
+                            .add_color(color),
+                        state.get_int_at(VarName::Charges, t).unwrap(),
+                    ))
+                } else {
+                    None
+                }
+            })
+            .collect_vec();
+        let pos = entity_screen_pos(entity, Vec2::ZERO, world);
+        let state = VarState::get(entity, world);
+        Ok(Self {
+            name: state
+                .get_string_at(VarName::Name, t)?
+                .add_color(state.get_color_at(VarName::HouseColor, t)?.c32()),
+            hp: state.get_int_at(VarName::Hp, t)?,
+            atk: state.get_int_at(VarName::Atk, t)?,
+            description: state
+                .get_string_at(VarName::Description, t)?
+                .to_colored()
+                .inject_vars(state)
+                .inject_definitions(world),
+            statuses,
+            pos,
+            id: Id::new(entity),
+        })
+    }
+
+    pub fn show(&self, world: &mut World) {
+        let ctx = &egui_context(world);
+        window("UNIT")
+            .id(self.id)
+            .default_pos(self.pos)
+            .show(ctx, |ui| {
+                frame(ui, |ui| {
+                    ui.vertical_centered(|ui| {
+                        ui.style_mut().wrap = Some(false);
+                        ui.heading(self.name.rich_text());
+                    });
+                    if !self.description.is_empty() {
+                        ui.vertical(|ui| {
+                            ui.label(self.description.widget());
+                        });
+                    }
+                    text_dots_text(
+                        &"hp".to_colored(),
+                        &self.hp.to_string().add_color(white()),
+                        ui,
+                    );
+                    text_dots_text(
+                        &"atk".to_colored(),
+                        &self.atk.to_string().add_color(white()),
+                        ui,
+                    );
+                });
+                if !self.statuses.is_empty() {
+                    frame(ui, |ui| {
+                        ui.vertical_centered(|ui| {
+                            ui.heading(RichText::new("Statuses").color(white()));
+                        });
+                        for (name, charges) in self.statuses.iter() {
+                            text_dots_text(name, &charges.to_string().add_color(white()), ui);
+                            if let Some(status) = Pools::get_status(&name.to_string(), world) {
+                                let state =
+                                    VarState::new_with(VarName::Charges, VarValue::Int(*charges));
+                                ui.vertical(|ui| {
+                                    ui.label(
+                                        status
+                                            .description
+                                            .clone()
+                                            .to_colored()
+                                            .inject_vars(&state)
+                                            .widget(),
+                                    );
+                                });
+                            }
+                        }
+                    });
+                }
+            });
+    }
+}

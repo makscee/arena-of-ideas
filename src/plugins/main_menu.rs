@@ -33,7 +33,7 @@ impl MainMenuPlugin {
         let ctx = &egui_context(world);
         let save = Save::get(world);
 
-        let mut window = window("MAIN MENU");
+        let mut window = window("MAIN MENU").set_width(400.0);
         window.0 = window.0.anchor(Align2::CENTER_CENTER, [0.0, 0.0]);
         window.show(ctx, |ui| {
             frame(ui, |ui| {

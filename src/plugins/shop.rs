@@ -442,21 +442,5 @@ impl ShopOffer {
                 }
             })
         });
-        if !so.description.is_empty() {
-            match &so.product {
-                OfferProduct::Unit => {
-                    show_description_panels(entity, &so.name, &so.description, world);
-                }
-                OfferProduct::Status { name, .. } => {
-                    let description =
-                        parse_vars(&so.description, entity, get_play_head(world), world);
-                    entity_panel(entity, vec2(0.0, 1.0), None, &name, world)
-                        .title_bar(true)
-                        .show(ctx, |ui| {
-                            show_lines(ui, description);
-                        });
-                }
-            }
-        }
     }
 }

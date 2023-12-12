@@ -1,8 +1,8 @@
-use std::str::FromStr;
+use bevy_egui::egui::Id;
 
 use super::*;
 
-fn light_gray() -> Color32 {
+pub fn light_gray() -> Color32 {
     hex_color!("#6F6F6F")
 }
 fn dark_gray() -> Color32 {
@@ -11,7 +11,7 @@ fn dark_gray() -> Color32 {
 fn black() -> Color32 {
     hex_color!("#000000")
 }
-fn white() -> Color32 {
+pub fn white() -> Color32 {
     hex_color!("#ffffff")
 }
 fn yellow() -> Color32 {
@@ -93,7 +93,7 @@ impl UiPlugin {
             style.spacing.window_margin = 0.0.into();
             // dbg!(style.visuals.widgets.hovered);
             style.visuals.widgets.inactive = WidgetVisuals {
-                bg_fill: white(),
+                bg_fill: black(),
                 weak_bg_fill: black(),
                 bg_stroke: Stroke::new(1.0, white()),
                 rounding: Rounding::same(0.0),
@@ -109,7 +109,7 @@ impl UiPlugin {
                 expansion: 2.0,
             };
             style.visuals.widgets.hovered = WidgetVisuals {
-                bg_fill: white(),
+                bg_fill: black(),
                 weak_bg_fill: black(),
                 bg_stroke: Stroke::new(1.0, yellow()),
                 rounding: Rounding::same(0.0),
@@ -130,12 +130,6 @@ impl UiPlugin {
 
     fn ui(world: &mut World) {
         let ctx = &egui_context(world);
-        if let Some(unit) = Pools::try_get(world)
-            .and_then(|p| p.heroes.get("Priest"))
-            .cloned()
-        {
-            show_unit_card(&unit, world);
-        }
 
         window("MAIN MENU").show(ctx, |ui| {
             frame(ui, |ui| {
@@ -195,50 +189,14 @@ impl UiPlugin {
     }
 }
 
-pub fn show_unit_card(unit: &PackedUnit, world: &mut World) {
-    let house_color = Pools::get_house_color(&unit.house, world)
-        .unwrap_or(Color::WHITE)
-        .c32();
-    let ctx = &egui_context(world);
-    window("unit").show(ctx, |ui| {
-        frame(ui, |ui| {
-            ui.vertical_centered(|ui| {
-                ui.heading(RichText::new(&unit.name).color(house_color));
-            });
-            ui.label(&unit.description);
-            text_dots_text("hp", &unit.hp.to_string(), ui);
-            text_dots_text("atk", &unit.atk.to_string(), ui);
-        });
-        if !unit.statuses.is_empty() {
-            frame(ui, |ui| {
-                ui.vertical_centered(|ui| {
-                    ui.heading(RichText::new("Statuses").color(white()));
-                });
-                for (name, charges) in unit.statuses.iter() {
-                    let c = Pools::get_status_house(name, world).color.clone().into();
-                    text_dots_text_colored((name, c), (&charges.to_string(), white()), ui);
-                    if let Some(status) = Pools::get_status(name, world) {
-                        let state = VarState::new_with(VarName::Charges, VarValue::Int(*charges));
-                        ui.label(status.description.inject_vars(&state));
-                    }
-                }
-            });
-        }
-    });
-}
-
-pub fn text_dots_text_colored(text1: (&str, Color32), text2: (&str, Color32), ui: &mut Ui) {
+pub fn text_dots_text(text1: &ColoredString, text2: &ColoredString, ui: &mut Ui) {
     ui.horizontal(|ui| {
         let rect = ui.max_rect();
-        let left = rect.left()
-            + ui.add(Label::new(RichText::new(text1.0).color(text1.1)))
-                .rect
-                .width()
-            + 3.0;
+        let left = rect.left() + ui.add(Label::new(text1.widget())).rect.width() + 3.0;
         let right = rect.right()
             - 3.0
             - ui.with_layout(Layout::right_to_left(egui::Align::Min), |ui| {
-                ui.colored_label(white(), RichText::new(text2.0).color(text2.1));
+                ui.label(text2.widget());
             })
             .response
             .rect
@@ -252,10 +210,6 @@ pub fn text_dots_text_colored(text1: (&str, Color32), text2: (&str, Color32), ui
         );
         ui.painter().add(line);
     });
-}
-
-pub fn text_dots_text(text1: &str, text2: &str, ui: &mut Ui) {
-    text_dots_text_colored((text1, light_gray()), (text2, white()), ui);
 }
 
 pub struct GameWindow<'a>(pub Window<'a>, &'a str);
@@ -290,14 +244,25 @@ impl GameWindow<'_> {
                 });
             add_contents(ui)
         });
-        // self.0.show(ctx, add_contents);
+    }
+    pub fn default_pos(mut self, pos: Vec2) -> Self {
+        self.0 = self.0.default_pos(pos2(pos.x, pos.y));
+        self
+    }
+    pub fn id(mut self, id: Id) -> Self {
+        self.0 = self.0.id(id);
+        self
+    }
+    pub fn set_width(mut self, width: f32) -> Self {
+        self.0 = self.0.default_width(width);
+        self
     }
 }
 
 pub fn window<'a>(title: &'a str) -> GameWindow<'a> {
     GameWindow(
         Window::new(title)
-            .min_width(80.0)
+            .default_width(200.0)
             .title_bar(false)
             .collapsible(false),
         title,
@@ -322,41 +287,6 @@ impl IntoC32 for Color {
         let a = self.as_rgba_u8();
         Color32::from_rgba_unmultiplied(a[0], a[1], a[2], a[3])
     }
-}
-
-pub trait InjectVars {
-    fn inject_vars(&self, state: &VarState) -> WidgetText;
-}
-
-impl InjectVars for str {
-    fn inject_vars(&self, state: &VarState) -> WidgetText {
-        let mut job = LayoutJob::default();
-        for (mut line, bracketed) in str_extract_brackets(self, ("{", "}")) {
-            let color = if bracketed { white() } else { light_gray() };
-            if let Ok(var) = VarName::from_str(&line) {
-                if let Ok(value) = state.get_string(var) {
-                    line = value;
-                }
-            }
-            job.append(&line, 0.0, TextFormat { color, ..default() });
-        }
-
-        WidgetText::LayoutJob(job)
-    }
-}
-
-fn str_extract_brackets(mut source: &str, pattern: (&str, &str)) -> Vec<(String, bool)> {
-    let mut lines: Vec<(String, bool)> = default();
-    while let Some(opening) = source.find(pattern.0) {
-        let left = &source[..opening];
-        let closing = source.find(pattern.1).unwrap();
-        let mid = &source[opening + 1..closing];
-        lines.push((left.to_owned(), false));
-        lines.push((mid.to_owned(), true));
-        source = &source[closing + 1..];
-    }
-    lines.push((source.to_owned(), false));
-    lines
 }
 
 pub trait PrimarySecondaryExtensions {

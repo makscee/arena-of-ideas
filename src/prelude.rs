@@ -84,3 +84,4 @@ pub use spacetimedb_sdk::{
 
 pub use crate::module_bindings::Ladder as TableLadder;
 pub use spacetimedb_sdk::table::*;
+pub use std::str::FromStr;

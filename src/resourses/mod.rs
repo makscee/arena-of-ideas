@@ -1,5 +1,6 @@
 mod ability;
 mod anim;
+mod colored_string;
 mod context;
 mod effect;
 pub mod event;
@@ -23,6 +24,7 @@ mod vfx;
 use super::*;
 pub use ability::*;
 pub use anim::*;
+pub use colored_string::*;
 pub use context::*;
 pub use effect::*;
 pub use event::*;

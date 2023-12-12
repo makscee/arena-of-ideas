@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use bevy_egui::{
     egui::{Align2, Context, Id, Pos2},
     EguiContext,
@@ -55,118 +53,12 @@ pub fn entity_panel(
         .resizable(false)
         .pivot(align)
 }
-pub fn show_description_panels(entity: Entity, name: &str, description: &str, world: &mut World) {
-    let (description, definitions) = parse_description(description, world);
-    let ctx = egui_context(world);
-    entity_panel(entity, vec2(0.0, 1.0), None, name, world)
-        .title_bar(true)
-        .show(&ctx, |ui| {
-            let mut job = LayoutJob::default();
-            for (text, color) in description {
-                job.append(
-                    &text,
-                    0.0,
-                    TextFormat {
-                        font_id: FontId::new(14.0, FontFamily::Proportional),
-                        color,
-                        ..Default::default()
-                    },
-                );
-            }
-            ui.label(WidgetText::LayoutJob(job));
-        });
-    if !definitions.is_empty() && world.resource::<HoveredUnit>().0 == Some(entity) {
-        entity_panel(entity, vec2(-1.0, 0.0), Some(200.0), "Definitions", world)
-            .title_bar(true)
-            .show(&ctx, |ui| {
-                for (name, color) in definitions {
-                    let description = &Pools::get_ability(&name, world).description;
-                    ui.heading(RichText::new(name).color(color).strong());
-                    ui.label(description);
-                }
-            });
-    }
-}
-pub fn show_lines(ui: &mut Ui, lines: Vec<(String, Color32)>) {
-    let mut job = LayoutJob::default();
-    for (text, color) in lines {
-        job.append(
-            &text,
-            0.0,
-            TextFormat {
-                font_id: FontId::new(14.0, FontFamily::Proportional),
-                color,
-                ..Default::default()
-            },
-        );
-    }
-    ui.label(WidgetText::LayoutJob(job));
-}
-pub fn parse_description(
-    source: &str,
-    world: &mut World,
-) -> (Vec<(String, Color32)>, Vec<(String, Color32)>) {
-    let mut description: Vec<(String, Color32)> = default();
-    let mut definitions: Vec<(String, Color32)> = default();
-
-    for (str, extr) in str_extract_brackets(source, ("[", "]")) {
-        if extr {
-            if let Some(house) = Pools::get_ability_house(&str, world) {
-                let color = house.color.clone().into();
-                description.push((str.to_owned(), color));
-                definitions.push((str, color));
-            } else {
-                error!("Failed to find house for ability {str}");
-            }
-        } else {
-            description.push((str, Color32::GRAY));
-        }
-    }
-
-    (description, definitions)
-}
-pub fn parse_vars(
-    source: &str,
-    entity: Entity,
-    t: f32,
-    world: &mut World,
-) -> Vec<(String, Color32)> {
-    if let Ok(state) = VarState::try_get(entity, world) {
-        str_extract_brackets(source, ("{", "}"))
-            .into_iter()
-            .map(|(str, extr)| match extr {
-                true => (
-                    state
-                        .get_string_at(VarName::from_str(&str).unwrap(), t)
-                        .unwrap_or_default(),
-                    Color32::WHITE,
-                ),
-                false => (str, Color32::GRAY),
-            })
-            .collect_vec()
-    } else {
-        default()
-    }
-}
-fn str_extract_brackets(mut source: &str, pattern: (&str, &str)) -> Vec<(String, bool)> {
-    let mut lines: Vec<(String, bool)> = default();
-    while let Some(opening) = source.find(pattern.0) {
-        let left = &source[..opening];
-        let closing = source.find(pattern.1).unwrap();
-        let mid = &source[opening + 1..closing];
-        lines.push((left.to_owned(), false));
-        lines.push((mid.to_owned(), true));
-        source = &source[closing + 1..];
-    }
-    lines.push((source.to_owned(), false));
-    lines
-}
 pub fn entity_screen_pos(entity: Entity, offset: Vec2, world: &mut World) -> Vec2 {
     let pos = world
         .get::<GlobalTransform>(entity)
         .and_then(|t| Some(t.translation()))
         .unwrap_or_default()
-        + vec3(offset.x, offset.y, 0.0);
+        + offset.extend(0.0);
     world_to_screen(pos, world)
 }
 pub fn cursor_pos(world: &mut World) -> Option<Vec2> {

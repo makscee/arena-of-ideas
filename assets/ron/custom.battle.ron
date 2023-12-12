@@ -5,7 +5,8 @@
             (
                 hp: 1,
                 atk: 5,
-                statuses: [("Shield", 2)],
+                description: "Test description. I have {Hp} hp and {Atk} atk",
+                statuses: [("Shield", 5)],
             ),
         ],
     ),
