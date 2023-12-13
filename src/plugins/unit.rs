@@ -1,5 +1,3 @@
-
-
 use super::*;
 
 pub const SACRIFICE_SLOT: usize = 6;

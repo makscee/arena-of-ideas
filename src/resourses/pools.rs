@@ -56,7 +56,8 @@ impl Pools {
     }
     pub fn get_house_color(name: &str, world: &World) -> Option<Color> {
         Self::try_get(world)
-            .and_then(|p| p.houses.get(name)).map(|h| h.color.clone().into())
+            .and_then(|p| p.houses.get(name))
+            .map(|h| h.color.clone().into())
     }
 }
 

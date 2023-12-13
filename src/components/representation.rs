@@ -36,7 +36,8 @@ pub struct SkipVisual(pub bool);
 impl SkipVisual {
     pub fn active(world: &mut World) -> bool {
         world
-            .get_resource::<SkipVisual>().map(|s| s.0)
+            .get_resource::<SkipVisual>()
+            .map(|s| s.0)
             .unwrap_or_default()
     }
 
