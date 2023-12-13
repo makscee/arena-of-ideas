@@ -14,7 +14,7 @@ fn black() -> Color32 {
 pub fn white() -> Color32 {
     hex_color!("#ffffff")
 }
-fn yellow() -> Color32 {
+pub fn yellow() -> Color32 {
     hex_color!("#D98F00")
 }
 pub struct UiPlugin;
@@ -212,61 +212,104 @@ pub fn text_dots_text(text1: &ColoredString, text2: &ColoredString, ui: &mut Ui)
     });
 }
 
-pub struct GameWindow<'a>(pub Window<'a>, &'a str);
+pub struct GameWindow<'a> {
+    window: Window<'a>,
+    title: &'a str,
+    title_bar: bool,
+    stroke: bool,
+}
 
 impl GameWindow<'_> {
-    pub fn show(self, ctx: &egui::Context, add_contents: impl FnOnce(&mut Ui)) {
-        self.0.show(ctx, |ui| {
-            let v = &ui.style().visuals.clone();
-            let mut rounding = v.window_rounding;
-            rounding.se = 0.0;
-            rounding.sw = 0.0;
-            Frame::none()
-                .fill(white())
-                .rounding(rounding)
-                .stroke(v.window_stroke)
-                .show(ui, |ui| {
-                    ui.with_layout(
-                        Layout::top_down(egui::Align::Min).with_cross_justify(true),
-                        |ui| {
-                            Frame::none()
-                                .inner_margin(Margin::symmetric(8.0, 0.0))
-                                .show(ui, |ui| {
-                                    ui.label(
-                                        RichText::new(self.1)
-                                            .text_style(TextStyle::Heading)
-                                            .size(15.0)
-                                            .color(black()),
-                                    );
-                                })
-                        },
-                    );
-                });
+    pub fn show(mut self, ctx: &egui::Context, add_contents: impl FnOnce(&mut Ui)) {
+        if !self.stroke {
+            self.window = self.window.frame(Frame::none());
+        }
+        self.window.show(ctx, |ui| {
+            if self.title_bar {
+                let v = &ui.style().visuals.clone();
+                let mut rounding = v.window_rounding;
+                rounding.se = 0.0;
+                rounding.sw = 0.0;
+                Frame::none()
+                    .fill(white())
+                    .rounding(rounding)
+                    .stroke(v.window_stroke)
+                    .show(ui, |ui| {
+                        ui.with_layout(
+                            Layout::top_down(egui::Align::Min).with_cross_justify(true),
+                            |ui| {
+                                Frame::none()
+                                    .inner_margin(Margin::symmetric(8.0, 0.0))
+                                    .show(ui, |ui| {
+                                        ui.label(
+                                            RichText::new(self.title)
+                                                .text_style(TextStyle::Heading)
+                                                .size(15.0)
+                                                .color(black()),
+                                        );
+                                    })
+                            },
+                        );
+                    });
+            }
             add_contents(ui)
         });
     }
     pub fn default_pos(mut self, pos: Vec2) -> Self {
-        self.0 = self.0.default_pos(pos2(pos.x, pos.y));
+        self.window = self.window.default_pos(pos2(pos.x, pos.y));
         self
     }
-    pub fn id(mut self, id: Id) -> Self {
-        self.0 = self.0.id(id);
+    pub fn fixed_pos(mut self, pos: Vec2) -> Self {
+        self.window = self.window.fixed_pos(pos2(pos.x, pos.y));
+        self
+    }
+    pub fn id(mut self, id: impl std::hash::Hash) -> Self {
+        self.window = self.window.id(Id::new(id).with(self.title));
         self
     }
     pub fn set_width(mut self, width: f32) -> Self {
-        self.0 = self.0.default_width(width);
+        self.window = self.window.default_width(width);
+        self
+    }
+    pub fn anchor(mut self, align: Align2, offset: impl Into<egui::Vec2>) -> Self {
+        self.window = self.window.anchor(align, offset);
+        self
+    }
+    pub fn resizable(mut self, resizable: bool) -> Self {
+        self.window = self.window.resizable(resizable);
+        self
+    }
+    pub fn title_bar(mut self, enable: bool) -> Self {
+        self.title_bar = enable;
+        self
+    }
+    pub fn stroke(mut self, enable: bool) -> Self {
+        self.stroke = enable;
+        self
+    }
+    pub fn entity_anchor(
+        mut self,
+        entity: Entity,
+        pivot: Align2,
+        offset: Vec2,
+        world: &mut World,
+    ) -> Self {
+        let pos = entity_screen_pos(entity, world) + offset;
+        self.window = self.window.fixed_pos([pos.x, pos.y]).pivot(pivot);
         self
     }
 }
 
 pub fn window<'a>(title: &'a str) -> GameWindow<'a> {
-    GameWindow(
-        Window::new(title)
+    GameWindow {
+        window: Window::new(title)
             .default_width(200.0)
             .title_bar(false)
             .collapsible(false),
         title,
-    )
+        title_bar: true,
+        stroke: true,
+    }
 }
 
 pub fn frame<R>(ui: &mut Ui, add_contents: impl FnOnce(&mut Ui) -> R) -> InnerResponse<R> {

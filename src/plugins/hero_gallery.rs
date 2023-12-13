@@ -32,7 +32,7 @@ impl HeroGallery {
 
     fn ui(world: &mut World) {
         for unit in UnitPlugin::collect_faction(Faction::Left, world) {
-            UnitCardData::from_entity(unit, world).unwrap().show(world);
+            UnitCard::from_entity(unit, world).unwrap().show(world);
         }
     }
 }

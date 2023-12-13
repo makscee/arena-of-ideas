@@ -423,24 +423,60 @@ impl OfferProduct {
 impl ShopOffer {
     pub fn draw_buy_panel(entity: Entity, world: &mut World) {
         let so = world.get::<ShopOffer>(entity).unwrap().clone();
-        let window = entity_panel(entity, vec2(0.0, -1.5), None, "buy_panel", world);
         let ctx = &egui_context(world);
-        window.show(ctx, |ui: &mut egui::Ui| {
-            ui.set_enabled(ShopPlugin::can_afford(so.price, world));
-            ui.vertical_centered(|ui| {
-                let btn = Button::new(
-                    RichText::new(format!("-{}g", so.price))
-                        .size(20.0)
-                        .color(hex_color!("#00E5FF"))
-                        .text_style(egui::TextStyle::Button),
-                )
-                .min_size(egui::vec2(100.0, 0.0));
-                ui.label("Buy");
-                if ui.add(btn).clicked() {
-                    so.product.do_buy(entity, world);
-                    ShopPlugin::change_g(-so.price, world).unwrap();
-                }
-            })
-        });
+        match &so.product {
+            OfferProduct::Unit => {}
+            OfferProduct::Status { name, charges } => {
+                window("BUY STATUS")
+                    .id(entity)
+                    .title_bar(false)
+                    .resizable(false)
+                    .set_width(150.0)
+                    .entity_anchor(entity, Align2::CENTER_BOTTOM, vec2(0.0, -80.0), world)
+                    .show(ctx, |ui| {
+                        frame(ui, |ui| {
+                            ui.vertical(|ui| {
+                                let color: Color32 =
+                                    Pools::get_status_house(name, world).color.clone().into();
+                                ui.label(name.add_color(color).rich_text());
+                                let description = Pools::get_status(name, world)
+                                    .unwrap()
+                                    .description
+                                    .to_colored()
+                                    .inject_vars(&VarState::new_with(
+                                        VarName::Charges,
+                                        VarValue::Int(*charges),
+                                    ));
+                                ui.label(description.widget());
+                            });
+                        });
+                    });
+            }
+        }
+        window("BUY")
+            .id(entity)
+            .set_width(80.0)
+            .resizable(false)
+            .title_bar(false)
+            .stroke(false)
+            .entity_anchor(entity, Align2::CENTER_TOP, vec2(0.0, 70.0), world)
+            .show(ctx, |ui| {
+                ui.set_enabled(ShopPlugin::can_afford(so.price, world));
+                frame(ui, |ui| {
+                    ui.vertical_centered(|ui| {
+                        let btn = Button::new(
+                            RichText::new(format!("-{} g", so.price))
+                                .size(20.0)
+                                .color(yellow())
+                                .text_style(egui::TextStyle::Button),
+                        )
+                        .min_size(egui::vec2(100.0, 0.0));
+                        if ui.add(btn).clicked() {
+                            so.product.do_buy(entity, world);
+                            ShopPlugin::change_g(-so.price, world).unwrap();
+                        }
+                    });
+                });
+            });
     }
 }

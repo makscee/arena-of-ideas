@@ -60,21 +60,21 @@ impl LoginPlugin {
 
     fn ui(world: &mut World) {
         let ctx = &egui_context(world);
-        let mut w = window("LOGIN");
-        w.0 = w.0.anchor(Align2::CENTER_CENTER, [0.0, 0.0]);
-        w.show(ctx, |ui| {
-            frame(ui, |ui| {
-                if identity().is_err() {
-                    if ui.button_primary("CONNECT").clicked() {
-                        Self::connect(world);
+        window("LOGIN")
+            .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
+            .show(ctx, |ui| {
+                frame(ui, |ui| {
+                    if identity().is_err() {
+                        if ui.button_primary("CONNECT").clicked() {
+                            Self::connect(world);
+                        }
+                        ui.set_enabled(world.resource::<CurrentCredentials>().creds.is_some());
+                        if ui.button("NEW IDENTITY").clicked() {
+                            Self::clear_saved_credentials(world);
+                        }
                     }
-                    ui.set_enabled(world.resource::<CurrentCredentials>().creds.is_some());
-                    if ui.button("NEW IDENTITY").clicked() {
-                        Self::clear_saved_credentials(world);
-                    }
-                }
+                });
             });
-        });
     }
 
     fn connect(world: &mut World) {

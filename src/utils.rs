@@ -33,7 +33,7 @@ pub fn entity_panel(
     name: &str,
     world: &mut World,
 ) -> egui::Window<'static> {
-    let pos = entity_screen_pos(entity, side, world);
+    let pos = entity_screen_pos(entity, world) + side;
     let side_i = side.as_ivec2();
     let align = match (side_i.x, side_i.y) {
         (-1, 0) => Align2::RIGHT_CENTER,
@@ -53,12 +53,11 @@ pub fn entity_panel(
         .resizable(false)
         .pivot(align)
 }
-pub fn entity_screen_pos(entity: Entity, offset: Vec2, world: &mut World) -> Vec2 {
+pub fn entity_screen_pos(entity: Entity, world: &mut World) -> Vec2 {
     let pos = world
         .get::<GlobalTransform>(entity)
         .and_then(|t| Some(t.translation()))
-        .unwrap_or_default()
-        + offset.extend(0.0);
+        .unwrap_or_default();
     world_to_screen(pos, world)
 }
 pub fn cursor_pos(world: &mut World) -> Option<Vec2> {
