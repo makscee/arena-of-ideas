@@ -12,15 +12,15 @@ pub use var_state_delta::*;
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct HexColor(pub String);
 
-impl Into<Color> for HexColor {
-    fn into(self) -> Color {
-        Color::hex(&self.0).unwrap()
+impl From<HexColor> for Color {
+    fn from(value: HexColor) -> Self {
+        Color::hex(&value.0).unwrap()
     }
 }
 
-impl Into<Color32> for HexColor {
-    fn into(self) -> Color32 {
-        let c: Color = self.into();
+impl From<HexColor> for Color32 {
+    fn from(value: HexColor) -> Self {
+        let c: Color = value.into();
         let c = c.as_rgba_u8();
         Color32::from_rgb(c[0], c[1], c[2])
     }
