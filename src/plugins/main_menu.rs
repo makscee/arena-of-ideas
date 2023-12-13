@@ -34,7 +34,8 @@ impl MainMenuPlugin {
         let save = Save::get(world);
 
         window("MAIN MENU").set_width(400.0)
-        .anchor(Align2::CENTER_CENTER, [0.0, 0.0]).show(ctx, |ui| {
+        .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
+        .show(ctx, |ui| {
             frame(ui, |ui| {
                 let enabled = save.current_level > 0;
                 ui.set_enabled(enabled);
@@ -55,9 +56,11 @@ impl MainMenuPlugin {
                                 .filter(|l| !l.status.eq(&module_bindings::LadderStatus::Building))
                                 .choose(&mut thread_rng())
                             {
-                                let mut save = Save::default();
-                                save.mode = GameMode::RandomLadder {
-                                    ladder_id: ladder.id,
+                                let save = Save {
+                                    mode: GameMode::RandomLadder {
+                                        ladder_id: ladder.id,
+                                    },
+                                    ..default()
                                 };
                                 save.save(world).unwrap();
                                 GameState::change(GameState::Shop, world);
@@ -73,8 +76,7 @@ impl MainMenuPlugin {
                             .clicked()
                         {
                             start_new_ladder();
-                            let mut save = Save::default();
-                            save.mode = GameMode::NewLadder;
+                            let save = Save { mode: GameMode::NewLadder, ..default() };
                             save.save(world).unwrap();
                             GameState::change(GameState::Shop, world);
                         }

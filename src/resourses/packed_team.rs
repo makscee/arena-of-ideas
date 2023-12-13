@@ -74,13 +74,10 @@ impl PackedTeam {
                 VisibilityBundle::default(),
             ))
             .id();
-        match faction {
-            Faction::Team => {
-                for slot in 1..=10 {
-                    UnitPlugin::spawn_slot(slot, Faction::Team, world);
-                }
+        if faction == Faction::Team {
+            for slot in 1..=10 {
+                UnitPlugin::spawn_slot(slot, Faction::Team, world);
             }
-            _ => {}
         }
         team
     }

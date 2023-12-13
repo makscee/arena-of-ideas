@@ -263,7 +263,7 @@ impl Expression {
                 };
                 let start = VarValue::Float(start);
                 let t = timeframe - to_next;
-                
+
                 Tween::QuartOut.f(&start, &VarValue::Float(0.0), t, timeframe * 0.5)
             }
             Expression::If(cond, th, el) => {
@@ -273,24 +273,14 @@ impl Expression {
                     el.get_value(context, world)
                 }
             }
-            Expression::GreaterThen(a, b) => Ok(VarValue::Bool(
-                match VarValue::compare(
-                    &a.get_value(context, world)?,
-                    &b.get_value(context, world)?,
-                )? {
-                    std::cmp::Ordering::Greater => true,
-                    _ => false,
-                },
-            )),
-            Expression::LessThen(a, b) => Ok(VarValue::Bool(
-                match VarValue::compare(
-                    &a.get_value(context, world)?,
-                    &b.get_value(context, world)?,
-                )? {
-                    std::cmp::Ordering::Less => true,
-                    _ => false,
-                },
-            )),
+            Expression::GreaterThen(a, b) => Ok(VarValue::Bool(matches!(
+                VarValue::compare(&a.get_value(context, world)?, &b.get_value(context, world)?,)?,
+                std::cmp::Ordering::Greater
+            ))),
+            Expression::LessThen(a, b) => Ok(VarValue::Bool(matches!(
+                VarValue::compare(&a.get_value(context, world)?, &b.get_value(context, world)?,)?,
+                std::cmp::Ordering::Less
+            ))),
             Expression::Min(a, b) => Ok(VarValue::min(
                 &a.get_value(context, world)?,
                 &b.get_value(context, world)?,

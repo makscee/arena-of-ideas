@@ -124,8 +124,8 @@ impl Status {
         if let Some(entity) = world.get_entity(entity) {
             if let Some(children) = entity.get::<Children>() {
                 return children
-                    .to_vec()
-                    .into_iter()
+                    .iter()
+                    .copied()
                     .filter(|x| world.entity(*x).contains::<Status>())
                     .collect_vec();
             }
@@ -196,22 +196,19 @@ impl Status {
             let parent = parent.get();
             let s = world.get::<Status>(status).unwrap();
             for trigger in s.trigger.collect_delta_triggers() {
-                match &trigger {
-                    Trigger::DeltaVar(var, e) => {
-                        let e = e.clone();
-                        let var = *var;
-                        if let Ok(delta) = e.get_value(
-                            Context::from_owner(parent, world).set_status(status, world),
-                            world,
-                        ) {
-                            let t = get_insert_head(world);
-                            let mut state_mapping = world.get_mut::<VarStateDelta>(status).unwrap();
-                            if state_mapping.need_update(var, &delta) {
-                                state_mapping.state.insert_simple(var, delta, t);
-                            }
+                if let Trigger::DeltaVar(var, e) = &trigger {
+                    let e = e.clone();
+                    let var = *var;
+                    if let Ok(delta) = e.get_value(
+                        Context::from_owner(parent, world).set_status(status, world),
+                        world,
+                    ) {
+                        let t = get_insert_head(world);
+                        let mut state_mapping = world.get_mut::<VarStateDelta>(status).unwrap();
+                        if state_mapping.need_update(var, &delta) {
+                            state_mapping.state.insert_simple(var, delta, t);
                         }
                     }
-                    _ => {}
                 }
             }
         }
@@ -227,19 +224,16 @@ impl Status {
         let s = world.get::<Status>(status).unwrap();
         for trigger in s.trigger.collect_map_triggers() {
             debug!("trigger {trigger:?}");
-            match &trigger {
-                Trigger::MapVar(v, e) => {
-                    debug!("Map trigger {v} {e:?}");
-                    if !var.eq(v) {
-                        continue;
-                    }
-                    let e = e.clone();
-                    if let Ok(v) = e.get_value(context.clone().set_var(var, value.clone()), world) {
-                        debug!("Value mapped {value:?} into {v:?}");
-                        *value = v;
-                    }
+            if let Trigger::MapVar(v, e) = &trigger {
+                debug!("Map trigger {v} {e:?}");
+                if !var.eq(v) {
+                    continue;
                 }
-                _ => {}
+                let e = e.clone();
+                if let Ok(v) = e.get_value(context.clone().set_var(var, value.clone()), world) {
+                    debug!("Value mapped {value:?} into {v:?}");
+                    *value = v;
+                }
             }
         }
     }

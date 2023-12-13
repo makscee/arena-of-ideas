@@ -163,7 +163,7 @@ impl VarState {
             if let Some(state) = world.get::<VarState>(entity) {
                 if let Ok(mut value) = state.get_value_at(var, t) {
                     if let Some(children) = world.get::<Children>(entity) {
-                        for child in children.to_vec() {
+                        for child in children.iter().copied() {
                             if let Some(delta) = world.get::<VarStateDelta>(child) {
                                 value = delta.process(var, value, t);
                             }

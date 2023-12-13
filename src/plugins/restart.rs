@@ -9,6 +9,7 @@ impl Plugin for RestartPlugin {
 }
 
 impl RestartPlugin {
+    #[allow(clippy::type_complexity)]
     fn restart(
         query: Query<Entity, Or<(&Unit, &Corpse, &ShopOffer, &Representation, &VarState)>>,
         mut commands: Commands,

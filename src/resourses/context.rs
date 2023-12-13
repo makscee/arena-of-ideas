@@ -70,7 +70,6 @@ impl Context {
     pub fn new_named(name: String) -> Self {
         Self {
             layers: vec![ContextLayer::Text(name)],
-            ..default()
         }
     }
 
@@ -94,11 +93,8 @@ impl Context {
     pub fn get_all_vars(&self) -> HashMap<VarName, VarValue> {
         let mut result: HashMap<VarName, VarValue> = default();
         for layer in self.layers.iter().rev() {
-            match layer {
-                ContextLayer::Var(var, value) => {
-                    result.insert(*var, value.clone());
-                }
-                _ => {}
+            if let ContextLayer::Var(var, value) = layer {
+                result.insert(*var, value.clone());
             }
         }
         result

@@ -131,12 +131,9 @@ impl ChangeType {
     }
 
     fn adust_time(&mut self, factor: f32) -> &mut Self {
-        match self {
-            ChangeType::Var { change, .. } => {
-                change.adjust_time(factor);
-            }
-            _ => {}
-        };
+        if let ChangeType::Var { change, .. } = self {
+            change.adjust_time(factor);
+        }
         self
     }
 
