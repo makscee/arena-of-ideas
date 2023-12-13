@@ -65,8 +65,7 @@ impl PackedUnit {
         }
         let house_color = Pools::get(world)
             .houses
-            .get(&self.house)
-            .and_then(|h| Some(h.color.clone()))
+            .get(&self.house).map(|h| h.color.clone())
             .unwrap_or_default();
         self.state
             .init(VarName::Hp, VarValue::Int(self.hp))

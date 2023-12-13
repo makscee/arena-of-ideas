@@ -36,8 +36,7 @@ pub struct SkipVisual(pub bool);
 impl SkipVisual {
     pub fn active(world: &mut World) -> bool {
         world
-            .get_resource::<SkipVisual>()
-            .and_then(|s| Some(s.0))
+            .get_resource::<SkipVisual>().map(|s| s.0)
             .unwrap_or_default()
     }
 
@@ -300,7 +299,7 @@ impl RepresentationMaterial {
                 let aa = aa.get_float(&context, world).unwrap_or(1.0);
                 let color = color.get_color(&context, world).unwrap_or_default();
                 let mut dilations = dilations
-                    .into_iter()
+                    .iter()
                     .map(|(t, v)| {
                         (
                             t.get_float(&context, world).unwrap(),
@@ -309,7 +308,7 @@ impl RepresentationMaterial {
                     })
                     .sorted_by(|a, b| a.0.total_cmp(&b.0))
                     .collect_vec();
-                if dilations.get(0).is_none() || dilations[0].0 != 0.0 {
+                if dilations.first().is_none() || dilations[0].0 != 0.0 {
                     dilations.insert(0, (0.0, 0.0));
                 }
                 if dilations.last().unwrap().0 != 1.0 {
@@ -636,7 +635,7 @@ impl Representation {
                         let mut renames: HashMap<VarName, VarName> = default();
                         let mut deletes: Vec<VarName> = default();
                         for (var, e) in self.mapping.iter_mut().sorted_by_key(|x| x.0) {
-                            let mut x = var.clone();
+                            let mut x = *var;
                             ui.horizontal(|ui| {
                                 if ui.button("-").clicked() {
                                     deletes.push(*var);

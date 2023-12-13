@@ -240,7 +240,7 @@ impl GameWindow<'_> {
     }
 }
 
-pub fn window<'a>(title: &'a str) -> GameWindow<'a> {
+pub fn window(title: &str) -> GameWindow<'_> {
     GameWindow {
         window: Window::new(title)
             .default_width(200.0)

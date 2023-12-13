@@ -27,7 +27,7 @@ impl ColoredString {
         let mut job = LayoutJob::default();
         for (s, color) in self.lines.iter() {
             let color = color.unwrap_or(light_gray());
-            job.append(&s, 0.0, TextFormat { color, ..default() });
+            job.append(s, 0.0, TextFormat { color, ..default() });
         }
         WidgetText::LayoutJob(job)
     }

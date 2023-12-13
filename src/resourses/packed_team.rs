@@ -16,7 +16,7 @@ impl PackedTeam {
         }
     }
     pub fn from_ladder_string(text: &str, world: &World) -> Self {
-        let split = text.split("_").collect_vec();
+        let split = text.split('_').collect_vec();
         let name = split[0];
         let count: usize = split[1].parse().unwrap();
         let mut unit = Pools::get(world).enemies.get(name).unwrap().clone();
@@ -101,10 +101,10 @@ impl PackedTeam {
             )
     }
     pub fn state(faction: Faction, world: &mut World) -> Option<&VarState> {
-        Self::entity(faction, world).and_then(|e| Some(VarState::get(e, world)))
+        Self::entity(faction, world).map(|e| VarState::get(e, world))
     }
     pub fn state_mut(faction: Faction, world: &mut World) -> Option<Mut<VarState>> {
-        Self::entity(faction, world).and_then(|e| Some(VarState::get_mut(e, world)))
+        Self::entity(faction, world).map(|e| VarState::get_mut(e, world))
     }
 }
 
@@ -128,7 +128,7 @@ impl ToString for PackedTeam {
             if count > 1 {
                 result.push_str(&format!("{name} x{count}"));
             } else {
-                result.push_str(&format!("{name}"));
+                result.push_str(&name.to_string());
             }
             if !statuses.is_empty() {
                 result.push_str(&format!(" with {statuses}"));

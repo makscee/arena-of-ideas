@@ -232,7 +232,7 @@ impl History {
         )
     }
     pub fn get_last(&self) -> Option<VarValue> {
-        self.0.last().and_then(|x| Some(x.value.clone()))
+        self.0.last().map(|x| x.value.clone())
     }
     pub fn simplify(&mut self) {
         if let Some(value) = self.get_last() {

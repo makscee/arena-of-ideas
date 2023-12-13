@@ -33,8 +33,7 @@ impl Ladder {
         let ladder_len = Save::get(world)
             .get_ladder_id()
             .ok()
-            .and_then(|lid| TableLadder::filter_by_id(lid))
-            .and_then(|l| Some(l.levels.len()))
+            .and_then(TableLadder::filter_by_id).map(|l| l.levels.len())
             .unwrap_or_default();
         Options::get_initial_ladder(world).levels.len() + ladder_len
     }

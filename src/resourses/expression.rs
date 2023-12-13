@@ -251,7 +251,7 @@ impl Expression {
                         }
                     }
                 }
-                return Err(anyhow!("Can't find status"));
+                Err(anyhow!("Can't find status"))
             }
             Expression::Beat => {
                 let beat = AudioPlugin::beat_index(world);
@@ -263,8 +263,8 @@ impl Expression {
                 };
                 let start = VarValue::Float(start);
                 let t = timeframe - to_next;
-                let result = Tween::QuartOut.f(&start, &VarValue::Float(0.0), t, timeframe * 0.5);
-                return result;
+                
+                Tween::QuartOut.f(&start, &VarValue::Float(0.0), t, timeframe * 0.5)
             }
             Expression::If(cond, th, el) => {
                 if cond.get_bool(context, world)? {
@@ -517,7 +517,7 @@ impl Expression {
                     ui.text_edit_singleline(x);
                 }
                 Expression::Hex(x) => {
-                    let c = Color::hex(x.to_owned()).unwrap_or_default().as_rgba_u8();
+                    let c = Color::hex(&x).unwrap_or_default().as_rgba_u8();
                     let mut c = Color32::from_rgb(c[0], c[1], c[2]);
                     if ui.color_edit_button_srgba(&mut c).changed() {
                         *x = encode(c.to_array());

@@ -100,17 +100,17 @@ impl Effect {
                         VarName::Position,
                         VarValue::Vec2(UnitPlugin::get_unit_position(context.target(), world)?),
                     )
-                    .set_var(VarName::Text, VarValue::String(format!("Kill")))
+                    .set_var(VarName::Text, VarValue::String("Kill".to_string()))
                     .set_var(VarName::Color, VarValue::Color(Color::RED))
                     .unpack(world)?;
             }
             Effect::Debug(msg) => {
-                let msg = msg.get_string(&context, world)?;
+                let msg = msg.get_string(context, world)?;
                 debug!("Debug effect: {msg}");
             }
             Effect::Noop => {}
             Effect::UseAbility(ability) => {
-                let effect = Pools::get_ability(&ability, world).effect.clone();
+                let effect = Pools::get_ability(ability, world).effect.clone();
                 ActionCluster::current(world).push_action_front(effect, context.clone());
                 Pools::get_vfx("text", world)
                     .clone()
@@ -122,7 +122,7 @@ impl Effect {
                     .set_var(
                         VarName::Color,
                         VarValue::Color(
-                            Pools::get_ability_house(&ability, world)
+                            Pools::get_ability_house(ability, world)
                                 .with_context(|| {
                                     format!("Failed to find house for ability {ability}")
                                 })?
@@ -139,8 +139,8 @@ impl Effect {
                     .get_var(VarName::Charges, world)
                     .unwrap_or(VarValue::Int(1))
                     .get_int()?;
-                let color = Pools::get_status_house(&status, world).color.clone().into();
-                Status::change_charges(&status, context.target(), charges, world)?;
+                let color = Pools::get_status_house(status, world).color.clone().into();
+                Status::change_charges(status, context.target(), charges, world)?;
                 Pools::get_vfx("text", world)
                     .clone()
                     .set_var(
@@ -357,7 +357,7 @@ impl Effect {
                 Effect::List(list) | Effect::ListSpread(list) => {
                     ui.vertical(|ui| {
                         let mut delete: Option<usize> = None;
-                        for (i, e) in list.into_iter().enumerate() {
+                        for (i, e) in list.iter_mut().enumerate() {
                             ui.horizontal(|ui| {
                                 if ui.link("-").clicked() {
                                     delete = Some(i);

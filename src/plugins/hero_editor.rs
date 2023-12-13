@@ -61,11 +61,11 @@ impl HeroEditorPlugin {
             }
         });
         let mut changed = false;
-        if !pd.hero_editor_data.editing_data.eq(&editing_data) {
+        if !pd.hero_editor_data.editing_data.eq(editing_data) {
             pd.hero_editor_data.editing_data = editing_data.to_owned();
             changed = true;
         }
-        if !pd.hero_editor_data.hero.eq(&hero) {
+        if !pd.hero_editor_data.hero.eq(hero) {
             pd.hero_editor_data.hero = hero.to_owned();
             Self::respawn_direct(&mut pd, world);
         } else if changed {

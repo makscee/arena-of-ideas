@@ -52,7 +52,7 @@ impl Save {
     pub fn add_ladder_levels(&mut self, levels: &Vec<PackedTeam>) -> &mut Self {
         debug!("New ladder levels: {levels:#?}");
         let levels = levels
-            .into_iter()
+            .iter()
             .map(|l| l.to_ladder_string())
             .collect_vec();
         add_ladder_levels(self.get_ladder_id().unwrap(), levels);

@@ -23,13 +23,13 @@ impl RatingPlugin {
             .collect_vec();
         let mut candidates = Vec::default();
         while candidates.len() < count {
-            let ind = (&mut thread_rng()).gen_range(0..enemies.len());
+            let ind = thread_rng().gen_range(0..enemies.len());
             let enemy = &mut enemies[ind];
             match SimulationPlugin::run(team.clone(), enemy.clone(), world) {
                 Ok(result) => match result {
                     BattleResult::Right(..) => candidates.push(enemies.remove(ind)),
                     BattleResult::Left(count) => {
-                        for _ in 0..(0..=count).into_iter().choose(&mut thread_rng()).unwrap() {
+                        for _ in 0..(0..=count).choose(&mut thread_rng()).unwrap() {
                             Self::strenghten(enemy, world);
                         }
                     }

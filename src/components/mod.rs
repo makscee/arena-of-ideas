@@ -14,7 +14,7 @@ pub struct HexColor(pub String);
 
 impl From<HexColor> for Color {
     fn from(value: HexColor) -> Self {
-        Color::hex(&value.0).unwrap()
+        Color::hex(value.0).unwrap()
     }
 }
 

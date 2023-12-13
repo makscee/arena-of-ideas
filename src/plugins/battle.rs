@@ -204,7 +204,7 @@ impl BattlePlugin {
         if !GameTimer::get(world).ended() {
             return;
         }
-        let end = world.resource::<BattleData>().end.clone();
+        let end = world.resource::<BattleData>().end;
         let text = match end {
             BattleEnd::Defeat(level, total, finished_building) => {
                 if finished_building {
@@ -214,7 +214,7 @@ impl BattlePlugin {
                 }
             }
             BattleEnd::LadderBeaten(level) => format!("Victory! Ladder beaten! {level}/{level}"),
-            BattleEnd::LadderGenerate(..) => format!("Victory! New levels will be generated."),
+            BattleEnd::LadderGenerate(..) => "Victory! New levels will be generated.".to_string(),
             BattleEnd::Victory(level, total) => format!("Victory! {level}/{total}"),
         };
         let color = match end {

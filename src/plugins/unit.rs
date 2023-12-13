@@ -1,4 +1,4 @@
-use bevy_egui::egui::Id;
+
 
 use super::*;
 
@@ -67,12 +67,11 @@ impl UnitPlugin {
     ) -> Vec<(Entity, Faction)> {
         factions
             .into_iter()
-            .map(|f| {
+            .flat_map(|f| {
                 Self::collect_faction(f, world)
                     .into_iter()
                     .map(move |e| (e, f))
             })
-            .flatten()
             .collect_vec()
     }
 
@@ -81,14 +80,11 @@ impl UnitPlugin {
             if let Some(children) = world.get::<Children>(team) {
                 return children
                     .iter()
-                    .filter_map(|e| match world.get::<Unit>(*e) {
-                        Some(_) => Some(*e),
-                        None => None,
-                    })
+                    .filter_map(|e| world.get::<Unit>(*e).map(|_| *e))
                     .collect_vec();
             }
         }
-        return default();
+        default()
     }
 
     pub fn fill_slot_gaps(faction: Faction, world: &mut World) {
@@ -394,7 +390,7 @@ impl UnitCard {
                     let color: Color32 = Pools::get_status_house(&name, world).color.clone().into();
                     let description =
                         if let Some(status) = Pools::get_status(&name.to_string(), world) {
-                            status.description.clone().to_colored().inject_vars(&state)
+                            status.description.clone().to_colored().inject_vars(state)
                         } else {
                             ColoredString::default()
                         };

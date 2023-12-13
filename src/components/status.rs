@@ -150,7 +150,7 @@ impl Status {
             .iter(world)
             .collect_vec()
             .into_iter()
-            .map(|c| {
+            .flat_map(|c| {
                 c.into_iter()
                     .filter_map(|e| {
                         if world.get::<Status>(*e).is_some() {
@@ -161,7 +161,6 @@ impl Status {
                     })
                     .collect_vec()
             })
-            .flatten()
             .collect_vec()
     }
 
@@ -176,14 +175,13 @@ impl Status {
     ) -> Vec<(Entity, Trigger)> {
         statuses
             .into_iter()
-            .map(|status| {
+            .flat_map(|status| {
                 Self::get_trigger(status, world)
                     .catch_event(event)
                     .into_iter()
                     .map(|t| (status, t))
                     .collect_vec()
             })
-            .flatten()
             .collect_vec()
     }
 
@@ -203,7 +201,7 @@ impl Status {
                         let e = e.clone();
                         let var = *var;
                         if let Ok(delta) = e.get_value(
-                            &Context::from_owner(parent, world).set_status(status, world),
+                            Context::from_owner(parent, world).set_status(status, world),
                             world,
                         ) {
                             let t = get_insert_head(world);

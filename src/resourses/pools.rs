@@ -19,10 +19,10 @@ pub struct Pools {
 }
 
 impl Pools {
-    pub fn get<'a>(world: &'a World) -> &'a Self {
+    pub fn get(world: &World) -> &Self {
         world.get_resource::<Pools>().unwrap()
     }
-    pub fn try_get<'a>(world: &'a World) -> Option<&'a Self> {
+    pub fn try_get(world: &World) -> Option<&Self> {
         world.get_resource::<Pools>()
     }
     pub fn get_mut(world: &mut World) -> Mut<Self> {
@@ -35,7 +35,7 @@ impl Pools {
     pub fn get_ability<'a>(name: &str, world: &'a World) -> &'a Ability {
         Self::get(world).abilities.get(name).unwrap()
     }
-    pub fn get_vfx<'a>(name: &str, world: &'a World) -> Vfx {
+    pub fn get_vfx(name: &str, world: &World) -> Vfx {
         let name = &format!("ron/vfx/{name}.vfx.ron");
         Self::get(world).vfx.get(name).unwrap().clone()
     }
@@ -56,8 +56,7 @@ impl Pools {
     }
     pub fn get_house_color(name: &str, world: &World) -> Option<Color> {
         Self::try_get(world)
-            .and_then(|p| p.houses.get(name))
-            .and_then(|h| Some(h.color.clone().into()))
+            .and_then(|p| p.houses.get(name)).map(|h| h.color.clone().into())
     }
 }
 
@@ -121,7 +120,7 @@ impl PoolsPlugin {
         let statuses = Pools::get(world)
             .houses
             .iter()
-            .map(|(_, h)| {
+            .flat_map(|(_, h)| {
                 let mut statuses = h.statuses.clone();
                 for status in statuses.iter_mut() {
                     status
@@ -130,7 +129,6 @@ impl PoolsPlugin {
                 }
                 statuses
             })
-            .flatten()
             .collect_vec();
         let pool = &mut Pools::get_mut(world).statuses;
         debug!("Setup {} statuses", statuses.len());
@@ -145,8 +143,7 @@ impl PoolsPlugin {
         let abilities = Pools::get(world)
             .houses
             .iter()
-            .map(|(_, h)| h.abilities.clone())
-            .flatten()
+            .flat_map(|(_, h)| h.abilities.clone())
             .collect_vec();
         let pool = &mut Pools::get_mut(world).abilities;
         debug!("Setup {} abilities", abilities.len());

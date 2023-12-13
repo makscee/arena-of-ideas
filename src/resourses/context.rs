@@ -39,7 +39,7 @@ impl ContextLayer {
         match self {
             ContextLayer::Owner(entity) => {
                 VarState::try_get(*entity, world).ok().and_then(|state| {
-                    state.get_value_last(var).ok().and_then(|mut value| {
+                    state.get_value_last(var).ok().map(|mut value| {
                         if let Some(children) = world.get::<Children>(*entity) {
                             let children = children.to_vec();
                             for child in children {
@@ -48,7 +48,7 @@ impl ContextLayer {
                                 }
                             }
                         }
-                        Some(value)
+                        value
                     })
                 })
             }
