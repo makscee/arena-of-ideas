@@ -274,13 +274,19 @@ impl Expression {
                 }
             }
             Expression::GreaterThen(a, b) => Ok(VarValue::Bool(
-                match VarValue::cmp(&a.get_value(context, world)?, &b.get_value(context, world)?)? {
+                match VarValue::compare(
+                    &a.get_value(context, world)?,
+                    &b.get_value(context, world)?,
+                )? {
                     std::cmp::Ordering::Greater => true,
                     _ => false,
                 },
             )),
             Expression::LessThen(a, b) => Ok(VarValue::Bool(
-                match VarValue::cmp(&a.get_value(context, world)?, &b.get_value(context, world)?)? {
+                match VarValue::compare(
+                    &a.get_value(context, world)?,
+                    &b.get_value(context, world)?,
+                )? {
                     std::cmp::Ordering::Less => true,
                     _ => false,
                 },

@@ -127,66 +127,6 @@ impl UiPlugin {
             // style.spacing.item_spacing = [12.0, 2.0].into();
         });
     }
-
-    fn ui(world: &mut World) {
-        let ctx = &egui_context(world);
-
-        window("MAIN MENU").show(ctx, |ui| {
-            frame(ui, |ui| {
-                ui.set_enabled(false);
-                ui.button("CONTINUE");
-            });
-            frame(ui, |ui| {
-                ui.columns(2, |ui| {
-                    ui[0].vertical_centered_justified(|ui| {
-                        ui.add(Button::new("RANDOM LADDER"));
-                    });
-                    ui[1].vertical_centered_justified(|ui| {
-                        ui.add(Button::new("NEW LADDER"));
-                    });
-                });
-            });
-            frame(ui, |ui| ui.button("EXIT"));
-        });
-        window("TEXT").show( ctx, |ui| {
-            frame(ui, |ui| {
-                Label::new(RichText::new("Heading").heading().color(white())).ui(ui);
-                ui.label("Lorem ipsum dolor sit amet consectetur adipiscing elit Ut et massa mi. Aliquam in hendrerit.");
-            });
-        });
-        window("UNIT").show(ctx, |ui| {
-            frame(ui, |ui| {
-                Label::new(
-                    RichText::new("Priest")
-                        .heading()
-                        .color(hex_color!("#FFF176")),
-                )
-                .ui(ui);
-
-                ui.label("Battle Start: apply Blessing 2 to all allies");
-                ui.horizontal(|ui| {
-                    let rect = ui.max_rect();
-                    let left = rect.left() + ui.add(Label::new("hp")).rect.width() + 3.0;
-                    let right = rect.right()
-                        - 3.0
-                        - ui.with_layout(Layout::right_to_left(egui::Align::Min), |ui| {
-                            ui.colored_label(white(), "3");
-                        })
-                        .response
-                        .rect
-                        .width();
-                    let bottom = rect.bottom() - 6.0;
-                    let line = egui::Shape::dotted_line(
-                        &[[left, bottom].into(), [right, bottom].into()],
-                        light_gray(),
-                        8.0,
-                        0.5,
-                    );
-                    ui.painter().add(line);
-                });
-            });
-        });
-    }
 }
 
 pub fn text_dots_text(text1: &ColoredString, text2: &ColoredString, ui: &mut Ui) {

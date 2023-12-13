@@ -56,7 +56,7 @@ pub fn entity_panel(
 pub fn entity_screen_pos(entity: Entity, world: &mut World) -> Vec2 {
     let pos = world
         .get::<GlobalTransform>(entity)
-        .and_then(|t| Some(t.translation()))
+        .map(|t| t.translation())
         .unwrap_or_default();
     world_to_screen(pos, world)
 }
@@ -85,7 +85,7 @@ pub fn get_parent(entity: Entity, world: &World) -> Entity {
 pub fn save_to_clipboard(text: &str, world: &mut World) {
     world
         .resource_mut::<bevy_egui::EguiClipboard>()
-        .set_contents(&text);
+        .set_contents(text);
     debug!("Saved to clipboard:\n{text}");
 }
 pub fn get_from_clipboard(world: &mut World) -> Option<String> {

@@ -165,7 +165,7 @@ impl VarValue {
         }
     }
 
-    pub fn cmp(a: &VarValue, b: &VarValue) -> Result<Ordering> {
+    pub fn compare(a: &VarValue, b: &VarValue) -> Result<Ordering> {
         match (a, b) {
             (VarValue::Float(a), VarValue::Float(b)) => Ok(a.total_cmp(b)),
             (VarValue::Int(a), VarValue::Int(b)) => Ok(a.cmp(b)),

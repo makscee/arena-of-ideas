@@ -30,9 +30,8 @@ impl Trigger {
         match self {
             Trigger::Noop | Trigger::DeltaVar(..) | Trigger::MapVar(..) => default(),
             Trigger::List(triggers) => triggers
-                .into_iter()
-                .map(|t| t.catch_event(event))
-                .flatten()
+                .iter()
+                .flat_map(|t| t.catch_event(event))
                 .collect_vec(),
             Trigger::AfterIncomingDamage(..) => match event {
                 Event::IncomingDamage { .. } => vec![self.clone()],
@@ -140,9 +139,8 @@ impl Trigger {
         match self {
             Trigger::DeltaVar(_, _) => vec![self.clone()],
             Trigger::List(triggers) => triggers
-                .into_iter()
-                .map(|t| t.collect_delta_triggers())
-                .flatten()
+                .iter()
+                .flat_map(|t| t.collect_delta_triggers())
                 .collect_vec(),
             _ => default(),
         }
@@ -152,9 +150,8 @@ impl Trigger {
         match self {
             Trigger::MapVar(_, _) => vec![self.clone()],
             Trigger::List(triggers) => triggers
-                .into_iter()
-                .map(|t| t.collect_map_triggers())
-                .flatten()
+                .iter()
+                .flat_map(|t| t.collect_map_triggers())
                 .collect_vec(),
             _ => default(),
         }
@@ -200,7 +197,7 @@ impl Trigger {
                 }
                 Trigger::List(list) => {
                     ui.vertical(|ui| {
-                        list.into_iter().enumerate().for_each(|(i, t)| {
+                        list.iter_mut().enumerate().for_each(|(i, t)| {
                             t.show_editor(editing_data, format!("{name} {i}"), ui, world);
                         });
                     });

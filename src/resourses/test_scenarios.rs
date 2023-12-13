@@ -70,13 +70,8 @@ impl TestPlugin {
                     }
                 ),
                 Err(err) => {
-                    let str = format!(
-                        "{} {}\n{}",
-                        "Error".bold(),
-                        path.color(path_color),
-                        err.to_string()
-                    )
-                    .red();
+                    let str =
+                        format!("{} {}\n{}", "Error".bold(), path.color(path_color), err).red();
                     failure.push(str.clone());
                     debug!("Test fail: {}", str.clone())
                 }

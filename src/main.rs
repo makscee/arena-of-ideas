@@ -137,19 +137,19 @@ fn detect_changes(
     mut vfx_events: EventReader<AssetEvent<Vfx>>,
     mut state: ResMut<NextState<GameState>>,
 ) {
-    if unit_events.into_iter().any(|x| match x {
-        AssetEvent::Modified { .. } => true,
-        _ => false,
-    }) || rep_events.into_iter().any(|x| match x {
-        AssetEvent::Modified { .. } => true,
-        _ => false,
-    }) || battle_state_events.into_iter().any(|x| match x {
-        AssetEvent::Modified { .. } => true,
-        _ => false,
-    }) || vfx_events.into_iter().any(|x| match x {
-        AssetEvent::Modified { .. } => true,
-        _ => false,
-    }) {
+    if unit_events
+        .into_iter()
+        .any(|x| matches!(x, AssetEvent::Modified { .. }))
+        || rep_events
+            .into_iter()
+            .any(|x| matches!(x, AssetEvent::Modified { .. }))
+        || battle_state_events
+            .into_iter()
+            .any(|x| matches!(x, AssetEvent::Modified { .. }))
+        || vfx_events
+            .into_iter()
+            .any(|x| matches!(x, AssetEvent::Modified { .. }))
+    {
         state.set(GameState::Loading)
     }
 }
