@@ -4,16 +4,12 @@ pub struct SettingsPlugin;
 
 #[derive(Resource, Serialize, Deserialize, Debug, Copy, Clone, PartialEq)]
 pub struct SettingsData {
-    pub last_state_on_load: bool,
     pub master_volume: f64,
 }
 
 impl Default for SettingsData {
     fn default() -> Self {
-        Self {
-            last_state_on_load: Default::default(),
-            master_volume: 0.5,
-        }
+        Self { master_volume: 0.5 }
     }
 }
 
@@ -33,9 +29,6 @@ impl SettingsPlugin {
     pub fn ui(world: &mut World) {
         let mut data = *SettingsData::get(world);
         window("SETTINGS").show(&egui_context(world), |ui| {
-            frame(ui, |ui| {
-                ui.checkbox(&mut data.last_state_on_load, "load from last state");
-            });
             frame(ui, |ui| {
                 let master_volume =
                     Slider::new(&mut data.master_volume, 0.0..=1.0).text("master volume");

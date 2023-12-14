@@ -55,13 +55,10 @@ pub fn add_ladder_levels(
 }
 
 #[spacetimedb(reducer)]
-pub fn finish_building_ladder(ctx: ReducerContext, top_remove: u32) -> Result<()> {
+pub fn finish_building_ladder(ctx: ReducerContext) -> Result<()> {
     let mut ladder = Ladder::filter_by_creator(&ctx.sender)
         .find(|l| l.status.eq(&LadderStatus::Building))
         .context("No building ladder found")?;
-    for _ in 0..top_remove {
-        ladder.levels.remove(ladder.levels.len() - 1);
-    }
     ladder.status = LadderStatus::Fresh;
     Ladder::update_by_id(&ladder.id.clone(), ladder);
     Ok(())

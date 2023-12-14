@@ -2,11 +2,10 @@ use crate::module_bindings::add_ladder_levels;
 
 use super::*;
 
-#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Save {
-    pub team: PackedTeam,
     pub mode: GameMode,
-    pub current_level: usize,
+    pub climb: LadderClimb,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, Eq)]
@@ -26,14 +25,20 @@ impl Save {
             .set("save", self)
             .map_err(|e| anyhow!(e.to_string()))
     }
-    pub fn get(world: &World) -> Save {
+    pub fn get(world: &World) -> Result<Save> {
         world
             .resource::<PkvStore>()
             .get::<Save>("save")
-            .unwrap_or_default()
+            .map_err(|e| anyhow!(e.to_string()))
+    }
+    pub fn clear(world: &mut World) -> Result<()> {
+        world
+            .resource_mut::<PkvStore>()
+            .set_string("save", "")
+            .map_err(|e| anyhow!(e.to_string()))
     }
     pub fn set_team(&mut self, team: PackedTeam) -> &mut Self {
-        self.team = team;
+        self.climb.team = team;
         self
     }
     pub fn get_ladder_id(&self) -> Result<u64> {
@@ -49,20 +54,37 @@ impl Save {
             GameMode::RandomLadder { ladder_id } => Ok(ladder_id),
         }
     }
-    pub fn add_ladder_levels(&mut self, levels: &Vec<PackedTeam>) -> &mut Self {
+    pub fn add_ladder_levels(&mut self, levels: Vec<String>) -> &mut Self {
         debug!("New ladder levels: {levels:#?}");
-        let levels = levels.iter().map(|l| l.to_ladder_string()).collect_vec();
-        add_ladder_levels(self.get_ladder_id().unwrap(), levels);
+        self.climb.levels.extend(levels.clone());
         self
     }
     pub fn ladder(&self) -> Option<TableLadder> {
         let ladder_id = self.get_ladder_id().ok()?;
         TableLadder::filter_by_id(ladder_id)
     }
-
+    pub fn register_victory(&mut self) -> &mut Self {
+        if matches!(self.mode, GameMode::NewLadder) {
+            add_ladder_levels(
+                self.get_ladder_id().unwrap(),
+                vec![self.climb.levels[self.climb.defeated].clone()],
+            )
+        }
+        self.climb.defeated += 1;
+        self
+    }
+    pub fn register_defeat(&mut self) -> &mut Self {
+        if matches!(self.mode, GameMode::NewLadder) {
+            add_ladder_levels(
+                self.get_ladder_id().unwrap(),
+                vec![self.climb.levels[self.climb.defeated].clone()],
+            )
+        }
+        self
+    }
     pub fn store_current(world: &mut World) -> Result<()> {
         PersistentData::load(world)
-            .set_stored_save(Self::get(world))
+            .set_stored_save(Self::get(world)?)
             .save(world)?;
         Ok(())
     }

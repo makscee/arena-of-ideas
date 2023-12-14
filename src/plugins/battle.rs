@@ -35,9 +35,20 @@ impl BattlePlugin {
     pub fn on_enter(world: &mut World) {
         GameTimer::get_mut(world).reset();
         let result = Self::run_battle(world).unwrap();
-        let mut save = Save::get(world);
-        save.current_level += 1;
-        let level = save.current_level;
+        if matches!(Self::process_battle_result(result, world), Err(..)) {
+            let mut bd = world.resource_mut::<BattleData>();
+            bd.end = match result {
+                BattleResult::Left(_) | BattleResult::Even => BattleEnd::Victory(0, 0),
+                BattleResult::Right(_) => BattleEnd::Defeat(0, 0, false),
+                BattleResult::Tbd => panic!("Failed to get BattleResult"),
+            };
+            bd.result = result;
+        }
+    }
+
+    fn process_battle_result(result: BattleResult, world: &mut World) -> Result<()> {
+        let save = Save::get(world)?;
+        let level = save.climb.defeated + 1;
         let total = Ladder::total_levels(world);
         let mut bd = world.resource_mut::<BattleData>();
         bd.end = match result {
@@ -55,7 +66,7 @@ impl BattlePlugin {
             }
         };
         bd.result = result;
-        save.save(world).unwrap();
+        Ok(())
     }
 
     pub fn load_teams(
@@ -257,32 +268,47 @@ impl BattlePlugin {
                     .clicked()
                 {
                     match end {
-                        BattleEnd::Defeat(level, total, new) => {
+                        BattleEnd::Defeat(_, _, new) => {
                             if new {
-                                finish_building_ladder((total - level) as u32);
+                                finish_building_ladder();
                             }
-                            Save::default().save(world).unwrap();
+                            Save::get(world).unwrap().register_defeat();
+                            Save::clear(world).unwrap();
                             GameState::MainMenu.change(world);
                         }
                         BattleEnd::LadderBeaten(_) => {
-                            let save = Save::get(world);
+                            let save = Save::get(world).unwrap();
                             let level =
-                                RatingPlugin::generate_weakest_opponent(&save.team, 1, world)[0]
-                                    .to_ladder_string();
+                                RatingPlugin::generate_weakest_opponent(&save.climb.team, 1, world)
+                                    [0]
+                                .to_ladder_string();
                             beat_ladder(save.get_ladder_id().unwrap(), level);
-                            Save::default().save(world).unwrap();
+                            Save::clear(world).unwrap();
                             GameState::MainMenu.change(world);
                         }
                         BattleEnd::LadderGenerate(_) => {
                             let teams = RatingPlugin::generate_weakest_opponent(
-                                &Save::get(world).team,
+                                &Save::get(world).unwrap().climb.team,
                                 3,
                                 world,
-                            );
-                            Save::get(world).add_ladder_levels(&teams);
+                            )
+                            .iter()
+                            .map(|l| l.to_ladder_string())
+                            .collect_vec();
+                            Save::get(world)
+                                .unwrap()
+                                .register_victory()
+                                .add_ladder_levels(teams)
+                                .save(world)
+                                .unwrap();
                             GameState::Shop.change(world);
                         }
                         BattleEnd::Victory(_, _) => {
+                            Save::get(world)
+                                .unwrap()
+                                .register_victory()
+                                .save(world)
+                                .unwrap();
                             GameState::Shop.change(world);
                         }
                     }

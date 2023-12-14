@@ -12,6 +12,122 @@ pub struct ShopData {
     pub phase: ShopPhase,
 }
 
+const G_PER_ROUND: i32 = 4;
+const HERO_COPIES_IN_POOL: usize = 5;
+const UNIT_PRICE: i32 = 3;
+const STATUS_PRICE: i32 = 2;
+const REROLL_PRICE: i32 = 1;
+
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+pub struct ShopState {
+    pub pool: Vec<ShopOffer>,
+    pub case: Vec<(Entity, ShopOffer)>,
+    pub g: i32,
+}
+
+impl ShopState {
+    fn can_afford(&self, g: i32) -> bool {
+        self.g >= g
+    }
+    fn change_g(&mut self, delta: i32) {
+        self.g += delta;
+    }
+    fn init_pool(&mut self, world: &World) {
+        let heroes = &Pools::get(world).heroes;
+        let total_heroes = heroes.len();
+        self.pool = Pools::get(world)
+            .heroes
+            .iter()
+            .cycle()
+            .take(HERO_COPIES_IN_POOL * total_heroes)
+            .map(|(_, u)| ShopOffer {
+                price: UNIT_PRICE,
+                product: OfferProduct::Unit { unit: u.clone() },
+                available: true,
+            })
+            .collect_vec();
+    }
+    fn refresh_case(&mut self, world: &mut World) {
+        self.take_case(world);
+        self.fill_case(3, 2, world);
+    }
+    fn take_case(&mut self, world: &mut World) {
+        for (entity, mut offer) in self.case.drain(..) {
+            if !offer.available {
+                continue;
+            }
+            match &offer.product {
+                OfferProduct::Unit { .. } => {
+                    let unit = PackedUnit::pack(entity, world);
+                    offer.product = OfferProduct::Unit { unit };
+                    self.pool.push(offer);
+                }
+                OfferProduct::Status { .. } => {}
+            }
+            world.entity_mut(entity).despawn_recursive();
+        }
+    }
+    fn fill_case(&mut self, heroes: usize, statuses: usize, world: &mut World) {
+        let mut slot = 1;
+        for _ in 0..heroes {
+            if self.pool.is_empty() {
+                self.init_pool(world);
+            }
+            let offer = self
+                .pool
+                .swap_remove((0..self.pool.len()).choose(&mut thread_rng()).unwrap());
+            let entity = offer.product.spawn(slot, world);
+            slot += 1;
+            self.case.push((entity, offer));
+        }
+        UnitPlugin::translate_to_slots(world);
+        for _ in 0..statuses {
+            let status = Pools::get(world)
+                .statuses
+                .values()
+                .filter(|s| s.shop_charges > 0)
+                .choose(&mut thread_rng())
+                .unwrap()
+                .clone();
+            let product = OfferProduct::Status {
+                name: status.name,
+                charges: status.shop_charges,
+            };
+            let entity = product.spawn(slot, world);
+            slot += 1;
+            self.case.push((
+                entity,
+                ShopOffer {
+                    price: STATUS_PRICE,
+                    product,
+                    available: true,
+                },
+            ));
+        }
+    }
+    fn buy(&mut self, entity: Entity, world: &mut World) -> Result<()> {
+        let (_, offer) = self
+            .case
+            .iter_mut()
+            .find(|(e, _)| entity.eq(e))
+            .context("Failed to find offer")?;
+        let price = offer.buy(entity, world)?;
+        self.change_g(-price);
+        Ok(())
+    }
+    fn respawn_case(&mut self, world: &mut World) {
+        for (ind, (entity, offer)) in self.case.iter_mut().enumerate() {
+            if let Some(entity) = world.get_entity_mut(*entity) {
+                entity.despawn_recursive();
+            }
+            if offer.available {
+                *entity = offer.product.spawn(ind + 1, world);
+            }
+        }
+        UnitPlugin::translate_to_slots(world);
+    }
+}
+
 #[derive(Clone, PartialEq)]
 pub enum ShopPhase {
     Buy,
@@ -28,6 +144,7 @@ impl Plugin for ShopPlugin {
                 },
                 Self::on_battle_transition,
             )
+            .add_systems(OnExit(GameState::Shop), Self::on_exit)
             .add_systems(PostUpdate, Self::input.run_if(in_state(GameState::Shop)))
             .add_systems(
                 Update,
@@ -41,31 +158,32 @@ impl Plugin for ShopPlugin {
 }
 
 impl ShopPlugin {
-    pub const UNIT_PRICE: i32 = 3;
-    pub const REROLL_PRICE: i32 = 1;
-
     fn win(world: &mut World) {
         Self::on_battle_transition(world);
-        let mut sd = Save::get(world);
-        sd.current_level += 1;
-        sd.save(world).unwrap();
+        Save::get(world)
+            .unwrap()
+            .register_victory()
+            .save(world)
+            .unwrap();
         Self::on_enter(world);
     }
 
     fn on_enter(world: &mut World) {
-        let save = Save::get(world);
-        debug!("Shop start, current ladder: {:?}", save.mode);
         GameTimer::get_mut(world).reset();
-        ActionPlugin::set_timeframe(0.05, world);
-        let team_len = save.team.units.len();
-        save.team.unpack(Faction::Team, world);
-        Self::change_g(4, world).unwrap();
+        let mut save = Save::get(world).unwrap();
+        debug!("Shop start, current ladder: {:?}", save.mode);
+        PackedTeam::default().unpack(Faction::Shop, world);
+        if save.climb.shop.case.is_empty() {
+            save.climb.shop.refresh_case(world);
+            save.climb.shop.change_g(G_PER_ROUND);
+        } else {
+            save.climb.shop.respawn_case(world);
+        }
+        let team_len = save.climb.team.units.len();
+        save.climb.team.clone().unpack(Faction::Team, world);
+        save.save(world).unwrap();
         UnitPlugin::translate_to_slots(world);
-        Self::fill_showcase(world);
-        PersistentData::load(world)
-            .set_last_state(GameState::Shop)
-            .save(world)
-            .unwrap();
+        ActionPlugin::set_timeframe(0.05, world);
         let phase = match team_len < SACRIFICE_SLOT {
             true => ShopPhase::Buy,
             false => ShopPhase::Sacrifice {
@@ -82,12 +200,18 @@ impl ShopPlugin {
 
     fn on_battle_transition(world: &mut World) {
         Self::pack_active_team(world).unwrap();
+        let mut save = Save::get(world).unwrap();
+        save.climb.shop.take_case(world);
+        save.save(world).unwrap();
         UnitPlugin::despawn_all_teams(world);
-        Self::clear_showcase(world);
 
         let left = Self::active_team(world).unwrap();
         let (right, ind) = Ladder::load_current(world);
         BattlePlugin::load_teams(left, right, Some(ind), world);
+    }
+
+    fn on_exit(world: &mut World) {
+        ShopPlugin::pack_active_team(world).unwrap();
     }
 
     fn input(world: &mut World) {
@@ -103,76 +227,17 @@ impl ShopPlugin {
         }
     }
 
-    fn fill_showcase(world: &mut World) {
-        let mut units = Vec::default();
-        for _ in 0..3 {
-            let unit = Pools::get(world)
-                .heroes
-                .values()
-                .choose(&mut rand::thread_rng())
-                .unwrap()
-                .clone();
-            units.push(unit);
-        }
-        let team = PackedTeam::spawn(Faction::Shop, world);
-        let units_len = units.len();
-        for unit in units {
-            let description = unit.description.to_owned();
-            let unit = unit.unpack(team, None, world);
-            world.entity_mut(unit).insert(ShopOffer {
-                name: "Hero".to_owned(),
-                description,
-                price: Self::UNIT_PRICE,
-                product: OfferProduct::Unit,
-            });
-        }
-        UnitPlugin::fill_slot_gaps(Faction::Shop, world);
-        UnitPlugin::translate_to_slots(world);
-
-        for i in 1..3 {
-            let pos = UnitPlugin::get_slot_position(Faction::Shop, units_len + i as usize);
-            let status = Pools::get(world)
-                .statuses
-                .values()
-                .filter(|s| s.shop_charges > 0)
-                .choose(&mut thread_rng())
-                .unwrap()
-                .clone();
-            let name = status.name.to_owned();
-            let description = status.description.to_owned();
-            let charges = status.shop_charges;
-            let entity = status.unpack(None, world);
-            VarState::get_mut(entity, world)
-                .init(VarName::Position, VarValue::Vec2(pos))
-                .init(VarName::Charges, VarValue::Int(charges));
-            world.entity_mut(entity).insert(ShopOffer {
-                product: OfferProduct::Status {
-                    name: name.to_owned(),
-                    charges,
-                },
-                name,
-                description,
-                price: 2,
-            });
-        }
-    }
-
-    fn clear_showcase(world: &mut World) {
-        for entity in Self::all_offers(world) {
-            world.entity_mut(entity).despawn_recursive();
-        }
-    }
-
     pub fn pack_active_team(world: &mut World) -> Result<()> {
         let team = PackedTeam::pack(Faction::Team, world);
         Save::get(world)
+            .unwrap()
             .set_team(team)
             .save(world)
             .map_err(|e| anyhow!("{}", e.to_string()))
     }
 
     pub fn active_team(world: &mut World) -> Result<PackedTeam> {
-        Ok(Save::get(world).team)
+        Ok(Save::get(world).unwrap().climb.team)
     }
 
     pub fn ui(world: &mut World) {
@@ -180,25 +245,24 @@ impl ShopPlugin {
         let mut data = world.resource::<ShopData>().clone();
         let mut sacrifice_accepted = false;
 
-        let pos = UnitPlugin::get_slot_position(Faction::Shop, 0);
+        let pos = UnitPlugin::get_slot_position(Faction::Shop, 0) - vec2(1.0, 0.0);
         let pos = world_to_screen(pos.extend(0.0), world);
         let pos = pos2(pos.x, pos.y);
+        let save = Save::get(world).unwrap();
         match &mut data.phase {
             ShopPhase::Buy => {
-                for entity in Self::all_offers(world) {
-                    ShopOffer::draw_buy_panel(entity, world);
-                }
+                ShopOffer::draw_buy_panels(world);
                 Window::new("reroll")
-                    .fixed_pos(pos2(pos.x, pos.y))
+                    .fixed_pos(pos)
                     .collapsible(false)
                     .title_bar(false)
                     .resizable(false)
                     .default_width(10.0)
                     .show(ctx, |ui| {
-                        ui.set_enabled(Self::reroll_affordable(world));
+                        ui.set_enabled(save.climb.shop.can_afford(REROLL_PRICE));
                         ui.vertical_centered(|ui| {
                             let btn = Button::new(
-                                RichText::new(format!("-{}g", Self::REROLL_PRICE))
+                                RichText::new(format!("-{}g", REROLL_PRICE))
                                     .size(20.0)
                                     .color(hex_color!("#00E5FF"))
                                     .text_style(egui::TextStyle::Button),
@@ -233,7 +297,7 @@ impl ShopPlugin {
                     .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
                     .show(ctx, |ui| {
                         ui.set_enabled(
-                            Save::get(world).team.units.len() - selected.len() < SACRIFICE_SLOT,
+                            save.climb.team.units.len() - selected.len() < SACRIFICE_SLOT,
                         );
                         if ui
                             .button(
@@ -253,6 +317,7 @@ impl ShopPlugin {
                                 }
                             }
                             Self::change_g(selected.len() as i32, world).unwrap();
+                            Self::pack_active_team(world).unwrap();
                             sacrifice_accepted = true;
                         }
                     });
@@ -263,19 +328,18 @@ impl ShopPlugin {
             UnitPlugin::translate_to_slots(world);
             data.phase = ShopPhase::Buy;
         }
-        if let Some(team_state) = PackedTeam::state(Faction::Team, world) {
-            let g = team_state.get_int(VarName::G).unwrap_or_default();
-            Area::new("g")
-                .fixed_pos(pos + egui::vec2(0.0, -60.0))
-                .show(ctx, |ui| {
-                    ui.label(
-                        RichText::new(format!("{g} g"))
-                            .size(40.0)
-                            .strong()
-                            .color(hex_color!("#FFC107")),
-                    );
-                });
-        }
+
+        let g = save.climb.shop.g;
+        Area::new("g")
+            .fixed_pos(pos + egui::vec2(0.0, -60.0))
+            .show(ctx, |ui| {
+                ui.label(
+                    RichText::new(format!("{g} g"))
+                        .size(40.0)
+                        .strong()
+                        .color(hex_color!("#FFC107")),
+                );
+            });
         Area::new("level number")
             .anchor(Align2::CENTER_TOP, [-400.0, 20.0])
             .show(ctx, |ui| {
@@ -324,41 +388,17 @@ impl ShopPlugin {
                     }
                 });
             });
-        Area::new("exit")
-            .anchor(Align2::LEFT_TOP, [20.0, 20.0])
-            .show(ctx, |ui| {
-                if ui.button(RichText::new("Exit").size(25.0)).clicked() {
-                    GameState::MainMenuClean.change(world);
-                    UnitPlugin::despawn_all_teams(world);
-                    Self::clear_showcase(world);
-                }
-            });
         world.insert_resource(data);
     }
 
-    pub fn reroll_affordable(world: &mut World) -> bool {
-        Self::get_g(world) >= Self::REROLL_PRICE
-    }
-    pub fn can_afford(price: i32, world: &mut World) -> bool {
-        Self::get_g(world) >= price
-    }
-
-    pub fn buy_unit(unit: Entity, world: &mut World) {
-        let team = PackedTeam::entity(Faction::Team, world).unwrap();
-        world
-            .entity_mut(unit)
-            .set_parent(team)
-            .insert(ActiveTeam)
-            .remove::<ShopOffer>();
-        VarState::push_back(unit, VarName::Slot, VarChange::new(VarValue::Int(0)), world);
-        UnitPlugin::fill_slot_gaps(Faction::Team, world);
-        UnitPlugin::translate_to_slots(world);
-    }
-
     pub fn buy_reroll(world: &mut World) -> Result<()> {
-        Self::clear_showcase(world);
-        Self::fill_showcase(world);
-        Self::change_g(-Self::REROLL_PRICE, world)
+        let mut save = Save::get(world)?;
+        if !save.climb.shop.can_afford(REROLL_PRICE) {
+            return Err(anyhow!("Not enough g"));
+        }
+        save.climb.shop.refresh_case(world);
+        save.climb.shop.change_g(-REROLL_PRICE);
+        save.save(world)
     }
 
     pub fn get_g(world: &mut World) -> i32 {
@@ -369,6 +409,9 @@ impl ShopPlugin {
 
     pub fn change_g(delta: i32, world: &mut World) -> Result<()> {
         debug!("Change g {delta}");
+        let mut save = Save::get(world)?;
+        save.climb.shop.g += delta;
+        save.save(world)?;
         VarState::change_int(
             PackedTeam::entity(Faction::Team, world).unwrap(),
             VarName::G,
@@ -376,33 +419,63 @@ impl ShopPlugin {
             world,
         )
     }
-
-    pub fn all_offers(world: &mut World) -> Vec<Entity> {
-        world
-            .query_filtered::<Entity, With<ShopOffer>>()
-            .iter(world)
-            .collect_vec()
-    }
 }
 
-#[derive(Component, Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ShopOffer {
-    pub name: String,
-    pub description: String,
     pub price: i32,
+    pub available: bool,
     pub product: OfferProduct,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum OfferProduct {
-    Unit,
+    Unit { unit: PackedUnit },
     Status { name: String, charges: i32 },
 }
 
 impl OfferProduct {
-    pub fn do_buy(&self, entity: Entity, world: &mut World) {
+    pub fn spawn(&self, slot: usize, world: &mut World) -> Entity {
         match self {
-            OfferProduct::Unit => ShopPlugin::buy_unit(entity, world),
+            OfferProduct::Unit { unit } => unit.clone().unpack(
+                PackedTeam::entity(Faction::Shop, world).unwrap(),
+                Some(slot),
+                world,
+            ),
+            OfferProduct::Status { name, charges } => {
+                let status = Pools::get(world).statuses.get(name).unwrap();
+                let entity = status.clone().unpack(None, world);
+                let pos = UnitPlugin::get_slot_position(Faction::Shop, slot);
+                VarState::get_mut(entity, world)
+                    .init(VarName::Position, VarValue::Vec2(pos))
+                    .init(VarName::Charges, VarValue::Int(*charges));
+                entity
+            }
+        }
+    }
+}
+
+impl ShopOffer {
+    fn buy(&mut self, entity: Entity, world: &mut World) -> Result<i32> {
+        if !Save::get(world)?.climb.shop.can_afford(self.price) {
+            return Err(anyhow!("Can't afford {}", self.price));
+        }
+        if !self.available {
+            return Err(anyhow!("Offer is no longer available"));
+        }
+        self.available = false;
+        match &self.product {
+            OfferProduct::Unit { .. } => {
+                let pos = VarState::get(entity, world).get_vec2(VarName::Position)?;
+                let entity = PackedUnit::pack(entity, world).clone().unpack(
+                    PackedTeam::entity(Faction::Team, world).unwrap(),
+                    None,
+                    world,
+                );
+                VarState::get_mut(entity, world).init(VarName::Position, VarValue::Vec2(pos));
+                UnitPlugin::fill_slot_gaps(Faction::Team, world);
+                UnitPlugin::translate_to_slots(world);
+            }
             OfferProduct::Status { name, charges } => {
                 for unit in UnitPlugin::collect_faction(Faction::Team, world)
                     .into_iter()
@@ -414,69 +487,76 @@ impl OfferProduct {
                     ActionCluster::current(world)
                         .push_action_back(Effect::AddStatus(name.clone()), context);
                 }
-                world.entity_mut(entity).despawn_recursive();
             }
         }
+        world.entity_mut(entity).despawn_recursive();
+        Ok(self.price)
     }
-}
 
-impl ShopOffer {
-    pub fn draw_buy_panel(entity: Entity, world: &mut World) {
-        let so = world.get::<ShopOffer>(entity).unwrap().clone();
+    fn draw_buy_panels(world: &mut World) {
         let ctx = &egui_context(world);
-        match &so.product {
-            OfferProduct::Unit => {}
-            OfferProduct::Status { name, charges } => {
-                window("BUY STATUS")
-                    .id(entity)
-                    .title_bar(false)
-                    .resizable(false)
-                    .set_width(150.0)
-                    .entity_anchor(entity, Align2::CENTER_BOTTOM, vec2(0.0, -80.0), world)
-                    .show(ctx, |ui| {
-                        frame(ui, |ui| {
-                            ui.vertical(|ui| {
-                                let color: Color32 =
-                                    Pools::get_status_house(name, world).color.clone().into();
-                                ui.label(name.add_color(color).rich_text());
-                                let description = Pools::get_status(name, world)
-                                    .unwrap()
-                                    .description
-                                    .to_colored()
-                                    .inject_vars(&VarState::new_with(
-                                        VarName::Charges,
-                                        VarValue::Int(*charges),
-                                    ));
-                                ui.label(description.widget());
+        let save = &mut Save::get(world).unwrap();
+        for (entity, offer) in save.climb.shop.case.clone().iter_mut() {
+            if !offer.available {
+                continue;
+            }
+            match &offer.product {
+                OfferProduct::Unit { .. } => {}
+                OfferProduct::Status { name, charges } => {
+                    window("BUY STATUS")
+                        .id(&entity)
+                        .title_bar(false)
+                        .resizable(false)
+                        .set_width(150.0)
+                        .entity_anchor(*entity, Align2::CENTER_BOTTOM, vec2(0.0, -80.0), world)
+                        .show(ctx, |ui| {
+                            frame(ui, |ui| {
+                                ui.vertical(|ui| {
+                                    let color: Color32 =
+                                        Pools::get_status_house(&name, world).color.clone().into();
+                                    ui.label(name.add_color(color).rich_text());
+                                    let description = Pools::get_status(&name, world)
+                                        .unwrap()
+                                        .description
+                                        .to_colored()
+                                        .inject_vars(&VarState::new_with(
+                                            VarName::Charges,
+                                            VarValue::Int(*charges),
+                                        ));
+                                    ui.label(description.widget());
+                                });
                             });
                         });
-                    });
+                }
             }
-        }
-        window("BUY")
-            .id(entity)
-            .set_width(80.0)
-            .resizable(false)
-            .title_bar(false)
-            .stroke(false)
-            .entity_anchor(entity, Align2::CENTER_TOP, vec2(0.0, 70.0), world)
-            .show(ctx, |ui| {
-                ui.set_enabled(ShopPlugin::can_afford(so.price, world));
-                frame(ui, |ui| {
-                    ui.vertical_centered(|ui| {
-                        let btn = Button::new(
-                            RichText::new(format!("-{} g", so.price))
-                                .size(20.0)
-                                .color(yellow())
-                                .text_style(egui::TextStyle::Button),
-                        )
-                        .min_size(egui::vec2(100.0, 0.0));
-                        if ui.add(btn).clicked() {
-                            so.product.do_buy(entity, world);
-                            ShopPlugin::change_g(-so.price, world).unwrap();
-                        }
+            window("BUY")
+                .id(&entity)
+                .set_width(80.0)
+                .resizable(false)
+                .title_bar(false)
+                .stroke(false)
+                .entity_anchor(*entity, Align2::CENTER_TOP, vec2(0.0, 70.0), world)
+                .show(ctx, |ui| {
+                    ui.set_enabled(offer.available && save.climb.shop.can_afford(offer.price));
+                    frame(ui, |ui| {
+                        ui.vertical_centered(|ui| {
+                            let btn = Button::new(
+                                RichText::new(format!("-{} g", offer.price))
+                                    .size(20.0)
+                                    .color(yellow())
+                                    .text_style(egui::TextStyle::Button),
+                            )
+                            .min_size(egui::vec2(100.0, 0.0));
+                            if ui.add(btn).clicked() {
+                                if let Err(e) = save.climb.shop.buy(*entity, world) {
+                                    error!("Buy error: {}", e);
+                                } else {
+                                    save.save(world).unwrap();
+                                }
+                            }
+                        });
                     });
                 });
-            });
+        }
     }
 }

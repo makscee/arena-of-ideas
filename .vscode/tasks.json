@@ -37,7 +37,8 @@
 				"regular"
 			],
 			"group": {
-				"kind": "build"
+				"kind": "build",
+				"isDefault": true
 			},
 			"env": {
 				"RUST_BACKTRACE": "1"
@@ -58,8 +59,7 @@
 				"custom"
 			],
 			"group": {
-				"kind": "build",
-				"isDefault": true
+				"kind": "build"
 			},
 			"env": {
 				"RUST_BACKTRACE": "1"

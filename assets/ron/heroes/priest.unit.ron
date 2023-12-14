@@ -5,7 +5,6 @@
     atk: 1,
     house: "Holy",
     description: "Battle Start: apply [Blessing] to all allies",
-    statuses: [("Blessing", 3), ("Shield", 2)],
     trigger: BattleStart(
         AoeFaction(
             OwnerFaction,

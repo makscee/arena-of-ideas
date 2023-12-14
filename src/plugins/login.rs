@@ -61,6 +61,7 @@ impl LoginPlugin {
     fn ui(world: &mut World) {
         let ctx = &egui_context(world);
         window("LOGIN")
+            .set_width(400.0)
             .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
             .show(ctx, |ui| {
                 frame(ui, |ui| {

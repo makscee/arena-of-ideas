@@ -19,7 +19,6 @@ struct Args {
 pub enum RunMode {
     #[default]
     Regular,
-    Clean,
     Test,
     Custom,
 }
@@ -29,7 +28,6 @@ fn main() {
     let next_state = match args.mode {
         RunMode::Regular => GameState::Login,
         RunMode::Custom => GameState::CustomBattle,
-        RunMode::Clean => GameState::MainMenuClean,
         RunMode::Test => GameState::TestsLoading,
     };
     App::new()
@@ -121,11 +119,6 @@ fn input_world(world: &mut World) {
         return;
     }
     if input.just_pressed(KeyCode::R) {
-        if input.pressed(KeyCode::ShiftLeft) {
-            let mut pd = PersistentData::load(world);
-            pd.last_state = None;
-            pd.save(world).unwrap();
-        }
         GameState::change(GameState::Restart, world);
     }
 }

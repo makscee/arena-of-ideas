@@ -29,12 +29,10 @@ impl ProfilePlugin {
     pub fn ui(world: &mut World) {
         window("PROFILE").show(&egui_context(world), |ui| {
             if let Ok(identity) = identity() {
-                let initial_len = Options::get_initial_ladder(world).levels.len();
                 let own_ladder_length = TableLadder::filter_by_creator(identity.clone())
                     .find(|l| l.status.eq(&module_bindings::LadderStatus::Fresh))
                     .map(|l| l.levels.len())
-                    .unwrap_or_default()
-                    + initial_len;
+                    .unwrap_or_default();
                 let beaten_ladders = TableLadder::filter_by_owner(identity.clone())
                     .filter(|l| l.status.eq(&module_bindings::LadderStatus::Beaten))
                     .collect_vec();
@@ -50,16 +48,11 @@ impl ProfilePlugin {
                         ui,
                     );
                     for (i, ladder) in beaten_ladders.into_iter().enumerate() {
-                        ui.collapsing(
-                            format!("{}. {} levels", i + 1, ladder.levels.len() + initial_len),
-                            |ui| {
-                                for level in ladder.levels.iter() {
-                                    ui.label(
-                                        PackedTeam::from_ladder_string(level, world).to_string(),
-                                    );
-                                }
-                            },
-                        );
+                        ui.collapsing(format!("{}. {} levels", i + 1, ladder.levels.len()), |ui| {
+                            for level in ladder.levels.iter() {
+                                ui.label(PackedTeam::from_ladder_string(level, world).to_string());
+                            }
+                        });
                     }
                 });
             }

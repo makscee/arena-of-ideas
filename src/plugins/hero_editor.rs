@@ -17,7 +17,7 @@ impl Plugin for HeroEditorPlugin {
 
 impl HeroEditorPlugin {
     fn on_enter(world: &mut World) {
-        let mut pd = PersistentData::load(world).set_last_state(GameState::HeroEditor);
+        let mut pd = PersistentData::load(world);
         pd.hero_editor_data.editing_data.lookup.clear();
         pd.hero_editor_data.editing_data.hovered = None;
         pd.save(world).unwrap();

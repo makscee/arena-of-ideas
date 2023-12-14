@@ -11,7 +11,7 @@ impl Plugin for RestartPlugin {
 impl RestartPlugin {
     #[allow(clippy::type_complexity)]
     fn restart(
-        query: Query<Entity, Or<(&Unit, &Corpse, &ShopOffer, &Representation, &VarState)>>,
+        query: Query<Entity, Or<(&Unit, &Corpse, &Representation, &VarState, &Status)>>,
         mut commands: Commands,
         mut state: ResMut<NextState<GameState>>,
         mut time: ResMut<Time>,

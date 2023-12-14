@@ -5,7 +5,6 @@ pub enum GameState {
     #[default]
     Loading,
     MainMenu,
-    MainMenuClean,
     TestsLoading,
     BattleTest,
     Restart,
