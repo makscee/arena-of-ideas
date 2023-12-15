@@ -9,9 +9,15 @@ pub struct Ladder {
 impl Ladder {
     pub fn load_current(world: &World) -> (PackedTeam, usize) {
         let save = Save::get(world).unwrap();
+
         let ind = save.climb.defeated;
+
         (
-            PackedTeam::from_ladder_string(&save.climb.levels[ind], world),
+            if ind == save.climb.levels.len() {
+                save.climb.owner_team.unwrap()
+            } else {
+                PackedTeam::from_ladder_string(&save.climb.levels[ind], world)
+            },
             ind,
         )
     }
@@ -22,6 +28,12 @@ impl Ladder {
     }
 
     pub fn total_levels(world: &World) -> usize {
-        Save::get(world).unwrap().climb.levels.len()
+        let save = Save::get(world).unwrap();
+        save.climb.levels.len()
+            + if matches!(save.mode, GameMode::RandomLadder { .. }) {
+                1
+            } else {
+                0
+            }
     }
 }

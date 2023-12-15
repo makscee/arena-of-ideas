@@ -45,6 +45,13 @@ impl MainMenuPlugin {
                                     })
                                     .choose(&mut thread_rng())
                                 {
+                                    let team = match ladder.status {
+                                        module_bindings::LadderStatus::Fresh(team)
+                                        | module_bindings::LadderStatus::Beaten(team) => {
+                                            ron::from_str::<PackedTeam>(&team).unwrap()
+                                        }
+                                        _ => panic!(),
+                                    };
                                     let save = Save {
                                         mode: GameMode::RandomLadder {
                                             ladder_id: ladder.id,
@@ -54,6 +61,7 @@ impl MainMenuPlugin {
                                             levels: ladder.levels,
                                             defeated: default(),
                                             shop: default(),
+                                            owner_team: Some(team),
                                         },
                                     };
                                     save.save(world).unwrap();

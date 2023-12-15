@@ -17,8 +17,8 @@ pub struct Ladder {
 #[derive(SpacetimeType, PartialEq, Eq)]
 pub enum LadderStatus {
     Building,
-    Fresh,
-    Beaten,
+    Fresh(String),
+    Beaten(String),
 }
 
 #[spacetimedb(reducer)]
@@ -55,25 +55,32 @@ pub fn add_ladder_levels(
 }
 
 #[spacetimedb(reducer)]
-pub fn finish_building_ladder(ctx: ReducerContext) -> Result<()> {
+pub fn finish_building_ladder(ctx: ReducerContext, owner_team: String) -> Result<()> {
     let mut ladder = Ladder::filter_by_creator(&ctx.sender)
         .find(|l| l.status.eq(&LadderStatus::Building))
         .context("No building ladder found")?;
-    ladder.status = LadderStatus::Fresh;
+    ladder.status = LadderStatus::Fresh(owner_team);
     Ladder::update_by_id(&ladder.id.clone(), ladder);
     Ok(())
 }
 
 #[spacetimedb(reducer)]
-pub fn beat_ladder(ctx: ReducerContext, ladder_id: u64, level: String) -> Result<()> {
+pub fn beat_ladder(
+    ctx: ReducerContext,
+    ladder_id: u64,
+    level: String,
+    owner_team: String,
+) -> Result<()> {
     let mut ladder = Ladder::filter_by_id(&ladder_id).context("Ladder not found")?;
-    if !ladder.status.eq(&LadderStatus::Beaten) && !ladder.status.eq(&LadderStatus::Fresh) {
+    if !matches!(ladder.status, LadderStatus::Beaten(..))
+        && !matches!(ladder.status, LadderStatus::Fresh(..))
+    {
         return Err(anyhow!("Tried to beat ladder of wrong status"));
     }
     ladder.owner = ctx.sender;
     ladder.defeaters.push(ctx.sender);
     ladder.levels.push(level);
-    ladder.status = LadderStatus::Beaten;
+    ladder.status = LadderStatus::Beaten(owner_team);
     Ladder::update_by_id(&ladder_id, ladder);
     Ok(())
 }

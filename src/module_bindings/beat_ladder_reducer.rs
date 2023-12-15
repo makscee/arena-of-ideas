@@ -16,6 +16,7 @@ use spacetimedb_sdk::{
 pub struct BeatLadderArgs {
     pub ladder_id: u64,
     pub level: String,
+    pub owner_team: String,
 }
 
 impl Reducer for BeatLadderArgs {
@@ -23,27 +24,44 @@ impl Reducer for BeatLadderArgs {
 }
 
 #[allow(unused)]
-pub fn beat_ladder(ladder_id: u64, level: String) {
-    BeatLadderArgs { ladder_id, level }.invoke();
+pub fn beat_ladder(ladder_id: u64, level: String, owner_team: String) {
+    BeatLadderArgs {
+        ladder_id,
+        level,
+        owner_team,
+    }
+    .invoke();
 }
 
 #[allow(unused)]
 pub fn on_beat_ladder(
-    mut __callback: impl FnMut(&Identity, Option<Address>, &Status, &u64, &String) + Send + 'static,
+    mut __callback: impl FnMut(&Identity, Option<Address>, &Status, &u64, &String, &String)
+        + Send
+        + 'static,
 ) -> ReducerCallbackId<BeatLadderArgs> {
     BeatLadderArgs::on_reducer(move |__identity, __addr, __status, __args| {
-        let BeatLadderArgs { ladder_id, level } = __args;
-        __callback(__identity, __addr, __status, ladder_id, level);
+        let BeatLadderArgs {
+            ladder_id,
+            level,
+            owner_team,
+        } = __args;
+        __callback(__identity, __addr, __status, ladder_id, level, owner_team);
     })
 }
 
 #[allow(unused)]
 pub fn once_on_beat_ladder(
-    __callback: impl FnOnce(&Identity, Option<Address>, &Status, &u64, &String) + Send + 'static,
+    __callback: impl FnOnce(&Identity, Option<Address>, &Status, &u64, &String, &String)
+        + Send
+        + 'static,
 ) -> ReducerCallbackId<BeatLadderArgs> {
     BeatLadderArgs::once_on_reducer(move |__identity, __addr, __status, __args| {
-        let BeatLadderArgs { ladder_id, level } = __args;
-        __callback(__identity, __addr, __status, ladder_id, level);
+        let BeatLadderArgs {
+            ladder_id,
+            level,
+            owner_team,
+        } = __args;
+        __callback(__identity, __addr, __status, ladder_id, level, owner_team);
     })
 }
 

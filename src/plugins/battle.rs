@@ -269,10 +269,14 @@ impl BattlePlugin {
                 {
                     match end {
                         BattleEnd::Defeat(_, _, new) => {
+                            let team = ron::to_string(
+                                &Save::get(world).unwrap().register_defeat().climb.team,
+                            )
+                            .unwrap();
                             if new {
-                                finish_building_ladder();
+                                debug!("Finish ladder building, team: {team}");
+                                finish_building_ladder(team);
                             }
-                            Save::get(world).unwrap().register_defeat();
                             Save::clear(world).unwrap();
                             GameState::MainMenu.change(world);
                         }
@@ -282,7 +286,8 @@ impl BattlePlugin {
                                 RatingPlugin::generate_weakest_opponent(&save.climb.team, 1, world)
                                     [0]
                                 .to_ladder_string();
-                            beat_ladder(save.get_ladder_id().unwrap(), level);
+                            let team = ron::to_string(&save.climb.team).unwrap();
+                            beat_ladder(save.get_ladder_id().unwrap(), level, team);
                             Save::clear(world).unwrap();
                             GameState::MainMenu.change(world);
                         }

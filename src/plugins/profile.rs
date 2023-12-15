@@ -1,4 +1,4 @@
-use crate::module_bindings::{set_email, set_name, User};
+use crate::module_bindings::{set_email, set_name, LadderStatus, User};
 
 use super::*;
 
@@ -30,11 +30,11 @@ impl ProfilePlugin {
         window("PROFILE").show(&egui_context(world), |ui| {
             if let Ok(identity) = identity() {
                 let own_ladder_length = TableLadder::filter_by_creator(identity.clone())
-                    .find(|l| l.status.eq(&module_bindings::LadderStatus::Fresh))
+                    .find(|l| matches!(l.status, LadderStatus::Fresh(..)))
                     .map(|l| l.levels.len())
                     .unwrap_or_default();
                 let beaten_ladders = TableLadder::filter_by_owner(identity.clone())
-                    .filter(|l| l.status.eq(&module_bindings::LadderStatus::Beaten))
+                    .filter(|l| matches!(l.status, LadderStatus::Beaten(..)))
                     .collect_vec();
                 frame(ui, |ui| {
                     text_dots_text(

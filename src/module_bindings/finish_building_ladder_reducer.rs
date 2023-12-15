@@ -13,34 +13,36 @@ use spacetimedb_sdk::{
 };
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
-pub struct FinishBuildingLadderArgs {}
+pub struct FinishBuildingLadderArgs {
+    pub owner_team: String,
+}
 
 impl Reducer for FinishBuildingLadderArgs {
     const REDUCER_NAME: &'static str = "finish_building_ladder";
 }
 
 #[allow(unused)]
-pub fn finish_building_ladder() {
-    FinishBuildingLadderArgs {}.invoke();
+pub fn finish_building_ladder(owner_team: String) {
+    FinishBuildingLadderArgs { owner_team }.invoke();
 }
 
 #[allow(unused)]
 pub fn on_finish_building_ladder(
-    mut __callback: impl FnMut(&Identity, Option<Address>, &Status) + Send + 'static,
+    mut __callback: impl FnMut(&Identity, Option<Address>, &Status, &String) + Send + 'static,
 ) -> ReducerCallbackId<FinishBuildingLadderArgs> {
     FinishBuildingLadderArgs::on_reducer(move |__identity, __addr, __status, __args| {
-        let FinishBuildingLadderArgs {} = __args;
-        __callback(__identity, __addr, __status);
+        let FinishBuildingLadderArgs { owner_team } = __args;
+        __callback(__identity, __addr, __status, owner_team);
     })
 }
 
 #[allow(unused)]
 pub fn once_on_finish_building_ladder(
-    __callback: impl FnOnce(&Identity, Option<Address>, &Status) + Send + 'static,
+    __callback: impl FnOnce(&Identity, Option<Address>, &Status, &String) + Send + 'static,
 ) -> ReducerCallbackId<FinishBuildingLadderArgs> {
     FinishBuildingLadderArgs::once_on_reducer(move |__identity, __addr, __status, __args| {
-        let FinishBuildingLadderArgs {} = __args;
-        __callback(__identity, __addr, __status);
+        let FinishBuildingLadderArgs { owner_team } = __args;
+        __callback(__identity, __addr, __status, owner_team);
     })
 }
 

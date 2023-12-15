@@ -16,7 +16,6 @@ use spacetimedb_sdk::{
 pub enum LadderStatus {
     Building,
 
-    Fresh,
-
-    Beaten,
+    Fresh(String),
+    Beaten(String),
 }

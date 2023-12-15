@@ -101,6 +101,14 @@
 			"command": "spacetime publish aoi -p server"
 		},
 		{
+			"label": "STDB: Publish & Clear",
+			"type": "shell",
+			"group": {
+				"kind": "build"
+			},
+			"command": "spacetime publish -c aoi -p server"
+		},
+		{
 			"label": "STDB: Start",
 			"type": "shell",
 			"group": {
