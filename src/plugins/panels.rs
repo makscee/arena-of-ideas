@@ -10,6 +10,7 @@ enum TopButton {
     Exit,
     Settings,
     Profile,
+    Leaderboard,
 }
 
 impl Plugin for PanelsPlugin {
@@ -33,13 +34,20 @@ impl TopButton {
     }
 
     fn click(&self, world: &mut World) {
-        match self {
-            TopButton::Exit => debug!("Exit"),
-            TopButton::Settings | TopButton::Profile => {
+        let open = match self {
+            TopButton::Exit => {
+                debug!("Exit");
+                false
+            }
+            TopButton::Settings | TopButton::Profile | TopButton::Leaderboard => {
                 let mut data = world.resource_mut::<TopOpenWindows>();
                 let entry = data.0.get_mut(self).unwrap();
                 *entry = !*entry;
+                *entry
             }
+        };
+        if open && self.eq(&TopButton::Leaderboard) {
+            LeaderboardPlugin::load(world);
         }
     }
 
@@ -47,6 +55,7 @@ impl TopButton {
         match self {
             TopButton::Settings => SettingsPlugin::ui(world),
             TopButton::Profile => ProfilePlugin::ui(world),
+            TopButton::Leaderboard => LeaderboardPlugin::ui(world),
             TopButton::Exit => {}
         }
     }

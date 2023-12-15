@@ -96,7 +96,13 @@ fn main() {
             HeroGallery,
             CameraPlugin,
         ))
-        .add_plugins((LoginPlugin, ProfilePlugin, PanelsPlugin, UiPlugin))
+        .add_plugins((
+            LoginPlugin,
+            ProfilePlugin,
+            PanelsPlugin,
+            UiPlugin,
+            LeaderboardPlugin,
+        ))
         .add_systems(Update, input_world)
         .init_resource::<GameTimer>()
         .register_type::<VarState>()
