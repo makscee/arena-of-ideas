@@ -5,7 +5,7 @@ use super::*;
 pub struct ProfilePlugin;
 
 impl Plugin for ProfilePlugin {
-    fn build(&self, app: &mut App) {}
+    fn build(&self, _app: &mut App) {}
 }
 
 #[derive(Resource)]
