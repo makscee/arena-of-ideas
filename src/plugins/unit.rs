@@ -1,3 +1,5 @@
+use std::collections::VecDeque;
+
 use super::*;
 
 pub const SACRIFICE_SLOT: usize = 6;
@@ -376,6 +378,7 @@ pub struct UnitCard {
     pub hp: i32,
     pub atk: i32,
     pub description: ColoredString,
+    pub definitions: Vec<(ColoredString, ColoredString)>,
     pub statuses: Vec<(ColoredString, i32, ColoredString)>,
     pub pos: Vec2,
     pub entity: Entity,
@@ -390,7 +393,11 @@ impl UnitCard {
                 let state = VarState::get(e, world);
                 let name = state.get_string_at(VarName::Name, t);
                 if let Ok(name) = name {
-                    let color: Color32 = Pools::get_status_house(&name, world).color.clone().into();
+                    let color: Color32 = Pools::get_status_house(&name, world)
+                        .unwrap()
+                        .color
+                        .clone()
+                        .into();
                     let description =
                         if let Some(status) = Pools::get_status(&name.to_string(), world) {
                             status.description.clone().to_colored().inject_vars(state)
@@ -412,20 +419,57 @@ impl UnitCard {
             .collect_vec();
         let pos = entity_screen_pos(entity, world);
         let state = VarState::get(entity, world);
+        let description = state.get_string_at(VarName::Description, t)?;
+        let mut definitions: Vec<(ColoredString, ColoredString)> = default();
+        let mut added_definitions: HashSet<String> = default();
+        let mut raw_definitions = VecDeque::from_iter(description.extract_bracketed(("[", "]")));
+        while let Some(name) = raw_definitions.pop_front() {
+            let (color, description) = if let Some(ability) = Pools::get_ability(&name, world) {
+                let color: Color32 = Pools::get_ability_house(&name, world)
+                    .unwrap()
+                    .color
+                    .clone()
+                    .into();
+                (color, ability.description.clone())
+            } else if let Some(status) = Pools::get_status(&name, world) {
+                let color: Color32 = Pools::get_status_house(&name, world)
+                    .unwrap()
+                    .color
+                    .clone()
+                    .into();
+                (color, status.description.clone())
+            } else {
+                continue;
+            };
+            if !added_definitions.insert(name.clone()) {
+                continue;
+            }
+            definitions.push((
+                name.add_color(color),
+                description
+                    .to_colored()
+                    .inject_definitions(world)
+                    .inject_vars(&default()),
+            ));
+            raw_definitions.extend(description.extract_bracketed(("[", "]")));
+        }
+
+        let description = description
+            .to_colored()
+            .inject_vars(state)
+            .inject_definitions(world);
+
         Ok(Self {
             name: state
                 .get_string_at(VarName::Name, t)?
                 .add_color(state.get_color_at(VarName::HouseColor, t)?.c32()),
             hp: state.get_int_at(VarName::Hp, t)?,
             atk: state.get_int_at(VarName::Atk, t)?,
-            description: state
-                .get_string_at(VarName::Description, t)?
-                .to_colored()
-                .inject_vars(state)
-                .inject_definitions(world),
+            description,
             statuses,
             pos,
             entity,
+            definitions,
         })
     }
 
@@ -436,6 +480,7 @@ impl UnitCard {
     pub fn show_with(&self, add_contents: impl FnOnce(&mut Ui), world: &mut World) {
         window("UNIT")
             .id(self.entity)
+            .set_width(200.0)
             .entity_anchor(self.entity, Align2::CENTER_BOTTOM, vec2(0.0, -60.0), world)
             .show(&egui_context(world), |ui| {
                 frame(ui, |ui| {
@@ -449,6 +494,14 @@ impl UnitCard {
                         });
                     }
                 });
+                for (name, text) in &self.definitions {
+                    frame(ui, |ui| {
+                        ui.label(name.widget());
+                        ui.horizontal_wrapped(|ui| {
+                            ui.label(text.widget());
+                        });
+                    });
+                }
                 if !self.statuses.is_empty() {
                     frame(ui, |ui| {
                         ui.vertical_centered(|ui| {

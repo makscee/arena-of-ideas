@@ -246,7 +246,7 @@ impl GameWindow<'_> {
 pub fn window(title: &str) -> GameWindow<'_> {
     GameWindow {
         window: Window::new(title)
-            .default_width(200.0)
+            .default_width(300.0)
             .title_bar(false)
             .collapsible(false),
         title,

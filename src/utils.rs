@@ -93,3 +93,34 @@ pub fn get_from_clipboard(world: &mut World) -> Option<String> {
         .resource_mut::<bevy_egui::EguiClipboard>()
         .get_contents()
 }
+
+pub trait StrExtensions {
+    fn split_by_brackets(self, pattern: (&str, &str)) -> Vec<(String, bool)>;
+    fn extract_bracketed(self, pattern: (&str, &str)) -> Vec<String>;
+}
+
+impl<'a> StrExtensions for &'a str {
+    fn split_by_brackets(mut self, pattern: (&str, &str)) -> Vec<(String, bool)> {
+        let mut lines: Vec<(String, bool)> = default();
+        while let Some(opening) = self.find(pattern.0) {
+            let left = &self[..opening];
+            let closing = self.find(pattern.1).unwrap();
+            let mid = &self[opening + 1..closing];
+            lines.push((left.to_owned(), false));
+            lines.push((mid.to_owned(), true));
+            self = &self[closing + 1..];
+        }
+        lines.push((self.to_owned(), false));
+        lines
+    }
+
+    fn extract_bracketed(self, pattern: (&str, &str)) -> Vec<String> {
+        self.split_by_brackets(pattern)
+            .into_iter()
+            .filter_map(|(s, v)| match v {
+                true => Some(s),
+                false => None,
+            })
+            .collect_vec()
+    }
+}

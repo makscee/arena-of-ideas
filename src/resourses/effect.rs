@@ -110,7 +110,10 @@ impl Effect {
             }
             Effect::Noop => {}
             Effect::UseAbility(ability) => {
-                let effect = Pools::get_ability(ability, world).effect.clone();
+                let effect = Pools::get_ability(ability, world)
+                    .with_context(|| format!("Ability not found {ability}"))?
+                    .effect
+                    .clone();
                 ActionCluster::current(world).push_action_front(effect, context.clone());
                 Pools::get_vfx("text", world)
                     .clone()
@@ -139,7 +142,11 @@ impl Effect {
                     .get_var(VarName::Charges, world)
                     .unwrap_or(VarValue::Int(1))
                     .get_int()?;
-                let color = Pools::get_status_house(status, world).color.clone().into();
+                let color = Pools::get_status_house(status, world)
+                    .unwrap()
+                    .color
+                    .clone()
+                    .into();
                 Status::change_charges(status, context.target(), charges, world)?;
                 Pools::get_vfx("text", world)
                     .clone()

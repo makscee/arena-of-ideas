@@ -525,8 +525,11 @@ impl ShopOffer {
                         .show(ctx, |ui| {
                             frame(ui, |ui| {
                                 ui.vertical(|ui| {
-                                    let color: Color32 =
-                                        Pools::get_status_house(name, world).color.clone().into();
+                                    let color: Color32 = Pools::get_status_house(name, world)
+                                        .unwrap()
+                                        .color
+                                        .clone()
+                                        .into();
                                     ui.label(name.add_color(color).rich_text());
                                     let description = Pools::get_status(name, world)
                                         .unwrap()

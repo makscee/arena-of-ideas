@@ -36,7 +36,7 @@
     abilities: [
         (
             name: "Devour",
-            description: "Kill target and gain [Dark Satiety] for each HP",
+            description: "Kill target and gain [Dark Satiety] {2} for each HP",
             effect: List(
                 [
                     WithVar(

@@ -48,9 +48,11 @@ impl ColoredString {
                 result.push((s, color));
                 continue;
             }
-            for (s, bracketed) in str_extract_brackets(&s, ("[", "]")) {
+            for (s, bracketed) in s.split_by_brackets(("[", "]")) {
                 if bracketed {
-                    let color = if let Some(house) = Pools::get_ability_house(&s, world) {
+                    let color = if let Some(house) =
+                        Pools::get_ability_house(&s, world).or(Pools::get_status_house(&s, world))
+                    {
                         house.color.clone().into()
                     } else {
                         error!("Failed to find house for ability {s}");
@@ -73,7 +75,7 @@ impl ColoredString {
                 result.push((s, color));
                 continue;
             }
-            for (mut s, bracketed) in str_extract_brackets(&s, ("{", "}")) {
+            for (mut s, bracketed) in s.split_by_brackets(("{", "}")) {
                 if bracketed {
                     if let Ok(var) = VarName::from_str(&s) {
                         if let Ok(value) = state.get_string(var) {
@@ -93,6 +95,10 @@ impl ColoredString {
     pub fn is_empty(&self) -> bool {
         self.lines.is_empty() || self.lines.iter().all(|(s, _)| s.is_empty())
     }
+
+    pub fn to_string(&self) -> String {
+        self.lines.iter().map(|(s, _)| s).join(" ")
+    }
 }
 
 impl From<&str> for ColoredString {
@@ -107,20 +113,6 @@ impl ToString for ColoredString {
     fn to_string(&self) -> String {
         self.lines.iter().map(|(s, _)| s).join(" ")
     }
-}
-
-fn str_extract_brackets(mut source: &str, pattern: (&str, &str)) -> Vec<(String, bool)> {
-    let mut lines: Vec<(String, bool)> = default();
-    while let Some(opening) = source.find(pattern.0) {
-        let left = &source[..opening];
-        let closing = source.find(pattern.1).unwrap();
-        let mid = &source[opening + 1..closing];
-        lines.push((left.to_owned(), false));
-        lines.push((mid.to_owned(), true));
-        source = &source[closing + 1..];
-    }
-    lines.push((source.to_owned(), false));
-    lines
 }
 
 pub trait ToColoredString {

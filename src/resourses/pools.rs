@@ -32,8 +32,8 @@ impl Pools {
     pub fn get_status<'a>(name: &str, world: &'a World) -> Option<&'a PackedStatus> {
         Self::get(world).statuses.get(name)
     }
-    pub fn get_ability<'a>(name: &str, world: &'a World) -> &'a Ability {
-        Self::get(world).abilities.get(name).unwrap()
+    pub fn get_ability<'a>(name: &str, world: &'a World) -> Option<&'a Ability> {
+        Self::get(world).abilities.get(name)
     }
     pub fn get_vfx(name: &str, world: &World) -> Vfx {
         let name = &format!("ron/vfx/{name}.vfx.ron");
@@ -46,13 +46,12 @@ impl Pools {
             .find(|(_, h)| h.abilities.iter().any(|a| a.name.eq(name)))
             .map(|(_, h)| h)
     }
-    pub fn get_status_house<'a>(name: &str, world: &'a World) -> &'a House {
+    pub fn get_status_house<'a>(name: &str, world: &'a World) -> Option<&'a House> {
         Self::get(world)
             .houses
             .iter()
             .find(|(_, h)| h.statuses.iter().any(|s| s.name.eq(name)))
             .map(|(_, h)| h)
-            .unwrap()
     }
     pub fn get_house_color(name: &str, world: &World) -> Option<Color> {
         Self::try_get(world)
