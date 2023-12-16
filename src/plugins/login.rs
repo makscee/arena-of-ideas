@@ -65,10 +65,8 @@ impl LoginPlugin {
             .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
             .show(ctx, |ui| {
                 frame(ui, |ui| {
-                    if identity().is_err() {
-                        if ui.button_primary("CONNECT").clicked() {
-                            Self::connect(world);
-                        }
+                    if identity().is_err() && ui.button_primary("CONNECT").clicked() {
+                        Self::connect(world);
                     }
                 });
                 frame(ui, |ui| {
