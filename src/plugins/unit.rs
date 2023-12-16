@@ -74,7 +74,7 @@ impl UnitPlugin {
     }
 
     pub fn collect_faction(faction: Faction, world: &mut World) -> Vec<Entity> {
-        if let Some(team) = PackedTeam::entity(faction, world) {
+        if let Some(team) = PackedTeam::find_entity(faction, world) {
             if let Some(children) = world.get::<Children>(team) {
                 return children
                     .iter()
@@ -180,6 +180,7 @@ impl UnitPlugin {
     }
 
     pub fn despawn_all_teams(world: &mut World) {
+        debug!("Called despawn all teams");
         for team in world
             .query_filtered::<Entity, With<Team>>()
             .iter(world)
@@ -190,6 +191,7 @@ impl UnitPlugin {
     }
 
     pub fn despawn_all_units(world: &mut World) {
+        debug!("Called despawn all units");
         for entity in world
             .query_filtered::<Entity, Or<(&Unit, &Corpse)>>()
             .iter(world)
@@ -296,7 +298,7 @@ impl UnitPlugin {
 
     pub fn spawn_slot(slot: usize, faction: Faction, world: &mut World) -> Entity {
         let pos = UnitPlugin::get_slot_position(Faction::Team, slot);
-        let team = PackedTeam::entity(faction, world);
+        let team = PackedTeam::find_entity(faction, world);
         let rep = Options::get_slot_rep(world)
             .clone()
             .unpack(None, team, world);
@@ -352,8 +354,11 @@ impl Faction {
         match self {
             Faction::Left => Faction::Right,
             Faction::Right => Faction::Left,
-            _ => panic!("Tried to get opposite of {self}"),
+            _ => panic!("Can't get opposite of {self}"),
         }
+    }
+    pub fn team_entity(&self, world: &mut World) -> Entity {
+        PackedTeam::find_entity(*self, world).unwrap_or_else(|| PackedTeam::spawn(*self, world))
     }
 }
 
@@ -443,16 +448,6 @@ impl UnitCard {
                             ui.label(self.description.widget());
                         });
                     }
-                    text_dots_text(
-                        &"hp".to_colored(),
-                        &self.hp.to_string().add_color(white()),
-                        ui,
-                    );
-                    text_dots_text(
-                        &"atk".to_colored(),
-                        &self.atk.to_string().add_color(white()),
-                        ui,
-                    );
                 });
                 if !self.statuses.is_empty() {
                     frame(ui, |ui| {

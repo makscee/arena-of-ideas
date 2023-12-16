@@ -116,7 +116,7 @@ impl HeroEditorPlugin {
                     };
                     match Self::get_unit_from_clipboard(world) {
                         Ok(hero) => {
-                            hero.unpack(PackedTeam::entity(faction, world).unwrap(), None, world);
+                            hero.unpack(faction.team_entity(world), None, world);
                             UnitPlugin::fill_slot_gaps(faction, world);
                             UnitPlugin::translate_to_slots(world);
                         }
@@ -169,11 +169,7 @@ impl HeroEditorPlugin {
                         house: "Enemy".to_owned(),
                         ..default()
                     }
-                    .unpack(
-                        PackedTeam::entity(Faction::Right, world).unwrap(),
-                        None,
-                        world,
-                    );
+                    .unpack(Faction::Right.team_entity(world), None, world);
                     UnitPlugin::fill_slot_gaps(Faction::Right, world);
                     UnitPlugin::translate_to_slots(world);
                 }
@@ -198,11 +194,11 @@ impl HeroEditorPlugin {
 
     fn respawn_direct(pd: &mut PersistentData, world: &mut World) {
         UnitPlugin::despawn_all_units(world);
-        let unit = pd.hero_editor_data.hero.clone().unpack(
-            PackedTeam::entity(Faction::Left, world).unwrap(),
-            None,
-            world,
-        );
+        let unit =
+            pd.hero_editor_data
+                .hero
+                .clone()
+                .unpack(Faction::Left.team_entity(world), None, world);
         pd.hero_editor_data.hero_entity = Some(unit);
         UnitPlugin::fill_slot_gaps(Faction::Left, world);
         UnitPlugin::place_into_slot(unit, world).unwrap();

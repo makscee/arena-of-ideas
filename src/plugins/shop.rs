@@ -18,7 +18,7 @@ const UNIT_PRICE: i32 = 3;
 const STATUS_PRICE: i32 = 2;
 const REROLL_PRICE: i32 = 1;
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ShopState {
     pub pool: Vec<ShopOffer>,
     pub case: Vec<(Entity, ShopOffer)>,
@@ -26,16 +26,25 @@ pub struct ShopState {
 }
 
 impl ShopState {
+    pub fn new(world: &mut World) -> Self {
+        let mut result = Self {
+            pool: Self::new_pool(world),
+            case: default(),
+            g: G_PER_ROUND,
+        };
+        result.fill_case(3, 2, world);
+        result
+    }
     fn can_afford(&self, g: i32) -> bool {
         self.g >= g
     }
     fn change_g(&mut self, delta: i32) {
         self.g += delta;
     }
-    fn init_pool(&mut self, world: &World) {
+    fn new_pool(world: &World) -> Vec<ShopOffer> {
         let heroes = &Pools::get(world).heroes;
         let total_heroes = heroes.len();
-        self.pool = Pools::get(world)
+        Pools::get(world)
             .heroes
             .iter()
             .cycle()
@@ -45,7 +54,7 @@ impl ShopState {
                 product: OfferProduct::Unit { unit: u.clone() },
                 available: true,
             })
-            .collect_vec();
+            .collect_vec()
     }
     fn refresh_case(&mut self, world: &mut World) {
         self.take_case(world);
@@ -71,7 +80,7 @@ impl ShopState {
         let mut slot = 1;
         for _ in 0..heroes {
             if self.pool.is_empty() {
-                self.init_pool(world);
+                self.pool = Self::new_pool(world);
             }
             let offer = self
                 .pool
@@ -139,12 +148,19 @@ impl Plugin for ShopPlugin {
         app.add_systems(OnEnter(GameState::Shop), Self::on_enter)
             .add_systems(
                 OnTransition {
+                    from: GameState::Battle,
+                    to: GameState::Shop,
+                },
+                Self::transition_from_battle.after(Self::on_enter),
+            )
+            .add_systems(OnExit(GameState::Shop), Self::on_exit)
+            .add_systems(
+                OnTransition {
                     from: GameState::Shop,
                     to: GameState::Battle,
                 },
-                Self::on_battle_transition,
+                Self::transition_to_battle,
             )
-            .add_systems(OnExit(GameState::Shop), Self::on_exit)
             .add_systems(PostUpdate, Self::input.run_if(in_state(GameState::Shop)))
             .add_systems(
                 Update,
@@ -159,7 +175,7 @@ impl Plugin for ShopPlugin {
 
 impl ShopPlugin {
     fn win(world: &mut World) {
-        Self::on_battle_transition(world);
+        Self::transition_to_battle(world);
         Save::get(world)
             .unwrap()
             .register_victory()
@@ -171,11 +187,8 @@ impl ShopPlugin {
     fn on_enter(world: &mut World) {
         GameTimer::get_mut(world).reset();
         let mut save = Save::get(world).unwrap();
-        debug!("Shop start, current ladder: {:?}", save.mode);
-        PackedTeam::default().unpack(Faction::Shop, world);
         if save.climb.shop.case.is_empty() {
             save.climb.shop.refresh_case(world);
-            save.climb.shop.change_g(G_PER_ROUND);
         } else {
             save.climb.shop.respawn_case(world);
         }
@@ -198,20 +211,22 @@ impl ShopPlugin {
         });
     }
 
-    fn on_battle_transition(world: &mut World) {
-        Self::pack_active_team(world).unwrap();
+    fn transition_from_battle(world: &mut World) {
         let mut save = Save::get(world).unwrap();
-        save.climb.shop.take_case(world);
+        save.climb.shop.change_g(G_PER_ROUND);
         save.save(world).unwrap();
-        UnitPlugin::despawn_all_teams(world);
-
-        let left = Self::active_team(world).unwrap();
-        let (right, ind) = Ladder::load_current(world);
-        BattlePlugin::load_teams(left, right, Some(ind), world);
     }
 
     fn on_exit(world: &mut World) {
-        ShopPlugin::pack_active_team(world).unwrap();
+        Self::pack_active_team(world).unwrap();
+        UnitPlugin::despawn_all_teams(world);
+        Representation::despawn_all(world);
+    }
+
+    fn transition_to_battle(world: &mut World) {
+        let left = Self::active_team(world).unwrap();
+        let (right, ind) = Ladder::load_current(world);
+        BattlePlugin::load_teams(left, right, Some(ind), world);
     }
 
     fn input(world: &mut World) {
@@ -229,15 +244,14 @@ impl ShopPlugin {
 
     pub fn pack_active_team(world: &mut World) -> Result<()> {
         let team = PackedTeam::pack(Faction::Team, world);
-        Save::get(world)
-            .unwrap()
+        Save::get(world)?
             .set_team(team)
             .save(world)
             .map_err(|e| anyhow!("{}", e.to_string()))
     }
 
     pub fn active_team(world: &mut World) -> Result<PackedTeam> {
-        Ok(Save::get(world).unwrap().climb.team)
+        Ok(Save::get(world)?.climb.team)
     }
 
     pub fn ui(world: &mut World) {
@@ -384,11 +398,18 @@ impl ShopPlugin {
                     )
                     .min_size(egui::vec2(100.0, 0.0));
                     if ui.add(btn).clicked() {
-                        GameState::change(GameState::Battle, world);
+                        Self::go_to_battle(world);
                     }
                 });
             });
         world.insert_resource(data);
+    }
+
+    fn go_to_battle(world: &mut World) {
+        let mut save = Save::get(world).unwrap();
+        save.climb.shop.take_case(world);
+        save.save(world).unwrap();
+        GameState::change(GameState::Battle, world);
     }
 
     pub fn buy_reroll(world: &mut World) -> Result<()> {
@@ -412,12 +433,7 @@ impl ShopPlugin {
         let mut save = Save::get(world)?;
         save.climb.shop.g += delta;
         save.save(world)?;
-        VarState::change_int(
-            PackedTeam::entity(Faction::Team, world).unwrap(),
-            VarName::G,
-            delta,
-            world,
-        )
+        VarState::change_int(Faction::Team.team_entity(world), VarName::G, delta, world)
     }
 }
 
@@ -436,15 +452,12 @@ pub enum OfferProduct {
 
 impl OfferProduct {
     pub fn spawn(&self, slot: usize, world: &mut World) -> Entity {
+        let parent = Faction::Shop.team_entity(world);
         match self {
-            OfferProduct::Unit { unit } => unit.clone().unpack(
-                PackedTeam::entity(Faction::Shop, world).unwrap(),
-                Some(slot),
-                world,
-            ),
+            OfferProduct::Unit { unit } => unit.clone().unpack(parent, Some(slot), world),
             OfferProduct::Status { name, charges } => {
                 let status = Pools::get(world).statuses.get(name).unwrap();
-                let entity = status.clone().unpack(None, world);
+                let entity = status.clone().unpack(parent, world);
                 let pos = UnitPlugin::get_slot_position(Faction::Shop, slot);
                 VarState::get_mut(entity, world)
                     .init(VarName::Position, VarValue::Vec2(pos))
@@ -468,7 +481,7 @@ impl ShopOffer {
             OfferProduct::Unit { .. } => {
                 let pos = VarState::get(entity, world).get_vec2(VarName::Position)?;
                 let entity = PackedUnit::pack(entity, world).clone().unpack(
-                    PackedTeam::entity(Faction::Team, world).unwrap(),
+                    Faction::Team.team_entity(world),
                     None,
                     world,
                 );

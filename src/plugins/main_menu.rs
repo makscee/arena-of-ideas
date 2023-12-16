@@ -60,7 +60,7 @@ impl MainMenuPlugin {
                                             team: default(),
                                             levels: ladder.levels,
                                             defeated: default(),
-                                            shop: default(),
+                                            shop: ShopState::new(world),
                                             owner_team: Some(team),
                                         },
                                     };
@@ -83,7 +83,10 @@ New levels generated considering your teams strength",
                                     mode: GameMode::NewLadder,
                                     climb: LadderClimb {
                                         levels: Options::get_initial_ladder(world).levels.clone(),
-                                        ..default()
+                                        shop: ShopState::new(world),
+                                        team: default(),
+                                        owner_team: default(),
+                                        defeated: default(),
                                     },
                                 }
                                 .save(world)
@@ -94,11 +97,6 @@ New levels generated considering your teams strength",
                     });
                 });
 
-                frame(ui, |ui| {
-                    if ui.button("PROFILE").clicked() {
-                        GameState::change(GameState::Profile, world);
-                    }
-                });
                 frame(ui, |ui| {
                     if ui.button("HERO GALLERY").clicked() {
                         GameState::change(GameState::HeroGallery, world);

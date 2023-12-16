@@ -252,7 +252,7 @@ impl Effect {
                 for entity in Status::collect_entity_statuses(target, world) {
                     let status = world.get::<Status>(entity).unwrap();
                     if let Some(status) = Pools::get_status(&status.name, world) {
-                        let status = status.clone().unpack(Some(owner), world);
+                        let status = status.clone().unpack(owner, world);
                         for (var, history) in
                             VarState::get(entity, world).history.clone().into_iter()
                         {

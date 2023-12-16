@@ -14,7 +14,6 @@ pub enum GameState {
     HeroEditor,
     HeroGallery,
     Login,
-    Profile,
 }
 
 impl GameState {
@@ -24,5 +23,20 @@ impl GameState {
             .get_resource_mut::<NextState<GameState>>()
             .unwrap()
             .set(self);
+    }
+    pub fn exit(&self, world: &mut World) {
+        match self {
+            GameState::MainMenu | GameState::Login => world.send_event(AppExit),
+            GameState::CustomBattle | GameState::Battle => {
+                GameTimer::get_mut(world).skip_to_end();
+            }
+            GameState::Shop | GameState::HeroEditor | GameState::HeroGallery => {
+                Self::MainMenu.change(world)
+            }
+            GameState::TestsLoading
+            | GameState::BattleTest
+            | GameState::Restart
+            | GameState::Loading => {}
+        }
     }
 }

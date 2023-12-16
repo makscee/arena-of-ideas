@@ -36,7 +36,11 @@ impl TopButton {
     fn click(&self, world: &mut World) {
         let open = match self {
             TopButton::Exit => {
-                debug!("Exit");
+                world
+                    .resource::<State<GameState>>()
+                    .get()
+                    .clone()
+                    .exit(world);
                 false
             }
             TopButton::Settings | TopButton::Profile | TopButton::Leaderboard => {

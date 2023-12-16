@@ -26,7 +26,7 @@ pub struct Status {
 }
 
 impl PackedStatus {
-    pub fn unpack(mut self, owner: Option<Entity>, world: &mut World) -> Entity {
+    pub fn unpack(mut self, owner: Entity, world: &mut World) -> Entity {
         if self.state.get_int(VarName::Charges).is_err() {
             self.state.init(VarName::Charges, VarValue::Int(1));
         }
@@ -43,9 +43,7 @@ impl PackedStatus {
         if add_delta {
             world.entity_mut(entity).insert(VarStateDelta::default());
         }
-        if let Some(owner) = owner {
-            world.entity_mut(entity).set_parent(owner);
-        }
+        world.entity_mut(entity).set_parent(owner);
         if !SkipVisual::active(world) {
             Options::get_status_rep(world)
                 .clone()
@@ -102,7 +100,7 @@ impl Status {
         }
         let mut status = Pools::get_status(status, world).unwrap().clone();
         status.state.init(VarName::Charges, VarValue::Int(delta));
-        let entity = status.unpack(Some(unit), world);
+        let entity = status.unpack(unit, world);
         Self::reindex_statuses(unit, world)?;
         Ok(entity)
     }

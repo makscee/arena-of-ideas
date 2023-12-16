@@ -46,7 +46,7 @@ impl PackedTeam {
         format!("{}_{}{status}", unit.name, self.units.len())
     }
     pub fn pack(faction: Faction, world: &mut World) -> Self {
-        let state = VarState::get(Self::entity(faction, world).unwrap(), world).clone();
+        let state = VarState::get(Self::find_entity(faction, world).unwrap(), world).clone();
         let units = UnitPlugin::collect_factions(HashSet::from([faction]), world)
             .into_iter()
             .map(|(u, _)| PackedUnit::pack(u, world))
@@ -82,11 +82,11 @@ impl PackedTeam {
         team
     }
     pub fn despawn(faction: Faction, world: &mut World) {
-        if let Some(team) = Self::entity(faction, world) {
+        if let Some(team) = Self::find_entity(faction, world) {
             world.entity_mut(team).despawn_recursive();
         }
     }
-    pub fn entity(faction: Faction, world: &mut World) -> Option<Entity> {
+    pub fn find_entity(faction: Faction, world: &mut World) -> Option<Entity> {
         world
             .query_filtered::<(Entity, &VarState), With<Team>>()
             .iter(world)
@@ -98,10 +98,10 @@ impl PackedTeam {
             )
     }
     pub fn state(faction: Faction, world: &mut World) -> Option<&VarState> {
-        Self::entity(faction, world).map(|e| VarState::get(e, world))
+        Self::find_entity(faction, world).map(|e| VarState::get(e, world))
     }
     pub fn state_mut(faction: Faction, world: &mut World) -> Option<Mut<VarState>> {
-        Self::entity(faction, world).map(|e| VarState::get_mut(e, world))
+        Self::find_entity(faction, world).map(|e| VarState::get_mut(e, world))
     }
 }
 

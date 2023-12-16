@@ -69,10 +69,15 @@ impl LoginPlugin {
                         if ui.button_primary("CONNECT").clicked() {
                             Self::connect(world);
                         }
-                        ui.set_enabled(world.resource::<CurrentCredentials>().creds.is_some());
-                        if ui.button("NEW IDENTITY").clicked() {
-                            Self::clear_saved_credentials(world);
-                        }
+                    }
+                });
+                frame(ui, |ui| {
+                    ui.set_enabled(world.resource::<CurrentCredentials>().creds.is_some());
+                    let visuals = &mut ui.style_mut().visuals.widgets.inactive;
+                    visuals.fg_stroke.color = red();
+                    visuals.bg_stroke.color = red();
+                    if ui.button("CLEAR IDENTITY").clicked() {
+                        Self::clear_saved_credentials(world);
                     }
                 });
             });
