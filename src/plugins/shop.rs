@@ -8,7 +8,9 @@ pub struct ShopPlugin;
 #[derive(Resource, Clone)]
 pub struct ShopData {
     pub next_team: PackedTeam,
+    pub next_team_cards: Vec<(UnitCard, usize)>,
     pub next_level_num: usize,
+    pub enemy_panel_expanded: bool,
     pub phase: ShopPhase,
 }
 
@@ -204,10 +206,13 @@ impl ShopPlugin {
             },
         };
         let (next_team, next_level_num) = Ladder::load_current(world);
+        let next_team_cards = next_team.get_cards(world);
         world.insert_resource(ShopData {
+            next_team_cards,
             next_team,
             next_level_num: next_level_num + 1,
             phase,
+            enemy_panel_expanded: false,
         });
     }
 
@@ -256,7 +261,7 @@ impl ShopPlugin {
 
     pub fn ui(world: &mut World) {
         let ctx = &egui_context(world);
-        let mut data = world.resource::<ShopData>().clone();
+        let mut data = world.remove_resource::<ShopData>().unwrap();
         let mut sacrifice_accepted = false;
 
         let pos = UnitPlugin::get_slot_position(Faction::Shop, 0) - vec2(1.0, 0.0);
@@ -354,55 +359,65 @@ impl ShopPlugin {
                         .color(hex_color!("#FFC107")),
                 );
             });
-        Area::new("level number")
-            .anchor(Align2::CENTER_TOP, [-400.0, 20.0])
-            .show(ctx, |ui| {
-                let current_level = data.next_level_num;
-                ui.label(
-                    RichText::new(format!(
-                        "Level {current_level}/{}",
-                        Ladder::total_levels(world)
-                    ))
-                    .size(40.0)
-                    .color(hex_color!("#0091EA"))
-                    .text_style(egui::TextStyle::Heading),
-                );
-            });
-        Window::new("Next Enemy")
-            .collapsible(false)
-            .resizable(false)
-            .anchor(Align2::RIGHT_CENTER, [-20.0, 0.0])
-            .default_width(150.0)
-            .show(ctx, |ui| {
-                ui.vertical_centered(|ui| {
-                    let team = &data.next_team;
-                    let unit = &team.units[0];
+        Self::show_next_enemy_window(&mut data, world);
+        world.insert_resource(data);
+    }
 
-                    ui.heading(
-                        RichText::new(format!("{} {}/{}", unit.name, unit.hp, unit.atk))
-                            .size(20.0)
-                            .color(hex_color!("#B71C1C")),
-                    );
+    fn show_next_enemy_window(data: &mut ShopData, world: &mut World) {
+        let len = data.next_team_cards.len();
+        window("NEXT ENEMY")
+            .anchor(Align2::RIGHT_CENTER, [-10.0, 0.0])
+            .show(&egui_context(world), |ui| {
+                Frame::none().inner_margin(8.0).show(ui, |ui| {
+                    ui.vertical(|ui| {
+                        ui.label(
+                            format!(
+                                "Level {}/{}",
+                                data.next_level_num,
+                                Ladder::total_levels(world)
+                            )
+                            .add_color(white())
+                            .rich_text(),
+                        );
+                        let mut can_expand = false;
+                        ui.columns(len, |ui| {
+                            for (ind, (card, count)) in data.next_team_cards.iter().enumerate() {
+                                can_expand |=
+                                    !card.description.is_empty() || !card.statuses.is_empty();
+                                ui[ind].vertical_centered(|ui| {
+                                    if data.enemy_panel_expanded {
+                                        card.show_frames(ui);
+                                    } else {
+                                        card.show_name(false, ui);
+                                    }
+                                    if *count > 1 {
+                                        ui.heading(
+                                            format!("x{count}").add_color(white()).rich_text(),
+                                        );
+                                    }
+                                });
+                            }
+                        });
 
-                    ui.label(RichText::new(format!("x{}", team.units.len())).size(25.0));
-                    if !unit.statuses.is_empty() {
-                        let (name, charges) = &unit.statuses[0];
-                        ui.label(RichText::new(format!("with {name} ({charges})")));
-                    }
-                    ui.set_enabled(data.phase.eq(&ShopPhase::Buy));
-                    let btn = Button::new(
-                        RichText::new("Go")
-                            .size(25.0)
-                            .color(hex_color!("#B71C1C"))
-                            .text_style(egui::TextStyle::Button),
-                    )
-                    .min_size(egui::vec2(100.0, 0.0));
-                    if ui.add(btn).clicked() {
-                        Self::go_to_battle(world);
-                    }
+                        if can_expand {
+                            if if data.enemy_panel_expanded {
+                                ui.button_primary("EXPAND")
+                            } else {
+                                ui.button("EXPAND")
+                            }
+                            .clicked()
+                            {
+                                data.enemy_panel_expanded = !data.enemy_panel_expanded;
+                            }
+                        }
+                        ui.with_layout(Layout::right_to_left(egui::Align::Min), |ui| {
+                            if ui.button_primary(RichText::new("GO").heading()).clicked() {
+                                Self::go_to_battle(world);
+                            }
+                        });
+                    });
                 });
             });
-        world.insert_resource(data);
     }
 
     fn go_to_battle(world: &mut World) {
@@ -423,9 +438,7 @@ impl ShopPlugin {
     }
 
     pub fn get_g(world: &mut World) -> i32 {
-        PackedTeam::state(Faction::Team, world)
-            .and_then(|s| s.get_int(VarName::G).ok())
-            .unwrap_or_default()
+        Save::get(world).unwrap().climb.shop.g
     }
 
     pub fn change_g(delta: i32, world: &mut World) -> Result<()> {

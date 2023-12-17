@@ -7,8 +7,11 @@ impl Plugin for CameraPlugin {
         app.add_systems(OnEnter(GameState::Loading), Self::respawn_camera)
             .add_systems(
                 Update,
-                Self::adjust_to_fit_units
-                    .run_if(in_state(GameState::Battle).or_else(in_state(GameState::Shop))),
+                Self::adjust_to_fit_units.run_if(
+                    in_state(GameState::Battle)
+                        .or_else(in_state(GameState::Shop))
+                        .or_else(in_state(GameState::HeroGallery)),
+                ),
             );
     }
 }
@@ -53,21 +56,27 @@ impl CameraPlugin {
 
     fn adjust_to_fit_units(
         visible: Query<(&Transform, &ComputedVisibility)>,
-        mut camera: Query<&mut OrthographicProjection>,
+        mut projection: Query<(&mut OrthographicProjection, &Camera)>,
         mut data: ResMut<CameraData>,
         time: Res<Time>,
     ) {
-        let mut camera = camera.single_mut();
+        let (mut projection, camera) = projection.single_mut();
         let mut width = 15.0_f32;
+        let aspect_ratio = camera
+            .logical_target_size()
+            .and_then(|v| Some(v.x / v.y))
+            .unwrap_or(1.0);
         for (t, cv) in visible.iter() {
             if cv.is_visible_in_hierarchy() {
-                width = width.max((t.translation.x.abs() + 1.5) * 2.0);
+                width = width
+                    .max((t.translation.x.abs() + 1.5) * 2.0)
+                    .max(((t.translation.y.abs() + 2.0) * aspect_ratio) * 2.0);
             }
         }
         data.need_scale = width;
         data.cur_scale +=
             (data.need_scale - data.cur_scale) * time.delta_seconds() * SCALE_CHANGE_SPEED;
 
-        camera.scaling_mode = ScalingMode::FixedHorizontal(data.cur_scale);
+        projection.scaling_mode = ScalingMode::FixedHorizontal(data.cur_scale);
     }
 }

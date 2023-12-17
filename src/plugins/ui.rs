@@ -57,7 +57,7 @@ impl UiPlugin {
             .families
             .get_mut(&FontFamily::Proportional)
             .unwrap()
-            .insert(0, "bold".to_owned());
+            .insert(0, "regular".to_owned());
         fonts
             .families
             .insert(FontFamily::Name("medium".into()), vec!["medium".to_owned()]);
@@ -262,6 +262,18 @@ pub fn frame<R>(ui: &mut Ui, add_contents: impl FnOnce(&mut Ui) -> R) -> InnerRe
         .outer_margin(6.0)
         .rounding(0.0)
         .show(ui, |ui| ui.vertical_centered_justified(add_contents).inner)
+}
+
+pub fn frame_horizontal<R>(
+    ui: &mut Ui,
+    add_contents: impl FnOnce(&mut Ui) -> R,
+) -> InnerResponse<R> {
+    Frame::none()
+        .stroke(Stroke::new(1.0, dark_gray()))
+        .inner_margin(6.0)
+        .outer_margin(6.0)
+        .rounding(0.0)
+        .show(ui, |ui| ui.horizontal_centered(add_contents).inner)
 }
 
 pub trait IntoC32 {

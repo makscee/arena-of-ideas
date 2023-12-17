@@ -40,6 +40,10 @@ impl Plugin for AudioPlugin {
             .add_systems(Startup, Self::setup)
             .add_systems(OnEnter(GameState::Shop), Self::start_filtered_background)
             .add_systems(OnEnter(GameState::Battle), Self::start_normal_background)
+            .add_systems(
+                OnEnter(GameState::HeroGallery),
+                Self::start_normal_background,
+            )
             .add_systems(OnEnter(GameState::MainMenu), Self::stop_background)
             .add_systems(Update, Self::update)
             .add_systems(Update, Self::ui.run_if(in_state(GameState::Battle)));
@@ -116,13 +120,6 @@ impl AudioPlugin {
     }
 
     pub fn background_position(world: &World) -> Option<f64> {
-        if world
-            .resource::<State<GameState>>()
-            .get()
-            .eq(&GameState::HeroGallery)
-        {
-            return Some(get_play_head(world) as f64);
-        }
         let instance = &world.resource::<BackgroundChannel>().handle;
         let channel = world.resource::<AudioChannel<BackgroundChannel>>();
 

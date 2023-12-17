@@ -21,6 +21,7 @@ pub enum RunMode {
     Regular,
     Test,
     Custom,
+    Continue,
 }
 
 fn main() {
@@ -28,6 +29,7 @@ fn main() {
     let next_state = match args.mode {
         RunMode::Regular => GameState::Login,
         RunMode::Custom => GameState::CustomBattle,
+        RunMode::Continue => GameState::Shop,
         RunMode::Test => GameState::TestsLoading,
     };
     App::new()

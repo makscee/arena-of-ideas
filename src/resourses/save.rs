@@ -65,10 +65,12 @@ impl Save {
     }
     pub fn register_victory(&mut self) -> &mut Self {
         if matches!(self.mode, GameMode::NewLadder) {
-            add_ladder_levels(
-                self.get_ladder_id().unwrap(),
-                vec![self.climb.levels[self.climb.defeated].clone()],
-            )
+            if let Ok(ladder_id) = self.get_ladder_id() {
+                add_ladder_levels(
+                    ladder_id,
+                    vec![self.climb.levels[self.climb.defeated].clone()],
+                )
+            }
         }
         self.climb.defeated += 1;
         self

@@ -37,8 +37,7 @@
 				"regular"
 			],
 			"group": {
-				"kind": "build",
-				"isDefault": true
+				"kind": "build"
 			},
 			"env": {
 				"RUST_BACKTRACE": "1"
@@ -50,7 +49,7 @@
 			"problemMatcher": [
 				"$rustc"
 			],
-			"label": "Regular",
+			"label": "Custom",
 			"args": [
 				"--features",
 				"bevy/dynamic_linking",
@@ -60,6 +59,28 @@
 			],
 			"group": {
 				"kind": "build"
+			},
+			"env": {
+				"RUST_BACKTRACE": "1"
+			}
+		},
+		{
+			"type": "cargo",
+			"command": "run",
+			"problemMatcher": [
+				"$rustc"
+			],
+			"label": "Continue",
+			"args": [
+				"--features",
+				"bevy/dynamic_linking",
+				"--",
+				"--mode",
+				"continue"
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": true
 			},
 			"env": {
 				"RUST_BACKTRACE": "1"

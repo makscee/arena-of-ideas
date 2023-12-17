@@ -24,10 +24,23 @@ impl ColoredString {
     }
 
     pub fn widget(&self) -> WidgetText {
+        self.widget_with_font(None)
+    }
+
+    pub fn widget_with_font(&self, font_id: Option<FontId>) -> WidgetText {
         let mut job = LayoutJob::default();
+        let font_id = font_id.unwrap_or_default();
         for (s, color) in self.lines.iter() {
             let color = color.unwrap_or(light_gray());
-            job.append(s, 0.0, TextFormat { color, ..default() });
+            job.append(
+                s,
+                0.0,
+                TextFormat {
+                    color,
+                    font_id: font_id.clone(),
+                    ..default()
+                },
+            );
         }
         WidgetText::LayoutJob(job)
     }

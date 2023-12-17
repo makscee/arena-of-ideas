@@ -273,11 +273,11 @@ impl VarChange {
 impl Tween {
     pub fn f(&self, a: &VarValue, b: &VarValue, t: f32, over: f32) -> Result<VarValue> {
         let t = t / over;
-        if t > 1.0 {
-            return Ok(b.clone());
-        }
-        if t < 0.0 {
+        if t.is_nan() || t <= 0.0 {
             return Ok(a.clone());
+        }
+        if t >= 1.0 {
+            return Ok(b.clone());
         }
         let t = match self {
             Tween::Linear => tween::Tweener::linear(0.0, 1.0, 1.0).move_to(t),
@@ -302,6 +302,7 @@ impl Tween {
                 sub.set_r(b.r() - a.r());
                 sub.set_g(b.g() - a.g());
                 sub.set_b(b.b() - a.b());
+                sub.set_a(b.a() - a.a());
                 VarValue::Color(*a + sub * t)
             }
             (VarValue::String(a), VarValue::String(b)) => VarValue::String(match t > 0.5 {

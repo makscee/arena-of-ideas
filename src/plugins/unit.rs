@@ -35,8 +35,8 @@ impl UnitPlugin {
         match faction {
             Faction::Left => vec2(slot as f32 * -3.0, 0.0),
             Faction::Right => vec2(slot as f32 * 3.0, 0.0),
-            Faction::Team => vec2(slot as f32 * -3.0 + 12.5, -3.0),
-            Faction::Shop => vec2(slot as f32 * -3.0 + 6.5, 1.0),
+            Faction::Team => vec2(slot as f32 * -3.0 + 9.0, -4.0),
+            Faction::Shop => vec2(slot as f32 * 3.0 - 9.0, 4.0),
         }
     }
 
@@ -285,7 +285,7 @@ impl UnitPlugin {
     fn ui(world: &mut World) {
         if let Some(hovered) = world.get_resource::<HoveredUnit>().unwrap().0 {
             if let Ok(card) = UnitCard::from_entity(hovered, world) {
-                card.show(world);
+                card.show_window(world);
             }
         }
     }
@@ -373,6 +373,7 @@ pub struct DraggedUnit(pub Option<Entity>);
 #[derive(Component)]
 pub struct ActiveTeam;
 
+#[derive(Clone, Debug)]
 pub struct UnitCard {
     pub name: ColoredString,
     pub hp: i32,
@@ -380,11 +381,17 @@ pub struct UnitCard {
     pub description: ColoredString,
     pub definitions: Vec<(ColoredString, ColoredString)>,
     pub statuses: Vec<(ColoredString, i32, ColoredString)>,
-    pub pos: Vec2,
+    pub full: bool,
     pub entity: Entity,
 }
 
 impl UnitCard {
+    pub fn from_packed(unit: PackedUnit, world: &mut World) -> Result<Self> {
+        let entity = unit.unpack(Faction::Left.team_entity(world), None, world);
+        let card = Self::from_entity(entity, world)?;
+        world.entity_mut(entity).despawn_recursive();
+        Ok(card)
+    }
     pub fn from_entity(entity: Entity, world: &mut World) -> Result<Self> {
         let t = get_play_head(world);
         let statuses = Status::collect_entity_statuses(entity, world)
@@ -417,7 +424,6 @@ impl UnitCard {
                 }
             })
             .collect_vec();
-        let pos = entity_screen_pos(entity, world);
         let state = VarState::get(entity, world);
         let description = state.get_string_at(VarName::Description, t)?;
         let mut definitions: Vec<(ColoredString, ColoredString)> = default();
@@ -458,66 +464,94 @@ impl UnitCard {
             .to_colored()
             .inject_vars(state)
             .inject_definitions(world);
+        let hp = VarState::find_value(entity, VarName::Hp, t, world)?.get_int()?;
+        let atk = VarState::find_value(entity, VarName::Atk, t, world)?.get_int()?;
+        let mut name = state
+            .get_string_at(VarName::Name, t)?
+            .add_color(state.get_color_at(VarName::HouseColor, t)?.c32());
+        name.push(format!(" {atk}/{hp}"), white());
 
         Ok(Self {
-            name: state
-                .get_string_at(VarName::Name, t)?
-                .add_color(state.get_color_at(VarName::HouseColor, t)?.c32()),
-            hp: state.get_int_at(VarName::Hp, t)?,
-            atk: state.get_int_at(VarName::Atk, t)?,
+            name,
+            hp,
+            atk,
             description,
             statuses,
-            pos,
             entity,
             definitions,
+            full: true,
         })
     }
 
-    pub fn show(&self, world: &mut World) {
-        self.show_with(|_| {}, world);
+    fn show_status_lines(&self, show_desc: bool, ui: &mut Ui) {
+        for (name, charges, description) in self.statuses.iter() {
+            text_dots_text(name, &charges.to_string().add_color(white()), ui);
+            if show_desc && !description.is_empty() {
+                ui.vertical(|ui| {
+                    ui.label(description.widget());
+                });
+            }
+        }
     }
 
-    pub fn show_with(&self, add_contents: impl FnOnce(&mut Ui), world: &mut World) {
+    pub fn show_name(&self, big: bool, ui: &mut Ui) {
+        ui.vertical_centered(|ui| {
+            ui.style_mut().wrap = Some(false);
+            if big {
+                Label::new(
+                    self.name
+                        .widget_with_font(Some(TextStyle::Heading.resolve(ui.style()))),
+                )
+                .ui(ui);
+            } else {
+                ui.label(self.name.widget());
+            }
+        });
+    }
+
+    pub fn show_frames(&self, ui: &mut Ui) {
+        frame(ui, |ui| {
+            self.show_name(self.full, ui);
+
+            if !self.description.is_empty() {
+                ui.vertical(|ui| {
+                    ui.label(self.description.widget());
+                });
+            }
+            if !self.full {
+                self.show_status_lines(false, ui);
+            }
+        });
+        if self.full {
+            for (name, text) in &self.definitions {
+                frame(ui, |ui| {
+                    ui.label(name.rich_text().family(FontFamily::Name("bold".into())));
+                    ui.horizontal_wrapped(|ui| {
+                        ui.label(text.widget());
+                    });
+                });
+            }
+            if !self.statuses.is_empty() {
+                frame(ui, |ui| {
+                    ui.vertical_centered(|ui| {
+                        ui.heading(RichText::new("Statuses").color(white()));
+                    });
+                    self.show_status_lines(self.full, ui);
+                });
+            }
+        }
+    }
+
+    pub fn show_window(&self, world: &mut World) {
         window("UNIT")
             .id(self.entity)
             .set_width(200.0)
             .entity_anchor(self.entity, Align2::CENTER_BOTTOM, vec2(0.0, -60.0), world)
-            .show(&egui_context(world), |ui| {
-                frame(ui, |ui| {
-                    ui.vertical_centered(|ui| {
-                        ui.style_mut().wrap = Some(false);
-                        ui.heading(self.name.rich_text());
-                    });
-                    if !self.description.is_empty() {
-                        ui.vertical(|ui| {
-                            ui.label(self.description.widget());
-                        });
-                    }
-                });
-                for (name, text) in &self.definitions {
-                    frame(ui, |ui| {
-                        ui.label(name.widget());
-                        ui.horizontal_wrapped(|ui| {
-                            ui.label(text.widget());
-                        });
-                    });
-                }
-                if !self.statuses.is_empty() {
-                    frame(ui, |ui| {
-                        ui.vertical_centered(|ui| {
-                            ui.heading(RichText::new("Statuses").color(white()));
-                        });
-                        for (name, charges, description) in self.statuses.iter() {
-                            text_dots_text(name, &charges.to_string().add_color(white()), ui);
-                            if !description.is_empty() {
-                                ui.vertical(|ui| {
-                                    ui.label(description.widget());
-                                });
-                            }
-                        }
-                    });
-                }
-                add_contents(ui);
-            });
+            .show(&egui_context(world), |ui| self.show_frames(ui));
+    }
+
+    pub fn set_compact(mut self, value: bool) -> Self {
+        self.full = value;
+        self
     }
 }
