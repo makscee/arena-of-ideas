@@ -1,0 +1,30 @@
+#![enable(implicit_some)]
+(
+    hp: 1,
+    atk: 2,
+    house: "Meta",
+    trigger: BeforeDeath(UseAbility("Amnesia")),
+    name: "Mentalist",
+    description: "Before Death: use [Amnesia]",
+    representation: (
+        material: Shape(
+            shape: Circle,
+            fill: Opaque,
+            size: Vec2E(Float(0.25)),
+            thickness: Float(1.3),
+            alpha: If(Equals(State(Index), Zero), Float(0.6), Float(0.1)),
+            color: State(Color),
+        ),
+        children: [],
+        mapping: {
+            Position: Mul(Vec2EE(Cos(State(T)), Sin(State(T))), Float(0.5)),
+            T: Sum(Sin(Sum(GameTime, Mul(IntFloat(State(Index)), Float(-0.15)))), Mul(PI, Float(1.5))),
+        },
+        count: 8,
+    ),
+    state: (
+        history: {},
+        birth: 0.0,
+    ),
+    statuses: [],
+)

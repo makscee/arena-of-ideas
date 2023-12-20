@@ -153,6 +153,7 @@ impl UnitPlugin {
     }
 
     pub fn turn_into_corpse(entity: Entity, world: &mut World) {
+        Event::Death(entity).send(world);
         let mut unit = world.entity_mut(entity);
         unit.remove::<Unit>();
         unit.insert(Corpse);
@@ -162,7 +163,6 @@ impl UnitPlugin {
             VarChange::new(VarValue::Bool(false)),
             world,
         );
-        Event::Death(entity).send(world);
         if let Ok(killer) = VarState::get(entity, world).get_entity(VarName::LastAttacker) {
             Event::Kill {
                 owner: killer,

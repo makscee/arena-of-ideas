@@ -1,0 +1,18 @@
+#![enable(implicit_some)]
+(
+    name: "Meta",
+    color: ("#EA80FC"),
+    statuses: [],
+    abilities: [
+        (
+            name: "Amnesia",
+            description: "Send Battle Start event",
+            effect: List(
+                [
+                    SendEvent(BattleStart),
+                    Text(String("Send Battle Start")),
+                ],
+            ),
+        ),
+    ],
+)

@@ -118,6 +118,7 @@ impl Trigger {
                 };
                 let owner = get_parent(status, world);
                 if dead.eq(&owner) {
+                    context.stack(ContextLayer::DeadOwner, world);
                     ActionPlugin::new_cluster(effect, context, world);
                 }
             }

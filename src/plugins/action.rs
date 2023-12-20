@@ -250,7 +250,7 @@ impl Action {
             mut context,
         } = self;
         if let Some(owner) = context.get_owner() {
-            if UnitPlugin::is_dead(owner, world) {
+            if !context.dead_owner_allowed() && UnitPlugin::is_dead(owner, world) {
                 return;
             }
         }

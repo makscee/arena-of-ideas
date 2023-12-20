@@ -14,6 +14,7 @@ pub enum ContextLayer {
     Status(Entity),
     Var(VarName, VarValue),
     Text(String),
+    DeadOwner,
 }
 
 impl ContextLayer {
@@ -189,6 +190,12 @@ impl Context {
         self.stack(ContextLayer::Status(entity), world)
     }
 
+    pub fn dead_owner_allowed(&self) -> bool {
+        self.layers
+            .iter()
+            .any(|l| matches!(l, ContextLayer::DeadOwner))
+    }
+
     pub fn take(&mut self) -> Self {
         mem::take(self)
     }
@@ -204,6 +211,7 @@ impl std::fmt::Display for ContextLayer {
             | ContextLayer::Status(entity) => write!(f, "{self_text} {entity:?}"),
             ContextLayer::Var(var, value) => write!(f, "{self_text} {var} -> {value:?}"),
             ContextLayer::Text(text) => write!(f, "{self_text} {text}"),
+            ContextLayer::DeadOwner => write!(f, "{self_text}"),
         }
     }
 }

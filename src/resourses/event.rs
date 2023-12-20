@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Debug, Display)]
+#[derive(Debug, Display, PartialEq, Eq, Serialize, Deserialize, Default, Clone)]
 pub enum Event {
     IncomingDamage {
         owner: Entity,
@@ -20,6 +20,7 @@ pub enum Event {
         target: Entity,
         value: i32,
     },
+    #[default]
     BattleStart,
     TurnStart,
     TurnEnd,

@@ -20,6 +20,7 @@ pub enum Effect {
     UseAbility(String),
     AddStatus(String),
     Vfx(String),
+    SendEvent(Event),
 }
 
 impl Effect {
@@ -276,6 +277,9 @@ impl Effect {
                     }
                 }
             }
+            Effect::SendEvent(event) => {
+                event.clone().send(world);
+            }
         }
         Ok(())
     }
@@ -396,6 +400,15 @@ impl Effect {
                         .show_ui(ui, |ui| {
                             for ability in Pools::get(world).abilities.keys() {
                                 ui.selectable_value(name, ability.to_owned(), ability);
+                            }
+                        });
+                }
+                Effect::SendEvent(event) => {
+                    ComboBox::from_id_source(format!("{path}/event"))
+                        .selected_text(event.to_string())
+                        .show_ui(ui, |ui| {
+                            for new in [Event::BattleStart, Event::TurnEnd, Event::TurnStart] {
+                                ui.selectable_value(event, new.clone(), new.to_string());
                             }
                         });
                 }
