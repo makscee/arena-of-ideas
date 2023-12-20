@@ -15,8 +15,10 @@ struct ProfileEditData {
 
 impl ProfilePlugin {
     pub fn load(world: &mut World) {
-        let user = User::filter_by_identity(identity().unwrap()).expect("User not found");
-        world.insert_resource(ProfileEditData { user });
+        if let Ok(identity) = identity() {
+            let user = User::filter_by_identity(identity).expect("User not found");
+            world.insert_resource(ProfileEditData { user });
+        }
     }
 
     pub fn ui(world: &mut World) {
@@ -69,6 +71,17 @@ impl ProfilePlugin {
                                 ui.label(PackedTeam::from_ladder_string(level, world).to_string());
                             }
                         });
+                    }
+                });
+                frame(ui, |ui| {
+                    ui.set_enabled(world.resource::<CurrentCredentials>().creds.is_some());
+                    let visuals = &mut ui.style_mut().visuals.widgets.inactive;
+                    visuals.fg_stroke.color = red();
+                    visuals.bg_stroke.color = red();
+                    if ui.button("CLEAR IDENTITY").clicked() {
+                        LoginPlugin::clear_saved_credentials(world);
+                        Save::clear(world).unwrap();
+                        world.send_event(AppExit);
                     }
                 });
             }

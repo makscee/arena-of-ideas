@@ -33,6 +33,13 @@ impl TopButton {
         self.to_string().to_uppercase()
     }
 
+    fn enabled(&self) -> bool {
+        match self {
+            TopButton::Profile | TopButton::Leaderboard => identity().is_ok(),
+            TopButton::Exit | TopButton::Settings => true,
+        }
+    }
+
     fn click(&self, world: &mut World) {
         let open = match self {
             TopButton::Exit => {
@@ -87,6 +94,7 @@ impl PanelsPlugin {
                     ui.columns(columns, |ui| {
                         for (ind, (t, value)) in top_data.iter().enumerate() {
                             ui[ind].vertical_centered_justified(|ui| {
+                                ui.set_enabled(t.enabled());
                                 let name = t.name();
                                 let btn = if *value {
                                     ui.button_primary(name)

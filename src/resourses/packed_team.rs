@@ -106,10 +106,7 @@ impl PackedTeam {
     pub fn get_cards(&self, world: &mut World) -> Vec<(UnitCard, usize)> {
         let mut result: Vec<(PackedUnit, usize)> = default();
         for unit in &self.units {
-            if result
-                .last().map(|(u, _)| u.eq(unit))
-                .unwrap_or_default()
-            {
+            if result.last().map(|(u, _)| u.eq(unit)).unwrap_or_default() {
                 result.last_mut().unwrap().1 += 1;
             } else {
                 result.push((unit.clone(), 1));

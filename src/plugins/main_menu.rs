@@ -48,7 +48,10 @@ impl MainMenuPlugin {
                             .on_hover_text("Play ladder that belongs to other random player")
                             .clicked()
                         {
-                            if let Some(ladder) = TableLadder::iter().choose(&mut thread_rng()) {
+                            if let Some(ladder) = TableLadder::iter()
+                                .filter(|l| l.owner != identity().unwrap())
+                                .choose(&mut thread_rng())
+                            {
                                 let team = match ladder.status {
                                     module_bindings::LadderStatus::Fresh(team)
                                     | module_bindings::LadderStatus::Beaten(team) => {
