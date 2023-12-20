@@ -1,4 +1,5 @@
 use bevy_egui::egui::{Context, Frame, Key, SidePanel, TopBottomPanel};
+use rand::seq::IteratorRandom;
 use ron::ser::{to_string_pretty, PrettyConfig};
 
 use super::*;
@@ -9,9 +10,12 @@ impl Plugin for HeroEditorPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
-            (Self::input, Self::ui).run_if(in_state(GameState::HeroEditor)),
+            (Self::input, Self::ui)
+                .run_if(in_state(GameState::HeroEditor))
+                .after(PanelsPlugin::ui),
         )
-        .add_systems(OnEnter(GameState::HeroEditor), Self::on_enter);
+        .add_systems(OnEnter(GameState::HeroEditor), Self::on_enter)
+        .add_systems(OnExit(GameState::HeroEditor), Self::on_exit);
     }
 }
 
@@ -26,6 +30,10 @@ impl HeroEditorPlugin {
         Self::apply_camera(&mut pd, true, world);
         Self::respawn(world);
         ActionPlugin::set_timeframe(0.001, world);
+    }
+
+    fn on_exit(world: &mut World) {
+        UnitPlugin::despawn_all_teams(world);
     }
 
     fn ui(world: &mut World) {
@@ -84,7 +92,7 @@ impl HeroEditorPlugin {
 
     fn side_ui(pd: &mut PersistentData, ctx: &Context, world: &mut World) {
         SidePanel::new(egui::panel::Side::Right, "hero editor bottom").show(ctx, |ui| {
-            ui.vertical(|ui| {
+            ui.vertical_centered_justified(|ui| {
                 if ui.button("Clear").clicked() {
                     pd.hero_editor_data.clear();
                     pd.save(world).unwrap();
@@ -107,8 +115,18 @@ impl HeroEditorPlugin {
                         Err(e) => error!("Failed to get hero: {e}"),
                     }
                 }
-                let spawn_ally = ui.button("Spawn ally from Clipboard").clicked();
-                let spawn_enemy = ui.button("Spawn enemy from Clipboard").clicked();
+                if ui.button("Load Random").clicked() {
+                    let mut pd = PersistentData::load(world);
+                    pd.hero_editor_data.hero = Pools::get(world)
+                        .heroes
+                        .values()
+                        .choose(&mut thread_rng())
+                        .unwrap()
+                        .clone();
+                    Self::respawn_direct(&mut pd, world);
+                }
+                let spawn_ally = ui.button("Paste Ally").clicked();
+                let spawn_enemy = ui.button("Paste Enemy").clicked();
                 if spawn_ally || spawn_enemy {
                     let faction = match spawn_ally {
                         true => Faction::Left,
@@ -151,17 +169,21 @@ impl HeroEditorPlugin {
                 if changed {
                     Self::apply_camera(pd, false, world);
                 }
-                CollapsingHeader::new("Triggers").show(ui, |ui| {
-                    if ui.button("Send Battle Start").clicked() {
-                        Event::BattleStart.send(world);
-                    }
-                    if ui.button("Send Turn Start").clicked() {
-                        Event::TurnStart.send(world);
-                    }
-                    if ui.button("Send Turn End").clicked() {
-                        Event::TurnEnd.send(world);
-                    }
-                });
+                CollapsingHeader::new("Triggers")
+                    .default_open(false)
+                    .show(ui, |ui| {
+                        ui.vertical_centered_justified(|ui| {
+                            if ui.button("Send Battle Start").clicked() {
+                                Event::BattleStart.send(world);
+                            }
+                            if ui.button("Send Turn Start").clicked() {
+                                Event::TurnStart.send(world);
+                            }
+                            if ui.button("Send Turn End").clicked() {
+                                Event::TurnEnd.send(world);
+                            }
+                        });
+                    });
                 if ui.button("Spawn enemy").clicked() {
                     PackedUnit {
                         hp: 5,
@@ -178,7 +200,7 @@ impl HeroEditorPlugin {
                         BattlePlugin::run_strike(left, right, world);
                     }
                 }
-                if ui.button("Clear").clicked() {
+                if ui.button("Reset").clicked() {
                     Self::respawn(world);
                 }
             })

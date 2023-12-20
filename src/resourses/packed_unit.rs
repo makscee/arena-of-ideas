@@ -188,10 +188,10 @@ impl PackedUnit {
                             .desired_width(100.0)
                             .hint_text("description"),
                     );
-                    ui.label("hp:");
-                    ui.add(DragValue::new(&mut self.hp));
                     ui.label("atk:");
                     ui.add(DragValue::new(&mut self.atk));
+                    ui.label("hp:");
+                    ui.add(DragValue::new(&mut self.hp));
                     let houses = Pools::get(world).houses.keys().cloned().collect_vec();
                     ui.label("house:");
                     ComboBox::from_id_source("house")

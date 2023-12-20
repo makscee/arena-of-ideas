@@ -407,7 +407,7 @@ impl Expression {
             self.show_editor(editing_data, name, ui);
             if let Some(entity) = entity {
                 let text = match self.get_value(&Context::from_owner(entity, world), world) {
-                    Ok(value) => RichText::new(format!("{value:?}")).color(hex_color!("#00ACC1")),
+                    Ok(value) => RichText::new(format!("{value}")).color(hex_color!("#00ACC1")),
                     Err(err) => RichText::new(err.to_string()).color(hex_color!("#F44336")),
                 };
                 ui.label(text);

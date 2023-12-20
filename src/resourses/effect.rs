@@ -35,7 +35,7 @@ impl Effect {
                         .get_var(VarName::Atk, world)
                         .context("Can't find ATK")?,
                 };
-                debug!("Damage {value} {target:?}");
+                debug!("Damage {} {target:?}", value.to_string());
                 Event::IncomingDamage {
                     owner: target,
                     value: value.get_int()?,

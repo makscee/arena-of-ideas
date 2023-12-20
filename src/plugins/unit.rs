@@ -424,7 +424,7 @@ impl UnitCard {
                 }
             })
             .collect_vec();
-        let state = VarState::get(entity, world);
+        let state = VarState::try_get(entity, world)?;
         let description = state.get_string_at(VarName::Description, t)?;
         let mut definitions: Vec<(ColoredString, ColoredString)> = default();
         let mut added_definitions: HashSet<String> = default();

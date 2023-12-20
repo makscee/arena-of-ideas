@@ -44,6 +44,10 @@ impl Plugin for AudioPlugin {
                 OnEnter(GameState::HeroGallery),
                 Self::start_normal_background,
             )
+            .add_systems(
+                OnEnter(GameState::HeroEditor),
+                Self::start_normal_background,
+            )
             .add_systems(OnEnter(GameState::MainMenu), Self::stop_background)
             .add_systems(Update, Self::update)
             .add_systems(Update, Self::ui.run_if(in_state(GameState::Battle)));

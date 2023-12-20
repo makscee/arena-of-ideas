@@ -1,4 +1,4 @@
-use std::cmp::Ordering;
+use std::{cmp::Ordering, fmt::Display};
 
 use anyhow::anyhow;
 use strum_macros::{Display, EnumString};
@@ -58,7 +58,7 @@ pub enum VarName {
     OutgoingDamage,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Reflect, PartialEq, Display)]
+#[derive(Serialize, Deserialize, Clone, Debug, Reflect, PartialEq)]
 pub enum VarValue {
     Float(f32),
     Int(i32),
@@ -198,6 +198,21 @@ impl VarValue {
             VarValue::Int(x) => Ok(VarValue::Int(x.abs())),
             VarValue::Vec2(x) => Ok(VarValue::Vec2(x.abs())),
             _ => Err(anyhow!("Abs {self:?} not supported")),
+        }
+    }
+}
+
+impl Display for VarValue {
+    fn fmt(&self, f: &mut __private::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            VarValue::Float(v) => write!(f, "{v:.2}"),
+            VarValue::Int(v) => write!(f, "{v}"),
+            VarValue::Vec2(v) => write!(f, "{:.2}:{:.2}", v.x, v.y),
+            VarValue::Bool(v) => write!(f, "{v}"),
+            VarValue::String(v) => write!(f, "{v}"),
+            VarValue::Faction(v) => write!(f, "{v}"),
+            VarValue::Entity(v) => write!(f, "{v:?}"),
+            VarValue::Color(v) => write!(f, "{v:?}"),
         }
     }
 }
