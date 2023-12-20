@@ -43,13 +43,19 @@ impl MainMenuPlugin {
             .show(ctx, |ui| {
                 frame(ui, |ui| {
                     if LoginPlugin::is_connected() {
+                        let identity = identity().unwrap();
+                        let has_own = TableLadder::filter_by_creator(identity.clone())
+                            .next()
+                            .is_some();
+                        ui.set_enabled(has_own);
                         if ui
                             .button("RANDOM LADDDER")
                             .on_hover_text("Play ladder that belongs to other random player")
+                            .on_disabled_hover_text("Create at least one ladder, click New Ladder")
                             .clicked()
                         {
                             if let Some(ladder) = TableLadder::iter()
-                                .filter(|l| l.owner != identity().unwrap())
+                                .filter(|l| l.owner != identity)
                                 .choose(&mut thread_rng())
                             {
                                 let team = match ladder.status {
