@@ -34,6 +34,22 @@ impl SettingsPlugin {
                     Slider::new(&mut data.master_volume, 0.0..=1.0).text("master volume");
                 ui.add(master_volume);
             });
+            frame(ui, |ui| {
+                if ui.button("RESET").clicked() {
+                    Save::clear(world).unwrap();
+                    PersistentData::default().save(world).unwrap();
+                    SettingsData::default().save(world).unwrap();
+                }
+            });
+            frame(ui, |ui| {
+                ui.set_enabled(world.resource::<CurrentCredentials>().creds.is_some());
+                let visuals = &mut ui.style_mut().visuals.widgets.inactive;
+                visuals.fg_stroke.color = red();
+                visuals.bg_stroke.color = red();
+                if ui.button("CLEAR IDENTITY").clicked() {
+                    LoginPlugin::clear_saved_credentials(world);
+                }
+            });
         });
         if !data.eq(SettingsData::get(world)) {
             Self::updated(data, world);

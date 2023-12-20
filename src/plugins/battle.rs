@@ -1,6 +1,6 @@
 use bevy_egui::egui::{Align2, Window};
 
-use crate::module_bindings::{beat_ladder, finish_building_ladder};
+use crate::module_bindings::beat_ladder;
 
 use super::*;
 
@@ -269,13 +269,8 @@ impl BattlePlugin {
                 {
                     match end {
                         BattleEnd::Defeat(_, _, new) => {
-                            let team = ron::to_string(
-                                &Save::get(world).unwrap().register_defeat().climb.team,
-                            )
-                            .unwrap();
-                            if new {
-                                debug!("Finish ladder building, team: {team}");
-                                finish_building_ladder(team);
+                            if new && LoginPlugin::is_connected() {
+                                Save::get(world).unwrap().finish_building_ladder();
                             }
                             Save::clear(world).unwrap();
                             GameState::MainMenu.change(world);
@@ -287,14 +282,21 @@ impl BattlePlugin {
                                     [0]
                                 .to_ladder_string();
                             let team = ron::to_string(&save.climb.team).unwrap();
-                            beat_ladder(save.get_ladder_id().unwrap(), level, team);
+                            let mut levels = save.climb.levels.clone();
+                            levels.push(level);
+                            beat_ladder(save.get_ladder_id().unwrap(), levels, team);
                             Save::clear(world).unwrap();
                             GameState::MainMenu.change(world);
                         }
-                        BattleEnd::LadderGenerate(_) => {
+                        BattleEnd::LadderGenerate(level) => {
+                            let generate_amount = match level {
+                                ..=3 => 3,
+                                4..=8 => 2,
+                                _ => 1,
+                            };
                             let teams = RatingPlugin::generate_weakest_opponent(
                                 &Save::get(world).unwrap().climb.team,
-                                3,
+                                generate_amount,
                                 world,
                             )
                             .iter()

@@ -14,6 +14,7 @@ use spacetimedb_sdk::{
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct FinishBuildingLadderArgs {
+    pub levels: Vec<String>,
     pub owner_team: String,
 }
 
@@ -22,27 +23,29 @@ impl Reducer for FinishBuildingLadderArgs {
 }
 
 #[allow(unused)]
-pub fn finish_building_ladder(owner_team: String) {
-    FinishBuildingLadderArgs { owner_team }.invoke();
+pub fn finish_building_ladder(levels: Vec<String>, owner_team: String) {
+    FinishBuildingLadderArgs { levels, owner_team }.invoke();
 }
 
 #[allow(unused)]
 pub fn on_finish_building_ladder(
-    mut __callback: impl FnMut(&Identity, Option<Address>, &Status, &String) + Send + 'static,
+    mut __callback: impl FnMut(&Identity, Option<Address>, &Status, &Vec<String>, &String)
+        + Send
+        + 'static,
 ) -> ReducerCallbackId<FinishBuildingLadderArgs> {
     FinishBuildingLadderArgs::on_reducer(move |__identity, __addr, __status, __args| {
-        let FinishBuildingLadderArgs { owner_team } = __args;
-        __callback(__identity, __addr, __status, owner_team);
+        let FinishBuildingLadderArgs { levels, owner_team } = __args;
+        __callback(__identity, __addr, __status, levels, owner_team);
     })
 }
 
 #[allow(unused)]
 pub fn once_on_finish_building_ladder(
-    __callback: impl FnOnce(&Identity, Option<Address>, &Status, &String) + Send + 'static,
+    __callback: impl FnOnce(&Identity, Option<Address>, &Status, &Vec<String>, &String) + Send + 'static,
 ) -> ReducerCallbackId<FinishBuildingLadderArgs> {
     FinishBuildingLadderArgs::once_on_reducer(move |__identity, __addr, __status, __args| {
-        let FinishBuildingLadderArgs { owner_team } = __args;
-        __callback(__identity, __addr, __status, owner_team);
+        let FinishBuildingLadderArgs { levels, owner_team } = __args;
+        __callback(__identity, __addr, __status, levels, owner_team);
     })
 }
 

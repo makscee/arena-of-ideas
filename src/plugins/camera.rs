@@ -61,7 +61,7 @@ impl CameraPlugin {
         time: Res<Time>,
     ) {
         let (mut projection, camera) = projection.single_mut();
-        let mut width = 15.0_f32;
+        let mut width = 25.0_f32;
         let aspect_ratio = camera
             .logical_target_size()
             .and_then(|v| Some(v.x / v.y))

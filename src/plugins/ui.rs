@@ -96,7 +96,7 @@ impl UiPlugin {
             style.spacing.window_margin = 0.0.into();
             // dbg!(style.visuals.widgets.hovered);
             style.visuals.widgets.inactive = WidgetVisuals {
-                bg_fill: black(),
+                bg_fill: white(),
                 weak_bg_fill: black(),
                 bg_stroke: Stroke::new(1.0, white()),
                 rounding: Rounding::same(0.0),

@@ -27,7 +27,7 @@ pub enum RunMode {
 fn main() {
     let args = Args::try_parse().unwrap_or_default();
     let next_state = match args.mode {
-        RunMode::Regular => GameState::Login,
+        RunMode::Regular => GameState::MainMenu,
         RunMode::Custom => GameState::CustomBattle,
         RunMode::Continue => GameState::Shop,
         RunMode::Test => GameState::TestsLoading,

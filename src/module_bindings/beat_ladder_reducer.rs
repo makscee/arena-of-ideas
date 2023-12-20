@@ -15,7 +15,7 @@ use spacetimedb_sdk::{
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct BeatLadderArgs {
     pub ladder_id: u64,
-    pub level: String,
+    pub levels: Vec<String>,
     pub owner_team: String,
 }
 
@@ -24,10 +24,10 @@ impl Reducer for BeatLadderArgs {
 }
 
 #[allow(unused)]
-pub fn beat_ladder(ladder_id: u64, level: String, owner_team: String) {
+pub fn beat_ladder(ladder_id: u64, levels: Vec<String>, owner_team: String) {
     BeatLadderArgs {
         ladder_id,
-        level,
+        levels,
         owner_team,
     }
     .invoke();
@@ -35,33 +35,33 @@ pub fn beat_ladder(ladder_id: u64, level: String, owner_team: String) {
 
 #[allow(unused)]
 pub fn on_beat_ladder(
-    mut __callback: impl FnMut(&Identity, Option<Address>, &Status, &u64, &String, &String)
+    mut __callback: impl FnMut(&Identity, Option<Address>, &Status, &u64, &Vec<String>, &String)
         + Send
         + 'static,
 ) -> ReducerCallbackId<BeatLadderArgs> {
     BeatLadderArgs::on_reducer(move |__identity, __addr, __status, __args| {
         let BeatLadderArgs {
             ladder_id,
-            level,
+            levels,
             owner_team,
         } = __args;
-        __callback(__identity, __addr, __status, ladder_id, level, owner_team);
+        __callback(__identity, __addr, __status, ladder_id, levels, owner_team);
     })
 }
 
 #[allow(unused)]
 pub fn once_on_beat_ladder(
-    __callback: impl FnOnce(&Identity, Option<Address>, &Status, &u64, &String, &String)
+    __callback: impl FnOnce(&Identity, Option<Address>, &Status, &u64, &Vec<String>, &String)
         + Send
         + 'static,
 ) -> ReducerCallbackId<BeatLadderArgs> {
     BeatLadderArgs::once_on_reducer(move |__identity, __addr, __status, __args| {
         let BeatLadderArgs {
             ladder_id,
-            level,
+            levels,
             owner_team,
         } = __args;
-        __callback(__identity, __addr, __status, ladder_id, level, owner_team);
+        __callback(__identity, __addr, __status, ladder_id, levels, owner_team);
     })
 }
 

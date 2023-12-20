@@ -1,4 +1,4 @@
-use crate::module_bindings::add_ladder_levels;
+use crate::module_bindings::finish_building_ladder;
 
 use super::*;
 
@@ -41,17 +41,10 @@ impl Save {
         self.climb.team = team;
         self
     }
-    pub fn get_ladder_id(&self) -> Result<u64> {
+    pub fn get_ladder_id(&self) -> Option<u64> {
         match self.mode {
-            GameMode::NewLadder => {
-                let identity = identity()?;
-                Ok(TableLadder::find(|l| {
-                    l.creator == identity && l.status.eq(&module_bindings::LadderStatus::Building)
-                })
-                .context("Failed to find ladder")?
-                .id)
-            }
-            GameMode::RandomLadder { ladder_id } => Ok(ladder_id),
+            GameMode::NewLadder => None,
+            GameMode::RandomLadder { ladder_id } => Some(ladder_id),
         }
     }
     pub fn add_ladder_levels(&mut self, levels: Vec<String>) -> &mut Self {
@@ -59,29 +52,20 @@ impl Save {
         self.climb.levels.extend(levels.clone());
         self
     }
+    pub fn finish_building_ladder(&mut self) -> &mut Self {
+        if matches!(self.mode, GameMode::NewLadder) && LoginPlugin::is_connected() {
+            let team = ron::to_string(&self.climb.team).unwrap();
+            debug!("Finish building ladder {team}");
+            finish_building_ladder(self.climb.levels[..self.climb.defeated].to_vec(), team);
+        }
+        self
+    }
     pub fn ladder(&self) -> Option<TableLadder> {
-        let ladder_id = self.get_ladder_id().ok()?;
+        let ladder_id = self.get_ladder_id()?;
         TableLadder::filter_by_id(ladder_id)
     }
     pub fn register_victory(&mut self) -> &mut Self {
-        if matches!(self.mode, GameMode::NewLadder) {
-            if let Ok(ladder_id) = self.get_ladder_id() {
-                add_ladder_levels(
-                    ladder_id,
-                    vec![self.climb.levels[self.climb.defeated].clone()],
-                )
-            }
-        }
         self.climb.defeated += 1;
-        self
-    }
-    pub fn register_defeat(&mut self) -> &mut Self {
-        if matches!(self.mode, GameMode::NewLadder) {
-            add_ladder_levels(
-                self.get_ladder_id().unwrap(),
-                vec![self.climb.levels[self.climb.defeated].clone()],
-            )
-        }
         self
     }
     pub fn store_current(world: &mut World) -> Result<()> {
