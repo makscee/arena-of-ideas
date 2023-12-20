@@ -399,16 +399,13 @@ impl ShopPlugin {
                             }
                         });
 
-                        if can_expand {
-                            if if data.enemy_panel_expanded {
+                        if can_expand && if data.enemy_panel_expanded {
                                 ui.button_primary("EXPAND")
                             } else {
                                 ui.button("EXPAND")
                             }
-                            .clicked()
-                            {
-                                data.enemy_panel_expanded = !data.enemy_panel_expanded;
-                            }
+                            .clicked() {
+                            data.enemy_panel_expanded = !data.enemy_panel_expanded;
                         }
                         ui.with_layout(Layout::right_to_left(egui::Align::Min), |ui| {
                             if ui.button_primary(RichText::new("GO").heading()).clicked() {

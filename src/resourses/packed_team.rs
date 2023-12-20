@@ -107,8 +107,7 @@ impl PackedTeam {
         let mut result: Vec<(PackedUnit, usize)> = default();
         for unit in &self.units {
             if result
-                .last()
-                .and_then(|(u, _)| Some(u.eq(unit)))
+                .last().map(|(u, _)| u.eq(unit))
                 .unwrap_or_default()
             {
                 result.last_mut().unwrap().1 += 1;
