@@ -1,4 +1,4 @@
-use crate::module_bindings::{set_email, set_name, LadderStatus, User};
+use crate::module_bindings::{set_email, set_name, TowerStatus, User};
 
 use super::*;
 
@@ -24,12 +24,12 @@ impl ProfilePlugin {
     pub fn ui(world: &mut World) {
         window("PROFILE").show(&egui_context(world), |ui| {
             if let Ok(identity) = identity() {
-                let own_ladder_length = TableLadder::filter_by_creator(identity.clone())
-                    .find(|l| matches!(l.status, LadderStatus::Fresh(..)))
+                let own_tower_length = TableTower::filter_by_creator(identity.clone())
+                    .find(|l| matches!(l.status, TowerStatus::Fresh(..)))
                     .map(|l| l.levels.len())
                     .unwrap_or_default();
-                let beaten_ladders = TableLadder::filter_by_owner(identity.clone())
-                    .filter(|l| matches!(l.status, LadderStatus::Beaten(..)))
+                let beaten_towers = TableTower::filter_by_owner(identity.clone())
+                    .filter(|l| matches!(l.status, TowerStatus::Beaten(..)))
                     .collect_vec();
                 frame(ui, |ui| {
                     let user = &mut world.resource_mut::<ProfileEditData>().user;
@@ -56,19 +56,19 @@ impl ProfilePlugin {
                 });
                 frame(ui, |ui| {
                     text_dots_text(
-                        &"Own ladder length".to_colored(),
-                        &own_ladder_length.to_string().add_color(white()),
+                        &"Own tower length".to_colored(),
+                        &own_tower_length.to_string().add_color(white()),
                         ui,
                     );
                     text_dots_text(
-                        &"Beaten ladders count".to_colored(),
-                        &beaten_ladders.len().to_string().add_color(white()),
+                        &"Beaten towers count".to_colored(),
+                        &beaten_towers.len().to_string().add_color(white()),
                         ui,
                     );
-                    for (i, ladder) in beaten_ladders.into_iter().enumerate() {
-                        ui.collapsing(format!("{}. {} levels", i + 1, ladder.levels.len()), |ui| {
-                            for level in ladder.levels.iter() {
-                                ui.label(PackedTeam::from_ladder_string(level, world).to_string());
+                    for (i, tower) in beaten_towers.into_iter().enumerate() {
+                        ui.collapsing(format!("{}. {} levels", i + 1, tower.levels.len()), |ui| {
+                            for level in tower.levels.iter() {
+                                ui.label(PackedTeam::from_tower_string(level, world).to_string());
                             }
                         });
                     }

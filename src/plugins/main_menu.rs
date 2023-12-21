@@ -44,33 +44,31 @@ impl MainMenuPlugin {
                 frame(ui, |ui| {
                     if LoginPlugin::is_connected() {
                         let identity = identity().unwrap();
-                        let has_own = TableLadder::filter_by_creator(identity.clone())
+                        let has_own = TableTower::filter_by_creator(identity.clone())
                             .next()
                             .is_some();
                         ui.set_enabled(has_own);
                         if ui
-                            .button("RANDOM LADDDER")
-                            .on_hover_text("Play ladder that belongs to other random player")
-                            .on_disabled_hover_text("Create at least one ladder, click New Ladder")
+                            .button("RANDOM TOWER")
+                            .on_hover_text("Play tower that belongs to other random player")
+                            .on_disabled_hover_text("Create at least one tower, click New Tower")
                             .clicked()
                         {
-                            if let Some(ladder) = TableLadder::iter()
+                            if let Some(tower) = TableTower::iter()
                                 .filter(|l| l.owner != identity)
                                 .choose(&mut thread_rng())
                             {
-                                let team = match ladder.status {
-                                    module_bindings::LadderStatus::Fresh(team)
-                                    | module_bindings::LadderStatus::Beaten(team) => {
+                                let team = match tower.status {
+                                    module_bindings::TowerStatus::Fresh(team)
+                                    | module_bindings::TowerStatus::Beaten(team) => {
                                         ron::from_str::<PackedTeam>(&team).unwrap()
                                     }
                                 };
                                 let save = Save {
-                                    mode: GameMode::RandomLadder {
-                                        ladder_id: ladder.id,
-                                    },
-                                    climb: LadderClimb {
+                                    mode: GameMode::RandomTower { tower_id: tower.id },
+                                    climb: TowerClimb {
                                         team: default(),
-                                        levels: ladder.levels,
+                                        levels: tower.levels,
                                         defeated: default(),
                                         shop: ShopState::new(world),
                                         owner_team: Some(team),
@@ -107,9 +105,9 @@ New levels generated considering your teams strength",
                         .clicked()
                     {
                         Save {
-                            mode: GameMode::NewLadder,
-                            climb: LadderClimb {
-                                levels: Options::get_initial_ladder(world).levels.clone(),
+                            mode: GameMode::NewTower,
+                            climb: TowerClimb {
+                                levels: Options::get_initial_tower(world).levels.clone(),
                                 shop: ShopState::new(world),
                                 team: default(),
                                 owner_team: default(),

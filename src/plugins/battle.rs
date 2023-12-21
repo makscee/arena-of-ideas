@@ -1,6 +1,6 @@
 use bevy_egui::egui::{Align2, Window};
 
-use crate::module_bindings::beat_ladder;
+use crate::module_bindings::beat_tower;
 
 use super::*;
 
@@ -26,8 +26,8 @@ pub struct BattleData {
 #[derive(Clone, Copy)]
 pub enum BattleEnd {
     Defeat(usize, usize, bool),
-    LadderBeaten(usize),
-    LadderGenerate(usize),
+    TowerBeaten(usize),
+    TowerGenerate(usize),
     Victory(usize, usize),
 }
 
@@ -49,19 +49,19 @@ impl BattlePlugin {
     fn process_battle_result(result: BattleResult, world: &mut World) -> Result<()> {
         let save = Save::get(world)?;
         let level = save.climb.defeated + 1;
-        let total = Ladder::total_levels(world);
+        let total = Tower::total_levels(world);
         let mut bd = world.resource_mut::<BattleData>();
         bd.end = match result {
             BattleResult::Tbd => panic!("Failed to get BattleResult"),
             BattleResult::Left(_) | BattleResult::Even => match level == total {
                 true => match save.mode {
-                    GameMode::NewLadder => BattleEnd::LadderGenerate(level),
-                    GameMode::RandomLadder { .. } => BattleEnd::LadderBeaten(level),
+                    GameMode::NewTower => BattleEnd::TowerGenerate(level),
+                    GameMode::RandomTower { .. } => BattleEnd::TowerBeaten(level),
                 },
                 false => BattleEnd::Victory(level, total),
             },
             BattleResult::Right(_) => {
-                let finish_building = save.mode == GameMode::NewLadder;
+                let finish_building = save.mode == GameMode::NewTower;
                 BattleEnd::Defeat(level, total, finish_building)
             }
         };
@@ -219,20 +219,20 @@ impl BattlePlugin {
         let text = match end {
             BattleEnd::Defeat(level, total, finished_building) => {
                 if finished_building {
-                    format!("Defeat. New ladder is {level} levels")
+                    format!("Defeat. New tower is {level} levels")
                 } else {
                     format!("Defeat. Reached level {level}/{total}")
                 }
             }
-            BattleEnd::LadderBeaten(level) => format!("Victory! Ladder beaten! {level}/{level}"),
-            BattleEnd::LadderGenerate(..) => "Victory! New levels will be generated.".to_string(),
+            BattleEnd::TowerBeaten(level) => format!("Victory! Tower beaten! {level}/{level}"),
+            BattleEnd::TowerGenerate(..) => "Victory! New levels will be generated.".to_string(),
             BattleEnd::Victory(level, total) => format!("Victory! {level}/{total}"),
         };
         let color = match end {
             BattleEnd::Defeat(..) => hex_color!("#FF1744"),
-            BattleEnd::LadderBeaten(_)
-            | BattleEnd::LadderGenerate(_)
-            | BattleEnd::Victory(_, _) => hex_color!("#00E5FF"),
+            BattleEnd::TowerBeaten(_) | BattleEnd::TowerGenerate(_) | BattleEnd::Victory(_, _) => {
+                hex_color!("#00E5FF")
+            }
         };
 
         Window::new(
@@ -270,25 +270,25 @@ impl BattlePlugin {
                     match end {
                         BattleEnd::Defeat(_, _, new) => {
                             if new && LoginPlugin::is_connected() {
-                                Save::get(world).unwrap().finish_building_ladder();
+                                Save::get(world).unwrap().finish_building_tower();
                             }
                             Save::clear(world).unwrap();
                             GameState::MainMenu.change(world);
                         }
-                        BattleEnd::LadderBeaten(_) => {
+                        BattleEnd::TowerBeaten(_) => {
                             let save = Save::get(world).unwrap();
                             let level =
                                 RatingPlugin::generate_weakest_opponent(&save.climb.team, 1, world)
                                     [0]
-                                .to_ladder_string();
+                                .to_tower_string();
                             let team = ron::to_string(&save.climb.team).unwrap();
                             let mut levels = save.climb.levels.clone();
                             levels.push(level);
-                            beat_ladder(save.get_ladder_id().unwrap(), levels, team);
+                            beat_tower(save.get_tower_id().unwrap(), levels, team);
                             Save::clear(world).unwrap();
                             GameState::MainMenu.change(world);
                         }
-                        BattleEnd::LadderGenerate(level) => {
+                        BattleEnd::TowerGenerate(level) => {
                             let generate_amount = match level {
                                 ..=3 => 3,
                                 4..=8 => 2,
@@ -300,12 +300,12 @@ impl BattlePlugin {
                                 world,
                             )
                             .iter()
-                            .map(|l| l.to_ladder_string())
+                            .map(|l| l.to_tower_string())
                             .collect_vec();
                             Save::get(world)
                                 .unwrap()
                                 .register_victory()
-                                .add_ladder_levels(teams)
+                                .add_tower_levels(teams)
                                 .save(world)
                                 .unwrap();
                             GameState::Shop.change(world);

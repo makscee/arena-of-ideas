@@ -1,19 +1,19 @@
-use crate::module_bindings::finish_building_ladder;
+use crate::module_bindings::finish_building_tower;
 
 use super::*;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Save {
     pub mode: GameMode,
-    pub climb: LadderClimb,
+    pub climb: TowerClimb,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, Eq)]
 pub enum GameMode {
     #[default]
-    NewLadder,
-    RandomLadder {
-        ladder_id: u64,
+    NewTower,
+    RandomTower {
+        tower_id: u64,
     },
 }
 
@@ -41,28 +41,28 @@ impl Save {
         self.climb.team = team;
         self
     }
-    pub fn get_ladder_id(&self) -> Option<u64> {
+    pub fn get_tower_id(&self) -> Option<u64> {
         match self.mode {
-            GameMode::NewLadder => None,
-            GameMode::RandomLadder { ladder_id } => Some(ladder_id),
+            GameMode::NewTower => None,
+            GameMode::RandomTower { tower_id } => Some(tower_id),
         }
     }
-    pub fn add_ladder_levels(&mut self, levels: Vec<String>) -> &mut Self {
-        debug!("New ladder levels: {levels:#?}");
+    pub fn add_tower_levels(&mut self, levels: Vec<String>) -> &mut Self {
+        debug!("New tower levels: {levels:#?}");
         self.climb.levels.extend(levels.clone());
         self
     }
-    pub fn finish_building_ladder(&mut self) -> &mut Self {
-        if matches!(self.mode, GameMode::NewLadder) && LoginPlugin::is_connected() {
+    pub fn finish_building_tower(&mut self) -> &mut Self {
+        if matches!(self.mode, GameMode::NewTower) && LoginPlugin::is_connected() {
             let team = ron::to_string(&self.climb.team).unwrap();
-            debug!("Finish building ladder {team}");
-            finish_building_ladder(self.climb.levels[..self.climb.defeated].to_vec(), team);
+            debug!("Finish building tower {team}");
+            finish_building_tower(self.climb.levels[..self.climb.defeated].to_vec(), team);
         }
         self
     }
-    pub fn ladder(&self) -> Option<TableLadder> {
-        let ladder_id = self.get_ladder_id()?;
-        TableLadder::filter_by_id(ladder_id)
+    pub fn tower(&self) -> Option<TableTower> {
+        let tower_id = self.get_tower_id()?;
+        TableTower::filter_by_id(tower_id)
     }
     pub fn register_victory(&mut self) -> &mut Self {
         self.climb.defeated += 1;

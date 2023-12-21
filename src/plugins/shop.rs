@@ -205,7 +205,7 @@ impl ShopPlugin {
                 selected: default(),
             },
         };
-        let (next_team, next_level_num) = Ladder::load_current(world);
+        let (next_team, next_level_num) = Tower::load_current(world);
         let next_team_cards = next_team.get_cards(world);
         world.insert_resource(ShopData {
             next_team_cards,
@@ -230,7 +230,7 @@ impl ShopPlugin {
 
     fn transition_to_battle(world: &mut World) {
         let left = Self::active_team(world).unwrap();
-        let (right, ind) = Ladder::load_current(world);
+        let (right, ind) = Tower::load_current(world);
         BattlePlugin::load_teams(left, right, Some(ind), world);
     }
 
@@ -374,7 +374,7 @@ impl ShopPlugin {
                             format!(
                                 "Level {}/{}",
                                 data.next_level_num,
-                                Ladder::total_levels(world)
+                                Tower::total_levels(world)
                             )
                             .add_color(white())
                             .rich_text(),

@@ -27,12 +27,12 @@ impl LeaderboardPlugin {
     pub fn load(world: &mut World) {
         let mut count: HashMap<Identity, usize> = default();
         let mut length: HashMap<Identity, usize> = default();
-        for ladder in TableLadder::iter() {
-            *count.entry(ladder.owner.clone()).or_default() += 1;
+        for tower in TableTower::iter() {
+            *count.entry(tower.owner.clone()).or_default() += 1;
             length
-                .entry(ladder.owner)
-                .and_modify(|v| *v = ladder.levels.len().max(*v))
-                .or_insert(ladder.levels.len());
+                .entry(tower.owner)
+                .and_modify(|v| *v = tower.levels.len().max(*v))
+                .or_insert(tower.levels.len());
         }
         let mut lb = LeaderboardData::default();
         let top = lb.data.entry(LeaderboardType::Count).or_default();

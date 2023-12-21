@@ -13,20 +13,20 @@ use spacetimedb_sdk::{
 };
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
-pub struct BeatLadderArgs {
-    pub ladder_id: u64,
+pub struct BeatTowerArgs {
+    pub tower_id: u64,
     pub levels: Vec<String>,
     pub owner_team: String,
 }
 
-impl Reducer for BeatLadderArgs {
-    const REDUCER_NAME: &'static str = "beat_ladder";
+impl Reducer for BeatTowerArgs {
+    const REDUCER_NAME: &'static str = "beat_tower";
 }
 
 #[allow(unused)]
-pub fn beat_ladder(ladder_id: u64, levels: Vec<String>, owner_team: String) {
-    BeatLadderArgs {
-        ladder_id,
+pub fn beat_tower(tower_id: u64, levels: Vec<String>, owner_team: String) {
+    BeatTowerArgs {
+        tower_id,
         levels,
         owner_team,
     }
@@ -34,38 +34,38 @@ pub fn beat_ladder(ladder_id: u64, levels: Vec<String>, owner_team: String) {
 }
 
 #[allow(unused)]
-pub fn on_beat_ladder(
+pub fn on_beat_tower(
     mut __callback: impl FnMut(&Identity, Option<Address>, &Status, &u64, &Vec<String>, &String)
         + Send
         + 'static,
-) -> ReducerCallbackId<BeatLadderArgs> {
-    BeatLadderArgs::on_reducer(move |__identity, __addr, __status, __args| {
-        let BeatLadderArgs {
-            ladder_id,
+) -> ReducerCallbackId<BeatTowerArgs> {
+    BeatTowerArgs::on_reducer(move |__identity, __addr, __status, __args| {
+        let BeatTowerArgs {
+            tower_id,
             levels,
             owner_team,
         } = __args;
-        __callback(__identity, __addr, __status, ladder_id, levels, owner_team);
+        __callback(__identity, __addr, __status, tower_id, levels, owner_team);
     })
 }
 
 #[allow(unused)]
-pub fn once_on_beat_ladder(
+pub fn once_on_beat_tower(
     __callback: impl FnOnce(&Identity, Option<Address>, &Status, &u64, &Vec<String>, &String)
         + Send
         + 'static,
-) -> ReducerCallbackId<BeatLadderArgs> {
-    BeatLadderArgs::once_on_reducer(move |__identity, __addr, __status, __args| {
-        let BeatLadderArgs {
-            ladder_id,
+) -> ReducerCallbackId<BeatTowerArgs> {
+    BeatTowerArgs::once_on_reducer(move |__identity, __addr, __status, __args| {
+        let BeatTowerArgs {
+            tower_id,
             levels,
             owner_team,
         } = __args;
-        __callback(__identity, __addr, __status, ladder_id, levels, owner_team);
+        __callback(__identity, __addr, __status, tower_id, levels, owner_team);
     })
 }
 
 #[allow(unused)]
-pub fn remove_on_beat_ladder(id: ReducerCallbackId<BeatLadderArgs>) {
-    BeatLadderArgs::remove_on_reducer(id);
+pub fn remove_on_beat_tower(id: ReducerCallbackId<BeatTowerArgs>) {
+    BeatTowerArgs::remove_on_reducer(id);
 }

@@ -15,7 +15,7 @@ impl PackedTeam {
             state: default(),
         }
     }
-    pub fn from_ladder_string(text: &str, world: &World) -> Self {
+    pub fn from_tower_string(text: &str, world: &World) -> Self {
         let split = text.split('_').collect_vec();
         let name = split[0];
         let count: usize = split[1].parse().unwrap();
@@ -30,13 +30,13 @@ impl PackedTeam {
             ..default()
         }
     }
-    pub fn to_ladder_string(&self) -> String {
+    pub fn to_tower_string(&self) -> String {
         if !self.units.first().unwrap().eq(self.units.last().unwrap()) {
-            panic!("Ladder team should contain same units {self:#?}");
+            panic!("Tower team should contain same units {self:#?}");
         }
         let unit = &self.units[0];
         if unit.statuses.len() > 1 {
-            panic!("Ladder team can only have one status");
+            panic!("Tower team can only have one status");
         }
         let status = unit
             .statuses

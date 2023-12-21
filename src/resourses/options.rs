@@ -8,8 +8,8 @@ pub struct Options {
     pub status: Handle<Representation>,
     #[asset(key = "slot.rep")]
     pub slot: Handle<Representation>,
-    #[asset(key = "initial.ladder")]
-    pub initial_ladder: Handle<Ladder>,
+    #[asset(key = "initial.tower")]
+    pub initial_tower: Handle<Tower>,
     #[asset(key = "custom.battle")]
     pub custom_battle: Handle<CustomBattleData>,
     #[asset(key = "anim")]
@@ -68,11 +68,11 @@ impl Options {
             .get(&world.get_resource::<Options>().unwrap().animations)
             .unwrap()
     }
-    pub fn get_initial_ladder(world: &World) -> &Ladder {
+    pub fn get_initial_tower(world: &World) -> &Tower {
         world
-            .get_resource::<Assets<Ladder>>()
+            .get_resource::<Assets<Tower>>()
             .unwrap()
-            .get(&world.get_resource::<Options>().unwrap().initial_ladder)
+            .get(&world.get_resource::<Options>().unwrap().initial_tower)
             .unwrap()
     }
 }

@@ -13,43 +13,43 @@ use spacetimedb_sdk::{
 };
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
-pub struct FinishBuildingLadderArgs {
+pub struct FinishBuildingTowerArgs {
     pub levels: Vec<String>,
     pub owner_team: String,
 }
 
-impl Reducer for FinishBuildingLadderArgs {
-    const REDUCER_NAME: &'static str = "finish_building_ladder";
+impl Reducer for FinishBuildingTowerArgs {
+    const REDUCER_NAME: &'static str = "finish_building_tower";
 }
 
 #[allow(unused)]
-pub fn finish_building_ladder(levels: Vec<String>, owner_team: String) {
-    FinishBuildingLadderArgs { levels, owner_team }.invoke();
+pub fn finish_building_tower(levels: Vec<String>, owner_team: String) {
+    FinishBuildingTowerArgs { levels, owner_team }.invoke();
 }
 
 #[allow(unused)]
-pub fn on_finish_building_ladder(
+pub fn on_finish_building_tower(
     mut __callback: impl FnMut(&Identity, Option<Address>, &Status, &Vec<String>, &String)
         + Send
         + 'static,
-) -> ReducerCallbackId<FinishBuildingLadderArgs> {
-    FinishBuildingLadderArgs::on_reducer(move |__identity, __addr, __status, __args| {
-        let FinishBuildingLadderArgs { levels, owner_team } = __args;
+) -> ReducerCallbackId<FinishBuildingTowerArgs> {
+    FinishBuildingTowerArgs::on_reducer(move |__identity, __addr, __status, __args| {
+        let FinishBuildingTowerArgs { levels, owner_team } = __args;
         __callback(__identity, __addr, __status, levels, owner_team);
     })
 }
 
 #[allow(unused)]
-pub fn once_on_finish_building_ladder(
+pub fn once_on_finish_building_tower(
     __callback: impl FnOnce(&Identity, Option<Address>, &Status, &Vec<String>, &String) + Send + 'static,
-) -> ReducerCallbackId<FinishBuildingLadderArgs> {
-    FinishBuildingLadderArgs::once_on_reducer(move |__identity, __addr, __status, __args| {
-        let FinishBuildingLadderArgs { levels, owner_team } = __args;
+) -> ReducerCallbackId<FinishBuildingTowerArgs> {
+    FinishBuildingTowerArgs::once_on_reducer(move |__identity, __addr, __status, __args| {
+        let FinishBuildingTowerArgs { levels, owner_team } = __args;
         __callback(__identity, __addr, __status, levels, owner_team);
     })
 }
 
 #[allow(unused)]
-pub fn remove_on_finish_building_ladder(id: ReducerCallbackId<FinishBuildingLadderArgs>) {
-    FinishBuildingLadderArgs::remove_on_reducer(id);
+pub fn remove_on_finish_building_tower(id: ReducerCallbackId<FinishBuildingTowerArgs>) {
+    FinishBuildingTowerArgs::remove_on_reducer(id);
 }

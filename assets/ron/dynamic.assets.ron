@@ -3,8 +3,8 @@
         "unit.rep": File(path: "ron/unit.rep.ron"),
         "status.rep": File(path: "ron/status.rep.ron"),
         "slot.rep": File(path: "ron/slot.rep.ron"),
-        "initial.ladder": File(
-            path: "ron/initial.ladder.ron",
+        "initial.tower": File(
+            path: "ron/initial.tower.ron",
         ),
         "pool.heroes": Folder(path: "ron/heroes"),
         "pool.enemies": Folder(path: "ron/enemies"),

@@ -80,7 +80,7 @@ fn main() {
         .add_plugins(RonAssetPlugin::<Animations>::new(&["anim.ron"]))
         .add_plugins(RonAssetPlugin::<TestScenario>::new(&["scenario.ron"]))
         .add_plugins(RonAssetPlugin::<Vfx>::new(&["vfx.ron"]))
-        .add_plugins(RonAssetPlugin::<Ladder>::new(&["ladder.ron"]))
+        .add_plugins(RonAssetPlugin::<Tower>::new(&["tower.ron"]))
         .add_plugins((
             MainMenuPlugin,
             RestartPlugin,

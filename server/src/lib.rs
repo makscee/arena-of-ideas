@@ -1,4 +1,4 @@
-mod ladder;
+mod tower;
 mod user;
 
 use anyhow::Context;

@@ -20,32 +20,32 @@ use spacetimedb_sdk::{
 };
 use std::sync::Arc;
 
-pub mod beat_ladder_reducer;
-pub mod finish_building_ladder_reducer;
-pub mod ladder;
-pub mod ladder_status;
+pub mod beat_tower_reducer;
+pub mod finish_building_tower_reducer;
 pub mod set_email_reducer;
 pub mod set_name_reducer;
-pub mod sync_ladder_levels_reducer;
+pub mod sync_tower_levels_reducer;
+pub mod tower;
+pub mod tower_status;
 pub mod user;
 
-pub use beat_ladder_reducer::*;
-pub use finish_building_ladder_reducer::*;
-pub use ladder::*;
-pub use ladder_status::*;
+pub use beat_tower_reducer::*;
+pub use finish_building_tower_reducer::*;
 pub use set_email_reducer::*;
 pub use set_name_reducer::*;
-pub use sync_ladder_levels_reducer::*;
+pub use sync_tower_levels_reducer::*;
+pub use tower::*;
+pub use tower_status::*;
 pub use user::*;
 
 #[allow(unused)]
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub enum ReducerEvent {
-    BeatLadder(beat_ladder_reducer::BeatLadderArgs),
-    FinishBuildingLadder(finish_building_ladder_reducer::FinishBuildingLadderArgs),
+    BeatTower(beat_tower_reducer::BeatTowerArgs),
+    FinishBuildingTower(finish_building_tower_reducer::FinishBuildingTowerArgs),
     SetEmail(set_email_reducer::SetEmailArgs),
     SetName(set_name_reducer::SetNameArgs),
-    SyncLadderLevels(sync_ladder_levels_reducer::SyncLadderLevelsArgs),
+    SyncTowerLevels(sync_tower_levels_reducer::SyncTowerLevelsArgs),
 }
 
 #[allow(unused)]
@@ -59,8 +59,8 @@ impl SpacetimeModule for Module {
     ) {
         let table_name = &table_update.table_name[..];
         match table_name {
-            "Ladder" => client_cache
-                .handle_table_update_with_primary_key::<ladder::Ladder>(callbacks, table_update),
+            "Tower" => client_cache
+                .handle_table_update_with_primary_key::<tower::Tower>(callbacks, table_update),
             "User" => client_cache
                 .handle_table_update_with_primary_key::<user::User>(callbacks, table_update),
             _ => {
@@ -75,7 +75,7 @@ impl SpacetimeModule for Module {
         reducer_event: Option<Arc<AnyReducerEvent>>,
         state: &Arc<ClientCache>,
     ) {
-        reminders.invoke_callbacks::<ladder::Ladder>(worker, &reducer_event, state);
+        reminders.invoke_callbacks::<tower::Tower>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<user::User>(worker, &reducer_event, state);
     }
     fn handle_event(
@@ -90,11 +90,11 @@ impl SpacetimeModule for Module {
         };
         #[allow(clippy::match_single_binding)]
 match &function_call.reducer[..] {
-						"beat_ladder" => _reducer_callbacks.handle_event_of_type::<beat_ladder_reducer::BeatLadderArgs, ReducerEvent>(event, _state, ReducerEvent::BeatLadder),
-			"finish_building_ladder" => _reducer_callbacks.handle_event_of_type::<finish_building_ladder_reducer::FinishBuildingLadderArgs, ReducerEvent>(event, _state, ReducerEvent::FinishBuildingLadder),
+						"beat_tower" => _reducer_callbacks.handle_event_of_type::<beat_tower_reducer::BeatTowerArgs, ReducerEvent>(event, _state, ReducerEvent::BeatTower),
+			"finish_building_tower" => _reducer_callbacks.handle_event_of_type::<finish_building_tower_reducer::FinishBuildingTowerArgs, ReducerEvent>(event, _state, ReducerEvent::FinishBuildingTower),
 			"set_email" => _reducer_callbacks.handle_event_of_type::<set_email_reducer::SetEmailArgs, ReducerEvent>(event, _state, ReducerEvent::SetEmail),
 			"set_name" => _reducer_callbacks.handle_event_of_type::<set_name_reducer::SetNameArgs, ReducerEvent>(event, _state, ReducerEvent::SetName),
-			"sync_ladder_levels" => _reducer_callbacks.handle_event_of_type::<sync_ladder_levels_reducer::SyncLadderLevelsArgs, ReducerEvent>(event, _state, ReducerEvent::SyncLadderLevels),
+			"sync_tower_levels" => _reducer_callbacks.handle_event_of_type::<sync_tower_levels_reducer::SyncTowerLevelsArgs, ReducerEvent>(event, _state, ReducerEvent::SyncTowerLevels),
 			unknown => { spacetimedb_sdk::log::error!("Event on an unknown reducer: {:?}", unknown); None }
 }
     }
@@ -106,8 +106,8 @@ match &function_call.reducer[..] {
     ) {
         let table_name = &new_subs.table_name[..];
         match table_name {
-            "Ladder" => {
-                client_cache.handle_resubscribe_for_type::<ladder::Ladder>(callbacks, new_subs)
+            "Tower" => {
+                client_cache.handle_resubscribe_for_type::<tower::Tower>(callbacks, new_subs)
             }
             "User" => client_cache.handle_resubscribe_for_type::<user::User>(callbacks, new_subs),
             _ => {
