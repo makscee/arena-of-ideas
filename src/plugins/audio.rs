@@ -179,6 +179,8 @@ impl AudioPlugin {
                             AudioControls::SkipEnd.show(&mut data, world, ui);
                         });
                     });
+                });
+                frame(ui, |ui| {
                     ui.columns(3, |ui| {
                         ui[0].vertical_centered_justified(|ui| {
                             AudioControls::Speed1.show(&mut data, world, ui);
@@ -211,7 +213,53 @@ enum AudioControls {
 }
 
 impl AudioControls {
-    fn show(self, data: &mut AudioData, world: &mut World, ui: &mut Ui) -> Response {
+    fn show(self, data: &mut AudioData, world: &mut World, ui: &mut Ui) {
+        match &self {
+            AudioControls::Speed1 => {
+                let active = data.speed == 1.0;
+                let text = "x1";
+                if if active {
+                    ui.button_primary(text)
+                } else {
+                    ui.button(text)
+                }
+                .clicked()
+                {
+                    data.speed = 1.0;
+                }
+                return;
+            }
+            AudioControls::Speed2 => {
+                let active = data.speed == 2.0;
+                let text = "x2";
+                if if active {
+                    ui.button_primary(text)
+                } else {
+                    ui.button(text)
+                }
+                .clicked()
+                {
+                    data.speed = 2.0;
+                }
+                return;
+            }
+            AudioControls::Speed3 => {
+                let active = data.speed == 4.0;
+                let text = "x4";
+                if if active {
+                    ui.button_primary(text)
+                } else {
+                    ui.button(text)
+                }
+                .clicked()
+                {
+                    data.speed = 4.0;
+                }
+                return;
+            }
+            _ => {}
+        }
+
         let size = match &self {
             AudioControls::Play
             | AudioControls::Reverse
@@ -237,90 +285,70 @@ impl AudioControls {
                 if clicked {
                     data.need_rate = 1.0;
                 }
-                let fill = if data.need_rate > 0.0 {
-                    yellow()
+                let active = data.need_rate > 0.0;
+                let points = [rect.left_top(), rect.right_center(), rect.left_bottom()];
+                ui.painter().add(egui::Shape::Path(if active {
+                    PathShape::convex_polygon(points.into(), visuals.bg_fill, visuals.bg_stroke)
                 } else {
-                    visuals.bg_fill
-                };
-                ui.painter()
-                    .add(egui::Shape::Path(PathShape::convex_polygon(
-                        [rect.left_top(), rect.right_center(), rect.left_bottom()].into(),
-                        fill,
-                        Stroke::NONE,
-                    )));
+                    PathShape::closed_line(points.into(), visuals.fg_stroke)
+                }));
             }
             AudioControls::Reverse => {
                 if clicked {
                     data.need_rate = -1.0;
                 }
-                let fill = if data.need_rate < 0.0 {
-                    yellow()
+                let active = data.need_rate < 0.0;
+                let points = [rect.right_top(), rect.left_center(), rect.right_bottom()];
+                ui.painter().add(egui::Shape::Path(if active {
+                    PathShape::convex_polygon(points.into(), visuals.bg_fill, visuals.bg_stroke)
                 } else {
-                    visuals.bg_fill
-                };
-                ui.painter()
-                    .add(egui::Shape::Path(PathShape::convex_polygon(
-                        [rect.right_top(), rect.left_center(), rect.right_bottom()].into(),
-                        fill,
-                        Stroke::NONE,
-                    )));
+                    PathShape::closed_line(points.into(), visuals.fg_stroke)
+                }));
             }
             AudioControls::Pause => {
                 if clicked {
                     data.need_rate = 0.0;
                 }
-                let fill = if data.need_rate == 0.0 {
-                    yellow()
-                } else {
-                    visuals.bg_fill
-                };
+                let active = data.need_rate == 0.0;
                 let mut rect1 = rect;
                 *rect1.right_mut() -= rect.width() * 0.6;
                 let mut rect2 = rect;
                 *rect2.left_mut() += rect.width() * 0.6;
 
-                ui.painter().add(Vec::from([
-                    egui::Shape::Rect(RectShape::filled(rect1, Rounding::ZERO, fill)),
-                    egui::Shape::Rect(RectShape::filled(rect2, Rounding::ZERO, fill)),
-                ]));
+                ui.painter().add(if active {
+                    Vec::from([
+                        egui::Shape::Rect(RectShape::filled(
+                            rect1,
+                            Rounding::ZERO,
+                            visuals.bg_fill,
+                        )),
+                        egui::Shape::Rect(RectShape::filled(
+                            rect2,
+                            Rounding::ZERO,
+                            visuals.bg_fill,
+                        )),
+                    ])
+                } else {
+                    Vec::from([
+                        egui::Shape::Rect(RectShape::stroke(
+                            rect1,
+                            Rounding::ZERO,
+                            visuals.fg_stroke,
+                        )),
+                        egui::Shape::Rect(RectShape::stroke(
+                            rect2,
+                            Rounding::ZERO,
+                            visuals.fg_stroke,
+                        )),
+                    ])
+                });
             }
             AudioControls::StepForward => todo!(),
             AudioControls::StepBackward => todo!(),
-            AudioControls::Speed1 => {
-                let fill = if data.speed == 1.0 {
-                    yellow()
-                } else {
-                    visuals.bg_fill
-                };
-                if ui.button("x1".add_color(fill).rich_text()).clicked() {
-                    data.speed = 1.0;
-                }
-            }
-            AudioControls::Speed2 => {
-                let fill = if data.speed == 2.0 {
-                    yellow()
-                } else {
-                    visuals.bg_fill
-                };
-                if ui.button("x2".add_color(fill).rich_text()).clicked() {
-                    data.speed = 2.0;
-                }
-            }
-            AudioControls::Speed3 => {
-                let fill = if data.speed == 4.0 {
-                    yellow()
-                } else {
-                    visuals.bg_fill
-                };
-                if ui.button("x4".add_color(fill).rich_text()).clicked() {
-                    data.speed = 4.0;
-                }
-            }
             AudioControls::SkipStart => {
                 if clicked {
                     GameTimer::get_mut(world).play_head_to(0.0);
                 }
-                let fill = visuals.bg_fill;
                 let mut rect1 = rect;
                 *rect1.right_mut() -= rect.width() * 0.8;
                 let mut rect2 = rect.translate(egui::vec2(rect1.width(), 0.0));
@@ -329,16 +357,14 @@ impl AudioControls {
                 *rect3.left_mut() += rect.width() * 0.6;
 
                 ui.painter().add(Vec::from([
-                    egui::Shape::Rect(RectShape::filled(rect1, Rounding::ZERO, fill)),
-                    egui::Shape::Path(PathShape::convex_polygon(
+                    egui::Shape::Rect(RectShape::stroke(rect1, Rounding::ZERO, visuals.fg_stroke)),
+                    egui::Shape::Path(PathShape::closed_line(
                         [rect2.right_top(), rect2.left_center(), rect2.right_bottom()].into(),
-                        fill,
-                        Stroke::NONE,
+                        visuals.fg_stroke,
                     )),
-                    egui::Shape::Path(PathShape::convex_polygon(
+                    egui::Shape::Path(PathShape::closed_line(
                         [rect3.right_top(), rect3.left_center(), rect3.right_bottom()].into(),
-                        fill,
-                        Stroke::NONE,
+                        visuals.fg_stroke,
                     )),
                 ]));
             }
@@ -346,7 +372,6 @@ impl AudioControls {
                 if clicked {
                     GameTimer::get_mut(world).skip_to_end();
                 }
-                let fill = visuals.bg_fill;
                 let mut rect1 = rect;
                 *rect1.right_mut() -= rect.width() * 0.6;
                 let rect2 = rect1.translate(egui::vec2(rect1.width(), 0.0));
@@ -354,20 +379,18 @@ impl AudioControls {
                 *rect3.left_mut() += rect.width() - rect.width() / 5.0;
 
                 ui.painter().add(Vec::from([
-                    egui::Shape::Path(PathShape::convex_polygon(
+                    egui::Shape::Path(PathShape::closed_line(
                         [rect1.left_top(), rect1.right_center(), rect1.left_bottom()].into(),
-                        fill,
-                        Stroke::NONE,
+                        visuals.fg_stroke,
                     )),
-                    egui::Shape::Path(PathShape::convex_polygon(
+                    egui::Shape::Path(PathShape::closed_line(
                         [rect2.left_top(), rect2.right_center(), rect2.left_bottom()].into(),
-                        fill,
-                        Stroke::NONE,
+                        visuals.fg_stroke,
                     )),
-                    egui::Shape::Rect(RectShape::filled(rect3, Rounding::ZERO, fill)),
+                    egui::Shape::Rect(RectShape::stroke(rect3, Rounding::ZERO, visuals.fg_stroke)),
                 ]));
             }
+            _ => {}
         };
-        response
     }
 }
