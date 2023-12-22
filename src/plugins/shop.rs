@@ -580,6 +580,7 @@ impl ShopOffer {
                                     error!("Buy error: {}", e);
                                 } else {
                                     save.save(world).unwrap();
+                                    ShopPlugin::pack_active_team(world).unwrap();
                                 }
                             }
                         });
