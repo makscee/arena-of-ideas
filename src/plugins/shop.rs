@@ -271,28 +271,24 @@ impl ShopPlugin {
         match &mut data.phase {
             ShopPhase::Buy => {
                 ShopOffer::draw_buy_panels(world);
-                Window::new("reroll")
-                    .fixed_pos(pos)
-                    .collapsible(false)
-                    .title_bar(false)
-                    .resizable(false)
-                    .default_width(10.0)
-                    .show(ctx, |ui| {
+                Area::new("reroll").fixed_pos(pos).show(ctx, |ui| {
+                    ui.set_width(120.0);
+                    frame(ui, |ui| {
                         ui.set_enabled(save.climb.shop.can_afford(REROLL_PRICE));
-                        ui.vertical_centered(|ui| {
-                            let btn = Button::new(
-                                RichText::new(format!("-{}g", REROLL_PRICE))
-                                    .size(20.0)
-                                    .color(hex_color!("#00E5FF"))
-                                    .text_style(egui::TextStyle::Button),
+                        ui.label("Reroll".add_color(white()).rich_text());
+                        if ui
+                            .button(
+                                format!("-{}g", REROLL_PRICE)
+                                    .add_color(yellow())
+                                    .rich_text()
+                                    .size(20.0),
                             )
-                            .min_size(egui::vec2(100.0, 0.0));
-                            ui.label("Reroll");
-                            if ui.add(btn).clicked() {
-                                Self::buy_reroll(world).unwrap();
-                            }
-                        })
+                            .clicked()
+                        {
+                            Self::buy_reroll(world).unwrap();
+                        }
                     });
+                });
             }
             ShopPhase::Sacrifice { selected } => {
                 for unit in UnitPlugin::collect_faction(Faction::Team, world) {
@@ -567,23 +563,23 @@ impl ShopOffer {
                 .show(ctx, |ui| {
                     ui.set_enabled(offer.available && save.climb.shop.can_afford(offer.price));
                     frame(ui, |ui| {
-                        ui.vertical_centered(|ui| {
-                            let btn = Button::new(
-                                RichText::new(format!("-{} g", offer.price))
-                                    .size(20.0)
-                                    .color(yellow())
-                                    .text_style(egui::TextStyle::Button),
+                        ui.set_width(100.0);
+                        if ui
+                            .button(
+                                format!("-{} g", offer.price)
+                                    .add_color(yellow())
+                                    .rich_text()
+                                    .size(20.0),
                             )
-                            .min_size(egui::vec2(100.0, 0.0));
-                            if ui.add(btn).clicked() {
-                                if let Err(e) = save.climb.shop.buy(*entity, world) {
-                                    error!("Buy error: {}", e);
-                                } else {
-                                    save.save(world).unwrap();
-                                    ShopPlugin::pack_active_team(world).unwrap();
-                                }
+                            .clicked()
+                        {
+                            if let Err(e) = save.climb.shop.buy(*entity, world) {
+                                error!("Buy error: {}", e);
+                            } else {
+                                save.save(world).unwrap();
+                                ShopPlugin::pack_active_team(world).unwrap();
                             }
-                        });
+                        }
                     });
                 });
         }

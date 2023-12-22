@@ -5,7 +5,7 @@ pub struct CameraPlugin;
 impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(GameState::MainMenu), Self::respawn_camera)
-            .add_systems(OnEnter(GameState::Battle), Self::respawn_camera)
+            .add_systems(OnEnter(GameState::Loading), Self::respawn_camera)
             .add_systems(
                 Update,
                 Self::adjust_to_fit_units.run_if(
