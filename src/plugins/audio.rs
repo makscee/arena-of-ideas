@@ -52,12 +52,19 @@ impl Plugin for AudioPlugin {
                 Self::start_normal_background,
             )
             .add_systems(OnEnter(GameState::MainMenu), Self::stop_background)
+            .add_systems(OnExit(GameState::Battle), Self::reset_play_speed)
             .add_systems(Update, Self::update)
             .add_systems(Update, Self::ui.run_if(in_state(GameState::Battle)));
     }
 }
 
 impl AudioPlugin {
+    pub fn reset_play_speed(world: &mut World) {
+        let mut data = world.resource_mut::<AudioData>();
+        data.need_rate = 1.0;
+        data.speed = 1.0;
+    }
+
     fn update(world: &mut World) {
         let mut data = world.resource::<AudioData>().clone();
         data.cur_rate += (data.need_rate * data.speed - data.cur_rate)

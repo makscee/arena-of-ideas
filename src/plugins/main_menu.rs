@@ -21,11 +21,13 @@ impl Plugin for MainMenuPlugin {
 
 impl MainMenuPlugin {
     fn update(world: &mut World) {
-        if let Ok(creds) = credentials() {
-            let mut state = world.resource_mut::<MainMenuState>();
-            if !state.connected {
-                state.connected = true;
-                Self::handle_connection(creds, world);
+        if LoginPlugin::is_connected() {
+            if let Ok(creds) = credentials() {
+                let mut state = world.resource_mut::<MainMenuState>();
+                if !state.connected {
+                    state.connected = true;
+                    Self::handle_connection(creds, world);
+                }
             }
         }
     }
@@ -51,7 +53,9 @@ impl MainMenuPlugin {
                         if ui
                             .button("RANDOM TOWER")
                             .on_hover_text("Play tower that belongs to other random player")
-                            .on_disabled_hover_text("Create at least one tower, click New Tower")
+                            .on_disabled_hover_text(
+                                "Create at least one tower, click New Tower and beat 3+ levels",
+                            )
                             .clicked()
                         {
                             if let Some(tower) = TableTower::iter()
@@ -78,8 +82,11 @@ impl MainMenuPlugin {
                                 GameState::change(GameState::Shop, world);
                             }
                         }
-                    } else if ui.button_primary("CONNECT").clicked() {
-                        LoginPlugin::connect(world);
+                    } else {
+                        ui.label("DISCONNECTED");
+                        if ui.button("CONNECT").clicked() {
+                            LoginPlugin::connect(world);
+                        }
                     }
                 });
 
@@ -97,7 +104,7 @@ impl MainMenuPlugin {
                 });
                 frame(ui, |ui| {
                     if ui
-                        .button("NEW LADDDER")
+                        .button("NEW TOWER")
                         .on_hover_text(
                             "Generate new levels infinitely until defeat.
 New levels generated considering your teams strength",

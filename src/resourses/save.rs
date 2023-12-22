@@ -53,10 +53,13 @@ impl Save {
         self
     }
     pub fn finish_building_tower(&mut self) -> &mut Self {
-        if matches!(self.mode, GameMode::NewTower) && LoginPlugin::is_connected() {
+        if matches!(self.mode, GameMode::NewTower)
+            && LoginPlugin::is_connected()
+            && self.climb.defeated >= 3
+        {
             let team = ron::to_string(&self.climb.team).unwrap();
             debug!("Finish building tower {team}");
-            finish_building_tower(self.climb.levels[..self.climb.defeated].to_vec(), team);
+            finish_building_tower(self.climb.levels[..=self.climb.defeated].to_vec(), team);
         }
         self
     }

@@ -1,3 +1,5 @@
+use bevy::input::common_conditions::input_just_pressed;
+
 use super::*;
 
 pub struct PanelsPlugin;
@@ -15,8 +17,14 @@ enum TopButton {
 
 impl Plugin for PanelsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, Self::ui)
-            .init_resource::<TopOpenWindows>();
+        app.add_systems(
+            Update,
+            (
+                Self::ui,
+                Self::close_all.run_if(input_just_pressed(KeyCode::Escape)),
+            ),
+        )
+        .init_resource::<TopOpenWindows>();
     }
 }
 
@@ -35,7 +43,7 @@ impl TopButton {
 
     fn enabled(&self) -> bool {
         match self {
-            TopButton::Profile | TopButton::Leaderboard => identity().is_ok(),
+            TopButton::Profile | TopButton::Leaderboard => LoginPlugin::is_connected(),
             TopButton::Exit | TopButton::Settings => true,
         }
     }
@@ -76,6 +84,10 @@ impl TopButton {
 }
 
 impl PanelsPlugin {
+    fn close_all(world: &mut World) {
+        *world.resource_mut::<TopOpenWindows>() = default();
+    }
+
     pub fn ui(world: &mut World) {
         let ctx = &egui_context(world);
         let top_data = world.resource::<TopOpenWindows>().0.clone();

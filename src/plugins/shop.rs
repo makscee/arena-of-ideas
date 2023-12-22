@@ -289,19 +289,38 @@ impl ShopPlugin {
                         }
                     });
                 });
+                Self::show_next_enemy_window(&mut data, world);
             }
             ShopPhase::Sacrifice { selected } => {
                 for unit in UnitPlugin::collect_faction(Faction::Team, world) {
                     let slot = VarState::get(unit, world).get_int(VarName::Slot).unwrap() as usize;
-                    entity_panel(unit, vec2(0.0, -1.5), None, "sacrifice", world).show(ctx, |ui| {
-                        if ui.button("Sacrifice").clicked() {
-                            if selected.contains(&slot) {
-                                selected.remove(&slot);
-                            } else {
-                                selected.insert(slot);
-                            }
-                        }
-                    });
+                    window("sacrifice")
+                        .id(&unit)
+                        .set_width(80.0)
+                        .resizable(false)
+                        .title_bar(false)
+                        .stroke(false)
+                        .entity_anchor(unit, Align2::CENTER_TOP, vec2(0.0, 70.0), world)
+                        .show(ctx, |ui| {
+                            frame(ui, |ui| {
+                                ui.set_width(100.0);
+                                let is_selected = selected.contains(&slot);
+                                let text = "SACRIFICE";
+                                if if is_selected {
+                                    ui.button_primary(text)
+                                } else {
+                                    ui.button(text)
+                                }
+                                .clicked()
+                                {
+                                    if is_selected {
+                                        selected.remove(&slot);
+                                    } else {
+                                        selected.insert(slot);
+                                    }
+                                }
+                            });
+                        });
                     if selected.contains(&slot) {
                         entity_panel(unit, default(), None, "cross", world).show(ctx, |ui| {
                             ui.label(RichText::new("X").color(hex_color!("#D50000")).size(80.0));
@@ -355,7 +374,6 @@ impl ShopPlugin {
                         .color(hex_color!("#FFC107")),
                 );
             });
-        Self::show_next_enemy_window(&mut data, world);
         world.insert_resource(data);
     }
 

@@ -1,3 +1,5 @@
+use std::thread::sleep;
+
 use spacetimedb_sdk::{
     identity::{load_credentials, save_credentials},
     subscribe,
@@ -12,7 +14,12 @@ const SPACETIMEDB_URI: &str = "http://178.62.220.183:3000";
 const DB_NAME: &str = "aoi";
 const CREDS_DIR: &str = ".aoi";
 
+static mut IS_CONNECTED: bool = false;
+
 fn on_connected(creds: &Credentials, _client_address: Address) {
+    unsafe {
+        IS_CONNECTED = true;
+    }
     println!("{creds:?} {_client_address:?}");
 }
 fn register_callbacks() {
@@ -30,13 +37,18 @@ pub struct CurrentCredentials {
 impl Plugin for LoginPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, Self::setup)
+            .add_systems(OnEnter(GameState::Loading), Self::menu_connect)
             .init_resource::<CurrentCredentials>();
     }
 }
 
 impl LoginPlugin {
+    fn menu_connect(world: &mut World) {
+        Self::connect(world)
+    }
+
     pub fn is_connected() -> bool {
-        identity().is_ok()
+        unsafe { IS_CONNECTED }
     }
 
     fn setup(world: &mut World) {
@@ -47,9 +59,18 @@ impl LoginPlugin {
     }
 
     pub fn connect(world: &mut World) {
+        if Self::is_connected() {
+            return;
+        }
         let creds = &mut world.resource_mut::<CurrentCredentials>().creds;
+        let mut tries = 5;
         while let Err(e) = connect(SPACETIMEDB_URI, DB_NAME, creds.clone()) {
             error!("Connection error: {e}");
+            sleep(Duration::from_secs(1));
+            tries -= 1;
+            if tries <= 0 {
+                return;
+            }
         }
         subscribe_to_tables();
     }
