@@ -217,111 +217,106 @@ impl BattlePlugin {
         }
         let end = world.resource::<BattleData>().end;
         let text = match end {
+            BattleEnd::Defeat(..) => "Defeat".to_owned(),
+            BattleEnd::TowerBeaten(..) | BattleEnd::Victory(..) | BattleEnd::TowerGenerate(..) => {
+                "Victory".to_owned()
+            }
+        };
+        let subtext = match end {
             BattleEnd::Defeat(level, total, finished_building) => {
                 if finished_building {
-                    format!("Defeat. New tower is {level} levels")
+                    format!("New tower is {level} levels long")
                 } else {
-                    format!("Defeat. Reached level {level}/{total}")
+                    format!("Reached level {level}/{total}")
                 }
             }
-            BattleEnd::TowerBeaten(level) => format!("Victory! Tower beaten! {level}/{level}"),
-            BattleEnd::TowerGenerate(..) => "Victory! New levels will be generated.".to_string(),
-            BattleEnd::Victory(level, total) => format!("Victory! {level}/{total}"),
+            BattleEnd::TowerBeaten(level) => format!("Tower beaten! {level}/{level}"),
+            BattleEnd::TowerGenerate(..) => "New levels will be generated.".to_string(),
+            BattleEnd::Victory(level, total) => format!("{level}/{total}"),
         };
         let color = match end {
             BattleEnd::Defeat(..) => hex_color!("#FF1744"),
             BattleEnd::TowerBeaten(_) | BattleEnd::TowerGenerate(_) | BattleEnd::Victory(_, _) => {
-                hex_color!("#00E5FF")
+                hex_color!("#80D8FF")
             }
         };
 
-        Window::new(
-            RichText::new(text)
-                .color(color)
-                .size(30.0)
-                .text_style(egui::TextStyle::Heading),
-        )
-        .collapsible(false)
-        .resizable(false)
-        .anchor(Align2::CENTER_CENTER, [0.0, -150.0])
-        .show(ctx, |ui| {
-            ui.set_min_width(300.0);
-            ui.vertical_centered_justified(|ui| {
-                if ui
-                    .button(
-                        RichText::new("Replay")
-                            .size(20.0)
-                            .color(hex_color!("#78909C"))
-                            .text_style(egui::TextStyle::Button),
-                    )
-                    .clicked()
-                {
-                    let t = -AudioPlugin::to_next_beat(world);
-                    GameTimer::get_mut(world).play_head_to(t);
-                }
-                if ui
-                    .button(
-                        RichText::new("Ok")
-                            .size(20.0)
-                            .text_style(egui::TextStyle::Button),
-                    )
-                    .clicked()
-                {
-                    match end {
-                        BattleEnd::Defeat(_, _, new) => {
-                            if new && LoginPlugin::is_connected() {
-                                Save::get(world).unwrap().finish_building_tower();
+        window("BATTLE END")
+            .set_width(400.0)
+            .set_color(color)
+            .anchor(Align2::CENTER_CENTER, [0.0, -200.0])
+            .show(ctx, |ui| {
+                frame(ui, |ui| {
+                    ui.heading(text.add_color(color).rich_text());
+                    ui.label(subtext.add_color(white()).rich_text());
+                    ui.columns(2, |ui| {
+                        ui[0].vertical_centered_justified(|ui| {
+                            if ui.button("REPLAY").clicked() {
+                                let t = -AudioPlugin::to_next_beat(world);
+                                GameTimer::get_mut(world).play_head_to(t);
                             }
-                            Save::clear(world).unwrap();
-                            GameState::MainMenu.change(world);
-                        }
-                        BattleEnd::TowerBeaten(_) => {
-                            let save = Save::get(world).unwrap();
-                            let level =
-                                RatingPlugin::generate_weakest_opponent(&save.climb.team, 1, world)
-                                    [0]
-                                .to_tower_string();
-                            let team = ron::to_string(&save.climb.team).unwrap();
-                            let mut levels = save.climb.levels.clone();
-                            levels.push(level);
-                            beat_tower(save.get_tower_id().unwrap(), levels, team);
-                            Save::clear(world).unwrap();
-                            GameState::MainMenu.change(world);
-                        }
-                        BattleEnd::TowerGenerate(level) => {
-                            let generate_amount = match level {
-                                ..=3 => 3,
-                                4..=8 => 2,
-                                _ => 1,
-                            };
-                            let teams = RatingPlugin::generate_weakest_opponent(
-                                &Save::get(world).unwrap().climb.team,
-                                generate_amount,
-                                world,
-                            )
-                            .iter()
-                            .map(|l| l.to_tower_string())
-                            .collect_vec();
-                            Save::get(world)
-                                .unwrap()
-                                .register_victory()
-                                .add_tower_levels(teams)
-                                .save(world)
-                                .unwrap();
-                            GameState::Shop.change(world);
-                        }
-                        BattleEnd::Victory(_, _) => {
-                            Save::get(world)
-                                .unwrap()
-                                .register_victory()
-                                .save(world)
-                                .unwrap();
-                            GameState::Shop.change(world);
-                        }
-                    }
-                }
+                        });
+                        ui[1].vertical_centered_justified(|ui| {
+                            if ui.button_primary("OK").clicked() {
+                                match end {
+                                    BattleEnd::Defeat(_, _, new) => {
+                                        if new && LoginPlugin::is_connected() {
+                                            Save::get(world).unwrap().finish_building_tower();
+                                        }
+                                        Save::clear(world).unwrap();
+                                        GameState::MainMenu.change(world);
+                                    }
+                                    BattleEnd::TowerBeaten(_) => {
+                                        let save = Save::get(world).unwrap();
+                                        let level = RatingPlugin::generate_weakest_opponent(
+                                            &save.climb.team,
+                                            1,
+                                            world,
+                                        )[0]
+                                        .to_tower_string();
+                                        let team = ron::to_string(&save.climb.team).unwrap();
+                                        let mut levels = save.climb.levels.clone();
+                                        levels.push(level);
+                                        beat_tower(save.get_tower_id().unwrap(), levels, team);
+                                        Save::clear(world).unwrap();
+                                        GameState::MainMenu.change(world);
+                                    }
+                                    BattleEnd::TowerGenerate(level) => {
+                                        let generate_amount = match level {
+                                            ..=3 => 3,
+                                            4..=8 => 2,
+                                            _ => 1,
+                                        };
+                                        let teams = RatingPlugin::generate_weakest_opponent(
+                                            &Save::get(world).unwrap().climb.team,
+                                            generate_amount,
+                                            world,
+                                        )
+                                        .iter()
+                                        .map(|l| l.to_tower_string())
+                                        .collect_vec();
+                                        Save::get(world)
+                                            .unwrap()
+                                            .register_victory()
+                                            .add_tower_levels(teams)
+                                            .save(world)
+                                            .unwrap();
+                                        GameState::Shop.change(world);
+                                    }
+                                    BattleEnd::Victory(_, _) => {
+                                        Save::get(world)
+                                            .unwrap()
+                                            .register_victory()
+                                            .save(world)
+                                            .unwrap();
+                                        GameState::Shop.change(world);
+                                    }
+                                }
+                            }
+                        });
+                    })
+                });
             });
-        });
     }
 }
 

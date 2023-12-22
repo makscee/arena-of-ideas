@@ -160,12 +160,17 @@ pub struct GameWindow<'a> {
     title: &'a str,
     title_bar: bool,
     stroke: bool,
+    color: Option<Color32>,
 }
 
 impl GameWindow<'_> {
     pub fn show(mut self, ctx: &egui::Context, add_contents: impl FnOnce(&mut Ui)) {
+        let style = ctx.style();
         if !self.stroke {
             self.window = self.window.frame(Frame::none());
+        }
+        if let Some(color) = self.color {
+            ctx.style_mut(|style| style.visuals.window_stroke.color = color);
         }
         self.window.show(ctx, |ui| {
             if self.title_bar {
@@ -174,7 +179,7 @@ impl GameWindow<'_> {
                 rounding.se = 0.0;
                 rounding.sw = 0.0;
                 Frame::none()
-                    .fill(white())
+                    .fill(v.window_stroke.color)
                     .rounding(rounding)
                     .stroke(v.window_stroke)
                     .show(ui, |ui| {
@@ -197,6 +202,7 @@ impl GameWindow<'_> {
             }
             add_contents(ui)
         });
+        ctx.set_style(style);
     }
     pub fn default_pos(mut self, pos: Vec2) -> Self {
         self.window = self.window.default_pos(pos2(pos.x, pos.y));
@@ -230,6 +236,10 @@ impl GameWindow<'_> {
         self.stroke = enable;
         self
     }
+    pub fn set_color(mut self, color: Color32) -> Self {
+        self.color = Some(color);
+        self
+    }
     pub fn entity_anchor(
         mut self,
         entity: Entity,
@@ -252,6 +262,7 @@ pub fn window(title: &str) -> GameWindow<'_> {
         title,
         title_bar: true,
         stroke: true,
+        color: None,
     }
 }
 
