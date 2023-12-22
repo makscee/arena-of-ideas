@@ -1,4 +1,4 @@
-use bevy_egui::egui::{Align2, Window};
+use bevy_egui::egui::Align2;
 
 use crate::module_bindings::beat_tower;
 

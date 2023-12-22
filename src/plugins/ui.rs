@@ -112,7 +112,7 @@ impl UiPlugin {
                 expansion: 2.0,
             };
             style.visuals.widgets.hovered = WidgetVisuals {
-                bg_fill: black(),
+                bg_fill: white(),
                 weak_bg_fill: black(),
                 bg_stroke: Stroke::new(1.0, yellow()),
                 rounding: Rounding::same(0.0),
