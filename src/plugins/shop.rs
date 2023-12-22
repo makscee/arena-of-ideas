@@ -295,7 +295,7 @@ impl ShopPlugin {
                 for unit in UnitPlugin::collect_faction(Faction::Team, world) {
                     let slot = VarState::get(unit, world).get_int(VarName::Slot).unwrap() as usize;
                     window("sacrifice")
-                        .id(&unit)
+                        .id(unit)
                         .set_width(80.0)
                         .resizable(false)
                         .title_bar(false)
