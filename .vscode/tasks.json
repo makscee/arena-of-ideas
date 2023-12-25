@@ -119,7 +119,7 @@
 			"group": {
 				"kind": "build"
 			},
-			"command": "spacetime publish aoi -p server"
+			"command": "spacetime publish aoi_dev -p server"
 		},
 		{
 			"label": "STDB: Publish & Clear",
@@ -127,7 +127,7 @@
 			"group": {
 				"kind": "build"
 			},
-			"command": "spacetime publish -c aoi -p server"
+			"command": "spacetime publish -c aoi_dev -p server"
 		},
 		{
 			"label": "STDB: Start",
@@ -151,7 +151,7 @@
 			"group": {
 				"kind": "build"
 			},
-			"command": "spacetime sql aoi --interactive"
+			"command": "spacetime sql aoi_dev --interactive"
 		},
 		{
 			"label": "Flamegraph: Run Debug",
@@ -175,7 +175,15 @@
 			"group": {
 				"kind": "build"
 			},
-			"command": "lipo \"target/x86_64-apple-darwin/release/arena-of-ideas\" \"target/aarch64-apple-darwin/release/arena-of-ideas\" -create -output \"ArenaOfIdeas.app/Contents/MacOS/ArenaOfIdeas\""
+			"command": "mkdir -p target/ArenaOfIdeas.app/Contents/MacOS/; lipo \"target/x86_64-apple-darwin/release/arena-of-ideas\" \"target/aarch64-apple-darwin/release/arena-of-ideas\" -create -output \"target/ArenaOfIdeas.app/Contents/MacOS/ArenaOfIdeas\""
+		},
+		{
+			"label": "Mac Build & lipo",
+			"type": "shell",
+			"group": {
+				"kind": "build"
+			},
+			"command": "cargo build --release --target x86_64-apple-darwin; cargo build --release --target aarch64-apple-darwin; mkdir -p target/ArenaOfIdeas.app/Contents/MacOS/; lipo \"target/x86_64-apple-darwin/release/arena-of-ideas\" \"target/aarch64-apple-darwin/release/arena-of-ideas\" -create -output \"target/ArenaOfIdeas.app/Contents/MacOS/ArenaOfIdeas\""
 		},
 		{
 			"type": "cargo",

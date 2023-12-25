@@ -11,6 +11,9 @@ pub struct LoginPlugin;
 
 // const SPACETIMEDB_URI: &str = "http://localhost:3001";
 const SPACETIMEDB_URI: &str = "http://178.62.220.183:3000";
+#[cfg(debug_assertions)]
+const DB_NAME: &str = "aoi_dev";
+#[cfg(not(debug_assertions))]
 const DB_NAME: &str = "aoi";
 const CREDS_DIR: &str = ".aoi";
 
