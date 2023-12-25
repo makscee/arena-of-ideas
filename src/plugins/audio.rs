@@ -171,32 +171,40 @@ impl AudioPlugin {
             .title_bar(false)
             .show(ctx, |ui| {
                 frame(ui, |ui| {
-                    ui.columns(3, |ui| {
+                    ui.columns(5, |ui| {
                         ui[0].vertical_centered_justified(|ui| {
-                            AudioControls::Reverse.show(&mut data, world, ui);
-                            ui.add_space(15.0);
-                            AudioControls::SkipStart.show(&mut data, world, ui);
+                            AudioControls::StepBackward.show(&mut data, world, ui);
                         });
                         ui[1].vertical_centered_justified(|ui| {
-                            AudioControls::Pause.show(&mut data, world, ui);
+                            AudioControls::Reverse.show(&mut data, world, ui);
                         });
                         ui[2].vertical_centered_justified(|ui| {
+                            AudioControls::Pause.show(&mut data, world, ui);
+                        });
+                        ui[3].vertical_centered_justified(|ui| {
                             AudioControls::Play.show(&mut data, world, ui);
-                            ui.add_space(15.0);
-                            AudioControls::SkipEnd.show(&mut data, world, ui);
+                        });
+                        ui[4].vertical_centered_justified(|ui| {
+                            AudioControls::StepForward.show(&mut data, world, ui);
                         });
                     });
                 });
                 frame(ui, |ui| {
-                    ui.columns(3, |ui| {
+                    ui.columns(5, |ui| {
                         ui[0].vertical_centered_justified(|ui| {
-                            AudioControls::Speed1.show(&mut data, world, ui);
+                            AudioControls::SkipStart.show(&mut data, world, ui);
                         });
                         ui[1].vertical_centered_justified(|ui| {
-                            AudioControls::Speed2.show(&mut data, world, ui);
+                            AudioControls::Speed1.show(&mut data, world, ui);
                         });
                         ui[2].vertical_centered_justified(|ui| {
+                            AudioControls::Speed2.show(&mut data, world, ui);
+                        });
+                        ui[3].vertical_centered_justified(|ui| {
                             AudioControls::Speed3.show(&mut data, world, ui);
+                        });
+                        ui[4].vertical_centered_justified(|ui| {
+                            AudioControls::SkipEnd.show(&mut data, world, ui);
                         });
                     });
                     ui.label(format!("{:.2}", GameTimer::get(world).play_head()));
@@ -221,6 +229,18 @@ enum AudioControls {
 
 impl AudioControls {
     fn show(self, data: &mut AudioData, world: &mut World, ui: &mut Ui) {
+        let hint = match &self {
+            AudioControls::Play => "Play",
+            AudioControls::Reverse => "Play reverse",
+            AudioControls::Pause => "Pause",
+            AudioControls::StepForward => "Step forward",
+            AudioControls::StepBackward => "Step backward",
+            AudioControls::Speed1 => "Speed x1",
+            AudioControls::Speed2 => "Speed x2",
+            AudioControls::Speed3 => "Speed x4",
+            AudioControls::SkipStart => "Skip to start",
+            AudioControls::SkipEnd => "Skip to end",
+        };
         match &self {
             AudioControls::Speed1 => {
                 let active = data.speed == 1.0;
@@ -230,6 +250,7 @@ impl AudioControls {
                 } else {
                     ui.button(text)
                 }
+                .on_hover_text(hint)
                 .clicked()
                 {
                     data.speed = 1.0;
@@ -244,6 +265,7 @@ impl AudioControls {
                 } else {
                     ui.button(text)
                 }
+                .on_hover_text(hint)
                 .clicked()
                 {
                     data.speed = 2.0;
@@ -258,6 +280,7 @@ impl AudioControls {
                 } else {
                     ui.button(text)
                 }
+                .on_hover_text(hint)
                 .clicked()
                 {
                     data.speed = 4.0;
@@ -275,8 +298,7 @@ impl AudioControls {
             | AudioControls::Speed2
             | AudioControls::Speed3 => egui::vec2(30.0, 30.0),
             AudioControls::SkipStart | AudioControls::SkipEnd => egui::vec2(75.0, 30.0) * 0.5,
-            AudioControls::StepForward => todo!(),
-            AudioControls::StepBackward => todo!(),
+            AudioControls::StepBackward | AudioControls::StepForward => egui::vec2(45.0, 30.0),
         };
         let (rect, mut response) = ui.allocate_exact_size(size, egui::Sense::click());
         let mut clicked = false;
@@ -284,6 +306,7 @@ impl AudioControls {
             clicked = true;
             response.mark_changed();
         }
+        response = response.on_hover_text(hint);
         response.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::Button, true, ""));
         let visuals = ui.style().interact(&response);
         let rect = rect.expand(visuals.expansion);
@@ -350,8 +373,40 @@ impl AudioControls {
                     ])
                 });
             }
-            AudioControls::StepForward => todo!(),
-            AudioControls::StepBackward => todo!(),
+            AudioControls::StepForward => {
+                if clicked {
+                    GameTimer::get_mut(world).advance_play(AudioPlugin::beat_timeframe());
+                }
+                let mut rect1 = rect;
+                *rect1.right_mut() -= rect.width() / 3.0;
+                let mut rect2 = rect;
+                *rect2.left_mut() += rect1.width();
+
+                ui.painter().add(Vec::from([
+                    egui::Shape::Path(PathShape::closed_line(
+                        [rect1.left_top(), rect1.right_center(), rect1.left_bottom()].into(),
+                        visuals.fg_stroke,
+                    )),
+                    egui::Shape::Rect(RectShape::stroke(rect2, Rounding::ZERO, visuals.fg_stroke)),
+                ]));
+            }
+            AudioControls::StepBackward => {
+                if clicked {
+                    GameTimer::get_mut(world).advance_play(-AudioPlugin::beat_timeframe());
+                }
+                let mut rect1 = rect;
+                *rect1.right_mut() -= rect.width() * 2.0 / 3.0;
+                let mut rect2 = rect;
+                *rect2.left_mut() += rect1.width();
+
+                ui.painter().add(Vec::from([
+                    egui::Shape::Rect(RectShape::stroke(rect1, Rounding::ZERO, visuals.fg_stroke)),
+                    egui::Shape::Path(PathShape::closed_line(
+                        [rect2.right_top(), rect2.left_center(), rect2.right_bottom()].into(),
+                        visuals.fg_stroke,
+                    )),
+                ]));
+            }
             AudioControls::SkipStart => {
                 if clicked {
                     GameTimer::get_mut(world).play_head_to(0.0);
