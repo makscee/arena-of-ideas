@@ -1,4 +1,4 @@
-use crate::module_bindings::{set_email, set_name, TowerStatus, User};
+use crate::module_bindings::{set_name, TowerStatus, User};
 
 use super::*;
 
@@ -15,20 +15,20 @@ struct ProfileEditData {
 
 impl ProfilePlugin {
     pub fn load(world: &mut World) {
-        if let Ok(identity) = identity() {
-            let user = User::filter_by_identity(identity).expect("User not found");
+        if let Some(name) = LoginPlugin::get_username() {
+            let user = User::filter_by_name(name).expect("User not found");
             world.insert_resource(ProfileEditData { user });
         }
     }
 
     pub fn ui(world: &mut World) {
         window("PROFILE").show(&egui_context(world), |ui| {
-            if let Ok(identity) = identity() {
-                let own_tower_length = TableTower::filter_by_creator(identity.clone())
+            if let Some(name) = LoginPlugin::get_username() {
+                let own_tower_length = TableTower::filter_by_creator(name.to_owned())
                     .find(|l| matches!(l.status, TowerStatus::Fresh(..)))
                     .map(|l| l.levels.len())
                     .unwrap_or_default();
-                let beaten_towers = TableTower::filter_by_owner(identity.clone())
+                let beaten_towers = TableTower::filter_by_owner(name.to_owned())
                     .filter(|l| matches!(l.status, TowerStatus::Beaten(..)))
                     .collect_vec();
                 frame(ui, |ui| {
@@ -36,22 +36,16 @@ impl ProfilePlugin {
                     ui.horizontal(|ui| {
                         ui.vertical(|ui| {
                             ui.label("name:");
-                            ui.label("email:");
                         });
                         ui.vertical(|ui| {
-                            let mut name = user.name.clone().unwrap_or_default();
+                            let mut name = user.name.clone();
                             if ui.text_edit_singleline(&mut name).changed() {
-                                user.name = Some(name);
-                            }
-                            let mut email = user.email.clone().unwrap_or_default();
-                            if ui.text_edit_singleline(&mut email).changed() {
-                                user.email = Some(email);
+                                user.name = name;
                             }
                         });
                     });
                     if ui.button("Save").clicked() {
-                        set_name(user.name.clone().unwrap_or_default());
-                        set_email(user.email.clone().unwrap_or_default());
+                        set_name(user.name.clone());
                     }
                 });
                 frame(ui, |ui| {
@@ -71,17 +65,6 @@ impl ProfilePlugin {
                                 ui.label(PackedTeam::from_tower_string(level, world).to_string());
                             }
                         });
-                    }
-                });
-                frame(ui, |ui| {
-                    ui.set_enabled(world.resource::<CurrentCredentials>().creds.is_some());
-                    let visuals = &mut ui.style_mut().visuals.widgets.inactive;
-                    visuals.fg_stroke.color = red();
-                    visuals.bg_stroke.color = red();
-                    if ui.button("CLEAR IDENTITY").clicked() {
-                        LoginPlugin::clear_saved_credentials(world);
-                        Save::clear(world).unwrap();
-                        world.send_event(AppExit);
                     }
                 });
             }

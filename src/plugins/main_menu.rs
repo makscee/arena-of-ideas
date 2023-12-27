@@ -1,41 +1,13 @@
-use rand::seq::IteratorRandom;
-use spacetimedb_sdk::identity::credentials;
-
 use super::*;
 pub struct MainMenuPlugin;
 
-#[derive(Resource, Default)]
-struct MainMenuState {
-    connected: bool,
-}
-
 impl Plugin for MainMenuPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
-            Update,
-            (Self::ui, Self::update).run_if(in_state(GameState::MainMenu)),
-        )
-        .init_resource::<MainMenuState>();
+        app.add_systems(Update, Self::ui.run_if(in_state(GameState::MainMenu)));
     }
 }
 
 impl MainMenuPlugin {
-    fn update(world: &mut World) {
-        if LoginPlugin::is_connected() {
-            if let Ok(creds) = credentials() {
-                let mut state = world.resource_mut::<MainMenuState>();
-                if !state.connected {
-                    state.connected = true;
-                    Self::handle_connection(creds, world);
-                }
-            }
-        }
-    }
-
-    fn handle_connection(creds: Credentials, world: &mut World) {
-        LoginPlugin::save_credentials(creds, world)
-    }
-
     fn ui(world: &mut World) {
         let ctx = &egui_context(world);
 
@@ -43,52 +15,54 @@ impl MainMenuPlugin {
             .set_width(400.0)
             .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
             .show(ctx, |ui| {
-                frame(ui, |ui| {
-                    if LoginPlugin::is_connected() {
-                        let identity = identity().unwrap();
-                        let has_own = TableTower::filter_by_creator(identity.clone())
-                            .next()
-                            .is_some();
-                        ui.set_enabled(has_own);
-                        if ui
-                            .button("RANDOM TOWER")
-                            .on_hover_text("Play tower that belongs to other random player")
-                            .on_disabled_hover_text(
-                                "Create at least one tower, click New Tower and beat 3+ levels",
-                            )
-                            .clicked()
-                        {
-                            if let Some(tower) = TableTower::iter()
-                                .filter(|l| l.owner != identity)
-                                .choose(&mut thread_rng())
-                            {
-                                let team = match tower.status {
-                                    module_bindings::TowerStatus::Fresh(team)
-                                    | module_bindings::TowerStatus::Beaten(team) => {
-                                        ron::from_str::<PackedTeam>(&team).unwrap()
-                                    }
-                                };
-                                let save = Save {
-                                    mode: GameMode::RandomTower { tower_id: tower.id },
-                                    climb: TowerClimb {
-                                        team: default(),
-                                        levels: tower.levels,
-                                        defeated: default(),
-                                        shop: ShopState::new(world),
-                                        owner_team: Some(team),
-                                    },
-                                };
-                                save.save(world).unwrap();
-                                GameState::change(GameState::Shop, world);
-                            }
-                        }
-                    } else {
-                        ui.label("DISCONNECTED");
-                        if ui.button("CONNECT").clicked() {
-                            LoginPlugin::connect(world);
-                        }
+                if LoginPlugin::is_connected() {
+                    if CURRENT_USER.lock().unwrap().is_none() {
+                        LoginPlugin::login(ui, world);
+                        LoginPlugin::register(ui, world);
                     }
-                });
+                    // let identity = identity().unwrap();
+                    // let has_own = TableTower::filter_by_creator(identity.clone())
+                    //     .next()
+                    //     .is_some();
+                    // ui.set_enabled(has_own);
+                    // if ui
+                    //     .button("RANDOM TOWER")
+                    //     .on_hover_text("Play tower that belongs to other random player")
+                    //     .on_disabled_hover_text(
+                    //         "Create at least one tower, click New Tower and beat 3+ levels",
+                    //     )
+                    //     .clicked()
+                    // {
+                    //     if let Some(tower) = TableTower::iter()
+                    //         .filter(|l| l.owner != identity)
+                    //         .choose(&mut thread_rng())
+                    //     {
+                    //         let team = match tower.status {
+                    //             module_bindings::TowerStatus::Fresh(team)
+                    //             | module_bindings::TowerStatus::Beaten(team) => {
+                    //                 ron::from_str::<PackedTeam>(&team).unwrap()
+                    //             }
+                    //         };
+                    //         let save = Save {
+                    //             mode: GameMode::RandomTower { tower_id: tower.id },
+                    //             climb: TowerClimb {
+                    //                 team: default(),
+                    //                 levels: tower.levels,
+                    //                 defeated: default(),
+                    //                 shop: ShopState::new(world),
+                    //                 owner_team: Some(team),
+                    //             },
+                    //         };
+                    //         save.save(world).unwrap();
+                    //         GameState::change(GameState::Shop, world);
+                    //     }
+                    // }
+                } else {
+                    ui.label("DISCONNECTED");
+                    if ui.button("CONNECT").clicked() {
+                        LoginPlugin::connect();
+                    }
+                }
 
                 frame(ui, |ui| {
                     let enabled = Save::get(world).is_ok();

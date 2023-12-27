@@ -14,9 +14,11 @@ use spacetimedb_sdk::{
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct User {
-    pub identity: Identity,
-    pub name: Option<String>,
-    pub email: Option<String>,
+    pub name: String,
+    pub identities: Vec<Identity>,
+    pub pass_hash: String,
+    pub online: bool,
+    pub last_login: u64,
 }
 
 impl TableType for User {
@@ -25,23 +27,31 @@ impl TableType for User {
 }
 
 impl TableWithPrimaryKey for User {
-    type PrimaryKey = Identity;
+    type PrimaryKey = String;
     fn primary_key(&self) -> &Self::PrimaryKey {
-        &self.identity
+        &self.name
     }
 }
 
 impl User {
     #[allow(unused)]
-    pub fn filter_by_identity(identity: Identity) -> Option<Self> {
-        Self::find(|row| row.identity == identity)
+    pub fn filter_by_name(name: String) -> Option<Self> {
+        Self::find(|row| row.name == name)
     }
     #[allow(unused)]
-    pub fn filter_by_name(name: Option<String>) -> TableIter<Self> {
-        Self::filter(|row| row.name == name)
+    pub fn filter_by_identities(identities: Vec<Identity>) -> TableIter<Self> {
+        Self::filter(|row| row.identities == identities)
     }
     #[allow(unused)]
-    pub fn filter_by_email(email: Option<String>) -> TableIter<Self> {
-        Self::filter(|row| row.email == email)
+    pub fn filter_by_pass_hash(pass_hash: String) -> TableIter<Self> {
+        Self::filter(|row| row.pass_hash == pass_hash)
+    }
+    #[allow(unused)]
+    pub fn filter_by_online(online: bool) -> TableIter<Self> {
+        Self::filter(|row| row.online == online)
+    }
+    #[allow(unused)]
+    pub fn filter_by_last_login(last_login: u64) -> TableIter<Self> {
+        Self::filter(|row| row.last_login == last_login)
     }
 }

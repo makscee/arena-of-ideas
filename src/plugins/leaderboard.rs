@@ -1,13 +1,9 @@
-use crate::module_bindings::User;
-
 use super::*;
 
 pub struct LeaderboardPlugin;
 
 impl Plugin for LeaderboardPlugin {
-    fn build(&self, _: &mut App) {
-        // app.add_systems(OnEnter(GameState::MainMenu), Self::load);
-    }
+    fn build(&self, _: &mut App) {}
 }
 
 #[derive(Resource, Default, Debug, Clone)]
@@ -25,8 +21,8 @@ enum LeaderboardType {
 
 impl LeaderboardPlugin {
     pub fn load(world: &mut World) {
-        let mut count: HashMap<Identity, usize> = default();
-        let mut length: HashMap<Identity, usize> = default();
+        let mut count: HashMap<String, usize> = default();
+        let mut length: HashMap<String, usize> = default();
         for tower in TableTower::iter() {
             *count.entry(tower.owner.clone()).or_default() += 1;
             length
@@ -37,21 +33,11 @@ impl LeaderboardPlugin {
         let mut lb = LeaderboardData::default();
         let top = lb.data.entry(LeaderboardType::Count).or_default();
         for (i, c) in count.into_iter().sorted_by_key(|(_, v)| *v).rev() {
-            top.push((
-                User::filter_by_identity(i)
-                    .and_then(|u| u.name)
-                    .unwrap_or("no_name".to_owned()),
-                c,
-            ));
+            top.push((i, c));
         }
         let top = lb.data.entry(LeaderboardType::Length).or_default();
         for (i, c) in length.into_iter().sorted_by_key(|(_, v)| *v).rev() {
-            top.push((
-                User::filter_by_identity(i)
-                    .and_then(|u| u.name)
-                    .unwrap_or("no_name".to_owned()),
-                c,
-            ));
+            top.push((i, c));
         }
         world.insert_resource(lb)
     }

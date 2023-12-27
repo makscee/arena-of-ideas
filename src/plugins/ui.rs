@@ -109,7 +109,7 @@ impl UiPlugin {
                 bg_stroke: Stroke::NONE,
                 rounding: Rounding::same(0.0),
                 fg_stroke: Stroke::new(1.0, white()),
-                expansion: 2.0,
+                expansion: 0.0,
             };
             style.visuals.widgets.hovered = WidgetVisuals {
                 bg_fill: white(),
@@ -117,7 +117,7 @@ impl UiPlugin {
                 bg_stroke: Stroke::new(1.0, yellow()),
                 rounding: Rounding::same(0.0),
                 fg_stroke: Stroke::new(1.0, yellow()),
-                expansion: 0.0,
+                expansion: 1.0,
             };
             style.visuals.widgets.noninteractive = WidgetVisuals {
                 bg_fill: black(),

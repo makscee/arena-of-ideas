@@ -22,7 +22,9 @@ use std::sync::Arc;
 
 pub mod beat_tower_reducer;
 pub mod finish_building_tower_reducer;
-pub mod set_email_reducer;
+pub mod login_by_identity_reducer;
+pub mod login_reducer;
+pub mod register_reducer;
 pub mod set_name_reducer;
 pub mod sync_tower_levels_reducer;
 pub mod tower;
@@ -31,7 +33,9 @@ pub mod user;
 
 pub use beat_tower_reducer::*;
 pub use finish_building_tower_reducer::*;
-pub use set_email_reducer::*;
+pub use login_by_identity_reducer::*;
+pub use login_reducer::*;
+pub use register_reducer::*;
 pub use set_name_reducer::*;
 pub use sync_tower_levels_reducer::*;
 pub use tower::*;
@@ -43,7 +47,9 @@ pub use user::*;
 pub enum ReducerEvent {
     BeatTower(beat_tower_reducer::BeatTowerArgs),
     FinishBuildingTower(finish_building_tower_reducer::FinishBuildingTowerArgs),
-    SetEmail(set_email_reducer::SetEmailArgs),
+    Login(login_reducer::LoginArgs),
+    LoginByIdentity(login_by_identity_reducer::LoginByIdentityArgs),
+    Register(register_reducer::RegisterArgs),
     SetName(set_name_reducer::SetNameArgs),
     SyncTowerLevels(sync_tower_levels_reducer::SyncTowerLevelsArgs),
 }
@@ -92,7 +98,9 @@ impl SpacetimeModule for Module {
 match &function_call.reducer[..] {
 						"beat_tower" => _reducer_callbacks.handle_event_of_type::<beat_tower_reducer::BeatTowerArgs, ReducerEvent>(event, _state, ReducerEvent::BeatTower),
 			"finish_building_tower" => _reducer_callbacks.handle_event_of_type::<finish_building_tower_reducer::FinishBuildingTowerArgs, ReducerEvent>(event, _state, ReducerEvent::FinishBuildingTower),
-			"set_email" => _reducer_callbacks.handle_event_of_type::<set_email_reducer::SetEmailArgs, ReducerEvent>(event, _state, ReducerEvent::SetEmail),
+			"login" => _reducer_callbacks.handle_event_of_type::<login_reducer::LoginArgs, ReducerEvent>(event, _state, ReducerEvent::Login),
+			"login_by_identity" => _reducer_callbacks.handle_event_of_type::<login_by_identity_reducer::LoginByIdentityArgs, ReducerEvent>(event, _state, ReducerEvent::LoginByIdentity),
+			"register" => _reducer_callbacks.handle_event_of_type::<register_reducer::RegisterArgs, ReducerEvent>(event, _state, ReducerEvent::Register),
 			"set_name" => _reducer_callbacks.handle_event_of_type::<set_name_reducer::SetNameArgs, ReducerEvent>(event, _state, ReducerEvent::SetName),
 			"sync_tower_levels" => _reducer_callbacks.handle_event_of_type::<sync_tower_levels_reducer::SyncTowerLevelsArgs, ReducerEvent>(event, _state, ReducerEvent::SyncTowerLevels),
 			unknown => { spacetimedb_sdk::log::error!("Event on an unknown reducer: {:?}", unknown); None }

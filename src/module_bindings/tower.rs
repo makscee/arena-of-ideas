@@ -16,9 +16,9 @@ use spacetimedb_sdk::{
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct Tower {
     pub id: u64,
-    pub owner: Identity,
-    pub creator: Identity,
-    pub defeaters: Vec<Identity>,
+    pub owner: String,
+    pub creator: String,
+    pub defeaters: Vec<String>,
     pub levels: Vec<String>,
     pub status: TowerStatus,
 }
@@ -41,15 +41,15 @@ impl Tower {
         Self::find(|row| row.id == id)
     }
     #[allow(unused)]
-    pub fn filter_by_owner(owner: Identity) -> TableIter<Self> {
+    pub fn filter_by_owner(owner: String) -> TableIter<Self> {
         Self::filter(|row| row.owner == owner)
     }
     #[allow(unused)]
-    pub fn filter_by_creator(creator: Identity) -> TableIter<Self> {
+    pub fn filter_by_creator(creator: String) -> TableIter<Self> {
         Self::filter(|row| row.creator == creator)
     }
     #[allow(unused)]
-    pub fn filter_by_defeaters(defeaters: Vec<Identity>) -> TableIter<Self> {
+    pub fn filter_by_defeaters(defeaters: Vec<String>) -> TableIter<Self> {
         Self::filter(|row| row.defeaters == defeaters)
     }
     #[allow(unused)]
