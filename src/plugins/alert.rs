@@ -5,6 +5,7 @@ use bevy_egui::egui::Order;
 use lazy_static::lazy_static;
 use std::sync::Mutex;
 
+type AlertAction = Box<dyn FnOnce(&mut World) + Send + Sync>;
 pub struct AlertPlugin;
 
 lazy_static! {
@@ -20,7 +21,7 @@ pub struct AlertData {
 struct Alert {
     title: Option<String>,
     text: String,
-    action: Option<Box<dyn FnOnce(&mut World) + Send + Sync>>,
+    action: Option<AlertAction>,
     r#type: AlertType,
 }
 
@@ -59,11 +60,7 @@ impl Alert {
 }
 
 impl AlertPlugin {
-    pub fn add(
-        title: Option<String>,
-        text: String,
-        action: Option<Box<dyn FnOnce(&mut World) + Send + Sync>>,
-    ) {
+    pub fn add(title: Option<String>, text: String, action: Option<AlertAction>) {
         Alert {
             title,
             text,
@@ -72,11 +69,7 @@ impl AlertPlugin {
         }
         .do_add()
     }
-    pub fn add_error(
-        title: Option<String>,
-        text: String,
-        action: Option<Box<dyn FnOnce(&mut World) + Send + Sync>>,
-    ) {
+    pub fn add_error(title: Option<String>, text: String, action: Option<AlertAction>) {
         error!("{title:?} {text}");
         Alert {
             title,
@@ -100,7 +93,7 @@ impl AlertPlugin {
     fn ui(world: &mut World) {
         let ctx = &egui_context(world);
         let mut data = ALERTS.lock().unwrap();
-        let mut actions: Vec<Box<dyn FnOnce(&mut World) + Send + Sync>> = default();
+        let mut actions: Vec<AlertAction> = default();
         let offset = 15.0;
         let mut closed: HashSet<usize> = default();
 
