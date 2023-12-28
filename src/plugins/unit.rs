@@ -496,12 +496,11 @@ impl UnitCard {
 
     pub fn show_name(&self, big: bool, ui: &mut Ui) {
         ui.vertical_centered(|ui| {
-            ui.style_mut().wrap = Some(false);
+            ui.style_mut().wrap = Some(true);
             if big {
-                Label::new(
-                    self.name
-                        .widget_with_font(Some(TextStyle::Heading.resolve(ui.style()))),
-                )
+                Label::new(self.name.widget_with_font(Some(
+                    TextStyle::Name("Heading2".into()).resolve(ui.style()),
+                )))
                 .ui(ui);
             } else {
                 ui.label(self.name.widget());

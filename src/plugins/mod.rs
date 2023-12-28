@@ -1,6 +1,7 @@
 use super::*;
 
 mod action;
+mod alert;
 mod audio;
 mod battle;
 mod camera;
@@ -22,6 +23,7 @@ mod ui;
 mod unit;
 
 pub use action::*;
+pub use alert::*;
 pub use audio::*;
 pub use battle::*;
 pub use camera::*;

@@ -1,4 +1,4 @@
-use bevy_egui::egui::Id;
+use bevy_egui::egui::{Id, Order};
 
 use super::*;
 
@@ -156,76 +156,82 @@ pub fn text_dots_text(text1: &ColoredString, text2: &ColoredString, ui: &mut Ui)
 }
 
 pub struct GameWindow<'a> {
-    window: Window<'a>,
+    area: Area,
+    frame: Option<Frame>,
     title: &'a str,
     title_bar: bool,
     stroke: bool,
+    width: f32,
     color: Option<Color32>,
 }
 
 impl GameWindow<'_> {
     pub fn show(mut self, ctx: &egui::Context, add_contents: impl FnOnce(&mut Ui)) {
-        let style = ctx.style();
         if !self.stroke {
-            self.window = self.window.frame(Frame::none());
+            self.frame = Some(Frame::none());
         }
-        if let Some(color) = self.color {
-            ctx.style_mut(|style| style.visuals.window_stroke.color = color);
-        }
-        self.window.show(ctx, |ui| {
-            if self.title_bar {
-                let v = &ui.style().visuals.clone();
-                let mut rounding = v.window_rounding;
-                rounding.se = 0.0;
-                rounding.sw = 0.0;
-                Frame::none()
-                    .fill(v.window_stroke.color)
-                    .rounding(rounding)
-                    .stroke(v.window_stroke)
-                    .show(ui, |ui| {
-                        ui.with_layout(
-                            Layout::top_down(egui::Align::Min).with_cross_justify(true),
-                            |ui| {
-                                Frame::none()
-                                    .inner_margin(Margin::symmetric(8.0, 0.0))
-                                    .show(ui, |ui| {
-                                        ui.label(
-                                            RichText::new(self.title)
-                                                .text_style(TextStyle::Heading)
-                                                .size(15.0)
-                                                .color(black()),
-                                        );
-                                    })
-                            },
-                        );
-                    });
-            }
-            add_contents(ui)
+        let style = ctx.style();
+        let mut stroke = style.visuals.window_stroke;
+        stroke.color = self.color.unwrap_or(style.visuals.window_stroke.color);
+        self.area.show(ctx, |ui| {
+            ui.set_width(self.width);
+            self.frame
+                .unwrap_or(Frame::window(&style).stroke(stroke))
+                .show(ui, |ui| {
+                    if self.title_bar {
+                        let v = &ui.style().visuals.clone();
+                        let mut rounding = v.window_rounding;
+                        rounding.se = 0.0;
+                        rounding.sw = 0.0;
+                        Frame::none()
+                            .fill(stroke.color)
+                            .rounding(rounding)
+                            .stroke(stroke)
+                            .show(ui, |ui| {
+                                ui.with_layout(
+                                    Layout::top_down(egui::Align::Min).with_cross_justify(true),
+                                    |ui| {
+                                        Frame::none()
+                                            .inner_margin(Margin::symmetric(8.0, 0.0))
+                                            .show(ui, |ui| {
+                                                ui.label(
+                                                    RichText::new(self.title)
+                                                        .text_style(TextStyle::Heading)
+                                                        .size(15.0)
+                                                        .color(black()),
+                                                );
+                                            })
+                                    },
+                                );
+                            });
+                    }
+                    add_contents(ui)
+                });
         });
         ctx.set_style(style);
     }
-    pub fn default_pos(mut self, pos: Vec2) -> Self {
-        self.window = self.window.default_pos(pos2(pos.x, pos.y));
+    pub fn default_pos_vec(mut self, pos: Vec2) -> Self {
+        self.area = self.area.default_pos(pos2(pos.x, pos.y));
+        self
+    }
+    pub fn default_pos(mut self, pos: Pos2) -> Self {
+        self.area = self.area.default_pos(pos);
         self
     }
     pub fn fixed_pos(mut self, pos: Vec2) -> Self {
-        self.window = self.window.fixed_pos(pos2(pos.x, pos.y));
+        self.area = self.area.fixed_pos(pos2(pos.x, pos.y));
         self
     }
     pub fn id(mut self, id: impl std::hash::Hash) -> Self {
-        self.window = self.window.id(Id::new(id).with(self.title));
+        self.area = self.area.id(Id::new(id).with(self.title));
         self
     }
     pub fn set_width(mut self, width: f32) -> Self {
-        self.window = self.window.default_width(width);
+        self.width = width;
         self
     }
     pub fn anchor(mut self, align: Align2, offset: impl Into<egui::Vec2>) -> Self {
-        self.window = self.window.anchor(align, offset);
-        self
-    }
-    pub fn resizable(mut self, resizable: bool) -> Self {
-        self.window = self.window.resizable(resizable);
+        self.area = self.area.anchor(align, offset);
         self
     }
     pub fn title_bar(mut self, enable: bool) -> Self {
@@ -240,6 +246,10 @@ impl GameWindow<'_> {
         self.color = Some(color);
         self
     }
+    pub fn order(mut self, order: Order) -> Self {
+        self.area = self.area.order(order);
+        self
+    }
     pub fn entity_anchor(
         mut self,
         entity: Entity,
@@ -248,21 +258,22 @@ impl GameWindow<'_> {
         world: &mut World,
     ) -> Self {
         let pos = entity_screen_pos(entity, world) + offset;
-        self.window = self.window.fixed_pos([pos.x, pos.y]).pivot(pivot);
+        self.area = self.area.fixed_pos([pos.x, pos.y]).pivot(pivot);
         self
     }
 }
 
 pub fn window(title: &str) -> GameWindow<'_> {
     GameWindow {
-        window: Window::new(title)
-            .default_width(300.0)
-            .title_bar(false)
-            .collapsible(false),
+        area: Area::new(title.to_owned())
+            .constrain(true)
+            .pivot(Align2::CENTER_CENTER),
         title,
         title_bar: true,
         stroke: true,
         color: None,
+        width: 250.0,
+        frame: None,
     }
 }
 
@@ -272,7 +283,10 @@ pub fn frame<R>(ui: &mut Ui, add_contents: impl FnOnce(&mut Ui) -> R) -> InnerRe
         .inner_margin(6.0)
         .outer_margin(6.0)
         .rounding(0.0)
-        .show(ui, |ui| ui.vertical_centered_justified(add_contents).inner)
+        .show(ui, |ui| {
+            ui.set_width(ui.available_width());
+            ui.vertical_centered_justified(add_contents).inner
+        })
 }
 
 pub fn frame_horizontal<R>(

@@ -167,8 +167,8 @@ impl AudioPlugin {
 
         window("PLAYBACK")
             .anchor(Align2::CENTER_BOTTOM, [0.0, -50.0])
-            .resizable(false)
             .title_bar(false)
+            .set_width(300.0)
             .show(ctx, |ui| {
                 frame(ui, |ui| {
                     ui.columns(5, |ui| {

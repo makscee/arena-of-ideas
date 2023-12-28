@@ -122,7 +122,11 @@ impl LoginPlugin {
         match status {
             Status::Committed => *CURRENT_USER.lock().unwrap() = Some(name.clone()),
             Status::Failed(e) => {
-                error!("Failed to login {e}")
+                AlertPlugin::add_error(
+                    Some("LOGIN ERROR".to_owned()),
+                    format!("Failed to login {e}"),
+                    None,
+                );
             }
             Status::OutOfEnergy => panic!(),
         }

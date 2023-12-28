@@ -297,7 +297,6 @@ impl ShopPlugin {
                     window("sacrifice")
                         .id(unit)
                         .set_width(80.0)
-                        .resizable(false)
                         .title_bar(false)
                         .stroke(false)
                         .entity_anchor(unit, Align2::CENTER_TOP, vec2(0.0, 70.0), world)
@@ -545,7 +544,6 @@ impl ShopOffer {
                     window("BUY STATUS")
                         .id(&entity)
                         .title_bar(false)
-                        .resizable(false)
                         .set_width(150.0)
                         .entity_anchor(*entity, Align2::CENTER_BOTTOM, vec2(0.0, -80.0), world)
                         .show(ctx, |ui| {
@@ -573,8 +571,7 @@ impl ShopOffer {
             }
             window("BUY")
                 .id(&entity)
-                .set_width(80.0)
-                .resizable(false)
+                .set_width(120.0)
                 .title_bar(false)
                 .stroke(false)
                 .entity_anchor(*entity, Align2::CENTER_TOP, vec2(0.0, 70.0), world)

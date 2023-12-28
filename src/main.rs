@@ -104,6 +104,7 @@ fn main() {
             PanelsPlugin,
             UiPlugin,
             LeaderboardPlugin,
+            AlertPlugin,
         ))
         .add_systems(Update, input_world)
         .init_resource::<GameTimer>()
