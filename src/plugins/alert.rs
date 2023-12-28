@@ -77,7 +77,7 @@ impl AlertPlugin {
         text: String,
         action: Option<Box<dyn FnOnce(&mut World) + Send + Sync>>,
     ) {
-        error!("{title} {text}");
+        error!("{title:?} {text}");
         Alert {
             title,
             text,
