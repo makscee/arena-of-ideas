@@ -1,5 +1,6 @@
 mod tower;
 mod user;
+mod hero;
 
 use anyhow::Context;
 

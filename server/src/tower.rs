@@ -24,7 +24,7 @@ pub enum TowerStatus {
 }
 
 #[spacetimedb(reducer)]
-pub fn sync_tower_levels(
+fn sync_tower_levels(
     ctx: ReducerContext,
     tower_id: u64,
     levels: Vec<String>,
@@ -40,7 +40,7 @@ pub fn sync_tower_levels(
 }
 
 #[spacetimedb(reducer)]
-pub fn finish_building_tower(
+fn finish_building_tower(
     ctx: ReducerContext,
     levels: Vec<String>,
     owner_team: String,
@@ -58,7 +58,7 @@ pub fn finish_building_tower(
 }
 
 #[spacetimedb(reducer)]
-pub fn beat_tower(
+fn beat_tower(
     ctx: ReducerContext,
     tower_id: u64,
     levels: Vec<String>,

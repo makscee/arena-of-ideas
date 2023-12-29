@@ -117,10 +117,14 @@ impl LoginPlugin {
         std::fs::remove_dir_all(path).expect("Failed to clear credentials dir");
     }
 
+    pub fn save_current_user(name: String) {
+        *CURRENT_USER.lock().unwrap() = Some(name)
+    }
+
     fn on_login(status: &Status, name: &String) {
         debug!("Login: {status:?} {name}");
         match status {
-            Status::Committed => *CURRENT_USER.lock().unwrap() = Some(name.clone()),
+            Status::Committed => Self::save_current_user(name.clone()),
             Status::Failed(e) => {
                 AlertPlugin::add_error(
                     Some("LOGIN ERROR".to_owned()),

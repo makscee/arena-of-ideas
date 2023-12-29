@@ -1,4 +1,4 @@
-use crate::module_bindings::{set_name, TowerStatus, User};
+use crate::module_bindings::{once_on_set_name, set_name, TowerStatus, User};
 
 use super::*;
 
@@ -46,6 +46,17 @@ impl ProfilePlugin {
                     });
                     if ui.button("Save").clicked() {
                         set_name(user.name.clone());
+                        once_on_set_name(|_, _, status, name| match status {
+                            spacetimedb_sdk::reducer::Status::Committed => {
+                                LoginPlugin::save_current_user(name.clone())
+                            }
+                            spacetimedb_sdk::reducer::Status::Failed(e) => AlertPlugin::add_error(
+                                Some("SET NAME ERROR".to_owned()),
+                                e.clone(),
+                                None,
+                            ),
+                            spacetimedb_sdk::reducer::Status::OutOfEnergy => panic!(),
+                        });
                     }
                 });
                 frame(ui, |ui| {
