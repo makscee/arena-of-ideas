@@ -21,6 +21,7 @@ mod shop;
 mod simulation;
 mod ui;
 mod unit;
+mod unit_sync;
 
 pub use action::*;
 pub use alert::*;
@@ -43,3 +44,4 @@ pub use shop::*;
 pub use simulation::*;
 pub use ui::*;
 pub use unit::*;
+pub use unit_sync::*;

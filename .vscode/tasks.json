@@ -106,6 +106,25 @@
 			}
 		},
 		{
+			"type": "cargo",
+			"command": "run",
+			"problemMatcher": [
+				"$rustc"
+			],
+			"label": "Sync Units",
+			"args": [
+				"--",
+				"--mode",
+				"sync"
+			],
+			"group": {
+				"kind": "build"
+			},
+			"env": {
+				"RUST_BACKTRACE": "1"
+			}
+		},
+		{
 			"label": "Format Ron",
 			"type": "shell",
 			"group": {

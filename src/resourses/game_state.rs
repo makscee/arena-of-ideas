@@ -14,6 +14,7 @@ pub enum GameState {
     HeroEditor,
     HeroGallery,
     Login,
+    UnitSync,
 }
 
 impl GameState {
@@ -36,6 +37,7 @@ impl GameState {
             GameState::TestsLoading
             | GameState::BattleTest
             | GameState::Restart
+            | GameState::UnitSync
             | GameState::Loading => {}
         }
     }

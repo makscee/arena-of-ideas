@@ -22,6 +22,7 @@ pub enum RunMode {
     Test,
     Custom,
     Continue,
+    Sync,
 }
 
 fn main() {
@@ -31,6 +32,7 @@ fn main() {
         RunMode::Custom => GameState::CustomBattle,
         RunMode::Continue => GameState::Shop,
         RunMode::Test => GameState::TestsLoading,
+        RunMode::Sync => GameState::UnitSync,
     };
     App::new()
         .add_state::<GameState>()
@@ -105,6 +107,7 @@ fn main() {
             UiPlugin,
             LeaderboardPlugin,
             AlertPlugin,
+            UnitSyncPlugin,
         ))
         .add_systems(Update, input_world)
         .init_resource::<GameTimer>()

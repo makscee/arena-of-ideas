@@ -22,36 +22,50 @@ use std::sync::Arc;
 
 pub mod beat_tower_reducer;
 pub mod finish_building_tower_reducer;
+pub mod give_right_reducer;
 pub mod login_by_identity_reducer;
 pub mod login_reducer;
 pub mod register_reducer;
 pub mod set_name_reducer;
 pub mod sync_tower_levels_reducer;
+pub mod sync_units_reducer;
 pub mod tower;
 pub mod tower_status;
+pub mod unit;
+pub mod unit_pool;
 pub mod user;
+pub mod user_access;
+pub mod user_right;
 
 pub use beat_tower_reducer::*;
 pub use finish_building_tower_reducer::*;
+pub use give_right_reducer::*;
 pub use login_by_identity_reducer::*;
 pub use login_reducer::*;
 pub use register_reducer::*;
 pub use set_name_reducer::*;
 pub use sync_tower_levels_reducer::*;
+pub use sync_units_reducer::*;
 pub use tower::*;
 pub use tower_status::*;
+pub use unit::*;
+pub use unit_pool::*;
 pub use user::*;
+pub use user_access::*;
+pub use user_right::*;
 
 #[allow(unused)]
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub enum ReducerEvent {
     BeatTower(beat_tower_reducer::BeatTowerArgs),
     FinishBuildingTower(finish_building_tower_reducer::FinishBuildingTowerArgs),
+    GiveRight(give_right_reducer::GiveRightArgs),
     Login(login_reducer::LoginArgs),
     LoginByIdentity(login_by_identity_reducer::LoginByIdentityArgs),
     Register(register_reducer::RegisterArgs),
     SetName(set_name_reducer::SetNameArgs),
     SyncTowerLevels(sync_tower_levels_reducer::SyncTowerLevelsArgs),
+    SyncUnits(sync_units_reducer::SyncUnitsArgs),
 }
 
 #[allow(unused)]
@@ -67,8 +81,15 @@ impl SpacetimeModule for Module {
         match table_name {
             "Tower" => client_cache
                 .handle_table_update_with_primary_key::<tower::Tower>(callbacks, table_update),
+            "Unit" => client_cache
+                .handle_table_update_with_primary_key::<unit::Unit>(callbacks, table_update),
             "User" => client_cache
                 .handle_table_update_with_primary_key::<user::User>(callbacks, table_update),
+            "UserAccess" => client_cache
+                .handle_table_update_with_primary_key::<user_access::UserAccess>(
+                    callbacks,
+                    table_update,
+                ),
             _ => {
                 spacetimedb_sdk::log::error!("TableRowOperation on unknown table {:?}", table_name)
             }
@@ -82,7 +103,9 @@ impl SpacetimeModule for Module {
         state: &Arc<ClientCache>,
     ) {
         reminders.invoke_callbacks::<tower::Tower>(worker, &reducer_event, state);
+        reminders.invoke_callbacks::<unit::Unit>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<user::User>(worker, &reducer_event, state);
+        reminders.invoke_callbacks::<user_access::UserAccess>(worker, &reducer_event, state);
     }
     fn handle_event(
         &self,
@@ -98,11 +121,13 @@ impl SpacetimeModule for Module {
 match &function_call.reducer[..] {
 						"beat_tower" => _reducer_callbacks.handle_event_of_type::<beat_tower_reducer::BeatTowerArgs, ReducerEvent>(event, _state, ReducerEvent::BeatTower),
 			"finish_building_tower" => _reducer_callbacks.handle_event_of_type::<finish_building_tower_reducer::FinishBuildingTowerArgs, ReducerEvent>(event, _state, ReducerEvent::FinishBuildingTower),
+			"give_right" => _reducer_callbacks.handle_event_of_type::<give_right_reducer::GiveRightArgs, ReducerEvent>(event, _state, ReducerEvent::GiveRight),
 			"login" => _reducer_callbacks.handle_event_of_type::<login_reducer::LoginArgs, ReducerEvent>(event, _state, ReducerEvent::Login),
 			"login_by_identity" => _reducer_callbacks.handle_event_of_type::<login_by_identity_reducer::LoginByIdentityArgs, ReducerEvent>(event, _state, ReducerEvent::LoginByIdentity),
 			"register" => _reducer_callbacks.handle_event_of_type::<register_reducer::RegisterArgs, ReducerEvent>(event, _state, ReducerEvent::Register),
 			"set_name" => _reducer_callbacks.handle_event_of_type::<set_name_reducer::SetNameArgs, ReducerEvent>(event, _state, ReducerEvent::SetName),
 			"sync_tower_levels" => _reducer_callbacks.handle_event_of_type::<sync_tower_levels_reducer::SyncTowerLevelsArgs, ReducerEvent>(event, _state, ReducerEvent::SyncTowerLevels),
+			"sync_units" => _reducer_callbacks.handle_event_of_type::<sync_units_reducer::SyncUnitsArgs, ReducerEvent>(event, _state, ReducerEvent::SyncUnits),
 			unknown => { spacetimedb_sdk::log::error!("Event on an unknown reducer: {:?}", unknown); None }
 }
     }
@@ -117,7 +142,10 @@ match &function_call.reducer[..] {
             "Tower" => {
                 client_cache.handle_resubscribe_for_type::<tower::Tower>(callbacks, new_subs)
             }
+            "Unit" => client_cache.handle_resubscribe_for_type::<unit::Unit>(callbacks, new_subs),
             "User" => client_cache.handle_resubscribe_for_type::<user::User>(callbacks, new_subs),
+            "UserAccess" => client_cache
+                .handle_resubscribe_for_type::<user_access::UserAccess>(callbacks, new_subs),
             _ => {
                 spacetimedb_sdk::log::error!("TableRowOperation on unknown table {:?}", table_name)
             }
