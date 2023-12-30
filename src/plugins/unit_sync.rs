@@ -1,4 +1,4 @@
-use crate::module_bindings::{give_right, sync_units};
+use crate::module_bindings::sync_units;
 
 use super::*;
 
@@ -13,7 +13,6 @@ impl Plugin for UnitSyncPlugin {
 fn do_sync(world: &mut World) {
     debug!("Sync start");
     LoginPlugin::connect();
-    // give_right(identity().unwrap(), module_bindings::UserRight::UnitSync);
     let mut units: Vec<module_bindings::Unit> = default();
     for (name, unit) in Pools::get(world).heroes.iter() {
         units.push(module_bindings::Unit {

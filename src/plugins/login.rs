@@ -24,10 +24,12 @@ const DB_NAME: &str = "aoi";
 const CREDS_DIR: &str = ".aoi";
 
 static IS_CONNECTED: Mutex<bool> = Mutex::new(false);
+static LOGIN_EVENT_DISPATCHED: Mutex<bool> = Mutex::new(false);
 pub static CURRENT_USER: Mutex<Option<String>> = Mutex::new(None);
 
 fn on_connected(creds: &Credentials, _client_address: Address) {
     *IS_CONNECTED.lock().unwrap() = true;
+    debug!("Current identity: {}", hex::encode(creds.identity.bytes()));
     if let Err(e) = save_credentials(CREDS_DIR, creds) {
         eprintln!("Failed to save credentials: {:?}", e);
     }
@@ -52,13 +54,17 @@ pub struct RegisterData {
     pub pass_repeat: String,
 }
 
+#[derive(BevyEvent)]
+pub struct LoginEvent;
+
 impl Plugin for LoginPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, Self::setup)
             .add_systems(OnEnter(GameState::Loading), Self::menu_connect)
             .add_systems(Update, Self::update.run_if(in_state(GameState::MainMenu)))
             .init_resource::<LoginData>()
-            .init_resource::<RegisterData>();
+            .init_resource::<RegisterData>()
+            .add_event::<LoginEvent>();
     }
 }
 
@@ -79,6 +85,11 @@ impl LoginPlugin {
                         data.prev_name = Some(user.name.clone());
                     }
                 }
+            }
+            let mut led = LOGIN_EVENT_DISPATCHED.lock().unwrap();
+            if !*led {
+                world.send_event(LoginEvent);
+                *led = true;
             }
         }
     }
@@ -225,5 +236,5 @@ impl LoginPlugin {
 }
 
 fn subscribe_to_tables() {
-    subscribe(&["SELECT * FROM User; SELECT * FROM Tower;"]).unwrap();
+    subscribe(&["SELECT * FROM User; SELECT * FROM Tower; SELECT * FROM Unit;"]).unwrap();
 }

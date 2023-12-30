@@ -201,10 +201,34 @@ impl PoolsPlugin {
             }
         }
     }
+
+    fn cache_server_pools(mut events: EventReader<LoginEvent>, mut pools: ResMut<Pools>) {
+        if events.is_empty() {
+            return;
+        }
+        events.clear();
+        debug!("Cache server pools start");
+        pools.heroes.clear();
+        pools.enemies.clear();
+        for module_bindings::Unit { name, data, pool } in module_bindings::Unit::iter() {
+            match pool {
+                module_bindings::UnitPool::Hero => {
+                    pools.heroes.insert(name, ron::from_str(&data).unwrap());
+                }
+                module_bindings::UnitPool::Enemy => {
+                    pools.enemies.insert(name, ron::from_str(&data).unwrap());
+                }
+            }
+        }
+    }
 }
 
 impl Plugin for PoolsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnExit(GameState::Loading), Self::setup);
+        app.add_systems(OnExit(GameState::Loading), Self::setup)
+            .add_systems(
+                Update,
+                Self::cache_server_pools.run_if(in_state(GameState::MainMenu)),
+            );
     }
 }

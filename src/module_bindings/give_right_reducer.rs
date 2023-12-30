@@ -15,7 +15,7 @@ use spacetimedb_sdk::{
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct GiveRightArgs {
-    pub identity: Identity,
+    pub identity: String,
     pub right: UserRight,
 }
 
@@ -24,13 +24,13 @@ impl Reducer for GiveRightArgs {
 }
 
 #[allow(unused)]
-pub fn give_right(identity: Identity, right: UserRight) {
+pub fn give_right(identity: String, right: UserRight) {
     GiveRightArgs { identity, right }.invoke();
 }
 
 #[allow(unused)]
 pub fn on_give_right(
-    mut __callback: impl FnMut(&Identity, Option<Address>, &Status, &Identity, &UserRight)
+    mut __callback: impl FnMut(&Identity, Option<Address>, &Status, &String, &UserRight)
         + Send
         + 'static,
 ) -> ReducerCallbackId<GiveRightArgs> {
@@ -42,7 +42,7 @@ pub fn on_give_right(
 
 #[allow(unused)]
 pub fn once_on_give_right(
-    __callback: impl FnOnce(&Identity, Option<Address>, &Status, &Identity, &UserRight) + Send + 'static,
+    __callback: impl FnOnce(&Identity, Option<Address>, &Status, &String, &UserRight) + Send + 'static,
 ) -> ReducerCallbackId<GiveRightArgs> {
     GiveRightArgs::once_on_reducer(move |__identity, __addr, __status, __args| {
         let GiveRightArgs { identity, right } = __args;
