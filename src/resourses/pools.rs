@@ -210,6 +210,10 @@ impl PoolsPlugin {
         debug!("Cache server pools start");
         pools.heroes.clear();
         pools.enemies.clear();
+        pools.houses.clear();
+        pools.abilities.clear();
+        pools.statuses.clear();
+        pools.vfx.clear();
         for module_bindings::Unit { name, data, pool } in module_bindings::Unit::iter() {
             match pool {
                 module_bindings::UnitPool::Hero => {
@@ -220,6 +224,27 @@ impl PoolsPlugin {
                 }
             }
         }
+        for module_bindings::House { name, data } in module_bindings::House::iter() {
+            pools.houses.insert(name, ron::from_str(&data).unwrap());
+        }
+        for module_bindings::Ability { name, data } in module_bindings::Ability::iter() {
+            pools.abilities.insert(name, ron::from_str(&data).unwrap());
+        }
+        for module_bindings::Statuses { name, data } in module_bindings::Statuses::iter() {
+            pools.statuses.insert(name, ron::from_str(&data).unwrap());
+        }
+        for module_bindings::Vfx { name, data } in module_bindings::Vfx::iter() {
+            pools.vfx.insert(name, ron::from_str(&data).unwrap());
+        }
+        debug!(
+            "Cache complete\n{} Heroes\n{} Enemies\n{} Houses\n{} Abilities\n{} Statuses\n{} Vfxs",
+            pools.heroes.len(),
+            pools.enemies.len(),
+            pools.houses.len(),
+            pools.abilities.len(),
+            pools.statuses.len(),
+            pools.vfx.len()
+        );
     }
 }
 

@@ -111,7 +111,7 @@
 			"problemMatcher": [
 				"$rustc"
 			],
-			"label": "Sync Units",
+			"label": "Sync Assets",
 			"args": [
 				"--",
 				"--mode",

@@ -107,7 +107,7 @@ fn main() {
             UiPlugin,
             LeaderboardPlugin,
             AlertPlugin,
-            UnitSyncPlugin,
+            AssetsSyncPlugin,
         ))
         .add_systems(Update, input_world)
         .init_resource::<GameTimer>()
