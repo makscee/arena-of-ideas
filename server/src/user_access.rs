@@ -14,12 +14,12 @@ pub enum UserRight {
     UnitSync,
 }
 
-const SERVER_IDENTITY_HEX: &'static str =
+const SERVER_IDENTITY_HEX: &str =
     "93dda09db9a56d8fa6c024d843e805d8262191db3b4ba84c5efcd1ad451fed4e";
 
 #[spacetimedb(reducer)]
 fn give_right(ctx: ReducerContext, identity: String) -> Result<(), String> {
-    if !hex::encode(&ctx.sender.as_bytes()).eq(SERVER_IDENTITY_HEX) {
+    if !hex::encode(ctx.sender.as_bytes()).eq(SERVER_IDENTITY_HEX) {
         return Err("Sender identity doesn't match server".to_owned());
     }
     let identity = Identity::from_str(&identity).map_err(|e| e.to_string())?;
