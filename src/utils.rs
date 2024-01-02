@@ -19,8 +19,10 @@ pub fn egui_context(world: &mut World) -> Context {
         .get_mut()
         .clone()
 }
-pub fn world_to_screen(pos: Vec3, world: &mut World) -> Vec2 {
-    let (camera, transform) = world.query::<(&Camera, &GlobalTransform)>().single(world);
+pub fn world_to_screen(pos: Vec3, world: &World) -> Vec2 {
+    let entity = world.entity(world.resource::<CameraData>().entity);
+    let camera = entity.get::<Camera>().unwrap();
+    let transform = entity.get::<GlobalTransform>().unwrap();
     camera.world_to_viewport(transform, pos).unwrap_or_default()
 }
 pub fn screen_to_world(pos: Vec2, camera: &Camera, transform: &GlobalTransform) -> Vec2 {
@@ -33,7 +35,7 @@ pub fn entity_panel(
     name: &str,
     world: &mut World,
 ) -> egui::Window<'static> {
-    let pos = entity_screen_pos(entity, world) + side;
+    let pos = entity_screen_pos(entity, side, world);
     let side_i = side.as_ivec2();
     let align = match (side_i.x, side_i.y) {
         (-1, 0) => Align2::RIGHT_CENTER,
@@ -53,12 +55,12 @@ pub fn entity_panel(
         .resizable(false)
         .pivot(align)
 }
-pub fn entity_screen_pos(entity: Entity, world: &mut World) -> Vec2 {
+pub fn entity_screen_pos(entity: Entity, offset: Vec2, world: &World) -> Vec2 {
     let pos = world
         .get::<GlobalTransform>(entity)
         .map(|t| t.translation())
         .unwrap_or_default();
-    world_to_screen(pos, world)
+    world_to_screen(pos + offset.extend(0.0), world)
 }
 pub fn cursor_pos(world: &mut World) -> Option<Vec2> {
     let window = world.query::<&bevy::window::Window>().single(world);

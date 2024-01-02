@@ -114,12 +114,7 @@ impl PackedTeam {
         }
         result
             .into_iter()
-            .map(|(u, c)| {
-                (
-                    UnitCard::from_packed(u, world).unwrap().set_compact(false),
-                    c,
-                )
-            })
+            .map(|(u, c)| (UnitCard::from_packed(u, world).unwrap().set_open(false), c))
             .collect_vec()
     }
 }

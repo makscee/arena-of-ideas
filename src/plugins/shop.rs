@@ -299,7 +299,7 @@ impl ShopPlugin {
                         .set_width(80.0)
                         .title_bar(false)
                         .stroke(false)
-                        .entity_anchor(unit, Align2::CENTER_TOP, vec2(0.0, 70.0), world)
+                        .entity_anchor(unit, Align2::CENTER_TOP, vec2(0.0, 1.0), world)
                         .show(ctx, |ui| {
                             frame(ui, |ui| {
                                 ui.set_width(100.0);
@@ -399,7 +399,7 @@ impl ShopPlugin {
                                     !card.description.is_empty() || !card.statuses.is_empty();
                                 ui[ind].vertical_centered(|ui| {
                                     if data.enemy_panel_expanded {
-                                        card.show_frames(ui);
+                                        card.show_frames(true, ui);
                                     } else {
                                         card.show_name(false, ui);
                                     }
@@ -545,10 +545,10 @@ impl ShopOffer {
                         .id(&entity)
                         .title_bar(false)
                         .set_width(150.0)
-                        .entity_anchor(*entity, Align2::CENTER_BOTTOM, vec2(0.0, -80.0), world)
+                        .entity_anchor(*entity, Align2::CENTER_BOTTOM, vec2(0.0, 1.2), world)
                         .show(ctx, |ui| {
                             frame(ui, |ui| {
-                                ui.vertical(|ui| {
+                                ui.vertical_centered_justified(|ui| {
                                     let color: Color32 = Pools::get_status_house(name, world)
                                         .unwrap()
                                         .color
@@ -574,7 +574,7 @@ impl ShopOffer {
                 .set_width(120.0)
                 .title_bar(false)
                 .stroke(false)
-                .entity_anchor(*entity, Align2::CENTER_TOP, vec2(0.0, 70.0), world)
+                .entity_anchor(*entity, Align2::CENTER_TOP, vec2(0.0, -1.2), world)
                 .show(ctx, |ui| {
                     ui.set_enabled(offer.available && save.climb.shop.can_afford(offer.price));
                     frame(ui, |ui| {

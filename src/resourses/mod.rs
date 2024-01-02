@@ -19,6 +19,7 @@ mod test_scenarios;
 mod tower;
 mod tower_climb;
 mod trigger;
+mod unit_card;
 mod vars;
 mod vfx;
 
@@ -44,5 +45,6 @@ pub use test_scenarios::*;
 pub use tower::*;
 pub use tower_climb::*;
 pub use trigger::*;
+pub use unit_card::*;
 pub use vars::*;
 pub use vfx::*;

@@ -108,9 +108,13 @@ impl PackedUnit {
         {
             world.entity_mut(entity).insert(ActiveTeam);
         }
+        let card = UnitCard::from_entity(entity, world)
+            .unwrap()
+            .set_open(false);
         world
             .entity_mut(entity)
-            .insert((Name::new(self.name.clone()), Unit));
+            .insert((Name::new(self.name.clone()), Unit))
+            .insert(card);
         debug!("Unpacked unit {entity:?} {}", self.name);
         entity
     }

@@ -24,9 +24,7 @@ pub struct UiPlugin;
 
 impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, Self::setup)
-            // .add_systems(Update, Self::ui)
-            ;
+        app.add_systems(Startup, Self::setup);
     }
 }
 
@@ -255,9 +253,9 @@ impl GameWindow<'_> {
         entity: Entity,
         pivot: Align2,
         offset: Vec2,
-        world: &mut World,
+        world: &World,
     ) -> Self {
-        let pos = entity_screen_pos(entity, world) + offset;
+        let pos = entity_screen_pos(entity, offset, world);
         self.area = self.area.fixed_pos([pos.x, pos.y]).pivot(pivot);
         self
     }

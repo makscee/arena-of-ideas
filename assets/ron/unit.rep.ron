@@ -60,13 +60,5 @@
                 ),
             ],
         ),
-        (
-            material: Text(
-                text: State(Name),
-                color: Hex("#ECEFF1"),
-                size: Float(0.25),
-            ),
-            mapping: {Position: Vec2(0.0, -1.1)},
-        ),
     ],
 )
