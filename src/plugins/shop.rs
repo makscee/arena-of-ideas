@@ -1,6 +1,7 @@
 use super::*;
 
 use bevy::input::common_conditions::input_just_pressed;
+use bevy_egui::egui::Order;
 use rand::seq::IteratorRandom;
 
 pub struct ShopPlugin;
@@ -10,8 +11,8 @@ pub struct ShopData {
     pub next_team: PackedTeam,
     pub next_team_cards: Vec<(UnitCard, usize)>,
     pub next_level_num: usize,
-    pub enemy_panel_expanded: bool,
     pub phase: ShopPhase,
+    pub bottom_expanded: bool,
 }
 
 const G_PER_ROUND: i32 = 4;
@@ -212,7 +213,7 @@ impl ShopPlugin {
             next_team,
             next_level_num: next_level_num + 1,
             phase,
-            enemy_panel_expanded: false,
+            bottom_expanded: false,
         });
     }
 
@@ -270,7 +271,9 @@ impl ShopPlugin {
         let save = Save::get(world).unwrap();
         match &mut data.phase {
             ShopPhase::Buy => {
-                ShopOffer::draw_buy_panels(world);
+                if !data.bottom_expanded {
+                    ShopOffer::draw_buy_panels(world);
+                }
                 Area::new("reroll").fixed_pos(pos).show(ctx, |ui| {
                     ui.set_width(120.0);
                     frame(ui, |ui| {
@@ -289,7 +292,7 @@ impl ShopPlugin {
                         }
                     });
                 });
-                Self::show_next_enemy_window(&mut data, world);
+                Self::show_next_enemy_preview_panel(&mut data, world);
             }
             ShopPhase::Sacrifice { selected } => {
                 for unit in UnitPlugin::collect_faction(Faction::Team, world) {
@@ -376,60 +379,40 @@ impl ShopPlugin {
         world.insert_resource(data);
     }
 
-    fn show_next_enemy_window(data: &mut ShopData, world: &mut World) {
-        let len = data.next_team_cards.len();
-        window("NEXT ENEMY")
-            .anchor(Align2::RIGHT_CENTER, [-10.0, 0.0])
-            .show(&egui_context(world), |ui| {
-                Frame::none().inner_margin(8.0).show(ui, |ui| {
-                    ui.vertical(|ui| {
-                        ui.label(
-                            format!(
-                                "Level {}/{}",
-                                data.next_level_num - 1,
-                                Tower::total_levels()
-                            )
+    fn show_next_enemy_preview_panel(data: &mut ShopData, world: &mut World) {
+        let ctx = &egui_context(world);
+        let response = TopBottomPanel::bottom("enemy preview")
+            .frame(
+                Frame::none()
+                    .fill(light_black())
+                    .inner_margin(Margin::same(8.0)),
+            )
+            .show(ctx, |ui| {
+                ui.with_layout(Layout::right_to_left(egui::Align::Max), |ui| {
+                    ui.add_space(30.0);
+                    if ui.button("START BATTLE").clicked() {
+                        Self::go_to_battle(world);
+                    }
+                    ui.label(
+                        format!("{}/{}", data.next_level_num - 1, Tower::total_levels())
                             .add_color(white())
                             .rich_text(),
-                        );
-                        let mut can_expand = false;
-                        ui.columns(len, |ui| {
-                            for (ind, (card, count)) in data.next_team_cards.iter().enumerate() {
-                                can_expand |=
-                                    !card.description.is_empty() || !card.statuses.is_empty();
-                                ui[ind].vertical_centered(|ui| {
-                                    if data.enemy_panel_expanded {
-                                        card.show_frames(true, ui);
-                                    } else {
-                                        card.show_name(false, ui);
-                                    }
-                                    if *count > 1 {
-                                        ui.heading(
-                                            format!("x{count}").add_color(white()).rich_text(),
-                                        );
-                                    }
-                                });
-                            }
-                        });
-
-                        if can_expand
-                            && if data.enemy_panel_expanded {
-                                ui.button_primary("EXPAND")
-                            } else {
-                                ui.button("EXPAND")
-                            }
-                            .clicked()
-                        {
-                            data.enemy_panel_expanded = !data.enemy_panel_expanded;
+                    );
+                    ui.add_space(50.0);
+                    for (card, count) in data.next_team_cards.iter().rev() {
+                        if *count > 1 {
+                            ui.label(format!("x{count}").add_color(white()).rich_text());
                         }
-                        ui.with_layout(Layout::right_to_left(egui::Align::Min), |ui| {
-                            if ui.button_primary(RichText::new("GO").heading()).clicked() {
-                                Self::go_to_battle(world);
-                            }
-                        });
-                    });
+                        card.show_ui(data.bottom_expanded, ui);
+                    }
+                    ui.label("NEXT ENEMY:");
                 });
-            });
+            })
+            .response;
+        if data.bottom_expanded && !response.hovered() {
+            ctx.data_mut(|w| w.clear());
+        }
+        data.bottom_expanded = response.hovered();
     }
 
     fn go_to_battle(world: &mut World) {

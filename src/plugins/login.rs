@@ -86,10 +86,12 @@ impl LoginPlugin {
                     }
                 }
             }
-            let mut led = LOGIN_EVENT_DISPATCHED.lock().unwrap();
-            if !*led {
-                world.send_event(LoginEvent);
-                *led = true;
+            if Self::get_username().is_some() {
+                let mut led = LOGIN_EVENT_DISPATCHED.lock().unwrap();
+                if !*led {
+                    world.send_event(LoginEvent);
+                    *led = true;
+                }
             }
         }
     }

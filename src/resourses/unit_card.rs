@@ -151,35 +151,37 @@ impl UnitCard {
     }
 
     pub fn show_frames(&self, open: bool, ui: &mut Ui) {
-        self.show_name(open, ui);
-        if !open {
-            return;
-        }
-        frame(ui, |ui| {
-            if !self.description.is_empty() {
-                ui.vertical(|ui| {
-                    ui.label(self.description.widget());
+        ui.vertical(|ui| {
+            self.show_name(open, ui);
+            if !open {
+                return;
+            }
+            frame(ui, |ui| {
+                if !self.description.is_empty() {
+                    ui.vertical(|ui| {
+                        ui.label(self.description.widget());
+                    });
+                }
+                // self.show_status_lines(false, ui);
+            });
+
+            for (name, text) in &self.definitions {
+                frame(ui, |ui| {
+                    ui.label(name.rich_text().family(FontFamily::Name("bold".into())));
+                    ui.horizontal_wrapped(|ui| {
+                        ui.label(text.widget());
+                    });
                 });
             }
-            // self.show_status_lines(false, ui);
+            if !self.statuses.is_empty() {
+                frame(ui, |ui| {
+                    ui.vertical_centered(|ui| {
+                        ui.heading(RichText::new("Statuses").color(white()));
+                    });
+                    self.show_status_lines(open, ui);
+                });
+            }
         });
-
-        for (name, text) in &self.definitions {
-            frame(ui, |ui| {
-                ui.label(name.rich_text().family(FontFamily::Name("bold".into())));
-                ui.horizontal_wrapped(|ui| {
-                    ui.label(text.widget());
-                });
-            });
-        }
-        if !self.statuses.is_empty() {
-            frame(ui, |ui| {
-                ui.vertical_centered(|ui| {
-                    ui.heading(RichText::new("Statuses").color(white()));
-                });
-                self.show_status_lines(open, ui);
-            });
-        }
     }
 
     pub fn show_window(&self, open: bool, ctx: &egui::Context, world: &World) {
@@ -207,6 +209,14 @@ impl UnitCard {
                     self.show_frames(open, ui)
                 }
             });
+    }
+
+    pub fn show_ui(&self, open: bool, ui: &mut Ui) {
+        window("UNIT")
+            .id(self.entity)
+            .set_width(if open { 200.0 } else { 120.0 })
+            .title_bar(false)
+            .show_ui(ui, |ui| self.show_frames(open, ui));
     }
 
     pub fn set_open(mut self, value: bool) -> Self {

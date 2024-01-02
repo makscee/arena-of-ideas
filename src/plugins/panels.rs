@@ -94,7 +94,7 @@ impl PanelsPlugin {
             )
             .show(&egui_context(world), |ui| {
                 let mut margin = Margin::same(4.0);
-                margin.top = 1.0;
+                margin.top = 2.0;
                 Frame::none().inner_margin(margin).show(ui, |ui| {
                     let columns = top_data.len();
                     ui.set_max_width(columns as f32 * 150.0);

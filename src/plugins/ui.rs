@@ -5,11 +5,14 @@ use super::*;
 pub fn light_gray() -> Color32 {
     hex_color!("#6F6F6F")
 }
-fn dark_gray() -> Color32 {
+pub fn dark_gray() -> Color32 {
     hex_color!("#393939")
 }
-fn black() -> Color32 {
+pub fn black() -> Color32 {
     hex_color!("#000000")
+}
+pub fn light_black() -> Color32 {
+    hex_color!("#202020")
 }
 pub fn white() -> Color32 {
     hex_color!("#ffffff")
@@ -164,49 +167,51 @@ pub struct GameWindow<'a> {
 }
 
 impl GameWindow<'_> {
-    pub fn show(mut self, ctx: &egui::Context, add_contents: impl FnOnce(&mut Ui)) {
+    pub fn show(self, ctx: &egui::Context, add_contents: impl FnOnce(&mut Ui)) {
+        self.area.show(ctx, |ui| {
+            self.show_ui(ui, add_contents);
+        });
+    }
+    pub fn show_ui(mut self, ui: &mut Ui, add_contents: impl FnOnce(&mut Ui)) {
         if !self.stroke {
             self.frame = Some(Frame::none());
         }
-        let style = ctx.style();
+        let style = ui.style();
         let mut stroke = style.visuals.window_stroke;
         stroke.color = self.color.unwrap_or(style.visuals.window_stroke.color);
-        self.area.show(ctx, |ui| {
-            ui.set_width(self.width);
-            self.frame
-                .unwrap_or(Frame::window(&style).stroke(stroke))
-                .show(ui, |ui| {
-                    if self.title_bar {
-                        let v = &ui.style().visuals.clone();
-                        let mut rounding = v.window_rounding;
-                        rounding.se = 0.0;
-                        rounding.sw = 0.0;
-                        Frame::none()
-                            .fill(stroke.color)
-                            .rounding(rounding)
-                            .stroke(stroke)
-                            .show(ui, |ui| {
-                                ui.with_layout(
-                                    Layout::top_down(egui::Align::Min).with_cross_justify(true),
-                                    |ui| {
-                                        Frame::none()
-                                            .inner_margin(Margin::symmetric(8.0, 0.0))
-                                            .show(ui, |ui| {
-                                                ui.label(
-                                                    RichText::new(self.title)
-                                                        .text_style(TextStyle::Heading)
-                                                        .size(15.0)
-                                                        .color(black()),
-                                                );
-                                            })
-                                    },
-                                );
-                            });
-                    }
-                    add_contents(ui)
-                });
-        });
-        ctx.set_style(style);
+        self.frame
+            .unwrap_or(Frame::window(&style).stroke(stroke))
+            .show(ui, |ui| {
+                ui.set_width(self.width);
+                if self.title_bar {
+                    let v = &ui.style().visuals.clone();
+                    let mut rounding = v.window_rounding;
+                    rounding.se = 0.0;
+                    rounding.sw = 0.0;
+                    Frame::none()
+                        .fill(stroke.color)
+                        .rounding(rounding)
+                        .stroke(stroke)
+                        .show(ui, |ui| {
+                            ui.with_layout(
+                                Layout::top_down(egui::Align::Min).with_cross_justify(true),
+                                |ui| {
+                                    Frame::none()
+                                        .inner_margin(Margin::symmetric(8.0, 0.0))
+                                        .show(ui, |ui| {
+                                            ui.label(
+                                                RichText::new(self.title)
+                                                    .text_style(TextStyle::Heading)
+                                                    .size(15.0)
+                                                    .color(black()),
+                                            );
+                                        })
+                                },
+                            );
+                        });
+                }
+                add_contents(ui)
+            });
     }
     pub fn default_pos_vec(mut self, pos: Vec2) -> Self {
         self.area = self.area.default_pos(pos2(pos.x, pos.y));
