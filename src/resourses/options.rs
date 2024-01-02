@@ -68,11 +68,4 @@ impl Options {
             .get(&world.get_resource::<Options>().unwrap().animations)
             .unwrap()
     }
-    pub fn get_initial_tower(world: &World) -> &Tower {
-        world
-            .get_resource::<Assets<Tower>>()
-            .unwrap()
-            .get(&world.get_resource::<Options>().unwrap().initial_tower)
-            .unwrap()
-    }
 }

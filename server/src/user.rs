@@ -1,13 +1,14 @@
 use pwhash::bcrypt;
 use spacetimedb::Timestamp;
 
-use crate::tower::Tower;
-
 use super::*;
 
 #[spacetimedb(table)]
 pub struct User {
     #[primarykey]
+    #[autoinc]
+    pub id: u64,
+    #[unique]
     pub name: String,
     identities: Vec<Identity>,
     pass_hash: String,
@@ -21,6 +22,7 @@ fn register(ctx: ReducerContext, name: String, pass: String) -> Result<(), Strin
     let pass_hash = bcrypt::hash(pass).map_err(|e| e.to_string())?;
     User::clear_identity(&ctx.sender);
     User::insert(User {
+        id: 0,
         identities: vec![ctx.sender],
         name,
         pass_hash,
@@ -63,9 +65,8 @@ pub fn login_by_identity(ctx: ReducerContext, name: String) -> Result<(), String
 #[spacetimedb(reducer)]
 fn set_name(ctx: ReducerContext, name: String) -> Result<(), String> {
     let name = User::validate_name(name)?;
-    if let Some(user) = User::find_by_identity(&ctx.sender) {
-        Tower::apply_name_change(user.name.clone(), name.clone());
-        User::update_by_name(&user.name, User { name, ..user });
+    if let Ok(user) = User::find_by_identity(&ctx.sender) {
+        User::update_by_id(&user.id, User { name, ..user });
         Ok(())
     } else {
         Err("Cannot set name for unknown user".to_string())
@@ -74,9 +75,9 @@ fn set_name(ctx: ReducerContext, name: String) -> Result<(), String> {
 
 #[spacetimedb(disconnect)]
 fn identity_disconnected(ctx: ReducerContext) {
-    if let Some(mut user) = User::find_by_identity(&ctx.sender) {
+    if let Ok(mut user) = User::find_by_identity(&ctx.sender) {
         user.online = false;
-        User::update_by_name(&user.name.clone(), user);
+        User::update_by_id(&user.id.clone(), user);
     }
 }
 
@@ -91,20 +92,23 @@ impl User {
         }
     }
 
-    pub fn find_by_identity(identity: &Identity) -> Option<User> {
-        User::iter().find(|u| u.identities.contains(identity))
+    pub fn find_by_identity(identity: &Identity) -> Result<User, String> {
+        User::iter()
+            .find(|u| u.identities.contains(identity))
+            .context("User not found")
+            .map_err(|e| e.to_string())
     }
 
     fn login(mut self) {
         self.online = true;
         self.last_login = Timestamp::now();
-        User::update_by_name(&self.name.clone(), self);
+        User::update_by_id(&self.id.clone(), self);
     }
 
     fn clear_identity(identity: &Identity) {
-        if let Some(mut user) = User::find_by_identity(identity) {
+        if let Ok(mut user) = User::find_by_identity(identity) {
             user.identities.retain(|i| !i.eq(identity));
-            User::update_by_name(&user.name.clone(), user);
+            User::update_by_id(&user.id.clone(), user);
         }
     }
 }

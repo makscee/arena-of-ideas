@@ -1,5 +1,3 @@
-use crate::user_access::UserRight;
-
 use super::*;
 
 #[spacetimedb(table)]

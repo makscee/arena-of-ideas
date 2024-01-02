@@ -238,12 +238,12 @@ impl LoginPlugin {
 fn subscribe_to_tables() {
     subscribe(&[
         "SELECT * FROM User",
-        "SELECT * FROM Tower",
         "SELECT * FROM Unit",
         "SELECT * FROM House",
         "SELECT * FROM Statuses",
         "SELECT * FROM Ability",
         "SELECT * FROM Vfx",
+        "SELECT * FROM GlobalTower",
     ])
     .unwrap();
 }

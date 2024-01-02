@@ -105,7 +105,6 @@ fn main() {
             ProfilePlugin,
             PanelsPlugin,
             UiPlugin,
-            LeaderboardPlugin,
             AlertPlugin,
             AssetsSyncPlugin,
         ))

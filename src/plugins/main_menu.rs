@@ -20,43 +20,6 @@ impl MainMenuPlugin {
                         LoginPlugin::login(ui, world);
                         LoginPlugin::register(ui, world);
                     }
-                    // let identity = identity().unwrap();
-                    // let has_own = TableTower::filter_by_creator(identity.clone())
-                    //     .next()
-                    //     .is_some();
-                    // ui.set_enabled(has_own);
-                    // if ui
-                    //     .button("RANDOM TOWER")
-                    //     .on_hover_text("Play tower that belongs to other random player")
-                    //     .on_disabled_hover_text(
-                    //         "Create at least one tower, click New Tower and beat 3+ levels",
-                    //     )
-                    //     .clicked()
-                    // {
-                    //     if let Some(tower) = TableTower::iter()
-                    //         .filter(|l| l.owner != identity)
-                    //         .choose(&mut thread_rng())
-                    //     {
-                    //         let team = match tower.status {
-                    //             module_bindings::TowerStatus::Fresh(team)
-                    //             | module_bindings::TowerStatus::Beaten(team) => {
-                    //                 ron::from_str::<PackedTeam>(&team).unwrap()
-                    //             }
-                    //         };
-                    //         let save = Save {
-                    //             mode: GameMode::RandomTower { tower_id: tower.id },
-                    //             climb: TowerClimb {
-                    //                 team: default(),
-                    //                 levels: tower.levels,
-                    //                 defeated: default(),
-                    //                 shop: ShopState::new(world),
-                    //                 owner_team: Some(team),
-                    //             },
-                    //         };
-                    //         save.save(world).unwrap();
-                    //         GameState::change(GameState::Shop, world);
-                    //     }
-                    // }
                 } else {
                     ui.label("DISCONNECTED");
                     if ui.button("CONNECT").clicked() {
@@ -77,18 +40,10 @@ impl MainMenuPlugin {
                     }
                 });
                 frame(ui, |ui| {
-                    if ui
-                        .button("NEW TOWER")
-                        .on_hover_text(
-                            "Generate new levels infinitely until defeat.
-New levels generated considering your teams strength",
-                        )
-                        .clicked()
-                    {
+                    if ui.button("NEW GAME").clicked() {
                         Save {
-                            mode: GameMode::NewTower,
+                            mode: GameMode::GlobalTower,
                             climb: TowerClimb {
-                                levels: Options::get_initial_tower(world).levels.clone(),
                                 shop: ShopState::new(world),
                                 team: default(),
                                 owner_team: default(),

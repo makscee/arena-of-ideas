@@ -14,6 +14,7 @@ use spacetimedb_sdk::{
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct User {
+    pub id: u64,
     pub name: String,
     pub identities: Vec<Identity>,
     pub pass_hash: String,
@@ -27,13 +28,17 @@ impl TableType for User {
 }
 
 impl TableWithPrimaryKey for User {
-    type PrimaryKey = String;
+    type PrimaryKey = u64;
     fn primary_key(&self) -> &Self::PrimaryKey {
-        &self.name
+        &self.id
     }
 }
 
 impl User {
+    #[allow(unused)]
+    pub fn filter_by_id(id: u64) -> Option<Self> {
+        Self::find(|row| row.id == id)
+    }
     #[allow(unused)]
     pub fn filter_by_name(name: String) -> Option<Self> {
         Self::find(|row| row.name == name)

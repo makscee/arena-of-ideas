@@ -1,3 +1,5 @@
+use crate::module_bindings::GlobalTower;
+
 use super::*;
 
 #[derive(Serialize, Deserialize, Debug, TypeUuid, TypePath, Default, Clone)]
@@ -10,13 +12,14 @@ impl Tower {
     pub fn load_current(world: &World) -> (PackedTeam, usize) {
         let save = Save::get(world).unwrap();
 
-        let ind = save.climb.defeated;
-
+        let ind = save.climb.defeated + 1;
+        let floor = GlobalTower::filter_by_number(ind as u64).unwrap().floor;
         (
-            if ind == save.climb.levels.len() {
-                save.climb.owner_team.unwrap()
-            } else {
-                PackedTeam::from_tower_string(&save.climb.levels[ind], world)
+            match floor {
+                module_bindings::TowerFloor::Enemy(team) => {
+                    PackedTeam::from_tower_string(&team, world)
+                }
+                module_bindings::TowerFloor::Team(team) => ron::from_str(&team).unwrap(),
             },
             ind,
         )
@@ -24,16 +27,10 @@ impl Tower {
 
     pub fn levels_left(world: &World) -> usize {
         let save = Save::get(world).unwrap();
-        Self::total_levels(world) - save.climb.defeated
+        Self::total_levels() - save.climb.defeated
     }
 
-    pub fn total_levels(world: &World) -> usize {
-        let save = Save::get(world).unwrap();
-        save.climb.levels.len()
-            + if matches!(save.mode, GameMode::RandomTower { .. }) {
-                1
-            } else {
-                0
-            }
+    pub fn total_levels() -> usize {
+        GlobalTower::count()
     }
 }

@@ -386,8 +386,8 @@ impl ShopPlugin {
                         ui.label(
                             format!(
                                 "Level {}/{}",
-                                data.next_level_num,
-                                Tower::total_levels(world)
+                                data.next_level_num - 1,
+                                Tower::total_levels()
                             )
                             .add_color(white())
                             .rich_text(),
