@@ -1,2 +1,2 @@
 #![enable(implicit_some)]
-(name: "Enemies", color: ("#B71C1C"))
+(name: "Enemies", color: ("#6F6F6F"))

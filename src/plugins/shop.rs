@@ -1,8 +1,11 @@
 use std::thread::sleep;
 
+use crate::module_bindings::{GlobalTower, User};
+
 use super::*;
 
 use bevy::input::common_conditions::input_just_pressed;
+use bevy_egui::egui::{Rect, SidePanel};
 use rand::seq::IteratorRandom;
 
 pub struct ShopPlugin;
@@ -14,6 +17,7 @@ pub struct ShopData {
     pub next_level_num: usize,
     pub phase: ShopPhase,
     pub bottom_expanded: bool,
+    pub tower_teams: Vec<PackedTeam>,
 }
 
 const G_PER_ROUND: i32 = 4;
@@ -190,6 +194,7 @@ impl ShopPlugin {
 
     fn on_enter(world: &mut World) {
         GameTimer::get_mut(world).reset();
+        egui_context(world).data_mut(|w| w.clear());
         let mut save = Save::get(world).unwrap();
         if save.climb.shop.case.is_empty() {
             save.climb.shop.refresh_case(world);
@@ -217,12 +222,20 @@ impl ShopPlugin {
         }
         let (next_team, next_level_num) = current.expect("Failed to load current floor");
         let next_team_cards = next_team.get_cards(world);
+        let tower_teams = GlobalTower::iter()
+            .sorted_by_key(|f| f.number)
+            .map(|f| match f.floor {
+                module_bindings::TowerFloor::Enemy(s) => PackedTeam::from_tower_string(&s, world),
+                module_bindings::TowerFloor::Team(s) => ron::from_str(&s).unwrap(),
+            })
+            .collect_vec();
         world.insert_resource(ShopData {
             next_team_cards,
             next_team,
             next_level_num: next_level_num + 1,
             phase,
             bottom_expanded: false,
+            tower_teams,
         });
     }
 
@@ -278,6 +291,7 @@ impl ShopPlugin {
         let pos = world_to_screen(pos.extend(0.0), world);
         let pos = pos2(pos.x, pos.y);
         let save = Save::get(world).unwrap();
+        Self::show_tower_view_panel(&mut data, world);
         match &mut data.phase {
             ShopPhase::Buy => {
                 if !data.bottom_expanded {
@@ -388,6 +402,75 @@ impl ShopPlugin {
         world.insert_resource(data);
     }
 
+    fn show_tower_view_panel(data: &mut ShopData, world: &mut World) {
+        let ctx = &egui_context(world);
+        SidePanel::left("tower view")
+            .exact_width(200.0)
+            .resizable(false)
+            .frame(
+                Frame::none()
+                    .fill(light_black())
+                    .inner_margin(Margin::same(8.0)),
+            )
+            .show(ctx, |ui| {
+                const RADIUS: f32 = 20.0;
+                const WIDTH: f32 = 4.0;
+                const OFFSET: f32 = 30.0;
+                let mut line = ui.max_rect();
+                line = Rect::from_center_size(
+                    line.center(),
+                    egui::vec2(WIDTH, line.height() - RADIUS * 5.0),
+                );
+
+                let len = GlobalTower::count() as f32;
+                let (line2, line1) = line.split_top_bottom_at_fraction(
+                    1.0 - (data.next_level_num - 2) as f32 / (len - 1.0),
+                );
+                ui.painter()
+                    .rect_filled(line1, Rounding::same(5.0), white());
+                ui.painter()
+                    .rect_filled(line2, Rounding::same(5.0), dark_gray());
+                for (ind, floor) in GlobalTower::iter().sorted_by_key(|f| f.number).enumerate() {
+                    let pos = line.center_bottom()
+                        - egui::vec2(0.0, line.height() * (ind as f32 / (len - 1.0)));
+                    if let Some(owner) = floor.owner {
+                        let name = User::filter_by_id(owner)
+                            .map(|u| u.name)
+                            .unwrap_or("no_name".to_owned());
+                        let name = Label::new(name).wrap(false);
+                        ui.allocate_ui_at_rect(
+                            Rect::from_center_size(
+                                pos + egui::vec2(OFFSET, 0.0),
+                                egui::vec2(1.0, 20.0),
+                            ),
+                            |ui| {
+                                ui.add(name);
+                            },
+                        );
+                    }
+                    if ind + 2 < data.next_level_num {
+                        ui.painter().circle_filled(pos, RADIUS, white());
+                    } else {
+                        ui.painter().circle_filled(pos, RADIUS, dark_gray());
+                        ui.painter().circle_stroke(
+                            pos,
+                            RADIUS - WIDTH,
+                            Stroke::new(WIDTH, white()),
+                        );
+                    }
+                    for (ind, unit) in data.tower_teams[ind].units.iter().enumerate() {
+                        let offset = OFFSET + ind as f32 * 10.0;
+                        let color = Pools::get_house_color(&unit.house, world).unwrap().c32();
+                        ui.painter().circle_stroke(
+                            pos - egui::vec2(offset, 0.0),
+                            4.0,
+                            Stroke::new(1.0, color),
+                        );
+                    }
+                }
+            });
+    }
+
     fn show_next_enemy_preview_panel(data: &mut ShopData, world: &mut World) {
         let ctx = &egui_context(world);
         let response = TopBottomPanel::bottom("enemy preview")
@@ -398,7 +481,7 @@ impl ShopPlugin {
             )
             .show(ctx, |ui| {
                 ui.with_layout(Layout::right_to_left(egui::Align::Max), |ui| {
-                    ui.add_space(30.0);
+                    ui.add_space(20.0);
                     if ui.button("START BATTLE").clicked() {
                         Self::go_to_battle(world);
                     }
@@ -407,14 +490,36 @@ impl ShopPlugin {
                             .add_color(white())
                             .rich_text(),
                     );
-                    ui.add_space(50.0);
-                    for (card, count) in data.next_team_cards.iter().rev() {
+                    ui.add_space(20.0);
+                    fn show_card(card: &UnitCard, count: &usize, data: &ShopData, ui: &mut Ui) {
                         if *count > 1 {
                             ui.label(format!("x{count}").add_color(white()).rich_text());
                         }
-                        card.show_ui(data.bottom_expanded, ui);
+                        card.show_ui(data.bottom_expanded, false, ui);
                     }
-                    ui.label("NEXT ENEMY:");
+                    if data.next_team_cards.len() <= 5 || !data.bottom_expanded {
+                        for (card, count) in data.next_team_cards.iter().rev() {
+                            show_card(card, count, data, ui);
+                        }
+                    } else {
+                        let mut it = data.next_team_cards.iter().peekable();
+                        ui.vertical(|ui| {
+                            while it.peek().is_some() {
+                                ui.horizontal(|ui| {
+                                    for _ in 0..5 {
+                                        if let Some((card, count)) = it.next() {
+                                            show_card(card, count, data, ui);
+                                        } else {
+                                            break;
+                                        }
+                                    }
+                                });
+                            }
+                        });
+                    }
+                    if !data.bottom_expanded {
+                        ui.label("NEXT ENEMY:");
+                    }
                 });
             })
             .response;

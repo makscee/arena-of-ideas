@@ -150,7 +150,7 @@ impl UnitCard {
         });
     }
 
-    pub fn show_frames(&self, open: bool, ui: &mut Ui) {
+    pub fn show_frames(&self, open: bool, expanded: bool, ui: &mut Ui) {
         ui.vertical(|ui| {
             self.show_name(open, ui);
             if !open {
@@ -162,9 +162,13 @@ impl UnitCard {
                         ui.label(self.description.widget());
                     });
                 }
-                // self.show_status_lines(false, ui);
+                if !expanded {
+                    self.show_status_lines(false, ui);
+                }
             });
-
+            if !expanded {
+                return;
+            }
             for (name, text) in &self.definitions {
                 frame(ui, |ui| {
                     ui.label(name.rich_text().family(FontFamily::Name("bold".into())));
@@ -204,19 +208,19 @@ impl UnitCard {
                 if open && world.get_entity(self.entity).is_some() {
                     Self::from_entity(self.entity, world)
                         .unwrap()
-                        .show_frames(open, ui)
+                        .show_frames(open, true, ui)
                 } else {
-                    self.show_frames(open, ui)
+                    self.show_frames(open, true, ui)
                 }
             });
     }
 
-    pub fn show_ui(&self, open: bool, ui: &mut Ui) {
+    pub fn show_ui(&self, open: bool, expanded: bool, ui: &mut Ui) {
         window("UNIT")
             .id(self.entity)
             .set_width(if open { 200.0 } else { 120.0 })
             .title_bar(false)
-            .show_ui(ui, |ui| self.show_frames(open, ui));
+            .show_ui(ui, |ui| self.show_frames(open, expanded, ui));
     }
 
     pub fn set_open(mut self, value: bool) -> Self {

@@ -33,8 +33,8 @@ impl UnitPlugin {
         match faction {
             Faction::Left => vec2(slot as f32 * -3.0, 0.0),
             Faction::Right => vec2(slot as f32 * 3.0, 0.0),
-            Faction::Team => vec2(slot as f32 * -3.0 + 9.0, -4.0),
-            Faction::Shop => vec2(slot as f32 * 3.0 - 9.0, 4.0),
+            Faction::Team => vec2(slot as f32 * -3.0 + 12.0, -4.0),
+            Faction::Shop => vec2(slot as f32 * 3.0 - 4.0, 4.0),
         }
     }
 
