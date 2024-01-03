@@ -112,7 +112,7 @@ fn main() {
         .init_resource::<GameTimer>()
         .register_type::<VarState>()
         .register_type::<VarStateDelta>()
-        .add_systems(Update, show_build_version)
+        .add_systems(Update, show_build_version.after(ShopPlugin::ui))
         .run();
 }
 

@@ -60,7 +60,6 @@ pub struct LoginEvent;
 impl Plugin for LoginPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, Self::setup)
-            .add_systems(OnEnter(GameState::Loading), Self::menu_connect)
             .add_systems(Update, Self::update.run_if(in_state(GameState::MainMenu)))
             .init_resource::<LoginData>()
             .init_resource::<RegisterData>()
@@ -71,9 +70,6 @@ impl Plugin for LoginPlugin {
 impl LoginPlugin {
     fn load_credentials() -> Option<Credentials> {
         load_credentials(CREDS_DIR).expect("Failed to load credentials")
-    }
-    fn menu_connect() {
-        Self::connect()
     }
 
     fn update(world: &mut World) {
@@ -105,6 +101,7 @@ impl LoginPlugin {
 
     fn setup() {
         register_callbacks();
+        Self::connect();
     }
 
     pub fn connect() {

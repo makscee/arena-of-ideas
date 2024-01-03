@@ -1,7 +1,8 @@
+use std::thread::sleep;
+
 use super::*;
 
 use bevy::input::common_conditions::input_just_pressed;
-use bevy_egui::egui::Order;
 use rand::seq::IteratorRandom;
 
 pub struct ShopPlugin;
@@ -206,7 +207,15 @@ impl ShopPlugin {
                 selected: default(),
             },
         };
-        let (next_team, next_level_num) = Tower::load_current(world);
+
+        let mut current = Tower::load_current(world);
+        let mut c = 0;
+        while current.is_none() && c < 100 {
+            current = Tower::load_current(world);
+            c += 1;
+            sleep(Duration::from_secs_f32(0.05));
+        }
+        let (next_team, next_level_num) = current.expect("Failed to load current floor");
         let next_team_cards = next_team.get_cards(world);
         world.insert_resource(ShopData {
             next_team_cards,
@@ -231,7 +240,7 @@ impl ShopPlugin {
 
     fn transition_to_battle(world: &mut World) {
         let left = Self::active_team(world).unwrap();
-        let (right, ind) = Tower::load_current(world);
+        let (right, ind) = Tower::load_current(world).unwrap();
         BattlePlugin::load_teams(left, right, Some(ind), world);
     }
 

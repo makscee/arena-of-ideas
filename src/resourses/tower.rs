@@ -9,12 +9,12 @@ pub struct Tower {
 }
 
 impl Tower {
-    pub fn load_current(world: &World) -> (PackedTeam, usize) {
+    pub fn load_current(world: &World) -> Option<(PackedTeam, usize)> {
         let save = Save::get(world).unwrap();
 
         let ind = save.climb.defeated + 1;
-        let floor = GlobalTower::filter_by_number(ind as u64).unwrap().floor;
-        (
+        let floor = GlobalTower::filter_by_number(ind as u64)?.floor;
+        Some((
             match floor {
                 module_bindings::TowerFloor::Enemy(team) => {
                     PackedTeam::from_tower_string(&team, world)
@@ -22,7 +22,7 @@ impl Tower {
                 module_bindings::TowerFloor::Team(team) => ron::from_str(&team).unwrap(),
             },
             ind,
-        )
+        ))
     }
 
     pub fn levels_left(world: &World) -> usize {
