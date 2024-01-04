@@ -111,7 +111,7 @@ impl User {
     }
 
     fn hash_pass(pass: String) -> Result<String, String> {
-        Ok(bcrypt::hash(pass).map_err(|e| e.to_string())?)
+        bcrypt::hash(pass).map_err(|e| e.to_string())
     }
 
     pub fn find_by_identity(identity: &Identity) -> Result<User, String> {
