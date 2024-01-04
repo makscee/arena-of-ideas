@@ -19,7 +19,7 @@ pub struct User {
 #[spacetimedb(reducer)]
 fn register(ctx: ReducerContext, name: String, pass: String) -> Result<(), String> {
     let name = User::validate_name(name)?;
-    let pass_hash = bcrypt::hash(pass).map_err(|e| e.to_string())?;
+    let pass_hash = User::hash_pass(pass)?;
     User::clear_identity(&ctx.sender);
     User::insert(User {
         id: 0,
@@ -37,7 +37,7 @@ fn login(ctx: ReducerContext, name: String, pass: String) -> Result<(), String> 
     let mut user = User::filter_by_name(&name)
         .context("User not found")
         .map_err(|e| e.to_string())?;
-    if !bcrypt::verify(pass, &user.pass_hash) {
+    if !user.check_pass(pass) {
         Err("Wrong password".to_owned())
     } else {
         if !user.identities.contains(&ctx.sender) {
@@ -73,6 +73,20 @@ fn set_name(ctx: ReducerContext, name: String) -> Result<(), String> {
     }
 }
 
+#[spacetimedb(reducer)]
+fn set_password(ctx: ReducerContext, old_pass: String, new_pass: String) -> Result<(), String> {
+    if let Ok(user) = User::find_by_identity(&ctx.sender) {
+        if !user.check_pass(old_pass) {
+            return Err("Old password did not match".to_owned());
+        }
+        let pass_hash = User::hash_pass(new_pass)?;
+        User::update_by_id(&user.id, User { pass_hash, ..user });
+        Ok(())
+    } else {
+        Err("Cannot set name for unknown user".to_string())
+    }
+}
+
 #[spacetimedb(disconnect)]
 fn identity_disconnected(ctx: ReducerContext) {
     if let Ok(mut user) = User::find_by_identity(&ctx.sender) {
@@ -90,6 +104,14 @@ impl User {
         } else {
             Ok(name)
         }
+    }
+
+    fn check_pass(&self, pass: String) -> bool {
+        bcrypt::verify(pass, &self.pass_hash)
+    }
+
+    fn hash_pass(pass: String) -> Result<String, String> {
+        Ok(bcrypt::hash(pass).map_err(|e| e.to_string())?)
     }
 
     pub fn find_by_identity(identity: &Identity) -> Result<User, String> {

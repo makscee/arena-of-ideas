@@ -13,11 +13,11 @@ impl MainMenuPlugin {
 
         window("MAIN MENU")
             .set_width(400.0)
-            .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
+            .anchor(Align2::LEFT_TOP, [20.0, 200.0])
             .show(ctx, |ui| {
                 if LoginPlugin::is_connected() {
                     if CURRENT_USER.lock().unwrap().is_none() {
-                        const CTX_KEY: &str = "regiser";
+                        const CTX_KEY: &str = "register";
                         let register = get_context_bool(world, CTX_KEY);
                         frame(ui, |ui| {
                             ui.columns(2, |ui| {

@@ -30,6 +30,7 @@ pub mod login_by_identity_reducer;
 pub mod login_reducer;
 pub mod register_reducer;
 pub mod set_name_reducer;
+pub mod set_password_reducer;
 pub mod statuses;
 pub mod sync_abilities_reducer;
 pub mod sync_houses_reducer;
@@ -54,6 +55,7 @@ pub use login_by_identity_reducer::*;
 pub use login_reducer::*;
 pub use register_reducer::*;
 pub use set_name_reducer::*;
+pub use set_password_reducer::*;
 pub use statuses::*;
 pub use sync_abilities_reducer::*;
 pub use sync_houses_reducer::*;
@@ -77,6 +79,7 @@ pub enum ReducerEvent {
     LoginByIdentity(login_by_identity_reducer::LoginByIdentityArgs),
     Register(register_reducer::RegisterArgs),
     SetName(set_name_reducer::SetNameArgs),
+    SetPassword(set_password_reducer::SetPasswordArgs),
     SyncAbilities(sync_abilities_reducer::SyncAbilitiesArgs),
     SyncHouses(sync_houses_reducer::SyncHousesArgs),
     SyncStatuses(sync_statuses_reducer::SyncStatusesArgs),
@@ -164,6 +167,7 @@ match &function_call.reducer[..] {
 			"login_by_identity" => _reducer_callbacks.handle_event_of_type::<login_by_identity_reducer::LoginByIdentityArgs, ReducerEvent>(event, _state, ReducerEvent::LoginByIdentity),
 			"register" => _reducer_callbacks.handle_event_of_type::<register_reducer::RegisterArgs, ReducerEvent>(event, _state, ReducerEvent::Register),
 			"set_name" => _reducer_callbacks.handle_event_of_type::<set_name_reducer::SetNameArgs, ReducerEvent>(event, _state, ReducerEvent::SetName),
+			"set_password" => _reducer_callbacks.handle_event_of_type::<set_password_reducer::SetPasswordArgs, ReducerEvent>(event, _state, ReducerEvent::SetPassword),
 			"sync_abilities" => _reducer_callbacks.handle_event_of_type::<sync_abilities_reducer::SyncAbilitiesArgs, ReducerEvent>(event, _state, ReducerEvent::SyncAbilities),
 			"sync_houses" => _reducer_callbacks.handle_event_of_type::<sync_houses_reducer::SyncHousesArgs, ReducerEvent>(event, _state, ReducerEvent::SyncHouses),
 			"sync_statuses" => _reducer_callbacks.handle_event_of_type::<sync_statuses_reducer::SyncStatusesArgs, ReducerEvent>(event, _state, ReducerEvent::SyncStatuses),

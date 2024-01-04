@@ -45,7 +45,7 @@ impl AlertType {
     fn color(&self) -> Color32 {
         match self {
             AlertType::Error => red(),
-            AlertType::Normal => white(),
+            AlertType::Normal => yellow(),
         }
     }
 }

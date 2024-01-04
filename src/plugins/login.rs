@@ -162,6 +162,13 @@ impl LoginPlugin {
         }
     }
 
+    fn send_login(name: String, pass: String) {
+        login(name, pass);
+        once_on_login(|_, _, status, name, _| {
+            Self::on_login(status, name);
+        });
+    }
+
     pub fn login(ui: &mut Ui, world: &mut World) {
         let mut login_data = world.resource_mut::<LoginData>();
 
@@ -195,10 +202,7 @@ impl LoginPlugin {
             });
             ui.set_enabled(!login_data.name.is_empty() && !login_data.pass.is_empty());
             if ui.button("LOGIN").clicked() {
-                login(login_data.name.clone(), login_data.pass.clone());
-                once_on_login(|_, _, status, name, _| {
-                    Self::on_login(status, name);
-                });
+                Self::send_login(login_data.name.clone(), login_data.pass.clone());
             }
         });
     }
@@ -242,9 +246,19 @@ impl LoginPlugin {
                         register_data.name, register_data.pass
                     );
                     register(register_data.name.clone(), register_data.pass.clone());
-                    once_on_register(|_, _, status, name, _| {
+                    once_on_register(|_, _, status, name, pass| {
                         debug!("Register: {status:?} {name}");
+                        match status {
+                            Status::Committed => Self::send_login(name.to_owned(), pass.to_owned()),
+                            Status::Failed(e) => AlertPlugin::add_error(
+                                Some("REGISTER ERROR".to_owned()),
+                                e.to_owned(),
+                                None,
+                            ),
+                            _ => panic!(),
+                        }
                     });
+                    set_context_bool(world, "register", false);
                 }
             })
         });
