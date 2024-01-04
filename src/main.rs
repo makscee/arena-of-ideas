@@ -158,7 +158,7 @@ fn detect_changes(
     }
 }
 
-const VERSION: &str = env!("CARGO_PKG_VERSION");
+pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 fn show_build_version(world: &mut World) {
     let ctx = &egui_context(world);
     Area::new("build version")

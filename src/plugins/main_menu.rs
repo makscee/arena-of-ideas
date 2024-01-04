@@ -27,34 +27,36 @@ impl MainMenuPlugin {
                     }
                 }
 
-                frame(ui, |ui| {
-                    let enabled = Save::get(world).is_ok();
-                    ui.set_enabled(enabled);
-                    let btn = if enabled {
-                        ui.button_primary("CONTINUE")
-                    } else {
-                        ui.button("CONTINUE")
-                    };
-                    if btn.clicked() {
-                        GameState::change(GameState::Shop, world);
-                    }
-                });
-                frame(ui, |ui| {
-                    if ui.button("NEW GAME").clicked() {
-                        Save {
-                            mode: GameMode::GlobalTower,
-                            climb: TowerClimb {
-                                shop: ShopState::new(world),
-                                team: default(),
-                                owner_team: default(),
-                                defeated: default(),
-                            },
+                if LoginPlugin::get_username().is_some() {
+                    frame(ui, |ui| {
+                        let enabled = Save::get(world).is_ok();
+                        ui.set_enabled(enabled);
+                        let btn = if enabled {
+                            ui.button_primary("CONTINUE")
+                        } else {
+                            ui.button("CONTINUE")
+                        };
+                        if btn.clicked() {
+                            GameState::change(GameState::Shop, world);
                         }
-                        .save(world)
-                        .unwrap();
-                        GameState::change(GameState::Shop, world);
-                    }
-                });
+                    });
+                    frame(ui, |ui| {
+                        if ui.button("NEW GAME").clicked() {
+                            Save {
+                                mode: GameMode::GlobalTower,
+                                climb: TowerClimb {
+                                    shop: ShopState::new(world),
+                                    team: default(),
+                                    owner_team: default(),
+                                    defeated: default(),
+                                },
+                            }
+                            .save(world)
+                            .unwrap();
+                            GameState::change(GameState::Shop, world);
+                        }
+                    });
+                }
 
                 frame(ui, |ui| {
                     if ui.button("HERO GALLERY").clicked() {

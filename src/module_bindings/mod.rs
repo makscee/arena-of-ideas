@@ -23,6 +23,7 @@ use std::sync::Arc;
 pub mod ability;
 pub mod extend_global_tower_reducer;
 pub mod give_right_reducer;
+pub mod global_data;
 pub mod global_tower;
 pub mod house;
 pub mod login_by_identity_reducer;
@@ -46,6 +47,7 @@ pub mod vfx;
 pub use ability::*;
 pub use extend_global_tower_reducer::*;
 pub use give_right_reducer::*;
+pub use global_data::*;
 pub use global_tower::*;
 pub use house::*;
 pub use login_by_identity_reducer::*;
@@ -95,6 +97,11 @@ impl SpacetimeModule for Module {
         match table_name {
             "Ability" => client_cache
                 .handle_table_update_with_primary_key::<ability::Ability>(callbacks, table_update),
+            "GlobalData" => client_cache
+                .handle_table_update_no_primary_key::<global_data::GlobalData>(
+                    callbacks,
+                    table_update,
+                ),
             "GlobalTower" => client_cache
                 .handle_table_update_with_primary_key::<global_tower::GlobalTower>(
                     callbacks,
@@ -130,6 +137,7 @@ impl SpacetimeModule for Module {
         state: &Arc<ClientCache>,
     ) {
         reminders.invoke_callbacks::<ability::Ability>(worker, &reducer_event, state);
+        reminders.invoke_callbacks::<global_data::GlobalData>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<global_tower::GlobalTower>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<house::House>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<statuses::Statuses>(worker, &reducer_event, state);
@@ -175,6 +183,8 @@ match &function_call.reducer[..] {
             "Ability" => {
                 client_cache.handle_resubscribe_for_type::<ability::Ability>(callbacks, new_subs)
             }
+            "GlobalData" => client_cache
+                .handle_resubscribe_for_type::<global_data::GlobalData>(callbacks, new_subs),
             "GlobalTower" => client_cache
                 .handle_resubscribe_for_type::<global_tower::GlobalTower>(callbacks, new_subs),
             "House" => {

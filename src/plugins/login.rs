@@ -8,7 +8,7 @@ use spacetimedb_sdk::{
 
 use crate::module_bindings::{
     login, login_by_identity, once_on_login, once_on_login_by_identity, once_on_register, register,
-    User,
+    GlobalData, User,
 };
 
 use super::*;
@@ -84,6 +84,22 @@ impl LoginPlugin {
             }
             if Self::get_username().is_some() {
                 let mut led = LOGIN_EVENT_DISPATCHED.lock().unwrap();
+                if !*led && !VERSION.eq(&GlobalData::filter_by_always_zero(0).unwrap().game_version)
+                {
+                    AlertPlugin::add_error(
+                        Some("GAME VERSION ERROR".to_owned()),
+                        "Game version is too old".to_owned(),
+                        Some(Box::new(|w| {
+                            egui_context(w).open_url(egui::OpenUrl {
+                                url: "https://makscee.itch.io/arena-of-ideas".to_owned(),
+                                new_tab: true,
+                            });
+                            w.send_event(AppExit);
+                        })),
+                    );
+                    *led = true;
+                    *CURRENT_USER.lock().unwrap() = None;
+                }
                 if !*led {
                     world.send_event(LoginEvent);
                     *led = true;
@@ -243,6 +259,7 @@ fn subscribe_to_tables() {
         "SELECT * FROM Ability",
         "SELECT * FROM Vfx",
         "SELECT * FROM GlobalTower",
+        "SELECT * FROM GlobalData",
     ])
     .unwrap();
 }

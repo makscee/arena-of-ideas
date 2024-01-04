@@ -1,12 +1,21 @@
-[package]
-name = "arena-of-ideas"
-version = "0.4.0"
-edition = "2021"
-
 [workspace]
 members = ["server"]
 
+[workspace.package]
+version = "0.5.0"
+edition = "2021"
+
+[package]
+name = "arena-of-ideas"
+version.workspace = true
+edition.workspace = true
+
+
+[workspace.dependencies]
+spacetimedb = { version = "0.8.0", features = ["getrandom"] }
+
 [dependencies]
+spacetimedb-sdk = "0.8.0"
 bevy = { version = "0.11.0", default-features = false, features = [
     "bevy_core_pipeline",
     "bevy_render",
@@ -43,7 +52,6 @@ rand_chacha = "0.3.1"
 colored = "2.0.0"
 bevy_pkv = "0.8.0"
 clap = { version = "4.4.5", features = ["derive"] }
-spacetimedb-sdk = "0.8.0"
 bevy_kira_audio = { version = "0.17.0", features = ["settings_loader"] }
 strum = "0.25.0"
 hex = "0.4.3"
