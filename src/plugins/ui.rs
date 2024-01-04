@@ -317,6 +317,7 @@ impl IntoC32 for Color {
 
 pub trait PrimarySecondaryExtensions {
     fn button_primary(&mut self, text: impl Into<WidgetText>) -> Response;
+    fn button_or_primary(&mut self, text: impl Into<WidgetText>, primary: bool) -> Response;
 }
 
 impl PrimarySecondaryExtensions for Ui {
@@ -329,5 +330,13 @@ impl PrimarySecondaryExtensions for Ui {
         let response = Button::new(text).min_size(egui::Vec2::ZERO).ui(self);
         self.set_style(prev_style);
         response
+    }
+
+    fn button_or_primary(&mut self, text: impl Into<WidgetText>, primary: bool) -> Response {
+        if primary {
+            self.button_primary(text)
+        } else {
+            self.button(text)
+        }
     }
 }

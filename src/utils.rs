@@ -19,6 +19,14 @@ pub fn egui_context(world: &mut World) -> Context {
         .get_mut()
         .clone()
 }
+pub fn get_context_bool(world: &mut World, key: &str) -> bool {
+    let id = Id::new(key);
+    egui_context(world).data(|r| r.get_temp::<bool>(id).unwrap_or_default())
+}
+pub fn set_context_bool(world: &mut World, key: &str, value: bool) {
+    let id = Id::new(key);
+    egui_context(world).data_mut(|w| w.insert_temp(id, value))
+}
 pub fn world_to_screen(pos: Vec3, world: &World) -> Vec2 {
     let entity = world.entity(world.resource::<CameraData>().entity);
     let camera = entity.get::<Camera>().unwrap();

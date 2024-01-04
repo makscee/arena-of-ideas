@@ -17,8 +17,27 @@ impl MainMenuPlugin {
             .show(ctx, |ui| {
                 if LoginPlugin::is_connected() {
                     if CURRENT_USER.lock().unwrap().is_none() {
-                        LoginPlugin::login(ui, world);
-                        LoginPlugin::register(ui, world);
+                        const CTX_KEY: &str = "regiser";
+                        let register = get_context_bool(world, CTX_KEY);
+                        frame(ui, |ui| {
+                            ui.columns(2, |ui| {
+                                ui[0].vertical_centered_justified(|ui| {
+                                    if ui.button_or_primary("LOGIN", !register).clicked() {
+                                        set_context_bool(world, CTX_KEY, false);
+                                    }
+                                });
+                                ui[1].vertical_centered_justified(|ui| {
+                                    if ui.button_or_primary("REGISTER", register).clicked() {
+                                        set_context_bool(world, CTX_KEY, true);
+                                    }
+                                });
+                            });
+                            if register {
+                                LoginPlugin::register(ui, world);
+                            } else {
+                                LoginPlugin::login(ui, world);
+                            }
+                        });
                     }
                 } else {
                     ui.label("DISCONNECTED");

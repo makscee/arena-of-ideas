@@ -164,15 +164,18 @@ impl LoginPlugin {
 
     pub fn login(ui: &mut Ui, world: &mut World) {
         let mut login_data = world.resource_mut::<LoginData>();
-        frame(ui, |ui| {
-            if let Some(name) = &login_data.prev_name {
+
+        if let Some(name) = &login_data.prev_name {
+            frame(ui, |ui| {
                 if ui.button(format!("LOGIN AS {name}")).clicked() {
                     login_by_identity(name.to_owned());
                     once_on_login_by_identity(|_, _, status, name| {
                         Self::on_login(status, name);
                     });
                 }
-            }
+            });
+        }
+        frame(ui, |ui| {
             ui.horizontal(|ui| {
                 ui.vertical(|ui| {
                     ui.label("name:");
@@ -203,49 +206,47 @@ impl LoginPlugin {
     pub fn register(ui: &mut Ui, world: &mut World) {
         frame(ui, |ui| {
             ui.set_width(ui.available_width());
-            ui.collapsing("REGISTER", |ui| {
-                ui.vertical_centered_justified(|ui| {
-                    let mut register_data = world.resource_mut::<RegisterData>();
-                    ui.horizontal(|ui| {
-                        ui.vertical(|ui| {
-                            ui.label("name:");
-                            ui.label("password:");
-                            ui.label("repeat:");
-                        });
-                        ui.vertical(|ui| {
-                            TextEdit::singleline(&mut register_data.name)
-                                .desired_width(ui.available_width())
-                                .margin(egui::Vec2::ZERO)
-                                .ui(ui);
-                            TextEdit::singleline(&mut register_data.pass)
-                                .password(true)
-                                .desired_width(ui.available_width())
-                                .margin(egui::Vec2::ZERO)
-                                .ui(ui);
-                            TextEdit::singleline(&mut register_data.pass_repeat)
-                                .password(true)
-                                .desired_width(ui.available_width())
-                                .margin(egui::Vec2::ZERO)
-                                .ui(ui);
-                        });
+            ui.vertical_centered_justified(|ui| {
+                let mut register_data = world.resource_mut::<RegisterData>();
+                ui.horizontal(|ui| {
+                    ui.vertical(|ui| {
+                        ui.label("name:");
+                        ui.label("password:");
+                        ui.label("repeat:");
                     });
-                    ui.set_enabled(
-                        !register_data.name.is_empty()
-                            && !register_data.pass.is_empty()
-                            && register_data.pass.eq(&register_data.pass_repeat),
-                    );
-                    if ui.button("REGISTER").clicked() {
-                        debug!(
-                            "Register start: {} {}",
-                            register_data.name, register_data.pass
-                        );
-                        register(register_data.name.clone(), register_data.pass.clone());
-                        once_on_register(|_, _, status, name, _| {
-                            debug!("Register: {status:?} {name}");
-                        });
-                    }
+                    ui.vertical(|ui| {
+                        TextEdit::singleline(&mut register_data.name)
+                            .desired_width(ui.available_width())
+                            .margin(egui::Vec2::ZERO)
+                            .ui(ui);
+                        TextEdit::singleline(&mut register_data.pass)
+                            .password(true)
+                            .desired_width(ui.available_width())
+                            .margin(egui::Vec2::ZERO)
+                            .ui(ui);
+                        TextEdit::singleline(&mut register_data.pass_repeat)
+                            .password(true)
+                            .desired_width(ui.available_width())
+                            .margin(egui::Vec2::ZERO)
+                            .ui(ui);
+                    });
                 });
-            });
+                ui.set_enabled(
+                    !register_data.name.is_empty()
+                        && !register_data.pass.is_empty()
+                        && register_data.pass.eq(&register_data.pass_repeat),
+                );
+                if ui.button("REGISTER").clicked() {
+                    debug!(
+                        "Register start: {} {}",
+                        register_data.name, register_data.pass
+                    );
+                    register(register_data.name.clone(), register_data.pass.clone());
+                    once_on_register(|_, _, status, name, _| {
+                        debug!("Register: {status:?} {name}");
+                    });
+                }
+            })
         });
     }
 }
