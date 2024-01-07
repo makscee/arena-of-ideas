@@ -279,6 +279,7 @@ impl ShopPlugin {
 
         if !data.bottom_expanded {
             ShopOffer::draw_buy_panels(world);
+            Self::show_sell_buttons(world);
         }
         Area::new("reroll").fixed_pos(pos).show(ctx, |ui| {
             ui.set_width(120.0);
@@ -439,6 +440,34 @@ impl ShopPlugin {
             ctx.data_mut(|w| w.clear());
         }
         data.bottom_expanded = response.hovered();
+    }
+
+    fn show_sell_buttons(world: &mut World) {
+        let ctx = &egui_context(world);
+        for entity in UnitPlugin::collect_faction(Faction::Team, world) {
+            window("SELL")
+                .id(&entity)
+                .set_width(120.0)
+                .title_bar(false)
+                .stroke(false)
+                .entity_anchor(entity, Align2::CENTER_BOTTOM, vec2(0.0, 1.2), world)
+                .show(ctx, |ui| {
+                    frame(ui, |ui| {
+                        ui.set_width(100.0);
+                        ui.label("sell");
+                        if ui
+                            .button("+1 g".add_color(yellow()).rich_text().size(20.0))
+                            .clicked()
+                        {
+                            Self::change_g(1, world).unwrap();
+                            world.entity_mut(entity).despawn_recursive();
+                            UnitPlugin::fill_slot_gaps(Faction::Team, world);
+                            UnitPlugin::translate_to_slots(world);
+                            Self::pack_active_team(world).unwrap();
+                        }
+                    });
+                });
+        }
     }
 
     fn go_to_battle(world: &mut World) {
