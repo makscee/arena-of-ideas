@@ -103,18 +103,10 @@ impl PackedTeam {
     pub fn state_mut(faction: Faction, world: &mut World) -> Option<Mut<VarState>> {
         Self::find_entity(faction, world).map(|e| VarState::get_mut(e, world))
     }
-    pub fn get_cards(&self, world: &mut World) -> Vec<(UnitCard, usize)> {
-        let mut result: Vec<(PackedUnit, usize)> = default();
-        for unit in &self.units {
-            if result.last().map(|(u, _)| u.eq(unit)).unwrap_or_default() {
-                result.last_mut().unwrap().1 += 1;
-            } else {
-                result.push((unit.clone(), 1));
-            }
-        }
-        result
-            .into_iter()
-            .map(|(u, c)| (UnitCard::from_packed(u, world).unwrap().set_open(false), c))
+    pub fn get_cards(&self, world: &mut World) -> Vec<UnitCard> {
+        self.units
+            .iter()
+            .map(|unit| UnitCard::from_packed(unit.clone(), world).unwrap())
             .collect_vec()
     }
 }

@@ -13,7 +13,7 @@ pub struct ShopPlugin;
 #[derive(Resource, Clone)]
 pub struct ShopData {
     pub next_team: PackedTeam,
-    pub next_team_cards: Vec<(UnitCard, usize)>,
+    pub next_team_cards: Vec<UnitCard>,
     pub next_level_num: usize,
     pub bottom_expanded: bool,
     pub tower_teams: Vec<PackedTeam>,
@@ -404,15 +404,12 @@ impl ShopPlugin {
                             .rich_text(),
                     );
                     ui.add_space(20.0);
-                    fn show_card(card: &UnitCard, count: &usize, data: &ShopData, ui: &mut Ui) {
-                        if *count > 1 {
-                            ui.label(format!("x{count}").add_color(white()).rich_text());
-                        }
+                    fn show_card(card: &UnitCard, data: &ShopData, ui: &mut Ui) {
                         card.show_ui(data.bottom_expanded, false, ui);
                     }
                     if data.next_team_cards.len() <= 5 || !data.bottom_expanded {
-                        for (card, count) in data.next_team_cards.iter().rev() {
-                            show_card(card, count, data, ui);
+                        for card in data.next_team_cards.iter().rev() {
+                            show_card(card, data, ui);
                         }
                     } else {
                         let mut it = data.next_team_cards.iter().peekable();
@@ -420,8 +417,8 @@ impl ShopPlugin {
                             while it.peek().is_some() {
                                 ui.horizontal(|ui| {
                                     for _ in 0..5 {
-                                        if let Some((card, count)) = it.next() {
-                                            show_card(card, count, data, ui);
+                                        if let Some(card) = it.next() {
+                                            show_card(card, data, ui);
                                         } else {
                                             break;
                                         }
@@ -430,9 +427,7 @@ impl ShopPlugin {
                             }
                         });
                     }
-                    if !data.bottom_expanded {
-                        ui.label("NEXT ENEMY:");
-                    }
+                    ui.label("NEXT ENEMY:");
                 });
             })
             .response;
@@ -446,7 +441,7 @@ impl ShopPlugin {
         let ctx = &egui_context(world);
         for entity in UnitPlugin::collect_faction(Faction::Team, world) {
             window("SELL")
-                .id(&entity)
+                .id(entity)
                 .set_width(120.0)
                 .title_bar(false)
                 .stroke(false)

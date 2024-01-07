@@ -8,6 +8,8 @@ use super::*;
 pub struct PackedUnit {
     pub hp: i32,
     pub atk: i32,
+    #[serde(default = "default_stacks")]
+    pub stacks: i32,
     #[serde(default = "default_house")]
     pub house: String,
     #[serde(default)]
@@ -29,6 +31,9 @@ fn default_house() -> String {
 }
 fn default_text() -> String {
     "empty".to_owned()
+}
+fn default_stacks() -> i32 {
+    1
 }
 
 pub const LOCAL_TRIGGER: &str = "_local";
@@ -71,6 +76,7 @@ impl PackedUnit {
         self.state
             .init(VarName::Hp, VarValue::Int(self.hp))
             .init(VarName::Atk, VarValue::Int(self.atk))
+            .init(VarName::Stacks, VarValue::Int(self.stacks))
             .init(VarName::House, VarValue::String(self.house.clone()))
             .init(VarName::Name, VarValue::String(self.name.clone()))
             .init(VarName::Position, VarValue::Vec2(default()))
@@ -138,6 +144,7 @@ impl PackedUnit {
         let state = VarState::get(entity, world).clone();
         let hp = state.get_int(VarName::Hp).unwrap();
         let atk = state.get_int(VarName::Atk).unwrap();
+        let stacks = state.get_int(VarName::Stacks).unwrap();
         let name = state.get_string(VarName::Name).unwrap();
         let description = state.get_string(VarName::Description).unwrap();
         let house = state.get_string(VarName::House).unwrap();
@@ -168,6 +175,7 @@ impl PackedUnit {
             state,
             description,
             statuses,
+            stacks,
         }
     }
 

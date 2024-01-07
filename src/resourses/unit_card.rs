@@ -102,10 +102,14 @@ impl UnitCard {
             .inject_definitions(world);
         let hp = VarState::find_value(entity, VarName::Hp, t, world)?.get_int()?;
         let atk = VarState::find_value(entity, VarName::Atk, t, world)?.get_int()?;
+        let stacks = VarState::find_value(entity, VarName::Stacks, t, world)?.get_int()?;
         let name = state
             .get_string_at(VarName::Name, t)?
             .add_color(state.get_color_at(VarName::HouseColor, t)?.c32());
-        let stats = format!(" {atk}/{hp}").add_color(white());
+        let mut stats = format!(" {atk}/{hp}").add_color(white());
+        if stacks > 1 {
+            stats.push(format!(" x{stacks} stacks"), light_gray());
+        }
 
         Ok(Self {
             name,

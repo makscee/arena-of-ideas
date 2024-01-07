@@ -12,8 +12,8 @@ impl Plugin for UnitPlugin {
 
 pub const TEAM_SLOTS: usize = 7;
 
-#[derive(Resource, Debug)]
-pub struct ClosestSlot(usize, f32);
+#[derive(Resource, Debug, Copy, Clone)]
+pub struct ClosestSlot(usize, f32, bool);
 
 impl UnitPlugin {
     pub fn get_unit_position(entity: Entity, world: &World) -> Result<Vec2> {
@@ -231,33 +231,47 @@ impl UnitPlugin {
         for entity in team.iter_mut() {
             commands.entity(entity).insert(Pickable::IGNORE);
         }
-        commands.insert_resource(ClosestSlot(0, f32::MAX));
+        commands.insert_resource(ClosestSlot(0, f32::MAX, false));
+    }
+
+    pub fn change_stacks(unit: Entity, delta: i32, world: &mut World) {
+        VarState::change_int(unit, VarName::Stacks, delta, world).unwrap();
+        VarState::change_int(unit, VarName::Hp, delta, world).unwrap();
+        VarState::change_int(unit, VarName::Atk, delta, world).unwrap();
     }
 
     pub fn drag_unit_end(
         event: Listener<Pointer<DragEnd>>,
-        mut dragged: ResMut<DraggedUnit>,
-        closest_slot: Res<ClosestSlot>,
-        timer: Res<GameTimer>,
         mut team: Query<Entity, With<ActiveTeam>>,
-        mut state: Query<&mut VarState>,
         mut commands: Commands,
     ) {
         debug!("Drag unit end {:?}", event.target);
-        let unit = event.target;
-        dragged.0 = None;
         for entity in team.iter_mut() {
             commands.entity(entity).insert(Pickable::default());
         }
-        let mut state = state.get_mut(unit).unwrap();
-        state.insert_simple(
-            VarName::Slot,
-            VarValue::Int(closest_slot.0 as i32),
-            timer.insert_head(),
-        );
+
         commands.add(|world: &mut World| {
+            let dragged = world.resource::<DraggedUnit>().0.unwrap();
+            let ClosestSlot(slot, _, stackable) = *world.resource::<ClosestSlot>();
+            if stackable {
+                world.entity_mut(dragged).despawn_recursive();
+                Self::change_stacks(
+                    Self::find_unit(Faction::Team, slot, world).unwrap(),
+                    1,
+                    world,
+                );
+            } else {
+                let t = GameTimer::get(world).insert_head();
+                VarState::get_mut(dragged, world).insert_simple(
+                    VarName::Slot,
+                    VarValue::Int(slot as i32),
+                    t,
+                );
+            }
             Self::fill_slot_gaps(Faction::Team, world);
             Self::translate_to_slots(world);
+
+            world.resource_mut::<DraggedUnit>().0 = None;
         });
     }
 
@@ -271,9 +285,27 @@ impl UnitPlugin {
                 if let Some(prev_closest) = world.get_resource::<ClosestSlot>() {
                     let closest_slot = Self::get_closest_slot(cursor_pos, Faction::Team);
                     if prev_closest.0 != closest_slot.0 {
-                        Self::make_slot_gap(Faction::Team, closest_slot.0 as i32, world);
-                        Self::translate_to_slots(world);
-                        world.insert_resource(ClosestSlot(closest_slot.0, closest_slot.1));
+                        let name = VarState::get(dragged, world)
+                            .get_string(VarName::Name)
+                            .unwrap();
+                        let stackable = if Self::find_unit(Faction::Team, closest_slot.0, world)
+                            .is_some_and(|entity| {
+                                VarState::get(entity, world)
+                                    .get_string(VarName::Name)
+                                    .unwrap()
+                                    .eq(&name)
+                            }) {
+                            true
+                        } else {
+                            Self::make_slot_gap(Faction::Team, closest_slot.0 as i32, world);
+                            Self::translate_to_slots(world);
+                            false
+                        };
+                        world.insert_resource(ClosestSlot(
+                            closest_slot.0,
+                            closest_slot.1,
+                            stackable,
+                        ));
                     }
                 }
             }

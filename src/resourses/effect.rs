@@ -115,7 +115,16 @@ impl Effect {
                     .with_context(|| format!("Ability not found {ability}"))?
                     .effect
                     .clone();
-                ActionCluster::current(world).push_action_front(effect, context.clone());
+                {
+                    let mut context = context.clone();
+                    if context.get_var(VarName::Charges, world).is_none() {
+                        context.set_var(
+                            VarName::Charges,
+                            context.get_var(VarName::Stacks, world).unwrap(),
+                        );
+                    }
+                    ActionCluster::current(world).push_action_front(effect, context);
+                }
                 Pools::get_vfx("text", world)
                     .clone()
                     .set_var(

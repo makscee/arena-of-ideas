@@ -180,7 +180,7 @@ impl GameWindow<'_> {
         let mut stroke = style.visuals.window_stroke;
         stroke.color = self.color.unwrap_or(style.visuals.window_stroke.color);
         self.frame
-            .unwrap_or(Frame::window(&style).stroke(stroke))
+            .unwrap_or(Frame::window(style).stroke(stroke))
             .show(ui, |ui| {
                 ui.set_width(self.width);
                 if self.title_bar {
