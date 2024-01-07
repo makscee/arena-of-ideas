@@ -9,8 +9,14 @@
             description: "Send Battle Start event",
             effect: List(
                 [
-                    SendEvent(BattleStart),
-                    Text(String("Send Battle Start")),
+                    SendEvent(
+                        BattleStart,
+                    ),
+                    Text(
+                        String(
+                            "Send Battle Start",
+                        ),
+                    ),
                 ],
             ),
         ),

@@ -3,18 +3,29 @@
     left: (
         units: [
             (
-                hp: 1,
-                atk: 5,
+                hp: 15,
+                atk: 3,
                 description: "Test description. I have {Hp} hp and {Atk} atk",
-                statuses: [("Shield", 5)],
             ),
         ],
     ),
     right: (
         units: [
-            (hp: 5, atk: 1),
-            (hp: 5, atk: 1),
-            (hp: 5, atk: 1),
+            (
+                hp: 3,
+                atk: 3,
+                name: "Snake",
+                house: "Enemies",
+                description: "Kill after dealing any damage",
+                trigger: AfterDamageDealt(Kill),
+                representation: (
+                    material: Shape(
+                        shape: Circle,
+                        color: Hex("#76FF03"),
+                        size: Vec2(0.8, 0.8),
+                    ),
+                ),
+            ),
         ],
     ),
 )

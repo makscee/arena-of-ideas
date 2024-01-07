@@ -2,25 +2,64 @@
     hp: 1,
     atk: 2,
     house: "Enemies",
-    trigger: BattleStart(WithVar(Faction, OppositeFaction, WithTarget(RandomUnit, List([
-        Damage(None),
-        Vfx("magic_missile"),
-    ])))),
+    trigger: BattleStart(
+        WithVar(
+            Faction,
+            OppositeFaction,
+            WithTarget(
+                RandomUnit,
+                List(
+                    [
+                        Damage(None),
+                        Vfx(
+                            "magic_missile",
+                        ),
+                    ],
+                ),
+            ),
+        ),
+    ),
     name: "Charger",
     description: "Start of Battle: deal ATK damage to random enemy",
     representation: (
         material: Curve(
             thickness: Float(0.6),
             dilations: [],
-            curvature: Sum(Float(1.2), Mul(Sin(GameTime), Float(0.3))),
+            curvature: Sum(
+                Float(1.2),
+                Mul(
+                    Sin(GameTime),
+                    Float(0.3),
+                ),
+            ),
             aa: Float(1.0),
             color: State(Color),
         ),
         children: [],
         mapping: {
-            T: Sum(Mul(GameTime, Float(2.8)), Mul(IntFloat(State(Index)), Mul(PI, Float(0.25)))),
-            Position: Vec2EE(Float(0.0), Float(-0.4)),
-            Delta: Mul(Vec2EE(Sin(State(T)), Cos(State(T))), Float(0.7)),
+            T: Sum(
+                Mul(
+                    GameTime,
+                    Float(2.8),
+                ),
+                Mul(
+                    IntFloat(
+                        State(Index),
+                    ),
+                    Mul(PI, Float(0.25)),
+                ),
+            ),
+            Position: Vec2EE(
+                Float(0.0),
+                Float(-0.4),
+            ),
+            Delta: Mul(
+                Vec2EE(
+                    Sin(State(T)),
+                    Cos(State(T)),
+                ),
+                Float(0.7),
+            ),
         },
         count: 8,
     ),

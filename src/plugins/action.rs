@@ -39,6 +39,7 @@ impl ActionPlugin {
     pub fn spin(world: &mut World) -> bool {
         let mut processed = false;
         let timeframe = world.resource::<Timeframe>().0;
+        let mut died: HashSet<Entity> = default();
         loop {
             start_batch(world);
             if Self::process_cluster(timeframe, world) {
@@ -48,19 +49,22 @@ impl ActionPlugin {
                     .advance_insert(timeframe)
                     .end_batch()
                     .start_batch();
-                if UnitPlugin::run_death_check(world) {
+                died.extend(UnitPlugin::run_death_check(&died, world));
+            } else {
+                end_batch(world);
+                let has_dead = !died.is_empty();
+                for unit in died.drain() {
+                    UnitPlugin::turn_into_corpse(unit, world);
+                    debug!("{unit:?} now corpse");
+                }
+                if has_dead {
                     UnitPlugin::fill_slot_gaps(Faction::Left, world);
                     UnitPlugin::fill_slot_gaps(Faction::Right, world);
                     UnitPlugin::translate_to_slots(world);
-                    GameTimer::get_mut(world)
-                        .to_batch_start()
-                        .advance_insert(timeframe)
-                        .end_batch()
-                        .start_batch();
+                    continue;
+                } else {
+                    break;
                 }
-            } else {
-                end_batch(world);
-                break;
             }
             end_batch(world);
         }
@@ -250,7 +254,7 @@ impl Action {
             mut context,
         } = self;
         if let Some(owner) = context.get_owner() {
-            if !context.dead_owner_allowed() && UnitPlugin::is_dead(owner, world) {
+            if !context.dead_owner_allowed() && world.get::<Unit>(owner).is_none() {
                 return;
             }
         }

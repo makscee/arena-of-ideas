@@ -2,7 +2,16 @@
     hp: 4,
     atk: 4,
     house: "Enemies",
-    trigger: BattleStart(WithVar(Faction, OppositeFaction, WithTarget(SlotUnit(Int(1)), UseAbility("Copy")))),
+    trigger: BattleStart(
+        WithVar(
+            Faction,
+            OppositeFaction,
+            WithTarget(
+                SlotUnit(Int(1)),
+                UseAbility("Copy"),
+            ),
+        ),
+    ),
     name: "Spy",
     description: "[Copy] front enemy",
     representation: (
@@ -16,8 +25,25 @@
         ),
         children: [],
         mapping: {
-            Position: Mul(UnitVec(Mul(IntFloat(State(Index)), Mul(PI, Float(0.5)))), Mul(Beat, Float(0.5))),
-            Color: If(Even(State(Index)), State(Color), Hex("ffffffff")),
+            Position: Mul(
+                UnitVec(
+                    Mul(
+                        IntFloat(
+                            State(Index),
+                        ),
+                        Mul(
+                            PI,
+                            Float(0.5),
+                        ),
+                    ),
+                ),
+                Mul(Beat, Float(0.5)),
+            ),
+            Color: If(
+                Even(State(Index)),
+                State(Color),
+                Hex("ffffffff"),
+            ),
         },
         count: 4,
     ),

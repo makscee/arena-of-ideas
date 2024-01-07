@@ -1,0 +1,25 @@
+#![enable(implicit_some)]
+(
+    left: (units: [(hp: 15, atk: 3)]),
+    right: (
+        units: [
+            (
+                hp: 3,
+                atk: 3,
+                name: "left",
+                description: "Kill after dealing any damage",
+                trigger: AfterDamageDealt(Kill),
+            ),
+        ],
+    ),
+    condition: And(
+        Equals(
+            FactionCount(Faction(Left)),
+            Int(0),
+        ),
+        Equals(
+            FactionCount(Faction(Right)),
+            Int(0),
+        ),
+    ),
+)

@@ -135,23 +135,30 @@ impl UnitPlugin {
         );
     }
 
-    /// Iter over all Units
-    /// For any hp < 0 replace Unit marker with Corpse marker
-    pub fn run_death_check(world: &mut World) -> bool {
+    pub fn run_death_check(already_died: &HashSet<Entity>, world: &mut World) -> Vec<Entity> {
         let dead = world
             .query_filtered::<Entity, With<Unit>>()
             .iter(world)
-            .filter(|e| Self::is_dead(*e, world))
+            .filter(|e| !already_died.contains(e) && Self::is_dead(*e, world))
             .collect_vec();
-        let has_dead = !dead.is_empty();
-        for unit in dead {
-            Self::turn_into_corpse(unit, world);
+        for unit in dead.iter() {
+            Self::send_death_events(*unit, world);
         }
-        has_dead
+        dead
+    }
+
+    fn send_death_events(entity: Entity, world: &mut World) {
+        Event::Death(entity).send(world);
+        if let Ok(killer) = VarState::get(entity, world).get_entity(VarName::LastAttacker) {
+            Event::Kill {
+                owner: killer,
+                target: entity,
+            }
+            .send(world);
+        }
     }
 
     pub fn turn_into_corpse(entity: Entity, world: &mut World) {
-        Event::Death(entity).send(world);
         let mut unit = world.entity_mut(entity);
         unit.remove::<Unit>();
         unit.insert(Corpse);
@@ -161,13 +168,6 @@ impl UnitPlugin {
             VarChange::new(VarValue::Bool(false)),
             world,
         );
-        if let Ok(killer) = VarState::get(entity, world).get_entity(VarName::LastAttacker) {
-            Event::Kill {
-                owner: killer,
-                target: entity,
-            }
-            .send(world);
-        }
     }
 
     pub fn is_dead(entity: Entity, world: &World) -> bool {
