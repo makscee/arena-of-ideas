@@ -15,7 +15,6 @@ pub struct ShopData {
     pub next_team: PackedTeam,
     pub next_team_cards: Vec<(UnitCard, usize)>,
     pub next_level_num: usize,
-    pub phase: ShopPhase,
     pub bottom_expanded: bool,
     pub tower_teams: Vec<PackedTeam>,
 }
@@ -145,12 +144,6 @@ impl ShopState {
     }
 }
 
-#[derive(Clone, PartialEq)]
-pub enum ShopPhase {
-    Buy,
-    Sacrifice { selected: HashSet<usize> },
-}
-
 impl Plugin for ShopPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(GameState::Shop), Self::on_enter)
@@ -201,17 +194,10 @@ impl ShopPlugin {
         } else {
             save.climb.shop.respawn_case(world);
         }
-        let team_len = save.climb.team.units.len();
         save.climb.team.clone().unpack(Faction::Team, world);
         save.save(world).unwrap();
         UnitPlugin::translate_to_slots(world);
         ActionPlugin::set_timeframe(0.05, world);
-        let phase = match team_len < SACRIFICE_SLOT {
-            true => ShopPhase::Buy,
-            false => ShopPhase::Sacrifice {
-                selected: default(),
-            },
-        };
 
         let mut current = Tower::load_current(world);
         let mut c = 0;
@@ -233,7 +219,6 @@ impl ShopPlugin {
             next_team_cards,
             next_team,
             next_level_num: next_level_num + 1,
-            phase,
             bottom_expanded: false,
             tower_teams,
         });
@@ -285,108 +270,35 @@ impl ShopPlugin {
     pub fn ui(world: &mut World) {
         let ctx = &egui_context(world);
         let mut data = world.remove_resource::<ShopData>().unwrap();
-        let mut sacrifice_accepted = false;
 
         let pos = UnitPlugin::get_slot_position(Faction::Shop, 0) - vec2(1.0, 0.0);
         let pos = world_to_screen(pos.extend(0.0), world);
         let pos = pos2(pos.x, pos.y);
         let save = Save::get(world).unwrap();
         Self::show_tower_view_panel(&mut data, world);
-        match &mut data.phase {
-            ShopPhase::Buy => {
-                if !data.bottom_expanded {
-                    ShopOffer::draw_buy_panels(world);
-                }
-                Area::new("reroll").fixed_pos(pos).show(ctx, |ui| {
-                    ui.set_width(120.0);
-                    frame(ui, |ui| {
-                        ui.set_enabled(save.climb.shop.can_afford(REROLL_PRICE));
-                        ui.label("Reroll".add_color(white()).rich_text());
-                        if ui
-                            .button(
-                                format!("-{}g", REROLL_PRICE)
-                                    .add_color(yellow())
-                                    .rich_text()
-                                    .size(20.0),
-                            )
-                            .clicked()
-                        {
-                            Self::buy_reroll(world).unwrap();
-                        }
-                    });
-                });
-                Self::show_next_enemy_preview_panel(&mut data, world);
-            }
-            ShopPhase::Sacrifice { selected } => {
-                for unit in UnitPlugin::collect_faction(Faction::Team, world) {
-                    let slot = VarState::get(unit, world).get_int(VarName::Slot).unwrap() as usize;
-                    window("sacrifice")
-                        .id(unit)
-                        .set_width(80.0)
-                        .title_bar(false)
-                        .stroke(false)
-                        .entity_anchor(unit, Align2::CENTER_TOP, vec2(0.0, 1.0), world)
-                        .show(ctx, |ui| {
-                            frame(ui, |ui| {
-                                ui.set_width(100.0);
-                                let is_selected = selected.contains(&slot);
-                                let text = "SACRIFICE";
-                                if if is_selected {
-                                    ui.button_primary(text)
-                                } else {
-                                    ui.button(text)
-                                }
-                                .clicked()
-                                {
-                                    if is_selected {
-                                        selected.remove(&slot);
-                                    } else {
-                                        selected.insert(slot);
-                                    }
-                                }
-                            });
-                        });
-                    if selected.contains(&slot) {
-                        entity_panel(unit, default(), None, "cross", world).show(ctx, |ui| {
-                            ui.label(RichText::new("X").color(hex_color!("#D50000")).size(80.0));
-                        });
-                    }
-                }
-                Area::new("accept sacrifice")
-                    .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
-                    .show(ctx, |ui| {
-                        ui.set_enabled(
-                            save.climb.team.units.len() - selected.len() < SACRIFICE_SLOT,
-                        );
-                        if ui
-                            .button(
-                                RichText::new(format!("Accept Sacrifice +{} g", selected.len()))
-                                    .color(hex_color!("#D50000"))
-                                    .size(30.0)
-                                    .text_style(egui::TextStyle::Button),
-                            )
-                            .clicked()
-                        {
-                            for entity in UnitPlugin::collect_faction(Faction::Team, world) {
-                                if selected.contains(
-                                    &(VarState::get(entity, world).get_int(VarName::Slot).unwrap()
-                                        as usize),
-                                ) {
-                                    world.entity_mut(entity).despawn_recursive();
-                                }
-                            }
-                            Self::change_g(selected.len() as i32, world).unwrap();
-                            Self::pack_active_team(world).unwrap();
-                            sacrifice_accepted = true;
-                        }
-                    });
-            }
+
+        if !data.bottom_expanded {
+            ShopOffer::draw_buy_panels(world);
         }
-        if sacrifice_accepted {
-            UnitPlugin::fill_slot_gaps(Faction::Team, world);
-            UnitPlugin::translate_to_slots(world);
-            data.phase = ShopPhase::Buy;
-        }
+        Area::new("reroll").fixed_pos(pos).show(ctx, |ui| {
+            ui.set_width(120.0);
+            frame(ui, |ui| {
+                ui.set_enabled(save.climb.shop.can_afford(REROLL_PRICE));
+                ui.label("Reroll".add_color(white()).rich_text());
+                if ui
+                    .button(
+                        format!("-{}g", REROLL_PRICE)
+                            .add_color(yellow())
+                            .rich_text()
+                            .size(20.0),
+                    )
+                    .clicked()
+                {
+                    Self::buy_reroll(world).unwrap();
+                }
+            });
+        });
+        Self::show_next_enemy_preview_panel(&mut data, world);
 
         let g = save.climb.shop.g;
         Area::new("g")
@@ -405,7 +317,7 @@ impl ShopPlugin {
     fn show_tower_view_panel(data: &mut ShopData, world: &mut World) {
         let ctx = &egui_context(world);
         SidePanel::left("tower view")
-            .exact_width(200.0)
+            .exact_width(160.0)
             .resizable(false)
             .frame(
                 Frame::none()
@@ -673,7 +585,11 @@ impl ShopOffer {
                 .stroke(false)
                 .entity_anchor(*entity, Align2::CENTER_TOP, vec2(0.0, -1.2), world)
                 .show(ctx, |ui| {
-                    ui.set_enabled(offer.available && save.climb.shop.can_afford(offer.price));
+                    ui.set_enabled(
+                        offer.available
+                            && save.climb.shop.can_afford(offer.price)
+                            && save.climb.team.units.len() < TEAM_SLOTS,
+                    );
                     frame(ui, |ui| {
                         ui.set_width(100.0);
                         if ui

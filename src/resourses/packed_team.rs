@@ -75,7 +75,7 @@ impl PackedTeam {
             ))
             .id();
         if faction == Faction::Team {
-            for slot in 1..=10 {
+            for slot in 1..=TEAM_SLOTS {
                 UnitPlugin::spawn_slot(slot, Faction::Team, world);
             }
         }

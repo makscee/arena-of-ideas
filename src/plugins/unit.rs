@@ -1,7 +1,5 @@
 use super::*;
 
-pub const SACRIFICE_SLOT: usize = 6;
-
 pub struct UnitPlugin;
 
 impl Plugin for UnitPlugin {
@@ -11,6 +9,8 @@ impl Plugin for UnitPlugin {
             .add_systems(Update, Self::ui);
     }
 }
+
+pub const TEAM_SLOTS: usize = 7;
 
 #[derive(Resource, Debug)]
 pub struct ClosestSlot(usize, f32);
@@ -33,7 +33,7 @@ impl UnitPlugin {
         match faction {
             Faction::Left => vec2(slot as f32 * -3.0, 0.0),
             Faction::Right => vec2(slot as f32 * 3.0, 0.0),
-            Faction::Team => vec2(slot as f32 * -3.0 + 12.0, -4.0),
+            Faction::Team => vec2(slot as f32 * -3.0 + 14.0, -4.0),
             Faction::Shop => vec2(slot as f32 * 3.0 - 4.0, 4.0),
         }
     }

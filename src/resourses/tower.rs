@@ -13,6 +13,7 @@ impl Tower {
         let save = Save::get(world).unwrap();
 
         let ind = save.climb.defeated + 1;
+        debug!("Load floor number {ind}");
         let floor = GlobalTower::filter_by_number(ind as u64)?.floor;
         Some((
             match floor {
