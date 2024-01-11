@@ -126,7 +126,7 @@ impl VarState {
     }
 
     fn show_status_lines(
-        statuses: &Vec<(ColoredString, i32, ColoredString)>,
+        statuses: &[(ColoredString, i32, ColoredString)],
         show_desc: bool,
         ui: &mut Ui,
     ) {

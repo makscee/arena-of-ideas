@@ -232,7 +232,7 @@ impl UnitPlugin {
         state.change_int(VarName::Hp, 1);
         state.change_int(VarName::Atk, 1);
         let level = state.get_int(VarName::Level).unwrap();
-        if stacks >= level + 1 {
+        if stacks > level {
             state.set_int(VarName::Level, level + 1);
             state.set_int(VarName::Stacks, stacks - level);
         }
