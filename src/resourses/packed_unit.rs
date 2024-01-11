@@ -117,7 +117,6 @@ impl PackedUnit {
         {
             world.entity_mut(entity).insert(ActiveTeam);
         }
-        UnitCard::refresh_unit(entity, world).unwrap();
         world
             .entity_mut(entity)
             .insert((Name::new(self.name.clone()), Unit));

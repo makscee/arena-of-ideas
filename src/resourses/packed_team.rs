@@ -103,12 +103,6 @@ impl PackedTeam {
     pub fn state_mut(faction: Faction, world: &mut World) -> Option<Mut<VarState>> {
         Self::find_entity(faction, world).map(|e| VarState::get_mut(e, world))
     }
-    pub fn get_cards(&self, world: &mut World) -> Vec<UnitCard> {
-        self.units
-            .iter()
-            .map(|unit| UnitCard::from_packed(unit.clone(), world).unwrap())
-            .collect_vec()
-    }
 }
 
 impl ToString for PackedTeam {

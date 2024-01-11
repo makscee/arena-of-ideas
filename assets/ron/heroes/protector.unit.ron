@@ -9,7 +9,7 @@
         ),
     ),
     name: "Protector",
-    description: "Battle Start: give [Shield] ({Stacks}) to front ally",
+    description: "Battle Start: give [Shield] ({Level}) to front ally",
     representation: (
         material: Shape(
             shape: Circle,

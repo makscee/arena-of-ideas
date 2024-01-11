@@ -5,7 +5,7 @@
     house: "Dragons",
     trigger: AnyDeath(UseAbility("Grow")),
     name: "Scavenger",
-    description: "Any Unit died: [Grow] ({Stacks})",
+    description: "Any Unit died: [Grow] ({Level})",
     representation: (
         material: Shape(
             shape: Rectangle,

@@ -4,7 +4,7 @@
     hp: 1,
     atk: 1,
     house: "Holy",
-    description: "Battle Start: apply [Blessing] ({Stacks}) to all allies",
+    description: "Battle Start: apply [Blessing] ({Level}) to all allies",
     trigger: BattleStart(
         AoeFaction(
             OwnerFaction,

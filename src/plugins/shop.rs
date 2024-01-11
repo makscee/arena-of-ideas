@@ -12,8 +12,6 @@ pub struct ShopPlugin;
 
 #[derive(Resource, Clone)]
 pub struct ShopData {
-    pub next_team: PackedTeam,
-    pub next_team_cards: Vec<UnitCard>,
     pub next_level_num: usize,
     pub bottom_expanded: bool,
     pub tower_teams: Vec<PackedTeam>,
@@ -206,8 +204,7 @@ impl ShopPlugin {
             c += 1;
             sleep(Duration::from_secs_f32(0.05));
         }
-        let (next_team, next_level_num) = current.expect("Failed to load current floor");
-        let next_team_cards = next_team.get_cards(world);
+        let (_, next_level_num) = current.expect("Failed to load current floor");
         let tower_teams = GlobalTower::iter()
             .sorted_by_key(|f| f.number)
             .map(|f| match f.floor {
@@ -216,8 +213,6 @@ impl ShopPlugin {
             })
             .collect_vec();
         world.insert_resource(ShopData {
-            next_team_cards,
-            next_team,
             next_level_num: next_level_num + 1,
             bottom_expanded: false,
             tower_teams,
@@ -299,7 +294,6 @@ impl ShopPlugin {
                 }
             });
         });
-        Self::show_next_enemy_preview_panel(&mut data, world);
 
         let g = save.climb.shop.g;
         Area::new("g")
@@ -311,6 +305,13 @@ impl ShopPlugin {
                         .strong()
                         .color(hex_color!("#FFC107")),
                 );
+            });
+        Area::new("battle button")
+            .anchor(Align2::RIGHT_CENTER, [-40.0, 0.0])
+            .show(ctx, |ui| {
+                if ui.button("START BATTLE").clicked() {
+                    Self::go_to_battle(world);
+                }
             });
         world.insert_resource(data);
     }
@@ -382,59 +383,6 @@ impl ShopPlugin {
                     }
                 }
             });
-    }
-
-    fn show_next_enemy_preview_panel(data: &mut ShopData, world: &mut World) {
-        let ctx = &egui_context(world);
-        let response = TopBottomPanel::bottom("enemy preview")
-            .frame(
-                Frame::none()
-                    .fill(light_black())
-                    .inner_margin(Margin::same(8.0)),
-            )
-            .show(ctx, |ui| {
-                ui.with_layout(Layout::right_to_left(egui::Align::Max), |ui| {
-                    ui.add_space(20.0);
-                    if ui.button("START BATTLE").clicked() {
-                        Self::go_to_battle(world);
-                    }
-                    ui.label(
-                        format!("{}/{}", data.next_level_num - 1, Tower::total_levels())
-                            .add_color(white())
-                            .rich_text(),
-                    );
-                    ui.add_space(20.0);
-                    fn show_card(card: &UnitCard, data: &ShopData, ui: &mut Ui) {
-                        card.show_ui(data.bottom_expanded, false, ui);
-                    }
-                    if data.next_team_cards.len() <= 5 || !data.bottom_expanded {
-                        for card in data.next_team_cards.iter().rev() {
-                            show_card(card, data, ui);
-                        }
-                    } else {
-                        let mut it = data.next_team_cards.iter().peekable();
-                        ui.vertical(|ui| {
-                            while it.peek().is_some() {
-                                ui.horizontal(|ui| {
-                                    for _ in 0..5 {
-                                        if let Some(card) = it.next() {
-                                            show_card(card, data, ui);
-                                        } else {
-                                            break;
-                                        }
-                                    }
-                                });
-                            }
-                        });
-                    }
-                    ui.label("NEXT ENEMY:");
-                });
-            })
-            .response;
-        if data.bottom_expanded && !response.hovered() {
-            ctx.data_mut(|w| w.clear());
-        }
-        data.bottom_expanded = response.hovered();
     }
 
     fn show_sell_buttons(world: &mut World) -> Result<()> {

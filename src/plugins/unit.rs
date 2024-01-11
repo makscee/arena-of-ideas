@@ -236,7 +236,6 @@ impl UnitPlugin {
             state.set_int(VarName::Level, level + 1);
             state.set_int(VarName::Stacks, stacks - level);
         }
-        UnitCard::refresh_unit(unit, world).unwrap();
     }
 
     pub fn drag_unit_end(
@@ -310,8 +309,11 @@ impl UnitPlugin {
     fn ui(world: &mut World) {
         let hovered = world.get_resource::<HoveredUnit>().unwrap().0;
         let ctx = &egui_context(world);
-        for (entity, card) in world.query::<(Entity, &UnitCard)>().iter(world) {
-            card.show_window(card.open || hovered == Some(entity), ctx, world);
+        for (entity, state) in world
+            .query_filtered::<(Entity, &VarState), Or<(&Unit, &Corpse)>>()
+            .iter(world)
+        {
+            state.show_window(entity, hovered == Some(entity), ctx, world);
         }
     }
 

@@ -108,6 +108,9 @@ impl ColoredString {
     pub fn is_empty(&self) -> bool {
         self.lines.is_empty() || self.lines.iter().all(|(s, _)| s.is_empty())
     }
+    pub fn take(&mut self) -> Self {
+        mem::take(self)
+    }
 }
 
 impl From<&str> for ColoredString {
