@@ -252,14 +252,12 @@ impl UnitPlugin {
 
         commands.add(|world: &mut World| {
             let dragged = world.resource::<DraggedUnit>().0.unwrap();
+            world.resource_mut::<DraggedUnit>().0 = None;
             let ClosestSlot(slot, _, stackable) = *world.resource::<ClosestSlot>();
-            if stackable {
+            let target = Self::find_unit(Faction::Team, slot, world);
+            if stackable && !target.is_some_and(|target| target.eq(&dragged)) {
                 world.entity_mut(dragged).despawn_recursive();
-                Self::change_stacks(
-                    Self::find_unit(Faction::Team, slot, world).unwrap(),
-                    1,
-                    world,
-                );
+                Self::change_stacks(target.unwrap(), 1, world);
             } else {
                 let t = GameTimer::get(world).insert_head();
                 VarState::get_mut(dragged, world).insert_simple(
@@ -270,8 +268,6 @@ impl UnitPlugin {
             }
             Self::fill_slot_gaps(Faction::Team, world);
             Self::translate_to_slots(world);
-
-            world.resource_mut::<DraggedUnit>().0 = None;
         });
     }
 
