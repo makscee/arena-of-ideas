@@ -274,7 +274,7 @@ impl ShopPlugin {
 
         if !data.bottom_expanded {
             ShopOffer::draw_buy_panels(world);
-            let _ = Self::show_sell_buttons(world);
+            let _ = Self::show_hero_ui(world);
         }
         Area::new("reroll").fixed_pos(pos).show(ctx, |ui| {
             ui.set_width(120.0);
@@ -385,39 +385,76 @@ impl ShopPlugin {
             });
     }
 
-    fn show_sell_buttons(world: &mut World) -> Result<()> {
+    fn show_hero_ui(world: &mut World) -> Result<()> {
         let ctx = &egui_context(world);
         let cursor_pos = CameraPlugin::cursor_world_pos(world).context("Failed to get cursor")?;
-        for entity in UnitPlugin::collect_faction(Faction::Team, world) {
-            if VarState::get(entity, world)
-                .get_int(VarName::Slot)
-                .context("Failed to get slot")?
-                == UnitPlugin::get_closest_slot(cursor_pos, Faction::Team).0 as i32
-            {
-                window("SELL")
-                    .id(entity)
-                    .set_width(120.0)
-                    .title_bar(false)
-                    .stroke(false)
-                    .entity_anchor(entity, Align2::CENTER_BOTTOM, vec2(0.0, 1.2), world)
-                    .show(ctx, |ui| {
-                        frame(ui, |ui| {
-                            ui.set_width(100.0);
-                            ui.label("sell");
-                            if ui
-                                .button("+1 g".add_color(yellow()).rich_text().size(20.0))
-                                .clicked()
-                            {
-                                Self::change_g(1, world).unwrap();
-                                world.entity_mut(entity).despawn_recursive();
-                                UnitPlugin::fill_slot_gaps(Faction::Team, world);
-                                UnitPlugin::translate_to_slots(world);
-                                Self::pack_active_team(world).unwrap();
-                            }
+        let dragged = world.resource::<DraggedUnit>().0;
+        if let Some(dragged) = dragged {
+            let dragged_state = VarState::get(dragged, world);
+            let dragged_name = dragged_state.get_string(VarName::Name)?;
+            for entity in UnitPlugin::collect_faction(Faction::Team, world) {
+                if entity == dragged {
+                    continue;
+                }
+                let state = VarState::get(entity, world);
+                let same_slot = state.get_int(VarName::Slot).context("Failed to get slot")?
+                    == UnitPlugin::get_closest_slot(cursor_pos, Faction::Team).0 as i32;
+                let same_name = dragged_name.eq(&state.get_string(VarName::Name)?);
+                if same_name {
+                    let stacks = state.get_int(VarName::Stacks)?;
+                    let level = state.get_int(VarName::Level)?;
+                    let color = if same_slot { yellow() } else { white() };
+                    window("STACK")
+                        .id(entity)
+                        .set_width(150.0)
+                        .title_bar(false)
+                        .stroke(false)
+                        .entity_anchor(entity, Align2::CENTER_BOTTOM, vec2(0.0, 2.2), world)
+                        .show(ctx, |ui| {
+                            frame(ui, |ui| {
+                                ui.label("+STACK".add_color(color).rich_text().size(24.0));
+                                ui.label(format!("Level {level}").add_color(color).rich_text());
+                                ui.label(
+                                    format!("{stacks}/{}", level + 1)
+                                        .add_color(light_gray())
+                                        .rich_text(),
+                                );
+                            });
                         });
-                    });
+                }
+            }
+        } else {
+            for entity in UnitPlugin::collect_faction(Faction::Team, world) {
+                let state = VarState::get(entity, world);
+                if state.get_int(VarName::Slot).context("Failed to get slot")?
+                    == UnitPlugin::get_closest_slot(cursor_pos, Faction::Team).0 as i32
+                {
+                    window("SELL")
+                        .id(entity)
+                        .set_width(120.0)
+                        .title_bar(false)
+                        .stroke(false)
+                        .entity_anchor(entity, Align2::CENTER_BOTTOM, vec2(0.0, 1.2), world)
+                        .show(ctx, |ui| {
+                            frame(ui, |ui| {
+                                ui.set_width(100.0);
+                                ui.label("sell");
+                                if ui
+                                    .button("+1 g".add_color(yellow()).rich_text().size(20.0))
+                                    .clicked()
+                                {
+                                    Self::change_g(1, world).unwrap();
+                                    world.entity_mut(entity).despawn_recursive();
+                                    UnitPlugin::fill_slot_gaps(Faction::Team, world);
+                                    UnitPlugin::translate_to_slots(world);
+                                    Self::pack_active_team(world).unwrap();
+                                }
+                            });
+                        });
+                }
             }
         }
+
         Ok(())
     }
 
