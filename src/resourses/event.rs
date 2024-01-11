@@ -68,7 +68,7 @@ impl Event {
                 Status::collect_entity_statuses(*owner, world)
             }
         };
-        let statuses = Status::filter_active_statuses(statuses, get_insert_head(world), world);
+        let statuses = Status::filter_active_statuses(statuses, get_insert_head(), world);
         Status::notify(statuses, &self, &context, world);
         self
     }
@@ -84,7 +84,7 @@ impl Event {
             ),
             _ => panic!("Can't map {self}"),
         };
-        let statuses = Status::filter_active_statuses(statuses, get_insert_head(world), world);
+        let statuses = Status::filter_active_statuses(statuses, get_insert_head(), world);
         for status in statuses {
             Status::map_var(status, var, value, &context, world);
         }

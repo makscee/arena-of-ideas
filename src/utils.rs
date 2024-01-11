@@ -74,20 +74,20 @@ pub fn cursor_pos(world: &mut World) -> Option<Vec2> {
     let window = world.query::<&bevy::window::Window>().single(world);
     window.cursor_position()
 }
-pub fn get_insert_head(world: &World) -> f32 {
-    GameTimer::get(world).insert_head()
+pub fn get_insert_head() -> f32 {
+    GameTimer::get().insert_head()
 }
-pub fn get_play_head(world: &World) -> f32 {
-    GameTimer::get(world).play_head()
+pub fn get_play_head() -> f32 {
+    GameTimer::get().play_head()
 }
-pub fn start_batch(world: &mut World) {
-    GameTimer::get_mut(world).start_batch();
+pub fn start_batch() {
+    GameTimer::get().start_batch();
 }
-pub fn end_batch(world: &mut World) {
-    GameTimer::get_mut(world).end_batch();
+pub fn end_batch() {
+    GameTimer::get().end_batch();
 }
-pub fn to_batch_start(world: &mut World) {
-    GameTimer::get_mut(world).to_batch_start();
+pub fn to_batch_start() {
+    GameTimer::get().to_batch_start();
 }
 pub fn get_parent(entity: Entity, world: &World) -> Entity {
     world.get::<Parent>(entity).unwrap().get()

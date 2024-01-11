@@ -74,6 +74,7 @@ pub use utils::*;
 
 pub use bevy::diagnostic::{DiagnosticsStore, FrameTimeDiagnosticsPlugin};
 pub use clap::{Parser, ValueEnum};
+pub use lazy_static::lazy_static;
 pub use materials::prelude::module_bindings::connect;
 pub use spacetimedb_sdk;
 pub use spacetimedb_sdk::identity::Identity;
@@ -81,6 +82,7 @@ pub use spacetimedb_sdk::{
     identity::{identity, once_on_connect, Credentials},
     Address,
 };
+pub use std::sync::Mutex;
 
 pub use spacetimedb_sdk::table::*;
 pub use std::str::FromStr;

@@ -41,17 +41,17 @@ impl ActionPlugin {
         let timeframe = world.resource::<Timeframe>().0;
         let mut died: HashSet<Entity> = default();
         loop {
-            start_batch(world);
+            start_batch();
             if Self::process_cluster(timeframe, world) {
                 processed = true;
-                GameTimer::get_mut(world)
+                GameTimer::get()
                     .to_batch_start()
                     .advance_insert(timeframe)
                     .end_batch()
                     .start_batch();
                 died.extend(UnitPlugin::run_death_check(&died, world));
             } else {
-                end_batch(world);
+                end_batch();
                 let has_dead = !died.is_empty();
                 for unit in died.drain() {
                     UnitPlugin::turn_into_corpse(unit, world);
@@ -66,7 +66,7 @@ impl ActionPlugin {
                     break;
                 }
             }
-            end_batch(world);
+            end_batch();
         }
         processed
     }
@@ -121,14 +121,16 @@ pub enum ChangeType {
 
 impl ChangeType {
     fn process(self, entity: Entity, world: &mut World) {
-        match self {
-            ChangeType::Var { var, change } => {
-                VarState::push_back(entity, var, change, world);
-            }
-            ChangeType::Birth => {
-                let ts = get_insert_head(world);
-                if let Ok(mut s) = VarState::try_get_mut(entity, world) {
-                    s.birth = ts;
+        if let Ok(mut state) = VarState::try_get_mut(entity, world) {
+            match self {
+                ChangeType::Var { var, change } => {
+                    state.push_back(var, change);
+                }
+                ChangeType::Birth => {
+                    let ts = get_insert_head();
+                    if let Ok(mut s) = VarState::try_get_mut(entity, world) {
+                        s.birth = ts;
+                    }
                 }
             }
         }
@@ -199,13 +201,13 @@ impl ActionCluster {
         let step = timeframe / orders as f32;
         let factor = (timeframe / total_duration).min(1.0);
         for (_, changes) in self.changes.drain().sorted_by_key(|(c, _)| *c) {
-            start_batch(world);
+            start_batch();
             for QueuedChange { entity, mut change } in changes {
                 change.adust_time(factor);
                 change.process(entity, world);
-                to_batch_start(world);
+                to_batch_start();
             }
-            GameTimer::get_mut(world)
+            GameTimer::get()
                 .to_batch_start()
                 .advance_insert(step)
                 .end_batch();

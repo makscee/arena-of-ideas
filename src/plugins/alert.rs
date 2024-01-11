@@ -2,8 +2,6 @@ use super::*;
 
 use bevy::input::common_conditions::input_just_pressed;
 use bevy_egui::egui::Order;
-use lazy_static::lazy_static;
-use std::sync::Mutex;
 
 type AlertAction = Box<dyn FnOnce(&mut World) + Send + Sync>;
 pub struct AlertPlugin;

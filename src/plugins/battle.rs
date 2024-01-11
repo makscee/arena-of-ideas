@@ -32,7 +32,7 @@ pub enum BattleEnd {
 
 impl BattlePlugin {
     pub fn on_enter(world: &mut World) {
-        GameTimer::get_mut(world).reset();
+        GameTimer::get().reset();
         let result = Self::run_battle(world).unwrap();
         if matches!(Self::process_battle_result(result, world), Err(..)) {
             let mut bd = world.resource_mut::<BattleData>();
@@ -86,7 +86,7 @@ impl BattlePlugin {
         let timeframe = AudioPlugin::beat_timeframe();
         ActionPlugin::set_timeframe(timeframe, world);
         let shift_left = -AudioPlugin::to_next_beat(world);
-        GameTimer::get_mut(world)
+        GameTimer::get()
             .advance_insert(shift_left)
             .advance_play(shift_left);
         let data = world.resource::<BattleData>().clone();
@@ -94,7 +94,7 @@ impl BattlePlugin {
         data.right.unwrap().unpack(Faction::Right, world);
         UnitPlugin::translate_to_slots(world);
         ActionPlugin::spin(world);
-        GameTimer::get_mut(world).insert_head_to(0.0);
+        GameTimer::get().insert_head_to(0.0);
         Event::BattleStart.send(world).spin(world);
         while let Some((left, right)) = Self::get_strikers(world) {
             Self::run_strike(left, right, world);
@@ -205,7 +205,7 @@ impl BattlePlugin {
 
     pub fn ui(world: &mut World) {
         let ctx = &egui_context(world);
-        if !GameTimer::get(world).ended() {
+        if !GameTimer::get().ended() {
             return;
         }
         let end = world.resource::<BattleData>().end;
@@ -239,7 +239,7 @@ impl BattlePlugin {
                         ui[0].vertical_centered_justified(|ui| {
                             if ui.button("REPLAY").clicked() {
                                 let t = -AudioPlugin::to_next_beat(world);
-                                GameTimer::get_mut(world).play_head_to(t);
+                                GameTimer::get().play_head_to(t);
                             }
                         });
                         ui[1].vertical_centered_justified(|ui| {

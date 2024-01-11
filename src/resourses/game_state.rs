@@ -29,7 +29,7 @@ impl GameState {
         match self {
             GameState::MainMenu | GameState::Login => world.send_event(AppExit),
             GameState::CustomBattle | GameState::Battle => {
-                GameTimer::get_mut(world).skip_to_end();
+                GameTimer::get().skip_to_end();
             }
             GameState::Shop | GameState::HeroEditor | GameState::HeroGallery => {
                 Self::MainMenu.change(world)

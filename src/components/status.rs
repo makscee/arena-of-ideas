@@ -84,15 +84,12 @@ impl Status {
         for entity in Self::collect_entity_statuses(unit, world) {
             if let Some(s) = world.entity(entity).get::<Status>() {
                 if s.name.eq(status) {
-                    VarState::change_int(entity, VarName::Charges, delta, world)?;
-                    VarState::push_back(
-                        entity,
-                        VarName::Visible,
-                        VarChange::new(VarValue::Bool(
-                            VarState::get(entity, world).get_int(VarName::Charges)? > 0,
-                        )),
-                        world,
-                    );
+                    let mut state =
+                        VarState::try_get_mut(entity, world).context("Failed to get state")?;
+                    let visible = state.get_int(VarName::Charges)? > 0;
+                    state
+                        .push_back(VarName::Visible, VarChange::new(VarValue::Bool(visible)))
+                        .change_int(VarName::Charges, delta);
 
                     return Ok(entity);
                 }
@@ -107,7 +104,7 @@ impl Status {
 
     fn reindex_statuses(unit: Entity, world: &mut World) -> Result<()> {
         let mut ind: i32 = 0;
-        let t = get_insert_head(world);
+        let t = get_insert_head();
         for entity in Self::collect_entity_statuses(unit, world) {
             let mut state = VarState::get_mut(entity, world);
             if state.get_int(VarName::Charges).is_ok_and(|x| x > 0) {
@@ -201,7 +198,7 @@ impl Status {
                         Context::from_owner(parent, world).set_status(status, world),
                         world,
                     ) {
-                        let t = get_insert_head(world);
+                        let t = get_insert_head();
                         let mut state_mapping = world.get_mut::<VarStateDelta>(status).unwrap();
                         if state_mapping.need_update(var, &delta) {
                             state_mapping.state.insert_simple(var, delta, t);

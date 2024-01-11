@@ -14,6 +14,6 @@ impl SimulationPlugin {
     pub fn clear(world: &mut World) {
         UnitPlugin::despawn_all_teams(world);
         Representation::despawn_all(world);
-        GameTimer::get_mut(world).reset();
+        GameTimer::get().reset();
     }
 }

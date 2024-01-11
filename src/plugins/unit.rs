@@ -114,12 +114,8 @@ impl UnitPlugin {
             .context("No slot var")?
             .get_int()?;
         let pos = Self::get_slot_position(faction, slot as usize);
-        VarState::push_back(
-            entity,
-            VarName::Position,
-            VarChange::new(VarValue::Vec2(pos)),
-            world,
-        );
+        VarState::get_mut(entity, world)
+            .push_back(VarName::Position, VarChange::new(VarValue::Vec2(pos)));
         Ok(())
     }
 
@@ -162,12 +158,8 @@ impl UnitPlugin {
         let mut unit = world.entity_mut(entity);
         unit.remove::<Unit>();
         unit.insert(Corpse);
-        VarState::push_back(
-            unit.id(),
-            VarName::Visible,
-            VarChange::new(VarValue::Bool(false)),
-            world,
-        );
+        VarState::get_mut(unit.id(), world)
+            .push_back(VarName::Visible, VarChange::new(VarValue::Bool(false)));
     }
 
     pub fn is_dead(entity: Entity, world: &World) -> bool {
@@ -234,10 +226,17 @@ impl UnitPlugin {
         commands.insert_resource(ClosestSlot(0, f32::MAX, false));
     }
 
-    pub fn change_stacks(unit: Entity, delta: i32, world: &mut World) {
-        VarState::change_int(unit, VarName::Stacks, delta, world).unwrap();
-        VarState::change_int(unit, VarName::Hp, delta, world).unwrap();
-        VarState::change_int(unit, VarName::Atk, delta, world).unwrap();
+    pub fn add_stack(unit: Entity, world: &mut World) {
+        let mut state = VarState::get_mut(unit, world);
+        let stacks = state.change_int(VarName::Stacks, 1);
+        state.change_int(VarName::Hp, 1);
+        state.change_int(VarName::Atk, 1);
+        let level = state.get_int(VarName::Level).unwrap();
+        if stacks >= level + 1 {
+            state.set_int(VarName::Level, level + 1);
+            state.set_int(VarName::Stacks, stacks - level);
+        }
+        UnitCard::refresh_unit(unit, world).unwrap();
     }
 
     pub fn drag_unit_end(
@@ -257,9 +256,9 @@ impl UnitPlugin {
             let target = Self::find_unit(Faction::Team, slot, world);
             if stackable && !target.is_some_and(|target| target.eq(&dragged)) {
                 world.entity_mut(dragged).despawn_recursive();
-                Self::change_stacks(target.unwrap(), 1, world);
+                Self::add_stack(target.unwrap(), world);
             } else {
-                let t = GameTimer::get(world).insert_head();
+                let t = GameTimer::get().insert_head();
                 VarState::get_mut(dragged, world).insert_simple(
                     VarName::Slot,
                     VarValue::Int(slot as i32),

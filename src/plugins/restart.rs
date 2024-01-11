@@ -15,13 +15,12 @@ impl RestartPlugin {
         mut commands: Commands,
         mut state: ResMut<NextState<GameState>>,
         mut time: ResMut<Time>,
-        mut game_timer: ResMut<GameTimer>,
     ) {
         for unit in query.iter() {
             commands.entity(unit).despawn_recursive();
         }
         *time = Time::new(Instant::now());
-        game_timer.reset();
+        GameTimer::get().reset();
         state.set(GameState::MainMenu);
     }
 }

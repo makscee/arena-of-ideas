@@ -109,14 +109,14 @@ fn main() {
             AssetsSyncPlugin,
         ))
         .add_systems(Update, input_world)
-        .init_resource::<GameTimer>()
         .register_type::<VarState>()
         .register_type::<VarStateDelta>()
         .add_systems(Update, show_build_version.after(ShopPlugin::ui))
         .run();
 }
 
-fn update(mut timer: ResMut<GameTimer>, time: Res<Time>, audio: Res<AudioData>) {
+fn update(time: Res<Time>, audio: Res<AudioData>) {
+    let mut timer = GameTimer::get();
     if let Some(play_delta) = audio.play_delta {
         timer.advance_play(play_delta);
     } else {

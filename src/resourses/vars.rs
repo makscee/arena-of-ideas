@@ -57,6 +57,7 @@ pub enum VarName {
     IncomingDamage,
     OutgoingDamage,
     Stacks,
+    Level,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Reflect, PartialEq)]

@@ -18,6 +18,15 @@ pub struct UnitCard {
 }
 
 impl UnitCard {
+    pub fn attach_to_unit(self, unit: Entity, world: &mut World) {
+        world.entity_mut(unit).insert(self);
+    }
+    pub fn refresh_unit(unit: Entity, world: &mut World) -> Result<()> {
+        Self::from_entity(unit, world)?
+            .set_open(false)
+            .attach_to_unit(unit, world);
+        Ok(())
+    }
     pub fn from_packed(unit: PackedUnit, world: &mut World) -> Result<Self> {
         let entity = unit.unpack(Faction::Left.team_entity(world), None, world);
         let card = Self::from_entity(entity, world)?;
@@ -25,7 +34,7 @@ impl UnitCard {
         Ok(card)
     }
     pub fn from_entity(entity: Entity, world: &World) -> Result<Self> {
-        let t = get_play_head(world);
+        let t = get_play_head();
         let statuses = Status::collect_entity_statuses(entity, world)
             .into_iter()
             .filter_map(|e| {
@@ -102,13 +111,15 @@ impl UnitCard {
             .inject_definitions(world);
         let hp = VarState::find_value(entity, VarName::Hp, t, world)?.get_int()?;
         let atk = VarState::find_value(entity, VarName::Atk, t, world)?.get_int()?;
+        let level = VarState::find_value(entity, VarName::Level, t, world)?.get_int()?;
         let stacks = VarState::find_value(entity, VarName::Stacks, t, world)?.get_int()?;
-        let name = state
+        let mut name = state
             .get_string_at(VarName::Name, t)?
             .add_color(state.get_color_at(VarName::HouseColor, t)?.c32());
-        let mut stats = format!(" {atk}/{hp}").add_color(white());
-        if stacks > 1 {
-            stats.push(format!(" x{stacks} stacks"), light_gray());
+        let stats = format!(" {atk}/{hp}").add_color(white());
+        if level > 1 {
+            name.push(format!(" {level}"), white())
+                .push(format!(" {stacks}/{}", level + 1), light_gray());
         }
 
         Ok(Self {

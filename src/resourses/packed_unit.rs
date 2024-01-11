@@ -8,8 +8,10 @@ use super::*;
 pub struct PackedUnit {
     pub hp: i32,
     pub atk: i32,
-    #[serde(default = "default_stacks")]
+    #[serde(default = "default_one")]
     pub stacks: i32,
+    #[serde(default = "default_one")]
+    pub level: i32,
     #[serde(default = "default_house")]
     pub house: String,
     #[serde(default)]
@@ -32,7 +34,7 @@ fn default_house() -> String {
 fn default_text() -> String {
     "empty".to_owned()
 }
-fn default_stacks() -> i32 {
+fn default_one() -> i32 {
     1
 }
 
@@ -77,6 +79,7 @@ impl PackedUnit {
             .init(VarName::Hp, VarValue::Int(self.hp))
             .init(VarName::Atk, VarValue::Int(self.atk))
             .init(VarName::Stacks, VarValue::Int(self.stacks))
+            .init(VarName::Level, VarValue::Int(self.level))
             .init(VarName::House, VarValue::String(self.house.clone()))
             .init(VarName::Name, VarValue::String(self.name.clone()))
             .init(VarName::Position, VarValue::Vec2(default()))
@@ -114,13 +117,10 @@ impl PackedUnit {
         {
             world.entity_mut(entity).insert(ActiveTeam);
         }
-        let card = UnitCard::from_entity(entity, world)
-            .unwrap()
-            .set_open(false);
+        UnitCard::refresh_unit(entity, world).unwrap();
         world
             .entity_mut(entity)
-            .insert((Name::new(self.name.clone()), Unit))
-            .insert(card);
+            .insert((Name::new(self.name.clone()), Unit));
         debug!("Unpacked unit {entity:?} {}", self.name);
         entity
     }
@@ -141,10 +141,11 @@ impl PackedUnit {
                 None => default(),
             }
         };
-        let state = VarState::get(entity, world).clone();
+        let mut state = VarState::get(entity, world).clone();
         let hp = state.get_int(VarName::Hp).unwrap();
         let atk = state.get_int(VarName::Atk).unwrap();
         let stacks = state.get_int(VarName::Stacks).unwrap();
+        let level = state.get_int(VarName::Level).unwrap();
         let name = state.get_string(VarName::Name).unwrap();
         let description = state.get_string(VarName::Description).unwrap();
         let house = state.get_string(VarName::House).unwrap();
@@ -164,6 +165,15 @@ impl PackedUnit {
             }
         }
         let trigger = trigger.unwrap();
+        state
+            .clear_value(VarName::Hp)
+            .clear_value(VarName::Atk)
+            .clear_value(VarName::Level)
+            .clear_value(VarName::Stacks)
+            .clear_value(VarName::Name)
+            .clear_value(VarName::Description)
+            .clear_value(VarName::House)
+            .simplify();
 
         Self {
             hp,
@@ -176,6 +186,7 @@ impl PackedUnit {
             description,
             statuses,
             stacks,
+            level,
         }
     }
 

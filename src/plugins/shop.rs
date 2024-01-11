@@ -186,7 +186,7 @@ impl ShopPlugin {
     }
 
     fn on_enter(world: &mut World) {
-        GameTimer::get_mut(world).reset();
+        GameTimer::get().reset();
         egui_context(world).data_mut(|w| w.clear());
         let mut save = Save::get(world).unwrap();
         if save.climb.shop.case.is_empty() {
@@ -499,7 +499,11 @@ impl ShopPlugin {
         let mut save = Save::get(world)?;
         save.climb.shop.g += delta;
         save.save(world)?;
-        VarState::change_int(Faction::Team.team_entity(world), VarName::G, delta, world)
+        let entity = Faction::Team.team_entity(world);
+        VarState::try_get_mut(entity, world)
+            .context("Failed to get state")?
+            .change_int(VarName::G, delta);
+        Ok(())
     }
 }
 

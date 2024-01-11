@@ -43,7 +43,7 @@ impl VarState {
     }
 
     pub fn attach(mut self, entity: Entity, world: &mut World) {
-        self.birth = get_insert_head(world);
+        self.birth = get_insert_head();
         world.entity_mut(entity).insert(self);
         ActionCluster::current(world).push_state_birth(entity);
     }
@@ -88,26 +88,22 @@ impl VarState {
             .with_context(|| format!("VarState not found for {entity:?}"))
     }
 
-    pub fn change_int(entity: Entity, var: VarName, delta: i32, world: &mut World) -> Result<()> {
-        let value = Self::get(entity, world).get_int(var).unwrap_or_default() + delta;
-        Self::push_back(entity, var, VarChange::new(VarValue::Int(value)), world);
-        Ok(())
+    pub fn change_int(&mut self, var: VarName, delta: i32) -> i32 {
+        let value = self.get_int(var).unwrap_or_default() + delta;
+        self.push_back(var, VarChange::new(VarValue::Int(value)));
+        value
+    }
+    pub fn set_int(&mut self, var: VarName, value: i32) {
+        self.push_back(var, VarChange::new(VarValue::Int(value)));
     }
 
-    pub fn push_back(entity: Entity, var: VarName, mut change: VarChange, world: &mut World) {
-        let head = get_insert_head(world);
-        let birth = if let Ok(state) = Self::try_get(entity, world) {
-            state.birth
-        } else {
-            return;
-        };
+    pub fn push_back(&mut self, var: VarName, mut change: VarChange) -> &mut Self {
+        let head = get_insert_head();
+        let birth = self.birth;
         change.t += head - birth;
-        GameTimer::get_mut(world).advance_insert(change.duration);
-        Self::get_mut(entity, world)
-            .history
-            .entry(var)
-            .or_insert(default())
-            .push(change);
+        GameTimer::get().advance_insert(change.duration);
+        self.history.entry(var).or_insert(default()).push(change);
+        self
     }
     pub fn insert_simple(&mut self, var: VarName, value: VarValue, t: f32) -> &mut Self {
         self.history
@@ -196,6 +192,10 @@ impl VarState {
         } else {
             Err(anyhow!("Var {var} was not found"))
         }
+    }
+    pub fn clear_value(&mut self, var: VarName) -> &mut Self {
+        self.history.remove(&var);
+        self
     }
     pub fn simplify(&mut self) -> &mut Self {
         for history in self.history.values_mut() {

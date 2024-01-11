@@ -1,6 +1,12 @@
+use std::sync::MutexGuard;
+
 use super::*;
 
-#[derive(Resource, Default)]
+lazy_static! {
+    static ref GAME_TIMER: Mutex<GameTimer> = Mutex::new(default());
+}
+
+#[derive(Default)]
 pub struct GameTimer {
     play_head: f32,
     insert_head: f32,
@@ -19,12 +25,8 @@ impl GameTimer {
         self.paused
     }
 
-    pub fn get_mut(world: &mut World) -> Mut<GameTimer> {
-        world.get_resource_mut::<GameTimer>().unwrap()
-    }
-
-    pub fn get(world: &World) -> &GameTimer {
-        world.get_resource::<GameTimer>().unwrap()
+    pub fn get() -> MutexGuard<'static, GameTimer> {
+        GAME_TIMER.lock().unwrap()
     }
 
     pub fn play_head(&self) -> f32 {

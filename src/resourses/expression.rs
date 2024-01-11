@@ -116,7 +116,7 @@ impl Expression {
                 let x = x.get_int(context, world)?;
                 Ok(VarValue::Bool(x % 2 == 0))
             }
-            Expression::GameTime => Ok(VarValue::Float(GameTimer::get(world).play_head())),
+            Expression::GameTime => Ok(VarValue::Float(GameTimer::get().play_head())),
             Expression::PI => Ok(VarValue::Float(PI)),
             Expression::Sum(a, b) => {
                 VarValue::sum(&a.get_value(context, world)?, &b.get_value(context, world)?)
@@ -131,18 +131,18 @@ impl Expression {
                 VarValue::div(&a.get_value(context, world)?, &b.get_value(context, world)?)
             }
             Expression::State(var) => {
-                let t = get_play_head(world);
+                let t = get_play_head();
                 VarState::find_value(context.owner(), *var, t, world)
             }
             Expression::TargetState(var) => {
-                let t = get_play_head(world);
+                let t = get_play_head();
                 VarState::find_value(context.target(), *var, t, world)
             }
             Expression::StateLast(var) => {
                 VarState::get(context.owner(), world).get_value_last(*var)
             }
             Expression::Age => Ok(VarValue::Float(
-                get_play_head(world) - VarState::find(context.owner(), world).birth,
+                get_play_head() - VarState::find(context.owner(), world).birth,
             )),
             Expression::Context(var) => context
                 .get_var(*var, world)

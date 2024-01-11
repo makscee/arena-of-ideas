@@ -55,11 +55,9 @@ impl Effect {
                             context,
                         );
                     }
-                    VarState::push_back(
-                        target,
+                    VarState::get_mut(target, world).push_back(
                         VarName::LastAttacker,
                         VarChange::new(VarValue::Entity(context.owner())),
-                        world,
                     );
                     Event::DamageTaken {
                         owner: target,
@@ -88,13 +86,12 @@ impl Effect {
             }
             Effect::Kill => {
                 let target = context.get_target().context("Target not found")?;
-                VarState::change_int(target, VarName::Hp, -9999999, world)?;
-                VarState::push_back(
-                    target,
-                    VarName::LastAttacker,
-                    VarChange::new(VarValue::Entity(context.owner())),
-                    world,
-                );
+                VarState::get_mut(target, world)
+                    .push_back(
+                        VarName::LastAttacker,
+                        VarChange::new(VarValue::Entity(context.owner())),
+                    )
+                    .change_int(VarName::Hp, -9999999);
                 Pools::get_vfx("text", world)
                     .clone()
                     .set_var(
@@ -249,7 +246,7 @@ impl Effect {
                         continue;
                     }
                     if let Some(value) = history.get_last() {
-                        VarState::push_back(owner, var, VarChange::new(value), world);
+                        VarState::get_mut(owner, world).push_back(var, VarChange::new(value));
                     }
                 }
                 if !SkipVisual::active(world) {
@@ -274,7 +271,8 @@ impl Effect {
                             VarState::get(entity, world).history.clone().into_iter()
                         {
                             if let Some(value) = history.get_last() {
-                                VarState::push_back(status, var, VarChange::new(value), world);
+                                VarState::get_mut(status, world)
+                                    .push_back(var, VarChange::new(value));
                             }
                         }
                     } else {
