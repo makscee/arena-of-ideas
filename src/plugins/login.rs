@@ -7,8 +7,8 @@ use spacetimedb_sdk::{
 };
 
 use crate::module_bindings::{
-    login, login_by_identity, once_on_login, once_on_login_by_identity, once_on_register, register,
-    GlobalData, User,
+    login, login_by_identity, once_on_login, once_on_login_by_identity, once_on_register,
+    once_on_register_empty, register, register_empty, GlobalData, User,
 };
 
 use super::*;
@@ -45,7 +45,7 @@ fn register_callbacks() {
 pub struct LoginData {
     pub name: String,
     pub pass: String,
-    pub prev_name: Option<String>,
+    pub login_sent: bool,
 }
 #[derive(Resource, Default)]
 pub struct RegisterData {
@@ -75,11 +75,25 @@ impl LoginPlugin {
     fn update(world: &mut World) {
         if *IS_CONNECTED.lock().unwrap() {
             let mut data = world.resource_mut::<LoginData>();
-            if data.prev_name.is_none() {
-                if let Some(creds) = Self::load_credentials() {
-                    if let Some(user) = User::find(|u| u.identities.contains(&creds.identity)) {
-                        data.prev_name = Some(user.name.clone());
-                    }
+            if !data.login_sent {
+                let creds = Self::load_credentials().unwrap();
+                data.login_sent = true;
+                if User::find(|u| u.identities.contains(&creds.identity)).is_some() {
+                    Self::login_by_identity();
+                } else {
+                    register_empty();
+                    once_on_register_empty(|_, _, status| {
+                        debug!("Register empty: {status:?}");
+                        match status {
+                            Status::Committed => Self::login_by_identity(),
+                            Status::Failed(e) => AlertPlugin::add_error(
+                                Some("REGISTER ERROR".to_owned()),
+                                e.to_owned(),
+                                None,
+                            ),
+                            _ => panic!(),
+                        }
+                    });
                 }
             }
             if Self::get_username().is_some() {
@@ -158,7 +172,7 @@ impl LoginPlugin {
                     None,
                 );
             }
-            Status::OutOfEnergy => panic!(),
+            _ => panic!(),
         }
     }
 
@@ -169,19 +183,19 @@ impl LoginPlugin {
         });
     }
 
+    fn login_by_identity() {
+        login_by_identity();
+        once_on_login_by_identity(|identity, _, status| {
+            let name = User::find(|u| u.identities.contains(identity))
+                .unwrap()
+                .name;
+            Self::on_login(status, &name);
+        });
+    }
+
     pub fn login(ui: &mut Ui, world: &mut World) {
         let mut login_data = world.resource_mut::<LoginData>();
 
-        if let Some(name) = &login_data.prev_name {
-            frame(ui, |ui| {
-                if ui.button(format!("LOGIN AS {name}")).clicked() {
-                    login_by_identity(name.to_owned());
-                    once_on_login_by_identity(|_, _, status, name| {
-                        Self::on_login(status, name);
-                    });
-                }
-            });
-        }
         frame(ui, |ui| {
             ui.horizontal(|ui| {
                 ui.vertical(|ui| {

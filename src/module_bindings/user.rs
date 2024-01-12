@@ -17,7 +17,7 @@ pub struct User {
     pub id: u64,
     pub name: String,
     pub identities: Vec<Identity>,
-    pub pass_hash: String,
+    pub pass_hash: Option<String>,
     pub online: bool,
     pub last_login: u64,
 }
@@ -48,7 +48,7 @@ impl User {
         Self::filter(|row| row.identities == identities)
     }
     #[allow(unused)]
-    pub fn filter_by_pass_hash(pass_hash: String) -> TableIter<Self> {
+    pub fn filter_by_pass_hash(pass_hash: Option<String>) -> TableIter<Self> {
         Self::filter(|row| row.pass_hash == pass_hash)
     }
     #[allow(unused)]

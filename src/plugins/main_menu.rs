@@ -17,27 +17,7 @@ impl MainMenuPlugin {
             .show(ctx, |ui| {
                 if LoginPlugin::is_connected() {
                     if CURRENT_USER.lock().unwrap().is_none() {
-                        const CTX_KEY: &str = "register";
-                        let register = get_context_bool(world, CTX_KEY);
-                        frame(ui, |ui| {
-                            ui.columns(2, |ui| {
-                                ui[0].vertical_centered_justified(|ui| {
-                                    if ui.button_or_primary("LOGIN", !register).clicked() {
-                                        set_context_bool(world, CTX_KEY, false);
-                                    }
-                                });
-                                ui[1].vertical_centered_justified(|ui| {
-                                    if ui.button_or_primary("REGISTER", register).clicked() {
-                                        set_context_bool(world, CTX_KEY, true);
-                                    }
-                                });
-                            });
-                            if register {
-                                LoginPlugin::register(ui, world);
-                            } else {
-                                LoginPlugin::login(ui, world);
-                            }
-                        });
+                        LoginPlugin::login(ui, world);
                     }
                 } else {
                     ui.label("DISCONNECTED");
@@ -46,7 +26,10 @@ impl MainMenuPlugin {
                     }
                 }
 
-                if LoginPlugin::get_username().is_some() {
+                if let Some(name) = LoginPlugin::get_username() {
+                    frame(ui, |ui| {
+                        ui.label(format!("Welcome {name}!"));
+                    });
                     frame(ui, |ui| {
                         let enabled = Save::get(world).is_ok();
                         ui.set_enabled(enabled);

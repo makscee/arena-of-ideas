@@ -30,6 +30,8 @@ pub mod global_tower;
 pub mod house;
 pub mod login_by_identity_reducer;
 pub mod login_reducer;
+pub mod logout_reducer;
+pub mod register_empty_reducer;
 pub mod register_reducer;
 pub mod set_name_reducer;
 pub mod set_password_reducer;
@@ -59,6 +61,8 @@ pub use global_tower::*;
 pub use house::*;
 pub use login_by_identity_reducer::*;
 pub use login_reducer::*;
+pub use logout_reducer::*;
+pub use register_empty_reducer::*;
 pub use register_reducer::*;
 pub use set_name_reducer::*;
 pub use set_password_reducer::*;
@@ -85,7 +89,9 @@ pub enum ReducerEvent {
     GiveRight(give_right_reducer::GiveRightArgs),
     Login(login_reducer::LoginArgs),
     LoginByIdentity(login_by_identity_reducer::LoginByIdentityArgs),
+    Logout(logout_reducer::LogoutArgs),
     Register(register_reducer::RegisterArgs),
+    RegisterEmpty(register_empty_reducer::RegisterEmptyArgs),
     SetName(set_name_reducer::SetNameArgs),
     SetPassword(set_password_reducer::SetPasswordArgs),
     StartRun(start_run_reducer::StartRunArgs),
@@ -186,7 +192,9 @@ match &function_call.reducer[..] {
 			"give_right" => _reducer_callbacks.handle_event_of_type::<give_right_reducer::GiveRightArgs, ReducerEvent>(event, _state, ReducerEvent::GiveRight),
 			"login" => _reducer_callbacks.handle_event_of_type::<login_reducer::LoginArgs, ReducerEvent>(event, _state, ReducerEvent::Login),
 			"login_by_identity" => _reducer_callbacks.handle_event_of_type::<login_by_identity_reducer::LoginByIdentityArgs, ReducerEvent>(event, _state, ReducerEvent::LoginByIdentity),
+			"logout" => _reducer_callbacks.handle_event_of_type::<logout_reducer::LogoutArgs, ReducerEvent>(event, _state, ReducerEvent::Logout),
 			"register" => _reducer_callbacks.handle_event_of_type::<register_reducer::RegisterArgs, ReducerEvent>(event, _state, ReducerEvent::Register),
+			"register_empty" => _reducer_callbacks.handle_event_of_type::<register_empty_reducer::RegisterEmptyArgs, ReducerEvent>(event, _state, ReducerEvent::RegisterEmpty),
 			"set_name" => _reducer_callbacks.handle_event_of_type::<set_name_reducer::SetNameArgs, ReducerEvent>(event, _state, ReducerEvent::SetName),
 			"set_password" => _reducer_callbacks.handle_event_of_type::<set_password_reducer::SetPasswordArgs, ReducerEvent>(event, _state, ReducerEvent::SetPassword),
 			"start_run" => _reducer_callbacks.handle_event_of_type::<start_run_reducer::StartRunArgs, ReducerEvent>(event, _state, ReducerEvent::StartRun),

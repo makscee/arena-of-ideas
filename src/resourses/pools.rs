@@ -207,6 +207,10 @@ impl PoolsPlugin {
             return;
         }
         events.clear();
+        if module_bindings::House::count() == 0 {
+            error!("Server assets are not synced");
+            return;
+        }
         debug!("Cache server pools start");
         pools.heroes.clear();
         pools.enemies.clear();

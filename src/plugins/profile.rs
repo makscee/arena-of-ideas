@@ -1,5 +1,5 @@
 use crate::module_bindings::{
-    once_on_set_name, once_on_set_password, set_name, set_password, User,
+    logout, once_on_set_name, once_on_set_password, set_name, set_password, User,
 };
 
 use super::*;
@@ -86,11 +86,7 @@ impl ProfilePlugin {
                                 .ui(ui);
                         });
                     });
-                    ui.set_enabled(
-                        !data.old_pass.is_empty()
-                            && !data.pass.is_empty()
-                            && data.pass.eq(&data.pass_repeat),
-                    );
+                    ui.set_enabled(!data.pass.is_empty() && data.pass.eq(&data.pass_repeat));
                     if ui.button("Save").clicked() {
                         set_password(data.old_pass.clone(), data.pass.clone());
                         once_on_set_password(|_, _, status, _, _| match status {
@@ -108,6 +104,17 @@ impl ProfilePlugin {
                             ),
                             spacetimedb_sdk::reducer::Status::OutOfEnergy => panic!(),
                         });
+                    }
+                });
+
+                ui.collapsing("Login", |ui| {
+                    LoginPlugin::login(ui, world);
+                });
+
+                frame(ui, |ui| {
+                    if ui.button("LOGOUT").clicked() {
+                        logout();
+                        world.send_event(AppExit);
                     }
                 });
             }
