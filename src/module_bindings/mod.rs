@@ -21,6 +21,8 @@ use spacetimedb_sdk::{
 use std::sync::Arc;
 
 pub mod ability;
+pub mod arena_pool;
+pub mod arena_run;
 pub mod extend_global_tower_reducer;
 pub mod give_right_reducer;
 pub mod global_data;
@@ -31,7 +33,9 @@ pub mod login_reducer;
 pub mod register_reducer;
 pub mod set_name_reducer;
 pub mod set_password_reducer;
+pub mod start_run_reducer;
 pub mod statuses;
+pub mod submit_run_result_reducer;
 pub mod sync_abilities_reducer;
 pub mod sync_houses_reducer;
 pub mod sync_statuses_reducer;
@@ -46,6 +50,8 @@ pub mod user_right;
 pub mod vfx;
 
 pub use ability::*;
+pub use arena_pool::*;
+pub use arena_run::*;
 pub use extend_global_tower_reducer::*;
 pub use give_right_reducer::*;
 pub use global_data::*;
@@ -56,7 +62,9 @@ pub use login_reducer::*;
 pub use register_reducer::*;
 pub use set_name_reducer::*;
 pub use set_password_reducer::*;
+pub use start_run_reducer::*;
 pub use statuses::*;
+pub use submit_run_result_reducer::*;
 pub use sync_abilities_reducer::*;
 pub use sync_houses_reducer::*;
 pub use sync_statuses_reducer::*;
@@ -80,6 +88,8 @@ pub enum ReducerEvent {
     Register(register_reducer::RegisterArgs),
     SetName(set_name_reducer::SetNameArgs),
     SetPassword(set_password_reducer::SetPasswordArgs),
+    StartRun(start_run_reducer::StartRunArgs),
+    SubmitRunResult(submit_run_result_reducer::SubmitRunResultArgs),
     SyncAbilities(sync_abilities_reducer::SyncAbilitiesArgs),
     SyncHouses(sync_houses_reducer::SyncHousesArgs),
     SyncStatuses(sync_statuses_reducer::SyncStatusesArgs),
@@ -100,6 +110,15 @@ impl SpacetimeModule for Module {
         match table_name {
             "Ability" => client_cache
                 .handle_table_update_with_primary_key::<ability::Ability>(callbacks, table_update),
+            "ArenaPool" => client_cache
+                .handle_table_update_with_primary_key::<arena_pool::ArenaPool>(
+                    callbacks,
+                    table_update,
+                ),
+            "ArenaRun" => client_cache.handle_table_update_with_primary_key::<arena_run::ArenaRun>(
+                callbacks,
+                table_update,
+            ),
             "GlobalData" => client_cache
                 .handle_table_update_no_primary_key::<global_data::GlobalData>(
                     callbacks,
@@ -140,6 +159,8 @@ impl SpacetimeModule for Module {
         state: &Arc<ClientCache>,
     ) {
         reminders.invoke_callbacks::<ability::Ability>(worker, &reducer_event, state);
+        reminders.invoke_callbacks::<arena_pool::ArenaPool>(worker, &reducer_event, state);
+        reminders.invoke_callbacks::<arena_run::ArenaRun>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<global_data::GlobalData>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<global_tower::GlobalTower>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<house::House>(worker, &reducer_event, state);
@@ -168,6 +189,8 @@ match &function_call.reducer[..] {
 			"register" => _reducer_callbacks.handle_event_of_type::<register_reducer::RegisterArgs, ReducerEvent>(event, _state, ReducerEvent::Register),
 			"set_name" => _reducer_callbacks.handle_event_of_type::<set_name_reducer::SetNameArgs, ReducerEvent>(event, _state, ReducerEvent::SetName),
 			"set_password" => _reducer_callbacks.handle_event_of_type::<set_password_reducer::SetPasswordArgs, ReducerEvent>(event, _state, ReducerEvent::SetPassword),
+			"start_run" => _reducer_callbacks.handle_event_of_type::<start_run_reducer::StartRunArgs, ReducerEvent>(event, _state, ReducerEvent::StartRun),
+			"submit_run_result" => _reducer_callbacks.handle_event_of_type::<submit_run_result_reducer::SubmitRunResultArgs, ReducerEvent>(event, _state, ReducerEvent::SubmitRunResult),
 			"sync_abilities" => _reducer_callbacks.handle_event_of_type::<sync_abilities_reducer::SyncAbilitiesArgs, ReducerEvent>(event, _state, ReducerEvent::SyncAbilities),
 			"sync_houses" => _reducer_callbacks.handle_event_of_type::<sync_houses_reducer::SyncHousesArgs, ReducerEvent>(event, _state, ReducerEvent::SyncHouses),
 			"sync_statuses" => _reducer_callbacks.handle_event_of_type::<sync_statuses_reducer::SyncStatusesArgs, ReducerEvent>(event, _state, ReducerEvent::SyncStatuses),
@@ -186,6 +209,11 @@ match &function_call.reducer[..] {
         match table_name {
             "Ability" => {
                 client_cache.handle_resubscribe_for_type::<ability::Ability>(callbacks, new_subs)
+            }
+            "ArenaPool" => client_cache
+                .handle_resubscribe_for_type::<arena_pool::ArenaPool>(callbacks, new_subs),
+            "ArenaRun" => {
+                client_cache.handle_resubscribe_for_type::<arena_run::ArenaRun>(callbacks, new_subs)
             }
             "GlobalData" => client_cache
                 .handle_resubscribe_for_type::<global_data::GlobalData>(callbacks, new_subs),

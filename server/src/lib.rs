@@ -1,4 +1,6 @@
 mod ability;
+mod arena_pool;
+mod arena_run;
 mod global_data;
 mod global_tower;
 mod house;
@@ -9,6 +11,8 @@ mod user_access;
 mod vfx;
 
 pub use anyhow::Context;
+pub use arena_pool::*;
+pub use arena_run::*;
 pub use global_data::GlobalData;
 pub use global_tower::*;
 pub use spacetimedb::SpacetimeType;
