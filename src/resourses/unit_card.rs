@@ -16,6 +16,12 @@ impl VarState {
             .push(format!(" {stacks}/{}", level + 1), light_gray())
             .take())
     }
+    fn stats(&self) -> Result<ColoredString> {
+        let t = get_play_head();
+        let atk = self.get_int_at(VarName::Atk, t)?;
+        let hp = self.get_int_at(VarName::Hp, t)?;
+        Ok(format!("{atk}/{hp}").add_color(white()))
+    }
     fn description(&self, world: &World) -> Result<ColoredString> {
         let t = get_play_head();
         let description = self.get_string_at(VarName::Description, t)?;
@@ -155,6 +161,16 @@ impl VarState {
         });
     }
 
+    fn show_stats(stats: ColoredString, ui: &mut Ui) {
+        ui.vertical_centered(|ui| {
+            Label::new(
+                stats
+                    .widget_with_font(Some(TextStyle::Name("Heading2".into()).resolve(ui.style()))),
+            )
+            .ui(ui);
+        });
+    }
+
     fn show_extra_lines(lines: Vec<(ColoredString, ColoredString)>, ui: &mut Ui) {
         for (name, value) in lines.iter() {
             text_dots_text(name, value, ui);
@@ -169,55 +185,57 @@ impl VarState {
         ui: &mut Ui,
         world: &World,
     ) -> Result<()> {
-        let description = self.description(world);
-        let definition = self.definitions(world);
-        let statuses = self.statuses(entity, world);
         let name = self.name()?;
+
+        Self::show_name(name, open, ui);
+        if !open {
+            return Ok(());
+        }
+        let stats = self.stats()?;
+        let description = self.description(world);
+        let statuses = self.statuses(entity, world);
         let extra_lines = self.extra_lines();
-        ui.vertical(|ui| {
-            Self::show_name(name, open, ui);
-            if !open {
-                return;
-            }
-            frame(ui, |ui| {
-                if let Ok(description) = description {
-                    ui.vertical(|ui| {
-                        ui.label(description.widget());
-                    });
-                }
-                if !expanded {
-                    if let Ok(statuses) = statuses.as_ref() {
-                        Self::show_status_lines(statuses, false, ui);
-                    }
-                }
-            });
-            if let Ok(lines) = extra_lines {
-                frame(ui, |ui| {
-                    Self::show_extra_lines(lines, ui);
+        frame(ui, |ui| {
+            Self::show_stats(stats, ui);
+            if let Ok(description) = description {
+                ui.vertical(|ui| {
+                    ui.label(description.widget());
                 });
             }
             if !expanded {
-                return;
-            }
-            if let Ok(definitions) = definition {
-                for (name, text) in &definitions {
-                    frame(ui, |ui| {
-                        ui.label(name.rich_text().family(FontFamily::Name("bold".into())));
-                        ui.horizontal_wrapped(|ui| {
-                            ui.label(text.widget());
-                        });
-                    });
+                if let Ok(statuses) = statuses.as_ref() {
+                    Self::show_status_lines(statuses, false, ui);
                 }
             }
-            if let Ok(statuses) = statuses.as_ref() {
+        });
+        if let Ok(lines) = extra_lines {
+            frame(ui, |ui| {
+                Self::show_extra_lines(lines, ui);
+            });
+        }
+        if !expanded {
+            return Ok(());
+        }
+        let definition = self.definitions(world);
+        if let Ok(definitions) = definition {
+            for (name, text) in &definitions {
                 frame(ui, |ui| {
-                    ui.vertical_centered(|ui| {
-                        ui.heading(RichText::new("Statuses").color(white()));
+                    ui.label(name.rich_text().family(FontFamily::Name("bold".into())));
+                    ui.horizontal_wrapped(|ui| {
+                        ui.label(text.widget());
                     });
-                    Self::show_status_lines(statuses, open, ui);
                 });
             }
-        });
+        }
+        if let Ok(statuses) = statuses.as_ref() {
+            frame(ui, |ui| {
+                ui.vertical_centered(|ui| {
+                    ui.heading(RichText::new("Statuses").color(white()));
+                });
+                Self::show_status_lines(statuses, open, ui);
+            });
+        }
+
         Ok(())
     }
 
