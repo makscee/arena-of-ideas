@@ -96,6 +96,9 @@ impl VarState {
     pub fn set_int(&mut self, var: VarName, value: i32) {
         self.push_back(var, VarChange::new(VarValue::Int(value)));
     }
+    pub fn set_string(&mut self, var: VarName, value: String) {
+        self.push_back(var, VarChange::new(VarValue::String(value)));
+    }
 
     pub fn push_back(&mut self, var: VarName, mut change: VarChange) -> &mut Self {
         let head = get_insert_head();

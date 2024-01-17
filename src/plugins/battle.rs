@@ -1,7 +1,5 @@
 use bevy_egui::egui::Align2;
 
-use crate::module_bindings::extend_global_tower;
-
 use super::*;
 
 pub struct BattlePlugin;
@@ -18,16 +16,14 @@ impl Plugin for BattlePlugin {
 pub struct BattleData {
     pub left: Option<PackedTeam>,
     pub right: Option<PackedTeam>,
-    pub level: Option<usize>,
     pub result: BattleResult,
     pub end: BattleEnd,
 }
 
 #[derive(Clone, Copy)]
 pub enum BattleEnd {
-    Defeat(usize, usize),
-    TowerBeaten(usize),
-    Victory(usize, usize),
+    Defeat,
+    Victory,
 }
 
 impl BattlePlugin {
@@ -37,8 +33,8 @@ impl BattlePlugin {
         if matches!(Self::process_battle_result(result, world), Err(..)) {
             let mut bd = world.resource_mut::<BattleData>();
             bd.end = match result {
-                BattleResult::Left(_) | BattleResult::Even => BattleEnd::Victory(0, 0),
-                BattleResult::Right(_) => BattleEnd::Defeat(0, 0),
+                BattleResult::Left(_) | BattleResult::Even => BattleEnd::Victory,
+                BattleResult::Right(_) => BattleEnd::Defeat,
                 BattleResult::Tbd => panic!("Failed to get BattleResult"),
             };
             bd.result = result;
@@ -46,34 +42,22 @@ impl BattlePlugin {
     }
 
     fn process_battle_result(result: BattleResult, world: &mut World) -> Result<()> {
-        let save = Save::get(world)?;
-        let level = save.climb.defeated + 1;
-        let total = Tower::total_levels();
         let mut bd = world.resource_mut::<BattleData>();
         bd.end = match result {
             BattleResult::Tbd => panic!("Failed to get BattleResult"),
-            BattleResult::Left(_) | BattleResult::Even => match level == total {
-                true => BattleEnd::TowerBeaten(level),
-                false => BattleEnd::Victory(level, total),
-            },
-            BattleResult::Right(_) => BattleEnd::Defeat(level, total),
+            BattleResult::Left(_) | BattleResult::Even => BattleEnd::Victory,
+            BattleResult::Right(_) => BattleEnd::Defeat,
         };
         bd.result = result;
         Ok(())
     }
 
-    pub fn load_teams(
-        left: PackedTeam,
-        right: PackedTeam,
-        level: Option<usize>,
-        world: &mut World,
-    ) {
+    pub fn load_teams(left: PackedTeam, right: PackedTeam, world: &mut World) {
         world.insert_resource(BattleData {
             left: Some(left),
             right: Some(right),
-            level,
             result: default(),
-            end: BattleEnd::Defeat(0, 0),
+            end: BattleEnd::Defeat,
         });
     }
 
@@ -210,19 +194,19 @@ impl BattlePlugin {
         }
         let end = world.resource::<BattleData>().end;
         let text = match end {
-            BattleEnd::Defeat(..) => "Defeat".to_owned(),
-            BattleEnd::TowerBeaten(..) | BattleEnd::Victory(..) => "Victory".to_owned(),
+            BattleEnd::Defeat => "Defeat".to_owned(),
+            BattleEnd::Victory => "Victory".to_owned(),
         };
         let subtext = match end {
-            BattleEnd::Defeat(level, total) => {
-                format!("Reached level {level}/{total}")
+            BattleEnd::Defeat => {
+                format!(":(")
             }
-            BattleEnd::TowerBeaten(level) => format!("Tower beaten! {level}/{level}"),
-            BattleEnd::Victory(level, total) => format!("{level}/{total}"),
+
+            BattleEnd::Victory => format!(":)"),
         };
         let color = match end {
-            BattleEnd::Defeat(..) => hex_color!("#FF1744"),
-            BattleEnd::TowerBeaten(_) | BattleEnd::Victory(_, _) => {
+            BattleEnd::Defeat => hex_color!("#FF1744"),
+            BattleEnd::Victory => {
                 hex_color!("#80D8FF")
             }
         };
@@ -245,29 +229,10 @@ impl BattlePlugin {
                         ui[1].vertical_centered_justified(|ui| {
                             if ui.button_primary("OK").clicked() {
                                 match end {
-                                    BattleEnd::Defeat(_, _) => {
-                                        Save::clear(world).unwrap();
+                                    BattleEnd::Defeat => {
                                         GameState::MainMenu.change(world);
                                     }
-                                    BattleEnd::TowerBeaten(_) => {
-                                        let save = Save::get(world).unwrap();
-                                        let level = RatingPlugin::generate_weakest_opponent(
-                                            &save.climb.team,
-                                            1,
-                                            world,
-                                        )[0]
-                                        .to_tower_string();
-                                        let team = ron::to_string(&save.climb.team).unwrap();
-                                        extend_global_tower(level, team);
-                                        Save::clear(world).unwrap();
-                                        GameState::MainMenu.change(world);
-                                    }
-                                    BattleEnd::Victory(_, _) => {
-                                        Save::get(world)
-                                            .unwrap()
-                                            .register_victory()
-                                            .save(world)
-                                            .unwrap();
+                                    BattleEnd::Victory => {
                                         GameState::Shop.change(world);
                                     }
                                 }

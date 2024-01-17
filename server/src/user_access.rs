@@ -15,7 +15,7 @@ pub enum UserRight {
 const SERVER_IDENTITY_HEX: &str =
     "93dda09db9a56d8fa6c024d843e805d8262191db3b4ba84c5efcd1ad451fed4e";
 pub const LOCAL_IDENTITY_HEX: &str =
-    "176a3fae76a69a440698ddd2fbdc1e0fcee1232a8cdcdec451404b8197158817";
+    "ccfe5528bb3c1f6399c807dd410d8dd7320cb63d15a5e7a46504e63652610c43";
 
 #[spacetimedb(reducer)]
 fn give_right(ctx: ReducerContext, identity: String) -> Result<(), String> {

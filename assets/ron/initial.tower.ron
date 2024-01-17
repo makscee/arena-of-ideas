@@ -1,2 +1,0 @@
-#![enable(implicit_some)]
-(levels: ["Bug_1", "Bug_5", "Snake_2"])

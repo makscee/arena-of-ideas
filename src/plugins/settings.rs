@@ -40,7 +40,6 @@ impl SettingsPlugin {
                     .on_hover_text("Clear saved game and other data")
                     .clicked()
                 {
-                    Save::clear(world).unwrap();
                     PersistentData::default().save(world).unwrap();
                     SettingsData::default().save(world).unwrap();
                 }

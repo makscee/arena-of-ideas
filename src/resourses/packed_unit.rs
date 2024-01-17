@@ -1,5 +1,7 @@
 use bevy_egui::egui::{ComboBox, DragValue};
 
+use crate::module_bindings::{StatusCharges, TableUnit};
+
 use super::*;
 
 #[derive(Deserialize, Serialize, TypeUuid, TypePath, Debug, Clone, PartialEq, Default)]
@@ -14,12 +16,12 @@ pub struct PackedUnit {
     pub level: i32,
     #[serde(default = "default_house")]
     pub house: String,
-    #[serde(default)]
-    pub trigger: Trigger,
     #[serde(default = "default_text")]
     pub name: String,
     #[serde(default)]
     pub description: String,
+    #[serde(default)]
+    pub trigger: Trigger,
     #[serde(default)]
     pub representation: Representation,
     #[serde(default)]
@@ -237,5 +239,49 @@ impl PackedUnit {
             .iter()
             .map(|(name, charges)| format!("{name} ({charges})"))
             .join(",")
+    }
+}
+
+impl Into<TableUnit> for PackedUnit {
+    fn into(self) -> TableUnit {
+        TableUnit {
+            name: self.name,
+            hp: self.hp,
+            atk: self.atk,
+            house: self.house,
+            description: self.description,
+            stacks: self.stacks,
+            level: self.level,
+            statuses: self
+                .statuses
+                .into_iter()
+                .map(|(name, charges)| StatusCharges { name, charges })
+                .collect_vec(),
+            trigger: ron::to_string(&self.trigger).unwrap(),
+            representation: ron::to_string(&self.representation).unwrap(),
+            state: ron::to_string(&self.state).unwrap(),
+        }
+    }
+}
+
+impl From<TableUnit> for PackedUnit {
+    fn from(value: TableUnit) -> Self {
+        Self {
+            hp: value.hp,
+            atk: value.atk,
+            stacks: value.stacks,
+            level: value.level,
+            house: value.house,
+            name: value.name,
+            description: value.description,
+            trigger: ron::from_str(&value.trigger).unwrap(),
+            representation: ron::from_str(&value.representation).unwrap(),
+            state: ron::from_str(&value.state).unwrap(),
+            statuses: value
+                .statuses
+                .into_iter()
+                .map(|s| (s.name, s.charges))
+                .collect_vec(),
+        }
     }
 }

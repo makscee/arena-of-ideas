@@ -1,3 +1,5 @@
+use crate::unit::TableUnit;
+
 use super::*;
 
 #[spacetimedb(table)]
@@ -7,5 +9,5 @@ pub struct ArenaPool {
     pub id: u64,
     pub owner: u64,
     pub round: u8,
-    pub team: String,
+    pub team: Vec<TableUnit>,
 }

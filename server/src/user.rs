@@ -49,9 +49,7 @@ fn register(ctx: ReducerContext, name: String, pass: String) -> Result<(), Strin
 
 #[spacetimedb(reducer)]
 fn login(ctx: ReducerContext, name: String, pass: String) -> Result<(), String> {
-    let mut user = User::filter_by_name(&name)
-        .context("User not found")
-        .map_err(|e| e.to_string())?;
+    let mut user = User::filter_by_name(&name).context_str("User not found")?;
     if user.pass_hash.is_none() {
         return Err("No password set for user".to_owned());
     }
@@ -147,8 +145,7 @@ impl User {
     pub fn find_by_identity(identity: &Identity) -> Result<User, String> {
         User::iter()
             .find(|u| u.identities.contains(identity))
-            .context("User not found")
-            .map_err(|e| e.to_string())
+            .context_str("User not found")
     }
 
     fn login(mut self) {

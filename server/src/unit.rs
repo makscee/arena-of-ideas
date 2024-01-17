@@ -1,27 +1,36 @@
 use super::*;
 
 #[spacetimedb(table)]
-pub struct Unit {
+#[derive(Clone)]
+pub struct TableUnit {
     #[primarykey]
     pub name: String,
-    pub data: String,
-    pub pool: UnitPool,
+    pub hp: i32,
+    pub atk: i32,
+    pub house: String,
+    pub description: String,
+    pub stacks: i32,
+    pub level: i32,
+    pub statuses: Vec<StatusCharges>,
+    pub trigger: String,
+    pub representation: String,
+    pub state: String,
 }
 
-#[derive(SpacetimeType)]
-pub enum UnitPool {
-    Hero,
-    Enemy,
+#[derive(SpacetimeType, Clone)]
+pub struct StatusCharges {
+    pub name: String,
+    pub charges: i32,
 }
 
 #[spacetimedb(reducer)]
-fn sync_units(ctx: ReducerContext, units: Vec<Unit>) -> Result<(), String> {
+fn sync_units(ctx: ReducerContext, units: Vec<TableUnit>) -> Result<(), String> {
     UserRight::UnitSync.check(&ctx.sender)?;
-    for unit in Unit::iter() {
-        Unit::delete_by_name(&unit.name);
+    for unit in TableUnit::iter() {
+        TableUnit::delete_by_name(&unit.name);
     }
     for unit in units {
-        Unit::insert(unit)?;
+        TableUnit::insert(unit)?;
     }
     Ok(())
 }

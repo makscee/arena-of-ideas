@@ -1,3 +1,5 @@
+use crate::module_bindings::{once_on_run_start, run_start};
+
 use super::*;
 pub struct MainMenuPlugin;
 
@@ -16,7 +18,7 @@ impl MainMenuPlugin {
             .anchor(Align2::LEFT_TOP, [20.0, 200.0])
             .show(ctx, |ui| {
                 if LoginPlugin::is_connected() {
-                    if CURRENT_USER.lock().unwrap().is_none() {
+                    if LoginPlugin::get_user_data().is_none() {
                         LoginPlugin::login(ui, world);
                     }
                 } else {
@@ -26,12 +28,13 @@ impl MainMenuPlugin {
                     }
                 }
 
-                if let Some(name) = LoginPlugin::get_username() {
+                if let Some(user) = LoginPlugin::get_user_data() {
+                    let name = user.name;
                     frame(ui, |ui| {
                         ui.label(format!("Welcome {name}!"));
                     });
                     frame(ui, |ui| {
-                        let enabled = Save::get(world).is_ok();
+                        let enabled = false;
                         ui.set_enabled(enabled);
                         let btn = if enabled {
                             ui.button_primary("CONTINUE")
@@ -44,18 +47,26 @@ impl MainMenuPlugin {
                     });
                     frame(ui, |ui| {
                         if ui.button("NEW GAME").clicked() {
-                            Save {
-                                mode: GameMode::GlobalTower,
-                                climb: TowerClimb {
-                                    shop: ShopState::new(world),
-                                    team: default(),
-                                    owner_team: default(),
-                                    defeated: default(),
-                                },
-                            }
-                            .save(world)
-                            .unwrap();
-                            GameState::change(GameState::Shop, world);
+                            debug!("Start new run");
+                            run_start();
+                            once_on_run_start(|_, _, s| {
+                                debug!("Run start callback: {s:?}");
+                                match s {
+                                    spacetimedb_sdk::reducer::Status::Committed => {
+                                        OperationsPlugin::add(|w| {
+                                            GameState::change(GameState::Shop, w);
+                                        })
+                                    }
+                                    spacetimedb_sdk::reducer::Status::Failed(e) => {
+                                        AlertPlugin::add_error(
+                                            Some("GAME START ERROR".to_owned()),
+                                            e.clone(),
+                                            None,
+                                        )
+                                    }
+                                    _ => panic!(),
+                                };
+                            });
                         }
                     });
                 }

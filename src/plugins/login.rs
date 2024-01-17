@@ -2,6 +2,7 @@ use std::{sync::Mutex, thread::sleep};
 
 use spacetimedb_sdk::{
     identity::{load_credentials, save_credentials},
+    once_on_subscription_applied,
     reducer::Status,
     subscribe,
 };
@@ -15,8 +16,8 @@ use super::*;
 
 pub struct LoginPlugin;
 
-// const SPACETIMEDB_URI: &str = "http://localhost:3001";
-const SPACETIMEDB_URI: &str = "http://178.62.220.183:3000";
+const SPACETIMEDB_URI: &str = "http://localhost:3001";
+// const SPACETIMEDB_URI: &str = "http://178.62.220.183:3000";
 #[cfg(debug_assertions)]
 const DB_NAME: &str = "aoi_dev";
 #[cfg(not(debug_assertions))]
@@ -24,8 +25,14 @@ const DB_NAME: &str = "aoi";
 const CREDS_DIR: &str = ".aoi";
 
 static IS_CONNECTED: Mutex<bool> = Mutex::new(false);
-static LOGIN_EVENT_DISPATCHED: Mutex<bool> = Mutex::new(false);
-pub static CURRENT_USER: Mutex<Option<String>> = Mutex::new(None);
+pub static CURRENT_USER: Mutex<Option<UserData>> = Mutex::new(None);
+
+#[derive(Clone)]
+pub struct UserData {
+    pub name: String,
+    pub id: u64,
+    pub identity: Identity,
+}
 
 fn on_connected(creds: &Credentials, _client_address: Address) {
     *IS_CONNECTED.lock().unwrap() = true;
@@ -33,13 +40,43 @@ fn on_connected(creds: &Credentials, _client_address: Address) {
     if let Err(e) = save_credentials(CREDS_DIR, creds) {
         eprintln!("Failed to save credentials: {:?}", e);
     }
+    subscribe(&["select * from User", "select * from GlobalData"]).unwrap();
+    let creds = creds.clone();
+    once_on_subscription_applied(move || {
+        if !VERSION.eq(&GlobalData::filter_by_always_zero(0).unwrap().game_version) {
+            AlertPlugin::add_error(
+                Some("GAME VERSION ERROR".to_owned()),
+                "Game version is too old".to_owned(),
+                Some(Box::new(|w| {
+                    egui_context(w).open_url(egui::OpenUrl {
+                        url: "https://makscee.itch.io/arena-of-ideas".to_owned(),
+                        new_tab: true,
+                    });
+                    w.send_event(AppExit);
+                })),
+            );
+            return;
+        }
+
+        if User::find(|u| u.identities.contains(&creds.identity)).is_some() {
+            LoginPlugin::login_by_identity();
+        } else {
+            register_empty();
+            once_on_register_empty(|_, _, status| {
+                debug!("Register empty: {status:?}");
+                match status {
+                    Status::Committed => LoginPlugin::login_by_identity(),
+                    Status::Failed(e) => AlertPlugin::add_error(
+                        Some("REGISTER ERROR".to_owned()),
+                        e.to_owned(),
+                        None,
+                    ),
+                    _ => panic!(),
+                }
+            });
+        }
+    });
 }
-fn register_callbacks() {
-    once_on_connect(on_connected);
-}
-// fn identity_leading_hex(id: &Identity) -> String {
-//     hex::encode(&id.bytes()[0..8])
-// }
 
 #[derive(Resource, Default)]
 pub struct LoginData {
@@ -60,7 +97,6 @@ pub struct LoginEvent;
 impl Plugin for LoginPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, Self::setup)
-            .add_systems(Update, Self::update.run_if(in_state(GameState::MainMenu)))
             .init_resource::<LoginData>()
             .init_resource::<RegisterData>()
             .add_event::<LoginEvent>();
@@ -72,65 +108,15 @@ impl LoginPlugin {
         load_credentials(CREDS_DIR).expect("Failed to load credentials")
     }
 
-    fn update(world: &mut World) {
-        if *IS_CONNECTED.lock().unwrap() {
-            let mut data = world.resource_mut::<LoginData>();
-            if !data.login_sent {
-                let creds = Self::load_credentials().unwrap();
-                data.login_sent = true;
-                if User::find(|u| u.identities.contains(&creds.identity)).is_some() {
-                    Self::login_by_identity();
-                } else {
-                    register_empty();
-                    once_on_register_empty(|_, _, status| {
-                        debug!("Register empty: {status:?}");
-                        match status {
-                            Status::Committed => Self::login_by_identity(),
-                            Status::Failed(e) => AlertPlugin::add_error(
-                                Some("REGISTER ERROR".to_owned()),
-                                e.to_owned(),
-                                None,
-                            ),
-                            _ => panic!(),
-                        }
-                    });
-                }
-            }
-            if Self::get_username().is_some() {
-                let mut led = LOGIN_EVENT_DISPATCHED.lock().unwrap();
-                if !*led && !VERSION.eq(&GlobalData::filter_by_always_zero(0).unwrap().game_version)
-                {
-                    AlertPlugin::add_error(
-                        Some("GAME VERSION ERROR".to_owned()),
-                        "Game version is too old".to_owned(),
-                        Some(Box::new(|w| {
-                            egui_context(w).open_url(egui::OpenUrl {
-                                url: "https://makscee.itch.io/arena-of-ideas".to_owned(),
-                                new_tab: true,
-                            });
-                            w.send_event(AppExit);
-                        })),
-                    );
-                    *led = true;
-                    *CURRENT_USER.lock().unwrap() = None;
-                }
-                if !*led {
-                    world.send_event(LoginEvent);
-                    *led = true;
-                }
-            }
-        }
-    }
-
     pub fn is_connected() -> bool {
         *IS_CONNECTED.lock().unwrap()
     }
-    pub fn get_username() -> Option<String> {
+    pub fn get_user_data() -> Option<UserData> {
         CURRENT_USER.lock().unwrap().clone()
     }
 
     fn setup() {
-        register_callbacks();
+        once_on_connect(on_connected);
         Self::connect();
     }
 
@@ -148,7 +134,6 @@ impl LoginPlugin {
                 return;
             }
         }
-        subscribe_to_tables();
     }
 
     pub fn clear_saved_credentials() {
@@ -157,14 +142,18 @@ impl LoginPlugin {
         std::fs::remove_dir_all(path).expect("Failed to clear credentials dir");
     }
 
-    pub fn save_current_user(name: String) {
-        *CURRENT_USER.lock().unwrap() = Some(name)
+    pub fn save_current_user(name: String, id: u64, identity: Identity) {
+        *CURRENT_USER.lock().unwrap() = Some(UserData { name, id, identity });
+        subscribe_to_tables(id);
     }
 
-    fn on_login(status: &Status, name: &String) {
-        debug!("Login: {status:?} {name}");
+    fn on_login(status: &Status, identity: &Identity) {
+        debug!("Login: {status:?} {identity:?}");
         match status {
-            Status::Committed => Self::save_current_user(name.clone()),
+            Status::Committed => {
+                let user = User::find(|u| u.identities.contains(identity)).unwrap();
+                Self::save_current_user(user.name, user.id, identity.clone());
+            }
             Status::Failed(e) => {
                 AlertPlugin::add_error(
                     Some("LOGIN ERROR".to_owned()),
@@ -176,21 +165,15 @@ impl LoginPlugin {
         }
     }
 
-    fn send_login(name: String, pass: String) {
+    fn login_by_password(name: String, pass: String) {
         login(name, pass);
-        once_on_login(|_, _, status, name, _| {
-            Self::on_login(status, name);
-        });
+        once_on_login(|identity, _, status, _, _| Self::on_login(status, identity));
     }
 
     fn login_by_identity() {
+        debug!("Login by identity");
         login_by_identity();
-        once_on_login_by_identity(|identity, _, status| {
-            let name = User::find(|u| u.identities.contains(identity))
-                .unwrap()
-                .name;
-            Self::on_login(status, &name);
-        });
+        once_on_login_by_identity(|identity, _, status| Self::on_login(status, identity));
     }
 
     pub fn login(ui: &mut Ui, world: &mut World) {
@@ -216,7 +199,7 @@ impl LoginPlugin {
             });
             ui.set_enabled(!login_data.name.is_empty() && !login_data.pass.is_empty());
             if ui.button("LOGIN").clicked() {
-                Self::send_login(login_data.name.clone(), login_data.pass.clone());
+                Self::login_by_password(login_data.name.clone(), login_data.pass.clone());
             }
         });
     }
@@ -263,7 +246,9 @@ impl LoginPlugin {
                     once_on_register(|_, _, status, name, pass| {
                         debug!("Register: {status:?} {name}");
                         match status {
-                            Status::Committed => Self::send_login(name.to_owned(), pass.to_owned()),
+                            Status::Committed => {
+                                Self::login_by_password(name.to_owned(), pass.to_owned())
+                            }
                             Status::Failed(e) => AlertPlugin::add_error(
                                 Some("REGISTER ERROR".to_owned()),
                                 e.to_owned(),
@@ -279,16 +264,19 @@ impl LoginPlugin {
     }
 }
 
-fn subscribe_to_tables() {
-    subscribe(&[
-        "SELECT * FROM User",
-        "SELECT * FROM Unit",
-        "SELECT * FROM House",
-        "SELECT * FROM Statuses",
-        "SELECT * FROM Ability",
-        "SELECT * FROM Vfx",
-        "SELECT * FROM GlobalTower",
-        "SELECT * FROM GlobalData",
-    ])
-    .unwrap();
+fn subscribe_to_tables(user_id: u64) {
+    debug!("Subscribe to tables, user_id = {user_id}");
+    match subscribe(&[
+        "select * from User",
+        "select * from GlobalData",
+        "select * from TableUnit",
+        "select * from House",
+        "select * from Statuses",
+        "select * from Ability",
+        "select * from Vfx",
+        &format!("select * from ArenaRun where user_id = {user_id}"),
+    ]) {
+        Ok(_) => debug!("Subscribe successful"),
+        Err(e) => error!("Subscription error: {e}"),
+    }
 }

@@ -13,38 +13,38 @@ use spacetimedb_sdk::{
 };
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
-pub struct StartRunArgs {}
+pub struct RunStartArgs {}
 
-impl Reducer for StartRunArgs {
-    const REDUCER_NAME: &'static str = "start_run";
+impl Reducer for RunStartArgs {
+    const REDUCER_NAME: &'static str = "run_start";
 }
 
 #[allow(unused)]
-pub fn start_run() {
-    StartRunArgs {}.invoke();
+pub fn run_start() {
+    RunStartArgs {}.invoke();
 }
 
 #[allow(unused)]
-pub fn on_start_run(
+pub fn on_run_start(
     mut __callback: impl FnMut(&Identity, Option<Address>, &Status) + Send + 'static,
-) -> ReducerCallbackId<StartRunArgs> {
-    StartRunArgs::on_reducer(move |__identity, __addr, __status, __args| {
-        let StartRunArgs {} = __args;
+) -> ReducerCallbackId<RunStartArgs> {
+    RunStartArgs::on_reducer(move |__identity, __addr, __status, __args| {
+        let RunStartArgs {} = __args;
         __callback(__identity, __addr, __status);
     })
 }
 
 #[allow(unused)]
-pub fn once_on_start_run(
+pub fn once_on_run_start(
     __callback: impl FnOnce(&Identity, Option<Address>, &Status) + Send + 'static,
-) -> ReducerCallbackId<StartRunArgs> {
-    StartRunArgs::once_on_reducer(move |__identity, __addr, __status, __args| {
-        let StartRunArgs {} = __args;
+) -> ReducerCallbackId<RunStartArgs> {
+    RunStartArgs::once_on_reducer(move |__identity, __addr, __status, __args| {
+        let RunStartArgs {} = __args;
         __callback(__identity, __addr, __status);
     })
 }
 
 #[allow(unused)]
-pub fn remove_on_start_run(id: ReducerCallbackId<StartRunArgs>) {
-    StartRunArgs::remove_on_reducer(id);
+pub fn remove_on_run_start(id: ReducerCallbackId<RunStartArgs>) {
+    RunStartArgs::remove_on_reducer(id);
 }

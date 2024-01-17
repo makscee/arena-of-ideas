@@ -1,3 +1,5 @@
+use crate::module_bindings::TableUnit;
+
 use super::*;
 
 #[derive(Deserialize, Serialize, TypeUuid, TypePath, Debug, Clone, Default)]
@@ -15,35 +17,8 @@ impl PackedTeam {
             state: default(),
         }
     }
-    pub fn from_tower_string(text: &str, world: &World) -> Self {
-        let split = text.split('_').collect_vec();
-        let name = split[0];
-        let count: usize = split[1].parse().unwrap();
-        let mut unit = Pools::get(world).enemies.get(name).unwrap().clone();
-        if split.len() == 4 {
-            let status = split[2];
-            let charges: i32 = split[3].parse().unwrap();
-            unit.statuses.push((status.to_string(), charges));
-        }
-        PackedTeam {
-            units: (0..count).map(|_| unit.clone()).collect_vec(),
-            ..default()
-        }
-    }
-    pub fn to_tower_string(&self) -> String {
-        if !self.units.first().unwrap().eq(self.units.last().unwrap()) {
-            panic!("Tower team should contain same units {self:#?}");
-        }
-        let unit = &self.units[0];
-        if unit.statuses.len() > 1 {
-            panic!("Tower team can only have one status");
-        }
-        let status = unit
-            .statuses
-            .get(0)
-            .map(|(s, c)| format!("_{s}_{c}"))
-            .unwrap_or_default();
-        format!("{}_{}{status}", unit.name, self.units.len())
+    pub fn from_table_units(units: Vec<TableUnit>) -> Self {
+        Self::new(units.into_iter().map(|u| u.into()).collect())
     }
     pub fn pack(faction: Faction, world: &mut World) -> Self {
         let state = VarState::get(Self::find_entity(faction, world).unwrap(), world).clone();

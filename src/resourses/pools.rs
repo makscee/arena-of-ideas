@@ -1,3 +1,5 @@
+use crate::module_bindings::TableUnit;
+
 use super::*;
 
 #[derive(AssetCollection, Resource, Debug)]
@@ -5,9 +7,9 @@ pub struct Pools {
     #[asset(key = "pool.heroes", collection(typed, mapped))]
     heroes_handles: HashMap<String, Handle<PackedUnit>>,
     pub heroes: HashMap<String, PackedUnit>,
-    #[asset(key = "pool.enemies", collection(typed, mapped))]
-    enemies_handles: HashMap<String, Handle<PackedUnit>>,
-    pub enemies: HashMap<String, PackedUnit>,
+    // #[asset(key = "pool.enemies", collection(typed, mapped))]
+    // enemies_handles: HashMap<String, Handle<PackedUnit>>,
+    // pub enemies: HashMap<String, PackedUnit>,
     #[asset(key = "pool.houses", collection(typed, mapped))]
     houses_handles: HashMap<String, Handle<House>>,
     pub houses: HashMap<String, House>,
@@ -68,7 +70,7 @@ impl PoolsPlugin {
         Self::setup_statuses(world);
         Self::setup_abilities(world);
         Self::setup_heroes(world);
-        Self::setup_enemies(world);
+        // Self::setup_enemies(world);
         Self::setup_vfx(world);
     }
 
@@ -178,29 +180,29 @@ impl PoolsPlugin {
         }
     }
 
-    pub fn setup_enemies(world: &mut World) {
-        let enemies = world
-            .get_resource::<Pools>()
-            .unwrap()
-            .enemies_handles
-            .values()
-            .map(|handle| {
-                world
-                    .get_resource::<Assets<PackedUnit>>()
-                    .unwrap()
-                    .get(handle)
-                    .unwrap()
-                    .clone()
-            })
-            .collect_vec();
-        let pool = &mut Pools::get_mut(world).enemies;
-        debug!("Setup {} enemies", enemies.len());
-        for (key, value) in enemies.into_iter().map(|s| (s.name.clone(), s)) {
-            if pool.insert(key.clone(), value).is_some() {
-                panic!("Duplicate enemy name: {key}")
-            }
-        }
-    }
+    // pub fn setup_enemies(world: &mut World) {
+    //     let enemies = world
+    //         .get_resource::<Pools>()
+    //         .unwrap()
+    //         .enemies_handles
+    //         .values()
+    //         .map(|handle| {
+    //             world
+    //                 .get_resource::<Assets<PackedUnit>>()
+    //                 .unwrap()
+    //                 .get(handle)
+    //                 .unwrap()
+    //                 .clone()
+    //         })
+    //         .collect_vec();
+    //     let pool = &mut Pools::get_mut(world).enemies;
+    //     debug!("Setup {} enemies", enemies.len());
+    //     for (key, value) in enemies.into_iter().map(|s| (s.name.clone(), s)) {
+    //         if pool.insert(key.clone(), value).is_some() {
+    //             panic!("Duplicate enemy name: {key}")
+    //         }
+    //     }
+    // }
 
     fn cache_server_pools(mut events: EventReader<LoginEvent>, mut pools: ResMut<Pools>) {
         if events.is_empty() {
@@ -213,20 +215,12 @@ impl PoolsPlugin {
         }
         debug!("Cache server pools start");
         pools.heroes.clear();
-        pools.enemies.clear();
         pools.houses.clear();
         pools.abilities.clear();
         pools.statuses.clear();
         pools.vfx.clear();
-        for module_bindings::Unit { name, data, pool } in module_bindings::Unit::iter() {
-            match pool {
-                module_bindings::UnitPool::Hero => {
-                    pools.heroes.insert(name, ron::from_str(&data).unwrap());
-                }
-                module_bindings::UnitPool::Enemy => {
-                    pools.enemies.insert(name, ron::from_str(&data).unwrap());
-                }
-            }
+        for unit in TableUnit::iter() {
+            pools.heroes.insert(unit.name.clone(), unit.into());
         }
         for module_bindings::House { name, data } in module_bindings::House::iter() {
             pools.houses.insert(name, ron::from_str(&data).unwrap());
@@ -241,9 +235,9 @@ impl PoolsPlugin {
             pools.vfx.insert(name, ron::from_str(&data).unwrap());
         }
         debug!(
-            "Cache complete\n{} Heroes\n{} Enemies\n{} Houses\n{} Abilities\n{} Statuses\n{} Vfxs",
+            "Cache complete\n{} Heroes\n{} Houses\n{} Abilities\n{} Statuses\n{} Vfxs",
             pools.heroes.len(),
-            pools.enemies.len(),
+            // pools.enemies.len(),
             pools.houses.len(),
             pools.abilities.len(),
             pools.statuses.len(),

@@ -1,3 +1,5 @@
+use crate::module_bindings::run_stack;
+
 use super::*;
 
 pub struct UnitPlugin;
@@ -27,6 +29,13 @@ impl UnitPlugin {
             VarState::get(*e, world).get_int(VarName::Slot).unwrap() == slot as i32
                 && !Self::is_dead(*e, world)
         })
+    }
+
+    pub fn get_id(entity: Entity, world: &World) -> Option<u64> {
+        VarState::get(entity, world)
+            .get_int(VarName::Id)
+            .map(|v| v as u64)
+            .ok()
     }
 
     pub fn get_slot_position(faction: Faction, slot: usize) -> Vec2 {
@@ -83,6 +92,15 @@ impl UnitPlugin {
             }
         }
         default()
+    }
+
+    pub fn collect_faction_ids(faction: Faction, world: &mut World) -> HashMap<u64, Entity> {
+        HashMap::from_iter(Self::collect_faction(faction, world).into_iter().map(|u| {
+            (
+                VarState::get(u, world).get_int(VarName::Id).unwrap() as u64,
+                u,
+            )
+        }))
     }
 
     pub fn fill_slot_gaps(faction: Faction, world: &mut World) {
@@ -226,18 +244,6 @@ impl UnitPlugin {
         commands.insert_resource(ClosestSlot(0, f32::MAX, false));
     }
 
-    pub fn add_stack(unit: Entity, world: &mut World) {
-        let mut state = VarState::get_mut(unit, world);
-        let stacks = state.change_int(VarName::Stacks, 1);
-        state.change_int(VarName::Hp, 1);
-        state.change_int(VarName::Atk, 1);
-        let level = state.get_int(VarName::Level).unwrap();
-        if stacks > level {
-            state.set_int(VarName::Level, level + 1);
-            state.set_int(VarName::Stacks, stacks - level);
-        }
-    }
-
     pub fn drag_unit_end(
         event: Listener<Pointer<DragEnd>>,
         mut team: Query<Entity, With<ActiveTeam>>,
@@ -254,8 +260,9 @@ impl UnitPlugin {
             let ClosestSlot(slot, _, stackable) = *world.resource::<ClosestSlot>();
             let target = Self::find_unit(Faction::Team, slot, world);
             if stackable && !target.is_some_and(|target| target.eq(&dragged)) {
-                world.entity_mut(dragged).despawn_recursive();
-                Self::add_stack(target.unwrap(), world);
+                let target = Self::get_id(target.unwrap(), world).unwrap();
+                let dragged = Self::get_id(dragged, world).unwrap();
+                run_stack(target, dragged);
             } else {
                 let t = GameTimer::get().insert_head();
                 VarState::get_mut(dragged, world).insert_simple(

@@ -20,8 +20,8 @@ struct ProfileEditData {
 
 impl ProfilePlugin {
     pub fn load(world: &mut World) {
-        if let Some(name) = LoginPlugin::get_username() {
-            let user = User::filter_by_name(name).expect("User not found");
+        if let Some(data) = LoginPlugin::get_user_data() {
+            let user = User::filter_by_name(data.name).expect("User not found");
             world.insert_resource(ProfileEditData {
                 user,
                 old_pass: default(),
@@ -33,7 +33,8 @@ impl ProfilePlugin {
 
     pub fn ui(world: &mut World) {
         window("PROFILE").show(&egui_context(world), |ui| {
-            if let Some(username) = LoginPlugin::get_username() {
+            if let Some(data) = LoginPlugin::get_user_data() {
+                let username = data.name;
                 frame(ui, |ui| {
                     let user = &mut world.resource_mut::<ProfileEditData>().user;
                     ui.horizontal(|ui| {
@@ -50,21 +51,30 @@ impl ProfilePlugin {
                     ui.set_enabled(!user.name.eq(&username));
                     if ui.button("Save").clicked() {
                         set_name(user.name.clone());
-                        once_on_set_name(|_, _, status, name| match status {
-                            spacetimedb_sdk::reducer::Status::Committed => {
-                                LoginPlugin::save_current_user(name.clone());
-                                AlertPlugin::add(
-                                    None,
-                                    "Name updated successfully".to_owned(),
-                                    None,
-                                );
-                            }
-                            spacetimedb_sdk::reducer::Status::Failed(e) => AlertPlugin::add_error(
-                                Some("SET NAME ERROR".to_owned()),
-                                e.clone(),
-                                None,
-                            ),
-                            spacetimedb_sdk::reducer::Status::OutOfEnergy => panic!(),
+                        once_on_set_name(move |_, _, status, name| {
+                            debug!("set name callback");
+                            match status {
+                                spacetimedb_sdk::reducer::Status::Committed => {
+                                    LoginPlugin::save_current_user(
+                                        name.clone(),
+                                        data.id,
+                                        data.identity,
+                                    );
+                                    AlertPlugin::add(
+                                        None,
+                                        "Name updated successfully".to_owned(),
+                                        None,
+                                    );
+                                }
+                                spacetimedb_sdk::reducer::Status::Failed(e) => {
+                                    AlertPlugin::add_error(
+                                        Some("SET NAME ERROR".to_owned()),
+                                        e.clone(),
+                                        None,
+                                    )
+                                }
+                                spacetimedb_sdk::reducer::Status::OutOfEnergy => panic!(),
+                            };
                         });
                     }
                 });

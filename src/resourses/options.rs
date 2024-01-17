@@ -8,8 +8,6 @@ pub struct Options {
     pub status: Handle<Representation>,
     #[asset(key = "slot.rep")]
     pub slot: Handle<Representation>,
-    #[asset(key = "initial.tower")]
-    pub initial_tower: Handle<Tower>,
     #[asset(key = "custom.battle")]
     pub custom_battle: Handle<CustomBattleData>,
     #[asset(key = "anim")]

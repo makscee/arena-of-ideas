@@ -13,8 +13,7 @@ use spacetimedb_sdk::{
 };
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
-pub enum UnitPool {
-    Hero,
-
-    Enemy,
+pub struct StatusCharges {
+    pub name: String,
+    pub charges: i32,
 }
