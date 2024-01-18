@@ -1,4 +1,4 @@
-use crate::module_bindings::run_stack;
+use crate::module_bindings::{run_stack, run_team_reorder};
 
 use super::*;
 
@@ -270,6 +270,18 @@ impl UnitPlugin {
                     VarValue::Int(slot as i32),
                     t,
                 );
+                let sorted_ids = UnitPlugin::collect_faction_ids(Faction::Team, world)
+                    .into_iter()
+                    .map(|(id, entity)| {
+                        (
+                            id,
+                            VarState::get(entity, world).get_int(VarName::Slot).unwrap(),
+                        )
+                    })
+                    .sorted_by_key(|(_, s)| *s)
+                    .map(|(id, _)| id)
+                    .collect_vec();
+                run_team_reorder(sorted_ids);
             }
             Self::fill_slot_gaps(Faction::Team, world);
             Self::translate_to_slots(world);

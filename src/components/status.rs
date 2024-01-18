@@ -86,10 +86,12 @@ impl Status {
                 if s.name.eq(status) {
                     let mut state =
                         VarState::try_get_mut(entity, world).context("Failed to get state")?;
-                    let visible = state.get_int(VarName::Charges)? > 0;
-                    state
-                        .push_back(VarName::Visible, VarChange::new(VarValue::Bool(visible)))
-                        .change_int(VarName::Charges, delta);
+
+                    let visible = state.get_bool(VarName::Visible).unwrap_or(true);
+                    state.change_int(VarName::Charges, delta);
+                    if visible != (state.get_int(VarName::Charges)? > 0) {
+                        state.push_back(VarName::Visible, VarChange::new(VarValue::Bool(!visible)));
+                    }
 
                     return Ok(entity);
                 }

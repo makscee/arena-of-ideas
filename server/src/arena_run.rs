@@ -90,6 +90,9 @@ fn run_submit_result(ctx: ReducerContext, win: bool) -> Result<(), String> {
             run.enemies.push(enemy.id);
         }
     }
+    run.change_g(G_PER_ROUND);
+    run.state.case.clear();
+    run.fill_case();
     run.update();
     Ok(())
 }
@@ -169,6 +172,16 @@ fn run_stack(ctx: ReducerContext, target: u64, dragged: u64) -> Result<(), Strin
         target.level += 1;
     }
     run.state.team.remove(i_dragged);
+    run.update();
+    Ok(())
+}
+
+#[spacetimedb(reducer)]
+fn run_team_reorder(ctx: ReducerContext, order: Vec<u64>) -> Result<(), String> {
+    let (_, mut run) = ArenaRun::get_by_identity(&ctx.sender)?;
+    run.state
+        .team
+        .sort_by_key(|u| order.iter().position(|o| u.id.eq(o)));
     run.update();
     Ok(())
 }

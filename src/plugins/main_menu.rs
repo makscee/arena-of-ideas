@@ -1,4 +1,4 @@
-use crate::module_bindings::{once_on_run_start, run_start};
+use crate::module_bindings::{once_on_run_start, run_start, ArenaRun};
 
 use super::*;
 pub struct MainMenuPlugin;
@@ -34,7 +34,7 @@ impl MainMenuPlugin {
                         ui.label(format!("Welcome {name}!"));
                     });
                     frame(ui, |ui| {
-                        let enabled = false;
+                        let enabled = ArenaRun::filter_by_active(true).next().is_some();
                         ui.set_enabled(enabled);
                         let btn = if enabled {
                             ui.button_primary("CONTINUE")

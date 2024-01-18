@@ -56,13 +56,13 @@ impl VarState {
         let statuses = Status::collect_entity_statuses(entity, world);
         let lines = statuses
             .into_iter()
-            .filter_map(|e| {
-                let state = &VarState::snapshot(e, world, t);
+            .filter_map(|entity| {
+                let state = VarState::snapshot(entity, world, t);
                 let charges = state.get_int(VarName::Charges);
                 if charges.is_err() || charges.is_ok_and(|c| c <= 0) {
                     return None;
                 }
-                let name = self.get_string_at(VarName::Name, t);
+                let name = state.get_string(VarName::Name);
                 if let Ok(name) = name {
                     let color: Color32 = Pools::get_status_house(&name, world)
                         .unwrap()
@@ -71,15 +71,13 @@ impl VarState {
                         .into();
                     let description =
                         if let Some(status) = Pools::get_status(&name.to_string(), world) {
-                            status.description.clone().to_colored().inject_vars(self)
+                            status.description.clone().to_colored().inject_vars(&state)
                         } else {
                             ColoredString::default()
                         };
                     Some((
-                        self.get_string_at(VarName::Name, t)
-                            .unwrap()
-                            .add_color(color),
-                        self.get_int_at(VarName::Charges, t).unwrap(),
+                        name.add_color(color),
+                        state.get_int(VarName::Charges).unwrap(),
                         description,
                     ))
                 } else {

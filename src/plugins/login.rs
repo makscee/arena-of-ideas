@@ -91,15 +91,11 @@ pub struct RegisterData {
     pub pass_repeat: String,
 }
 
-#[derive(BevyEvent)]
-pub struct LoginEvent;
-
 impl Plugin for LoginPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, Self::setup)
+        app.add_systems(OnExit(GameState::Loading), Self::setup)
             .init_resource::<LoginData>()
-            .init_resource::<RegisterData>()
-            .add_event::<LoginEvent>();
+            .init_resource::<RegisterData>();
     }
 }
 
@@ -153,6 +149,7 @@ impl LoginPlugin {
             Status::Committed => {
                 let user = User::find(|u| u.identities.contains(identity)).unwrap();
                 Self::save_current_user(user.name, user.id, identity.clone());
+                OperationsPlugin::add(|w| PoolsPlugin::cache_server_pools(w));
             }
             Status::Failed(e) => {
                 AlertPlugin::add_error(
@@ -275,6 +272,7 @@ fn subscribe_to_tables(user_id: u64) {
         "select * from Ability",
         "select * from Vfx",
         &format!("select * from ArenaRun where user_id = {user_id}"),
+        "select * from ArenaPool",
     ]) {
         Ok(_) => debug!("Subscribe successful"),
         Err(e) => error!("Subscription error: {e}"),

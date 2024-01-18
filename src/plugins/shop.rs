@@ -10,7 +10,6 @@ pub struct ShopPlugin;
 
 #[derive(Resource, Clone)]
 struct ShopData {
-    bottom_expanded: bool,
     update_callback: UpdateCallbackId<ArenaRun>,
 }
 
@@ -40,41 +39,32 @@ impl Plugin for ShopPlugin {
 }
 
 impl ShopPlugin {
-    fn win(world: &mut World) {
-        Self::transition_to_battle(world);
-        Self::on_enter(world);
+    fn win() {
         run_submit_result(true);
+        OperationsPlugin::add(|w| Self::on_enter(w));
     }
 
     fn on_enter(world: &mut World) {
         GameTimer::get().reset();
         PackedTeam::spawn(Faction::Shop, world);
         PackedTeam::spawn(Faction::Team, world);
+        if Self::load_state(world).is_err() {
+            GameState::MainMenu.change(world);
+            return;
+        }
         let update_callback = ArenaRun::on_update(|_, new, _| {
             let new = new.clone();
             OperationsPlugin::add(move |world| {
                 Self::sync_units(&new.state.team, Faction::Team, world);
                 Self::sync_units_state(&new.state.team, Faction::Team, world);
-                Self::sync_units(
-                    &new.state
-                        .case
-                        .into_iter()
-                        .filter_map(|o| if o.available { Some(o.unit) } else { None })
-                        .collect_vec(),
-                    Faction::Shop,
-                    world,
-                );
+                Self::sync_units(&new.get_case_units(), Faction::Shop, world);
             })
         });
         egui_context(world).data_mut(|w| w.clear());
-        run_reroll(true);
         UnitPlugin::translate_to_slots(world);
         ActionPlugin::set_timeframe(0.05, world);
 
-        world.insert_resource(ShopData {
-            bottom_expanded: false,
-            update_callback,
-        });
+        world.insert_resource(ShopData { update_callback });
     }
 
     fn on_exit(world: &mut World) {
@@ -97,6 +87,15 @@ impl ShopPlugin {
         if just_pressed(KeyCode::G, world) {
             run_change_g(10);
         }
+    }
+
+    fn load_state(world: &mut World) -> Result<()> {
+        let run = ArenaRun::filter_by_active(true)
+            .next()
+            .context("No active run")?;
+        Self::sync_units(&run.state.team, Faction::Team, world);
+        Self::sync_units(&run.get_case_units(), Faction::Shop, world);
+        Ok(())
     }
 
     fn sync_units(units: &Vec<TeamUnit>, faction: Faction, world: &mut World) {
@@ -147,10 +146,10 @@ impl ShopPlugin {
         let pos = world_to_screen(pos.extend(0.0), world);
         let pos = pos2(pos.x, pos.y);
 
-        if !data.bottom_expanded {
-            Self::draw_buy_panels(world);
-            let _ = Self::show_hero_ui(world);
-        }
+        Self::draw_buy_panels(world);
+        let _ = Self::show_hero_ui(world);
+        Self::show_info_table(world);
+
         Area::new("reroll").fixed_pos(pos).show(ctx, |ui| {
             ui.set_width(120.0);
             frame(ui, |ui| {
@@ -188,6 +187,26 @@ impl ShopPlugin {
                 }
             });
         world.insert_resource(data);
+    }
+
+    fn show_info_table(world: &mut World) {
+        let run = ArenaRun::current();
+        window("INFO")
+            .anchor(Align2::LEFT_TOP, [10.0, 10.0])
+            .show(&egui_context(world), |ui| {
+                frame(ui, |ui| {
+                    text_dots_text(
+                        &"wins".to_colored(),
+                        &run.state.wins.to_string().add_color(white()),
+                        ui,
+                    );
+                    text_dots_text(
+                        &"loses".to_colored(),
+                        &run.state.loses.to_string().add_color(white()),
+                        ui,
+                    );
+                });
+            })
     }
 
     fn show_hero_ui(world: &mut World) -> Result<()> {
@@ -318,5 +337,23 @@ impl ShopPlugin {
 
     pub fn buy_reroll() {
         run_reroll(false);
+    }
+}
+
+pub trait ArenaRunExt {
+    fn get_case_units(self) -> Vec<TeamUnit>;
+    fn current() -> Self;
+}
+
+impl ArenaRunExt for ArenaRun {
+    fn get_case_units(self) -> Vec<TeamUnit> {
+        self.state
+            .case
+            .into_iter()
+            .filter_map(|o| if o.available { Some(o.unit) } else { None })
+            .collect_vec()
+    }
+    fn current() -> Self {
+        ArenaRun::filter_by_active(true).next().unwrap()
     }
 }

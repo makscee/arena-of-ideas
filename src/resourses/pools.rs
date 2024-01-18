@@ -7,9 +7,6 @@ pub struct Pools {
     #[asset(key = "pool.heroes", collection(typed, mapped))]
     heroes_handles: HashMap<String, Handle<PackedUnit>>,
     pub heroes: HashMap<String, PackedUnit>,
-    // #[asset(key = "pool.enemies", collection(typed, mapped))]
-    // enemies_handles: HashMap<String, Handle<PackedUnit>>,
-    // pub enemies: HashMap<String, PackedUnit>,
     #[asset(key = "pool.houses", collection(typed, mapped))]
     houses_handles: HashMap<String, Handle<House>>,
     pub houses: HashMap<String, House>,
@@ -70,7 +67,6 @@ impl PoolsPlugin {
         Self::setup_statuses(world);
         Self::setup_abilities(world);
         Self::setup_heroes(world);
-        // Self::setup_enemies(world);
         Self::setup_vfx(world);
     }
 
@@ -180,39 +176,12 @@ impl PoolsPlugin {
         }
     }
 
-    // pub fn setup_enemies(world: &mut World) {
-    //     let enemies = world
-    //         .get_resource::<Pools>()
-    //         .unwrap()
-    //         .enemies_handles
-    //         .values()
-    //         .map(|handle| {
-    //             world
-    //                 .get_resource::<Assets<PackedUnit>>()
-    //                 .unwrap()
-    //                 .get(handle)
-    //                 .unwrap()
-    //                 .clone()
-    //         })
-    //         .collect_vec();
-    //     let pool = &mut Pools::get_mut(world).enemies;
-    //     debug!("Setup {} enemies", enemies.len());
-    //     for (key, value) in enemies.into_iter().map(|s| (s.name.clone(), s)) {
-    //         if pool.insert(key.clone(), value).is_some() {
-    //             panic!("Duplicate enemy name: {key}")
-    //         }
-    //     }
-    // }
-
-    fn cache_server_pools(mut events: EventReader<LoginEvent>, mut pools: ResMut<Pools>) {
-        if events.is_empty() {
-            return;
-        }
-        events.clear();
+    pub fn cache_server_pools(world: &mut World) {
         if module_bindings::House::count() == 0 {
             error!("Server assets are not synced");
             return;
         }
+        let mut pools = Pools::get_mut(world);
         debug!("Cache server pools start");
         pools.heroes.clear();
         pools.houses.clear();
@@ -237,7 +206,6 @@ impl PoolsPlugin {
         debug!(
             "Cache complete\n{} Heroes\n{} Houses\n{} Abilities\n{} Statuses\n{} Vfxs",
             pools.heroes.len(),
-            // pools.enemies.len(),
             pools.houses.len(),
             pools.abilities.len(),
             pools.statuses.len(),
@@ -248,10 +216,6 @@ impl PoolsPlugin {
 
 impl Plugin for PoolsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnExit(GameState::Loading), Self::setup)
-            .add_systems(
-                Update,
-                Self::cache_server_pools.run_if(in_state(GameState::MainMenu)),
-            );
+        app.add_systems(OnExit(GameState::Loading), Self::setup);
     }
 }

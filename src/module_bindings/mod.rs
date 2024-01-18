@@ -39,6 +39,7 @@ pub mod run_sell_reducer;
 pub mod run_stack_reducer;
 pub mod run_start_reducer;
 pub mod run_submit_result_reducer;
+pub mod run_team_reorder_reducer;
 pub mod set_name_reducer;
 pub mod set_password_reducer;
 pub mod shop_offer;
@@ -75,6 +76,7 @@ pub use run_sell_reducer::*;
 pub use run_stack_reducer::*;
 pub use run_start_reducer::*;
 pub use run_submit_result_reducer::*;
+pub use run_team_reorder_reducer::*;
 pub use set_name_reducer::*;
 pub use set_password_reducer::*;
 pub use shop_offer::*;
@@ -108,6 +110,7 @@ pub enum ReducerEvent {
     RunStack(run_stack_reducer::RunStackArgs),
     RunStart(run_start_reducer::RunStartArgs),
     RunSubmitResult(run_submit_result_reducer::RunSubmitResultArgs),
+    RunTeamReorder(run_team_reorder_reducer::RunTeamReorderArgs),
     SetName(set_name_reducer::SetNameArgs),
     SetPassword(set_password_reducer::SetPasswordArgs),
     SyncAbilities(sync_abilities_reducer::SyncAbilitiesArgs),
@@ -212,6 +215,7 @@ match &function_call.reducer[..] {
 			"run_stack" => _reducer_callbacks.handle_event_of_type::<run_stack_reducer::RunStackArgs, ReducerEvent>(event, _state, ReducerEvent::RunStack),
 			"run_start" => _reducer_callbacks.handle_event_of_type::<run_start_reducer::RunStartArgs, ReducerEvent>(event, _state, ReducerEvent::RunStart),
 			"run_submit_result" => _reducer_callbacks.handle_event_of_type::<run_submit_result_reducer::RunSubmitResultArgs, ReducerEvent>(event, _state, ReducerEvent::RunSubmitResult),
+			"run_team_reorder" => _reducer_callbacks.handle_event_of_type::<run_team_reorder_reducer::RunTeamReorderArgs, ReducerEvent>(event, _state, ReducerEvent::RunTeamReorder),
 			"set_name" => _reducer_callbacks.handle_event_of_type::<set_name_reducer::SetNameArgs, ReducerEvent>(event, _state, ReducerEvent::SetName),
 			"set_password" => _reducer_callbacks.handle_event_of_type::<set_password_reducer::SetPasswordArgs, ReducerEvent>(event, _state, ReducerEvent::SetPassword),
 			"sync_abilities" => _reducer_callbacks.handle_event_of_type::<sync_abilities_reducer::SyncAbilitiesArgs, ReducerEvent>(event, _state, ReducerEvent::SyncAbilities),

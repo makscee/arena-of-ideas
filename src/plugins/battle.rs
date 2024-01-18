@@ -1,5 +1,7 @@
 use bevy_egui::egui::Align2;
 
+use crate::module_bindings::{run_submit_result, ArenaRun};
+
 use super::*;
 
 pub struct BattlePlugin;
@@ -17,39 +19,19 @@ pub struct BattleData {
     pub left: Option<PackedTeam>,
     pub right: Option<PackedTeam>,
     pub result: BattleResult,
-    pub end: BattleEnd,
-}
-
-#[derive(Clone, Copy)]
-pub enum BattleEnd {
-    Defeat,
-    Victory,
 }
 
 impl BattlePlugin {
     pub fn on_enter(world: &mut World) {
         GameTimer::get().reset();
         let result = Self::run_battle(world).unwrap();
-        if matches!(Self::process_battle_result(result, world), Err(..)) {
-            let mut bd = world.resource_mut::<BattleData>();
-            bd.end = match result {
-                BattleResult::Left(_) | BattleResult::Even => BattleEnd::Victory,
-                BattleResult::Right(_) => BattleEnd::Defeat,
-                BattleResult::Tbd => panic!("Failed to get BattleResult"),
-            };
-            bd.result = result;
+        if let Some(win) = result.is_win() {
+            run_submit_result(win);
+        } else {
+            error!("Failed to get battle result");
         }
-    }
-
-    fn process_battle_result(result: BattleResult, world: &mut World) -> Result<()> {
         let mut bd = world.resource_mut::<BattleData>();
-        bd.end = match result {
-            BattleResult::Tbd => panic!("Failed to get BattleResult"),
-            BattleResult::Left(_) | BattleResult::Even => BattleEnd::Victory,
-            BattleResult::Right(_) => BattleEnd::Defeat,
-        };
         bd.result = result;
-        Ok(())
     }
 
     pub fn load_teams(left: PackedTeam, right: PackedTeam, world: &mut World) {
@@ -57,7 +39,6 @@ impl BattlePlugin {
             left: Some(left),
             right: Some(right),
             result: default(),
-            end: BattleEnd::Defeat,
         });
     }
 
@@ -192,55 +173,56 @@ impl BattlePlugin {
         if !GameTimer::get().ended() {
             return;
         }
-        let end = world.resource::<BattleData>().end;
-        let text = match end {
-            BattleEnd::Defeat => "Defeat".to_owned(),
-            BattleEnd::Victory => "Victory".to_owned(),
-        };
-        let subtext = match end {
-            BattleEnd::Defeat => {
-                format!(":(")
-            }
+        if let Some(win) = world.resource::<BattleData>().result.is_win() {
+            let run = ArenaRun::current();
+            let text = match win {
+                true => "Victory".to_owned(),
+                false => "Defeat".to_owned(),
+            };
+            let subtext = "Wins: "
+                .to_colored()
+                .push(format!("{}/10", run.state.wins), white())
+                .push("\nLoses: ".to_owned(), light_gray())
+                .push(format!("{}/3", run.state.loses), white())
+                .take();
+            let color = match win {
+                true => {
+                    hex_color!("#80D8FF")
+                }
+                false => hex_color!("#FF1744"),
+            };
 
-            BattleEnd::Victory => format!(":)"),
-        };
-        let color = match end {
-            BattleEnd::Defeat => hex_color!("#FF1744"),
-            BattleEnd::Victory => {
-                hex_color!("#80D8FF")
-            }
-        };
-
-        window("BATTLE END")
-            .set_width(400.0)
-            .set_color(color)
-            .anchor(Align2::CENTER_CENTER, [0.0, -200.0])
-            .show(ctx, |ui| {
-                frame(ui, |ui| {
-                    ui.heading(text.add_color(color).rich_text());
-                    ui.label(subtext.add_color(white()).rich_text());
-                    ui.columns(2, |ui| {
-                        ui[0].vertical_centered_justified(|ui| {
-                            if ui.button("REPLAY").clicked() {
-                                let t = -AudioPlugin::to_next_beat(world);
-                                GameTimer::get().play_head_to(t);
-                            }
-                        });
-                        ui[1].vertical_centered_justified(|ui| {
-                            if ui.button_primary("OK").clicked() {
-                                match end {
-                                    BattleEnd::Defeat => {
-                                        GameState::MainMenu.change(world);
-                                    }
-                                    BattleEnd::Victory => {
-                                        GameState::Shop.change(world);
+            window("BATTLE END")
+                .set_width(400.0)
+                .set_color(color)
+                .anchor(Align2::CENTER_CENTER, [0.0, -200.0])
+                .show(ctx, |ui| {
+                    frame(ui, |ui| {
+                        ui.heading(text.add_color(color).rich_text());
+                        ui.label(subtext.widget());
+                        ui.columns(2, |ui| {
+                            ui[0].vertical_centered_justified(|ui| {
+                                if ui.button("REPLAY").clicked() {
+                                    let t = -AudioPlugin::to_next_beat(world);
+                                    GameTimer::get().play_head_to(t);
+                                }
+                            });
+                            ui[1].vertical_centered_justified(|ui| {
+                                if ui.button_primary("OK").clicked() {
+                                    match win {
+                                        true => {
+                                            GameState::Shop.change(world);
+                                        }
+                                        false => {
+                                            GameState::MainMenu.change(world);
+                                        }
                                     }
                                 }
-                            }
-                        });
-                    })
+                            });
+                        })
+                    });
                 });
-            });
+        }
     }
 }
 
@@ -251,4 +233,14 @@ pub enum BattleResult {
     Left(usize),
     Right(usize),
     Even,
+}
+
+impl BattleResult {
+    pub fn is_win(&self) -> Option<bool> {
+        match self {
+            BattleResult::Tbd => None,
+            BattleResult::Left(..) | BattleResult::Even => Some(true),
+            BattleResult::Right(..) => Some(false),
+        }
+    }
 }
