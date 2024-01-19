@@ -4,7 +4,7 @@
     hp: 3,
     atk: 1,
     house: "Mages",
-    description: "Turn End: use [Magic Missile] ({Level})",
+    description: "use [Magic Missile] ({Level})",
     trigger: TurnEnd(UseAbility("Magic Missile")),
     representation: (
         material: Shape(

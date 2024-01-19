@@ -84,7 +84,7 @@ fn run_submit_result(ctx: ReducerContext, win: bool) -> Result<(), String> {
     } else {
         let round = run.state.wins + run.state.loses;
         if let Some(enemy) = ArenaPool::filter_by_round(&round)
-            .filter(|e| e.owner != user_id)
+            // .filter(|e| e.owner != user_id)
             .choose(&mut thread_rng())
         {
             run.enemies.push(enemy.id);

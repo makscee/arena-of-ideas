@@ -23,6 +23,11 @@ impl ColoredString {
         self
     }
 
+    pub fn join(&mut self, string: ColoredString) -> &mut Self {
+        self.lines.extend(string.lines.into_iter());
+        self
+    }
+
     pub fn widget(&self) -> WidgetText {
         self.widget_with_font(None)
     }

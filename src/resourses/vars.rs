@@ -38,6 +38,8 @@ pub enum VarName {
     Dmg,
     Name,
     Description,
+    AbilityDescription,
+    TriggerDescription,
     Text,
     Spawn,
     Slot,

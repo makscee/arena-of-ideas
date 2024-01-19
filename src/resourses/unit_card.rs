@@ -24,14 +24,16 @@ impl VarState {
     }
     fn description(&self, world: &World) -> Result<ColoredString> {
         let t = get_play_head();
-        let description = self.get_string_at(VarName::Description, t)?;
-        if description.is_empty() {
+        let ability = self.get_string_at(VarName::AbilityDescription, t)?;
+        if ability.is_empty() {
             return Err(anyhow!("No description"));
         }
-        Ok(description
+        let ability = ability
             .to_colored()
             .inject_vars(self)
-            .inject_definitions(world))
+            .inject_definitions(world);
+        let trigger = self.get_string_at(VarName::TriggerDescription, t)?;
+        Ok(trigger.add_color(white()).join(ability).take())
     }
     fn extra_lines(&self) -> Result<Vec<(ColoredString, ColoredString)>> {
         let t = get_play_head();
@@ -92,7 +94,7 @@ impl VarState {
     }
     fn definitions(&self, world: &World) -> Result<Vec<(ColoredString, ColoredString)>> {
         let t = get_play_head();
-        let description = self.get_string_at(VarName::Description, t)?;
+        let description = self.get_string_at(VarName::AbilityDescription, t)?;
         let mut definitions: Vec<(ColoredString, ColoredString)> = default();
         let mut added_definitions: HashSet<String> = default();
         let mut raw_definitions = VecDeque::from_iter(description.extract_bracketed(("[", "]")));

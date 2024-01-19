@@ -207,4 +207,27 @@ impl Trigger {
             }
         });
     }
+
+    pub fn get_description_string(&self) -> String {
+        let mut s = match self {
+            Trigger::AfterIncomingDamage(_)
+            | Trigger::AfterDamageTaken(_)
+            | Trigger::AfterDamageDealt(_)
+            | Trigger::BattleStart(_)
+            | Trigger::TurnStart(_)
+            | Trigger::TurnEnd(_)
+            | Trigger::BeforeStrike(_)
+            | Trigger::AfterStrike(_)
+            | Trigger::AllyDeath(_)
+            | Trigger::AnyDeath(_)
+            | Trigger::BeforeDeath(_)
+            | Trigger::DeltaVar(_, _)
+            | Trigger::MapVar(_, _)
+            | Trigger::Noop
+            | Trigger::AfterKill(_) => self.to_string(),
+            Trigger::List(triggers) => triggers.into_iter().map(|t| t.to_string()).join(" + "),
+        };
+        s.push_str(" → ");
+        s
+    }
 }

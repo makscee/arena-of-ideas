@@ -5,7 +5,7 @@
     house: "Meta",
     trigger: BeforeDeath(UseAbility("Amnesia")),
     name: "Mentalist",
-    description: "Before Death: use [Amnesia] ({Level})",
+    description: "use [Amnesia] ({Level})",
     representation: (
         material: Shape(
             shape: Circle,

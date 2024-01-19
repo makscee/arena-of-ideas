@@ -91,8 +91,12 @@ impl PackedUnit {
                 VarValue::Int(slot.unwrap_or_default() as i32),
             )
             .init(
-                VarName::Description,
+                VarName::AbilityDescription,
                 VarValue::String(self.description.to_owned()),
+            )
+            .init(
+                VarName::TriggerDescription,
+                VarValue::String(self.trigger.get_description_string()),
             )
             .init(
                 VarName::HouseColor,
@@ -148,7 +152,7 @@ impl PackedUnit {
         let stacks = state.get_int(VarName::Stacks).unwrap();
         let level = state.get_int(VarName::Level).unwrap();
         let name = state.get_string(VarName::Name).unwrap();
-        let description = state.get_string(VarName::Description).unwrap();
+        let description = state.get_string(VarName::AbilityDescription).unwrap();
         let house = state.get_string(VarName::House).unwrap();
         let mut trigger = None;
         let mut statuses = Vec::default();
@@ -172,7 +176,8 @@ impl PackedUnit {
             .clear_value(VarName::Level)
             .clear_value(VarName::Stacks)
             .clear_value(VarName::Name)
-            .clear_value(VarName::Description)
+            .clear_value(VarName::AbilityDescription)
+            .clear_value(VarName::TriggerDescription)
             .clear_value(VarName::House)
             .simplify();
 

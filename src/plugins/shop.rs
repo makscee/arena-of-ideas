@@ -77,9 +77,12 @@ impl ShopPlugin {
         let run = ArenaRun::filter_by_active(true).next().unwrap();
         let left =
             PackedTeam::from_table_units(run.state.team.into_iter().map(|u| u.unit).collect());
-        let right = run.enemies.last().unwrap();
-        let right = ArenaPool::filter_by_id(*right).unwrap().team;
-        let right = PackedTeam::from_table_units(right);
+        let right = if let Some(right) = run.enemies.last() {
+            let right = ArenaPool::filter_by_id(*right).unwrap().team;
+            PackedTeam::from_table_units(right)
+        } else {
+            default()
+        };
         BattlePlugin::load_teams(left, right, world);
     }
 
@@ -133,7 +136,7 @@ impl ShopPlugin {
             state.set_int(VarName::Atk, unit.atk);
             state.set_int(VarName::Stacks, unit.stacks);
             state.set_int(VarName::Level, unit.level);
-            state.set_string(VarName::Description, unit.description.clone());
+            state.set_string(VarName::AbilityDescription, unit.description.clone());
             state.set_string(VarName::House, unit.house.clone());
         }
     }
