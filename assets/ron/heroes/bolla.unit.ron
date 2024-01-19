@@ -5,7 +5,7 @@
     house: "Dragons",
     trigger: TurnEnd(UseAbility("Grow")),
     name: "Bolla",
-    description: "[Grow] ({Level})",
+    description: "use [Grow] ({Level})",
     representation: (
         material: Shape(
             shape: Circle,
