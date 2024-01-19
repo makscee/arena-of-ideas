@@ -35,6 +35,11 @@ impl BattlePlugin {
     }
 
     pub fn load_teams(left: PackedTeam, right: PackedTeam, world: &mut World) {
+        dbg!(PackedUnit::fuse(
+            left.units[0].clone(),
+            left.units[1].clone()
+        ));
+        world.send_event(AppExit);
         world.insert_resource(BattleData {
             left: Some(left),
             right: Some(right),

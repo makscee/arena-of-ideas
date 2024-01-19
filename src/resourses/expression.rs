@@ -293,67 +293,67 @@ impl Expression {
         }
     }
 
-    pub fn get_inner(&mut self) -> Vec<&mut Box<Expression>> {
+    pub fn get_inner(&mut self) -> Vec<&mut Box<Self>> {
         match self {
-            Expression::Zero
-            | Expression::GameTime
-            | Expression::RandomFloat
-            | Expression::PI
-            | Expression::Owner
-            | Expression::Caster
-            | Expression::Target
-            | Expression::RandomUnit
-            | Expression::RandomAdjacentUnit
-            | Expression::Age
-            | Expression::SlotPosition
-            | Expression::OwnerFaction
-            | Expression::OppositeFaction
-            | Expression::Beat
-            | Expression::Float(..)
-            | Expression::Int(..)
-            | Expression::Bool(..)
-            | Expression::String(..)
-            | Expression::Hex(..)
-            | Expression::Faction(..)
-            | Expression::State(..)
-            | Expression::TargetState(..)
-            | Expression::StateLast(..)
-            | Expression::Context(..)
-            | Expression::Vec2(..) => default(),
-            Expression::StringInt(x)
-            | Expression::StringFloat(x)
-            | Expression::StringVec(x)
-            | Expression::IntFloat(x)
-            | Expression::Sin(x)
-            | Expression::Cos(x)
-            | Expression::Sign(x)
-            | Expression::Fract(x)
-            | Expression::Floor(x)
-            | Expression::UnitVec(x)
-            | Expression::Even(x)
-            | Expression::Abs(x)
-            | Expression::SlotUnit(x)
-            | Expression::FactionCount(x)
-            | Expression::StatusCharges(x)
-            | Expression::Vec2E(x) => vec![x],
+            Self::Zero
+            | Self::GameTime
+            | Self::RandomFloat
+            | Self::PI
+            | Self::Owner
+            | Self::Caster
+            | Self::Target
+            | Self::RandomUnit
+            | Self::RandomAdjacentUnit
+            | Self::Age
+            | Self::SlotPosition
+            | Self::OwnerFaction
+            | Self::OppositeFaction
+            | Self::Beat
+            | Self::Float(..)
+            | Self::Int(..)
+            | Self::Bool(..)
+            | Self::String(..)
+            | Self::Hex(..)
+            | Self::Faction(..)
+            | Self::State(..)
+            | Self::TargetState(..)
+            | Self::StateLast(..)
+            | Self::Context(..)
+            | Self::Vec2(..) => default(),
+            Self::StringInt(x)
+            | Self::StringFloat(x)
+            | Self::StringVec(x)
+            | Self::IntFloat(x)
+            | Self::Sin(x)
+            | Self::Cos(x)
+            | Self::Sign(x)
+            | Self::Fract(x)
+            | Self::Floor(x)
+            | Self::UnitVec(x)
+            | Self::Even(x)
+            | Self::Abs(x)
+            | Self::SlotUnit(x)
+            | Self::FactionCount(x)
+            | Self::StatusCharges(x)
+            | Self::Vec2E(x) => vec![x],
 
-            Expression::Vec2EE(a, b)
-            | Expression::Sum(a, b)
-            | Expression::Sub(a, b)
-            | Expression::Mul(a, b)
-            | Expression::Div(a, b)
-            | Expression::GreaterThen(a, b)
-            | Expression::LessThen(a, b)
-            | Expression::Min(a, b)
-            | Expression::Equals(a, b)
-            | Expression::And(a, b)
-            | Expression::Or(a, b)
-            | Expression::Max(a, b) => vec![a, b],
-            Expression::If(a, b, c) => vec![a, b, c],
+            Self::Vec2EE(a, b)
+            | Self::Sum(a, b)
+            | Self::Sub(a, b)
+            | Self::Mul(a, b)
+            | Self::Div(a, b)
+            | Self::GreaterThen(a, b)
+            | Self::LessThen(a, b)
+            | Self::Min(a, b)
+            | Self::Equals(a, b)
+            | Self::And(a, b)
+            | Self::Or(a, b)
+            | Self::Max(a, b) => vec![a, b],
+            Self::If(a, b, c) => vec![a, b, c],
         }
     }
 
-    pub fn set_inner(mut self, mut other: Expression) -> Self {
+    pub fn set_inner(mut self, mut other: Self) -> Self {
         let inner_self = self.get_inner();
         let inner_other = other.get_inner();
         for (i, e) in inner_self.into_iter().enumerate() {

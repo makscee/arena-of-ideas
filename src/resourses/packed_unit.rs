@@ -196,6 +196,49 @@ impl PackedUnit {
         }
     }
 
+    pub fn fuse(a: Self, b: Self) -> Vec<Trigger> {
+        let mut result: Vec<Trigger> = default();
+        let mut trigger_a = a.trigger;
+        let mut trigger_b = b.trigger;
+
+        if std::mem::discriminant(&trigger_a) != std::mem::discriminant(&trigger_b) {
+            {
+                if let Some(effect_a) = trigger_a.get_inner_effect().cloned() {
+                    let mut trigger_b = trigger_b.clone();
+                    trigger_b.set_inner_effect(effect_a);
+                    result.push(Trigger::List(
+                        [Box::new(trigger_a.clone()), Box::new(trigger_b)].into(),
+                    ));
+                }
+                if let Some(effect_b) = trigger_b.get_inner_effect().cloned() {
+                    let mut trigger_a = trigger_a.clone();
+                    trigger_a.set_inner_effect(effect_b);
+                    result.push(Trigger::List(
+                        [Box::new(trigger_b.clone()), Box::new(trigger_a)].into(),
+                    ));
+                }
+            }
+        } else {
+            let mut result_a = trigger_a.clone();
+            let mut result_b = trigger_b.clone();
+            if let Some(ability_a) = trigger_a.get_inner_effect().and_then(|e| e.find_ability()) {
+                if let Some(ability_b) = trigger_b.get_inner_effect().and_then(|e| e.find_ability())
+                {
+                    *result_a.get_inner_effect().unwrap().find_ability().unwrap() = Effect::List(
+                        [Box::new(ability_a.clone()), Box::new(ability_b.clone())].into(),
+                    );
+                    result.push(result_a);
+                    *result_b.get_inner_effect().unwrap().find_ability().unwrap() = Effect::List(
+                        [Box::new(ability_a.clone()), Box::new(ability_b.clone())].into(),
+                    );
+                    result.push(result_b);
+                }
+            }
+        }
+
+        result
+    }
+
     pub fn show_editor(
         &mut self,
         entity: Option<Entity>,

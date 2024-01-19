@@ -1,4 +1,4 @@
-use std::ops::Deref;
+use std::{collections::VecDeque, ops::Deref};
 
 use super::*;
 
@@ -289,6 +289,39 @@ impl Effect {
             }
         }
         Ok(())
+    }
+
+    pub fn get_inner(&mut self) -> Vec<&mut Self> {
+        match self {
+            Effect::Noop
+            | Effect::Kill
+            | Effect::FullCopy
+            | Effect::Debug(..)
+            | Effect::Text(..)
+            | Effect::Damage(..)
+            | Effect::UseAbility(..)
+            | Effect::AddStatus(..)
+            | Effect::Vfx(..)
+            | Effect::SendEvent(..) => default(),
+            Effect::AoeFaction(_, e)
+            | Effect::WithTarget(_, e)
+            | Effect::WithOwner(_, e)
+            | Effect::WithVar(_, _, e) => vec![e],
+            Effect::List(list) | Effect::ListSpread(list) => {
+                list.into_iter().map(|e| e.as_mut()).collect_vec()
+            }
+        }
+    }
+
+    pub fn find_ability(&mut self) -> Option<&mut Self> {
+        let mut queue = VecDeque::from([self]);
+        while let Some(e) = queue.pop_front() {
+            if matches!(e, Effect::UseAbility(..)) {
+                return Some(e);
+            }
+            queue.extend(e.get_inner());
+        }
+        None
     }
 
     pub fn show_editor(

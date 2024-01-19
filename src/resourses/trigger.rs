@@ -230,4 +230,28 @@ impl Trigger {
         s.push_str(" → ");
         s
     }
+
+    pub fn get_inner_effect(&mut self) -> Option<&mut Effect> {
+        match self {
+            Trigger::AfterIncomingDamage(effect)
+            | Trigger::AfterDamageTaken(effect)
+            | Trigger::AfterDamageDealt(effect)
+            | Trigger::BattleStart(effect)
+            | Trigger::TurnStart(effect)
+            | Trigger::TurnEnd(effect)
+            | Trigger::BeforeStrike(effect)
+            | Trigger::AfterStrike(effect)
+            | Trigger::AllyDeath(effect)
+            | Trigger::AnyDeath(effect)
+            | Trigger::BeforeDeath(effect)
+            | Trigger::AfterKill(effect) => Some(effect),
+            _ => None,
+        }
+    }
+
+    pub fn set_inner_effect(&mut self, effect: Effect)  {
+        if let Some(inner) = self.get_inner_effect() {
+            *inner = effect;
+        }
+    }
 }
