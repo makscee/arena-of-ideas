@@ -2,10 +2,10 @@
 (
     hp: 1,
     atk: 2,
-    house: "Meta",
+    houses: ["Meta"],
     trigger: BeforeDeath(UseAbility("Amnesia")),
     name: "Mentalist",
-    description: "use [Amnesia] ({Level})",
+    description: "use [Ability] ({Level})",
     representation: (
         material: Shape(
             shape: Circle,

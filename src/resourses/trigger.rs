@@ -231,7 +231,7 @@ impl Trigger {
         s
     }
 
-    pub fn get_inner_effect(&mut self) -> Option<&mut Effect> {
+    pub fn get_inner_effect_mut(&mut self) -> Option<&mut Effect> {
         match self {
             Trigger::AfterIncomingDamage(effect)
             | Trigger::AfterDamageTaken(effect)
@@ -249,8 +249,30 @@ impl Trigger {
         }
     }
 
-    pub fn set_inner_effect(&mut self, effect: Effect)  {
-        if let Some(inner) = self.get_inner_effect() {
+    pub fn get_inner_effect(&self) -> Vec<&Effect> {
+        match self {
+            Trigger::AfterIncomingDamage(effect)
+            | Trigger::AfterDamageTaken(effect)
+            | Trigger::AfterDamageDealt(effect)
+            | Trigger::BattleStart(effect)
+            | Trigger::TurnStart(effect)
+            | Trigger::TurnEnd(effect)
+            | Trigger::BeforeStrike(effect)
+            | Trigger::AfterStrike(effect)
+            | Trigger::AllyDeath(effect)
+            | Trigger::AnyDeath(effect)
+            | Trigger::BeforeDeath(effect)
+            | Trigger::AfterKill(effect) => [effect].into(),
+            Trigger::List(list) => list
+                .into_iter()
+                .flat_map(|t| t.get_inner_effect())
+                .collect(),
+            _ => default(),
+        }
+    }
+
+    pub fn set_inner_effect(&mut self, effect: Effect) {
+        if let Some(inner) = self.get_inner_effect_mut() {
             *inner = effect;
         }
     }

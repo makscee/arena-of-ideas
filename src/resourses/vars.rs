@@ -33,7 +33,7 @@ pub enum VarName {
     Rotation,
     Hp,
     Atk,
-    House,
+    Houses,
     HouseColor,
     Dmg,
     Name,

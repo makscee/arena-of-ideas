@@ -2,7 +2,7 @@
 (
     hp: 2,
     atk: 3,
-    house: "Shifters",
+    houses: ["Shifters"],
     trigger: BattleStart(
         WithTarget(
             RandomAdjacentUnit,
@@ -10,7 +10,7 @@
         ),
     ),
     name: "Doppelganger",
-    description: "use [Copy] on random adjacent ally",
+    description: "use [Ability] on random adjacent ally",
     representation: (
         material: Shape(
             shape: Circle,

@@ -1,7 +1,7 @@
 (
     hp: 2,
     atk: 2,
-    house: "Paladins",
+    houses: ["Paladins"],
     trigger: BattleStart(
         WithTarget(
             SlotUnit(Int(1)),
@@ -9,7 +9,7 @@
         ),
     ),
     name: "Protector",
-    description: "use [Shield] ({Level}) on front ally",
+    description: "use [Ability] ({Level}) on front ally",
     representation: (
         material: Shape(
             shape: Circle,

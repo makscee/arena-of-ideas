@@ -15,7 +15,7 @@ pub struct PackedUnit {
     #[serde(default = "default_one")]
     pub level: i32,
     #[serde(default = "default_house")]
-    pub house: String,
+    pub houses: Vec<String>,
     #[serde(default = "default_text")]
     pub name: String,
     #[serde(default)]
@@ -30,8 +30,8 @@ pub struct PackedUnit {
     pub statuses: Vec<(String, i32)>,
 }
 
-fn default_house() -> String {
-    "Enemies".to_owned()
+fn default_house() -> Vec<String> {
+    vec!["Default".to_owned()]
 }
 fn default_text() -> String {
     "empty".to_owned()
@@ -72,37 +72,12 @@ impl PackedUnit {
                 .unpack(None, Some(entity), world);
             world.entity_mut(entity).insert(UnitRepresentation);
         }
-        let house_color = Pools::get(world)
-            .houses
-            .get(&self.house)
-            .map(|h| h.color.clone())
-            .unwrap_or_default();
-        self.state
-            .init(VarName::Hp, VarValue::Int(self.hp))
-            .init(VarName::Atk, VarValue::Int(self.atk))
-            .init(VarName::Stacks, VarValue::Int(self.stacks))
-            .init(VarName::Level, VarValue::Int(self.level))
-            .init(VarName::House, VarValue::String(self.house.clone()))
-            .init(VarName::Name, VarValue::String(self.name.clone()))
-            .init(VarName::Position, VarValue::Vec2(default()))
-            .init(VarName::Index, VarValue::Int(0))
-            .init(
-                VarName::Slot,
-                VarValue::Int(slot.unwrap_or_default() as i32),
-            )
-            .init(
-                VarName::AbilityDescription,
-                VarValue::String(self.description.to_owned()),
-            )
-            .init(
-                VarName::TriggerDescription,
-                VarValue::String(self.trigger.get_description_string()),
-            )
-            .init(
-                VarName::HouseColor,
-                VarValue::Color(house_color.clone().into()),
-            )
-            .init(VarName::Color, VarValue::Color(house_color.into()));
+
+        self.state = self.generate_state(world);
+        self.state.init(
+            VarName::Slot,
+            VarValue::Int(slot.unwrap_or_default() as i32),
+        );
         self.state.clone().attach(entity, world);
         Status {
             name: LOCAL_TRIGGER.to_owned(),
@@ -130,6 +105,65 @@ impl PackedUnit {
         entity
     }
 
+    pub fn generate_state(&self, world: &World) -> VarState {
+        let house_color = Pools::get(world)
+            .houses
+            .get(&self.houses[0])
+            .map(|h| h.color.clone())
+            .unwrap_or_default();
+        let mut state = self.state.clone();
+        let mut description = self.description.clone();
+        if description.contains("[Ability]") {
+            let abilities = self
+                .trigger
+                .get_inner_effect()
+                .into_iter()
+                .flat_map(|e| e.find_all_abilities())
+                .collect_vec();
+
+            description = description.replace(
+                "[Ability]",
+                abilities
+                    .into_iter()
+                    .map(|e| match e {
+                        Effect::UseAbility(name) => format!("[{name}]"),
+                        _ => default(),
+                    })
+                    .unique()
+                    .join("+")
+                    .as_str(),
+            );
+        }
+        state
+            .init(VarName::Hp, VarValue::Int(self.hp))
+            .init(VarName::Atk, VarValue::Int(self.atk))
+            .init(VarName::Stacks, VarValue::Int(self.stacks))
+            .init(VarName::Level, VarValue::Int(self.level))
+            .init(VarName::Houses, VarValue::String(self.house_string()))
+            .init(VarName::Name, VarValue::String(self.name.clone()))
+            .init(VarName::Position, VarValue::Vec2(default()))
+            .init(VarName::Index, VarValue::Int(0))
+            .init(
+                VarName::Description,
+                VarValue::String(self.description.clone()),
+            )
+            .init(VarName::AbilityDescription, VarValue::String(description))
+            .init(
+                VarName::TriggerDescription,
+                VarValue::String(self.trigger.get_description_string()),
+            )
+            .init(
+                VarName::HouseColor,
+                VarValue::Color(house_color.clone().into()),
+            )
+            .init(VarName::Color, VarValue::Color(house_color.into()));
+        state
+    }
+
+    pub fn house_string(&self) -> String {
+        self.houses.join("+")
+    }
+
     pub fn get_representation_entity(entity: Entity, world: &World) -> Option<Entity> {
         world
             .get::<Children>(entity)
@@ -152,8 +186,13 @@ impl PackedUnit {
         let stacks = state.get_int(VarName::Stacks).unwrap();
         let level = state.get_int(VarName::Level).unwrap();
         let name = state.get_string(VarName::Name).unwrap();
-        let description = state.get_string(VarName::AbilityDescription).unwrap();
-        let house = state.get_string(VarName::House).unwrap();
+        let description = state.get_string(VarName::Description).unwrap();
+        let houses = state
+            .get_string(VarName::Houses)
+            .unwrap()
+            .split("+")
+            .map(|s| s.to_owned())
+            .collect_vec();
         let mut trigger = None;
         let mut statuses = Vec::default();
         for entity in Status::collect_entity_statuses(entity, world) {
@@ -178,13 +217,13 @@ impl PackedUnit {
             .clear_value(VarName::Name)
             .clear_value(VarName::AbilityDescription)
             .clear_value(VarName::TriggerDescription)
-            .clear_value(VarName::House)
+            .clear_value(VarName::Houses)
             .simplify();
 
         Self {
             hp,
             atk,
-            house,
+            houses,
             name,
             trigger,
             representation,
@@ -196,45 +235,76 @@ impl PackedUnit {
         }
     }
 
-    pub fn fuse(a: Self, b: Self) -> Vec<Trigger> {
+    pub fn fuse(a: Self, b: Self) -> Vec<Self> {
         let mut result: Vec<Trigger> = default();
+        let mut fused = a.clone();
         let mut trigger_a = a.trigger;
         let mut trigger_b = b.trigger;
 
-        if std::mem::discriminant(&trigger_a) != std::mem::discriminant(&trigger_b) {
-            {
-                if let Some(effect_a) = trigger_a.get_inner_effect().cloned() {
-                    let mut trigger_b = trigger_b.clone();
-                    trigger_b.set_inner_effect(effect_a);
-                    result.push(Trigger::List(
-                        [Box::new(trigger_a.clone()), Box::new(trigger_b)].into(),
-                    ));
-                }
-                if let Some(effect_b) = trigger_b.get_inner_effect().cloned() {
-                    let mut trigger_a = trigger_a.clone();
-                    trigger_a.set_inner_effect(effect_b);
-                    result.push(Trigger::List(
-                        [Box::new(trigger_b.clone()), Box::new(trigger_a)].into(),
-                    ));
-                }
+        if mem::discriminant(&trigger_a) != mem::discriminant(&trigger_b) {
+            // trigger_a + trigger_b -> effect_a
+            if let Some(effect_a) = trigger_a.get_inner_effect_mut().cloned() {
+                let mut trigger_b = trigger_b.clone();
+                trigger_b.set_inner_effect(effect_a);
+                result.push(Trigger::List(
+                    [Box::new(trigger_a.clone()), Box::new(trigger_b)].into(),
+                ));
             }
-        } else {
-            let mut result_a = trigger_a.clone();
-            let mut result_b = trigger_b.clone();
-            if let Some(ability_a) = trigger_a.get_inner_effect().and_then(|e| e.find_ability()) {
-                if let Some(ability_b) = trigger_b.get_inner_effect().and_then(|e| e.find_ability())
-                {
-                    *result_a.get_inner_effect().unwrap().find_ability().unwrap() = Effect::List(
-                        [Box::new(ability_a.clone()), Box::new(ability_b.clone())].into(),
-                    );
-                    result.push(result_a);
-                    *result_b.get_inner_effect().unwrap().find_ability().unwrap() = Effect::List(
-                        [Box::new(ability_a.clone()), Box::new(ability_b.clone())].into(),
-                    );
-                    result.push(result_b);
-                }
+            // trigger_a + trigger_b -> effect_b
+            if let Some(effect_b) = trigger_b.get_inner_effect_mut().cloned() {
+                let mut trigger_a = trigger_a.clone();
+                trigger_a.set_inner_effect(effect_b);
+                result.push(Trigger::List(
+                    [Box::new(trigger_b.clone()), Box::new(trigger_a)].into(),
+                ));
             }
         }
+
+        let mut result_a = trigger_a.clone();
+        let mut result_b = trigger_b.clone();
+        if let Some(ability_a) = trigger_a
+            .get_inner_effect_mut()
+            .and_then(|e| e.find_ability())
+        {
+            if let Some(ability_b) = trigger_b
+                .get_inner_effect_mut()
+                .and_then(|e| e.find_ability())
+            {
+                // trigger_a -> effect_a (ability_a + ability_b)
+                *result_a
+                    .get_inner_effect_mut()
+                    .unwrap()
+                    .find_ability()
+                    .unwrap() =
+                    Effect::List([Box::new(ability_a.clone()), Box::new(ability_b.clone())].into());
+                result.push(result_a);
+                // trigger_b -> effect_b (ability_a + ability_b)
+                *result_b
+                    .get_inner_effect_mut()
+                    .unwrap()
+                    .find_ability()
+                    .unwrap() =
+                    Effect::List([Box::new(ability_a.clone()), Box::new(ability_b.clone())].into());
+                result.push(result_b);
+            }
+        }
+
+        fused
+            .representation
+            .children
+            .push(Box::new(b.representation));
+        fused.hp = fused.hp.max(b.hp);
+        fused.atk = fused.atk.max(b.atk);
+        fused.level = 1;
+        fused.stacks = 1;
+        let result = result
+            .into_iter()
+            .map(|trigger| {
+                let mut unit = fused.clone();
+                unit.trigger = trigger;
+                unit
+            })
+            .collect_vec();
 
         result
     }
@@ -267,10 +337,10 @@ impl PackedUnit {
                     let houses = Pools::get(world).houses.keys().cloned().collect_vec();
                     ui.label("house:");
                     ComboBox::from_id_source("house")
-                        .selected_text(self.house.clone())
+                        .selected_text(self.houses[0].clone())
                         .show_ui(ui, |ui| {
                             for house in houses {
-                                ui.selectable_value(&mut self.house, house.to_owned(), house);
+                                ui.selectable_value(&mut self.houses, vec![house.clone()], house);
                             }
                         })
                 });
@@ -293,10 +363,10 @@ impl PackedUnit {
 impl Into<TableUnit> for PackedUnit {
     fn into(self) -> TableUnit {
         TableUnit {
+            houses: self.house_string(),
             name: self.name,
             hp: self.hp,
             atk: self.atk,
-            house: self.house,
             description: self.description,
             stacks: self.stacks,
             level: self.level,
@@ -319,7 +389,7 @@ impl From<TableUnit> for PackedUnit {
             atk: value.atk,
             stacks: value.stacks,
             level: value.level,
-            house: value.house,
+            houses: value.houses.split("+").map(|s| s.to_owned()).collect(),
             name: value.name,
             description: value.description,
             trigger: ron::from_str(&value.trigger).unwrap(),

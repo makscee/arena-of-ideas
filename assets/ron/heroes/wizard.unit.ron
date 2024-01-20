@@ -3,8 +3,8 @@
     name: "Wizard",
     hp: 3,
     atk: 1,
-    house: "Mages",
-    description: "use [Magic Missile] ({Level})",
+    houses: ["Mages"],
+    description: "use [Ability] ({Level})",
     trigger: TurnEnd(UseAbility("Magic Missile")),
     representation: (
         material: Shape(

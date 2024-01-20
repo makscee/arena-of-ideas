@@ -51,40 +51,24 @@ impl VarState {
     }
     fn statuses(
         &self,
-        entity: Entity,
+        statuses: Vec<(String, i32)>,
         world: &World,
     ) -> Result<Vec<(ColoredString, i32, ColoredString)>> {
-        let t = get_play_head();
-        let statuses = Status::collect_entity_statuses(entity, world);
         let lines = statuses
             .into_iter()
-            .filter_map(|entity| {
-                let state = VarState::snapshot(entity, world, t);
-                let charges = state.get_int(VarName::Charges);
-                if charges.is_err() || charges.is_ok_and(|c| c <= 0) {
-                    return None;
-                }
-                let name = state.get_string(VarName::Name);
-                if let Ok(name) = name {
-                    let color: Color32 = Pools::get_status_house(&name, world)
-                        .unwrap()
-                        .color
-                        .clone()
-                        .into();
-                    let description =
-                        if let Some(status) = Pools::get_status(&name.to_string(), world) {
-                            status.description.clone().to_colored().inject_vars(&state)
-                        } else {
-                            ColoredString::default()
-                        };
-                    Some((
-                        name.add_color(color),
-                        state.get_int(VarName::Charges).unwrap(),
-                        description,
-                    ))
+            .map(|(name, charges)| {
+                let color: Color32 = Pools::get_status_house(&name, world)
+                    .unwrap()
+                    .color
+                    .clone()
+                    .into();
+                let description = if let Some(status) = Pools::get_status(&name.to_string(), world)
+                {
+                    status.description.clone().to_colored().inject_vars(self)
                 } else {
-                    None
-                }
+                    ColoredString::default()
+                };
+                (name.add_color(color), charges, description)
             })
             .collect_vec();
         if lines.is_empty() {
@@ -179,7 +163,7 @@ impl VarState {
 
     fn show_frames(
         &self,
-        entity: Entity,
+        statuses: Vec<(String, i32)>,
         open: bool,
         expanded: bool,
         ui: &mut Ui,
@@ -193,7 +177,7 @@ impl VarState {
         }
         let stats = self.stats()?;
         let description = self.description(world);
-        let statuses = self.statuses(entity, world);
+        let statuses = self.statuses(statuses, world);
         let extra_lines = self.extra_lines();
         frame(ui, |ui| {
             Self::show_stats(stats, ui);
@@ -239,7 +223,36 @@ impl VarState {
         Ok(())
     }
 
-    pub fn show_window(&self, entity: Entity, open: bool, ctx: &egui::Context, world: &World) {
+    pub fn show_state_card_window(
+        &self,
+        id: impl std::hash::Hash,
+        statuses: Vec<(String, i32)>,
+        open: bool,
+        ctx: &egui::Context,
+        world: &World,
+    ) {
+        window("UNIT")
+            .id(id)
+            .set_width(if open { 200.0 } else { 120.0 })
+            .title_bar(false)
+            .order(if open {
+                egui::Order::Foreground
+            } else {
+                Order::Middle
+            })
+            .show(ctx, |ui| {
+                let _ = self.show_frames(statuses, open, true, ui, world);
+            });
+    }
+
+    pub fn show_entity_card_window(
+        &self,
+        entity: Entity,
+        statuses: Vec<(String, i32)>,
+        open: bool,
+        ctx: &egui::Context,
+        world: &World,
+    ) {
         if let Some(visibility) = world.get::<ComputedVisibility>(entity) {
             if !visibility.is_visible() {
                 return;
@@ -256,17 +269,25 @@ impl VarState {
             })
             .entity_anchor(entity, Align2::CENTER_TOP, vec2(0.0, 1.2), world)
             .show(ctx, |ui| {
-                let _ = self.show_frames(entity, open, true, ui, world);
+                let _ = self.show_frames(statuses, open, true, ui, world);
             });
     }
 
-    pub fn show_ui(&self, entity: Entity, open: bool, expanded: bool, ui: &mut Ui, world: &World) {
+    pub fn show_entity_card_ui(
+        &self,
+        entity: Entity,
+        statuses: Vec<(String, i32)>,
+        open: bool,
+        expanded: bool,
+        ui: &mut Ui,
+        world: &World,
+    ) {
         window("UNIT")
             .id(entity)
             .set_width(if open { 200.0 } else { 120.0 })
             .title_bar(false)
             .show_ui(ui, |ui| {
-                let _ = self.show_frames(entity, open, expanded, ui, world);
+                let _ = self.show_frames(statuses, open, expanded, ui, world);
             });
     }
 }

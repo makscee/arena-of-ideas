@@ -7,7 +7,7 @@ pub struct TableUnit {
     pub name: String,
     pub hp: i32,
     pub atk: i32,
-    pub house: String,
+    pub houses: String,
     pub description: String,
     pub stacks: i32,
     pub level: i32,

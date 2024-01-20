@@ -117,6 +117,27 @@ impl Status {
         Ok(())
     }
 
+    pub fn collect_statuses_name_charges(
+        entity: Entity,
+        t: f32,
+        world: &World,
+    ) -> Vec<(String, i32)> {
+        Self::collect_entity_statuses(entity, world)
+            .into_iter()
+            .filter_map(|entity| {
+                let state = VarState::snapshot(entity, world, t);
+                let charges = state.get_int(VarName::Charges);
+                if charges.is_err() || *charges.as_ref().unwrap() <= 0 {
+                    return None;
+                }
+                match state.get_string(VarName::Name) {
+                    Ok(name) => Some((name, charges.unwrap())),
+                    Err(_) => None,
+                }
+            })
+            .collect_vec()
+    }
+
     pub fn collect_entity_statuses(entity: Entity, world: &World) -> Vec<Entity> {
         if let Some(entity) = world.get_entity(entity) {
             if let Some(children) = entity.get::<Children>() {

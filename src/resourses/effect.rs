@@ -291,7 +291,7 @@ impl Effect {
         Ok(())
     }
 
-    pub fn get_inner(&mut self) -> Vec<&mut Self> {
+    pub fn get_inner_mut(&mut self) -> Vec<&mut Self> {
         match self {
             Effect::Noop
             | Effect::Kill
@@ -313,15 +313,49 @@ impl Effect {
         }
     }
 
+    pub fn get_inner(&self) -> Vec<&Self> {
+        match self {
+            Effect::Noop
+            | Effect::Kill
+            | Effect::FullCopy
+            | Effect::Debug(..)
+            | Effect::Text(..)
+            | Effect::Damage(..)
+            | Effect::UseAbility(..)
+            | Effect::AddStatus(..)
+            | Effect::Vfx(..)
+            | Effect::SendEvent(..) => default(),
+            Effect::AoeFaction(_, e)
+            | Effect::WithTarget(_, e)
+            | Effect::WithOwner(_, e)
+            | Effect::WithVar(_, _, e) => vec![e],
+            Effect::List(list) | Effect::ListSpread(list) => {
+                list.into_iter().map(|e| e.as_ref()).collect_vec()
+            }
+        }
+    }
+
     pub fn find_ability(&mut self) -> Option<&mut Self> {
         let mut queue = VecDeque::from([self]);
         while let Some(e) = queue.pop_front() {
             if matches!(e, Effect::UseAbility(..)) {
                 return Some(e);
             }
-            queue.extend(e.get_inner());
+            queue.extend(e.get_inner_mut());
         }
         None
+    }
+
+    pub fn find_all_abilities(&self) -> Vec<Self> {
+        let mut result: Vec<Self> = default();
+        let mut queue = VecDeque::from([self]);
+        while let Some(e) = queue.pop_front() {
+            if matches!(e, Effect::UseAbility(..)) {
+                result.push(e.clone());
+            }
+            queue.extend(e.get_inner());
+        }
+        result
     }
 
     pub fn show_editor(

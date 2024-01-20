@@ -11,6 +11,7 @@ pub struct ShopPlugin;
 #[derive(Resource, Clone)]
 struct ShopData {
     update_callback: UpdateCallbackId<ArenaRun>,
+    fusion_candidates: Vec<PackedUnit>,
 }
 
 const REROLL_PRICE: i32 = 1;
@@ -32,6 +33,7 @@ impl Plugin for ShopPlugin {
                 ((
                     Self::ui.after(PanelsPlugin::ui),
                     Self::win.run_if(input_just_pressed(KeyCode::V)),
+                    Self::fuse_front.run_if(input_just_pressed(KeyCode::F)),
                 )
                     .run_if(in_state(GameState::Shop)),),
             );
@@ -64,7 +66,24 @@ impl ShopPlugin {
         UnitPlugin::translate_to_slots(world);
         ActionPlugin::set_timeframe(0.05, world);
 
-        world.insert_resource(ShopData { update_callback });
+        world.insert_resource(ShopData {
+            update_callback,
+            fusion_candidates: default(),
+        });
+    }
+
+    fn fuse_front(world: &mut World) {
+        let a = PackedUnit::pack(
+            UnitPlugin::find_unit(Faction::Team, 1, world).unwrap(),
+            world,
+        );
+        let b = PackedUnit::pack(
+            UnitPlugin::find_unit(Faction::Team, 2, world).unwrap(),
+            world,
+        );
+        let fusions = PackedUnit::fuse(a, b);
+        dbg!(&fusions);
+        world.resource_mut::<ShopData>().fusion_candidates = fusions;
     }
 
     fn on_exit(world: &mut World) {
@@ -136,8 +155,8 @@ impl ShopPlugin {
             state.set_int(VarName::Atk, unit.atk);
             state.set_int(VarName::Stacks, unit.stacks);
             state.set_int(VarName::Level, unit.level);
-            state.set_string(VarName::AbilityDescription, unit.description.clone());
-            state.set_string(VarName::House, unit.house.clone());
+            // state.set_string(VarName::AbilityDescription, unit.description.clone());
+            state.set_string(VarName::Houses, unit.houses.clone());
         }
     }
 
@@ -189,7 +208,17 @@ impl ShopPlugin {
                     Self::go_to_battle(world);
                 }
             });
+        Self::show_fusion_options(&data, world);
         world.insert_resource(data);
+    }
+
+    fn show_fusion_options(data: &ShopData, world: &mut World) {
+        let ctx = &egui_context(world);
+        for (i, fusion) in data.fusion_candidates.iter().enumerate() {
+            let state = fusion.generate_state(world);
+            let statuses = fusion.statuses.clone();
+            state.show_state_card_window(i, statuses, true, ctx, world);
+        }
     }
 
     fn show_info_table(world: &mut World) {

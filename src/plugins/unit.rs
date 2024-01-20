@@ -332,7 +332,8 @@ impl UnitPlugin {
             .query_filtered::<(Entity, &VarState), Or<(&Unit, &Corpse)>>()
             .iter(world)
         {
-            state.show_window(entity, hovered == Some(entity), ctx, world);
+            let statuses = Status::collect_statuses_name_charges(entity, get_play_head(), world);
+            state.show_entity_card_window(entity, statuses, hovered == Some(entity), ctx, world);
         }
     }
 
