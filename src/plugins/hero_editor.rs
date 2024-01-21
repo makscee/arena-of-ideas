@@ -188,7 +188,7 @@ impl HeroEditorPlugin {
                     PackedUnit {
                         hp: 5,
                         atk: 1,
-                        houses: vec!["Default".to_owned()],
+                        houses: "Default".to_owned(),
                         ..default()
                     }
                     .unpack(Faction::Right.team_entity(world), None, world);

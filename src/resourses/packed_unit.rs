@@ -8,16 +8,16 @@ use super::*;
 #[uuid = "028620be-3b01-4e20-b62e-a631f0db4777"]
 #[serde(deny_unknown_fields)]
 pub struct PackedUnit {
+    #[serde(default = "default_text")]
+    pub name: String,
     pub hp: i32,
     pub atk: i32,
     #[serde(default = "default_one")]
     pub stacks: i32,
     #[serde(default = "default_one")]
     pub level: i32,
-    #[serde(default = "default_house")]
-    pub houses: Vec<String>,
-    #[serde(default = "default_text")]
-    pub name: String,
+    #[serde(default = "default_houses")]
+    pub houses: String,
     #[serde(default)]
     pub description: String,
     #[serde(default)]
@@ -30,8 +30,8 @@ pub struct PackedUnit {
     pub statuses: Vec<(String, i32)>,
 }
 
-fn default_house() -> Vec<String> {
-    vec!["Default".to_owned()]
+fn default_houses() -> String {
+    "Default".to_owned()
 }
 fn default_text() -> String {
     "empty".to_owned()
@@ -106,11 +106,6 @@ impl PackedUnit {
     }
 
     pub fn generate_state(&self, world: &World) -> VarState {
-        let house_color = Pools::get(world)
-            .houses
-            .get(&self.houses[0])
-            .map(|h| h.color.clone())
-            .unwrap_or_default();
         let mut state = self.state.clone();
         let mut description = self.description.clone();
         if description.contains("[Ability]") {
@@ -139,7 +134,7 @@ impl PackedUnit {
             .init(VarName::Atk, VarValue::Int(self.atk))
             .init(VarName::Stacks, VarValue::Int(self.stacks))
             .init(VarName::Level, VarValue::Int(self.level))
-            .init(VarName::Houses, VarValue::String(self.house_string()))
+            .init(VarName::Houses, VarValue::String(self.houses.clone()))
             .init(VarName::Name, VarValue::String(self.name.clone()))
             .init(VarName::Position, VarValue::Vec2(default()))
             .init(VarName::Index, VarValue::Int(0))
@@ -151,17 +146,24 @@ impl PackedUnit {
             .init(
                 VarName::TriggerDescription,
                 VarValue::String(self.trigger.get_description_string()),
-            )
-            .init(
-                VarName::HouseColor,
-                VarValue::Color(house_color.clone().into()),
-            )
-            .init(VarName::Color, VarValue::Color(house_color.into()));
-        state
-    }
+            );
 
-    pub fn house_string(&self) -> String {
-        self.houses.join("+")
+        let house_colors = self
+            .houses
+            .split("+")
+            .into_iter()
+            .map(|h| Pools::get_house_color(h, world).unwrap())
+            .collect_vec();
+        state
+            .init(VarName::HouseColor1, VarValue::Color(house_colors[0]))
+            .init(VarName::Color, VarValue::Color(house_colors[0]));
+        if let Some(color) = house_colors.get(1) {
+            state.init(VarName::HouseColor2, VarValue::Color(*color));
+        }
+        if let Some(color) = house_colors.get(2) {
+            state.init(VarName::HouseColor3, VarValue::Color(*color));
+        }
+        state
     }
 
     pub fn get_representation_entity(entity: Entity, world: &World) -> Option<Entity> {
@@ -187,12 +189,7 @@ impl PackedUnit {
         let level = state.get_int(VarName::Level).unwrap();
         let name = state.get_string(VarName::Name).unwrap();
         let description = state.get_string(VarName::Description).unwrap();
-        let houses = state
-            .get_string(VarName::Houses)
-            .unwrap()
-            .split("+")
-            .map(|s| s.to_owned())
-            .collect_vec();
+        let houses = state.get_string(VarName::Houses).unwrap();
         let mut trigger = None;
         let mut statuses = Vec::default();
         for entity in Status::collect_entity_statuses(entity, world) {
@@ -295,6 +292,8 @@ impl PackedUnit {
             .push(Box::new(b.representation));
         fused.hp = fused.hp.max(b.hp);
         fused.atk = fused.atk.max(b.atk);
+        fused.houses += &format!("+{}", b.houses);
+        fused.name = format!("{}+{}", fused.name, b.name);
         fused.level = 1;
         fused.stacks = 1;
         let result = result
@@ -337,10 +336,10 @@ impl PackedUnit {
                     let houses = Pools::get(world).houses.keys().cloned().collect_vec();
                     ui.label("house:");
                     ComboBox::from_id_source("house")
-                        .selected_text(self.houses[0].clone())
+                        .selected_text(self.houses.clone())
                         .show_ui(ui, |ui| {
                             for house in houses {
-                                ui.selectable_value(&mut self.houses, vec![house.clone()], house);
+                                ui.selectable_value(&mut self.houses, house.clone(), house);
                             }
                         })
                 });
@@ -363,7 +362,7 @@ impl PackedUnit {
 impl Into<TableUnit> for PackedUnit {
     fn into(self) -> TableUnit {
         TableUnit {
-            houses: self.house_string(),
+            houses: self.houses,
             name: self.name,
             hp: self.hp,
             atk: self.atk,

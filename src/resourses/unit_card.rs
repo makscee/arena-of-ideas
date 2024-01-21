@@ -8,11 +8,17 @@ impl VarState {
     fn name(&self) -> Result<ColoredString> {
         let t = get_play_head();
         let level = self.get_int_at(VarName::Level, t)?;
-        Ok(self
-            .get_string_at(VarName::Name, t)?
-            .add_color(self.get_color_at(VarName::HouseColor, t)?.c32())
-            .push(format!(" lv.{}", level), white())
-            .take())
+        let mut result = ColoredString::default();
+        for (i, name) in self.get_string_at(VarName::Name, t)?.split("+").enumerate() {
+            let var = match i {
+                0 => VarName::HouseColor1,
+                1 => VarName::HouseColor2,
+                2 => VarName::HouseColor3,
+                _ => panic!("Too many houses"),
+            };
+            result.push(name.to_owned(), self.get_color_at(var, t)?.c32());
+        }
+        Ok(result.push(format!(" lv.{}", level), white()).take())
     }
     fn stats(&self) -> Result<ColoredString> {
         let t = get_play_head();

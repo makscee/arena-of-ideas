@@ -1,10 +1,10 @@
 #![enable(implicit_some)]
 (
+    name: "Mentalist",
     hp: 1,
     atk: 2,
-    houses: ["Meta"],
+    houses: "Meta",
     trigger: BeforeDeath(UseAbility("Amnesia")),
-    name: "Mentalist",
     description: "use [Ability] ({Level})",
     representation: (
         material: Shape(

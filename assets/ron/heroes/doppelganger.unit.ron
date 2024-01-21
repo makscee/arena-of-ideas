@@ -1,15 +1,15 @@
 #![enable(implicit_some)]
 (
+    name: "Doppelganger",
     hp: 2,
     atk: 3,
-    houses: ["Shifters"],
+    houses: "Shifters",
     trigger: BattleStart(
         WithTarget(
             RandomAdjacentUnit,
             UseAbility("Copy"),
         ),
     ),
-    name: "Doppelganger",
     description: "use [Ability] on random adjacent ally",
     representation: (
         material: Shape(
