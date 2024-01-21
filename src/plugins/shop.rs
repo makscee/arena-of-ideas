@@ -1,3 +1,5 @@
+use std::thread::sleep;
+
 use crate::module_bindings::{
     run_buy, run_change_g, run_reroll, run_sell, run_submit_result, ArenaPool, ArenaRun, TeamUnit,
 };
@@ -5,6 +7,7 @@ use crate::module_bindings::{
 use super::*;
 
 use bevy::input::common_conditions::input_just_pressed;
+use bevy_egui::egui::Order;
 
 pub struct ShopPlugin;
 
@@ -50,10 +53,6 @@ impl ShopPlugin {
         GameTimer::get().reset();
         PackedTeam::spawn(Faction::Shop, world);
         PackedTeam::spawn(Faction::Team, world);
-        if Self::load_state(world).is_err() {
-            GameState::MainMenu.change(world);
-            return;
-        }
         let update_callback = ArenaRun::on_update(|_, new, _| {
             let new = new.clone();
             OperationsPlugin::add(move |world| {
@@ -62,14 +61,23 @@ impl ShopPlugin {
                 Self::sync_units(&new.get_case_units(), Faction::Shop, world);
             })
         });
-        egui_context(world).data_mut(|w| w.clear());
         UnitPlugin::translate_to_slots(world);
         ActionPlugin::set_timeframe(0.05, world);
-
+        debug!("Shop insert data");
         world.insert_resource(ShopData {
             update_callback,
             fusion_candidates: default(),
         });
+        // So there's enough time for subscription if we run staight into Shop state
+        if Self::load_state(world).is_err() {
+            sleep(Duration::from_secs_f32(0.1));
+        } else {
+            return;
+        }
+        if Self::load_state(world).is_err() {
+            GameState::MainMenu.change(world);
+        }
+        Self::fuse_front(world);
     }
 
     fn fuse_front(world: &mut World) {
@@ -82,7 +90,6 @@ impl ShopPlugin {
             world,
         );
         let fusions = PackedUnit::fuse(a, b);
-        dbg!(&fusions);
         world.resource_mut::<ShopData>().fusion_candidates = fusions;
     }
 
@@ -162,7 +169,7 @@ impl ShopPlugin {
 
     pub fn ui(world: &mut World) {
         let ctx = &egui_context(world);
-        let data = world.remove_resource::<ShopData>().unwrap();
+        let mut data = world.remove_resource::<ShopData>().unwrap();
 
         let pos = UnitPlugin::get_slot_position(Faction::Shop, 0) - vec2(1.0, 0.0);
         let pos = world_to_screen(pos.extend(0.0), world);
@@ -208,17 +215,45 @@ impl ShopPlugin {
                     Self::go_to_battle(world);
                 }
             });
-        Self::show_fusion_options(&data, world);
+        Self::show_fusion_options(&mut data, world);
         world.insert_resource(data);
     }
 
-    fn show_fusion_options(data: &ShopData, world: &mut World) {
+    fn show_fusion_options(data: &mut ShopData, world: &mut World) {
         let ctx = &egui_context(world);
-        for (i, fusion) in data.fusion_candidates.iter().enumerate() {
-            let state = fusion.generate_state(world);
-            let statuses = fusion.statuses.clone();
-            state.show_state_card_window(i, statuses, true, ctx, world);
+        let len = data.fusion_candidates.len();
+        if len == 0 {
+            return;
         }
+        window("CHOOSE FUSION")
+            .order(Order::Foreground)
+            .set_width(len as f32 * 240.0)
+            .show(ctx, |ui| {
+                ui.columns(len, |ui| {
+                    for (i, fusion) in data.fusion_candidates.iter().enumerate() {
+                        let state = fusion.generate_state(world);
+                        let statuses = fusion.statuses.clone();
+                        frame(&mut ui[i], |ui| {
+                            state.show_state_card_ui(i, statuses, true, ui, world);
+                        });
+                    }
+                });
+                ui.columns(len, |ui| {
+                    for i in 0..len {
+                        ui[i].vertical_centered(|ui| {
+                            frame(ui, |ui| {
+                                ui.button("ACCEPT");
+                            });
+                        });
+                    }
+                });
+                frame(ui, |ui| {
+                    ui.set_width(300.0);
+                    if ui.button_red("CANCEL").clicked() {
+                        data.fusion_candidates.clear();
+                    }
+                });
+            });
     }
 
     fn show_info_table(world: &mut World) {

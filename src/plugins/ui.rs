@@ -316,6 +316,7 @@ impl IntoC32 for Color {
 }
 
 pub trait PrimarySecondaryExtensions {
+    fn button_red(&mut self, text: impl Into<WidgetText>) -> Response;
     fn button_primary(&mut self, text: impl Into<WidgetText>) -> Response;
     fn button_or_primary(&mut self, text: impl Into<WidgetText>, primary: bool) -> Response;
 }
@@ -338,5 +339,12 @@ impl PrimarySecondaryExtensions for Ui {
         } else {
             self.button(text)
         }
+    }
+
+    fn button_red(&mut self, text: impl Into<WidgetText>) -> Response {
+        let visuals = &mut self.style_mut().visuals.widgets.inactive;
+        visuals.fg_stroke.color = red();
+        visuals.bg_stroke.color = red();
+        self.button(text)
     }
 }

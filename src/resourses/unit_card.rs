@@ -8,12 +8,10 @@ impl VarState {
     fn name(&self) -> Result<ColoredString> {
         let t = get_play_head();
         let level = self.get_int_at(VarName::Level, t)?;
-        let stacks = self.get_int_at(VarName::Stacks, t)?;
         Ok(self
             .get_string_at(VarName::Name, t)?
             .add_color(self.get_color_at(VarName::HouseColor, t)?.c32())
-            .push(format!(" {}", level), white())
-            .push(format!(" {stacks}/{}", level + 1), light_gray())
+            .push(format!(" lv.{}", level), white())
             .take())
     }
     fn stats(&self) -> Result<ColoredString> {
@@ -241,6 +239,28 @@ impl VarState {
                 Order::Middle
             })
             .show(ctx, |ui| {
+                let _ = self.show_frames(statuses, open, true, ui, world);
+            });
+    }
+
+    pub fn show_state_card_ui(
+        &self,
+        id: impl std::hash::Hash,
+        statuses: Vec<(String, i32)>,
+        open: bool,
+        ui: &mut Ui,
+        world: &World,
+    ) {
+        window("UNIT")
+            .id(id)
+            .set_width(if open { 200.0 } else { 120.0 })
+            .title_bar(false)
+            .order(if open {
+                egui::Order::Foreground
+            } else {
+                Order::Middle
+            })
+            .show_ui(ui, |ui| {
                 let _ = self.show_frames(statuses, open, true, ui, world);
             });
     }
