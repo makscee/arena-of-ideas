@@ -6,10 +6,12 @@
         (
             name: "Strength",
             description: "+{Charges} ATK",
-            trigger: DeltaVar(
-                Atk,
-                Context(Charges),
-            ),
+            trigger: 
+                    Change(
+                        trigger: Var(Atk),
+                        expr: Context(Charges),
+                    ),
+
             shop_charges: 1,
         ),
     ],

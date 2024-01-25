@@ -5,12 +5,7 @@
     atk: 1,
     houses: "Holy",
     description: "use [Ability] ({Level}) on all allies",
-    trigger: BattleStart(
-        AoeFaction(
-            OwnerFaction,
-            UseAbility("Blessing"),
-        ),
-    ),
+    trigger: Fire(trigger: BattleStart, target: AllyUnits, effect: UseAbility("Blessing")),
     representation: (
         count: 4,
         material: Shape(

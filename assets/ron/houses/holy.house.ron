@@ -8,15 +8,15 @@
             description: "+{Charges}/+{Charges}",
             trigger: List(
                 [
-                    DeltaVar(
-                        Hp,
-                        Context(Charges),
+                    Change(
+                        trigger: Var(Hp),
+                        expr: Context(Charges),
                     ),
-                    DeltaVar(
-                        Atk,
-                        Context(Charges),
+                    Change(
+                        trigger: Var(Atk),
+                        expr: Context(Charges),
                     ),
-                ],
+                ]
             ),
         ),
     ],

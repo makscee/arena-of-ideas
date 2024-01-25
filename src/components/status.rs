@@ -37,7 +37,7 @@ impl PackedStatus {
             )
             .init(VarName::Name, VarValue::String(self.name.to_owned()))
             .init(VarName::Position, VarValue::Vec2(default()));
-        let add_delta = !self.trigger.collect_delta_triggers().is_empty();
+        let add_delta = self.trigger.has_stat_change();
         let entity = Status::spawn_new(self.name, self.trigger, world).id();
         self.state.attach(entity, world);
         if add_delta {
@@ -186,47 +186,38 @@ impl Status {
         &world.get::<Status>(status).unwrap().trigger
     }
 
-    pub fn collect_event_triggers(
-        statuses: Vec<Entity>,
-        event: &Event,
-        world: &World,
-    ) -> Vec<(Entity, Trigger)> {
+    pub fn collect_triggers(statuses: Vec<Entity>, world: &World) -> Vec<(Entity, Trigger)> {
         statuses
             .into_iter()
-            .flat_map(|status| {
-                Self::get_trigger(status, world)
-                    .catch_event(event)
-                    .into_iter()
-                    .map(|t| (status, t))
-                    .collect_vec()
-            })
+            .map(|status| (status, Self::get_trigger(status, world).clone()))
             .collect_vec()
     }
 
     pub fn notify(statuses: Vec<Entity>, event: &Event, context: &Context, world: &mut World) {
-        for (status, trigger) in Self::collect_event_triggers(statuses, event, world) {
-            trigger.fire(event, context, status, world)
+        for (status, trigger) in Self::collect_triggers(statuses, world) {
+            trigger.fire(
+                event,
+                &context
+                    .clone()
+                    .set_owner(get_parent(status, world), world)
+                    .set_status(status, world),
+                world,
+            )
         }
     }
 
     pub fn refresh_entity_mapping(status: Entity, world: &mut World) {
         if let Some(parent) = world.get::<Parent>(status) {
             let parent = parent.get();
+            let context = Context::from_owner(parent, world)
+                .set_status(status, world)
+                .take();
             let s = world.get::<Status>(status).unwrap();
-            for trigger in s.trigger.collect_delta_triggers() {
-                if let Trigger::DeltaVar(var, e) = &trigger {
-                    let e = e.clone();
-                    let var = *var;
-                    if let Ok(delta) = e.get_value(
-                        Context::from_owner(parent, world).set_status(status, world),
-                        world,
-                    ) {
-                        let t = get_insert_head();
-                        let mut state_mapping = world.get_mut::<VarStateDelta>(status).unwrap();
-                        if state_mapping.need_update(var, &delta) {
-                            state_mapping.state.insert_simple(var, delta, t);
-                        }
-                    }
+            for (var, value) in s.trigger.clone().collect_mappings(&context, world) {
+                let t = get_insert_head();
+                let mut state_mapping = world.get_mut::<VarStateDelta>(status).unwrap();
+                if state_mapping.need_update(var, &value) {
+                    state_mapping.state.insert_simple(var, value, t);
                 }
             }
         }
@@ -234,25 +225,12 @@ impl Status {
 
     pub fn map_var(
         status: Entity,
-        var: VarName,
+        event: &Event,
         value: &mut VarValue,
         context: &Context,
         world: &mut World,
     ) {
         let s = world.get::<Status>(status).unwrap();
-        for trigger in s.trigger.collect_map_triggers() {
-            debug!("trigger {trigger:?}");
-            if let Trigger::MapVar(v, e) = &trigger {
-                debug!("Map trigger {v} {e:?}");
-                if !var.eq(v) {
-                    continue;
-                }
-                let e = e.clone();
-                if let Ok(v) = e.get_value(context.clone().set_var(var, value.clone()), world) {
-                    debug!("Value mapped {value:?} into {v:?}");
-                    *value = v;
-                }
-            }
-        }
+        let _ = s.trigger.clone().change(event, context, value, world);
     }
 }

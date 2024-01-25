@@ -2,7 +2,10 @@ use std::f32::consts::PI;
 
 use bevy_egui::egui::{ComboBox, DragValue};
 use hex::encode;
-use rand::{seq::IteratorRandom, Rng, SeedableRng};
+use rand::{
+    seq::{IteratorRandom, SliceRandom},
+    Rng, SeedableRng,
+};
 use rand_chacha::ChaCha8Rng;
 
 use super::*;
@@ -14,16 +17,23 @@ pub enum Expression {
     GameTime,
     RandomFloat,
     PI,
-    Owner,
-    Caster,
-    Target,
-    RandomUnit,
-    RandomAdjacentUnit,
     Age,
     SlotPosition,
     OwnerFaction,
     OppositeFaction,
     Beat,
+
+    Owner,
+    Caster,
+    Target,
+    RandomUnit,
+    RandomAdjacentUnit,
+    RandomAlly,
+    RandomEnemy,
+    AllyUnits,
+    EnemyUnits,
+    AllUnits,
+    AdjacentUnits,
 
     Float(f32),
     Int(i32),
@@ -35,6 +45,7 @@ pub enum Expression {
     TargetState(VarName),
     StateLast(VarName),
     Context(VarName),
+    Value(VarValue),
 
     Vec2(f32, f32),
 
@@ -116,7 +127,7 @@ impl Expression {
                 let x = x.get_int(context, world)?;
                 Ok(VarValue::Bool(x % 2 == 0))
             }
-            Expression::GameTime => Ok(VarValue::Float(GameTimer::get().play_head())),
+            Expression::GameTime => Ok(VarValue::Float(get_play_head())),
             Expression::PI => Ok(VarValue::Float(PI)),
             Expression::Sum(a, b) => {
                 VarValue::sum(&a.get_value(context, world)?, &b.get_value(context, world)?)
@@ -160,6 +171,67 @@ impl Expression {
                 context.owner(),
                 world,
             )?)),
+            Expression::AllUnits => Ok(VarValue::EntityList(
+                UnitPlugin::collect_factions(
+                    [
+                        UnitPlugin::get_faction(context.owner(), world),
+                        UnitPlugin::get_faction(context.owner(), world).opposite(),
+                    ]
+                    .into(),
+                    world,
+                )
+                .into_iter()
+                .map(|(u, _)| u)
+                .collect_vec(),
+            )),
+            Expression::AdjacentUnits => {
+                let own_slot = context.get_var(VarName::Slot, world).unwrap().get_int()?;
+                let faction = context
+                    .get_var(VarName::Faction, world)
+                    .unwrap()
+                    .get_faction()?;
+                let mut min_distance = 999999;
+                for unit in UnitPlugin::collect_faction(faction, world) {
+                    let state = VarState::get(unit, world);
+                    if state.get_int(VarName::Hp)? <= 0 {
+                        continue;
+                    }
+                    let slot = state.get_int(VarName::Slot)?;
+                    let delta = (slot - own_slot).abs();
+                    if delta == 0 {
+                        continue;
+                    }
+                    min_distance = min_distance.min(delta);
+                }
+                Ok(VarValue::EntityList(
+                    UnitPlugin::find_unit(faction, (own_slot - min_distance) as usize, world)
+                        .into_iter()
+                        .chain(
+                            UnitPlugin::find_unit(
+                                faction,
+                                (own_slot + min_distance) as usize,
+                                world,
+                            )
+                            .into_iter(),
+                        )
+                        .collect_vec(),
+                ))
+            }
+            Expression::RandomAdjacentUnit => Ok(VarValue::Entity(
+                *Self::AdjacentUnits
+                    .get_value(context, world)?
+                    .get_entity_list()?
+                    .choose(&mut thread_rng())
+                    .context("No adjacent units found")?,
+            )),
+            Expression::AllyUnits => Ok(VarValue::EntityList(UnitPlugin::collect_faction(
+                UnitPlugin::get_faction(context.owner(), world),
+                world,
+            ))),
+            Expression::EnemyUnits => Ok(VarValue::EntityList(UnitPlugin::collect_faction(
+                UnitPlugin::get_faction(context.owner(), world).opposite(),
+                world,
+            ))),
             Expression::SlotUnit(index) => Ok(VarValue::Entity(
                 UnitPlugin::find_unit(
                     context
@@ -184,40 +256,20 @@ impl Expression {
                 .choose(&mut thread_rng())
                 .context("No other units found")?,
             )),
-            Expression::RandomAdjacentUnit => {
-                let own_slot = context.get_var(VarName::Slot, world).unwrap().get_int()?;
-                let faction = context
-                    .get_var(VarName::Faction, world)
-                    .unwrap()
-                    .get_faction()?;
-                let mut min_distance = 999999;
-                for unit in UnitPlugin::collect_faction(faction, world) {
-                    let state = VarState::get(unit, world);
-                    if state.get_int(VarName::Hp)? <= 0 {
-                        continue;
-                    }
-                    let slot = state.get_int(VarName::Slot)?;
-                    let delta = (slot - own_slot).abs();
-                    if delta == 0 {
-                        continue;
-                    }
-                    min_distance = min_distance.min(delta);
-                }
-                Ok(VarValue::Entity(
-                    UnitPlugin::find_unit(faction, (own_slot - min_distance) as usize, world)
-                        .into_iter()
-                        .chain(
-                            UnitPlugin::find_unit(
-                                faction,
-                                (own_slot + min_distance) as usize,
-                                world,
-                            )
-                            .into_iter(),
-                        )
-                        .choose(&mut thread_rng())
-                        .context("No adjacent units found")?,
-                ))
-            }
+            Expression::RandomAlly => Self::RandomUnit.get_value(
+                context.clone().set_var(
+                    VarName::Faction,
+                    VarValue::Faction(UnitPlugin::get_faction(context.owner(), world)),
+                ),
+                world,
+            ),
+            Expression::RandomEnemy => Self::RandomUnit.get_value(
+                context.clone().set_var(
+                    VarName::Faction,
+                    VarValue::Faction(UnitPlugin::get_faction(context.owner(), world).opposite()),
+                ),
+                world,
+            ),
             Expression::OwnerFaction => Ok(VarValue::Faction(UnitPlugin::get_faction(
                 context.owner(),
                 world,
@@ -290,6 +342,7 @@ impl Expression {
                 &b.get_value(context, world)?,
             )?),
             Expression::Abs(x) => x.get_value(context, world)?.abs(),
+            Expression::Value(v) => Ok(v.clone()),
         }
     }
 
@@ -304,11 +357,17 @@ impl Expression {
             | Self::Target
             | Self::RandomUnit
             | Self::RandomAdjacentUnit
+            | Self::RandomAlly
+            | Self::RandomEnemy
             | Self::Age
             | Self::SlotPosition
             | Self::OwnerFaction
             | Self::OppositeFaction
             | Self::Beat
+            | Self::AllUnits
+            | Self::AdjacentUnits
+            | Self::AllyUnits
+            | Self::EnemyUnits
             | Self::Float(..)
             | Self::Int(..)
             | Self::Bool(..)
@@ -319,6 +378,7 @@ impl Expression {
             | Self::TargetState(..)
             | Self::StateLast(..)
             | Self::Context(..)
+            | Self::Value(..)
             | Self::Vec2(..) => default(),
             Self::StringInt(x)
             | Self::StringFloat(x)
@@ -489,11 +549,20 @@ impl Expression {
                 | Expression::Target
                 | Expression::RandomUnit
                 | Expression::RandomAdjacentUnit
+                | Expression::RandomAlly
+                | Expression::RandomEnemy
                 | Expression::Age
                 | Expression::SlotPosition
                 | Expression::OwnerFaction
                 | Expression::OppositeFaction
+                | Expression::AllyUnits
+                | Expression::EnemyUnits
+                | Expression::AllUnits
+                | Expression::AdjacentUnits
                 | Expression::Beat => {}
+                Expression::Value(v) => {
+                    ui.label(format!("{v:?}"));
+                }
                 Expression::Float(x) => {
                     ui.add(DragValue::new(x).speed(0.1));
                 }
@@ -611,9 +680,15 @@ impl Expression {
             | Expression::Target
             | Expression::RandomUnit
             | Expression::RandomAdjacentUnit
+            | Expression::RandomAlly
+            | Expression::RandomEnemy
             | Expression::Age
             | Expression::SlotPosition
             | Expression::OwnerFaction
+            | Expression::AllyUnits
+            | Expression::EnemyUnits
+            | Expression::AllUnits
+            | Expression::AdjacentUnits
             | Expression::OppositeFaction
             | Expression::Beat => hex_color!("#80D8FF"),
 
@@ -627,6 +702,7 @@ impl Expression {
             | Expression::TargetState(_)
             | Expression::StateLast(_)
             | Expression::Context(_)
+            | Expression::Value(_)
             | Expression::Vec2(_, _) => hex_color!("#18FFFF"),
             Expression::Vec2E(_)
             | Expression::StringInt(_)

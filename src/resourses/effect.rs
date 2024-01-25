@@ -217,10 +217,17 @@ impl Effect {
                     .unpack(world)?;
             }
             Effect::WithTarget(target, effect) => {
-                let context = context
-                    .set_target(target.get_entity(context, world)?, world)
-                    .clone();
-                ActionCluster::current(world).push_action_front(effect.deref().clone(), context);
+                let target = target.get_value(context, world)?;
+                let targets = if let Ok(targets) = target.get_entity_list() {
+                    targets
+                } else {
+                    vec![target.get_entity()?]
+                };
+                for target in targets {
+                    let context = context.set_target(target, world).clone();
+                    ActionCluster::current(world)
+                        .push_action_front(effect.deref().clone(), context);
+                }
             }
             Effect::WithOwner(owner, effect) => {
                 let context = context

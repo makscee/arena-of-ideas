@@ -8,34 +8,29 @@
             description: "+{Charges}/+{Charges}",
             trigger: List(
                 [
-                    DeltaVar(
-                        Hp,
-                        Context(Charges),
+                    Change(
+                        trigger: Var(Hp),
+                        expr: Context(Charges),
                     ),
-                    DeltaVar(
-                        Atk,
-                        Context(Charges),
+                    Change(
+                        trigger: Var(Atk),
+                        expr: Context(Charges),
                     ),
-                ],
+                ]
             ),
         ),
     ],
     abilities: [
         (
             name: "Grow",
-            description: "Gain +1/+1",
-            effect: WithTarget(
-                Owner,
-                List(
-                    [
-                        AddStatus(
-                            "Growth",
-                        ),
-                        Vfx(
-                            "apply_status",
-                        ),
-                    ],
-                ),
+            description: "Give +1/+1",
+            effect: List(
+                [
+                    AddStatus(
+                        "Growth",
+                    ),
+                    Vfx("apply_status"),
+                ],
             ),
         ),
     ],

@@ -6,10 +6,13 @@
         (
             name: "Vitality",
             description: "+{Charges} HP",
-            trigger: DeltaVar(
-                Hp,
-                Context(Charges),
-            ),
+            
+            trigger: 
+                    Change(
+                        trigger: Var(Hp),
+                        expr: Context(Charges),
+                    ),
+
             shop_charges: 2,
         ),
     ],

@@ -48,7 +48,7 @@ fn run_start(ctx: ReducerContext) -> Result<(), String> {
     let user = User::find_by_identity(&ctx.sender)?;
     if let Some(mut run) = ArenaRun::filter_by_user_id(&user.id).find(|r| r.active) {
         run.active = false;
-        run.update();
+        run.save();
     }
     let mut run = ArenaRun::new(user.id);
     if let Some(enemy) = ArenaPool::filter_by_round(&0).choose(&mut thread_rng()) {
@@ -93,7 +93,7 @@ fn run_submit_result(ctx: ReducerContext, win: bool) -> Result<(), String> {
     run.change_g(G_PER_ROUND);
     run.state.case.clear();
     run.fill_case();
-    run.update();
+    run.save();
     Ok(())
 }
 
@@ -106,7 +106,7 @@ fn run_reroll(ctx: ReducerContext, force: bool) -> Result<(), String> {
         }
         run.state.case.clear();
         run.fill_case();
-        run.update();
+        run.save();
         Ok(())
     } else {
         Err("Not enough g".to_owned())
@@ -136,7 +136,7 @@ fn run_buy(ctx: ReducerContext, id: u64) -> Result<(), String> {
     }
     run.change_g(-PRICE_UNIT);
     run.state.team.insert(0, offer.unit);
-    run.update();
+    run.save();
     Ok(())
 }
 
@@ -151,7 +151,7 @@ fn run_sell(ctx: ReducerContext, id: u64) -> Result<(), String> {
         .context_str("Unit not found")?;
     run.state.team.remove(index);
     run.change_g(PRICE_SELL);
-    run.update();
+    run.save();
     Ok(())
 }
 
@@ -172,7 +172,7 @@ fn run_stack(ctx: ReducerContext, target: u64, dragged: u64) -> Result<(), Strin
         target.level += 1;
     }
     run.state.team.remove(i_dragged);
-    run.update();
+    run.save();
     Ok(())
 }
 
@@ -182,7 +182,7 @@ fn run_team_reorder(ctx: ReducerContext, order: Vec<u64>) -> Result<(), String> 
     run.state
         .team
         .sort_by_key(|u| order.iter().position(|o| u.id.eq(o)));
-    run.update();
+    run.save();
     Ok(())
 }
 
@@ -191,7 +191,22 @@ fn run_change_g(ctx: ReducerContext, delta: i64) -> Result<(), String> {
     UserRight::UnitSync.check(&ctx.sender)?;
     let (_, mut run) = ArenaRun::get_by_identity(&ctx.sender)?;
     run.change_g(delta);
-    run.update();
+    run.save();
+    Ok(())
+}
+
+#[spacetimedb(reducer)]
+fn run_fuse(ctx: ReducerContext, a: u64, b: u64, unit: TableUnit) -> Result<(), String> {
+    let (_, mut run) = ArenaRun::get_by_identity(&ctx.sender)?;
+    run.state
+        .team
+        .retain(|TeamUnit { id, .. }| !b.eq(id) && !a.eq(id));
+    let unit = TeamUnit {
+        id: run.next_id(),
+        unit,
+    };
+    run.state.team.insert(0, unit);
+    run.save();
     Ok(())
 }
 
@@ -263,17 +278,12 @@ impl ArenaRun {
             .position(|u| u.id.eq(&id))
             .context_str("Unit not found")
     }
-
-    fn find_team_mut(&mut self, id: u64) -> Result<(usize, &mut TeamUnit), String> {
-        let index = self.position_team(id)?;
-        Ok((index, &mut self.state.team[index]))
-    }
     fn find_team(&self, id: u64) -> Result<(usize, &TeamUnit), String> {
         let index = self.position_team(id)?;
         Ok((index, &self.state.team[index]))
     }
 
-    fn update(self) {
+    fn save(self) {
         Self::update_by_id(&self.id.clone(), self);
     }
 }

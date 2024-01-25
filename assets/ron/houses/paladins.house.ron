@@ -8,23 +8,15 @@
             description: "Block next incoming damage {Charges} times",
             trigger: List(
                 [
-                    MapVar(
-                        IncomingDamage,
-                        Int(0),
+                    Change(
+                        trigger: IncomingDamage,
+                        expr: Mul(Context(Value), Int(-1)),
                     ),
-                    AfterIncomingDamage(
-                        WithTarget(
-                            Owner,
-                            WithVar(
-                                Charges,
-                                Int(-1),
-                                AddStatus(
-                                    "Shield",
-                                ),
-                            ),
-                        ),
+                    Fire(
+                        trigger: AfterIncomingDamage,
+                        effect: WithVar(Charges, Int(-1), AddStatus("Shield")),
                     ),
-                ],
+                ]
             ),
         ),
     ],

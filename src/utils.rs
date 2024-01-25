@@ -92,6 +92,9 @@ pub fn to_batch_start() {
 pub fn get_parent(entity: Entity, world: &World) -> Entity {
     world.get::<Parent>(entity).unwrap().get()
 }
+pub fn get_children(entity: Entity, world: &World) -> Vec<Entity> {
+    world.get::<Children>(entity).unwrap().to_vec()
+}
 pub fn save_to_clipboard(text: &str, world: &mut World) {
     world
         .resource_mut::<bevy_egui::EguiClipboard>()

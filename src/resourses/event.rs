@@ -74,9 +74,8 @@ impl Event {
     }
 
     pub fn map(self, value: &mut VarValue, world: &mut World) -> Self {
-        let (var, context, statuses) = match &self {
+        let (context, statuses) = match &self {
             Event::IncomingDamage { owner, .. } => (
-                VarName::IncomingDamage,
                 Context::new_named(self.to_string())
                     .set_owner(*owner, world)
                     .take(),
@@ -86,7 +85,7 @@ impl Event {
         };
         let statuses = Status::filter_active_statuses(statuses, get_insert_head(), world);
         for status in statuses {
-            Status::map_var(status, var, value, &context, world);
+            Status::map_var(status, &self, value, &context, world);
         }
         self
     }

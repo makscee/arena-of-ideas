@@ -66,9 +66,10 @@ impl VarState {
                     .color
                     .clone()
                     .into();
+                let state = VarState::new_with(VarName::Charges, VarValue::Int(charges));
                 let description = if let Some(status) = Pools::get_status(&name.to_string(), world)
                 {
-                    status.description.clone().to_colored().inject_vars(self)
+                    status.description.clone().to_colored().inject_vars(&state)
                 } else {
                     ColoredString::default()
                 };

@@ -87,9 +87,7 @@ impl PackedUnit {
         .insert(VarState::default())
         .set_parent(entity);
         for (status, charges) in self.statuses.iter() {
-            if let Ok(entity) = Status::change_charges(status, entity, *charges, world) {
-                Status::refresh_entity_mapping(entity, world);
-            }
+            let _ = Status::change_charges(status, entity, *charges, world);
         }
         if VarState::get_mut(parent, world)
             .get_faction(VarName::Faction)
@@ -107,28 +105,7 @@ impl PackedUnit {
 
     pub fn generate_state(&self, world: &World) -> VarState {
         let mut state = self.state.clone();
-        let mut description = self.description.clone();
-        if description.contains("[Ability]") {
-            let abilities = self
-                .trigger
-                .get_inner_effect()
-                .into_iter()
-                .flat_map(|e| e.find_all_abilities())
-                .collect_vec();
-
-            description = description.replace(
-                "[Ability]",
-                abilities
-                    .into_iter()
-                    .map(|e| match e {
-                        Effect::UseAbility(name) => format!("[{name}]"),
-                        _ => default(),
-                    })
-                    .unique()
-                    .join("+")
-                    .as_str(),
-            );
-        }
+        let description = self.description.clone();
         state
             .init(VarName::Hp, VarValue::Int(self.hp))
             .init(VarName::Atk, VarValue::Int(self.atk))
@@ -147,7 +124,6 @@ impl PackedUnit {
                 VarName::TriggerDescription,
                 VarValue::String(self.trigger.get_description_string()),
             );
-
         let house_colors = self
             .houses
             .split("+")
@@ -232,78 +208,88 @@ impl PackedUnit {
         }
     }
 
-    pub fn fuse(a: Self, b: Self) -> Vec<Self> {
-        let mut result: Vec<Trigger> = default();
+    fn fuse_base(a: &Self, b: &Self, trigger: Trigger, world: &World) -> Self {
         let mut fused = a.clone();
-        let mut trigger_a = a.trigger;
-        let mut trigger_b = b.trigger;
-
-        if mem::discriminant(&trigger_a) != mem::discriminant(&trigger_b) {
-            // trigger_a + trigger_b -> effect_a
-            if let Some(effect_a) = trigger_a.get_inner_effect_mut().cloned() {
-                let mut trigger_b = trigger_b.clone();
-                trigger_b.set_inner_effect(effect_a);
-                result.push(Trigger::List(
-                    [Box::new(trigger_a.clone()), Box::new(trigger_b)].into(),
-                ));
-            }
-            // trigger_a + trigger_b -> effect_b
-            if let Some(effect_b) = trigger_b.get_inner_effect_mut().cloned() {
-                let mut trigger_a = trigger_a.clone();
-                trigger_a.set_inner_effect(effect_b);
-                result.push(Trigger::List(
-                    [Box::new(trigger_b.clone()), Box::new(trigger_a)].into(),
-                ));
-            }
-        }
-
-        let mut result_a = trigger_a.clone();
-        let mut result_b = trigger_b.clone();
-        if let Some(ability_a) = trigger_a
-            .get_inner_effect_mut()
-            .and_then(|e| e.find_ability())
-        {
-            if let Some(ability_b) = trigger_b
-                .get_inner_effect_mut()
-                .and_then(|e| e.find_ability())
-            {
-                // trigger_a -> effect_a (ability_a + ability_b)
-                *result_a
-                    .get_inner_effect_mut()
-                    .unwrap()
-                    .find_ability()
-                    .unwrap() =
-                    Effect::List([Box::new(ability_a.clone()), Box::new(ability_b.clone())].into());
-                result.push(result_a);
-                // trigger_b -> effect_b (ability_a + ability_b)
-                *result_b
-                    .get_inner_effect_mut()
-                    .unwrap()
-                    .find_ability()
-                    .unwrap() =
-                    Effect::List([Box::new(ability_a.clone()), Box::new(ability_b.clone())].into());
-                result.push(result_b);
-            }
-        }
-
-        fused
-            .representation
-            .children
-            .push(Box::new(b.representation));
+        fused.representation.children.push(Box::new({
+            let mut rep = b.representation.clone();
+            rep.mapping.insert(
+                VarName::Color,
+                Expression::Value(VarValue::Color(
+                    Pools::get_house_color(&b.houses, world).unwrap(),
+                )),
+            );
+            rep
+        }));
         fused.hp = fused.hp.max(b.hp);
         fused.atk = fused.atk.max(b.atk);
-        fused.houses += &format!("+{}", b.houses);
+        fused.houses = format!("{}+{}", a.houses, b.houses);
         fused.name = format!("{}+{}", fused.name, b.name);
         fused.level = 1;
         fused.stacks = 1;
-        let result = result
-            .into_iter()
-            .map(|trigger| {
-                let mut unit = fused.clone();
-                unit.trigger = trigger;
-                unit
-            })
-            .collect_vec();
+        fused.trigger = trigger;
+        fused
+    }
+
+    pub fn fuse(a: Self, b: Self, world: &World) -> Vec<Self> {
+        let mut result: Vec<Self> = default();
+        let trigger_a = &a.trigger;
+        let trigger_b = &b.trigger;
+
+        match (trigger_a, trigger_b) {
+            (
+                Trigger::Fire {
+                    trigger: trigger_a,
+                    target: target_a,
+                    effect: effect_a,
+                },
+                Trigger::Fire {
+                    trigger: trigger_b,
+                    target: target_b,
+                    effect: effect_b,
+                },
+            ) => {
+                if !trigger_a.eq(&trigger_b) {
+                    let trigger = Trigger::Fire {
+                        trigger: FireTrigger::List(
+                            [Box::new(trigger_a.clone()), Box::new(trigger_b.clone())].into(),
+                        ),
+                        target: target_a.clone(),
+                        effect: effect_a.clone(),
+                    };
+                    result.push(Self::fuse_base(&a, &b, trigger, world));
+                    let trigger = Trigger::Fire {
+                        trigger: FireTrigger::List(
+                            [Box::new(trigger_a.clone()), Box::new(trigger_b.clone())].into(),
+                        ),
+                        target: target_b.clone(),
+                        effect: effect_b.clone(),
+                    };
+                    result.push(Self::fuse_base(&b, &a, trigger, world));
+                }
+                let trigger = Trigger::Fire {
+                    trigger: trigger_a.clone(),
+                    target: target_a.clone(),
+                    effect: Effect::List(
+                        [Box::new(effect_a.clone()), Box::new(effect_b.clone())].into(),
+                    ),
+                };
+                result.push(Self::fuse_base(&a, &b, trigger, world));
+                let trigger = Trigger::Fire {
+                    trigger: trigger_b.clone(),
+                    target: target_b.clone(),
+                    effect: Effect::List(
+                        [Box::new(effect_a.clone()), Box::new(effect_b.clone())].into(),
+                    ),
+                };
+                result.push(Self::fuse_base(&a, &b, trigger, world));
+            }
+            _ => {
+                let trigger = Trigger::List(
+                    [Box::new(trigger_a.clone()), Box::new(trigger_b.clone())].into(),
+                );
+                result.push(Self::fuse_base(&a, &b, trigger, world));
+            }
+        }
 
         result
     }
@@ -388,7 +374,7 @@ impl From<TableUnit> for PackedUnit {
             atk: value.atk,
             stacks: value.stacks,
             level: value.level,
-            houses: value.houses.split("+").map(|s| s.to_owned()).collect(),
+            houses: value.houses,
             name: value.name,
             description: value.description,
             trigger: ron::from_str(&value.trigger).unwrap(),

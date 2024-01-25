@@ -3,12 +3,7 @@
     hp: 2,
     atk: 2,
     houses: "Paladins",
-    trigger: BattleStart(
-        WithTarget(
-            SlotUnit(Int(1)),
-            UseAbility("Shield"),
-        ),
-    ),
+    trigger: Fire(trigger: BattleStart, target: SlotUnit(Int(1)), effect: UseAbility("Shield")),
     description: "use [Ability] ({Level}) on front ally",
     representation: (
         material: Shape(

@@ -35,7 +35,6 @@ impl BattlePlugin {
     }
 
     pub fn load_teams(left: PackedTeam, right: PackedTeam, world: &mut World) {
-        world.send_event(AppExit);
         world.insert_resource(BattleData {
             left: Some(left),
             right: Some(right),

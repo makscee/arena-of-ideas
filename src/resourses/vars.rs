@@ -58,15 +58,15 @@ pub enum VarName {
     T,
     Alpha,
     Index,
-    IncomingDamage,
-    OutgoingDamage,
     Stacks,
     Level,
     Id,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Reflect, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, Reflect, PartialEq, Default)]
 pub enum VarValue {
+    #[default]
+    None,
     Float(f32),
     Int(i32),
     Vec2(Vec2),
@@ -74,6 +74,7 @@ pub enum VarValue {
     String(String),
     Faction(Faction),
     Entity(Entity),
+    EntityList(Vec<Entity>),
     Color(Color),
 }
 
@@ -129,6 +130,12 @@ impl VarValue {
     pub fn get_entity(&self) -> Result<Entity> {
         match self {
             VarValue::Entity(value) => Ok(*value),
+            _ => Err(anyhow!("Entity not supported by {self:?}")),
+        }
+    }
+    pub fn get_entity_list(&self) -> Result<Vec<Entity>> {
+        match self {
+            VarValue::EntityList(value) => Ok(value.clone()),
             _ => Err(anyhow!("Entity not supported by {self:?}")),
         }
     }
@@ -219,7 +226,13 @@ impl Display for VarValue {
             VarValue::String(v) => write!(f, "{v}"),
             VarValue::Faction(v) => write!(f, "{v}"),
             VarValue::Entity(v) => write!(f, "{v:?}"),
+            VarValue::EntityList(v) => write!(
+                f,
+                "[{}]",
+                v.into_iter().map(|v| format!("{v:?}")).join(", ")
+            ),
             VarValue::Color(v) => write!(f, "{v:?}"),
+            VarValue::None => write!(f, "none"),
         }
     }
 }

@@ -1,149 +1,62 @@
 #![enable(implicit_some)]
 (
     left: (
-        units: [
-            (
-    hp: 2,
-    atk: 2,
-    houses: "Paladins",
-    trigger: TurnEnd(
-        WithTarget(
-            SlotUnit(Int(1)),
-            UseAbility("Shield"),
-        ),
-    ),
-    name: "Protector",
-    description: "use [Ability] ({Level}) on front ally",
+        units: [(
+    name: "Priest",
+    hp: 1,
+    atk: 1,
+    houses: "Holy",
+    description: "use [Ability] ({Level}) on all allies",
+    trigger: Fire(trigger: BattleStart, target: AllyUnits, effect: UseAbility("Blessing")),
     representation: (
+        count: 4,
         material: Shape(
             shape: Circle,
-            fill: Line,
-            size: Vec2E(Float(0.67)),
-            thickness: Float(0.37),
-            alpha: Float(0.36),
-            color: State(Color),
+            thickness: Sum(
+                Float(2.5),
+                Cos(GameTime),
+            ),
+            size: Vec2E(
+                Sum(
+                    Float(0.5),
+                    Mul(
+                        Beat,
+                        Float(0.3),
+                    ),
+                ),
+            ),
         ),
-        children: [],
         mapping: {
             Position: Mul(
                 UnitVec(
-                    Sum(
-                        IntFloat(
-                            State(Index),
-                        ),
+                    Mul(
                         Sum(
                             GameTime,
-                            Sin(
+                            Mul(
                                 Mul(
-                                    RandomFloat,
-                                    GameTime,
+                                    PI,
+                                    Float(
+                                        0.5,
+                                    ),
+                                ),
+                                IntFloat(
+                                    State(
+                                        Index,
+                                    ),
                                 ),
                             ),
                         ),
+                        Float(3.0),
                     ),
                 ),
-                Mul(
-                    Sin(
-                        Mul(
-                            GameTime,
-                            Float(0.3),
-                        ),
-                    ),
-                    Float(0.19),
-                ),
+                Float(0.3),
             ),
         },
-        count: 16,
+        children: [],
     ),
-),
-            (
-                name: "Priest",
-                hp: 1,
-                atk: 1,
-                houses: "Holy",
-                description: "use [Ability] ({Level}) on all allies",
-                trigger: BattleStart(
-                    AoeFaction(
-                        OwnerFaction,
-                        UseAbility(
-                            "Blessing",
-                        ),
-                    ),
-                ),
-                representation: (
-                    count: 4,
-                    material: Shape(
-                        shape: Circle,
-                        thickness: Sum(
-                            Float(2.5),
-                            Cos(
-                                GameTime,
-                            ),
-                        ),
-                        size: Vec2E(
-                            Sum(
-                                Float(
-                                    0.5,
-                                ),
-                                Mul(
-                                    Beat,
-                                    Float(
-                                        0.3,
-                                    ),
-                                ),
-                            ),
-                        ),
-                    ),
-                    mapping: {
-                        Position: Mul(
-                            UnitVec(
-                                Mul(
-                                    Sum(
-                                        GameTime,
-                                        Mul(
-                                            Mul(
-                                                PI,
-                                                Float(
-                                                    0.5,
-                                                ),
-                                            ),
-                                            IntFloat(
-                                                State(
-                                                    Index,
-                                                ),
-                                            ),
-                                        ),
-                                    ),
-                                    Float(
-                                        3.0,
-                                    ),
-                                ),
-                            ),
-                            Float(0.3),
-                        ),
-                    },
-                    children: [],
-                ),
-            ),
-        ],
+)],
     ),
     right: (
-        units: [
-            (
-                hp: 3,
-                atk: 3,
-                name: "Snake",
-                houses: "Enemies",
-                description: "Kill after dealing any damage",
-                trigger: AfterDamageDealt(Kill),
-                representation: (
-                    material: Shape(
-                        shape: Circle,
-                        color: Hex("#76FF03"),
-                        size: Vec2(0.8, 0.8),
-                    ),
-                ),
-            ),
-        ],
+        units: [],
     ),
 )

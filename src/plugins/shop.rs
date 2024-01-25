@@ -1,7 +1,8 @@
 use std::thread::sleep;
 
 use crate::module_bindings::{
-    run_buy, run_change_g, run_reroll, run_sell, run_submit_result, ArenaPool, ArenaRun, TeamUnit,
+    run_buy, run_change_g, run_fuse, run_reroll, run_sell, run_submit_result, ArenaPool, ArenaRun,
+    TeamUnit,
 };
 
 use super::*;
@@ -14,7 +15,7 @@ pub struct ShopPlugin;
 #[derive(Resource, Clone)]
 struct ShopData {
     update_callback: UpdateCallbackId<ArenaRun>,
-    fusion_candidates: Vec<PackedUnit>,
+    fusion_candidates: Option<((Entity, Entity), Vec<PackedUnit>)>,
 }
 
 const REROLL_PRICE: i32 = 1;
@@ -77,20 +78,15 @@ impl ShopPlugin {
         if Self::load_state(world).is_err() {
             GameState::MainMenu.change(world);
         }
-        Self::fuse_front(world);
     }
 
     fn fuse_front(world: &mut World) {
-        let a = PackedUnit::pack(
-            UnitPlugin::find_unit(Faction::Team, 1, world).unwrap(),
-            world,
-        );
-        let b = PackedUnit::pack(
-            UnitPlugin::find_unit(Faction::Team, 2, world).unwrap(),
-            world,
-        );
-        let fusions = PackedUnit::fuse(a, b);
-        world.resource_mut::<ShopData>().fusion_candidates = fusions;
+        let entity_a = UnitPlugin::find_unit(Faction::Team, 1, world).unwrap();
+        let entity_b = UnitPlugin::find_unit(Faction::Team, 2, world).unwrap();
+        let a = PackedUnit::pack(entity_a, world);
+        let b = PackedUnit::pack(entity_b, world);
+        let fusions = PackedUnit::fuse(a, b, world);
+        world.resource_mut::<ShopData>().fusion_candidates = Some(((entity_a, entity_b), fusions));
     }
 
     fn on_exit(world: &mut World) {
@@ -221,39 +217,47 @@ impl ShopPlugin {
 
     fn show_fusion_options(data: &mut ShopData, world: &mut World) {
         let ctx = &egui_context(world);
-        let len = data.fusion_candidates.len();
-        if len == 0 {
-            return;
-        }
-        window("CHOOSE FUSION")
-            .order(Order::Foreground)
-            .set_width(len as f32 * 240.0)
-            .show(ctx, |ui| {
-                ui.columns(len, |ui| {
-                    for (i, fusion) in data.fusion_candidates.iter().enumerate() {
-                        let state = fusion.generate_state(world);
-                        let statuses = fusion.statuses.clone();
-                        frame(&mut ui[i], |ui| {
-                            state.show_state_card_ui(i, statuses, true, ui, world);
-                        });
-                    }
-                });
-                ui.columns(len, |ui| {
-                    for i in 0..len {
-                        ui[i].vertical_centered(|ui| {
-                            frame(ui, |ui| {
-                                ui.button("ACCEPT");
+        if let Some(((entity_a, entity_b), candidates)) = &mut data.fusion_candidates {
+            let len = candidates.len();
+            if len == 0 {
+                return;
+            }
+            window("CHOOSE FUSION")
+                .order(Order::Foreground)
+                .set_width(len as f32 * 240.0)
+                .show(ctx, |ui| {
+                    ui.columns(len, |ui| {
+                        for (i, fusion) in candidates.iter().enumerate() {
+                            let state = fusion.generate_state(world);
+                            let statuses = fusion.statuses.clone();
+                            frame(&mut ui[i], |ui| {
+                                state.show_state_card_ui(i, statuses, true, ui, world);
                             });
-                        });
-                    }
+                        }
+                    });
+                    ui.columns(len, |ui| {
+                        for i in 0..len {
+                            ui[i].vertical_centered(|ui| {
+                                frame(ui, |ui| {
+                                    if ui.button("ACCEPT").clicked() {
+                                        let fused = candidates.remove(i);
+                                        let a = UnitPlugin::get_id(*entity_a, world).unwrap();
+                                        let b = UnitPlugin::get_id(*entity_b, world).unwrap();
+                                        run_fuse(a, b, fused.into());
+                                        candidates.clear();
+                                    }
+                                });
+                            });
+                        }
+                    });
+                    frame(ui, |ui| {
+                        ui.set_width(300.0);
+                        if ui.button_red("CANCEL").clicked() {
+                            candidates.clear();
+                        }
+                    });
                 });
-                frame(ui, |ui| {
-                    ui.set_width(300.0);
-                    if ui.button_red("CANCEL").clicked() {
-                        data.fusion_candidates.clear();
-                    }
-                });
-            });
+        }
     }
 
     fn show_info_table(world: &mut World) {
