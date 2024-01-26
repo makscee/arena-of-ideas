@@ -5,7 +5,6 @@
     atk: 2,
     houses: "Meta",
     trigger: Fire(trigger: BeforeDeath, effect: UseAbility("Amnesia")),
-    description: "use [Ability] ({Level})",
     representation: (
         material: Shape(
             shape: Circle,

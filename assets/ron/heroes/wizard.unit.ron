@@ -4,7 +4,6 @@
     hp: 3,
     atk: 1,
     houses: "Mages",
-    description: "use [Ability] ({Level})",
     trigger: Fire(trigger: TurnEnd, target: RandomEnemy, effect: UseAbility("Magic Missile")),
     representation: (
         material: Shape(

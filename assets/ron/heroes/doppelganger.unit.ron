@@ -5,7 +5,6 @@
     atk: 3,
     houses: "Shifters",
     trigger: Fire(trigger: BattleStart, target: RandomAdjacentUnit, effect: UseAbility("Copy")),
-    description: "use [Ability] on random adjacent ally",
     representation: (
         material: Shape(
             shape: Circle,

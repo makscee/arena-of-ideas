@@ -86,6 +86,38 @@ impl ColoredString {
         self
     }
 
+    pub fn inject_trigger(mut self, state: &VarState) -> Self {
+        if let Ok(trigger) = state.get_string(VarName::TriggerDescription) {
+            self.lines = self
+                .lines
+                .drain(..)
+                .flat_map(|(line, color)| match line.find("%trigger") {
+                    Some(_) => line
+                        .replace("%trigger", &format!("<{trigger}>"))
+                        .split_by_brackets(("<", ">"))
+                        .into_iter()
+                        .map(|(line, t)| match t {
+                            true => (line, Some(white())),
+                            false => (line, color),
+                        })
+                        .collect_vec(),
+                    None => vec![(line, color)],
+                })
+                .collect_vec();
+        }
+        if let Ok(effect) = state.get_string(VarName::EffectDescription) {
+            for (line, _) in self.lines.iter_mut() {
+                *line = line.replace("%effect", &effect);
+            }
+        }
+        if let Ok(target) = state.get_string(VarName::TargetDescription) {
+            for (line, _) in self.lines.iter_mut() {
+                *line = line.replace("%target", &target);
+            }
+        }
+        self
+    }
+
     pub fn inject_vars(mut self, state: &VarState) -> Self {
         let mut result: Vec<(String, Option<Color32>)> = default();
         for (s, color) in self.lines.drain(..) {

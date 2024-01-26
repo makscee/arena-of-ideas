@@ -5,7 +5,6 @@
     atk: 1,
     houses: "Dragons",
     trigger: Fire(trigger: AnyDeath, effect: UseAbility("Grow")),
-    description: "use [Ability] ({Level})",
     representation: (
         material: Shape(
             shape: Rectangle,

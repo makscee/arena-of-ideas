@@ -18,7 +18,7 @@ pub struct PackedUnit {
     pub level: i32,
     #[serde(default = "default_houses")]
     pub houses: String,
-    #[serde(default)]
+    #[serde(default = "default_description ")]
     pub description: String,
     #[serde(default)]
     pub trigger: Trigger,
@@ -30,6 +30,9 @@ pub struct PackedUnit {
     pub statuses: Vec<(String, i32)>,
 }
 
+fn default_description() -> String {
+    "%trigger → %effect on %target".to_owned()
+}
 fn default_houses() -> String {
     "Default".to_owned()
 }
@@ -119,11 +122,8 @@ impl PackedUnit {
                 VarName::Description,
                 VarValue::String(self.description.clone()),
             )
-            .init(VarName::AbilityDescription, VarValue::String(description))
-            .init(
-                VarName::TriggerDescription,
-                VarValue::String(self.trigger.get_description_string()),
-            );
+            .init(VarName::Description, VarValue::String(description));
+        self.trigger.inject_description(&mut state);
         let house_colors = self
             .houses
             .split("+")
@@ -188,7 +188,8 @@ impl PackedUnit {
             .clear_value(VarName::Level)
             .clear_value(VarName::Stacks)
             .clear_value(VarName::Name)
-            .clear_value(VarName::AbilityDescription)
+            .clear_value(VarName::EffectDescription)
+            .clear_value(VarName::TargetDescription)
             .clear_value(VarName::TriggerDescription)
             .clear_value(VarName::Houses)
             .simplify();

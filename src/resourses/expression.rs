@@ -1,6 +1,7 @@
 use std::f32::consts::PI;
 
 use bevy_egui::egui::{ComboBox, DragValue};
+use convert_case::{Case, Casing};
 use hex::encode;
 use rand::{
     seq::{IteratorRandom, SliceRandom},
@@ -733,6 +734,85 @@ impl Expression {
             | Expression::And(_, _)
             | Expression::Or(_, _) => hex_color!("#FFEB3B"),
             Expression::If(_, _, _) => hex_color!("#BA68C8"),
+        }
+    }
+
+    pub fn get_description_string(&self) -> String {
+        match self {
+            Expression::Zero
+            | Expression::GameTime
+            | Expression::RandomFloat
+            | Expression::PI
+            | Expression::Age
+            | Expression::SlotPosition
+            | Expression::OwnerFaction
+            | Expression::OppositeFaction
+            | Expression::Beat
+            | Expression::Owner
+            | Expression::Caster
+            | Expression::Target
+            | Expression::RandomUnit
+            | Expression::RandomAdjacentUnit
+            | Expression::RandomAlly
+            | Expression::RandomEnemy
+            | Expression::AllyUnits
+            | Expression::EnemyUnits
+            | Expression::AllUnits
+            | Expression::AdjacentUnits => self.to_string().to_case(Case::Lower),
+            Expression::Float(v) => v.to_string(),
+            Expression::Int(v) => v.to_string(),
+            Expression::Bool(v) => v.to_string(),
+            Expression::String(v) => v.to_string(),
+            Expression::Hex(v) => v.to_string(),
+            Expression::Faction(v) => v.to_string(),
+            Expression::State(v) => format!("{self}({v})"),
+            Expression::TargetState(v) => format!("{self}({v})"),
+            Expression::StateLast(v) => format!("{self}({v})"),
+            Expression::Context(v) => format!("{self}({v})"),
+            Expression::Value(v) => format!("{self}({v})"),
+            Expression::Vec2(x, y) => format!("({x}, {y})"),
+            Expression::Vec2E(x) => format!("({x}, {x})"),
+            Expression::StringInt(v)
+            | Expression::StringFloat(v)
+            | Expression::StringVec(v)
+            | Expression::IntFloat(v)
+            | Expression::Sin(v)
+            | Expression::Cos(v)
+            | Expression::Sign(v)
+            | Expression::Fract(v)
+            | Expression::Floor(v)
+            | Expression::UnitVec(v)
+            | Expression::Even(v)
+            | Expression::Abs(v)
+            | Expression::SlotUnit(v)
+            | Expression::FactionCount(v)
+            | Expression::StatusCharges(v) => format!(
+                "{} ({})",
+                self.to_string().to_case(Case::Lower),
+                v.get_description_string().to_case(Case::Title)
+            ),
+            Expression::Vec2EE(x, y)
+            | Expression::Sum(x, y)
+            | Expression::Sub(x, y)
+            | Expression::Mul(x, y)
+            | Expression::Div(x, y)
+            | Expression::GreaterThen(x, y)
+            | Expression::LessThen(x, y)
+            | Expression::Min(x, y)
+            | Expression::Max(x, y)
+            | Expression::Equals(x, y)
+            | Expression::And(x, y)
+            | Expression::Or(x, y) => format!(
+                "{self}({}, {})",
+                x.get_description_string().to_case(Case::Title),
+                y.get_description_string().to_case(Case::Title)
+            ),
+            Expression::If(x, y, z) => format!(
+                "{self}({}, {}, {})",
+                x.get_description_string().to_case(Case::Title),
+                y.get_description_string().to_case(Case::Title),
+                z.get_description_string().to_case(Case::Title),
+            ),
         }
     }
 }

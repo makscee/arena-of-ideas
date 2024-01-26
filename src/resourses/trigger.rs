@@ -283,29 +283,40 @@ impl Trigger {
         });
     }
 
-    pub fn get_description_string(&self) -> String {
+    pub fn inject_description(&self, state: &mut VarState) {
         match self {
             Trigger::Fire {
                 trigger,
                 target,
                 effect,
-            } => format!(
-                "{} → {} on {}",
-                trigger.get_description_string(),
-                effect.to_string(),
-                target.to_string()
-            ),
-            Trigger::Change {
-                trigger,
-                expr: expression,
-            } => match trigger {
-                DeltaTrigger::Var(var) => format!("Stat {var} +{expression}"),
-                DeltaTrigger::IncomingDamage => format!("{trigger} +{expression}"),
-            },
-            Trigger::List(list) => list
-                .into_iter()
-                .map(|t| t.get_description_string())
-                .join(" | "),
+            } => {
+                state
+                    .init(
+                        VarName::TriggerDescription,
+                        VarValue::String(trigger.get_description_string()),
+                    )
+                    .init(
+                        VarName::EffectDescription,
+                        VarValue::String(
+                            effect
+                                .find_all_abilities()
+                                .into_iter()
+                                .map(|a| match a {
+                                    Effect::UseAbility(ability) => {
+                                        format!("[{ability}] ({{Level}})")
+                                    }
+                                    _ => default(),
+                                })
+                                .join(" + "),
+                        ),
+                    )
+                    .init(
+                        VarName::TargetDescription,
+                        VarValue::String(target.get_description_string()),
+                    );
+            }
+            Trigger::Change { .. } => {}
+            Trigger::List(list) => list.into_iter().for_each(|t| t.inject_description(state)),
         }
     }
 }
