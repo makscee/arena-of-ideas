@@ -160,7 +160,8 @@ fn run_stack(ctx: ReducerContext, target: u64, dragged: u64) -> Result<(), Strin
     let (_, mut run) = ArenaRun::get_by_identity(&ctx.sender)?;
     let (i_target, target) = run.find_team(target)?;
     let (i_dragged, dragged) = run.find_team(dragged)?;
-    if !target.unit.houses.eq(&dragged.unit.houses) {
+    let d_houses = dragged.unit.houses.split("+").collect_vec();
+    if !target.unit.houses.split("+").any(|h| d_houses.contains(&h)) {
         return Err("Houses should match for stacking".to_owned());
     }
     let target = &mut run.state.team[i_target].unit;

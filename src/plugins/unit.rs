@@ -111,7 +111,10 @@ impl UnitPlugin {
         let dragged = world.resource::<DraggedUnit>().0;
         for (unit, ind) in Self::collect_faction(faction, world)
             .into_iter()
-            .filter(|u| dragged != Some(*u))
+            .filter(|u| match dragged {
+                Some((d, _)) => d != *u,
+                None => true,
+            })
             .sorted_by_key(|x| VarState::get(*x, world).get_int(VarName::Slot).unwrap())
             .zip(1..)
             .collect_vec()
@@ -235,9 +238,13 @@ impl UnitPlugin {
         mut team: Query<Entity, With<ActiveTeam>>,
         mut dragged: ResMut<DraggedUnit>,
         mut commands: Commands,
+        shop_data: Res<ShopData>,
     ) {
+        if shop_data.fusion_candidates.is_some() {
+            return;
+        }
         debug!("Drag unit start {:?}", event.target);
-        dragged.0 = Some(event.target);
+        dragged.0 = Some((event.target, DragAction::None));
         for entity in team.iter_mut() {
             commands.entity(entity).insert(Pickable::IGNORE);
         }
@@ -255,72 +262,58 @@ impl UnitPlugin {
         }
 
         commands.add(|world: &mut World| {
-            let dragged = world.resource::<DraggedUnit>().0.unwrap();
-            world.resource_mut::<DraggedUnit>().0 = None;
-            let ClosestSlot(slot, _, stackable) = *world.resource::<ClosestSlot>();
-            let target = Self::find_unit(Faction::Team, slot, world);
-            if stackable && !target.is_some_and(|target| target.eq(&dragged)) {
-                let target = Self::get_id(target.unwrap(), world).unwrap();
-                let dragged = Self::get_id(dragged, world).unwrap();
-                run_stack(target, dragged);
-            } else {
-                let t = GameTimer::get().insert_head();
-                VarState::get_mut(dragged, world).insert_simple(
-                    VarName::Slot,
-                    VarValue::Int(slot as i32),
-                    t,
-                );
-                let sorted_ids = UnitPlugin::collect_faction_ids(Faction::Team, world)
-                    .into_iter()
-                    .map(|(id, entity)| {
-                        (
-                            id,
-                            VarState::get(entity, world).get_int(VarName::Slot).unwrap(),
-                        )
-                    })
-                    .sorted_by_key(|(_, s)| *s)
-                    .map(|(id, _)| id)
-                    .collect_vec();
-                run_team_reorder(sorted_ids);
+            if let Some((dragged, action)) = world.resource::<DraggedUnit>().0 {
+                world.resource_mut::<DraggedUnit>().0 = None;
+                match action {
+                    DragAction::Fuse(target) => {
+                        ShopPlugin::start_fuse(target, dragged, world);
+                    }
+                    DragAction::Stack(target) => {
+                        let target = Self::get_id(target, world).unwrap();
+                        let dragged = Self::get_id(dragged, world).unwrap();
+                        run_stack(target, dragged);
+                    }
+                    DragAction::Insert(_) | DragAction::None => {
+                        let sorted_ids = UnitPlugin::collect_faction_ids(Faction::Team, world)
+                            .into_iter()
+                            .map(|(id, entity)| {
+                                (
+                                    id,
+                                    VarState::get(entity, world).get_int(VarName::Slot).unwrap(),
+                                )
+                            })
+                            .sorted_by_key(|(_, s)| *s)
+                            .map(|(id, _)| id)
+                            .collect_vec();
+                        run_team_reorder(sorted_ids);
+                    }
+                    DragAction::Sell => todo!(),
+                }
+                Self::fill_slot_gaps(Faction::Team, world);
+                Self::translate_to_slots(world);
             }
-            Self::fill_slot_gaps(Faction::Team, world);
-            Self::translate_to_slots(world);
         });
     }
 
     pub fn drag_unit(world: &mut World) {
-        if let Some(dragged) = world.resource::<DraggedUnit>().0 {
+        if let Some((dragged, action)) = world.resource::<DraggedUnit>().0 {
             if let Some(cursor_pos) = CameraPlugin::cursor_world_pos(world) {
                 let mut transform = world.get_mut::<Transform>(dragged).unwrap();
                 transform.translation = cursor_pos.extend(0.0);
                 VarState::get_mut(dragged, world)
                     .init(VarName::Position, VarValue::Vec2(cursor_pos));
-                if let Some(prev_closest) = world.get_resource::<ClosestSlot>() {
-                    let closest_slot = Self::get_closest_slot(cursor_pos, Faction::Team);
-                    if prev_closest.0 != closest_slot.0 {
-                        let name = VarState::get(dragged, world)
-                            .get_string(VarName::Name)
-                            .unwrap();
-                        let stackable = if Self::find_unit(Faction::Team, closest_slot.0, world)
-                            .is_some_and(|entity| {
-                                VarState::get(entity, world)
-                                    .get_string(VarName::Name)
-                                    .unwrap()
-                                    .eq(&name)
-                            }) {
-                            true
-                        } else {
-                            Self::make_slot_gap(Faction::Team, closest_slot.0 as i32, world);
-                            Self::translate_to_slots(world);
-                            false
-                        };
-                        world.insert_resource(ClosestSlot(
-                            closest_slot.0,
-                            closest_slot.1,
-                            stackable,
-                        ));
+            }
+            match action {
+                DragAction::Insert(slot) => {
+                    let mut state = VarState::get_mut(dragged, world);
+                    let slot = slot as i32;
+                    if state.get_int(VarName::Slot).unwrap() != slot {
+                        state.init(VarName::Slot, VarValue::Int(slot));
+                        UnitPlugin::make_slot_gap(Faction::Team, slot, world);
+                        UnitPlugin::translate_to_slots(world);
                     }
                 }
+                _ => {}
             }
         }
     }
@@ -414,8 +407,17 @@ impl Faction {
 #[derive(Resource, Default)]
 pub struct HoveredUnit(pub Option<Entity>);
 
-#[derive(Resource, Default, Debug)]
-pub struct DraggedUnit(pub Option<Entity>);
+#[derive(Resource, Default, Debug, Clone, Copy)]
+pub struct DraggedUnit(pub Option<(Entity, DragAction)>);
+
+#[derive(Debug, Copy, Clone)]
+pub enum DragAction {
+    None,
+    Fuse(Entity),
+    Stack(Entity),
+    Insert(usize),
+    Sell,
+}
 
 #[derive(Component)]
 pub struct ActiveTeam;

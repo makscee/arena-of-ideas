@@ -13,9 +13,9 @@ use bevy_egui::egui::Order;
 pub struct ShopPlugin;
 
 #[derive(Resource, Clone)]
-struct ShopData {
+pub struct ShopData {
     update_callback: UpdateCallbackId<ArenaRun>,
-    fusion_candidates: Option<((Entity, Entity), Vec<PackedUnit>)>,
+    pub fusion_candidates: Option<((Entity, Entity), Vec<PackedUnit>)>,
 }
 
 const REROLL_PRICE: i32 = 1;
@@ -83,6 +83,10 @@ impl ShopPlugin {
     fn fuse_front(world: &mut World) {
         let entity_a = UnitPlugin::find_unit(Faction::Team, 1, world).unwrap();
         let entity_b = UnitPlugin::find_unit(Faction::Team, 2, world).unwrap();
+        Self::start_fuse(entity_a, entity_b, world);
+    }
+
+    pub fn start_fuse(entity_a: Entity, entity_b: Entity, world: &mut World) {
         let a = PackedUnit::pack(entity_a, world);
         let b = PackedUnit::pack(entity_b, world);
         let fusions = PackedUnit::fuse(a, b, world);
@@ -166,6 +170,11 @@ impl ShopPlugin {
     pub fn ui(world: &mut World) {
         let ctx = &egui_context(world);
         let mut data = world.remove_resource::<ShopData>().unwrap();
+        if data.fusion_candidates.is_some() {
+            Self::show_fusion_options(&mut data, world);
+            world.insert_resource(data);
+            return;
+        }
 
         let pos = UnitPlugin::get_slot_position(Faction::Shop, 0) - vec2(1.0, 0.0);
         let pos = world_to_screen(pos.extend(0.0), world);
@@ -211,7 +220,6 @@ impl ShopPlugin {
                     Self::go_to_battle(world);
                 }
             });
-        Self::show_fusion_options(&mut data, world);
         world.insert_resource(data);
     }
 
@@ -219,9 +227,6 @@ impl ShopPlugin {
         let ctx = &egui_context(world);
         if let Some(((entity_a, entity_b), candidates)) = &mut data.fusion_candidates {
             let len = candidates.len();
-            if len == 0 {
-                return;
-            }
             window("CHOOSE FUSION")
                 .order(Order::Foreground)
                 .set_width(len as f32 * 240.0)
@@ -257,6 +262,9 @@ impl ShopPlugin {
                         }
                     });
                 });
+            if candidates.len() == 0 {
+                data.fusion_candidates = None;
+            }
         }
     }
 
@@ -284,21 +292,27 @@ impl ShopPlugin {
         let ctx = &egui_context(world);
         let cursor_pos = CameraPlugin::cursor_world_pos(world).context("Failed to get cursor")?;
         let dragged = world.resource::<DraggedUnit>().0;
-        if let Some(dragged) = dragged {
+        if let Some((dragged, action)) = dragged {
+            let mut new_action = DragAction::None;
             let dragged_state = VarState::get(dragged, world);
-            let dragged_name = dragged_state.get_string(VarName::Name)?;
+            let dragged_houses = dragged_state.get_houses_vec()?;
+            let dragged_level = dragged_state.get_int(VarName::Level)?;
             for entity in UnitPlugin::collect_faction(Faction::Team, world) {
                 if entity == dragged {
                     continue;
                 }
                 let state = VarState::get(entity, world);
-                let same_slot = state.get_int(VarName::Slot).context("Failed to get slot")?
-                    == UnitPlugin::get_closest_slot(cursor_pos, Faction::Team).0 as i32;
-                let same_name = dragged_name.eq(&state.get_string(VarName::Name)?);
-                if same_name {
+                let houses = state.get_houses_vec()?;
+                let level = state.get_int(VarName::Level)?;
+                let same_house = dragged_houses.iter().any(|h| houses.contains(h));
+                if same_house {
                     let stacks = state.get_int(VarName::Stacks)?;
                     let level = state.get_int(VarName::Level)?;
-                    let color = if same_slot { yellow() } else { white() };
+                    let color = if matches!(action, DragAction::Stack(e) if e == entity) {
+                        yellow()
+                    } else {
+                        white()
+                    };
                     window("STACK")
                         .id(entity)
                         .set_width(150.0)
@@ -306,7 +320,7 @@ impl ShopPlugin {
                         .stroke(false)
                         .entity_anchor(entity, Align2::CENTER_BOTTOM, vec2(0.0, 2.2), world)
                         .show(ctx, |ui| {
-                            frame(ui, |ui| {
+                            if frame(ui, |ui| {
                                 ui.label("+STACK".add_color(color).rich_text().size(24.0));
                                 ui.label(format!("Level {level}").add_color(color).rich_text());
                                 ui.label(
@@ -314,10 +328,49 @@ impl ShopPlugin {
                                         .add_color(light_gray())
                                         .rich_text(),
                                 );
-                            });
+                            })
+                            .response
+                            .hovered()
+                            {
+                                new_action = DragAction::Stack(entity);
+                            };
+                        });
+                } else if level >= houses.len() as i32 + 1
+                    && houses.len() < 3
+                    && dragged_level >= level
+                    && dragged_houses.len() == 1
+                    && !houses.contains(&dragged_houses[0])
+                {
+                    let color = if matches!(action, DragAction::Fuse(e) if e == entity) {
+                        yellow()
+                    } else {
+                        white()
+                    };
+                    window("FUSE")
+                        .id(entity)
+                        .set_width(150.0)
+                        .title_bar(false)
+                        .stroke(false)
+                        .entity_anchor(entity, Align2::CENTER_BOTTOM, vec2(0.0, 2.2), world)
+                        .show(ctx, |ui| {
+                            if frame(ui, |ui| {
+                                ui.label("FUSE".add_color(color).rich_text().size(24.0));
+                            })
+                            .response
+                            .hovered()
+                            {
+                                new_action = DragAction::Fuse(entity);
+                            };
                         });
                 }
             }
+            for slot in 1..TEAM_SLOTS {
+                let pos = UnitPlugin::get_slot_position(Faction::Team, slot);
+                if (pos - cursor_pos).length() < 1.0 {
+                    new_action = DragAction::Insert(slot);
+                }
+            }
+            world.resource_mut::<DraggedUnit>().0 = Some((dragged, new_action));
         } else {
             for entity in UnitPlugin::collect_faction(Faction::Team, world) {
                 let state = VarState::get(entity, world);

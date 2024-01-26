@@ -167,6 +167,13 @@ impl VarState {
     pub fn get_color_at(&self, var: VarName, t: f32) -> Result<Color> {
         self.get_value_at(var, t)?.get_color()
     }
+    pub fn get_houses_vec(&self) -> Result<Vec<String>> {
+        Ok(self
+            .get_string(VarName::Houses)?
+            .split("+")
+            .map(|s| s.to_owned())
+            .collect_vec())
+    }
     pub fn find_value(mut entity: Entity, var: VarName, t: f32, world: &World) -> Result<VarValue> {
         let mut result = None;
         loop {

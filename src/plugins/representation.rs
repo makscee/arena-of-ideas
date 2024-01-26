@@ -24,7 +24,11 @@ impl RepresentationPlugin {
             .map(|(e, r)| (e, r.clone()))
             .collect_vec();
         let t = get_play_head();
-        let dragged = world.get_resource::<DraggedUnit>().unwrap().0;
+        let dragged = world
+            .get_resource::<DraggedUnit>()
+            .unwrap()
+            .0
+            .map(|(d, _)| d);
         for (entity, rep) in reps {
             let context = Context::from_owner(entity, world);
             let mapping: HashMap<VarName, VarValue> =

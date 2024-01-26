@@ -216,7 +216,7 @@ impl PackedUnit {
             rep.mapping.insert(
                 VarName::Color,
                 Expression::Value(VarValue::Color(
-                    Pools::get_house_color(&b.houses, world).unwrap(),
+                    Pools::get_house_color(&b.houses.split("+").next().unwrap(), world).unwrap(),
                 )),
             );
             rep
