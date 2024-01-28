@@ -1,5 +1,3 @@
-use bevy_egui::egui::Checkbox;
-
 use super::*;
 
 pub struct SettingsPlugin;
@@ -8,6 +6,17 @@ pub struct SettingsPlugin;
 pub struct SettingsData {
     pub master_volume: f64,
     pub expanded_hint: bool,
+    pub window_mode: WindowMode,
+}
+
+#[derive(
+    Default, Serialize, Deserialize, Debug, Copy, Clone, PartialEq, EnumString, EnumIter, Display,
+)]
+pub enum WindowMode {
+    #[default]
+    Windowed,
+    FullScreen,
+    BorderlessFullScreen,
 }
 
 impl Default for SettingsData {
@@ -15,6 +24,7 @@ impl Default for SettingsData {
         Self {
             master_volume: 0.5,
             expanded_hint: false,
+            window_mode: default(),
         }
     }
 }
@@ -34,27 +44,63 @@ impl SettingsPlugin {
 
     pub fn ui(world: &mut World) {
         let mut data = *SettingsData::get(world);
-        window("SETTINGS").show(&egui_context(world), |ui| {
-            frame(ui, |ui| {
-                let master_volume =
-                    Slider::new(&mut data.master_volume, 0.0..=1.0).text("master volume");
-                ui.add(master_volume);
+        window("SETTINGS")
+            .set_width(600.0)
+            .order(egui::Order::Foreground)
+            .show(&egui_context(world), |ui| {
+                frame(ui, |ui| {
+                    ui.columns(2, |ui| {
+                        "master volume".to_colored().label(&mut ui[0]);
+                        Slider::new(&mut data.master_volume, 0.0..=1.0)
+                            .step_by(0.01)
+                            .ui(&mut ui[1]);
+                    })
+                });
+                frame(ui, |ui| {
+                    ui.columns(2, |ui| {
+                        "always expand hint".to_colored().label(&mut ui[0]);
+                        ui[1].vertical_centered_justified(|ui| {
+                            let value = &mut data.expanded_hint;
+                            if ui
+                                .button_or_primary(
+                                    if *value { "ENABLED" } else { "DISABLED" },
+                                    *value,
+                                )
+                                .clicked()
+                            {
+                                *value = !*value;
+                            }
+                        });
+                    });
+                });
+                frame(ui, |ui| {
+                    let value = &mut data.window_mode;
+                    ui.columns(2, |ui| {
+                        "window mode".to_colored().label(&mut ui[0]);
+                        ui[1].vertical_centered_justified(|ui| {
+                            ComboBox::from_id_source("window mode")
+                                .width(240.0)
+                                .selected_text(value.to_string())
+                                .show_ui(ui, |ui| {
+                                    for option in WindowMode::iter() {
+                                        let text = option.to_string();
+                                        ui.selectable_value(value, option, text).changed();
+                                    }
+                                });
+                        });
+                    });
+                });
+                frame(ui, |ui| {
+                    if ui
+                        .button("CLEAR DATA")
+                        .on_hover_text("Clear saved game and other data")
+                        .clicked()
+                    {
+                        PersistentData::default().save(world).unwrap();
+                        SettingsData::default().save(world).unwrap();
+                    }
+                });
             });
-            frame(ui, |ui| {
-                let expanded_hint = Checkbox::new(&mut data.expanded_hint, "always expanded hint");
-                ui.add(expanded_hint);
-            });
-            frame(ui, |ui| {
-                if ui
-                    .button("CLEAR DATA")
-                    .on_hover_text("Clear saved game and other data")
-                    .clicked()
-                {
-                    PersistentData::default().save(world).unwrap();
-                    SettingsData::default().save(world).unwrap();
-                }
-            });
-        });
         if !data.eq(SettingsData::get(world)) {
             Self::updated(data, world);
         }
@@ -63,6 +109,16 @@ impl SettingsPlugin {
     fn updated(data: SettingsData, world: &mut World) {
         data.save(world).unwrap();
         AudioPlugin::update_settings(&data, world);
+        let mut window = world
+            .query::<&mut bevy::window::Window>()
+            .iter_mut(world)
+            .next()
+            .unwrap();
+        window.mode = match data.window_mode {
+            WindowMode::Windowed => bevy::window::WindowMode::Windowed,
+            WindowMode::FullScreen => bevy::window::WindowMode::Fullscreen,
+            WindowMode::BorderlessFullScreen => bevy::window::WindowMode::BorderlessFullscreen,
+        };
     }
 }
 

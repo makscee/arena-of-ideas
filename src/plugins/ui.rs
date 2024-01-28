@@ -99,6 +99,7 @@ impl UiPlugin {
             style.visuals.window_stroke.width = 1.0;
             // style.spacing.window_margin = 8.0.into();
             style.spacing.window_margin = 0.0.into();
+            style.spacing.slider_width = 200.0;
             // dbg!(style.visuals.widgets.hovered);
             style.visuals.widgets.inactive = WidgetVisuals {
                 bg_fill: white(),
