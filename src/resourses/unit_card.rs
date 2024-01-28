@@ -43,15 +43,6 @@ impl VarState {
             );
         Ok(result)
     }
-    fn stats(&self) -> Result<ColoredString> {
-        let t = get_play_head();
-        let atk = self.get_int_at(VarName::Atk, t)?;
-        let hp = self.get_int_at(VarName::Hp, t)?;
-        Ok(format!("{atk}/{hp}")
-            .add_color(white())
-            .set_style(ColoredStringStyle::Heading2)
-            .take())
-    }
     fn description(&self, world: &World) -> Result<ColoredString> {
         let t = get_play_head();
         let description = self
@@ -65,16 +56,32 @@ impl VarState {
     fn extra_lines(&self) -> Result<Vec<(ColoredString, ColoredString)>> {
         let t = get_play_head();
         let level = self.get_int_at(VarName::Level, t)?;
-        let level_line = (
-            "level".add_color(light_gray()),
-            level.to_string().add_color(white()),
-        );
         let stacks = self.get_int_at(VarName::Stacks, t)?;
-        let stacks_line = (
-            "stacks".add_color(light_gray()),
-            format!("{stacks}/{}", level + 1).add_color(white()),
+        let stacks = format!("{stacks}/{} ", level + 1);
+        let level_line = (
+            "level".to_colored(),
+            stacks
+                .to_colored()
+                .push_styled(level.to_string(), white(), ColoredStringStyle::Bold)
+                .take(),
         );
-        Ok([level_line, stacks_line].into())
+        let atk = self.get_int_at(VarName::Atk, t)?;
+        let hp = self.get_int_at(VarName::Hp, t)?;
+        let hp_line = (
+            "hp".to_colored(),
+            hp.to_string()
+                .add_color(red())
+                .set_style(ColoredStringStyle::Bold)
+                .take(),
+        );
+        let atk_line = (
+            "atk".to_colored(),
+            atk.to_string()
+                .add_color(yellow())
+                .set_style(ColoredStringStyle::Bold)
+                .take(),
+        );
+        Ok([level_line, atk_line, hp_line].into())
     }
     fn statuses(
         &self,
@@ -160,12 +167,8 @@ impl VarState {
         }
     }
 
-    fn show_name(name: ColoredString, open: bool, ui: &mut Ui) {
+    fn show_name(name: ColoredString, ui: &mut Ui) {
         ui.vertical_centered(|ui| name.label(ui));
-    }
-
-    fn show_stats(stats: ColoredString, ui: &mut Ui) {
-        ui.vertical_centered(|ui| stats.label(ui));
     }
 
     fn show_extra_lines(lines: Vec<(ColoredString, ColoredString)>, ui: &mut Ui) {
@@ -178,22 +181,19 @@ impl VarState {
         &self,
         statuses: Vec<(String, i32)>,
         open: bool,
-        expanded: bool,
         ui: &mut Ui,
         world: &World,
     ) -> Result<()> {
         let name = self.name(open)?;
-
-        Self::show_name(name, open, ui);
+        Self::show_name(name, ui);
         if !open {
             return Ok(());
         }
-        let stats = self.stats()?;
+        let expanded = ui.input(|i| i.modifiers.shift) || SettingsData::get(world).expanded_hint;
         let description = self.description(world);
         let statuses = self.statuses(statuses, world);
         let extra_lines = self.extra_lines();
         frame(ui, |ui| {
-            Self::show_stats(stats, ui);
             if let Ok(description) = description {
                 ui.vertical(|ui| {
                     description.label(ui);
@@ -211,6 +211,12 @@ impl VarState {
             });
         }
         if !expanded {
+            ui.vertical_centered(|ui| {
+                "SHIFT to expand"
+                    .to_colored()
+                    .set_style(ColoredStringStyle::Small)
+                    .label(ui);
+            });
             return Ok(());
         }
         let definition = self.definitions(world);
@@ -254,7 +260,7 @@ impl VarState {
                 Order::Middle
             })
             .show(ctx, |ui| {
-                let _ = self.show_frames(statuses, open, true, ui, world);
+                let _ = self.show_frames(statuses, open, ui, world);
             });
     }
 
@@ -276,7 +282,7 @@ impl VarState {
                 Order::Middle
             })
             .show_ui(ui, |ui| {
-                let _ = self.show_frames(statuses, open, true, ui, world);
+                let _ = self.show_frames(statuses, open, ui, world);
             });
     }
 
@@ -304,7 +310,7 @@ impl VarState {
             })
             .entity_anchor(entity, Align2::CENTER_TOP, vec2(0.0, 1.2), world)
             .show(ctx, |ui| {
-                let _ = self.show_frames(statuses, open, true, ui, world);
+                let _ = self.show_frames(statuses, open, ui, world);
             });
     }
 
@@ -313,7 +319,6 @@ impl VarState {
         entity: Entity,
         statuses: Vec<(String, i32)>,
         open: bool,
-        expanded: bool,
         ui: &mut Ui,
         world: &World,
     ) {
@@ -322,7 +327,7 @@ impl VarState {
             .set_width(if open { 200.0 } else { 120.0 })
             .title_bar(false)
             .show_ui(ui, |ui| {
-                let _ = self.show_frames(statuses, open, expanded, ui, world);
+                let _ = self.show_frames(statuses, open, ui, world);
             });
     }
 }

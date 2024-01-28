@@ -1,3 +1,5 @@
+use bevy_egui::egui::Checkbox;
+
 use super::*;
 
 pub struct SettingsPlugin;
@@ -5,11 +7,15 @@ pub struct SettingsPlugin;
 #[derive(Resource, Serialize, Deserialize, Debug, Copy, Clone, PartialEq)]
 pub struct SettingsData {
     pub master_volume: f64,
+    pub expanded_hint: bool,
 }
 
 impl Default for SettingsData {
     fn default() -> Self {
-        Self { master_volume: 0.5 }
+        Self {
+            master_volume: 0.5,
+            expanded_hint: false,
+        }
     }
 }
 
@@ -33,6 +39,10 @@ impl SettingsPlugin {
                 let master_volume =
                     Slider::new(&mut data.master_volume, 0.0..=1.0).text("master volume");
                 ui.add(master_volume);
+            });
+            frame(ui, |ui| {
+                let expanded_hint = Checkbox::new(&mut data.expanded_hint, "always expanded hint");
+                ui.add(expanded_hint);
             });
             frame(ui, |ui| {
                 if ui
@@ -75,7 +85,7 @@ impl SettingsData {
         Ok(self)
     }
 
-    pub fn get(world: &mut World) -> &Self {
+    pub fn get(world: &World) -> &Self {
         world.resource::<SettingsData>()
     }
 }
