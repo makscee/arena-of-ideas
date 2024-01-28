@@ -60,35 +60,5 @@
                 ),
             ],
         ),
-        (
-            material: Shape(
-                shape: Circle,
-                color: Hex("#B0BEC5"),
-                size: Vec2E(Float(0.3)),
-            ),
-            mapping: {
-                Position: Vec2(0.9, 0.6),
-                Visible: GreaterThen(
-                    State(Level),
-                    Int(1),
-                ),
-            },
-            children: [
-                (
-                    material: Text(
-                        text: Sum(
-                            String("x"),
-                            StringInt(
-                                State(
-                                    Level,
-                                ),
-                            ),
-                        ),
-                        size: Float(0.4),
-                        color: Hex("#ffffff"),
-                    ),
-                ),
-            ],
-        ),
     ],
 )

@@ -78,6 +78,10 @@ impl UiPlugin {
                     FontId::new(22.0, FontFamily::Monospace),
                 ),
                 (
+                    TextStyle::Name("Bold".into()),
+                    FontId::new(14.0, FontFamily::Name("bold".into())),
+                ),
+                (
                     TextStyle::Name("Context".into()),
                     FontId::new(20.0, FontFamily::Monospace),
                 ),
@@ -136,11 +140,11 @@ impl UiPlugin {
 pub fn text_dots_text(text1: &ColoredString, text2: &ColoredString, ui: &mut Ui) {
     ui.horizontal(|ui| {
         let rect = ui.max_rect();
-        let left = rect.left() + ui.add(Label::new(text1.widget())).rect.width() + 3.0;
+        let left = rect.left() + text1.label(ui).rect.width() + 3.0;
         let right = rect.right()
             - 3.0
             - ui.with_layout(Layout::right_to_left(egui::Align::Min), |ui| {
-                ui.label(text2.widget());
+                text2.label(ui);
             })
             .response
             .rect

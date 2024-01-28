@@ -282,7 +282,7 @@ impl PackedUnit {
                         [Box::new(effect_a.clone()), Box::new(effect_b.clone())].into(),
                     ),
                 };
-                result.push(Self::fuse_base(&a, &b, trigger, world));
+                result.push(Self::fuse_base(&b, &a, trigger, world));
             }
             _ => {
                 let trigger = Trigger::List(

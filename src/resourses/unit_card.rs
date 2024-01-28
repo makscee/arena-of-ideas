@@ -5,7 +5,7 @@ use bevy_egui::egui::Order;
 use super::*;
 
 impl VarState {
-    fn name(&self) -> Result<ColoredString> {
+    fn name(&self, open: bool) -> Result<ColoredString> {
         let t = get_play_head();
         let level = self.get_int_at(VarName::Level, t)?;
         let mut result = ColoredString::default();
@@ -16,15 +16,41 @@ impl VarState {
                 2 => VarName::HouseColor3,
                 _ => panic!("Too many houses"),
             };
-            result.push(name.to_owned(), self.get_color_at(var, t)?.c32());
+            result
+                .push(name.to_owned(), self.get_color_at(var, t)?.c32())
+                .set_style(match open {
+                    true => ColoredStringStyle::Heading2,
+                    false => ColoredStringStyle::Normal,
+                });
         }
-        Ok(result.push(format!(" lv.{}", level), white()).take())
+        result
+            .push_colored(
+                " lv."
+                    .to_colored()
+                    .set_style(ColoredStringStyle::Small)
+                    .take(),
+            )
+            .push_colored(
+                level
+                    .to_string()
+                    .add_color(match level {
+                        1 => white(),
+                        2 => yellow(),
+                        _ => red(),
+                    })
+                    .set_style(ColoredStringStyle::Bold)
+                    .take(),
+            );
+        Ok(result)
     }
     fn stats(&self) -> Result<ColoredString> {
         let t = get_play_head();
         let atk = self.get_int_at(VarName::Atk, t)?;
         let hp = self.get_int_at(VarName::Hp, t)?;
-        Ok(format!("{atk}/{hp}").add_color(white()))
+        Ok(format!("{atk}/{hp}")
+            .add_color(white())
+            .set_style(ColoredStringStyle::Heading2)
+            .take())
     }
     fn description(&self, world: &World) -> Result<ColoredString> {
         let t = get_play_head();
@@ -106,7 +132,9 @@ impl VarState {
                 continue;
             }
             definitions.push((
-                name.add_color(color),
+                name.add_color(color)
+                    .set_style(ColoredStringStyle::Bold)
+                    .take(),
                 description
                     .to_colored()
                     .inject_definitions(world)
@@ -126,35 +154,18 @@ impl VarState {
             text_dots_text(name, &charges.to_string().add_color(white()), ui);
             if show_desc && !description.is_empty() {
                 ui.vertical(|ui| {
-                    ui.label(description.widget());
+                    description.label(ui);
                 });
             }
         }
     }
 
     fn show_name(name: ColoredString, open: bool, ui: &mut Ui) {
-        ui.vertical_centered(|ui| {
-            ui.style_mut().wrap = Some(true);
-            if open {
-                Label::new(name.widget_with_font(Some(
-                    TextStyle::Name("Heading2".into()).resolve(ui.style()),
-                )))
-                .ui(ui);
-                // ui.label(self.stats.widget());
-            } else {
-                ui.label(name.widget());
-            }
-        });
+        ui.vertical_centered(|ui| name.label(ui));
     }
 
     fn show_stats(stats: ColoredString, ui: &mut Ui) {
-        ui.vertical_centered(|ui| {
-            Label::new(
-                stats
-                    .widget_with_font(Some(TextStyle::Name("Heading2".into()).resolve(ui.style()))),
-            )
-            .ui(ui);
-        });
+        ui.vertical_centered(|ui| stats.label(ui));
     }
 
     fn show_extra_lines(lines: Vec<(ColoredString, ColoredString)>, ui: &mut Ui) {
@@ -171,7 +182,7 @@ impl VarState {
         ui: &mut Ui,
         world: &World,
     ) -> Result<()> {
-        let name = self.name()?;
+        let name = self.name(open)?;
 
         Self::show_name(name, open, ui);
         if !open {
@@ -185,7 +196,7 @@ impl VarState {
             Self::show_stats(stats, ui);
             if let Ok(description) = description {
                 ui.vertical(|ui| {
-                    ui.label(description.widget());
+                    description.label(ui);
                 });
             }
             if !expanded {
@@ -206,9 +217,9 @@ impl VarState {
         if let Ok(definitions) = definition {
             for (name, text) in &definitions {
                 frame(ui, |ui| {
-                    ui.label(name.rich_text().family(FontFamily::Name("bold".into())));
+                    name.label(ui);
                     ui.horizontal_wrapped(|ui| {
-                        ui.label(text.widget());
+                        text.label(ui);
                     });
                 });
             }
@@ -235,7 +246,7 @@ impl VarState {
     ) {
         window("UNIT")
             .id(id)
-            .set_width(if open { 200.0 } else { 120.0 })
+            .set_width(if open { 200.0 } else { 140.0 })
             .title_bar(false)
             .order(if open {
                 egui::Order::Foreground
@@ -257,7 +268,7 @@ impl VarState {
     ) {
         window("UNIT")
             .id(id)
-            .set_width(if open { 200.0 } else { 120.0 })
+            .set_width(if open { 200.0 } else { 140.0 })
             .title_bar(false)
             .order(if open {
                 egui::Order::Foreground
@@ -284,7 +295,7 @@ impl VarState {
         }
         window("UNIT")
             .id(entity)
-            .set_width(if open { 200.0 } else { 120.0 })
+            .set_width(if open { 200.0 } else { 140.0 })
             .title_bar(false)
             .order(if open {
                 egui::Order::Foreground

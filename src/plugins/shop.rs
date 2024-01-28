@@ -47,14 +47,18 @@ impl Plugin for ShopPlugin {
 impl ShopPlugin {
     fn win() {
         run_submit_result(true);
-        OperationsPlugin::add(|w| Self::on_enter(w));
+        OperationsPlugin::add(|w| {
+            Self::on_exit(w);
+            Self::on_enter(w);
+        });
     }
 
     fn on_enter(world: &mut World) {
         GameTimer::get().reset();
         PackedTeam::spawn(Faction::Shop, world);
         PackedTeam::spawn(Faction::Team, world);
-        let update_callback = ArenaRun::on_update(|_, new, _| {
+        let update_callback = ArenaRun::on_update(|_, new, event| {
+            debug!("ArenaRun callback: {event:?}");
             let new = new.clone();
             OperationsPlugin::add(move |world| {
                 Self::sync_units(&new.state.team, Faction::Team, world);
@@ -187,16 +191,12 @@ impl ShopPlugin {
         Area::new("reroll").fixed_pos(pos).show(ctx, |ui| {
             ui.set_width(120.0);
             frame(ui, |ui| {
-                ui.label("Reroll".add_color(white()).rich_text());
-                if ui
-                    .button(
-                        format!("-{}g", REROLL_PRICE)
-                            .add_color(yellow())
-                            .rich_text()
-                            .size(20.0),
-                    )
-                    .clicked()
-                {
+                "Reroll".add_color(white()).label(ui);
+                let text = format!("-{}g", REROLL_PRICE)
+                    .add_color(yellow())
+                    .rich_text(ui)
+                    .size(20.0);
+                if ui.button(text).clicked() {
                     Self::buy_reroll();
                 }
             });
@@ -269,7 +269,7 @@ impl ShopPlugin {
     }
 
     fn show_info_table(world: &mut World) {
-        let run = ArenaRun::current();
+        let run = ArenaRun::current().expect("Current run not found");
         window("INFO")
             .anchor(Align2::LEFT_TOP, [10.0, 10.0])
             .show(&egui_context(world), |ui| {
@@ -321,13 +321,15 @@ impl ShopPlugin {
                         .entity_anchor(entity, Align2::CENTER_BOTTOM, vec2(0.0, 2.2), world)
                         .show(ctx, |ui| {
                             if frame(ui, |ui| {
-                                ui.label("+STACK".add_color(color).rich_text().size(24.0));
-                                ui.label(format!("Level {level}").add_color(color).rich_text());
-                                ui.label(
-                                    format!("{stacks}/{}", level + 1)
-                                        .add_color(light_gray())
-                                        .rich_text(),
-                                );
+                                "+STACK"
+                                    .add_color(color)
+                                    .set_style(ColoredStringStyle::Heading)
+                                    .label(ui);
+                                format!("Level {level}").add_color(color).label(ui);
+
+                                format!("{stacks}/{}", level + 1)
+                                    .add_color(light_gray())
+                                    .label(ui);
                             })
                             .response
                             .hovered()
@@ -354,7 +356,10 @@ impl ShopPlugin {
                         .entity_anchor(entity, Align2::CENTER_BOTTOM, vec2(0.0, 2.2), world)
                         .show(ctx, |ui| {
                             if frame(ui, |ui| {
-                                ui.label("FUSE".add_color(color).rich_text().size(24.0));
+                                "FUSE"
+                                    .add_color(color)
+                                    .set_style(ColoredStringStyle::Heading)
+                                    .label(ui);
                             })
                             .response
                             .hovered()
@@ -387,10 +392,8 @@ impl ShopPlugin {
                             frame(ui, |ui| {
                                 ui.set_width(100.0);
                                 ui.label("sell");
-                                if ui
-                                    .button("+1 g".add_color(yellow()).rich_text().size(20.0))
-                                    .clicked()
-                                {
+                                let text = "+1 g".add_color(yellow()).rich_text(ui).size(20.0);
+                                if ui.button(text).clicked() {
                                     run_sell(
                                         VarState::get(entity, world).get_int(VarName::Id).unwrap()
                                             as u64,
@@ -438,15 +441,11 @@ impl ShopPlugin {
                         // );
                         frame(ui, |ui| {
                             ui.set_width(100.0);
-                            if ui
-                                .button(
-                                    format!("-{} g", offer.price)
-                                        .add_color(yellow())
-                                        .rich_text()
-                                        .size(20.0),
-                                )
-                                .clicked()
-                            {
+                            let text = format!("-{} g", offer.price)
+                                .add_color(yellow())
+                                .rich_text(ui)
+                                .size(20.0);
+                            if ui.button(text).clicked() {
                                 run_buy(id);
                             }
                         });
@@ -466,7 +465,7 @@ impl ShopPlugin {
 
 pub trait ArenaRunExt {
     fn get_case_units(self) -> Vec<TeamUnit>;
-    fn current() -> Self;
+    fn current() -> Option<ArenaRun>;
 }
 
 impl ArenaRunExt for ArenaRun {
@@ -477,7 +476,7 @@ impl ArenaRunExt for ArenaRun {
             .filter_map(|o| if o.available { Some(o.unit) } else { None })
             .collect_vec()
     }
-    fn current() -> Self {
-        ArenaRun::filter_by_active(true).next().unwrap()
+    fn current() -> Option<Self> {
+        ArenaRun::filter_by_active(true).next()
     }
 }

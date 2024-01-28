@@ -14,23 +14,27 @@ impl Plugin for BattlePlugin {
     }
 }
 
-#[derive(Resource, Clone)]
-pub struct BattleData {
-    pub left: Option<PackedTeam>,
-    pub right: Option<PackedTeam>,
-    pub result: BattleResult,
+#[derive(Resource, Clone, Default)]
+struct BattleData {
+    left: Option<PackedTeam>,
+    right: Option<PackedTeam>,
+    result: BattleResult,
+    run_id: Option<u64>,
 }
 
 impl BattlePlugin {
     pub fn on_enter(world: &mut World) {
         GameTimer::get().reset();
         let result = Self::run_battle(world).unwrap();
+        let mut bd = world.resource_mut::<BattleData>();
+        if let Some(run) = ArenaRun::current() {
+            bd.run_id = Some(run.id);
+        }
         if let Some(win) = result.is_win() {
             run_submit_result(win);
         } else {
             error!("Failed to get battle result");
         }
-        let mut bd = world.resource_mut::<BattleData>();
         bd.result = result;
     }
 
@@ -38,7 +42,7 @@ impl BattlePlugin {
         world.insert_resource(BattleData {
             left: Some(left),
             right: Some(right),
-            result: default(),
+            ..default()
         });
     }
 
@@ -173,18 +177,26 @@ impl BattlePlugin {
         if !GameTimer::get().ended() {
             return;
         }
-        if let Some(win) = world.resource::<BattleData>().result.is_win() {
-            let run = ArenaRun::current();
+        let bd = world.resource::<BattleData>();
+        if let Some(win) = bd.result.is_win() {
             let text = match win {
                 true => "Victory".to_owned(),
                 false => "Defeat".to_owned(),
             };
-            let subtext = "Wins: "
-                .to_colored()
-                .push(format!("{}/10", run.state.wins), white())
-                .push("\nLoses: ".to_owned(), light_gray())
-                .push(format!("{}/3", run.state.loses), white())
-                .take();
+            let mut subtext = "".to_colored();
+            let mut run_active = false;
+            if let Some(run) = bd.run_id.and_then(|id| ArenaRun::filter_by_id(id)) {
+                if !run.active {
+                    subtext.push("Run Over\n\n".to_owned(), yellow());
+                } else {
+                    run_active = true;
+                }
+                subtext
+                    .push("Wins: ".to_owned(), light_gray())
+                    .push(format!("{}/10", run.state.wins), white())
+                    .push("\nLoses: ".to_owned(), light_gray())
+                    .push(format!("{}/3", run.state.loses), red());
+            }
             let color = match win {
                 true => {
                     hex_color!("#80D8FF")
@@ -198,8 +210,10 @@ impl BattlePlugin {
                 .anchor(Align2::CENTER_CENTER, [0.0, -200.0])
                 .show(ctx, |ui| {
                     frame(ui, |ui| {
-                        ui.heading(text.add_color(color).rich_text());
-                        ui.label(subtext.widget());
+                        text.add_color(color)
+                            .set_style(ColoredStringStyle::Heading)
+                            .label(ui);
+                        subtext.label(ui);
                         ui.columns(2, |ui| {
                             ui[0].vertical_centered_justified(|ui| {
                                 if ui.button("REPLAY").clicked() {
@@ -209,7 +223,7 @@ impl BattlePlugin {
                             });
                             ui[1].vertical_centered_justified(|ui| {
                                 if ui.button_primary("OK").clicked() {
-                                    match win {
+                                    match run_active {
                                         true => {
                                             GameState::Shop.change(world);
                                         }

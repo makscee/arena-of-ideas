@@ -1,25 +1,70 @@
+use bevy_egui::egui::Style;
+
 use super::*;
 
 #[derive(Clone, Debug, Default)]
 pub struct ColoredString {
-    pub lines: Vec<(String, Option<Color32>)>,
+    pub lines: Vec<(String, Option<Color32>, ColoredStringStyle)>,
+}
+
+#[derive(Clone, Copy, Debug, Default)]
+pub enum ColoredStringStyle {
+    #[default]
+    Normal,
+    Small,
+    Bold,
+    Heading,
+    Heading2,
+}
+
+impl ColoredStringStyle {
+    fn get_font(&self, style: &Style) -> FontId {
+        match self {
+            ColoredStringStyle::Normal => TextStyle::Body,
+            ColoredStringStyle::Small => TextStyle::Small,
+            ColoredStringStyle::Bold => TextStyle::Name("Bold".into()),
+            ColoredStringStyle::Heading => TextStyle::Heading,
+            ColoredStringStyle::Heading2 => TextStyle::Name("Heading2".into()),
+        }
+        .resolve(style)
+    }
 }
 
 impl ColoredString {
     pub fn simple(text: String) -> Self {
         Self {
-            lines: [(text, None)].into(),
+            lines: [(text, None, default())].into(),
         }
     }
 
     pub fn new(text: String, color: Color32) -> Self {
         Self {
-            lines: vec![(text, Some(color))],
+            lines: vec![(text, Some(color), default())],
         }
     }
 
+    pub fn push_colored(&mut self, cstring: ColoredString) -> &mut Self {
+        self.lines.extend(cstring.lines.into_iter());
+        self
+    }
+
     pub fn push(&mut self, text: String, color: Color32) -> &mut Self {
-        self.lines.push((text, Some(color)));
+        self.lines.push((text, Some(color), default()));
+        self
+    }
+
+    pub fn push_styled(
+        &mut self,
+        text: String,
+        color: Color32,
+        style: ColoredStringStyle,
+    ) -> &mut Self {
+        self.lines.push((text, Some(color), style));
+        self
+    }
+
+    pub fn set_style(&mut self, style: ColoredStringStyle) -> &mut Self {
+        self.lines.iter_mut().for_each(|(_, _, s)| *s = style);
         self
     }
 
@@ -28,21 +73,20 @@ impl ColoredString {
         self
     }
 
-    pub fn widget(&self) -> WidgetText {
-        self.widget_with_font(None)
+    pub fn label(&self, ui: &mut Ui) -> Response {
+        Label::new(self.widget(ui)).ui(ui)
     }
 
-    pub fn widget_with_font(&self, font_id: Option<FontId>) -> WidgetText {
+    pub fn widget(&self, ui: &mut Ui) -> WidgetText {
         let mut job = LayoutJob::default();
-        let font_id = font_id.unwrap_or_default();
-        for (s, color) in self.lines.iter() {
+        for (s, color, style) in self.lines.iter() {
             let color = color.unwrap_or(light_gray());
             job.append(
                 s,
                 0.0,
                 TextFormat {
                     color,
-                    font_id: font_id.clone(),
+                    font_id: style.get_font(ui.style()),
                     ..default()
                 },
             );
@@ -50,20 +94,20 @@ impl ColoredString {
         WidgetText::LayoutJob(job)
     }
 
-    pub fn rich_text(&self) -> RichText {
-        let color = self
-            .lines
-            .get(0)
-            .and_then(|(_, c)| *c)
-            .unwrap_or(light_gray());
-        RichText::new(self.to_string()).color(color)
+    pub fn rich_text(&self, ui: &mut Ui) -> RichText {
+        let (color, font) = if let Some((_, c, f)) = self.lines.get(0) {
+            (c.unwrap_or(light_gray()), f.get_font(ui.style()))
+        } else {
+            (light_gray(), default())
+        };
+        RichText::new(self.to_string()).color(color).font(font)
     }
 
     pub fn inject_definitions(mut self, world: &World) -> Self {
-        let mut result: Vec<(String, Option<Color32>)> = default();
-        for (s, color) in self.lines.drain(..) {
+        let mut result: Vec<(String, Option<Color32>, ColoredStringStyle)> = default();
+        for (s, color, style) in self.lines.drain(..) {
             if color.is_some() {
-                result.push((s, color));
+                result.push((s, color, style));
                 continue;
             }
             for (s, bracketed) in s.split_by_brackets(("[", "]")) {
@@ -76,9 +120,9 @@ impl ColoredString {
                         error!("Failed to find house for ability {s}");
                         light_gray()
                     };
-                    result.push((s, Some(color)));
+                    result.push((s, Some(color), style));
                 } else {
-                    result.push((s, None));
+                    result.push((s, None, style));
                 }
             }
         }
@@ -91,27 +135,27 @@ impl ColoredString {
             self.lines = self
                 .lines
                 .drain(..)
-                .flat_map(|(line, color)| match line.find("%trigger") {
+                .flat_map(|(line, color, style)| match line.find("%trigger") {
                     Some(_) => line
                         .replace("%trigger", &format!("<{trigger}>"))
                         .split_by_brackets(("<", ">"))
                         .into_iter()
                         .map(|(line, t)| match t {
-                            true => (line, Some(white())),
-                            false => (line, color),
+                            true => (line, Some(white()), style),
+                            false => (line, color, style),
                         })
                         .collect_vec(),
-                    None => vec![(line, color)],
+                    None => vec![(line, color, style)],
                 })
                 .collect_vec();
         }
         if let Ok(effect) = state.get_string(VarName::EffectDescription) {
-            for (line, _) in self.lines.iter_mut() {
+            for (line, _, _) in self.lines.iter_mut() {
                 *line = line.replace("%effect", &effect);
             }
         }
         if let Ok(target) = state.get_string(VarName::TargetDescription) {
-            for (line, _) in self.lines.iter_mut() {
+            for (line, _, _) in self.lines.iter_mut() {
                 *line = line.replace("%target", &target);
             }
         }
@@ -119,10 +163,10 @@ impl ColoredString {
     }
 
     pub fn inject_vars(mut self, state: &VarState) -> Self {
-        let mut result: Vec<(String, Option<Color32>)> = default();
-        for (s, color) in self.lines.drain(..) {
+        let mut result: Vec<(String, Option<Color32>, ColoredStringStyle)> = default();
+        for (s, color, style) in self.lines.drain(..) {
             if color.is_some() {
-                result.push((s, color));
+                result.push((s, color, style));
                 continue;
             }
             for (mut s, bracketed) in s.split_by_brackets(("{", "}")) {
@@ -132,9 +176,9 @@ impl ColoredString {
                             s = value;
                         }
                     }
-                    result.push((s, Some(white())));
+                    result.push((s, Some(white()), style));
                 } else {
-                    result.push((s, None));
+                    result.push((s, None, style));
                 }
             }
         }
@@ -143,7 +187,7 @@ impl ColoredString {
     }
 
     pub fn is_empty(&self) -> bool {
-        self.lines.is_empty() || self.lines.iter().all(|(s, _)| s.is_empty())
+        self.lines.is_empty() || self.lines.iter().all(|(s, _, _)| s.is_empty())
     }
     pub fn take(&mut self) -> Self {
         mem::take(self)
@@ -153,14 +197,14 @@ impl ColoredString {
 impl From<&str> for ColoredString {
     fn from(value: &str) -> Self {
         Self {
-            lines: vec![(value.to_owned(), None)],
+            lines: vec![(value.to_owned(), None, default())],
         }
     }
 }
 
 impl ToString for ColoredString {
     fn to_string(&self) -> String {
-        self.lines.iter().map(|(s, _)| s).join(" ")
+        self.lines.iter().map(|(s, _, _)| s).join(" ")
     }
 }
 

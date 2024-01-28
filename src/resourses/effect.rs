@@ -117,7 +117,7 @@ impl Effect {
                     if context.get_var(VarName::Charges, world).is_none() {
                         context.set_var(
                             VarName::Charges,
-                            context.get_var(VarName::Stacks, world).unwrap(),
+                            context.get_var(VarName::Level, world).unwrap(),
                         );
                     }
                     ActionCluster::current(world).push_action_front(effect, context);
