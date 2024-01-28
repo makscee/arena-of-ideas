@@ -126,8 +126,7 @@ impl PackedUnit {
         self.trigger.inject_description(&mut state);
         let house_colors = self
             .houses
-            .split("+")
-            .into_iter()
+            .split('+')
             .map(|h| Pools::get_house_color(h, world).unwrap())
             .collect_vec();
         state
@@ -216,7 +215,7 @@ impl PackedUnit {
             rep.mapping.insert(
                 VarName::Color,
                 Expression::Value(VarValue::Color(
-                    Pools::get_house_color(&b.houses.split("+").next().unwrap(), world).unwrap(),
+                    Pools::get_house_color(b.houses.split('+').next().unwrap(), world).unwrap(),
                 )),
             );
             rep
@@ -249,7 +248,7 @@ impl PackedUnit {
                     effect: effect_b,
                 },
             ) => {
-                if !trigger_a.eq(&trigger_b) {
+                if !trigger_a.eq(trigger_b) {
                     let trigger = Trigger::Fire {
                         trigger: FireTrigger::List(
                             [Box::new(trigger_a.clone()), Box::new(trigger_b.clone())].into(),
@@ -346,24 +345,24 @@ impl PackedUnit {
     }
 }
 
-impl Into<TableUnit> for PackedUnit {
-    fn into(self) -> TableUnit {
+impl From<PackedUnit> for TableUnit {
+    fn from(val: PackedUnit) -> Self {
         TableUnit {
-            houses: self.houses,
-            name: self.name,
-            hp: self.hp,
-            atk: self.atk,
-            description: self.description,
-            stacks: self.stacks,
-            level: self.level,
-            statuses: self
+            houses: val.houses,
+            name: val.name,
+            hp: val.hp,
+            atk: val.atk,
+            description: val.description,
+            stacks: val.stacks,
+            level: val.level,
+            statuses: val
                 .statuses
                 .into_iter()
                 .map(|(name, charges)| StatusCharges { name, charges })
                 .collect_vec(),
-            trigger: ron::to_string(&self.trigger).unwrap(),
-            representation: ron::to_string(&self.representation).unwrap(),
-            state: ron::to_string(&self.state).unwrap(),
+            trigger: ron::to_string(&val.trigger).unwrap(),
+            representation: ron::to_string(&val.representation).unwrap(),
+            state: ron::to_string(&val.state).unwrap(),
         }
     }
 }

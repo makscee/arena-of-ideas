@@ -149,7 +149,7 @@ impl LoginPlugin {
             Status::Committed => {
                 let user = User::find(|u| u.identities.contains(identity)).unwrap();
                 Self::save_current_user(user.name, user.id, identity.clone());
-                OperationsPlugin::add(|w| PoolsPlugin::cache_server_pools(w));
+                OperationsPlugin::add(PoolsPlugin::cache_server_pools);
             }
             Status::Failed(e) => {
                 AlertPlugin::add_error(

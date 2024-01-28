@@ -197,7 +197,7 @@ impl Status {
         for (status, trigger) in Self::collect_triggers(statuses, world) {
             trigger.fire(
                 event,
-                &context
+                context
                     .clone()
                     .set_owner(get_parent(status, world), world)
                     .set_status(status, world),

@@ -212,8 +212,7 @@ impl Expression {
                                 faction,
                                 (own_slot + min_distance) as usize,
                                 world,
-                            )
-                            .into_iter(),
+                            ),
                         )
                         .collect_vec(),
                 ))

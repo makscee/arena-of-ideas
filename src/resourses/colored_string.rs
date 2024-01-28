@@ -44,7 +44,7 @@ impl ColoredString {
     }
 
     pub fn push_colored(&mut self, cstring: ColoredString) -> &mut Self {
-        self.lines.extend(cstring.lines.into_iter());
+        self.lines.extend(cstring.lines);
         self
     }
 
@@ -69,7 +69,7 @@ impl ColoredString {
     }
 
     pub fn join(&mut self, string: ColoredString) -> &mut Self {
-        self.lines.extend(string.lines.into_iter());
+        self.lines.extend(string.lines);
         self
     }
 

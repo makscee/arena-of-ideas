@@ -230,7 +230,7 @@ impl Display for VarValue {
             VarValue::EntityList(v) => write!(
                 f,
                 "[{}]",
-                v.into_iter().map(|v| format!("{v:?}")).join(", ")
+                v.iter().map(|v| format!("{v:?}")).join(", ")
             ),
             VarValue::Color(v) => write!(f, "{v:?}"),
             VarValue::None => write!(f, "none"),

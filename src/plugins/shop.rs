@@ -148,7 +148,7 @@ impl ShopPlugin {
         if world_units.len() > units.len() {
             for unit in world_units {
                 let id = VarState::get(unit, world).get_int(VarName::Id).unwrap() as u64;
-                if units.iter().find(|u| u.id.eq(&id)).is_none() {
+                if !units.iter().any(|u| u.id.eq(&id)) {
                     world.entity_mut(unit).despawn_recursive();
                 }
             }
@@ -262,7 +262,7 @@ impl ShopPlugin {
                         }
                     });
                 });
-            if candidates.len() == 0 {
+            if candidates.is_empty() {
                 data.fusion_candidates = None;
             }
         }
@@ -337,7 +337,7 @@ impl ShopPlugin {
                                 new_action = DragAction::Stack(entity);
                             };
                         });
-                } else if level >= houses.len() as i32 + 1
+                } else if level > houses.len() as i32
                     && houses.len() < 3
                     && dragged_level >= level
                     && dragged_houses.len() == 1
@@ -428,7 +428,7 @@ impl ShopPlugin {
 
             if let Some(entity) = units.get(&id) {
                 window("BUY")
-                    .id(&entity)
+                    .id(entity)
                     .set_width(120.0)
                     .title_bar(false)
                     .stroke(false)

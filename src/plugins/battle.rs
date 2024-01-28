@@ -185,7 +185,7 @@ impl BattlePlugin {
             };
             let mut subtext = "".to_colored();
             let mut run_active = false;
-            if let Some(run) = bd.run_id.and_then(|id| ArenaRun::filter_by_id(id)) {
+            if let Some(run) = bd.run_id.and_then(ArenaRun::filter_by_id) {
                 if !run.active {
                     subtext.push("Run Over\n\n".to_owned(), yellow());
                 } else {

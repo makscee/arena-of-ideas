@@ -52,7 +52,7 @@ pub enum FireTrigger {
 impl FireTrigger {
     fn catch(&self, event: &Event, context: &Context, world: &mut World) -> bool {
         match self {
-            FireTrigger::List(list) => list.into_iter().any(|t| t.catch(event, context, world)),
+            FireTrigger::List(list) => list.iter().any(|t| t.catch(event, context, world)),
             FireTrigger::AfterIncomingDamage => matches!(event, Event::IncomingDamage { .. }),
             FireTrigger::AfterDamageTaken => matches!(event, Event::DamageTaken { .. }),
             FireTrigger::AfterDamageDealt => matches!(event, Event::DamageDealt { .. }),
@@ -93,7 +93,7 @@ impl FireTrigger {
     fn get_description_string(&self) -> String {
         match self {
             FireTrigger::List(list) => list
-                .into_iter()
+                .iter()
                 .map(|t| t.get_description_string())
                 .join(" + "),
             _ => self.to_string(),
@@ -142,8 +142,8 @@ impl Trigger {
     pub fn fire(&self, event: &Event, context: &Context, world: &mut World) {
         match self {
             Trigger::List(list) => list
-                .into_iter()
-                .for_each(|t| t.fire(&event, context, world)),
+                .iter()
+                .for_each(|t| t.fire(event, context, world)),
             Trigger::Fire {
                 trigger,
                 target,
@@ -187,7 +187,7 @@ impl Trigger {
         world: &mut World,
     ) -> Result<()> {
         match self {
-            Trigger::List(list) => list.into_iter().for_each(|t| {
+            Trigger::List(list) => list.iter().for_each(|t| {
                 let _ = t.change(event, context, value, world);
             }),
             Trigger::Change { trigger, expr } => {
@@ -195,7 +195,7 @@ impl Trigger {
                     return Ok(());
                 }
                 let delta = expr.get_value(
-                    &context.clone().set_var(VarName::Value, value.clone()),
+                    context.clone().set_var(VarName::Value, value.clone()),
                     world,
                 )?;
                 *value = VarValue::sum(value, &delta)?;
@@ -212,7 +212,7 @@ impl Trigger {
     ) -> Vec<(VarName, VarValue)> {
         match self {
             Trigger::List(list) => list
-                .into_iter()
+                .iter()
                 .flat_map(|t| t.collect_mappings(context, world))
                 .collect_vec(),
             Trigger::Change { trigger, expr } => match trigger {
@@ -228,7 +228,7 @@ impl Trigger {
 
     pub fn has_stat_change(&self) -> bool {
         match self {
-            Trigger::List(list) => list.into_iter().any(|t| t.has_stat_change()),
+            Trigger::List(list) => list.iter().any(|t| t.has_stat_change()),
             Trigger::Change { .. } => true,
             Trigger::Fire { .. } => false,
         }
@@ -316,7 +316,7 @@ impl Trigger {
                     );
             }
             Trigger::Change { .. } => {}
-            Trigger::List(list) => list.into_iter().for_each(|t| t.inject_description(state)),
+            Trigger::List(list) => list.iter().for_each(|t| t.inject_description(state)),
         }
     }
 }

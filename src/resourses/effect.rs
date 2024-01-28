@@ -315,7 +315,7 @@ impl Effect {
             | Effect::WithOwner(_, e)
             | Effect::WithVar(_, _, e) => vec![e],
             Effect::List(list) | Effect::ListSpread(list) => {
-                list.into_iter().map(|e| e.as_mut()).collect_vec()
+                list.iter_mut().map(|e| e.as_mut()).collect_vec()
             }
         }
     }
@@ -337,7 +337,7 @@ impl Effect {
             | Effect::WithOwner(_, e)
             | Effect::WithVar(_, _, e) => vec![e],
             Effect::List(list) | Effect::ListSpread(list) => {
-                list.into_iter().map(|e| e.as_ref()).collect_vec()
+                list.iter().map(|e| e.as_ref()).collect_vec()
             }
         }
     }

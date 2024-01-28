@@ -9,7 +9,7 @@ impl VarState {
         let t = get_play_head();
         let level = self.get_int_at(VarName::Level, t)?;
         let mut result = ColoredString::default();
-        for (i, name) in self.get_string_at(VarName::Name, t)?.split("+").enumerate() {
+        for (i, name) in self.get_string_at(VarName::Name, t)?.split('+').enumerate() {
             let var = match i {
                 0 => VarName::HouseColor1,
                 1 => VarName::HouseColor2,
