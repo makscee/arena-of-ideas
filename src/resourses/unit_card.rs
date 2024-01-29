@@ -90,21 +90,22 @@ impl VarState {
     ) -> Result<Vec<(ColoredString, i32, ColoredString)>> {
         let lines = statuses
             .into_iter()
-            .map(|(name, charges)| {
-                let color: Color32 = Pools::get_status_house(&name, world)
-                    .unwrap()
-                    .color
-                    .clone()
-                    .into();
-                let state = VarState::new_with(VarName::Charges, VarValue::Int(charges));
-                let description = if let Some(status) = Pools::get_status(&name.to_string(), world)
-                {
-                    status.description.clone().to_colored().inject_vars(&state)
-                } else {
-                    ColoredString::default()
-                };
-                (name.add_color(color), charges, description)
-            })
+            .filter_map(
+                |(name, charges)| match Pools::get_status_house(&name, world) {
+                    Some(h) => {
+                        let color = h.color.clone().into();
+                        let state = VarState::new_with(VarName::Charges, VarValue::Int(charges));
+                        let description =
+                            if let Some(status) = Pools::get_status(&name.to_string(), world) {
+                                status.description.clone().to_colored().inject_vars(&state)
+                            } else {
+                                ColoredString::default()
+                            };
+                        Some((name.add_color(color), charges, description))
+                    }
+                    None => None,
+                },
+            )
             .collect_vec();
         if lines.is_empty() {
             return Err(anyhow!("No statuses"));

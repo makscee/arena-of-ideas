@@ -127,9 +127,8 @@ impl ChangeType {
                     state.push_back(var, change);
                 }
                 ChangeType::Birth => {
-                    let ts = get_insert_head();
                     if let Ok(mut s) = VarState::try_get_mut(entity, world) {
-                        s.birth = ts;
+                        s.birth = get_insert_head();
                     }
                 }
             }

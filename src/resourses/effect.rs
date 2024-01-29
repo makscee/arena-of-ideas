@@ -295,7 +295,7 @@ impl Effect {
                 }
             }
             Effect::SendEvent(event) => {
-                event.clone().process(&context, world);
+                event.clone().send(world);
             }
             Effect::RemoveLocalTrigger => {
                 let target = context.target();
