@@ -87,7 +87,11 @@ impl PackedUnit {
             trigger: self.trigger.clone(),
         }
         .spawn(world)
-        .insert(VarState::default())
+        .insert(
+            VarState::new_with(VarName::Charges, VarValue::Int(1))
+                .init(VarName::Name, VarValue::String("_local".to_owned()))
+                .take(),
+        )
         .set_parent(entity);
         for (status, charges) in self.statuses.iter() {
             let _ = Status::change_charges(status, entity, *charges, world);

@@ -113,7 +113,7 @@ impl ShopPlugin {
         } else {
             default()
         };
-        BattlePlugin::load_teams(left, right, world);
+        BattlePlugin::load_teams(left, right, Some(run.id), world);
     }
 
     fn input(world: &mut World) {

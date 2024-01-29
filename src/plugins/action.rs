@@ -256,7 +256,7 @@ impl Action {
             mut context,
         } = self;
         if let Some(owner) = context.get_owner() {
-            if !context.dead_owner_allowed() && world.get::<Unit>(owner).is_none() {
+            if world.get::<Unit>(owner).is_none() {
                 return;
             }
         }

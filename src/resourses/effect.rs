@@ -21,6 +21,7 @@ pub enum Effect {
     AddStatus(String),
     Vfx(String),
     SendEvent(Event),
+    RemoveLocalTrigger,
 }
 
 impl Effect {
@@ -113,13 +114,15 @@ impl Effect {
                     .effect
                     .clone();
                 {
-                    let mut context = context.clone();
-                    if context.get_var(VarName::Charges, world).is_none() {
-                        context.set_var(
+                    let context = context
+                        .clone()
+                        .set_var(
                             VarName::Charges,
-                            context.get_var(VarName::Level, world).unwrap(),
-                        );
-                    }
+                            context
+                                .get_var(VarName::Level, world)
+                                .unwrap_or(VarValue::Int(1)),
+                        )
+                        .take();
                     ActionCluster::current(world).push_action_front(effect, context);
                 }
                 Pools::get_vfx("text", world)
@@ -169,7 +172,7 @@ impl Effect {
                     .unpack(world)?;
             }
             Effect::List(list) => {
-                for effect in list {
+                for effect in list.into_iter().rev() {
                     ActionCluster::current(world)
                         .push_action_front(effect.deref().clone(), context.clone());
                 }
@@ -292,7 +295,22 @@ impl Effect {
                 }
             }
             Effect::SendEvent(event) => {
-                event.clone().send(world);
+                event.clone().process(&context, world);
+            }
+            Effect::RemoveLocalTrigger => {
+                let target = context.target();
+                let local_trigger = Status::collect_entity_statuses(target, world)
+                    .into_iter()
+                    .find(|e| {
+                        world
+                            .get::<Status>(*e)
+                            .is_some_and(|s| s.name.eq(LOCAL_TRIGGER))
+                    });
+                if let Some(entity) = local_trigger {
+                    VarState::get_mut(entity, world).set_int(VarName::Charges, 0);
+                }
+                VarState::get_mut(target, world)
+                    .set_string(VarName::Description, "--removed--".into());
             }
         }
         Ok(())
@@ -303,6 +321,7 @@ impl Effect {
             Effect::Noop
             | Effect::Kill
             | Effect::FullCopy
+            | Effect::RemoveLocalTrigger
             | Effect::Debug(..)
             | Effect::Text(..)
             | Effect::Damage(..)
@@ -325,6 +344,7 @@ impl Effect {
             Effect::Noop
             | Effect::Kill
             | Effect::FullCopy
+            | Effect::RemoveLocalTrigger
             | Effect::Debug(..)
             | Effect::Text(..)
             | Effect::Damage(..)
@@ -421,7 +441,7 @@ impl Effect {
             });
 
             match self {
-                Effect::Noop | Effect::Kill | Effect::FullCopy => {}
+                Effect::Noop | Effect::Kill | Effect::FullCopy | Effect::RemoveLocalTrigger => {}
                 Effect::Debug(e) | Effect::Text(e) => {
                     e.show_editor(editing_data, format!("{path}/e"), ui);
                 }

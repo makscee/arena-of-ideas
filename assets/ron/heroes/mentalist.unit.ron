@@ -4,7 +4,7 @@
     hp: 1,
     atk: 2,
     houses: "Meta",
-    trigger: Fire(trigger: BeforeDeath, effect: UseAbility("Amnesia")),
+    trigger: Fire(trigger: BattleStart, target: AllUnits, effect: UseAbility("Amnesia")),
     representation: (
         material: Shape(
             shape: Circle,

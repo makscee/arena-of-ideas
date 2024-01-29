@@ -29,9 +29,7 @@ impl PackedTeam {
             .collect_vec();
         PackedTeam { units, state }
     }
-    pub fn unpack(mut self, faction: Faction, world: &mut World) {
-        self.state
-            .init(VarName::Faction, VarValue::Faction(faction));
+    pub fn unpack(self, faction: Faction, world: &mut World) {
         let team = Self::spawn(faction, world);
         self.state.attach(team, world);
         for (i, unit) in self.units.into_iter().enumerate() {
@@ -42,7 +40,9 @@ impl PackedTeam {
         Self::despawn(faction, world);
         let team = world
             .spawn((
-                VarState::new_with(VarName::Faction, VarValue::Faction(faction)),
+                VarState::new_with(VarName::Faction, VarValue::Faction(faction))
+                    .init(VarName::Name, VarValue::String(format!("Team {faction}")))
+                    .take(),
                 Team,
                 Transform::default(),
                 GlobalTransform::default(),

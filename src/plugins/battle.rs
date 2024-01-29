@@ -27,21 +27,21 @@ impl BattlePlugin {
         GameTimer::get().reset();
         let result = Self::run_battle(world).unwrap();
         let mut bd = world.resource_mut::<BattleData>();
-        if let Some(run) = ArenaRun::current() {
-            bd.run_id = Some(run.id);
-        }
-        if let Some(win) = result.is_win() {
-            run_submit_result(win);
-        } else {
-            error!("Failed to get battle result");
-        }
         bd.result = result;
+        if bd.run_id.is_some() {
+            if let Some(win) = result.is_win() {
+                run_submit_result(win);
+            } else {
+                error!("Failed to get battle result");
+            }
+        }
     }
 
-    pub fn load_teams(left: PackedTeam, right: PackedTeam, world: &mut World) {
+    pub fn load_teams(left: PackedTeam, right: PackedTeam, run_id: Option<u64>, world: &mut World) {
         world.insert_resource(BattleData {
             left: Some(left),
             right: Some(right),
+            run_id,
             ..default()
         });
     }

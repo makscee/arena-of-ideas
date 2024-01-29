@@ -157,7 +157,6 @@ impl Status {
             .filter(|entity| {
                 VarState::find_value(*entity, VarName::Charges, t, world)
                     .is_ok_and(|x| x.get_int().unwrap() > 0)
-                    || world.get::<Status>(*entity).unwrap().name.eq(LOCAL_TRIGGER)
             })
             .collect_vec()
     }

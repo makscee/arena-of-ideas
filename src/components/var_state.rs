@@ -44,7 +44,11 @@ impl VarState {
 
     pub fn attach(mut self, entity: Entity, world: &mut World) {
         self.birth = get_insert_head();
-        world.entity_mut(entity).insert(self);
+        if let Ok(mut state) = Self::try_get_mut(entity, world) {
+            state.history.extend(self.history.drain());
+        } else {
+            world.entity_mut(entity).insert(self);
+        }
         ActionCluster::current(world).push_state_birth(entity);
     }
 
@@ -95,11 +99,13 @@ impl VarState {
         self.push_back(var, VarChange::new(VarValue::Int(value)));
         value
     }
-    pub fn set_int(&mut self, var: VarName, value: i32) {
+    pub fn set_int(&mut self, var: VarName, value: i32) -> &mut Self {
         self.push_back(var, VarChange::new(VarValue::Int(value)));
+        self
     }
-    pub fn set_string(&mut self, var: VarName, value: String) {
+    pub fn set_string(&mut self, var: VarName, value: String) -> &mut Self {
         self.push_back(var, VarChange::new(VarValue::String(value)));
+        self
     }
 
     pub fn push_back(&mut self, var: VarName, mut change: VarChange) -> &mut Self {
@@ -214,6 +220,9 @@ impl VarState {
             history.simplify()
         }
         self
+    }
+    pub fn take(&mut self) -> Self {
+        mem::take(self)
     }
 }
 

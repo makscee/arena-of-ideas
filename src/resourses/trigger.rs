@@ -92,10 +92,7 @@ impl FireTrigger {
 
     fn get_description_string(&self) -> String {
         match self {
-            FireTrigger::List(list) => list
-                .iter()
-                .map(|t| t.get_description_string())
-                .join(" + "),
+            FireTrigger::List(list) => list.iter().map(|t| t.get_description_string()).join(" + "),
             _ => self.to_string(),
         }
     }
@@ -141,9 +138,7 @@ impl Default for Trigger {
 impl Trigger {
     pub fn fire(&self, event: &Event, context: &Context, world: &mut World) {
         match self {
-            Trigger::List(list) => list
-                .iter()
-                .for_each(|t| t.fire(event, context, world)),
+            Trigger::List(list) => list.iter().for_each(|t| t.fire(event, context, world)),
             Trigger::Fire {
                 trigger,
                 target,
@@ -163,10 +158,8 @@ impl Trigger {
                     | FireTrigger::AllyDeath
                     | FireTrigger::AnyDeath
                     | FireTrigger::BeforeDeath
-                    | FireTrigger::AfterKill => {
-                        ActionPlugin::new_cluster(effect, context.clone(), world)
-                    }
-                    FireTrigger::AfterIncomingDamage
+                    | FireTrigger::AfterKill
+                    | FireTrigger::AfterIncomingDamage
                     | FireTrigger::TurnStart
                     | FireTrigger::TurnEnd => {
                         ActionCluster::current(world).push_action_back(effect, context.clone());

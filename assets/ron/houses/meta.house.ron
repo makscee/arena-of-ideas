@@ -6,17 +6,11 @@
     abilities: [
         (
             name: "Amnesia",
-            description: "Send Battle Start event",
+            description: "Remove ability of a unit",
             effect: List(
                 [
-                    SendEvent(
-                        BattleStart,
-                    ),
-                    Text(
-                        String(
-                            "Send Battle Start",
-                        ),
-                    ),
+                    RemoveLocalTrigger,
+                    Vfx("apply_status"),
                 ],
             ),
         ),
