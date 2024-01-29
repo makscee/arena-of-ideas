@@ -6,12 +6,10 @@
                 hp: 1,
                 atk: 0,
                 name: "left",
-                trigger: BattleStart(
-                    WithTarget(
-                        Owner,
-                        UseAbility(
-                            "Strength",
-                        ),
+                trigger: Fire(
+                    trigger: BattleStart,
+                    effect: UseAbility(
+                        "Strength",
                     ),
                 ),
             ),

@@ -81,6 +81,8 @@ pub enum Expression {
     Or(Box<Expression>, Box<Expression>),
 
     If(Box<Expression>, Box<Expression>, Box<Expression>),
+
+    WithVar(VarName, Box<Expression>, Box<Expression>),
 }
 impl Expression {
     pub fn get_value(&self, context: &Context, world: &mut World) -> Result<VarValue> {
@@ -207,13 +209,11 @@ impl Expression {
                 Ok(VarValue::EntityList(
                     UnitPlugin::find_unit(faction, (own_slot - min_distance) as usize, world)
                         .into_iter()
-                        .chain(
-                            UnitPlugin::find_unit(
-                                faction,
-                                (own_slot + min_distance) as usize,
-                                world,
-                            ),
-                        )
+                        .chain(UnitPlugin::find_unit(
+                            faction,
+                            (own_slot + min_distance) as usize,
+                            world,
+                        ))
                         .collect_vec(),
                 ))
             }
@@ -343,6 +343,12 @@ impl Expression {
             )?),
             Expression::Abs(x) => x.get_value(context, world)?.abs(),
             Expression::Value(v) => Ok(v.clone()),
+            Expression::WithVar(var, value, e) => e.get_value(
+                context
+                    .clone()
+                    .set_var(*var, value.get_value(context, world)?),
+                world,
+            ),
         }
     }
 
@@ -408,7 +414,8 @@ impl Expression {
             | Self::Equals(a, b)
             | Self::And(a, b)
             | Self::Or(a, b)
-            | Self::Max(a, b) => vec![a, b],
+            | Self::Max(a, b)
+            | Self::WithVar(_, a, b) => vec![a, b],
             Self::If(a, b, c) => vec![a, b, c],
         }
     }
@@ -639,7 +646,8 @@ impl Expression {
                 | Expression::Max(a, b)
                 | Expression::Equals(a, b)
                 | Expression::And(a, b)
-                | Expression::Or(a, b) => {
+                | Expression::Or(a, b)
+                | Expression::WithVar(_, a, b) => {
                     ui.vertical(|ui| {
                         ui.horizontal(|ui| {
                             a.show_editor(editing_data, format!("{name}/a"), ui);
@@ -731,7 +739,8 @@ impl Expression {
             | Expression::Max(_, _)
             | Expression::Equals(_, _)
             | Expression::And(_, _)
-            | Expression::Or(_, _) => hex_color!("#FFEB3B"),
+            | Expression::Or(_, _)
+            | Expression::WithVar(_, _, _) => hex_color!("#FFEB3B"),
             Expression::If(_, _, _) => hex_color!("#BA68C8"),
         }
     }
@@ -811,6 +820,12 @@ impl Expression {
                 x.get_description_string().to_case(Case::Title),
                 y.get_description_string().to_case(Case::Title),
                 z.get_description_string().to_case(Case::Title),
+            ),
+            Expression::WithVar(var, val, e) => format!(
+                "{self}({}, {}, {})",
+                var.to_string().to_case(Case::Title),
+                val.get_description_string().to_case(Case::Title),
+                e.get_description_string().to_case(Case::Title),
             ),
         }
     }

@@ -16,7 +16,7 @@
                         trigger: Var(Atk),
                         expr: Context(Charges),
                     ),
-                ]
+                ],
             ),
         ),
     ],
@@ -26,9 +26,7 @@
             description: "Give +1/+1",
             effect: List(
                 [
-                    AddStatus(
-                        "Growth",
-                    ),
+                    AddStatus("Growth"),
                     Vfx("apply_status"),
                 ],
             ),

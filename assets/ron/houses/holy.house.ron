@@ -16,7 +16,7 @@
                         trigger: Var(Atk),
                         expr: Context(Charges),
                     ),
-                ]
+                ],
             ),
         ),
     ],

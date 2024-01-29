@@ -6,12 +6,10 @@
         (
             name: "Strength",
             description: "+{Charges} ATK",
-            trigger: 
-                    Change(
-                        trigger: Var(Atk),
-                        expr: Context(Charges),
-                    ),
-
+            trigger: Change(
+                trigger: Var(Atk),
+                expr: Context(Charges),
+            ),
             shop_charges: 1,
         ),
     ],

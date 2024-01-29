@@ -3,108 +3,145 @@
     left: (
         units: [
             (
-    name: "Mentalist",
-    hp: 1,
-    atk: 2,
-    houses: "Meta",
-    trigger: Fire(trigger: BattleStart, target: AllyUnits, effect: UseAbility("Amnesia")),
-    representation: (
-        material: Shape(
-            shape: Circle,
-            fill: Opaque,
-            size: Vec2E(Float(0.25)),
-            thickness: Float(1.3),
-            alpha: If(
-                Equals(
-                    State(Index),
-                    Zero,
+                name: "Mentalist",
+                hp: 1,
+                atk: 2,
+                houses: "Meta",
+                trigger: Fire(
+                    trigger: BattleStart,
+                    target: AllyUnits,
+                    effect: UseAbility(
+                        "Amnesia",
+                    ),
                 ),
-                Float(0.6),
-                Float(0.1),
-            ),
-            color: State(Color),
-        ),
-        children: [],
-        mapping: {
-            Position: Mul(
-                Vec2EE(
-                    Cos(State(T)),
-                    Sin(State(T)),
-                ),
-                Float(0.5),
-            ),
-            T: Sum(
-                Sin(
-                    Sum(
-                        GameTime,
-                        Mul(
-                            IntFloat(
+                representation: (
+                    material: Shape(
+                        shape: Circle,
+                        fill: Opaque,
+                        size: Vec2E(
+                            Float(0.25),
+                        ),
+                        thickness: Float(1.3),
+                        alpha: If(
+                            Equals(
                                 State(
                                     Index,
                                 ),
+                                Zero,
                             ),
-                            Float(-0.15),
+                            Float(0.6),
+                            Float(0.1),
                         ),
+                        color: State(Color),
                     ),
-                ),
-                Mul(PI, Float(1.5)),
-            ),
-        },
-        count: 8,
-    ),
-    state: (history: {}, birth: 0.0),
-    statuses: [],
-),(
-    name: "Protector",
-    hp: 2,
-    atk: 2,
-    houses: "Paladins",
-    trigger: Fire(trigger: BattleStart, target: SlotUnit(Int(1)), effect: UseAbility("Shield")),
-    description: "%trigger → use %effect on front ally",
-    representation: (
-        material: Shape(
-            shape: Circle,
-            fill: Line,
-            size: Vec2E(Float(0.67)),
-            thickness: Float(0.37),
-            alpha: Float(0.36),
-            color: State(Color),
-        ),
-        children: [],
-        mapping: {
-            Position: Mul(
-                UnitVec(
-                    Sum(
-                        IntFloat(
-                            State(Index),
+                    children: [],
+                    mapping: {
+                        Position: Mul(
+                            Vec2EE(
+                                Cos(
+                                    State(
+                                        T,
+                                    ),
+                                ),
+                                Sin(
+                                    State(
+                                        T,
+                                    ),
+                                ),
+                            ),
+                            Float(0.5),
                         ),
-                        Sum(
-                            GameTime,
+                        T: Sum(
                             Sin(
-                                Mul(
-                                    RandomFloat,
+                                Sum(
                                     GameTime,
+                                    Mul(
+                                        IntFloat(
+                                            State(
+                                                Index,
+                                            ),
+                                        ),
+                                        Float(
+                                            -0.15,
+                                        ),
+                                    ),
+                                ),
+                            ),
+                            Mul(
+                                PI,
+                                Float(
+                                    1.5,
                                 ),
                             ),
                         ),
-                    ),
+                    },
+                    count: 8,
                 ),
-                Mul(
-                    Sin(
-                        Mul(
-                            GameTime,
-                            Float(0.3),
+                state: (history: {}, birth: 0.0),
+                statuses: [],
+            ),
+            (
+                name: "Protector",
+                hp: 2,
+                atk: 2,
+                houses: "Paladins",
+                trigger: Fire(
+                    trigger: BattleStart,
+                    target: SlotUnit(Int(1)),
+                    effect: UseAbility("Shield"),
+                ),
+                description: "%trigger → use %effect on front ally",
+                representation: (
+                    material: Shape(
+                        shape: Circle,
+                        fill: Line,
+                        size: Vec2E(
+                            Float(0.67),
                         ),
+                        thickness: Float(0.37),
+                        alpha: Float(0.36),
+                        color: State(Color),
                     ),
-                    Float(0.19),
+                    children: [],
+                    mapping: {
+                        Position: Mul(
+                            UnitVec(
+                                Sum(
+                                    IntFloat(
+                                        State(
+                                            Index,
+                                        ),
+                                    ),
+                                    Sum(
+                                        GameTime,
+                                        Sin(
+                                            Mul(
+                                                RandomFloat,
+                                                GameTime,
+                                            ),
+                                        ),
+                                    ),
+                                ),
+                            ),
+                            Mul(
+                                Sin(
+                                    Mul(
+                                        GameTime,
+                                        Float(
+                                            0.3,
+                                        ),
+                                    ),
+                                ),
+                                Float(
+                                    0.19,
+                                ),
+                            ),
+                        ),
+                    },
+                    count: 16,
                 ),
             ),
-        },
-        count: 16,
+        ],
     ),
-)],
-    ),
-    right: (
-        units: [],
-    ),
+    right: (units: []),
 )

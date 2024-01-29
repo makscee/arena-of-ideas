@@ -10,13 +10,24 @@
                 [
                     Change(
                         trigger: IncomingDamage,
-                        expr: Mul(Context(Value), Int(-1)),
+                        expr: Mul(
+                            Context(
+                                Value,
+                            ),
+                            Int(-1),
+                        ),
                     ),
                     Fire(
                         trigger: AfterIncomingDamage,
-                        effect: WithVar(Charges, Int(-1), AddStatus("Shield")),
+                        effect: WithVar(
+                            Charges,
+                            Int(-1),
+                            AddStatus(
+                                "Shield",
+                            ),
+                        ),
                     ),
-                ]
+                ],
             ),
         ),
     ],

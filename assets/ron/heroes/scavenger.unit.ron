@@ -4,7 +4,10 @@
     hp: 1,
     atk: 1,
     houses: "Dragons",
-    trigger: Fire(trigger: AnyDeath, effect: UseAbility("Grow")),
+    trigger: Fire(
+        trigger: AnyDeath,
+        effect: UseAbility("Grow"),
+    ),
     representation: (
         material: Shape(
             shape: Rectangle,

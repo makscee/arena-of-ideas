@@ -8,7 +8,10 @@
                 atk: 3,
                 name: "left",
                 description: "Kill after dealing any damage",
-                trigger: AfterDamageDealt(Kill),
+                trigger: Fire(
+                    trigger: AfterDamageDealt,
+                    effect: Kill,
+                ),
             ),
         ],
     ),
