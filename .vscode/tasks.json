@@ -111,6 +111,27 @@
 			"problemMatcher": [
 				"$rustc"
 			],
+			"label": "Single Test Scenario",
+			"args": [
+				"--",
+				"--mode",
+				"test",
+				"--path",
+				"ron/scenarios/kill_after_death.scenario.ron"
+			],
+			"group": {
+				"kind": "build"
+			},
+			"env": {
+				"RUST_BACKTRACE": "1"
+			}
+		},
+		{
+			"type": "cargo",
+			"command": "run",
+			"problemMatcher": [
+				"$rustc"
+			],
 			"label": "Sync Assets",
 			"args": [
 				"--",

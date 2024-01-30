@@ -28,12 +28,13 @@ impl Anim {
             Anim::Sequence(list) => {
                 for anim in list {
                     anim.apply(context.clone(), world)?;
-                    ActionCluster::current(world).order += 1;
                 }
             }
             Anim::Run(list) => {
                 for anim in list {
+                    GameTimer::get().start_batch();
                     anim.apply(context.clone(), world)?;
+                    GameTimer::get().to_batch_start().end_batch();
                 }
             }
             Anim::Change {
@@ -54,7 +55,8 @@ impl Anim {
                     tween,
                     value,
                 };
-                ActionCluster::current(world).push_var_change(var, change, context);
+                VarState::get_mut(context.owner(), world).push_back(var, change);
+                GameTimer::get().advance_insert(timeframe);
             }
         }
         Ok(())

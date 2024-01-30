@@ -1,15 +1,16 @@
 #![enable(implicit_some)]
 (
-    left: (units: [(hp: 15, atk: 3)]),
+    left: (units: [(name: "left", hp: 15, atk: 3)]),
     right: (
         units: [
             (
                 hp: 3,
                 atk: 3,
-                name: "left",
+                name: "right",
                 description: "Kill after dealing any damage",
                 trigger: Fire(
                     trigger: AfterDamageDealt,
+                    target: Target,
                     effect: Kill,
                 ),
             ),

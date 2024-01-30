@@ -52,18 +52,12 @@ impl BattlePlugin {
     }
 
     pub fn run_battle(world: &mut World) -> Result<BattleResult> {
-        let timeframe = AudioPlugin::beat_timeframe();
-        ActionPlugin::set_timeframe(timeframe, world);
-        let shift_left = -AudioPlugin::to_next_beat(world);
-        GameTimer::get()
-            .advance_insert(shift_left)
-            .advance_play(shift_left);
         let data = world.resource::<BattleData>().clone();
         data.left.unwrap().unpack(Faction::Left, world);
         data.right.unwrap().unpack(Faction::Right, world);
         UnitPlugin::translate_to_slots(world);
+        GameTimer::get().insert_to_end();
         ActionPlugin::spin(world);
-        GameTimer::get().insert_head_to(0.0);
         Event::BattleStart.send(world).spin(world);
         while let Some((left, right)) = Self::get_strikers(world) {
             Self::run_strike(left, right, world);
@@ -128,6 +122,7 @@ impl BattlePlugin {
             return;
         }
         let units = vec![(left, -1.0), (right, 1.0)];
+        GameTimer::get().start_batch();
         for (caster, dir) in units {
             Options::get_animations(world)
                 .get(AnimationType::BeforeStrike)
@@ -139,35 +134,40 @@ impl BattlePlugin {
                     world,
                 )
                 .unwrap();
+            GameTimer::get().to_batch_start();
         }
+        GameTimer::get().insert_to_end().end_batch();
         ActionPlugin::spin(world);
     }
 
     fn strike(left: Entity, right: Entity, world: &mut World) {
         debug!("Strike {left:?} {right:?}");
         let units = vec![(left, right), (right, left)];
-        let mut actions: Vec<Action> = default();
         for (caster, target) in units {
             let context = Context::from_caster(caster, world)
                 .set_target(target, world)
                 .set_owner(caster, world)
                 .take();
             let effect = Effect::Damage(None);
-            actions.push(Action { effect, context });
+            ActionPlugin::action_push_back(effect, context, world);
         }
-        ActionPlugin::new_cluster_many(actions, world);
+        GameTimer::get().advance_insert(0.3);
+        ActionPlugin::spin(world);
     }
 
     fn after_strike(left: Entity, right: Entity, world: &mut World) {
         debug!("After strike {left:?} {right:?}");
         let units = vec![left, right];
+        GameTimer::get().start_batch();
         for caster in units {
             Options::get_animations(world)
                 .get(AnimationType::AfterStrike)
                 .clone()
                 .apply(Context::from_owner(caster, world), world)
                 .unwrap();
+            GameTimer::get().to_batch_start();
         }
+        GameTimer::get().insert_to_end().end_batch();
         Event::AfterStrike(left).send(world).spin(world);
         Event::AfterStrike(right).send(world).spin(world);
     }

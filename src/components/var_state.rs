@@ -43,13 +43,12 @@ impl VarState {
     }
 
     pub fn attach(mut self, entity: Entity, world: &mut World) {
-        self.birth = get_insert_head();
+        self.birth = GameTimer::get().insert_head();
         if let Ok(mut state) = Self::try_get_mut(entity, world) {
             state.history.extend(self.history.drain());
         } else {
             world.entity_mut(entity).insert(self);
         }
-        ActionCluster::current(world).push_state_birth(entity);
     }
 
     pub fn get(entity: Entity, world: &World) -> &Self {
@@ -109,7 +108,7 @@ impl VarState {
     }
 
     pub fn push_back(&mut self, var: VarName, mut change: VarChange) -> &mut Self {
-        let head = get_insert_head();
+        let head = GameTimer::get().insert_head();
         let birth = self.birth;
         change.t += head - birth;
         GameTimer::get().advance_insert(change.duration);

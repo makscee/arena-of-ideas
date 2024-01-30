@@ -1,3 +1,5 @@
+use std::ops::Range;
+
 use itertools::Itertools;
 use rand::seq::IteratorRandom;
 use rand::thread_rng;
@@ -37,7 +39,7 @@ pub struct ShopOffer {
     unit: TeamUnit,
 }
 
-const G_PER_ROUND: i64 = 4;
+const G_PER_ROUND: Range<i64> = 4..10;
 const PRICE_REROLL: i64 = 1;
 const PRICE_UNIT: i64 = 3;
 const PRICE_SELL: i64 = 1;
@@ -82,7 +84,7 @@ fn run_submit_result(ctx: ReducerContext, win: bool) -> Result<(), String> {
     if run.state.loses > 2 || run.state.wins > 9 {
         run.active = false;
     } else {
-        let round = run.state.wins + run.state.loses;
+        let round = run.round();
         if let Some(enemy) = ArenaPool::filter_by_round(&round)
             // .filter(|e| e.owner != user_id)
             .choose(&mut thread_rng())
@@ -90,7 +92,7 @@ fn run_submit_result(ctx: ReducerContext, win: bool) -> Result<(), String> {
             run.enemies.push(enemy.id);
         }
     }
-    run.change_g(G_PER_ROUND);
+    run.change_g((G_PER_ROUND.start + run.round() as i64).min(G_PER_ROUND.end));
     run.state.case.clear();
     run.fill_case();
     run.save();
@@ -221,7 +223,7 @@ impl ArenaRun {
             state: GameState {
                 wins: 0,
                 loses: 0,
-                g: G_PER_ROUND,
+                g: G_PER_ROUND.start,
                 team: Vec::default(),
                 case: Vec::default(),
                 next_id: 0,

@@ -23,7 +23,7 @@ impl RepresentationPlugin {
             .iter(world)
             .map(|(e, r)| (e, r.clone()))
             .collect_vec();
-        let t = get_play_head();
+        let t = GameTimer::get().play_head();
         let dragged = world
             .get_resource::<DraggedUnit>()
             .unwrap()

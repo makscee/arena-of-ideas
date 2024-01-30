@@ -29,7 +29,6 @@ impl HeroEditorPlugin {
         PackedTeam::spawn(Faction::Right, world);
         Self::apply_camera(&mut pd, true, world);
         Self::respawn(world);
-        ActionPlugin::set_timeframe(0.001, world);
     }
 
     fn on_exit(world: &mut World) {

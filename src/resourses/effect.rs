@@ -48,14 +48,8 @@ impl Effect {
                 let value = value.get_int()?;
                 if value > 0 {
                     let new_hp = VarState::get(target, world).get_int(VarName::Hp)? - value;
-                    {
-                        let context = context.clone().set_owner(target, world).take();
-                        ActionCluster::current(world).push_var_change(
-                            VarName::Hp,
-                            VarChange::new(VarValue::Int(new_hp)),
-                            context,
-                        );
-                    }
+                    VarState::get_mut(target, world)
+                        .push_back(VarName::Hp, VarChange::new(VarValue::Int(new_hp)));
                     VarState::get_mut(target, world).push_back(
                         VarName::LastAttacker,
                         VarChange::new(VarValue::Entity(context.owner())),
@@ -123,7 +117,7 @@ impl Effect {
                                 .unwrap_or(VarValue::Int(1)),
                         )
                         .take();
-                    ActionCluster::current(world).push_action_front(effect, context);
+                    ActionPlugin::action_push_front(effect, context, world);
                 }
                 Pools::get_vfx("text", world)
                     .clone()
@@ -145,7 +139,6 @@ impl Effect {
                         ),
                     )
                     .unpack(world)?;
-                ActionCluster::current(world).incr_order();
             }
             Effect::AddStatus(status) => {
                 let charges = context
@@ -173,21 +166,19 @@ impl Effect {
             }
             Effect::List(list) => {
                 for effect in list.into_iter().rev() {
-                    ActionCluster::current(world)
-                        .push_action_front(effect.deref().clone(), context.clone());
+                    ActionPlugin::action_push_front(effect.deref().clone(), context.clone(), world);
                 }
             }
             Effect::ListSpread(list) => {
                 for effect in list {
-                    ActionPlugin::new_cluster(effect.deref().clone(), context.clone(), world);
+                    ActionPlugin::action_push_front(effect.deref().clone(), context.clone(), world);
                 }
             }
             Effect::AoeFaction(faction, effect) => {
                 for unit in UnitPlugin::collect_faction(faction.get_faction(context, world)?, world)
                 {
                     let context = context.clone().set_target(unit, world).take();
-                    ActionCluster::current(world)
-                        .push_action_front(effect.deref().clone(), context);
+                    ActionPlugin::action_push_front(effect.deref().clone(), context, world);
                 }
             }
             Effect::Text(text) => {
@@ -226,23 +217,28 @@ impl Effect {
                 } else {
                     vec![target.get_entity()?]
                 };
+                let delay = 0.2;
                 for target in targets {
                     let context = context.set_target(target, world).clone();
-                    ActionCluster::current(world)
-                        .push_action_front(effect.deref().clone(), context);
+                    ActionPlugin::action_push_front_with_dealy(
+                        effect.deref().clone(),
+                        context,
+                        delay,
+                        world,
+                    );
                 }
             }
             Effect::WithOwner(owner, effect) => {
                 let context = context
                     .set_owner(owner.get_entity(context, world)?, world)
                     .clone();
-                ActionCluster::current(world).push_action_front(effect.deref().clone(), context);
+                ActionPlugin::action_push_front(effect.deref().clone(), context, world);
             }
             Effect::WithVar(var, value, effect) => {
                 let context = context
                     .set_var(*var, value.get_value(context, world)?)
                     .clone();
-                ActionCluster::current(world).push_action_front(effect.deref().clone(), context);
+                ActionPlugin::action_push_front(effect.deref().clone(), context, world);
             }
             Effect::FullCopy => {
                 let owner = context.owner();

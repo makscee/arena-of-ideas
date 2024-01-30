@@ -22,6 +22,13 @@ impl TestScenario {
             Ok(_) => self.condition.get_bool(&Context::default(), world),
             Err(e) => Err(anyhow!("{e}")),
         };
+        if let Ok(result) = result {
+            if !result {
+                for unit in UnitPlugin::collect_all(world) {
+                    dbg!(VarState::get(unit, world));
+                }
+            }
+        }
         SimulationPlugin::clear(world);
         result
     }
@@ -38,7 +45,14 @@ impl Plugin for TestPlugin {
 impl TestPlugin {
     pub fn run_tests(world: &mut World) {
         // PersistentData::save_last_state(GameState::TestsLoading, world);
-        let scenarios = Self::get_all_scenarios(world);
+        let mut scenarios = Self::get_all_scenarios(world);
+        let args = Args::try_parse().unwrap_or_default();
+        if let Some(path) = args.path {
+            scenarios = scenarios
+                .into_iter()
+                .filter(|(p, _)| path.eq(p))
+                .collect_vec();
+        }
         let mut failure: Vec<ColoredString> = default();
         let mut success: Vec<ColoredString> = default();
         let path_color = Color::TrueColor {

@@ -22,7 +22,6 @@ impl HeroGallery {
                 VarValue::Vec2(start_pos + per_slot * slot as f32),
             );
         });
-        ActionPlugin::set_timeframe(1.3, world);
     }
 
     fn on_leave(world: &mut World) {

@@ -106,7 +106,7 @@ impl Status {
 
     fn reindex_statuses(unit: Entity, world: &mut World) -> Result<()> {
         let mut ind: i32 = 0;
-        let t = get_insert_head();
+        let t = GameTimer::get().insert_head();
         for entity in Self::collect_entity_statuses(unit, world) {
             let mut state = VarState::get_mut(entity, world);
             if state.get_int(VarName::Charges).is_ok_and(|x| x > 0) {
@@ -192,17 +192,24 @@ impl Status {
             .collect_vec()
     }
 
-    pub fn notify(statuses: Vec<Entity>, event: &Event, context: &Context, world: &mut World) {
+    pub fn notify(
+        statuses: Vec<Entity>,
+        event: &Event,
+        context: &Context,
+        world: &mut World,
+    ) -> bool {
+        let mut result = false;
         for (status, trigger) in Self::collect_triggers(statuses, world) {
-            trigger.fire(
+            result |= trigger.fire(
                 event,
                 context
                     .clone()
                     .set_owner(get_parent(status, world), world)
                     .set_status(status, world),
                 world,
-            )
+            );
         }
+        result
     }
 
     pub fn refresh_entity_mapping(status: Entity, world: &mut World) {
@@ -213,7 +220,7 @@ impl Status {
                 .take();
             let s = world.get::<Status>(status).unwrap();
             for (var, value) in s.trigger.clone().collect_mappings(&context, world) {
-                let t = get_insert_head();
+                let t = GameTimer::get().insert_head();
                 let mut state_mapping = world.get_mut::<VarStateDelta>(status).unwrap();
                 if state_mapping.need_update(var, &value) {
                     state_mapping.state.insert_simple(var, value, t);

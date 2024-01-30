@@ -6,7 +6,7 @@ use super::*;
 
 impl VarState {
     fn name(&self, open: bool) -> Result<ColoredString> {
-        let t = get_play_head();
+        let t = GameTimer::get().play_head();
         let level = self.get_int_at(VarName::Level, t)?;
         let mut result = ColoredString::default();
         for (i, name) in self.get_string_at(VarName::Name, t)?.split('+').enumerate() {
@@ -44,7 +44,7 @@ impl VarState {
         Ok(result)
     }
     fn description(&self, world: &World) -> Result<ColoredString> {
-        let t = get_play_head();
+        let t = GameTimer::get().play_head();
         let description = self
             .get_string_at(VarName::Description, t)?
             .to_colored()
@@ -54,7 +54,7 @@ impl VarState {
         Ok(description)
     }
     fn extra_lines(&self) -> Result<Vec<(ColoredString, ColoredString)>> {
-        let t = get_play_head();
+        let t = GameTimer::get().play_head();
         let level = self.get_int_at(VarName::Level, t)?;
         let stacks = self.get_int_at(VarName::Stacks, t)?;
         let stacks = format!("{stacks}/{} ", level + 1);
@@ -113,7 +113,7 @@ impl VarState {
         Ok(lines)
     }
     fn definitions(&self, world: &World) -> Result<Vec<(ColoredString, ColoredString)>> {
-        let t = get_play_head();
+        let t = GameTimer::get().play_head();
         let description = self.get_string_at(VarName::EffectDescription, t)?;
         let mut definitions: Vec<(ColoredString, ColoredString)> = default();
         let mut added_definitions: HashSet<String> = default();

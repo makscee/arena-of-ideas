@@ -37,20 +37,20 @@ impl Event {
     pub fn send(self, world: &mut World) -> Self {
         debug!("Send event {self:?}");
         let mut context = Context::new_named(self.to_string());
-        let statuses = match &self {
+        let units = match &self {
             Event::DamageTaken { owner, value } | Event::IncomingDamage { owner, value } => {
                 context.set_var(VarName::Value, VarValue::Int(*value));
-                Status::collect_entity_statuses(*owner, world)
+                [*owner].into()
             }
             Event::BattleStart | Event::TurnStart | Event::TurnEnd | Event::Death(..) => {
-                Status::collect_all_statuses(world)
+                let mut units = UnitPlugin::collect_all(world);
+                units.sort_by_key(|e| VarState::get(*e, world).get_int(VarName::Slot).unwrap());
+                units
             }
-            Event::BeforeStrike(unit) | Event::AfterStrike(unit) => {
-                Status::collect_entity_statuses(*unit, world)
-            }
+            Event::BeforeStrike(unit) | Event::AfterStrike(unit) => [*unit].into(),
             Event::Kill { owner, target } => {
                 context.set_target(*target, world);
-                Status::collect_entity_statuses(*owner, world)
+                [*owner].into()
             }
             Event::OutgoingDamage {
                 owner,
@@ -65,12 +65,23 @@ impl Event {
                 context
                     .set_target(*target, world)
                     .set_var(VarName::Value, VarValue::Int(*value));
-                Status::collect_entity_statuses(*owner, world)
+                [*owner].into()
             }
         };
-        let statuses = Status::filter_active_statuses(statuses, get_insert_head(), world);
-        Status::notify(statuses, &self, &context, world);
+        for unit in units {
+            ActionPlugin::event_push_back(
+                self.clone(),
+                context.clone().set_owner(unit, world).take(),
+                world,
+            );
+        }
         self
+    }
+
+    pub fn process(self, context: Context, world: &mut World) -> bool {
+        let statuses = Status::collect_entity_statuses(context.owner(), world);
+        let statuses = Status::filter_active_statuses(statuses, f32::MAX, world);
+        Status::notify(statuses, &self, &context, world)
     }
 
     pub fn map(self, value: &mut VarValue, world: &mut World) -> Self {
@@ -83,7 +94,8 @@ impl Event {
             ),
             _ => panic!("Can't map {self}"),
         };
-        let statuses = Status::filter_active_statuses(statuses, get_insert_head(), world);
+        let statuses =
+            Status::filter_active_statuses(statuses, GameTimer::get().insert_head(), world);
         for status in statuses {
             Status::map_var(status, &self, value, &context, world);
         }

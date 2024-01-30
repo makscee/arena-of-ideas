@@ -10,9 +10,11 @@ pub use prelude::*;
 
 #[derive(Parser, Debug, Default)]
 #[command(author, version, about, long_about = None)]
-struct Args {
+pub struct Args {
     #[arg(short, long)]
     mode: RunMode,
+    #[arg(short, long)]
+    path: Option<String>,
 }
 
 #[derive(Debug, Clone, ValueEnum, Default)]

@@ -68,6 +68,13 @@ impl UnitPlugin {
         Ok(Self::get_slot_position(faction, slot))
     }
 
+    pub fn collect_all(world: &mut World) -> Vec<Entity> {
+        world
+            .query_filtered::<Entity, With<Unit>>()
+            .iter(world)
+            .collect_vec()
+    }
+
     pub fn collect_factions(
         factions: HashSet<Faction>,
         world: &mut World,
@@ -141,22 +148,19 @@ impl UnitPlugin {
     }
 
     pub fn translate_unit(entity: Entity, position: Vec2, world: &mut World) {
-        ActionCluster::current(world).push_change(
-            entity,
-            ChangeType::Var {
-                var: VarName::Position,
-                change: VarChange::new(VarValue::Vec2(position))
-                    .set_duration(0.3)
-                    .set_tween(Tween::QuartOut),
-            },
+        VarState::get_mut(entity, world).push_back(
+            VarName::Position,
+            VarChange::new(VarValue::Vec2(position))
+                .set_duration(0.3)
+                .set_tween(Tween::QuartOut),
         );
     }
 
-    pub fn run_death_check(already_died: &HashSet<Entity>, world: &mut World) -> Vec<Entity> {
+    pub fn run_death_check(world: &mut World) -> Vec<Entity> {
         let dead = world
             .query_filtered::<Entity, With<Unit>>()
             .iter(world)
-            .filter(|e| !already_died.contains(e) && Self::is_dead(*e, world))
+            .filter(|e| Self::is_dead(*e, world))
             .collect_vec();
         for unit in dead.iter() {
             Self::send_death_events(*unit, world);
@@ -219,10 +223,13 @@ impl UnitPlugin {
             HashSet::from([Faction::Left, Faction::Right, Faction::Team, Faction::Shop]),
             world,
         );
+        GameTimer::get().start_batch();
         for (unit, faction) in units.into_iter() {
             let slot = VarState::get(unit, world).get_int(VarName::Slot).unwrap() as usize;
             UnitPlugin::translate_unit(unit, UnitPlugin::get_slot_position(faction, slot), world);
+            GameTimer::get().to_batch_start();
         }
+        GameTimer::get().end_batch();
     }
 
     pub fn hover_unit(event: Listener<Pointer<Over>>, mut hovered: ResMut<HoveredUnit>) {
@@ -322,7 +329,8 @@ impl UnitPlugin {
             .query_filtered::<(Entity, &VarState), Or<(&Unit, &Corpse)>>()
             .iter(world)
         {
-            let statuses = Status::collect_statuses_name_charges(entity, get_play_head(), world);
+            let statuses =
+                Status::collect_statuses_name_charges(entity, GameTimer::get().play_head(), world);
             state.show_entity_card_window(entity, statuses, hovered == Some(entity), ctx, world);
         }
     }

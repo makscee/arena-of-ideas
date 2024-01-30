@@ -56,13 +56,17 @@ impl GameTimer {
         self
     }
 
+    pub fn insert_to_end(&mut self) -> &mut Self {
+        self.insert_head_to(self.end)
+    }
+
     pub fn advance_insert(&mut self, delta: f32) -> &mut Self {
         self.insert_head += delta;
         self.end = self.end.max(self.insert_head);
         self
     }
 
-    pub fn end(&self) -> f32 {
+    pub fn get_end(&self) -> f32 {
         self.end
     }
 

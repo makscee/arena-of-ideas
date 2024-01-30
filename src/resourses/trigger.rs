@@ -136,16 +136,22 @@ impl Default for Trigger {
 }
 
 impl Trigger {
-    pub fn fire(&self, event: &Event, context: &Context, world: &mut World) {
+    pub fn fire(&self, event: &Event, context: &Context, world: &mut World) -> bool {
         match self {
-            Trigger::List(list) => list.iter().for_each(|t| t.fire(event, context, world)),
+            Trigger::List(list) => {
+                let mut result = false;
+                for trigger in list {
+                    result |= trigger.fire(event, context, world);
+                }
+                result
+            }
             Trigger::Fire {
                 trigger,
                 target,
                 effect,
             } => {
                 if !trigger.catch(event, context, world) {
-                    return;
+                    return false;
                 }
                 let effect = Effect::WithTarget(target.clone(), Box::new(effect.clone()));
                 match trigger {
@@ -162,14 +168,15 @@ impl Trigger {
                     | FireTrigger::AfterIncomingDamage
                     | FireTrigger::TurnStart
                     | FireTrigger::TurnEnd => {
-                        ActionCluster::current(world).push_action_back(effect, context.clone());
+                        ActionPlugin::action_push_back(effect, context.clone(), world);
+                        true
                     }
 
-                    FireTrigger::Noop => {}
+                    FireTrigger::Noop => false,
                 }
             }
-            Trigger::Change { .. } => {}
-        };
+            Trigger::Change { .. } => false,
+        }
     }
 
     pub fn change(

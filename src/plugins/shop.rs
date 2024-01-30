@@ -67,7 +67,6 @@ impl ShopPlugin {
             })
         });
         UnitPlugin::translate_to_slots(world);
-        ActionPlugin::set_timeframe(0.05, world);
         debug!("Shop insert data");
         world.insert_resource(ShopData {
             update_callback,
@@ -105,9 +104,10 @@ impl ShopPlugin {
 
     fn transition_to_battle(world: &mut World) {
         let run = ArenaRun::filter_by_active(true).next().unwrap();
+        let round = run.state.wins + run.state.loses;
         let left =
             PackedTeam::from_table_units(run.state.team.into_iter().map(|u| u.unit).collect());
-        let right = if let Some(right) = run.enemies.last() {
+        let right = if let Some(right) = run.enemies.get(round as usize) {
             let right = ArenaPool::filter_by_id(*right).unwrap().team;
             PackedTeam::from_table_units(right)
         } else {
