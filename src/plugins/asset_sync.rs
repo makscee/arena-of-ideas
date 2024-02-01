@@ -14,7 +14,6 @@ impl Plugin for AssetsSyncPlugin {
 
 fn do_sync(world: &mut World) {
     debug!("Assets Sync start");
-    LoginPlugin::connect();
     let mut data: Vec<TableUnit> = default();
     for (_, asset) in Pools::get(world).heroes.iter() {
         data.push(asset.clone().into());

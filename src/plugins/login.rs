@@ -16,8 +16,8 @@ use super::*;
 
 pub struct LoginPlugin;
 
-const SPACETIMEDB_URI: &str = "http://localhost:3001";
-// const SPACETIMEDB_URI: &str = "http://178.62.220.183:3000";
+// const SPACETIMEDB_URI: &str = "http://localhost:3001";
+const SPACETIMEDB_URI: &str = "http://16.170.211.203:3000";
 #[cfg(debug_assertions)]
 const DB_NAME: &str = "aoi_dev";
 #[cfg(not(debug_assertions))]
@@ -40,7 +40,9 @@ fn on_connected(creds: &Credentials, _client_address: Address) {
     if let Err(e) = save_credentials(CREDS_DIR, creds) {
         eprintln!("Failed to save credentials: {:?}", e);
     }
+    debug!("Subscribe start");
     subscribe(&["select * from User", "select * from GlobalData"]).unwrap();
+    debug!("Subscribed");
     let creds = creds.clone();
     once_on_subscription_applied(move || {
         if !VERSION.eq(&GlobalData::filter_by_always_zero(0).unwrap().game_version) {
@@ -120,7 +122,8 @@ impl LoginPlugin {
         if Self::is_connected() {
             return;
         }
-        let creds = Self::load_credentials();
+        debug!("Connect start");
+        let creds: Option<Credentials> = Self::load_credentials();
         let mut tries = 5;
         while let Err(e) = connect(SPACETIMEDB_URI, DB_NAME, creds.clone()) {
             error!("Connection error: {e}");

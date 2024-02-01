@@ -44,6 +44,8 @@ const PRICE_REROLL: i64 = 1;
 const PRICE_UNIT: i64 = 3;
 const PRICE_SELL: i64 = 1;
 const TEAM_SLOTS: usize = 7;
+const SHOP_SLOTS_PER_ROUND: f32 = 0.5;
+const SHOP_SLOTS: Range<usize> = 3..6;
 
 #[spacetimedb(reducer)]
 fn run_start(ctx: ReducerContext) -> Result<(), String> {
@@ -259,7 +261,9 @@ impl ArenaRun {
     }
 
     fn fill_case(&mut self) {
-        for _ in 0..3 {
+        let slots = (SHOP_SLOTS.start + (self.round() as f32 * SHOP_SLOTS_PER_ROUND) as usize)
+            .min(SHOP_SLOTS.end);
+        for _ in 0..slots {
             let id = self.next_id();
             self.state.case.push(
                 TableUnit::iter()

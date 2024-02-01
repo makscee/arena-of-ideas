@@ -157,6 +157,12 @@ impl ShopPlugin {
         UnitPlugin::translate_to_slots(world);
     }
 
+    pub fn is_fusing(world: &World) -> bool {
+        world
+            .get_resource::<ShopData>()
+            .is_some_and(|d| d.fusion_candidates.is_some())
+    }
+
     fn sync_units_state(units: &Vec<TeamUnit>, faction: Faction, world: &mut World) {
         let world_units = UnitPlugin::collect_faction_ids(faction, world);
         for TeamUnit { id, unit } in units {
@@ -230,6 +236,7 @@ impl ShopPlugin {
             window("CHOOSE FUSION")
                 .order(Order::Foreground)
                 .set_width(len as f32 * 240.0)
+                .anchor(Align2::CENTER_TOP, [0.0, 40.0])
                 .show(ctx, |ui| {
                     ui.columns(len, |ui| {
                         for (i, fusion) in candidates.iter().enumerate() {

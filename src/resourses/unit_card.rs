@@ -9,7 +9,31 @@ impl VarState {
         let t = GameTimer::get().play_head();
         let level = self.get_int_at(VarName::Level, t)?;
         let mut result = ColoredString::default();
-        for (i, name) in self.get_string_at(VarName::Name, t)?.split('+').enumerate() {
+        let names = self
+            .get_string_at(VarName::Name, t)?
+            .split('+')
+            .map(|v| v.to_string())
+            .collect_vec();
+        let len = names.len();
+        for (i, name) in names.into_iter().enumerate() {
+            let name = match i {
+                0 => {
+                    if len > 1 {
+                        name.split_at(name.len() / 2).0
+                    } else {
+                        name.as_str()
+                    }
+                }
+                1 => {
+                    if len > 2 {
+                        name.split_at(name.len() / 2).0
+                    } else {
+                        name.split_at(name.len() / 2).1
+                    }
+                }
+                2 => name.split_at(name.len() / 2).1,
+                _ => name.as_str(),
+            };
             let var = match i {
                 0 => VarName::HouseColor1,
                 1 => VarName::HouseColor2,

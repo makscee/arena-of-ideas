@@ -10,6 +10,7 @@ use super::*;
 pub struct PackedUnit {
     #[serde(default = "default_text")]
     pub name: String,
+    #[serde(default = "default_one")]
     pub hp: i32,
     pub atk: i32,
     #[serde(default = "default_one")]
@@ -131,7 +132,7 @@ impl PackedUnit {
         let house_colors = self
             .houses
             .split('+')
-            .map(|h| Pools::get_house_color(h, world).unwrap())
+            .map(|h| Pools::get_house_color(h, world).unwrap_or(Color::CRIMSON))
             .collect_vec();
         state
             .init(VarName::HouseColor1, VarValue::Color(house_colors[0]))

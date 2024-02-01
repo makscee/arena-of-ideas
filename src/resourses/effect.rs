@@ -159,7 +159,13 @@ impl Effect {
                     )
                     .set_var(
                         VarName::Text,
-                        VarValue::String(format!("+{status} x{charges}")),
+                        VarValue::String(format!(
+                            "{status} {}",
+                            match charges.is_positive() {
+                                true => format!("+{charges}"),
+                                false => charges.to_string(),
+                            }
+                        )),
                     )
                     .set_var(VarName::Color, VarValue::Color(color))
                     .unpack(world)?;

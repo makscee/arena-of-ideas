@@ -324,6 +324,9 @@ impl UnitPlugin {
 
     fn ui(world: &mut World) {
         let hovered = world.get_resource::<HoveredUnit>().unwrap().0;
+        if ShopPlugin::is_fusing(world) {
+            return;
+        }
         let ctx = &egui_context(world);
         for (entity, state) in world
             .query_filtered::<(Entity, &VarState), Or<(&Unit, &Corpse)>>()

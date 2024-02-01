@@ -25,6 +25,7 @@ pub enum RunMode {
     Custom,
     Continue,
     Sync,
+    Editor,
 }
 
 fn main() {
@@ -32,6 +33,7 @@ fn main() {
     let next_state = match args.mode {
         RunMode::Regular => GameState::MainMenu,
         RunMode::Custom => GameState::CustomBattle,
+        RunMode::Editor => GameState::HeroEditor,
         RunMode::Continue => GameState::Shop,
         RunMode::Test => GameState::TestsLoading,
         RunMode::Sync => GameState::UnitSync,

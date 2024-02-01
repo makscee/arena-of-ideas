@@ -109,7 +109,7 @@ impl AlertPlugin {
                 .default_pos(ctx.screen_rect().center() + egui::vec2(offset * c, offset * c))
                 .show(ctx, |ui| {
                     frame(ui, |ui| {
-                        alert.text.add_color(white()).rich_text(ui);
+                        alert.text.add_color(white()).label(ui);
                         if ui.button("OK").clicked() {
                             if let Some(action) = alert.action.take() {
                                 actions.push(action);
