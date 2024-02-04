@@ -1,5 +1,4 @@
 (
-    timeframe: 1.0,
     anim: Run(
         [
             Change(

@@ -9,6 +9,7 @@ pub enum GameState {
     BattleTest,
     Restart,
     CustomBattle,
+    LastBattle,
     Battle,
     Shop,
     HeroEditor,
@@ -28,7 +29,7 @@ impl GameState {
     pub fn exit(&self, world: &mut World) {
         match self {
             GameState::MainMenu | GameState::Login => world.send_event(AppExit),
-            GameState::CustomBattle | GameState::Battle => {
+            GameState::CustomBattle | GameState::LastBattle | GameState::Battle => {
                 GameTimer::get().skip_to_end();
             }
             GameState::Shop | GameState::HeroEditor | GameState::HeroGallery => {

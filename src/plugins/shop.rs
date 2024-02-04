@@ -113,6 +113,10 @@ impl ShopPlugin {
         } else {
             default()
         };
+        PersistentData::load(world)
+            .set_last_battle(left.clone(), right.clone())
+            .save(world)
+            .unwrap();
         BattlePlugin::load_teams(left, right, Some(run.id), world);
     }
 
@@ -220,7 +224,7 @@ impl ShopPlugin {
                 );
             });
         Area::new("battle button")
-            .anchor(Align2::RIGHT_CENTER, [-40.0, 0.0])
+            .anchor(Align2::RIGHT_CENTER, [-40.0, -50.0])
             .show(ctx, |ui| {
                 if ui.button("START BATTLE").clicked() {
                     Self::go_to_battle(world);

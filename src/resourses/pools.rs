@@ -15,6 +15,7 @@ pub struct Pools {
     #[asset(key = "pool.vfx", collection(typed, mapped))]
     vfx_handles: HashMap<String, Handle<Vfx>>,
     pub vfx: HashMap<String, Vfx>,
+    pub only_local_cache: bool,
 }
 
 impl Pools {
@@ -182,6 +183,10 @@ impl PoolsPlugin {
             return;
         }
         let mut pools = Pools::get_mut(world);
+        if pools.only_local_cache {
+            debug!("Server cache disabled");
+            return;
+        }
         debug!("Cache server pools start");
         pools.heroes.clear();
         pools.houses.clear();

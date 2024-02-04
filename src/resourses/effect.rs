@@ -107,6 +107,20 @@ impl Effect {
                     .with_context(|| format!("Ability not found {ability}"))?
                     .effect
                     .clone();
+                let color = Pools::get_ability_house(ability, world)
+                    .with_context(|| format!("Failed to find house for ability {ability}"))?
+                    .color
+                    .clone()
+                    .into();
+                Pools::get_vfx("text", world)
+                    .clone()
+                    .set_var(
+                        VarName::Position,
+                        VarState::get(context.owner(), world).get_value_last(VarName::Position)?,
+                    )
+                    .set_var(VarName::Text, VarValue::String(format!("Use {ability}")))
+                    .set_var(VarName::Color, VarValue::Color(color))
+                    .unpack(world)?;
                 {
                     let context = context
                         .clone()
@@ -116,29 +130,10 @@ impl Effect {
                                 .get_var(VarName::Level, world)
                                 .unwrap_or(VarValue::Int(1)),
                         )
+                        .set_var(VarName::Color, VarValue::Color(color))
                         .take();
                     ActionPlugin::action_push_front(effect, context, world);
                 }
-                Pools::get_vfx("text", world)
-                    .clone()
-                    .set_var(
-                        VarName::Position,
-                        VarState::get(context.owner(), world).get_value_last(VarName::Position)?,
-                    )
-                    .set_var(VarName::Text, VarValue::String(format!("Use {ability}")))
-                    .set_var(
-                        VarName::Color,
-                        VarValue::Color(
-                            Pools::get_ability_house(ability, world)
-                                .with_context(|| {
-                                    format!("Failed to find house for ability {ability}")
-                                })?
-                                .color
-                                .clone()
-                                .into(),
-                        ),
-                    )
-                    .unpack(world)?;
             }
             Effect::AddStatus(status) => {
                 let charges = context

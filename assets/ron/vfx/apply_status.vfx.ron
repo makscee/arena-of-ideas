@@ -30,7 +30,7 @@
     representation: (
         material: Curve(
             color: State(Color),
-            curvature: Float(1.6),
+            curvature: Float(2.0),
             thickness: State(Thickness),
             aa: Float(0.5),
             dilations: [

@@ -49,18 +49,6 @@ impl ActionPlugin {
                 }
                 continue;
             }
-            let dead = UnitPlugin::run_death_check(world);
-            let died = !dead.is_empty();
-            for unit in dead {
-                UnitPlugin::turn_into_corpse(unit, world);
-            }
-            if died {
-                GameTimer::get().advance_insert(0.5);
-                UnitPlugin::fill_slot_gaps(Faction::Left, world);
-                UnitPlugin::fill_slot_gaps(Faction::Right, world);
-                UnitPlugin::translate_to_slots(world);
-                GameTimer::get().insert_to_end();
-            }
             let mut actions_added = false;
             while let Some((event, context)) = Self::pop_event(world) {
                 if event.process(context, world) {
@@ -74,7 +62,20 @@ impl ActionPlugin {
             }
         }
         if processed {
-            GameTimer::get().advance_insert(0.3);
+            let dead = UnitPlugin::run_death_check(world);
+            let died = !dead.is_empty();
+            for unit in dead {
+                UnitPlugin::turn_into_corpse(unit, world);
+            }
+            if died {
+                GameTimer::get().advance_insert(0.5);
+                UnitPlugin::fill_slot_gaps(Faction::Left, world);
+                UnitPlugin::fill_slot_gaps(Faction::Right, world);
+                UnitPlugin::translate_to_slots(world);
+                GameTimer::get().insert_to_end();
+            } else {
+                GameTimer::get().advance_insert(0.3);
+            }
         }
     }
 

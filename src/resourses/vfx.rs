@@ -7,6 +7,8 @@ pub struct Vfx {
     pub representation: Representation,
     #[serde(default)]
     pub state: VarState,
+    #[serde(default)]
+    pub timeframe: f32,
     pub parent: Option<Entity>,
 }
 
@@ -26,6 +28,9 @@ impl Vfx {
                 .take(),
             world,
         );
+        if self.timeframe > 0.0 {
+            GameTimer::get().advance_insert(self.timeframe);
+        }
         result
     }
 

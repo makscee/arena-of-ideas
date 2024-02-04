@@ -152,7 +152,6 @@ impl LoginPlugin {
             Status::Committed => {
                 let user = User::find(|u| u.identities.contains(identity)).unwrap();
                 Self::save_current_user(user.name, user.id, identity.clone());
-                OperationsPlugin::add(PoolsPlugin::cache_server_pools);
             }
             Status::Failed(e) => {
                 AlertPlugin::add_error(
@@ -277,7 +276,10 @@ fn subscribe_to_tables(user_id: u64) {
         &format!("select * from ArenaRun where user_id = {user_id}"),
         "select * from ArenaPool",
     ]) {
-        Ok(_) => debug!("Subscribe successful"),
+        Ok(_) => {
+            debug!("Subscribe successful");
+            once_on_subscription_applied(|| OperationsPlugin::add(PoolsPlugin::cache_server_pools));
+        }
         Err(e) => error!("Subscription error: {e}"),
     }
 }
