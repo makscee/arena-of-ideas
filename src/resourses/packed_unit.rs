@@ -12,6 +12,7 @@ pub struct PackedUnit {
     pub name: String,
     #[serde(default = "default_one")]
     pub hp: i32,
+    #[serde(default)]
     pub atk: i32,
     #[serde(default = "default_one")]
     pub stacks: i32,
@@ -172,7 +173,7 @@ impl PackedUnit {
         let houses = state.get_string(VarName::Houses).unwrap();
         let mut trigger = None;
         let mut statuses = Vec::default();
-        for entity in Status::collect_entity_statuses(entity, world) {
+        for entity in Status::collect_unit_statuses(entity, world) {
             let status = world.get::<Status>(entity).unwrap();
             if status.name.eq(LOCAL_TRIGGER) {
                 trigger = Some(status.trigger.clone());
@@ -302,7 +303,8 @@ impl PackedUnit {
     pub fn show_editor(
         &mut self,
         entity: Option<Entity>,
-        editing_data: &mut EditingData,
+        hovered: &mut Option<String>,
+        lookup: &mut String,
         ui: &mut Ui,
         world: &mut World,
     ) {
@@ -336,9 +338,9 @@ impl PackedUnit {
                 });
 
                 self.representation
-                    .show_editor(entity, editing_data, 0, ui, world);
+                    .show_editor(entity, hovered, lookup, 0, ui, world);
                 self.trigger
-                    .show_editor(editing_data, "trigger".to_owned(), ui, world);
+                    .show_editor(hovered, lookup, "trigger".to_owned(), ui, world);
             });
     }
 

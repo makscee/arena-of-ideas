@@ -8,7 +8,10 @@ impl Plugin for UnitPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<HoveredUnit>()
             .init_resource::<DraggedUnit>()
-            .add_systems(Update, Self::ui);
+            .add_systems(
+                Update,
+                Self::ui.run_if(not(in_state(GameState::HeroEditor))),
+            );
     }
 }
 
@@ -230,6 +233,12 @@ impl UnitPlugin {
             GameTimer::get().to_batch_start();
         }
         GameTimer::get().end_batch();
+    }
+
+    pub fn fill_gaps_and_translate(world: &mut World) {
+        Self::fill_slot_gaps(Faction::Left, world);
+        Self::fill_slot_gaps(Faction::Right, world);
+        Self::translate_to_slots(world);
     }
 
     pub fn hover_unit(event: Listener<Pointer<Over>>, mut hovered: ResMut<HoveredUnit>) {

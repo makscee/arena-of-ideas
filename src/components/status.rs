@@ -81,7 +81,7 @@ impl Status {
         delta: i32,
         world: &mut World,
     ) -> Result<Entity> {
-        for entity in Self::collect_entity_statuses(unit, world) {
+        for entity in Self::collect_unit_statuses(unit, world) {
             if let Some(s) = world.entity(entity).get::<Status>() {
                 if s.name.eq(status) {
                     let mut state =
@@ -107,7 +107,7 @@ impl Status {
     fn reindex_statuses(unit: Entity, world: &mut World) -> Result<()> {
         let mut ind: i32 = 0;
         let t = GameTimer::get().insert_head();
-        for entity in Self::collect_entity_statuses(unit, world) {
+        for entity in Self::collect_unit_statuses(unit, world) {
             let mut state = VarState::get_mut(entity, world);
             if state.get_int(VarName::Charges).is_ok_and(|x| x > 0) {
                 state.insert_simple(VarName::Index, VarValue::Int(ind), t);
@@ -122,7 +122,7 @@ impl Status {
         t: f32,
         world: &World,
     ) -> Vec<(String, i32)> {
-        Self::collect_entity_statuses(entity, world)
+        Self::collect_unit_statuses(entity, world)
             .into_iter()
             .filter_map(|entity| {
                 let state = VarState::snapshot(entity, world, t);
@@ -138,8 +138,8 @@ impl Status {
             .collect_vec()
     }
 
-    pub fn collect_entity_statuses(entity: Entity, world: &World) -> Vec<Entity> {
-        if let Some(entity) = world.get_entity(entity) {
+    pub fn collect_unit_statuses(unit: Entity, world: &World) -> Vec<Entity> {
+        if let Some(entity) = world.get_entity(unit) {
             if let Some(children) = entity.get::<Children>() {
                 return children
                     .iter()
@@ -149,6 +149,27 @@ impl Status {
             }
         }
         default()
+    }
+
+    pub fn find_unit_status<'a>(
+        unit: Entity,
+        name: &str,
+        world: &'a mut World,
+    ) -> Option<Mut<'a, Status>> {
+        if let Some(entity) = world.get_entity(unit) {
+            if let Some(children) = entity.get::<Children>() {
+                if let Some(status) = children.iter().copied().find_map(|x| {
+                    if world.get::<Status>(x).is_some_and(|s| s.name.eq(name)) {
+                        Some(x)
+                    } else {
+                        None
+                    }
+                }) {
+                    return Some(world.get_mut::<Status>(status).unwrap());
+                }
+            }
+        }
+        None
     }
 
     pub fn filter_active_statuses(entities: Vec<Entity>, t: f32, world: &World) -> Vec<Entity> {

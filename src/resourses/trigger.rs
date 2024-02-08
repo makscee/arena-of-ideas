@@ -236,11 +236,13 @@ impl Trigger {
 
     pub fn show_editor(
         &mut self,
-        editing_data: &mut EditingData,
+        hovered: &mut Option<String>,
+        lookup: &mut String,
         name: String,
         ui: &mut Ui,
         world: &mut World,
     ) {
+        let mut changed = false;
         ui.horizontal(|ui| {
             ComboBox::from_id_source(&name)
                 .selected_text(self.to_string())
@@ -248,7 +250,7 @@ impl Trigger {
                 .show_ui(ui, |ui| {
                     for option in Trigger::iter() {
                         let text = option.to_string();
-                        ui.selectable_value(self, option, text).changed();
+                        ui.selectable_value(self, option, text);
                     }
                 });
             match self {
@@ -259,8 +261,8 @@ impl Trigger {
                 } => {
                     ui.vertical(|ui| {
                         trigger.show_editor(format!("{name}/trigger"), ui);
-                        target.show_editor(editing_data, format!("{name}/target"), ui);
-                        effect.show_editor(editing_data, format!("{name}/effect"), ui, world);
+                        target.show_editor(hovered, lookup, format!("{name}/target"), ui);
+                        effect.show_editor(hovered, lookup, format!("{name}/effect"), ui, world);
                     });
                 }
                 Trigger::Change {
@@ -268,14 +270,14 @@ impl Trigger {
                     expr: expression,
                 } => {
                     ui.vertical(|ui| {
-                        expression.show_editor(editing_data, format!("{name}/exp"), ui);
+                        expression.show_editor(hovered, lookup, format!("{name}/exp"), ui);
                         trigger.show_editor(format!("{name}/trigger"), ui);
                     });
                 }
                 Trigger::List(list) => {
                     ui.vertical(|ui| {
                         list.iter_mut().enumerate().for_each(|(i, t)| {
-                            t.show_editor(editing_data, format!("{name} {i}"), ui, world);
+                            t.show_editor(hovered, lookup, format!("{name} {i}"), ui, world);
                         });
                     });
                 }

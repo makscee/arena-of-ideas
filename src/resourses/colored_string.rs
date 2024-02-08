@@ -74,7 +74,10 @@ impl ColoredString {
     }
 
     pub fn label(&self, ui: &mut Ui) -> Response {
-        Label::new(self.widget(ui)).ui(ui)
+        self.as_label(ui).ui(ui)
+    }
+    pub fn as_label(&self, ui: &mut Ui) -> Label {
+        Label::new(self.widget(ui))
     }
 
     pub fn widget(&self, ui: &mut Ui) -> WidgetText {

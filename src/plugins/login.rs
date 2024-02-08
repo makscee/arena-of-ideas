@@ -19,7 +19,7 @@ pub struct LoginPlugin;
 // const SPACETIMEDB_URI: &str = "http://localhost:3001";
 const SPACETIMEDB_URI: &str = "http://16.170.211.203:3000";
 #[cfg(debug_assertions)]
-const DB_NAME: &str = "aoi_dev";
+const DB_NAME: &str = "aoi_dev2";
 #[cfg(not(debug_assertions))]
 const DB_NAME: &str = "aoi";
 const CREDS_DIR: &str = ".aoi";
@@ -45,10 +45,11 @@ fn on_connected(creds: &Credentials, _client_address: Address) {
     debug!("Subscribed");
     let creds = creds.clone();
     once_on_subscription_applied(move || {
-        if !VERSION.eq(&GlobalData::filter_by_always_zero(0).unwrap().game_version) {
+        let server_version = GlobalData::filter_by_always_zero(0).unwrap().game_version;
+        if !VERSION.eq(&server_version) {
             AlertPlugin::add_error(
                 Some("GAME VERSION ERROR".to_owned()),
-                "Game version is too old".to_owned(),
+                format!("Game version is too old: {VERSION} < {server_version}"),
                 Some(Box::new(|w| {
                     egui_context(w).open_url(egui::OpenUrl {
                         url: "https://makscee.itch.io/arena-of-ideas".to_owned(),

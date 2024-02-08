@@ -8,7 +8,7 @@ pub struct PersistentData {
 
 const PERSISTENT_DATA_KEY: &str = "persistent_data";
 impl PersistentData {
-    pub fn load(world: &mut World) -> Self {
+    pub fn load(world: &World) -> Self {
         world
             .resource::<PkvStore>()
             .get(PERSISTENT_DATA_KEY)
@@ -17,7 +17,7 @@ impl PersistentData {
     pub fn save(&self, world: &mut World) -> Result<()> {
         world
             .resource_mut::<PkvStore>()
-            .set(PERSISTENT_DATA_KEY, &self)
+            .set(PERSISTENT_DATA_KEY, self)
             .map_err(|e| anyhow!("{}", e.to_string()))
     }
 

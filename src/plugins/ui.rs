@@ -167,17 +167,22 @@ pub struct GameWindow<'a> {
     title: &'a str,
     title_bar: bool,
     stroke: bool,
-    width: f32,
+    min_width: f32,
+    max_width: f32,
     color: Option<Color32>,
 }
 
 impl GameWindow<'_> {
-    pub fn show(self, ctx: &egui::Context, add_contents: impl FnOnce(&mut Ui)) {
-        self.area.show(ctx, |ui| {
-            self.show_ui(ui, add_contents);
-        });
+    pub fn show(
+        self,
+        ctx: &egui::Context,
+        add_contents: impl FnOnce(&mut Ui),
+    ) -> InnerResponse<()> {
+        self.area
+            .show(ctx, |ui| self.show_ui(ui, add_contents))
+            .inner
     }
-    pub fn show_ui(mut self, ui: &mut Ui, add_contents: impl FnOnce(&mut Ui)) {
+    pub fn show_ui(mut self, ui: &mut Ui, add_contents: impl FnOnce(&mut Ui)) -> InnerResponse<()> {
         if !self.stroke {
             self.frame = Some(Frame::none());
         }
@@ -187,7 +192,8 @@ impl GameWindow<'_> {
         self.frame
             .unwrap_or(Frame::window(style).stroke(stroke))
             .show(ui, |ui| {
-                ui.set_width(self.width);
+                ui.set_min_width(self.min_width);
+                ui.set_max_width(self.max_width);
                 if self.title_bar {
                     let v = &ui.style().visuals.clone();
                     let mut rounding = v.window_rounding;
@@ -216,7 +222,7 @@ impl GameWindow<'_> {
                         });
                 }
                 add_contents(ui)
-            });
+            })
     }
     pub fn default_pos_vec(mut self, pos: Vec2) -> Self {
         self.area = self.area.default_pos(pos2(pos.x, pos.y));
@@ -235,7 +241,16 @@ impl GameWindow<'_> {
         self
     }
     pub fn set_width(mut self, width: f32) -> Self {
-        self.width = width;
+        self.min_width = width;
+        self.max_width = width;
+        self
+    }
+    pub fn set_max_width(mut self, width: f32) -> Self {
+        self.max_width = width;
+        self
+    }
+    pub fn set_min_width(mut self, width: f32) -> Self {
+        self.min_width = width;
         self
     }
     pub fn anchor(mut self, align: Align2, offset: impl Into<egui::Vec2>) -> Self {
@@ -280,7 +295,8 @@ pub fn window(title: &str) -> GameWindow<'_> {
         title_bar: true,
         stroke: true,
         color: None,
-        width: 250.0,
+        min_width: 250.0,
+        max_width: 250.0,
         frame: None,
     }
 }
@@ -321,6 +337,7 @@ impl IntoC32 for Color {
 }
 
 pub trait PrimarySecondaryExtensions {
+    fn button_color(&mut self, text: impl Into<WidgetText>, color: Color32) -> Response;
     fn button_red(&mut self, text: impl Into<WidgetText>) -> Response;
     fn button_primary(&mut self, text: impl Into<WidgetText>) -> Response;
     fn button_or_primary(&mut self, text: impl Into<WidgetText>, primary: bool) -> Response;
@@ -347,9 +364,16 @@ impl PrimarySecondaryExtensions for Ui {
     }
 
     fn button_red(&mut self, text: impl Into<WidgetText>) -> Response {
+        self.button_color(text, red())
+    }
+
+    fn button_color(&mut self, text: impl Into<WidgetText>, color: Color32) -> Response {
+        let prev_style = self.style().clone();
         let visuals = &mut self.style_mut().visuals.widgets.inactive;
-        visuals.fg_stroke.color = red();
-        visuals.bg_stroke.color = red();
-        self.button(text)
+        visuals.fg_stroke.color = color;
+        visuals.bg_stroke.color = color;
+        let r = self.button(text);
+        self.set_style(prev_style);
+        r
     }
 }

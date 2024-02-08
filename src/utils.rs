@@ -27,6 +27,22 @@ pub fn set_context_bool(world: &mut World, key: &str, value: bool) {
     let id = Id::new(key);
     egui_context(world).data_mut(|w| w.insert_temp(id, value))
 }
+pub fn get_context_string(world: &mut World, key: &str) -> String {
+    let id = Id::new(key);
+    egui_context(world).data(|r| r.get_temp::<String>(id).unwrap_or_default())
+}
+pub fn set_context_string(world: &mut World, key: &str, value: String) {
+    let id = Id::new(key);
+    egui_context(world).data_mut(|w| w.insert_temp(id, value))
+}
+pub fn get_context_expression(world: &mut World, key: &str) -> Expression {
+    let id = Id::new(key);
+    egui_context(world).data(|r| r.get_temp::<Expression>(id).unwrap_or_default())
+}
+pub fn set_context_expression(world: &mut World, key: &str, value: Expression) {
+    let id = Id::new(key);
+    egui_context(world).data_mut(|w| w.insert_temp(id, value))
+}
 pub fn world_to_screen(pos: Vec3, world: &World) -> Vec2 {
     let entity = world.entity(world.resource::<CameraData>().entity);
     let camera = entity.get::<Camera>().unwrap();
@@ -36,16 +52,16 @@ pub fn world_to_screen(pos: Vec3, world: &World) -> Vec2 {
 pub fn screen_to_world(pos: Vec2, camera: &Camera, transform: &GlobalTransform) -> Vec2 {
     camera.viewport_to_world_2d(transform, pos).unwrap()
 }
-pub fn entity_panel(
+pub fn entity_window(
     entity: Entity,
     side: Vec2,
     width: Option<f32>,
     name: &str,
-    world: &mut World,
+    world: &World,
 ) -> egui::Window<'static> {
     let pos = entity_screen_pos(entity, side, world);
     let side_i = side.as_ivec2();
-    let align = match (side_i.x, side_i.y) {
+    let align = match (side_i.x.signum(), side_i.y.signum()) {
         (-1, 0) => Align2::RIGHT_CENTER,
         (1, 0) => Align2::LEFT_CENTER,
         (0, -1) => Align2::CENTER_TOP,
@@ -120,5 +136,15 @@ impl<'a> StrExtensions for &'a str {
                 false => None,
             })
             .collect_vec()
+    }
+}
+
+pub trait ToBVec2 {
+    fn to_bvec2(&self) -> Vec2;
+}
+
+impl ToBVec2 for Pos2 {
+    fn to_bvec2(&self) -> Vec2 {
+        vec2(self.x, self.y)
     }
 }

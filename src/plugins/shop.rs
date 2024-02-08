@@ -296,7 +296,7 @@ impl ShopPlugin {
                         ui,
                     );
                 });
-            })
+            });
     }
 
     fn show_hero_ui(world: &mut World) -> Result<()> {

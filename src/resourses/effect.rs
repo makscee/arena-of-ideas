@@ -267,10 +267,10 @@ impl Effect {
                 // if let Some(entity) = PackedUnit::get_representation_entity(owner, world) {
                 //     world.get_entity_mut(entity).unwrap().despawn_recursive();
                 // }
-                for entity in Status::collect_entity_statuses(owner, world) {
+                for entity in Status::collect_unit_statuses(owner, world) {
                     world.entity_mut(entity).despawn_recursive();
                 }
-                for entity in Status::collect_entity_statuses(target, world) {
+                for entity in Status::collect_unit_statuses(target, world) {
                     let status = world.get::<Status>(entity).unwrap();
                     if let Some(status) = Pools::get_status(&status.name, world) {
                         let status = status.clone().unpack(owner, world);
@@ -296,7 +296,7 @@ impl Effect {
             }
             Effect::RemoveLocalTrigger => {
                 let target = context.target();
-                let local_trigger = Status::collect_entity_statuses(target, world)
+                let local_trigger = Status::collect_unit_statuses(target, world)
                     .into_iter()
                     .find(|e| {
                         world
@@ -384,17 +384,18 @@ impl Effect {
 
     pub fn show_editor(
         &mut self,
-        editing_data: &mut EditingData,
+        hovered: &mut Option<String>,
+        lookup: &mut String,
         path: String,
         ui: &mut Ui,
         world: &mut World,
     ) {
-        let hovered = if let Some(hovered) = editing_data.hovered.as_ref() {
+        let is_hovered = if let Some(hovered) = hovered.as_ref() {
             hovered.eq(&path)
         } else {
             false
         };
-        let color = match hovered {
+        let color = match is_hovered {
             true => hex_color!("#FF9100"),
             false => hex_color!("#9575CD"),
         };
@@ -404,20 +405,20 @@ impl Effect {
             ui.vertical(|ui| {
                 let link = ui.link(RichText::new(format!("( {self}")));
                 if link.clicked() {
-                    editing_data.lookup.clear();
+                    lookup.clear();
                     link.request_focus();
                 }
                 now_hovered |= link.hovered();
                 if link.has_focus() || link.lost_focus() {
                     let mut need_clear = false;
                     ui.horizontal_wrapped(|ui| {
-                        ui.label(editing_data.lookup.to_owned());
+                        ui.label(lookup.to_owned());
                         Effect::iter()
                             .filter_map(|e| {
                                 match e
                                     .to_string()
                                     .to_lowercase()
-                                    .starts_with(editing_data.lookup.to_lowercase().as_str())
+                                    .starts_with(lookup.to_lowercase().as_str())
                                 {
                                     true => Some(e),
                                     false => None,
@@ -432,7 +433,7 @@ impl Effect {
                             })
                     });
                     if need_clear {
-                        editing_data.lookup.clear();
+                        lookup.clear();
                     }
                 }
             });
@@ -440,7 +441,7 @@ impl Effect {
             match self {
                 Effect::Noop | Effect::Kill | Effect::FullCopy | Effect::RemoveLocalTrigger => {}
                 Effect::Debug(e) | Effect::Text(e) => {
-                    e.show_editor(editing_data, format!("{path}/e"), ui);
+                    e.show_editor(hovered, lookup, format!("{path}/e"), ui);
                 }
                 Effect::Damage(e) => {
                     let mut is_some = e.is_some();
@@ -452,15 +453,15 @@ impl Effect {
                         }
                     }
                     if let Some(e) = e {
-                        e.show_editor(editing_data, format!("{path}/e"), ui);
+                        e.show_editor(hovered, lookup, format!("{path}/e"), ui);
                     }
                 }
                 Effect::AoeFaction(exp, e)
                 | Effect::WithTarget(exp, e)
                 | Effect::WithOwner(exp, e) => {
                     ui.vertical(|ui| {
-                        exp.show_editor(editing_data, format!("{path}/exp"), ui);
-                        e.show_editor(editing_data, format!("{path}/e"), ui, world);
+                        exp.show_editor(hovered, lookup, format!("{path}/exp"), ui);
+                        e.show_editor(hovered, lookup, format!("{path}/e"), ui, world);
                     });
                 }
                 Effect::List(list) | Effect::ListSpread(list) => {
@@ -471,7 +472,7 @@ impl Effect {
                                 if ui.link("-").clicked() {
                                     delete = Some(i);
                                 }
-                                e.show_editor(editing_data, format!("{path}/{i}"), ui, world);
+                                e.show_editor(hovered, lookup, format!("{path}/{i}"), ui, world);
                             });
                         }
                         if let Some(delete) = delete {
@@ -485,8 +486,8 @@ impl Effect {
                 Effect::WithVar(var, exp, e) => {
                     ui.vertical(|ui| {
                         var.show_editor(ui);
-                        exp.show_editor(editing_data, format!("{path}/exp"), ui);
-                        e.show_editor(editing_data, format!("{path}/e"), ui, world);
+                        exp.show_editor(hovered, lookup, format!("{path}/exp"), ui);
+                        e.show_editor(hovered, lookup, format!("{path}/e"), ui, world);
                     });
                 }
                 Effect::AddStatus(name) | Effect::Vfx(name) => {
@@ -514,8 +515,8 @@ impl Effect {
             ui.style_mut().visuals.hyperlink_color = color;
             let right = ui.link(RichText::new(")"));
             now_hovered |= right.hovered();
-            if now_hovered && !editing_data.hovered.as_ref().eq(&Some(&path)) {
-                editing_data.hovered = Some(path.clone());
+            if now_hovered && !hovered.as_ref().eq(&Some(&path)) {
+                *hovered = Some(path.clone());
             }
         });
     }

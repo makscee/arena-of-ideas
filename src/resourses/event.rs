@@ -79,7 +79,7 @@ impl Event {
     }
 
     pub fn process(self, context: Context, world: &mut World) -> bool {
-        let statuses = Status::collect_entity_statuses(context.owner(), world);
+        let statuses = Status::collect_unit_statuses(context.owner(), world);
         let statuses = Status::filter_active_statuses(statuses, f32::MAX, world);
         Status::notify(statuses, &self, &context, world)
     }
@@ -90,7 +90,7 @@ impl Event {
                 Context::new_named(self.to_string())
                     .set_owner(*owner, world)
                     .take(),
-                Status::collect_entity_statuses(*owner, world),
+                Status::collect_unit_statuses(*owner, world),
             ),
             _ => panic!("Can't map {self}"),
         };

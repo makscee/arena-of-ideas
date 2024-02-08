@@ -377,7 +377,8 @@ impl RepresentationMaterial {
     pub fn show_editor(
         &mut self,
         entity: Option<Entity>,
-        editing_data: &mut EditingData,
+        hovered: &mut Option<String>,
+        lookup: &mut String,
         ui: &mut Ui,
         world: &mut World,
     ) {
@@ -425,7 +426,8 @@ impl RepresentationMaterial {
 
                         size.show_editor_root(
                             entity,
-                            editing_data,
+                            hovered,
+                            lookup,
                             "size".to_owned(),
                             true,
                             ui,
@@ -433,7 +435,8 @@ impl RepresentationMaterial {
                         );
                         thickness.show_editor_root(
                             entity,
-                            editing_data,
+                            hovered,
+                            lookup,
                             "thickness".to_owned(),
                             true,
                             ui,
@@ -441,7 +444,8 @@ impl RepresentationMaterial {
                         );
                         alpha.show_editor_root(
                             entity,
-                            editing_data,
+                            hovered,
+                            lookup,
                             "alpha".to_owned(),
                             true,
                             ui,
@@ -449,7 +453,8 @@ impl RepresentationMaterial {
                         );
                         color.show_editor_root(
                             entity,
-                            editing_data,
+                            hovered,
+                            lookup,
                             "color".to_owned(),
                             true,
                             ui,
@@ -465,7 +470,8 @@ impl RepresentationMaterial {
                     } => {
                         size.show_editor_root(
                             entity,
-                            editing_data,
+                            hovered,
+                            lookup,
                             "size".to_owned(),
                             true,
                             ui,
@@ -473,7 +479,8 @@ impl RepresentationMaterial {
                         );
                         text.show_editor_root(
                             entity,
-                            editing_data,
+                            hovered,
+                            lookup,
                             "text".to_owned(),
                             true,
                             ui,
@@ -481,7 +488,8 @@ impl RepresentationMaterial {
                         );
                         color.show_editor_root(
                             entity,
-                            editing_data,
+                            hovered,
+                            lookup,
                             "color".to_owned(),
                             true,
                             ui,
@@ -489,7 +497,8 @@ impl RepresentationMaterial {
                         );
                         alpha.show_editor_root(
                             entity,
-                            editing_data,
+                            hovered,
+                            lookup,
                             "alpha".to_owned(),
                             true,
                             ui,
@@ -506,7 +515,8 @@ impl RepresentationMaterial {
                     } => {
                         thickness.show_editor_root(
                             entity,
-                            editing_data,
+                            hovered,
+                            lookup,
                             "thickness".to_owned(),
                             true,
                             ui,
@@ -514,16 +524,26 @@ impl RepresentationMaterial {
                         );
                         curvature.show_editor_root(
                             entity,
-                            editing_data,
+                            hovered,
+                            lookup,
                             "curvature".to_owned(),
                             true,
                             ui,
                             world,
                         );
-                        aa.show_editor_root(entity, editing_data, "aa".to_owned(), true, ui, world);
+                        aa.show_editor_root(
+                            entity,
+                            hovered,
+                            lookup,
+                            "aa".to_owned(),
+                            true,
+                            ui,
+                            world,
+                        );
                         color.show_editor_root(
                             entity,
-                            editing_data,
+                            hovered,
+                            lookup,
                             "color".to_owned(),
                             true,
                             ui,
@@ -606,7 +626,8 @@ impl Representation {
     pub fn show_editor(
         &mut self,
         entity: Option<Entity>,
-        editing_data: &mut EditingData,
+        hovered: &mut Option<String>,
+        lookup: &mut String,
         id: impl std::hash::Hash,
         ui: &mut Ui,
         world: &mut World,
@@ -619,10 +640,11 @@ impl Representation {
                 if ui.button("delete").clicked() {
                     delete = true;
                 }
-                self.material.show_editor(entity, editing_data, ui, world);
+                self.material
+                    .show_editor(entity, hovered, lookup, ui, world);
                 let mut deletes = Vec::default();
                 for (i, rep) in self.children.iter_mut().enumerate() {
-                    let child_delete = rep.show_editor(entity, editing_data, i, ui, world);
+                    let child_delete = rep.show_editor(entity, hovered, lookup, i, ui, world);
                     if child_delete {
                         deletes.push(i);
                     }
@@ -644,7 +666,8 @@ impl Representation {
                                 x.show_editor(ui);
                                 e.show_editor_root(
                                     entity,
-                                    editing_data,
+                                    hovered,
+                                    lookup,
                                     var.to_string(),
                                     false,
                                     ui,

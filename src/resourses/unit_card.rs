@@ -326,14 +326,14 @@ impl VarState {
         }
         window("UNIT")
             .id(entity)
-            .set_width(if open { 200.0 } else { 140.0 })
+            .set_width(if open { 200.0 } else { 120.0 })
             .title_bar(false)
             .order(if open {
                 egui::Order::Foreground
             } else {
                 Order::Middle
             })
-            .entity_anchor(entity, Align2::CENTER_TOP, vec2(0.0, 1.2), world)
+            .entity_anchor(entity, Align2::CENTER_TOP, vec2(0.0, -1.2), world)
             .show(ctx, |ui| {
                 let _ = self.show_frames(statuses, open, ui, world);
             });

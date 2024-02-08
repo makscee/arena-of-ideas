@@ -295,7 +295,7 @@ impl Expression {
             Expression::Hex(color) => Ok(VarValue::Color(Color::hex(color)?)),
             Expression::StatusCharges(name) => {
                 let status_name = name.get_string(context, world)?;
-                for status in Status::collect_entity_statuses(context.owner(), world) {
+                for status in Status::collect_unit_statuses(context.owner(), world) {
                     let state = VarState::get(status, world);
                     if let Ok(name) = state.get_string(VarName::Name) {
                         if name.eq(&status_name) {
@@ -461,7 +461,8 @@ impl Expression {
     pub fn show_editor_root(
         &mut self,
         entity: Option<Entity>,
-        editing_data: &mut EditingData,
+        hovered: &mut Option<String>,
+        lookup: &mut String,
         name: String,
         show_name: bool,
         ui: &mut Ui,
@@ -471,7 +472,7 @@ impl Expression {
             if show_name {
                 ui.label(name.clone());
             }
-            self.show_editor(editing_data, name, ui);
+            self.show_editor(hovered, lookup, name, ui);
             if let Some(entity) = entity {
                 let text = match self.get_value(&Context::from_owner(entity, world), world) {
                     Ok(value) => RichText::new(format!("{value}")).color(hex_color!("#00ACC1")),
@@ -482,13 +483,19 @@ impl Expression {
         });
     }
 
-    pub fn show_editor(&mut self, editing_data: &mut EditingData, name: String, ui: &mut Ui) {
-        let hovered = if let Some(hovered) = editing_data.hovered.as_ref() {
+    pub fn show_editor(
+        &mut self,
+        hovered: &mut Option<String>,
+        lookup: &mut String,
+        name: String,
+        ui: &mut Ui,
+    ) {
+        let is_hovered = if let Some(hovered) = hovered.as_ref() {
             hovered.eq(&name)
         } else {
             false
         };
-        let color = match hovered {
+        let color = match is_hovered {
             true => hex_color!("#FF9100"),
             false => self.editor_color(),
         };
@@ -513,20 +520,20 @@ impl Expression {
             ui.vertical(|ui| {
                 let link = ui.link(RichText::new(format!("{self}")));
                 if link.clicked() {
-                    editing_data.lookup.clear();
+                    lookup.clear();
                     link.request_focus();
                 }
                 now_hovered |= link.hovered();
                 if link.has_focus() || link.lost_focus() {
                     let mut need_clear = false;
                     ui.horizontal_wrapped(|ui| {
-                        ui.label(editing_data.lookup.to_owned());
+                        ui.label(lookup.to_owned());
                         Expression::iter()
                             .filter_map(|e| {
                                 match e
                                     .to_string()
                                     .to_lowercase()
-                                    .starts_with(editing_data.lookup.to_lowercase().as_str())
+                                    .starts_with(lookup.to_lowercase().as_str())
                                 {
                                     true => Some(e),
                                     false => None,
@@ -541,7 +548,7 @@ impl Expression {
                             })
                     });
                     if need_clear {
-                        editing_data.lookup.clear();
+                        lookup.clear();
                     }
                 }
             });
@@ -633,7 +640,7 @@ impl Expression {
                 | Expression::SlotUnit(x)
                 | Expression::FactionCount(x)
                 | Expression::StatusCharges(x) => {
-                    x.show_editor(editing_data, format!("{name}/x"), ui);
+                    x.show_editor(hovered, lookup, format!("{name}/x"), ui);
                 }
                 Expression::Vec2EE(a, b)
                 | Expression::Sum(a, b)
@@ -650,17 +657,17 @@ impl Expression {
                 | Expression::WithVar(_, a, b) => {
                     ui.vertical(|ui| {
                         ui.horizontal(|ui| {
-                            a.show_editor(editing_data, format!("{name}/a"), ui);
+                            a.show_editor(hovered, lookup, format!("{name}/a"), ui);
                         });
                         ui.horizontal(|ui| {
-                            b.show_editor(editing_data, format!("{name}/b"), ui);
+                            b.show_editor(hovered, lookup, format!("{name}/b"), ui);
                         });
                     });
                 }
                 Expression::If(i, t, e) => {
-                    i.show_editor(editing_data, format!("{name}/i"), ui);
-                    t.show_editor(editing_data, format!("{name}/t"), ui);
-                    e.show_editor(editing_data, format!("{name}/e"), ui);
+                    i.show_editor(hovered, lookup, format!("{name}/i"), ui);
+                    t.show_editor(hovered, lookup, format!("{name}/t"), ui);
+                    e.show_editor(hovered, lookup, format!("{name}/e"), ui);
                 }
             }
             ui.style_mut().visuals.hyperlink_color = color;
@@ -671,13 +678,13 @@ impl Expression {
                 }
             }
             now_hovered |= right.hovered();
-            if now_hovered && !editing_data.hovered.as_ref().eq(&Some(&name)) {
-                editing_data.hovered = Some(name.clone());
+            if now_hovered && !hovered.as_ref().eq(&Some(&name)) {
+                *hovered = Some(name.clone());
             }
         });
     }
 
-    fn editor_color(&self) -> Color32 {
+    pub fn editor_color(&self) -> Color32 {
         match self {
             Expression::Zero
             | Expression::GameTime
