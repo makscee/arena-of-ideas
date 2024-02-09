@@ -300,50 +300,6 @@ impl PackedUnit {
         result
     }
 
-    pub fn show_editor(
-        &mut self,
-        entity: Option<Entity>,
-        hovered: &mut Option<String>,
-        lookup: &mut String,
-        ui: &mut Ui,
-        world: &mut World,
-    ) {
-        CollapsingHeader::new("Hero")
-            .default_open(true)
-            .show(ui, |ui| {
-                ui.horizontal(|ui| {
-                    ui.add(
-                        TextEdit::singleline(&mut self.name)
-                            .desired_width(80.0)
-                            .hint_text("name"),
-                    );
-                    ui.add(
-                        TextEdit::singleline(&mut self.description)
-                            .desired_width(100.0)
-                            .hint_text("description"),
-                    );
-                    ui.label("atk:");
-                    ui.add(DragValue::new(&mut self.atk));
-                    ui.label("hp:");
-                    ui.add(DragValue::new(&mut self.hp));
-                    let houses = Pools::get(world).houses.keys().cloned().collect_vec();
-                    ui.label("house:");
-                    ComboBox::from_id_source("house")
-                        .selected_text(self.houses.clone())
-                        .show_ui(ui, |ui| {
-                            for house in houses {
-                                ui.selectable_value(&mut self.houses, house.clone(), house);
-                            }
-                        })
-                });
-
-                self.representation
-                    .show_editor(entity, hovered, lookup, 0, ui, world);
-                self.trigger
-                    .show_editor(hovered, lookup, "trigger".to_owned(), ui, world);
-            });
-    }
-
     pub fn statuses_string(&self) -> String {
         self.statuses
             .iter()

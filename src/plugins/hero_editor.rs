@@ -1,9 +1,10 @@
-use std::ops::Add;
+use std::{fmt::Display, ops::Add};
 
 use bevy::input::mouse::MouseButton;
-use bevy_egui::egui::{epaint::TextShape, DragValue, Frame, Key, ScrollArea, Sense, Shape};
+use bevy_egui::egui::{DragValue, Frame, Key, ScrollArea, Sense, Shape};
 use hex::encode;
 use ron::ser::{to_string_pretty, PrettyConfig};
+use serde::de::DeserializeOwned;
 
 use super::*;
 
@@ -13,9 +14,7 @@ impl Plugin for HeroEditorPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
-            (Self::input, Self::ui.after(PanelsPlugin::ui))
-                .run_if(in_state(GameState::HeroEditor))
-                .after(PanelsPlugin::ui),
+            (Self::input, Self::ui.after(PanelsPlugin::ui)).run_if(in_state(GameState::HeroEditor)),
         )
         .add_systems(OnEnter(GameState::HeroEditor), Self::on_enter)
         .add_systems(OnExit(GameState::HeroEditor), Self::on_exit);
@@ -35,6 +34,19 @@ impl HeroEditorPlugin {
     fn on_exit(world: &mut World) {
         Self::save(world);
         Self::clear(world);
+    }
+
+    fn input(world: &mut World) {
+        if world
+            .resource::<Input<KeyCode>>()
+            .just_pressed(KeyCode::Escape)
+        {
+            debug!("Close");
+            let mut pd = PersistentData::load(world);
+            let ed = &mut pd.hero_editor_data;
+            ed.units.values_mut().for_each(|u| u.active = false);
+            pd.save(world).unwrap();
+        }
     }
 
     fn save(world: &mut World) {
@@ -100,8 +112,6 @@ impl HeroEditorPlugin {
         }
         pd.save(world).unwrap();
     }
-
-    fn input(world: &mut World) {}
 
     fn clear(world: &mut World) {
         let mut pd = PersistentData::load(world);
@@ -240,22 +250,61 @@ impl EditorEntityData {
                                 target,
                                 effect,
                             } => {
-                                CollapsingHeader::new("TARGET").default_open(false).show(
-                                    ui,
-                                    |ui| {
-                                        ui.horizontal(|ui| {
-                                            target.show_node(
-                                                default(),
-                                                None,
-                                                &Context::from_owner(unit, world),
-                                                ui,
-                                                world,
-                                            );
+                                ComboBox::from_id_source(unit)
+                                    .selected_text(trigger.to_string())
+                                    .show_ui(ui, |ui| {
+                                        for option in FireTrigger::iter() {
+                                            let text = option.to_string();
+                                            ui.selectable_value(trigger, option, text);
+                                        }
+                                    });
+                                match trigger {
+                                    FireTrigger::List(list) => {
+                                        ui.vertical(|ui| {
+                                            for (i, trigger) in list.iter_mut().enumerate() {
+                                                ComboBox::from_id_source(Id::new(unit).with(i))
+                                                    .selected_text(trigger.to_string())
+                                                    .show_ui(ui, |ui| {
+                                                        for option in FireTrigger::iter() {
+                                                            let text = option.to_string();
+                                                            ui.selectable_value(
+                                                                trigger.as_mut(),
+                                                                option,
+                                                                text,
+                                                            );
+                                                        }
+                                                    });
+                                            }
+                                            if ui.button("+").clicked() {
+                                                list.push(default());
+                                            }
                                         });
-                                    },
-                                );
+                                    }
+                                    _ => {}
+                                }
+                                CollapsingHeader::new("TARGET")
+                                    .default_open(true)
+                                    .show(ui, |ui| {
+                                        show_tree(
+                                            target,
+                                            &Context::from_owner(unit, world),
+                                            ui,
+                                            world,
+                                        );
+                                    });
+
+                                CollapsingHeader::new("EFFECT")
+                                    .default_open(true)
+                                    .show(ui, |ui| {
+                                        show_tree(
+                                            effect,
+                                            &Context::from_owner(unit, world),
+                                            ui,
+                                            world,
+                                        );
+                                    });
                             }
-                            Trigger::Change { trigger, expr } => todo!(),
+                            Trigger::Change { .. } => todo!(),
                             Trigger::List(_) => todo!(),
                         }
 
@@ -299,7 +348,13 @@ impl HeroEditorData {
         let left = PackedTeam::find_entity(Faction::Left, world).unwrap();
         self.saved_units.0.iter().rev().for_each(|u| {
             let e = u.clone().unpack(left, None, world);
-            self.units.insert(e, default());
+            self.units.insert(
+                e,
+                EditorEntityData {
+                    active: true,
+                    ..default()
+                },
+            );
         });
         let right = PackedTeam::find_entity(Faction::Right, world).unwrap();
         self.saved_units.1.iter().rev().for_each(|u| {
@@ -341,17 +396,6 @@ impl HeroEditorData {
     }
 }
 
-trait EditorNodeGenerator {
-    fn show_node(
-        &mut self,
-        path: String,
-        connect_pos: Option<Pos2>,
-        context: &Context,
-        ui: &mut Ui,
-        world: &mut World,
-    );
-}
-
 fn show_value(value: &Result<VarValue>, ui: &mut Ui) {
     match &value {
         Ok(v) => {
@@ -371,196 +415,246 @@ fn show_value(value: &Result<VarValue>, ui: &mut Ui) {
     }
 }
 
-impl EditorNodeGenerator for Expression {
-    fn show_node(
+fn show_tree(
+    root: &mut impl EditorNodeGenerator,
+    context: &Context,
+    ui: &mut Ui,
+    world: &mut World,
+) {
+    let style = ui.style_mut();
+    style.override_text_style = Some(TextStyle::Small);
+    style.drag_value_text_style = TextStyle::Small;
+    style.visuals.widgets.inactive.bg_stroke = Stroke {
+        width: 1.0,
+        color: dark_gray(),
+    };
+    ui.horizontal(|ui| {
+        show_node(root, default(), None, context, ui, world);
+    });
+}
+
+fn show_node(
+    source: &mut impl EditorNodeGenerator,
+    path: String,
+    connect_pos: Option<Pos2>,
+    context: &Context,
+    ui: &mut Ui,
+    world: &mut World,
+) {
+    let path = format!("{path}/{source}");
+    let ctx = &egui_context(world);
+    let InnerResponse {
+        inner: name_resp,
+        response: frame_resp,
+    } = Frame::none()
+        .stroke(Stroke::new(1.0, dark_gray()))
+        .inner_margin(6.0)
+        .outer_margin(6.0)
+        .rounding(0.0)
+        .show(ui, |ui| {
+            ui.set_min_width(50.0);
+            let name = source
+                .to_string()
+                .add_color(source.node_color())
+                .as_label(ui)
+                .sense(Sense::click())
+                .ui(ui);
+            ui.allocate_ui_at_rect(
+                name.rect.translate(egui::vec2(0.0, name.rect.height())),
+                |ui| {
+                    source.show_extra(&path, context, world, ui);
+                },
+            );
+            name.on_hover_text(&path)
+        });
+
+    if name_resp.clicked() {
+        name_resp.request_focus();
+    }
+    if name_resp.has_focus() || name_resp.lost_focus() {
+        const LOOKUP_KEY: &str = "lookup";
+        window("replace")
+            .order(egui::Order::Foreground)
+            .title_bar(false)
+            .fixed_pos(frame_resp.rect.right_center().to_bvec2())
+            .show(ctx, |ui| {
+                Frame::none().inner_margin(8.0).show(ui, |ui| {
+                    let mut lookup = get_context_string(world, LOOKUP_KEY);
+                    let mut submit = false;
+                    ctx.input(|i| {
+                        for e in &i.events {
+                            match e {
+                                egui::Event::Text(t) => lookup += t,
+                                egui::Event::Key { key, pressed, .. } => {
+                                    if *pressed {
+                                        if key.eq(&Key::Backspace) && !lookup.is_empty() {
+                                            lookup.remove(lookup.len() - 1);
+                                        } else if matches!(key, Key::Enter | Key::Tab) {
+                                            submit = true;
+                                        }
+                                    }
+                                }
+                                _ => {}
+                            }
+                        }
+                    });
+                    ui.label(&lookup);
+                    set_context_string(world, LOOKUP_KEY, lookup.clone());
+                    ScrollArea::new([false, true])
+                        .max_height(300.0)
+                        .show(ui, |ui| {
+                            let lookup = lookup.to_lowercase();
+                            frame(ui, |ui| {
+                                if source.show_replace_buttons(&lookup, submit, ui) {
+                                    set_context_string(world, LOOKUP_KEY, default());
+                                }
+                            });
+                        });
+                });
+            });
+    }
+
+    if let Some(pos) = connect_pos {
+        let end = frame_resp.rect.left_center();
+        let mut mid1 = pos;
+        mid1.x += 5.0;
+        let mut mid2 = end;
+        mid2.x -= 5.0;
+        let points = [pos, mid1, mid2, end];
+        let curve = Shape::CubicBezier(egui::epaint::CubicBezierShape::from_points_stroke(
+            points,
+            false,
+            Color32::TRANSPARENT,
+            Stroke {
+                width: 1.0,
+                color: dark_gray(),
+            },
+        ));
+        ui.painter().add(curve);
+    }
+
+    source.show_children(
+        &path,
+        Some(frame_resp.rect.right_center()),
+        context,
+        ui,
+        world,
+    );
+
+    name_resp.context_menu(|ui| {
+        if ui.button("COPY").clicked() {
+            save_to_clipboard(
+                &to_string_pretty(source, PrettyConfig::new()).unwrap(),
+                world,
+            );
+            ui.close_menu();
+        }
+        if ui.button("PASTE").clicked() {
+            let o = get_from_clipboard(world).unwrap();
+            *source = ron::from_str(o.as_str()).unwrap();
+            ui.close_menu();
+        }
+    });
+}
+
+trait EditorNodeGenerator: Display + Sized + Serialize + DeserializeOwned {
+    fn node_color(&self) -> Color32;
+    fn show_children(
         &mut self,
-        path: String,
+        path: &str,
+        connect_pos: Option<Pos2>,
+        context: &Context,
+        ui: &mut Ui,
+        world: &mut World,
+    );
+    fn show_extra(&mut self, path: &str, context: &Context, world: &mut World, ui: &mut Ui);
+    fn show_replace_buttons(&mut self, lookup: &str, submit: bool, ui: &mut Ui) -> bool;
+}
+
+impl EditorNodeGenerator for Expression {
+    fn node_color(&self) -> Color32 {
+        self.editor_color()
+    }
+
+    fn show_extra(&mut self, path: &str, context: &Context, world: &mut World, ui: &mut Ui) {
+        let value = self.get_value(context, world);
+        match self {
+            Expression::Value(v) => {
+                ui.label(format!("{v:?}"));
+            }
+            Expression::Float(x) => {
+                ui.add(DragValue::new(x).speed(0.1));
+            }
+            Expression::Int(x) => {
+                ui.add(DragValue::new(x));
+            }
+            Expression::Bool(x) => {
+                ui.checkbox(x, "");
+            }
+            Expression::String(x) => {
+                ui.text_edit_singleline(x);
+            }
+            Expression::Hex(x) => {
+                let c = Color::hex(&x).unwrap_or_default().as_rgba_u8();
+                let mut c = Color32::from_rgb(c[0], c[1], c[2]);
+                if ui.color_edit_button_srgba(&mut c).changed() {
+                    *x = encode(c.to_array());
+                }
+            }
+            Expression::Faction(x) => {
+                ComboBox::from_id_source(&path)
+                    .selected_text(x.to_string())
+                    .show_ui(ui, |ui| {
+                        for option in Faction::iter() {
+                            let text = option.to_string();
+                            ui.selectable_value(x, option, text).changed();
+                        }
+                    });
+            }
+            Expression::State(x)
+            | Expression::TargetState(x)
+            | Expression::Context(x)
+            | Expression::StateLast(x) => {
+                ComboBox::from_id_source(&path)
+                    .selected_text(x.to_string())
+                    .show_ui(ui, |ui| {
+                        for option in VarName::iter() {
+                            if context.get_var(option, world).is_some() {
+                                let text = option.to_string();
+                                ui.selectable_value(x, option, text).changed();
+                            }
+                        }
+                    });
+            }
+            Expression::WithVar(x, ..) => {
+                ui.vertical(|ui| {
+                    ComboBox::from_id_source(&path)
+                        .selected_text(x.to_string())
+                        .show_ui(ui, |ui| {
+                            for option in VarName::iter() {
+                                let text = option.to_string();
+                                ui.selectable_value(x, option, text).changed();
+                            }
+                        });
+                    show_value(&value, ui);
+                });
+            }
+            Expression::Vec2(x, y) => {
+                ui.add(DragValue::new(x).speed(0.1));
+                ui.add(DragValue::new(y).speed(0.1));
+            }
+            _ => show_value(&value, ui),
+        };
+    }
+
+    fn show_children(
+        &mut self,
+        path: &str,
         connect_pos: Option<Pos2>,
         context: &Context,
         ui: &mut Ui,
         world: &mut World,
     ) {
-        let path = format!("{path}/{self}");
-        let value = self.get_value(context, world);
-        let ctx = &egui_context(world);
-        let InnerResponse {
-            inner: node,
-            response: frame_resp,
-        } = frame_horizontal(ui, |ui| {
-            ui.set_min_width(50.0);
-            let (pos, galley, resp) = self
-                .to_string()
-                .add_color(self.editor_color())
-                .as_label(ui)
-                .sense(Sense::click())
-                .layout_in_ui(ui);
-            ui.painter().add(TextShape::new(pos, galley.galley));
-            ui.allocate_ui_at_rect(
-                resp.rect.translate(egui::vec2(0.0, resp.rect.height())),
-                |ui| {
-                    let style = ui.style_mut();
-                    style.override_text_style = Some(TextStyle::Small);
-                    style.drag_value_text_style = TextStyle::Small;
-                    style.visuals.widgets.inactive.bg_stroke = Stroke {
-                        width: 1.0,
-                        color: dark_gray(),
-                    };
-                    match self {
-                        Expression::Value(v) => {
-                            ui.label(format!("{v:?}"));
-                        }
-                        Expression::Float(x) => {
-                            ui.add(DragValue::new(x).speed(0.1));
-                        }
-                        Expression::Int(x) => {
-                            ui.add(DragValue::new(x));
-                        }
-                        Expression::Bool(x) => {
-                            ui.checkbox(x, "");
-                        }
-                        Expression::String(x) => {
-                            ui.text_edit_singleline(x);
-                        }
-                        Expression::Hex(x) => {
-                            let c = Color::hex(&x).unwrap_or_default().as_rgba_u8();
-                            let mut c = Color32::from_rgb(c[0], c[1], c[2]);
-                            if ui.color_edit_button_srgba(&mut c).changed() {
-                                *x = encode(c.to_array());
-                            }
-                        }
-                        Expression::Faction(x) => {
-                            ComboBox::from_id_source(&path)
-                                .selected_text(x.to_string())
-                                .show_ui(ui, |ui| {
-                                    for option in Faction::iter() {
-                                        let text = option.to_string();
-                                        ui.selectable_value(x, option, text).changed();
-                                    }
-                                });
-                        }
-                        Expression::State(x)
-                        | Expression::TargetState(x)
-                        | Expression::Context(x)
-                        | Expression::StateLast(x) => {
-                            ComboBox::from_id_source(&path)
-                                .selected_text(x.to_string())
-                                .show_ui(ui, |ui| {
-                                    for option in VarName::iter() {
-                                        if context.get_var(option, world).is_some() {
-                                            let text = option.to_string();
-                                            ui.selectable_value(x, option, text).changed();
-                                        }
-                                    }
-                                });
-                        }
-                        Expression::WithVar(x, ..) => {
-                            ui.vertical(|ui| {
-                                ComboBox::from_id_source(&path)
-                                    .selected_text(x.to_string())
-                                    .show_ui(ui, |ui| {
-                                        for option in VarName::iter() {
-                                            let text = option.to_string();
-                                            ui.selectable_value(x, option, text).changed();
-                                        }
-                                    });
-                                show_value(&value, ui);
-                            });
-                        }
-                        Expression::Vec2(x, y) => {
-                            ui.add(DragValue::new(x).speed(0.1));
-                            ui.add(DragValue::new(y).speed(0.1));
-                        }
-                        _ => show_value(&value, ui),
-                    };
-                },
-            );
-            resp
-        });
-        if let Some(pos) = connect_pos {
-            let end = frame_resp.rect.left_center();
-            let mut mid1 = pos;
-            mid1.x += 5.0;
-            let mut mid2 = end;
-            mid2.x -= 5.0;
-            let points = [pos, mid1, mid2, end];
-            let curve = Shape::CubicBezier(egui::epaint::CubicBezierShape::from_points_stroke(
-                points,
-                false,
-                Color32::TRANSPARENT,
-                Stroke {
-                    width: 1.0,
-                    color: match value {
-                        Ok(_) => light_gray(),
-                        Err(_) => red(),
-                    },
-                },
-            ));
-            ui.painter().add(curve);
-        }
-        if node.clicked() {
-            node.request_focus();
-        }
-        if node.has_focus() || node.lost_focus() {
-            const LOOKUP_KEY: &str = "lookup";
-
-            window("replace")
-                .order(egui::Order::Foreground)
-                .title_bar(false)
-                .fixed_pos(frame_resp.rect.right_center().to_bvec2())
-                .show(ctx, |ui| {
-                    Frame::none().inner_margin(8.0).show(ui, |ui| {
-                        let mut lookup = get_context_string(world, LOOKUP_KEY);
-                        let mut submit = false;
-                        ctx.input(|i| {
-                            for e in &i.events {
-                                match e {
-                                    egui::Event::Text(t) => lookup += t,
-                                    egui::Event::Key { key, pressed, .. } => {
-                                        if *pressed {
-                                            if key.eq(&Key::Backspace) && !lookup.is_empty() {
-                                                lookup.remove(lookup.len() - 1);
-                                            } else if matches!(key, Key::Enter | Key::Tab) {
-                                                submit = true;
-                                            }
-                                        }
-                                    }
-                                    _ => {}
-                                }
-                            }
-                        });
-                        ui.label(&lookup);
-                        set_context_string(world, LOOKUP_KEY, lookup.clone());
-                        ScrollArea::new([false, true])
-                            .max_height(300.0)
-                            .show(ui, |ui| {
-                                let lookup = lookup.to_lowercase();
-                                frame(ui, |ui| {
-                                    for e in Expression::iter() {
-                                        if e.to_string().to_lowercase().contains(&lookup) {
-                                            let btn = e
-                                                .to_string()
-                                                .add_color(e.editor_color())
-                                                .rich_text(ui);
-                                            let btn = ui.button(btn);
-                                            if btn.clicked() || submit {
-                                                btn.request_focus();
-                                            }
-                                            if btn.gained_focus() {
-                                                *self = e.set_inner(self.clone());
-                                                set_context_string(world, LOOKUP_KEY, default());
-                                                break;
-                                            }
-                                        }
-                                    }
-                                });
-                            });
-                    });
-                });
-            // let mut rect = response.rect;
-            // rect.set_width(220.0);
-            // *rect.bottom_mut() += 300.0;
-            // let ui = &mut ui.child_ui(rect, Layout::top_down_justified(egui::Align::Center));
-        }
         match self {
             Expression::Zero
             | Expression::GameTime
@@ -581,8 +675,8 @@ impl EditorNodeGenerator for Expression {
             | Expression::AllyUnits
             | Expression::EnemyUnits
             | Expression::AllUnits
-            | Expression::AdjacentUnits => {}
-            Expression::Float(_)
+            | Expression::AdjacentUnits
+            | Expression::Float(_)
             | Expression::Int(_)
             | Expression::Bool(_)
             | Expression::String(_)
@@ -593,51 +687,31 @@ impl EditorNodeGenerator for Expression {
             | Expression::StateLast(_)
             | Expression::Context(_)
             | Expression::Value(_)
-            | Expression::Vec2(_, _) => {}
-            Expression::Vec2E(e)
-            | Expression::StringInt(e)
-            | Expression::StringFloat(e)
-            | Expression::StringVec(e)
-            | Expression::IntFloat(e)
-            | Expression::Sin(e)
-            | Expression::Cos(e)
-            | Expression::Sign(e)
-            | Expression::Fract(e)
-            | Expression::Floor(e)
-            | Expression::UnitVec(e)
-            | Expression::Even(e)
-            | Expression::Abs(e)
-            | Expression::SlotUnit(e)
-            | Expression::FactionCount(e)
-            | Expression::StatusCharges(e) => e.show_node(
-                format!("{path}:e"),
-                Some(frame_resp.rect.right_center()),
+            | Expression::Vec2(_, _)
+            | Expression::Vec2E(_)
+            | Expression::StringInt(_)
+            | Expression::StringFloat(_)
+            | Expression::StringVec(_)
+            | Expression::IntFloat(_) => default(),
+            Expression::Sin(x)
+            | Expression::Cos(x)
+            | Expression::Sign(x)
+            | Expression::Fract(x)
+            | Expression::Floor(x)
+            | Expression::UnitVec(x)
+            | Expression::Even(x)
+            | Expression::Abs(x)
+            | Expression::SlotUnit(x)
+            | Expression::FactionCount(x)
+            | Expression::StatusCharges(x) => show_node(
+                x.as_mut(),
+                format!("{path}:x"),
+                connect_pos,
                 context,
                 ui,
                 world,
             ),
-            Expression::Vec2EE(x, y) => {
-                ui.vertical(|ui| {
-                    ui.horizontal(|ui| {
-                        x.show_node(
-                            format!("{path}:x"),
-                            Some(frame_resp.rect.right_center()),
-                            context,
-                            ui,
-                            world,
-                        );
-                    });
-                    ui.horizontal(|ui| {
-                        y.show_node(
-                            format!("{path}:y"),
-                            Some(frame_resp.rect.right_center()),
-                            context,
-                            ui,
-                            world,
-                        );
-                    });
-                });
-            }
+
             Expression::Sum(a, b)
             | Expression::Sub(a, b)
             | Expression::Mul(a, b)
@@ -648,22 +722,24 @@ impl EditorNodeGenerator for Expression {
             | Expression::Max(a, b)
             | Expression::Equals(a, b)
             | Expression::And(a, b)
-            | Expression::Or(a, b)
-            | Expression::WithVar(_, a, b) => {
+            | Expression::Vec2EE(a, b)
+            | Expression::Or(a, b) => {
                 ui.vertical(|ui| {
                     ui.horizontal(|ui| {
-                        a.show_node(
+                        show_node(
+                            a.as_mut(),
                             format!("{path}:a"),
-                            Some(frame_resp.rect.right_center()),
+                            connect_pos,
                             context,
                             ui,
                             world,
                         );
                     });
                     ui.horizontal(|ui| {
-                        b.show_node(
+                        show_node(
+                            b.as_mut(),
                             format!("{path}:b"),
-                            Some(frame_resp.rect.right_center()),
+                            connect_pos,
                             context,
                             ui,
                             world,
@@ -674,27 +750,54 @@ impl EditorNodeGenerator for Expression {
             Expression::If(i, t, e) => {
                 ui.vertical(|ui| {
                     ui.horizontal(|ui| {
-                        i.show_node(
+                        show_node(
+                            i.as_mut(),
                             format!("{path}:i"),
-                            Some(frame_resp.rect.right_center()),
+                            connect_pos,
                             context,
                             ui,
                             world,
                         );
                     });
                     ui.horizontal(|ui| {
-                        t.show_node(
+                        show_node(
+                            t.as_mut(),
                             format!("{path}:t"),
-                            Some(frame_resp.rect.right_center()),
+                            connect_pos,
                             context,
                             ui,
                             world,
                         );
                     });
                     ui.horizontal(|ui| {
-                        e.show_node(
+                        show_node(
+                            e.as_mut(),
                             format!("{path}:e"),
-                            Some(frame_resp.rect.right_center()),
+                            connect_pos,
+                            context,
+                            ui,
+                            world,
+                        );
+                    });
+                });
+            }
+            Expression::WithVar(_, val, e) => {
+                ui.vertical(|ui| {
+                    ui.horizontal(|ui| {
+                        show_node(
+                            val.as_mut(),
+                            format!("{path}:val"),
+                            connect_pos,
+                            context,
+                            ui,
+                            world,
+                        );
+                    });
+                    ui.horizontal(|ui| {
+                        show_node(
+                            e.as_mut(),
+                            format!("{path}:e"),
+                            connect_pos,
                             context,
                             ui,
                             world,
@@ -703,20 +806,202 @@ impl EditorNodeGenerator for Expression {
                 });
             }
         };
+    }
 
-        node.context_menu(|ui| {
-            if ui.button("COPY").clicked() {
-                save_to_clipboard(&to_string_pretty(self, PrettyConfig::new()).unwrap(), world);
-                ui.close_menu();
+    fn show_replace_buttons(&mut self, lookup: &str, submit: bool, ui: &mut Ui) -> bool {
+        for e in Expression::iter() {
+            if e.to_string().to_lowercase().contains(lookup) {
+                let btn = e.to_string().add_color(e.node_color()).rich_text(ui);
+                let btn = ui.button(btn);
+                if btn.clicked() || submit {
+                    btn.request_focus();
+                }
+                if btn.gained_focus() {
+                    *self = e.set_inner(self.clone());
+                    return true;
+                }
             }
-            if ui.button("PASTE").clicked() {
-                *self = ron::from_str(&get_from_clipboard(world).unwrap()).unwrap();
-                ui.close_menu();
+        }
+        false
+    }
+}
+
+impl EditorNodeGenerator for Effect {
+    fn node_color(&self) -> Color32 {
+        white()
+    }
+
+    fn show_extra(&mut self, path: &str, context: &Context, world: &mut World, ui: &mut Ui) {
+        match self {
+            Effect::AoeFaction(_, _)
+            | Effect::WithTarget(_, _)
+            | Effect::WithOwner(_, _)
+            | Effect::Noop
+            | Effect::Kill
+            | Effect::FullCopy
+            | Effect::RemoveLocalTrigger
+            | Effect::Debug(_)
+            | Effect::Text(_) => {}
+
+            Effect::List(list) | Effect::ListSpread(list) => {
+                if ui.button("CLEAR").clicked() {
+                    list.clear()
+                }
             }
-            if ui.button("WRAP").clicked() {
-                *self = Expression::Abs(Box::new(self.clone()));
-                ui.close_menu();
+            Effect::Damage(e) => {
+                let mut v = e.is_some();
+                if ui.checkbox(&mut v, "").changed() {
+                    *e = match v {
+                        true => Some(default()),
+                        false => None,
+                    };
+                }
             }
-        });
+            Effect::WithVar(x, e, _) => {
+                ui.vertical(|ui| {
+                    ComboBox::from_id_source(&path)
+                        .selected_text(x.to_string())
+                        .show_ui(ui, |ui| {
+                            for option in VarName::iter() {
+                                let text = option.to_string();
+                                ui.selectable_value(x, option, text).changed();
+                            }
+                        });
+                    let value = e.get_value(context, world);
+                    show_value(&value, ui);
+                });
+            }
+            Effect::UseAbility(name) => {
+                ui.vertical(|ui| {
+                    ComboBox::from_id_source(&path)
+                        .selected_text(name.to_owned())
+                        .show_ui(ui, |ui| {
+                            for option in Pools::get(world).abilities.keys() {
+                                let text = option.to_string();
+                                ui.selectable_value(name, option.to_owned(), text).changed();
+                            }
+                        });
+                });
+            }
+            Effect::AddStatus(name) => {
+                ui.vertical(|ui| {
+                    ComboBox::from_id_source(&path)
+                        .selected_text(name.to_owned())
+                        .show_ui(ui, |ui| {
+                            for option in Pools::get(world).statuses.keys() {
+                                let text = option.to_string();
+                                ui.selectable_value(name, option.to_owned(), text).changed();
+                            }
+                        });
+                });
+            }
+            Effect::Vfx(name) => {
+                ui.vertical(|ui| {
+                    ComboBox::from_id_source(&path)
+                        .selected_text(name.to_owned())
+                        .show_ui(ui, |ui| {
+                            for option in Pools::get(world).vfx.keys() {
+                                let text = option.to_string();
+                                ui.selectable_value(name, option.to_owned(), text).changed();
+                            }
+                        });
+                });
+            }
+            Effect::SendEvent(name) => {
+                ui.vertical(|ui| {
+                    ComboBox::from_id_source(&path)
+                        .selected_text(name.to_string())
+                        .show_ui(ui, |ui| {
+                            for option in [Event::BattleStart, Event::TurnStart, Event::TurnEnd] {
+                                let text = option.to_string();
+                                ui.selectable_value(name, option, text).changed();
+                            }
+                        });
+                });
+            }
+        }
+    }
+
+    fn show_replace_buttons(&mut self, lookup: &str, submit: bool, ui: &mut Ui) -> bool {
+        for e in Effect::iter() {
+            if e.to_string().to_lowercase().contains(lookup) {
+                let btn = e.to_string().add_color(e.node_color()).rich_text(ui);
+                let btn = ui.button(btn);
+                if btn.clicked() || submit {
+                    btn.request_focus();
+                }
+                if btn.gained_focus() {
+                    *self = e;
+                    return true;
+                }
+            }
+        }
+        false
+    }
+
+    fn show_children(
+        &mut self,
+        path: &str,
+        connect_pos: Option<Pos2>,
+        context: &Context,
+        ui: &mut Ui,
+        world: &mut World,
+    ) {
+        match self {
+            Effect::Noop
+            | Effect::Kill
+            | Effect::FullCopy
+            | Effect::UseAbility(_)
+            | Effect::AddStatus(_)
+            | Effect::Vfx(_)
+            | Effect::SendEvent(_)
+            | Effect::RemoveLocalTrigger
+            | Effect::Debug(_) => {}
+
+            Effect::Text(e) => show_node(e, format!("{path}:e"), connect_pos, context, ui, world),
+            Effect::Damage(e) => {
+                if let Some(e) = e {
+                    show_node(e, format!("{path}:e"), connect_pos, context, ui, world);
+                }
+            }
+            Effect::AoeFaction(e, eff) | Effect::WithTarget(e, eff) | Effect::WithOwner(e, eff) => {
+                ui.vertical(|ui| {
+                    ui.horizontal(|ui| {
+                        show_node(e, format!("{path}:e"), connect_pos, context, ui, world);
+                    });
+                    ui.horizontal(|ui| {
+                        show_node(
+                            eff.as_mut(),
+                            format!("{path}:eff"),
+                            connect_pos,
+                            context,
+                            ui,
+                            world,
+                        );
+                    });
+                });
+            }
+            Effect::List(list) => {
+                ui.vertical(|ui| {
+                    for eff in list.iter_mut() {
+                        ui.horizontal(|ui| {
+                            show_node(
+                                eff.as_mut(),
+                                format!("{path}:eff"),
+                                connect_pos,
+                                context,
+                                ui,
+                                world,
+                            );
+                        });
+                    }
+                    if ui.button("+").clicked() {
+                        list.push(default());
+                    }
+                });
+            }
+            Effect::ListSpread(_) => todo!(),
+            Effect::WithVar(_, _, _) => todo!(),
+        };
     }
 }

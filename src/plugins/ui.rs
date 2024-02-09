@@ -102,7 +102,7 @@ impl UiPlugin {
             style.spacing.slider_width = 200.0;
             // dbg!(style.visuals.widgets.hovered);
             style.visuals.widgets.inactive = WidgetVisuals {
-                bg_fill: white(),
+                bg_fill: black(),
                 weak_bg_fill: black(),
                 bg_stroke: Stroke::new(1.0, white()),
                 rounding: Rounding::same(0.0),
@@ -118,7 +118,7 @@ impl UiPlugin {
                 expansion: 0.0,
             };
             style.visuals.widgets.hovered = WidgetVisuals {
-                bg_fill: white(),
+                bg_fill: black(),
                 weak_bg_fill: black(),
                 bg_stroke: Stroke::new(1.0, yellow()),
                 rounding: Rounding::same(0.0),
