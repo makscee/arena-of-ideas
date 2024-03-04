@@ -223,6 +223,42 @@ impl VarState {
     pub fn take(&mut self) -> Self {
         mem::take(self)
     }
+    pub fn apply_transform(entity: Entity, t: f32, vars: Vec<VarName>, world: &mut World) {
+        let mut transform = world.get_mut::<Transform>(entity).unwrap().clone();
+        for var in vars {
+            match var {
+                VarName::Position => {
+                    let position = VarState::get_value(entity, var, t, world)
+                        .and_then(|x| x.get_vec2())
+                        .unwrap_or_default();
+                    transform.translation.x = position.x;
+                    transform.translation.y = position.y;
+                }
+                VarName::Scale => {
+                    let scale = VarState::get_value(entity, var, t, world)
+                        .and_then(|x| x.get_vec2())
+                        .unwrap_or(Vec2::ONE);
+                    transform.scale.x = scale.x;
+                    transform.scale.y = scale.y;
+                }
+                VarName::Rotation => {
+                    let rotation = VarState::get_value(entity, var, t, world)
+                        .and_then(|x| x.get_float())
+                        .unwrap_or_default();
+                    transform.rotation = Quat::from_rotation_z(rotation);
+                }
+                VarName::Offset => {
+                    let position = VarState::get_value(entity, var, t, world)
+                        .and_then(|x| x.get_vec2())
+                        .unwrap_or_default();
+                    transform.translation.x = position.x;
+                    transform.translation.y = position.y;
+                }
+                _ => {}
+            }
+        }
+        world.entity_mut(entity).insert(transform);
+    }
 }
 
 impl History {

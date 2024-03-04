@@ -1,6 +1,8 @@
 #![enable(implicit_some)]
 (
-    left: (units: [(name: "left", hp: 15, atk: 3)]),
+    left: (
+        units: [(name: "left", hp: 15, atk: 3)],
+    ),
     right: (
         units: [
             (

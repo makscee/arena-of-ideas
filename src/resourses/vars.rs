@@ -30,6 +30,7 @@ pub enum VarName {
     Scale,
     Radius,
     Position,
+    Offset,
     Rotation,
     Hp,
     Atk,
@@ -227,11 +228,9 @@ impl Display for VarValue {
             VarValue::String(v) => write!(f, "{v}"),
             VarValue::Faction(v) => write!(f, "{v}"),
             VarValue::Entity(v) => write!(f, "{v:?}"),
-            VarValue::EntityList(v) => write!(
-                f,
-                "[{}]",
-                v.iter().map(|v| format!("{v:?}")).join(", ")
-            ),
+            VarValue::EntityList(v) => {
+                write!(f, "[{}]", v.iter().map(|v| format!("{v:?}")).join(", "))
+            }
             VarValue::Color(v) => write!(f, "{v:?}"),
             VarValue::None => write!(f, "none"),
         }

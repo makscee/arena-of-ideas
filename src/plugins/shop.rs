@@ -443,7 +443,7 @@ impl ShopPlugin {
                     .set_width(120.0)
                     .title_bar(false)
                     .stroke(false)
-                    .entity_anchor(*entity, Align2::CENTER_TOP, vec2(0.0, -1.2), world)
+                    .entity_anchor(*entity, Align2::CENTER_TOP, vec2(0.0, -1.8), world)
                     .show(ctx, |ui| {
                         // ui.set_enabled(
                         //     offer.available

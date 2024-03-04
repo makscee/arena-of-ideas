@@ -10,7 +10,7 @@ struct BackgroundChannel {
     handle: Handle<AudioInstance>,
 }
 
-#[derive(Resource, Clone)]
+#[derive(Resource, Clone, Debug)]
 pub struct AudioData {
     pub play_delta: Option<f32>,
     pub prev_pos: Option<f32>,
@@ -318,7 +318,7 @@ impl AudioControls {
                 let active = data.need_rate > 0.0;
                 let points = [rect.left_top(), rect.right_center(), rect.left_bottom()];
                 ui.painter().add(egui::Shape::Path(if active {
-                    PathShape::convex_polygon(points.into(), visuals.bg_fill, visuals.bg_stroke)
+                    PathShape::convex_polygon(points.into(), white(), visuals.fg_stroke)
                 } else {
                     PathShape::closed_line(points.into(), visuals.fg_stroke)
                 }));
@@ -330,7 +330,7 @@ impl AudioControls {
                 let active = data.need_rate < 0.0;
                 let points = [rect.right_top(), rect.left_center(), rect.right_bottom()];
                 ui.painter().add(egui::Shape::Path(if active {
-                    PathShape::convex_polygon(points.into(), visuals.bg_fill, visuals.bg_stroke)
+                    PathShape::convex_polygon(points.into(), white(), visuals.bg_stroke)
                 } else {
                     PathShape::closed_line(points.into(), visuals.fg_stroke)
                 }));
@@ -347,16 +347,8 @@ impl AudioControls {
 
                 ui.painter().add(if active {
                     Vec::from([
-                        egui::Shape::Rect(RectShape::filled(
-                            rect1,
-                            Rounding::ZERO,
-                            visuals.bg_fill,
-                        )),
-                        egui::Shape::Rect(RectShape::filled(
-                            rect2,
-                            Rounding::ZERO,
-                            visuals.bg_fill,
-                        )),
+                        egui::Shape::Rect(RectShape::filled(rect1, Rounding::ZERO, white())),
+                        egui::Shape::Rect(RectShape::filled(rect2, Rounding::ZERO, white())),
                     ])
                 } else {
                     Vec::from([

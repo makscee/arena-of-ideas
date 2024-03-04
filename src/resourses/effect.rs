@@ -257,7 +257,7 @@ impl Effect {
                     }
                 }
                 if !SkipVisual::active(world) {
-                    Representation::pack(target, world).unpack(None, Some(owner), world);
+                    Representation::pack(target, world).unpack(owner, world);
                 }
                 // let source = &world.get::<Unit>(target).unwrap().source;
                 // source

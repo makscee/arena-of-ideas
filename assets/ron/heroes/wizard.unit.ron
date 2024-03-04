@@ -35,7 +35,7 @@
                     size: Vec2E(Float(0.2)),
                 ),
                 mapping: {
-                    Position: Mul(
+                    Offset: Mul(
                         Vec2EE(
                             Sin(
                                 Sum(

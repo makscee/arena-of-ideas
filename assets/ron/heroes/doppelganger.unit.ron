@@ -19,7 +19,7 @@
         ),
         children: [],
         mapping: {
-            Position: Mul(
+            Offset: Mul(
                 UnitVec(
                     Mul(
                         IntFloat(

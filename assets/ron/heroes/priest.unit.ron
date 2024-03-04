@@ -28,7 +28,7 @@
             ),
         ),
         mapping: {
-            Position: Mul(
+            Offset: Mul(
                 UnitVec(
                     Mul(
                         Sum(

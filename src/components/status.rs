@@ -45,11 +45,10 @@ impl PackedStatus {
         }
         world.entity_mut(entity).set_parent(owner);
         if !SkipVisual::active(world) {
-            Options::get_status_rep(world)
-                .clone()
-                .unpack(Some(entity), None, world);
             if let Some(rep) = self.representation {
-                rep.unpack(None, Some(entity), world);
+                rep.unpack(entity, world);
+            } else {
+                Options::get_status_rep(world).clone().unpack(entity, world);
             }
         }
         entity
@@ -225,7 +224,7 @@ impl Status {
                 event,
                 context
                     .clone()
-                    .set_owner(get_parent(status, world), world)
+                    .set_owner(get_parent(status, world).unwrap(), world)
                     .set_status(status, world),
                 world,
             );

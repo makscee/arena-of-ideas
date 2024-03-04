@@ -49,34 +49,11 @@ pub const LOCAL_TRIGGER: &str = "_local";
 
 impl PackedUnit {
     pub fn unpack(mut self, parent: Entity, slot: Option<usize>, world: &mut World) -> Entity {
-        let entity = if SkipVisual::active(world) {
-            world.spawn_empty().set_parent(parent).id()
-        } else {
-            Options::get_unit_rep(world)
-                .clone()
-                .unpack(None, Some(parent), world)
-        };
+        let entity = world.spawn_empty().set_parent(parent).id();
         let is_team = VarState::get(parent, world)
             .get_faction(VarName::Faction)
             .unwrap()
             .eq(&Faction::Team);
-        let mut emut = world.entity_mut(entity);
-        emut.insert(PickableBundle::default())
-            .insert(RaycastPickTarget::default())
-            .insert(On::<Pointer<Over>>::run(UnitPlugin::hover_unit))
-            .insert(On::<Pointer<Out>>::run(UnitPlugin::unhover_unit));
-        if is_team {
-            emut.insert(On::<Pointer<DragStart>>::run(UnitPlugin::drag_unit_start))
-                .insert(On::<Pointer<DragEnd>>::run(UnitPlugin::drag_unit_end))
-                .insert(On::<Pointer<Drag>>::run(UnitPlugin::drag_unit));
-        }
-        if !SkipVisual::active(world) {
-            let entity = self
-                .representation
-                .clone()
-                .unpack(None, Some(entity), world);
-            world.entity_mut(entity).insert(UnitRepresentation);
-        }
 
         self.state = self.generate_state(world);
         self.state.init(
@@ -84,6 +61,21 @@ impl PackedUnit {
             VarValue::Int(slot.unwrap_or_default() as i32),
         );
         self.state.clone().attach(entity, world);
+        if !SkipVisual::active(world) {
+            let mut rep = Options::get_unit_rep(world).clone();
+            rep.children.push(Box::new(self.representation));
+            let entity = rep.unpack(entity, world);
+            let mut emut = world.entity_mut(entity);
+            emut.insert(PickableBundle::default())
+                .insert(RaycastPickTarget::default())
+                .insert(On::<Pointer<Over>>::run(UnitPlugin::hover_unit))
+                .insert(On::<Pointer<Out>>::run(UnitPlugin::unhover_unit));
+            if is_team {
+                emut.insert(On::<Pointer<DragStart>>::run(UnitPlugin::drag_unit_start))
+                    .insert(On::<Pointer<DragEnd>>::run(UnitPlugin::drag_unit_end))
+                    .insert(On::<Pointer<Drag>>::run(UnitPlugin::drag_unit));
+            }
+        }
         Status {
             name: LOCAL_TRIGGER.to_owned(),
             trigger: self.trigger.clone(),
@@ -152,7 +144,7 @@ impl PackedUnit {
             .get::<Children>(entity)
             .unwrap()
             .into_iter()
-            .find(|x| world.get::<UnitRepresentation>(**x).is_some())
+            .find(|x| world.get::<Representation>(**x).is_some())
             .copied()
     }
 

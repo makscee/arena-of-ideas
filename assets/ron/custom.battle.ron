@@ -3,69 +3,326 @@
     left: (
         units: [
             (
-                name: "Wizard",
-                hp: 3,
-                atk: 1,
-                houses: "Mages",
-                trigger: Fire(
-                    trigger: TurnEnd,
-                    target: RandomEnemy,
-                    effect: UseAbility(
-                        "Magic Missile",
+    name: "Wizard",
+    hp: 3,
+    atk: 1,
+    houses: "Mages",
+    trigger: Fire(
+        trigger: TurnEnd,
+        target: RandomEnemy,
+        effect: UseAbility("Magic Missile"),
+    ),
+    representation: (
+        material: Shape(
+            shape: Circle,
+            thickness: Sum(
+                Float(2.5),
+                Cos(GameTime),
+            ),
+            size: Vec2E(
+                Sum(
+                    Float(0.7),
+                    Mul(
+                        Beat,
+                        Float(0.3),
                     ),
                 ),
             ),
+        ),
+        children: [
             (
-                name: "Wizard",
-                hp: 3,
-                atk: 1,
-                houses: "Mages",
-                trigger: Fire(
-                    trigger: TurnEnd,
-                    target: RandomEnemy,
-                    effect: UseAbility(
-                        "Magic Missile",
+                count: 5,
+                material: Shape(
+                    shape: Circle,
+                    fill: Opaque,
+                    size: Vec2E(Float(0.2)),
+                ),
+                mapping: {
+                    Offset: Mul(
+                        Vec2EE(
+                            Sin(
+                                Sum(
+                                    GameTime,
+                                    IntFloat(
+                                        State(
+                                            Index,
+                                        ),
+                                    ),
+                                ),
+                            ),
+                            Cos(
+                                GameTime,
+                            ),
+                        ),
+                        Mul(
+                            Cos(
+                                Mul(
+                                    Sum(
+                                        GameTime,
+                                        IntFloat(
+                                            State(
+                                                Index,
+                                            ),
+                                        ),
+                                    ),
+                                    Float(
+                                        1.3,
+                                    ),
+                                ),
+                            ),
+                            Sum(
+                                Float(
+                                    0.5,
+                                ),
+                                Beat,
+                            ),
+                        ),
+                    ),
+                },
+            ),
+        ],
+    ),
+),(
+    name: "Wizard",
+    hp: 3,
+    atk: 1,
+    houses: "Mages",
+    trigger: Fire(
+        trigger: TurnEnd,
+        target: RandomEnemy,
+        effect: UseAbility("Magic Missile"),
+    ),
+    representation: (
+        material: Shape(
+            shape: Circle,
+            thickness: Sum(
+                Float(2.5),
+                Cos(GameTime),
+            ),
+            size: Vec2E(
+                Sum(
+                    Float(0.7),
+                    Mul(
+                        Beat,
+                        Float(0.3),
                     ),
                 ),
             ),
+        ),
+        children: [
             (
-                name: "Wizard",
-                hp: 3,
-                atk: 1,
-                houses: "Mages",
-                trigger: Fire(
-                    trigger: TurnEnd,
-                    target: RandomEnemy,
-                    effect: UseAbility(
-                        "Magic Missile",
+                count: 5,
+                material: Shape(
+                    shape: Circle,
+                    fill: Opaque,
+                    size: Vec2E(Float(0.2)),
+                ),
+                mapping: {
+                    Offset: Mul(
+                        Vec2EE(
+                            Sin(
+                                Sum(
+                                    GameTime,
+                                    IntFloat(
+                                        State(
+                                            Index,
+                                        ),
+                                    ),
+                                ),
+                            ),
+                            Cos(
+                                GameTime,
+                            ),
+                        ),
+                        Mul(
+                            Cos(
+                                Mul(
+                                    Sum(
+                                        GameTime,
+                                        IntFloat(
+                                            State(
+                                                Index,
+                                            ),
+                                        ),
+                                    ),
+                                    Float(
+                                        1.3,
+                                    ),
+                                ),
+                            ),
+                            Sum(
+                                Float(
+                                    0.5,
+                                ),
+                                Beat,
+                            ),
+                        ),
+                    ),
+                },
+            ),
+        ],
+    ),
+),(
+    name: "Wizard",
+    hp: 3,
+    atk: 1,
+    houses: "Mages",
+    trigger: Fire(
+        trigger: TurnEnd,
+        target: RandomEnemy,
+        effect: UseAbility("Magic Missile"),
+    ),
+    representation: (
+        material: Shape(
+            shape: Circle,
+            thickness: Sum(
+                Float(2.5),
+                Cos(GameTime),
+            ),
+            size: Vec2E(
+                Sum(
+                    Float(0.7),
+                    Mul(
+                        Beat,
+                        Float(0.3),
                     ),
                 ),
             ),
+        ),
+        children: [
             (
-                name: "Wizard",
-                hp: 3,
-                atk: 1,
-                houses: "Mages",
-                trigger: Fire(
-                    trigger: TurnEnd,
-                    target: RandomEnemy,
-                    effect: UseAbility(
-                        "Magic Missile",
+                count: 5,
+                material: Shape(
+                    shape: Circle,
+                    fill: Opaque,
+                    size: Vec2E(Float(0.2)),
+                ),
+                mapping: {
+                    Offset: Mul(
+                        Vec2EE(
+                            Sin(
+                                Sum(
+                                    GameTime,
+                                    IntFloat(
+                                        State(
+                                            Index,
+                                        ),
+                                    ),
+                                ),
+                            ),
+                            Cos(
+                                GameTime,
+                            ),
+                        ),
+                        Mul(
+                            Cos(
+                                Mul(
+                                    Sum(
+                                        GameTime,
+                                        IntFloat(
+                                            State(
+                                                Index,
+                                            ),
+                                        ),
+                                    ),
+                                    Float(
+                                        1.3,
+                                    ),
+                                ),
+                            ),
+                            Sum(
+                                Float(
+                                    0.5,
+                                ),
+                                Beat,
+                            ),
+                        ),
+                    ),
+                },
+            ),
+        ],
+    ),
+),(
+    name: "Wizard",
+    hp: 3,
+    atk: 1,
+    houses: "Mages",
+    trigger: Fire(
+        trigger: TurnEnd,
+        target: RandomEnemy,
+        effect: UseAbility("Magic Missile"),
+    ),
+    representation: (
+        material: Shape(
+            shape: Circle,
+            thickness: Sum(
+                Float(2.5),
+                Cos(GameTime),
+            ),
+            size: Vec2E(
+                Sum(
+                    Float(0.7),
+                    Mul(
+                        Beat,
+                        Float(0.3),
                     ),
                 ),
             ),
+        ),
+        children: [
             (
-                name: "Bolla",
-                hp: 1,
-                atk: 1,
-                houses: "Dragons",
-                trigger: Fire(
-                    trigger: TurnEnd,
-                    effect: UseAbility("Grow"),
+                count: 5,
+                material: Shape(
+                    shape: Circle,
+                    fill: Opaque,
+                    size: Vec2E(Float(0.2)),
                 ),
-                state: (history: {}, birth: 0.0),
-                statuses: [],
+                mapping: {
+                    Offset: Mul(
+                        Vec2EE(
+                            Sin(
+                                Sum(
+                                    GameTime,
+                                    IntFloat(
+                                        State(
+                                            Index,
+                                        ),
+                                    ),
+                                ),
+                            ),
+                            Cos(
+                                GameTime,
+                            ),
+                        ),
+                        Mul(
+                            Cos(
+                                Mul(
+                                    Sum(
+                                        GameTime,
+                                        IntFloat(
+                                            State(
+                                                Index,
+                                            ),
+                                        ),
+                                    ),
+                                    Float(
+                                        1.3,
+                                    ),
+                                ),
+                            ),
+                            Sum(
+                                Float(
+                                    0.5,
+                                ),
+                                Beat,
+                            ),
+                        ),
+                    ),
+                },
             ),
+        ],
+    ),
+),
         ],
     ),
     right: (
@@ -75,50 +332,167 @@
                 hp: 1,
                 atk: 1,
                 houses: "Holy",
-                trigger: Fire(
-                    trigger: BattleStart,
-                    target: AllyUnits,
-                    effect: UseAbility(
-                        "Blessing",
+            ),(
+    name: "Wizard",
+    hp: 3,
+    atk: 1,
+    houses: "Mages",
+    trigger: Fire(
+        trigger: TurnEnd,
+        target: RandomEnemy,
+        effect: UseAbility("Magic Missile"),
+    ),
+    representation: (
+        material: Shape(
+            shape: Circle,
+            thickness: Sum(
+                Float(2.5),
+                Cos(GameTime),
+            ),
+            size: Vec2E(
+                Sum(
+                    Float(0.7),
+                    Mul(
+                        Beat,
+                        Float(0.3),
                     ),
                 ),
             ),
+        ),
+        children: [
             (
-                name: "Priest",
-                hp: 12,
-                atk: 1,
-                houses: "Holy",
-            ),
-            (
-                name: "Priest",
-                hp: 1,
-                atk: 1,
-                houses: "Holy",
-            ),
-            (
-                name: "Priest",
-                hp: 1,
-                atk: 1,
-                houses: "Holy",
-            ),
-            (
-                name: "Priest",
-                hp: 1,
-                atk: 1,
-                houses: "Holy",
-            ),
-            (
-                name: "Protector",
-                hp: 2,
-                atk: 2,
-                houses: "Paladins",
-                trigger: Fire(
-                    trigger: BattleStart,
-                    target: SlotUnit(Int(1)),
-                    effect: UseAbility("Shield"),
+                count: 5,
+                material: Shape(
+                    shape: Circle,
+                    fill: Opaque,
+                    size: Vec2E(Float(0.2)),
                 ),
-                description: "%trigger → use %effect on front ally",
+                mapping: {
+                    Offset: Mul(
+                        Vec2EE(
+                            Sin(
+                                Sum(
+                                    GameTime,
+                                    IntFloat(
+                                        State(
+                                            Index,
+                                        ),
+                                    ),
+                                ),
+                            ),
+                            Cos(
+                                GameTime,
+                            ),
+                        ),
+                        Mul(
+                            Cos(
+                                Mul(
+                                    Sum(
+                                        GameTime,
+                                        IntFloat(
+                                            State(
+                                                Index,
+                                            ),
+                                        ),
+                                    ),
+                                    Float(
+                                        1.3,
+                                    ),
+                                ),
+                            ),
+                            Sum(
+                                Float(
+                                    0.5,
+                                ),
+                                Beat,
+                            ),
+                        ),
+                    ),
+                },
             ),
+        ],
+    ),
+),(
+    name: "Wizard",
+    hp: 3,
+    atk: 1,
+    houses: "Mages",
+    trigger: Fire(
+        trigger: TurnEnd,
+        target: RandomEnemy,
+        effect: UseAbility("Magic Missile"),
+    ),
+    representation: (
+        material: Shape(
+            shape: Circle,
+            thickness: Sum(
+                Float(2.5),
+                Cos(GameTime),
+            ),
+            size: Vec2E(
+                Sum(
+                    Float(0.7),
+                    Mul(
+                        Beat,
+                        Float(0.3),
+                    ),
+                ),
+            ),
+        ),
+        children: [
+            (
+                count: 5,
+                material: Shape(
+                    shape: Circle,
+                    fill: Opaque,
+                    size: Vec2E(Float(0.2)),
+                ),
+                mapping: {
+                    Offset: Mul(
+                        Vec2EE(
+                            Sin(
+                                Sum(
+                                    GameTime,
+                                    IntFloat(
+                                        State(
+                                            Index,
+                                        ),
+                                    ),
+                                ),
+                            ),
+                            Cos(
+                                GameTime,
+                            ),
+                        ),
+                        Mul(
+                            Cos(
+                                Mul(
+                                    Sum(
+                                        GameTime,
+                                        IntFloat(
+                                            State(
+                                                Index,
+                                            ),
+                                        ),
+                                    ),
+                                    Float(
+                                        1.3,
+                                    ),
+                                ),
+                            ),
+                            Sum(
+                                Float(
+                                    0.5,
+                                ),
+                                Beat,
+                            ),
+                        ),
+                    ),
+                },
+            ),
+        ],
+    ),
+)
         ],
     ),
 )

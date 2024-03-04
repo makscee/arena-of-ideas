@@ -1,6 +1,7 @@
 use bevy::{
     prelude::{Bezier, CubicGenerator},
     sprite::Mesh2dHandle,
+    transform::TransformBundle,
 };
 use bevy_egui::egui::ComboBox;
 
@@ -28,6 +29,10 @@ pub struct Representation {
     pub mapping: HashMap<VarName, Expression>,
     #[serde(default)]
     pub count: usize,
+    #[serde(default)]
+    pub entity: Option<Entity>,
+    #[serde(default)]
+    pub material_entities: Vec<Entity>,
 }
 
 #[derive(Resource)]
@@ -216,17 +221,7 @@ impl RepresentationMaterial {
         }
     }
 
-    pub fn update(&self, entity: Entity, world: &mut World) {
-        let t = GameTimer::get().play_head();
-        if let Ok(state) = VarState::try_get(entity, world) {
-            let visible = state.get_bool_at(VarName::Visible, t).unwrap_or(true);
-            let visible = visible && state.birth < t;
-            Self::set_visible(entity, visible, world);
-            if !visible {
-                return;
-            }
-        }
-        let context = Context::from_owner(entity, world);
+    pub fn update(&self, entity: Entity, context: &Context, world: &mut World) {
         match self {
             RepresentationMaterial::None => {}
             RepresentationMaterial::Shape {
@@ -237,10 +232,10 @@ impl RepresentationMaterial {
                 alpha,
                 ..
             } => {
-                let size = size.get_vec2(&context, world).unwrap_or_default();
-                let thickness = thickness.get_float(&context, world).unwrap_or_default();
-                let alpha = alpha.get_float(&context, world).unwrap_or_default();
-                let color = color.get_color(&context, world).unwrap_or(Color::Rgba {
+                let size = size.get_vec2(context, world).unwrap_or_default();
+                let thickness = thickness.get_float(context, world).unwrap_or_default();
+                let alpha = alpha.get_float(context, world).unwrap_or_default();
+                let color = color.get_color(context, world).unwrap_or(Color::Rgba {
                     red: 1.0,
                     green: 0.0,
                     blue: 1.0,
@@ -273,12 +268,12 @@ impl RepresentationMaterial {
                 font_size,
             } => {
                 let color = color
-                    .get_color(&context, world)
+                    .get_color(context, world)
                     .unwrap_or_default()
-                    .set_a(alpha.get_float(&context, world).unwrap_or(1.0))
+                    .set_a(alpha.get_float(context, world).unwrap_or(1.0))
                     .to_owned();
                 world.get_mut::<Text>(entity).unwrap().sections[0].value =
-                    text.get_string(&context, world).unwrap_or_default();
+                    text.get_string(context, world).unwrap_or_default();
                 world.get_mut::<Text>(entity).unwrap().sections[0].style = bevy::text::TextStyle {
                     font_size: *font_size,
                     color,
@@ -286,7 +281,7 @@ impl RepresentationMaterial {
                 };
                 world.get_mut::<Transform>(entity).unwrap().scale =
                     vec3(1.0 / *font_size, 1.0 / *font_size, 1.0)
-                        * size.get_float(&context, world).unwrap();
+                        * size.get_float(context, world).unwrap();
             }
             RepresentationMaterial::Curve {
                 thickness,
@@ -295,16 +290,16 @@ impl RepresentationMaterial {
                 dilations,
                 aa,
             } => {
-                let thickness = thickness.get_float(&context, world).unwrap_or(1.0) * 0.05;
-                let curvature = curvature.get_float(&context, world).unwrap_or(1.0);
-                let aa = aa.get_float(&context, world).unwrap_or(1.0);
-                let color = color.get_color(&context, world).unwrap_or_default();
+                let thickness = thickness.get_float(context, world).unwrap_or(1.0) * 0.05;
+                let curvature = curvature.get_float(context, world).unwrap_or(1.0);
+                let aa = aa.get_float(context, world).unwrap_or(1.0);
+                let color = color.get_color(context, world).unwrap_or_default();
                 let mut dilations = dilations
                     .iter()
                     .map(|(t, v)| {
                         (
-                            t.get_float(&context, world).unwrap(),
-                            v.get_float(&context, world).unwrap(),
+                            t.get_float(context, world).unwrap(),
+                            v.get_float(context, world).unwrap(),
                         )
                     })
                     .sorted_by(|a, b| a.0.total_cmp(&b.0))
@@ -374,15 +369,8 @@ impl RepresentationMaterial {
         }
     }
 
-    pub fn show_editor(
-        &mut self,
-        entity: Option<Entity>,
-        hovered: &mut Option<String>,
-        lookup: &mut String,
-        ui: &mut Ui,
-        world: &mut World,
-    ) {
-        CollapsingHeader::new(self.to_string())
+    fn show_editor(&mut self, context: &Context, ui: &mut Ui, world: &mut World) {
+        CollapsingHeader::new("MATERIAL")
             .default_open(true)
             .show(ui, |ui| {
                 ComboBox::from_label("type")
@@ -424,42 +412,14 @@ impl RepresentationMaterial {
                                 });
                         });
 
-                        size.show_editor_root(
-                            entity,
-                            hovered,
-                            lookup,
-                            "size".to_owned(),
-                            true,
-                            ui,
-                            world,
-                        );
-                        thickness.show_editor_root(
-                            entity,
-                            hovered,
-                            lookup,
-                            "thickness".to_owned(),
-                            true,
-                            ui,
-                            world,
-                        );
-                        alpha.show_editor_root(
-                            entity,
-                            hovered,
-                            lookup,
-                            "alpha".to_owned(),
-                            true,
-                            ui,
-                            world,
-                        );
-                        color.show_editor_root(
-                            entity,
-                            hovered,
-                            lookup,
-                            "color".to_owned(),
-                            true,
-                            ui,
-                            world,
-                        );
+                        ui.label("size:");
+                        show_tree(size, context, ui, world);
+                        ui.label("thickness:");
+                        show_tree(thickness, context, ui, world);
+                        ui.label("alpha:");
+                        show_tree(alpha, context, ui, world);
+                        ui.label("color:");
+                        show_tree(color, context, ui, world);
                     }
                     RepresentationMaterial::Text {
                         size,
@@ -468,42 +428,10 @@ impl RepresentationMaterial {
                         alpha,
                         font_size,
                     } => {
-                        size.show_editor_root(
-                            entity,
-                            hovered,
-                            lookup,
-                            "size".to_owned(),
-                            true,
-                            ui,
-                            world,
-                        );
-                        text.show_editor_root(
-                            entity,
-                            hovered,
-                            lookup,
-                            "text".to_owned(),
-                            true,
-                            ui,
-                            world,
-                        );
-                        color.show_editor_root(
-                            entity,
-                            hovered,
-                            lookup,
-                            "color".to_owned(),
-                            true,
-                            ui,
-                            world,
-                        );
-                        alpha.show_editor_root(
-                            entity,
-                            hovered,
-                            lookup,
-                            "alpha".to_owned(),
-                            true,
-                            ui,
-                            world,
-                        );
+                        show_tree(size, context, ui, world);
+                        show_tree(text, context, ui, world);
+                        show_tree(color, context, ui, world);
+                        show_tree(alpha, context, ui, world);
                         ui.add(Slider::new(font_size, 16.0..=48.0));
                     }
                     RepresentationMaterial::Curve {
@@ -513,42 +441,10 @@ impl RepresentationMaterial {
                         aa,
                         color,
                     } => {
-                        thickness.show_editor_root(
-                            entity,
-                            hovered,
-                            lookup,
-                            "thickness".to_owned(),
-                            true,
-                            ui,
-                            world,
-                        );
-                        curvature.show_editor_root(
-                            entity,
-                            hovered,
-                            lookup,
-                            "curvature".to_owned(),
-                            true,
-                            ui,
-                            world,
-                        );
-                        aa.show_editor_root(
-                            entity,
-                            hovered,
-                            lookup,
-                            "aa".to_owned(),
-                            true,
-                            ui,
-                            world,
-                        );
-                        color.show_editor_root(
-                            entity,
-                            hovered,
-                            lookup,
-                            "color".to_owned(),
-                            true,
-                            ui,
-                            world,
-                        );
+                        show_tree(thickness, context, ui, world);
+                        show_tree(curvature, context, ui, world);
+                        show_tree(aa, context, ui, world);
+                        show_tree(color, context, ui, world);
                     }
                 };
             });
@@ -556,58 +452,102 @@ impl RepresentationMaterial {
 }
 
 impl Representation {
-    pub fn unpack(
-        mut self,
-        entity: Option<Entity>,
-        parent: Option<Entity>,
-        world: &mut World,
-    ) -> Entity {
-        let entity = match entity {
-            Some(value) => value,
-            None => world.spawn_empty().id(),
-        };
-        if self.count > 0 {
-            let entity = Representation::default().unpack(Some(entity), parent, world);
-            for i in 0..self.count {
-                let mut rep = self.clone();
-                rep.count = 0;
-                rep.mapping
-                    .insert(VarName::Index, Expression::Int(i as i32));
-                rep.unpack(None, Some(entity), world);
-            }
-            return entity;
-        }
-        self.material.unpack(entity, world);
-        if !world.entity(entity).contains::<VarState>() {
-            VarState::default().attach(entity, world);
-        }
-        VarState::get_mut(entity, world).init(VarName::Index, VarValue::Int(self.count as i32));
-        let mut entity = world.entity_mut(entity);
-        entity.get_mut::<Transform>().unwrap().translation.z += 0.0000001; // children always rendered on top of parents
-        if let Some(parent) = parent {
-            entity.set_parent(parent);
-        }
-        let entity = entity.id();
-        for (i, child) in self.children.drain(..).enumerate() {
-            let entity = child.unpack(None, Some(entity), world);
-            world.get_mut::<Transform>(entity).unwrap().translation.z += 0.001 * i as f32;
-        }
+    pub fn unpack(mut self, entity: Entity, world: &mut World) -> Entity {
+        let rep = self.unpack_materials(entity, world);
         world.entity_mut(entity).insert(self);
-        entity
-    }
-    pub fn pack(entity: Entity, world: &World) -> Self {
-        let mut rep = world.get::<Representation>(entity).unwrap().clone();
-        rep.pack_children(entity, world);
         rep
     }
-    fn pack_children(&mut self, entity: Entity, world: &World) {
-        if let Some(children) = world.get::<Children>(entity) {
-            for child in children.iter() {
-                if let Some(mut rep) = world.get::<Representation>(*child).cloned() {
-                    rep.pack_children(*child, world);
-                    self.children.push(Box::new(rep));
-                }
+    fn unpack_materials(&mut self, entity: Entity, world: &mut World) -> Entity {
+        world
+            .entity_mut(entity)
+            .insert(TransformBundle::default())
+            .insert(VisibilityBundle::default());
+        VarState::default().attach(entity, world);
+        self.entity = Some(entity);
+        for i in 0..self.count.max(1) {
+            let entity = world.spawn_empty().set_parent(entity).id();
+            self.material.unpack(entity, world);
+            VarState::new_with(VarName::Index, VarValue::Int(i as i32)).attach(entity, world);
+            self.material_entities.push(entity);
+        }
+        self.unpack_children(world);
+        *self.material_entities.first().unwrap()
+    }
+    fn unpack_children(&mut self, world: &mut World) {
+        let parent = *self.material_entities.first().unwrap();
+        for child in self.children.iter_mut() {
+            if child.entity.is_none() {
+                child.unpack_materials(world.spawn_empty().set_parent(parent).id(), world);
             }
+        }
+    }
+    pub fn add_child(&mut self, world: &mut World) {
+        self.children.push(default());
+        self.unpack_children(world);
+    }
+
+    pub fn pack(entity: Entity, world: &World) -> Self {
+        let mut rep = world.get::<Representation>(entity).unwrap().clone();
+        // rep.pack_children(entity, world);
+        rep
+    }
+    pub fn update(self, dragged: Option<Entity>, world: &mut World) {
+        let t = GameTimer::get().play_head();
+        let entity = self.entity.unwrap();
+        let context = Context::from_owner(entity, world);
+        {
+            let state = VarState::get_mut(entity, world);
+            let visible = state.get_bool_at(VarName::Visible, t).unwrap_or(true);
+            let visible = visible && state.birth < t;
+            RepresentationMaterial::set_visible(entity, visible, world);
+            if !visible {
+                return;
+            }
+        }
+        self.apply_mapping(entity, world);
+        let vars: Vec<VarName> = [VarName::Rotation, VarName::Position, VarName::Scale].into();
+        VarState::apply_transform(entity, t, vars, world);
+        for (i, entity) in self.material_entities.iter().enumerate() {
+            let context = context
+                .clone()
+                .set_owner(*entity, world)
+                .set_var(VarName::Index, VarValue::Int(i as i32))
+                .take();
+            self.apply_mapping(*entity, world);
+            if dragged == Some(*entity) {
+                debug!("Dragged");
+            }
+            VarState::apply_transform(
+                *entity,
+                t,
+                [VarName::Rotation, VarName::Scale, VarName::Offset].into(),
+                world,
+            );
+            self.material.update(
+                *entity,
+                &context
+                    .clone()
+                    .set_var(VarName::Index, VarValue::Int(i as i32)),
+                world,
+            );
+        }
+        for child in self.children {
+            child.update(dragged, world);
+        }
+    }
+
+    fn apply_mapping(&self, entity: Entity, world: &mut World) {
+        let context = Context::from_owner(entity, world);
+        let mapping: HashMap<VarName, VarValue> =
+            HashMap::from_iter(self.mapping.iter().filter_map(|(var, value)| {
+                match value.get_value(&context, world) {
+                    Ok(value) => Some((*var, value)),
+                    Err(_) => None,
+                }
+            }));
+        let mut state = VarState::get_mut(entity, world);
+        for (var, value) in mapping {
+            state.init(var, value);
         }
     }
 
@@ -623,7 +563,21 @@ impl Representation {
         }
     }
 
-    pub fn show_editor(
+    pub fn show_editor(&mut self, context: &Context, ui: &mut Ui, world: &mut World) {
+        CollapsingHeader::new("Representation")
+            .id_source(self.entity)
+            .show(ui, |ui| {
+                self.material.show_editor(context, ui, world);
+                for child in self.children.iter_mut() {
+                    child.show_editor(context, ui, world);
+                }
+                if ui.button("+").clicked() {
+                    self.add_child(world);
+                }
+            });
+    }
+
+    pub fn show_editor_old(
         &mut self,
         entity: Option<Entity>,
         hovered: &mut Option<String>,
@@ -640,11 +594,11 @@ impl Representation {
                 if ui.button("delete").clicked() {
                     delete = true;
                 }
-                self.material
-                    .show_editor(entity, hovered, lookup, ui, world);
+                // self.material
+                //     .show_editor_old(entity, hovered, lookup, ui, world);
                 let mut deletes = Vec::default();
                 for (i, rep) in self.children.iter_mut().enumerate() {
-                    let child_delete = rep.show_editor(entity, hovered, lookup, i, ui, world);
+                    let child_delete = rep.show_editor_old(entity, hovered, lookup, i, ui, world);
                     if child_delete {
                         deletes.push(i);
                     }

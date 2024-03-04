@@ -27,7 +27,7 @@
         ),
         children: [],
         mapping: {
-            Position: Mul(
+            Offset: Mul(
                 Vec2EE(
                     Cos(State(T)),
                     Sin(State(T)),

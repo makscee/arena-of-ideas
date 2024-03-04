@@ -17,7 +17,8 @@ impl Vfx {
         if SkipVisual::active(world) {
             return Ok(());
         }
-        let entity = self.representation.unpack(None, None, world);
+        let entity = world.spawn_empty().id();
+        self.representation.unpack(entity, world);
         if let Some(parent) = self.parent {
             world.entity_mut(entity).set_parent(parent);
         }

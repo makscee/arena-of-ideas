@@ -183,6 +183,7 @@ impl UnitPlugin {
     }
 
     pub fn turn_into_corpse(entity: Entity, world: &mut World) {
+        debug!("Turn {entity:?} into corpse");
         let mut unit = world.entity_mut(entity);
         unit.remove::<Unit>();
         unit.insert(Corpse);
@@ -241,6 +242,13 @@ impl UnitPlugin {
         Self::translate_to_slots(world);
     }
 
+    pub fn get_hovered(world: &World) -> Option<Entity> {
+        world
+            .resource::<HoveredUnit>()
+            .0
+            .and_then(|e| get_parent(e, world))
+    }
+
     pub fn hover_unit(event: Listener<Pointer<Over>>, mut hovered: ResMut<HoveredUnit>) {
         hovered.0 = Some(event.target);
     }
@@ -254,13 +262,15 @@ impl UnitPlugin {
         mut team: Query<Entity, With<ActiveTeam>>,
         mut dragged: ResMut<DraggedUnit>,
         mut commands: Commands,
+        parent: Query<&Parent>,
         shop_data: Res<ShopData>,
     ) {
         if shop_data.fusion_candidates.is_some() {
             return;
         }
-        debug!("Drag unit start {:?}", event.target);
-        dragged.0 = Some((event.target, DragAction::None));
+        let entity = parent.get(event.target).unwrap().get();
+        debug!("Drag unit start {:?}", entity);
+        dragged.0 = Some((entity, DragAction::None));
         for entity in team.iter_mut() {
             commands.entity(entity).insert(Pickable::IGNORE);
         }
@@ -332,7 +342,7 @@ impl UnitPlugin {
     }
 
     fn ui(world: &mut World) {
-        let hovered = world.get_resource::<HoveredUnit>().unwrap().0;
+        let hovered = UnitPlugin::get_hovered(world);
         if ShopPlugin::is_fusing(world) {
             return;
         }
@@ -355,26 +365,22 @@ impl UnitPlugin {
             .unwrap()
     }
 
-    pub fn spawn_slot(slot: usize, faction: Faction, world: &mut World) -> Entity {
+    pub fn spawn_slot(slot: usize, faction: Faction, world: &mut World) {
         let pos = UnitPlugin::get_slot_position(Faction::Team, slot);
-        let team = PackedTeam::find_entity(faction, world);
-        let rep = Options::get_slot_rep(world)
-            .clone()
-            .unpack(None, team, world);
-        let mut state = VarState::new_with(VarName::Position, VarValue::Vec2(pos));
-        state.init(VarName::Slot, VarValue::Int(slot as i32));
-        state.attach(rep, world);
-        world.get_mut::<Transform>(rep).unwrap().translation.z -= 100.0;
-        world.entity_mut(rep).insert(Slot);
-        rep
+        if let Some(team) = PackedTeam::find_entity(faction, world) {
+            let entity = world.spawn_empty().set_parent(team).id();
+            let rep = Options::get_slot_rep(world).clone().unpack(entity, world);
+            let mut state = VarState::new_with(VarName::Position, VarValue::Vec2(pos));
+            state.init(VarName::Slot, VarValue::Int(slot as i32));
+            state.attach(entity, world);
+            world.get_mut::<Transform>(rep).unwrap().translation.z -= 100.0;
+            world.entity_mut(rep).insert(Slot);
+        }
     }
 }
 
 #[derive(Component)]
 pub struct Unit;
-
-#[derive(Component)]
-pub struct UnitRepresentation;
 
 #[derive(Component)]
 pub struct Corpse;

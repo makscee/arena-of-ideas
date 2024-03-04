@@ -20,7 +20,7 @@
         ),
         children: [],
         mapping: {
-            Position: Mul(
+            Offset: Mul(
                 UnitVec(
                     Sum(
                         IntFloat(
