@@ -146,6 +146,8 @@ impl VarValue {
         match (a, b) {
             (VarValue::Float(a), VarValue::Float(b)) => Ok(VarValue::Float(a + b)),
             (VarValue::Int(a), VarValue::Int(b)) => Ok(VarValue::Int(a + b)),
+            (VarValue::Float(a), VarValue::Int(b)) => Ok(VarValue::Float(a + *b as f32)),
+            (VarValue::Int(a), VarValue::Float(b)) => Ok(VarValue::Float(b + *a as f32)),
             (VarValue::Vec2(a), VarValue::Vec2(b)) => Ok(VarValue::Vec2(*a + *b)),
             (VarValue::String(a), VarValue::String(b)) => Ok(VarValue::String(a.to_owned() + b)),
             _ => Err(anyhow!("{a:?} + {b:?} not supported")),
@@ -156,6 +158,8 @@ impl VarValue {
         match (a, b) {
             (VarValue::Float(a), VarValue::Float(b)) => Ok(VarValue::Float(a - b)),
             (VarValue::Int(a), VarValue::Int(b)) => Ok(VarValue::Int(a - b)),
+            (VarValue::Float(a), VarValue::Int(b)) => Ok(VarValue::Float(a - *b as f32)),
+            (VarValue::Int(a), VarValue::Float(b)) => Ok(VarValue::Float(b - *a as f32)),
             (VarValue::Vec2(a), VarValue::Vec2(b)) => Ok(VarValue::Vec2(*a - *b)),
             _ => Err(anyhow!("{a:?} - {b:?} not supported")),
         }
@@ -165,6 +169,8 @@ impl VarValue {
         match (a, b) {
             (VarValue::Float(a), VarValue::Float(b)) => Ok(VarValue::Float(a * b)),
             (VarValue::Int(a), VarValue::Int(b)) => Ok(VarValue::Int(a * b)),
+            (VarValue::Float(a), VarValue::Int(b)) => Ok(VarValue::Float(a * *b as f32)),
+            (VarValue::Int(a), VarValue::Float(b)) => Ok(VarValue::Float(b * *a as f32)),
             (VarValue::Vec2(a), VarValue::Vec2(b)) => Ok(VarValue::Vec2(*a * *b)),
             (VarValue::Vec2(a), VarValue::Float(b)) => Ok(VarValue::Vec2(*a * *b)),
             _ => Err(anyhow!("{a:?} * {b:?} not supported")),
@@ -175,6 +181,8 @@ impl VarValue {
         match (a, b) {
             (VarValue::Float(a), VarValue::Float(b)) => Ok(VarValue::Float(a / b)),
             (VarValue::Int(a), VarValue::Int(b)) => Ok(VarValue::Int(a / b)),
+            (VarValue::Float(a), VarValue::Int(b)) => Ok(VarValue::Float(a / *b as f32)),
+            (VarValue::Int(a), VarValue::Float(b)) => Ok(VarValue::Float(*a as f32 / b)),
             (VarValue::Vec2(a), VarValue::Vec2(b)) => Ok(VarValue::Vec2(*a / *b)),
             (VarValue::Vec2(a), VarValue::Float(b)) => Ok(VarValue::Vec2(*a / *b)),
             _ => Err(anyhow!("{a:?} * {b:?} not supported")),

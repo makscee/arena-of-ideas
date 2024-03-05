@@ -1,5 +1,3 @@
-use bevy_egui::egui::{ComboBox, DragValue};
-
 use crate::module_bindings::{StatusCharges, TableUnit};
 
 use super::*;
@@ -62,9 +60,10 @@ impl PackedUnit {
         );
         self.state.clone().attach(entity, world);
         if !SkipVisual::active(world) {
-            let mut rep = Options::get_unit_rep(world).clone();
-            rep.children.push(Box::new(self.representation));
-            let entity = rep.unpack(entity, world);
+            self.representation.unpack(entity, world);
+            let entity = Options::get_unit_rep(world)
+                .clone()
+                .unpack(world.spawn_empty().set_parent(entity).id(), world);
             let mut emut = world.entity_mut(entity);
             emut.insert(PickableBundle::default())
                 .insert(RaycastPickTarget::default())
@@ -149,12 +148,7 @@ impl PackedUnit {
     }
 
     pub fn pack(entity: Entity, world: &World) -> Self {
-        let representation = {
-            match Self::get_representation_entity(entity, world) {
-                Some(entity) => Representation::pack(entity, world),
-                None => default(),
-            }
-        };
+        let representation = Representation::pack(entity, world);
         let mut state = VarState::get(entity, world).clone();
         let hp = state.get_int(VarName::Hp).unwrap();
         let atk = state.get_int(VarName::Atk).unwrap();

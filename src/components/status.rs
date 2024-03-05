@@ -224,7 +224,7 @@ impl Status {
                 event,
                 context
                     .clone()
-                    .set_owner(get_parent(status, world).unwrap(), world)
+                    .set_owner(status.get_parent(world).unwrap(), world)
                     .set_status(status, world),
                 world,
             );

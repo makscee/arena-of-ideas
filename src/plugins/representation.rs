@@ -28,8 +28,8 @@ impl RepresentationPlugin {
             .unwrap()
             .0
             .map(|(d, _)| d);
-        for (entity, rep) in reps {
-            rep.update( dragged, world);
+        for (_, rep) in reps {
+            rep.update(dragged, world);
         }
     }
 }

@@ -1,7 +1,7 @@
-use std::{fmt::Display, ops::Add};
+use std::fmt::Display;
 
-use bevy::input::mouse::{MouseButton, MouseScrollUnit};
-use bevy_egui::egui::{DragValue, Frame, Key, ScrollArea, Sense, Shape};
+use bevy::input::mouse::MouseButton;
+use bevy_egui::egui::{DragValue, Frame, Key, ScrollArea, Sense, Shape, SidePanel};
 use hex::encode;
 use ron::ser::{to_string_pretty, PrettyConfig};
 use serde::de::DeserializeOwned;
@@ -27,25 +27,23 @@ impl HeroEditorPlugin {
         let mut pd = PersistentData::load(world);
         PackedTeam::spawn(Faction::Left, world);
         PackedTeam::spawn(Faction::Right, world);
+        pd.hero_editor_data.active = None;
         pd.hero_editor_data.load(world);
         pd.save(world).unwrap();
     }
 
     fn on_exit(world: &mut World) {
         Self::save(world);
-        Self::clear(world);
+        UnitPlugin::despawn_all_teams(world);
     }
 
     fn update(world: &mut World) {
         let mut pd = PersistentData::load(world);
         let ed = &mut pd.hero_editor_data;
-        let pos = if let Some(entity) = ed.active.and_then(|e| world.get_entity(e)) {
-            world
-                .get::<Transform>(entity.id())
+        let pos = if let Some((entity, _)) = ed.active {
+            VarState::get(entity, world)
+                .get_vec2(VarName::Position)
                 .unwrap()
-                .translation
-                .xy()
-                + vec2(ed.camera_scale, 0.0)
         } else {
             default()
         };
@@ -57,14 +55,7 @@ impl HeroEditorPlugin {
     fn input(world: &mut World) {
         let mut pd = PersistentData::load(world);
         let ed = &mut pd.hero_editor_data;
-        if world
-            .resource::<Input<KeyCode>>()
-            .just_pressed(KeyCode::Escape)
-        {
-            ed.active = None;
-            ed.camera_need_pos = default();
-            pd.save(world).unwrap();
-        } else if world.resource::<Input<KeyCode>>().just_pressed(KeyCode::Up) {
+        if world.resource::<Input<KeyCode>>().just_pressed(KeyCode::Up) {
             ed.camera_scale *= 1.2;
             pd.save(world).unwrap();
         } else if world
@@ -73,8 +64,13 @@ impl HeroEditorPlugin {
         {
             ed.camera_scale /= 1.2;
             pd.save(world).unwrap();
-        } else if world.resource::<Input<KeyCode>>().just_pressed(KeyCode::C) {
-            Self::clear(world);
+        } else if world
+            .resource::<Input<KeyCode>>()
+            .pressed(KeyCode::SuperLeft)
+        {
+            if world.resource::<Input<KeyCode>>().just_pressed(KeyCode::C) {
+                Self::clear(world);
+            }
         }
     }
 
@@ -93,19 +89,17 @@ impl HeroEditorPlugin {
         let mut delete: Option<Entity> = None;
         for unit in UnitPlugin::collect_all(world) {
             let hovered = hovered == Some(unit);
-            if ed.active == Some(unit) || hovered {
+            if hovered {
                 entity_window(unit, vec2(0.0, 0.0), None, &format!("{unit:?}"), world)
                     .frame(Frame::none())
                     .show(ctx, |ui| {
-                        if hovered {
-                            let button = ui.button("EDIT");
-                            if button.clicked() {
-                                ed.active = Some(unit);
-                            }
-                            ui.add_space(5.0);
-                            if ui.button_red("DELETE").clicked() {
-                                delete = Some(unit);
-                            }
+                        let button = ui.button("EDIT");
+                        if button.clicked() {
+                            ed.active = Some((unit, PackedUnit::pack(unit, world)));
+                        }
+                        ui.add_space(5.0);
+                        if ui.button_red("DELETE").clicked() {
+                            delete = Some(unit);
                         }
                     });
             }
@@ -114,25 +108,28 @@ impl HeroEditorPlugin {
             world.entity_mut(unit).despawn_recursive();
             UnitPlugin::fill_gaps_and_translate(world);
         }
-        for faction in [Faction::Left, Faction::Right] {
-            let offset: Vec2 = match faction {
-                Faction::Left => [-1.0, 0.0],
-                _ => [1.0, 0.0],
+        Self::show_edit_panel(ed, world);
+        if ed.active.is_none() {
+            for faction in [Faction::Left, Faction::Right] {
+                let offset: Vec2 = match faction {
+                    Faction::Left => [-1.0, 0.0],
+                    _ => [1.0, 0.0],
+                }
+                .into();
+                window(&format!("spawn {faction}"))
+                    .fixed_pos(world_to_screen(
+                        (UnitPlugin::get_slot_position(faction, 0) + offset).extend(0.0),
+                        world,
+                    ))
+                    .title_bar(false)
+                    .stroke(false)
+                    .set_width(60.0)
+                    .show(ctx, |ui| {
+                        if ui.button("SPAWN").clicked() {
+                            ed.spawn(faction, world);
+                        }
+                    });
             }
-            .into();
-            window(&format!("spawn {faction}"))
-                .fixed_pos(world_to_screen(
-                    (UnitPlugin::get_slot_position(faction, 0) + offset).extend(0.0),
-                    world,
-                ))
-                .title_bar(false)
-                .stroke(false)
-                .set_width(60.0)
-                .show(ctx, |ui| {
-                    if ui.button("SPAWN").clicked() {
-                        ed.spawn(faction, world);
-                    }
-                });
         }
         if world
             .resource::<Input<MouseButton>>()
@@ -144,6 +141,178 @@ impl HeroEditorPlugin {
             pd.hero_editor_data.save(world);
         }
         pd.save(world).unwrap();
+    }
+
+    fn show_edit_panel(ed: &mut HeroEditorData, world: &mut World) {
+        if let Some((entity, old_unit)) = ed.active.as_ref() {
+            let mut unit = old_unit.clone();
+            let entity = *entity;
+            let ctx = &egui_context(world);
+            SidePanel::left("editor panel")
+                .frame(Frame {
+                    stroke: Stroke {
+                        width: 1.0,
+                        color: white(),
+                    },
+                    outer_margin: Margin::same(4.0),
+                    inner_margin: Margin::same(4.0),
+                    fill: black(),
+                    ..default()
+                })
+                .default_width(ctx.screen_rect().width() * 0.7)
+                .show(ctx, |ui| {
+                    ui.with_layout(Layout::right_to_left(egui::Align::Min), |ui| {
+                        if ui.button_red("CLOSE").clicked() {
+                            ed.active = None;
+                        }
+                        if ui.button("PASTE").clicked() {
+                            unit = ron::from_str(&get_from_clipboard(world).unwrap()).unwrap();
+                        }
+                        if ui.button("COPY").clicked() {
+                            save_to_clipboard(
+                                &to_string_pretty(&unit, PrettyConfig::new()).unwrap(),
+                                world,
+                            );
+                        }
+                    });
+                    ScrollArea::new([true, true])
+                        .scroll_bar_visibility(egui::scroll_area::ScrollBarVisibility::AlwaysHidden)
+                        .show(ui, |ui| {
+                            let style = ui.style_mut();
+                            style.override_text_style = Some(TextStyle::Small);
+                            style.drag_value_text_style = TextStyle::Small;
+                            style.visuals.widgets.inactive.bg_stroke = Stroke {
+                                width: 1.0,
+                                color: dark_gray(),
+                            };
+                            ui.horizontal(|ui| {
+                                let name = &mut unit.name;
+                                ui.label("name:");
+                                TextEdit::singleline(name).desired_width(60.0).ui(ui);
+                                let atk = &mut unit.atk;
+                                ui.label("atk:");
+                                DragValue::new(atk).clamp_range(0..=99).ui(ui);
+                                let hp = &mut unit.hp;
+                                ui.label("hp:");
+                                DragValue::new(hp).clamp_range(0..=99).ui(ui);
+                            });
+                            ui.horizontal(|ui| {
+                                let houses: HashMap<String, Color> = HashMap::from_iter(
+                                    Pools::get(world)
+                                        .houses
+                                        .iter()
+                                        .map(|(k, v)| (k.clone(), v.color.clone().into())),
+                                );
+                                ui.label("house:");
+                                let house = &mut unit.houses;
+                                ComboBox::from_id_source("house")
+                                    .selected_text(house.clone())
+                                    .width(140.0)
+                                    .show_ui(ui, |ui| {
+                                        for (h, _) in houses {
+                                            ui.selectable_value(house, h.clone(), h.clone());
+                                        }
+                                    });
+                            });
+                            ui.horizontal(|ui| {
+                                ui.label("desc:");
+                                let description = &mut unit.description;
+                                TextEdit::singleline(description)
+                                    .desired_width(ui.available_width().min(200.0))
+                                    .ui(ui);
+                            });
+
+                            let context = &Context::from_owner(entity, world);
+                            ui.horizontal(|ui| {
+                                let trigger = &mut unit.trigger;
+                                match trigger {
+                                    Trigger::Fire {
+                                        trigger,
+                                        target,
+                                        effect,
+                                    } => {
+                                        CollapsingHeader::new("Trigger").default_open(true).show(
+                                            ui,
+                                            |ui| {
+                                                trigger.show_editor(entity, ui);
+                                                match trigger {
+                                                    FireTrigger::List(list) => {
+                                                        ui.vertical(|ui| {
+                                                            for (i, trigger) in
+                                                                list.iter_mut().enumerate()
+                                                            {
+                                                                ComboBox::from_id_source(
+                                                                    Id::new(entity).with(i),
+                                                                )
+                                                                .selected_text(trigger.to_string())
+                                                                .show_ui(ui, |ui| {
+                                                                    for option in
+                                                                        FireTrigger::iter()
+                                                                    {
+                                                                        let text =
+                                                                            option.to_string();
+                                                                        ui.selectable_value(
+                                                                            trigger.as_mut(),
+                                                                            option,
+                                                                            text,
+                                                                        );
+                                                                    }
+                                                                });
+                                                            }
+                                                            if ui.button("+").clicked() {
+                                                                list.push(default());
+                                                            }
+                                                        });
+                                                    }
+                                                    _ => {}
+                                                }
+                                            },
+                                        );
+                                        CollapsingHeader::new("Target").default_open(true).show(
+                                            ui,
+                                            |ui| {
+                                                show_tree(target, context, ui, world);
+                                            },
+                                        );
+
+                                        CollapsingHeader::new("Effect").default_open(true).show(
+                                            ui,
+                                            |ui| {
+                                                show_tree(effect, context, ui, world);
+                                            },
+                                        );
+                                    }
+                                    Trigger::Change { .. } => todo!(),
+                                    Trigger::List(_) => todo!(),
+                                }
+                            });
+
+                            let rep = &mut unit.representation;
+                            ui.horizontal(|ui| {
+                                for child in rep.children.iter_mut() {
+                                    child.show_editor(context, ui, world);
+                                }
+                            });
+                            if ui.button("+").clicked() {
+                                rep.children.push(default());
+                            }
+                        });
+                });
+
+            if let Some((entity, old_unit)) = ed.active.as_ref() {
+                let entity = *entity;
+                if !unit.eq(old_unit) {
+                    let slot =
+                        VarState::get(entity, world).get_int(VarName::Slot).unwrap() as usize;
+                    let parent = entity.get_parent(world).unwrap();
+                    world.entity_mut(entity).despawn_recursive();
+                    let entity = unit.clone().unpack(parent, Some(slot), world);
+                    UnitPlugin::place_into_slot(entity, world).unwrap();
+                    ed.active = Some((entity, unit));
+                    ed.save(world);
+                }
+            }
+        }
     }
 
     fn clear(world: &mut World) {
@@ -158,7 +327,7 @@ impl HeroEditorPlugin {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct HeroEditorData {
-    pub active: Option<Entity>,
+    pub active: Option<(Entity, PackedUnit)>,
 
     pub teams: (Vec<PackedUnit>, Vec<PackedUnit>),
     pub camera_pos: Vec2,
@@ -181,198 +350,6 @@ impl Default for HeroEditorData {
         }
     }
 }
-
-// impl EditorEntityData {
-//     fn show_window(&mut self, unit: Entity, ui: &mut Ui, world: &mut World) {
-//         if !self.active {
-//             return;
-//         }
-//         let pos = entity_screen_pos(unit, vec2(0.0, -1.0), world).to_pos2();
-//         let center = self.window_center;
-//         let ctx = &egui_context(world);
-//         CentralPanel::default()
-//             .frame(Frame::none())
-//             .show(ctx, |ui| {
-//                 let end = center.to_pos2();
-//                 let start = pos;
-//                 ui.painter().line_segment(
-//                     [start, end],
-//                     Stroke {
-//                         width: 2.0,
-//                         color: white(),
-//                     },
-//                 );
-//             });
-//         let unit_window = window(&format!("edit {unit:?}"))
-//             .default_pos(pos.add(egui::vec2(150.0, 0.0)))
-//             .title_bar(false)
-//             .order(egui::Order::Foreground)
-//             .show(&egui_context(world), |ui| {
-//                 ui.style_mut().override_text_style = Some(TextStyle::Small);
-//                 frame(ui, |ui| {
-//                     let houses: HashMap<String, Color> = HashMap::from_iter(
-//                         Pools::get(world)
-//                             .houses
-//                             .iter()
-//                             .map(|(k, v)| (k.clone(), v.color.clone().into())),
-//                     );
-//                     let mut state = VarState::get_mut(unit, world);
-//                     ui.horizontal(|ui| {
-//                         let name = &mut state.get_string(VarName::Name).unwrap();
-//                         ui.label("name:");
-//                         if TextEdit::singleline(name)
-//                             .desired_width(60.0)
-//                             .ui(ui)
-//                             .changed()
-//                         {
-//                             state.init(VarName::Name, VarValue::String(name.to_owned()));
-//                         }
-//                         let atk = &mut state.get_int(VarName::Atk).unwrap();
-//                         ui.label("atk:");
-//                         if DragValue::new(atk).clamp_range(0..=99).ui(ui).changed() {
-//                             state.init(VarName::Atk, VarValue::Int(*atk));
-//                         }
-//                         let hp = &mut state.get_int(VarName::Hp).unwrap();
-//                         ui.label("hp:");
-//                         if DragValue::new(hp).clamp_range(0..=99).ui(ui).changed() {
-//                             state.init(VarName::Hp, VarValue::Int(*hp));
-//                         }
-//                     });
-//                     ui.horizontal(|ui| {
-//                         ui.label("house:");
-//                         let house = &mut state.get_string(VarName::Houses).unwrap();
-//                         ComboBox::from_id_source("house")
-//                             .selected_text(house.clone())
-//                             .width(140.0)
-//                             .show_ui(ui, |ui| {
-//                                 for (h, c) in houses {
-//                                     if ui.selectable_value(house, h.clone(), h.clone()).changed() {
-//                                         state.init(VarName::Houses, VarValue::String(h));
-//                                         state.init(VarName::HouseColor1, VarValue::Color(c));
-//                                     }
-//                                 }
-//                             });
-//                     });
-//                     ui.horizontal(|ui| {
-//                         ui.label("desc:");
-//                         let description = &mut state.get_string(VarName::Description).unwrap();
-//                         if TextEdit::singleline(description)
-//                             .desired_width(ui.available_width().min(200.0))
-//                             .ui(ui)
-//                             .changed()
-//                         {
-//                             state.init(
-//                                 VarName::Description,
-//                                 VarValue::String(description.to_owned()),
-//                             );
-//                         }
-//                     });
-//                     let context = &Context::from_owner(unit, world);
-//                     ui.horizontal(|ui| {
-//                         let trigger = &mut default();
-//                         mem::swap(
-//                             trigger,
-//                             &mut Status::find_unit_status(unit, LOCAL_TRIGGER, world)
-//                                 .unwrap()
-//                                 .trigger,
-//                         );
-//                         match trigger {
-//                             Trigger::Fire {
-//                                 trigger,
-//                                 target,
-//                                 effect,
-//                             } => {
-//                                 CollapsingHeader::new("TRIGGER").default_open(true).show(
-//                                     ui,
-//                                     |ui| {
-//                                         ComboBox::from_id_source(unit)
-//                                             .selected_text(trigger.to_string())
-//                                             .wrap(false)
-//                                             .show_ui(ui, |ui| {
-//                                                 for option in FireTrigger::iter() {
-//                                                     let text = option.to_string();
-//                                                     ui.selectable_value(trigger, option, text);
-//                                                 }
-//                                             });
-//                                         match trigger {
-//                                             FireTrigger::List(list) => {
-//                                                 ui.vertical(|ui| {
-//                                                     for (i, trigger) in list.iter_mut().enumerate()
-//                                                     {
-//                                                         ComboBox::from_id_source(
-//                                                             Id::new(unit).with(i),
-//                                                         )
-//                                                         .selected_text(trigger.to_string())
-//                                                         .show_ui(ui, |ui| {
-//                                                             for option in FireTrigger::iter() {
-//                                                                 let text = option.to_string();
-//                                                                 ui.selectable_value(
-//                                                                     trigger.as_mut(),
-//                                                                     option,
-//                                                                     text,
-//                                                                 );
-//                                                             }
-//                                                         });
-//                                                     }
-//                                                     if ui.button("+").clicked() {
-//                                                         list.push(default());
-//                                                     }
-//                                                 });
-//                                             }
-//                                             _ => {}
-//                                         }
-//                                     },
-//                                 );
-//                                 CollapsingHeader::new("TARGET")
-//                                     .default_open(true)
-//                                     .show(ui, |ui| {
-//                                         show_tree(target, context, ui, world);
-//                                     });
-
-//                                 CollapsingHeader::new("EFFECT")
-//                                     .default_open(true)
-//                                     .show(ui, |ui| {
-//                                         show_tree(effect, context, ui, world);
-//                                     });
-//                             }
-//                             Trigger::Change { .. } => todo!(),
-//                             Trigger::List(_) => todo!(),
-//                         }
-
-//                         mem::swap(
-//                             trigger,
-//                             &mut Status::find_unit_status(unit, LOCAL_TRIGGER, world)
-//                                 .unwrap()
-//                                 .trigger,
-//                         );
-//                     });
-//                     ui.horizontal(|ui| {
-//                         let mut rep = default();
-//                         mem::swap(
-//                             &mut rep,
-//                             world.get_mut::<Representation>(unit).unwrap().as_mut(),
-//                         );
-
-//                         for child in rep.children.iter_mut() {
-//                             child.show_editor(context, ui, world);
-//                         }
-//                         if ui.button("+").clicked() {
-//                             rep.add_child(world);
-//                         }
-
-//                         mem::swap(
-//                             &mut rep,
-//                             world.get_mut::<Representation>(unit).unwrap().as_mut(),
-//                         );
-//                     });
-//                 });
-//             })
-//             .response;
-//         let window_pos = unit_window.rect.center();
-
-//         self.window_center = window_pos.to_vec2();
-//     }
-// }
 
 impl HeroEditorData {
     fn save(&mut self, world: &mut World) {
@@ -418,7 +395,7 @@ impl HeroEditorData {
             .get_single_mut(world)
         {
             let need_pos = if self.camera_need_pos.length() > 0.0 {
-                self.camera_need_pos - vec2(projection.area.max.x - projection.scale, 0.0)
+                self.camera_need_pos - vec2(projection.area.max.x - 1.2, 0.0)
             } else {
                 default()
             };
@@ -444,21 +421,14 @@ impl HeroEditorData {
 
 fn show_value(value: &Result<VarValue>, ui: &mut Ui) {
     match &value {
-        Ok(v) => {
-            v.to_string()
-                .add_color(light_gray())
-                .set_style(ColoredStringStyle::Small)
-                .label(ui);
-        }
-        Err(e) => {
-            e.to_string()
-                .add_color(red())
-                .set_style(ColoredStringStyle::Small)
-                .as_label(ui)
-                .truncate(true)
-                .ui(ui);
-        }
+        Ok(v) => v.to_string().add_color(light_gray()),
+
+        Err(e) => e.to_string().add_color(red()),
     }
+    .set_style(ColoredStringStyle::Small)
+    .as_label(ui)
+    .truncate(true)
+    .ui(ui);
 }
 
 pub fn show_tree(
@@ -467,13 +437,6 @@ pub fn show_tree(
     ui: &mut Ui,
     world: &mut World,
 ) {
-    let style = ui.style_mut();
-    style.override_text_style = Some(TextStyle::Small);
-    style.drag_value_text_style = TextStyle::Small;
-    style.visuals.widgets.inactive.bg_stroke = Stroke {
-        width: 1.0,
-        color: dark_gray(),
-    };
     ui.horizontal(|ui| {
         show_node(root, default(), None, context, ui, world);
     });
@@ -497,8 +460,8 @@ fn show_node(
         .inner_margin(6.0)
         .outer_margin(6.0)
         .rounding(0.0)
+        .fill(light_black())
         .show(ui, |ui| {
-            ui.set_min_width(50.0);
             let name = source
                 .to_string()
                 .add_color(source.node_color())
@@ -626,7 +589,7 @@ impl EditorNodeGenerator for Expression {
         let value = self.get_value(context, world);
         match self {
             Expression::Value(v) => {
-                ui.label(format!("{v:?}"));
+                show_value(&Ok(v.clone()), ui);
             }
             Expression::Float(x) => {
                 ui.add(DragValue::new(x).speed(0.1));
@@ -722,6 +685,7 @@ impl EditorNodeGenerator for Expression {
             | Expression::EnemyUnits
             | Expression::AllUnits
             | Expression::AdjacentUnits
+            | Expression::Index
             | Expression::Float(_)
             | Expression::Int(_)
             | Expression::Bool(_)
@@ -733,12 +697,7 @@ impl EditorNodeGenerator for Expression {
             | Expression::StateLast(_)
             | Expression::Context(_)
             | Expression::Value(_)
-            | Expression::Vec2(_, _)
-            | Expression::Vec2E(_)
-            | Expression::StringInt(_)
-            | Expression::StringFloat(_)
-            | Expression::StringVec(_)
-            | Expression::IntFloat(_) => default(),
+            | Expression::Vec2(_, _) => default(),
             Expression::Sin(x)
             | Expression::Cos(x)
             | Expression::Sign(x)
@@ -747,6 +706,11 @@ impl EditorNodeGenerator for Expression {
             | Expression::UnitVec(x)
             | Expression::Even(x)
             | Expression::Abs(x)
+            | Expression::Vec2E(x)
+            | Expression::StringInt(x)
+            | Expression::StringFloat(x)
+            | Expression::StringVec(x)
+            | Expression::IntFloat(x)
             | Expression::SlotUnit(x)
             | Expression::FactionCount(x)
             | Expression::StatusCharges(x) => show_node(

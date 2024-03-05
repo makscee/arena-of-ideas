@@ -90,9 +90,6 @@ pub fn cursor_pos(world: &mut World) -> Option<Vec2> {
     let window = world.query::<&bevy::window::Window>().single(world);
     window.cursor_position()
 }
-pub fn get_parent(entity: Entity, world: &World) -> Option<Entity> {
-    world.get::<Parent>(entity).map(|p| p.get())
-}
 pub fn get_children(entity: Entity, world: &World) -> Vec<Entity> {
     world.get::<Children>(entity).unwrap().to_vec()
 }
@@ -156,5 +153,20 @@ pub trait ToPos2 {
 impl ToPos2 for Vec2 {
     fn to_pos2(&self) -> Pos2 {
         pos2(self.x, self.y)
+    }
+}
+
+pub trait EntityExt {
+    fn get_parent(&self, world: &World) -> Option<Entity>;
+    fn get_parent_query(&self, query: &Query<&Parent>) -> Option<Entity>;
+}
+
+impl EntityExt for Entity {
+    fn get_parent(&self, world: &World) -> Option<Entity> {
+        world.get::<Parent>(*self).map(|p| p.get())
+    }
+
+    fn get_parent_query(&self, query: &Query<&Parent>) -> Option<Entity> {
+        query.get(*self).ok().map(|p| p.get())
     }
 }

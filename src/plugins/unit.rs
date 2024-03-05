@@ -8,10 +8,7 @@ impl Plugin for UnitPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<HoveredUnit>()
             .init_resource::<DraggedUnit>()
-            .add_systems(
-                Update,
-                Self::ui.run_if(not(in_state(GameState::HeroEditor))),
-            );
+            .add_systems(Update, Self::ui);
     }
 }
 
@@ -246,11 +243,15 @@ impl UnitPlugin {
         world
             .resource::<HoveredUnit>()
             .0
-            .and_then(|e| get_parent(e, world))
+            .and_then(|e| e.get_parent(world))
     }
 
-    pub fn hover_unit(event: Listener<Pointer<Over>>, mut hovered: ResMut<HoveredUnit>) {
-        hovered.0 = Some(event.target);
+    pub fn hover_unit(
+        event: Listener<Pointer<Over>>,
+        mut hovered: ResMut<HoveredUnit>,
+        parent: Query<&Parent>,
+    ) {
+        hovered.0 = event.target.get_parent_query(&parent);
     }
 
     pub fn unhover_unit(_event: Listener<Pointer<Out>>, mut hovered: ResMut<HoveredUnit>) {
@@ -268,7 +269,12 @@ impl UnitPlugin {
         if shop_data.fusion_candidates.is_some() {
             return;
         }
-        let entity = parent.get(event.target).unwrap().get();
+        let entity: Entity = event.target;
+        let entity = entity
+            .get_parent_query(&parent)
+            .unwrap()
+            .get_parent_query(&parent)
+            .unwrap();
         debug!("Drag unit start {:?}", entity);
         dragged.0 = Some((entity, DragAction::None));
         for entity in team.iter_mut() {

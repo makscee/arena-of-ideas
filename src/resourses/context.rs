@@ -124,8 +124,8 @@ impl Context {
     }
 
     pub fn set_owner(&mut self, entity: Entity, world: &World) -> &mut Self {
-        let name = VarState::get(entity, world)
-            .get_string(VarName::Name)
+        let name = VarState::try_get(entity, world)
+            .and_then(|s| s.get_string(VarName::Name))
             .unwrap_or_default();
         self.stack(ContextLayer::Owner(entity, name), world)
     }

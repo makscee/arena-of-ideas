@@ -76,15 +76,15 @@ impl FireTrigger {
         }
     }
 
-    fn show_editor(&mut self, name: String, ui: &mut Ui) {
+    pub fn show_editor(&mut self, name: impl std::hash::Hash, ui: &mut Ui) {
         ui.horizontal(|ui| {
-            ComboBox::from_id_source(&name)
+            ComboBox::from_id_source(name)
                 .selected_text(self.to_string())
                 .width(150.0)
                 .show_ui(ui, |ui| {
                     for option in FireTrigger::iter() {
                         let text = option.to_string();
-                        ui.selectable_value(self, option, text).changed();
+                        ui.selectable_value(self, option, text);
                     }
                 });
         });

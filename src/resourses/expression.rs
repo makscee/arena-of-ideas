@@ -1,13 +1,10 @@
-use std::f32::consts::PI;
-
-use bevy_egui::egui::{ComboBox, DragValue};
 use convert_case::{Case, Casing};
-use hex::encode;
 use rand::{
     seq::{IteratorRandom, SliceRandom},
     Rng, SeedableRng,
 };
 use rand_chacha::ChaCha8Rng;
+use std::f32::consts::PI;
 
 use super::*;
 
@@ -23,6 +20,7 @@ pub enum Expression {
     OwnerFaction,
     OppositeFaction,
     Beat,
+    Index,
 
     Owner,
     Caster,
@@ -161,6 +159,7 @@ impl Expression {
             Expression::Context(var) => context
                 .get_var(*var, world)
                 .with_context(|| format!("Var {var} was not found")),
+            Expression::Index => Expression::Context(VarName::Index).get_value(context, world),
             Expression::Owner => Ok(VarValue::Entity(
                 context.get_owner().context("Owner not found")?,
             )),
@@ -374,6 +373,7 @@ impl Expression {
             | Self::AdjacentUnits
             | Self::AllyUnits
             | Self::EnemyUnits
+            | Self::Index
             | Self::Float(..)
             | Self::Int(..)
             | Self::Bool(..)
@@ -458,232 +458,6 @@ impl Expression {
         self.get_value(context, world)?.get_color()
     }
 
-    pub fn show_editor_root(
-        &mut self,
-        entity: Option<Entity>,
-        hovered: &mut Option<String>,
-        lookup: &mut String,
-        name: String,
-        show_name: bool,
-        ui: &mut Ui,
-        world: &mut World,
-    ) {
-        ui.horizontal(|ui| {
-            if show_name {
-                ui.label(name.clone());
-            }
-            self.show_editor(hovered, lookup, name, ui);
-            if let Some(entity) = entity {
-                let text = match self.get_value(&Context::from_owner(entity, world), world) {
-                    Ok(value) => RichText::new(format!("{value}")).color(hex_color!("#00ACC1")),
-                    Err(err) => RichText::new(err.to_string()).color(hex_color!("#F44336")),
-                };
-                ui.label(text);
-            }
-        });
-    }
-
-    pub fn show_editor(
-        &mut self,
-        hovered: &mut Option<String>,
-        lookup: &mut String,
-        name: String,
-        ui: &mut Ui,
-    ) {
-        let is_hovered = if let Some(hovered) = hovered.as_ref() {
-            hovered.eq(&name)
-        } else {
-            false
-        };
-        let color = match is_hovered {
-            true => hex_color!("#FF9100"),
-            false => self.editor_color(),
-        };
-        ui.style_mut().visuals.hyperlink_color = color;
-        let mut now_hovered = false;
-        ui.horizontal(|ui| {
-            let minus = ui.link("-");
-            if minus.clicked() {
-                let first: Expression = if let Some(first) = self.get_inner().first() {
-                    first.as_ref().clone()
-                } else {
-                    default()
-                };
-                *self = first;
-            }
-            let left = ui.link(RichText::new("("));
-            if left.clicked() {
-                let abs = Expression::Abs(Box::new(self.clone()));
-                *self = abs;
-            }
-            now_hovered |= left.hovered() || minus.hovered();
-            ui.vertical(|ui| {
-                let link = ui.link(RichText::new(format!("{self}")));
-                if link.clicked() {
-                    lookup.clear();
-                    link.request_focus();
-                }
-                now_hovered |= link.hovered();
-                if link.has_focus() || link.lost_focus() {
-                    let mut need_clear = false;
-                    ui.horizontal_wrapped(|ui| {
-                        ui.label(lookup.to_owned());
-                        Expression::iter()
-                            .filter_map(|e| {
-                                match e
-                                    .to_string()
-                                    .to_lowercase()
-                                    .starts_with(lookup.to_lowercase().as_str())
-                                {
-                                    true => Some(e),
-                                    false => None,
-                                }
-                            })
-                            .for_each(|e| {
-                                let button = ui.button(e.to_string());
-                                if button.gained_focus() || button.clicked() {
-                                    *self = e.set_inner(self.clone());
-                                    need_clear = true;
-                                }
-                            })
-                    });
-                    if need_clear {
-                        lookup.clear();
-                    }
-                }
-            });
-
-            match self {
-                Expression::Zero
-                | Expression::GameTime
-                | Expression::RandomFloat
-                | Expression::PI
-                | Expression::Owner
-                | Expression::Caster
-                | Expression::Target
-                | Expression::RandomUnit
-                | Expression::RandomAdjacentUnit
-                | Expression::RandomAlly
-                | Expression::RandomEnemy
-                | Expression::Age
-                | Expression::SlotPosition
-                | Expression::OwnerFaction
-                | Expression::OppositeFaction
-                | Expression::AllyUnits
-                | Expression::EnemyUnits
-                | Expression::AllUnits
-                | Expression::AdjacentUnits
-                | Expression::Beat => {}
-                Expression::Value(v) => {
-                    ui.label(format!("{v:?}"));
-                }
-                Expression::Float(x) => {
-                    ui.add(DragValue::new(x).speed(0.1));
-                }
-                Expression::Int(x) => {
-                    ui.add(DragValue::new(x));
-                }
-                Expression::Bool(x) => {
-                    ui.checkbox(x, "");
-                }
-                Expression::String(x) => {
-                    ui.text_edit_singleline(x);
-                }
-                Expression::Hex(x) => {
-                    let c = Color::hex(&x).unwrap_or_default().as_rgba_u8();
-                    let mut c = Color32::from_rgb(c[0], c[1], c[2]);
-                    if ui.color_edit_button_srgba(&mut c).changed() {
-                        *x = encode(c.to_array());
-                    }
-                }
-                Expression::Faction(x) => {
-                    ComboBox::from_id_source(&name)
-                        .selected_text(x.to_string())
-                        .show_ui(ui, |ui| {
-                            for option in Faction::iter() {
-                                let text = option.to_string();
-                                ui.selectable_value(x, option, text).changed();
-                            }
-                        });
-                }
-                Expression::State(x) | Expression::TargetState(x) | Expression::StateLast(x) => {
-                    ComboBox::from_id_source(&name)
-                        .selected_text(x.to_string())
-                        .show_ui(ui, |ui| {
-                            for option in VarName::iter() {
-                                let text = option.to_string();
-                                ui.selectable_value(x, option, text).changed();
-                            }
-                        });
-                }
-                Expression::Context(x) => {
-                    ui.label(x.to_string());
-                }
-                Expression::Vec2(x, y) => {
-                    ui.add(DragValue::new(x).speed(0.1));
-                    ui.add(DragValue::new(y).speed(0.1));
-                }
-
-                Expression::Vec2E(x)
-                | Expression::StringInt(x)
-                | Expression::StringFloat(x)
-                | Expression::StringVec(x)
-                | Expression::IntFloat(x)
-                | Expression::Sin(x)
-                | Expression::Cos(x)
-                | Expression::Sign(x)
-                | Expression::Fract(x)
-                | Expression::Floor(x)
-                | Expression::UnitVec(x)
-                | Expression::Even(x)
-                | Expression::Abs(x)
-                | Expression::SlotUnit(x)
-                | Expression::FactionCount(x)
-                | Expression::StatusCharges(x) => {
-                    x.show_editor(hovered, lookup, format!("{name}/x"), ui);
-                }
-                Expression::Vec2EE(a, b)
-                | Expression::Sum(a, b)
-                | Expression::Sub(a, b)
-                | Expression::Mul(a, b)
-                | Expression::Div(a, b)
-                | Expression::GreaterThen(a, b)
-                | Expression::LessThen(a, b)
-                | Expression::Min(a, b)
-                | Expression::Max(a, b)
-                | Expression::Equals(a, b)
-                | Expression::And(a, b)
-                | Expression::Or(a, b)
-                | Expression::WithVar(_, a, b) => {
-                    ui.vertical(|ui| {
-                        ui.horizontal(|ui| {
-                            a.show_editor(hovered, lookup, format!("{name}/a"), ui);
-                        });
-                        ui.horizontal(|ui| {
-                            b.show_editor(hovered, lookup, format!("{name}/b"), ui);
-                        });
-                    });
-                }
-                Expression::If(i, t, e) => {
-                    i.show_editor(hovered, lookup, format!("{name}/i"), ui);
-                    t.show_editor(hovered, lookup, format!("{name}/t"), ui);
-                    e.show_editor(hovered, lookup, format!("{name}/e"), ui);
-                }
-            }
-            ui.style_mut().visuals.hyperlink_color = color;
-            let right = ui.link(RichText::new(")"));
-            if right.clicked() {
-                for inner in self.get_inner() {
-                    *inner = Box::new(Expression::Zero);
-                }
-            }
-            now_hovered |= right.hovered();
-            if now_hovered && !hovered.as_ref().eq(&Some(&name)) {
-                *hovered = Some(name.clone());
-            }
-        });
-    }
-
     pub fn editor_color(&self) -> Color32 {
         match self {
             Expression::Zero
@@ -705,6 +479,7 @@ impl Expression {
             | Expression::AllUnits
             | Expression::AdjacentUnits
             | Expression::OppositeFaction
+            | Expression::Index
             | Expression::Beat => hex_color!("#80D8FF"),
 
             Expression::Float(_)
@@ -773,6 +548,7 @@ impl Expression {
             | Expression::AllyUnits
             | Expression::EnemyUnits
             | Expression::AllUnits
+            | Expression::Index
             | Expression::AdjacentUnits => self.to_string().to_case(Case::Lower),
             Expression::Float(v) => v.to_string(),
             Expression::Int(v) => v.to_string(),

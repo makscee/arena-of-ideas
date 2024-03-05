@@ -3,7 +3,8 @@ use bevy::{
     sprite::Mesh2dHandle,
     transform::TransformBundle,
 };
-use bevy_egui::egui::ComboBox;
+use bevy_egui::egui::{ComboBox, DragValue};
+use indexmap::IndexMap;
 
 use super::*;
 
@@ -26,12 +27,12 @@ pub struct Representation {
     #[serde(default)]
     pub children: Vec<Box<Representation>>,
     #[serde(default)]
-    pub mapping: HashMap<VarName, Expression>,
+    pub mapping: IndexMap<VarName, Expression>,
     #[serde(default)]
     pub count: usize,
-    #[serde(default)]
+    #[serde(skip)]
     pub entity: Option<Entity>,
-    #[serde(default)]
+    #[serde(skip)]
     pub material_entities: Vec<Entity>,
 }
 
@@ -272,9 +273,10 @@ impl RepresentationMaterial {
                     .unwrap_or_default()
                     .set_a(alpha.get_float(context, world).unwrap_or(1.0))
                     .to_owned();
-                world.get_mut::<Text>(entity).unwrap().sections[0].value =
-                    text.get_string(context, world).unwrap_or_default();
-                world.get_mut::<Text>(entity).unwrap().sections[0].style = bevy::text::TextStyle {
+                let text = text.get_string(context, world).unwrap_or_default();
+                let text_comp = &mut world.get_mut::<Text>(entity).unwrap().sections[0];
+                text_comp.value = text;
+                text_comp.style = bevy::text::TextStyle {
                     font_size: *font_size,
                     color,
                     ..default()
@@ -370,7 +372,7 @@ impl RepresentationMaterial {
     }
 
     fn show_editor(&mut self, context: &Context, ui: &mut Ui, world: &mut World) {
-        CollapsingHeader::new("MATERIAL")
+        CollapsingHeader::new("Material")
             .default_open(true)
             .show(ui, |ui| {
                 ComboBox::from_label("type")
@@ -476,19 +478,14 @@ impl Representation {
     fn unpack_children(&mut self, world: &mut World) {
         let parent = *self.material_entities.first().unwrap();
         for child in self.children.iter_mut() {
-            if child.entity.is_none() {
-                child.unpack_materials(world.spawn_empty().set_parent(parent).id(), world);
-            }
+            child.unpack_materials(world.spawn_empty().set_parent(parent).id(), world);
         }
-    }
-    pub fn add_child(&mut self, world: &mut World) {
-        self.children.push(default());
-        self.unpack_children(world);
     }
 
     pub fn pack(entity: Entity, world: &World) -> Self {
         let mut rep = world.get::<Representation>(entity).unwrap().clone();
-        // rep.pack_children(entity, world);
+        rep.material_entities.clear();
+        rep.entity = None;
         rep
     }
     pub fn update(self, dragged: Option<Entity>, world: &mut World) {
@@ -567,88 +564,47 @@ impl Representation {
         CollapsingHeader::new("Representation")
             .id_source(self.entity)
             .show(ui, |ui| {
+                ui.horizontal(|ui| {
+                    ui.label("count:");
+                    DragValue::new(&mut self.count).ui(ui);
+                });
                 self.material.show_editor(context, ui, world);
+                ui.collapsing("Mapping", |ui| {
+                    let mut map_key = None;
+                    let mut remove_key = None;
+                    for (key, value) in self.mapping.iter_mut() {
+                        let mut new_key = key.clone();
+                        ui.horizontal(|ui| {
+                            new_key.show_editor(ui);
+                            if ui.button_red("-").clicked() {
+                                remove_key = Some(*key);
+                            }
+                        });
+                        show_tree(value, context, ui, world);
+                        if !new_key.eq(key) {
+                            map_key = Some((*key, new_key));
+                        }
+                    }
+                    if let Some((from, to)) = map_key {
+                        let ind = self.mapping.get_index_of(&from).unwrap();
+                        self.mapping.shift_remove(&to);
+                        let value = self.mapping.shift_remove(&from).unwrap();
+                        self.mapping.shift_insert(ind, to, value);
+                    }
+                    if let Some(key) = remove_key {
+                        self.mapping.shift_remove(&key);
+                    }
+                    if ui.button("+").clicked() {
+                        self.mapping.insert(VarName::None, default());
+                    }
+                });
+                ui.label("children:");
                 for child in self.children.iter_mut() {
                     child.show_editor(context, ui, world);
                 }
                 if ui.button("+").clicked() {
-                    self.add_child(world);
-                }
-            });
-    }
-
-    pub fn show_editor_old(
-        &mut self,
-        entity: Option<Entity>,
-        hovered: &mut Option<String>,
-        lookup: &mut String,
-        id: impl std::hash::Hash,
-        ui: &mut Ui,
-        world: &mut World,
-    ) -> bool {
-        let mut delete = false;
-        CollapsingHeader::new("Representation")
-            .id_source(id)
-            .default_open(true)
-            .show(ui, |ui| {
-                if ui.button("delete").clicked() {
-                    delete = true;
-                }
-                // self.material
-                //     .show_editor_old(entity, hovered, lookup, ui, world);
-                let mut deletes = Vec::default();
-                for (i, rep) in self.children.iter_mut().enumerate() {
-                    let child_delete = rep.show_editor_old(entity, hovered, lookup, i, ui, world);
-                    if child_delete {
-                        deletes.push(i);
-                    }
-                }
-                deletes.into_iter().rev().for_each(|i| {
-                    self.children.remove(i);
-                });
-                CollapsingHeader::new("Mapping")
-                    .default_open(true)
-                    .show(ui, |ui| {
-                        let mut renames: HashMap<VarName, VarName> = default();
-                        let mut deletes: Vec<VarName> = default();
-                        for (var, e) in self.mapping.iter_mut().sorted_by_key(|x| x.0) {
-                            let mut x = *var;
-                            ui.horizontal(|ui| {
-                                if ui.button("-").clicked() {
-                                    deletes.push(*var);
-                                }
-                                x.show_editor(ui);
-                                e.show_editor_root(
-                                    entity,
-                                    hovered,
-                                    lookup,
-                                    var.to_string(),
-                                    false,
-                                    ui,
-                                    world,
-                                );
-                                if !x.eq(var) {
-                                    renames.insert(x, *var);
-                                }
-                            });
-                        }
-                        for (to, from) in renames {
-                            if let Some(value) = self.mapping.remove(&from) {
-                                self.mapping.insert(to, value);
-                            }
-                        }
-                        for var in deletes {
-                            self.mapping.remove(&var);
-                        }
-                        if ui.button("+").clicked() {
-                            self.mapping.insert(default(), default());
-                        }
-                    });
-                if ui.button("+").clicked() {
                     self.children.push(default());
                 }
-                ui.add(Slider::new(&mut self.count, 0..=20).text("Count"));
             });
-        delete
     }
 }

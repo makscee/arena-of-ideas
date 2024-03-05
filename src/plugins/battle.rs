@@ -69,7 +69,7 @@ impl BattlePlugin {
     fn get_result(world: &mut World) -> Result<BattleResult> {
         let mut result: HashMap<Faction, usize> = default();
         for unit in world.query_filtered::<Entity, With<Unit>>().iter(world) {
-            let team = get_parent(unit, world).unwrap();
+            let team = unit.get_parent(world).unwrap();
             let faction = VarState::get(team, world)
                 .get_faction(VarName::Faction)
                 .unwrap();

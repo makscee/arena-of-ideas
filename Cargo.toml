@@ -60,6 +60,7 @@ ordered_hash_map = "0.4.0"
 home = "0.5.5"
 lazy_static = "1.4.0"
 convert_case = "0.6.0"
+indexmap = { version = "2.2.5", features = ["serde"] }
 
 [dependencies.winit]
 # version = "*"
