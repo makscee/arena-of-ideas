@@ -18,7 +18,7 @@ pub struct PackedUnit {
     pub level: i32,
     #[serde(default = "default_houses")]
     pub houses: String,
-    #[serde(default = "default_description ")]
+    #[serde(default = "default_description")]
     pub description: String,
     #[serde(default)]
     pub trigger: Trigger,

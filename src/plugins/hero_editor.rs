@@ -129,32 +129,54 @@ impl HeroEditorPlugin {
                         }
                     });
             }
-
-            TopBottomPanel::top("battle btns").show(ctx, |ui| {
-                ui.horizontal(|ui| {
-                    if ui.button("Reset").clicked() {
-                        UnitPlugin::despawn_all_teams(world);
-                        ed.load(world);
-                    }
-                    if ui.button("Turn End").clicked() {
-                        Event::TurnEnd.send(world);
-                    }
-                    if ui.button("Battle Start").clicked() {
-                        Event::BattleStart.send(world);
-                    }
-                    if ui.button("Strike").clicked() {
-                        if let Some((left, right)) = BattlePlugin::get_strikers(world) {
-                            BattlePlugin::run_strike(left, right, world);
-                        }
-                    }
-                });
-            });
         }
+        Self::draw_top_buttons(ed, ctx, world);
         if !pd.hero_editor_data.eq(ed) {
             ed.save(world);
             mem::swap(&mut pd.hero_editor_data, ed);
             pd.save(world).unwrap();
         }
+    }
+
+    fn draw_top_buttons(ed: &mut HeroEditorData, ctx: &egui::Context, world: &mut World) {
+        if ed.active.is_some() {
+            return;
+        }
+        TopBottomPanel::top("battle btns").show(ctx, |ui| {
+            ui.horizontal(|ui| {
+                if ui.button("Turn End").clicked() {
+                    Event::TurnEnd.send(world);
+                }
+                if ui.button("Battle Start").clicked() {
+                    Event::BattleStart.send(world);
+                }
+                if ui.button("Strike").clicked() {
+                    if let Some((left, right)) = BattlePlugin::get_strikers(world) {
+                        BattlePlugin::run_strike(left, right, world);
+                    }
+                }
+                ui.add_space(10.0);
+                if ui.button_color("Save", yellow()).clicked() {
+                    ed.saved_teams = ed.teams.clone();
+                }
+                if ui.button_color("Load", yellow()).clicked() {
+                    ed.teams = ed.saved_teams.clone();
+                    ed.load(world);
+                }
+
+                ui.add_space(10.0);
+                if ui.button_red("Clear Statuses").clicked() {
+                    for unit in ed.teams.0.iter_mut().chain(ed.teams.1.iter_mut()) {
+                        unit.statuses.clear();
+                    }
+                    ed.load(world);
+                }
+                if ui.button_red("Reset").clicked() {
+                    UnitPlugin::despawn_all_teams(world);
+                    ed.load(world);
+                }
+            });
+        });
     }
 
     fn show_edit_panel(ed: &mut HeroEditorData, world: &mut World) {
@@ -352,6 +374,8 @@ pub struct HeroEditorData {
     pub camera_need_pos: Vec2,
     pub camera_scale: f32,
     pub hovered_id: Option<String>,
+
+    pub saved_teams: (Vec<PackedUnit>, Vec<PackedUnit>),
 }
 
 impl Default for HeroEditorData {
@@ -363,6 +387,7 @@ impl Default for HeroEditorData {
             hovered_id: default(),
             active: default(),
             teams: default(),
+            saved_teams: default(),
         }
     }
 }
@@ -386,6 +411,7 @@ impl HeroEditorData {
 
     fn load(&mut self, world: &mut World) {
         debug!("Load hero editor data start");
+        UnitPlugin::despawn_all_teams(world);
         let left = PackedTeam::spawn(Faction::Left, world);
         let right = PackedTeam::spawn(Faction::Right, world);
         self.teams.0.iter().for_each(|u| {

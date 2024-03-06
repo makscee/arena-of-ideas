@@ -1,0 +1,42 @@
+#![enable(implicit_some)]
+(
+    name: "Equalizer",
+    hp: 2,
+    atk: 1,
+    stacks: 1,
+    level: 1,
+    houses: "Alchemists",
+    description: "%trigger → %effect on %target",
+    trigger: Fire(
+        trigger: BattleStart,
+        target: AllUnits,
+        effect: UseAbility("Petrify"),
+    ),
+    representation: (
+        material: None,
+        children: [
+            (
+                material: Shape(
+                    shape: Rectangle,
+                    fill: Line,
+                    size: Vec2E(Float(1.5)),
+                    thickness: Float(1.0),
+                    alpha: Float(1.0),
+                    color: State(Color),
+                ),
+                children: [],
+                mapping: {
+                    Rotation: Sum(Mul(Mul(PI, Float(0.25)), Index), Mul(Sin(Mul(Sum(GameTime, Mul(Index, Sum(Float(0.2), Beat))), Float(0.5))), Float(0.5))),
+                },
+                count: 8,
+            ),
+        ],
+        mapping: {},
+        count: 0,
+    ),
+    state: (
+        history: {},
+        birth: 0.0,
+    ),
+    statuses: [],
+)
