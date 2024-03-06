@@ -5,6 +5,7 @@ use bevy::{
 };
 use bevy_egui::egui::{ComboBox, DragValue};
 use indexmap::IndexMap;
+use ron::ser::{to_string_pretty, PrettyConfig};
 
 use super::*;
 
@@ -560,27 +561,45 @@ impl Representation {
         }
     }
 
-    pub fn show_editor(&mut self, context: &Context, ui: &mut Ui, world: &mut World) {
-        CollapsingHeader::new("Representation")
-            .id_source(self.entity)
+    pub fn show_editor(
+        &mut self,
+        context: &Context,
+        id: impl std::hash::Hash,
+        ui: &mut Ui,
+        world: &mut World,
+    ) {
+        let response = CollapsingHeader::new("Representation")
+            .id_source(id)
             .show(ui, |ui| {
-                ui.horizontal(|ui| {
-                    ui.label("count:");
-                    DragValue::new(&mut self.count).ui(ui);
-                });
-                self.material.show_editor(context, ui, world);
-                ui.collapsing("Mapping", |ui| {
+                frame(ui, |ui| {
+                    ui.horizontal(|ui| {
+                        ui.label("count:");
+                        DragValue::new(&mut self.count).ui(ui);
+                    });
+                    self.material.show_editor(context, ui, world);
+
+                    ui.horizontal(|ui| {
+                        ui.label("mapping:");
+                        if ui.button("+").clicked() {
+                            self.mapping.shift_remove(&VarName::None);
+                            self.mapping.insert(VarName::None, default());
+                        }
+                    });
                     let mut map_key = None;
-                    let mut remove_key = None;
+                    let mut to_remove = None;
                     for (key, value) in self.mapping.iter_mut() {
                         let mut new_key = key.clone();
                         ui.horizontal(|ui| {
-                            new_key.show_editor(ui);
                             if ui.button_red("-").clicked() {
-                                remove_key = Some(*key);
+                                to_remove = Some(*key);
                             }
+                            ui.collapsing(key.to_string(), |ui| {
+                                frame(ui, |ui| {
+                                    new_key.show_editor(ui);
+                                    show_tree(value, context, ui, world);
+                                });
+                            });
                         });
-                        show_tree(value, context, ui, world);
                         if !new_key.eq(key) {
                             map_key = Some((*key, new_key));
                         }
@@ -591,20 +610,47 @@ impl Representation {
                         let value = self.mapping.shift_remove(&from).unwrap();
                         self.mapping.shift_insert(ind, to, value);
                     }
-                    if let Some(key) = remove_key {
+                    if let Some(key) = to_remove {
                         self.mapping.shift_remove(&key);
                     }
-                    if ui.button("+").clicked() {
-                        self.mapping.insert(VarName::None, default());
+                    ui.horizontal(|ui| {
+                        ui.label("children:");
+                        if ui.button("+").clicked() {
+                            self.children.push(default());
+                        }
+                    });
+                    let mut to_remove = None;
+                    for (i, child) in self.children.iter_mut().enumerate() {
+                        ui.horizontal(|ui| {
+                            if ui.button_red("-").clicked() {
+                                to_remove = Some(i);
+                            }
+                            child.show_editor(context, i, ui, world);
+                        });
+                    }
+                    if let Some(i) = to_remove {
+                        self.children.remove(i);
                     }
                 });
-                ui.label("children:");
-                for child in self.children.iter_mut() {
-                    child.show_editor(context, ui, world);
-                }
-                if ui.button("+").clicked() {
-                    self.children.push(default());
-                }
             });
+        response.header_response.context_menu(|ui| {
+            if ui.button("COPY").clicked() {
+                save_to_clipboard(&to_string_pretty(self, PrettyConfig::new()).unwrap(), world);
+                ui.close_menu();
+            }
+            if ui.button("PASTE").clicked() {
+                if let Some(s) = get_from_clipboard(world) {
+                    match ron::from_str(&s) {
+                        Ok(o) => *self = o,
+                        Err(e) => AlertPlugin::add_error(
+                            Some("Paste Failed".to_owned()),
+                            e.to_string(),
+                            None,
+                        ),
+                    }
+                }
+                ui.close_menu();
+            }
+        });
     }
 }

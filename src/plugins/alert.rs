@@ -107,6 +107,7 @@ impl AlertPlugin {
                 .set_color(alert.r#type.color())
                 .order(Order::Foreground)
                 .default_pos(ctx.screen_rect().center() + egui::vec2(offset * c, offset * c))
+                .set_min_width(400.0)
                 .show(ctx, |ui| {
                     frame(ui, |ui| {
                         alert.text.add_color(white()).label(ui);

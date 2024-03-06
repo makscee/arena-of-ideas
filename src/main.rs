@@ -117,7 +117,12 @@ fn main() {
         .add_systems(Update, input_world)
         .register_type::<VarState>()
         .register_type::<VarStateDelta>()
-        .add_systems(Update, show_build_version.after(ShopPlugin::ui))
+        .add_systems(
+            Update,
+            show_build_version
+                .after(ShopPlugin::ui)
+                .after(HeroEditorPlugin::ui),
+        )
         .run();
 }
 

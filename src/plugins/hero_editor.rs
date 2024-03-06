@@ -81,7 +81,7 @@ impl HeroEditorPlugin {
         pd.save(world).unwrap();
     }
 
-    fn ui(world: &mut World) {
+    pub fn ui(world: &mut World) {
         let mut pd = PersistentData::load(world);
         let ed = &mut pd.hero_editor_data;
         let ctx = &egui_context(world);
@@ -166,7 +166,16 @@ impl HeroEditorPlugin {
                             ed.active = None;
                         }
                         if ui.button("PASTE").clicked() {
-                            unit = ron::from_str(&get_from_clipboard(world).unwrap()).unwrap();
+                            if let Some(s) = get_from_clipboard(world) {
+                                match ron::from_str(&s) {
+                                    Ok(u) => unit = u,
+                                    Err(e) => AlertPlugin::add_error(
+                                        Some("Paste Failed".to_owned()),
+                                        e.to_string(),
+                                        None,
+                                    ),
+                                }
+                            }
                         }
                         if ui.button("COPY").clicked() {
                             save_to_clipboard(
@@ -288,14 +297,7 @@ impl HeroEditorPlugin {
                             });
 
                             let rep = &mut unit.representation;
-                            ui.horizontal(|ui| {
-                                for child in rep.children.iter_mut() {
-                                    child.show_editor(context, ui, world);
-                                }
-                            });
-                            if ui.button("+").clicked() {
-                                rep.children.push(default());
-                            }
+                            rep.show_editor(context, "root", ui, world);
                         });
                 });
 
