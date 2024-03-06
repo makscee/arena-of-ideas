@@ -25,8 +25,6 @@ impl Plugin for HeroEditorPlugin {
 impl HeroEditorPlugin {
     fn on_enter(world: &mut World) {
         let mut pd = PersistentData::load(world);
-        PackedTeam::spawn(Faction::Left, world);
-        PackedTeam::spawn(Faction::Right, world);
         pd.hero_editor_data.active = None;
         pd.hero_editor_data.load(world);
         pd.save(world).unwrap();
@@ -83,7 +81,7 @@ impl HeroEditorPlugin {
 
     pub fn ui(world: &mut World) {
         let mut pd = PersistentData::load(world);
-        let ed = &mut pd.hero_editor_data;
+        let ed = &mut pd.hero_editor_data.clone();
         let ctx = &egui_context(world);
         let hovered = UnitPlugin::get_hovered(world);
         let mut delete: Option<Entity> = None;
@@ -93,12 +91,12 @@ impl HeroEditorPlugin {
                 entity_window(unit, vec2(0.0, 0.0), None, &format!("{unit:?}"), world)
                     .frame(Frame::none())
                     .show(ctx, |ui| {
-                        let button = ui.button("EDIT");
+                        let button = ui.button("Edit");
                         if button.clicked() {
                             ed.active = Some((unit, PackedUnit::pack(unit, world)));
                         }
                         ui.add_space(5.0);
-                        if ui.button_red("DELETE").clicked() {
+                        if ui.button_red("Delete").clicked() {
                             delete = Some(unit);
                         }
                     });
@@ -107,6 +105,7 @@ impl HeroEditorPlugin {
         if let Some(unit) = delete {
             world.entity_mut(unit).despawn_recursive();
             UnitPlugin::fill_gaps_and_translate(world);
+            ed.save(world);
         }
         Self::show_edit_panel(ed, world);
         if ed.active.is_none() {
@@ -125,22 +124,34 @@ impl HeroEditorPlugin {
                     .stroke(false)
                     .set_width(60.0)
                     .show(ctx, |ui| {
-                        if ui.button("SPAWN").clicked() {
+                        if ui.button("Spawn").clicked() {
                             ed.spawn(faction, world);
                         }
                     });
             }
+
+            TopBottomPanel::top("battle btns").show(ctx, |ui| {
+                ui.horizontal(|ui| {
+                    if ui.button("Reset").clicked() {
+                        UnitPlugin::despawn_all_teams(world);
+                        ed.load(world);
+                    }
+                    if ui.button("Send event").clicked() {
+                        Event::TurnEnd.send(world);
+                    }
+                    if ui.button("Strike").clicked() {
+                        if let Some((left, right)) = BattlePlugin::get_strikers(world) {
+                            BattlePlugin::run_strike(left, right, world);
+                        }
+                    }
+                });
+            });
         }
-        if world
-            .resource::<Input<MouseButton>>()
-            .get_just_released()
-            .len()
-            > 0
-            || world.resource::<Input<KeyCode>>().get_just_released().len() > 0
-        {
-            pd.hero_editor_data.save(world);
+        if !pd.hero_editor_data.eq(ed) {
+            ed.save(world);
+            mem::swap(&mut pd.hero_editor_data, ed);
+            pd.save(world).unwrap();
         }
-        pd.save(world).unwrap();
     }
 
     fn show_edit_panel(ed: &mut HeroEditorData, world: &mut World) {
@@ -327,7 +338,7 @@ impl HeroEditorPlugin {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct HeroEditorData {
     pub active: Option<(Entity, PackedUnit)>,
 
@@ -372,12 +383,12 @@ impl HeroEditorData {
 
     fn load(&mut self, world: &mut World) {
         debug!("Load hero editor data start");
-        let left = PackedTeam::find_entity(Faction::Left, world).unwrap();
-        self.teams.0.iter().rev().for_each(|u| {
+        let left = PackedTeam::spawn(Faction::Left, world);
+        let right = PackedTeam::spawn(Faction::Right, world);
+        self.teams.0.iter().for_each(|u| {
             u.clone().unpack(left, None, world);
         });
-        let right = PackedTeam::find_entity(Faction::Right, world).unwrap();
-        self.teams.1.iter().rev().for_each(|u| {
+        self.teams.1.iter().for_each(|u| {
             u.clone().unpack(right, None, world);
         });
         UnitPlugin::fill_gaps_and_translate(world);
@@ -418,6 +429,7 @@ impl HeroEditorData {
         );
         UnitPlugin::fill_slot_gaps(faction, world);
         UnitPlugin::translate_to_slots(world);
+        self.save(world);
     }
 }
 
