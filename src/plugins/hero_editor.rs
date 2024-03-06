@@ -277,10 +277,15 @@ impl HeroEditorPlugin {
                                         trigger,
                                         target,
                                         effect,
+                                        period,
                                     } => {
                                         CollapsingHeader::new("Trigger").default_open(true).show(
                                             ui,
                                             |ui| {
+                                                ui.horizontal(|ui| {
+                                                    ui.label("period:");
+                                                    DragValue::new(period).ui(ui);
+                                                });
                                                 trigger.show_editor(entity, ui);
                                                 match trigger {
                                                     FireTrigger::List(list) => {
@@ -756,6 +761,7 @@ impl EditorNodeGenerator for Expression {
             | Expression::SlotUnit(x)
             | Expression::FactionCount(x)
             | Expression::FilterMaxEnemy(x)
+            | Expression::FindUnit(x)
             | Expression::StatusCharges(x) => show_node(
                 x.as_mut(),
                 format!("{path}:x"),
@@ -862,7 +868,7 @@ impl EditorNodeGenerator for Expression {
     }
 
     fn show_replace_buttons(&mut self, lookup: &str, submit: bool, ui: &mut Ui) -> bool {
-        for (e, s) in Expression::iter()
+        for (e, _) in Expression::iter()
             .filter_map(|e| {
                 let s = e.to_string().to_lowercase();
                 match s.contains(lookup) {

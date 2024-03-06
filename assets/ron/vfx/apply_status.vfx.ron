@@ -49,7 +49,7 @@
             (
                 material: Curve(
                     color: Hex("#263238"),
-                    curvature: Float(1.6),
+                    curvature: Float(2.0),
                     thickness: Mul(
                         Float(0.2),
                         State(Thickness),

@@ -35,6 +35,12 @@ impl ContextLayer {
             _ => None,
         }
     }
+    pub fn get_status(&self) -> Option<Entity> {
+        match self {
+            ContextLayer::Status(entity, ..) => Some(*entity),
+            _ => None,
+        }
+    }
     pub fn get_var(&self, var: VarName, world: &World) -> Option<VarValue> {
         match self {
             ContextLayer::Owner(entity, ..) => {
@@ -202,6 +208,21 @@ impl Context {
             .get_string(VarName::Name)
             .unwrap_or_default();
         self.stack(ContextLayer::Status(entity, name), world)
+    }
+
+    pub fn status(&self) -> Entity {
+        self.get_status().expect("Target not found")
+    }
+
+    pub fn get_status(&self) -> Option<Entity> {
+        let mut result = None;
+        for layer in self.layers.iter().rev() {
+            result = layer.get_status();
+            if result.is_some() {
+                break;
+            }
+        }
+        result
     }
 
     pub fn take(&mut self) -> Self {

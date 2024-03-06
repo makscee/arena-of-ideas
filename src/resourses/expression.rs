@@ -65,6 +65,7 @@ pub enum Expression {
     FactionCount(Box<Expression>),
     StatusCharges(Box<Expression>),
     FilterMaxEnemy(Box<Expression>),
+    FindUnit(Box<Expression>),
 
     Vec2EE(Box<Expression>, Box<Expression>),
     Sum(Box<Expression>, Box<Expression>),
@@ -303,7 +304,7 @@ impl Expression {
                         }
                     }
                 }
-                Err(anyhow!("Can't find status"))
+                Ok(VarValue::Int(0))
             }
             Expression::FilterMaxEnemy(value) => {
                 let faction = Self::OppositeFaction.get_faction(context, world)?;
@@ -322,6 +323,21 @@ impl Expression {
                         },
                     )
                     .context("Failed to filer max enemy")?;
+                Ok(VarValue::Entity(unit))
+            }
+            Expression::FindUnit(condition) => {
+                let faction = context
+                    .get_var(VarName::Faction, world)
+                    .context("No Faction var in context")?
+                    .get_faction()?;
+                let unit = UnitPlugin::collect_faction(faction, world)
+                    .into_iter()
+                    .find(|u| {
+                        condition
+                            .get_bool(&Context::from_owner(*u, world), world)
+                            .unwrap_or_default()
+                    })
+                    .context("Failed to find unit")?;
                 Ok(VarValue::Entity(unit))
             }
             Expression::Beat => {
@@ -422,6 +438,7 @@ impl Expression {
             | Self::FactionCount(x)
             | Self::StatusCharges(x)
             | Self::FilterMaxEnemy(x)
+            | Self::FindUnit(x)
             | Self::Vec2E(x) => vec![x],
 
             Self::Vec2EE(a, b)
@@ -531,6 +548,7 @@ impl Expression {
             | Expression::SlotUnit(_)
             | Expression::FactionCount(_)
             | Expression::FilterMaxEnemy(_)
+            | Expression::FindUnit(_)
             | Expression::StatusCharges(_) => hex_color!("#448AFF"),
             Expression::Vec2EE(_, _)
             | Expression::Sum(_, _)
@@ -600,6 +618,7 @@ impl Expression {
             | Expression::SlotUnit(v)
             | Expression::FactionCount(v)
             | Expression::FilterMaxEnemy(v)
+            | Expression::FindUnit(v)
             | Expression::StatusCharges(v) => format!(
                 "{} ({})",
                 self.to_string().to_case(Case::Lower),

@@ -11,6 +11,8 @@ pub enum Trigger {
         #[serde(default = "owner")]
         target: Expression,
         effect: Effect,
+        #[serde(default)]
+        period: usize,
     },
     Change {
         trigger: DeltaTrigger,
@@ -131,6 +133,7 @@ impl Default for Trigger {
             trigger: FireTrigger::Noop,
             target: Expression::Owner,
             effect: Effect::Noop,
+            period: 0,
         }
     }
 }
@@ -149,8 +152,17 @@ impl Trigger {
                 trigger,
                 target,
                 effect,
+                period,
             } => {
                 if !trigger.catch(event, context, world) {
+                    return false;
+                }
+                let mut state = VarState::get_mut(context.status(), world);
+                let count = state.get_int(VarName::Count).unwrap_or_default() + 1;
+                if count > *period as i32 {
+                    state.set_int(VarName::Count, 0);
+                } else {
+                    state.set_int(VarName::Count, count + 1);
                     return false;
                 }
                 let effect = Effect::WithTarget(target.clone(), Box::new(effect.clone()));
@@ -240,12 +252,15 @@ impl Trigger {
                 trigger,
                 target,
                 effect,
+                period,
             } => {
+                let mut trigger = trigger.get_description_string();
+                if *period > 0 {
+                    let s = format!(" ({})", *period + 1);
+                    trigger.push_str(&s);
+                }
                 state
-                    .init(
-                        VarName::TriggerDescription,
-                        VarValue::String(trigger.get_description_string()),
-                    )
+                    .init(VarName::TriggerDescription, VarValue::String(trigger))
                     .init(
                         VarName::EffectDescription,
                         VarValue::String(

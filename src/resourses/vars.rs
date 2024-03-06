@@ -58,6 +58,7 @@ pub enum VarName {
     Curvature,
     Delta,
     T,
+    Count,
     Alpha,
     Index,
     Stacks,

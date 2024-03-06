@@ -1,0 +1,30 @@
+(
+    name: "Guardian",
+    hp: 2,
+    atk: 1,
+    stacks: 1,
+    level: 1,
+    houses: "Paladins",
+    description: "%trigger → %effect on ally that doesn\'t have [Shield]",
+    trigger: Fire(
+        trigger: BattleStart,
+        target: FindUnit(Equals(StatusCharges(String("Shield")), Zero)),
+        effect: UseAbility("Shield"),
+        period: 1,
+    ),
+    representation: (
+        material: Shape(
+            shape: Circle,
+            fill: Line,
+            size: Vec2E(Float(0.8)),
+            thickness: Float(0.6),
+            alpha: Float(1.0),
+            color: State(Color),
+        ),
+        children: [],
+        mapping: {
+            Offset: Mul(UnitVec(Mul(Sum(Index, Int(1)), Mul(PI, Float(0.1)))), Mul(Float(0.3), Sin(Sum(GameTime, Mul(Beat, Float(0.5)))))),
+        },
+        count: 9,
+    ),
+)

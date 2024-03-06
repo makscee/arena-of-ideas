@@ -18,9 +18,7 @@
             description: "Next taken damage is fatal",
             effect: List(
                 [
-                    AddStatus(
-                        "Petrify",
-                    ),
+                    AddStatus("Petrify"),
                     Vfx("apply_status"),
                 ],
             ),

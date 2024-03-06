@@ -26,7 +26,39 @@
                 ),
                 children: [],
                 mapping: {
-                    Rotation: Sum(Mul(Mul(PI, Float(0.25)), Index), Mul(Sin(Mul(Sum(GameTime, Mul(Index, Sum(Float(0.2), Beat))), Float(0.5))), Float(0.5))),
+                    Rotation: Sum(
+                        Mul(
+                            Mul(
+                                PI,
+                                Float(
+                                    0.25,
+                                ),
+                            ),
+                            Index,
+                        ),
+                        Mul(
+                            Sin(
+                                Mul(
+                                    Sum(
+                                        GameTime,
+                                        Mul(
+                                            Index,
+                                            Sum(
+                                                Float(
+                                                    0.2,
+                                                ),
+                                                Beat,
+                                            ),
+                                        ),
+                                    ),
+                                    Float(
+                                        0.5,
+                                    ),
+                                ),
+                            ),
+                            Float(0.5),
+                        ),
+                    ),
                 },
                 count: 8,
             ),
@@ -34,9 +66,6 @@
         mapping: {},
         count: 0,
     ),
-    state: (
-        history: {},
-        birth: 0.0,
-    ),
+    state: (history: {}, birth: 0.0),
     statuses: [],
 )
