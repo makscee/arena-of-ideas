@@ -1,6 +1,5 @@
 use std::fmt::Display;
 
-use bevy::input::mouse::MouseButton;
 use bevy_egui::egui::{DragValue, Frame, Key, ScrollArea, Sense, Shape, SidePanel};
 use hex::encode;
 use ron::ser::{to_string_pretty, PrettyConfig};
@@ -28,6 +27,7 @@ impl HeroEditorPlugin {
         pd.hero_editor_data.active = None;
         pd.hero_editor_data.load(world);
         pd.save(world).unwrap();
+        Pools::get_mut(world).only_local_cache = true;
     }
 
     fn on_exit(world: &mut World) {
@@ -41,7 +41,7 @@ impl HeroEditorPlugin {
         let pos = if let Some((entity, _)) = ed.active {
             VarState::get(entity, world)
                 .get_vec2(VarName::Position)
-                .unwrap()
+                .unwrap_or(ed.camera_need_pos)
         } else {
             default()
         };
@@ -136,8 +136,11 @@ impl HeroEditorPlugin {
                         UnitPlugin::despawn_all_teams(world);
                         ed.load(world);
                     }
-                    if ui.button("Send event").clicked() {
+                    if ui.button("Turn End").clicked() {
                         Event::TurnEnd.send(world);
+                    }
+                    if ui.button("Battle Start").clicked() {
+                        Event::BattleStart.send(world);
                     }
                     if ui.button("Strike").clicked() {
                         if let Some((left, right)) = BattlePlugin::get_strikers(world) {
@@ -189,6 +192,8 @@ impl HeroEditorPlugin {
                             }
                         }
                         if ui.button("COPY").clicked() {
+                            let mut unit = unit.clone();
+                            unit.state = default();
                             save_to_clipboard(
                                 &to_string_pretty(&unit, PrettyConfig::new()).unwrap(),
                                 world,
@@ -346,7 +351,6 @@ pub struct HeroEditorData {
     pub camera_pos: Vec2,
     pub camera_need_pos: Vec2,
     pub camera_scale: f32,
-    pub lookup: String,
     pub hovered_id: Option<String>,
 }
 
@@ -356,7 +360,6 @@ impl Default for HeroEditorData {
             camera_pos: default(),
             camera_need_pos: default(),
             camera_scale: 1.0,
-            lookup: default(),
             hovered_id: default(),
             active: default(),
             teams: default(),
@@ -397,7 +400,6 @@ impl HeroEditorData {
     fn clear(&mut self) {
         self.teams.0.clear();
         self.teams.1.clear();
-        self.lookup.clear();
         self.hovered_id = None;
     }
 
@@ -727,6 +729,7 @@ impl EditorNodeGenerator for Expression {
             | Expression::IntFloat(x)
             | Expression::SlotUnit(x)
             | Expression::FactionCount(x)
+            | Expression::FilterMaxEnemy(x)
             | Expression::StatusCharges(x) => show_node(
                 x.as_mut(),
                 format!("{path}:x"),
@@ -833,17 +836,24 @@ impl EditorNodeGenerator for Expression {
     }
 
     fn show_replace_buttons(&mut self, lookup: &str, submit: bool, ui: &mut Ui) -> bool {
-        for e in Expression::iter() {
-            if e.to_string().to_lowercase().contains(lookup) {
-                let btn = e.to_string().add_color(e.node_color()).rich_text(ui);
-                let btn = ui.button(btn);
-                if btn.clicked() || submit {
-                    btn.request_focus();
+        for (e, s) in Expression::iter()
+            .filter_map(|e| {
+                let s = e.to_string().to_lowercase();
+                match s.contains(lookup) {
+                    true => Some((e, s)),
+                    false => None,
                 }
-                if btn.gained_focus() {
-                    *self = e.set_inner(self.clone());
-                    return true;
-                }
+            })
+            .sorted_by_key(|(_, s)| !s.starts_with(lookup))
+        {
+            let btn = e.to_string().add_color(e.node_color()).rich_text(ui);
+            let btn = ui.button(btn);
+            if btn.clicked() || submit {
+                btn.request_focus();
+            }
+            if btn.gained_focus() {
+                *self = e.set_inner(self.clone());
+                return true;
             }
         }
         false

@@ -1,0 +1,29 @@
+#![enable(implicit_some)]
+(
+    name: "Alchemists",
+    color: ("#FFCA28"),
+    statuses: [
+        (
+            name: "Petrify",
+            description: "Next taken damage is fatal",
+            trigger: Fire(
+                trigger: AfterDamageTaken,
+                effect: Kill,
+            ),
+        ),
+    ],
+    abilities: [
+        (
+            name: "Petrify",
+            description: "Next taken damage is fatal",
+            effect: List(
+                [
+                    AddStatus(
+                        "Petrify",
+                    ),
+                    Vfx("apply_status"),
+                ],
+            ),
+        ),
+    ],
+)

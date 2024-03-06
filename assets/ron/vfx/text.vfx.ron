@@ -13,9 +13,9 @@
                 var: Position,
                 value: Sum(
                     StateLast(Position),
-                    Vec2(0.0, 4.0),
+                    Vec2(0.0, 2.0),
                 ),
-                duration: Float(1.0),
+                duration: Float(0.7),
                 tween: Linear,
             ),
             Change(
