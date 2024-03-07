@@ -62,13 +62,6 @@ impl HeroEditorPlugin {
         {
             ed.camera_scale /= 1.2;
             pd.save(world).unwrap();
-        } else if world
-            .resource::<Input<KeyCode>>()
-            .pressed(KeyCode::SuperLeft)
-        {
-            if world.resource::<Input<KeyCode>>().just_pressed(KeyCode::C) {
-                Self::clear(world);
-            }
         }
     }
 
@@ -174,6 +167,9 @@ impl HeroEditorPlugin {
                 if ui.button_red("Reset").clicked() {
                     UnitPlugin::despawn_all_teams(world);
                     ed.load(world);
+                }
+                if ui.button_red("Clear").clicked() {
+                    Self::clear(world);
                 }
             });
         });
@@ -953,6 +949,18 @@ impl EditorNodeGenerator for Effect {
                         });
                 });
             }
+            Effect::Summon(name) => {
+                ui.vertical(|ui| {
+                    ComboBox::from_id_source(&path)
+                        .selected_text(name.to_owned())
+                        .show_ui(ui, |ui| {
+                            for option in Pools::get(world).summons.keys() {
+                                let text = option.to_string();
+                                ui.selectable_value(name, option.to_owned(), text).changed();
+                            }
+                        });
+                });
+            }
             Effect::AddStatus(name) => {
                 ui.vertical(|ui| {
                     ComboBox::from_id_source(&path)
@@ -1022,6 +1030,7 @@ impl EditorNodeGenerator for Effect {
             | Effect::Kill
             | Effect::FullCopy
             | Effect::UseAbility(_)
+            | Effect::Summon(_)
             | Effect::AddStatus(_)
             | Effect::Vfx(_)
             | Effect::SendEvent(_)

@@ -18,6 +18,7 @@ pub enum Effect {
     ListSpread(Vec<Box<Effect>>),
     WithVar(VarName, Expression, Box<Effect>),
     UseAbility(String),
+    Summon(String),
     AddStatus(String),
     Vfx(String),
     SendEvent(Event),
@@ -136,6 +137,48 @@ impl Effect {
                         );
                     }
                     ActionPlugin::action_push_front(effect, context, world);
+                }
+            }
+            Effect::Summon(name) => {
+                let unit = Pools::get_summon(name, world)
+                    .with_context(|| format!("Summon unit not found {name}"))?
+                    .clone();
+                let color = Pools::get_summon_house(name, world)
+                    .with_context(|| format!("Failed to find house for summon {name}"))?
+                    .color
+                    .clone()
+                    .into();
+                Pools::get_vfx("text", world)
+                    .clone()
+                    .set_var(
+                        VarName::Position,
+                        VarState::get(context.owner(), world).get_value_last(VarName::Position)?,
+                    )
+                    .set_var(VarName::Text, VarValue::String(format!("Summon {name}")))
+                    .set_var(VarName::Color, VarValue::Color(color))
+                    .unpack(world)?;
+                {
+                    let mut context = context
+                        .clone()
+                        .set_var(VarName::Color, VarValue::Color(color))
+                        .take();
+                    if context.get_var(VarName::Charges, world).is_none() {
+                        context.set_var(
+                            VarName::Charges,
+                            context
+                                .get_var(VarName::Level, world)
+                                .unwrap_or(VarValue::Int(1)),
+                        );
+                    }
+                    let faction = context
+                        .get_var(VarName::Faction, world)
+                        .context("No faction in context")?
+                        .get_faction()?;
+                    let parent =
+                        PackedTeam::find_entity(faction, world).context("Team not found")?;
+                    unit.unpack(parent, None, world);
+                    UnitPlugin::fill_slot_gaps(faction, world);
+                    UnitPlugin::translate_to_slots(world);
                 }
             }
             Effect::AddStatus(status) => {
@@ -326,6 +369,7 @@ impl Effect {
             | Effect::Text(..)
             | Effect::Damage(..)
             | Effect::UseAbility(..)
+            | Effect::Summon(..)
             | Effect::AddStatus(..)
             | Effect::Vfx(..)
             | Effect::SendEvent(..) => default(),
@@ -349,6 +393,7 @@ impl Effect {
             | Effect::Text(..)
             | Effect::Damage(..)
             | Effect::UseAbility(..)
+            | Effect::Summon(..)
             | Effect::AddStatus(..)
             | Effect::Vfx(..)
             | Effect::SendEvent(..) => default(),

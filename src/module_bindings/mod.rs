@@ -46,9 +46,11 @@ pub mod set_password_reducer;
 pub mod shop_offer;
 pub mod status_charges;
 pub mod statuses;
+pub mod summon;
 pub mod sync_abilities_reducer;
 pub mod sync_houses_reducer;
 pub mod sync_statuses_reducer;
+pub mod sync_summons_reducer;
 pub mod sync_units_reducer;
 pub mod sync_vfxs_reducer;
 pub mod table_unit;
@@ -84,9 +86,11 @@ pub use set_password_reducer::*;
 pub use shop_offer::*;
 pub use status_charges::*;
 pub use statuses::*;
+pub use summon::*;
 pub use sync_abilities_reducer::*;
 pub use sync_houses_reducer::*;
 pub use sync_statuses_reducer::*;
+pub use sync_summons_reducer::*;
 pub use sync_units_reducer::*;
 pub use sync_vfxs_reducer::*;
 pub use table_unit::*;
@@ -119,6 +123,7 @@ pub enum ReducerEvent {
     SyncAbilities(sync_abilities_reducer::SyncAbilitiesArgs),
     SyncHouses(sync_houses_reducer::SyncHousesArgs),
     SyncStatuses(sync_statuses_reducer::SyncStatusesArgs),
+    SyncSummons(sync_summons_reducer::SyncSummonsArgs),
     SyncUnits(sync_units_reducer::SyncUnitsArgs),
     SyncVfxs(sync_vfxs_reducer::SyncVfxsArgs),
 }
@@ -156,6 +161,8 @@ impl SpacetimeModule for Module {
                 callbacks,
                 table_update,
             ),
+            "Summon" => client_cache
+                .handle_table_update_with_primary_key::<summon::Summon>(callbacks, table_update),
             "TableUnit" => client_cache
                 .handle_table_update_with_primary_key::<table_unit::TableUnit>(
                     callbacks,
@@ -188,6 +195,7 @@ impl SpacetimeModule for Module {
         reminders.invoke_callbacks::<global_data::GlobalData>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<house::House>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<statuses::Statuses>(worker, &reducer_event, state);
+        reminders.invoke_callbacks::<summon::Summon>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<table_unit::TableUnit>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<user::User>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<user_access::UserAccess>(worker, &reducer_event, state);
@@ -225,6 +233,7 @@ match &function_call.reducer[..] {
 			"sync_abilities" => _reducer_callbacks.handle_event_of_type::<sync_abilities_reducer::SyncAbilitiesArgs, ReducerEvent>(event, _state, ReducerEvent::SyncAbilities),
 			"sync_houses" => _reducer_callbacks.handle_event_of_type::<sync_houses_reducer::SyncHousesArgs, ReducerEvent>(event, _state, ReducerEvent::SyncHouses),
 			"sync_statuses" => _reducer_callbacks.handle_event_of_type::<sync_statuses_reducer::SyncStatusesArgs, ReducerEvent>(event, _state, ReducerEvent::SyncStatuses),
+			"sync_summons" => _reducer_callbacks.handle_event_of_type::<sync_summons_reducer::SyncSummonsArgs, ReducerEvent>(event, _state, ReducerEvent::SyncSummons),
 			"sync_units" => _reducer_callbacks.handle_event_of_type::<sync_units_reducer::SyncUnitsArgs, ReducerEvent>(event, _state, ReducerEvent::SyncUnits),
 			"sync_vfxs" => _reducer_callbacks.handle_event_of_type::<sync_vfxs_reducer::SyncVfxsArgs, ReducerEvent>(event, _state, ReducerEvent::SyncVfxs),
 			unknown => { spacetimedb_sdk::log::error!("Event on an unknown reducer: {:?}", unknown); None }
@@ -253,6 +262,9 @@ match &function_call.reducer[..] {
             }
             "Statuses" => {
                 client_cache.handle_resubscribe_for_type::<statuses::Statuses>(callbacks, new_subs)
+            }
+            "Summon" => {
+                client_cache.handle_resubscribe_for_type::<summon::Summon>(callbacks, new_subs)
             }
             "TableUnit" => client_cache
                 .handle_resubscribe_for_type::<table_unit::TableUnit>(callbacks, new_subs),

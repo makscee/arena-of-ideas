@@ -43,4 +43,71 @@
             ),
         ),
     ],
+    summons: [
+        (
+            name: "Guardian Angel",
+            hp: 1,
+            atk: 10,
+            stacks: 1,
+            level: 1,
+            houses: "Paladins",
+            description: "",
+            trigger: Fire(
+                trigger: Noop,
+                target: Owner,
+                effect: Noop,
+                period: 0,
+            ),
+            representation: (
+                material: Shape(
+                    shape: Circle,
+                    fill: Line,
+                    size: Vec2E(
+                        Mul(
+                            Abs(
+                                Sin(
+                                    Sum(
+                                        Mul(
+                                            GameTime,
+                                            Float(
+                                                0.5,
+                                            ),
+                                        ),
+                                        Mul(
+                                            Index,
+                                            Mul(
+                                                PI,
+                                                Float(
+                                                    0.05,
+                                                ),
+                                            ),
+                                        ),
+                                    ),
+                                ),
+                            ),
+                            Sum(
+                                Float(
+                                    0.95,
+                                ),
+                                Mul(
+                                    Beat,
+                                    Float(
+                                        0.1,
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                    thickness: Float(1.0),
+                    alpha: Float(1.0),
+                    color: State(Color),
+                ),
+                children: [],
+                mapping: {},
+                count: 7,
+            ),
+            state: (history: {}, birth: 0.0),
+            statuses: [("Shield", 1)],
+        ),
+    ],
 )

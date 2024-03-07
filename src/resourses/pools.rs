@@ -12,6 +12,7 @@ pub struct Pools {
     pub houses: HashMap<String, House>,
     pub statuses: HashMap<String, PackedStatus>,
     pub abilities: HashMap<String, Ability>,
+    pub summons: HashMap<String, PackedUnit>,
     #[asset(key = "pool.vfx", collection(typed, mapped))]
     vfx_handles: HashMap<String, Handle<Vfx>>,
     pub vfx: HashMap<String, Vfx>,
@@ -35,6 +36,9 @@ impl Pools {
     pub fn get_ability<'a>(name: &str, world: &'a World) -> Option<&'a Ability> {
         Self::get(world).abilities.get(name)
     }
+    pub fn get_summon<'a>(name: &str, world: &'a World) -> Option<&'a PackedUnit> {
+        Self::get(world).summons.get(name)
+    }
     pub fn get_vfx(name: &str, world: &World) -> Vfx {
         let name = &format!("ron/vfx/{name}.vfx.ron");
         Self::get(world).vfx.get(name).unwrap().clone()
@@ -53,6 +57,13 @@ impl Pools {
             .find(|(_, h)| h.statuses.iter().any(|s| s.name.eq(name)))
             .map(|(_, h)| h)
     }
+    pub fn get_summon_house<'a>(name: &str, world: &'a World) -> Option<&'a House> {
+        Self::get(world)
+            .houses
+            .iter()
+            .find(|(_, h)| h.summons.iter().any(|s| s.name.eq(name)))
+            .map(|(_, h)| h)
+    }
     pub fn get_house_color(name: &str, world: &World) -> Option<Color> {
         Self::try_get(world)
             .and_then(|p| p.houses.get(name))
@@ -67,6 +78,7 @@ impl PoolsPlugin {
         Self::setup_houses(world);
         Self::setup_statuses(world);
         Self::setup_abilities(world);
+        Self::setup_summons(world);
         Self::setup_heroes(world);
         Self::setup_vfx(world);
     }
@@ -153,6 +165,21 @@ impl PoolsPlugin {
         }
     }
 
+    pub fn setup_summons(world: &mut World) {
+        let summons = Pools::get(world)
+            .houses
+            .iter()
+            .flat_map(|(_, h)| h.summons.clone())
+            .collect_vec();
+        let pool = &mut Pools::get_mut(world).summons;
+        debug!("Setup {} summons", summons.len());
+        for (key, value) in summons.into_iter().map(|s| (s.name.clone(), s)) {
+            if pool.insert(key.clone(), value).is_some() {
+                panic!("Duplicate summon name: {key}")
+            }
+        }
+    }
+
     pub fn setup_heroes(world: &mut World) {
         let heroes = world
             .get_resource::<Pools>()
@@ -205,15 +232,19 @@ impl PoolsPlugin {
         for module_bindings::Statuses { name, data } in module_bindings::Statuses::iter() {
             pools.statuses.insert(name, ron::from_str(&data).unwrap());
         }
+        for module_bindings::Summon { name, data } in module_bindings::Summon::iter() {
+            pools.summons.insert(name, ron::from_str(&data).unwrap());
+        }
         for module_bindings::Vfx { name, data } in module_bindings::Vfx::iter() {
             pools.vfx.insert(name, ron::from_str(&data).unwrap());
         }
         debug!(
-            "Cache complete\n{} Heroes\n{} Houses\n{} Abilities\n{} Statuses\n{} Vfxs",
+            "Cache complete\n{} Heroes\n{} Houses\n{} Abilities\n{} Statuses\n{} Summons\n{} Vfxs",
             pools.heroes.len(),
             pools.houses.len(),
             pools.abilities.len(),
             pools.statuses.len(),
+            pools.summons.len(),
             pools.vfx.len()
         );
     }

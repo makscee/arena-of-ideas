@@ -9,4 +9,6 @@ pub struct House {
     pub abilities: Vec<Ability>,
     #[serde(default)]
     pub statuses: Vec<PackedStatus>,
+    #[serde(default)]
+    pub summons: Vec<PackedUnit>,
 }
