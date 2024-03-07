@@ -8,7 +8,10 @@
             description: "-{Charges} ATK",
             trigger: Change(
                 trigger: Var(Atk),
-                expr: Sub(Int(0), Context(Charges)),
+                expr: Sub(
+                    Int(0),
+                    Context(Charges),
+                ),
             ),
         ),
     ],

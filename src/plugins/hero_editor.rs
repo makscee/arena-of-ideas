@@ -563,7 +563,7 @@ fn show_node(
                                 egui::Event::Key { key, pressed, .. } => {
                                     if *pressed {
                                         if key.eq(&Key::Backspace) && !lookup.is_empty() {
-                                            lookup.remove(lookup.len() - 1);
+                                            lookup.pop();
                                         } else if matches!(key, Key::Enter | Key::Tab) {
                                             submit = true;
                                         }

@@ -1,0 +1,28 @@
+(
+    name: "Mesmerist",
+    hp: 1,
+    atk: 3,
+    stacks: 1,
+    level: 1,
+    houses: "Meta",
+    description: "%trigger → %effect on %target",
+    trigger: Fire(
+        trigger: BattleStart,
+        target: RandomEnemy,
+        effect: UseAbility("Betray"),
+        period: 0,
+    ),
+    representation: (
+        material: Shape(
+            shape: Circle,
+            fill: Line,
+            size: Vec2E(Mul(Index, Mul(Float(0.1), Abs(Sin(Sum(GameTime, Index)))))),
+            thickness: Float(1.0),
+            alpha: Float(1.0),
+            color: State(Color),
+        ),
+        children: [],
+        mapping: {},
+        count: 10,
+    ),
+)

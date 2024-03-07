@@ -9,7 +9,15 @@
     trigger: Fire(
         trigger: BattleStart,
         target: Owner,
-        effect: WithVar(Faction, OppositeFaction, WithVar(Charges, UnitCount(Bool(true)), UseAbility("Blessing"))),
+        effect: WithVar(
+            Faction,
+            OppositeFaction,
+            WithVar(
+                Charges,
+                UnitCount(Bool(true)),
+                UseAbility("Blessing"),
+            ),
+        ),
         period: 0,
     ),
     representation: (
@@ -24,7 +32,36 @@
         children: [],
         mapping: {
             Rotation: Even(Index),
-            Offset: Vec2EE(Mul(Sin(Sum(Mul(Index, Float(0.3)), GameTime)), Float(0.1)), Mul(Cos(Sum(Mul(Index, Float(0.3)), GameTime)), Float(0.1))),
+            Offset: Vec2EE(
+                Mul(
+                    Sin(
+                        Sum(
+                            Mul(
+                                Index,
+                                Float(
+                                    0.3,
+                                ),
+                            ),
+                            GameTime,
+                        ),
+                    ),
+                    Float(0.1),
+                ),
+                Mul(
+                    Cos(
+                        Sum(
+                            Mul(
+                                Index,
+                                Float(
+                                    0.3,
+                                ),
+                            ),
+                            GameTime,
+                        ),
+                    ),
+                    Float(0.1),
+                ),
+            ),
         },
         count: 8,
     ),
