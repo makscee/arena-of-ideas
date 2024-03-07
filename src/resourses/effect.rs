@@ -123,16 +123,18 @@ impl Effect {
                     .set_var(VarName::Color, VarValue::Color(color))
                     .unpack(world)?;
                 {
-                    let context = context
+                    let mut context = context
                         .clone()
-                        .set_var(
+                        .set_var(VarName::Color, VarValue::Color(color))
+                        .take();
+                    if context.get_var(VarName::Charges, world).is_none() {
+                        context.set_var(
                             VarName::Charges,
                             context
                                 .get_var(VarName::Level, world)
                                 .unwrap_or(VarValue::Int(1)),
-                        )
-                        .set_var(VarName::Color, VarValue::Color(color))
-                        .take();
+                        );
+                    }
                     ActionPlugin::action_push_front(effect, context, world);
                 }
             }

@@ -66,6 +66,7 @@ pub enum Expression {
     StatusCharges(Box<Expression>),
     FilterMaxEnemy(Box<Expression>),
     FindUnit(Box<Expression>),
+    UnitCount(Box<Expression>),
 
     Vec2EE(Box<Expression>, Box<Expression>),
     Sum(Box<Expression>, Box<Expression>),
@@ -283,6 +284,20 @@ impl Expression {
                 UnitPlugin::collect_faction(faction.get_faction(context, world)?, world).len()
                     as i32,
             )),
+            Expression::UnitCount(condition) => {
+                let faction = context
+                    .get_var(VarName::Faction, world)
+                    .context("No faction in context")?
+                    .get_faction()?;
+                let mut cnt = 0;
+                for unit in UnitPlugin::collect_faction(faction, world) {
+                    let context = Context::from_owner(unit, world);
+                    if condition.get_bool(&context, world)? {
+                        cnt += 1;
+                    }
+                }
+                Ok(VarValue::Int(cnt))
+            }
             Expression::Equals(a, b) => Ok(VarValue::Bool(
                 a.get_value(context, world)?
                     .eq(&b.get_value(context, world)?),
@@ -439,6 +454,7 @@ impl Expression {
             | Self::StatusCharges(x)
             | Self::FilterMaxEnemy(x)
             | Self::FindUnit(x)
+            | Self::UnitCount(x)
             | Self::Vec2E(x) => vec![x],
 
             Self::Vec2EE(a, b)
@@ -549,6 +565,7 @@ impl Expression {
             | Expression::FactionCount(_)
             | Expression::FilterMaxEnemy(_)
             | Expression::FindUnit(_)
+            | Expression::UnitCount(_)
             | Expression::StatusCharges(_) => hex_color!("#448AFF"),
             Expression::Vec2EE(_, _)
             | Expression::Sum(_, _)
@@ -619,6 +636,7 @@ impl Expression {
             | Expression::FactionCount(v)
             | Expression::FilterMaxEnemy(v)
             | Expression::FindUnit(v)
+            | Expression::UnitCount(v)
             | Expression::StatusCharges(v) => format!(
                 "{} ({})",
                 self.to_string().to_case(Case::Lower),

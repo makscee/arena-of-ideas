@@ -25,15 +25,17 @@ use super::*;
 pub enum VarName {
     #[default]
     None,
-    Value,
-    Size,
-    Scale,
-    Radius,
+    Charges,
+    Hp,
+    Atk,
+    Faction,
     Position,
     Offset,
     Rotation,
-    Hp,
-    Atk,
+    Scale,
+    Value,
+    Size,
+    Radius,
     Houses,
     HouseColor1,
     HouseColor2,
@@ -47,10 +49,8 @@ pub enum VarName {
     Text,
     Spawn,
     Slot,
-    Faction,
     Visible,
     Direction,
-    Charges,
     G,
     LastAttacker,
     Color,
@@ -86,12 +86,14 @@ impl VarValue {
         match self {
             VarValue::Float(value) => Ok(*value),
             VarValue::Int(value) => Ok(*value as f32),
+            VarValue::Bool(value) => Ok(*value as i32 as f32),
             _ => Err(anyhow!("Float not supported by {self:?}")),
         }
     }
     pub fn get_int(&self) -> Result<i32> {
         match self {
             VarValue::Int(value) => Ok(*value),
+            VarValue::Bool(value) => Ok(*value as i32),
             _ => Err(anyhow!("Int not supported by {self:?}")),
         }
     }
@@ -104,6 +106,8 @@ impl VarValue {
     pub fn get_bool(&self) -> Result<bool> {
         match self {
             VarValue::Bool(value) => Ok(*value),
+            VarValue::Int(value) => Ok(*value > 0),
+            VarValue::Float(value) => Ok(*value > 0.0),
             _ => Err(anyhow!("Bool not supported by {self:?}")),
         }
     }

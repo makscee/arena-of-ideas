@@ -782,6 +782,7 @@ impl EditorNodeGenerator for Expression {
             | Expression::FactionCount(x)
             | Expression::FilterMaxEnemy(x)
             | Expression::FindUnit(x)
+            | Expression::UnitCount(x)
             | Expression::StatusCharges(x) => show_node(
                 x.as_mut(),
                 format!("{path}:x"),
@@ -949,14 +950,7 @@ impl EditorNodeGenerator for Effect {
             }
             Effect::WithVar(x, e, _) => {
                 ui.vertical(|ui| {
-                    ComboBox::from_id_source(&path)
-                        .selected_text(x.to_string())
-                        .show_ui(ui, |ui| {
-                            for option in VarName::iter() {
-                                let text = option.to_string();
-                                ui.selectable_value(x, option, text).changed();
-                            }
-                        });
+                    x.show_editor(ui);
                     let value = e.get_value(context, world);
                     show_value(&value, ui);
                 });
@@ -1091,7 +1085,23 @@ impl EditorNodeGenerator for Effect {
                 });
             }
             Effect::ListSpread(_) => todo!(),
-            Effect::WithVar(_, _, _) => todo!(),
+            Effect::WithVar(_, e, eff) => {
+                ui.vertical(|ui| {
+                    ui.horizontal(|ui| {
+                        show_node(e, format!("{path}:e"), connect_pos, context, ui, world);
+                    });
+                    ui.horizontal(|ui| {
+                        show_node(
+                            eff.as_mut(),
+                            format!("{path}:eff"),
+                            connect_pos,
+                            context,
+                            ui,
+                            world,
+                        );
+                    });
+                });
+            }
         };
     }
 

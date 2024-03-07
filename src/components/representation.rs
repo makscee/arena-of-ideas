@@ -512,7 +512,7 @@ impl Representation {
             }
         }
         self.apply_mapping(entity, world);
-        let vars: Vec<VarName> = [VarName::Rotation, VarName::Position, VarName::Scale].into();
+        let vars: Vec<VarName> = [VarName::Position, VarName::Scale].into();
         VarState::apply_transform(entity, t, vars, world);
         for (i, entity) in self.material_entities.iter().enumerate() {
             let context = context
