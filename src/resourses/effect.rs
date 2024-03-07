@@ -23,6 +23,7 @@ pub enum Effect {
     Vfx(String),
     SendEvent(Event),
     RemoveLocalTrigger,
+    If(Expression, Box<Effect>, Box<Effect>),
 }
 
 impl Effect {
@@ -355,6 +356,13 @@ impl Effect {
                 VarState::get_mut(target, world)
                     .set_string(VarName::Description, "--removed--".into());
             }
+            Effect::If(cond, th, el) => {
+                if cond.get_bool(context, world)? {
+                    ActionPlugin::action_push_front(th.deref().clone(), context.clone(), world);
+                } else {
+                    ActionPlugin::action_push_front(el.deref().clone(), context.clone(), world);
+                }
+            }
         }
         Ok(())
     }
@@ -376,7 +384,8 @@ impl Effect {
             Effect::AoeFaction(_, e)
             | Effect::WithTarget(_, e)
             | Effect::WithOwner(_, e)
-            | Effect::WithVar(_, _, e) => vec![e],
+            | Effect::WithVar(_, _, e)
+            | Effect::If(_, _, e) => vec![e],
             Effect::List(list) | Effect::ListSpread(list) => {
                 list.iter_mut().map(|e| e.as_mut()).collect_vec()
             }
@@ -400,6 +409,7 @@ impl Effect {
             Effect::AoeFaction(_, e)
             | Effect::WithTarget(_, e)
             | Effect::WithOwner(_, e)
+            | Effect::If(_, _, e)
             | Effect::WithVar(_, _, e) => vec![e],
             Effect::List(list) | Effect::ListSpread(list) => {
                 list.iter().map(|e| e.as_ref()).collect_vec()

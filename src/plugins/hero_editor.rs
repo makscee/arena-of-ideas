@@ -252,7 +252,9 @@ impl HeroEditorPlugin {
                                     .selected_text(house.clone())
                                     .width(140.0)
                                     .show_ui(ui, |ui| {
-                                        for (h, _) in houses {
+                                        for (h, _) in
+                                            houses.into_iter().sorted_by_key(|(k, _)| k.clone())
+                                        {
                                             ui.selectable_value(house, h.clone(), h.clone());
                                         }
                                     });
@@ -937,6 +939,12 @@ impl EditorNodeGenerator for Effect {
                     show_value(&value, ui);
                 });
             }
+            Effect::If(e, ..) => {
+                ui.vertical(|ui| {
+                    let value = e.get_value(context, world);
+                    show_value(&value, ui);
+                });
+            }
             Effect::UseAbility(name) => {
                 ui.vertical(|ui| {
                     ComboBox::from_id_source(&path)
@@ -1089,6 +1097,40 @@ impl EditorNodeGenerator for Effect {
                         show_node(
                             eff.as_mut(),
                             format!("{path}:eff"),
+                            connect_pos,
+                            context,
+                            ui,
+                            world,
+                        );
+                    });
+                });
+            }
+            Effect::If(cond, th, el) => {
+                ui.vertical(|ui| {
+                    ui.horizontal(|ui| {
+                        show_node(
+                            cond,
+                            format!("{path}:cond"),
+                            connect_pos,
+                            context,
+                            ui,
+                            world,
+                        );
+                    });
+                    ui.horizontal(|ui| {
+                        show_node(
+                            th.as_mut(),
+                            format!("{path}:then"),
+                            connect_pos,
+                            context,
+                            ui,
+                            world,
+                        );
+                    });
+                    ui.horizontal(|ui| {
+                        show_node(
+                            el.as_mut(),
+                            format!("{path}:else"),
                             connect_pos,
                             context,
                             ui,

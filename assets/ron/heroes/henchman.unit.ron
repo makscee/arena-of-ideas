@@ -1,0 +1,30 @@
+(
+    name: "Henchman",
+    hp: 4,
+    atk: 1,
+    stacks: 1,
+    level: 1,
+    houses: "Warlocks",
+    description: "%trigger → %effect on %target",
+    trigger: Fire(
+        trigger: BattleStart,
+        target: Owner,
+        effect: UseAbility("Doom"),
+        period: 0,
+    ),
+    representation: (
+        material: Shape(
+            shape: Circle,
+            fill: Line,
+            size: Vec2E(Sum(Float(0.5), Mul(Sin(GameTime), Sum(Float(0.1), Mul(Sub(Zero, Beat), Float(0.2)))))),
+            thickness: Float(1.0),
+            alpha: Float(1.0),
+            color: State(Color),
+        ),
+        children: [],
+        mapping: {
+            Offset: Mul(UnitVec(Mul(GameTime, Float(100.0))), Float(0.05)),
+        },
+        count: 0,
+    ),
+)
