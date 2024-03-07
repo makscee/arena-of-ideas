@@ -5,7 +5,7 @@
     statuses: [
         (
             name: "Petrify",
-            description: "Next taken damage is fatal",
+            description: "Next taken damage is lethal",
             trigger: Fire(
                 trigger: AfterDamageTaken,
                 effect: Kill,
@@ -15,7 +15,7 @@
     abilities: [
         (
             name: "Petrify",
-            description: "Next taken damage is fatal",
+            description: "Next taken damage is lethal",
             effect: List(
                 [
                     AddStatus("Petrify"),

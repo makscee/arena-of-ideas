@@ -431,10 +431,15 @@ impl RepresentationMaterial {
                         alpha,
                         font_size,
                     } => {
+                        ui.label("size:");
                         show_tree(size, context, ui, world);
+                        ui.label("text:");
                         show_tree(text, context, ui, world);
+                        ui.label("color:");
                         show_tree(color, context, ui, world);
+                        ui.label("alpha:");
                         show_tree(alpha, context, ui, world);
+                        ui.label("font size:");
                         ui.add(Slider::new(font_size, 16.0..=48.0));
                     }
                     RepresentationMaterial::Curve {
@@ -444,9 +449,13 @@ impl RepresentationMaterial {
                         aa,
                         color,
                     } => {
+                        ui.label("thickness:");
                         show_tree(thickness, context, ui, world);
+                        ui.label("curvature:");
                         show_tree(curvature, context, ui, world);
+                        ui.label("aa:");
                         show_tree(aa, context, ui, world);
+                        ui.label("color:");
                         show_tree(color, context, ui, world);
                     }
                 };

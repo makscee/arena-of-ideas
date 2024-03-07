@@ -69,6 +69,7 @@ impl Effect {
                         .set_parent(context.target())
                         .unpack(world)?;
                 }
+                let value = value.max(0);
                 Pools::get_vfx("text", world)
                     .clone()
                     .set_var(

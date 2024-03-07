@@ -1,0 +1,42 @@
+(
+    name: "Hag",
+    hp: 2,
+    atk: 2,
+    stacks: 1,
+    level: 1,
+    houses: "Witches",
+    description: "%trigger → %effect on %target",
+    trigger: Fire(
+        trigger: BattleStart,
+        target: EnemyUnits,
+        effect: UseAbility("Weakness"),
+        period: 0,
+    ),
+    representation: (
+        material: None,
+        children: [
+            (
+                material: Curve(
+                    thickness: Float(0.3),
+                    dilations: [],
+                    curvature: Mul(Sub(Float(0.5), Mul(Index, Float(0.14))), Sin(Sum(GameTime, Mul(Index, Float(0.1))))),
+                    aa: Float(0.5),
+                    color: State(Color),
+                ),
+                children: [],
+                mapping: {
+                    Position: Vec2EE(Sum(Float(-1.0), Mul(Beat, Float(0.2))), Float(0.0)),
+                    Delta: Vec2EE(Sum(Float(2.0), Mul(Sub(Zero, Beat), Float(0.4))), Float(0.0)),
+                },
+                count: 14,
+            ),
+        ],
+        mapping: {},
+        count: 0,
+    ),
+    state: (
+        history: {},
+        birth: 0.0,
+    ),
+    statuses: [],
+)

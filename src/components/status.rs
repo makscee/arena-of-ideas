@@ -15,8 +15,6 @@ pub struct PackedStatus {
     pub representation: Option<Representation>,
     #[serde(default)]
     pub state: VarState,
-    #[serde(default)]
-    pub shop_charges: i32,
 }
 
 #[derive(Component, Clone)]

@@ -10,7 +10,6 @@
                 trigger: Var(Atk),
                 expr: Context(Charges),
             ),
-            shop_charges: 1,
         ),
     ],
     abilities: [

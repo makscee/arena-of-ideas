@@ -341,6 +341,7 @@ impl HeroEditorPlugin {
 
                             let rep = &mut unit.representation;
                             rep.show_editor(context, "root", ui, world);
+                            ui.add_space(150.0);
                         });
                 });
 

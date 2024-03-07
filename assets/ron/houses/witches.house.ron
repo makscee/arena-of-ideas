@@ -1,25 +1,25 @@
 #![enable(implicit_some)]
 (
-    name: "Medics",
-    color: ("#42A5F5"),
+    name: "Witches",
+    color: ("#673AB7"),
     statuses: [
         (
-            name: "Vitality",
-            description: "+{Charges} HP",
+            name: "Weakness",
+            description: "-{Charges} ATK",
             trigger: Change(
-                trigger: Var(Hp),
-                expr: Context(Charges),
+                trigger: Var(Atk),
+                expr: Sub(Int(0), Context(Charges)),
             ),
         ),
     ],
     abilities: [
         (
-            name: "Vitality",
-            description: "Give +1 HP",
+            name: "Weakness",
+            description: "-1 ATK",
             effect: List(
                 [
                     AddStatus(
-                        "Vitality",
+                        "Weakness",
                     ),
                     Vfx("apply_status"),
                 ],
