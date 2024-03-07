@@ -524,6 +524,24 @@ fn show_node(
             name.on_hover_text(&path)
         });
 
+    {
+        let mut left_line = frame_resp.rect.translate(egui::vec2(3.0, 0.0));
+        left_line.set_width(2.0);
+        left_line = left_line.shrink2(egui::vec2(0.0, 14.0));
+        let mut ui = ui.child_ui(left_line, Layout::left_to_right(egui::Align::Center));
+        let response = ui.allocate_rect(left_line, Sense::click());
+        let color = if response.hovered() {
+            yellow()
+        } else {
+            dark_gray()
+        };
+        ui.painter_at(left_line)
+            .rect_filled(left_line, Rounding::ZERO, color);
+        if response.clicked() {
+            source.wrap();
+        }
+    }
+
     if name_resp.clicked() {
         name_resp.request_focus();
     }
@@ -625,6 +643,7 @@ pub trait EditorNodeGenerator: Display + Sized + Serialize + DeserializeOwned {
     );
     fn show_extra(&mut self, path: &str, context: &Context, world: &mut World, ui: &mut Ui);
     fn show_replace_buttons(&mut self, lookup: &str, submit: bool, ui: &mut Ui) -> bool;
+    fn wrap(&mut self);
 }
 
 impl EditorNodeGenerator for Expression {
@@ -890,6 +909,10 @@ impl EditorNodeGenerator for Expression {
         }
         false
     }
+
+    fn wrap(&mut self) {
+        *self = Expression::Abs(Box::new(self.clone()))
+    }
 }
 
 impl EditorNodeGenerator for Effect {
@@ -1069,5 +1092,9 @@ impl EditorNodeGenerator for Effect {
             Effect::ListSpread(_) => todo!(),
             Effect::WithVar(_, _, _) => todo!(),
         };
+    }
+
+    fn wrap(&mut self) {
+        *self = Effect::List([Box::new(self.clone())].into());
     }
 }
