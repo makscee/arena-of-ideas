@@ -45,6 +45,12 @@ impl Event {
             Event::BattleStart | Event::TurnStart | Event::TurnEnd | Event::Death(..) => {
                 let mut units = UnitPlugin::collect_all(world);
                 units.sort_by_key(|e| VarState::get(*e, world).get_int(VarName::Slot).unwrap());
+                match self {
+                    Event::Death(e) => {
+                        context.set_target(e, world);
+                    }
+                    _ => {}
+                };
                 units
             }
             Event::BeforeStrike(unit) | Event::AfterStrike(unit) => [*unit].into(),

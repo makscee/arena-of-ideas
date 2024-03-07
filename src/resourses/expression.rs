@@ -41,8 +41,9 @@ pub enum Expression {
     Hex(String),
     Faction(Faction),
     State(VarName),
-    TargetState(VarName),
     StateLast(VarName),
+    TargetState(VarName),
+    TargetStateLast(VarName),
     Context(VarName),
     Value(VarValue),
 
@@ -151,7 +152,16 @@ impl Expression {
             }
             Expression::TargetState(var) => {
                 let t = GameTimer::get().play_head();
-                VarState::find_value(context.target(), *var, t, world)
+                VarState::find_value(
+                    context.get_target().context("No target in context")?,
+                    *var,
+                    t,
+                    world,
+                )
+            }
+            Expression::TargetStateLast(var) => {
+                VarState::get(context.get_target().context("No target in context")?, world)
+                    .get_value_last(*var)
             }
             Expression::StateLast(var) => {
                 VarState::get(context.owner(), world).get_value_last(*var)
@@ -434,6 +444,7 @@ impl Expression {
             | Self::State(..)
             | Self::TargetState(..)
             | Self::StateLast(..)
+            | Self::TargetStateLast(..)
             | Self::Context(..)
             | Self::Value(..)
             | Self::Vec2(..) => default(),
@@ -543,8 +554,9 @@ impl Expression {
             | Expression::Hex(_)
             | Expression::Faction(_)
             | Expression::State(_)
-            | Expression::TargetState(_)
             | Expression::StateLast(_)
+            | Expression::TargetState(_)
+            | Expression::TargetStateLast(_)
             | Expression::Context(_)
             | Expression::Value(_)
             | Expression::Vec2(_, _) => hex_color!("#18FFFF"),
@@ -614,8 +626,9 @@ impl Expression {
             Expression::Hex(v) => v.to_string(),
             Expression::Faction(v) => v.to_string(),
             Expression::State(v) => format!("{self}({v})"),
-            Expression::TargetState(v) => format!("{self}({v})"),
             Expression::StateLast(v) => format!("{self}({v})"),
+            Expression::TargetState(v) => format!("{self}({v})"),
+            Expression::TargetStateLast(v) => format!("{self}({v})"),
             Expression::Context(v) => format!("{self}({v})"),
             Expression::Value(v) => format!("{self}({v})"),
             Expression::Vec2(x, y) => format!("({x}, {y})"),

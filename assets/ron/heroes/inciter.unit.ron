@@ -1,0 +1,30 @@
+(
+    name: "Inciter",
+    hp: 2,
+    atk: 2,
+    stacks: 1,
+    level: 1,
+    houses: "Meta",
+    description: "%trigger → use %effect on killer",
+    trigger: Fire(
+        trigger: AllyDeath,
+        target: TargetStateLast(LastAttacker),
+        effect: UseAbility("Betray"),
+        period: 0,
+    ),
+    representation: (
+        material: Shape(
+            shape: Circle,
+            fill: Line,
+            size: Vec2E(Max(Mul(Abs(Beat), Float(0.5)), Mul(Abs(Cos(Mul(GameTime, Float(0.3)))), Float(0.2)))),
+            thickness: Float(1.0),
+            alpha: Float(0.3),
+            color: State(Color),
+        ),
+        children: [],
+        mapping: {
+            Offset: Mul(UnitVec(Sum(Mul(Index, Mul(PI, Float(0.2))), Mul(Sin(Mul(GameTime, Float(0.3))), Float(5.0)))), Float(0.2)),
+        },
+        count: 10,
+    ),
+)

@@ -683,35 +683,20 @@ impl EditorNodeGenerator for Expression {
                     .show_ui(ui, |ui| {
                         for option in Faction::iter() {
                             let text = option.to_string();
-                            ui.selectable_value(x, option, text).changed();
+                            ui.selectable_value(x, option, text);
                         }
                     });
             }
             Expression::State(x)
             | Expression::TargetState(x)
+            | Expression::TargetStateLast(x)
             | Expression::Context(x)
             | Expression::StateLast(x) => {
-                ComboBox::from_id_source(&path)
-                    .selected_text(x.to_string())
-                    .show_ui(ui, |ui| {
-                        for option in VarName::iter() {
-                            if context.get_var(option, world).is_some() {
-                                let text = option.to_string();
-                                ui.selectable_value(x, option, text).changed();
-                            }
-                        }
-                    });
+                x.show_editor_with_context(context, world, ui);
             }
             Expression::WithVar(x, ..) => {
+                x.show_editor_with_context(context, world, ui);
                 ui.vertical(|ui| {
-                    ComboBox::from_id_source(&path)
-                        .selected_text(x.to_string())
-                        .show_ui(ui, |ui| {
-                            for option in VarName::iter() {
-                                let text = option.to_string();
-                                ui.selectable_value(x, option, text).changed();
-                            }
-                        });
                     show_value(&value, ui);
                 });
             }
@@ -760,8 +745,9 @@ impl EditorNodeGenerator for Expression {
             | Expression::Hex(_)
             | Expression::Faction(_)
             | Expression::State(_)
-            | Expression::TargetState(_)
             | Expression::StateLast(_)
+            | Expression::TargetState(_)
+            | Expression::TargetStateLast(_)
             | Expression::Context(_)
             | Expression::Value(_)
             | Expression::Vec2(_, _) => default(),

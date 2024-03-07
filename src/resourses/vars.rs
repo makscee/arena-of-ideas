@@ -261,4 +261,27 @@ impl VarName {
                 }
             });
     }
+
+    pub fn show_editor_with_context(&mut self, context: &Context, world: &World, ui: &mut Ui) {
+        ComboBox::from_id_source(*self)
+            .selected_text(self.to_string())
+            .show_ui(ui, |ui| {
+                for option in VarName::iter() {
+                    if context.get_var(option, world).is_some() {
+                        let text = option
+                            .to_string()
+                            .add_color(white())
+                            .rich_text(ui)
+                            .size(10.0);
+                        ui.selectable_value(self, option, text);
+                    }
+                }
+                for option in VarName::iter() {
+                    if context.get_var(option, world).is_none() {
+                        let text = option.to_string().to_colored().rich_text(ui).size(10.0);
+                        ui.selectable_value(self, option, text);
+                    }
+                }
+            });
+    }
 }
