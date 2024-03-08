@@ -8,24 +8,10 @@
             description: "Block next incoming damage {Charges} times",
             trigger: List(
                 [
-                    Change(
-                        trigger: IncomingDamage,
-                        expr: Mul(
-                            Context(
-                                Value,
-                            ),
-                            Int(-1),
-                        ),
-                    ),
+                    Change(trigger: IncomingDamage, expr: Mul(Context(Value), Int(-1))),
                     Fire(
                         trigger: AfterIncomingDamage,
-                        effect: WithVar(
-                            Charges,
-                            Int(-1),
-                            AddStatus(
-                                "Shield",
-                            ),
-                        ),
+                        effect: WithVar(Charges, Int(-1), AddStatus("Shield")),
                     ),
                 ],
             ),
@@ -35,12 +21,7 @@
         (
             name: "Shield",
             description: "Block next incoming damage",
-            effect: List(
-                [
-                    AddStatus("Shield"),
-                    Vfx("apply_status"),
-                ],
-            ),
+            effect: List([AddStatus("Shield"), Vfx("apply_status")]),
         ),
     ],
     summons: [
@@ -52,12 +33,7 @@
             level: 1,
             houses: "Paladins",
             description: "",
-            trigger: Fire(
-                trigger: Noop,
-                target: Owner,
-                effect: Noop,
-                period: 0,
-            ),
+            trigger: Fire(trigger: Noop, target: Owner, effect: Noop, period: 0),
             representation: (
                 material: Shape(
                     shape: Circle,
@@ -66,36 +42,10 @@
                         Mul(
                             Abs(
                                 Sin(
-                                    Sum(
-                                        Mul(
-                                            GameTime,
-                                            Float(
-                                                0.5,
-                                            ),
-                                        ),
-                                        Mul(
-                                            Index,
-                                            Mul(
-                                                PI,
-                                                Float(
-                                                    0.05,
-                                                ),
-                                            ),
-                                        ),
-                                    ),
+                                    Sum(Mul(GameTime, Float(0.5)), Mul(Index, Mul(PI, Float(0.05)))),
                                 ),
                             ),
-                            Sum(
-                                Float(
-                                    0.95,
-                                ),
-                                Mul(
-                                    Beat,
-                                    Float(
-                                        0.1,
-                                    ),
-                                ),
-                            ),
+                            Sum(Float(0.95), Mul(Beat, Float(0.1))),
                         ),
                     ),
                     thickness: Float(1.0),

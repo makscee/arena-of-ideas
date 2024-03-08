@@ -1,31 +1,11 @@
 (
     anim: Run(
         [
-            Change(
-                var: Alpha,
-                value: Float(1.0),
-            ),
-            Change(
-                var: T,
-                value: Float(0.7),
-            ),
-            Change(
-                var: Alpha,
-                value: Float(0.0),
-                tween: QuartOut,
-                duration: Float(0.3),
-            ),
-            Change(
-                var: T,
-                value: Float(1.2),
-                tween: QuadOut,
-                duration: Float(0.3),
-            ),
-            Change(
-                var: Visible,
-                value: Bool(false),
-                t: 0.3,
-            ),
+            Change(var: Alpha, value: Float(1.0)),
+            Change(var: T, value: Float(0.7)),
+            Change(var: Alpha, value: Float(0.0), tween: QuartOut, duration: Float(0.3)),
+            Change(var: T, value: Float(1.2), tween: QuadOut, duration: Float(0.3)),
+            Change(var: Visible, value: Bool(false), t: 0.3),
         ],
     ),
     representation: (

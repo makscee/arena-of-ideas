@@ -4,51 +4,18 @@
     hp: 1,
     atk: 1,
     houses: "Holy",
-    trigger: Fire(
-        trigger: BattleStart,
-        target: AllyUnits,
-        effect: UseAbility("Blessing"),
-    ),
+    trigger: Fire(trigger: BattleStart, target: AllyUnits, effect: UseAbility("Blessing")),
     representation: (
         count: 4,
         material: Shape(
             shape: Circle,
-            thickness: Sum(
-                Float(2.5),
-                Cos(GameTime),
-            ),
-            size: Vec2E(
-                Sum(
-                    Float(0.5),
-                    Mul(
-                        Beat,
-                        Float(0.3),
-                    ),
-                ),
-            ),
+            thickness: Sum(Float(2.5), Cos(GameTime)),
+            size: Vec2E(Sum(Float(0.5), Mul(Beat, Float(0.3)))),
         ),
         mapping: {
             Offset: Mul(
                 UnitVec(
-                    Mul(
-                        Sum(
-                            GameTime,
-                            Mul(
-                                Mul(
-                                    PI,
-                                    Float(
-                                        0.5,
-                                    ),
-                                ),
-                                IntFloat(
-                                    State(
-                                        Index,
-                                    ),
-                                ),
-                            ),
-                        ),
-                        Float(3.0),
-                    ),
+                    Mul(Sum(GameTime, Mul(Mul(PI, Float(0.5)), IntFloat(State(Index)))), Float(3.0)),
                 ),
                 Float(0.3),
             ),

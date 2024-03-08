@@ -6,24 +6,14 @@
         (
             name: "Vitality",
             description: "+{Charges} HP",
-            trigger: Change(
-                trigger: Var(Hp),
-                expr: Context(Charges),
-            ),
+            trigger: Change(trigger: Var(Hp), expr: Context(Charges)),
         ),
     ],
     abilities: [
         (
             name: "Vitality",
             description: "Give +1 HP",
-            effect: List(
-                [
-                    AddStatus(
-                        "Vitality",
-                    ),
-                    Vfx("apply_status"),
-                ],
-            ),
+            effect: List([AddStatus("Vitality"), Vfx("apply_status")]),
         ),
     ],
 )

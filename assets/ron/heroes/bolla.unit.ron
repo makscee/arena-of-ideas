@@ -4,10 +4,7 @@
     hp: 1,
     atk: 1,
     houses: "Dragons",
-    trigger: Fire(
-        trigger: TurnEnd,
-        effect: UseAbility("Grow"),
-    ),
+    trigger: Fire(trigger: TurnEnd, effect: UseAbility("Grow")),
     representation: (
         material: Shape(
             shape: Circle,
@@ -24,24 +21,8 @@
                     Sum(
                         GameTime,
                         Mul(
-                            IntFloat(
-                                State(
-                                    Index,
-                                ),
-                            ),
-                            Sum(
-                                Float(
-                                    1.04,
-                                ),
-                                Mul(
-                                    Sin(
-                                        GameTime,
-                                    ),
-                                    Float(
-                                        0.24,
-                                    ),
-                                ),
-                            ),
+                            IntFloat(State(Index)),
+                            Sum(Float(1.04), Mul(Sin(GameTime), Float(0.24))),
                         ),
                     ),
                 ),

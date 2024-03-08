@@ -6,22 +6,14 @@
         (
             name: "Petrify",
             description: "Next taken damage is lethal",
-            trigger: Fire(
-                trigger: AfterDamageTaken,
-                effect: Kill,
-            ),
+            trigger: Fire(trigger: AfterDamageTaken, effect: Kill),
         ),
     ],
     abilities: [
         (
             name: "Petrify",
             description: "Next taken damage is lethal",
-            effect: List(
-                [
-                    AddStatus("Petrify"),
-                    Vfx("apply_status"),
-                ],
-            ),
+            effect: List([AddStatus("Petrify"), Vfx("apply_status")]),
         ),
     ],
 )

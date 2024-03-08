@@ -8,14 +8,7 @@
     description: "%trigger → %effect on ally that doesn\'t have [Shield]",
     trigger: Fire(
         trigger: BattleStart,
-        target: FindUnit(
-            Equals(
-                StatusCharges(
-                    String("Shield"),
-                ),
-                Zero,
-            ),
-        ),
+        target: FindUnit(Equals(StatusCharges(String("Shield")), Zero)),
         effect: UseAbility("Shield"),
         period: 1,
     ),
@@ -31,32 +24,8 @@
         children: [],
         mapping: {
             Offset: Mul(
-                UnitVec(
-                    Mul(
-                        Sum(
-                            Index,
-                            Int(1),
-                        ),
-                        Mul(
-                            PI,
-                            Float(0.1),
-                        ),
-                    ),
-                ),
-                Mul(
-                    Float(0.3),
-                    Sin(
-                        Sum(
-                            GameTime,
-                            Mul(
-                                Beat,
-                                Float(
-                                    0.5,
-                                ),
-                            ),
-                        ),
-                    ),
-                ),
+                UnitVec(Mul(Sum(Index, Int(1)), Mul(PI, Float(0.1)))),
+                Mul(Float(0.3), Sin(Sum(GameTime, Mul(Beat, Float(0.5))))),
             ),
         },
         count: 9,

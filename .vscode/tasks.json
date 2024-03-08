@@ -195,7 +195,7 @@
 			"group": {
 				"kind": "build"
 			},
-			"command": "find . -iname '*.ron' -exec ronfmt \"{}\" \\;"
+			"command": "find . -iname '*.ron' -exec ronfmt -w 100 \"{}\" \\;"
 		},
 		{
 			"label": "STDB: Publish",

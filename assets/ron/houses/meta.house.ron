@@ -7,31 +7,14 @@
         (
             name: "Amnesia",
             description: "Remove ability of a unit",
-            effect: List(
-                [
-                    RemoveLocalTrigger,
-                    Vfx("apply_status"),
-                ],
-            ),
+            effect: List([RemoveLocalTrigger, Vfx("apply_status")]),
         ),
         (
             name: "Betray",
             description: "Deal ATK DMG to adjacent allies",
             effect: WithOwner(
                 Target,
-                List(
-                    [
-                        Text(
-                            String(
-                                "Betray",
-                            ),
-                        ),
-                        WithTarget(
-                            AdjacentUnits,
-                            Damage(None),
-                        ),
-                    ],
-                ),
+                List([Text(String("Betray")), WithTarget(AdjacentUnits, Damage(None))]),
             ),
         ),
     ],

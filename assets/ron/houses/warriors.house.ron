@@ -6,24 +6,14 @@
         (
             name: "Strength",
             description: "+{Charges} ATK",
-            trigger: Change(
-                trigger: Var(Atk),
-                expr: Context(Charges),
-            ),
+            trigger: Change(trigger: Var(Atk), expr: Context(Charges)),
         ),
     ],
     abilities: [
         (
             name: "Strength",
             description: "Give +1 ATK",
-            effect: List(
-                [
-                    AddStatus(
-                        "Strength",
-                    ),
-                    Vfx("apply_status"),
-                ],
-            ),
+            effect: List([AddStatus("Strength"), Vfx("apply_status")]),
         ),
     ],
 )

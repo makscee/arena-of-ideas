@@ -7,87 +7,26 @@
                 hp: 3,
                 atk: 1,
                 houses: "Mages",
-                trigger: Fire(
-                    trigger: TurnEnd,
-                    target: RandomEnemy,
-                    effect: UseAbility(
-                        "Magic Missile",
-                    ),
-                ),
+                trigger: Fire(trigger: TurnEnd, target: RandomEnemy, effect: UseAbility("Magic Missile")),
                 representation: (
                     material: Shape(
                         shape: Circle,
-                        thickness: Sum(
-                            Float(2.5),
-                            Cos(
-                                GameTime,
-                            ),
-                        ),
-                        size: Vec2E(
-                            Sum(
-                                Float(
-                                    0.7,
-                                ),
-                                Mul(
-                                    Beat,
-                                    Float(
-                                        0.3,
-                                    ),
-                                ),
-                            ),
-                        ),
+                        thickness: Sum(Float(2.5), Cos(GameTime)),
+                        size: Vec2E(Sum(Float(0.7), Mul(Beat, Float(0.3)))),
                     ),
                     children: [
                         (
                             count: 5,
-                            material: Shape(
-                                shape: Circle,
-                                fill: Opaque,
-                                size: Vec2E(
-                                    Float(
-                                        0.2,
-                                    ),
-                                ),
-                            ),
+                            material: Shape(shape: Circle, fill: Opaque, size: Vec2E(Float(0.2))),
                             mapping: {
                                 Offset: Mul(
                                     Vec2EE(
-                                        Sin(
-                                            Sum(
-                                                GameTime,
-                                                IntFloat(
-                                                    State(
-                                                        Index,
-                                                    ),
-                                                ),
-                                            ),
-                                        ),
-                                        Cos(
-                                            GameTime,
-                                        ),
+                                        Sin(Sum(GameTime, IntFloat(State(Index)))),
+                                        Cos(GameTime),
                                     ),
                                     Mul(
-                                        Cos(
-                                            Mul(
-                                                Sum(
-                                                    GameTime,
-                                                    IntFloat(
-                                                        State(
-                                                            Index,
-                                                        ),
-                                                    ),
-                                                ),
-                                                Float(
-                                                    1.3,
-                                                ),
-                                            ),
-                                        ),
-                                        Sum(
-                                            Float(
-                                                0.5,
-                                            ),
-                                            Beat,
-                                        ),
+                                        Cos(Mul(Sum(GameTime, IntFloat(State(Index))), Float(1.3))),
+                                        Sum(Float(0.5), Beat),
                                     ),
                                 ),
                             },
@@ -100,87 +39,26 @@
                 hp: 3,
                 atk: 1,
                 houses: "Mages",
-                trigger: Fire(
-                    trigger: TurnEnd,
-                    target: RandomEnemy,
-                    effect: UseAbility(
-                        "Magic Missile",
-                    ),
-                ),
+                trigger: Fire(trigger: TurnEnd, target: RandomEnemy, effect: UseAbility("Magic Missile")),
                 representation: (
                     material: Shape(
                         shape: Circle,
-                        thickness: Sum(
-                            Float(2.5),
-                            Cos(
-                                GameTime,
-                            ),
-                        ),
-                        size: Vec2E(
-                            Sum(
-                                Float(
-                                    0.7,
-                                ),
-                                Mul(
-                                    Beat,
-                                    Float(
-                                        0.3,
-                                    ),
-                                ),
-                            ),
-                        ),
+                        thickness: Sum(Float(2.5), Cos(GameTime)),
+                        size: Vec2E(Sum(Float(0.7), Mul(Beat, Float(0.3)))),
                     ),
                     children: [
                         (
                             count: 5,
-                            material: Shape(
-                                shape: Circle,
-                                fill: Opaque,
-                                size: Vec2E(
-                                    Float(
-                                        0.2,
-                                    ),
-                                ),
-                            ),
+                            material: Shape(shape: Circle, fill: Opaque, size: Vec2E(Float(0.2))),
                             mapping: {
                                 Offset: Mul(
                                     Vec2EE(
-                                        Sin(
-                                            Sum(
-                                                GameTime,
-                                                IntFloat(
-                                                    State(
-                                                        Index,
-                                                    ),
-                                                ),
-                                            ),
-                                        ),
-                                        Cos(
-                                            GameTime,
-                                        ),
+                                        Sin(Sum(GameTime, IntFloat(State(Index)))),
+                                        Cos(GameTime),
                                     ),
                                     Mul(
-                                        Cos(
-                                            Mul(
-                                                Sum(
-                                                    GameTime,
-                                                    IntFloat(
-                                                        State(
-                                                            Index,
-                                                        ),
-                                                    ),
-                                                ),
-                                                Float(
-                                                    1.3,
-                                                ),
-                                            ),
-                                        ),
-                                        Sum(
-                                            Float(
-                                                0.5,
-                                            ),
-                                            Beat,
-                                        ),
+                                        Cos(Mul(Sum(GameTime, IntFloat(State(Index))), Float(1.3))),
+                                        Sum(Float(0.5), Beat),
                                     ),
                                 ),
                             },
@@ -193,87 +71,26 @@
                 hp: 3,
                 atk: 1,
                 houses: "Mages",
-                trigger: Fire(
-                    trigger: TurnEnd,
-                    target: RandomEnemy,
-                    effect: UseAbility(
-                        "Magic Missile",
-                    ),
-                ),
+                trigger: Fire(trigger: TurnEnd, target: RandomEnemy, effect: UseAbility("Magic Missile")),
                 representation: (
                     material: Shape(
                         shape: Circle,
-                        thickness: Sum(
-                            Float(2.5),
-                            Cos(
-                                GameTime,
-                            ),
-                        ),
-                        size: Vec2E(
-                            Sum(
-                                Float(
-                                    0.7,
-                                ),
-                                Mul(
-                                    Beat,
-                                    Float(
-                                        0.3,
-                                    ),
-                                ),
-                            ),
-                        ),
+                        thickness: Sum(Float(2.5), Cos(GameTime)),
+                        size: Vec2E(Sum(Float(0.7), Mul(Beat, Float(0.3)))),
                     ),
                     children: [
                         (
                             count: 5,
-                            material: Shape(
-                                shape: Circle,
-                                fill: Opaque,
-                                size: Vec2E(
-                                    Float(
-                                        0.2,
-                                    ),
-                                ),
-                            ),
+                            material: Shape(shape: Circle, fill: Opaque, size: Vec2E(Float(0.2))),
                             mapping: {
                                 Offset: Mul(
                                     Vec2EE(
-                                        Sin(
-                                            Sum(
-                                                GameTime,
-                                                IntFloat(
-                                                    State(
-                                                        Index,
-                                                    ),
-                                                ),
-                                            ),
-                                        ),
-                                        Cos(
-                                            GameTime,
-                                        ),
+                                        Sin(Sum(GameTime, IntFloat(State(Index)))),
+                                        Cos(GameTime),
                                     ),
                                     Mul(
-                                        Cos(
-                                            Mul(
-                                                Sum(
-                                                    GameTime,
-                                                    IntFloat(
-                                                        State(
-                                                            Index,
-                                                        ),
-                                                    ),
-                                                ),
-                                                Float(
-                                                    1.3,
-                                                ),
-                                            ),
-                                        ),
-                                        Sum(
-                                            Float(
-                                                0.5,
-                                            ),
-                                            Beat,
-                                        ),
+                                        Cos(Mul(Sum(GameTime, IntFloat(State(Index))), Float(1.3))),
+                                        Sum(Float(0.5), Beat),
                                     ),
                                 ),
                             },
@@ -286,87 +103,26 @@
                 hp: 3,
                 atk: 1,
                 houses: "Mages",
-                trigger: Fire(
-                    trigger: TurnEnd,
-                    target: RandomEnemy,
-                    effect: UseAbility(
-                        "Magic Missile",
-                    ),
-                ),
+                trigger: Fire(trigger: TurnEnd, target: RandomEnemy, effect: UseAbility("Magic Missile")),
                 representation: (
                     material: Shape(
                         shape: Circle,
-                        thickness: Sum(
-                            Float(2.5),
-                            Cos(
-                                GameTime,
-                            ),
-                        ),
-                        size: Vec2E(
-                            Sum(
-                                Float(
-                                    0.7,
-                                ),
-                                Mul(
-                                    Beat,
-                                    Float(
-                                        0.3,
-                                    ),
-                                ),
-                            ),
-                        ),
+                        thickness: Sum(Float(2.5), Cos(GameTime)),
+                        size: Vec2E(Sum(Float(0.7), Mul(Beat, Float(0.3)))),
                     ),
                     children: [
                         (
                             count: 5,
-                            material: Shape(
-                                shape: Circle,
-                                fill: Opaque,
-                                size: Vec2E(
-                                    Float(
-                                        0.2,
-                                    ),
-                                ),
-                            ),
+                            material: Shape(shape: Circle, fill: Opaque, size: Vec2E(Float(0.2))),
                             mapping: {
                                 Offset: Mul(
                                     Vec2EE(
-                                        Sin(
-                                            Sum(
-                                                GameTime,
-                                                IntFloat(
-                                                    State(
-                                                        Index,
-                                                    ),
-                                                ),
-                                            ),
-                                        ),
-                                        Cos(
-                                            GameTime,
-                                        ),
+                                        Sin(Sum(GameTime, IntFloat(State(Index)))),
+                                        Cos(GameTime),
                                     ),
                                     Mul(
-                                        Cos(
-                                            Mul(
-                                                Sum(
-                                                    GameTime,
-                                                    IntFloat(
-                                                        State(
-                                                            Index,
-                                                        ),
-                                                    ),
-                                                ),
-                                                Float(
-                                                    1.3,
-                                                ),
-                                            ),
-                                        ),
-                                        Sum(
-                                            Float(
-                                                0.5,
-                                            ),
-                                            Beat,
-                                        ),
+                                        Cos(Mul(Sum(GameTime, IntFloat(State(Index))), Float(1.3))),
+                                        Sum(Float(0.5), Beat),
                                     ),
                                 ),
                             },
@@ -378,98 +134,32 @@
     ),
     right: (
         units: [
-            (
-                name: "Priest",
-                hp: 1,
-                atk: 1,
-                houses: "Holy",
-            ),
+            (name: "Priest", hp: 1, atk: 1, houses: "Holy"),
             (
                 name: "Wizard",
                 hp: 3,
                 atk: 1,
                 houses: "Mages",
-                trigger: Fire(
-                    trigger: TurnEnd,
-                    target: RandomEnemy,
-                    effect: UseAbility(
-                        "Magic Missile",
-                    ),
-                ),
+                trigger: Fire(trigger: TurnEnd, target: RandomEnemy, effect: UseAbility("Magic Missile")),
                 representation: (
                     material: Shape(
                         shape: Circle,
-                        thickness: Sum(
-                            Float(2.5),
-                            Cos(
-                                GameTime,
-                            ),
-                        ),
-                        size: Vec2E(
-                            Sum(
-                                Float(
-                                    0.7,
-                                ),
-                                Mul(
-                                    Beat,
-                                    Float(
-                                        0.3,
-                                    ),
-                                ),
-                            ),
-                        ),
+                        thickness: Sum(Float(2.5), Cos(GameTime)),
+                        size: Vec2E(Sum(Float(0.7), Mul(Beat, Float(0.3)))),
                     ),
                     children: [
                         (
                             count: 5,
-                            material: Shape(
-                                shape: Circle,
-                                fill: Opaque,
-                                size: Vec2E(
-                                    Float(
-                                        0.2,
-                                    ),
-                                ),
-                            ),
+                            material: Shape(shape: Circle, fill: Opaque, size: Vec2E(Float(0.2))),
                             mapping: {
                                 Offset: Mul(
                                     Vec2EE(
-                                        Sin(
-                                            Sum(
-                                                GameTime,
-                                                IntFloat(
-                                                    State(
-                                                        Index,
-                                                    ),
-                                                ),
-                                            ),
-                                        ),
-                                        Cos(
-                                            GameTime,
-                                        ),
+                                        Sin(Sum(GameTime, IntFloat(State(Index)))),
+                                        Cos(GameTime),
                                     ),
                                     Mul(
-                                        Cos(
-                                            Mul(
-                                                Sum(
-                                                    GameTime,
-                                                    IntFloat(
-                                                        State(
-                                                            Index,
-                                                        ),
-                                                    ),
-                                                ),
-                                                Float(
-                                                    1.3,
-                                                ),
-                                            ),
-                                        ),
-                                        Sum(
-                                            Float(
-                                                0.5,
-                                            ),
-                                            Beat,
-                                        ),
+                                        Cos(Mul(Sum(GameTime, IntFloat(State(Index))), Float(1.3))),
+                                        Sum(Float(0.5), Beat),
                                     ),
                                 ),
                             },
@@ -482,87 +172,26 @@
                 hp: 3,
                 atk: 1,
                 houses: "Mages",
-                trigger: Fire(
-                    trigger: TurnEnd,
-                    target: RandomEnemy,
-                    effect: UseAbility(
-                        "Magic Missile",
-                    ),
-                ),
+                trigger: Fire(trigger: TurnEnd, target: RandomEnemy, effect: UseAbility("Magic Missile")),
                 representation: (
                     material: Shape(
                         shape: Circle,
-                        thickness: Sum(
-                            Float(2.5),
-                            Cos(
-                                GameTime,
-                            ),
-                        ),
-                        size: Vec2E(
-                            Sum(
-                                Float(
-                                    0.7,
-                                ),
-                                Mul(
-                                    Beat,
-                                    Float(
-                                        0.3,
-                                    ),
-                                ),
-                            ),
-                        ),
+                        thickness: Sum(Float(2.5), Cos(GameTime)),
+                        size: Vec2E(Sum(Float(0.7), Mul(Beat, Float(0.3)))),
                     ),
                     children: [
                         (
                             count: 5,
-                            material: Shape(
-                                shape: Circle,
-                                fill: Opaque,
-                                size: Vec2E(
-                                    Float(
-                                        0.2,
-                                    ),
-                                ),
-                            ),
+                            material: Shape(shape: Circle, fill: Opaque, size: Vec2E(Float(0.2))),
                             mapping: {
                                 Offset: Mul(
                                     Vec2EE(
-                                        Sin(
-                                            Sum(
-                                                GameTime,
-                                                IntFloat(
-                                                    State(
-                                                        Index,
-                                                    ),
-                                                ),
-                                            ),
-                                        ),
-                                        Cos(
-                                            GameTime,
-                                        ),
+                                        Sin(Sum(GameTime, IntFloat(State(Index)))),
+                                        Cos(GameTime),
                                     ),
                                     Mul(
-                                        Cos(
-                                            Mul(
-                                                Sum(
-                                                    GameTime,
-                                                    IntFloat(
-                                                        State(
-                                                            Index,
-                                                        ),
-                                                    ),
-                                                ),
-                                                Float(
-                                                    1.3,
-                                                ),
-                                            ),
-                                        ),
-                                        Sum(
-                                            Float(
-                                                0.5,
-                                            ),
-                                            Beat,
-                                        ),
+                                        Cos(Mul(Sum(GameTime, IntFloat(State(Index))), Float(1.3))),
+                                        Sum(Float(0.5), Beat),
                                     ),
                                 ),
                             },

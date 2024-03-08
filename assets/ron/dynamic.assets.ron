@@ -3,17 +3,13 @@
         "unit.rep": File(path: "ron/unit.rep.ron"),
         "status.rep": File(path: "ron/status.rep.ron"),
         "slot.rep": File(path: "ron/slot.rep.ron"),
-        "initial.tower": File(
-            path: "ron/initial.tower.ron",
-        ),
+        "initial.tower": File(path: "ron/initial.tower.ron"),
         "pool.heroes": Folder(path: "ron/heroes"),
         "pool.enemies": Folder(path: "ron/enemies"),
         "pool.houses": Folder(path: "ron/houses"),
         "pool.vfx": Folder(path: "ron/vfx"),
         "test.scenarios": Folder(path: "ron/scenarios"),
-        "custom.battle": File(
-            path: "ron/custom.battle.ron",
-        ),
+        "custom.battle": File(path: "ron/custom.battle.ron"),
         "anim": File(path: "ron/all.anim.ron"),
     },
 )

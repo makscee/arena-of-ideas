@@ -8,14 +8,8 @@
             description: "+{Charges}/+{Charges}",
             trigger: List(
                 [
-                    Change(
-                        trigger: Var(Hp),
-                        expr: Context(Charges),
-                    ),
-                    Change(
-                        trigger: Var(Atk),
-                        expr: Context(Charges),
-                    ),
+                    Change(trigger: Var(Hp), expr: Context(Charges)),
+                    Change(trigger: Var(Atk), expr: Context(Charges)),
                 ],
             ),
         ),
@@ -24,14 +18,7 @@
         (
             name: "Blessing",
             description: "Give +1/+1",
-            effect: List(
-                [
-                    AddStatus(
-                        "Blessing",
-                    ),
-                    Vfx("apply_status"),
-                ],
-            ),
+            effect: List([AddStatus("Blessing"), Vfx("apply_status")]),
         ),
     ],
 )

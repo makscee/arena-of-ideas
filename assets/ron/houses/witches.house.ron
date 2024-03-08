@@ -6,27 +6,14 @@
         (
             name: "Weakness",
             description: "-{Charges} ATK",
-            trigger: Change(
-                trigger: Var(Atk),
-                expr: Sub(
-                    Int(0),
-                    Context(Charges),
-                ),
-            ),
+            trigger: Change(trigger: Var(Atk), expr: Sub(Int(0), Context(Charges))),
         ),
     ],
     abilities: [
         (
             name: "Weakness",
             description: "-1 ATK",
-            effect: List(
-                [
-                    AddStatus(
-                        "Weakness",
-                    ),
-                    Vfx("apply_status"),
-                ],
-            ),
+            effect: List([AddStatus("Weakness"), Vfx("apply_status")]),
         ),
     ],
 )

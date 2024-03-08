@@ -7,12 +7,7 @@
         (
             name: "Copy",
             description: "Fully copy target",
-            effect: List(
-                [
-                    FullCopy,
-                    Vfx("apply_status"),
-                ],
-            ),
+            effect: List([FullCopy, Vfx("apply_status")]),
         ),
     ],
 )

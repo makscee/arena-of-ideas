@@ -7,11 +7,7 @@
     level: 1,
     houses: "Alchemists",
     description: "%trigger → %effect on enemy with most HP",
-    trigger: Fire(
-        trigger: BattleStart,
-        target: FilterMaxEnemy(State(Hp)),
-        effect: UseAbility("Petrify"),
-    ),
+    trigger: Fire(trigger: BattleStart, target: FilterMaxEnemy(State(Hp)), effect: UseAbility("Petrify")),
     representation: (
         material: None,
         children: [
@@ -27,24 +23,8 @@
                 children: [],
                 mapping: {
                     Rotation: Sum(
-                        Mul(
-                            Mul(
-                                PI,
-                                Float(
-                                    0.25,
-                                ),
-                            ),
-                            Index,
-                        ),
-                        Mul(
-                            Sin(
-                                Sum(
-                                    GameTime,
-                                    Index,
-                                ),
-                            ),
-                            Float(0.3),
-                        ),
+                        Mul(Mul(PI, Float(0.25)), Index),
+                        Mul(Sin(Sum(GameTime, Index)), Float(0.3)),
                     ),
                 },
                 count: 2,

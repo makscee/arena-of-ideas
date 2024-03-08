@@ -8,14 +8,8 @@
             description: "+{Charges}/+{Charges}",
             trigger: List(
                 [
-                    Change(
-                        trigger: Var(Hp),
-                        expr: Context(Charges),
-                    ),
-                    Change(
-                        trigger: Var(Atk),
-                        expr: Context(Charges),
-                    ),
+                    Change(trigger: Var(Hp), expr: Context(Charges)),
+                    Change(trigger: Var(Atk), expr: Context(Charges)),
                 ],
             ),
         ),
@@ -24,12 +18,7 @@
         (
             name: "Grow",
             description: "Give +1/+1",
-            effect: List(
-                [
-                    AddStatus("Growth"),
-                    Vfx("apply_status"),
-                ],
-            ),
+            effect: List([AddStatus("Growth"), Vfx("apply_status")]),
         ),
     ],
 )

@@ -18,23 +18,8 @@
             fill: Line,
             size: Vec2E(
                 Max(
-                    Mul(
-                        Abs(Beat),
-                        Float(0.5),
-                    ),
-                    Mul(
-                        Abs(
-                            Cos(
-                                Mul(
-                                    GameTime,
-                                    Float(
-                                        0.3,
-                                    ),
-                                ),
-                            ),
-                        ),
-                        Float(0.2),
-                    ),
+                    Mul(Abs(Beat), Float(0.5)),
+                    Mul(Abs(Cos(Mul(GameTime, Float(0.3)))), Float(0.2)),
                 ),
             ),
             thickness: Float(1.0),
@@ -46,26 +31,8 @@
             Offset: Mul(
                 UnitVec(
                     Sum(
-                        Mul(
-                            Index,
-                            Mul(
-                                PI,
-                                Float(
-                                    0.2,
-                                ),
-                            ),
-                        ),
-                        Mul(
-                            Sin(
-                                Mul(
-                                    GameTime,
-                                    Float(
-                                        0.3,
-                                    ),
-                                ),
-                            ),
-                            Float(5.0),
-                        ),
+                        Mul(Index, Mul(PI, Float(0.2))),
+                        Mul(Sin(Mul(GameTime, Float(0.3))), Float(5.0)),
                     ),
                 ),
                 Float(0.2),

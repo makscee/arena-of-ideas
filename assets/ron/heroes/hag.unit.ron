@@ -6,17 +6,15 @@
     level: 1,
     houses: "Witches",
     description: "%trigger → %effect on %target",
-    trigger: Fire(
-        trigger: BattleStart,
-        target: EnemyUnits,
-        effect: UseAbility("Weakness"),
-        period: 0,
-    ),
+    trigger: Fire(trigger: BattleStart, target: EnemyUnits, effect: UseAbility("Weakness"), period: 0),
     representation: (
         material: Curve(
             thickness: Float(0.3),
             dilations: [],
-            curvature: Mul(Sub(Float(0.5), Mul(Index, Float(0.14))), Sin(Sum(GameTime, Mul(Index, Float(0.1))))),
+            curvature: Mul(
+                Sub(Float(0.5), Mul(Index, Float(0.14))),
+                Sin(Sum(GameTime, Mul(Index, Float(0.1)))),
+            ),
             aa: Float(0.5),
             color: State(Color),
         ),
@@ -27,9 +25,6 @@
         },
         count: 14,
     ),
-    state: (
-        history: {},
-        birth: 0.0,
-    ),
+    state: (history: {}, birth: 0.0),
     statuses: [],
 )

@@ -7,11 +7,7 @@
     level: 1,
     houses: "Alchemists",
     description: "%trigger → %effect on %target",
-    trigger: Fire(
-        trigger: BattleStart,
-        target: AllUnits,
-        effect: UseAbility("Petrify"),
-    ),
+    trigger: Fire(trigger: BattleStart, target: AllUnits, effect: UseAbility("Petrify")),
     representation: (
         material: None,
         children: [
@@ -27,35 +23,9 @@
                 children: [],
                 mapping: {
                     Rotation: Sum(
+                        Mul(Mul(PI, Float(0.25)), Index),
                         Mul(
-                            Mul(
-                                PI,
-                                Float(
-                                    0.25,
-                                ),
-                            ),
-                            Index,
-                        ),
-                        Mul(
-                            Sin(
-                                Mul(
-                                    Sum(
-                                        GameTime,
-                                        Mul(
-                                            Index,
-                                            Sum(
-                                                Float(
-                                                    0.2,
-                                                ),
-                                                Beat,
-                                            ),
-                                        ),
-                                    ),
-                                    Float(
-                                        0.5,
-                                    ),
-                                ),
-                            ),
+                            Sin(Mul(Sum(GameTime, Mul(Index, Sum(Float(0.2), Beat))), Float(0.5))),
                             Float(0.5),
                         ),
                     ),

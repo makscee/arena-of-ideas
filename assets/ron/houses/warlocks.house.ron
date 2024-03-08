@@ -12,40 +12,20 @@
                     [
                         If(
                             Equals(StatusCharges(String("Doom")), Int(1)),
-                            List([
-                                Kill,
-                                Summon("Doomguard"),
-                            ]),
+                            List([Kill, Summon("Doomguard")]),
                             Noop,
                         ),
-                        WithVar(
-                            Charges,
-                            Int(-1),
-                            AddStatus(
-                                "Doom",
-                            ),
-                        ),
-                    ]
-                )
-            )
+                        WithVar(Charges, Int(-1), AddStatus("Doom")),
+                    ],
+                ),
+            ),
         ),
     ],
     abilities: [
         (
             name: "Doom",
             description: "Die in 5 turns then summon Doomguard",
-            effect: List(
-                [
-                    WithVar(
-                        Charges,
-                        Int(5),
-                        AddStatus(
-                            "Doom",
-                        )
-                    ),
-                    Vfx("apply_status"),
-                ],
-            ),
+            effect: List([WithVar(Charges, Int(5), AddStatus("Doom")), Vfx("apply_status")]),
         ),
     ],
     summons: [
@@ -57,27 +37,25 @@
             level: 1,
             houses: "Warlocks",
             description: "",
-            trigger: Fire(
-                trigger: Noop,
-                target: Owner,
-                effect: UseAbility("Doom"),
-                period: 0,
-            ),
+            trigger: Fire(trigger: Noop, target: Owner, effect: UseAbility("Doom"), period: 0),
             representation: (
                 material: Shape(
                     shape: Circle,
                     fill: Line,
-                    size: Vec2E(Sum(Float(0.9), Mul(Abs(Sin(Mul(Sum(GameTime, Index), Float(29.2)))), Float(-0.6)))),
+                    size: Vec2E(
+                        Sum(
+                            Float(0.9),
+                            Mul(Abs(Sin(Mul(Sum(GameTime, Index), Float(29.2)))), Float(-0.6)),
+                        ),
+                    ),
                     thickness: Float(1.0),
                     alpha: Float(1.0),
                     color: State(Color),
                 ),
                 children: [],
-                mapping: {
-                    Offset: Mul(UnitVec(Mul(Sin(Sum(GameTime, Index)), Float(100.0))), Float(0.05)),
-                },
+                mapping: {Offset: Mul(UnitVec(Mul(Sin(Sum(GameTime, Index)), Float(100.0))), Float(0.05))},
                 count: 10,
             ),
-        )
-    ]
+        ),
+    ],
 )
