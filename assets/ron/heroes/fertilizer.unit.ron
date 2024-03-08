@@ -1,0 +1,30 @@
+(
+    name: "Fertilizer",
+    hp: 3,
+    atk: 1,
+    stacks: 1,
+    level: 1,
+    houses: "Druids",
+    description: "%trigger → %effect on %target",
+    trigger: Fire(
+        trigger: BattleStart,
+        target: AllyUnits,
+        effect: UseAbility("Thorns"),
+        period: 0,
+    ),
+    representation: (
+        material: Shape(
+            shape: Rectangle,
+            fill: Line,
+            size: Vec2E(Float(1.0)),
+            thickness: Float(2.0),
+            alpha: Float(1.0),
+            color: State(Color),
+        ),
+        children: [],
+        mapping: {
+            Rotation: Sum(Float(0.0), Sin(Sum(Index, GameTime))),
+        },
+        count: 4,
+    ),
+)

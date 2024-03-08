@@ -260,7 +260,9 @@ impl Effect {
             }
             Effect::WithTarget(target, effect) => {
                 let target = target.get_value(context, world)?;
-                let targets = if let Ok(targets) = target.get_entity_list() {
+                let targets = if let Ok(mut targets) = target.get_entity_list() {
+                    targets
+                        .sort_by_key(|e| -VarState::get(*e, world).get_int(VarName::Slot).unwrap());
                     targets
                 } else {
                     vec![target.get_entity()?]
@@ -268,7 +270,7 @@ impl Effect {
                 let delay = 0.2;
                 for target in targets {
                     let context = context.set_target(target, world).clone();
-                    ActionPlugin::action_push_front_with_dealy(
+                    ActionPlugin::action_push_front_with_delay(
                         effect.deref().clone(),
                         context,
                         delay,

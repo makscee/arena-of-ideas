@@ -115,7 +115,7 @@ impl ActionPlugin {
             delay: 0.0,
         });
     }
-    pub fn action_push_back_with_dealy(
+    pub fn action_push_back_with_delay(
         effect: Effect,
         context: Context,
         delay: f32,
@@ -127,7 +127,7 @@ impl ActionPlugin {
             delay,
         });
     }
-    pub fn action_push_front_with_dealy(
+    pub fn action_push_front_with_delay(
         effect: Effect,
         context: Context,
         delay: f32,
