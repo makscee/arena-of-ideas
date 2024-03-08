@@ -41,7 +41,7 @@ impl ActionPlugin {
                             .iter(world)
                             .collect_vec()
                         {
-                            Status::refresh_entity_mapping(entity, world);
+                            Status::refresh_status_mapping(entity, world);
                         }
                         GameTimer::get().advance_insert(delay);
                     }

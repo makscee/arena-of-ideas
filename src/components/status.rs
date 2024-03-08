@@ -230,7 +230,7 @@ impl Status {
         result
     }
 
-    pub fn refresh_entity_mapping(status: Entity, world: &mut World) {
+    pub fn refresh_status_mapping(status: Entity, world: &mut World) {
         if let Some(parent) = world.get::<Parent>(status) {
             let parent = parent.get();
             let context = Context::from_owner(parent, world)

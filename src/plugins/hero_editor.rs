@@ -180,7 +180,7 @@ impl HeroEditorPlugin {
             let mut unit = old_unit.clone();
             let entity = *entity;
             let ctx = &egui_context(world);
-            SidePanel::left("editor panel")
+            SidePanel::left("edit panel")
                 .frame(Frame {
                     stroke: Stroke {
                         width: 1.0,
@@ -216,6 +216,33 @@ impl HeroEditorPlugin {
                                 &to_string_pretty(&unit, PrettyConfig::new()).unwrap(),
                                 world,
                             );
+                        }
+                        ui.add_space(100.0);
+                        const SELECTED_STATUS_KEY: &str = "selected status";
+                        let mut status = get_context_string(world, SELECTED_STATUS_KEY);
+                        ComboBox::from_id_source("status select")
+                            .selected_text(status.clone())
+                            .show_ui(ui, |ui| {
+                                for option in
+                                    Pools::get(world).statuses.keys().cloned().collect_vec()
+                                {
+                                    let text = option.to_string();
+                                    if ui
+                                        .selectable_value(&mut status, option.to_owned(), text)
+                                        .changed()
+                                    {
+                                        set_context_string(world, SELECTED_STATUS_KEY, option);
+                                    }
+                                }
+                            });
+                        if ui.button("Add Status").clicked() {
+                            if let Some((i, _)) =
+                                unit.statuses.iter().find_position(|(s, _)| status.eq(s))
+                            {
+                                unit.statuses[i].1 += 1;
+                            } else {
+                                unit.statuses.push((status, 1));
+                            }
                         }
                     });
                     ScrollArea::new([true, true])
@@ -952,7 +979,7 @@ impl EditorNodeGenerator for Effect {
                         .show_ui(ui, |ui| {
                             for option in Pools::get(world).abilities.keys() {
                                 let text = option.to_string();
-                                ui.selectable_value(name, option.to_owned(), text).changed();
+                                ui.selectable_value(name, option.to_owned(), text);
                             }
                         });
                 });
@@ -964,7 +991,7 @@ impl EditorNodeGenerator for Effect {
                         .show_ui(ui, |ui| {
                             for option in Pools::get(world).summons.keys() {
                                 let text = option.to_string();
-                                ui.selectable_value(name, option.to_owned(), text).changed();
+                                ui.selectable_value(name, option.to_owned(), text);
                             }
                         });
                 });
@@ -976,7 +1003,7 @@ impl EditorNodeGenerator for Effect {
                         .show_ui(ui, |ui| {
                             for option in Pools::get(world).statuses.keys() {
                                 let text = option.to_string();
-                                ui.selectable_value(name, option.to_owned(), text).changed();
+                                ui.selectable_value(name, option.to_owned(), text);
                             }
                         });
                 });
@@ -988,7 +1015,7 @@ impl EditorNodeGenerator for Effect {
                         .show_ui(ui, |ui| {
                             for option in Pools::get(world).vfx.keys() {
                                 let text = option.to_string();
-                                ui.selectable_value(name, option.to_owned(), text).changed();
+                                ui.selectable_value(name, option.to_owned(), text);
                             }
                         });
                 });
@@ -1000,7 +1027,7 @@ impl EditorNodeGenerator for Effect {
                         .show_ui(ui, |ui| {
                             for option in [Event::BattleStart, Event::TurnStart, Event::TurnEnd] {
                                 let text = option.to_string();
-                                ui.selectable_value(name, option, text).changed();
+                                ui.selectable_value(name, option, text);
                             }
                         });
                 });

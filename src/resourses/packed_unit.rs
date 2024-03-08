@@ -87,7 +87,10 @@ impl PackedUnit {
         )
         .set_parent(entity);
         for (status, charges) in self.statuses.iter() {
-            let _ = Status::change_charges(status, entity, *charges, world);
+            match Status::change_charges(status, entity, *charges, world) {
+                Ok(entity) => Status::refresh_status_mapping(entity, world),
+                Err(_) => {}
+            }
         }
         if VarState::get_mut(parent, world)
             .get_faction(VarName::Faction)
