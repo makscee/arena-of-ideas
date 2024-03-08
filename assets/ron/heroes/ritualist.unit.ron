@@ -1,0 +1,30 @@
+(
+    name: "Ritualist",
+    hp: 2,
+    atk: 2,
+    stacks: 1,
+    level: 1,
+    houses: "Warlocks",
+    description: "%trigger → %effect on %target",
+    trigger: Fire(
+        trigger: BattleStart,
+        target: SlotUnit(Int(1)),
+        effect: UseAbility("Doom"),
+        period: 0,
+    ),
+    representation: (
+        material: Shape(
+            shape: Circle,
+            fill: Line,
+            size: Vec2E(Float(0.5)),
+            thickness: Float(2.0),
+            alpha: Float(1.0),
+            color: State(Color),
+        ),
+        children: [],
+        mapping: {
+            Offset: Mul(UnitVec(Sum(Mul(Index, Mul(PI, Float(0.5))), Sum(Mul(GameTime, Float(0.5)), Mul(Sin(Sum(GameTime, Mul(Index, Float(1.0)))), Float(0.25))))), Float(0.3)),
+        },
+        count: 4,
+    ),
+)
