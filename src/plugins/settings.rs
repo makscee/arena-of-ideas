@@ -43,11 +43,16 @@ impl SettingsPlugin {
     }
 
     pub fn ui(world: &mut World) {
+        let ctx = &if let Some(context) = egui_context(world) {
+            context
+        } else {
+            return;
+        };
         let mut data = *SettingsData::get(world);
         window("SETTINGS")
             .set_width(600.0)
             .order(egui::Order::Foreground)
-            .show(&egui_context(world), |ui| {
+            .show(ctx, |ui| {
                 frame(ui, |ui| {
                     ui.columns(2, |ui| {
                         "master volume".to_colored().label(&mut ui[0]);
@@ -109,16 +114,17 @@ impl SettingsPlugin {
     fn updated(data: SettingsData, world: &mut World) {
         data.save(world).unwrap();
         AudioPlugin::update_settings(&data, world);
-        let mut window = world
+        if let Some(mut window) = world
             .query::<&mut bevy::window::Window>()
             .iter_mut(world)
             .next()
-            .unwrap();
-        window.mode = match data.window_mode {
-            WindowMode::Windowed => bevy::window::WindowMode::Windowed,
-            WindowMode::FullScreen => bevy::window::WindowMode::Fullscreen,
-            WindowMode::BorderlessFullScreen => bevy::window::WindowMode::BorderlessFullscreen,
-        };
+        {
+            window.mode = match data.window_mode {
+                WindowMode::Windowed => bevy::window::WindowMode::Windowed,
+                WindowMode::FullScreen => bevy::window::WindowMode::Fullscreen,
+                WindowMode::BorderlessFullScreen => bevy::window::WindowMode::BorderlessFullscreen,
+            };
+        }
     }
 }
 

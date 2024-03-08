@@ -51,7 +51,12 @@ fn on_connected(creds: &Credentials, _client_address: Address) {
                 Some("GAME VERSION ERROR".to_owned()),
                 format!("Game version is too old: {VERSION} < {server_version}"),
                 Some(Box::new(|w| {
-                    egui_context(w).open_url(egui::OpenUrl {
+                    let ctx = &if let Some(context) = egui_context(w) {
+                        context
+                    } else {
+                        return;
+                    };
+                    ctx.open_url(egui::OpenUrl {
                         url: "https://makscee.itch.io/arena-of-ideas".to_owned(),
                         new_tab: true,
                     });
@@ -96,8 +101,7 @@ pub struct RegisterData {
 
 impl Plugin for LoginPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnExit(GameState::Loading), Self::setup)
-            .init_resource::<LoginData>()
+        app.init_resource::<LoginData>()
             .init_resource::<RegisterData>();
     }
 }
@@ -114,7 +118,7 @@ impl LoginPlugin {
         CURRENT_USER.lock().unwrap().clone()
     }
 
-    fn setup() {
+    pub fn setup() {
         once_on_connect(on_connected);
         Self::connect();
     }

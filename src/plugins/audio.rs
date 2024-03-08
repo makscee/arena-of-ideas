@@ -162,7 +162,11 @@ impl AudioPlugin {
     }
 
     fn ui(world: &mut World) {
-        let ctx = &egui_context(world);
+        let ctx = &if let Some(context) = egui_context(world) {
+            context
+        } else {
+            return;
+        };
         let mut data = world.resource::<AudioData>().clone();
 
         window("PLAYBACK")

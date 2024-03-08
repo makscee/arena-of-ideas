@@ -182,7 +182,11 @@ impl ShopPlugin {
     }
 
     pub fn ui(world: &mut World) {
-        let ctx = &egui_context(world);
+        let ctx = &if let Some(context) = egui_context(world) {
+            context
+        } else {
+            return;
+        };
         let mut data = world.remove_resource::<ShopData>().unwrap();
         if data.fusion_candidates.is_some() {
             Self::show_fusion_options(&mut data, world);
@@ -234,7 +238,11 @@ impl ShopPlugin {
     }
 
     fn show_fusion_options(data: &mut ShopData, world: &mut World) {
-        let ctx = &egui_context(world);
+        let ctx = &if let Some(context) = egui_context(world) {
+            context
+        } else {
+            return;
+        };
         if let Some(((entity_a, entity_b), candidates)) = &mut data.fusion_candidates {
             let len = candidates.len();
             window("CHOOSE FUSION")
@@ -280,10 +288,15 @@ impl ShopPlugin {
     }
 
     fn show_info_table(world: &mut World) {
+        let ctx = &if let Some(context) = egui_context(world) {
+            context
+        } else {
+            return;
+        };
         let run = ArenaRun::current().expect("Current run not found");
         window("INFO")
             .anchor(Align2::LEFT_TOP, [10.0, 10.0])
-            .show(&egui_context(world), |ui| {
+            .show(ctx, |ui| {
                 frame(ui, |ui| {
                     text_dots_text(
                         &"wins".to_colored(),
@@ -300,7 +313,11 @@ impl ShopPlugin {
     }
 
     fn show_hero_ui(world: &mut World) -> Result<()> {
-        let ctx = &egui_context(world);
+        let ctx = &if let Some(context) = egui_context(world) {
+            context
+        } else {
+            return Ok(());
+        };
         let cursor_pos = CameraPlugin::cursor_world_pos(world).context("Failed to get cursor")?;
         let dragged = world.resource::<DraggedUnit>().0;
         if let Some((dragged, action)) = dragged {
@@ -422,7 +439,11 @@ impl ShopPlugin {
         Ok(())
     }
     fn draw_buy_panels(world: &mut World) {
-        let ctx = &egui_context(world);
+        let ctx = &if let Some(context) = egui_context(world) {
+            context
+        } else {
+            return;
+        };
         let run = ArenaRun::filter_by_active(true).next().unwrap();
         let units = HashMap::from_iter(
             UnitPlugin::collect_faction(Faction::Shop, world)

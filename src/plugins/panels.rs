@@ -84,7 +84,11 @@ impl PanelsPlugin {
     }
 
     pub fn ui(world: &mut World) {
-        let ctx = &egui_context(world);
+        let ctx = &if let Some(context) = egui_context(world) {
+            context
+        } else {
+            return;
+        };
         let top_data = world.resource::<TopOpenWindows>().0.clone();
         if !ctx.is_pointer_over_area() && ctx.input(|r| r.pointer.primary_clicked()) {
             Self::close_all(world);
@@ -95,7 +99,7 @@ impl PanelsPlugin {
                     .rounding(0.0)
                     .stroke(Stroke::NONE),
             )
-            .show(&egui_context(world), |ui| {
+            .show(ctx, |ui| {
                 let mut margin = Margin::same(4.0);
                 margin.top = 2.0;
                 Frame::none().inner_margin(margin).show(ui, |ui| {

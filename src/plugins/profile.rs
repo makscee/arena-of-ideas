@@ -32,7 +32,12 @@ impl ProfilePlugin {
     }
 
     pub fn ui(world: &mut World) {
-        window("PROFILE").show(&egui_context(world), |ui| {
+        let ctx = &if let Some(context) = egui_context(world) {
+            context
+        } else {
+            return;
+        };
+        window("PROFILE").show(ctx, |ui| {
             if let Some(data) = LoginPlugin::get_user_data() {
                 let username = data.name;
                 frame(ui, |ui| {

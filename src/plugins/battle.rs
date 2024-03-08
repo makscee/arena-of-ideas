@@ -177,7 +177,11 @@ impl BattlePlugin {
     }
 
     pub fn ui(world: &mut World) {
-        let ctx = &egui_context(world);
+        let ctx = &if let Some(context) = egui_context(world) {
+            context
+        } else {
+            return;
+        };
         if !GameTimer::get().ended() {
             return;
         }

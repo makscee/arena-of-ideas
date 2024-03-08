@@ -40,29 +40,42 @@ fn main() {
         RunMode::Test => GameState::TestsLoading,
         RunMode::Sync => GameState::UnitSync,
     };
-    App::new()
-        .add_state::<GameState>()
-        .insert_resource(ClearColor(Color::rgb(0.1, 0.1, 0.1)))
-        .insert_resource(PkvStore::new("makscee", "arena_of_ideas"))
-        .add_plugins((
-            DefaultPlugins
-                .set(AssetPlugin {
-                    watch_for_changes: ChangeWatcher::with_delay(Duration::from_millis(100)),
-                    ..default()
-                })
-                .set(LogPlugin {
-                    level: bevy::log::Level::DEBUG,
-                    filter: "info,debug,wgpu_core=warn,wgpu_hal=warn,naga=warn".into(),
-                })
-                .set(bevy::window::WindowPlugin {
-                    primary_window: Some(bevy::prelude::Window {
-                        title: "Arena of Ideas".into(),
-                        ..default()
-                    }),
+    let mut default_plugins = DefaultPlugins
+        .set(AssetPlugin {
+            watch_for_changes: ChangeWatcher::with_delay(Duration::from_millis(100)),
+            ..default()
+        })
+        .set(LogPlugin {
+            level: bevy::log::Level::DEBUG,
+            filter: "info,debug,wgpu_core=warn,wgpu_hal=warn,naga=warn".into(),
+        });
+    match args.mode {
+        RunMode::Regular
+        | RunMode::Custom
+        | RunMode::Last
+        | RunMode::Continue
+        | RunMode::Editor => {
+            default_plugins = default_plugins.set(bevy::window::WindowPlugin {
+                primary_window: Some(bevy::prelude::Window {
+                    title: "Arena of Ideas".into(),
                     ..default()
                 }),
-            FrameTimeDiagnosticsPlugin,
-        ))
+                ..default()
+            })
+        }
+        RunMode::Test | RunMode::Sync => {
+            default_plugins = default_plugins.set(bevy::window::WindowPlugin {
+                primary_window: None,
+                exit_condition: bevy::window::ExitCondition::DontExit,
+                ..default()
+            })
+        }
+    };
+    let mut app = App::new();
+    app.add_state::<GameState>()
+        .insert_resource(ClearColor(Color::rgb(0.1, 0.1, 0.1)))
+        .insert_resource(PkvStore::new("makscee", "arena_of_ideas"))
+        .add_plugins((default_plugins, FrameTimeDiagnosticsPlugin))
         .add_loading_state(LoadingState::new(GameState::Loading).continue_to_state(next_state))
         .add_loading_state(
             LoadingState::new(GameState::TestsLoading).continue_to_state(GameState::BattleTest),
@@ -122,8 +135,15 @@ fn main() {
             show_build_version
                 .after(ShopPlugin::ui)
                 .after(HeroEditorPlugin::ui),
-        )
-        .run();
+        );
+    match args.mode {
+        RunMode::Regular | RunMode::Continue | RunMode::Last | RunMode::Sync => {
+            app.add_systems(OnExit(GameState::Loading), LoginPlugin::setup);
+        }
+        RunMode::Test | RunMode::Custom | RunMode::Editor => {}
+    }
+
+    app.run();
 }
 
 fn update(time: Res<Time>, audio: Res<AudioData>) {
@@ -171,7 +191,11 @@ fn detect_changes(
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 fn show_build_version(world: &mut World) {
-    let ctx = &egui_context(world);
+    let ctx = &if let Some(context) = egui_context(world) {
+        context
+    } else {
+        return;
+    };
     Area::new("build version")
         .anchor(Align2::LEFT_BOTTOM, [10.0, -10.0])
         .show(ctx, |ui| {

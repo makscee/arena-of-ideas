@@ -73,9 +73,14 @@ impl HeroEditorPlugin {
     }
 
     pub fn ui(world: &mut World) {
+        let ctx = &if let Some(context) = egui_context(world) {
+            context
+        } else {
+            return;
+        };
         let mut pd = PersistentData::load(world);
         let ed = &mut pd.hero_editor_data.clone();
-        let ctx = &egui_context(world);
+
         let hovered = UnitPlugin::get_hovered(world);
         let mut delete: Option<Entity> = None;
         for unit in UnitPlugin::collect_all(world) {
@@ -180,9 +185,14 @@ impl HeroEditorPlugin {
 
     fn show_edit_panel(ed: &mut HeroEditorData, world: &mut World) {
         if let Some((entity, old_unit)) = ed.active.as_ref() {
+            let ctx = &if let Some(context) = egui_context(world) {
+                context
+            } else {
+                return;
+            };
             let mut unit = old_unit.clone();
             let entity = *entity;
-            let ctx = &egui_context(world);
+
             SidePanel::left("edit panel")
                 .frame(Frame {
                     stroke: Stroke {
@@ -526,8 +536,12 @@ fn show_node(
     ui: &mut Ui,
     world: &mut World,
 ) {
+    let ctx = &if let Some(context) = egui_context(world) {
+        context
+    } else {
+        return;
+    };
     let path = format!("{path}/{source}");
-    let ctx = &egui_context(world);
     let InnerResponse {
         inner: name_resp,
         response: frame_resp,

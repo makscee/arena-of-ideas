@@ -352,7 +352,11 @@ impl UnitPlugin {
         if ShopPlugin::is_fusing(world) {
             return;
         }
-        let ctx = &egui_context(world);
+        let ctx = &if let Some(context) = egui_context(world) {
+            context
+        } else {
+            return;
+        };
         for (entity, state) in world
             .query_filtered::<(Entity, &VarState), Or<(&Unit, &Corpse)>>()
             .iter(world)

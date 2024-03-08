@@ -11,37 +11,54 @@ pub fn just_pressed(key: KeyCode, world: &World) -> bool {
         .unwrap()
         .just_pressed(key)
 }
-pub fn egui_context(world: &mut World) -> Context {
+pub fn egui_context(world: &mut World) -> Option<Context> {
     world
         .query::<&mut EguiContext>()
-        .single_mut(world)
-        .into_inner()
-        .get_mut()
-        .clone()
+        .get_single_mut(world)
+        .map(|c| c.into_inner().get_mut().clone())
+        .ok()
 }
 pub fn get_context_bool(world: &mut World, key: &str) -> bool {
     let id = Id::new(key);
-    egui_context(world).data(|r| r.get_temp::<bool>(id).unwrap_or_default())
+    if let Some(context) = egui_context(world) {
+        context.data(|r| r.get_temp::<bool>(id).unwrap_or_default())
+    } else {
+        default()
+    }
 }
 pub fn set_context_bool(world: &mut World, key: &str, value: bool) {
     let id = Id::new(key);
-    egui_context(world).data_mut(|w| w.insert_temp(id, value))
+    if let Some(context) = egui_context(world) {
+        context.data_mut(|w| w.insert_temp(id, value))
+    }
 }
 pub fn get_context_string(world: &mut World, key: &str) -> String {
     let id = Id::new(key);
-    egui_context(world).data(|r| r.get_temp::<String>(id).unwrap_or_default())
+    if let Some(context) = egui_context(world) {
+        context.data(|r| r.get_temp::<String>(id).unwrap_or_default())
+    } else {
+        default()
+    }
 }
 pub fn set_context_string(world: &mut World, key: &str, value: String) {
     let id = Id::new(key);
-    egui_context(world).data_mut(|w| w.insert_temp(id, value))
+    if let Some(context) = egui_context(world) {
+        context.data_mut(|w| w.insert_temp(id, value))
+    }
 }
 pub fn get_context_expression(world: &mut World, key: &str) -> Expression {
     let id = Id::new(key);
-    egui_context(world).data(|r| r.get_temp::<Expression>(id).unwrap_or_default())
+    if let Some(context) = egui_context(world) {
+        context.data(|r| r.get_temp::<Expression>(id).unwrap_or_default())
+    } else {
+        default()
+    }
 }
 pub fn set_context_expression(world: &mut World, key: &str, value: Expression) {
     let id = Id::new(key);
-    egui_context(world).data_mut(|w| w.insert_temp(id, value))
+    if let Some(context) = egui_context(world) {
+        context.data_mut(|w| w.insert_temp(id, value))
+    }
 }
 pub fn world_to_screen(pos: Vec3, world: &World) -> Vec2 {
     let entity = world.entity(world.resource::<CameraData>().entity);

@@ -89,7 +89,11 @@ impl AlertPlugin {
     }
 
     fn ui(world: &mut World) {
-        let ctx = &egui_context(world);
+        let ctx = &if let Some(context) = egui_context(world) {
+            context
+        } else {
+            return;
+        };
         let mut data = ALERTS.lock().unwrap();
         let mut actions: Vec<AlertAction> = default();
         let offset = 15.0;
