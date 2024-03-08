@@ -57,12 +57,12 @@ impl BattlePlugin {
         data.right.unwrap().unpack(Faction::Right, world);
         UnitPlugin::translate_to_slots(world);
         GameTimer::get().insert_to_end();
-        ActionPlugin::spin(world);
-        Event::BattleStart.send(world).spin(world);
+        ActionPlugin::spin(world)?;
+        Event::BattleStart.send(world).spin(world)?;
         while let Some((left, right)) = Self::get_strikers(world) {
-            Self::run_strike(left, right, world);
+            Self::run_strike(left, right, world)?;
         }
-        ActionPlugin::spin(world);
+        ActionPlugin::spin(world)?;
         Self::get_result(world)
     }
 
@@ -102,24 +102,25 @@ impl BattlePlugin {
         UnitPlugin::is_dead(left, world) || UnitPlugin::is_dead(right, world)
     }
 
-    pub fn run_strike(left: Entity, right: Entity, world: &mut World) {
-        ActionPlugin::spin(world);
-        Self::before_strike(left, right, world);
+    pub fn run_strike(left: Entity, right: Entity, world: &mut World) -> Result<()> {
+        ActionPlugin::spin(world)?;
+        Self::before_strike(left, right, world)?;
         if Self::stricker_death_check(left, right, world) {
-            return;
+            return Ok(());
         }
-        Self::strike(left, right, world);
-        Self::after_strike(left, right, world);
-        Event::TurnEnd.send(world).spin(world);
+        Self::strike(left, right, world)?;
+        Self::after_strike(left, right, world)?;
+        Event::TurnEnd.send(world).spin(world)?;
+        Ok(())
     }
 
-    fn before_strike(left: Entity, right: Entity, world: &mut World) {
+    fn before_strike(left: Entity, right: Entity, world: &mut World) -> Result<()> {
         debug!("Before strike {left:?} {right:?}");
-        Event::TurnStart.send(world).spin(world);
-        Event::BeforeStrike(left).send(world).spin(world);
-        Event::BeforeStrike(right).send(world).spin(world);
+        Event::TurnStart.send(world).spin(world)?;
+        Event::BeforeStrike(left).send(world).spin(world)?;
+        Event::BeforeStrike(right).send(world).spin(world)?;
         if Self::stricker_death_check(left, right, world) {
-            return;
+            return Ok(());
         }
         let units = vec![(left, -1.0), (right, 1.0)];
         GameTimer::get().start_batch();
@@ -137,10 +138,11 @@ impl BattlePlugin {
             GameTimer::get().to_batch_start();
         }
         GameTimer::get().insert_to_end().end_batch();
-        ActionPlugin::spin(world);
+        ActionPlugin::spin(world)?;
+        Ok(())
     }
 
-    fn strike(left: Entity, right: Entity, world: &mut World) {
+    fn strike(left: Entity, right: Entity, world: &mut World) -> Result<()> {
         debug!("Strike {left:?} {right:?}");
         let units = vec![(left, right), (right, left)];
         for (caster, target) in units {
@@ -152,10 +154,11 @@ impl BattlePlugin {
             ActionPlugin::action_push_back(effect, context, world);
         }
         GameTimer::get().advance_insert(0.3);
-        ActionPlugin::spin(world);
+        ActionPlugin::spin(world)?;
+        Ok(())
     }
 
-    fn after_strike(left: Entity, right: Entity, world: &mut World) {
+    fn after_strike(left: Entity, right: Entity, world: &mut World) -> Result<()> {
         debug!("After strike {left:?} {right:?}");
         let units = vec![left, right];
         GameTimer::get().start_batch();
@@ -168,8 +171,9 @@ impl BattlePlugin {
             GameTimer::get().to_batch_start();
         }
         GameTimer::get().insert_to_end().end_batch();
-        Event::AfterStrike(left).send(world).spin(world);
-        Event::AfterStrike(right).send(world).spin(world);
+        Event::AfterStrike(left).send(world).spin(world)?;
+        Event::AfterStrike(right).send(world).spin(world)?;
+        Ok(())
     }
 
     pub fn ui(world: &mut World) {

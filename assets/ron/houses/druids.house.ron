@@ -1,0 +1,23 @@
+#![enable(implicit_some)]
+(
+    name: "Druids",
+    color: ("#EF6C00"),
+    statuses: [
+        (
+            name: "Thorns",
+            description: "Deal {Charges} DMG to attacker",
+            trigger: Fire(
+                trigger: AfterDamageTaken,
+                target: StateLast(LastAttacker),
+                effect: Damage(Context(Charges)),
+            )
+        ),
+    ],
+    abilities: [
+        (
+            name: "Thorns",
+            description: "Deal 1 DMG to attacker",
+            effect: List([AddStatus("Thorns"), Vfx("apply_status")]),
+        ),
+    ],
+)

@@ -36,6 +36,8 @@ jobs:
         run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev
       - name: Run cargo test
         run: cargo test
+      - name: Run test scenarios
+        run: cargo run -- --mode test
 
   # Run cargo clippy -- -D warnings
   clippy_check:

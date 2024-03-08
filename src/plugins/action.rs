@@ -8,7 +8,7 @@ impl Plugin for ActionPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<EventQueue>()
             .init_resource::<ActionQueue>()
-            .add_systems(Update, Self::spin);
+            .add_systems(Update, Self::update);
     }
 }
 
@@ -24,9 +24,18 @@ struct Action {
 }
 
 impl ActionPlugin {
-    pub fn spin(world: &mut World) {
+    fn update(world: &mut World) {
+        Self::spin(world).expect("Spin failed");
+    }
+
+    pub fn spin(world: &mut World) -> Result<bool> {
         let mut processed = false;
+        let mut limit = 100;
         loop {
+            if limit == 0 {
+                return Err(anyhow!("Limit exceeeded"));
+            }
+            limit -= 1;
             if let Some(Action {
                 effect,
                 mut context,
@@ -36,12 +45,12 @@ impl ActionPlugin {
                 match effect.invoke(&mut context, world) {
                     Ok(_) => {
                         processed = true;
-                        for entity in world
+                        for status in world
                             .query_filtered::<Entity, (With<Status>, With<VarStateDelta>, With<Parent>)>()
                             .iter(world)
                             .collect_vec()
                         {
-                            Status::refresh_status_mapping(entity, world);
+                            Status::refresh_status_mapping(status, world);
                         }
                         GameTimer::get().advance_insert(delay);
                     }
@@ -77,6 +86,7 @@ impl ActionPlugin {
                 GameTimer::get().advance_insert(0.3);
             }
         }
+        Ok(processed)
     }
 
     pub fn event_push_back(event: Event, context: Context, world: &mut World) {

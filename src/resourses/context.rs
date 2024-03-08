@@ -108,7 +108,6 @@ impl Context {
         }
         result
     }
-
     pub fn get_var(&self, var: VarName, world: &World) -> Option<VarValue> {
         let mut result = None;
         for layer in self.layers.iter().rev() {
@@ -119,7 +118,6 @@ impl Context {
         }
         result
     }
-
     pub fn set_var(&mut self, var: VarName, value: VarValue) -> &mut Self {
         self.layers.push(ContextLayer::Var(var, value));
         self
@@ -128,18 +126,15 @@ impl Context {
     pub fn from_owner(entity: Entity, world: &World) -> Self {
         Self::new_empty().set_owner(entity, world).take()
     }
-
     pub fn set_owner(&mut self, entity: Entity, world: &World) -> &mut Self {
         let name = VarState::try_get(entity, world)
             .and_then(|s| s.get_string(VarName::Name))
             .unwrap_or_default();
         self.stack(ContextLayer::Owner(entity, name), world)
     }
-
     pub fn owner(&self) -> Entity {
         self.get_owner().expect("Owner not found")
     }
-
     pub fn get_owner(&self) -> Option<Entity> {
         let mut result = None;
         for layer in self.layers.iter().rev() {
@@ -154,18 +149,15 @@ impl Context {
     pub fn from_caster(entity: Entity, world: &World) -> Self {
         Self::new_empty().set_caster(entity, world).take()
     }
-
     pub fn set_caster(&mut self, entity: Entity, world: &World) -> &mut Self {
         let name = VarState::get(entity, world)
             .get_string(VarName::Name)
             .unwrap_or_default();
         self.stack(ContextLayer::Caster(entity, name), world)
     }
-
     pub fn caster(&self) -> Entity {
         self.get_caster().expect("Caster not found")
     }
-
     pub fn get_caster(&self) -> Option<Entity> {
         let mut result = None;
         for layer in self.layers.iter().rev() {
@@ -180,18 +172,15 @@ impl Context {
     pub fn from_target(entity: Entity, world: &World) -> Self {
         Self::new_empty().set_target(entity, world).take()
     }
-
     pub fn set_target(&mut self, entity: Entity, world: &World) -> &mut Self {
         let name = VarState::get(entity, world)
             .get_string(VarName::Name)
             .unwrap_or_default();
         self.stack(ContextLayer::Target(entity, name), world)
     }
-
     pub fn target(&self) -> Entity {
         self.get_target().expect("Target not found")
     }
-
     pub fn get_target(&self) -> Option<Entity> {
         let mut result = None;
         for layer in self.layers.iter().rev() {
@@ -209,11 +198,9 @@ impl Context {
             .unwrap_or_default();
         self.stack(ContextLayer::Status(entity, name), world)
     }
-
     pub fn status(&self) -> Entity {
         self.get_status().expect("Target not found")
     }
-
     pub fn get_status(&self) -> Option<Entity> {
         let mut result = None;
         for layer in self.layers.iter().rev() {
@@ -223,6 +210,16 @@ impl Context {
             }
         }
         result
+    }
+    pub fn has_status(&self, entity: Entity) -> bool {
+        self.layers
+            .iter()
+            .any(|l| matches!(l, ContextLayer::Status(e, ..) if entity.eq(e)))
+    }
+
+    pub fn add_text(&mut self, text: String) -> &mut Self {
+        self.layers.push(ContextLayer::Text(text));
+        self
     }
 
     pub fn take(&mut self) -> Self {

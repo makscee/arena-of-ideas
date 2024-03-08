@@ -218,6 +218,9 @@ impl Status {
     ) -> bool {
         let mut result = false;
         for (status, trigger) in Self::collect_triggers(statuses, world) {
+            if context.has_status(status) {
+                continue;
+            }
             result |= trigger.fire(
                 event,
                 context

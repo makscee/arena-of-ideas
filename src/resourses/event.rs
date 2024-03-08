@@ -34,9 +34,9 @@ pub enum Event {
 }
 
 impl Event {
-    pub fn send(self, world: &mut World) -> Self {
+    pub fn send_with_context(self, mut context: Context, world: &mut World) -> Self {
         debug!("Send event {self:?}");
-        let mut context = Context::new_named(self.to_string());
+        context.add_text(self.to_string());
         let units = match &self {
             Event::DamageTaken { owner, value } | Event::IncomingDamage { owner, value } => {
                 context.set_var(VarName::Value, VarValue::Int(*value));
@@ -84,6 +84,10 @@ impl Event {
         self
     }
 
+    pub fn send(self, world: &mut World) -> Self {
+        self.send_with_context(Context::new_empty(), world)
+    }
+
     pub fn process(self, context: Context, world: &mut World) -> bool {
         let statuses = Status::collect_unit_statuses(context.owner(), world);
         let statuses = Status::filter_active_statuses(statuses, f32::MAX, world);
@@ -108,7 +112,7 @@ impl Event {
         self
     }
 
-    pub fn spin(self, world: &mut World) {
-        ActionPlugin::spin(world);
+    pub fn spin(self, world: &mut World) -> Result<bool> {
+        ActionPlugin::spin(world)
     }
 }

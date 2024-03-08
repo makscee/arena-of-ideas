@@ -145,7 +145,10 @@ impl HeroEditorPlugin {
                 }
                 if ui.button("Strike").clicked() {
                     if let Some((left, right)) = BattlePlugin::get_strikers(world) {
-                        BattlePlugin::run_strike(left, right, world);
+                        match BattlePlugin::run_strike(left, right, world) {
+                            Ok(_) => {}
+                            Err(e) => error!("{e}"),
+                        }
                     }
                 }
                 ui.add_space(10.0);

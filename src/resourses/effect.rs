@@ -44,7 +44,7 @@ impl Effect {
                     owner: target,
                     value: value.get_int()?,
                 }
-                .send(world)
+                .send_with_context(context.clone(), world)
                 .map(&mut value, world);
                 debug!("Value after map {value:?}");
                 let value = value.get_int()?;
@@ -60,13 +60,13 @@ impl Effect {
                         owner: target,
                         value,
                     }
-                    .send(world);
+                    .send_with_context(context.clone(), world);
                     Event::DamageDealt {
                         owner,
                         target,
                         value,
                     }
-                    .send(world);
+                    .send_with_context(context.clone(), world);
                     Pools::get_vfx("pain", world)
                         .set_parent(context.target())
                         .unpack(world)?;
@@ -339,7 +339,7 @@ impl Effect {
                 }
             }
             Effect::SendEvent(event) => {
-                event.clone().send(world);
+                event.clone().send_with_context(context.clone(), world);
             }
             Effect::RemoveLocalTrigger => {
                 let target = context.target();
