@@ -10,7 +10,6 @@
     ),
     representation: (
         material: Curve(
-            color: State(Color),
             curvature: Float(0.6),
             thickness: State(Thickness),
             aa: Float(0.5),

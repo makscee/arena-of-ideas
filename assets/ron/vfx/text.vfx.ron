@@ -17,7 +17,6 @@
     representation: (
         material: Text(
             text: State(Text),
-            color: State(Color),
             size: Sub(Float(0.7), Mul(Age, Float(0.3))),
             alpha: State(Alpha),
         ),

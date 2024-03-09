@@ -50,7 +50,7 @@
                     ),
                     thickness: Float(1.0),
                     alpha: Float(1.0),
-                    color: State(Color),
+                    
                 ),
                 children: [],
                 mapping: {Offset: Mul(UnitVec(Mul(Sin(Sum(GameTime, Index)), Float(100.0))), Float(0.05))},

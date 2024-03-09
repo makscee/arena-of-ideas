@@ -1,22 +1,28 @@
 use bevy::render::{mesh::MeshVertexBufferLayout, render_resource::RenderPipelineDescriptor};
+use convert_case::Casing;
 use strum_macros::Display;
 
 use super::*;
 
 #[derive(AsBindGroup, TypeUuid, TypePath, Debug, Clone)]
 #[uuid = "ec09cb82-5a6b-43cd-ab8a-56d0979f7cc4"]
-#[bind_group_data(LineShapeMaterialKey)]
+#[bind_group_data(ShapeMaterialKey)]
 pub struct ShapeMaterial {
-    #[uniform(0)]
-    pub color: Color,
     #[uniform(0)]
     pub size: Vec2,
     #[uniform(0)]
     pub thickness: f32,
     #[uniform(0)]
     pub alpha: f32,
+    #[uniform(0)]
+    pub colors: [Vec4; 10],
+    #[uniform(0)]
+    pub point1: Vec2,
+    #[uniform(0)]
+    pub point2: Vec2,
     pub shape: Shape,
     pub fill: Fill,
+    pub fill_color: FillColor,
 }
 
 #[derive(
@@ -37,6 +43,15 @@ pub enum Fill {
     Opaque,
 }
 
+#[derive(
+    Debug, Clone, Copy, Default, Eq, PartialEq, Hash, Display, Serialize, Deserialize, EnumIter,
+)]
+pub enum FillColor {
+    #[default]
+    Solid,
+    GradientLinear2,
+}
+
 impl Shape {
     pub fn def(&self) -> String {
         self.to_string().to_uppercase()
@@ -52,6 +67,14 @@ impl Shape {
 impl Fill {
     pub fn def(&self) -> String {
         self.to_string().to_uppercase()
+    }
+}
+
+impl FillColor {
+    pub fn def(&self) -> String {
+        self.to_string()
+            .from_case(convert_case::Case::Pascal)
+            .to_case(convert_case::Case::UpperSnake)
     }
 }
 
@@ -72,21 +95,26 @@ impl Material2d for ShapeMaterial {
         fragment
             .shader_defs
             .push(key.bind_group_data.fill.def().into());
+        fragment
+            .shader_defs
+            .push(key.bind_group_data.fill_color.def().into());
         Ok(())
     }
 }
 
 #[derive(Eq, PartialEq, Hash, Clone, Copy)]
-pub struct LineShapeMaterialKey {
+pub struct ShapeMaterialKey {
     shape: Shape,
     fill: Fill,
+    fill_color: FillColor,
 }
 
-impl From<&ShapeMaterial> for LineShapeMaterialKey {
+impl From<&ShapeMaterial> for ShapeMaterialKey {
     fn from(material: &ShapeMaterial) -> Self {
         Self {
             shape: material.shape,
             fill: material.fill,
+            fill_color: material.fill_color,
         }
     }
 }
@@ -94,12 +122,15 @@ impl From<&ShapeMaterial> for LineShapeMaterialKey {
 impl Default for ShapeMaterial {
     fn default() -> Self {
         Self {
-            color: Color::PINK,
+            colors: default(),
             thickness: 1.0,
             alpha: 1.0,
             size: default(),
             shape: default(),
             fill: default(),
+            fill_color: default(),
+            point1: default(),
+            point2: default(),
         }
     }
 }

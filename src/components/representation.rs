@@ -63,14 +63,22 @@ pub enum RepresentationMaterial {
         shape: Shape,
         #[serde(default)]
         fill: Fill,
+        #[serde(default)]
+        fill_color: FillColor,
         #[serde(default = "default_one_vec2_e")]
         size: Expression,
+        #[serde(default = "default_one_vec2_e")]
+        point1: Expression,
+        #[serde(default = "default_one_vec2_e")]
+        point2: Expression,
         #[serde(default = "default_one_f32_e")]
         thickness: Expression,
         #[serde(default = "default_one_f32_e")]
         alpha: Expression,
-        #[serde(default = "default_color_e")]
-        color: Expression,
+        #[serde(default = "default_color_arr_e")]
+        colors: Vec<Expression>,
+        #[serde(default = "default_f32_zero_arr_e")]
+        parts: Vec<Expression>,
     },
     Text {
         #[serde(default = "default_one_f32_e")]
@@ -109,52 +117,17 @@ fn default_zero_f32_e() -> Expression {
 fn default_one_vec2_e() -> Expression {
     Expression::Vec2(1.0, 1.0)
 }
+fn default_f32_zero_arr_e() -> Vec<Expression> {
+    [Expression::Float(0.0)].into()
+}
 fn default_color_e() -> Expression {
     Expression::State(VarName::Color)
 }
+fn default_color_arr_e() -> Vec<Expression> {
+    [Expression::State(VarName::Color)].into()
+}
 
 impl RepresentationMaterial {
-    pub fn fill_default(&mut self) -> &mut Self {
-        match self {
-            RepresentationMaterial::None => {}
-            RepresentationMaterial::Shape {
-                size,
-                thickness,
-                alpha,
-                color,
-                ..
-            } => {
-                *size = default_one_vec2_e();
-                *thickness = default_one_f32_e();
-                *alpha = default_one_f32_e();
-                *color = default_color_e();
-            }
-            RepresentationMaterial::Text {
-                size,
-                text,
-                color,
-                font_size,
-                ..
-            } => {
-                *size = default_one_f32_e();
-                *color = default_color_e();
-                *font_size = 16.0;
-                *text = Expression::String("empty".to_owned());
-            }
-            RepresentationMaterial::Curve {
-                thickness,
-                curvature,
-                color,
-                ..
-            } => {
-                *thickness = default_one_f32_e();
-                *color = default_color_e();
-                *curvature = default_one_f32_e();
-            }
-        }
-        self
-    }
-
     pub fn unpack(&self, entity: Entity, world: &mut World) {
         match self {
             RepresentationMaterial::None => {
@@ -164,12 +137,17 @@ impl RepresentationMaterial {
                     VisibilityBundle::default(),
                 ));
             }
-            RepresentationMaterial::Shape { shape, fill, .. } => {
+            RepresentationMaterial::Shape {
+                shape,
+                fill,
+                fill_color,
+                ..
+            } => {
                 let mut materials = world.resource_mut::<Assets<ShapeMaterial>>();
                 let material = ShapeMaterial {
-                    color: Color::PINK,
                     shape: *shape,
                     fill: *fill,
+                    fill_color: *fill_color,
                     ..default()
                 };
                 let material = materials.add(material);
@@ -229,26 +207,50 @@ impl RepresentationMaterial {
             RepresentationMaterial::Shape {
                 shape,
                 size,
-                color,
+                colors,
+                parts: points,
                 thickness,
                 alpha,
+                point1,
+                point2,
                 ..
             } => {
                 let size = size.get_vec2(context, world).unwrap_or_default();
+                let point1 = point1.get_vec2(context, world).unwrap_or_default();
+                let point2 = point2.get_vec2(context, world).unwrap_or_default();
                 let thickness = thickness.get_float(context, world).unwrap_or_default();
                 let alpha = alpha.get_float(context, world).unwrap_or_default();
-                let color = color.get_color(context, world).unwrap_or(Color::Rgba {
-                    red: 1.0,
-                    green: 0.0,
-                    blue: 1.0,
-                    alpha: 1.0,
-                });
+                let colors = colors
+                    .into_iter()
+                    .map(|color| {
+                        color
+                            .get_color(context, world)
+                            .unwrap_or(Color::FUCHSIA)
+                            .as_rgba_f32()
+                    })
+                    .collect_vec();
+                let colors = colors
+                    .into_iter()
+                    .enumerate()
+                    .map(|(i, c)| {
+                        vec4(
+                            c[0],
+                            c[1],
+                            c[2],
+                            points[i].get_float(context, world).unwrap_or_default(),
+                        )
+                    })
+                    .collect_vec();
                 let handle = world.get::<Handle<ShapeMaterial>>(entity).unwrap().clone();
                 let mut materials = world.get_resource_mut::<Assets<ShapeMaterial>>().unwrap();
                 if let Some(mat) = materials.get_mut(&handle) {
-                    mat.color = color;
+                    for (i, color) in colors.into_iter().enumerate() {
+                        mat.colors[i] = color;
+                    }
                     mat.thickness = thickness;
                     mat.alpha = alpha;
+                    mat.point1 = point1;
+                    mat.point2 = point2;
                     if mat.size != size {
                         mat.size = size;
                         let mesh = world.entity(entity).get::<Mesh2dHandle>().unwrap().clone();
@@ -382,7 +384,12 @@ impl RepresentationMaterial {
                         for option in RepresentationMaterial::iter() {
                             let text = option.to_string();
                             if ui.selectable_value(self, option, text).changed() {
-                                self.fill_default();
+                                *self = ron::from_str(&if matches!(self, Self::None) {
+                                    self.to_string()
+                                } else {
+                                    format!("{}()", self.to_string())
+                                })
+                                .unwrap();
                             }
                         }
                     });
@@ -391,13 +398,17 @@ impl RepresentationMaterial {
                     RepresentationMaterial::Shape {
                         shape,
                         fill,
+                        fill_color,
                         size,
                         thickness,
                         alpha,
-                        color,
+                        colors,
+                        parts,
+                        point1,
+                        point2,
                     } => {
                         ui.horizontal(|ui| {
-                            ComboBox::from_label("Shape")
+                            ComboBox::from_label("shape")
                                 .selected_text(shape.to_string())
                                 .show_ui(ui, |ui| {
                                     for option in Shape::iter() {
@@ -405,7 +416,7 @@ impl RepresentationMaterial {
                                         ui.selectable_value(shape, option, text);
                                     }
                                 });
-                            ComboBox::from_label("Fill")
+                            ComboBox::from_label("fill")
                                 .selected_text(fill.to_string())
                                 .show_ui(ui, |ui| {
                                     for option in Fill::iter() {
@@ -413,16 +424,35 @@ impl RepresentationMaterial {
                                         ui.selectable_value(fill, option, text);
                                     }
                                 });
+                            ComboBox::from_label("fill color")
+                                .selected_text(fill_color.to_string())
+                                .show_ui(ui, |ui| {
+                                    for option in FillColor::iter() {
+                                        let text = option.to_string();
+                                        ui.selectable_value(fill_color, option, text);
+                                    }
+                                });
                         });
 
-                        ui.label("size:");
-                        show_tree(size, context, ui, world);
-                        ui.label("thickness:");
-                        show_tree(thickness, context, ui, world);
-                        ui.label("alpha:");
-                        show_tree(alpha, context, ui, world);
-                        ui.label("color:");
-                        show_tree(color, context, ui, world);
+                        show_tree("size:", size, context, ui, world);
+                        show_tree("thickness:", thickness, context, ui, world);
+                        show_tree("alpha:", alpha, context, ui, world);
+                        match fill_color {
+                            FillColor::Solid => {
+                                colors.resize(1, default_color_e());
+                                show_tree("color:", &mut colors[0], context, ui, world);
+                            }
+                            FillColor::GradientLinear2 => {
+                                colors.resize(2, default_color_e());
+                                parts.resize(2, default());
+                                show_tree("color1:", &mut colors[0], context, ui, world);
+                                show_tree("color2:", &mut colors[1], context, ui, world);
+                                show_tree("part1:", &mut parts[0], context, ui, world);
+                                show_tree("part2:", &mut parts[1], context, ui, world);
+                                show_tree("point1:", point1, context, ui, world);
+                                show_tree("point2:", point2, context, ui, world);
+                            }
+                        }
                     }
                     RepresentationMaterial::Text {
                         size,
@@ -431,14 +461,10 @@ impl RepresentationMaterial {
                         alpha,
                         font_size,
                     } => {
-                        ui.label("size:");
-                        show_tree(size, context, ui, world);
-                        ui.label("text:");
-                        show_tree(text, context, ui, world);
-                        ui.label("color:");
-                        show_tree(color, context, ui, world);
-                        ui.label("alpha:");
-                        show_tree(alpha, context, ui, world);
+                        show_tree("size:", size, context, ui, world);
+                        show_tree("text:", text, context, ui, world);
+                        show_tree("color:", color, context, ui, world);
+                        show_tree("alpha:", alpha, context, ui, world);
                         ui.label("font size:");
                         ui.add(Slider::new(font_size, 16.0..=48.0));
                     }
@@ -449,14 +475,10 @@ impl RepresentationMaterial {
                         aa,
                         color,
                     } => {
-                        ui.label("thickness:");
-                        show_tree(thickness, context, ui, world);
-                        ui.label("curvature:");
-                        show_tree(curvature, context, ui, world);
-                        ui.label("aa:");
-                        show_tree(aa, context, ui, world);
-                        ui.label("color:");
-                        show_tree(color, context, ui, world);
+                        show_tree("thickness:", thickness, context, ui, world);
+                        show_tree("curvature:", curvature, context, ui, world);
+                        show_tree("aa:", aa, context, ui, world);
+                        show_tree("color:", color, context, ui, world);
                     }
                 };
             });
@@ -578,7 +600,7 @@ impl Representation {
         world: &mut World,
     ) {
         let response = CollapsingHeader::new("Representation")
-            .id_source(id)
+            .id_source(&id)
             .show(ui, |ui| {
                 frame(ui, |ui| {
                     ui.horizontal(|ui| {
@@ -604,8 +626,8 @@ impl Representation {
                             }
                             ui.collapsing(key.to_string(), |ui| {
                                 frame(ui, |ui| {
-                                    new_key.show_editor(ui);
-                                    show_tree(value, context, ui, world);
+                                    new_key.show_editor(Id::new(&id).with(*key), ui);
+                                    show_tree("", value, context, ui, world);
                                 });
                             });
                         });

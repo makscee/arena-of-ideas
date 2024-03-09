@@ -2,16 +2,16 @@
     material: Shape(
         shape: Circle,
         size: Vec2E(Sum(Mul(If(Even(State(Slot)), Beat, Mul(Beat, Float(-1.0))), Float(0.1)), Float(1.0))),
-        color: Hex("#B0BEC5"),
+        colors: [Hex("#B0BEC5")],
     ),
     children: [
         (
-            material: Shape(shape: Circle, color: Hex("#FF3D00"), size: Vec2E(Float(0.3))),
+            material: Shape(shape: Circle, colors: [Hex("#FF3D00")], size: Vec2E(Float(0.3))),
             mapping: {Offset: Vec2(0.9, -0.9)},
             children: [(material: Text(text: StringInt(State(Hp)), size: Float(0.6), color: Hex("#FF3D00")))],
         ),
         (
-            material: Shape(shape: Circle, color: Hex("#FBC02D"), size: Vec2E(Float(0.3))),
+            material: Shape(shape: Circle, colors: [Hex("#FBC02D")], size: Vec2E(Float(0.3))),
             mapping: {Offset: Vec2(-0.9, -0.9)},
             children: [(material: Text(text: StringInt(State(Atk)), size: Float(0.6), color: Hex("#FBC02D")))],
         ),

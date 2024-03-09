@@ -16,7 +16,7 @@
                 Sin(Sum(GameTime, Mul(Index, Float(0.1)))),
             ),
             aa: Float(0.5),
-            color: State(Color),
+            
         ),
         children: [],
         mapping: {

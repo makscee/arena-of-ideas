@@ -24,7 +24,7 @@
             ),
             thickness: Float(1.0),
             alpha: Float(0.3),
-            color: State(Color),
+            
         ),
         children: [],
         mapping: {

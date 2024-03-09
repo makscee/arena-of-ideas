@@ -120,7 +120,7 @@ impl DeltaTrigger {
                     }
                 });
             match self {
-                DeltaTrigger::Var(var) => var.show_editor(ui),
+                DeltaTrigger::Var(var) => var.show_editor(*var, ui),
                 DeltaTrigger::IncomingDamage => {}
             }
         });

@@ -14,7 +14,6 @@
             size: Vec2E(Sum(Float(0.2), Sub(Zero, Mul(Index, Float(0.03))))),
             thickness: Float(1.0),
             alpha: Float(1.0),
-            color: State(Color),
         ),
         children: [],
         mapping: {

@@ -10,7 +10,6 @@
     ),
     representation: (
         material: Curve(
-            color: State(Color),
             curvature: Float(2.0),
             thickness: State(Thickness),
             aa: Float(0.5),
@@ -23,7 +22,6 @@
         children: [
             (
                 material: Curve(
-                    color: Hex("#263238"),
                     curvature: Float(2.0),
                     thickness: Mul(Float(0.2), State(Thickness)),
                     aa: Float(0.4),

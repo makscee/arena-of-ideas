@@ -361,14 +361,14 @@ impl HeroEditorPlugin {
                                         CollapsingHeader::new("Target").default_open(true).show(
                                             ui,
                                             |ui| {
-                                                show_tree(target, context, ui, world);
+                                                show_tree("", target, context, ui, world);
                                             },
                                         );
 
                                         CollapsingHeader::new("Effect").default_open(true).show(
                                             ui,
                                             |ui| {
-                                                show_tree(effect, context, ui, world);
+                                                show_tree("", effect, context, ui, world);
                                             },
                                         );
                                     }
@@ -518,13 +518,15 @@ fn show_value(value: &Result<VarValue>, ui: &mut Ui) {
 }
 
 pub fn show_tree(
+    label: &str,
     root: &mut impl EditorNodeGenerator,
     context: &Context,
     ui: &mut Ui,
     world: &mut World,
 ) {
     ui.horizontal(|ui| {
-        show_node(root, default(), None, context, ui, world);
+        ui.label(label);
+        show_node(root, label.to_owned(), None, context, ui, world);
     });
 }
 
@@ -734,10 +736,10 @@ impl EditorNodeGenerator for Expression {
             | Expression::TargetStateLast(x)
             | Expression::Context(x)
             | Expression::StateLast(x) => {
-                x.show_editor_with_context(context, world, ui);
+                x.show_editor_with_context(context, path, world, ui);
             }
             Expression::WithVar(x, ..) => {
-                x.show_editor_with_context(context, world, ui);
+                x.show_editor_with_context(context, path, world, ui);
                 ui.vertical(|ui| {
                     show_value(&value, ui);
                 });
@@ -978,7 +980,7 @@ impl EditorNodeGenerator for Effect {
             }
             Effect::WithVar(x, e, _) => {
                 ui.vertical(|ui| {
-                    x.show_editor(ui);
+                    x.show_editor(path, ui);
                     let value = e.get_value(context, world);
                     show_value(&value, ui);
                 });

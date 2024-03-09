@@ -12,7 +12,7 @@
         material: Shape(
             fill: Opaque,
             shape: Circle,
-            color: Hex("#ffffff"),
+            colors: [Hex("#ffffff")],
             size: Vec2E(State(T)),
             alpha: State(Alpha),
         ),

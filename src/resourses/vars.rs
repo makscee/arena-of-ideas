@@ -251,8 +251,8 @@ impl Display for VarValue {
 }
 
 impl VarName {
-    pub fn show_editor(&mut self, ui: &mut Ui) {
-        ComboBox::from_id_source(*self)
+    pub fn show_editor(&mut self, id: impl std::hash::Hash, ui: &mut Ui) {
+        ComboBox::from_id_source(id)
             .selected_text(self.to_string())
             .show_ui(ui, |ui| {
                 for option in VarName::iter() {
@@ -262,8 +262,14 @@ impl VarName {
             });
     }
 
-    pub fn show_editor_with_context(&mut self, context: &Context, world: &World, ui: &mut Ui) {
-        ComboBox::from_id_source(*self)
+    pub fn show_editor_with_context(
+        &mut self,
+        context: &Context,
+        id: impl std::hash::Hash,
+        world: &World,
+        ui: &mut Ui,
+    ) {
+        ComboBox::from_id_source(id)
             .selected_text(self.to_string())
             .show_ui(ui, |ui| {
                 for option in VarName::iter() {

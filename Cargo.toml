@@ -19,7 +19,7 @@ spacetimedb-sdk = "0.8.1"
 bevy = { version = "0.11.0", default-features = false, features = [
     "bevy_core_pipeline",
     "bevy_render",
-
+    "bevy_winit",
     "multi-threaded",
     "filesystem_watcher",
     "bevy_ui",
