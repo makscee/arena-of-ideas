@@ -10,7 +10,7 @@
         material: Shape(
             shape: Circle,
             thickness: Sum(Float(2.5), Cos(GameTime)),
-            size: Vec2E(Sum(Float(0.5), Mul(Beat, Float(0.3)))),
+            size: Vec2E(Sum(Float(0.5), Mul(Beat, Float(0.1)))),
         ),
         mapping: {
             Offset: Mul(

@@ -9,12 +9,15 @@
     trigger: Fire(
         trigger: AllyDeath,
         target: Owner,
-        effect: List([
-            If(LessThen(ToInt(StateLast(Charges)), Int(3)), List([
-                StateAddVar(Charges, Owner, Int(1)),
-                UseAbility("Summon Treant"),
-            ]), Noop),
-        ]),
+        effect: List(
+            [
+                If(
+                    LessThen(ToInt(StateLast(Charges)), Int(3)),
+                    List([StateAddVar(Charges, Owner, Int(1)), UseAbility("Summon Treant")]),
+                    Noop,
+                ),
+            ],
+        ),
         period: 0,
     ),
     representation: (
@@ -27,25 +30,13 @@
             point2: UnitVec(Sum(Mul(GameTime, Float(0.3)), PI)),
             thickness: Float(1.4),
             alpha: Float(1.0),
-            colors: [
-                State(Color),
-                Hex("101010ff"),
-            ],
-            parts: [
-                Float(0.5),
-                Float(0.51),
-            ],
+            colors: [State(Color), Hex("101010ff")],
+            parts: [Float(0.5), Float(0.51)],
         ),
         children: [],
-        mapping: {
-            Rotation: Mul(Index, Float(0.2)),
-            Offset: Mul(UnitVec(Sum(GameTime, Index)), Float(0.07)),
-        },
+        mapping: {Rotation: Mul(Index, Float(0.2)), Offset: Mul(UnitVec(Sum(GameTime, Index)), Float(0.07))},
         count: 4,
     ),
-    state: (
-        history: {},
-        birth: 0.0,
-    ),
+    state: (history: {}, birth: 0.0),
     statuses: [],
 )
