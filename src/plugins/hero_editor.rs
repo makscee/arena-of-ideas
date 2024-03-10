@@ -812,6 +812,7 @@ impl EditorNodeGenerator for Expression {
             | Expression::StringFloat(x)
             | Expression::StringVec(x)
             | Expression::IntFloat(x)
+            | Expression::ToInt(x)
             | Expression::SlotUnit(x)
             | Expression::FactionCount(x)
             | Expression::FilterMaxEnemy(x)
@@ -995,6 +996,21 @@ impl EditorNodeGenerator for Effect {
                     show_value(&value, ui);
                 });
             }
+            Effect::StateAddVar(x, target, value) => {
+                ui.vertical(|ui| {
+                    x.show_editor(path, ui);
+                    ui.horizontal(|ui| {
+                        ui.label("target:");
+                        let target = target.get_value(context, world);
+                        show_value(&target, ui);
+                    });
+                    ui.horizontal(|ui| {
+                        ui.label("value:");
+                        let value = value.get_value(context, world);
+                        show_value(&value, ui);
+                    });
+                });
+            }
             Effect::UseAbility(name) => {
                 ui.vertical(|ui| {
                     ComboBox::from_id_source(&path)
@@ -1147,6 +1163,30 @@ impl EditorNodeGenerator for Effect {
                         show_node(
                             eff.as_mut(),
                             format!("{path}:eff"),
+                            connect_pos,
+                            context,
+                            ui,
+                            world,
+                        );
+                    });
+                });
+            }
+            Effect::StateAddVar(_, target, value) => {
+                ui.vertical(|ui| {
+                    ui.horizontal(|ui| {
+                        show_node(
+                            target,
+                            format!("{path}:target"),
+                            connect_pos,
+                            context,
+                            ui,
+                            world,
+                        );
+                    });
+                    ui.horizontal(|ui| {
+                        show_node(
+                            value,
+                            format!("{path}:value"),
                             connect_pos,
                             context,
                             ui,

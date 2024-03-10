@@ -17,6 +17,7 @@ pub enum Effect {
     List(Vec<Box<Effect>>),
     ListSpread(Vec<Box<Effect>>),
     WithVar(VarName, Expression, Box<Effect>),
+    StateAddVar(VarName, Expression, Expression),
     UseAbility(String),
     Summon(String),
     AddStatus(String),
@@ -290,6 +291,16 @@ impl Effect {
                     .clone();
                 ActionPlugin::action_push_front(effect.deref().clone(), context, world);
             }
+            Effect::StateAddVar(var, target, value) => {
+                let target = target.get_entity(context, world)?;
+                let value = value.get_value(context, world)?;
+                let mut state = VarState::try_get_mut(target, world)?;
+                let value = match state.get_value_last(*var) {
+                    Ok(prev) => VarValue::sum(&value, &prev)?,
+                    Err(_) => value,
+                };
+                state.push_back(*var, VarChange::new(value));
+            }
             Effect::FullCopy => {
                 let owner = context.owner();
                 let target = context.target();
@@ -369,31 +380,6 @@ impl Effect {
         Ok(())
     }
 
-    pub fn get_inner_mut(&mut self) -> Vec<&mut Self> {
-        match self {
-            Effect::Noop
-            | Effect::Kill
-            | Effect::FullCopy
-            | Effect::RemoveLocalTrigger
-            | Effect::Debug(..)
-            | Effect::Text(..)
-            | Effect::Damage(..)
-            | Effect::UseAbility(..)
-            | Effect::Summon(..)
-            | Effect::AddStatus(..)
-            | Effect::Vfx(..)
-            | Effect::SendEvent(..) => default(),
-            Effect::AoeFaction(_, e)
-            | Effect::WithTarget(_, e)
-            | Effect::WithOwner(_, e)
-            | Effect::WithVar(_, _, e)
-            | Effect::If(_, _, e) => vec![e],
-            Effect::List(list) | Effect::ListSpread(list) => {
-                list.iter_mut().map(|e| e.as_mut()).collect_vec()
-            }
-        }
-    }
-
     pub fn get_inner(&self) -> Vec<&Self> {
         match self {
             Effect::Noop
@@ -407,27 +393,17 @@ impl Effect {
             | Effect::Summon(..)
             | Effect::AddStatus(..)
             | Effect::Vfx(..)
+            | Effect::StateAddVar(..)
             | Effect::SendEvent(..) => default(),
             Effect::AoeFaction(_, e)
             | Effect::WithTarget(_, e)
             | Effect::WithOwner(_, e)
-            | Effect::If(_, _, e)
             | Effect::WithVar(_, _, e) => vec![e],
+            Effect::If(_, t, e) => vec![t, e],
             Effect::List(list) | Effect::ListSpread(list) => {
                 list.iter().map(|e| e.as_ref()).collect_vec()
             }
         }
-    }
-
-    pub fn find_ability(&mut self) -> Option<&mut Self> {
-        let mut queue = VecDeque::from([self]);
-        while let Some(e) = queue.pop_front() {
-            if matches!(e, Effect::UseAbility(..)) {
-                return Some(e);
-            }
-            queue.extend(e.get_inner_mut());
-        }
-        None
     }
 
     pub fn find_all_abilities(&self) -> Vec<Self> {

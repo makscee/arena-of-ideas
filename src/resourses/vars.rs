@@ -87,6 +87,7 @@ impl VarValue {
             VarValue::Float(value) => Ok(*value),
             VarValue::Int(value) => Ok(*value as f32),
             VarValue::Bool(value) => Ok(*value as i32 as f32),
+            VarValue::None => Ok(0.0),
             _ => Err(anyhow!("Float not supported by {self:?}")),
         }
     }
@@ -94,12 +95,14 @@ impl VarValue {
         match self {
             VarValue::Int(value) => Ok(*value),
             VarValue::Bool(value) => Ok(*value as i32),
+            VarValue::None => Ok(0),
             _ => Err(anyhow!("Int not supported by {self:?}")),
         }
     }
     pub fn get_vec2(&self) -> Result<Vec2> {
         match self {
             VarValue::Vec2(value) => Ok(*value),
+            VarValue::None => Ok(Vec2::ZERO),
             _ => Err(anyhow!("Vec2 not supported by {self:?}")),
         }
     }
@@ -108,6 +111,7 @@ impl VarValue {
             VarValue::Bool(value) => Ok(*value),
             VarValue::Int(value) => Ok(*value > 0),
             VarValue::Float(value) => Ok(*value > 0.0),
+            VarValue::None => Ok(false),
             _ => Err(anyhow!("Bool not supported by {self:?}")),
         }
     }

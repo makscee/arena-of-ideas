@@ -68,6 +68,7 @@ pub enum Expression {
     FilterMaxEnemy(Box<Expression>),
     FindUnit(Box<Expression>),
     UnitCount(Box<Expression>),
+    ToInt(Box<Expression>),
 
     Vec2EE(Box<Expression>, Box<Expression>),
     Sum(Box<Expression>, Box<Expression>),
@@ -118,6 +119,7 @@ impl Expression {
                 Ok(VarValue::String(format!("({x:.1}:{y:.1})")))
             }
             Expression::IntFloat(x) => Ok(VarValue::Float(x.get_int(context, world)? as f32)),
+            Expression::ToInt(x) => Ok(VarValue::Int(x.get_int(context, world)?)),
             Expression::Sin(x) => Ok(VarValue::Float(x.get_float(context, world)?.sin())),
             Expression::Cos(x) => Ok(VarValue::Float(x.get_float(context, world)?.cos())),
             Expression::Sign(x) => Ok(VarValue::Float(x.get_float(context, world)?.signum())),
@@ -163,9 +165,9 @@ impl Expression {
                 VarState::get(context.get_target().context("No target in context")?, world)
                     .get_value_last(*var)
             }
-            Expression::StateLast(var) => {
-                VarState::get(context.owner(), world).get_value_last(*var)
-            }
+            Expression::StateLast(var) => Ok(VarState::get(context.owner(), world)
+                .get_value_last(*var)
+                .unwrap_or_default()),
             Expression::Age => Ok(VarValue::Float(
                 GameTimer::get().play_head() - VarState::find(context.owner(), world).birth,
             )),
@@ -452,6 +454,7 @@ impl Expression {
             | Self::StringFloat(x)
             | Self::StringVec(x)
             | Self::IntFloat(x)
+            | Self::ToInt(x)
             | Self::Sin(x)
             | Self::Cos(x)
             | Self::Sign(x)
@@ -565,6 +568,7 @@ impl Expression {
             | Expression::StringFloat(_)
             | Expression::StringVec(_)
             | Expression::IntFloat(_)
+            | Expression::ToInt(_)
             | Expression::Sin(_)
             | Expression::Cos(_)
             | Expression::Sign(_)
@@ -637,6 +641,7 @@ impl Expression {
             | Expression::StringFloat(v)
             | Expression::StringVec(v)
             | Expression::IntFloat(v)
+            | Expression::ToInt(v)
             | Expression::Sin(v)
             | Expression::Cos(v)
             | Expression::Sign(v)
