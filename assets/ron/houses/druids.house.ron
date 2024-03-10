@@ -19,6 +19,11 @@
             description: "Deal 1 DMG to attacker",
             effect: List([AddStatus("Thorns"), Vfx("apply_status")]),
         ),
+        (
+            name: "Summon Treant",
+            description: "Summon {1}/{5} with [Thorns] ({5})",
+            effect: Summon("Treant"),
+        ),
     ],
     summons: [
         (

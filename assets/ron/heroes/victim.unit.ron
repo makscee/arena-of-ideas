@@ -5,15 +5,25 @@
     stacks: 1,
     level: 1,
     houses: "Paladins",
-    description: "%trigger → %effect on %target",
-    trigger: Fire(trigger: BeforeDeath, target: Owner, effect: Summon("Guardian Angel"), period: 0),
+    description: "%trigger → %effect",
+    trigger: Fire(
+        trigger: BeforeDeath,
+        target: Owner,
+        effect: UseAbility("Summon Guardian Angel"),
+        period: 0,
+    ),
     representation: (
         material: Shape(
             shape: Circle,
             fill: Line,
+            fill_color: Solid,
             size: Vec2E(Sum(Float(0.2), Sub(Zero, Mul(Index, Float(0.03))))),
+            point1: Vec2(1.0, 1.0),
+            point2: Vec2(1.0, 1.0),
             thickness: Float(1.0),
             alpha: Float(1.0),
+            colors: [State(Color)],
+            parts: [Float(0.0)],
         ),
         children: [],
         mapping: {
@@ -24,4 +34,6 @@
         },
         count: 7,
     ),
+    state: (history: {}, birth: 0.0),
+    statuses: [],
 )
