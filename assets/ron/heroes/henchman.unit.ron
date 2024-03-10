@@ -19,7 +19,6 @@
             ),
             thickness: Float(1.0),
             alpha: Float(1.0),
-            
         ),
         children: [],
         mapping: {Offset: Mul(UnitVec(Mul(GameTime, Float(100.0))), Float(0.05))},

@@ -10,7 +10,7 @@
                 trigger: AfterDamageTaken,
                 target: StateLast(LastAttacker),
                 effect: Damage(Context(Charges)),
-            )
+            ),
         ),
     ],
     abilities: [
@@ -18,6 +18,45 @@
             name: "Thorns",
             description: "Deal 1 DMG to attacker",
             effect: List([AddStatus("Thorns"), Vfx("apply_status")]),
+        ),
+    ],
+    summons: [
+        (
+            name: "Treant",
+            hp: 5,
+            atk: 1,
+            stacks: 1,
+            level: 1,
+            houses: "Druids",
+            description: "",
+            trigger: Fire(trigger: Noop, target: Owner, effect: Noop, period: 0),
+            representation: (
+                material: Shape(
+                    shape: Circle,
+                    fill: Line,
+                    fill_color: GradientLinear2,
+                    size: Vec2E(
+                        Sum(
+                            Mul(
+                                Index,
+                                Sum(Float(-0.26), Mul(Sin(Mul(GameTime, Float(0.2))), Float(0.05))),
+                            ),
+                            Sum(Float(0.8), Mul(Sub(Zero, Beat), Float(0.1))),
+                        ),
+                    ),
+                    point1: UnitVec(Mul(GameTime, Float(0.3))),
+                    point2: UnitVec(Sum(Mul(GameTime, Float(0.3)), PI)),
+                    thickness: Float(1.4),
+                    alpha: Float(1.0),
+                    colors: [State(Color), Hex("101010ff")],
+                    parts: [Float(0.5), Float(0.51)],
+                ),
+                children: [],
+                mapping: {Rotation: Sin(Sum(Mul(GameTime, Float(0.2)), Mul(Index, Float(0.13))))},
+                count: 4,
+            ),
+            state: (history: {}, birth: 0.0),
+            statuses: [("Thorns", 5)],
         ),
     ],
 )

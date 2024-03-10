@@ -8,7 +8,6 @@
                 atk: 1,
                 houses: "Mages",
                 trigger: Fire(trigger: TurnEnd, target: RandomEnemy, effect: UseAbility("Magic Missile")),
-
             ),
             (
                 name: "Wizard",
@@ -16,7 +15,6 @@
                 atk: 1,
                 houses: "Mages",
                 trigger: Fire(trigger: TurnEnd, target: RandomEnemy, effect: UseAbility("Magic Missile")),
-
             ),
             (
                 name: "Wizard",
@@ -24,7 +22,6 @@
                 atk: 1,
                 houses: "Mages",
                 trigger: Fire(trigger: TurnEnd, target: RandomEnemy, effect: UseAbility("Magic Missile")),
-
             ),
             (
                 name: "Wizard",
@@ -32,7 +29,6 @@
                 atk: 1,
                 houses: "Mages",
                 trigger: Fire(trigger: TurnEnd, target: RandomEnemy, effect: UseAbility("Magic Missile")),
-
             ),
         ],
     ),
@@ -45,7 +41,6 @@
                 atk: 1,
                 houses: "Mages",
                 trigger: Fire(trigger: TurnEnd, target: RandomEnemy, effect: UseAbility("Magic Missile")),
-
             ),
             (
                 name: "Wizard",
@@ -53,7 +48,6 @@
                 atk: 1,
                 houses: "Mages",
                 trigger: Fire(trigger: TurnEnd, target: RandomEnemy, effect: UseAbility("Magic Missile")),
-
             ),
         ],
     ),

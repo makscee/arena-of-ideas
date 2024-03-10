@@ -14,7 +14,6 @@
             size: Vec2E(Float(0.5)),
             thickness: Float(2.0),
             alpha: Float(1.0),
-            
         ),
         children: [],
         mapping: {

@@ -248,6 +248,7 @@ impl HeroEditorPlugin {
                                     }
                                 }
                             });
+                        ui.set_enabled(!status.is_empty());
                         if ui.button("Add Status").clicked() {
                             if let Some((i, _)) =
                                 unit.statuses.iter().find_position(|(s, _)| status.eq(s))
@@ -305,6 +306,9 @@ impl HeroEditorPlugin {
                                 TextEdit::singleline(description)
                                     .desired_width(ui.available_width().min(200.0))
                                     .ui(ui);
+                                if ui.button("reset").clicked() {
+                                    *description = DEFAULT_UNIT_DESCRIPTION.to_owned();
+                                }
                             });
 
                             let context = &Context::from_owner(entity, world);

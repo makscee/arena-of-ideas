@@ -50,7 +50,6 @@
                     ),
                     thickness: Float(1.0),
                     alpha: Float(1.0),
-                    
                 ),
                 children: [],
                 mapping: {},

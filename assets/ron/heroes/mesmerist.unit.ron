@@ -14,7 +14,6 @@
             size: Vec2E(Mul(Index, Mul(Float(0.1), Abs(Sin(Sum(GameTime, Index)))))),
             thickness: Float(1.0),
             alpha: Float(1.0),
-            
         ),
         children: [],
         mapping: {},

@@ -502,6 +502,7 @@ impl Representation {
             let entity = world.spawn_empty().set_parent(entity).id();
             self.material.unpack(entity, world);
             VarState::new_with(VarName::Index, VarValue::Int(i as i32)).attach(entity, world);
+            world.get_mut::<Transform>(entity).unwrap().translation.z += 0.01 * i as f32;
             self.material_entities.push(entity);
         }
         self.unpack_children(world);

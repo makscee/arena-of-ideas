@@ -30,8 +30,10 @@ pub struct PackedUnit {
     pub statuses: Vec<(String, i32)>,
 }
 
+pub const DEFAULT_UNIT_DESCRIPTION: &str = "%trigger → %effect on %target";
+
 fn default_description() -> String {
-    "%trigger → %effect on %target".to_owned()
+    DEFAULT_UNIT_DESCRIPTION.to_owned()
 }
 fn default_houses() -> String {
     "Default".to_owned()
