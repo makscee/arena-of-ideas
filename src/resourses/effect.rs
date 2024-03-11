@@ -178,9 +178,10 @@ impl Effect {
                         .get_faction()?;
                     let parent =
                         PackedTeam::find_entity(faction, world).context("Team not found")?;
-                    unit.unpack(parent, None, world);
+                    let entity = unit.unpack(parent, None, world);
                     UnitPlugin::fill_slot_gaps(faction, world);
                     UnitPlugin::translate_to_slots(world);
+                    Event::Summon(entity).send_with_context(context.clone(), world);
                 }
             }
             Effect::AddStatus(status) => {

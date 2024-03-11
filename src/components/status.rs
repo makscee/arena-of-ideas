@@ -107,7 +107,7 @@ impl Status {
         for entity in Self::collect_unit_statuses(unit, world) {
             let mut state = VarState::get_mut(entity, world);
             if state.get_int(VarName::Charges).is_ok_and(|x| x > 0) {
-                state.insert_simple(VarName::Index, VarValue::Int(ind), t);
+                state.insert_simple(VarName::StatusIndex, VarValue::Int(ind), t);
                 ind += 1;
             }
         }

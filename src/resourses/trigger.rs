@@ -47,6 +47,7 @@ pub enum FireTrigger {
     AfterStrike,
     AllyDeath,
     AnyDeath,
+    AllySummon,
     BeforeDeath,
     AfterKill,
 }
@@ -63,10 +64,15 @@ impl FireTrigger {
             FireTrigger::TurnEnd => matches!(event, Event::TurnEnd { .. }),
             FireTrigger::BeforeStrike => matches!(event, Event::BeforeStrike { .. }),
             FireTrigger::AfterStrike => matches!(event, Event::AfterStrike { .. }),
-            FireTrigger::AnyDeath => matches!(event, Event::Death { .. }),
             FireTrigger::AfterKill => matches!(event, Event::Kill { .. }),
+            FireTrigger::AnyDeath => matches!(event, Event::Death { .. }),
             FireTrigger::AllyDeath => match event {
                 Event::Death(dead) => UnitPlugin::get_faction(*dead, world)
+                    .eq(&UnitPlugin::get_faction(context.owner(), world)),
+                _ => false,
+            },
+            FireTrigger::AllySummon => match event {
+                Event::Summon(e) => UnitPlugin::get_faction(*e, world)
                     .eq(&UnitPlugin::get_faction(context.owner(), world)),
                 _ => false,
             },
@@ -106,24 +112,6 @@ impl DeltaTrigger {
             DeltaTrigger::IncomingDamage => matches!(event, Event::IncomingDamage { .. }),
             DeltaTrigger::Var(..) => false,
         }
-    }
-
-    fn show_editor(&mut self, name: String, ui: &mut Ui) {
-        ui.horizontal(|ui| {
-            ComboBox::from_id_source(&name)
-                .selected_text(self.to_string())
-                .width(150.0)
-                .show_ui(ui, |ui| {
-                    for option in DeltaTrigger::iter() {
-                        let text = option.to_string();
-                        ui.selectable_value(self, option, text).changed();
-                    }
-                });
-            match self {
-                DeltaTrigger::Var(var) => var.show_editor(*var, ui),
-                DeltaTrigger::IncomingDamage => {}
-            }
-        });
     }
 }
 
@@ -175,6 +163,7 @@ impl Trigger {
                     | FireTrigger::AfterStrike
                     | FireTrigger::AllyDeath
                     | FireTrigger::AnyDeath
+                    | FireTrigger::AllySummon
                     | FireTrigger::BeforeDeath
                     | FireTrigger::AfterKill
                     | FireTrigger::AfterIncomingDamage

@@ -1,3 +1,6 @@
 (
-    material: Shape(shape: Circle, size: Vec2E(Sum(Float(1.25), Mul(IntFloat(State(Index)), Float(0.1))))),
+    material: Shape(
+        shape: Circle,
+        size: Vec2E(Sum(Float(1.25), Mul(IntFloat(State(StatusIndex)), Float(0.1)))),
+    ),
 )

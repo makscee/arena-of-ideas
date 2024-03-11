@@ -61,6 +61,7 @@ pub enum VarName {
     Count,
     Alpha,
     Index,
+    StatusIndex,
     Stacks,
     Level,
     Id,

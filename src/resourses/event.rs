@@ -31,6 +31,7 @@ pub enum Event {
         owner: Entity,
         target: Entity,
     },
+    Summon(Entity),
 }
 
 impl Event {
@@ -42,11 +43,15 @@ impl Event {
                 context.set_var(VarName::Value, VarValue::Int(*value));
                 [*owner].into()
             }
-            Event::BattleStart | Event::TurnStart | Event::TurnEnd | Event::Death(..) => {
+            Event::BattleStart
+            | Event::TurnStart
+            | Event::TurnEnd
+            | Event::Death(..)
+            | Event::Summon(..) => {
                 let mut units = UnitPlugin::collect_all(world);
                 units.sort_by_key(|e| VarState::get(*e, world).get_int(VarName::Slot).unwrap());
                 match self {
-                    Event::Death(e) => {
+                    Event::Death(e) | Event::Summon(e) => {
                         context.set_target(e, world);
                     }
                     _ => {}
