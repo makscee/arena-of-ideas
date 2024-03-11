@@ -767,7 +767,6 @@ impl EditorNodeGenerator for Expression {
         match self {
             Expression::Zero
             | Expression::GameTime
-            | Expression::RandomFloat
             | Expression::PI
             | Expression::Age
             | Expression::SlotPosition
@@ -818,6 +817,7 @@ impl EditorNodeGenerator for Expression {
             | Expression::FilterMaxEnemy(x)
             | Expression::FindUnit(x)
             | Expression::UnitCount(x)
+            | Expression::RandomFloat(x)
             | Expression::StatusCharges(x) => show_node(
                 x.as_mut(),
                 format!("{path}:x"),

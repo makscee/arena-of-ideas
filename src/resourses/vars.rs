@@ -1,6 +1,7 @@
 use std::{cmp::Ordering, fmt::Display};
 
 use anyhow::anyhow;
+use bevy_egui::egui::epaint::util::FloatOrd;
 use strum_macros::{Display, EnumString};
 
 use super::*;
@@ -95,6 +96,7 @@ impl VarValue {
     pub fn get_int(&self) -> Result<i32> {
         match self {
             VarValue::Int(value) => Ok(*value),
+            VarValue::Float(value) => Ok(*value as i32),
             VarValue::Bool(value) => Ok(*value as i32),
             VarValue::None => Ok(0),
             _ => Err(anyhow!("Int not supported by {self:?}")),
@@ -252,6 +254,34 @@ impl Display for VarValue {
             VarValue::Color(v) => write!(f, "{v:?}"),
             VarValue::None => write!(f, "none"),
         }
+    }
+}
+
+impl std::hash::Hash for VarValue {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        match self {
+            VarValue::None => core::mem::discriminant(self).hash(state),
+            VarValue::Float(v) => (*v).ord().hash(state),
+            VarValue::Int(v) => (*v).hash(state),
+            VarValue::Vec2(Vec2 { x, y }) => {
+                (*x).ord().hash(state);
+                (*y).ord().hash(state);
+            }
+            VarValue::Bool(v) => (*v).hash(state),
+            VarValue::String(v) => (*v).hash(state),
+            VarValue::Faction(v) => (*v).hash(state),
+            VarValue::Entity(v) => (*v).to_bits().hash(state),
+            VarValue::EntityList(v) => {
+                for v in v {
+                    (*v).to_bits().hash(state)
+                }
+            }
+            VarValue::Color(v) => {
+                v.r().ord().hash(state);
+                v.g().ord().hash(state);
+                v.b().ord().hash(state);
+            }
+        };
     }
 }
 

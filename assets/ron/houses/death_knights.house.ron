@@ -1,0 +1,82 @@
+#![enable(implicit_some)]
+(
+    name: "Death Knights",
+    color: ("#658D1B"),
+    statuses: [
+        (
+            name: "Plague",
+            description: "Take {Charges} DMG every turn, [Summon Skeleton] after death",
+            trigger: List(
+                [
+                    Fire(trigger: TurnEnd, effect: WithTarget(Owner, Damage(Context(Charges)))),
+                    Fire(trigger: BeforeDeath, effect: UseAbility("Summon Skeleton")),
+                ],
+            ),
+        ),
+    ],
+    abilities: [
+        (
+            name: "Plague",
+            description: "Target takes 1 DMG every turn, [Summon Skeleton] after death",
+            effect: List([AddStatus("Plague"), Vfx("apply_status")]),
+        ),
+        (
+            name: "Summon Skeleton",
+            description: "Summon enemy {1}/{4}",
+            effect: WithVar(Faction, OppositeFaction, Summon("Skeleton")),
+        ),
+    ],
+    summons: [
+        (
+            name: "Skeleton",
+            hp: 4,
+            atk: 1,
+            stacks: 1,
+            level: 1,
+            houses: "Death Knights",
+            description: "",
+            trigger: Fire(trigger: Noop, target: Owner, effect: Noop, period: 0),
+            representation: (
+                material: Shape(
+                    shape: Rectangle,
+                    fill: Opaque,
+                    fill_color: Solid,
+                    size: Vec2(0.05, 1.0),
+                    point1: Vec2(1.0, 1.0),
+                    point2: Vec2(1.0, 1.0),
+                    thickness: Float(1.0),
+                    alpha: Float(1.0),
+                    colors: [State(Color)],
+                    parts: [Float(0.0)],
+                ),
+                children: [],
+                mapping: {
+                    Offset: Mul(
+                        UnitVec(
+                            Mul(
+                                Sub(
+                                    RandomFloat(Sum(Index, Sum(Int(200), ToInt(GameTime)))),
+                                    Float(0.5),
+                                ),
+                                Mul(PI, Float(2.0)),
+                            ),
+                        ),
+                        Float(0.5),
+                    ),
+                    Rotation: Mul(
+                        RandomFloat(
+                            Sum(
+                                Mul(Index, Int(10)),
+                                Sum(Int(29), ToInt(Sum(GameTime, Mul(Index, Float(0.1))))),
+                            ),
+                        ),
+                        Mul(PI, Float(2.0)),
+                    ),
+                },
+                count: 12,
+            ),
+            state: (history: {}, birth: 0.0),
+            statuses: [],
+        ),
+    ],
+)

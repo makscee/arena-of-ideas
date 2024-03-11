@@ -4,7 +4,8 @@ use rand::{
     Rng, SeedableRng,
 };
 use rand_chacha::ChaCha8Rng;
-use std::f32::consts::PI;
+use std::hash::{Hash, Hasher};
+use std::{collections::hash_map::DefaultHasher, f32::consts::PI};
 
 use super::*;
 
@@ -13,7 +14,6 @@ pub enum Expression {
     #[default]
     Zero,
     GameTime,
-    RandomFloat,
     PI,
     Age,
     SlotPosition,
@@ -69,6 +69,7 @@ pub enum Expression {
     FindUnit(Box<Expression>),
     UnitCount(Box<Expression>),
     ToInt(Box<Expression>),
+    RandomFloat(Box<Expression>),
 
     Vec2EE(Box<Expression>, Box<Expression>),
     Sum(Box<Expression>, Box<Expression>),
@@ -91,10 +92,6 @@ impl Expression {
     pub fn get_value(&self, context: &Context, world: &mut World) -> Result<VarValue> {
         match self {
             Expression::Zero => Ok(VarValue::Int(0)),
-            Expression::RandomFloat => {
-                let mut rng = ChaCha8Rng::seed_from_u64(context.owner().to_bits());
-                Ok(VarValue::Float(rng.gen_range(0.0..1.0)))
-            }
             Expression::Float(x) => Ok(VarValue::Float(*x)),
             Expression::Int(x) => Ok(VarValue::Int(*x)),
             Expression::Bool(x) => Ok(VarValue::Bool(*x)),
@@ -133,6 +130,13 @@ impl Expression {
             Expression::Even(x) => {
                 let x = x.get_int(context, world)?;
                 Ok(VarValue::Bool(x % 2 == 0))
+            }
+            Expression::RandomFloat(x) => {
+                let x = x.get_value(context, world)?;
+                let mut hasher = DefaultHasher::new();
+                x.hash(&mut hasher);
+                let mut rng = ChaCha8Rng::seed_from_u64(hasher.finish());
+                Ok(VarValue::Float(rng.gen_range(0.0..1.0)))
             }
             Expression::GameTime => Ok(VarValue::Float(GameTimer::get().play_head())),
             Expression::PI => Ok(VarValue::Float(PI)),
@@ -418,7 +422,6 @@ impl Expression {
         match self {
             Self::Zero
             | Self::GameTime
-            | Self::RandomFloat
             | Self::PI
             | Self::Owner
             | Self::Caster
@@ -469,6 +472,7 @@ impl Expression {
             | Self::FilterMaxEnemy(x)
             | Self::FindUnit(x)
             | Self::UnitCount(x)
+            | Self::RandomFloat(x)
             | Self::Vec2E(x) => vec![x],
 
             Self::Vec2EE(a, b)
@@ -530,7 +534,6 @@ impl Expression {
         match self {
             Expression::Zero
             | Expression::GameTime
-            | Expression::RandomFloat
             | Expression::PI
             | Expression::Owner
             | Expression::Caster
@@ -582,6 +585,7 @@ impl Expression {
             | Expression::FilterMaxEnemy(_)
             | Expression::FindUnit(_)
             | Expression::UnitCount(_)
+            | Expression::RandomFloat(_)
             | Expression::StatusCharges(_) => hex_color!("#448AFF"),
             Expression::Vec2EE(_, _)
             | Expression::Sum(_, _)
@@ -604,7 +608,6 @@ impl Expression {
         match self {
             Expression::Zero
             | Expression::GameTime
-            | Expression::RandomFloat
             | Expression::PI
             | Expression::Age
             | Expression::SlotPosition
@@ -655,6 +658,7 @@ impl Expression {
             | Expression::FilterMaxEnemy(v)
             | Expression::FindUnit(v)
             | Expression::UnitCount(v)
+            | Expression::RandomFloat(v)
             | Expression::StatusCharges(v) => format!(
                 "{} ({})",
                 self.to_string().to_case(Case::Lower),

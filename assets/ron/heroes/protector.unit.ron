@@ -16,7 +16,12 @@
         children: [],
         mapping: {
             Offset: Mul(
-                UnitVec(Sum(IntFloat(State(Index)), Sum(GameTime, Sin(Mul(RandomFloat, GameTime))))),
+                UnitVec(
+                    Sum(
+                        IntFloat(State(Index)),
+                        Sum(GameTime, Sin(Mul(RandomFloat(Owner), GameTime))),
+                    ),
+                ),
                 Mul(Sin(Mul(GameTime, Float(0.3))), Float(0.19)),
             ),
         },

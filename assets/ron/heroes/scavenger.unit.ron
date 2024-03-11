@@ -9,12 +9,14 @@
         material: Shape(
             shape: Rectangle,
             fill: Line,
-            size: Vec2E(Sum(Float(0.4), Mul(RandomFloat, Float(1.1)))),
-            thickness: Sum(Float(0.8), Mul(RandomFloat, Float(3.0))),
+            size: Vec2E(Sum(Float(0.4), Mul(RandomFloat(Owner), Float(1.1)))),
+            thickness: Sum(Float(0.8), Mul(RandomFloat(Owner), Float(3.0))),
             alpha: Float(0.2),
         ),
         children: [],
-        mapping: {Rotation: Sum(IntFloat(State(Index)), Sin(Sum(GameTime, Mul(RandomFloat, Float(10.0)))))},
+        mapping: {
+            Rotation: Sum(IntFloat(State(Index)), Sin(Sum(GameTime, Mul(RandomFloat(Owner), Float(10.0))))),
+        },
         count: 10,
     ),
 )
