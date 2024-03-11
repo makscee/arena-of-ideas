@@ -1,0 +1,34 @@
+(
+    name: "Injector",
+    hp: 6,
+    atk: 1,
+    stacks: 1,
+    level: 1,
+    houses: "Death Knights",
+    description: "%trigger → %effect on %target",
+    trigger: Fire(trigger: AfterDamageDealt, target: Target, effect: UseAbility("Plague"), period: 0),
+    representation: (
+        material: Shape(
+            shape: Circle,
+            fill: Line,
+            fill_color: Solid,
+            size: Vec2E(Sub(Float(0.19), Mul(Index, Float(0.02)))),
+            point1: Vec2(1.0, 1.0),
+            point2: Vec2(1.0, 1.0),
+            thickness: Float(1.0),
+            alpha: Float(1.0),
+            colors: [State(Color)],
+            parts: [Float(0.0)],
+        ),
+        children: [],
+        mapping: {
+            Offset: Vec2EE(
+                Sum(Mul(Index, Float(0.21)), Float(-0.65)),
+                Mul(Sin(Sum(GameTime, Index)), Float(0.04)),
+            ),
+        },
+        count: 8,
+    ),
+    state: (history: {}, birth: 0.0),
+    statuses: [],
+)
