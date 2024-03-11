@@ -1,7 +1,7 @@
 #![enable(implicit_some)]
 (
     name: "Warriors",
-    color: ("#8D6E63"),
+    color: ("#B86125"),
     statuses: [
         (
             name: "Strength",
