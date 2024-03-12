@@ -13,6 +13,11 @@
                 ],
             ),
         ),
+        (
+            name: "Decay",
+            description: "-{Charges} HP",
+            trigger: Change(trigger: Var(Hp), expr: Sub(Zero, Context(Charges))),
+        ),
     ],
     abilities: [
         (
@@ -24,6 +29,11 @@
             name: "Summon Skeleton",
             description: "Summon enemy {1}/{4}",
             effect: WithVar(Faction, OppositeFaction, Summon("Skeleton")),
+        ),
+        (
+            name: "Decay",
+            description: "Give -1 HP",
+            effect: List([AddStatus("Decay"), Vfx("apply_status")]),
         ),
     ],
     summons: [
