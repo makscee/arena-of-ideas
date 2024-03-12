@@ -138,7 +138,7 @@ impl Effect {
                                 .get_var(VarName::Level, world)
                                 .map(|v| v.get_int().unwrap())
                                 .unwrap_or(1)
-                                * *mult,
+                                * (*mult).max(1),
                         ),
                     );
 

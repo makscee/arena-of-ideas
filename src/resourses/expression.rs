@@ -15,6 +15,7 @@ pub enum Expression {
     Zero,
     GameTime,
     PI,
+    PI2,
     Age,
     SlotPosition,
     OwnerFaction,
@@ -140,6 +141,7 @@ impl Expression {
             }
             Expression::GameTime => Ok(VarValue::Float(GameTimer::get().play_head())),
             Expression::PI => Ok(VarValue::Float(PI)),
+            Expression::PI2 => Ok(VarValue::Float(PI * 2.0)),
             Expression::Sum(a, b) => {
                 VarValue::sum(&a.get_value(context, world)?, &b.get_value(context, world)?)
             }
@@ -423,6 +425,7 @@ impl Expression {
             Self::Zero
             | Self::GameTime
             | Self::PI
+            | Self::PI2
             | Self::Owner
             | Self::Caster
             | Self::Target
@@ -535,6 +538,7 @@ impl Expression {
             Expression::Zero
             | Expression::GameTime
             | Expression::PI
+            | Expression::PI2
             | Expression::Owner
             | Expression::Caster
             | Expression::Target
@@ -609,6 +613,7 @@ impl Expression {
             Expression::Zero
             | Expression::GameTime
             | Expression::PI
+            | Expression::PI2
             | Expression::Age
             | Expression::SlotPosition
             | Expression::OwnerFaction

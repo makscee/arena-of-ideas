@@ -768,6 +768,7 @@ impl EditorNodeGenerator for Expression {
             Expression::Zero
             | Expression::GameTime
             | Expression::PI
+            | Expression::PI2
             | Expression::Age
             | Expression::SlotPosition
             | Expression::OwnerFaction
