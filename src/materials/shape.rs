@@ -15,11 +15,11 @@ pub struct ShapeMaterial {
     #[uniform(0)]
     pub alpha: f32,
     #[uniform(0)]
-    pub colors: [Vec4; 10],
-    #[uniform(0)]
     pub point1: Vec2,
     #[uniform(0)]
     pub point2: Vec2,
+    #[uniform(0)]
+    pub colors: [Color; 10],
     pub shape: Shape,
     pub fill: Fill,
     pub fill_color: FillColor,

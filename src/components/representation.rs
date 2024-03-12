@@ -245,7 +245,7 @@ impl RepresentationMaterial {
                 let mut materials = world.get_resource_mut::<Assets<ShapeMaterial>>().unwrap();
                 if let Some(mat) = materials.get_mut(&handle) {
                     for (i, color) in colors.into_iter().enumerate() {
-                        mat.colors[i] = color;
+                        mat.colors[i] = Color::from(color);
                     }
                     mat.thickness = thickness;
                     mat.alpha = alpha;
@@ -502,7 +502,7 @@ impl Representation {
             let entity = world.spawn_empty().set_parent(entity).id();
             self.material.unpack(entity, world);
             VarState::new_with(VarName::Index, VarValue::Int(i as i32)).attach(entity, world);
-            world.get_mut::<Transform>(entity).unwrap().translation.z += 0.01 * i as f32;
+            world.get_mut::<Transform>(entity).unwrap().translation.z += 0.001 * i as f32;
             self.material_entities.push(entity);
         }
         self.unpack_children(world);
@@ -510,8 +510,10 @@ impl Representation {
     }
     fn unpack_children(&mut self, world: &mut World) {
         let parent = *self.material_entities.first().unwrap();
-        for child in self.children.iter_mut() {
-            child.unpack_materials(world.spawn_empty().set_parent(parent).id(), world);
+        for (i, child) in self.children.iter_mut().enumerate() {
+            let entity = world.spawn_empty().set_parent(parent).id();
+            child.unpack_materials(entity, world);
+            world.get_mut::<Transform>(entity).unwrap().translation.z += (i + 1) as f32;
         }
     }
 

@@ -6,9 +6,9 @@ struct ShapeMaterial {
     size: vec2<f32>,
     thickness: f32,
     alpha: f32,
-    colors: array<vec4<f32>, 10>,
     point1: vec2<f32>,
     point2: vec2<f32>,
+    colors: array<vec4<f32>, 10>,
 };
 
 @group(1) @binding(0)
@@ -43,8 +43,7 @@ fn fragment(in: MeshVertexOutput) -> @location(0) vec4<f32> {
 #ifdef LINE
     v = min(v, smoothstep(0.0, AA, -sdf)) * v;
     v = max(v, smoothstep(AA, 0.0, -sdf - thickness));
-#endif
-#ifdef OPAQUE
+#else ifdef OPAQUE
     v = f32(sdf < 0.0);
 #endif
     v = max(v, smoothstep(thickness + GLOW, thickness, -sdf) * 0.1);

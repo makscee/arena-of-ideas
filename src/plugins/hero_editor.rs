@@ -1,7 +1,6 @@
 use std::fmt::Display;
 
 use bevy_egui::egui::{DragValue, Frame, Key, ScrollArea, Sense, Shape, SidePanel};
-use hex::encode;
 use ron::ser::{to_string_pretty, PrettyConfig};
 use serde::de::DeserializeOwned;
 
@@ -509,7 +508,7 @@ impl HeroEditorData {
     }
 }
 
-fn show_value(value: &Result<VarValue>, ui: &mut Ui) {
+pub fn show_value(value: &Result<VarValue>, ui: &mut Ui) {
     match &value {
         Ok(v) => v.to_string().add_color(light_gray()),
 
@@ -534,7 +533,7 @@ pub fn show_tree(
     });
 }
 
-fn show_node(
+pub fn show_node(
     source: &mut impl EditorNodeGenerator,
     path: String,
     connect_pos: Option<Pos2>,
@@ -693,264 +692,6 @@ pub trait EditorNodeGenerator: Display + Sized + Serialize + DeserializeOwned {
     fn show_extra(&mut self, path: &str, context: &Context, world: &mut World, ui: &mut Ui);
     fn show_replace_buttons(&mut self, lookup: &str, submit: bool, ui: &mut Ui) -> bool;
     fn wrap(&mut self);
-}
-
-impl EditorNodeGenerator for Expression {
-    fn node_color(&self) -> Color32 {
-        self.editor_color()
-    }
-
-    fn show_extra(&mut self, path: &str, context: &Context, world: &mut World, ui: &mut Ui) {
-        let value = self.get_value(context, world);
-        match self {
-            Expression::Value(v) => {
-                show_value(&Ok(v.clone()), ui);
-            }
-            Expression::Float(x) => {
-                ui.add(DragValue::new(x).speed(0.1));
-            }
-            Expression::Int(x) => {
-                ui.add(DragValue::new(x));
-            }
-            Expression::Bool(x) => {
-                ui.checkbox(x, "");
-            }
-            Expression::String(x) => {
-                ui.text_edit_singleline(x);
-            }
-            Expression::Hex(x) => {
-                let c = Color::hex(&x).unwrap_or_default().as_rgba_u8();
-                let mut c = Color32::from_rgb(c[0], c[1], c[2]);
-                if ui.color_edit_button_srgba(&mut c).changed() {
-                    *x = encode(c.to_array());
-                }
-            }
-            Expression::Faction(x) => {
-                ComboBox::from_id_source(&path)
-                    .selected_text(x.to_string())
-                    .show_ui(ui, |ui| {
-                        for option in Faction::iter() {
-                            let text = option.to_string();
-                            ui.selectable_value(x, option, text);
-                        }
-                    });
-            }
-            Expression::State(x)
-            | Expression::TargetState(x)
-            | Expression::TargetStateLast(x)
-            | Expression::Context(x)
-            | Expression::StateLast(x) => {
-                x.show_editor_with_context(context, path, world, ui);
-            }
-            Expression::WithVar(x, ..) => {
-                x.show_editor_with_context(context, path, world, ui);
-                ui.vertical(|ui| {
-                    show_value(&value, ui);
-                });
-            }
-            Expression::Vec2(x, y) => {
-                ui.add(DragValue::new(x).speed(0.1));
-                ui.add(DragValue::new(y).speed(0.1));
-            }
-            _ => show_value(&value, ui),
-        };
-    }
-
-    fn show_children(
-        &mut self,
-        path: &str,
-        connect_pos: Option<Pos2>,
-        context: &Context,
-        ui: &mut Ui,
-        world: &mut World,
-    ) {
-        match self {
-            Expression::Zero
-            | Expression::GameTime
-            | Expression::PI
-            | Expression::PI2
-            | Expression::Age
-            | Expression::SlotPosition
-            | Expression::OwnerFaction
-            | Expression::OppositeFaction
-            | Expression::Beat
-            | Expression::Owner
-            | Expression::Caster
-            | Expression::Target
-            | Expression::RandomUnit
-            | Expression::RandomAdjacentUnit
-            | Expression::RandomAlly
-            | Expression::RandomEnemy
-            | Expression::AllyUnits
-            | Expression::EnemyUnits
-            | Expression::AllUnits
-            | Expression::AdjacentUnits
-            | Expression::Index
-            | Expression::Float(_)
-            | Expression::Int(_)
-            | Expression::Bool(_)
-            | Expression::String(_)
-            | Expression::Hex(_)
-            | Expression::Faction(_)
-            | Expression::State(_)
-            | Expression::StateLast(_)
-            | Expression::TargetState(_)
-            | Expression::TargetStateLast(_)
-            | Expression::Context(_)
-            | Expression::Value(_)
-            | Expression::Vec2(_, _) => default(),
-            Expression::Sin(x)
-            | Expression::Cos(x)
-            | Expression::Sign(x)
-            | Expression::Fract(x)
-            | Expression::Floor(x)
-            | Expression::UnitVec(x)
-            | Expression::Even(x)
-            | Expression::Abs(x)
-            | Expression::Vec2E(x)
-            | Expression::StringInt(x)
-            | Expression::StringFloat(x)
-            | Expression::StringVec(x)
-            | Expression::IntFloat(x)
-            | Expression::ToInt(x)
-            | Expression::SlotUnit(x)
-            | Expression::FactionCount(x)
-            | Expression::FilterMaxEnemy(x)
-            | Expression::FindUnit(x)
-            | Expression::UnitCount(x)
-            | Expression::RandomFloat(x)
-            | Expression::StatusCharges(x) => show_node(
-                x.as_mut(),
-                format!("{path}:x"),
-                connect_pos,
-                context,
-                ui,
-                world,
-            ),
-
-            Expression::Sum(a, b)
-            | Expression::Sub(a, b)
-            | Expression::Mul(a, b)
-            | Expression::Div(a, b)
-            | Expression::GreaterThen(a, b)
-            | Expression::LessThen(a, b)
-            | Expression::Min(a, b)
-            | Expression::Max(a, b)
-            | Expression::Equals(a, b)
-            | Expression::And(a, b)
-            | Expression::Vec2EE(a, b)
-            | Expression::Or(a, b) => {
-                ui.vertical(|ui| {
-                    ui.horizontal(|ui| {
-                        show_node(
-                            a.as_mut(),
-                            format!("{path}:a"),
-                            connect_pos,
-                            context,
-                            ui,
-                            world,
-                        );
-                    });
-                    ui.horizontal(|ui| {
-                        show_node(
-                            b.as_mut(),
-                            format!("{path}:b"),
-                            connect_pos,
-                            context,
-                            ui,
-                            world,
-                        );
-                    });
-                });
-            }
-            Expression::If(i, t, e) => {
-                ui.vertical(|ui| {
-                    ui.horizontal(|ui| {
-                        show_node(
-                            i.as_mut(),
-                            format!("{path}:i"),
-                            connect_pos,
-                            context,
-                            ui,
-                            world,
-                        );
-                    });
-                    ui.horizontal(|ui| {
-                        show_node(
-                            t.as_mut(),
-                            format!("{path}:t"),
-                            connect_pos,
-                            context,
-                            ui,
-                            world,
-                        );
-                    });
-                    ui.horizontal(|ui| {
-                        show_node(
-                            e.as_mut(),
-                            format!("{path}:e"),
-                            connect_pos,
-                            context,
-                            ui,
-                            world,
-                        );
-                    });
-                });
-            }
-            Expression::WithVar(_, val, e) => {
-                ui.vertical(|ui| {
-                    ui.horizontal(|ui| {
-                        show_node(
-                            val.as_mut(),
-                            format!("{path}:val"),
-                            connect_pos,
-                            context,
-                            ui,
-                            world,
-                        );
-                    });
-                    ui.horizontal(|ui| {
-                        show_node(
-                            e.as_mut(),
-                            format!("{path}:e"),
-                            connect_pos,
-                            context,
-                            ui,
-                            world,
-                        );
-                    });
-                });
-            }
-        };
-    }
-
-    fn show_replace_buttons(&mut self, lookup: &str, submit: bool, ui: &mut Ui) -> bool {
-        for (e, _) in Expression::iter()
-            .filter_map(|e| {
-                let s = e.to_string().to_lowercase();
-                match s.contains(lookup) {
-                    true => Some((e, s)),
-                    false => None,
-                }
-            })
-            .sorted_by_key(|(_, s)| !s.starts_with(lookup))
-        {
-            let btn = e.to_string().add_color(e.node_color()).rich_text(ui);
-            let btn = ui.button(btn);
-            if btn.clicked() || submit {
-                btn.request_focus();
-            }
-            if btn.gained_focus() {
-                *self = e.set_inner(self.clone());
-                return true;
-            }
-        }
-        false
-    }
-
-    fn wrap(&mut self) {
-        *self = Expression::Abs(Box::new(self.clone()))
-    }
 }
 
 impl EditorNodeGenerator for Effect {

@@ -1,0 +1,24 @@
+#![enable(implicit_some)]
+(
+    name: "Vampires",
+    color: ("#BA002F"),
+    statuses: [
+        (
+            name: "Siphoned Out",
+            description: "-{Charges} Hp",
+            trigger: Change(trigger: Var(Hp), expr: Sub(Int(0), Context(Charges))),
+        ),
+        (
+            name: "Siphon Bonus",
+            description: "+{Charges} Hp",
+            trigger: Change(trigger: Var(Hp), expr: Context(Charges)),
+        ),
+    ],
+    abilities: [
+        (
+            name: "Siphon",
+            description: "Drain 1 HP from target",
+            effect: List([AddStatus("Siphoned Out"), WithTarget(Owner, AddStatus("Siphon Bonus")), Vfx("apply_status")]),
+        ),
+    ],
+)

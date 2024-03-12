@@ -67,7 +67,7 @@ impl PackedUnit {
                 .clone()
                 .unpack(world.spawn_empty().set_parent(entity).id(), world);
             let mut emut = world.entity_mut(entity);
-            emut.get_mut::<Transform>().unwrap().translation.z -= 1.0;
+            emut.get_mut::<Transform>().unwrap().translation.z += 100.0;
             emut.insert(PickableBundle::default())
                 .insert(RaycastPickTarget::default())
                 .insert(On::<Pointer<Over>>::run(UnitPlugin::hover_unit))
