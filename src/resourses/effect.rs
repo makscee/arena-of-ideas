@@ -18,7 +18,7 @@ pub enum Effect {
     ListSpread(Vec<Box<Effect>>),
     WithVar(VarName, Expression, Box<Effect>),
     StateAddVar(VarName, Expression, Expression),
-    UseAbility(String),
+    UseAbility(String, i32),
     Summon(String),
     AddStatus(String),
     Vfx(String),
@@ -106,7 +106,7 @@ impl Effect {
                 debug!("Debug effect: {msg}");
             }
             Effect::Noop => {}
-            Effect::UseAbility(ability) => {
+            Effect::UseAbility(ability, mult) => {
                 let effect = Pools::get_ability(ability, world)
                     .with_context(|| format!("Ability not found {ability}"))?
                     .effect
@@ -130,14 +130,18 @@ impl Effect {
                         .clone()
                         .set_var(VarName::Color, VarValue::Color(color))
                         .take();
-                    if context.get_var(VarName::Charges, world).is_none() {
-                        context.set_var(
-                            VarName::Charges,
+
+                    context.set_var(
+                        VarName::Charges,
+                        VarValue::Int(
                             context
                                 .get_var(VarName::Level, world)
-                                .unwrap_or(VarValue::Int(1)),
-                        );
-                    }
+                                .map(|v| v.get_int().unwrap())
+                                .unwrap_or(1)
+                                * *mult,
+                        ),
+                    );
+
                     ActionPlugin::action_push_front(effect, context, world);
                 }
             }

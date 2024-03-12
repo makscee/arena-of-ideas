@@ -4,7 +4,7 @@
     hp: 2,
     atk: 3,
     houses: "Shifters",
-    trigger: Fire(trigger: BattleStart, target: RandomAdjacentUnit, effect: UseAbility("Copy")),
+    trigger: Fire(trigger: BattleStart, target: RandomAdjacentUnit, effect: UseAbility("Copy", 0)),
     representation: (
         material: Shape(
             shape: Circle,

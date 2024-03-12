@@ -9,7 +9,7 @@
             trigger: List(
                 [
                     Fire(trigger: TurnEnd, effect: WithTarget(Owner, Damage(Context(Charges)))),
-                    Fire(trigger: BeforeDeath, effect: UseAbility("Summon Skeleton")),
+                    Fire(trigger: BeforeDeath, effect: UseAbility("Summon Skeleton", 0)),
                 ],
             ),
         ),

@@ -6,7 +6,7 @@
     level: 1,
     houses: "Warriors",
     description: "%trigger → %effect on %target",
-    trigger: Fire(trigger: AllySummon, target: Target, effect: UseAbility("Strength"), period: 0),
+    trigger: Fire(trigger: AllySummon, target: Target, effect: UseAbility("Strength", 0), period: 0),
     representation: (
         material: Shape(
             shape: Rectangle,

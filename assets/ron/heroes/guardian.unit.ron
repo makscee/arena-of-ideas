@@ -9,7 +9,7 @@
     trigger: Fire(
         trigger: BattleStart,
         target: FindUnit(Equals(StatusCharges(String("Shield")), Zero)),
-        effect: UseAbility("Shield"),
+        effect: UseAbility("Shield", 0),
         period: 1,
     ),
     representation: (

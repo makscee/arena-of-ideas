@@ -9,7 +9,7 @@
     trigger: Fire(
         trigger: BeforeDeath,
         target: Owner,
-        effect: UseAbility("Summon Guardian Angel"),
+        effect: UseAbility("Summon Guardian Angel", 0),
         period: 0,
     ),
     representation: (

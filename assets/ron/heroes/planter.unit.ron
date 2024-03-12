@@ -6,7 +6,7 @@
     level: 1,
     houses: "Druids",
     description: "%trigger → %effect",
-    trigger: Fire(trigger: BattleStart, target: Owner, effect: UseAbility("Summon Treant"), period: 0),
+    trigger: Fire(trigger: BattleStart, target: Owner, effect: UseAbility("Summon Treant", 0), period: 0),
     representation: (
         material: Shape(
             shape: Circle,

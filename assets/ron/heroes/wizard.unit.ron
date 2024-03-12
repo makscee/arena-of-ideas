@@ -4,7 +4,7 @@
     hp: 3,
     atk: 1,
     houses: "Mages",
-    trigger: Fire(trigger: TurnEnd, target: RandomEnemy, effect: UseAbility("Magic Missile")),
+    trigger: Fire(trigger: TurnEnd, target: RandomEnemy, effect: UseAbility("Magic Missile", 0)),
     representation: (
         material: Shape(
             shape: Circle,

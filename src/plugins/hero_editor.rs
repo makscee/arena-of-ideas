@@ -1011,7 +1011,7 @@ impl EditorNodeGenerator for Effect {
                     });
                 });
             }
-            Effect::UseAbility(name) => {
+            Effect::UseAbility(name, mult) => {
                 ui.vertical(|ui| {
                     ComboBox::from_id_source(&path)
                         .selected_text(name.to_owned())
@@ -1021,6 +1021,7 @@ impl EditorNodeGenerator for Effect {
                                 ui.selectable_value(name, option.to_owned(), text);
                             }
                         });
+                    DragValue::new(mult).ui(ui);
                 });
             }
             Effect::Summon(name) => {
@@ -1103,13 +1104,13 @@ impl EditorNodeGenerator for Effect {
             Effect::Noop
             | Effect::Kill
             | Effect::FullCopy
-            | Effect::UseAbility(_)
-            | Effect::Summon(_)
-            | Effect::AddStatus(_)
-            | Effect::Vfx(_)
-            | Effect::SendEvent(_)
+            | Effect::UseAbility(..)
+            | Effect::Summon(..)
+            | Effect::AddStatus(..)
+            | Effect::Vfx(..)
+            | Effect::SendEvent(..)
             | Effect::RemoveLocalTrigger
-            | Effect::Debug(_) => {}
+            | Effect::Debug(..) => {}
 
             Effect::Text(e) => show_node(e, format!("{path}:e"), connect_pos, context, ui, world),
             Effect::Damage(e) => {

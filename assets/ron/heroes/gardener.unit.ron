@@ -6,7 +6,7 @@
     level: 1,
     houses: "Druids",
     description: "%trigger → %effect on front ally",
-    trigger: Fire(trigger: TurnEnd, target: SlotUnit(Int(1)), effect: UseAbility("Thorns"), period: 0),
+    trigger: Fire(trigger: TurnEnd, target: SlotUnit(Int(1)), effect: UseAbility("Thorns", 0), period: 0),
     representation: (
         material: Shape(
             shape: Rectangle,

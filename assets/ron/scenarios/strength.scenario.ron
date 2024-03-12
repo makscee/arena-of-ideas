@@ -6,7 +6,7 @@
                 hp: 1,
                 atk: 0,
                 name: "left",
-                trigger: Fire(trigger: BattleStart, effect: UseAbility("Strength")),
+                trigger: Fire(trigger: BattleStart, effect: UseAbility("Strength", 0)),
             ),
         ],
     ),

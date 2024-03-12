@@ -4,7 +4,7 @@
     hp: 1,
     atk: 1,
     houses: "Holy",
-    trigger: Fire(trigger: BattleStart, target: AllyUnits, effect: UseAbility("Blessing")),
+    trigger: Fire(trigger: BattleStart, target: AllyUnits, effect: UseAbility("Blessing", 0)),
     representation: (
         count: 4,
         material: Shape(

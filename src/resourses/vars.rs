@@ -26,13 +26,13 @@ use super::*;
 pub enum VarName {
     #[default]
     None,
+    Offset,
+    Rotation,
     Charges,
     Hp,
     Atk,
     Faction,
     Position,
-    Offset,
-    Rotation,
     Scale,
     Value,
     Size,

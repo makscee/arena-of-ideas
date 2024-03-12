@@ -6,7 +6,7 @@
     level: 1,
     houses: "Warlocks",
     description: "%trigger → %effect on %target",
-    trigger: Fire(trigger: BattleStart, target: SlotUnit(Int(1)), effect: UseAbility("Doom"), period: 0),
+    trigger: Fire(trigger: BattleStart, target: SlotUnit(Int(1)), effect: UseAbility("Doom", 0), period: 0),
     representation: (
         material: Shape(
             shape: Circle,

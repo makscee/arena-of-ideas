@@ -13,7 +13,7 @@
             [
                 If(
                     LessThen(ToInt(StateLast(Charges)), Int(3)),
-                    List([StateAddVar(Charges, Owner, Int(1)), UseAbility("Summon Treant")]),
+                    List([StateAddVar(Charges, Owner, Int(1)), UseAbility("Summon Treant", 0)]),
                     Noop,
                 ),
             ],

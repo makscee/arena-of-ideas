@@ -3,7 +3,7 @@
     left: (
         units: [
             (
-                trigger: Fire(trigger: BattleStart, target: AllUnits, effect: UseAbility("Amnesia")),
+                trigger: Fire(trigger: BattleStart, target: AllUnits, effect: UseAbility("Amnesia", 0)),
                 hp: 3,
                 atk: 1,
                 name: "left",
@@ -13,19 +13,19 @@
     right: (
         units: [
             (
-                trigger: Fire(trigger: BattleStart, effect: UseAbility("Shield")),
+                trigger: Fire(trigger: BattleStart, effect: UseAbility("Shield", 0)),
                 hp: 1,
                 atk: 1,
                 name: "right",
             ),
             (
-                trigger: Fire(trigger: BattleStart, effect: UseAbility("Vitality")),
+                trigger: Fire(trigger: BattleStart, effect: UseAbility("Vitality", 0)),
                 hp: 1,
                 atk: 1,
                 name: "right",
             ),
             (
-                trigger: Fire(trigger: BattleStart, effect: UseAbility("Shield")),
+                trigger: Fire(trigger: BattleStart, effect: UseAbility("Shield", 0)),
                 hp: 1,
                 atk: 1,
                 name: "right",

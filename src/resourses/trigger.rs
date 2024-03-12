@@ -257,8 +257,15 @@ impl Trigger {
                                 .find_all_abilities()
                                 .into_iter()
                                 .map(|a| match a {
-                                    Effect::UseAbility(ability) => {
-                                        format!("[{ability}] ({{Level}})")
+                                    Effect::UseAbility(ability, mult) => {
+                                        format!(
+                                            "[{ability}] ({{Level}}{})",
+                                            if mult > 1 {
+                                                format!("x{mult}")
+                                            } else {
+                                                default()
+                                            }
+                                        )
                                     }
                                     _ => default(),
                                 })

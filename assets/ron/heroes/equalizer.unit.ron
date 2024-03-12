@@ -7,7 +7,7 @@
     level: 1,
     houses: "Alchemists",
     description: "%trigger → %effect on %target",
-    trigger: Fire(trigger: BattleStart, target: AllUnits, effect: UseAbility("Petrify")),
+    trigger: Fire(trigger: BattleStart, target: AllUnits, effect: UseAbility("Petrify", 0)),
     representation: (
         material: None,
         children: [

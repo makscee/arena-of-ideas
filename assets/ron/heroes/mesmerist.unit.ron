@@ -6,7 +6,7 @@
     level: 1,
     houses: "Meta",
     description: "%trigger → %effect on %target",
-    trigger: Fire(trigger: BattleStart, target: RandomEnemy, effect: UseAbility("Betray"), period: 0),
+    trigger: Fire(trigger: BattleStart, target: RandomEnemy, effect: UseAbility("Betray", 0), period: 0),
     representation: (
         material: Shape(
             shape: Circle,

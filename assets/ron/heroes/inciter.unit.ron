@@ -9,7 +9,7 @@
     trigger: Fire(
         trigger: AllyDeath,
         target: TargetStateLast(LastAttacker),
-        effect: UseAbility("Betray"),
+        effect: UseAbility("Betray", 0),
         period: 0,
     ),
     representation: (

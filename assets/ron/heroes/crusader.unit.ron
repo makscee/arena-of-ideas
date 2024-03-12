@@ -12,7 +12,7 @@
         effect: WithVar(
             Faction,
             OppositeFaction,
-            WithVar(Charges, UnitCount(Bool(true)), UseAbility("Blessing")),
+            WithVar(Charges, UnitCount(Bool(true)), UseAbility("Blessing", 0)),
         ),
         period: 0,
     ),
