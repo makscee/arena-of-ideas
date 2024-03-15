@@ -40,15 +40,13 @@
             trigger: Fire(trigger: Noop, target: Owner, effect: UseAbility("Doom", 0), period: 0),
             representation: (
                 material: Shape(
-                    shape: Circle,
-                    fill: Line,
-                    size: Vec2E(
-                        Sum(
+                    shape: Circle(
+                        radius: Sum(
                             Float(0.9),
                             Mul(Abs(Sin(Mul(Sum(GameTime, Index), Float(29.2)))), Float(-0.6)),
                         ),
                     ),
-                    thickness: Float(1.0),
+                    shape_type: Line(thickness: Float(1.0)),
                     alpha: Float(1.0),
                 ),
                 children: [],

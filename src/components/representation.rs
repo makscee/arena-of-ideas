@@ -60,71 +60,160 @@ pub enum RepresentationMaterial {
     None,
     Shape {
         #[serde(default)]
-        shape: Shape,
+        shape: RepShape,
         #[serde(default)]
-        fill: Fill,
+        shape_type: RepShapeType,
         #[serde(default)]
-        fill_color: FillColor,
-        #[serde(default = "default_one_vec2_e")]
-        size: Expression,
-        #[serde(default = "default_one_vec2_e")]
-        point1: Expression,
-        #[serde(default = "default_one_vec2_e")]
-        point2: Expression,
-        #[serde(default = "default_one_f32_e")]
-        thickness: Expression,
-        #[serde(default = "default_one_f32_e")]
+        fill: RepFill,
+        #[serde(default = "f32_one_e")]
         alpha: Expression,
-        #[serde(default = "default_color_arr_e")]
-        colors: Vec<Expression>,
-        #[serde(default = "default_f32_zero_arr_e")]
-        parts: Vec<Expression>,
     },
     Text {
-        #[serde(default = "default_one_f32_e")]
+        #[serde(default = "f32_one_e")]
         size: Expression,
         text: Expression,
-        #[serde(default = "default_color_e")]
+        #[serde(default = "color_e")]
         color: Expression,
-        #[serde(default = "default_one_f32_e")]
+        #[serde(default = "f32_one_e")]
         alpha: Expression,
-        #[serde(default = "default_font_size")]
+        #[serde(default = "font_size")]
         font_size: f32,
     },
     Curve {
-        #[serde(default = "default_one_f32_e")]
+        #[serde(default = "f32_one_e")]
         thickness: Expression,
         #[serde(default)]
         dilations: Vec<(Expression, Expression)>,
-        #[serde(default = "default_one_f32_e")]
+        #[serde(default = "f32_one_e")]
         curvature: Expression,
-        #[serde(default = "default_zero_f32_e")]
+        #[serde(default = "f32_zero_e")]
         aa: Expression,
-        #[serde(default = "default_color_e")]
+        #[serde(default = "color_e")]
         color: Expression,
     },
 }
 
-fn default_font_size() -> f32 {
+fn font_size() -> f32 {
     32.0
 }
-fn default_one_f32_e() -> Expression {
+fn f32_one_e() -> Expression {
     Expression::Float(1.0)
 }
-fn default_zero_f32_e() -> Expression {
+fn f32_zero_e() -> Expression {
     Expression::Float(0.0)
 }
-fn default_one_vec2_e() -> Expression {
+fn f32_arr_e() -> Vec<Expression> {
+    [Expression::Float(0.0), Expression::Float(1.0)].into()
+}
+fn vec2_zero_e() -> Expression {
+    Expression::Vec2(0.0, 0.0)
+}
+fn vec2_one_e() -> Expression {
     Expression::Vec2(1.0, 1.0)
 }
-fn default_f32_zero_arr_e() -> Vec<Expression> {
-    [Expression::Float(0.0)].into()
-}
-fn default_color_e() -> Expression {
+fn color_e() -> Expression {
     Expression::State(VarName::Color)
 }
-fn default_color_arr_e() -> Vec<Expression> {
-    [Expression::State(VarName::Color)].into()
+fn color_arr_e() -> Vec<Expression> {
+    [
+        Expression::State(VarName::Color),
+        Expression::Hex("#ffffff".to_owned()),
+    ]
+    .into()
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, EnumIter, Display)]
+pub enum RepShape {
+    Circle {
+        #[serde(default = "f32_one_e")]
+        radius: Expression,
+    },
+    Rectangle {
+        #[serde(default = "vec2_one_e")]
+        size: Expression,
+    },
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, EnumIter, Display)]
+pub enum RepFill {
+    Solid {
+        #[serde(default = "color_e")]
+        color: Expression,
+    },
+    GradientLinear {
+        #[serde(default = "vec2_zero_e")]
+        point1: Expression,
+        #[serde(default = "vec2_one_e")]
+        point2: Expression,
+        #[serde(default = "f32_arr_e")]
+        parts: Vec<Expression>,
+        #[serde(default = "color_arr_e")]
+        colors: Vec<Expression>,
+    },
+    GradientRadial {
+        #[serde(default = "vec2_zero_e")]
+        center: Expression,
+        #[serde(default = "f32_one_e")]
+        radius: Expression,
+        #[serde(default = "f32_arr_e")]
+        parts: Vec<Expression>,
+        #[serde(default = "color_arr_e")]
+        colors: Vec<Expression>,
+    },
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default, EnumIter, Display)]
+pub enum RepShapeType {
+    #[default]
+    Opaque,
+    Line {
+        #[serde(default = "f32_one_e")]
+        thickness: Expression,
+    },
+}
+
+impl Default for RepShape {
+    fn default() -> Self {
+        Self::Circle {
+            radius: Expression::Float(1.0),
+        }
+    }
+}
+
+impl Default for RepFill {
+    fn default() -> Self {
+        Self::Solid {
+            color: Expression::State(VarName::Color),
+        }
+    }
+}
+
+impl RepShape {
+    fn shader_shape(&self) -> ShaderShape {
+        match self {
+            RepShape::Circle { .. } => ShaderShape::Circle,
+            RepShape::Rectangle { .. } => ShaderShape::Rectangle,
+        }
+    }
+}
+
+impl RepFill {
+    fn shader_fill(&self) -> ShaderShapeFill {
+        match self {
+            RepFill::Solid { .. } => ShaderShapeFill::Solid,
+            RepFill::GradientLinear { .. } => ShaderShapeFill::GradientLinear,
+            RepFill::GradientRadial { .. } => ShaderShapeFill::GradientRadial,
+        }
+    }
+}
+
+impl RepShapeType {
+    fn shader_shape_type(&self) -> ShaderShapeType {
+        match self {
+            RepShapeType::Opaque => ShaderShapeType::Opaque,
+            RepShapeType::Line { .. } => ShaderShapeType::Line,
+        }
+    }
 }
 
 impl RepresentationMaterial {
@@ -139,15 +228,15 @@ impl RepresentationMaterial {
             }
             RepresentationMaterial::Shape {
                 shape,
+                shape_type,
                 fill,
-                fill_color,
                 ..
             } => {
                 let mut materials = world.resource_mut::<Assets<ShapeMaterial>>();
                 let material = ShapeMaterial {
-                    shape: *shape,
-                    fill: *fill,
-                    fill_color: *fill_color,
+                    shape: shape.shader_shape(),
+                    shape_type: shape_type.shader_shape_type(),
+                    shape_fill: fill.shader_fill(),
                     ..default()
                 };
                 let material = materials.add(material);
@@ -206,62 +295,100 @@ impl RepresentationMaterial {
             RepresentationMaterial::None => {}
             RepresentationMaterial::Shape {
                 shape,
-                size,
-                colors,
-                parts: points,
-                thickness,
+                shape_type,
+                fill,
                 alpha,
-                point1,
-                point2,
-                ..
             } => {
-                let size = size.get_vec2(context, world).unwrap_or_default();
-                let point1 = point1.get_vec2(context, world).unwrap_or_default();
-                let point2 = point2.get_vec2(context, world).unwrap_or_default();
-                let thickness = thickness.get_float(context, world).unwrap_or_default();
-                let alpha = alpha.get_float(context, world).unwrap_or_default();
-                let colors = colors
-                    .into_iter()
-                    .map(|color| {
-                        color
-                            .get_color(context, world)
-                            .unwrap_or(Color::FUCHSIA)
-                            .as_rgba_f32()
-                    })
-                    .collect_vec();
-                let colors = colors
-                    .into_iter()
-                    .enumerate()
-                    .map(|(i, c)| {
-                        vec4(
-                            c[0],
-                            c[1],
-                            c[2],
-                            points[i].get_float(context, world).unwrap_or_default(),
-                        )
-                    })
-                    .collect_vec();
                 let handle = world.get::<Handle<ShapeMaterial>>(entity).unwrap().clone();
-                let mut materials = world.get_resource_mut::<Assets<ShapeMaterial>>().unwrap();
-                if let Some(mat) = materials.get_mut(&handle) {
-                    for (i, color) in colors.into_iter().enumerate() {
-                        mat.colors[i] = Color::from(color);
+                if let Some(mut mat) = world
+                    .get_resource_mut::<Assets<ShapeMaterial>>()
+                    .unwrap()
+                    .remove(&handle)
+                {
+                    let mut refresh_mesh = false;
+                    match shape {
+                        RepShape::Circle { radius } => {
+                            let radius = radius.get_float(context, world).unwrap_or(1.0);
+                            let t = &mut mat.data[10];
+                            if radius != t.x {
+                                refresh_mesh = true;
+                            }
+                            *t = vec4(radius, radius, 0.0, 0.0);
+                        }
+                        RepShape::Rectangle { size } => {
+                            let size = size.get_vec2(context, world).unwrap_or(vec2(1.0, 1.0));
+                            let t = &mut mat.data[10];
+                            if t.xy() != size {
+                                refresh_mesh = true;
+                            }
+                            *t = Vec4::from((size, 0.0, 0.0));
+                        }
                     }
-                    mat.thickness = thickness;
-                    mat.alpha = alpha;
-                    mat.point1 = point1;
-                    mat.point2 = point2;
-                    if mat.size != size {
-                        mat.size = size;
+                    match shape_type {
+                        RepShapeType::Line { thickness } => {
+                            mat.data[10].w = thickness.get_float(context, world).unwrap_or(1.0)
+                        }
+                        RepShapeType::Opaque => {}
+                    }
+                    match fill {
+                        RepFill::Solid { color } => {
+                            mat.colors[0] =
+                                color.get_color(context, world).unwrap_or(Color::FUCHSIA)
+                        }
+                        RepFill::GradientLinear {
+                            point1,
+                            point2,
+                            parts: _,
+                            colors: _,
+                        } => {
+                            let point1 = point1.get_vec2(context, world).unwrap_or_default();
+                            let point2 = point2.get_vec2(context, world).unwrap_or_default();
+                            mat.data[0].x = point1.x;
+                            mat.data[0].y = point1.y;
+                            mat.data[1].x = point2.x;
+                            mat.data[1].y = point2.y;
+                        }
+                        RepFill::GradientRadial {
+                            center,
+                            radius,
+                            parts: _,
+                            colors: _,
+                        } => {
+                            let center = center.get_vec2(context, world).unwrap_or_default();
+                            mat.data[0].x = center.x;
+                            mat.data[0].y = center.y;
+                            let radius = radius.get_float(context, world).unwrap_or(1.0);
+                            mat.data[0].z = radius;
+                        }
+                    }
+                    match fill {
+                        RepFill::GradientLinear { parts, colors, .. }
+                        | RepFill::GradientRadial { parts, colors, .. } => {
+                            for (i, color) in colors.into_iter().enumerate() {
+                                let color =
+                                    color.get_color(context, world).unwrap_or(Color::FUCHSIA);
+                                let part = parts[i].get_float(context, world).unwrap_or(0.5);
+                                mat.colors[i] = color;
+                                mat.data[i].w = part;
+                            }
+                        }
+                        RepFill::Solid { .. } => {}
+                    }
+                    mat.data[10].z = alpha.get_float(context, world).unwrap_or(1.0);
+                    if refresh_mesh {
                         let mesh = world.entity(entity).get::<Mesh2dHandle>().unwrap().clone();
                         if let Some(mesh) = world
                             .get_resource_mut::<Assets<Mesh>>()
                             .unwrap()
                             .get_mut(&mesh.0)
                         {
-                            *mesh = shape.mesh(size);
+                            *mesh = shape.shader_shape().mesh(mat.data[10].xy());
                         }
                     }
+                    let _ = world
+                        .get_resource_mut::<Assets<ShapeMaterial>>()
+                        .unwrap()
+                        .set(handle, mat);
                 }
             }
             RepresentationMaterial::Text {
@@ -397,61 +524,120 @@ impl RepresentationMaterial {
                     RepresentationMaterial::None => {}
                     RepresentationMaterial::Shape {
                         shape,
+                        shape_type,
                         fill,
-                        fill_color,
-                        size,
-                        thickness,
                         alpha,
-                        colors,
-                        parts,
-                        point1,
-                        point2,
                     } => {
                         ui.horizontal(|ui| {
                             ComboBox::from_label("shape")
                                 .selected_text(shape.to_string())
                                 .show_ui(ui, |ui| {
-                                    for option in Shape::iter() {
+                                    for option in RepShape::iter() {
                                         let text = option.to_string();
-                                        ui.selectable_value(shape, option, text);
+                                        if ui.selectable_value(shape, option, text).changed() {
+                                            *shape =
+                                                ron::from_str(&format!("{}()", shape.to_string()))
+                                                    .unwrap();
+                                        }
+                                    }
+                                });
+                            ComboBox::from_label("type")
+                                .selected_text(shape_type.to_string())
+                                .show_ui(ui, |ui| {
+                                    for option in RepShapeType::iter() {
+                                        let text = option.to_string();
+                                        if ui.selectable_value(shape_type, option, text).changed() {
+                                            let str = &match &shape_type {
+                                                RepShapeType::Opaque => shape_type.to_string(),
+                                                RepShapeType::Line { .. } => {
+                                                    format!("{}()", shape_type.to_string())
+                                                }
+                                            };
+                                            *shape_type = ron::from_str(str).unwrap();
+                                        }
                                     }
                                 });
                             ComboBox::from_label("fill")
                                 .selected_text(fill.to_string())
                                 .show_ui(ui, |ui| {
-                                    for option in Fill::iter() {
+                                    for option in RepFill::iter() {
                                         let text = option.to_string();
-                                        ui.selectable_value(fill, option, text);
-                                    }
-                                });
-                            ComboBox::from_label("fill color")
-                                .selected_text(fill_color.to_string())
-                                .show_ui(ui, |ui| {
-                                    for option in FillColor::iter() {
-                                        let text = option.to_string();
-                                        ui.selectable_value(fill_color, option, text);
+                                        if ui.selectable_value(fill, option, text).changed() {
+                                            *fill =
+                                                ron::from_str(&format!("{}()", fill.to_string()))
+                                                    .unwrap();
+                                        }
                                     }
                                 });
                         });
-
-                        show_tree("size:", size, context, ui, world);
-                        show_tree("thickness:", thickness, context, ui, world);
                         show_tree("alpha:", alpha, context, ui, world);
-                        match fill_color {
-                            FillColor::Solid => {
-                                colors.resize(1, default_color_e());
-                                show_tree("color:", &mut colors[0], context, ui, world);
+                        match shape {
+                            RepShape::Circle { radius } => {
+                                show_tree("radius:", radius, context, ui, world)
                             }
-                            FillColor::GradientLinear2 => {
-                                colors.resize(2, default_color_e());
-                                parts.resize(2, default());
-                                show_tree("color1:", &mut colors[0], context, ui, world);
-                                show_tree("color2:", &mut colors[1], context, ui, world);
-                                show_tree("part1:", &mut parts[0], context, ui, world);
-                                show_tree("part2:", &mut parts[1], context, ui, world);
+                            RepShape::Rectangle { size } => {
+                                show_tree("size:", size, context, ui, world)
+                            }
+                        }
+                        match shape_type {
+                            RepShapeType::Line { thickness } => {
+                                show_tree("thickness:", thickness, context, ui, world)
+                            }
+                            RepShapeType::Opaque => {}
+                        }
+                        match fill {
+                            RepFill::Solid { color } => {
+                                show_tree("color:", color, context, ui, world)
+                            }
+                            RepFill::GradientLinear {
+                                point1,
+                                point2,
+                                parts: _,
+                                colors: _,
+                            } => {
                                 show_tree("point1:", point1, context, ui, world);
                                 show_tree("point2:", point2, context, ui, world);
                             }
+                            RepFill::GradientRadial {
+                                center,
+                                radius,
+                                parts: _,
+                                colors: _,
+                            } => {
+                                show_tree("center", center, context, ui, world);
+                                show_tree("radius", radius, context, ui, world);
+                            }
+                        }
+                        match fill {
+                            RepFill::GradientLinear { parts, colors, .. }
+                            | RepFill::GradientRadial { parts, colors, .. } => {
+                                let mut delete = None;
+                                for (i, color) in colors.into_iter().enumerate() {
+                                    ui.horizontal(|ui| {
+                                        if ui.button_red("-").clicked() {
+                                            delete = Some(i);
+                                        }
+                                        show_trees(
+                                            vec![
+                                                (&format!("color{i}:"), color),
+                                                (&format!("part{i}:"), &mut parts[i]),
+                                            ],
+                                            context,
+                                            ui,
+                                            world,
+                                        );
+                                    });
+                                }
+                                if ui.button("+").clicked() {
+                                    parts.push(default());
+                                    colors.push(default());
+                                }
+                                if let Some(i) = delete {
+                                    parts.remove(i);
+                                    colors.remove(i);
+                                }
+                            }
+                            RepFill::Solid { .. } => {}
                         }
                     }
                     RepresentationMaterial::Text {

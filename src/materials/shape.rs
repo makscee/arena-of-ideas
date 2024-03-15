@@ -9,26 +9,18 @@ use super::*;
 #[bind_group_data(ShapeMaterialKey)]
 pub struct ShapeMaterial {
     #[uniform(0)]
-    pub size: Vec2,
+    pub colors: [Color; 11],
     #[uniform(0)]
-    pub thickness: f32,
-    #[uniform(0)]
-    pub alpha: f32,
-    #[uniform(0)]
-    pub point1: Vec2,
-    #[uniform(0)]
-    pub point2: Vec2,
-    #[uniform(0)]
-    pub colors: [Color; 10],
-    pub shape: Shape,
-    pub fill: Fill,
-    pub fill_color: FillColor,
+    pub data: [Vec4; 11],
+    pub shape: ShaderShape,
+    pub shape_type: ShaderShapeType,
+    pub shape_fill: ShaderShapeFill,
 }
 
 #[derive(
     Debug, Clone, Copy, Default, Eq, PartialEq, Hash, Display, Serialize, Deserialize, EnumIter,
 )]
-pub enum Shape {
+pub enum ShaderShape {
     #[default]
     Rectangle,
     Circle,
@@ -37,40 +29,41 @@ pub enum Shape {
 #[derive(
     Debug, Clone, Copy, Default, Eq, PartialEq, Hash, Display, Serialize, Deserialize, EnumIter,
 )]
-pub enum Fill {
+pub enum ShaderShapeType {
     #[default]
-    Line,
     Opaque,
+    Line,
 }
 
 #[derive(
     Debug, Clone, Copy, Default, Eq, PartialEq, Hash, Display, Serialize, Deserialize, EnumIter,
 )]
-pub enum FillColor {
+pub enum ShaderShapeFill {
     #[default]
     Solid,
-    GradientLinear2,
+    GradientLinear,
+    GradientRadial,
 }
 
-impl Shape {
+impl ShaderShape {
     pub fn def(&self) -> String {
         self.to_string().to_uppercase()
     }
     pub fn mesh(&self, size: Vec2) -> Mesh {
         match self {
-            Shape::Rectangle => Mesh::from(bevy::render::mesh::shape::Quad::new(size)),
-            Shape::Circle => Mesh::from(bevy::render::mesh::shape::Circle::new(size.x)),
+            ShaderShape::Rectangle => Mesh::from(bevy::render::mesh::shape::Quad::new(size)),
+            ShaderShape::Circle => Mesh::from(bevy::render::mesh::shape::Circle::new(size.x)),
         }
     }
 }
 
-impl Fill {
+impl ShaderShapeType {
     pub fn def(&self) -> String {
         self.to_string().to_uppercase()
     }
 }
 
-impl FillColor {
+impl ShaderShapeFill {
     pub fn def(&self) -> String {
         self.to_string()
             .from_case(convert_case::Case::Pascal)
@@ -104,17 +97,17 @@ impl Material2d for ShapeMaterial {
 
 #[derive(Eq, PartialEq, Hash, Clone, Copy)]
 pub struct ShapeMaterialKey {
-    shape: Shape,
-    fill: Fill,
-    fill_color: FillColor,
+    shape: ShaderShape,
+    fill: ShaderShapeType,
+    fill_color: ShaderShapeFill,
 }
 
 impl From<&ShapeMaterial> for ShapeMaterialKey {
     fn from(material: &ShapeMaterial) -> Self {
         Self {
             shape: material.shape,
-            fill: material.fill,
-            fill_color: material.fill_color,
+            fill: material.shape_type,
+            fill_color: material.shape_fill,
         }
     }
 }
@@ -122,15 +115,11 @@ impl From<&ShapeMaterial> for ShapeMaterialKey {
 impl Default for ShapeMaterial {
     fn default() -> Self {
         Self {
-            colors: default(),
-            thickness: 1.0,
-            alpha: 1.0,
-            size: default(),
             shape: default(),
-            fill: default(),
-            fill_color: default(),
-            point1: default(),
-            point2: default(),
+            shape_type: default(),
+            shape_fill: default(),
+            colors: default(),
+            data: default(),
         }
     }
 }

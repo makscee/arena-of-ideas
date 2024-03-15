@@ -7,11 +7,9 @@
     trigger: Fire(trigger: BattleStart, target: AllUnits, effect: UseAbility("Amnesia", 0)),
     representation: (
         material: Shape(
-            shape: Circle,
-            fill: Opaque,
-            size: Vec2E(Float(0.25)),
-            thickness: Float(1.3),
-            alpha: If(Equals(State(Index), Zero), Float(0.6), Float(0.1)),
+            shape: Circle(radius: Float(0.25)),
+            shape_type: Opaque,
+            alpha: If(Equals(State(Index), Zero), Float(1.0), Float(0.1)),
         ),
         children: [],
         mapping: {

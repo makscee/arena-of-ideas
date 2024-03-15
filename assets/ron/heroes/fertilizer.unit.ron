@@ -9,10 +9,8 @@
     trigger: Fire(trigger: BattleStart, target: AllAllyUnits, effect: UseAbility("Thorns", 0), period: 0),
     representation: (
         material: Shape(
-            shape: Rectangle,
-            fill: Line,
-            size: Vec2E(Float(1.0)),
-            thickness: Float(2.0),
+            shape: Rectangle(size: Vec2E(Float(1.0))),
+            shape_type: Line(thickness: Float(2.0)),
             alpha: Float(1.0),
         ),
         children: [],

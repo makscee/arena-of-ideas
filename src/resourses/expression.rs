@@ -742,7 +742,7 @@ impl EditorNodeGenerator for Expression {
             }
             Expression::Hex(x) => {
                 let c = Color::hex(&x).unwrap_or_default().as_rgba_u8();
-                let mut c = Color32::from_rgb(c[0], c[1], c[2]);
+                let mut c = Color32::from_rgba_premultiplied(c[0], c[1], c[2], c[3]);
                 if ui.color_edit_button_srgba(&mut c).changed() {
                     *x = encode(c.to_array());
                 }

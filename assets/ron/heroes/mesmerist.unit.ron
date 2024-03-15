@@ -9,10 +9,8 @@
     trigger: Fire(trigger: BattleStart, target: RandomEnemy, effect: UseAbility("Betray", 0), period: 0),
     representation: (
         material: Shape(
-            shape: Circle,
-            fill: Line,
-            size: Vec2E(Mul(Index, Mul(Float(0.1), Abs(Sin(Sum(GameTime, Index)))))),
-            thickness: Float(1.0),
+            shape: Circle(radius: Mul(Index, Mul(Float(0.1), Abs(Sin(Sum(GameTime, Index)))))),
+            shape_type: Line(thickness: Float(1.0)),
             alpha: Float(1.0),
         ),
         children: [],

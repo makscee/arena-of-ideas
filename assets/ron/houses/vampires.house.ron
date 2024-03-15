@@ -18,7 +18,13 @@
         (
             name: "Siphon",
             description: "Drain 1 HP from target",
-            effect: List([AddStatus("Siphoned Out"), WithTarget(Owner, AddStatus("Siphon Bonus")), Vfx("apply_status")]),
+            effect: List(
+                [
+                    AddStatus("Siphoned Out"),
+                    WithTarget(Owner, AddStatus("Siphon Bonus")),
+                    Vfx("apply_status"),
+                ],
+            ),
         ),
     ],
 )

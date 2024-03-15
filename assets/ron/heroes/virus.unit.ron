@@ -9,16 +9,10 @@
     trigger: Fire(trigger: BattleStart, target: AllEnemyUnits, effect: UseAbility("Plague", 0), period: 0),
     representation: (
         material: Shape(
-            shape: Circle,
-            fill: Line,
-            fill_color: Solid,
-            size: Vec2E(Float(0.12)),
-            point1: Vec2(1.0, 1.0),
-            point2: Vec2(1.0, 1.0),
-            thickness: Float(1.0),
+            shape: Circle(radius: Float(0.12)),
+            shape_type: Line(thickness: Float(1.0)),
+            fill: Solid(color: State(Color)),
             alpha: Float(1.0),
-            colors: [State(Color)],
-            parts: [Float(0.0)],
         ),
         children: [],
         mapping: {

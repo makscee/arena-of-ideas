@@ -6,14 +6,7 @@
     houses: "Dragons",
     trigger: Fire(trigger: TurnEnd, effect: UseAbility("Grow", 0)),
     representation: (
-        material: Shape(
-            shape: Circle,
-            fill: Opaque,
-            size: Vec2E(Float(0.5)),
-            thickness: Float(1.0),
-            alpha: Float(0.2),
-        ),
-        children: [],
+        material: Shape(shape: Circle(radius: Float(0.5)), shape_type: Opaque, alpha: Float(0.2)),
         mapping: {
             Offset: Mul(
                 UnitVec(
@@ -30,6 +23,4 @@
         },
         count: 6,
     ),
-    state: (history: {}, birth: 0.0),
-    statuses: [],
 )

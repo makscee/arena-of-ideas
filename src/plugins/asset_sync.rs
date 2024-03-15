@@ -8,7 +8,7 @@ pub struct AssetsSyncPlugin;
 
 impl Plugin for AssetsSyncPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::UnitSync), do_sync);
+        app.add_systems(OnEnter(GameState::AssetSync), do_sync);
     }
 }
 

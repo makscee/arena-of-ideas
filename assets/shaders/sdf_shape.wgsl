@@ -3,12 +3,8 @@
 #import bevy_sprite::mesh2d_vertex_output MeshVertexOutput
 
 struct ShapeMaterial {
-    size: vec2<f32>,
-    thickness: f32,
-    alpha: f32,
-    point1: vec2<f32>,
-    point2: vec2<f32>,
-    colors: array<vec4<f32>, 10>,
+    colors: array<vec4<f32>, 11>,
+    data: array<vec4<f32>, 11>,
 };
 
 @group(1) @binding(0)
@@ -22,13 +18,17 @@ fn sdf(uv: vec2<f32>, size: vec2<f32>) -> f32 {
 #endif
 #ifdef CIRCLE
 fn sdf(uv: vec2<f32>, size: vec2<f32>) -> f32 {
-    var d = length(uv) - size.x;
+    let d = length(uv) - size.x;
     return d;
 }
 #endif
 
 fn get_line_t(a: vec2<f32>, b: vec2<f32>, p: vec2<f32>) -> f32 {
-    var t = dot(p - b, a - b) / dot(a - b, a - b);
+    let t = dot(p - a, b - a) / dot(a - b, a - b);
+    return clamp(t, 0.0, 1.0);
+}
+fn get_circle_t(center: vec2<f32>, radius: f32, p: vec2<f32>) -> f32 {
+    let t = length(center - p) / radius;
     return clamp(t, 0.0, 1.0);
 }
 
@@ -36,9 +36,12 @@ const GLOW = 0.1;
 const AA = 0.01;
 @fragment
 fn fragment(in: MeshVertexOutput) -> @location(0) vec4<f32> {
-    let uv = (in.uv - vec2(0.5)) * material.size * 2.0;
-    let sdf = sdf(uv, material.size) - AA;
-    let thickness = material.thickness * 0.03;
+    let size = material.data[10].xy;
+    let alpha = material.data[10].z;
+    let thickness = material.data[10].w * 0.03;
+
+    let uv = (in.uv - vec2(0.5)) * size * 2.0;
+    let sdf = sdf(uv, size) - AA;
     var v = f32(sdf > -thickness);
 #ifdef LINE
     v = min(v, smoothstep(0.0, AA, -sdf)) * v;
@@ -48,13 +51,20 @@ fn fragment(in: MeshVertexOutput) -> @location(0) vec4<f32> {
 #endif
     v = max(v, smoothstep(thickness + GLOW, thickness, -sdf) * 0.1);
 #ifdef SOLID
-    let color = material.colors[0].rgb;
-#else ifdef GRADIENT_LINEAR_2
-    let ba = material.point2 - material.point1;
-    let a = material.point1 + ba * material.colors[0].a;
-    let b = material.point1 + ba * material.colors[1].a;
-    let t = get_line_t(a, b, uv);
-    let color = mix(material.colors[0].rgb, material.colors[1].rgb, t);
+    var color = material.colors[0];
+#else ifdef GRADIENT_LINEAR
+    let a = material.data[0].xy;
+    let b = material.data[1].xy;
+    var t = get_line_t(a, b, uv);
+    t = smoothstep(material.data[0].w, material.data[1].w, t);
+    var color = mix(material.colors[0], material.colors[1], t);
+#else ifdef GRADIENT_RADIAL
+    let center = material.data[0].xy;
+    let radius = material.data[0].z;
+    var t = get_circle_t(center, radius, uv);
+    t = smoothstep(material.data[0].w, material.data[1].w, t);
+    var color = mix(material.colors[0], material.colors[1], t);
 #endif
-    return vec4<f32>(color, v * material.alpha);
+    color.a *= v * alpha;
+    return color;
 }   

@@ -7,14 +7,18 @@
     trigger: Fire(trigger: TurnEnd, target: RandomEnemy, effect: UseAbility("Magic Missile", 0)),
     representation: (
         material: Shape(
-            shape: Circle,
-            thickness: Sum(Float(2.5), Cos(GameTime)),
-            size: Vec2E(Sum(Float(0.7), Mul(Beat, Float(0.3)))),
+            shape: Circle(radius: Sum(Float(0.7), Mul(Beat, Float(0.3)))),
+            shape_type: Line(thickness: Sum(Float(2.5), Cos(GameTime))),
+            fill: Solid(color: State(Color)),
         ),
         children: [
             (
                 count: 5,
-                material: Shape(shape: Circle, fill: Opaque, size: Vec2E(Float(0.2))),
+                material: Shape(
+                    shape: Circle(radius: Float(0.2)),
+                    shape_type: Opaque,
+                    fill: Solid(color: State(Color)),
+                ),
                 mapping: {
                     Offset: Mul(
                         Vec2EE(Sin(Sum(GameTime, IntFloat(State(Index)))), Cos(GameTime)),

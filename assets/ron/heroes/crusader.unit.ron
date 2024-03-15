@@ -18,10 +18,8 @@
     ),
     representation: (
         material: Shape(
-            shape: Rectangle,
-            fill: Line,
-            size: Vec2(0.5, 1.82),
-            thickness: Float(3.0),
+            shape: Rectangle(size: Vec2(0.5, 1.82)),
+            shape_type: Line(thickness: Float(3.0)),
             alpha: Float(0.3),
         ),
         children: [],

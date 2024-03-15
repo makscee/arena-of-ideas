@@ -38,7 +38,7 @@ fn main() {
         RunMode::Editor => GameState::HeroEditor,
         RunMode::Continue => GameState::Shop,
         RunMode::Test => GameState::TestsLoading,
-        RunMode::Sync => GameState::UnitSync,
+        RunMode::Sync => GameState::AssetSync,
     };
     let mut default_plugins = DefaultPlugins
         .set(AssetPlugin {

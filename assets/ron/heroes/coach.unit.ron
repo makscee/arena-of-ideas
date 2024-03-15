@@ -9,21 +9,17 @@
     trigger: Fire(trigger: AllySummon, target: Target, effect: UseAbility("Strength", 0), period: 0),
     representation: (
         material: Shape(
-            shape: Rectangle,
-            fill: Line,
-            fill_color: Solid,
-            size: Vec2E(Sum(Mul(Float(0.16), Index), Sum(Float(0.08), Sub(Zero, Mul(Beat, Float(0.02)))))),
-            point1: Vec2(1.0, 1.0),
-            point2: Vec2(1.0, 1.0),
-            thickness: Sum(Float(0.6), Mul(Sin(Sum(GameTime, Index)), Float(0.4))),
-            alpha: Float(1.0),
-            colors: [State(Color)],
-            parts: [Float(0.0)],
+            shape: Rectangle(
+                size: Vec2E(
+                    Sum(
+                        Mul(Float(0.16), Index),
+                        Sum(Float(0.08), Sub(Zero, Mul(Beat, Float(0.02)))),
+                    ),
+                ),
+            ),
+            shape_type: Line(thickness: Sum(Float(0.6), Mul(Sin(Sum(GameTime, Index)), Float(0.4)))),
+            fill: Solid(color: State(Color)),
         ),
-        children: [],
-        mapping: {},
         count: 8,
     ),
-    state: (history: {}, birth: 0.0),
-    statuses: [],
 )

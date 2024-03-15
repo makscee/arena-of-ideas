@@ -48,16 +48,10 @@
             trigger: Fire(trigger: Noop, target: Owner, effect: Noop, period: 0),
             representation: (
                 material: Shape(
-                    shape: Rectangle,
-                    fill: Opaque,
-                    fill_color: Solid,
-                    size: Vec2(0.05, 1.0),
-                    point1: Vec2(1.0, 1.0),
-                    point2: Vec2(1.0, 1.0),
-                    thickness: Float(1.0),
+                    shape: Rectangle(size: Vec2(0.05, 1.0)),
+                    shape_type: Opaque,
+                    fill: Solid(color: State(Color)),
                     alpha: Float(1.0),
-                    colors: [State(Color)],
-                    parts: [Float(0.0)],
                 ),
                 children: [],
                 mapping: {

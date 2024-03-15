@@ -7,10 +7,8 @@
     trigger: Fire(trigger: BattleStart, target: RandomAdjacentUnit, effect: UseAbility("Copy", 0)),
     representation: (
         material: Shape(
-            shape: Circle,
-            fill: Line,
-            size: Vec2E(Float(0.72)),
-            thickness: Float(2.0),
+            shape: Circle(radius: Float(0.72)),
+            shape_type: Line(thickness: Float(2.0)),
             alpha: Float(0.4),
         ),
         children: [],

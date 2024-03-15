@@ -41,10 +41,8 @@
             trigger: Fire(trigger: Noop, target: Owner, effect: Noop, period: 0),
             representation: (
                 material: Shape(
-                    shape: Circle,
-                    fill: Line,
-                    size: Vec2E(
-                        Mul(
+                    shape: Circle(
+                        radius: Mul(
                             Abs(
                                 Sin(
                                     Sum(Mul(GameTime, Float(0.5)), Mul(Index, Mul(PI, Float(0.05)))),
@@ -53,7 +51,7 @@
                             Sum(Float(0.95), Mul(Beat, Float(0.1))),
                         ),
                     ),
-                    thickness: Float(1.0),
+                    shape_type: Line(thickness: Float(1.0)),
                     alpha: Float(1.0),
                 ),
                 children: [],

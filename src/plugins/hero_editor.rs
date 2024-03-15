@@ -527,9 +527,20 @@ pub fn show_tree(
     ui: &mut Ui,
     world: &mut World,
 ) {
-    ui.horizontal(|ui| {
-        ui.label(label);
-        show_node(root, label.to_owned(), None, context, ui, world);
+    show_trees([(label, root)].into(), context, ui, world);
+}
+
+pub fn show_trees(
+    data: Vec<(&str, &mut impl EditorNodeGenerator)>,
+    context: &Context,
+    ui: &mut Ui,
+    world: &mut World,
+) {
+    ui.with_layout(Layout::left_to_right(egui::Align::Min), |ui| {
+        for (label, root) in data {
+            ui.label(label);
+            show_node(root, label.to_owned(), None, context, ui, world);
+        }
     });
 }
 

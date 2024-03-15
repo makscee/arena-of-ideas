@@ -10,10 +10,9 @@
     ),
     representation: (
         material: Shape(
-            fill: Opaque,
-            shape: Circle,
-            colors: [Hex("#ffffff")],
-            size: Vec2E(State(T)),
+            shape: Circle(radius: State(T)),
+            shape_type: Opaque,
+            fill: Solid(color: Hex("#ffffff")),
             alpha: State(Alpha),
         ),
     ),

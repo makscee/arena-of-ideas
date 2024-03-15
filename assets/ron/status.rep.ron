@@ -1,6 +1,6 @@
 (
     material: Shape(
-        shape: Circle,
-        size: Vec2E(Sum(Float(1.25), Mul(IntFloat(State(StatusIndex)), Float(0.1)))),
+        shape: Circle(radius: Sum(Float(1.25), Mul(IntFloat(State(StatusIndex)), Float(0.1)))),
+        shape_type: Line(thickness: Float(1.0)),
     ),
 )

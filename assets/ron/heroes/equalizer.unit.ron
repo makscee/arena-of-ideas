@@ -13,10 +13,8 @@
         children: [
             (
                 material: Shape(
-                    shape: Rectangle,
-                    fill: Line,
-                    size: Vec2E(Float(1.5)),
-                    thickness: Float(1.0),
+                    shape: Rectangle(size: Vec2E(Float(1.5))),
+                    shape_type: Line(thickness: Float(1.0)),
                     alpha: Float(1.0),
                 ),
                 children: [],
@@ -32,9 +30,5 @@
                 count: 8,
             ),
         ],
-        mapping: {},
-        count: 0,
     ),
-    state: (history: {}, birth: 0.0),
-    statuses: [],
 )

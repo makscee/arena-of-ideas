@@ -14,15 +14,13 @@
     ),
     representation: (
         material: Shape(
-            shape: Circle,
-            fill: Line,
-            size: Vec2E(
-                Max(
+            shape: Circle(
+                radius: Max(
                     Mul(Abs(Beat), Float(0.5)),
                     Mul(Abs(Cos(Mul(GameTime, Float(0.3)))), Float(0.2)),
                 ),
             ),
-            thickness: Float(1.0),
+            shape_type: Line(thickness: Float(1.0)),
             alpha: Float(0.3),
         ),
         children: [],
