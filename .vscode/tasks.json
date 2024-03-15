@@ -71,6 +71,27 @@
 			"problemMatcher": [
 				"$rustc"
 			],
+			"label": "Gallery",
+			"args": [
+				"--features",
+				"bevy/dynamic_linking",
+				"--",
+				"--mode",
+				"gallery"
+			],
+			"group": {
+				"kind": "build"
+			},
+			"env": {
+				"RUST_BACKTRACE": "1"
+			}
+		},
+		{
+			"type": "cargo",
+			"command": "run",
+			"problemMatcher": [
+				"$rustc"
+			],
 			"label": "Last",
 			"args": [
 				"--features",

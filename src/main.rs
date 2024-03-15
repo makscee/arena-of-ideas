@@ -27,6 +27,7 @@ pub enum RunMode {
     Continue,
     Sync,
     Editor,
+    Gallery,
 }
 
 fn main() {
@@ -34,6 +35,7 @@ fn main() {
     let next_state = match args.mode {
         RunMode::Regular => GameState::MainMenu,
         RunMode::Custom => GameState::CustomBattle,
+        RunMode::Gallery => GameState::HeroGallery,
         RunMode::Last => GameState::LastBattle,
         RunMode::Editor => GameState::HeroEditor,
         RunMode::Continue => GameState::Shop,
@@ -52,6 +54,7 @@ fn main() {
     match args.mode {
         RunMode::Regular
         | RunMode::Custom
+        | RunMode::Gallery
         | RunMode::Last
         | RunMode::Continue
         | RunMode::Editor => {
@@ -140,7 +143,7 @@ fn main() {
         RunMode::Regular | RunMode::Continue | RunMode::Last | RunMode::Sync => {
             app.add_systems(OnExit(GameState::Loading), LoginPlugin::setup);
         }
-        RunMode::Test | RunMode::Custom | RunMode::Editor => {}
+        RunMode::Test | RunMode::Custom | RunMode::Gallery | RunMode::Editor => {}
     }
 
     app.run();

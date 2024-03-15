@@ -3,6 +3,7 @@ use super::*;
 #[derive(Serialize, Deserialize, Default, Clone, Debug)]
 pub struct PersistentData {
     pub hero_editor_data: HeroEditorData,
+    pub hero_gallery_data: HeroGalleryData,
     pub last_battle: (PackedTeam, PackedTeam),
 }
 

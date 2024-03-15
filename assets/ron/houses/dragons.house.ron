@@ -1,7 +1,7 @@
 #![enable(implicit_some)]
 (
     name: "Dragons",
-    color: ("#558B2F"),
+    color: ("#DC4405"),
     statuses: [
         (
             name: "Growth",
