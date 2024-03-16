@@ -190,6 +190,9 @@ impl VarValue {
     }
 
     pub fn div(a: &VarValue, b: &VarValue) -> Result<VarValue> {
+        if VarValue::Int(0).eq(b) {
+            return Err(anyhow!("{a:?} / {b:?} division by zero"));
+        }
         match (a, b) {
             (VarValue::Float(a), VarValue::Float(b)) => Ok(VarValue::Float(a / b)),
             (VarValue::Int(a), VarValue::Int(b)) => Ok(VarValue::Int(a / b)),
@@ -197,7 +200,7 @@ impl VarValue {
             (VarValue::Int(a), VarValue::Float(b)) => Ok(VarValue::Float(*a as f32 / b)),
             (VarValue::Vec2(a), VarValue::Vec2(b)) => Ok(VarValue::Vec2(*a / *b)),
             (VarValue::Vec2(a), VarValue::Float(b)) => Ok(VarValue::Vec2(*a / *b)),
-            _ => Err(anyhow!("{a:?} * {b:?} not supported")),
+            _ => Err(anyhow!("{a:?} / {b:?} not supported")),
         }
     }
 
