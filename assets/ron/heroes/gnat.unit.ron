@@ -1,25 +1,25 @@
 (
-    name: "Lilith",
-    hp: 2,
-    atk: 4,
+    name: "Gnat",
+    hp: 1,
+    atk: 1,
     stacks: 1,
     level: 1,
     houses: "Vampires",
     description: "%trigger → %effect on %target",
-    trigger: Fire(trigger: BattleStart, target: AllOtherUnits, effect: UseAbility("Siphon", 0), period: 0),
+    trigger: Fire(trigger: TurnEnd, target: RandomEnemy, effect: UseAbility("Siphon", 0), period: 0),
     representation: (
         material: Shape(
-            shape: Circle(radius: Sum(Mul(Index, Float(-0.07)), Sum(Float(0.9), Mul(Beat, Float(0.05))))),
+            shape: Circle(radius: Sum(Mul(Index, Float(-0.14)), Sum(Float(0.9), Mul(Beat, Float(0.05))))),
             shape_type: Line(thickness: Float(1.0)),
             fill: GradientLinear(
                 point1: Vec2(0.0, -0.5),
                 point2: Vec2(0.0, 0.5),
-                parts: [Float(-0.25), Sum(Float(1.05), Mul(Index, Float(-0.03)))],
+                parts: [Float(0.0), Float(0.8)],
                 colors: [State(Color), Hex("00000000")],
             ),
             alpha: Float(1.0),
         ),
-        mapping: {Rotation: Sum(Mul(Index, Float(0.66)), GameTime)},
-        count: 12,
+        mapping: {Rotation: Sum(Mul(Index, PI), GameTime)},
+        count: 4,
     ),
 )
