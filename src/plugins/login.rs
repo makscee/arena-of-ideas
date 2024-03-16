@@ -26,12 +26,20 @@ const CREDS_DIR: &str = ".aoi";
 
 static IS_CONNECTED: Mutex<bool> = Mutex::new(false);
 pub static CURRENT_USER: Mutex<Option<UserData>> = Mutex::new(None);
+static OFFLINE: Mutex<bool> = Mutex::new(false);
 
 #[derive(Clone)]
 pub struct UserData {
     pub name: String,
     pub id: u64,
     pub identity: Identity,
+}
+
+pub fn set_offline(value: bool) {
+    *OFFLINE.lock().unwrap() = value;
+}
+pub fn is_offline() -> bool {
+    *OFFLINE.lock().unwrap()
 }
 
 fn on_connected(creds: &Credentials, _client_address: Address) {
@@ -124,7 +132,7 @@ impl LoginPlugin {
     }
 
     pub fn connect() {
-        if Self::is_connected() {
+        if Self::is_connected() || is_offline() {
             return;
         }
         debug!("Connect start");

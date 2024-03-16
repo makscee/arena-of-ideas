@@ -24,8 +24,8 @@ pub enum Event {
     BattleStart,
     TurnStart,
     TurnEnd,
-    BeforeStrike(Entity),
-    AfterStrike(Entity),
+    BeforeStrike(Entity, Entity),
+    AfterStrike(Entity, Entity),
     Death(Entity),
     Kill {
         owner: Entity,
@@ -58,7 +58,10 @@ impl Event {
                 };
                 units
             }
-            Event::BeforeStrike(unit) | Event::AfterStrike(unit) => [*unit].into(),
+            Event::BeforeStrike(owner, target) | Event::AfterStrike(owner, target) => {
+                context.set_target(*target, world);
+                [*owner].into()
+            }
             Event::Kill { owner, target } => {
                 context.set_target(*target, world);
                 [*owner].into()

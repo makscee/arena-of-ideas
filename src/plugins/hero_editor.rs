@@ -743,7 +743,7 @@ impl EditorNodeGenerator for Effect {
                     show_value(&value, ui);
                 });
             }
-            Effect::If(e, ..) => {
+            Effect::If(e, ..) | Effect::Repeat(e, ..) => {
                 ui.vertical(|ui| {
                     let value = e.get_value(context, world);
                     show_value(&value, ui);
@@ -871,7 +871,10 @@ impl EditorNodeGenerator for Effect {
                     show_node(e, format!("{path}:e"), connect_pos, context, ui, world);
                 }
             }
-            Effect::AoeFaction(e, eff) | Effect::WithTarget(e, eff) | Effect::WithOwner(e, eff) => {
+            Effect::AoeFaction(e, eff)
+            | Effect::WithTarget(e, eff)
+            | Effect::WithOwner(e, eff)
+            | Effect::Repeat(e, eff) => {
                 ui.vertical(|ui| {
                     ui.horizontal(|ui| {
                         show_node(e, format!("{path}:e"), connect_pos, context, ui, world);

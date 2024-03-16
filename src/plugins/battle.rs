@@ -117,8 +117,8 @@ impl BattlePlugin {
     fn before_strike(left: Entity, right: Entity, world: &mut World) -> Result<()> {
         debug!("Before strike {left:?} {right:?}");
         Event::TurnStart.send(world).spin(world)?;
-        Event::BeforeStrike(left).send(world).spin(world)?;
-        Event::BeforeStrike(right).send(world).spin(world)?;
+        Event::BeforeStrike(left, right).send(world).spin(world)?;
+        Event::BeforeStrike(right, left).send(world).spin(world)?;
         if Self::stricker_death_check(left, right, world) {
             return Ok(());
         }
@@ -171,8 +171,8 @@ impl BattlePlugin {
             GameTimer::get().to_batch_start();
         }
         GameTimer::get().insert_to_end().end_batch();
-        Event::AfterStrike(left).send(world).spin(world)?;
-        Event::AfterStrike(right).send(world).spin(world)?;
+        Event::AfterStrike(left, right).send(world).spin(world)?;
+        Event::AfterStrike(right, left).send(world).spin(world)?;
         Ok(())
     }
 

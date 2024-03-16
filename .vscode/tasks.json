@@ -50,6 +50,28 @@
 			"problemMatcher": [
 				"$rustc"
 			],
+			"label": "Offline",
+			"args": [
+				"--features",
+				"bevy/dynamic_linking",
+				"--",
+				"--mode",
+				"offline"
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"env": {
+				"RUST_BACKTRACE": "1"
+			}
+		},
+		{
+			"type": "cargo",
+			"command": "run",
+			"problemMatcher": [
+				"$rustc"
+			],
 			"label": "Custom",
 			"args": [
 				"--features",

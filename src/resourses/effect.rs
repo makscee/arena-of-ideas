@@ -25,6 +25,7 @@ pub enum Effect {
     SendEvent(Event),
     RemoveLocalTrigger,
     If(Expression, Box<Effect>, Box<Effect>),
+    Repeat(Expression, Box<Effect>),
 }
 
 impl Effect {
@@ -381,6 +382,12 @@ impl Effect {
                     ActionPlugin::action_push_front(el.deref().clone(), context.clone(), world);
                 }
             }
+            Effect::Repeat(count, effect) => {
+                let count = count.get_int(context, world)?;
+                for _ in 0..count {
+                    ActionPlugin::action_push_front(effect.deref().clone(), context.clone(), world);
+                }
+            }
         }
         Ok(())
     }
@@ -402,6 +409,7 @@ impl Effect {
             | Effect::SendEvent(..) => default(),
             Effect::AoeFaction(_, e)
             | Effect::WithTarget(_, e)
+            | Effect::Repeat(_, e)
             | Effect::WithOwner(_, e)
             | Effect::WithVar(_, _, e) => vec![e],
             Effect::If(_, t, e) => vec![t, e],

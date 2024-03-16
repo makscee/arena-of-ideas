@@ -21,6 +21,7 @@ pub struct Args {
 pub enum RunMode {
     #[default]
     Regular,
+    Offline,
     Test,
     Custom,
     Last,
@@ -32,8 +33,9 @@ pub enum RunMode {
 
 fn main() {
     let args = Args::try_parse().unwrap_or_default();
+    dbg!(&args);
     let next_state = match args.mode {
-        RunMode::Regular => GameState::MainMenu,
+        RunMode::Regular | RunMode::Offline => GameState::MainMenu,
         RunMode::Custom => GameState::CustomBattle,
         RunMode::Gallery => GameState::HeroGallery,
         RunMode::Last => GameState::LastBattle,
@@ -53,6 +55,7 @@ fn main() {
         });
     match args.mode {
         RunMode::Regular
+        | RunMode::Offline
         | RunMode::Custom
         | RunMode::Gallery
         | RunMode::Last
@@ -74,6 +77,9 @@ fn main() {
             })
         }
     };
+    if matches!(args.mode, RunMode::Offline) {
+        set_offline(true);
+    }
     let mut app = App::new();
     app.add_state::<GameState>()
         .insert_resource(ClearColor(Color::rgb(0.1, 0.1, 0.1)))
@@ -140,7 +146,7 @@ fn main() {
                 .after(HeroEditorPlugin::ui),
         );
     match args.mode {
-        RunMode::Regular | RunMode::Continue | RunMode::Last | RunMode::Sync => {
+        RunMode::Regular | RunMode::Offline | RunMode::Continue | RunMode::Last | RunMode::Sync => {
             app.add_systems(OnExit(GameState::Loading), LoginPlugin::setup);
         }
         RunMode::Test | RunMode::Custom | RunMode::Gallery | RunMode::Editor => {}
