@@ -1,0 +1,28 @@
+(
+    name: "Leech",
+    hp: 4,
+    atk: 1,
+    stacks: 1,
+    level: 1,
+    houses: "Vampires",
+    description: "%trigger → use %effect on killer",
+    trigger: Fire(trigger: AfterDamageDealt, target: Target, effect: UseAbility("Siphon", 2), period: 0),
+    representation: (
+        material: Shape(
+            shape: Circle(radius: Sum(Sum(Float(0.7), Mul(Index, Float(0.08))), Mul(Beat, Float(0.05)))),
+            shape_type: Line(thickness: Float(1.0)),
+            fill: GradientLinear(
+                point1: Vec2(0.0, -0.5),
+                point2: Vec2(0.0, 0.5),
+                parts: [Float(0.0), Sum(Float(1.24), Mul(Index, Float(0.0)))],
+                colors: [State(Color), Hex("00000000")],
+            ),
+            alpha: Float(1.0),
+        ),
+        mapping: {
+            Offset: Vec2EE(Sum(Mul(Index, Float(-0.04)), Mul(Abs(Beat), Mul(Float(0.1), Index))), Zero),
+            Rotation: Float(1.57),
+        },
+        count: 2,
+    ),
+)
