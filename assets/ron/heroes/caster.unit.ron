@@ -1,0 +1,41 @@
+(
+    name: "Caster",
+    hp: 1,
+    atk: 1,
+    stacks: 1,
+    level: 1,
+    houses: "Mages",
+    description: "%trigger → %effect on killer",
+    trigger: Fire(
+        trigger: AllyDeath,
+        target: TargetStateLast(LastAttacker),
+        effect: UseAbility("Magic Missile", 2),
+        period: 0,
+    ),
+    representation: (
+        material: Shape(
+            shape: Circle(radius: Float(0.15)),
+            shape_type: Opaque,
+            fill: Solid(color: State(Color)),
+            alpha: Float(1.0),
+        ),
+        children: [
+            (
+                material: Shape(
+                    shape: Circle(radius: Float(0.32)),
+                    shape_type: Line(thickness: Float(1.0)),
+                    fill: Solid(color: State(Color)),
+                    alpha: Float(1.0),
+                ),
+                count: 0,
+            ),
+        ],
+        mapping: {
+            Offset: Vec2EE(
+                Mul(Sin(Sum(GameTime, Mul(Index, Float(4.0)))), Float(0.3)),
+                Mul(Cos(Sum(Mul(Float(3.0), GameTime), Index)), Float(0.1)),
+            ),
+        },
+        count: 2,
+    ),
+)
