@@ -1,7 +1,7 @@
 (
     material: Shape(
         shape: Circle(
-            radius: Sum(Mul(If(Even(State(Slot)), Beat, Mul(Beat, Float(-1.0))), Float(0.1)), Float(1.0)),
+            radius: Sum(Mul(If(Even(State(Slot)), Mul(Beat, Float(-1.0)), Beat), Float(0.1)), Float(1.0)),
         ),
         shape_type: Line(thickness: Float(1.0)),
         fill: Solid(color: Hex("#B0BEC5")),
