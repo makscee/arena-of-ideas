@@ -13,6 +13,7 @@ enum ContextLayer {
     Owner(Entity, String),
     Status(Entity, String),
     Var(VarName, VarValue),
+    AbilityVar(String, VarName, VarValue),
     Text(String),
 }
 
@@ -38,6 +39,18 @@ impl ContextLayer {
     pub fn get_status(&self) -> Option<Entity> {
         match self {
             ContextLayer::Status(entity, ..) => Some(*entity),
+            _ => None,
+        }
+    }
+    pub fn get_ability_var(&self, ability: &str, var: VarName) -> Option<VarValue> {
+        match self {
+            ContextLayer::AbilityVar(a, v, val) => {
+                if ability.eq(a) && var.eq(v) {
+                    Some(val.clone())
+                } else {
+                    None
+                }
+            }
             _ => None,
         }
     }
@@ -120,6 +133,22 @@ impl Context {
     }
     pub fn set_var(&mut self, var: VarName, value: VarValue) -> &mut Self {
         self.layers.push(ContextLayer::Var(var, value));
+        self
+    }
+
+    pub fn get_ability_var(&self, ability: &str, var: VarName) -> Option<VarValue> {
+        let mut result = None;
+        for layer in self.layers.iter().rev() {
+            result = layer.get_ability_var(ability, var);
+            if result.is_some() {
+                break;
+            }
+        }
+        result
+    }
+    pub fn set_ability_var(&mut self, ability: String, var: VarName, value: VarValue) -> &mut Self {
+        self.layers
+            .push(ContextLayer::AbilityVar(ability, var, value));
         self
     }
 
@@ -236,6 +265,7 @@ impl std::fmt::Display for ContextLayer {
             ContextLayer::Owner(..) => self_text.blue(),
             ContextLayer::Status(..) => self_text.bright_cyan(),
             ContextLayer::Var(..) => self_text.purple(),
+            ContextLayer::AbilityVar(..) => self_text.bright_purple(),
             ContextLayer::Text(..) => self_text.white(),
         };
         match self {
@@ -244,6 +274,9 @@ impl std::fmt::Display for ContextLayer {
             | ContextLayer::Owner(entity, name)
             | ContextLayer::Status(entity, name) => write!(f, "{self_text} {entity:?} {name}"),
             ContextLayer::Var(var, value) => write!(f, "{self_text} {var} -> {value:?}"),
+            ContextLayer::AbilityVar(ability, var, value) => {
+                write!(f, "{self_text} {ability} {var} -> {value:?}")
+            }
             ContextLayer::Text(text) => write!(f, "{self_text} {text}"),
         }
     }

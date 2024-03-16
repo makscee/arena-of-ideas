@@ -58,4 +58,22 @@ impl Vfx {
         });
         self
     }
+
+    pub fn show_text(
+        text: String,
+        color: Color,
+        target: Entity,
+        context: &Context,
+        world: &mut World,
+    ) -> Result<()> {
+        Pools::get_vfx("text", world)
+            .clone()
+            .set_var(
+                VarName::Position,
+                VarState::get(target, world).get_value_last(VarName::Position)?,
+            )
+            .set_var(VarName::Text, VarValue::String(text))
+            .set_var(VarName::Color, VarValue::Color(color))
+            .unpack(world)
+    }
 }

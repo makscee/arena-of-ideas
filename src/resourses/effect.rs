@@ -18,6 +18,7 @@ pub enum Effect {
     ListSpread(Vec<Box<Effect>>),
     WithVar(VarName, Expression, Box<Effect>),
     StateAddVar(VarName, Expression, Expression),
+    AbilityStateAddVar(String, VarName, Expression),
     UseAbility(String, i32),
     Summon(String),
     AddStatus(String),
@@ -74,15 +75,13 @@ impl Effect {
                         .unpack(world)?;
                 }
                 let value = value.max(0);
-                Pools::get_vfx("text", world)
-                    .clone()
-                    .set_var(
-                        VarName::Position,
-                        VarValue::Vec2(UnitPlugin::get_unit_position(context.target(), world)?),
-                    )
-                    .set_var(VarName::Text, VarValue::String(format!("-{value}")))
-                    .set_var(VarName::Color, VarValue::Color(Color::ORANGE_RED))
-                    .unpack(world)?;
+                Vfx::show_text(
+                    format!("-{value}"),
+                    Color::ORANGE_RED,
+                    context.target(),
+                    context,
+                    world,
+                )?;
             }
             Effect::Kill => {
                 let target = context.get_target().context("Target not found")?;
@@ -117,15 +116,25 @@ impl Effect {
                     .color
                     .clone()
                     .into();
-                Pools::get_vfx("text", world)
-                    .clone()
-                    .set_var(
-                        VarName::Position,
-                        VarState::get(context.owner(), world).get_value_last(VarName::Position)?,
-                    )
-                    .set_var(VarName::Text, VarValue::String(format!("Use {ability}")))
-                    .set_var(VarName::Color, VarValue::Color(color))
-                    .unpack(world)?;
+                let faction = context
+                    .get_var(VarName::Faction, world)
+                    .context("Faction absent")?
+                    .get_faction()?;
+                if let Some(ability_state) = PackedTeam::get_ability_state(faction, ability, world)
+                {
+                    for (var, history) in ability_state.history.iter() {
+                        if let Some(value) = history.get_last() {
+                            context.set_ability_var(ability.to_owned(), *var, value);
+                        }
+                    }
+                }
+                Vfx::show_text(
+                    format!("Use {ability}"),
+                    color,
+                    context.owner(),
+                    context,
+                    world,
+                )?;
                 {
                     let mut context = context
                         .clone()
@@ -307,6 +316,33 @@ impl Effect {
                 };
                 state.push_back(*var, VarChange::new(value));
             }
+            Effect::AbilityStateAddVar(ability, var, value) => {
+                let value = value.get_value(context, world)?;
+                let faction = context
+                    .get_var(VarName::Faction, world)
+                    .context("Faction absent")?
+                    .get_faction()?;
+                let mut states = PackedTeam::get_ability_states_mut(faction, world)
+                    .context("Ability states absent")?;
+                let state = states.0.entry(ability.to_owned()).or_default();
+                let value = match state.get_value_last(*var) {
+                    Ok(prev) => VarValue::sum(&value, &prev)?,
+                    Err(_) => value,
+                };
+                state.push_back(*var, VarChange::new(value.clone()));
+                let color = Pools::get_ability_house(ability, world)
+                    .with_context(|| format!("Failed to find house for ability {ability}"))?
+                    .color
+                    .clone()
+                    .into();
+                Vfx::show_text(
+                    format!("{ability} {var} add {value}"),
+                    color,
+                    context.owner(),
+                    context,
+                    world,
+                )?;
+            }
             Effect::FullCopy => {
                 let owner = context.owner();
                 let target = context.target();
@@ -348,7 +384,45 @@ impl Effect {
                                     .push_back(var, VarChange::new(value));
                             }
                         }
-                    } else {
+                    } else {(
+    name: "Enhancer",
+    hp: 1,
+    atk: 0,
+    stacks: 1,
+    level: 1,
+    houses: "Mages",
+    description: "%trigger → [Magic Missile] {+1} {DMG}",
+    trigger: Fire(
+        trigger: BattleStart,
+        target: Owner,
+        effect: AbilityStateAddVar("Magic Missile", Value, Int(1)),
+        period: 0,
+    ),
+    representation: (
+        material: Shape(
+            shape: Circle(
+                radius: Max(Sin(Sum(Sum(GameTime, Mul(PI, Float(1.5))), Index)), Sum(Float(0.4), Mul(Index, Float(0.05)))),
+            ),
+            shape_type: Line(
+                thickness: Float(1.0),
+            ),
+            fill: Solid(
+                color: State(Color),
+            ),
+            alpha: Context(T),
+        ),
+        children: [],
+        mapping: {
+            T: Sin(Sum(GameTime, Index)),
+        },
+        count: 4,
+    ),
+    state: (
+        history: {},
+        birth: 0.0,
+    ),
+    statuses: [],
+)
                         status
                             .clone()
                             .spawn(world)
@@ -406,6 +480,7 @@ impl Effect {
             | Effect::AddStatus(..)
             | Effect::Vfx(..)
             | Effect::StateAddVar(..)
+            | Effect::AbilityStateAddVar(..)
             | Effect::SendEvent(..) => default(),
             Effect::AoeFaction(_, e)
             | Effect::WithTarget(_, e)

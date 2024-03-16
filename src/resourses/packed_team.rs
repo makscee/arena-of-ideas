@@ -8,34 +8,65 @@ pub struct PackedTeam {
     pub units: Vec<PackedUnit>,
     #[serde(default)]
     pub state: VarState,
+    #[serde(default)]
+    pub ability_states: HashMap<String, VarState>,
 }
+
+#[derive(Component, Default, Clone, Debug)]
+pub struct AbilityStates(pub HashMap<String, VarState>);
 
 impl PackedTeam {
     pub fn new(units: Vec<PackedUnit>) -> Self {
         Self {
             units,
             state: default(),
+            ability_states: default(),
         }
     }
     pub fn from_table_units(units: Vec<TableUnit>) -> Self {
         Self::new(units.into_iter().map(|u| u.into()).collect())
     }
+    pub fn unpack(self, faction: Faction, world: &mut World) {
+        let team = Self::spawn(faction, world);
+        self.state.attach(team, world);
+        world
+            .entity_mut(team)
+            .insert(AbilityStates(self.ability_states));
+        for (i, unit) in self.units.into_iter().enumerate() {
+            unit.unpack(team, Some(i + 1), world);
+        }
+    }
     pub fn pack(faction: Faction, world: &mut World) -> Self {
-        let state = VarState::get(Self::find_entity(faction, world).unwrap(), world).clone();
+        let team = Self::find_entity(faction, world).unwrap();
+        let state = VarState::get(team, world).clone();
+        let ability_states = world.get::<AbilityStates>(team).unwrap().0.clone();
         let units = UnitPlugin::collect_factions(HashSet::from([faction]), world)
             .into_iter()
             .map(|(u, _)| PackedUnit::pack(u, world))
             .sorted_by_key(|u| u.state.get_int(VarName::Slot).unwrap_or_default())
             .collect_vec();
-        PackedTeam { units, state }
-    }
-    pub fn unpack(self, faction: Faction, world: &mut World) {
-        let team = Self::spawn(faction, world);
-        self.state.attach(team, world);
-        for (i, unit) in self.units.into_iter().enumerate() {
-            unit.unpack(team, Some(i + 1), world);
+        PackedTeam {
+            units,
+            state,
+            ability_states,
         }
     }
+    pub fn get_ability_state<'a>(
+        faction: Faction,
+        ability: &str,
+        world: &'a mut World,
+    ) -> Option<&'a VarState> {
+        let team = Self::find_entity(faction, world)?;
+        world.get::<AbilityStates>(team)?.0.get(ability)
+    }
+    pub fn get_ability_states_mut<'a>(
+        faction: Faction,
+        world: &'a mut World,
+    ) -> Option<Mut<'a, AbilityStates>> {
+        let team = Self::find_entity(faction, world)?;
+        world.get_mut::<AbilityStates>(team)
+    }
+
     pub fn spawn(faction: Faction, world: &mut World) -> Entity {
         Self::despawn(faction, world);
         let team = world
@@ -47,6 +78,7 @@ impl PackedTeam {
                 Transform::default(),
                 GlobalTransform::default(),
                 VisibilityBundle::default(),
+                AbilityStates::default(),
             ))
             .id();
         if faction == Faction::Team {

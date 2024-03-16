@@ -764,6 +764,24 @@ impl EditorNodeGenerator for Effect {
                     });
                 });
             }
+            Effect::AbilityStateAddVar(name, x, value) => {
+                ui.vertical(|ui| {
+                    ComboBox::from_id_source(Id::new(path).with("ability"))
+                        .selected_text(name.to_owned())
+                        .show_ui(ui, |ui| {
+                            for option in Pools::get(world).abilities.keys() {
+                                let text = option.to_string();
+                                ui.selectable_value(name, option.to_owned(), text);
+                            }
+                        });
+                    x.show_editor(Id::new(path).with("var"), ui);
+                    ui.horizontal(|ui| {
+                        ui.label("value:");
+                        let value = value.get_value(context, world);
+                        show_value(&value, ui);
+                    });
+                });
+            }
             Effect::UseAbility(name, mult) => {
                 ui.vertical(|ui| {
                     ComboBox::from_id_source(&path)
@@ -865,7 +883,9 @@ impl EditorNodeGenerator for Effect {
             | Effect::RemoveLocalTrigger
             | Effect::Debug(..) => {}
 
-            Effect::Text(e) => show_node(e, format!("{path}:e"), connect_pos, context, ui, world),
+            Effect::Text(e) | Effect::AbilityStateAddVar(_, _, e) => {
+                show_node(e, format!("{path}:e"), connect_pos, context, ui, world)
+            }
             Effect::Damage(e) => {
                 if let Some(e) = e {
                     show_node(e, format!("{path}:e"), connect_pos, context, ui, world);
