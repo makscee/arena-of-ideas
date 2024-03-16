@@ -79,7 +79,6 @@ impl Effect {
                     format!("-{value}"),
                     Color::ORANGE_RED,
                     context.target(),
-                    context,
                     world,
                 )?;
             }
@@ -128,13 +127,7 @@ impl Effect {
                         }
                     }
                 }
-                Vfx::show_text(
-                    format!("Use {ability}"),
-                    color,
-                    context.owner(),
-                    context,
-                    world,
-                )?;
+                Vfx::show_text(format!("Use {ability}"), color, context.owner(), world)?;
                 {
                     let mut context = context
                         .clone()
@@ -340,7 +333,6 @@ impl Effect {
                     color,
                     context.owner(),
                     context,
-                    world,
                 )?;
             }
             Effect::FullCopy => {
@@ -384,45 +376,7 @@ impl Effect {
                                     .push_back(var, VarChange::new(value));
                             }
                         }
-                    } else {(
-    name: "Enhancer",
-    hp: 1,
-    atk: 0,
-    stacks: 1,
-    level: 1,
-    houses: "Mages",
-    description: "%trigger → [Magic Missile] {+1} {DMG}",
-    trigger: Fire(
-        trigger: BattleStart,
-        target: Owner,
-        effect: AbilityStateAddVar("Magic Missile", Value, Int(1)),
-        period: 0,
-    ),
-    representation: (
-        material: Shape(
-            shape: Circle(
-                radius: Max(Sin(Sum(Sum(GameTime, Mul(PI, Float(1.5))), Index)), Sum(Float(0.4), Mul(Index, Float(0.05)))),
-            ),
-            shape_type: Line(
-                thickness: Float(1.0),
-            ),
-            fill: Solid(
-                color: State(Color),
-            ),
-            alpha: Context(T),
-        ),
-        children: [],
-        mapping: {
-            T: Sin(Sum(GameTime, Index)),
-        },
-        count: 4,
-    ),
-    state: (
-        history: {},
-        birth: 0.0,
-    ),
-    statuses: [],
-)
+                    } else {
                         status
                             .clone()
                             .spawn(world)

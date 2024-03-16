@@ -59,13 +59,7 @@ impl Vfx {
         self
     }
 
-    pub fn show_text(
-        text: String,
-        color: Color,
-        target: Entity,
-        context: &Context,
-        world: &mut World,
-    ) -> Result<()> {
+    pub fn show_text(text: String, color: Color, target: Entity, world: &mut World) -> Result<()> {
         Pools::get_vfx("text", world)
             .clone()
             .set_var(
