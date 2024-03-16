@@ -332,7 +332,7 @@ impl Effect {
                     format!("{ability} {var} add {value}"),
                     color,
                     context.owner(),
-                    context,
+                    world,
                 )?;
             }
             Effect::FullCopy => {
