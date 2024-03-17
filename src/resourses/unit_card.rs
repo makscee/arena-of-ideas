@@ -159,16 +159,20 @@ impl VarState {
             if !added_definitions.insert(name.clone()) {
                 continue;
             }
-            definitions.push((
-                name.add_color(color)
-                    .set_style(ColoredStringStyle::Bold)
-                    .take(),
-                description
-                    .to_colored()
-                    .inject_definitions(world)
-                    .inject_vars(&default()),
-            ));
             raw_definitions.extend(description.extract_bracketed(("[", "]")));
+            let name_colored = name
+                .add_color(color)
+                .set_style(ColoredStringStyle::Bold)
+                .take();
+            let description = description.to_colored().inject_definitions(world);
+            let vars = self
+                .parent(world)
+                .and_then(|s| s.get_faction(VarName::Faction).ok())
+                .and_then(|f| TeamPlugin::get_ability_state(f, &name, world));
+            definitions.push((
+                name_colored,
+                description.inject_vars(vars.unwrap_or(&default())),
+            ));
         }
         Ok(definitions)
     }

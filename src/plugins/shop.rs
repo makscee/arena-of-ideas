@@ -55,8 +55,8 @@ impl ShopPlugin {
 
     fn on_enter(world: &mut World) {
         GameTimer::get().reset();
-        PackedTeam::spawn(Faction::Shop, world);
-        PackedTeam::spawn(Faction::Team, world);
+        TeamPlugin::spawn(Faction::Shop, world);
+        TeamPlugin::spawn(Faction::Team, world);
         let update_callback = ArenaRun::on_update(|_, new, event| {
             debug!("ArenaRun callback: {event:?}");
             let new = new.clone();
@@ -138,7 +138,7 @@ impl ShopPlugin {
     fn sync_units(units: &Vec<TeamUnit>, faction: Faction, world: &mut World) {
         debug!("Start sync {} {faction}", units.len());
         let world_units = UnitPlugin::collect_faction_ids(faction, world);
-        let team = PackedTeam::find_entity(faction, world).unwrap();
+        let team = TeamPlugin::find_entity(faction, world).unwrap();
         for unit in units {
             if world_units.contains_key(&unit.id) {
                 continue;

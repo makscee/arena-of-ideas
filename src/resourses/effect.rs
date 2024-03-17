@@ -112,7 +112,7 @@ impl Effect {
                     .clone();
                 let color = Pools::get_color_by_name(ability, world)?;
                 let faction = context.get_faction(world)?;
-                PackedTeam::inject_ability_state(faction, ability, context, world);
+                TeamPlugin::inject_ability_state(faction, ability, context, world);
                 Vfx::show_text(format!("Use {ability}"), color, context.owner(), world)?;
                 {
                     let mut context = context
@@ -139,7 +139,7 @@ impl Effect {
                     .with_context(|| format!("Summon unit not found {name}"))?
                     .clone();
                 let faction = context.get_faction(world)?;
-                PackedTeam::inject_ability_state(faction, name, context, world);
+                TeamPlugin::inject_ability_state(faction, name, context, world);
                 let extra_hp = context
                     .get_ability_var(name, VarName::Hp)
                     .unwrap_or(VarValue::Int(0))
@@ -176,7 +176,7 @@ impl Effect {
                     }
                     let faction = context.get_faction(world)?;
                     let parent =
-                        PackedTeam::find_entity(faction, world).context("Team not found")?;
+                        TeamPlugin::find_entity(faction, world).context("Team not found")?;
                     let entity = unit.unpack(parent, None, world);
                     UnitPlugin::fill_slot_gaps(faction, world);
                     UnitPlugin::translate_to_slots(world);
@@ -300,21 +300,10 @@ impl Effect {
             Effect::AbilityStateAddVar(ability, var, value) => {
                 let value = value.get_value(context, world)?;
                 let faction = context.get_faction(world)?;
-                let mut states = PackedTeam::get_ability_states_mut(faction, world)
-                    .context("Ability states absent")?;
-                let state = states.0.entry(ability.to_owned()).or_default();
-                let value = match state.get_value_last(*var) {
-                    Ok(prev) => VarValue::sum(&value, &prev)?,
-                    Err(_) => value,
-                };
-                state.push_back(*var, VarChange::new(value.clone()));
+                let text = format!("{ability} {var} add {value}");
+                TeamPlugin::add_ability_var(faction, ability, *var, value, world)?;
                 let color = Pools::get_color_by_name(ability, world)?;
-                Vfx::show_text(
-                    format!("{ability} {var} add {value}"),
-                    color,
-                    context.owner(),
-                    world,
-                )?;
+                Vfx::show_text(text, color, context.owner(), world)?;
             }
             Effect::FullCopy => {
                 let owner = context.owner();

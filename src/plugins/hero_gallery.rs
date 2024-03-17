@@ -34,7 +34,7 @@ impl Default for HeroGalleryData {
 impl HeroGallery {
     fn reload(world: &mut World) {
         let data = PersistentData::load(world).hero_gallery_data;
-        let team = PackedTeam::spawn(Faction::Left, world);
+        let team = TeamPlugin::spawn(Faction::Left, world);
         let heroes = Pools::get(world)
             .heroes
             .values()

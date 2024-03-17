@@ -5,6 +5,8 @@ pub struct VarState {
     pub history: HashMap<VarName, History>,
     #[serde(default)]
     pub birth: f32,
+    #[serde(skip)]
+    pub entity: Option<Entity>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, Reflect, PartialEq)]
@@ -37,6 +39,15 @@ pub enum Tween {
     BackIn,
 }
 
+impl From<HashMap<VarName, VarValue>> for VarState {
+    fn from(value: HashMap<VarName, VarValue>) -> Self {
+        Self {
+            history: HashMap::from_iter(value.into_iter().map(|(k, v)| (k, History::new(v)))),
+            ..default()
+        }
+    }
+}
+
 impl VarState {
     pub fn new_with(var: VarName, value: VarValue) -> Self {
         mem::take(Self::default().init(var, value))
@@ -44,11 +55,17 @@ impl VarState {
 
     pub fn attach(mut self, entity: Entity, world: &mut World) {
         self.birth = GameTimer::get().insert_head();
+        self.entity = Some(entity);
         if let Ok(mut state) = Self::try_get_mut(entity, world) {
             state.history.extend(self.history.drain());
         } else {
             world.entity_mut(entity).insert(self);
         }
+    }
+    pub fn parent<'a>(&self, world: &'a World) -> Option<&'a VarState> {
+        self.entity
+            .and_then(|e| e.get_parent(world))
+            .and_then(|e| Self::try_get(e, world).ok())
     }
 
     pub fn get(entity: Entity, world: &World) -> &Self {

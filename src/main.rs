@@ -135,6 +135,7 @@ fn main() {
             AlertPlugin,
             AssetsSyncPlugin,
             OperationsPlugin,
+            TeamPlugin,
         ))
         .add_systems(Update, input_world)
         .register_type::<VarState>()

@@ -13,6 +13,7 @@ pub struct Pools {
     pub statuses: HashMap<String, PackedStatus>,
     pub abilities: HashMap<String, Ability>,
     pub summons: HashMap<String, PackedUnit>,
+    pub default_ability_states: HashMap<String, VarState>,
     #[asset(key = "pool.vfx", collection(typed, mapped))]
     vfx_handles: HashMap<String, Handle<Vfx>>,
     pub vfx: HashMap<String, Vfx>,
@@ -77,6 +78,9 @@ impl Pools {
             .cloned()
             .with_context(|| format!("Color not found for {name}"))
     }
+    pub fn get_default_ability_state<'a>(name: &str, world: &'a World) -> Option<&'a VarState> {
+        Self::try_get(world)?.default_ability_states.get(name)
+    }
 }
 
 pub struct PoolsPlugin;
@@ -111,6 +115,11 @@ impl PoolsPlugin {
         debug!("Setup {} houses", houses.len());
         let mut pools = Pools::get_mut(world);
         for house in houses.values() {
+            for (ability, data) in house.defaults.iter() {
+                pools
+                    .default_ability_states
+                    .insert(ability.to_owned(), data.clone().into());
+            }
             let color: Color = house.color.clone().into();
             for ability in house.abilities.iter() {
                 pools.colors.insert(ability.name.clone(), color.clone());

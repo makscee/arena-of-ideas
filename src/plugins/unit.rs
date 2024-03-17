@@ -90,7 +90,7 @@ impl UnitPlugin {
     }
 
     pub fn collect_faction(faction: Faction, world: &mut World) -> Vec<Entity> {
-        if let Some(team) = PackedTeam::find_entity(faction, world) {
+        if let Some(team) = TeamPlugin::find_entity(faction, world) {
             if let Some(children) = world.get::<Children>(team) {
                 return children
                     .iter()
@@ -377,7 +377,7 @@ impl UnitPlugin {
 
     pub fn spawn_slot(slot: usize, faction: Faction, world: &mut World) {
         let pos = UnitPlugin::get_slot_position(Faction::Team, slot);
-        if let Some(team) = PackedTeam::find_entity(faction, world) {
+        if let Some(team) = TeamPlugin::find_entity(faction, world) {
             let entity = world.spawn_empty().set_parent(team).id();
             let rep = Options::get_slot_rep(world).clone().unpack(entity, world);
             let mut state = VarState::new_with(VarName::Position, VarValue::Vec2(pos));
@@ -433,7 +433,7 @@ impl Faction {
         }
     }
     pub fn team_entity(&self, world: &mut World) -> Entity {
-        PackedTeam::find_entity(*self, world).unwrap_or_else(|| PackedTeam::spawn(*self, world))
+        TeamPlugin::find_entity(*self, world).unwrap_or_else(|| TeamPlugin::spawn(*self, world))
     }
 }
 

@@ -11,4 +11,6 @@ pub struct House {
     pub statuses: Vec<PackedStatus>,
     #[serde(default)]
     pub summons: Vec<PackedUnit>,
+    #[serde(default)]
+    pub defaults: HashMap<String, HashMap<VarName, VarValue>>,
 }

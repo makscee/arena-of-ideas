@@ -459,8 +459,8 @@ impl HeroEditorData {
     fn load(&mut self, world: &mut World) {
         debug!("Load hero editor data start");
         UnitPlugin::despawn_all_teams(world);
-        let left = PackedTeam::spawn(Faction::Left, world);
-        let right = PackedTeam::spawn(Faction::Right, world);
+        let left = TeamPlugin::spawn(Faction::Left, world);
+        let right = TeamPlugin::spawn(Faction::Right, world);
         self.teams.0.iter().for_each(|u| {
             u.clone().unpack(left, None, world);
         });
@@ -498,7 +498,7 @@ impl HeroEditorData {
 
     fn spawn(&mut self, faction: Faction, world: &mut World) {
         ron::from_str::<PackedUnit>("()").unwrap().unpack(
-            PackedTeam::find_entity(faction, world).unwrap(),
+            TeamPlugin::find_entity(faction, world).unwrap(),
             None,
             world,
         );
