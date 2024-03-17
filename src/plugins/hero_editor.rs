@@ -778,6 +778,7 @@ impl EditorNodeGenerator for Effect {
                                     .chain(pools.statuses.keys())
                                     .chain(pools.summons.keys())
                                     .unique()
+                                    .sorted()
                             };
                             for option in names {
                                 let text = option.to_string();
@@ -797,7 +798,7 @@ impl EditorNodeGenerator for Effect {
                     ComboBox::from_id_source(&path)
                         .selected_text(name.to_owned())
                         .show_ui(ui, |ui| {
-                            for option in Pools::get(world).abilities.keys() {
+                            for option in Pools::get(world).abilities.keys().sorted() {
                                 let text = option.to_string();
                                 ui.selectable_value(name, option.to_owned(), text);
                             }
@@ -810,7 +811,7 @@ impl EditorNodeGenerator for Effect {
                     ComboBox::from_id_source(&path)
                         .selected_text(name.to_owned())
                         .show_ui(ui, |ui| {
-                            for option in Pools::get(world).summons.keys() {
+                            for option in Pools::get(world).summons.keys().sorted() {
                                 let text = option.to_string();
                                 ui.selectable_value(name, option.to_owned(), text);
                             }
@@ -822,7 +823,7 @@ impl EditorNodeGenerator for Effect {
                     ComboBox::from_id_source(&path)
                         .selected_text(name.to_owned())
                         .show_ui(ui, |ui| {
-                            for option in Pools::get(world).statuses.keys() {
+                            for option in Pools::get(world).statuses.keys().sorted() {
                                 let text = option.to_string();
                                 ui.selectable_value(name, option.to_owned(), text);
                             }
@@ -834,7 +835,7 @@ impl EditorNodeGenerator for Effect {
                     ComboBox::from_id_source(&path)
                         .selected_text(name.to_owned())
                         .show_ui(ui, |ui| {
-                            for option in Pools::get(world).vfx.keys() {
+                            for option in Pools::get(world).vfx.keys().sorted() {
                                 let text = option.to_string();
                                 ui.selectable_value(name, option.to_owned(), text);
                             }

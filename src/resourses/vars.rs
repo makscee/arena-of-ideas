@@ -114,6 +114,7 @@ impl VarValue {
             VarValue::Bool(value) => Ok(*value),
             VarValue::Int(value) => Ok(*value > 0),
             VarValue::Float(value) => Ok(*value > 0.0),
+            VarValue::String(value) => Ok(!value.is_empty()),
             VarValue::None => Ok(false),
             _ => Err(anyhow!("Bool not supported by {self:?}")),
         }

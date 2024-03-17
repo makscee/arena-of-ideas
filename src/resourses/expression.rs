@@ -50,6 +50,7 @@ pub enum Expression {
     TargetStateLast(VarName),
     Context(VarName),
     AbilityContext(String, VarName),
+    AbilityState(String, VarName),
     Value(VarValue),
 
     Vec2(f32, f32),
@@ -189,6 +190,12 @@ impl Expression {
             Expression::AbilityContext(ability, var) => context
                 .get_ability_var(ability, *var)
                 .with_context(|| format!("Var {var} was not found")),
+            Expression::AbilityState(ability, var) => {
+                let faction = context.get_faction(world)?;
+                TeamPlugin::get_ability_state(faction, ability, world)
+                    .with_context(|| format!("No ability state for {faction} {ability}"))?
+                    .get_value_at(*var, GameTimer::get().play_head())
+            }
             Expression::Index => Expression::Context(VarName::Index).get_value(context, world),
             Expression::Owner => Ok(VarValue::Entity(
                 context.get_owner().context("Owner not found")?,
@@ -475,6 +482,7 @@ impl Expression {
             | Self::TargetStateLast(..)
             | Self::Context(..)
             | Self::AbilityContext(..)
+            | Self::AbilityState(..)
             | Self::Value(..)
             | Self::Vec2(..) => default(),
             Self::StringInt(x)
@@ -591,6 +599,7 @@ impl Expression {
             | Expression::TargetStateLast(_)
             | Expression::Context(_)
             | Expression::AbilityContext(..)
+            | Expression::AbilityState(..)
             | Expression::Value(_)
             | Expression::Vec2(_, _) => hex_color!("#18FFFF"),
             Expression::Vec2E(_)
@@ -666,7 +675,9 @@ impl Expression {
             Expression::TargetState(v) => format!("{self}({v})"),
             Expression::TargetStateLast(v) => format!("{self}({v})"),
             Expression::Context(v) => format!("{self}({v})"),
-            Expression::AbilityContext(a, v) => format!("{self}({a}:{v})"),
+            Expression::AbilityContext(a, v) | Expression::AbilityState(a, v) => {
+                format!("{self}({a}:{v})")
+            }
             Expression::Value(v) => format!("{self}({v})"),
             Expression::Vec2(x, y) => format!("({x}, {y})"),
             Expression::Vec2E(x) => format!("({x}, {x})"),
@@ -830,6 +841,7 @@ impl EditorNodeGenerator for Expression {
             | Expression::TargetStateLast(_)
             | Expression::Context(_)
             | Expression::AbilityContext(_, _)
+            | Expression::AbilityState(_, _)
             | Expression::Value(_)
             | Expression::Vec2(_, _) => default(),
             Expression::Sin(x)

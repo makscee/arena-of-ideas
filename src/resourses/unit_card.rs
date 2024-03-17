@@ -109,7 +109,7 @@ impl VarState {
     }
     fn statuses(
         &self,
-        statuses: Vec<(String, i32)>,
+        statuses: &Vec<(String, i32)>,
         world: &World,
     ) -> Result<Vec<(ColoredString, i32, ColoredString)>> {
         let lines = statuses
@@ -118,14 +118,19 @@ impl VarState {
                 |(name, charges)| match Pools::get_status_house(&name, world) {
                     Some(h) => {
                         let color = h.color.clone().into();
-                        let state = VarState::new_with(VarName::Charges, VarValue::Int(charges));
+                        let state = VarState::new_with(VarName::Charges, VarValue::Int(*charges));
                         let description =
                             if let Some(status) = Pools::get_status(&name.to_string(), world) {
-                                status.description.clone().to_colored().inject_vars(&state)
+                                status
+                                    .description
+                                    .clone()
+                                    .to_colored()
+                                    .inject_definitions(world)
+                                    .inject_vars(&state)
                             } else {
                                 ColoredString::default()
                             };
-                        Some((name.add_color(color), charges, description))
+                        Some((name.add_color(color), *charges, description))
                     }
                     None => None,
                 },
@@ -136,12 +141,28 @@ impl VarState {
         }
         Ok(lines)
     }
-    fn definitions(&self, world: &World) -> Result<Vec<(ColoredString, ColoredString)>> {
+    fn definitions(
+        &self,
+        statuses: &Vec<(String, i32)>,
+        world: &World,
+    ) -> Result<Vec<(ColoredString, ColoredString)>> {
         let t = GameTimer::get().play_head();
         let description = self.get_string_at(VarName::EffectDescription, t)?;
+        let original_description = self.get_string_at(VarName::Description, t)?;
         let mut definitions: Vec<(ColoredString, ColoredString)> = default();
         let mut added_definitions: HashSet<String> = default();
-        let mut raw_definitions = VecDeque::from_iter(description.extract_bracketed(("[", "]")));
+        let mut raw_definitions = VecDeque::from_iter(
+            description
+                .extract_bracketed(("[", "]"))
+                .into_iter()
+                .chain(statuses.iter().map(|(s, _)| s.to_owned()))
+                .chain(
+                    original_description
+                        .extract_bracketed(("[", "]"))
+                        .into_iter(),
+                )
+                .unique(),
+        );
         while let Some(name) = raw_definitions.pop_front() {
             let (color, description) = if let Some(ability) = Pools::get_ability(&name, world) {
                 let color: Color32 = Pools::get_color_by_name(&name, world)?.c32();
@@ -216,7 +237,7 @@ impl VarState {
         }
         let expanded = ui.input(|i| i.modifiers.shift) || SettingsData::get(world).expanded_hint;
         let description = self.description(world);
-        let statuses = self.statuses(statuses, world);
+        let statuses_colored = self.statuses(&statuses, world);
         let extra_lines = self.extra_lines();
         frame(ui, |ui| {
             if let Ok(description) = description {
@@ -225,7 +246,7 @@ impl VarState {
                 });
             }
             if !expanded {
-                if let Ok(statuses) = statuses.as_ref() {
+                if let Ok(statuses) = statuses_colored.as_ref() {
                     Self::show_status_lines(statuses, false, ui);
                 }
             }
@@ -244,7 +265,15 @@ impl VarState {
             });
             return Ok(());
         }
-        let definition = self.definitions(world);
+        if let Ok(statuses) = statuses_colored.as_ref() {
+            frame(ui, |ui| {
+                ui.vertical_centered(|ui| {
+                    ui.heading(RichText::new("Statuses").color(white()));
+                });
+                Self::show_status_lines(statuses, open, ui);
+            });
+        }
+        let definition = self.definitions(statuses.as_ref(), world);
         if let Ok(definitions) = definition {
             for (name, text) in &definitions {
                 frame(ui, |ui| {
@@ -254,14 +283,6 @@ impl VarState {
                     });
                 });
             }
-        }
-        if let Ok(statuses) = statuses.as_ref() {
-            frame(ui, |ui| {
-                ui.vertical_centered(|ui| {
-                    ui.heading(RichText::new("Statuses").color(white()));
-                });
-                Self::show_status_lines(statuses, open, ui);
-            });
         }
 
         Ok(())

@@ -1,0 +1,34 @@
+(
+    name: "Exaperimenter",
+    hp: 3,
+    atk: 1,
+    stacks: 1,
+    level: 1,
+    houses: "Death Knights",
+    description: "[Skeleton] apply [Plague] on damage dealt",
+    trigger: Fire(
+        trigger: BattleStart,
+        target: Owner,
+        effect: AbilityStateAddVar("Summon Skeleton", T, String("Plague on damage dealt")),
+        period: 0,
+    ),
+    representation: (
+        material: Shape(
+            shape: Circle(
+                radius: Max(Sin(Sum(Sum(GameTime, Mul(PI, Float(1.5))), Index)), Sum(Float(0.11), Mul(Index, Float(0.05)))),
+            ),
+            shape_type: Line(
+                thickness: Float(1.0),
+            ),
+            fill: Solid(
+                color: State(Color),
+            ),
+            alpha: Context(T),
+        ),
+        children: [],
+        mapping: {
+            T: Sin(Sum(GameTime, Index)),
+        },
+        count: 4,
+    ),
+)

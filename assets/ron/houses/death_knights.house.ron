@@ -2,6 +2,7 @@
 (
     name: "Death Knights",
     color: ("#658D1B"),
+    defaults: {"Summon Skeleton": {T: String("")}},
     statuses: [
         (
             name: "Plague",
@@ -27,7 +28,7 @@
         ),
         (
             name: "Summon Skeleton",
-            description: "Summon enemy {1}/{4}",
+            description: "Summon unfriendly {1}/{4} {T}",
             effect: WithVar(Faction, OppositeFaction, Summon("Skeleton")),
         ),
         (
@@ -45,7 +46,7 @@
             level: 1,
             houses: "Death Knights",
             description: "",
-            trigger: Fire(trigger: Noop, target: Owner, effect: Noop, period: 0),
+            trigger: Fire(trigger: AfterDamageDealt, target: Target, effect: If(AbilityState("Summon Skeleton", T), UseAbility("Plague", 0), Noop)),
             representation: (
                 material: Shape(
                     shape: Rectangle(size: Vec2(0.05, 1.0)),
