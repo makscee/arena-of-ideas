@@ -105,7 +105,7 @@ impl Effect {
                 debug!("Debug effect: {msg}");
             }
             Effect::Noop => {}
-            Effect::UseAbility(ability, mult) => {
+            Effect::UseAbility(ability, base) => {
                 let effect = Pools::get_ability(ability, world)
                     .with_context(|| format!("Ability not found {ability}"))?
                     .effect
@@ -127,7 +127,7 @@ impl Effect {
                                 .get_var(VarName::Level, world)
                                 .map(|v| v.get_int().unwrap())
                                 .unwrap_or(1)
-                                * (*mult).max(1),
+                                + *base,
                         ),
                     );
 

@@ -792,7 +792,7 @@ impl EditorNodeGenerator for Effect {
                     });
                 });
             }
-            Effect::UseAbility(name, mult) => {
+            Effect::UseAbility(name, base) => {
                 ui.vertical(|ui| {
                     ComboBox::from_id_source(&path)
                         .selected_text(name.to_owned())
@@ -802,7 +802,7 @@ impl EditorNodeGenerator for Effect {
                                 ui.selectable_value(name, option.to_owned(), text);
                             }
                         });
-                    DragValue::new(mult).ui(ui);
+                    DragValue::new(base).ui(ui);
                 });
             }
             Effect::Summon(name) => {

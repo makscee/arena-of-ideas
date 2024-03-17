@@ -257,11 +257,11 @@ impl Trigger {
                                 .find_all_abilities()
                                 .into_iter()
                                 .map(|a| match a {
-                                    Effect::UseAbility(ability, mult) => {
+                                    Effect::UseAbility(ability, base) => {
                                         format!(
                                             "[{ability}] ({{Level}}{})",
-                                            if mult > 1 {
-                                                format!("x{mult}")
+                                            if base > 1 {
+                                                format!("+{base}")
                                             } else {
                                                 default()
                                             }
