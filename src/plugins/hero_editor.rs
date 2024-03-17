@@ -601,11 +601,12 @@ pub fn show_node(
         }
     }
 
+    const LOOKUP_KEY: &str = "lookup";
     if name_resp.clicked() {
         name_resp.request_focus();
+        set_context_string(world, LOOKUP_KEY, default());
     }
     if name_resp.has_focus() || name_resp.lost_focus() {
-        const LOOKUP_KEY: &str = "lookup";
         window("replace")
             .order(egui::Order::Foreground)
             .title_bar(false)
