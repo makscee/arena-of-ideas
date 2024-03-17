@@ -278,6 +278,9 @@ impl HeroEditorPlugin {
                                 let hp = &mut unit.hp;
                                 ui.label("hp:");
                                 DragValue::new(hp).clamp_range(0..=99).ui(ui);
+                                let lvl = &mut unit.level;
+                                ui.label("lvl:");
+                                DragValue::new(lvl).clamp_range(1..=99).ui(ui);
                             });
                             ui.horizontal(|ui| {
                                 let houses: HashMap<String, Color> = HashMap::from_iter(

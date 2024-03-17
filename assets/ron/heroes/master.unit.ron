@@ -1,0 +1,43 @@
+(
+    name: "Master",
+    hp: 3,
+    atk: 2,
+    stacks: 1,
+    level: 1,
+    houses: "Death Knights",
+    description: "[Skeleton] HP +({Level}+1) ATK +({Level}+1)",
+    trigger: Fire(
+        trigger: BattleStart,
+        target: Owner,
+        effect: List([
+            AbilityStateAddVar("Skeleton", Hp, Sum(Context(Level), Int(1))),
+            AbilityStateAddVar("Skeleton", Atk, Sum(Context(Level), Int(1))),
+        ]),
+        period: 0,
+    ),
+    representation: (
+        material: Shape(
+            shape: Circle(
+                radius: Max(Sin(Sum(Sum(GameTime, Mul(PI, Float(1.5))), Sum(Index, Int(3)))), Float(0.11)),
+            ),
+            shape_type: Line(
+                thickness: Float(1.0),
+            ),
+            fill: Solid(
+                color: State(Color),
+            ),
+            alpha: Context(T),
+        ),
+        children: [],
+        mapping: {
+            T: Sin(Sum(GameTime, Index)),
+            Offset: Mul(UnitVec(Mul(RandomFloat(Owner), PI2)), Float(0.2)),
+        },
+        count: 4,
+    ),
+    state: (
+        history: {},
+        birth: 0.0,
+    ),
+    statuses: [],
+)

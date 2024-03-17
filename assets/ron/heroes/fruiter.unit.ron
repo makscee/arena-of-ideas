@@ -11,8 +11,8 @@
         target: Owner,
         effect: List(
             [
-                AbilityStateAddVar("Treant", Hp, Context(Charges)),
-                AbilityStateAddVar("Treant", Atk, Context(Charges)),
+                AbilityStateAddVar("Treant", Hp, Context(Level)),
+                AbilityStateAddVar("Treant", Atk, Context(Level)),
             ],
         ),
         period: 0,
