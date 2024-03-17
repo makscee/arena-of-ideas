@@ -66,6 +66,20 @@ impl PackedTeam {
         let team = Self::find_entity(faction, world)?;
         world.get_mut::<AbilityStates>(team)
     }
+    pub fn inject_ability_state(
+        faction: Faction,
+        ability: &str,
+        context: &mut Context,
+        world: &mut World,
+    ) {
+        if let Some(ability_state) = Self::get_ability_state(faction, ability, world) {
+            for (var, history) in ability_state.history.iter() {
+                if let Some(value) = history.get_last() {
+                    context.set_ability_var(ability.to_owned(), *var, value);
+                }
+            }
+        }
+    }
 
     pub fn spawn(faction: Faction, world: &mut World) -> Entity {
         Self::despawn(faction, world);

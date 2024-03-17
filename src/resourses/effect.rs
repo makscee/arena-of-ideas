@@ -110,23 +110,9 @@ impl Effect {
                     .with_context(|| format!("Ability not found {ability}"))?
                     .effect
                     .clone();
-                let color = Pools::get_ability_house(ability, world)
-                    .with_context(|| format!("Failed to find house for ability {ability}"))?
-                    .color
-                    .clone()
-                    .into();
-                let faction = context
-                    .get_var(VarName::Faction, world)
-                    .context("Faction absent")?
-                    .get_faction()?;
-                if let Some(ability_state) = PackedTeam::get_ability_state(faction, ability, world)
-                {
-                    for (var, history) in ability_state.history.iter() {
-                        if let Some(value) = history.get_last() {
-                            context.set_ability_var(ability.to_owned(), *var, value);
-                        }
-                    }
-                }
+                let color = Pools::get_color_by_name(ability, world)?;
+                let faction = context.get_faction(world)?;
+                PackedTeam::inject_ability_state(faction, ability, context, world);
                 Vfx::show_text(format!("Use {ability}"), color, context.owner(), world)?;
                 {
                     let mut context = context
@@ -149,14 +135,23 @@ impl Effect {
                 }
             }
             Effect::Summon(name) => {
-                let unit = Pools::get_summon(name, world)
+                let mut unit = Pools::get_summon(name, world)
                     .with_context(|| format!("Summon unit not found {name}"))?
                     .clone();
-                let color = Pools::get_summon_house(name, world)
-                    .with_context(|| format!("Failed to find house for summon {name}"))?
-                    .color
-                    .clone()
-                    .into();
+                let faction = context.get_faction(world)?;
+                PackedTeam::inject_ability_state(faction, name, context, world);
+                let extra_hp = context
+                    .get_ability_var(name, VarName::Hp)
+                    .unwrap_or(VarValue::Int(0))
+                    .get_int()?;
+                let extra_atk = context
+                    .get_ability_var(name, VarName::Atk)
+                    .unwrap_or(VarValue::Int(0))
+                    .get_int()?;
+                unit.hp += extra_hp;
+                unit.atk += extra_atk;
+
+                let color = Pools::get_color_by_name(name, world)?;
                 Pools::get_vfx("text", world)
                     .clone()
                     .set_var(
@@ -179,10 +174,7 @@ impl Effect {
                                 .unwrap_or(VarValue::Int(1)),
                         );
                     }
-                    let faction = context
-                        .get_var(VarName::Faction, world)
-                        .context("No faction in context")?
-                        .get_faction()?;
+                    let faction = context.get_faction(world)?;
                     let parent =
                         PackedTeam::find_entity(faction, world).context("Team not found")?;
                     let entity = unit.unpack(parent, None, world);
@@ -196,11 +188,7 @@ impl Effect {
                     .get_var(VarName::Charges, world)
                     .unwrap_or(VarValue::Int(1))
                     .get_int()?;
-                let color = Pools::get_status_house(status, world)
-                    .unwrap()
-                    .color
-                    .clone()
-                    .into();
+                let color = Pools::get_color_by_name(status, world)?;
                 Status::change_charges(status, context.target(), charges, world)?;
                 Pools::get_vfx("text", world)
                     .clone()
@@ -311,10 +299,7 @@ impl Effect {
             }
             Effect::AbilityStateAddVar(ability, var, value) => {
                 let value = value.get_value(context, world)?;
-                let faction = context
-                    .get_var(VarName::Faction, world)
-                    .context("Faction absent")?
-                    .get_faction()?;
+                let faction = context.get_faction(world)?;
                 let mut states = PackedTeam::get_ability_states_mut(faction, world)
                     .context("Ability states absent")?;
                 let state = states.0.entry(ability.to_owned()).or_default();
@@ -323,11 +308,7 @@ impl Effect {
                     Err(_) => value,
                 };
                 state.push_back(*var, VarChange::new(value.clone()));
-                let color = Pools::get_ability_house(ability, world)
-                    .with_context(|| format!("Failed to find house for ability {ability}"))?
-                    .color
-                    .clone()
-                    .into();
+                let color = Pools::get_color_by_name(ability, world)?;
                 Vfx::show_text(
                     format!("{ability} {var} add {value}"),
                     color,

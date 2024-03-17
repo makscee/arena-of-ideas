@@ -1,0 +1,41 @@
+(
+    name: "Fruiter",
+    hp: 1,
+    atk: 1,
+    stacks: 1,
+    level: 1,
+    houses: "Druids",
+    description: "%trigger → [Treant] +{Level}/+{Level}",
+    trigger: Fire(
+        trigger: BattleStart,
+        target: Owner,
+        effect: List(
+            [
+                AbilityStateAddVar("Treant", Hp, Context(Charges)),
+                AbilityStateAddVar("Treant", Atk, Context(Charges)),
+            ],
+        ),
+        period: 0,
+    ),
+    representation: (
+        material: Shape(
+            shape: Circle(radius: Float(0.36)),
+            shape_type: Opaque,
+            fill: GradientRadial(
+                center: Vec2(0.0, 0.1),
+                radius: Float(0.45),
+                parts: [Float(0.0), Float(1.2)],
+                colors: [State(Color), Hex("000000ff")],
+            ),
+            alpha: Float(1.0),
+        ),
+        children: [],
+        mapping: {
+            Offset: Vec2EE(
+                Mul(Sub(Mul(Index, Int(2)), Int(1)), Float(0.16)),
+                Mul(Sin(Sum(GameTime, Index)), Float(0.15)),
+            ),
+        },
+        count: 2,
+    ),
+)

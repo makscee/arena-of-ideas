@@ -246,6 +246,12 @@ impl Context {
             .any(|l| matches!(l, ContextLayer::Status(e, ..) if entity.eq(e)))
     }
 
+    pub fn get_faction(&self, world: &World) -> Result<Faction> {
+        self.get_var(VarName::Faction, world)
+            .context("Faction absent")?
+            .get_faction()
+    }
+
     pub fn add_text(&mut self, text: String) -> &mut Self {
         self.layers.push(ContextLayer::Text(text));
         self

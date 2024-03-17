@@ -14,34 +14,27 @@
     ),
     representation: (
         material: Shape(
-            shape: Circle(
-                radius: Float(0.15),
-            ),
+            shape: Circle(radius: Float(0.15)),
             shape_type: Opaque,
-            fill: Solid(
-                color: State(Color),
-            ),
+            fill: Solid(color: State(Color)),
             alpha: Float(1.0),
         ),
         children: [
             (
                 material: Shape(
-                    shape: Circle(
-                        radius: Sum(Mul(Float(0.06), Index), Float(0.21)),
-                    ),
-                    shape_type: Line(
-                        thickness: Float(1.0),
-                    ),
-                    fill: Solid(
-                        color: State(Color),
-                    ),
+                    shape: Circle(radius: Sum(Mul(Float(0.06), Index), Float(0.21))),
+                    shape_type: Line(thickness: Float(1.0)),
+                    fill: Solid(color: State(Color)),
                     alpha: Float(1.0),
                 ),
                 count: 3,
             ),
         ],
         mapping: {
-            Offset: Mul(UnitVec(Sum(Mul(Index, Mul(PI, Float(0.666))), GameTime)), Sum(Float(0.3), Mul(Beat, Float(0.1)))),
+            Offset: Mul(
+                UnitVec(Sum(Mul(Index, Mul(PI, Float(0.666))), GameTime)),
+                Sum(Float(0.3), Mul(Beat, Float(0.1))),
+            ),
         },
         count: 3,
     ),

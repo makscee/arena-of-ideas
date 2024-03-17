@@ -115,10 +115,8 @@ impl ColoredString {
             }
             for (s, bracketed) in s.split_by_brackets(("[", "]")) {
                 if bracketed {
-                    let color = if let Some(house) =
-                        Pools::get_ability_house(&s, world).or(Pools::get_status_house(&s, world))
-                    {
-                        house.color.clone().into()
+                    let color = if let Ok(color) = Pools::get_color_by_name(&s, world) {
+                        color.c32()
                     } else {
                         error!("Failed to find house for ability {s}");
                         light_gray()

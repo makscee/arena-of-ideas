@@ -770,7 +770,16 @@ impl EditorNodeGenerator for Effect {
                     ComboBox::from_id_source(Id::new(path).with("ability"))
                         .selected_text(name.to_owned())
                         .show_ui(ui, |ui| {
-                            for option in Pools::get(world).abilities.keys() {
+                            let names = {
+                                let pools = Pools::get(world);
+                                pools
+                                    .abilities
+                                    .keys()
+                                    .chain(pools.statuses.keys())
+                                    .chain(pools.summons.keys())
+                                    .unique()
+                            };
+                            for option in names {
                                 let text = option.to_string();
                                 ui.selectable_value(name, option.to_owned(), text);
                             }
@@ -914,11 +923,11 @@ impl EditorNodeGenerator for Effect {
             }
             Effect::List(list) => {
                 ui.vertical(|ui| {
-                    for eff in list.iter_mut() {
+                    for (i, eff) in list.iter_mut().enumerate() {
                         ui.horizontal(|ui| {
                             show_node(
                                 eff.as_mut(),
-                                format!("{path}:eff"),
+                                format!("{path}:eff{i}"),
                                 connect_pos,
                                 context,
                                 ui,

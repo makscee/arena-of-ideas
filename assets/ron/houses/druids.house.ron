@@ -34,7 +34,6 @@
             level: 1,
             houses: "Druids",
             description: "",
-            trigger: Fire(trigger: Noop, target: Owner, effect: Noop, period: 0),
             representation: (
                 material: Shape(
                     shape: Circle(

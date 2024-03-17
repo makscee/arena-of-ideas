@@ -16,6 +16,7 @@ pub struct Pools {
     #[asset(key = "pool.vfx", collection(typed, mapped))]
     vfx_handles: HashMap<String, Handle<Vfx>>,
     pub vfx: HashMap<String, Vfx>,
+    pub colors: HashMap<String, Color>,
     pub only_local_cache: bool,
 }
 
@@ -69,6 +70,13 @@ impl Pools {
             .and_then(|p| p.houses.get(name))
             .map(|h| h.color.clone().into())
     }
+    pub fn get_color_by_name(name: &str, world: &World) -> Result<Color> {
+        Self::get(world)
+            .colors
+            .get(name)
+            .cloned()
+            .with_context(|| format!("Color not found for {name}"))
+    }
 }
 
 pub struct PoolsPlugin;
@@ -101,7 +109,20 @@ impl PoolsPlugin {
                 }),
         );
         debug!("Setup {} houses", houses.len());
-        world.get_resource_mut::<Pools>().unwrap().houses = houses;
+        let mut pools = Pools::get_mut(world);
+        for house in houses.values() {
+            let color: Color = house.color.clone().into();
+            for ability in house.abilities.iter() {
+                pools.colors.insert(ability.name.clone(), color.clone());
+            }
+            for status in house.statuses.iter() {
+                pools.colors.insert(status.name.clone(), color.clone());
+            }
+            for summon in house.summons.iter() {
+                pools.colors.insert(summon.name.clone(), color.clone());
+            }
+        }
+        pools.houses = houses;
     }
 
     pub fn setup_vfx(world: &mut World) {

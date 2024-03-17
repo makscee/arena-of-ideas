@@ -144,11 +144,7 @@ impl VarState {
         let mut raw_definitions = VecDeque::from_iter(description.extract_bracketed(("[", "]")));
         while let Some(name) = raw_definitions.pop_front() {
             let (color, description) = if let Some(ability) = Pools::get_ability(&name, world) {
-                let color: Color32 = Pools::get_ability_house(&name, world)
-                    .unwrap()
-                    .color
-                    .clone()
-                    .into();
+                let color: Color32 = Pools::get_color_by_name(&name, world)?.c32();
                 (color, ability.description.clone())
             } else if let Some(status) = Pools::get_status(&name, world) {
                 let color: Color32 = Pools::get_status_house(&name, world)
