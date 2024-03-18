@@ -13,7 +13,7 @@
                     Sum(
                         GameTime,
                         Mul(
-                            IntFloat(State(Index)),
+                            IntFloat(OwnerState(Index)),
                             Sum(Float(1.04), Mul(Sin(GameTime), Float(0.24))),
                         ),
                     ),

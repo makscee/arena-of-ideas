@@ -11,7 +11,7 @@
         material: Shape(
             shape: Circle(radius: Float(0.15)),
             shape_type: Opaque,
-            fill: Solid(color: State(Color)),
+            fill: Solid(color: OwnerState(Color)),
             alpha: Float(1.0),
         ),
         children: [
@@ -19,7 +19,7 @@
                 material: Shape(
                     shape: Circle(radius: Sum(Mul(Float(0.06), Index), Float(0.21))),
                     shape_type: Line(thickness: Float(1.0)),
-                    fill: Solid(color: State(Color)),
+                    fill: Solid(color: OwnerState(Color)),
                     alpha: Float(1.0),
                 ),
                 count: 3,

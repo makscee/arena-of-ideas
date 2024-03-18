@@ -17,6 +17,7 @@ pub enum Effect {
     List(Vec<Box<Effect>>),
     ListSpread(Vec<Box<Effect>>),
     WithVar(VarName, Expression, Box<Effect>),
+    StateSetVar(VarName, Expression, Expression),
     StateAddVar(VarName, Expression, Expression),
     AbilityStateAddVar(String, VarName, Expression),
     UseAbility(String, i32),
@@ -305,6 +306,12 @@ impl Effect {
                     .clone();
                 ActionPlugin::action_push_front(effect.deref().clone(), context, world);
             }
+            Effect::StateSetVar(var, target, value) => {
+                let target = target.get_entity(context, world)?;
+                let value = value.get_value(context, world)?;
+                let mut state = VarState::try_get_mut(target, world)?;
+                state.push_back(*var, VarChange::new(value));
+            }
             Effect::StateAddVar(var, target, value) => {
                 let target = target.get_entity(context, world)?;
                 let value = value.get_value(context, world)?;
@@ -422,6 +429,7 @@ impl Effect {
             | Effect::AddStatus(..)
             | Effect::ClearStatus(..)
             | Effect::Vfx(..)
+            | Effect::StateSetVar(..)
             | Effect::StateAddVar(..)
             | Effect::AbilityStateAddVar(..)
             | Effect::SendEvent(..) => default(),
@@ -494,7 +502,7 @@ impl EditorNodeGenerator for Effect {
                     show_value(&value, ui);
                 });
             }
-            Effect::StateAddVar(x, target, value) => {
+            Effect::StateAddVar(x, target, value) | Effect::StateSetVar(x, target, value) => {
                 ui.vertical(|ui| {
                     x.show_editor(path, ui);
                     ui.horizontal(|ui| {
@@ -704,7 +712,7 @@ impl EditorNodeGenerator for Effect {
                     });
                 });
             }
-            Effect::StateAddVar(_, target, value) => {
+            Effect::StateAddVar(_, target, value) | Effect::StateSetVar(_, target, value) => {
                 ui.vertical(|ui| {
                     ui.horizontal(|ui| {
                         show_node(

@@ -1,7 +1,7 @@
 (
     material: Shape(
         shape: Circle(
-            radius: Sum(Mul(If(Even(State(Slot)), Mul(Beat, Float(-1.0)), Beat), Float(0.1)), Float(1.0)),
+            radius: Sum(Mul(If(Even(OwnerState(Slot)), Mul(Beat, Float(-1.0)), Beat), Float(0.1)), Float(1.0)),
         ),
         shape_type: Line(thickness: Float(1.0)),
         fill: Solid(color: Hex("#B0BEC5")),
@@ -14,7 +14,7 @@
                 shape_type: Line(thickness: Float(1.0)),
             ),
             mapping: {Offset: Vec2(0.9, -0.9)},
-            children: [(material: Text(text: StringInt(State(Hp)), size: Float(0.6), color: Hex("#FF3D00")))],
+            children: [(material: Text(text: StringInt(OwnerState(Hp)), size: Float(0.6), color: Hex("#FF3D00")))],
         ),
         (
             material: Shape(
@@ -23,7 +23,7 @@
                 shape_type: Line(thickness: Float(1.0)),
             ),
             mapping: {Offset: Vec2(-0.9, -0.9)},
-            children: [(material: Text(text: StringInt(State(Atk)), size: Float(0.6), color: Hex("#FBC02D")))],
+            children: [(material: Text(text: StringInt(OwnerState(Atk)), size: Float(0.6), color: Hex("#FBC02D")))],
         ),
     ],
 )

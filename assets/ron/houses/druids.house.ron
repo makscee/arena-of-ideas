@@ -8,7 +8,7 @@
             description: "Deal {Charges} DMG to attacker",
             trigger: Fire(
                 trigger: AfterDamageTaken,
-                target: StateLast(LastAttacker),
+                target: OwnerStateLast(LastAttacker),
                 effect: Damage(Context(Charges)),
             ),
         ),
@@ -49,7 +49,7 @@
                     fill: GradientLinear(
                         point1: UnitVec(Mul(GameTime, Float(0.3))),
                         point2: UnitVec(Sum(Mul(GameTime, Float(0.3)), PI)),
-                        colors: [State(Color), Hex("101010ff")],
+                        colors: [OwnerState(Color), Hex("101010ff")],
                         parts: [Float(0.5), Float(0.51)],
                     ),
                     alpha: Float(1.0),

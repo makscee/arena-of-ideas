@@ -12,7 +12,7 @@
                     [
                         If(
                             Equals(StatusCharges(String("Doom")), Int(1)),
-                            List([Kill, Summon("Doomguard")]),
+                            List([Kill, WithVar(Faction, StateLast(Faction, Parent(Context(Caster))), Summon("Doomguard"))]),
                             Noop,
                         ),
                         WithVar(Charges, Int(-1), AddStatus("Doom")),
@@ -24,8 +24,11 @@
     abilities: [
         (
             name: "Doom",
-            description: "Die in 5 turns then summon Doomguard",
-            effect: List([WithVar(Charges, Int(5), AddStatus("Doom")), Vfx("apply_status")]),
+            description: "Kill target in 5 turns then summon friendly [Doomguard]",
+            effect: List([
+                WithVar(Charges, Int(5), AddStatus("Doom")), Vfx("apply_status"),
+                StateSetVar(Caster, StatusEntity("Doom", Target), Owner),
+            ]),
         ),
     ],
     summons: [

@@ -2,10 +2,10 @@
     timeframe: 0.1,
     anim: Run(
         [
-            Change(var: Position, value: Sum(StateLast(Position), Vec2(0.0, 1.0))),
+            Change(var: Position, value: Sum(OwnerStateLast(Position), Vec2(0.0, 1.0))),
             Change(
                 var: Position,
-                value: Sum(StateLast(Position), Vec2(0.0, 2.0)),
+                value: Sum(OwnerStateLast(Position), Vec2(0.0, 2.0)),
                 duration: Float(0.7),
                 tween: Linear,
             ),
@@ -15,6 +15,6 @@
         ],
     ),
     representation: (
-        material: Text(text: State(Text), size: Sub(Float(0.7), Mul(Age, Float(0.3))), alpha: State(Alpha)),
+        material: Text(text: OwnerState(Text), size: Sub(Float(0.7), Mul(Age, Float(0.3))), alpha: OwnerState(Alpha)),
     ),
 )

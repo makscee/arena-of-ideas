@@ -9,12 +9,12 @@
         material: Shape(
             shape: Circle(radius: Float(0.25)),
             shape_type: Opaque,
-            alpha: If(Equals(State(Index), Zero), Float(1.0), Float(0.1)),
+            alpha: If(Equals(OwnerState(Index), Zero), Float(1.0), Float(0.1)),
         ),
         children: [],
         mapping: {
-            Offset: Mul(Vec2EE(Cos(State(T)), Sin(State(T))), Float(0.5)),
-            T: Sum(Sin(Sum(GameTime, Mul(IntFloat(State(Index)), Float(-0.15)))), Mul(PI, Float(1.5))),
+            Offset: Mul(Vec2EE(Cos(OwnerState(T)), Sin(OwnerState(T))), Float(0.5)),
+            T: Sum(Sin(Sum(GameTime, Mul(IntFloat(OwnerState(Index)), Float(-0.15)))), Mul(PI, Float(1.5))),
         },
         count: 8,
     ),

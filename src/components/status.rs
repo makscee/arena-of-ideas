@@ -166,7 +166,7 @@ impl Status {
         unit: Entity,
         name: &str,
         world: &'a mut World,
-    ) -> Option<Mut<'a, Status>> {
+    ) -> Option<(Entity, Mut<'a, Status>)> {
         if let Some(entity) = world.get_entity(unit) {
             if let Some(children) = entity.get::<Children>() {
                 if let Some(status) = children.iter().copied().find_map(|x| {
@@ -176,7 +176,7 @@ impl Status {
                         None
                     }
                 }) {
-                    return Some(world.get_mut::<Status>(status).unwrap());
+                    return Some((status, world.get_mut::<Status>(status).unwrap()));
                 }
             }
         }

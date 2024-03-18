@@ -9,7 +9,7 @@
         material: Shape(
             shape: Circle(radius: Sum(Float(0.7), Mul(Beat, Float(0.3)))),
             shape_type: Line(thickness: Sum(Float(2.5), Cos(GameTime))),
-            fill: Solid(color: State(Color)),
+            fill: Solid(color: OwnerState(Color)),
         ),
         children: [
             (
@@ -17,13 +17,13 @@
                 material: Shape(
                     shape: Circle(radius: Float(0.2)),
                     shape_type: Opaque,
-                    fill: Solid(color: State(Color)),
+                    fill: Solid(color: OwnerState(Color)),
                 ),
                 mapping: {
                     Offset: Mul(
-                        Vec2EE(Sin(Sum(GameTime, IntFloat(State(Index)))), Cos(GameTime)),
+                        Vec2EE(Sin(Sum(GameTime, IntFloat(OwnerState(Index)))), Cos(GameTime)),
                         Mul(
-                            Cos(Mul(Sum(GameTime, IntFloat(State(Index))), Float(1.3))),
+                            Cos(Mul(Sum(GameTime, IntFloat(OwnerState(Index))), Float(1.3))),
                             Sum(Float(0.5), Beat),
                         ),
                     ),

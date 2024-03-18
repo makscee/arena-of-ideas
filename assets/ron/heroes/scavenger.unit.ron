@@ -13,7 +13,7 @@
         ),
         children: [],
         mapping: {
-            Rotation: Sum(IntFloat(State(Index)), Sin(Sum(GameTime, Mul(RandomFloat(Owner), Float(10.0))))),
+            Rotation: Sum(IntFloat(OwnerState(Index)), Sin(Sum(GameTime, Mul(RandomFloat(Owner), Float(10.0))))),
         },
         count: 10,
     ),

@@ -15,7 +15,7 @@
                 point1: Vec2(0.0, -0.5),
                 point2: Vec2(0.0, 0.5),
                 parts: [Float(-0.25), Sum(Float(1.05), Mul(Index, Float(-0.03)))],
-                colors: [State(Color), Hex("00000000")],
+                colors: [OwnerState(Color), Hex("00000000")],
             ),
             alpha: Float(1.0),
         ),

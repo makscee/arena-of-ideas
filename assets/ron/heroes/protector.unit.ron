@@ -16,7 +16,7 @@
             Offset: Mul(
                 UnitVec(
                     Sum(
-                        IntFloat(State(Index)),
+                        IntFloat(OwnerState(Index)),
                         Sum(GameTime, Sin(Mul(RandomFloat(Owner), GameTime))),
                     ),
                 ),

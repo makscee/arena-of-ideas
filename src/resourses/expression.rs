@@ -44,8 +44,8 @@ pub enum Expression {
     String(String),
     Hex(String),
     Faction(Faction),
-    State(VarName),
-    StateLast(VarName),
+    OwnerState(VarName),
+    OwnerStateLast(VarName),
     TargetState(VarName),
     TargetStateLast(VarName),
     Context(VarName),
@@ -78,6 +78,9 @@ pub enum Expression {
     RandomFloat(Box<Expression>),
     RandomFloatUnit(Box<Expression>),
     RandomEnemySubset(Box<Expression>),
+    Parent(Box<Expression>),
+    StatusEntity(String, Box<Expression>),
+    StateLast(VarName, Box<Expression>),
 
     Vec2EE(Box<Expression>, Box<Expression>),
     Sum(Box<Expression>, Box<Expression>),
@@ -167,7 +170,7 @@ impl Expression {
             Expression::Div(a, b) => {
                 VarValue::div(&a.get_value(context, world)?, &b.get_value(context, world)?)
             }
-            Expression::State(var) => {
+            Expression::OwnerState(var) => {
                 let t = GameTimer::get().play_head();
                 VarState::find_value(context.owner(), *var, t, world)
             }
@@ -180,11 +183,14 @@ impl Expression {
                     world,
                 )
             }
+            Expression::StateLast(var, target) => {
+                VarState::get(target.get_entity(context, world)?, world).get_value_last(*var)
+            }
             Expression::TargetStateLast(var) => {
                 VarState::get(context.get_target().context("No target in context")?, world)
                     .get_value_last(*var)
             }
-            Expression::StateLast(var) => Ok(VarState::get(context.owner(), world)
+            Expression::OwnerStateLast(var) => Ok(VarState::get(context.owner(), world)
                 .get_value_last(*var)
                 .unwrap_or_default()),
             Expression::Age => Ok(VarValue::Float(
@@ -303,6 +309,11 @@ impl Expression {
                 )
                 .context("No unit in slot")?,
             )),
+            Expression::StatusEntity(status, target) => Ok(VarValue::Entity(
+                Status::find_unit_status(target.get_entity(context, world)?, status, world)
+                    .with_context(|| format!("Status not found {status} {target}"))?
+                    .0,
+            )),
             Expression::RandomUnit => Ok(VarValue::Entity(
                 UnitPlugin::collect_faction(
                     context
@@ -413,6 +424,12 @@ impl Expression {
                     .context("Failed to find unit")?;
                 Ok(VarValue::Entity(unit))
             }
+            Expression::Parent(entity) => Ok(VarValue::Entity(
+                entity
+                    .get_entity(context, world)?
+                    .get_parent(world)
+                    .with_context(|| format!("Parent not found for {entity}"))?,
+            )),
             Expression::Beat => {
                 let beat = AudioPlugin::beat_index(world);
                 let to_next = AudioPlugin::to_next_beat(world);
@@ -496,9 +513,9 @@ impl Expression {
             | Self::String(..)
             | Self::Hex(..)
             | Self::Faction(..)
-            | Self::State(..)
+            | Self::OwnerState(..)
             | Self::TargetState(..)
-            | Self::StateLast(..)
+            | Self::OwnerStateLast(..)
             | Self::TargetStateLast(..)
             | Self::Context(..)
             | Self::AbilityContext(..)
@@ -519,10 +536,13 @@ impl Expression {
             | Self::Even(x)
             | Self::Abs(x)
             | Self::SlotUnit(x)
+            | Self::StatusEntity(_, x)
+            | Self::StateLast(_, x)
             | Self::FactionCount(x)
             | Self::StatusCharges(x)
             | Self::FilterMaxEnemy(x)
             | Self::FindUnit(x)
+            | Self::Parent(x)
             | Self::UnitCount(x)
             | Self::RandomFloat(x)
             | Self::RandomFloatUnit(x)
@@ -614,11 +634,13 @@ impl Expression {
             Expression::String(v) => v.to_string(),
             Expression::Hex(v) => v.to_string(),
             Expression::Faction(v) => v.to_string(),
-            Expression::State(v) => format!("{self}({v})"),
-            Expression::StateLast(v) => format!("{self}({v})"),
+            Expression::OwnerState(v) => format!("{self}({v})"),
+            Expression::OwnerStateLast(v) => format!("{self}({v})"),
             Expression::TargetState(v) => format!("{self}({v})"),
             Expression::TargetStateLast(v) => format!("{self}({v})"),
+            Expression::StateLast(v, t) => format!("{self} ({v}, {t})"),
             Expression::Context(v) => format!("{self}({v})"),
+            Expression::StatusEntity(s, v) => format!("{self} ({s}, {v})"),
             Expression::AbilityContext(a, v) | Expression::AbilityState(a, v) => {
                 format!("{self}({a}:{v})")
             }
@@ -642,6 +664,7 @@ impl Expression {
             | Expression::FactionCount(v)
             | Expression::FilterMaxEnemy(v)
             | Expression::FindUnit(v)
+            | Expression::Parent(v)
             | Expression::UnitCount(v)
             | Expression::RandomFloat(v)
             | Expression::RandomFloatUnit(v)
@@ -717,8 +740,8 @@ impl EditorNodeGenerator for Expression {
             | Expression::String(_)
             | Expression::Hex(_)
             | Expression::Faction(_)
-            | Expression::State(_)
-            | Expression::StateLast(_)
+            | Expression::OwnerState(_)
+            | Expression::OwnerStateLast(_)
             | Expression::TargetState(_)
             | Expression::TargetStateLast(_)
             | Expression::Context(_)
@@ -741,9 +764,12 @@ impl EditorNodeGenerator for Expression {
             | Expression::Even(_)
             | Expression::Abs(_)
             | Expression::SlotUnit(_)
+            | Expression::StatusEntity(..)
+            | Expression::StateLast(..)
             | Expression::FactionCount(_)
             | Expression::FilterMaxEnemy(_)
             | Expression::FindUnit(_)
+            | Expression::Parent(_)
             | Expression::UnitCount(_)
             | Expression::RandomFloat(_)
             | Expression::RandomFloatUnit(_)
@@ -801,11 +827,11 @@ impl EditorNodeGenerator for Expression {
                         }
                     });
             }
-            Expression::State(x)
+            Expression::OwnerState(x)
             | Expression::TargetState(x)
             | Expression::TargetStateLast(x)
             | Expression::Context(x)
-            | Expression::StateLast(x) => {
+            | Expression::OwnerStateLast(x) => {
                 x.show_editor_with_context(context, path, world, ui);
             }
             Expression::WithVar(x, ..) => {
@@ -859,8 +885,8 @@ impl EditorNodeGenerator for Expression {
             | Expression::String(_)
             | Expression::Hex(_)
             | Expression::Faction(_)
-            | Expression::State(_)
-            | Expression::StateLast(_)
+            | Expression::OwnerState(_)
+            | Expression::OwnerStateLast(_)
             | Expression::TargetState(_)
             | Expression::TargetStateLast(_)
             | Expression::Context(_)
@@ -883,9 +909,12 @@ impl EditorNodeGenerator for Expression {
             | Expression::IntFloat(x)
             | Expression::ToInt(x)
             | Expression::SlotUnit(x)
+            | Expression::StatusEntity(_, x)
+            | Expression::StateLast(_, x)
             | Expression::FactionCount(x)
             | Expression::FilterMaxEnemy(x)
             | Expression::FindUnit(x)
+            | Expression::Parent(x)
             | Expression::UnitCount(x)
             | Expression::RandomFloat(x)
             | Expression::RandomFloatUnit(x)

@@ -12,7 +12,7 @@
         effect: List(
             [
                 If(
-                    LessThen(ToInt(StateLast(Charges)), Int(3)),
+                    LessThen(ToInt(OwnerStateLast(Charges)), Int(3)),
                     List([StateAddVar(Charges, Owner, Int(1)), UseAbility("Summon Treant", 0)]),
                     Noop,
                 ),
@@ -29,7 +29,7 @@
                 point1: UnitVec(Mul(GameTime, Float(0.3))),
                 point2: UnitVec(Sum(Mul(GameTime, Float(0.3)), PI)),
                 parts: [Float(0.5), Float(0.51)],
-                colors: [State(Color), Hex("101010ff")],
+                colors: [OwnerState(Color), Hex("101010ff")],
             ),
             alpha: Float(1.0),
         ),

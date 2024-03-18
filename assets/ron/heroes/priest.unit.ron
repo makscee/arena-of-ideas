@@ -14,7 +14,7 @@
         mapping: {
             Offset: Mul(
                 UnitVec(
-                    Mul(Sum(GameTime, Mul(Mul(PI, Float(0.5)), IntFloat(State(Index)))), Float(3.0)),
+                    Mul(Sum(GameTime, Mul(Mul(PI, Float(0.5)), IntFloat(OwnerState(Index)))), Float(3.0)),
                 ),
                 Float(0.3),
             ),

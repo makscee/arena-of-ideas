@@ -7,7 +7,7 @@
     level: 1,
     houses: "Alchemists",
     description: "%trigger → %effect on enemy with most HP",
-    trigger: Fire(trigger: BattleStart, target: FilterMaxEnemy(State(Hp)), effect: UseAbility("Petrify", 0)),
+    trigger: Fire(trigger: BattleStart, target: FilterMaxEnemy(OwnerState(Hp)), effect: UseAbility("Petrify", 0)),
     representation: (
         material: None,
         children: [

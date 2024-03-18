@@ -112,11 +112,11 @@ fn vec2_one_e() -> Expression {
     Expression::Vec2(1.0, 1.0)
 }
 fn color_e() -> Expression {
-    Expression::State(VarName::Color)
+    Expression::OwnerState(VarName::Color)
 }
 fn color_arr_e() -> Vec<Expression> {
     [
-        Expression::State(VarName::Color),
+        Expression::OwnerState(VarName::Color),
         Expression::Hex("#ffffff".to_owned()),
     ]
     .into()
@@ -183,7 +183,7 @@ impl Default for RepShape {
 impl Default for RepFill {
     fn default() -> Self {
         Self::Solid {
-            color: Expression::State(VarName::Color),
+            color: Expression::OwnerState(VarName::Color),
         }
     }
 }

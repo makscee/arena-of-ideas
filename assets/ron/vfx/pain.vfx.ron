@@ -10,10 +10,10 @@
     ),
     representation: (
         material: Shape(
-            shape: Circle(radius: State(T)),
+            shape: Circle(radius: OwnerState(T)),
             shape_type: Opaque,
             fill: Solid(color: Hex("#ffffff")),
-            alpha: State(Alpha),
+            alpha: OwnerState(Alpha),
         ),
     ),
 )

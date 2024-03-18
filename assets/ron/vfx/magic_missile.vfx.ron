@@ -11,7 +11,7 @@
     representation: (
         material: Curve(
             curvature: Float(0.6),
-            thickness: State(Thickness),
+            thickness: OwnerState(Thickness),
             aa: Float(0.5),
             dilations: [
                 (Float(0.0), Float(-1.0)),
@@ -24,7 +24,7 @@
                 material: Curve(
                     color: Hex("#ffffff"),
                     curvature: Float(0.6),
-                    thickness: Mul(Float(0.3), State(Thickness)),
+                    thickness: Mul(Float(0.3), OwnerState(Thickness)),
                     aa: Float(0.1),
                     dilations: [
                         (Float(0.0), Float(-1.0)),

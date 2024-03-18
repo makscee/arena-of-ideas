@@ -11,7 +11,7 @@
         material: Shape(
             shape: Rectangle(size: Vec2E(Float(0.94))),
             shape_type: Line(thickness: Float(0.5)),
-            fill: Solid(color: State(Color)),
+            fill: Solid(color: OwnerState(Color)),
             alpha: Sin(Sum(Mul(GameTime, Float(0.5)), Mul(Index, Float(1000.0)))),
         ),
         children: [],

@@ -13,7 +13,7 @@
                 radius: Max(Sin(Sum(Sum(GameTime, Mul(PI, Float(4.5))), Sum(Index, Int(3)))), Float(0.1)),
             ),
             shape_type: Line(thickness: Float(1.0)),
-            fill: Solid(color: State(Color)),
+            fill: Solid(color: OwnerState(Color)),
             alpha: Context(T),
         ),
         mapping: {

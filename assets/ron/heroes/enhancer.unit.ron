@@ -20,7 +20,7 @@
                 ),
             ),
             shape_type: Line(thickness: Float(1.0)),
-            fill: Solid(color: State(Color)),
+            fill: Solid(color: OwnerState(Color)),
             alpha: Context(T),
         ),
         children: [],

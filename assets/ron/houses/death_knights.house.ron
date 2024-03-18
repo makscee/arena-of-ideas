@@ -55,7 +55,7 @@
                 material: Shape(
                     shape: Rectangle(size: Vec2(0.05, 1.0)),
                     shape_type: Opaque,
-                    fill: Solid(color: State(Color)),
+                    fill: Solid(color: OwnerState(Color)),
                     alpha: Float(1.0),
                 ),
                 children: [],

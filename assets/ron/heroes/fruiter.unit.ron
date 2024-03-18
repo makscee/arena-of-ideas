@@ -24,7 +24,7 @@
                 center: Vec2(0.0, 0.1),
                 radius: Float(0.45),
                 parts: [Float(0.0), Float(1.2)],
-                colors: [State(Color), Hex("000000ff")],
+                colors: [OwnerState(Color), Hex("000000ff")],
             ),
             alpha: Float(1.0),
         ),

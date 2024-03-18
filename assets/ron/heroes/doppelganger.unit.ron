@@ -13,7 +13,7 @@
         ),
         children: [],
         mapping: {
-            Offset: Mul(UnitVec(Mul(IntFloat(State(Index)), Mul(PI, Float(0.5)))), Mul(Beat, Float(0.5))),
+            Offset: Mul(UnitVec(Mul(IntFloat(OwnerState(Index)), Mul(PI, Float(0.5)))), Mul(Beat, Float(0.5))),
         },
         count: 4,
     ),
