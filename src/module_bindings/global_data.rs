@@ -16,6 +16,7 @@ use spacetimedb_sdk::{
 pub struct GlobalData {
     pub always_zero: u32,
     pub game_version: String,
+    pub last_sync: u64,
 }
 
 impl TableType for GlobalData {
@@ -31,5 +32,9 @@ impl GlobalData {
     #[allow(unused)]
     pub fn filter_by_game_version(game_version: String) -> TableIter<Self> {
         Self::filter(|row| row.game_version == game_version)
+    }
+    #[allow(unused)]
+    pub fn filter_by_last_sync(last_sync: u64) -> TableIter<Self> {
+        Self::filter(|row| row.last_sync == last_sync)
     }
 }

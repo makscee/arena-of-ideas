@@ -77,6 +77,16 @@ impl VarState {
             .inject_definitions(world);
         Ok(description)
     }
+    fn houses(&self, world: &World) -> Result<ColoredString> {
+        let t = GameTimer::get().play_head();
+        let mut result = ColoredString::default();
+        for house in self.get_string_at(VarName::Houses, t)?.split("+") {
+            let color = Pools::get_house_color(house, world)
+                .with_context(|| format!("House {house} not found"))?;
+            result.push_colored(format!("{house} ").add_color(color.c32()));
+        }
+        Ok(result)
+    }
     fn extra_lines(&self) -> Result<Vec<(ColoredString, ColoredString)>> {
         let t = GameTimer::get().play_head();
         let level = self.get_int_at(VarName::Level, t)?;
@@ -217,6 +227,10 @@ impl VarState {
         ui.vertical_centered(|ui| name.label(ui));
     }
 
+    fn show_houses(houses: ColoredString, ui: &mut Ui) {
+        ui.vertical_centered(|ui| houses.label(ui));
+    }
+
     fn show_extra_lines(lines: Vec<(ColoredString, ColoredString)>, ui: &mut Ui) {
         for (name, value) in lines.iter() {
             text_dots_text(name, value, ui);
@@ -235,6 +249,8 @@ impl VarState {
         if !open {
             return Ok(());
         }
+        let houses = self.houses(world)?;
+        Self::show_houses(houses, ui);
         let expanded = ui.input(|i| i.modifiers.shift) || SettingsData::get(world).expanded_hint;
         let description = self.description(world);
         let statuses_colored = self.statuses(&statuses, world);

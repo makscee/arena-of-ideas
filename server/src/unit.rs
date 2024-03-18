@@ -22,15 +22,3 @@ pub struct StatusCharges {
     pub name: String,
     pub charges: i32,
 }
-
-#[spacetimedb(reducer)]
-fn sync_units(ctx: ReducerContext, units: Vec<TableUnit>) -> Result<(), String> {
-    UserRight::UnitSync.check(&ctx.sender)?;
-    for unit in TableUnit::iter() {
-        TableUnit::delete_by_name(&unit.name);
-    }
-    for unit in units {
-        TableUnit::insert(unit)?;
-    }
-    Ok(())
-}

@@ -47,12 +47,7 @@ pub mod shop_offer;
 pub mod status_charges;
 pub mod statuses;
 pub mod summon;
-pub mod sync_abilities_reducer;
-pub mod sync_houses_reducer;
-pub mod sync_statuses_reducer;
-pub mod sync_summons_reducer;
-pub mod sync_units_reducer;
-pub mod sync_vfxs_reducer;
+pub mod sync_data_reducer;
 pub mod table_unit;
 pub mod team_unit;
 pub mod user;
@@ -87,12 +82,7 @@ pub use shop_offer::*;
 pub use status_charges::*;
 pub use statuses::*;
 pub use summon::*;
-pub use sync_abilities_reducer::*;
-pub use sync_houses_reducer::*;
-pub use sync_statuses_reducer::*;
-pub use sync_summons_reducer::*;
-pub use sync_units_reducer::*;
-pub use sync_vfxs_reducer::*;
+pub use sync_data_reducer::*;
 pub use table_unit::*;
 pub use team_unit::*;
 pub use user::*;
@@ -120,12 +110,7 @@ pub enum ReducerEvent {
     RunTeamReorder(run_team_reorder_reducer::RunTeamReorderArgs),
     SetName(set_name_reducer::SetNameArgs),
     SetPassword(set_password_reducer::SetPasswordArgs),
-    SyncAbilities(sync_abilities_reducer::SyncAbilitiesArgs),
-    SyncHouses(sync_houses_reducer::SyncHousesArgs),
-    SyncStatuses(sync_statuses_reducer::SyncStatusesArgs),
-    SyncSummons(sync_summons_reducer::SyncSummonsArgs),
-    SyncUnits(sync_units_reducer::SyncUnitsArgs),
-    SyncVfxs(sync_vfxs_reducer::SyncVfxsArgs),
+    SyncData(sync_data_reducer::SyncDataArgs),
 }
 
 #[allow(unused)]
@@ -230,12 +215,7 @@ match &function_call.reducer[..] {
 			"run_team_reorder" => _reducer_callbacks.handle_event_of_type::<run_team_reorder_reducer::RunTeamReorderArgs, ReducerEvent>(event, _state, ReducerEvent::RunTeamReorder),
 			"set_name" => _reducer_callbacks.handle_event_of_type::<set_name_reducer::SetNameArgs, ReducerEvent>(event, _state, ReducerEvent::SetName),
 			"set_password" => _reducer_callbacks.handle_event_of_type::<set_password_reducer::SetPasswordArgs, ReducerEvent>(event, _state, ReducerEvent::SetPassword),
-			"sync_abilities" => _reducer_callbacks.handle_event_of_type::<sync_abilities_reducer::SyncAbilitiesArgs, ReducerEvent>(event, _state, ReducerEvent::SyncAbilities),
-			"sync_houses" => _reducer_callbacks.handle_event_of_type::<sync_houses_reducer::SyncHousesArgs, ReducerEvent>(event, _state, ReducerEvent::SyncHouses),
-			"sync_statuses" => _reducer_callbacks.handle_event_of_type::<sync_statuses_reducer::SyncStatusesArgs, ReducerEvent>(event, _state, ReducerEvent::SyncStatuses),
-			"sync_summons" => _reducer_callbacks.handle_event_of_type::<sync_summons_reducer::SyncSummonsArgs, ReducerEvent>(event, _state, ReducerEvent::SyncSummons),
-			"sync_units" => _reducer_callbacks.handle_event_of_type::<sync_units_reducer::SyncUnitsArgs, ReducerEvent>(event, _state, ReducerEvent::SyncUnits),
-			"sync_vfxs" => _reducer_callbacks.handle_event_of_type::<sync_vfxs_reducer::SyncVfxsArgs, ReducerEvent>(event, _state, ReducerEvent::SyncVfxs),
+			"sync_data" => _reducer_callbacks.handle_event_of_type::<sync_data_reducer::SyncDataArgs, ReducerEvent>(event, _state, ReducerEvent::SyncData),
 			unknown => { spacetimedb_sdk::log::error!("Event on an unknown reducer: {:?}", unknown); None }
 }
     }

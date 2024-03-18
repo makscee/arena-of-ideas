@@ -1,6 +1,4 @@
-use crate::module_bindings::{
-    sync_abilities, sync_houses, sync_statuses, sync_units, sync_vfxs, TableUnit,
-};
+use crate::module_bindings::{once_on_sync_data, sync_data, TableUnit};
 
 use super::*;
 
@@ -14,52 +12,60 @@ impl Plugin for AssetsSyncPlugin {
 
 fn do_sync(world: &mut World) {
     debug!("Assets Sync start");
-    let mut data: Vec<TableUnit> = default();
+    let mut units: Vec<TableUnit> = default();
     for (_, asset) in Pools::get(world).heroes.iter() {
-        data.push(asset.clone().into());
+        units.push(asset.clone().into());
     }
-    debug!("Sync {} units", data.len());
-    sync_units(data);
-
-    let mut data: Vec<module_bindings::House> = default();
+    let mut houses: Vec<module_bindings::House> = default();
     for (name, asset) in Pools::get(world).houses.iter() {
-        data.push(module_bindings::House {
+        houses.push(module_bindings::House {
             name: name.clone(),
             data: ron::to_string(asset).unwrap(),
         });
     }
-    debug!("Sync {} houses", data.len());
-    sync_houses(data);
 
-    let mut data: Vec<module_bindings::Ability> = default();
+    let mut abilities: Vec<module_bindings::Ability> = default();
     for (name, asset) in Pools::get(world).abilities.iter() {
-        data.push(module_bindings::Ability {
+        abilities.push(module_bindings::Ability {
             name: name.clone(),
             data: ron::to_string(asset).unwrap(),
         });
     }
-    debug!("Sync {} abilities", data.len());
-    sync_abilities(data);
 
-    let mut data: Vec<module_bindings::Statuses> = default();
+    let mut summons: Vec<module_bindings::Summon> = default();
+    for (name, asset) in Pools::get(world).summons.iter() {
+        summons.push(module_bindings::Summon {
+            name: name.clone(),
+            data: ron::to_string(asset).unwrap(),
+        });
+    }
+
+    let mut statuses: Vec<module_bindings::Statuses> = default();
     for (name, asset) in Pools::get(world).statuses.iter() {
-        data.push(module_bindings::Statuses {
+        statuses.push(module_bindings::Statuses {
             name: name.clone(),
             data: ron::to_string(asset).unwrap(),
         });
     }
-    debug!("Sync {} statuses", data.len());
-    sync_statuses(data);
 
-    let mut data: Vec<module_bindings::Vfx> = default();
+    let mut vfxs: Vec<module_bindings::Vfx> = default();
     for (name, asset) in Pools::get(world).vfx.iter() {
-        data.push(module_bindings::Vfx {
+        vfxs.push(module_bindings::Vfx {
             name: name.clone(),
             data: ron::to_string(asset).unwrap(),
         });
     }
-    debug!("Sync {} vfxs", data.len());
-    sync_vfxs(data);
-
-    world.send_event(AppExit);
+    sync_data(houses, abilities, statuses, summons, units, vfxs);
+    once_on_sync_data(|_, _, status, _, _, _, _, _, _| {
+        match status {
+            spacetimedb_sdk::reducer::Status::Committed => {
+                debug!("Sync Success");
+            }
+            spacetimedb_sdk::reducer::Status::Failed(e) => {
+                error!("Sync Failure: {e}");
+            }
+            spacetimedb_sdk::reducer::Status::OutOfEnergy => panic!(),
+        };
+        OperationsPlugin::add(|w| w.send_event(AppExit));
+    });
 }

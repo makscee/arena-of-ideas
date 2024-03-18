@@ -5,7 +5,7 @@
     stacks: 1,
     level: 1,
     houses: "Druids",
-    description: "%trigger → [Treant] +{Level}/+{Level}",
+    description: "%trigger → [Summon Treant] gains +{Level}/+{Level}",
     trigger: Fire(
         trigger: BattleStart,
         target: Owner,

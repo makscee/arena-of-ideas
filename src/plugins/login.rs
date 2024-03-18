@@ -16,8 +16,8 @@ use super::*;
 
 pub struct LoginPlugin;
 
-// const SPACETIMEDB_URI: &str = "http://localhost:3001";
-const SPACETIMEDB_URI: &str = "http://16.170.211.203:3000";
+const SPACETIMEDB_URI: &str = "http://localhost:3001";
+// const SPACETIMEDB_URI: &str = "http://16.170.211.203:3000";
 #[cfg(debug_assertions)]
 const DB_NAME: &str = "aoi_dev2";
 #[cfg(not(debug_assertions))]

@@ -10,15 +10,21 @@ mod user;
 mod user_access;
 mod vfx;
 
+pub use ability::*;
 pub use anyhow::Context;
 pub use arena_pool::*;
 pub use arena_run::*;
 pub use global_data::GlobalData;
+pub use house::*;
 pub use spacetimedb::SpacetimeType;
 pub use spacetimedb::{spacetimedb, Identity, ReducerContext};
+pub use status::*;
 pub use std::str::FromStr;
+pub use summon::*;
+pub use unit::*;
 pub use user::*;
 pub use user_access::*;
+pub use vfx::*;
 
 #[spacetimedb(init)]
 fn init_user_access() -> Result<(), String> {
