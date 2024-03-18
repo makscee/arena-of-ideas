@@ -76,6 +76,7 @@ pub enum Expression {
     UnitCount(Box<Expression>),
     ToInt(Box<Expression>),
     RandomFloat(Box<Expression>),
+    RandomFloatUnit(Box<Expression>),
     RandomEnemySubset(Box<Expression>),
 
     Vec2EE(Box<Expression>, Box<Expression>),
@@ -92,6 +93,7 @@ pub enum Expression {
     Or(Box<Expression>, Box<Expression>),
 
     If(Box<Expression>, Box<Expression>, Box<Expression>),
+    Spread(Box<Expression>, Box<Expression>, Box<Expression>),
 
     WithVar(VarName, Box<Expression>, Box<Expression>),
 }
@@ -147,6 +149,9 @@ impl Expression {
                 let mut rng = ChaCha8Rng::seed_from_u64(hasher.finish());
                 Ok(VarValue::Float(rng.gen_range(0.0..1.0)))
             }
+            Expression::RandomFloatUnit(x) => Ok(VarValue::Float(
+                Expression::RandomFloat(x.clone()).get_float(context, world)? * 2.0 - 1.0,
+            )),
             Expression::GameTime => Ok(VarValue::Float(GameTimer::get().play_head())),
             Expression::PI => Ok(VarValue::Float(PI)),
             Expression::PI2 => Ok(VarValue::Float(PI * 2.0)),
@@ -428,6 +433,12 @@ impl Expression {
                     el.get_value(context, world)
                 }
             }
+            Expression::Spread(x, min, max) => {
+                let x = x.get_float(context, world)?;
+                let min = min.get_float(context, world)?;
+                let max = max.get_float(context, world)?;
+                Ok(VarValue::Float(min * (1.0 - x) + max * x))
+            }
             Expression::GreaterThen(a, b) => Ok(VarValue::Bool(matches!(
                 VarValue::compare(&a.get_value(context, world)?, &b.get_value(context, world)?,)?,
                 std::cmp::Ordering::Greater
@@ -514,6 +525,7 @@ impl Expression {
             | Self::FindUnit(x)
             | Self::UnitCount(x)
             | Self::RandomFloat(x)
+            | Self::RandomFloatUnit(x)
             | Self::RandomEnemySubset(x)
             | Self::Vec2E(x) => vec![x],
 
@@ -530,7 +542,7 @@ impl Expression {
             | Self::Or(a, b)
             | Self::Max(a, b)
             | Self::WithVar(_, a, b) => vec![a, b],
-            Self::If(a, b, c) => vec![a, b, c],
+            Self::Spread(a, b, c) | Self::If(a, b, c) => vec![a, b, c],
         }
     }
 
@@ -632,6 +644,7 @@ impl Expression {
             | Expression::FindUnit(_)
             | Expression::UnitCount(_)
             | Expression::RandomFloat(_)
+            | Expression::RandomFloatUnit(_)
             | Expression::RandomEnemySubset(_)
             | Expression::StatusCharges(_) => hex_color!("#448AFF"),
             Expression::Vec2EE(_, _)
@@ -647,7 +660,7 @@ impl Expression {
             | Expression::And(_, _)
             | Expression::Or(_, _)
             | Expression::WithVar(_, _, _) => hex_color!("#FFEB3B"),
-            Expression::If(_, _, _) => hex_color!("#BA68C8"),
+            Expression::If(_, _, _) | Expression::Spread(_, _, _) => hex_color!("#BA68C8"),
         }
     }
 
@@ -711,6 +724,7 @@ impl Expression {
             | Expression::FindUnit(v)
             | Expression::UnitCount(v)
             | Expression::RandomFloat(v)
+            | Expression::RandomFloatUnit(v)
             | Expression::StatusCharges(v) => format!(
                 "{} ({})",
                 self.to_string().to_case(Case::Lower),
@@ -732,7 +746,7 @@ impl Expression {
                 x.get_description_string().to_case(Case::Title),
                 y.get_description_string().to_case(Case::Title)
             ),
-            Expression::If(x, y, z) => format!(
+            Expression::If(x, y, z) | Expression::Spread(x, y, z) => format!(
                 "{self}({}, {}, {})",
                 x.get_description_string().to_case(Case::Title),
                 y.get_description_string().to_case(Case::Title),
@@ -878,6 +892,7 @@ impl EditorNodeGenerator for Expression {
             | Expression::FindUnit(x)
             | Expression::UnitCount(x)
             | Expression::RandomFloat(x)
+            | Expression::RandomFloatUnit(x)
             | Expression::RandomEnemySubset(x)
             | Expression::StatusCharges(x) => show_node(
                 x.as_mut(),
@@ -923,12 +938,12 @@ impl EditorNodeGenerator for Expression {
                     });
                 });
             }
-            Expression::If(i, t, e) => {
+            Expression::If(a, b, c) | Expression::Spread(a, b, c) => {
                 ui.vertical(|ui| {
                     ui.horizontal(|ui| {
                         show_node(
-                            i.as_mut(),
-                            format!("{path}:i"),
+                            a.as_mut(),
+                            format!("{path}:a"),
                             connect_pos,
                             context,
                             ui,
@@ -937,8 +952,8 @@ impl EditorNodeGenerator for Expression {
                     });
                     ui.horizontal(|ui| {
                         show_node(
-                            t.as_mut(),
-                            format!("{path}:t"),
+                            b.as_mut(),
+                            format!("{path}:b"),
                             connect_pos,
                             context,
                             ui,
@@ -947,8 +962,8 @@ impl EditorNodeGenerator for Expression {
                     });
                     ui.horizontal(|ui| {
                         show_node(
-                            e.as_mut(),
-                            format!("{path}:e"),
+                            c.as_mut(),
+                            format!("{path}:c"),
                             connect_pos,
                             context,
                             ui,

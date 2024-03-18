@@ -150,7 +150,7 @@ impl Trigger {
                 if count > *period as i32 {
                     state.set_int(VarName::Count, 0);
                 } else {
-                    state.set_int(VarName::Count, count + 1);
+                    state.set_int(VarName::Count, count);
                     return false;
                 }
                 let effect = Effect::WithTarget(target.clone(), Box::new(effect.clone()));
