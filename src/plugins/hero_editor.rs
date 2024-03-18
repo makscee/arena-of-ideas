@@ -688,7 +688,9 @@ pub fn show_node(
         }
         if ui.button("PASTE").clicked() {
             let o = get_from_clipboard(world).unwrap();
-            *source = ron::from_str(o.as_str()).unwrap();
+            if let Ok(o) = ron::from_str(o.as_str()) {
+                *source = o;
+            }
             ui.close_menu();
         }
     });

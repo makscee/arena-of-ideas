@@ -9,10 +9,12 @@
     trigger: Fire(
         trigger: BattleStart,
         target: Owner,
-        effect: List([
-            AbilityStateAddVar("Skeleton", Hp, Sum(Context(Level), Int(1))),
-            AbilityStateAddVar("Skeleton", Atk, Sum(Context(Level), Int(1))),
-        ]),
+        effect: List(
+            [
+                AbilityStateAddVar("Skeleton", Hp, Sum(Context(Level), Int(1))),
+                AbilityStateAddVar("Skeleton", Atk, Sum(Context(Level), Int(1))),
+            ],
+        ),
         period: 0,
     ),
     representation: (
@@ -20,12 +22,8 @@
             shape: Circle(
                 radius: Max(Sin(Sum(Sum(GameTime, Mul(PI, Float(1.5))), Sum(Index, Int(3)))), Float(0.11)),
             ),
-            shape_type: Line(
-                thickness: Float(1.0),
-            ),
-            fill: Solid(
-                color: State(Color),
-            ),
+            shape_type: Line(thickness: Float(1.0)),
+            fill: Solid(color: State(Color)),
             alpha: Context(T),
         ),
         children: [],
@@ -35,9 +33,6 @@
         },
         count: 4,
     ),
-    state: (
-        history: {},
-        birth: 0.0,
-    ),
+    state: (history: {}, birth: 0.0),
     statuses: [],
 )

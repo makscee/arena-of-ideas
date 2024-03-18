@@ -1,0 +1,35 @@
+(
+    name: "Rat",
+    hp: 1,
+    atk: 1,
+    stacks: 1,
+    level: 1,
+    houses: "Death Knights",
+    description: "%trigger → %effect on %target",
+    trigger: Fire(
+        trigger: BattleStart,
+        target: RandomEnemySubset(Int(2)),
+        effect: UseAbility("Plague", 0),
+        period: 0,
+    ),
+    representation: (
+        material: Shape(
+            shape: Circle(
+                radius: Max(Sin(Sum(Sum(GameTime, Mul(PI, Float(4.5))), Sum(Index, Int(3)))), Float(0.1)),
+            ),
+            shape_type: Line(thickness: Float(1.0)),
+            fill: Solid(color: State(Color)),
+            alpha: Context(T),
+        ),
+        mapping: {
+            T: Sin(Sum(GameTime, Index)),
+            Offset: Mul(
+                UnitVec(
+                    Mul(RandomFloat(Sum(Abs(Index), Floor(Div(Sub(GameTime, Int(-2)), PI2)))), PI2),
+                ),
+                Float(0.45),
+            ),
+        },
+        count: 4,
+    ),
+)

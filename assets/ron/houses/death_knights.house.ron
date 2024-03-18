@@ -46,7 +46,11 @@
             level: 1,
             houses: "Death Knights",
             description: "",
-            trigger: Fire(trigger: AfterDamageDealt, target: Target, effect: If(AbilityState("Summon Skeleton", T), UseAbility("Plague", 0), Noop)),
+            trigger: Fire(
+                trigger: AfterDamageDealt,
+                target: Target,
+                effect: If(AbilityState("Summon Skeleton", T), UseAbility("Plague", 0), Noop),
+            ),
             representation: (
                 material: Shape(
                     shape: Rectangle(size: Vec2(0.05, 1.0)),

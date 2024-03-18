@@ -76,6 +76,7 @@ pub enum Expression {
     UnitCount(Box<Expression>),
     ToInt(Box<Expression>),
     RandomFloat(Box<Expression>),
+    RandomEnemySubset(Box<Expression>),
 
     Vec2EE(Box<Expression>, Box<Expression>),
     Sum(Box<Expression>, Box<Expression>),
@@ -278,6 +279,14 @@ impl Expression {
                 UnitPlugin::get_faction(context.owner(), world).opposite(),
                 world,
             ))),
+            Expression::RandomEnemySubset(max) => Ok(VarValue::EntityList(
+                Expression::AllEnemyUnits
+                    .get_value(context, world)?
+                    .get_entity_list()?
+                    .choose_multiple(&mut thread_rng(), max.get_int(context, world)? as usize)
+                    .copied()
+                    .collect_vec(),
+            )),
             Expression::SlotUnit(index) => Ok(VarValue::Entity(
                 UnitPlugin::find_unit(
                     context
@@ -505,6 +514,7 @@ impl Expression {
             | Self::FindUnit(x)
             | Self::UnitCount(x)
             | Self::RandomFloat(x)
+            | Self::RandomEnemySubset(x)
             | Self::Vec2E(x) => vec![x],
 
             Self::Vec2EE(a, b)
@@ -622,6 +632,7 @@ impl Expression {
             | Expression::FindUnit(_)
             | Expression::UnitCount(_)
             | Expression::RandomFloat(_)
+            | Expression::RandomEnemySubset(_)
             | Expression::StatusCharges(_) => hex_color!("#448AFF"),
             Expression::Vec2EE(_, _)
             | Expression::Sum(_, _)
@@ -733,6 +744,9 @@ impl Expression {
                 val.get_description_string().to_case(Case::Title),
                 e.get_description_string().to_case(Case::Title),
             ),
+            Expression::RandomEnemySubset(amount) => {
+                format!("{} random enemies", amount.get_description_string())
+            }
         }
     }
 }
@@ -864,6 +878,7 @@ impl EditorNodeGenerator for Expression {
             | Expression::FindUnit(x)
             | Expression::UnitCount(x)
             | Expression::RandomFloat(x)
+            | Expression::RandomEnemySubset(x)
             | Expression::StatusCharges(x) => show_node(
                 x.as_mut(),
                 format!("{path}:x"),
