@@ -22,6 +22,7 @@ pub enum Effect {
     UseAbility(String, i32),
     Summon(String),
     AddStatus(String),
+    ClearStatus(String),
     Vfx(String),
     SendEvent(Event),
     RemoveLocalTrigger,
@@ -204,6 +205,28 @@ impl Effect {
                                 true => format!("+{charges}"),
                                 false => charges.to_string(),
                             }
+                        )),
+                    )
+                    .set_var(VarName::Color, VarValue::Color(color))
+                    .unpack(world)?;
+            }
+            Effect::ClearStatus(status) => {
+                let charges = Status::get_status_charges(context.target(), status, world)?;
+                if charges <= 0 {
+                    return Err(anyhow!("Charges <= 0: {status} ({charges})"));
+                }
+                let color = Pools::get_color_by_name(status, world)?;
+                Status::change_charges(status, context.target(), -charges, world)?;
+                Pools::get_vfx("text", world)
+                    .clone()
+                    .set_var(
+                        VarName::Position,
+                        VarState::get(context.target(), world).get_value_last(VarName::Position)?,
+                    )
+                    .set_var(
+                        VarName::Text,
+                        VarValue::String(format!(
+                            "Clear {status}"
                         )),
                     )
                     .set_var(VarName::Color, VarValue::Color(color))
@@ -402,6 +425,7 @@ impl Effect {
             | Effect::UseAbility(..)
             | Effect::Summon(..)
             | Effect::AddStatus(..)
+            | Effect::ClearStatus(..)
             | Effect::Vfx(..)
             | Effect::StateAddVar(..)
             | Effect::AbilityStateAddVar(..)

@@ -148,6 +148,20 @@ impl Status {
         default()
     }
 
+    pub fn get_status_charges(unit: Entity, status: &str, world: &World) -> Result<i32> {
+        Self::collect_unit_statuses(unit, world)
+            .into_iter()
+            .find_map(|e| {
+                let state = VarState::try_get(e, world).ok()?;
+                let name = state.get_string(VarName::Name).ok()?;
+                match name.eq(status) {
+                    true => Some(state.get_int(VarName::Charges).ok()?),
+                    false => None,
+                }
+            })
+            .with_context(|| format!("Failed to find status {status} for {unit:?}"))
+    }
+
     pub fn find_unit_status<'a>(
         unit: Entity,
         name: &str,

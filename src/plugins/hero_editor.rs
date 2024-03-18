@@ -823,7 +823,7 @@ impl EditorNodeGenerator for Effect {
                         });
                 });
             }
-            Effect::AddStatus(name) => {
+            Effect::AddStatus(name) | Effect::ClearStatus(name) => {
                 ui.vertical(|ui| {
                     ComboBox::from_id_source(&path)
                         .selected_text(name.to_owned())
@@ -894,6 +894,7 @@ impl EditorNodeGenerator for Effect {
             | Effect::UseAbility(..)
             | Effect::Summon(..)
             | Effect::AddStatus(..)
+            | Effect::ClearStatus(..)
             | Effect::Vfx(..)
             | Effect::SendEvent(..)
             | Effect::RemoveLocalTrigger

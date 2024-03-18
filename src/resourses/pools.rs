@@ -42,8 +42,12 @@ impl Pools {
         Self::get(world).summons.get(name)
     }
     pub fn get_vfx(name: &str, world: &World) -> Vfx {
-        let name = &format!("ron/vfx/{name}.vfx.ron");
-        Self::get(world).vfx.get(name).unwrap().clone()
+        let name = if name.ends_with(".ron") {
+            name.to_owned()
+        } else {
+            format!("ron/vfx/{name}.vfx.ron")
+        };
+        Self::get(world).vfx.get(&name).unwrap().clone()
     }
     pub fn get_ability_house<'a>(name: &str, world: &'a World) -> Option<&'a House> {
         Self::get(world)

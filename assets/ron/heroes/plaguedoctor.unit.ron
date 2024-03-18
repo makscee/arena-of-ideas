@@ -1,0 +1,36 @@
+(
+    name: "Plague Doctor",
+    hp: 5,
+    atk: 1,
+    stacks: 1,
+    level: 1,
+    houses: "Death Knights",
+    description: "%trigger → clear [Plague] from ally",
+    trigger: Fire(
+        trigger: TurnEnd,
+        target: FindUnit(StatusCharges(String("Plague"))),
+        effect: List([ClearStatus("Plague"), Vfx("ron/vfx/apply_status.vfx.ron")]),
+        period: 1,
+    ),
+    representation: (
+        material: Shape(
+            shape: Circle(radius: Float(0.43)),
+            shape_type: Opaque,
+            fill: GradientRadial(
+                center: Vec2(0.0, 0.0),
+                radius: Float(0.65),
+                parts: [Float(0.55), Float(-0.09)],
+                colors: [Hex("00000000"), State(Color)],
+            ),
+            alpha: Float(1.0),
+        ),
+        children: [],
+        mapping: {
+            Offset: Mul(
+                UnitVec(Sum(Cos(Sum(GameTime, Index)), Index)),
+                Mul(Sin(Sum(GameTime, Mul(Index, Int(10)))), Float(0.5)),
+            ),
+        },
+        count: 12,
+    ),
+)
