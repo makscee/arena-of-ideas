@@ -584,86 +584,6 @@ impl Expression {
         self.get_value(context, world)?.get_color()
     }
 
-    pub fn editor_color(&self) -> Color32 {
-        match self {
-            Expression::Zero
-            | Expression::GameTime
-            | Expression::PI
-            | Expression::PI2
-            | Expression::Owner
-            | Expression::Caster
-            | Expression::Target
-            | Expression::RandomUnit
-            | Expression::RandomAdjacentUnit
-            | Expression::RandomAlly
-            | Expression::RandomEnemy
-            | Expression::Age
-            | Expression::SlotPosition
-            | Expression::OwnerFaction
-            | Expression::AllAllyUnits
-            | Expression::AllEnemyUnits
-            | Expression::AllUnits
-            | Expression::AllOtherUnits
-            | Expression::AdjacentUnits
-            | Expression::OppositeFaction
-            | Expression::Index
-            | Expression::Beat => hex_color!("#80D8FF"),
-
-            Expression::Float(_)
-            | Expression::Int(_)
-            | Expression::Bool(_)
-            | Expression::String(_)
-            | Expression::Hex(_)
-            | Expression::Faction(_)
-            | Expression::State(_)
-            | Expression::StateLast(_)
-            | Expression::TargetState(_)
-            | Expression::TargetStateLast(_)
-            | Expression::Context(_)
-            | Expression::AbilityContext(..)
-            | Expression::AbilityState(..)
-            | Expression::Value(_)
-            | Expression::Vec2(_, _) => hex_color!("#18FFFF"),
-            Expression::Vec2E(_)
-            | Expression::StringInt(_)
-            | Expression::StringFloat(_)
-            | Expression::StringVec(_)
-            | Expression::IntFloat(_)
-            | Expression::ToInt(_)
-            | Expression::Sin(_)
-            | Expression::Cos(_)
-            | Expression::Sign(_)
-            | Expression::Fract(_)
-            | Expression::Floor(_)
-            | Expression::UnitVec(_)
-            | Expression::Even(_)
-            | Expression::Abs(_)
-            | Expression::SlotUnit(_)
-            | Expression::FactionCount(_)
-            | Expression::FilterMaxEnemy(_)
-            | Expression::FindUnit(_)
-            | Expression::UnitCount(_)
-            | Expression::RandomFloat(_)
-            | Expression::RandomFloatUnit(_)
-            | Expression::RandomEnemySubset(_)
-            | Expression::StatusCharges(_) => hex_color!("#448AFF"),
-            Expression::Vec2EE(_, _)
-            | Expression::Sum(_, _)
-            | Expression::Sub(_, _)
-            | Expression::Mul(_, _)
-            | Expression::Div(_, _)
-            | Expression::GreaterThen(_, _)
-            | Expression::LessThen(_, _)
-            | Expression::Min(_, _)
-            | Expression::Max(_, _)
-            | Expression::Equals(_, _)
-            | Expression::And(_, _)
-            | Expression::Or(_, _)
-            | Expression::WithVar(_, _, _) => hex_color!("#FFEB3B"),
-            Expression::If(_, _, _) | Expression::Spread(_, _, _) => hex_color!("#BA68C8"),
-        }
-    }
-
     pub fn get_description_string(&self) -> String {
         match self {
             Expression::Zero
@@ -767,7 +687,83 @@ impl Expression {
 
 impl EditorNodeGenerator for Expression {
     fn node_color(&self) -> Color32 {
-        self.editor_color()
+        match self {
+            Expression::Zero
+            | Expression::GameTime
+            | Expression::PI
+            | Expression::PI2
+            | Expression::Owner
+            | Expression::Caster
+            | Expression::Target
+            | Expression::RandomUnit
+            | Expression::RandomAdjacentUnit
+            | Expression::RandomAlly
+            | Expression::RandomEnemy
+            | Expression::Age
+            | Expression::SlotPosition
+            | Expression::OwnerFaction
+            | Expression::AllAllyUnits
+            | Expression::AllEnemyUnits
+            | Expression::AllUnits
+            | Expression::AllOtherUnits
+            | Expression::AdjacentUnits
+            | Expression::OppositeFaction
+            | Expression::Index
+            | Expression::Beat => hex_color!("#80D8FF"),
+
+            Expression::Float(_)
+            | Expression::Int(_)
+            | Expression::Bool(_)
+            | Expression::String(_)
+            | Expression::Hex(_)
+            | Expression::Faction(_)
+            | Expression::State(_)
+            | Expression::StateLast(_)
+            | Expression::TargetState(_)
+            | Expression::TargetStateLast(_)
+            | Expression::Context(_)
+            | Expression::AbilityContext(..)
+            | Expression::AbilityState(..)
+            | Expression::Value(_)
+            | Expression::Vec2(_, _) => hex_color!("#18FFFF"),
+            Expression::Vec2E(_)
+            | Expression::StringInt(_)
+            | Expression::StringFloat(_)
+            | Expression::StringVec(_)
+            | Expression::IntFloat(_)
+            | Expression::ToInt(_)
+            | Expression::Sin(_)
+            | Expression::Cos(_)
+            | Expression::Sign(_)
+            | Expression::Fract(_)
+            | Expression::Floor(_)
+            | Expression::UnitVec(_)
+            | Expression::Even(_)
+            | Expression::Abs(_)
+            | Expression::SlotUnit(_)
+            | Expression::FactionCount(_)
+            | Expression::FilterMaxEnemy(_)
+            | Expression::FindUnit(_)
+            | Expression::UnitCount(_)
+            | Expression::RandomFloat(_)
+            | Expression::RandomFloatUnit(_)
+            | Expression::RandomEnemySubset(_)
+            | Expression::StatusCharges(_) => hex_color!("#448AFF"),
+            Expression::Vec2EE(_, _)
+            | Expression::Sum(_, _)
+            | Expression::Sub(_, _)
+            | Expression::Mul(_, _)
+            | Expression::Div(_, _)
+            | Expression::GreaterThen(_, _)
+            | Expression::LessThen(_, _)
+            | Expression::Min(_, _)
+            | Expression::Max(_, _)
+            | Expression::Equals(_, _)
+            | Expression::And(_, _)
+            | Expression::Or(_, _)
+            | Expression::WithVar(_, _, _) => hex_color!("#FFEB3B"),
+            Expression::If(_, _, _) | Expression::Spread(_, _, _) => hex_color!("#BA68C8"),
+        }
     }
 
     fn show_extra(&mut self, path: &str, context: &Context, world: &mut World, ui: &mut Ui) {

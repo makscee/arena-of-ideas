@@ -15,7 +15,6 @@
                 AbilityStateAddVar("Skeleton", Atk, Sum(Context(Level), Int(1))),
             ],
         ),
-        period: 0,
     ),
     representation: (
         material: Shape(

@@ -10,7 +10,6 @@
         trigger: BattleStart,
         target: Owner,
         effect: AbilityStateAddVar("Summon Skeleton", T, String("Plague on damage dealt")),
-        period: 0,
     ),
     representation: (
         material: Shape(

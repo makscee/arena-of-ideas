@@ -37,7 +37,7 @@
             level: 1,
             houses: "Warlocks",
             description: "",
-            trigger: Fire(trigger: Noop, target: Owner, effect: UseAbility("Doom", 0), period: 0),
+            trigger: Fire(trigger: Noop, target: Owner, effect: UseAbility("Doom", 0)),
             representation: (
                 material: Shape(
                     shape: Circle(

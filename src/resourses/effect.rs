@@ -223,12 +223,7 @@ impl Effect {
                         VarName::Position,
                         VarState::get(context.target(), world).get_value_last(VarName::Position)?,
                     )
-                    .set_var(
-                        VarName::Text,
-                        VarValue::String(format!(
-                            "Clear {status}"
-                        )),
-                    )
+                    .set_var(VarName::Text, VarValue::String(format!("Clear {status}")))
                     .set_var(VarName::Color, VarValue::Color(color))
                     .unpack(world)?;
             }
@@ -452,5 +447,325 @@ impl Effect {
             queue.extend(e.get_inner());
         }
         result
+    }
+}
+
+impl EditorNodeGenerator for Effect {
+    fn node_color(&self) -> Color32 {
+        white()
+    }
+
+    fn show_extra(&mut self, path: &str, context: &Context, world: &mut World, ui: &mut Ui) {
+        match self {
+            Effect::AoeFaction(_, _)
+            | Effect::WithTarget(_, _)
+            | Effect::WithOwner(_, _)
+            | Effect::Noop
+            | Effect::Kill
+            | Effect::FullCopy
+            | Effect::RemoveLocalTrigger
+            | Effect::Debug(_)
+            | Effect::Text(_) => {}
+
+            Effect::List(list) | Effect::ListSpread(list) => {
+                if ui.button("CLEAR").clicked() {
+                    list.clear()
+                }
+            }
+            Effect::Damage(e) => {
+                let mut v = e.is_some();
+                if ui.checkbox(&mut v, "").changed() {
+                    *e = match v {
+                        true => Some(default()),
+                        false => None,
+                    };
+                }
+            }
+            Effect::WithVar(x, e, _) => {
+                ui.vertical(|ui| {
+                    x.show_editor(path, ui);
+                    let value = e.get_value(context, world);
+                    show_value(&value, ui);
+                });
+            }
+            Effect::If(e, ..) | Effect::Repeat(e, ..) => {
+                ui.vertical(|ui| {
+                    let value = e.get_value(context, world);
+                    show_value(&value, ui);
+                });
+            }
+            Effect::StateAddVar(x, target, value) => {
+                ui.vertical(|ui| {
+                    x.show_editor(path, ui);
+                    ui.horizontal(|ui| {
+                        ui.label("target:");
+                        let target = target.get_value(context, world);
+                        show_value(&target, ui);
+                    });
+                    ui.horizontal(|ui| {
+                        ui.label("value:");
+                        let value = value.get_value(context, world);
+                        show_value(&value, ui);
+                    });
+                });
+            }
+            Effect::AbilityStateAddVar(name, x, value) => {
+                ui.vertical(|ui| {
+                    ComboBox::from_id_source(Id::new(path).with("ability"))
+                        .selected_text(name.to_owned())
+                        .show_ui(ui, |ui| {
+                            let names = {
+                                let pools = Pools::get(world);
+                                pools
+                                    .abilities
+                                    .keys()
+                                    .chain(pools.statuses.keys())
+                                    .chain(pools.summons.keys())
+                                    .unique()
+                                    .sorted()
+                            };
+                            for option in names {
+                                let text = option.to_string();
+                                ui.selectable_value(name, option.to_owned(), text);
+                            }
+                        });
+                    x.show_editor(Id::new(path).with("var"), ui);
+                    ui.horizontal(|ui| {
+                        ui.label("value:");
+                        let value = value.get_value(context, world);
+                        show_value(&value, ui);
+                    });
+                });
+            }
+            Effect::UseAbility(name, base) => {
+                ui.vertical(|ui| {
+                    ComboBox::from_id_source(&path)
+                        .selected_text(name.to_owned())
+                        .show_ui(ui, |ui| {
+                            for option in Pools::get(world).abilities.keys().sorted() {
+                                let text = option.to_string();
+                                ui.selectable_value(name, option.to_owned(), text);
+                            }
+                        });
+                    DragValue::new(base).ui(ui);
+                });
+            }
+            Effect::Summon(name) => {
+                ui.vertical(|ui| {
+                    ComboBox::from_id_source(&path)
+                        .selected_text(name.to_owned())
+                        .show_ui(ui, |ui| {
+                            for option in Pools::get(world).summons.keys().sorted() {
+                                let text = option.to_string();
+                                ui.selectable_value(name, option.to_owned(), text);
+                            }
+                        });
+                });
+            }
+            Effect::AddStatus(name) | Effect::ClearStatus(name) => {
+                ui.vertical(|ui| {
+                    ComboBox::from_id_source(&path)
+                        .selected_text(name.to_owned())
+                        .show_ui(ui, |ui| {
+                            for option in Pools::get(world).statuses.keys().sorted() {
+                                let text = option.to_string();
+                                ui.selectable_value(name, option.to_owned(), text);
+                            }
+                        });
+                });
+            }
+            Effect::Vfx(name) => {
+                ui.vertical(|ui| {
+                    ComboBox::from_id_source(&path)
+                        .selected_text(name.to_owned())
+                        .show_ui(ui, |ui| {
+                            for option in Pools::get(world).vfx.keys().sorted() {
+                                let text = option.to_string();
+                                ui.selectable_value(name, option.to_owned(), text);
+                            }
+                        });
+                });
+            }
+            Effect::SendEvent(name) => {
+                ui.vertical(|ui| {
+                    ComboBox::from_id_source(&path)
+                        .selected_text(name.to_string())
+                        .show_ui(ui, |ui| {
+                            for option in [Event::BattleStart, Event::TurnStart, Event::TurnEnd] {
+                                let text = option.to_string();
+                                ui.selectable_value(name, option, text);
+                            }
+                        });
+                });
+            }
+        }
+    }
+
+    fn show_replace_buttons(&mut self, lookup: &str, submit: bool, ui: &mut Ui) -> bool {
+        for e in Effect::iter() {
+            if e.to_string().to_lowercase().contains(lookup) {
+                let btn = e.to_string().add_color(e.node_color()).rich_text(ui);
+                let btn = ui.button(btn);
+                if btn.clicked() || submit {
+                    btn.request_focus();
+                }
+                if btn.gained_focus() {
+                    *self = e;
+                    return true;
+                }
+            }
+        }
+        false
+    }
+
+    fn show_children(
+        &mut self,
+        path: &str,
+        connect_pos: Option<Pos2>,
+        context: &Context,
+        ui: &mut Ui,
+        world: &mut World,
+    ) {
+        match self {
+            Effect::Noop
+            | Effect::Kill
+            | Effect::FullCopy
+            | Effect::UseAbility(..)
+            | Effect::Summon(..)
+            | Effect::AddStatus(..)
+            | Effect::ClearStatus(..)
+            | Effect::Vfx(..)
+            | Effect::SendEvent(..)
+            | Effect::RemoveLocalTrigger
+            | Effect::Debug(..) => {}
+
+            Effect::Text(e) | Effect::AbilityStateAddVar(_, _, e) => {
+                show_node(e, format!("{path}:e"), connect_pos, context, ui, world)
+            }
+            Effect::Damage(e) => {
+                if let Some(e) = e {
+                    show_node(e, format!("{path}:e"), connect_pos, context, ui, world);
+                }
+            }
+            Effect::AoeFaction(e, eff)
+            | Effect::WithTarget(e, eff)
+            | Effect::WithOwner(e, eff)
+            | Effect::Repeat(e, eff) => {
+                ui.vertical(|ui| {
+                    ui.horizontal(|ui| {
+                        show_node(e, format!("{path}:e"), connect_pos, context, ui, world);
+                    });
+                    ui.horizontal(|ui| {
+                        show_node(
+                            eff.as_mut(),
+                            format!("{path}:eff"),
+                            connect_pos,
+                            context,
+                            ui,
+                            world,
+                        );
+                    });
+                });
+            }
+            Effect::List(list) => {
+                ui.vertical(|ui| {
+                    for (i, eff) in list.iter_mut().enumerate() {
+                        ui.horizontal(|ui| {
+                            show_node(
+                                eff.as_mut(),
+                                format!("{path}:eff{i}"),
+                                connect_pos,
+                                context,
+                                ui,
+                                world,
+                            );
+                        });
+                    }
+                    if ui.button("+").clicked() {
+                        list.push(default());
+                    }
+                });
+            }
+            Effect::ListSpread(_) => todo!(),
+            Effect::WithVar(_, e, eff) => {
+                ui.vertical(|ui| {
+                    ui.horizontal(|ui| {
+                        show_node(e, format!("{path}:e"), connect_pos, context, ui, world);
+                    });
+                    ui.horizontal(|ui| {
+                        show_node(
+                            eff.as_mut(),
+                            format!("{path}:eff"),
+                            connect_pos,
+                            context,
+                            ui,
+                            world,
+                        );
+                    });
+                });
+            }
+            Effect::StateAddVar(_, target, value) => {
+                ui.vertical(|ui| {
+                    ui.horizontal(|ui| {
+                        show_node(
+                            target,
+                            format!("{path}:target"),
+                            connect_pos,
+                            context,
+                            ui,
+                            world,
+                        );
+                    });
+                    ui.horizontal(|ui| {
+                        show_node(
+                            value,
+                            format!("{path}:value"),
+                            connect_pos,
+                            context,
+                            ui,
+                            world,
+                        );
+                    });
+                });
+            }
+            Effect::If(cond, th, el) => {
+                ui.vertical(|ui| {
+                    ui.horizontal(|ui| {
+                        show_node(
+                            cond,
+                            format!("{path}:cond"),
+                            connect_pos,
+                            context,
+                            ui,
+                            world,
+                        );
+                    });
+                    ui.horizontal(|ui| {
+                        show_node(
+                            th.as_mut(),
+                            format!("{path}:then"),
+                            connect_pos,
+                            context,
+                            ui,
+                            world,
+                        );
+                    });
+                    ui.horizontal(|ui| {
+                        show_node(
+                            el.as_mut(),
+                            format!("{path}:else"),
+                            connect_pos,
+                            context,
+                            ui,
+                            world,
+                        );
+                    });
+                });
+            }
+        };
+    }
+
+    fn wrap(&mut self) {
+        *self = Effect::List([Box::new(self.clone())].into());
     }
 }

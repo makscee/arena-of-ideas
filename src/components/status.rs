@@ -231,7 +231,7 @@ impl Status {
         world: &mut World,
     ) -> bool {
         let mut result = false;
-        for (status, trigger) in Self::collect_triggers(statuses, world) {
+        for (status, mut trigger) in Self::collect_triggers(statuses, world) {
             if context.has_status(status) {
                 continue;
             }
@@ -243,6 +243,7 @@ impl Status {
                     .set_status(status, world),
                 world,
             );
+            world.get_mut::<Status>(status).unwrap().trigger = trigger;
         }
         result
     }

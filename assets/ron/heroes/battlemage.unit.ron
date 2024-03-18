@@ -10,7 +10,6 @@
         trigger: AfterStrike,
         target: RandomEnemy,
         effect: Repeat(Int(3), WithTarget(RandomEnemy, UseAbility("Magic Missile", 0))),
-        period: 0,
     ),
     representation: (
         material: Shape(

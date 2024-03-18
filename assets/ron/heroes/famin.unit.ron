@@ -6,7 +6,7 @@
     level: 1,
     houses: "Death Knights",
     description: "%trigger → %effect on %target",
-    trigger: Fire(trigger: TurnEnd, target: AllEnemyUnits, effect: UseAbility("Plague", 0), period: 4),
+    trigger: Fire(trigger: Period(0, 4, TurnEnd), target: AllEnemyUnits, effect: UseAbility("Plague", 0)),
     representation: (
         material: Shape(
             shape: Circle(radius: Float(0.12)),
@@ -14,6 +14,7 @@
             fill: Solid(color: State(Color)),
             alpha: Sin(Context(T)),
         ),
+        children: [],
         mapping: {
             Offset: Vec2EE(
                 Mul(
@@ -26,4 +27,6 @@
         },
         count: 16,
     ),
+    state: (history: {}, birth: 0.0),
+    statuses: [],
 )

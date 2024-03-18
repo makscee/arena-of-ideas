@@ -15,7 +15,6 @@
                 AbilityStateAddVar("Treant", Atk, Context(Level)),
             ],
         ),
-        period: 0,
     ),
     representation: (
         material: Shape(

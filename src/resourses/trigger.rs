@@ -11,8 +11,6 @@ pub enum Trigger {
         #[serde(default = "owner")]
         target: Expression,
         effect: Effect,
-        #[serde(default)]
-        period: usize,
     },
     Change {
         trigger: DeltaTrigger,
@@ -37,6 +35,7 @@ pub enum FireTrigger {
     #[default]
     Noop,
     List(Vec<Box<FireTrigger>>),
+    Period(usize, usize, Box<FireTrigger>),
     AfterIncomingDamage,
     AfterDamageTaken,
     AfterDamageDealt,
@@ -53,9 +52,9 @@ pub enum FireTrigger {
 }
 
 impl FireTrigger {
-    fn catch(&self, event: &Event, context: &Context, world: &mut World) -> bool {
+    fn catch(&mut self, event: &Event, context: &Context, world: &World) -> bool {
         match self {
-            FireTrigger::List(list) => list.iter().any(|t| t.catch(event, context, world)),
+            FireTrigger::List(list) => list.iter_mut().any(|t| t.catch(event, context, world)),
             FireTrigger::AfterIncomingDamage => matches!(event, Event::IncomingDamage { .. }),
             FireTrigger::AfterDamageTaken => matches!(event, Event::DamageTaken { .. }),
             FireTrigger::AfterDamageDealt => matches!(event, Event::DamageDealt { .. }),
@@ -80,6 +79,18 @@ impl FireTrigger {
                 Event::Death(dead) => dead.eq(&context.owner()),
                 _ => false,
             },
+            FireTrigger::Period(counter, delay, trigger) => {
+                if !trigger.catch(event, context, world) {
+                    return false;
+                }
+                if *counter == *delay {
+                    *counter = 0;
+                    true
+                } else {
+                    *counter += 1;
+                    false
+                }
+            }
             FireTrigger::Noop => false,
         }
     }
@@ -101,8 +112,135 @@ impl FireTrigger {
     fn get_description_string(&self) -> String {
         match self {
             FireTrigger::List(list) => list.iter().map(|t| t.get_description_string()).join(" + "),
+            FireTrigger::Period(_, delay, t) => {
+                format!("{} ({})", t.get_description_string(), *delay + 1)
+            }
             _ => self.to_string(),
         }
+    }
+}
+
+impl EditorNodeGenerator for FireTrigger {
+    fn node_color(&self) -> Color32 {
+        match self {
+            FireTrigger::Noop
+            | FireTrigger::AfterIncomingDamage
+            | FireTrigger::AfterDamageTaken
+            | FireTrigger::AfterDamageDealt
+            | FireTrigger::BattleStart
+            | FireTrigger::TurnStart
+            | FireTrigger::TurnEnd
+            | FireTrigger::BeforeStrike
+            | FireTrigger::AfterStrike
+            | FireTrigger::AllyDeath
+            | FireTrigger::AnyDeath
+            | FireTrigger::AllySummon
+            | FireTrigger::BeforeDeath
+            | FireTrigger::AfterKill => hex_color!("#80D8FF"),
+            FireTrigger::Period(_, _, _) => hex_color!("#18FFFF"),
+            FireTrigger::List(_) => hex_color!("#FFEB3B"),
+        }
+    }
+
+    fn show_children(
+        &mut self,
+        path: &str,
+        connect_pos: Option<Pos2>,
+        context: &Context,
+        ui: &mut Ui,
+        world: &mut World,
+    ) {
+        match self {
+            FireTrigger::List(list) => {
+                ui.vertical(|ui| {
+                    for (i, eff) in list.iter_mut().enumerate() {
+                        ui.horizontal(|ui| {
+                            show_node(
+                                eff.as_mut(),
+                                format!("{path}:t{i}"),
+                                connect_pos,
+                                context,
+                                ui,
+                                world,
+                            );
+                        });
+                    }
+                    if ui.button("+").clicked() {
+                        list.push(default());
+                    }
+                });
+            }
+            FireTrigger::Period(_, _, t) => show_node(
+                t.as_mut(),
+                format!("{path}/t"),
+                connect_pos,
+                context,
+                ui,
+                world,
+            ),
+            FireTrigger::Noop
+            | FireTrigger::AfterIncomingDamage
+            | FireTrigger::AfterDamageTaken
+            | FireTrigger::AfterDamageDealt
+            | FireTrigger::BattleStart
+            | FireTrigger::TurnStart
+            | FireTrigger::TurnEnd
+            | FireTrigger::BeforeStrike
+            | FireTrigger::AfterStrike
+            | FireTrigger::AllyDeath
+            | FireTrigger::AnyDeath
+            | FireTrigger::AllySummon
+            | FireTrigger::BeforeDeath
+            | FireTrigger::AfterKill => default(),
+        }
+    }
+
+    fn show_extra(&mut self, _: &str, _: &Context, _: &mut World, ui: &mut Ui) {
+        match self {
+            FireTrigger::List(list) => {
+                if ui.button("CLEAR").clicked() {
+                    list.clear()
+                }
+            }
+            FireTrigger::Period(_, delay, _) => {
+                DragValue::new(delay).ui(ui);
+            }
+            FireTrigger::Noop
+            | FireTrigger::AfterIncomingDamage
+            | FireTrigger::AfterDamageTaken
+            | FireTrigger::AfterDamageDealt
+            | FireTrigger::BattleStart
+            | FireTrigger::TurnStart
+            | FireTrigger::TurnEnd
+            | FireTrigger::BeforeStrike
+            | FireTrigger::AfterStrike
+            | FireTrigger::AllyDeath
+            | FireTrigger::AnyDeath
+            | FireTrigger::AllySummon
+            | FireTrigger::BeforeDeath
+            | FireTrigger::AfterKill => {}
+        }
+    }
+
+    fn show_replace_buttons(&mut self, lookup: &str, submit: bool, ui: &mut Ui) -> bool {
+        for e in FireTrigger::iter() {
+            if e.to_string().to_lowercase().contains(lookup) {
+                let btn = e.to_string().add_color(e.node_color()).rich_text(ui);
+                let btn = ui.button(btn);
+                if btn.clicked() || submit {
+                    btn.request_focus();
+                }
+                if btn.gained_focus() {
+                    *self = e;
+                    return true;
+                }
+            }
+        }
+        false
+    }
+
+    fn wrap(&mut self) {
+        *self = FireTrigger::List([Box::new(self.clone())].into());
     }
 }
 
@@ -121,13 +259,12 @@ impl Default for Trigger {
             trigger: FireTrigger::Noop,
             target: Expression::Owner,
             effect: Effect::Noop,
-            period: 0,
         }
     }
 }
 
 impl Trigger {
-    pub fn fire(&self, event: &Event, context: &Context, world: &mut World) -> bool {
+    pub fn fire(&mut self, event: &Event, context: &Context, world: &mut World) -> bool {
         match self {
             Trigger::List(list) => {
                 let mut result = false;
@@ -140,41 +277,14 @@ impl Trigger {
                 trigger,
                 target,
                 effect,
-                period,
+                ..
             } => {
                 if !trigger.catch(event, context, world) {
                     return false;
                 }
-                let mut state = VarState::get_mut(context.status(), world);
-                let count = state.get_int(VarName::Count).unwrap_or_default() + 1;
-                if count > *period as i32 {
-                    state.set_int(VarName::Count, 0);
-                } else {
-                    state.set_int(VarName::Count, count);
-                    return false;
-                }
                 let effect = Effect::WithTarget(target.clone(), Box::new(effect.clone()));
-                match trigger {
-                    FireTrigger::List(_)
-                    | FireTrigger::AfterDamageTaken
-                    | FireTrigger::AfterDamageDealt
-                    | FireTrigger::BattleStart
-                    | FireTrigger::BeforeStrike
-                    | FireTrigger::AfterStrike
-                    | FireTrigger::AllyDeath
-                    | FireTrigger::AnyDeath
-                    | FireTrigger::AllySummon
-                    | FireTrigger::BeforeDeath
-                    | FireTrigger::AfterKill
-                    | FireTrigger::AfterIncomingDamage
-                    | FireTrigger::TurnStart
-                    | FireTrigger::TurnEnd => {
-                        ActionPlugin::action_push_back(effect, context.clone(), world);
-                        true
-                    }
-
-                    FireTrigger::Noop => false,
-                }
+                ActionPlugin::action_push_back(effect, context.clone(), world);
+                true
             }
             Trigger::Change { .. } => false,
         }
@@ -241,13 +351,8 @@ impl Trigger {
                 trigger,
                 target,
                 effect,
-                period,
             } => {
-                let mut trigger = trigger.get_description_string();
-                if *period > 0 {
-                    let s = format!(" ({})", *period + 1);
-                    trigger.push_str(&s);
-                }
+                let trigger = trigger.get_description_string();
                 state
                     .init(VarName::TriggerDescription, VarValue::String(trigger))
                     .init(

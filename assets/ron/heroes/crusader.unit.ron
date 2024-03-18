@@ -14,7 +14,6 @@
             OppositeFaction,
             WithVar(Charges, UnitCount(Bool(true)), UseAbility("Blessing", 0)),
         ),
-        period: 0,
     ),
     representation: (
         material: Shape(

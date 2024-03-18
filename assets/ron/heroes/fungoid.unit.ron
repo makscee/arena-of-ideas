@@ -18,7 +18,6 @@
                 ),
             ],
         ),
-        period: 0,
     ),
     representation: (
         material: Shape(

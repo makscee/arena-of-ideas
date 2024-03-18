@@ -6,7 +6,7 @@
     level: 1,
     houses: "Vampires",
     description: "%trigger → use %effect on killer",
-    trigger: Fire(trigger: AfterDamageDealt, target: Target, effect: UseAbility("Siphon", 2), period: 0),
+    trigger: Fire(trigger: AfterDamageDealt, target: Target, effect: UseAbility("Siphon", 2)),
     representation: (
         material: Shape(
             shape: Circle(radius: Sum(Sum(Float(0.7), Mul(Index, Float(0.08))), Mul(Beat, Float(0.05)))),

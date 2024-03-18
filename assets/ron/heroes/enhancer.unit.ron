@@ -10,7 +10,6 @@
         trigger: BattleStart,
         target: Owner,
         effect: AbilityStateAddVar("Magic Missile", Value, Int(1)),
-        period: 0,
     ),
     representation: (
         material: Shape(

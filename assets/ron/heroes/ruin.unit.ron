@@ -6,7 +6,7 @@
     level: 1,
     houses: "Death Knights",
     description: "%trigger → %effect on %target",
-    trigger: Fire(trigger: BattleStart, target: AllEnemyUnits, effect: UseAbility("Decay", 0), period: 0),
+    trigger: Fire(trigger: BattleStart, target: AllEnemyUnits, effect: UseAbility("Decay", 0)),
     representation: (
         material: Shape(
             shape: Rectangle(size: Vec2E(Float(0.94))),

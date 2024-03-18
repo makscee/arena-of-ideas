@@ -7,10 +7,9 @@
     houses: "Death Knights",
     description: "%trigger → clear [Plague] from ally",
     trigger: Fire(
-        trigger: TurnEnd,
+        trigger: Period(0, 1, TurnEnd),
         target: FindUnit(StatusCharges(String("Plague"))),
         effect: List([ClearStatus("Plague"), Vfx("ron/vfx/apply_status.vfx.ron")]),
-        period: 1,
     ),
     representation: (
         material: Shape(

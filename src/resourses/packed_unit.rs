@@ -239,13 +239,11 @@ impl PackedUnit {
                     trigger: trigger_a,
                     target: target_a,
                     effect: effect_a,
-                    period: period_a,
                 },
                 Trigger::Fire {
                     trigger: trigger_b,
                     target: target_b,
                     effect: effect_b,
-                    period: period_b,
                 },
             ) => {
                 if !trigger_a.eq(trigger_b) {
@@ -255,7 +253,6 @@ impl PackedUnit {
                         ),
                         target: target_a.clone(),
                         effect: effect_a.clone(),
-                        period: *period_a.max(period_b),
                     };
                     result.push(Self::fuse_base(&a, &b, trigger, world));
                     let trigger = Trigger::Fire {
@@ -264,7 +261,6 @@ impl PackedUnit {
                         ),
                         target: target_b.clone(),
                         effect: effect_b.clone(),
-                        period: *period_a.max(period_b),
                     };
                     result.push(Self::fuse_base(&b, &a, trigger, world));
                 }
@@ -274,7 +270,6 @@ impl PackedUnit {
                     effect: Effect::List(
                         [Box::new(effect_a.clone()), Box::new(effect_b.clone())].into(),
                     ),
-                    period: *period_a.max(period_b),
                 };
                 result.push(Self::fuse_base(&a, &b, trigger, world));
                 let trigger = Trigger::Fire {
@@ -283,7 +278,6 @@ impl PackedUnit {
                     effect: Effect::List(
                         [Box::new(effect_a.clone()), Box::new(effect_b.clone())].into(),
                     ),
-                    period: *period_a.max(period_b),
                 };
                 result.push(Self::fuse_base(&b, &a, trigger, world));
             }

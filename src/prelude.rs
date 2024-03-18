@@ -46,7 +46,7 @@ pub use bevy::{
 pub use bevy_asset_loader::prelude::*;
 pub use bevy_common_assets::ron::RonAssetPlugin;
 pub use bevy_egui::egui;
-pub use bevy_egui::egui::{Frame, Margin};
+pub use bevy_egui::egui::{DragValue, Frame, Margin};
 pub use bevy_egui::{
     egui::{
         pos2, style::WidgetVisuals, text::LayoutJob, Align2, Area, Button, CentralPanel,

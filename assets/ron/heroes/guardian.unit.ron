@@ -7,10 +7,9 @@
     houses: "Paladins",
     description: "%trigger → %effect on ally that doesn\'t have [Shield]",
     trigger: Fire(
-        trigger: BattleStart,
+        trigger: Period(0, 1, TurnEnd),
         target: FindUnit(Equals(StatusCharges(String("Shield")), Zero)),
         effect: UseAbility("Shield", 0),
-        period: 1,
     ),
     representation: (
         material: Shape(

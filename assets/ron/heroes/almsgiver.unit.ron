@@ -3,7 +3,7 @@
     hp: 3,
     atk: 1,
     houses: "Holy",
-    trigger: Fire(trigger: AllySummon, target: Target, effect: UseAbility("Blessing", 0), period: 0),
+    trigger: Fire(trigger: AllySummon, target: Target, effect: UseAbility("Blessing", 0)),
     representation: (
         material: Shape(
             shape: Circle(
