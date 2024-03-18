@@ -22,7 +22,7 @@
         (
             name: "Summon Treant",
             description: "Summon {1}/{5} with [Thorns] ({5})",
-            effect: Summon("Treant"),
+            effect: Repeat(Context(Charges), Summon("Treant")),
         ),
     ],
     summons: [

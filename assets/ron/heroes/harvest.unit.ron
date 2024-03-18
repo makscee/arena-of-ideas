@@ -1,0 +1,30 @@
+(
+    name: "Harvest",
+    hp: 4,
+    atk: 1,
+    stacks: 1,
+    level: 1,
+    houses: "Druids",
+    description: "%trigger → %effect",
+    trigger: Fire(trigger: OnceAfter(4, TurnEnd), target: Owner, effect: UseAbility("Summon Treant", 2)),
+    representation: (
+        material: Shape(
+            shape: Circle(radius: Float(0.12)),
+            shape_type: Line(thickness: Float(1.0)),
+            fill: Solid(color: State(Color)),
+            alpha: Sin(Context(T)),
+        ),
+        children: [],
+        mapping: {
+            Offset: Vec2EE(
+                Mul(
+                    RandomFloatUnit(Owner),
+                    Mul(Sin(Mul(GameTime, Sum(Float(0.4), Mul(Index, Float(0.1))))), Float(0.73)),
+                ),
+                Mul(Sin(Context(T)), Float(1.0)),
+            ),
+            T: Sum(Mul(GameTime, Float(2.0)), Index),
+        },
+        count: 16,
+    ),
+)

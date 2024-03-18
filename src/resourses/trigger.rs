@@ -36,6 +36,7 @@ pub enum FireTrigger {
     Noop,
     List(Vec<Box<FireTrigger>>),
     Period(usize, usize, Box<FireTrigger>),
+    OnceAfter(i32, Box<FireTrigger>),
     AfterIncomingDamage,
     AfterDamageTaken,
     AfterDamageDealt,
@@ -91,6 +92,13 @@ impl FireTrigger {
                     false
                 }
             }
+            FireTrigger::OnceAfter(counter, trigger) => {
+                if !trigger.catch(event, context, world) {
+                    return false;
+                }
+                *counter -= 1;
+                *counter == -1
+            }
             FireTrigger::Noop => false,
         }
     }
@@ -137,7 +145,7 @@ impl EditorNodeGenerator for FireTrigger {
             | FireTrigger::AllySummon
             | FireTrigger::BeforeDeath
             | FireTrigger::AfterKill => hex_color!("#80D8FF"),
-            FireTrigger::Period(_, _, _) => hex_color!("#18FFFF"),
+            FireTrigger::Period(..) | FireTrigger::OnceAfter(..) => hex_color!("#18FFFF"),
             FireTrigger::List(_) => hex_color!("#FFEB3B"),
         }
     }
@@ -170,7 +178,7 @@ impl EditorNodeGenerator for FireTrigger {
                     }
                 });
             }
-            FireTrigger::Period(_, _, t) => show_node(
+            FireTrigger::Period(_, _, t) | FireTrigger::OnceAfter(_, t) => show_node(
                 t.as_mut(),
                 format!("{path}/t"),
                 connect_pos,
@@ -203,6 +211,9 @@ impl EditorNodeGenerator for FireTrigger {
                 }
             }
             FireTrigger::Period(_, delay, _) => {
+                DragValue::new(delay).ui(ui);
+            }
+            FireTrigger::OnceAfter(delay, _) => {
                 DragValue::new(delay).ui(ui);
             }
             FireTrigger::Noop
