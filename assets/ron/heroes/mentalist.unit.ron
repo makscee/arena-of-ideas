@@ -5,7 +5,7 @@
     atk: 2,
     houses: "Meta",
     trigger: Fire(
-        triggers: [(BattleStart, None)],
+        triggers: [(BeforeDeath, None)],
         targets: [(AllUnits, None)],
         effects: [(UseAbility("Amnesia", 0), None)],
     ),
