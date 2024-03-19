@@ -5,8 +5,12 @@
     stacks: 1,
     level: 1,
     houses: "Vampires",
-    description: "%trigger → use %effect on killer",
-    trigger: Fire(trigger: AllyDeath, target: TargetStateLast(LastAttacker), effect: UseAbility("Siphon", 2)),
+    description: "%trigger → %effect on %target",
+    trigger: Fire(
+        triggers: [(AllyDeath, None)],
+        targets: [(TargetStateLast(LastAttacker), Some("killer"))],
+        effects: [(UseAbility("Siphon", 2), None)],
+    ),
     representation: (
         material: Shape(
             shape: Circle(radius: Sum(Sum(Float(0.81), Mul(Index, Float(-0.17))), Mul(Beat, Float(0.05)))),
@@ -19,6 +23,7 @@
             ),
             alpha: Float(1.0),
         ),
+        children: [],
         mapping: {
             Offset: Vec2EE(
                 Zero,
@@ -27,4 +32,6 @@
         },
         count: 3,
     ),
+    state: (history: {}, birth: 0.0),
+    statuses: [],
 )

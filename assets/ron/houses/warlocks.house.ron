@@ -7,17 +7,27 @@
             name: "Doom",
             description: "Die in {Charges} turns then summon Doomguard",
             trigger: Fire(
-                trigger: TurnEnd,
-                effect: List(
-                    [
+                triggers: [(TurnEnd, None)],
+                effects: [
+                    (
                         If(
                             Equals(StatusCharges(String("Doom")), Int(1)),
-                            List([Kill, WithVar(Faction, StateLast(Faction, Parent(Context(Caster))), Summon("Doomguard"))]),
+                            List(
+                                [
+                                    Kill,
+                                    WithVar(
+                                        Faction,
+                                        StateLast(Faction, Parent(Context(Caster))),
+                                        Summon("Doomguard"),
+                                    ),
+                                ],
+                            ),
                             Noop,
                         ),
-                        WithVar(Charges, Int(-1), AddStatus("Doom")),
-                    ],
-                ),
+                        None,
+                    ),
+                    (WithVar(Charges, Int(-1), AddStatus("Doom")), None),
+                ],
             ),
         ),
     ],
@@ -25,10 +35,13 @@
         (
             name: "Doom",
             description: "Kill target in 5 turns then summon friendly [Doomguard]",
-            effect: List([
-                WithVar(Charges, Int(5), AddStatus("Doom")), Vfx("apply_status"),
-                StateSetVar(Caster, StatusEntity("Doom", Target), Owner),
-            ]),
+            effect: List(
+                [
+                    WithVar(Charges, Int(5), AddStatus("Doom")),
+                    Vfx("apply_status"),
+                    StateSetVar(Caster, StatusEntity("Doom", Target), Owner),
+                ],
+            ),
         ),
     ],
     summons: [
@@ -40,7 +53,6 @@
             level: 1,
             houses: "Warlocks",
             description: "",
-            trigger: Fire(trigger: Noop, target: Owner, effect: UseAbility("Doom", 0)),
             representation: (
                 material: Shape(
                     shape: Circle(

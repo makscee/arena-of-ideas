@@ -5,8 +5,12 @@
     stacks: 1,
     level: 1,
     houses: "Druids",
-    description: "%trigger → %effect on front ally",
-    trigger: Fire(trigger: TurnEnd, target: SlotUnit(Int(1)), effect: UseAbility("Thorns", 0)),
+    description: "%trigger → %effect on %target",
+    trigger: Fire(
+        triggers: [(TurnEnd, None)],
+        targets: [(SlotUnit(Int(1)), Some("front ally"))],
+        effects: [(UseAbility("Thorns", 0), None)],
+    ),
     representation: (
         material: Shape(
             shape: Rectangle(
@@ -21,8 +25,8 @@
             fill: GradientLinear(
                 point1: UnitVec(Mul(GameTime, Float(0.3))),
                 point2: UnitVec(Sum(Mul(GameTime, Float(0.3)), PI)),
-                colors: [OwnerState(Color), Hex("101010ff")],
                 parts: [Float(0.5), Float(0.51)],
+                colors: [OwnerState(Color), Hex("101010ff")],
             ),
             alpha: Float(1.0),
         ),
@@ -30,4 +34,6 @@
         mapping: {Rotation: Mul(Index, Float(0.18))},
         count: 8,
     ),
+    state: (history: {}, birth: 0.0),
+    statuses: [],
 )

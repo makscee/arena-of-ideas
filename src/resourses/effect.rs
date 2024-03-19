@@ -2,7 +2,7 @@ use std::{collections::VecDeque, ops::Deref};
 
 use super::*;
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default, Display, PartialEq, EnumIter)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, EnumIter, AsRefStr)]
 pub enum Effect {
     #[default]
     Noop,
@@ -36,8 +36,8 @@ impl Effect {
         debug!("Processing {:?}\n{}", self, context);
         match self {
             Effect::Damage(value) => {
-                let target = context.get_target().context("Target not found")?;
-                let owner = context.get_owner().context("Owner not found")?;
+                let target = context.get_target().context("No target")?;
+                let owner = context.get_owner().context("No owner")?;
                 let mut value = match value {
                     Some(value) => value.get_value(context, world)?,
                     None => context
@@ -73,19 +73,14 @@ impl Effect {
                     }
                     .send_with_context(context.clone(), world);
                     Pools::get_vfx("pain", world)
-                        .set_parent(context.target())
+                        .set_parent(target)
                         .unpack(world)?;
                 }
                 let value = value.max(0);
-                Vfx::show_text(
-                    format!("-{value}"),
-                    Color::ORANGE_RED,
-                    context.target(),
-                    world,
-                )?;
+                Vfx::show_text(format!("-{value}"), Color::ORANGE_RED, target, world)?;
             }
             Effect::Kill => {
-                let target = context.get_target().context("Target not found")?;
+                let target = context.get_target().context("No target")?;
                 VarState::get_mut(target, world)
                     .push_back(
                         VarName::LastAttacker,
@@ -96,7 +91,7 @@ impl Effect {
                     .clone()
                     .set_var(
                         VarName::Position,
-                        VarValue::Vec2(UnitPlugin::get_unit_position(context.target(), world)?),
+                        VarValue::Vec2(UnitPlugin::get_unit_position(target, world)?),
                     )
                     .set_var(VarName::Text, VarValue::String("Kill".to_string()))
                     .set_var(VarName::Color, VarValue::Color(Color::RED))
@@ -191,12 +186,13 @@ impl Effect {
                     .unwrap_or(VarValue::Int(1))
                     .get_int()?;
                 let color = Pools::get_color_by_name(status, world)?;
-                Status::change_charges(status, context.target(), charges, world)?;
+                let target = context.get_target().context("No target")?;
+                Status::change_charges(status, target, charges, world)?;
                 Pools::get_vfx("text", world)
                     .clone()
                     .set_var(
                         VarName::Position,
-                        VarState::get(context.target(), world).get_value_last(VarName::Position)?,
+                        VarState::get(target, world).get_value_last(VarName::Position)?,
                     )
                     .set_var(
                         VarName::Text,
@@ -212,17 +208,18 @@ impl Effect {
                     .unpack(world)?;
             }
             Effect::ClearStatus(status) => {
-                let charges = Status::get_status_charges(context.target(), status, world)?;
+                let target = context.get_target().context("No target")?;
+                let charges = Status::get_status_charges(target, status, world)?;
                 if charges <= 0 {
                     return Err(anyhow!("Charges <= 0: {status} ({charges})"));
                 }
                 let color = Pools::get_color_by_name(status, world)?;
-                Status::change_charges(status, context.target(), -charges, world)?;
+                Status::change_charges(status, target, -charges, world)?;
                 Pools::get_vfx("text", world)
                     .clone()
                     .set_var(
                         VarName::Position,
-                        VarState::get(context.target(), world).get_value_last(VarName::Position)?,
+                        VarState::get(target, world).get_value_last(VarName::Position)?,
                     )
                     .set_var(VarName::Text, VarValue::String(format!("Clear {status}")))
                     .set_var(VarName::Color, VarValue::Color(color))
@@ -259,7 +256,8 @@ impl Effect {
             }
             Effect::Vfx(name) => {
                 let owner_pos = UnitPlugin::get_unit_position(context.owner(), world)?;
-                let delta = UnitPlugin::get_unit_position(context.target(), world)? - owner_pos;
+                let target = context.get_target().context("No target")?;
+                let delta = UnitPlugin::get_unit_position(target, world)? - owner_pos;
 
                 Pools::get_vfx(name, world)
                     .clone()
@@ -332,7 +330,7 @@ impl Effect {
             }
             Effect::FullCopy => {
                 let owner = context.owner();
-                let target = context.target();
+                let target = context.get_target().context("No target")?;
                 let history = VarState::get(target, world).history.clone();
                 for (var, history) in history.into_iter() {
                     if var.eq(&VarName::Position)
@@ -384,7 +382,7 @@ impl Effect {
                 event.clone().send_with_context(context.clone(), world);
             }
             Effect::RemoveLocalTrigger => {
-                let target = context.target();
+                let target = context.get_target().context("No target")?;
                 let local_trigger = Status::collect_unit_statuses(target, world)
                     .into_iter()
                     .find(|e| {
@@ -611,8 +609,8 @@ impl EditorNodeGenerator for Effect {
 
     fn show_replace_buttons(&mut self, lookup: &str, submit: bool, ui: &mut Ui) -> bool {
         for e in Effect::iter() {
-            if e.to_string().to_lowercase().contains(lookup) {
-                let btn = e.to_string().add_color(e.node_color()).rich_text(ui);
+            if e.as_ref().to_lowercase().contains(lookup) {
+                let btn = e.as_ref().add_color(e.node_color()).rich_text(ui);
                 let btn = ui.button(btn);
                 if btn.clicked() || submit {
                     btn.request_focus();
@@ -775,5 +773,59 @@ impl EditorNodeGenerator for Effect {
 
     fn wrap(&mut self) {
         *self = Effect::List([Box::new(self.clone())].into());
+    }
+}
+
+impl std::fmt::Display for Effect {
+    fn fmt(&self, f: &mut __private::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Effect::RemoveLocalTrigger | Effect::FullCopy | Effect::Kill | Effect::Noop => {
+                write!(f, "{}", self.as_ref())
+            }
+            Effect::Text(x) | Effect::Debug(x) => {
+                write!(f, "{}({x})", self.as_ref())
+            }
+            Effect::Damage(x) => write!(
+                f,
+                "{}({})",
+                self.as_ref(),
+                x.as_ref()
+                    .and_then(|x| Some(x.to_string()))
+                    .unwrap_or_default()
+            ),
+            Effect::WithOwner(x, e) | Effect::WithTarget(x, e) | Effect::AoeFaction(x, e) => {
+                write!(f, "{} ({x}, {e})", self.as_ref())
+            }
+            Effect::List(list) | Effect::ListSpread(list) => write!(
+                f,
+                "({})",
+                list.into_iter().map(|e| e.to_string()).join(" & ")
+            ),
+            Effect::WithVar(v, x, e) => write!(f, "{} ({v} -> {x}, {e})", self.as_ref()),
+            Effect::StateAddVar(var, t, v) | Effect::StateSetVar(var, t, v) => {
+                write!(f, "{} {t} ({var} -> {v})", self.as_ref())
+            }
+            Effect::AbilityStateAddVar(ability, var, v) => {
+                write!(f, "[{ability}]: {var} add {v}")
+            }
+            Effect::UseAbility(name, base) => write!(
+                f,
+                "use [{name}] ({{Level}}{})",
+                if *base > 0 {
+                    format!("+{base}")
+                } else {
+                    default()
+                }
+            ),
+            Effect::SendEvent(name) => write!(f, "{} ({name})", self.as_ref()),
+            Effect::Vfx(name)
+            | Effect::ClearStatus(name)
+            | Effect::AddStatus(name)
+            | Effect::Summon(name) => {
+                write!(f, "{} ({name})", self.as_ref())
+            }
+            Effect::If(c, t, e) => write!(f, "{} {c} ({t} else {e})", self.as_ref()),
+            Effect::Repeat(c, e) => write!(f, "{} ({e}) x {c}", self.as_ref()),
+        }
     }
 }

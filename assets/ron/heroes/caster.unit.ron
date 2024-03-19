@@ -5,11 +5,11 @@
     stacks: 1,
     level: 1,
     houses: "Mages",
-    description: "%trigger → %effect on killer",
+    description: "%trigger → %effect on %target",
     trigger: Fire(
-        trigger: AllyDeath,
-        target: TargetStateLast(LastAttacker),
-        effect: UseAbility("Magic Missile", 2),
+        triggers: [(AllyDeath, None)],
+        targets: [(TargetStateLast(LastAttacker), Some("killer"))],
+        effects: [(UseAbility("Magic Missile", 2), None)],
     ),
     representation: (
         material: Shape(
@@ -26,6 +26,8 @@
                     fill: Solid(color: OwnerState(Color)),
                     alpha: Float(1.0),
                 ),
+                children: [],
+                mapping: {},
                 count: 0,
             ),
         ],
@@ -37,4 +39,6 @@
         },
         count: 2,
     ),
+    state: (history: {}, birth: 0.0),
+    statuses: [],
 )

@@ -1,6 +1,4 @@
-use std::fmt::Display;
-
-use bevy_egui::egui::{DragValue, Frame, Key, ScrollArea, Sense, Shape, SidePanel};
+use bevy_egui::egui::{Frame, Key, ScrollArea, Sense, Shape, SidePanel};
 use ron::ser::{to_string_pretty, PrettyConfig};
 use serde::de::DeserializeOwned;
 
@@ -230,9 +228,9 @@ impl HeroEditorPlugin {
                             );
                         }
                         ui.add_space(100.0);
-                        const SELECTED_STATUS_KEY: &str = "selected status";
+                        const SELECTED_STATUS_KEY: &str = "selected_status";
                         let mut status = get_context_string(world, SELECTED_STATUS_KEY);
-                        ComboBox::from_id_source("status select")
+                        ComboBox::from_id_source(SELECTED_STATUS_KEY)
                             .selected_text(status.clone())
                             .show_ui(ui, |ui| {
                                 for option in
@@ -247,109 +245,64 @@ impl HeroEditorPlugin {
                                     }
                                 }
                             });
-                        ui.set_enabled(!status.is_empty());
-                        if ui.button("Add Status").clicked() {
-                            if let Some((i, _)) =
-                                unit.statuses.iter().find_position(|(s, _)| status.eq(s))
-                            {
-                                unit.statuses[i].1 += 1;
-                            } else {
-                                unit.statuses.push((status, 1));
+                        ui.add_enabled_ui(!status.is_empty(), |ui| {
+                            if ui.button("Add Status").clicked() {
+                                if let Some((i, _)) =
+                                    unit.statuses.iter().find_position(|(s, _)| status.eq(s))
+                                {
+                                    unit.statuses[i].1 += 1;
+                                } else {
+                                    unit.statuses.push((status, 1));
+                                }
                             }
+                        });
+
+                        ui.add_space(100.0);
+                        const LOAD_HERO_KEY: &str = "load_hero";
+                        let mut hero = get_context_string(world, LOAD_HERO_KEY);
+                        let heroes = Pools::get(world)
+                            .heroes
+                            .keys()
+                            .sorted()
+                            .cloned()
+                            .collect_vec();
+
+                        if ui.button("Next").clicked() {
+                            let p = heroes.iter().position(|h| hero.eq(h)).unwrap_or_default();
+                            hero = heroes.get((p + 1) % heroes.len()).unwrap().clone();
+                            set_context_string(world, LOAD_HERO_KEY, hero.clone());
+                            unit = Pools::get(world).heroes.get(&hero).unwrap().clone();
+                        }
+                        ComboBox::from_id_source(LOAD_HERO_KEY)
+                            .selected_text(hero.clone())
+                            .show_ui(ui, |ui| {
+                                for option in heroes {
+                                    let text = option.to_string();
+                                    if ui
+                                        .selectable_value(&mut hero, option.to_owned(), text)
+                                        .changed()
+                                    {
+                                        set_context_string(world, LOAD_HERO_KEY, option);
+                                        unit = Pools::get(world).heroes.get(&hero).unwrap().clone();
+                                    }
+                                }
+                            });
+                        if ui.button("Load").clicked() {
+                            unit = Pools::get(world).heroes.get(&hero).unwrap().clone();
+                        }
+
+                        ui.add_space(50.0);
+                        ui.label("card:");
+                        let mut sd = SettingsData::get(world).clone();
+                        let card = &mut sd.always_show_card;
+                        if ui.checkbox(card, "").changed() {
+                            sd.save(world).unwrap();
                         }
                     });
                     ScrollArea::new([true, true])
                         .scroll_bar_visibility(egui::scroll_area::ScrollBarVisibility::AlwaysHidden)
                         .show(ui, |ui| {
-                            let style = ui.style_mut();
-                            style.override_text_style = Some(TextStyle::Small);
-                            style.drag_value_text_style = TextStyle::Small;
-                            style.visuals.widgets.inactive.bg_stroke = Stroke {
-                                width: 1.0,
-                                color: dark_gray(),
-                            };
-                            ui.horizontal(|ui| {
-                                let name = &mut unit.name;
-                                ui.label("name:");
-                                TextEdit::singleline(name).desired_width(60.0).ui(ui);
-                                let atk = &mut unit.atk;
-                                ui.label("atk:");
-                                DragValue::new(atk).clamp_range(0..=99).ui(ui);
-                                let hp = &mut unit.hp;
-                                ui.label("hp:");
-                                DragValue::new(hp).clamp_range(0..=99).ui(ui);
-                                let lvl = &mut unit.level;
-                                ui.label("lvl:");
-                                DragValue::new(lvl).clamp_range(1..=99).ui(ui);
-                            });
-                            ui.horizontal(|ui| {
-                                let houses: HashMap<String, Color> = HashMap::from_iter(
-                                    Pools::get(world)
-                                        .houses
-                                        .iter()
-                                        .map(|(k, v)| (k.clone(), v.color.clone().into())),
-                                );
-                                ui.label("house:");
-                                let house = &mut unit.houses;
-                                ComboBox::from_id_source("house")
-                                    .selected_text(house.clone())
-                                    .width(140.0)
-                                    .show_ui(ui, |ui| {
-                                        for (h, _) in
-                                            houses.into_iter().sorted_by_key(|(k, _)| k.clone())
-                                        {
-                                            ui.selectable_value(house, h.clone(), h.clone());
-                                        }
-                                    });
-                            });
-                            ui.horizontal(|ui| {
-                                ui.label("desc:");
-                                let description = &mut unit.description;
-                                TextEdit::singleline(description)
-                                    .desired_width(ui.available_width().min(200.0))
-                                    .ui(ui);
-                                if ui.button("reset").clicked() {
-                                    *description = DEFAULT_UNIT_DESCRIPTION.to_owned();
-                                }
-                            });
-
-                            let context = &Context::from_owner(entity, world);
-                            ui.horizontal(|ui| {
-                                let trigger = &mut unit.trigger;
-                                match trigger {
-                                    Trigger::Fire {
-                                        trigger,
-                                        target,
-                                        effect,
-                                    } => {
-                                        CollapsingHeader::new("Trigger").default_open(true).show(
-                                            ui,
-                                            |ui| {
-                                                show_tree("", trigger, context, ui, world);
-                                            },
-                                        );
-                                        CollapsingHeader::new("Target").default_open(true).show(
-                                            ui,
-                                            |ui| {
-                                                show_tree("", target, context, ui, world);
-                                            },
-                                        );
-
-                                        CollapsingHeader::new("Effect").default_open(true).show(
-                                            ui,
-                                            |ui| {
-                                                show_tree("", effect, context, ui, world);
-                                            },
-                                        );
-                                    }
-                                    Trigger::Change { .. } => todo!(),
-                                    Trigger::List(_) => todo!(),
-                                }
-                            });
-
-                            let rep = &mut unit.representation;
-                            rep.show_editor(context, "root", ui, world);
-                            ui.add_space(150.0);
+                            unit.show_editor(entity, ui, world);
                         });
                 });
 
@@ -487,6 +440,43 @@ pub fn show_value(value: &Result<VarValue>, ui: &mut Ui) {
     .ui(ui);
 }
 
+pub fn show_trees_desc(
+    label: &str,
+    roots: &mut Vec<(impl EditorNodeGenerator, Option<String>)>,
+    context: &Context,
+    ui: &mut Ui,
+    world: &mut World,
+) {
+    ui.vertical(|ui| {
+        let mut delete = None;
+        for (i, (node, d)) in roots.iter_mut().enumerate() {
+            ui.horizontal(|ui| {
+                if ui.button_red("-").clicked() {
+                    delete = Some(i);
+                }
+                let mut c = d.is_some();
+                if ui.checkbox(&mut c, "").changed() {
+                    if c {
+                        *d = Some(default());
+                    } else {
+                        *d = None;
+                    }
+                }
+                if let Some(d) = d {
+                    ui.add_sized([100.0, 20.0], TextEdit::singleline(d));
+                }
+            });
+            show_tree(&i.to_string(), node, context, ui, world);
+        }
+        if let Some(delete) = delete {
+            roots.remove(delete);
+        }
+        if ui.button("+").clicked() {
+            roots.push((default(), None));
+        }
+    });
+}
+
 pub fn show_tree(
     label: &str,
     root: &mut impl EditorNodeGenerator,
@@ -524,7 +514,7 @@ pub fn show_node(
     } else {
         return;
     };
-    let path = format!("{path}/{source}");
+    let path = format!("{path}/{}", source.as_ref());
     let InnerResponse {
         inner: name_resp,
         response: frame_resp,
@@ -536,7 +526,7 @@ pub fn show_node(
         .fill(light_black())
         .show(ui, |ui| {
             let name = source
-                .to_string()
+                .as_ref()
                 .add_color(source.node_color())
                 .as_label(ui)
                 .sense(Sense::click())
@@ -660,7 +650,7 @@ pub fn show_node(
     });
 }
 
-pub trait EditorNodeGenerator: Display + Sized + Serialize + DeserializeOwned {
+pub trait EditorNodeGenerator: AsRef<str> + Sized + Serialize + DeserializeOwned + Default {
     fn node_color(&self) -> Color32;
     fn show_children(
         &mut self,

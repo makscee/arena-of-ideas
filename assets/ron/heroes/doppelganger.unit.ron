@@ -4,7 +4,11 @@
     hp: 2,
     atk: 3,
     houses: "Shifters",
-    trigger: Fire(trigger: BattleStart, target: RandomAdjacentUnit, effect: UseAbility("Copy", 0)),
+    trigger: Fire(
+        triggers: [(BattleStart, None)],
+        targets: [(RandomAdjacentUnit, None)],
+        effects: [(UseAbility("Copy", 0), None)],
+    ),
     representation: (
         material: Shape(
             shape: Circle(radius: Float(0.72)),
@@ -13,7 +17,10 @@
         ),
         children: [],
         mapping: {
-            Offset: Mul(UnitVec(Mul(IntFloat(OwnerState(Index)), Mul(PI, Float(0.5)))), Mul(Beat, Float(0.5))),
+            Offset: Mul(
+                UnitVec(Mul(IntFloat(OwnerState(Index)), Mul(PI, Float(0.5)))),
+                Mul(Beat, Float(0.5)),
+            ),
         },
         count: 4,
     ),

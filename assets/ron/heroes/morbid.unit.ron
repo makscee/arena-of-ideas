@@ -5,8 +5,12 @@
     stacks: 1,
     level: 1,
     houses: "Death Knights",
-    description: "%trigger → %effect on killer",
-    trigger: Fire(trigger: AllyDeath, target: TargetStateLast(LastAttacker), effect: UseAbility("Decay", 2)),
+    description: "%trigger → %effect on %target",
+    trigger: Fire(
+        triggers: [(AllyDeath, None)],
+        targets: [(TargetStateLast(LastAttacker), Some("killer"))],
+        effects: [(UseAbility("Decay", 2), None)],
+    ),
     representation: (
         material: Shape(
             shape: Rectangle(size: Vec2E(Float(0.35))),

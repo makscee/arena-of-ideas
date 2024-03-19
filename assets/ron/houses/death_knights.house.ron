@@ -9,8 +9,14 @@
             description: "Take {Charges} DMG every turn, [Summon Skeleton] after death",
             trigger: List(
                 [
-                    Fire(trigger: TurnEnd, effect: WithTarget(Owner, Damage(Context(Charges)))),
-                    Fire(trigger: BeforeDeath, effect: UseAbility("Summon Skeleton", 0)),
+                    Fire(
+                        triggers: [(TurnEnd, None)],
+                        effects: [(WithTarget(Owner, Damage(Context(Charges))), None)],
+                    ),
+                    Fire(
+                        triggers: [(BeforeDeath, None)],
+                        effects: [(UseAbility("Summon Skeleton", 0), None)],
+                    ),
                 ],
             ),
         ),
@@ -47,9 +53,9 @@
             houses: "Death Knights",
             description: "",
             trigger: Fire(
-                trigger: AfterDamageDealt,
-                target: Target,
-                effect: If(AbilityState("Summon Skeleton", T), UseAbility("Plague", 0), Noop),
+                triggers: [(AfterDamageDealt, None)],
+                targets: [(Target, None)],
+                effects: [(If(AbilityState("Summon Skeleton", T), UseAbility("Plague", 0), Noop), None)],
             ),
             representation: (
                 material: Shape(

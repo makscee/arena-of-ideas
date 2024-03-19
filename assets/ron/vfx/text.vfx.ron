@@ -15,6 +15,10 @@
         ],
     ),
     representation: (
-        material: Text(text: OwnerState(Text), size: Sub(Float(0.7), Mul(Age, Float(0.3))), alpha: OwnerState(Alpha)),
+        material: Text(
+            text: OwnerState(Text),
+            size: Sub(Float(0.7), Mul(Age, Float(0.3))),
+            alpha: OwnerState(Alpha),
+        ),
     ),
 )

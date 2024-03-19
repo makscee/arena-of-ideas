@@ -1,12 +1,24 @@
-#![enable(implicit_some)]
 (
     name: "Bolla",
     hp: 1,
     atk: 1,
+    stacks: 1,
+    level: 1,
     houses: "Dragons",
-    trigger: Fire(trigger: TurnEnd, effect: UseAbility("Grow", 0)),
+    description: "%trigger → %effect on %target",
+    trigger: Fire(
+        triggers: [(TurnEnd, None)],
+        targets: [(Owner, Some("self"))],
+        effects: [(UseAbility("Grow", 0), None)],
+    ),
     representation: (
-        material: Shape(shape: Circle(radius: Float(0.5)), shape_type: Opaque, alpha: Float(0.2)),
+        material: Shape(
+            shape: Circle(radius: Float(0.5)),
+            shape_type: Opaque,
+            fill: Solid(color: OwnerState(Color)),
+            alpha: Float(0.2),
+        ),
+        children: [],
         mapping: {
             Offset: Mul(
                 UnitVec(

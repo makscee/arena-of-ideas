@@ -6,7 +6,11 @@
     level: 1,
     houses: "Mages",
     description: "%trigger → %effect on %target",
-    trigger: Fire(trigger: AllySummon, target: RandomEnemy, effect: UseAbility("Magic Missile", 3)),
+    trigger: Fire(
+        triggers: [(AllySummon, None)],
+        targets: [(RandomEnemy, None)],
+        effects: [(UseAbility("Magic Missile", 3), None)],
+    ),
     representation: (
         material: Shape(
             shape: Circle(radius: Float(0.15)),

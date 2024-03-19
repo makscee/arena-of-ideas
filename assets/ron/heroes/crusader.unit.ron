@@ -5,20 +5,26 @@
     stacks: 1,
     level: 1,
     houses: "Holy",
-    description: "%trigger → gain {Level} [Blessing] per enemy",
+    description: "%trigger → %effect on %target",
     trigger: Fire(
-        trigger: BattleStart,
-        target: Owner,
-        effect: WithVar(
-            Faction,
-            OppositeFaction,
-            WithVar(Charges, UnitCount(Bool(true)), UseAbility("Blessing", 0)),
-        ),
+        triggers: [(BattleStart, None)],
+        targets: [(Owner, None)],
+        effects: [
+            (
+                WithVar(
+                    Faction,
+                    OppositeFaction,
+                    WithVar(Charges, UnitCount(Bool(true)), UseAbility("Blessing", 0)),
+                ),
+                Some("use [Blessing] ({Level}) per enemy"),
+            ),
+        ],
     ),
     representation: (
         material: Shape(
             shape: Rectangle(size: Vec2(0.5, 1.82)),
             shape_type: Line(thickness: Float(3.0)),
+            fill: Solid(color: OwnerState(Color)),
             alpha: Float(0.3),
         ),
         children: [],
@@ -31,4 +37,6 @@
         },
         count: 8,
     ),
+    state: (history: {}, birth: 0.0),
+    statuses: [],
 )

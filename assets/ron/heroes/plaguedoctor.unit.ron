@@ -5,11 +5,16 @@
     stacks: 1,
     level: 1,
     houses: "Death Knights",
-    description: "%trigger → clear [Plague] from ally",
+    description: "%trigger → %effect on %target",
     trigger: Fire(
-        trigger: Period(0, 1, TurnEnd),
-        target: FindUnit(StatusCharges(String("Plague"))),
-        effect: List([ClearStatus("Plague"), Vfx("ron/vfx/apply_status.vfx.ron")]),
+        triggers: [(Period(0, 1, TurnEnd), Some("Every 2 Turns"))],
+        targets: [(FindUnit(StatusCharges(String("Plague"))), Some("ally"))],
+        effects: [
+            (
+                List([ClearStatus("Plague"), Vfx("ron/vfx/apply_status.vfx.ron")]),
+                Some("clear [Plague]"),
+            ),
+        ],
     ),
     representation: (
         material: Shape(
@@ -32,4 +37,6 @@
         },
         count: 12,
     ),
+    state: (history: {}, birth: 0.0),
+    statuses: [],
 )

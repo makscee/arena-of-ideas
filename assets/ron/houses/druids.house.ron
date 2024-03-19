@@ -7,9 +7,9 @@
             name: "Thorns",
             description: "Deal {Charges} DMG to attacker",
             trigger: Fire(
-                trigger: AfterDamageTaken,
-                target: OwnerStateLast(LastAttacker),
-                effect: Damage(Context(Charges)),
+                triggers: [(AfterDamageTaken, None)],
+                targets: [(OwnerStateLast(LastAttacker), None)],
+                effects: [(Damage(Context(Charges)), None)],
             ),
         ),
     ],

@@ -132,11 +132,14 @@ impl<'a> StrExtensions for &'a str {
         let mut lines: Vec<(String, bool)> = default();
         while let Some(opening) = self.find(pattern.0) {
             let left = &self[..opening];
-            let closing = self.find(pattern.1).unwrap();
-            let mid = &self[opening + 1..closing];
-            lines.push((left.to_owned(), false));
-            lines.push((mid.to_owned(), true));
-            self = &self[closing + 1..];
+            if let Some(closing) = self.find(pattern.1) {
+                let mid = &self[opening + 1..closing];
+                lines.push((left.to_owned(), false));
+                lines.push((mid.to_owned(), true));
+                self = &self[closing + 1..];
+            } else {
+                break;
+            }
         }
         lines.push((self.to_owned(), false));
         lines

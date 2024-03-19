@@ -6,9 +6,9 @@
                 hp: 3,
                 atk: 1,
                 trigger: Fire(
-                    trigger: BeforeStrike,
-                    target: WithVar(Faction, OppositeFaction, SlotUnit(Int(1))),
-                    effect: Damage(Int(1)),
+                    triggers: [(BeforeStrike, None)],
+                    targets: [(WithVar(Faction, OppositeFaction, SlotUnit(Int(1))), None)],
+                    effects: [(Damage(Int(1)), None)],
                 ),
             ),
         ],

@@ -6,7 +6,7 @@
         (
             name: "Petrify",
             description: "Next taken damage is lethal",
-            trigger: Fire(trigger: AfterDamageTaken, effect: Kill),
+            trigger: Fire(triggers: [(AfterDamageTaken, None)], effects: [(Kill, None)]),
         ),
     ],
     abilities: [

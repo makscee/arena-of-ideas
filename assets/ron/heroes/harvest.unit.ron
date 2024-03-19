@@ -5,8 +5,12 @@
     stacks: 1,
     level: 1,
     houses: "Druids",
-    description: "{In 5 Turns} → %effect",
-    trigger: Fire(trigger: OnceAfter(4, TurnEnd), target: Owner, effect: UseAbility("Summon Treant", 2)),
+    description: "%trigger → %effect",
+    trigger: Fire(
+        triggers: [(OnceAfter(4, TurnEnd), Some("In 5 Turns"))],
+        targets: [],
+        effects: [(UseAbility("Summon Treant", 2), None)],
+    ),
     representation: (
         material: Shape(
             shape: Circle(radius: Float(0.12)),
@@ -27,4 +31,6 @@
         },
         count: 16,
     ),
+    state: (history: {}, birth: 0.0),
+    statuses: [],
 )

@@ -6,7 +6,11 @@
     level: 1,
     houses: "Paladins",
     description: "%trigger → %effect on %target",
-    trigger: Fire(trigger: AllySummon, target: Target, effect: UseAbility("Shield", 0)),
+    trigger: Fire(
+        triggers: [(AllySummon, None)],
+        targets: [(Target, None)],
+        effects: [(UseAbility("Shield", 0), None)],
+    ),
     representation: (
         material: Shape(
             shape: Circle(

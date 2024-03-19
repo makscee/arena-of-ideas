@@ -357,13 +357,20 @@ impl UnitPlugin {
         } else {
             return;
         };
+        let show_card = SettingsData::get(world).always_show_card;
         for (entity, state) in world
             .query_filtered::<(Entity, &VarState), Or<(&Unit, &Corpse)>>()
             .iter(world)
         {
             let statuses =
                 Status::collect_statuses_name_charges(entity, GameTimer::get().play_head(), world);
-            state.show_entity_card_window(entity, statuses, hovered == Some(entity), ctx, world);
+            state.show_entity_card_window(
+                entity,
+                statuses,
+                show_card || hovered == Some(entity),
+                ctx,
+                world,
+            );
         }
     }
 

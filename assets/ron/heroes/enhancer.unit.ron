@@ -5,11 +5,11 @@
     stacks: 1,
     level: 1,
     houses: "Mages",
-    description: "%trigger → [Magic Missile] {+1} {DMG}",
+    description: "%trigger → %effect",
     trigger: Fire(
-        trigger: BattleStart,
-        target: Owner,
-        effect: AbilityStateAddVar("Magic Missile", Value, Int(1)),
+        triggers: [(BattleStart, None)],
+        targets: [],
+        effects: [(AbilityStateAddVar("Magic Missile", Damage, Context(Level)), None)],
     ),
     representation: (
         material: Shape(
@@ -27,4 +27,6 @@
         mapping: {T: Sin(Sum(GameTime, Index))},
         count: 4,
     ),
+    state: (history: {}, birth: 0.0),
+    statuses: [],
 )

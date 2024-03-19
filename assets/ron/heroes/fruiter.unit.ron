@@ -5,16 +5,14 @@
     stacks: 1,
     level: 1,
     houses: "Druids",
-    description: "%trigger → [Summon Treant] gains +{Level}/+{Level}",
+    description: "%trigger → %effect",
     trigger: Fire(
-        trigger: BattleStart,
-        target: Owner,
-        effect: List(
-            [
-                AbilityStateAddVar("Treant", Hp, Context(Level)),
-                AbilityStateAddVar("Treant", Atk, Context(Level)),
-            ],
-        ),
+        triggers: [(BattleStart, None)],
+        targets: [],
+        effects: [
+            (AbilityStateAddVar("Treant", Atk, Context(Level)), None),
+            (AbilityStateAddVar("Treant", Hp, Context(Level)), None),
+        ],
     ),
     representation: (
         material: Shape(
@@ -37,4 +35,6 @@
         },
         count: 2,
     ),
+    state: (history: {}, birth: 0.0),
+    statuses: [],
 )

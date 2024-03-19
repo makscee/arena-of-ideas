@@ -7,17 +7,27 @@
     houses: "Druids",
     description: "%trigger → %effect (max 3)",
     trigger: Fire(
-        trigger: AllyDeath,
-        target: Owner,
-        effect: List(
-            [
-                If(
-                    LessThen(ToInt(OwnerStateLast(Charges)), Int(3)),
-                    List([StateAddVar(Charges, Owner, Int(1)), UseAbility("Summon Treant", 0)]),
-                    Noop,
+        triggers: [(AllyDeath, None)],
+        targets: [],
+        effects: [
+            (
+                List(
+                    [
+                        If(
+                            LessThen(ToInt(OwnerStateLast(Charges)), Int(3)),
+                            List(
+                                [
+                                    StateAddVar(Charges, Owner, Int(1)),
+                                    UseAbility("Summon Treant", 0),
+                                ],
+                            ),
+                            Noop,
+                        ),
+                    ],
                 ),
-            ],
-        ),
+                Some("[Summon Treant]"),
+            ),
+        ],
     ),
     representation: (
         material: Shape(

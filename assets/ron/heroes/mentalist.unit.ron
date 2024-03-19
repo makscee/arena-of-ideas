@@ -4,7 +4,11 @@
     hp: 1,
     atk: 2,
     houses: "Meta",
-    trigger: Fire(trigger: BattleStart, target: AllUnits, effect: UseAbility("Amnesia", 0)),
+    trigger: Fire(
+        triggers: [(BattleStart, None)],
+        targets: [(AllUnits, None)],
+        effects: [(UseAbility("Amnesia", 0), None)],
+    ),
     representation: (
         material: Shape(
             shape: Circle(radius: Float(0.25)),
@@ -14,7 +18,10 @@
         children: [],
         mapping: {
             Offset: Mul(Vec2EE(Cos(OwnerState(T)), Sin(OwnerState(T))), Float(0.5)),
-            T: Sum(Sin(Sum(GameTime, Mul(IntFloat(OwnerState(Index)), Float(-0.15)))), Mul(PI, Float(1.5))),
+            T: Sum(
+                Sin(Sum(GameTime, Mul(IntFloat(OwnerState(Index)), Float(-0.15)))),
+                Mul(PI, Float(1.5)),
+            ),
         },
         count: 8,
     ),

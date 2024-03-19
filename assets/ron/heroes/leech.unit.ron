@@ -5,8 +5,12 @@
     stacks: 1,
     level: 1,
     houses: "Vampires",
-    description: "%trigger → use %effect on killer",
-    trigger: Fire(trigger: AfterDamageDealt, target: Target, effect: UseAbility("Siphon", 2)),
+    description: "%trigger → %effect on %target",
+    trigger: Fire(
+        triggers: [(AfterDamageDealt, None)],
+        targets: [(Target, None)],
+        effects: [(UseAbility("Siphon", 2), None)],
+    ),
     representation: (
         material: Shape(
             shape: Circle(radius: Sum(Sum(Float(0.7), Mul(Index, Float(0.08))), Mul(Beat, Float(0.05)))),
@@ -19,10 +23,13 @@
             ),
             alpha: Float(1.0),
         ),
+        children: [],
         mapping: {
             Offset: Vec2EE(Sum(Mul(Index, Float(-0.04)), Mul(Abs(Beat), Mul(Float(0.1), Index))), Zero),
             Rotation: Float(1.57),
         },
         count: 2,
     ),
+    state: (history: {}, birth: 0.0),
+    statuses: [],
 )

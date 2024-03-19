@@ -5,11 +5,16 @@
     stacks: 1,
     level: 1,
     houses: "Mages",
-    description: "%trigger → %effectx3 on %target",
+    description: "%trigger → %effect",
     trigger: Fire(
-        trigger: AfterStrike,
-        target: RandomEnemy,
-        effect: Repeat(Int(3), WithTarget(RandomEnemy, UseAbility("Magic Missile", 0))),
+        triggers: [(AfterStrike, None)],
+        targets: [],
+        effects: [
+            (
+                Repeat(Int(3), WithTarget(RandomEnemy, UseAbility("Magic Missile", 0))),
+                Some("use [Magic Missile] ({Level}) on random enemy 3 times"),
+            ),
+        ],
     ),
     representation: (
         material: Shape(
@@ -18,6 +23,7 @@
             fill: Solid(color: OwnerState(Color)),
             alpha: Float(1.0),
         ),
+        children: [],
         mapping: {
             Offset: Mul(
                 UnitVec(Sum(Index, Mul(Sin(Sum(GameTime, Mul(Index, Float(10.0)))), PI2))),
@@ -26,4 +32,6 @@
         },
         count: 3,
     ),
+    state: (history: {}, birth: 0.0),
+    statuses: [],
 )

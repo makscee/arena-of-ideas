@@ -5,11 +5,16 @@
     stacks: 1,
     level: 1,
     houses: "Death Knights",
-    description: "[Skeleton] apply [Plague] on damage dealt",
+    description: "%trigger → %effect",
     trigger: Fire(
-        trigger: BattleStart,
-        target: Owner,
-        effect: AbilityStateAddVar("Summon Skeleton", T, String("Plague on damage dealt")),
+        triggers: [(BattleStart, None)],
+        targets: [],
+        effects: [
+            (
+                AbilityStateAddVar("Summon Skeleton", T, String("Plague on damage dealt")),
+                Some("[Skeleton] applies [Plague] on attack"),
+            ),
+        ],
     ),
     representation: (
         material: Shape(
@@ -27,4 +32,6 @@
         mapping: {T: Sin(Sum(GameTime, Index))},
         count: 4,
     ),
+    state: (history: {}, birth: 0.0),
+    statuses: [],
 )

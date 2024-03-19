@@ -6,7 +6,11 @@
     level: 1,
     houses: "Death Knights",
     description: "%trigger → %effect on %target",
-    trigger: Fire(trigger: AfterDamageDealt, target: Target, effect: UseAbility("Plague", 0)),
+    trigger: Fire(
+        triggers: [(AfterDamageDealt, None)],
+        targets: [(Target, None)],
+        effects: [(UseAbility("Plague", 0), None)],
+    ),
     representation: (
         material: Shape(
             shape: Circle(radius: Sub(Float(0.19), Mul(Index, Float(0.02)))),

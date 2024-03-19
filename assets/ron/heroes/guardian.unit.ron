@@ -5,16 +5,17 @@
     stacks: 1,
     level: 1,
     houses: "Paladins",
-    description: "%trigger → %effect on ally that doesn\'t have [Shield]",
+    description: "%trigger → %effect on %target",
     trigger: Fire(
-        trigger: Period(0, 1, TurnEnd),
-        target: FindUnit(Equals(StatusCharges(String("Shield")), Zero)),
-        effect: UseAbility("Shield", 0),
+        triggers: [(Period(0, 1, TurnEnd), Some("Every 2 Turns"))],
+        targets: [(FindUnit(Equals(StatusCharges(String("Shield")), Zero)), Some("ally with no [Shield]"))],
+        effects: [(UseAbility("Shield", 0), None)],
     ),
     representation: (
         material: Shape(
             shape: Circle(radius: Float(0.8)),
             shape_type: Line(thickness: Float(0.6)),
+            fill: Solid(color: OwnerState(Color)),
             alpha: Float(1.0),
         ),
         children: [],
@@ -26,4 +27,6 @@
         },
         count: 9,
     ),
+    state: (history: {}, birth: 0.0),
+    statuses: [],
 )

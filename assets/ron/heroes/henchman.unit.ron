@@ -6,7 +6,11 @@
     level: 1,
     houses: "Warlocks",
     description: "%trigger → %effect on %target",
-    trigger: Fire(trigger: BattleStart, target: Owner, effect: UseAbility("Doom", 0)),
+    trigger: Fire(
+        triggers: [(BattleStart, None)],
+        targets: [(Owner, None)],
+        effects: [(UseAbility("Doom", 0), None)],
+    ),
     representation: (
         material: Shape(
             shape: Circle(

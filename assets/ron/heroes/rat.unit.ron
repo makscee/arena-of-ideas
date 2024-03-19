@@ -6,7 +6,11 @@
     level: 1,
     houses: "Death Knights",
     description: "%trigger → %effect on %target",
-    trigger: Fire(trigger: BattleStart, target: RandomEnemySubset(Int(2)), effect: UseAbility("Plague", 0)),
+    trigger: Fire(
+        triggers: [(BattleStart, None)],
+        targets: [(RandomEnemySubset(Int(2)), None)],
+        effects: [(UseAbility("Plague", 0), None)],
+    ),
     representation: (
         material: Shape(
             shape: Circle(
@@ -16,6 +20,7 @@
             fill: Solid(color: OwnerState(Color)),
             alpha: Context(T),
         ),
+        children: [],
         mapping: {
             T: Sin(Sum(GameTime, Index)),
             Offset: Mul(
@@ -27,4 +32,6 @@
         },
         count: 4,
     ),
+    state: (history: {}, birth: 0.0),
+    statuses: [],
 )

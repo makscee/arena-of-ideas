@@ -11,7 +11,7 @@ use std::{collections::hash_map::DefaultHasher, f32::consts::PI};
 
 use super::*;
 
-#[derive(Serialize, Deserialize, Debug, Clone, Default, Display, PartialEq, EnumIter)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, EnumIter, AsRefStr)]
 pub enum Expression {
     #[default]
     Zero,
@@ -603,109 +603,6 @@ impl Expression {
     pub fn get_color(&self, context: &Context, world: &mut World) -> Result<Color> {
         self.get_value(context, world)?.get_color()
     }
-
-    pub fn get_description_string(&self) -> String {
-        match self {
-            Expression::Zero
-            | Expression::GameTime
-            | Expression::PI
-            | Expression::PI2
-            | Expression::Age
-            | Expression::SlotPosition
-            | Expression::OwnerFaction
-            | Expression::OppositeFaction
-            | Expression::Beat
-            | Expression::Owner
-            | Expression::Caster
-            | Expression::Target
-            | Expression::RandomUnit
-            | Expression::RandomAdjacentUnit
-            | Expression::RandomAlly
-            | Expression::RandomEnemy
-            | Expression::AllAllyUnits
-            | Expression::AllEnemyUnits
-            | Expression::AllUnits
-            | Expression::AllOtherUnits
-            | Expression::Index
-            | Expression::AdjacentUnits => self.to_string().to_case(Case::Lower),
-            Expression::Float(v) => v.to_string(),
-            Expression::Int(v) => v.to_string(),
-            Expression::Bool(v) => v.to_string(),
-            Expression::String(v) => v.to_string(),
-            Expression::Hex(v) => v.to_string(),
-            Expression::Faction(v) => v.to_string(),
-            Expression::OwnerState(v) => format!("{self}({v})"),
-            Expression::OwnerStateLast(v) => format!("{self}({v})"),
-            Expression::TargetState(v) => format!("{self}({v})"),
-            Expression::TargetStateLast(v) => format!("{self}({v})"),
-            Expression::StateLast(v, t) => format!("{self} ({v}, {t})"),
-            Expression::Context(v) => format!("{self}({v})"),
-            Expression::StatusEntity(s, v) => format!("{self} ({s}, {v})"),
-            Expression::AbilityContext(a, v) | Expression::AbilityState(a, v) => {
-                format!("{self}({a}:{v})")
-            }
-            Expression::Value(v) => format!("{self}({v})"),
-            Expression::Vec2(x, y) => format!("({x}, {y})"),
-            Expression::Vec2E(x) => format!("({x}, {x})"),
-            Expression::StringInt(v)
-            | Expression::StringFloat(v)
-            | Expression::StringVec(v)
-            | Expression::IntFloat(v)
-            | Expression::ToInt(v)
-            | Expression::Sin(v)
-            | Expression::Cos(v)
-            | Expression::Sign(v)
-            | Expression::Fract(v)
-            | Expression::Floor(v)
-            | Expression::UnitVec(v)
-            | Expression::Even(v)
-            | Expression::Abs(v)
-            | Expression::SlotUnit(v)
-            | Expression::FactionCount(v)
-            | Expression::FilterMaxEnemy(v)
-            | Expression::FindUnit(v)
-            | Expression::Parent(v)
-            | Expression::UnitCount(v)
-            | Expression::RandomFloat(v)
-            | Expression::RandomFloatUnit(v)
-            | Expression::StatusCharges(v) => format!(
-                "{} ({})",
-                self.to_string().to_case(Case::Lower),
-                v.get_description_string().to_case(Case::Title)
-            ),
-            Expression::Vec2EE(x, y)
-            | Expression::Sum(x, y)
-            | Expression::Sub(x, y)
-            | Expression::Mul(x, y)
-            | Expression::Div(x, y)
-            | Expression::GreaterThen(x, y)
-            | Expression::LessThen(x, y)
-            | Expression::Min(x, y)
-            | Expression::Max(x, y)
-            | Expression::Equals(x, y)
-            | Expression::And(x, y)
-            | Expression::Or(x, y) => format!(
-                "{self}({}, {})",
-                x.get_description_string().to_case(Case::Title),
-                y.get_description_string().to_case(Case::Title)
-            ),
-            Expression::If(x, y, z) | Expression::Spread(x, y, z) => format!(
-                "{self}({}, {}, {})",
-                x.get_description_string().to_case(Case::Title),
-                y.get_description_string().to_case(Case::Title),
-                z.get_description_string().to_case(Case::Title),
-            ),
-            Expression::WithVar(var, val, e) => format!(
-                "{self}({}, {}, {})",
-                var.to_string().to_case(Case::Title),
-                val.get_description_string().to_case(Case::Title),
-                e.get_description_string().to_case(Case::Title),
-            ),
-            Expression::RandomEnemySubset(amount) => {
-                format!("{} random enemies", amount.get_description_string())
-            }
-        }
-    }
 }
 
 impl EditorNodeGenerator for Expression {
@@ -1027,7 +924,7 @@ impl EditorNodeGenerator for Expression {
     fn show_replace_buttons(&mut self, lookup: &str, submit: bool, ui: &mut Ui) -> bool {
         for (e, _) in Expression::iter()
             .filter_map(|e| {
-                let s = e.to_string().to_lowercase();
+                let s = e.as_ref().to_lowercase();
                 match s.contains(lookup) {
                     true => Some((e, s)),
                     false => None,
@@ -1035,7 +932,7 @@ impl EditorNodeGenerator for Expression {
             })
             .sorted_by_key(|(_, s)| !s.starts_with(lookup))
         {
-            let btn = e.to_string().add_color(e.node_color()).rich_text(ui);
+            let btn = e.as_ref().add_color(e.node_color()).rich_text(ui);
             let btn = ui.button(btn);
             if btn.clicked() || submit {
                 btn.request_focus();
@@ -1050,5 +947,102 @@ impl EditorNodeGenerator for Expression {
 
     fn wrap(&mut self) {
         *self = Expression::Abs(Box::new(self.clone()))
+    }
+}
+
+impl std::fmt::Display for Expression {
+    fn fmt(&self, f: &mut __private::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Expression::Zero
+            | Expression::GameTime
+            | Expression::PI
+            | Expression::PI2
+            | Expression::Age
+            | Expression::SlotPosition
+            | Expression::OwnerFaction
+            | Expression::OppositeFaction
+            | Expression::Beat
+            | Expression::Owner
+            | Expression::Caster
+            | Expression::Target
+            | Expression::RandomUnit
+            | Expression::RandomAdjacentUnit
+            | Expression::RandomAlly
+            | Expression::RandomEnemy
+            | Expression::AllAllyUnits
+            | Expression::AllEnemyUnits
+            | Expression::AllUnits
+            | Expression::AllOtherUnits
+            | Expression::Index
+            | Expression::AdjacentUnits => write!(f, "{}", self.as_ref().to_case(Case::Title)),
+            Expression::Float(v) => write!(f, "{v}"),
+            Expression::Int(v) => write!(f, "{v}"),
+            Expression::Bool(v) => write!(f, "{v}"),
+            Expression::String(v) => write!(f, "{v}"),
+            Expression::Hex(v) => write!(f, "{v}"),
+            Expression::Faction(v) => write!(f, "{v}"),
+            Expression::OwnerState(v) => write!(f, "{}({v})", self.as_ref()),
+            Expression::OwnerStateLast(v) => write!(f, "{}({v})", self.as_ref()),
+            Expression::TargetState(v) => write!(f, "{}({v})", self.as_ref()),
+            Expression::TargetStateLast(v) => write!(f, "{}({v})", self.as_ref()),
+            Expression::StateLast(v, t) => write!(f, "{} ({v}, {t})", self.as_ref()),
+            Expression::Context(v) => write!(f, "{{{v}}}"),
+            Expression::StatusEntity(s, v) => write!(f, "{} ({s}, {v})", self.as_ref()),
+            Expression::AbilityContext(a, v) | Expression::AbilityState(a, v) => {
+                write!(f, "{}({a}:{v})", self.as_ref())
+            }
+            Expression::Value(v) => write!(f, "{}({v})", self.as_ref()),
+            Expression::Vec2(x, y) => write!(f, "({x}, {y})"),
+            Expression::Vec2E(x) => write!(f, "({x}, {x})"),
+            Expression::StringInt(v)
+            | Expression::StringFloat(v)
+            | Expression::StringVec(v)
+            | Expression::IntFloat(v)
+            | Expression::ToInt(v)
+            | Expression::Sin(v)
+            | Expression::Cos(v)
+            | Expression::Sign(v)
+            | Expression::Fract(v)
+            | Expression::Floor(v)
+            | Expression::UnitVec(v)
+            | Expression::Even(v)
+            | Expression::Abs(v)
+            | Expression::SlotUnit(v)
+            | Expression::FactionCount(v)
+            | Expression::FilterMaxEnemy(v)
+            | Expression::FindUnit(v)
+            | Expression::Parent(v)
+            | Expression::UnitCount(v)
+            | Expression::RandomFloat(v)
+            | Expression::RandomFloatUnit(v)
+            | Expression::StatusCharges(v) => {
+                write!(f, "{} ({v})", self.as_ref().to_case(Case::Title),)
+            }
+            Expression::Vec2EE(x, y)
+            | Expression::Sub(x, y)
+            | Expression::Mul(x, y)
+            | Expression::Div(x, y)
+            | Expression::GreaterThen(x, y)
+            | Expression::LessThen(x, y)
+            | Expression::Min(x, y)
+            | Expression::Max(x, y)
+            | Expression::Equals(x, y)
+            | Expression::And(x, y)
+            | Expression::Or(x, y) => {
+                write!(f, "{}({x}, {y})", self.as_ref().to_case(Case::Title),)
+            }
+            Expression::Sum(x, y) => write!(f, "({x}+{y})"),
+            Expression::If(x, y, z) | Expression::Spread(x, y, z) => {
+                write!(f, "{}({x}, {y}, {z})", self.as_ref())
+            }
+            Expression::WithVar(var, val, e) => write!(
+                f,
+                "{}({var}, {val}, {e})",
+                self.as_ref().to_case(Case::Title)
+            ),
+            Expression::RandomEnemySubset(amount) => {
+                write!(f, "{{{amount}}} random enemies")
+            }
+        }
     }
 }

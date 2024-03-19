@@ -1,16 +1,20 @@
 use super::*;
 
 use bevy_egui::egui::ComboBox;
+use convert_case::Casing;
 use event::Event;
 use strum_macros::Display;
 
 #[derive(Deserialize, Serialize, Clone, Debug, Display, PartialEq, EnumIter)]
+#[serde(deny_unknown_fields)]
 pub enum Trigger {
     Fire {
-        trigger: FireTrigger,
-        #[serde(default = "owner")]
-        target: Expression,
-        effect: Effect,
+        #[serde(default)]
+        triggers: Vec<(FireTrigger, Option<String>)>,
+        #[serde(default)]
+        targets: Vec<(Expression, Option<String>)>,
+        #[serde(default)]
+        effects: Vec<(Effect, Option<String>)>,
     },
     Change {
         trigger: DeltaTrigger,
@@ -30,7 +34,7 @@ pub enum DeltaTrigger {
     Var(VarName),
 }
 
-#[derive(Deserialize, Serialize, Clone, Debug, Display, PartialEq, EnumIter, Default)]
+#[derive(Deserialize, Serialize, Clone, Debug, PartialEq, EnumIter, Default, AsRefStr)]
 pub enum FireTrigger {
     #[default]
     Noop,
@@ -235,8 +239,8 @@ impl EditorNodeGenerator for FireTrigger {
 
     fn show_replace_buttons(&mut self, lookup: &str, submit: bool, ui: &mut Ui) -> bool {
         for e in FireTrigger::iter() {
-            if e.to_string().to_lowercase().contains(lookup) {
-                let btn = e.to_string().add_color(e.node_color()).rich_text(ui);
+            if e.as_ref().to_lowercase().contains(lookup) {
+                let btn = e.as_ref().add_color(e.node_color()).rich_text(ui);
                 let btn = ui.button(btn);
                 if btn.clicked() || submit {
                     btn.request_focus();
@@ -267,9 +271,9 @@ impl DeltaTrigger {
 impl Default for Trigger {
     fn default() -> Self {
         Self::Fire {
-            trigger: FireTrigger::Noop,
-            target: Expression::Owner,
-            effect: Effect::Noop,
+            triggers: default(),
+            targets: default(),
+            effects: default(),
         }
     }
 }
@@ -285,16 +289,27 @@ impl Trigger {
                 result
             }
             Trigger::Fire {
-                trigger,
-                target,
-                effect,
-                ..
+                triggers,
+                targets,
+                effects,
             } => {
-                if !trigger.catch(event, context, world) {
+                if !triggers
+                    .into_iter()
+                    .any(|(trigger, _)| trigger.catch(event, context, world))
+                {
                     return false;
                 }
-                let effect = Effect::WithTarget(target.clone(), Box::new(effect.clone()));
-                ActionPlugin::action_push_back(effect, context.clone(), world);
+                for (effect, _) in effects {
+                    if targets.is_empty() {
+                        ActionPlugin::action_push_back(effect.clone(), context.clone(), world);
+                    } else {
+                        for (target, _) in targets.iter() {
+                            let effect =
+                                Effect::WithTarget(target.clone(), Box::new(effect.clone()));
+                            ActionPlugin::action_push_back(effect, context.clone(), world);
+                        }
+                    }
+                }
                 true
             }
             Trigger::Change { .. } => false,
@@ -359,42 +374,63 @@ impl Trigger {
     pub fn inject_description(&self, state: &mut VarState) {
         match self {
             Trigger::Fire {
-                trigger,
-                target,
-                effect,
+                triggers,
+                targets,
+                effects,
             } => {
-                let trigger = trigger.get_description_string();
+                let trigger = triggers
+                    .into_iter()
+                    .map(|(t, s)| s.clone().unwrap_or_else(|| t.to_string()))
+                    .join(" & ");
+                let effect = effects
+                    .into_iter()
+                    .map(|(e, s)| s.clone().unwrap_or_else(|| e.to_string()))
+                    .join(" & ");
+                let target = targets
+                    .into_iter()
+                    .map(|(t, s)| s.clone().unwrap_or_else(|| t.to_string()))
+                    .join(" & ");
                 state
                     .init(VarName::TriggerDescription, VarValue::String(trigger))
-                    .init(
-                        VarName::EffectDescription,
-                        VarValue::String(
-                            effect
-                                .find_all_abilities()
-                                .into_iter()
-                                .map(|a| match a {
-                                    Effect::UseAbility(ability, base) => {
-                                        format!(
-                                            "[{ability}] ({{Level}}{})",
-                                            if base > 1 {
-                                                format!("+{base}")
-                                            } else {
-                                                default()
-                                            }
-                                        )
-                                    }
-                                    _ => default(),
-                                })
-                                .join(" + "),
-                        ),
-                    )
-                    .init(
-                        VarName::TargetDescription,
-                        VarValue::String(target.get_description_string()),
-                    );
+                    .init(VarName::EffectDescription, VarValue::String(effect))
+                    .init(VarName::TargetDescription, VarValue::String(target));
             }
             Trigger::Change { .. } => {}
             Trigger::List(list) => list.iter().for_each(|t| t.inject_description(state)),
+        }
+    }
+}
+
+impl std::fmt::Display for FireTrigger {
+    fn fmt(&self, f: &mut __private::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            FireTrigger::Noop
+            | FireTrigger::AfterIncomingDamage
+            | FireTrigger::AfterDamageTaken
+            | FireTrigger::AfterDamageDealt
+            | FireTrigger::BattleStart
+            | FireTrigger::TurnStart
+            | FireTrigger::TurnEnd
+            | FireTrigger::BeforeStrike
+            | FireTrigger::AfterStrike
+            | FireTrigger::AllyDeath
+            | FireTrigger::AnyDeath
+            | FireTrigger::AllySummon
+            | FireTrigger::BeforeDeath
+            | FireTrigger::AfterKill => {
+                write!(f, "{}", self.as_ref().to_case(convert_case::Case::Title))
+            }
+            FireTrigger::List(list) => write!(
+                f,
+                "({})",
+                list.into_iter().map(|t| t.to_string()).join(" + ")
+            ),
+            FireTrigger::Period(_, delay, trigger) => {
+                write!(f, "{} ({delay} {trigger})", self.as_ref())
+            }
+            FireTrigger::OnceAfter(delay, trigger) => {
+                write!(f, "{} ({delay} {trigger})", self.as_ref())
+            }
         }
     }
 }

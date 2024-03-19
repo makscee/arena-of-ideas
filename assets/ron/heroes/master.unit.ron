@@ -5,16 +5,14 @@
     stacks: 1,
     level: 1,
     houses: "Death Knights",
-    description: "[Skeleton] HP +({Level}+1) ATK +({Level}+1)",
+    description: "%trigger → %effect",
     trigger: Fire(
-        trigger: BattleStart,
-        target: Owner,
-        effect: List(
-            [
-                AbilityStateAddVar("Skeleton", Hp, Sum(Context(Level), Int(1))),
-                AbilityStateAddVar("Skeleton", Atk, Sum(Context(Level), Int(1))),
-            ],
-        ),
+        triggers: [(BattleStart, None)],
+        targets: [],
+        effects: [
+            (AbilityStateAddVar("Skeleton", Atk, Sum(Context(Level), Int(1))), None),
+            (AbilityStateAddVar("Skeleton", Hp, Sum(Context(Level), Int(1))), None),
+        ],
     ),
     representation: (
         material: Shape(

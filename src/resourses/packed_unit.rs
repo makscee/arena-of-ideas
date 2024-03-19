@@ -236,50 +236,56 @@ impl PackedUnit {
         match (trigger_a, trigger_b) {
             (
                 Trigger::Fire {
-                    trigger: trigger_a,
-                    target: target_a,
-                    effect: effect_a,
+                    triggers: trigger_a,
+                    targets: target_a,
+                    effects: effect_a,
                 },
                 Trigger::Fire {
-                    trigger: trigger_b,
-                    target: target_b,
-                    effect: effect_b,
+                    triggers: trigger_b,
+                    targets: target_b,
+                    effects: effect_b,
                 },
             ) => {
-                if !trigger_a.eq(trigger_b) {
+                {
                     let trigger = Trigger::Fire {
-                        trigger: FireTrigger::List(
-                            [Box::new(trigger_a.clone()), Box::new(trigger_b.clone())].into(),
+                        triggers: Vec::from_iter(
+                            trigger_a.iter().cloned().chain(trigger_b.iter().cloned()),
                         ),
-                        target: target_a.clone(),
-                        effect: effect_a.clone(),
+                        targets: target_a.clone(),
+                        effects: effect_a.clone(),
                     };
-                    result.push(Self::fuse_base(&a, &b, trigger, world));
-                    let trigger = Trigger::Fire {
-                        trigger: FireTrigger::List(
-                            [Box::new(trigger_a.clone()), Box::new(trigger_b.clone())].into(),
-                        ),
-                        target: target_b.clone(),
-                        effect: effect_b.clone(),
-                    };
-                    result.push(Self::fuse_base(&b, &a, trigger, world));
+                    result.push(Self::fuse_base(&a, &b, trigger, world))
                 }
-                let trigger = Trigger::Fire {
-                    trigger: trigger_a.clone(),
-                    target: target_a.clone(),
-                    effect: Effect::List(
-                        [Box::new(effect_a.clone()), Box::new(effect_b.clone())].into(),
-                    ),
-                };
-                result.push(Self::fuse_base(&a, &b, trigger, world));
-                let trigger = Trigger::Fire {
-                    trigger: trigger_b.clone(),
-                    target: target_b.clone(),
-                    effect: Effect::List(
-                        [Box::new(effect_a.clone()), Box::new(effect_b.clone())].into(),
-                    ),
-                };
-                result.push(Self::fuse_base(&b, &a, trigger, world));
+                {
+                    let trigger = Trigger::Fire {
+                        triggers: Vec::from_iter(
+                            trigger_a.iter().cloned().chain(trigger_b.iter().cloned()),
+                        ),
+                        targets: target_b.clone(),
+                        effects: effect_b.clone(),
+                    };
+                    result.push(Self::fuse_base(&b, &a, trigger, world))
+                }
+                {
+                    let trigger = Trigger::Fire {
+                        triggers: trigger_a.clone(),
+                        targets: target_a.clone(),
+                        effects: Vec::from_iter(
+                            effect_a.iter().cloned().chain(effect_b.iter().cloned()),
+                        ),
+                    };
+                    result.push(Self::fuse_base(&a, &b, trigger, world))
+                }
+                {
+                    let trigger = Trigger::Fire {
+                        triggers: trigger_b.clone(),
+                        targets: target_b.clone(),
+                        effects: Vec::from_iter(
+                            effect_a.iter().cloned().chain(effect_b.iter().cloned()),
+                        ),
+                    };
+                    result.push(Self::fuse_base(&b, &a, trigger, world))
+                }
             }
             _ => {
                 let trigger = Trigger::List(
@@ -297,6 +303,93 @@ impl PackedUnit {
             .iter()
             .map(|(name, charges)| format!("{name} ({charges})"))
             .join(",")
+    }
+
+    pub fn show_editor(&mut self, entity: Entity, ui: &mut Ui, world: &mut World) {
+        let style = ui.style_mut();
+        style.override_text_style = Some(TextStyle::Small);
+        style.drag_value_text_style = TextStyle::Small;
+        style.visuals.widgets.inactive.bg_stroke = Stroke {
+            width: 1.0,
+            color: dark_gray(),
+        };
+        ui.horizontal(|ui| {
+            let name = &mut self.name;
+            ui.label("name:");
+            TextEdit::singleline(name).desired_width(60.0).ui(ui);
+            let atk = &mut self.atk;
+            ui.label("atk:");
+            DragValue::new(atk).clamp_range(0..=99).ui(ui);
+            let hp = &mut self.hp;
+            ui.label("hp:");
+            DragValue::new(hp).clamp_range(0..=99).ui(ui);
+            let lvl = &mut self.level;
+            ui.label("lvl:");
+            DragValue::new(lvl).clamp_range(1..=99).ui(ui);
+        });
+        ui.horizontal(|ui| {
+            let houses: HashMap<String, Color> = HashMap::from_iter(
+                Pools::get(world)
+                    .houses
+                    .iter()
+                    .map(|(k, v)| (k.clone(), v.color.clone().into())),
+            );
+            ui.label("house:");
+            let house = &mut self.houses;
+            ComboBox::from_id_source("house")
+                .selected_text(house.clone())
+                .width(140.0)
+                .show_ui(ui, |ui| {
+                    for (h, _) in houses.into_iter().sorted_by_key(|(k, _)| k.clone()) {
+                        ui.selectable_value(house, h.clone(), h.clone());
+                    }
+                });
+        });
+        ui.horizontal(|ui| {
+            ui.label("desc:");
+            let description = &mut self.description;
+            TextEdit::singleline(description)
+                .desired_width(ui.available_width().min(200.0))
+                .ui(ui);
+            if ui.button("reset").clicked() {
+                *description = DEFAULT_UNIT_DESCRIPTION.to_owned();
+            }
+        });
+
+        let context = &Context::from_owner(entity, world);
+        ui.horizontal(|ui| {
+            let trigger = &mut self.trigger;
+            match trigger {
+                Trigger::Fire {
+                    triggers,
+                    targets,
+                    effects,
+                } => {
+                    CollapsingHeader::new("Triggers")
+                        .default_open(true)
+                        .show(ui, |ui| {
+                            show_trees_desc("triggers:", triggers, context, ui, world);
+                        });
+                    CollapsingHeader::new("Targets")
+                        .default_open(true)
+                        .show(ui, |ui| {
+                            show_trees_desc("targets:", targets, context, ui, world);
+                        });
+
+                    CollapsingHeader::new("Effects")
+                        .default_open(true)
+                        .show(ui, |ui| {
+                            show_trees_desc("effects:", effects, context, ui, world);
+                        });
+                }
+                Trigger::Change { .. } => todo!(),
+                Trigger::List(_) => todo!(),
+            }
+        });
+
+        let rep = &mut self.representation;
+        rep.show_editor(context, "root", ui, world);
+        ui.add_space(150.0);
     }
 }
 

@@ -10,8 +10,8 @@
                 [
                     Change(trigger: IncomingDamage, expr: Mul(Context(Value), Int(-1))),
                     Fire(
-                        trigger: AfterIncomingDamage,
-                        effect: WithVar(Charges, Int(-1), AddStatus("Shield")),
+                        triggers: [(AfterIncomingDamage, None)],
+                        effects: [(WithVar(Charges, Int(-1), AddStatus("Shield")), None)],
                     ),
                 ],
             ),
@@ -38,7 +38,6 @@
             level: 1,
             houses: "Paladins",
             description: "",
-            trigger: Fire(trigger: Noop, target: Owner, effect: Noop),
             representation: (
                 material: Shape(
                     shape: Circle(

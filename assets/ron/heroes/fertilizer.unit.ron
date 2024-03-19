@@ -6,7 +6,11 @@
     level: 1,
     houses: "Druids",
     description: "%trigger → %effect on %target",
-    trigger: Fire(trigger: BattleStart, target: AllAllyUnits, effect: UseAbility("Thorns", 0)),
+    trigger: Fire(
+        triggers: [(BattleStart, None)],
+        targets: [(AllAllyUnits, None)],
+        effects: [(UseAbility("Thorns", 0), None)],
+    ),
     representation: (
         material: Shape(
             shape: Rectangle(size: Vec2E(Float(1.0))),

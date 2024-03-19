@@ -6,6 +6,7 @@ pub struct SettingsPlugin;
 pub struct SettingsData {
     pub master_volume: f64,
     pub expanded_hint: bool,
+    pub always_show_card: bool,
     pub window_mode: WindowMode,
 }
 
@@ -25,6 +26,7 @@ impl Default for SettingsData {
             master_volume: 0.5,
             expanded_hint: false,
             window_mode: default(),
+            always_show_card: default(),
         }
     }
 }
@@ -50,7 +52,7 @@ impl SettingsPlugin {
         };
         let mut data = *SettingsData::get(world);
         window("SETTINGS")
-            .set_width(600.0)
+            .set_width(400.0)
             .order(egui::Order::Foreground)
             .show(ctx, |ui| {
                 frame(ui, |ui| {
@@ -66,6 +68,23 @@ impl SettingsPlugin {
                         "always expand hint".to_colored().label(&mut ui[0]);
                         ui[1].vertical_centered_justified(|ui| {
                             let value = &mut data.expanded_hint;
+                            if ui
+                                .button_or_primary(
+                                    if *value { "ENABLED" } else { "DISABLED" },
+                                    *value,
+                                )
+                                .clicked()
+                            {
+                                *value = !*value;
+                            }
+                        });
+                    });
+                });
+                frame(ui, |ui| {
+                    ui.columns(2, |ui| {
+                        "always show card".to_colored().label(&mut ui[0]);
+                        ui[1].vertical_centered_justified(|ui| {
+                            let value = &mut data.always_show_card;
                             if ui
                                 .button_or_primary(
                                     if *value { "ENABLED" } else { "DISABLED" },
