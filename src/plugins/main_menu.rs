@@ -26,10 +26,12 @@ impl MainMenuPlugin {
                         LoginPlugin::login(ui, world);
                     }
                 } else {
-                    ui.label("DISCONNECTED");
-                    if ui.button("CONNECT").clicked() {
-                        LoginPlugin::connect();
-                    }
+                    frame(ui, |ui| {
+                        ui.label("DISCONNECTED");
+                        if ui.button("CONNECT").clicked() {
+                            LoginPlugin::connect(world);
+                        }
+                    });
                 }
 
                 if let Some(user) = LoginPlugin::get_user_data() {

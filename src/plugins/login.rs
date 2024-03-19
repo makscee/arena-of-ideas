@@ -16,12 +16,12 @@ use super::*;
 
 pub struct LoginPlugin;
 
-const SPACETIMEDB_URI: &str = "http://localhost:3001";
-// const SPACETIMEDB_URI: &str = "http://16.170.211.203:3000";
-#[cfg(debug_assertions)]
-const DB_NAME: &str = "aoi_dev2";
-#[cfg(not(debug_assertions))]
-const DB_NAME: &str = "aoi";
+// const SPACETIMEDB_URI: &str = "http://localhost:3001";
+// // const SPACETIMEDB_URI: &str = "http://16.170.211.203:3000";
+// #[cfg(debug_assertions)]
+// const DB_NAME: &str = "aoi_dev2";
+// #[cfg(not(debug_assertions))]
+// const DB_NAME: &str = "aoi";
 const CREDS_DIR: &str = ".aoi";
 
 static IS_CONNECTED: Mutex<bool> = Mutex::new(false);
@@ -126,19 +126,20 @@ impl LoginPlugin {
         CURRENT_USER.lock().unwrap().clone()
     }
 
-    pub fn setup() {
+    pub fn setup(world: &World) {
         once_on_connect(on_connected);
-        Self::connect();
+        Self::connect(world);
     }
 
-    pub fn connect() {
+    pub fn connect(world: &World) {
         if Self::is_connected() || is_offline() {
             return;
         }
         debug!("Connect start");
         let creds: Option<Credentials> = Self::load_credentials();
         let mut tries = 5;
-        while let Err(e) = connect(SPACETIMEDB_URI, DB_NAME, creds.clone()) {
+        let OptionsData { address, server } = Options::get_data(world);
+        while let Err(e) = connect(address, server, creds.clone()) {
             error!("Connection error: {e}");
             sleep(Duration::from_secs(1));
             tries -= 1;

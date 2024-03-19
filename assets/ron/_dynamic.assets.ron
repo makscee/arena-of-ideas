@@ -11,5 +11,6 @@
         "test.scenarios": Folder(path: "ron/scenarios"),
         "custom.battle": File(path: "ron/custom.battle.ron"),
         "anim": File(path: "ron/all.anim.ron"),
+        "options": File(path: "ron/main.options.ron"),
     },
 )

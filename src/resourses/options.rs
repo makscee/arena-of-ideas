@@ -12,6 +12,8 @@ pub struct Options {
     pub custom_battle: Handle<CustomBattleData>,
     #[asset(key = "anim")]
     pub animations: Handle<Animations>,
+    #[asset(key = "options")]
+    pub options: Handle<OptionsData>,
 }
 
 #[derive(Serialize, Deserialize, Debug, TypeUuid, TypePath)]
@@ -30,40 +32,48 @@ impl Animations {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug, TypeUuid, TypePath)]
+#[uuid = "aa3e27a5-20e4-4c3e-9af2-672e23ec9751"]
+pub struct OptionsData {
+    pub address: String,
+    pub server: String,
+}
+
 impl Options {
     pub fn get_unit_rep(world: &World) -> &Representation {
         world
-            .get_resource::<Assets<Representation>>()
-            .unwrap()
-            .get(&world.get_resource::<Options>().unwrap().unit)
+            .resource::<Assets<Representation>>()
+            .get(&world.resource::<Options>().unit)
             .unwrap()
     }
     pub fn get_status_rep(world: &World) -> &Representation {
         world
-            .get_resource::<Assets<Representation>>()
-            .unwrap()
-            .get(&world.get_resource::<Options>().unwrap().status)
+            .resource::<Assets<Representation>>()
+            .get(&world.resource::<Options>().status)
             .unwrap()
     }
     pub fn get_slot_rep(world: &World) -> &Representation {
         world
-            .get_resource::<Assets<Representation>>()
-            .unwrap()
-            .get(&world.get_resource::<Options>().unwrap().slot)
+            .resource::<Assets<Representation>>()
+            .get(&world.resource::<Options>().slot)
             .unwrap()
     }
     pub fn get_custom_battle(world: &World) -> &CustomBattleData {
         world
-            .get_resource::<Assets<CustomBattleData>>()
-            .unwrap()
-            .get(&world.get_resource::<Options>().unwrap().custom_battle)
+            .resource::<Assets<CustomBattleData>>()
+            .get(&world.resource::<Options>().custom_battle)
             .unwrap()
     }
     pub fn get_animations(world: &World) -> &Animations {
         world
-            .get_resource::<Assets<Animations>>()
+            .resource::<Assets<Animations>>()
+            .get(&world.resource::<Options>().animations)
             .unwrap()
-            .get(&world.get_resource::<Options>().unwrap().animations)
+    }
+    pub fn get_data(world: &World) -> &OptionsData {
+        world
+            .resource::<Assets<OptionsData>>()
+            .get(&world.resource::<Options>().options)
             .unwrap()
     }
 }

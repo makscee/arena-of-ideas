@@ -91,7 +91,7 @@ fn main() {
         )
         .add_dynamic_collection_to_loading_state::<_, StandardDynamicAssetCollection>(
             GameState::Loading,
-            "ron/dynamic.assets.ron",
+            "ron/_dynamic.assets.ron",
         )
         .add_collection_to_loading_state::<_, Options>(GameState::Loading)
         .add_collection_to_loading_state::<_, Pools>(GameState::Loading)
@@ -107,6 +107,7 @@ fn main() {
         .add_plugins(RonAssetPlugin::<House>::new(&["house.ron"]))
         .add_plugins(RonAssetPlugin::<CustomBattleData>::new(&["battle.ron"]))
         .add_plugins(RonAssetPlugin::<Representation>::new(&["rep.ron"]))
+        .add_plugins(RonAssetPlugin::<OptionsData>::new(&["options.ron"]))
         .add_plugins(RonAssetPlugin::<Animations>::new(&["anim.ron"]))
         .add_plugins(RonAssetPlugin::<TestScenario>::new(&["scenario.ron"]))
         .add_plugins(RonAssetPlugin::<Vfx>::new(&["vfx.ron"]))
