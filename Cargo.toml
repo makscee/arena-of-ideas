@@ -12,10 +12,10 @@ edition.workspace = true
 
 
 [workspace.dependencies]
-spacetimedb = { version = "0.8.1", features = ["getrandom"] }
+spacetimedb = { version = "0.8.2", features = ["getrandom"] }
 
 [dependencies]
-spacetimedb-sdk = "0.8.1"
+spacetimedb-sdk = "0.8.2"
 bevy = { version = "0.11.0", default-features = false, features = [
     "bevy_core_pipeline",
     "bevy_render",
@@ -61,6 +61,7 @@ home = "0.5.5"
 lazy_static = "1.4.0"
 convert_case = "0.6.0"
 indexmap = { version = "2.2.5", features = ["serde"] }
+egui_extras = { version = "0.23.0", features = ["svg"] }
 
 [dependencies.winit]
 # version = "*"

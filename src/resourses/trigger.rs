@@ -418,7 +418,7 @@ impl std::fmt::Display for FireTrigger {
             | FireTrigger::AllySummon
             | FireTrigger::BeforeDeath
             | FireTrigger::AfterKill => {
-                write!(f, "{}", self.as_ref().to_case(convert_case::Case::Title))
+                write!(f, "{}", self.as_ref().to_case(convert_case::Case::Lower))
             }
             FireTrigger::List(list) => write!(
                 f,
@@ -426,7 +426,8 @@ impl std::fmt::Display for FireTrigger {
                 list.into_iter().map(|t| t.to_string()).join(" + ")
             ),
             FireTrigger::Period(_, delay, trigger) => {
-                write!(f, "{} ({delay} {trigger})", self.as_ref())
+                write!(f, "
+                {} ({delay} {trigger})", self.as_ref())
             }
             FireTrigger::OnceAfter(delay, trigger) => {
                 write!(f, "{} ({delay} {trigger})", self.as_ref())

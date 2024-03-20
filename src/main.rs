@@ -147,6 +147,7 @@ fn main() {
                 .after(ShopPlugin::ui)
                 .after(HeroEditorPlugin::ui),
         );
+    app.add_systems(Startup, setup);
     match args.mode {
         RunMode::Regular | RunMode::Offline | RunMode::Continue | RunMode::Last | RunMode::Sync => {
             app.add_systems(OnExit(GameState::Loading), LoginPlugin::setup);
@@ -155,6 +156,12 @@ fn main() {
     }
 
     app.run();
+}
+
+fn setup(world: &mut World) {
+    if let Some(ctx) = egui_context(world) {
+        egui_extras::install_image_loaders(&ctx);
+    }
 }
 
 fn update(time: Res<Time>, audio: Res<AudioData>) {

@@ -7,7 +7,7 @@
     houses: "Death Knights",
     description: "%trigger → %effect on %target",
     trigger: Fire(
-        triggers: [(Period(0, 4, TurnEnd), Some("Every 5 Turns"))],
+        triggers: [(Period(0, 4, TurnEnd), Some("every 5 turns"))],
         targets: [(AllEnemyUnits, None)],
         effects: [(UseAbility("Plague", 0), None)],
     ),

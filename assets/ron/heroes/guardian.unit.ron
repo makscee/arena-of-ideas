@@ -7,7 +7,7 @@
     houses: "Paladins",
     description: "%trigger → %effect on %target",
     trigger: Fire(
-        triggers: [(Period(0, 1, TurnEnd), Some("Every 2 Turns"))],
+        triggers: [(Period(0, 1, TurnEnd), Some("every 2 turns"))],
         targets: [(FindUnit(Equals(StatusCharges(String("Shield")), Zero)), Some("ally with no [Shield]"))],
         effects: [(UseAbility("Shield", 0), None)],
     ),

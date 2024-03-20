@@ -8,7 +8,7 @@
     description: "%trigger → %effect on %target",
     trigger: Fire(
         triggers: [(TurnEnd, None)],
-        targets: [(Owner, Some("self"))],
+        targets: [(Owner, None)],
         effects: [(UseAbility("Grow", 0), None)],
     ),
     representation: (
@@ -35,4 +35,6 @@
         },
         count: 6,
     ),
+    state: (history: {}, birth: 0.0),
+    statuses: [],
 )

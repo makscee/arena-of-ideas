@@ -7,7 +7,7 @@
     houses: "Druids",
     description: "%trigger → %effect",
     trigger: Fire(
-        triggers: [(OnceAfter(4, TurnEnd), Some("In 5 Turns"))],
+        triggers: [(OnceAfter(4, TurnEnd), Some("in 5 turns"))],
         targets: [],
         effects: [(UseAbility("Summon Treant", 2), None)],
     ),

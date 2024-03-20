@@ -8,7 +8,7 @@
     description: "%trigger → %effect on killer",
     trigger: Fire(
         triggers: [(AllyDeath, None)],
-        targets: [(TargetStateLast(LastAttacker), None)],
+        targets: [(TargetStateLast(LastAttacker), Some("killer"))],
         effects: [(UseAbility("Plague", 0), None)],
     ),
     representation: (
@@ -23,6 +23,7 @@
             ),
             alpha: Float(1.0),
         ),
+        children: [],
         mapping: {
             Offset: Vec2EE(
                 Zero,
@@ -31,4 +32,6 @@
         },
         count: 3,
     ),
+    state: (history: {}, birth: 0.0),
+    statuses: [],
 )

@@ -219,7 +219,7 @@ impl BattlePlugin {
                 .show(ctx, |ui| {
                     frame(ui, |ui| {
                         text.add_color(color)
-                            .set_style(ColoredStringStyle::Heading)
+                            .set_style_ref(ColoredStringStyle::Heading)
                             .label(ui);
                         subtext.label(ui);
                         ui.columns(2, |ui| {

@@ -30,7 +30,7 @@ impl ActionPlugin {
 
     pub fn spin(world: &mut World) -> Result<bool> {
         let mut processed = false;
-        let mut limit = 1000;
+        let mut limit = 100000;
         loop {
             if limit == 0 {
                 return Err(anyhow!("Limit exceeeded"));

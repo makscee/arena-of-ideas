@@ -7,7 +7,7 @@
     houses: "Death Knights",
     description: "%trigger → %effect on %target",
     trigger: Fire(
-        triggers: [(Period(0, 1, TurnEnd), Some("Every 2 Turns"))],
+        triggers: [(Period(0, 1, TurnEnd), Some("every 2 turns"))],
         targets: [(FindUnit(StatusCharges(String("Plague"))), Some("ally"))],
         effects: [
             (

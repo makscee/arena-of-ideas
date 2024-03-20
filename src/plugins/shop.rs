@@ -351,7 +351,7 @@ impl ShopPlugin {
                             if frame(ui, |ui| {
                                 "+STACK"
                                     .add_color(color)
-                                    .set_style(ColoredStringStyle::Heading)
+                                    .set_style_ref(ColoredStringStyle::Heading)
                                     .label(ui);
                                 format!("Level {level}").add_color(color).label(ui);
 
@@ -386,7 +386,7 @@ impl ShopPlugin {
                             if frame(ui, |ui| {
                                 "FUSE"
                                     .add_color(color)
-                                    .set_style(ColoredStringStyle::Heading)
+                                    .set_style_ref(ColoredStringStyle::Heading)
                                     .label(ui);
                             })
                             .response

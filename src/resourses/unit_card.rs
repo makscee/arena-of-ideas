@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-use bevy_egui::egui::Order;
+use bevy_egui::egui::{Order, TextureOptions};
 
 use super::*;
 
@@ -42,7 +42,7 @@ impl VarState {
             };
             result
                 .push(name.to_owned(), self.get_color_at(var, t)?.c32())
-                .set_style(match open {
+                .set_style_ref(match open {
                     true => ColoredStringStyle::Heading2,
                     false => ColoredStringStyle::Normal,
                 });
@@ -51,7 +51,7 @@ impl VarState {
             .push_colored(
                 " lv."
                     .to_colored()
-                    .set_style(ColoredStringStyle::Small)
+                    .set_style_ref(ColoredStringStyle::Small)
                     .take(),
             )
             .push_colored(
@@ -62,20 +62,66 @@ impl VarState {
                         2 => yellow(),
                         _ => red(),
                     })
-                    .set_style(ColoredStringStyle::Bold)
+                    .set_style_ref(ColoredStringStyle::Bold)
                     .take(),
             );
         Ok(result)
     }
-    fn description(&self, world: &World) -> Result<ColoredString> {
+    fn description(&self, expanded: bool, world: &World) -> Result<Vec<(Icon, ColoredString)>> {
         let t = GameTimer::get().play_head();
-        let description = self
-            .get_string_at(VarName::Description, t)?
-            .to_colored()
-            .inject_trigger(self)
-            .inject_vars(self)
-            .inject_definitions(world);
-        Ok(description)
+        let mut result: Vec<(Icon, ColoredString)> = default();
+        if let Ok(text) = self.get_string_at(VarName::TriggerDescription, t) {
+            if !text.is_empty() {
+                let mut text = text
+                    .to_colored()
+                    .set_style(ColoredStringStyle::Normal)
+                    .inject_vars(self)
+                    .inject_definitions(world);
+                if expanded {
+                    text.push_colored_front(
+                        "trigger: "
+                            .add_color(white())
+                            .set_style(ColoredStringStyle::Normal),
+                    );
+                }
+                result.push((Icon::Lightning, text));
+            }
+        }
+        if let Ok(text) = self.get_string_at(VarName::TargetDescription, t) {
+            if !text.is_empty() {
+                let mut text = text
+                    .to_colored()
+                    .set_style(ColoredStringStyle::Normal)
+                    .inject_vars(self)
+                    .inject_definitions(world);
+                if expanded {
+                    text.push_colored_front(
+                        "target: "
+                            .add_color(white())
+                            .set_style(ColoredStringStyle::Normal),
+                    );
+                }
+                result.push((Icon::Target, text));
+            }
+        }
+        if let Ok(text) = self.get_string_at(VarName::EffectDescription, t) {
+            if !text.is_empty() {
+                let mut text = text
+                    .to_colored()
+                    .set_style(ColoredStringStyle::Normal)
+                    .inject_vars(self)
+                    .inject_definitions(world);
+                if expanded {
+                    text.push_colored_front(
+                        "effect: "
+                            .add_color(white())
+                            .set_style(ColoredStringStyle::Normal),
+                    );
+                }
+                result.push((Icon::Flame, text));
+            }
+        }
+        Ok(result)
     }
     fn houses(&self, world: &World) -> Result<ColoredString> {
         let t = GameTimer::get().play_head();
@@ -105,14 +151,14 @@ impl VarState {
             "hp".to_colored(),
             hp.to_string()
                 .add_color(red())
-                .set_style(ColoredStringStyle::Bold)
+                .set_style_ref(ColoredStringStyle::Bold)
                 .take(),
         );
         let atk_line = (
             "atk".to_colored(),
             atk.to_string()
                 .add_color(yellow())
-                .set_style(ColoredStringStyle::Bold)
+                .set_style_ref(ColoredStringStyle::Bold)
                 .take(),
         );
         Ok([level_line, atk_line, hp_line].into())
@@ -193,7 +239,7 @@ impl VarState {
             raw_definitions.extend(description.extract_bracketed(("[", "]")));
             let name_colored = name
                 .add_color(color)
-                .set_style(ColoredStringStyle::Bold)
+                .set_style_ref(ColoredStringStyle::Bold)
                 .take();
             let description = description.to_colored().inject_definitions(world);
             let vars = self
@@ -237,6 +283,15 @@ impl VarState {
         }
     }
 
+    fn show_description(lines: Vec<(Icon, ColoredString)>, ui: &mut Ui) {
+        for (icon, value) in lines {
+            ui.horizontal(|ui| {
+                icon.paint_icon(ui);
+                value.as_label(ui).wrap(true).ui(ui);
+            });
+        }
+    }
+
     fn show_frames(
         &self,
         statuses: Vec<(String, i32)>,
@@ -252,14 +307,12 @@ impl VarState {
         let houses = self.houses(world)?;
         Self::show_houses(houses, ui);
         let expanded = ui.input(|i| i.modifiers.shift) || SettingsData::get(world).expanded_hint;
-        let description = self.description(world);
+        let description = self.description(expanded, world);
         let statuses_colored = self.statuses(&statuses, world);
         let extra_lines = self.extra_lines();
         frame(ui, |ui| {
-            if let Ok(description) = description {
-                ui.vertical(|ui| {
-                    description.label(ui);
-                });
+            if let Ok(lines) = description {
+                Self::show_description(lines, ui);
             }
             if !expanded {
                 if let Ok(statuses) = statuses_colored.as_ref() {
@@ -276,7 +329,7 @@ impl VarState {
             ui.vertical_centered(|ui| {
                 "SHIFT to expand"
                     .to_colored()
-                    .set_style(ColoredStringStyle::Small)
+                    .set_style_ref(ColoredStringStyle::Small)
                     .label(ui);
             });
             return Ok(());
@@ -391,5 +444,37 @@ impl VarState {
             .show_ui(ui, |ui| {
                 let _ = self.show_frames(statuses, open, ui, world);
             });
+    }
+}
+
+#[derive(Clone, Copy)]
+enum Icon {
+    Lightning,
+    Target,
+    Flame,
+}
+
+impl Icon {
+    fn paint_icon(self, ui: &mut Ui) {
+        match self {
+            Icon::Lightning => {
+                egui::Image::new(egui::include_image!("../../assets/svg/lightning.svg"))
+                    .max_width(16.0)
+                    .texture_options(TextureOptions::NEAREST)
+                    .ui(ui);
+            }
+            Icon::Target => {
+                egui::Image::new(egui::include_image!("../../assets/svg/target.svg"))
+                    .max_width(16.0)
+                    .texture_options(TextureOptions::NEAREST)
+                    .ui(ui);
+            }
+            Icon::Flame => {
+                egui::Image::new(egui::include_image!("../../assets/svg/flame.svg"))
+                    .max_width(16.0)
+                    .texture_options(TextureOptions::NEAREST)
+                    .ui(ui);
+            }
+        }
     }
 }

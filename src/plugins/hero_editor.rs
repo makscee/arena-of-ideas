@@ -227,7 +227,7 @@ impl HeroEditorPlugin {
                                 world,
                             );
                         }
-                        ui.add_space(100.0);
+                        ui.add_space(50.0);
                         const SELECTED_STATUS_KEY: &str = "selected_status";
                         let mut status = get_context_string(world, SELECTED_STATUS_KEY);
                         ComboBox::from_id_source(SELECTED_STATUS_KEY)
@@ -257,7 +257,7 @@ impl HeroEditorPlugin {
                             }
                         });
 
-                        ui.add_space(100.0);
+                        ui.add_space(50.0);
                         const LOAD_HERO_KEY: &str = "load_hero";
                         let mut hero = get_context_string(world, LOAD_HERO_KEY);
                         let heroes = Pools::get(world)
@@ -292,12 +292,12 @@ impl HeroEditorPlugin {
                         }
 
                         ui.add_space(50.0);
-                        ui.label("card:");
                         let mut sd = SettingsData::get(world).clone();
                         let card = &mut sd.always_show_card;
                         if ui.checkbox(card, "").changed() {
                             sd.save(world).unwrap();
                         }
+                        ui.label("card:");
                     });
                     ScrollArea::new([true, true])
                         .scroll_bar_visibility(egui::scroll_area::ScrollBarVisibility::AlwaysHidden)
@@ -434,7 +434,7 @@ pub fn show_value(value: &Result<VarValue>, ui: &mut Ui) {
 
         Err(e) => e.to_string().add_color(red()),
     }
-    .set_style(ColoredStringStyle::Small)
+    .set_style_ref(ColoredStringStyle::Small)
     .as_label(ui)
     .truncate(true)
     .ui(ui);

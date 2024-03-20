@@ -47,6 +47,11 @@ impl ColoredString {
         self.lines.extend(cstring.lines);
         self
     }
+    pub fn push_colored_front(&mut self, mut cstring: ColoredString) -> &mut Self {
+        mem::swap(self, &mut cstring);
+        self.lines.extend(cstring.lines);
+        self
+    }
 
     pub fn push(&mut self, text: String, color: Color32) -> &mut Self {
         self.lines.push((text, Some(color), default()));
@@ -63,7 +68,11 @@ impl ColoredString {
         self
     }
 
-    pub fn set_style(&mut self, style: ColoredStringStyle) -> &mut Self {
+    pub fn set_style_ref(&mut self, style: ColoredStringStyle) -> &mut Self {
+        self.lines.iter_mut().for_each(|(_, _, s)| *s = style);
+        self
+    }
+    pub fn set_style(mut self, style: ColoredStringStyle) -> Self {
         self.lines.iter_mut().for_each(|(_, _, s)| *s = style);
         self
     }
@@ -109,10 +118,10 @@ impl ColoredString {
     pub fn inject_definitions(mut self, world: &World) -> Self {
         let mut result: Vec<(String, Option<Color32>, ColoredStringStyle)> = default();
         for (s, color, style) in self.lines.drain(..) {
-            if color.is_some() {
-                result.push((s, color, style));
-                continue;
-            }
+            // if color.is_some() {
+            //     result.push((s, color, style));
+            //     continue;
+            // }
             for (s, bracketed) in s.split_by_brackets(("[", "]")) {
                 if bracketed {
                     let color = if let Ok(color) = Pools::get_color_by_name(&s, world) {
@@ -121,9 +130,9 @@ impl ColoredString {
                         error!("Failed to find house for ability {s}");
                         light_gray()
                     };
-                    result.push((s, Some(color), style));
+                    result.push((s, Some(color), ColoredStringStyle::Bold));
                 } else {
-                    result.push((s, None, style));
+                    result.push((s, color, style));
                 }
             }
         }
@@ -166,10 +175,10 @@ impl ColoredString {
     pub fn inject_vars(mut self, state: &VarState) -> Self {
         let mut result: Vec<(String, Option<Color32>, ColoredStringStyle)> = default();
         for (s, color, style) in self.lines.drain(..) {
-            if color.is_some() {
-                result.push((s, color, style));
-                continue;
-            }
+            // if color.is_some() {
+            //     result.push((s, color, style));
+            //     continue;
+            // }
             for (mut s, bracketed) in s.split_by_brackets(("{", "}")) {
                 if bracketed {
                     if let Ok(var) = VarName::from_str(&s) {
@@ -179,7 +188,7 @@ impl ColoredString {
                     }
                     result.push((s, Some(white()), style));
                 } else {
-                    result.push((s, None, style));
+                    result.push((s, color, style));
                 }
             }
         }

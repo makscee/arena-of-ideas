@@ -974,7 +974,7 @@ impl std::fmt::Display for Expression {
             | Expression::AllUnits
             | Expression::AllOtherUnits
             | Expression::Index
-            | Expression::AdjacentUnits => write!(f, "{}", self.as_ref().to_case(Case::Title)),
+            | Expression::AdjacentUnits => write!(f, "{}", self.as_ref().to_case(Case::Lower)),
             Expression::Float(v) => write!(f, "{v}"),
             Expression::Int(v) => write!(f, "{v}"),
             Expression::Bool(v) => write!(f, "{v}"),
