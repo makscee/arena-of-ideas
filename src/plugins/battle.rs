@@ -111,6 +111,7 @@ impl BattlePlugin {
         Self::strike(left, right, world)?;
         Self::after_strike(left, right, world)?;
         Event::TurnEnd.send(world).spin(world)?;
+        ActionPlugin::spin(world)?;
         Ok(())
     }
 

@@ -13,7 +13,25 @@ pub struct TestScenarios {
 pub struct TestScenario {
     pub left: PackedTeam,
     pub right: PackedTeam,
+    #[serde(default = "no_units")]
     pub condition: Expression,
+}
+
+fn no_units() -> Expression {
+    Expression::And(
+        Box::new(Expression::Equals(
+            Box::new(Expression::FactionCount(Box::new(Expression::Faction(
+                Faction::Left,
+            )))),
+            Box::new(Expression::Int(0)),
+        )),
+        Box::new(Expression::Equals(
+            Box::new(Expression::FactionCount(Box::new(Expression::Faction(
+                Faction::Right,
+            )))),
+            Box::new(Expression::Int(0)),
+        )),
+    )
 }
 
 impl TestScenario {

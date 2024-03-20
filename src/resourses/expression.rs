@@ -28,6 +28,7 @@ pub enum Expression {
     Owner,
     Caster,
     Target,
+    Status,
     RandomUnit,
     RandomAdjacentUnit,
     RandomAlly,
@@ -217,6 +218,9 @@ impl Expression {
             )),
             Expression::Target => Ok(VarValue::Entity(
                 context.get_target().context("Target not found")?,
+            )),
+            Expression::Status => Ok(VarValue::Entity(
+                context.get_status().context("Status not found")?,
             )),
             Expression::SlotPosition => Ok(VarValue::Vec2(UnitPlugin::get_entity_slot_position(
                 context.owner(),
@@ -492,6 +496,7 @@ impl Expression {
             | Self::Owner
             | Self::Caster
             | Self::Target
+            | Self::Status
             | Self::RandomUnit
             | Self::RandomAdjacentUnit
             | Self::RandomAlly
@@ -615,6 +620,7 @@ impl EditorNodeGenerator for Expression {
             | Expression::Owner
             | Expression::Caster
             | Expression::Target
+            | Expression::Status
             | Expression::RandomUnit
             | Expression::RandomAdjacentUnit
             | Expression::RandomAlly
@@ -766,6 +772,7 @@ impl EditorNodeGenerator for Expression {
             | Expression::Owner
             | Expression::Caster
             | Expression::Target
+            | Expression::Status
             | Expression::RandomUnit
             | Expression::RandomAdjacentUnit
             | Expression::RandomAlly
@@ -965,6 +972,7 @@ impl std::fmt::Display for Expression {
             | Expression::Owner
             | Expression::Caster
             | Expression::Target
+            | Expression::Status
             | Expression::RandomUnit
             | Expression::RandomAdjacentUnit
             | Expression::RandomAlly

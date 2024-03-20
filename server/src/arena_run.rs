@@ -39,12 +39,12 @@ pub struct ShopOffer {
     unit: TeamUnit,
 }
 
-const G_PER_ROUND: Range<i64> = 4..10;
+const G_PER_ROUND: Range<i64> = 4..7;
 const PRICE_REROLL: i64 = 1;
 const PRICE_UNIT: i64 = 3;
 const PRICE_SELL: i64 = 1;
 const TEAM_SLOTS: usize = 7;
-const SHOP_SLOTS_PER_ROUND: f32 = 0.5;
+const SHOP_SLOTS_PER_ROUND: f32 = 0.34;
 const SHOP_SLOTS: Range<usize> = 3..6;
 
 #[spacetimedb(reducer)]

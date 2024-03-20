@@ -6,7 +6,7 @@
                 hp: 1,
                 atk: 0,
                 name: "left",
-                trigger: Fire(triggers: [(BattleStart, None)], effects: [(UseAbility("Strength", 0), None)]),
+                trigger: Fire(triggers: [(BattleStart, None)], targets: [(Owner, None)], effects: [(UseAbility("Strength", 0), None)]),
             ),
         ],
     ),

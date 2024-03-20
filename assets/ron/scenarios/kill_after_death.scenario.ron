@@ -7,7 +7,6 @@
                 hp: 3,
                 atk: 3,
                 name: "right",
-                description: "Kill after dealing any damage",
                 trigger: Fire(
                     triggers: [(AfterDamageDealt, None)],
                     targets: [(Target, None)],
