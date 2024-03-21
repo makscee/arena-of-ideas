@@ -23,10 +23,6 @@ pub enum Trigger {
     List(Vec<Box<Trigger>>),
 }
 
-fn owner() -> Expression {
-    Expression::Owner
-}
-
 #[derive(Deserialize, Serialize, Clone, Debug, Display, PartialEq, EnumIter, Default)]
 pub enum DeltaTrigger {
     #[default]

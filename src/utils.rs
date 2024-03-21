@@ -190,3 +190,14 @@ impl EntityExt for Entity {
         query.get(*self).ok().map(|p| p.get())
     }
 }
+
+pub trait ToColor {
+    fn to_color(&self) -> Color;
+}
+
+impl ToColor for Color32 {
+    fn to_color(&self) -> Color {
+        let a = self.to_array();
+        Color::rgba_u8(a[0], a[1], a[2], a[3])
+    }
+}

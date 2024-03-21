@@ -59,8 +59,7 @@
 				"offline"
 			],
 			"group": {
-				"kind": "build",
-				"isDefault": true
+				"kind": "build"
 			},
 			"env": {
 				"RUST_BACKTRACE": "1"

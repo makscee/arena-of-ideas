@@ -120,26 +120,7 @@ fn run_reroll(ctx: ReducerContext, force: bool) -> Result<(), String> {
 #[spacetimedb(reducer)]
 fn run_buy(ctx: ReducerContext, id: u64) -> Result<(), String> {
     let (_, mut run) = ArenaRun::get_by_identity(&ctx.sender)?;
-    let offer = run
-        .state
-        .case
-        .iter_mut()
-        .find(|o| o.unit.id.eq(&id))
-        .context_str("Offer not found")?;
-    if !offer.available {
-        return Err("Offer is already bought".to_owned());
-    }
-    offer.available = false;
-    let offer = offer.clone();
-    let price = offer.price;
-    if !run.can_afford(price) {
-        return Err("Not enough g".to_owned());
-    }
-    if run.state.team.len() >= TEAM_SLOTS {
-        return Err("Team is already full".to_owned());
-    }
-    run.change_g(-PRICE_UNIT);
-    run.state.team.insert(0, offer.unit);
+    run.buy(id, 0)?;
     run.save();
     Ok(())
 }
@@ -162,8 +143,13 @@ fn run_sell(ctx: ReducerContext, id: u64) -> Result<(), String> {
 #[spacetimedb(reducer)]
 fn run_stack(ctx: ReducerContext, target: u64, dragged: u64) -> Result<(), String> {
     let (_, mut run) = ArenaRun::get_by_identity(&ctx.sender)?;
+    let (i_dragged, dragged) = if let Ok((ind, unit)) = run.find_team(dragged) {
+        (ind, unit)
+    } else {
+        run.buy(dragged, 0)?;
+        run.find_team(dragged)?
+    };
     let (i_target, target) = run.find_team(target)?;
-    let (i_dragged, dragged) = run.find_team(dragged)?;
     let d_houses = dragged.unit.houses.split("+").collect_vec();
     if !target.unit.houses.split("+").any(|h| d_houses.contains(&h)) {
         return Err("Houses should match for stacking".to_owned());
@@ -288,6 +274,30 @@ impl ArenaRun {
     fn find_team(&self, id: u64) -> Result<(usize, &TeamUnit), String> {
         let index = self.position_team(id)?;
         Ok((index, &self.state.team[index]))
+    }
+
+    fn buy(&mut self, id: u64, slot: usize) -> Result<(), String> {
+        let offer = self
+            .state
+            .case
+            .iter_mut()
+            .find(|o| o.unit.id.eq(&id))
+            .context_str("Offer not found")?;
+        if !offer.available {
+            return Err("Offer is already bought".to_owned());
+        }
+        offer.available = false;
+        let offer = offer.clone();
+        let price = offer.price;
+        if !self.can_afford(price) {
+            return Err("Not enough g".to_owned());
+        }
+        if self.state.team.len() >= TEAM_SLOTS {
+            return Err("Team is already full".to_owned());
+        }
+        self.change_g(-PRICE_UNIT);
+        self.state.team.insert(slot, offer.unit);
+        Ok(())
     }
 
     fn save(self) {

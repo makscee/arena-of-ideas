@@ -50,10 +50,12 @@ pub const LOCAL_TRIGGER: &str = "_local";
 impl PackedUnit {
     pub fn unpack(mut self, parent: Entity, slot: Option<usize>, world: &mut World) -> Entity {
         let entity = world.spawn_empty().set_parent(parent).id();
-        let is_team = VarState::get(parent, world)
-            .get_faction(VarName::Faction)
-            .unwrap()
-            .eq(&Faction::Team);
+        let draggable = {
+            let faction = VarState::get(parent, world)
+                .get_faction(VarName::Faction)
+                .unwrap();
+            faction.eq(&Faction::Team) || faction.eq(&Faction::Shop)
+        };
 
         self.state = self.generate_state(world);
         self.state.init(
@@ -72,7 +74,7 @@ impl PackedUnit {
                 .insert(RaycastPickTarget::default())
                 .insert(On::<Pointer<Over>>::run(UnitPlugin::hover_unit))
                 .insert(On::<Pointer<Out>>::run(UnitPlugin::unhover_unit));
-            if is_team {
+            if draggable {
                 emut.insert(On::<Pointer<DragStart>>::run(UnitPlugin::drag_unit_start))
                     .insert(On::<Pointer<DragEnd>>::run(UnitPlugin::drag_unit_end))
                     .insert(On::<Pointer<Drag>>::run(UnitPlugin::drag_unit));

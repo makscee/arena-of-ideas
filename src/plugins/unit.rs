@@ -1,4 +1,4 @@
-use crate::module_bindings::{run_stack, run_team_reorder};
+use crate::module_bindings::{once_on_run_stack, run_stack, run_team_reorder};
 
 use super::*;
 
@@ -36,6 +36,19 @@ impl UnitPlugin {
             .get_int(VarName::Id)
             .map(|v| v as u64)
             .ok()
+    }
+    pub fn get_by_id(id: u64, world: &mut World) -> Option<Entity> {
+        Self::collect_all(world).into_iter().find_map(|unit| {
+            VarState::try_get(unit, world).ok().and_then(|s| {
+                s.get_int(VarName::Id).ok().and_then(|tid| {
+                    if tid as u64 == id {
+                        Some(unit)
+                    } else {
+                        None
+                    }
+                })
+            })
+        })
     }
 
     pub fn get_slot_position(faction: Faction, slot: usize) -> Vec2 {
@@ -301,9 +314,31 @@ impl UnitPlugin {
                         ShopPlugin::start_fuse(target, dragged, world);
                     }
                     DragAction::Stack(target) => {
-                        let target = Self::get_id(target, world).unwrap();
+                        let t_id = Self::get_id(target, world).unwrap();
                         let dragged = Self::get_id(dragged, world).unwrap();
-                        run_stack(target, dragged);
+                        run_stack(t_id, dragged);
+                        once_on_run_stack(|_, _, s, target, _| match s {
+                            spacetimedb_sdk::reducer::Status::Committed => {
+                                let target = *target;
+                                OperationsPlugin::add(move |world| {
+                                    if let Some(target) = Self::get_by_id(target, world) {
+                                        Vfx::show_text(
+                                            "+Stack".to_owned(),
+                                            yellow().to_color(),
+                                            target,
+                                            world,
+                                        )
+                                        .unwrap()
+                                    }
+                                })
+                            }
+                            spacetimedb_sdk::reducer::Status::Failed(e) => AlertPlugin::add_error(
+                                Some("Stack error".to_owned()),
+                                e.to_string(),
+                                None,
+                            ),
+                            spacetimedb_sdk::reducer::Status::OutOfEnergy => panic!(),
+                        });
                     }
                     DragAction::Insert(_) | DragAction::None => {
                         let sorted_ids = UnitPlugin::collect_faction_ids(Faction::Team, world)
@@ -322,6 +357,7 @@ impl UnitPlugin {
                     DragAction::Sell => todo!(),
                 }
                 Self::fill_slot_gaps(Faction::Team, world);
+                Self::fill_slot_gaps(Faction::Shop, world);
                 Self::translate_to_slots(world);
             }
         });
