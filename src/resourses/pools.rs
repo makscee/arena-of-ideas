@@ -1,3 +1,5 @@
+use colored::CustomColor;
+
 use crate::module_bindings::TableUnit;
 
 use super::*;
@@ -71,16 +73,18 @@ impl Pools {
             .map(|(_, h)| h)
     }
     pub fn get_house_color(name: &str, world: &World) -> Option<Color> {
-        Self::try_get(world)
-            .and_then(|p| p.houses.get(name))
-            .map(|h| h.color.clone().into())
+        Self::try_get(world).and_then(|p| p.house_color(name))
+    }
+    pub fn house_color(&self, name: &str) -> Option<Color> {
+        self.houses.get(name).map(|h| h.color.clone().into())
     }
     pub fn get_color_by_name(name: &str, world: &World) -> Result<Color> {
         Self::get(world)
-            .colors
-            .get(name)
-            .cloned()
+            .color_by_name(name)
             .with_context(|| format!("Color not found for {name}"))
+    }
+    pub fn color_by_name(&self, name: &str) -> Option<Color> {
+        self.colors.get(name).cloned()
     }
     pub fn get_default_ability_state<'a>(name: &str, world: &'a World) -> Option<&'a VarState> {
         Self::try_get(world)?.default_ability_states.get(name)
@@ -272,6 +276,8 @@ impl PoolsPlugin {
         for module_bindings::Vfx { name, data } in module_bindings::Vfx::iter() {
             pools.vfx.insert(name, ron::from_str(&data).unwrap());
         }
+
+        Self::show_stats(&pools);
         debug!(
             "Cache complete\n{} Heroes\n{} Houses\n{} Abilities\n{} Statuses\n{} Summons\n{} Vfxs",
             pools.heroes.len(),
@@ -281,6 +287,59 @@ impl PoolsPlugin {
             pools.summons.len(),
             pools.vfx.len()
         );
+    }
+
+    fn show_stats(pools: &Pools) {
+        let mut abilities: HashMap<String, usize> = default();
+        let mut houses: HashMap<String, usize> = default();
+        for hero in pools.heroes.values() {
+            match &hero.trigger {
+                Trigger::Fire {
+                    triggers: _,
+                    targets: _,
+                    effects,
+                } => {
+                    for effect in effects {
+                        for ability in effect.0.find_all_abilities() {
+                            match &ability {
+                                Effect::UseAbility(ability, _) => {
+                                    *abilities.entry(ability.to_owned()).or_default() += 1
+                                }
+                                _ => {}
+                            }
+                        }
+                    }
+                }
+                _ => {}
+            }
+            for house in hero.houses.split("+") {
+                *houses.entry(house.to_owned()).or_default() += 1;
+            }
+        }
+        let houses = houses
+            .into_iter()
+            .sorted_by_key(|(_, c)| -(*c as i32))
+            .map(|(name, count)| {
+                let c = pools.house_color(&name).unwrap().as_rgba_u8();
+                format!(
+                    "{} = {count}",
+                    name.custom_color(CustomColor::new(c[0], c[1], c[2]))
+                )
+            })
+            .join("\n");
+        debug!("\nHouses:\n----\n{houses}");
+        let abilities = abilities
+            .into_iter()
+            .sorted_by_key(|(_, c)| -(*c as i32))
+            .map(|(name, count)| {
+                let c = pools.color_by_name(&name).unwrap().as_rgba_u8();
+                format!(
+                    "{} = {count}",
+                    name.custom_color(CustomColor::new(c[0], c[1], c[2]))
+                )
+            })
+            .join("\n");
+        debug!("\nAbilities:\n----\n{abilities}");
     }
 }
 
