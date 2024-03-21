@@ -120,7 +120,7 @@ fn run_reroll(ctx: ReducerContext, force: bool) -> Result<(), String> {
 #[spacetimedb(reducer)]
 fn run_buy(ctx: ReducerContext, id: u64) -> Result<(), String> {
     let (_, mut run) = ArenaRun::get_by_identity(&ctx.sender)?;
-    run.buy(id, 0)?;
+    run.buy(id, 0, false)?;
     run.save();
     Ok(())
 }
@@ -146,7 +146,7 @@ fn run_stack(ctx: ReducerContext, target: u64, dragged: u64) -> Result<(), Strin
     let (i_dragged, dragged) = if let Ok((ind, unit)) = run.find_team(dragged) {
         (ind, unit)
     } else {
-        run.buy(dragged, 0)?;
+        run.buy(dragged, 0, true)?;
         run.find_team(dragged)?
     };
     let (i_target, target) = run.find_team(target)?;
@@ -276,7 +276,7 @@ impl ArenaRun {
         Ok((index, &self.state.team[index]))
     }
 
-    fn buy(&mut self, id: u64, slot: usize) -> Result<(), String> {
+    fn buy(&mut self, id: u64, slot: usize, skip_limit_check: bool) -> Result<(), String> {
         let offer = self
             .state
             .case
@@ -292,7 +292,7 @@ impl ArenaRun {
         if !self.can_afford(price) {
             return Err("Not enough g".to_owned());
         }
-        if self.state.team.len() >= TEAM_SLOTS {
+        if !skip_limit_check && self.state.team.len() >= TEAM_SLOTS {
             return Err("Team is already full".to_owned());
         }
         self.change_g(-PRICE_UNIT);

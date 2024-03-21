@@ -201,7 +201,7 @@
 				"--mode",
 				"test",
 				"--path",
-				"ron/scenarios/kill_after_death.scenario.ron"
+				"ron/scenarios/already_dead.scenario.ron"
 			],
 			"group": {
 				"kind": "build"

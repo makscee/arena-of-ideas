@@ -71,22 +71,27 @@ impl ActionPlugin {
             }
         }
         if processed {
-            let dead = UnitPlugin::run_death_check(world);
-            let died = !dead.is_empty();
-            for unit in dead {
-                UnitPlugin::turn_into_corpse(unit, world);
-            }
-            if died {
-                GameTimer::get().advance_insert(0.5);
-                UnitPlugin::fill_slot_gaps(Faction::Left, world);
-                UnitPlugin::fill_slot_gaps(Faction::Right, world);
-                UnitPlugin::translate_to_slots(world);
-                GameTimer::get().insert_to_end();
-            } else {
-                GameTimer::get().advance_insert(0.3);
-            }
+            Self::clear_dead(world);
         }
         Ok(processed)
+    }
+
+    pub fn clear_dead(world: &mut World) -> bool {
+        let dead = UnitPlugin::run_death_check(world);
+        let died = !dead.is_empty();
+        for unit in dead {
+            UnitPlugin::turn_into_corpse(unit, world);
+        }
+        if died {
+            GameTimer::get().advance_insert(0.5);
+            UnitPlugin::fill_slot_gaps(Faction::Left, world);
+            UnitPlugin::fill_slot_gaps(Faction::Right, world);
+            UnitPlugin::translate_to_slots(world);
+            GameTimer::get().insert_to_end();
+        } else {
+            GameTimer::get().advance_insert(0.3);
+        }
+        died
     }
 
     pub fn event_push_back(event: Event, context: Context, world: &mut World) {

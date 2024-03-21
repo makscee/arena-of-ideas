@@ -4,7 +4,7 @@
     hp: 1,
     atk: 1,
     houses: "Dragons",
-    trigger: Fire(triggers: [(AnyDeath, None)], effects: [(UseAbility("Grow", 0), None)]),
+    trigger: Fire(triggers: [(AnyDeath, None)], targets: [(Owner, None)], effects: [(UseAbility("Grow", 0), None)]),
     representation: (
         material: Shape(
             shape: Rectangle(size: Vec2E(Sum(Float(0.4), Mul(RandomFloat(Owner), Float(1.1))))),

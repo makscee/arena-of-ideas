@@ -59,10 +59,17 @@ impl BattlePlugin {
         GameTimer::get().insert_to_end();
         ActionPlugin::spin(world)?;
         Event::BattleStart.send(world).spin(world)?;
-        while let Some((left, right)) = Self::get_strikers(world) {
-            Self::run_strike(left, right, world)?;
+
+        loop {
+            if let Some((left, right)) = Self::get_strikers(world) {
+                Self::run_strike(left, right, world)?;
+                continue;
+            }
+            if ActionPlugin::spin(world)? || ActionPlugin::clear_dead(world) {
+                continue;
+            }
+            break;
         }
-        ActionPlugin::spin(world)?;
         Self::get_result(world)
     }
 
