@@ -389,7 +389,7 @@ impl VarState {
     ) {
         window("UNIT")
             .id(id)
-            .set_width(if open { 300.0 } else { 140.0 })
+            .set_width(if open { 200.0 } else { 140.0 })
             .title_bar(false)
             .order(if open {
                 egui::Order::Foreground

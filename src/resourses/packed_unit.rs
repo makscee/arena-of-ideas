@@ -246,25 +246,27 @@ impl PackedUnit {
                     effects: effect_b,
                 },
             ) => {
-                {
-                    let trigger = Trigger::Fire {
-                        triggers: Vec::from_iter(
-                            trigger_a.iter().cloned().chain(trigger_b.iter().cloned()),
-                        ),
-                        targets: target_a.clone(),
-                        effects: effect_a.clone(),
-                    };
-                    result.push(Self::fuse_base(&a, &b, trigger, world))
-                }
-                {
-                    let trigger = Trigger::Fire {
-                        triggers: Vec::from_iter(
-                            trigger_a.iter().cloned().chain(trigger_b.iter().cloned()),
-                        ),
-                        targets: target_b.clone(),
-                        effects: effect_b.clone(),
-                    };
-                    result.push(Self::fuse_base(&b, &a, trigger, world))
+                if !trigger_a.eq(trigger_b) {
+                    {
+                        let trigger = Trigger::Fire {
+                            triggers: Vec::from_iter(
+                                trigger_a.iter().cloned().chain(trigger_b.iter().cloned()),
+                            ),
+                            targets: target_a.clone(),
+                            effects: effect_a.clone(),
+                        };
+                        result.push(Self::fuse_base(&a, &b, trigger, world))
+                    }
+                    {
+                        let trigger = Trigger::Fire {
+                            triggers: Vec::from_iter(
+                                trigger_a.iter().cloned().chain(trigger_b.iter().cloned()),
+                            ),
+                            targets: target_b.clone(),
+                            effects: effect_b.clone(),
+                        };
+                        result.push(Self::fuse_base(&b, &a, trigger, world))
+                    }
                 }
                 {
                     let trigger = Trigger::Fire {

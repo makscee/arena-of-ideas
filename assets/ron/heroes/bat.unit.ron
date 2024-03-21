@@ -9,7 +9,7 @@
     trigger: Fire(
         triggers: [(AllyDeath, None)],
         targets: [(TargetStateLast(LastAttacker), Some("killer"))],
-        effects: [(UseAbility("Siphon", 2), None)],
+        effects: [(UseAbility("Siphon", 1), None)],
     ),
     representation: (
         material: Shape(
@@ -32,6 +32,4 @@
         },
         count: 3,
     ),
-    state: (history: {}, birth: 0.0),
-    statuses: [],
 )
