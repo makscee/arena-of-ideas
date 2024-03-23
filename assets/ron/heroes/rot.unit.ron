@@ -1,15 +1,15 @@
 (
     name: "Rot",
-    hp: 3,
+    hp: 5,
     atk: 0,
     stacks: 1,
     level: 1,
     houses: "Death Knights",
     description: "%trigger → %effect on %target",
     trigger: Fire(
-        triggers: [(TurnEnd, None)],
+        triggers: [(AfterStrike, None)],
         targets: [(RandomEnemy, None)],
-        effects: [(UseAbility("Decay", 0), None)],
+        effects: [(UseAbility("Decay", 1), None)],
     ),
     representation: (
         material: Shape(

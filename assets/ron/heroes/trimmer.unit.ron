@@ -1,13 +1,13 @@
 (
     name: "Trimmer",
-    hp: 2,
+    hp: 3,
     atk: 1,
     stacks: 1,
     level: 1,
     houses: "Alchemists",
     description: "%trigger → %effect on enemy with most HP",
     trigger: Fire(
-        triggers: [(BattleStart, None)],
+        triggers: [(AfterStrike, None)],
         targets: [(FilterMaxEnemy(OwnerState(Hp)), Some("enemy with max Hp"))],
         effects: [(UseAbility("Petrify", 0), None)],
     ),
@@ -34,4 +34,6 @@
         mapping: {},
         count: 0,
     ),
+    state: (history: {}, birth: 0.0),
+    statuses: [],
 )

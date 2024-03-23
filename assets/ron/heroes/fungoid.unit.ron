@@ -25,7 +25,7 @@
                         ),
                     ],
                 ),
-                Some("[Summon Treant]"),
+                Some("[Summon Treant] (max 3)"),
             ),
         ],
     ),
