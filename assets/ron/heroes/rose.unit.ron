@@ -1,0 +1,25 @@
+(
+    name: "Rose",
+    hp: 3,
+    atk: 1,
+    stacks: 1,
+    level: 1,
+    houses: "Druids",
+    description: "%trigger → %effect on %target",
+    trigger: Fire(
+        triggers: [(BeforeStrike, None)],
+        targets: [(Owner, None)],
+        effects: [(UseAbility("Thorns", 3), None)],
+    ),
+    representation: (
+        material: Shape(
+            shape: Rectangle(size: Vec2E(Float(1.13))),
+            shape_type: Line(thickness: Float(1.0)),
+            fill: Solid(color: OwnerState(Color)),
+            alpha: Float(1.0),
+        ),
+        children: [],
+        mapping: {Rotation: Mul(Mul(Index, Float(0.1)), Sin(GameTime))},
+        count: 7,
+    ),
+)
