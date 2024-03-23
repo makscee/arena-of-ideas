@@ -10,7 +10,12 @@ impl Plugin for BattlePlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(GameState::Battle), Self::on_enter)
             .add_systems(OnExit(GameState::Battle), Self::on_leave)
-            .add_systems(Update, Self::ui.run_if(in_state(GameState::Battle)));
+            .add_systems(
+                Update,
+                Self::ui
+                    .run_if(in_state(GameState::Battle))
+                    .after(PanelsPlugin::ui),
+            );
     }
 }
 
@@ -190,7 +195,20 @@ impl BattlePlugin {
         } else {
             return;
         };
+
         if !GameTimer::get().ended() {
+            if let Some(event) = ActionPlugin::current_event(world) {
+                TopBottomPanel::top("event text").show(ctx, |ui| {
+                    ui.vertical_centered_justified(|ui| {
+                        let text = event
+                            .to_string()
+                            .add_color(yellow())
+                            .set_style(ColoredStringStyle::Heading)
+                            .rich_text(ui);
+                        ui.heading(text);
+                    });
+                });
+            }
             return;
         }
         let bd = world.resource::<BattleData>();

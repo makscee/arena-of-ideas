@@ -15,6 +15,7 @@ enum ContextLayer {
     Var(VarName, VarValue),
     AbilityVar(String, VarName, VarValue),
     Text(String),
+    Event(Event),
 }
 
 impl ContextLayer {
@@ -39,6 +40,12 @@ impl ContextLayer {
     pub fn get_status(&self) -> Option<Entity> {
         match self {
             ContextLayer::Status(entity, ..) => Some(*entity),
+            _ => None,
+        }
+    }
+    pub fn get_event(&self) -> Option<Event> {
+        match self {
+            ContextLayer::Event(entity, ..) => Some(*entity),
             _ => None,
         }
     }
@@ -122,14 +129,7 @@ impl Context {
         result
     }
     pub fn get_var(&self, var: VarName, world: &World) -> Option<VarValue> {
-        let mut result = None;
-        for layer in self.layers.iter().rev() {
-            result = layer.get_var(var, world);
-            if result.is_some() {
-                break;
-            }
-        }
-        result
+        self.layers.iter().rev().find_map(|l| l.get_var(var, world))
     }
     pub fn set_var(&mut self, var: VarName, value: VarValue) -> &mut Self {
         self.layers.push(ContextLayer::Var(var, value));
@@ -137,14 +137,10 @@ impl Context {
     }
 
     pub fn get_ability_var(&self, ability: &str, var: VarName) -> Option<VarValue> {
-        let mut result = None;
-        for layer in self.layers.iter().rev() {
-            result = layer.get_ability_var(ability, var);
-            if result.is_some() {
-                break;
-            }
-        }
-        result
+        self.layers
+            .iter()
+            .rev()
+            .find_map(|l| l.get_ability_var(ability, var))
     }
     pub fn set_ability_var(&mut self, ability: String, var: VarName, value: VarValue) -> &mut Self {
         self.layers
@@ -165,14 +161,7 @@ impl Context {
         self.get_owner().expect("Owner not found")
     }
     pub fn get_owner(&self) -> Option<Entity> {
-        let mut result = None;
-        for layer in self.layers.iter().rev() {
-            result = layer.get_owner();
-            if result.is_some() {
-                break;
-            }
-        }
-        result
+        self.layers.iter().rev().find_map(|l| l.get_owner())
     }
 
     pub fn from_caster(entity: Entity, world: &World) -> Self {
@@ -188,14 +177,7 @@ impl Context {
         self.get_caster().expect("Caster not found")
     }
     pub fn get_caster(&self) -> Option<Entity> {
-        let mut result = None;
-        for layer in self.layers.iter().rev() {
-            result = layer.get_caster();
-            if result.is_some() {
-                break;
-            }
-        }
-        result
+        self.layers.iter().rev().find_map(|l| l.get_caster())
     }
 
     pub fn from_target(entity: Entity, world: &World) -> Self {
@@ -211,14 +193,7 @@ impl Context {
         self.get_target().expect("Target not found")
     }
     pub fn get_target(&self) -> Option<Entity> {
-        let mut result = None;
-        for layer in self.layers.iter().rev() {
-            result = layer.get_target();
-            if result.is_some() {
-                break;
-            }
-        }
-        result
+        self.layers.iter().rev().find_map(|l| l.get_target())
     }
 
     pub fn set_status(&mut self, entity: Entity, world: &World) -> &mut Self {
@@ -231,14 +206,7 @@ impl Context {
         self.get_status().expect("Target not found")
     }
     pub fn get_status(&self) -> Option<Entity> {
-        let mut result = None;
-        for layer in self.layers.iter().rev() {
-            result = layer.get_status();
-            if result.is_some() {
-                break;
-            }
-        }
-        result
+        self.layers.iter().rev().find_map(|l| l.get_status())
     }
     pub fn has_status(&self, entity: Entity) -> bool {
         self.layers
@@ -254,6 +222,14 @@ impl Context {
 
     pub fn add_text(&mut self, text: String) -> &mut Self {
         self.layers.push(ContextLayer::Text(text));
+        self
+    }
+
+    pub fn get_event(&self) -> Option<Event> {
+        self.layers.iter().rev().find_map(|l| l.get_event())
+    }
+    pub fn set_event(&mut self, event: Event) -> &mut Self {
+        self.layers.push(ContextLayer::Event(event));
         self
     }
 
@@ -273,6 +249,7 @@ impl std::fmt::Display for ContextLayer {
             ContextLayer::Var(..) => self_text.purple(),
             ContextLayer::AbilityVar(..) => self_text.bright_purple(),
             ContextLayer::Text(..) => self_text.white(),
+            ContextLayer::Event(..) => self_text.yellow(),
         };
         match self {
             ContextLayer::Caster(entity, name)
@@ -284,6 +261,7 @@ impl std::fmt::Display for ContextLayer {
                 write!(f, "{self_text} {ability} {var} -> {value:?}")
             }
             ContextLayer::Text(text) => write!(f, "{self_text} {text}"),
+            ContextLayer::Event(event) => write!(f, "{self_text} {event}"),
         }
     }
 }

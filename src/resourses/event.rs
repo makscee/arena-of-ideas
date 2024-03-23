@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Debug, Display, PartialEq, Eq, Serialize, Deserialize, Default, Clone)]
+#[derive(Debug, Display, PartialEq, Eq, Serialize, Deserialize, Default, Clone, Copy)]
 pub enum Event {
     IncomingDamage {
         owner: Entity,
@@ -37,7 +37,8 @@ pub enum Event {
 impl Event {
     pub fn send_with_context(self, mut context: Context, world: &mut World) -> Self {
         debug!("Send event {self:?}");
-        context.add_text(self.to_string());
+        context.set_event(self);
+        ActionPlugin::register_event(self, world);
         let units = match &self {
             Event::DamageTaken { owner, value } | Event::IncomingDamage { owner, value } => {
                 context.set_var(VarName::Value, VarValue::Int(*value));

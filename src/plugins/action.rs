@@ -8,6 +8,7 @@ impl Plugin for ActionPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<EventQueue>()
             .init_resource::<ActionQueue>()
+            .init_resource::<ActionsData>()
             .add_systems(Update, Self::update);
     }
 }
@@ -16,6 +17,11 @@ impl Plugin for ActionPlugin {
 struct EventQueue(VecDeque<(Event, Context)>);
 #[derive(Resource, Default)]
 struct ActionQueue(VecDeque<Action>);
+
+#[derive(Resource, Default)]
+struct ActionsData {
+    events: Vec<(f32, Event)>,
+}
 
 struct Action {
     effect: Effect,
@@ -92,6 +98,23 @@ impl ActionPlugin {
             GameTimer::get().advance_insert(0.3);
         }
         died
+    }
+
+    pub fn current_event(world: &World) -> Option<Event> {
+        let t = GameTimer::get().play_head();
+        world.get_resource::<ActionsData>().and_then(|d| {
+            d.events.iter().rev().find_map(|(ts, e)| match t > *ts {
+                true => Some(*e),
+                false => None,
+            })
+        })
+    }
+
+    pub fn register_event(event: Event, world: &mut World) {
+        world
+            .resource_mut::<ActionsData>()
+            .events
+            .push((GameTimer::get().insert_head(), event));
     }
 
     pub fn event_push_back(event: Event, context: Context, world: &mut World) {
