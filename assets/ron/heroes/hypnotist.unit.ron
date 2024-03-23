@@ -1,0 +1,33 @@
+(
+    name: "Hypnotist",
+    hp: 3,
+    atk: 1,
+    stacks: 1,
+    level: 1,
+    houses: "Meta",
+    description: "%trigger → %effect on %target",
+    trigger: Fire(
+        triggers: [(AfterStrike, None)],
+        targets: [(Target, None)],
+        effects: [(UseAbility("Amnesia", 0), None)],
+    ),
+    representation: (
+        material: Shape(
+            shape: Circle(radius: Float(0.25)),
+            shape_type: Opaque,
+            fill: Solid(color: OwnerState(Color)),
+            alpha: If(Equals(OwnerState(Index), Zero), Float(1.0), Float(0.1)),
+        ),
+        children: [],
+        mapping: {
+            Offset: Mul(Vec2EE(Cos(Context(T)), Sin(Context(T))), Float(0.5)),
+            T: Sum(
+                Mul(Sin(Sum(Mul(GameTime, Float(0.2)), Mul(Index, Float(-0.05)))), Float(10.0)),
+                Mul(PI, Float(1.5)),
+            ),
+        },
+        count: 12,
+    ),
+    state: (history: {}, birth: 0.0),
+    statuses: [],
+)
