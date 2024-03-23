@@ -14,7 +14,7 @@
                 WithVar(
                     Faction,
                     OppositeFaction,
-                    WithVar(Charges, UnitCount(Bool(true)), UseAbility("Blessing", 0)),
+                    WithVar(Level, Mul(UnitCount(Bool(true)), Context(Level)), UseAbility("Blessing", 0)),
                 ),
                 Some("use [Blessing] ({Level}) per enemy"),
             ),
