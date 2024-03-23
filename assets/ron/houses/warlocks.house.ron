@@ -14,7 +14,7 @@
                             Equals(StatusCharges(String("Doom")), Int(1)),
                             List(
                                 [
-                                    Kill,
+                                    WithTarget(Owner, Kill),
                                     WithVar(
                                         Faction,
                                         StateLast(Faction, Parent(Context(Caster))),
@@ -26,7 +26,7 @@
                         ),
                         None,
                     ),
-                    (WithVar(Charges, Int(-1), AddStatus("Doom")), None),
+                    (WithVar(Charges, Int(-1), WithTarget(Owner, AddStatus("Doom"))), None),
                 ],
             ),
         ),
