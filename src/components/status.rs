@@ -122,7 +122,7 @@ impl Status {
         Self::collect_unit_statuses(entity, world)
             .into_iter()
             .filter_map(|entity| {
-                let state = VarState::snapshot(entity, world, t);
+                let state = VarState::get(entity, world).snapshot(t);
                 let charges = state.get_int(VarName::Charges);
                 if charges.is_err() || *charges.as_ref().unwrap() <= 0 {
                     return None;

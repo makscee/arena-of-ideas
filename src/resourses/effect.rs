@@ -346,35 +346,18 @@ impl Effect {
                 if !SkipVisual::active(world) {
                     Representation::pack(target, world).unpack(owner, world);
                 }
-                // let source = &world.get::<Unit>(target).unwrap().source;
-                // source
-                //     .representation
-                //     .clone()
-                //     .unpack(None, Some(owner), world);
-                // if let Some(entity) = PackedUnit::get_representation_entity(owner, world) {
-                //     world.get_entity_mut(entity).unwrap().despawn_recursive();
-                // }
                 for entity in Status::collect_unit_statuses(owner, world) {
-                    world.entity_mut(entity).despawn_recursive();
+                    VarState::get_mut(entity, world).set_int(VarName::Charges, 0);
                 }
                 for entity in Status::collect_unit_statuses(target, world) {
                     let status = world.get::<Status>(entity).unwrap();
-                    if let Some(status) = Pools::get_status(&status.name, world) {
-                        let status = status.clone().unpack(owner, world);
-                        for (var, history) in
-                            VarState::get(entity, world).history.clone().into_iter()
-                        {
-                            if let Some(value) = history.get_last() {
-                                VarState::get_mut(status, world)
-                                    .push_back(var, VarChange::new(value));
-                            }
-                        }
+                    if Pools::get_status(&status.name, world).is_some() {
+                        let delta = VarState::get(entity, world).get_int(VarName::Charges)?;
+                        let name = status.name.clone();
+                        Status::change_charges(&name, owner, delta, world)?;
                     } else {
-                        status
-                            .clone()
-                            .spawn(world)
-                            .insert(VarState::default())
-                            .set_parent(owner);
+                        let state = VarState::get(entity, world).final_snapshot();
+                        status.clone().spawn(world).insert(state).set_parent(owner);
                     }
                 }
             }

@@ -1,0 +1,40 @@
+(
+    name: "Mirror",
+    hp: 6,
+    atk: 0,
+    stacks: 1,
+    level: 1,
+    houses: "Shifters",
+    description: "%trigger → %effect on %target",
+    trigger: Fire(
+        triggers: [(BeforeStrike, None)],
+        targets: [(Target, None)],
+        effects: [(UseAbility("Copy", 0), None)],
+    ),
+    representation: (
+        material: Shape(
+            shape: Circle(radius: Float(0.72)),
+            shape_type: Line(thickness: Float(3.0)),
+            fill: GradientLinear(
+                point1: Vec2(0.0, -1.0),
+                point2: Vec2(0.0, 1.0),
+                parts: [Float(0.68), Float(0.84)],
+                colors: [OwnerState(Color), Hex("00000000")],
+            ),
+            alpha: Float(0.4),
+        ),
+        children: [],
+        mapping: {
+            Offset: Mul(
+                UnitVec(
+                    Mul(
+                        Sum(Index, Mul(GameTime, Mul(RandomFloatUnit(Owner), Float(5.0)))),
+                        Mul(PI, Float(0.5)),
+                    ),
+                ),
+                Float(0.05),
+            ),
+        },
+        count: 6,
+    ),
+)

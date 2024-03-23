@@ -76,12 +76,20 @@ impl VarState {
             .get::<Self>(entity)
             .with_context(|| format!("VarState not found for {entity:?}"))
     }
-    pub fn snapshot(entity: Entity, world: &World, t: f32) -> Self {
-        let source = Self::get(entity, world);
-        let t = t - source.birth;
+    pub fn snapshot(&self, t: f32) -> Self {
+        let t = t - self.birth;
         let mut state = VarState::default();
-        for (key, history) in source.history.iter() {
+        for (key, history) in self.history.iter() {
             if let Ok(value) = history.find_value(t) {
+                state.init(*key, value);
+            }
+        }
+        state
+    }
+    pub fn final_snapshot(&self) -> Self {
+        let mut state = VarState::default();
+        for (key, history) in self.history.iter() {
+            if let Some(value) = history.get_last() {
                 state.init(*key, value);
             }
         }
