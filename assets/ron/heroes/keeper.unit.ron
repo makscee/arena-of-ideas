@@ -7,32 +7,28 @@
     houses: "Paladins",
     description: "%trigger → %effect",
     trigger: Fire(
-        triggers: [
-            (Period(1, 1, AfterStrike), None),
-        ],
-        targets: [
-            (Owner, None),
-        ],
-        effects: [
-            (UseAbility("Shield", 0), None),
-        ],
+        triggers: [(Period(1, 1, AfterStrike), None)],
+        targets: [(Owner, None)],
+        effects: [(UseAbility("Shield", 0), None)],
     ),
     representation: (
         material: Shape(
             shape: Circle(
-                radius: Sum(Float(0.13), Sub(Zero, Mul(Sum(Index, Int(1)), Mul(Sin(Sum(GameTime, Index)), Float(-0.05))))),
+                radius: Sum(
+                    Float(0.13),
+                    Sub(Zero, Mul(Sum(Index, Int(1)), Mul(Sin(Sum(GameTime, Index)), Float(-0.05)))),
+                ),
             ),
-            shape_type: Line(
-                thickness: Float(1.0),
-            ),
-            fill: Solid(
-                color: OwnerState(Color),
-            ),
+            shape_type: Line(thickness: Float(1.0)),
+            fill: Solid(color: OwnerState(Color)),
             alpha: Float(1.0),
         ),
         children: [],
         mapping: {
-            Offset: Vec2EE(Mul(Sin(Sum(GameTime, Index)), Float(0.3)), Sum(Sum(Float(0.8), Mul(Index, Float(-0.2))), Mul(Sub(Zero, Beat), Float(-0.1)))),
+            Offset: Vec2EE(
+                Mul(Sin(Sum(GameTime, Index)), Float(0.3)),
+                Sum(Sum(Float(0.8), Mul(Index, Float(-0.2))), Mul(Sub(Zero, Beat), Float(-0.1))),
+            ),
         },
         count: 7,
     ),

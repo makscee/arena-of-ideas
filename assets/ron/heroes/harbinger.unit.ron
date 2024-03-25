@@ -1,0 +1,42 @@
+(
+    name: "Harbinger",
+    hp: 4,
+    atk: 1,
+    stacks: 1,
+    level: 1,
+    houses: "Warlocks",
+    description: "%trigger → %effect on %target",
+    trigger: Fire(
+        triggers: [(OnceAfter(0, AfterStrike), Some("after strike once"))],
+        targets: [(RandomEnemy, None)],
+        effects: [(UseAbility("Doom", 0), None)],
+    ),
+    representation: (
+        material: Shape(
+            shape: Circle(radius: Float(0.53)),
+            shape_type: Line(thickness: Float(1.0)),
+            fill: Solid(color: OwnerState(Color)),
+            alpha: Float(1.0),
+        ),
+        children: [
+            (
+                material: Shape(
+                    shape: Circle(radius: Float(1.0)),
+                    shape_type: Opaque,
+                    fill: GradientRadial(
+                        center: Vec2(0.0, 0.0),
+                        radius: Float(1.0),
+                        parts: [Float(-0.62), Float(1.05)],
+                        colors: [Context(Color), Hex("00000000")],
+                    ),
+                    alpha: Float(1.0),
+                ),
+                children: [],
+                mapping: {},
+                count: 0,
+            ),
+        ],
+        mapping: {Offset: Mul(UnitVec(Mul(Index, Mul(PI, Float(0.5)))), Mul(Sin(GameTime), Float(0.21)))},
+        count: 4,
+    ),
+)
