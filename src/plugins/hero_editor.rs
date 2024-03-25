@@ -153,12 +153,23 @@ impl HeroEditorPlugin {
                         }
                     }
                 }
+
                 ui.add_space(10.0);
                 if ui.button_color("Save", yellow()).clicked() {
                     ed.saved_teams = ed.teams.clone();
                 }
                 if ui.button_color("Load", yellow()).clicked() {
                     ed.teams = ed.saved_teams.clone();
+                    ed.load(world);
+                }
+
+                ui.add_space(10.0);
+                if ui.button("Fuse").clicked() {
+                    let fused =
+                        PackedUnit::fuse(ed.teams.0[0].clone(), ed.teams.0[1].clone(), world)
+                            .remove(0);
+                    ed.teams.0.remove(0);
+                    ed.teams.0[0] = fused;
                     ed.load(world);
                 }
 
@@ -227,7 +238,7 @@ impl HeroEditorPlugin {
                                 world,
                             );
                         }
-                        ui.add_space(50.0);
+                        ui.add_space(20.0);
                         const SELECTED_STATUS_KEY: &str = "selected_status";
                         let mut status = get_context_string(world, SELECTED_STATUS_KEY);
                         ComboBox::from_id_source(SELECTED_STATUS_KEY)
@@ -257,7 +268,7 @@ impl HeroEditorPlugin {
                             }
                         });
 
-                        ui.add_space(50.0);
+                        ui.add_space(20.0);
                         const LOAD_HERO_KEY: &str = "load_hero";
                         let mut hero = get_context_string(world, LOAD_HERO_KEY);
                         let heroes = Pools::get(world)
@@ -291,7 +302,7 @@ impl HeroEditorPlugin {
                             unit = Pools::get(world).heroes.get(&hero).unwrap().clone();
                         }
 
-                        ui.add_space(50.0);
+                        ui.add_space(20.0);
                         let mut sd = SettingsData::get(world).clone();
                         let card = &mut sd.always_show_card;
                         if ui.checkbox(card, "").changed() {
