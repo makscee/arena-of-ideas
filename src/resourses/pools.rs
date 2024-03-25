@@ -233,12 +233,14 @@ impl PoolsPlugin {
                     .clone()
             })
             .collect_vec();
-        let pool = &mut Pools::get_mut(world).heroes;
+        let pool = &mut Pools::get_mut(world);
         debug!("Setup {} heroes", heroes.len());
         for (key, value) in heroes.into_iter().map(|s| (s.name.clone(), s)) {
-            if pool.insert(key.clone(), value).is_some() {
+            if pool.heroes.insert(key.clone(), value.clone()).is_some() {
                 panic!("Duplicate hero name: {key}")
             }
+            let color = pool.house_color(&value.houses).unwrap();
+            pool.colors.insert(key.clone(), color);
         }
     }
 

@@ -1,4 +1,4 @@
-use bevy_egui::egui::{Frame, Key, ScrollArea, Sense, Shape, SidePanel};
+use bevy_egui::egui::{Frame, Key, ScrollArea, SelectableLabel, Sense, Shape, SidePanel};
 use ron::ser::{to_string_pretty, PrettyConfig};
 use serde::de::DeserializeOwned;
 
@@ -273,9 +273,9 @@ impl HeroEditorPlugin {
                         let mut hero = get_context_string(world, LOAD_HERO_KEY);
                         let heroes = Pools::get(world)
                             .heroes
-                            .keys()
-                            .sorted()
-                            .cloned()
+                            .iter()
+                            .sorted_by_key(|(_, h)| &h.houses)
+                            .map(|(k, _)| k.clone())
                             .collect_vec();
 
                         if ui.button("Next").clicked() {
@@ -290,9 +290,16 @@ impl HeroEditorPlugin {
                             .show_ui(ui, |ui| {
                                 for option in heroes {
                                     let text = option.to_string();
-                                    if ui
-                                        .selectable_value(&mut hero, option.to_owned(), text)
-                                        .changed()
+
+                                    if SelectableLabel::new(
+                                        hero.eq(&option),
+                                        text.add_color(
+                                            Pools::get_color_by_name(&option, world).unwrap().c32(),
+                                        )
+                                        .rich_text(ui),
+                                    )
+                                    .ui(ui)
+                                    .changed()
                                     {
                                         set_context_string(world, LOAD_HERO_KEY, option);
                                         unit = Pools::get(world).heroes.get(&hero).unwrap().clone();

@@ -1,0 +1,28 @@
+(
+    name: "Hand",
+    hp: 3,
+    atk: 1,
+    stacks: 1,
+    level: 1,
+    houses: "Alchemists",
+    description: "%trigger → %effect on enemy with most HP",
+    trigger: Fire(
+        triggers: [(AfterStrike, None)],
+        targets: [(Target, None)],
+        effects: [(UseAbility("Petrify", 0), None)],
+    ),
+    representation: (
+        material: Shape(
+            shape: Rectangle(size: Vec2(1.0, 0.3)),
+            shape_type: Line(thickness: Float(1.0)),
+            fill: Solid(color: OwnerState(Color)),
+            alpha: Float(1.0),
+        ),
+        children: [],
+        mapping: {
+            Rotation: Sum(Mul(Mul(PI, Float(0.23)), Index), Mul(Sin(Sum(GameTime, Index)), Float(1.5))),
+            Offset: Vec2EE(Mul(Sin(Sum(GameTime, Index)), Float(0.3)), Zero),
+        },
+        count: 4,
+    ),
+)
