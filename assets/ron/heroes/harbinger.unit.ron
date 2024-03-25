@@ -8,7 +8,7 @@
     description: "%trigger → %effect on %target",
     trigger: Fire(
         triggers: [(OnceAfter(0, AfterStrike), Some("after strike once"))],
-        targets: [(RandomEnemy, None)],
+        targets: [(FilterMaxEnemy(Context(Slot)), Some("last enemy"))],
         effects: [(UseAbility("Doom", 0), None)],
     ),
     representation: (
