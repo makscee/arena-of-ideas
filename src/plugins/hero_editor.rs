@@ -285,6 +285,7 @@ impl HeroEditorPlugin {
                             unit = Pools::get(world).heroes.get(&hero).unwrap().clone();
                         }
                         ComboBox::from_id_source(LOAD_HERO_KEY)
+                            .width(150.0)
                             .selected_text(hero.clone())
                             .show_ui(ui, |ui| {
                                 for option in heroes {

@@ -7,33 +7,19 @@
     houses: "Warriors",
     description: "%trigger → %effect on %target",
     trigger: Fire(
-        triggers: [
-            (BeforeStrike, None),
-        ],
-        targets: [
-            (Owner, None),
-        ],
-        effects: [
-            (UseAbility("Strength", 3), None),
-        ],
+        triggers: [(BeforeStrike, None)],
+        targets: [(Owner, None)],
+        effects: [(UseAbility("Strength", 3), None)],
     ),
     representation: (
         material: Shape(
-            shape: Rectangle(
-                size: Vec2E(Float(1.13)),
-            ),
-            shape_type: Line(
-                thickness: Float(1.0),
-            ),
-            fill: Solid(
-                color: OwnerState(Color),
-            ),
+            shape: Rectangle(size: Vec2E(Float(1.13))),
+            shape_type: Line(thickness: Float(1.0)),
+            fill: Solid(color: OwnerState(Color)),
             alpha: Float(1.0),
         ),
         children: [],
-        mapping: {
-            Offset: Mul(Mul(Mul(Index, Float(0.04)), Sin(GameTime)), UnitVec(Mul(Index, Float(1.0)))),
-        },
+        mapping: {Offset: Mul(Mul(Mul(Index, Float(0.04)), Sin(GameTime)), UnitVec(Mul(Index, Float(1.0))))},
         count: 7,
     ),
 )

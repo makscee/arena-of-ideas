@@ -1,0 +1,41 @@
+(
+    name: "Vixen",
+    hp: 3,
+    atk: 1,
+    stacks: 1,
+    level: 1,
+    houses: "Witches",
+    description: "%trigger → %effect on %target",
+    trigger: Fire(
+        triggers: [(AfterStrike, None)],
+        targets: [(RandomEnemySubset(Int(2)), None)],
+        effects: [(UseAbility("Weakness", 2), None)],
+    ),
+    representation: (
+        material: Shape(
+            shape: Circle(
+                radius: Max(
+                    Mul(
+                        Cos(Sum(Sum(GameTime, Mul(PI, Float(-5.15))), Sum(Index, Int(3)))),
+                        Float(0.5),
+                    ),
+                    Float(0.1),
+                ),
+            ),
+            shape_type: Line(thickness: Float(3.0)),
+            fill: Solid(color: OwnerState(Color)),
+            alpha: Context(T),
+        ),
+        children: [],
+        mapping: {
+            T: Sin(Sum(GameTime, Index)),
+            Offset: Mul(
+                UnitVec(
+                    Mul(RandomFloat(Sum(Abs(Index), Floor(Div(Sub(GameTime, Int(-2)), PI2)))), PI2),
+                ),
+                Float(0.45),
+            ),
+        },
+        count: 6,
+    ),
+)
