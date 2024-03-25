@@ -1,0 +1,40 @@
+(
+    name: "Con",
+    hp: 2,
+    atk: 2,
+    stacks: 1,
+    level: 1,
+    houses: "Meta",
+    description: "%trigger → %effect on %target",
+    trigger: Fire(
+        triggers: [(AfterStrike, None)],
+        targets: [(Target, None)],
+        effects: [(UseAbility("Betray", 0), None)],
+    ),
+    representation: (
+        material: Shape(
+            shape: Circle(
+                radius: Max(
+                    Mul(Abs(Beat), Float(0.2)),
+                    Mul(Abs(Cos(Mul(GameTime, Float(0.2)))), Float(0.71)),
+                ),
+            ),
+            shape_type: Line(thickness: Float(1.0)),
+            fill: Solid(color: OwnerState(Color)),
+            alpha: Float(0.3),
+        ),
+        children: [],
+        mapping: {
+            Offset: Mul(
+                UnitVec(
+                    Sum(
+                        Mul(Index, Mul(PI, Float(0.33))),
+                        Mul(Sin(Mul(GameTime, Float(0.3))), Float(6.84)),
+                    ),
+                ),
+                Float(0.13),
+            ),
+        },
+        count: 6,
+    ),
+)
