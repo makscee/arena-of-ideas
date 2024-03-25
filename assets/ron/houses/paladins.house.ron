@@ -11,7 +11,13 @@
                     Change(trigger: IncomingDamage, expr: Mul(Context(Value), Int(-1))),
                     Fire(
                         triggers: [(AfterIncomingDamage, None)],
-                        effects: [(WithVar(Charges, Int(-1), AddStatus("Shield")), None)],
+                        effects: [
+                            (If(
+                                GreaterThen(Context(Value), Int(0)),
+                                WithVar(Charges, Int(-1), AddStatus("Shield")),
+                                Noop,
+                            ),None)
+                        ],
                     ),
                 ],
             ),

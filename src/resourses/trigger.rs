@@ -422,15 +422,10 @@ impl std::fmt::Display for FireTrigger {
                 list.into_iter().map(|t| t.to_string()).join(" + ")
             ),
             FireTrigger::Period(_, delay, trigger) => {
-                write!(
-                    f,
-                    "
-                {} ({delay} {trigger})",
-                    self.as_ref()
-                )
+                write!(f, "Every {} {}", *delay + 1, trigger)
             }
             FireTrigger::OnceAfter(delay, trigger) => {
-                write!(f, "{} ({delay} {trigger})", self.as_ref())
+                write!(f, "Once in {delay} {trigger}")
             }
         }
     }
