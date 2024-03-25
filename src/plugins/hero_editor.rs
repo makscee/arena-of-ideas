@@ -299,10 +299,11 @@ impl HeroEditorPlugin {
                                         .rich_text(ui),
                                     )
                                     .ui(ui)
-                                    .changed()
+                                    .clicked()
                                     {
+                                        unit =
+                                            Pools::get(world).heroes.get(&option).unwrap().clone();
                                         set_context_string(world, LOAD_HERO_KEY, option);
-                                        unit = Pools::get(world).heroes.get(&hero).unwrap().clone();
                                     }
                                 }
                             });
