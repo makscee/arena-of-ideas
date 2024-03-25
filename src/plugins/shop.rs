@@ -324,6 +324,7 @@ impl ShopPlugin {
             let mut new_action = DragAction::None;
             let dragged_state = VarState::get(dragged, world);
             let dragged_houses = dragged_state.get_houses_vec()?;
+            let dragged_name = dragged_state.get_string(VarName::Name)?;
             let dragged_level = dragged_state.get_int(VarName::Level)?;
             for entity in UnitPlugin::collect_faction(Faction::Team, world) {
                 if entity == dragged {
@@ -332,8 +333,9 @@ impl ShopPlugin {
                 let state = VarState::get(entity, world);
                 let houses = state.get_houses_vec()?;
                 let level = state.get_int(VarName::Level)?;
-                let same_house = dragged_houses.iter().any(|h| houses.contains(h));
-                if same_house {
+                let check = state.get_string(VarName::Name)?.eq(&dragged_name)
+                    || houses.len() > 1 && dragged_houses.iter().any(|h| houses.contains(h));
+                if check {
                     let stacks = state.get_int(VarName::Stacks)?;
                     let level = state.get_int(VarName::Level)?;
                     let color = if matches!(action, DragAction::Stack(e) if e == entity) {
