@@ -116,16 +116,6 @@ impl FireTrigger {
                 });
         });
     }
-
-    fn get_description_string(&self) -> String {
-        match self {
-            FireTrigger::List(list) => list.iter().map(|t| t.get_description_string()).join(" + "),
-            FireTrigger::Period(_, delay, t) => {
-                format!("{} ({})", t.get_description_string(), *delay + 1)
-            }
-            _ => self.to_string(),
-        }
-    }
 }
 
 impl EditorNodeGenerator for FireTrigger {

@@ -43,7 +43,6 @@ const G_PER_ROUND: Range<i64> = 4..7;
 const PRICE_REROLL: i64 = 1;
 const PRICE_UNIT: i64 = 3;
 const PRICE_SELL: i64 = 1;
-const TEAM_SLOTS: usize = 7;
 const SHOP_SLOTS_PER_ROUND: f32 = 0.34;
 const SHOP_SLOTS: Range<usize> = 3..6;
 
@@ -292,7 +291,7 @@ impl ArenaRun {
         if !self.can_afford(price) {
             return Err("Not enough g".to_owned());
         }
-        if !skip_limit_check && self.state.team.len() >= TEAM_SLOTS {
+        if !skip_limit_check && self.state.team.len() >= GlobalSettings::get().team_slots as usize {
             return Err("Team is already full".to_owned());
         }
         self.change_g(-PRICE_UNIT);

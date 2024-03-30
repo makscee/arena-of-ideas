@@ -27,6 +27,8 @@ pub enum RunMode {
     Last,
     Continue,
     Sync,
+    Archive,
+    Upload,
     Editor,
     Gallery,
 }
@@ -35,15 +37,24 @@ fn main() {
     let args = Args::try_parse().unwrap_or_default();
     dbg!(&args);
     let next_state = match args.mode {
-        RunMode::Regular | RunMode::Offline => GameState::MainMenu,
+        RunMode::Regular
+        | RunMode::Offline
+        | RunMode::Archive
+        | RunMode::Upload
+        | RunMode::Sync => GameState::MainMenu,
         RunMode::Custom => GameState::CustomBattle,
         RunMode::Gallery => GameState::HeroGallery,
         RunMode::Last => GameState::LastBattle,
         RunMode::Editor => GameState::HeroEditor,
         RunMode::Continue => GameState::Shop,
         RunMode::Test => GameState::TestsLoading,
-        RunMode::Sync => GameState::AssetSync,
     };
+    match args.mode {
+        RunMode::Sync => set_after_login_state(GameState::AssetSync),
+        RunMode::Archive => set_after_login_state(GameState::ArenaArchiveSave),
+        RunMode::Upload => set_after_login_state(GameState::ArenaArchiveUpload),
+        _ => {}
+    }
     let mut default_plugins = DefaultPlugins
         .set(AssetPlugin {
             watch_for_changes: ChangeWatcher::with_delay(Duration::from_millis(100)),
@@ -69,7 +80,7 @@ fn main() {
                 ..default()
             })
         }
-        RunMode::Test | RunMode::Sync => {
+        RunMode::Test | RunMode::Sync | RunMode::Archive | RunMode::Upload => {
             default_plugins = default_plugins.set(bevy::window::WindowPlugin {
                 primary_window: None,
                 exit_condition: bevy::window::ExitCondition::DontExit,
@@ -137,6 +148,7 @@ fn main() {
             AssetsSyncPlugin,
             OperationsPlugin,
             TeamPlugin,
+            ArenaArchivePlugin,
         ))
         .add_systems(Update, input_world)
         .register_type::<VarState>()
@@ -149,7 +161,13 @@ fn main() {
         );
     app.add_systems(Startup, setup);
     match args.mode {
-        RunMode::Regular | RunMode::Offline | RunMode::Continue | RunMode::Last | RunMode::Sync => {
+        RunMode::Regular
+        | RunMode::Offline
+        | RunMode::Continue
+        | RunMode::Last
+        | RunMode::Sync
+        | RunMode::Archive
+        | RunMode::Upload => {
             app.add_systems(OnExit(GameState::Loading), LoginPlugin::setup);
         }
         RunMode::Test | RunMode::Custom | RunMode::Gallery | RunMode::Editor => {}

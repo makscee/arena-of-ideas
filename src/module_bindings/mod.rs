@@ -26,6 +26,7 @@ pub mod arena_run;
 pub mod game_state;
 pub mod give_right_reducer;
 pub mod global_data;
+pub mod global_settings;
 pub mod house;
 pub mod login_by_identity_reducer;
 pub mod login_reducer;
@@ -50,6 +51,7 @@ pub mod summon;
 pub mod sync_data_reducer;
 pub mod table_unit;
 pub mod team_unit;
+pub mod upload_pool_reducer;
 pub mod user;
 pub mod user_access;
 pub mod user_right;
@@ -61,6 +63,7 @@ pub use arena_run::*;
 pub use game_state::*;
 pub use give_right_reducer::*;
 pub use global_data::*;
+pub use global_settings::*;
 pub use house::*;
 pub use login_by_identity_reducer::*;
 pub use login_reducer::*;
@@ -85,6 +88,7 @@ pub use summon::*;
 pub use sync_data_reducer::*;
 pub use table_unit::*;
 pub use team_unit::*;
+pub use upload_pool_reducer::*;
 pub use user::*;
 pub use user_access::*;
 pub use user_right::*;
@@ -111,6 +115,7 @@ pub enum ReducerEvent {
     SetName(set_name_reducer::SetNameArgs),
     SetPassword(set_password_reducer::SetPasswordArgs),
     SyncData(sync_data_reducer::SyncDataArgs),
+    UploadPool(upload_pool_reducer::UploadPoolArgs),
 }
 
 #[allow(unused)]
@@ -137,6 +142,11 @@ impl SpacetimeModule for Module {
             ),
             "GlobalData" => client_cache
                 .handle_table_update_no_primary_key::<global_data::GlobalData>(
+                    callbacks,
+                    table_update,
+                ),
+            "GlobalSettings" => client_cache
+                .handle_table_update_no_primary_key::<global_settings::GlobalSettings>(
                     callbacks,
                     table_update,
                 ),
@@ -178,6 +188,11 @@ impl SpacetimeModule for Module {
         reminders.invoke_callbacks::<arena_pool::ArenaPool>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<arena_run::ArenaRun>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<global_data::GlobalData>(worker, &reducer_event, state);
+        reminders.invoke_callbacks::<global_settings::GlobalSettings>(
+            worker,
+            &reducer_event,
+            state,
+        );
         reminders.invoke_callbacks::<house::House>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<statuses::Statuses>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<summon::Summon>(worker, &reducer_event, state);
@@ -216,6 +231,7 @@ match &function_call.reducer[..] {
 			"set_name" => _reducer_callbacks.handle_event_of_type::<set_name_reducer::SetNameArgs, ReducerEvent>(event, _state, ReducerEvent::SetName),
 			"set_password" => _reducer_callbacks.handle_event_of_type::<set_password_reducer::SetPasswordArgs, ReducerEvent>(event, _state, ReducerEvent::SetPassword),
 			"sync_data" => _reducer_callbacks.handle_event_of_type::<sync_data_reducer::SyncDataArgs, ReducerEvent>(event, _state, ReducerEvent::SyncData),
+			"upload_pool" => _reducer_callbacks.handle_event_of_type::<upload_pool_reducer::UploadPoolArgs, ReducerEvent>(event, _state, ReducerEvent::UploadPool),
 			unknown => { spacetimedb_sdk::log::error!("Event on an unknown reducer: {:?}", unknown); None }
 }
     }
@@ -237,6 +253,10 @@ match &function_call.reducer[..] {
             }
             "GlobalData" => client_cache
                 .handle_resubscribe_for_type::<global_data::GlobalData>(callbacks, new_subs),
+            "GlobalSettings" => client_cache
+                .handle_resubscribe_for_type::<global_settings::GlobalSettings>(
+                    callbacks, new_subs,
+                ),
             "House" => {
                 client_cache.handle_resubscribe_for_type::<house::House>(callbacks, new_subs)
             }

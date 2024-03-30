@@ -2,6 +2,7 @@ mod ability;
 mod arena_pool;
 mod arena_run;
 mod global_data;
+mod global_settings;
 mod house;
 mod status;
 mod summon;
@@ -15,6 +16,7 @@ pub use anyhow::Context;
 pub use arena_pool::*;
 pub use arena_run::*;
 pub use global_data::GlobalData;
+pub use global_settings::*;
 pub use house::*;
 pub use spacetimedb::SpacetimeType;
 pub use spacetimedb::{spacetimedb, Identity, ReducerContext};
@@ -30,6 +32,7 @@ pub use vfx::*;
 fn init_user_access() -> Result<(), String> {
     UserAccess::init()?;
     GlobalData::init()?;
+    GlobalSettings::init()?;
     Ok(())
 }
 

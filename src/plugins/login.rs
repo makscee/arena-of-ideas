@@ -22,11 +22,12 @@ pub struct LoginPlugin;
 // const DB_NAME: &str = "aoi_dev2";
 // #[cfg(not(debug_assertions))]
 // const DB_NAME: &str = "aoi";
-const CREDS_DIR: &str = ".aoi";
+pub const HOME_DIR: &str = ".aoi";
 
 static IS_CONNECTED: Mutex<bool> = Mutex::new(false);
 pub static CURRENT_USER: Mutex<Option<UserData>> = Mutex::new(None);
 static OFFLINE: Mutex<bool> = Mutex::new(false);
+static AFTER_LOGIN_STATE: Mutex<Option<GameState>> = Mutex::new(None);
 
 #[derive(Clone)]
 pub struct UserData {
@@ -41,11 +42,14 @@ pub fn set_offline(value: bool) {
 pub fn is_offline() -> bool {
     *OFFLINE.lock().unwrap()
 }
+pub fn set_after_login_state(state: GameState) {
+    *AFTER_LOGIN_STATE.lock().unwrap() = Some(state);
+}
 
 fn on_connected(creds: &Credentials, _client_address: Address) {
     *IS_CONNECTED.lock().unwrap() = true;
     debug!("Current identity: {}", hex::encode(creds.identity.bytes()));
-    if let Err(e) = save_credentials(CREDS_DIR, creds) {
+    if let Err(e) = save_credentials(HOME_DIR, creds) {
         eprintln!("Failed to save credentials: {:?}", e);
     }
     debug!("Subscribe start");
@@ -116,7 +120,7 @@ impl Plugin for LoginPlugin {
 
 impl LoginPlugin {
     fn load_credentials() -> Option<Credentials> {
-        load_credentials(CREDS_DIR).expect("Failed to load credentials")
+        load_credentials(HOME_DIR).expect("Failed to load credentials")
     }
 
     pub fn is_connected() -> bool {
@@ -151,7 +155,7 @@ impl LoginPlugin {
 
     pub fn clear_saved_credentials() {
         let mut path = home::home_dir().expect("Failed to get home dir");
-        path.push(CREDS_DIR);
+        path.push(HOME_DIR);
         std::fs::remove_dir_all(path).expect("Failed to clear credentials dir");
     }
 
@@ -292,7 +296,14 @@ fn subscribe_to_tables(user_id: u64) {
     ]) {
         Ok(_) => {
             debug!("Subscribe successful");
-            once_on_subscription_applied(|| OperationsPlugin::add(PoolsPlugin::cache_server_pools));
+            once_on_subscription_applied(|| {
+                OperationsPlugin::add(|world| {
+                    PoolsPlugin::cache_server_pools(world);
+                    if let Some(state) = (*AFTER_LOGIN_STATE.lock().unwrap()).clone() {
+                        state.change(world);
+                    }
+                })
+            });
         }
         Err(e) => error!("Subscription error: {e}"),
     }
