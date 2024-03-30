@@ -20,6 +20,9 @@ pub fn white() -> Color32 {
 pub fn yellow() -> Color32 {
     hex_color!("#D98F00")
 }
+pub fn orange() -> Color32 {
+    hex_color!("#FC4C02")
+}
 pub fn red() -> Color32 {
     hex_color!("#E53935")
 }

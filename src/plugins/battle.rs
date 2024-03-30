@@ -116,6 +116,7 @@ impl BattlePlugin {
 
     pub fn run_strike(left: Entity, right: Entity, world: &mut World) -> Result<()> {
         ActionPlugin::spin(world)?;
+        ActionPlugin::register_next_round(world);
         Self::before_strike(left, right, world)?;
         if Self::stricker_death_check(left, right, world) {
             return Ok(());
@@ -195,22 +196,42 @@ impl BattlePlugin {
         } else {
             return;
         };
-
         if !GameTimer::get().ended() {
-            if let Some(event) = ActionPlugin::current_event(world) {
-                TopBottomPanel::top("event text").show(ctx, |ui| {
-                    ui.vertical_centered_justified(|ui| {
-                        let text = event
-                            .to_string()
-                            .add_color(yellow())
-                            .set_style(ColoredStringStyle::Heading)
-                            .rich_text(ui);
-                        ui.heading(text);
-                    });
-                });
-            }
+            Self::draw_round_num(ctx, world);
+            Self::draw_current_event(ctx, world);
             return;
         }
+        Self::draw_final_panel(ctx, world);
+    }
+
+    fn draw_round_num(ctx: &egui::Context, world: &World) {
+        let round = ActionPlugin::current_round(world);
+        TopBottomPanel::top("round num").show(ctx, |ui| {
+            ui.vertical_centered_justified(|ui| {
+                format!("Round {round}")
+                    .add_color(orange())
+                    .set_style(ColoredStringStyle::Heading)
+                    .label(ui)
+            })
+        });
+    }
+
+    fn draw_current_event(ctx: &egui::Context, world: &World) {
+        if let Some(event) = ActionPlugin::current_event(world) {
+            TopBottomPanel::top("event text").show(ctx, |ui| {
+                ui.vertical_centered_justified(|ui| {
+                    let text = event
+                        .to_string()
+                        .add_color(yellow())
+                        .set_style(ColoredStringStyle::Heading2)
+                        .rich_text(ui);
+                    ui.heading(text);
+                });
+            });
+        }
+    }
+
+    fn draw_final_panel(ctx: &egui::Context, world: &mut World) {
         let bd = world.resource::<BattleData>();
         if let Some(win) = bd.result.is_win() {
             let text = match win {
