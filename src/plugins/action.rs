@@ -101,16 +101,15 @@ impl ActionPlugin {
         died
     }
 
-    pub fn current_event(world: &World) -> Option<Event> {
+    pub fn get_event(world: &World) -> Option<Event> {
         let t = GameTimer::get().play_head();
         world.get_resource::<ActionsData>().and_then(|d| {
-            d.events.iter().rev().find_map(|(ts, e)| match t > *ts {
+            d.events.iter().rev().find_map(|(ts, e)| match t >= *ts {
                 true => Some(*e),
                 false => None,
             })
         })
     }
-
     pub fn register_event(event: Event, world: &mut World) {
         world
             .resource_mut::<ActionsData>()
@@ -118,19 +117,17 @@ impl ActionPlugin {
             .push((GameTimer::get().insert_head(), event));
     }
 
-    pub fn current_round(world: &World) -> usize {
-        let t = GameTimer::get().play_head();
+    pub fn get_round(t: f32, world: &World) -> usize {
         world
             .get_resource::<ActionsData>()
             .and_then(|d| {
-                d.rounds.iter().rev().find_map(|(ts, e)| match t > *ts {
+                d.rounds.iter().rev().find_map(|(ts, e)| match t >= *ts {
                     true => Some(*e),
                     false => None,
                 })
             })
             .unwrap_or_default()
     }
-
     pub fn register_next_round(world: &mut World) {
         let mut data = world.resource_mut::<ActionsData>();
         let next = data.rounds.last().map(|(_, r)| *r).unwrap_or_default() + 1;
@@ -186,6 +183,10 @@ impl ActionPlugin {
             context,
             delay,
         });
+    }
+
+    pub fn new_battle(world: &mut World) {
+        *world.resource_mut::<ActionsData>() = default();
     }
 
     fn pop_action(world: &mut World) -> Option<Action> {

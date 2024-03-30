@@ -2,6 +2,8 @@ use bevy_egui::egui::Align2;
 
 use crate::module_bindings::{run_submit_result, ArenaRun};
 
+use self::module_bindings::GlobalSettings;
+
 use super::*;
 
 pub struct BattlePlugin;
@@ -57,6 +59,7 @@ impl BattlePlugin {
     }
 
     pub fn run_battle(world: &mut World) -> Result<BattleResult> {
+        ActionPlugin::new_battle(world);
         let data = world.resource::<BattleData>().clone();
         data.left.unwrap().unpack(Faction::Left, world);
         data.right.unwrap().unpack(Faction::Right, world);
@@ -123,6 +126,7 @@ impl BattlePlugin {
         }
         Self::strike(left, right, world)?;
         Self::after_strike(left, right, world)?;
+        Self::fatigue(world)?;
         Event::TurnEnd.send(world).spin(world)?;
         ActionPlugin::spin(world)?;
         Ok(())
@@ -190,6 +194,32 @@ impl BattlePlugin {
         Ok(())
     }
 
+    fn fatigue(world: &mut World) -> Result<()> {
+        let round = ActionPlugin::get_round(GameTimer::get().insert_head(), world) as i32;
+        let fatigue = if let Some(settings) = GlobalSettings::filter_by_always_zero(0) {
+            settings.fatigue_start
+        } else {
+            20
+        } as i32;
+        let fatigue = round - fatigue;
+        if fatigue > 0 {
+            info!("Fatigue {fatigue}");
+            let effect = Effect::Damage(Some(Expression::Int(fatigue)));
+            for (unit, _) in
+                UnitPlugin::collect_factions([Faction::Left, Faction::Right].into(), world)
+            {
+                ActionPlugin::action_push_back(
+                    effect.clone(),
+                    Context::from_owner(unit, world)
+                        .set_target(unit, world)
+                        .take(),
+                    world,
+                );
+            }
+        }
+        Ok(())
+    }
+
     pub fn ui(world: &mut World) {
         let ctx = &if let Some(context) = egui_context(world) {
             context
@@ -205,7 +235,7 @@ impl BattlePlugin {
     }
 
     fn draw_round_num(ctx: &egui::Context, world: &World) {
-        let round = ActionPlugin::current_round(world);
+        let round = ActionPlugin::get_round(GameTimer::get().play_head(), world);
         TopBottomPanel::top("round num").show(ctx, |ui| {
             ui.vertical_centered_justified(|ui| {
                 format!("Round {round}")
@@ -217,7 +247,7 @@ impl BattlePlugin {
     }
 
     fn draw_current_event(ctx: &egui::Context, world: &World) {
-        if let Some(event) = ActionPlugin::current_event(world) {
+        if let Some(event) = ActionPlugin::get_event(world) {
             TopBottomPanel::top("event text").show(ctx, |ui| {
                 ui.vertical_centered_justified(|ui| {
                     let text = event
