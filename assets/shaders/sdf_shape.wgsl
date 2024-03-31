@@ -1,6 +1,7 @@
 #import bevy_sprite::mesh2d_view_bindings globals
 #import bevy_sprite::mesh2d_view_bindings view
 #import bevy_sprite::mesh2d_vertex_output MeshVertexOutput
+#import noisy_bevy fbm_simplex_2d
 
 struct ShapeMaterial {
     colors: array<vec4<f32>, 11>,
@@ -40,7 +41,17 @@ fn fragment(in: MeshVertexOutput) -> @location(0) vec4<f32> {
     let alpha = material.data[10].z;
     let thickness = material.data[10].w * 0.03;
 
-    let uv = (in.uv - vec2(0.5)) * size * 2.0;
+    var uv = (in.uv - vec2(0.5)) * size * 2.0;
+#ifdef FBM
+    let octaves = i32(material.data[9].x);
+    let lacunarity = material.data[9].y;
+    let gain = material.data[9].z;
+    let offset = material.data[9].w;
+    uv += vec2(
+        fbm_simplex_2d(uv, octaves, lacunarity, gain),
+        fbm_simplex_2d(uv + vec2(offset), octaves, lacunarity, gain)
+    );
+#endif
     let sdf = sdf(uv, size) - AA;
     var v = f32(sdf > -thickness);
 #ifdef LINE

@@ -65,6 +65,8 @@ pub enum RepresentationMaterial {
         shape_type: RepShapeType,
         #[serde(default)]
         fill: RepFill,
+        #[serde(default)]
+        fbm: Option<RepFbm>,
         #[serde(default = "f32_one_e")]
         alpha: Expression,
     },
@@ -95,6 +97,9 @@ pub enum RepresentationMaterial {
 
 fn font_size() -> f32 {
     32.0
+}
+fn i32_one_e() -> Expression {
+    Expression::Int(1)
 }
 fn f32_one_e() -> Expression {
     Expression::Float(1.0)
@@ -172,6 +177,18 @@ pub enum RepShapeType {
     },
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
+pub struct RepFbm {
+    #[serde(default = "i32_one_e")]
+    pub octaves: Expression,
+    #[serde(default = "f32_one_e")]
+    pub lacunarity: Expression,
+    #[serde(default = "f32_one_e")]
+    pub gain: Expression,
+    #[serde(default = "f32_one_e")]
+    pub offset: Expression,
+}
+
 impl Default for RepShape {
     fn default() -> Self {
         Self::Circle {
@@ -230,6 +247,7 @@ impl RepresentationMaterial {
                 shape,
                 shape_type,
                 fill,
+                fbm,
                 ..
             } => {
                 let mut materials = world.resource_mut::<Assets<ShapeMaterial>>();
@@ -237,6 +255,7 @@ impl RepresentationMaterial {
                     shape: shape.shader_shape(),
                     shape_type: shape_type.shader_shape_type(),
                     shape_fill: fill.shader_fill(),
+                    fbm: fbm.is_some(),
                     ..default()
                 };
                 let material = materials.add(material);
@@ -298,9 +317,10 @@ impl RepresentationMaterial {
                 shape_type,
                 fill,
                 alpha,
+                fbm,
             } => {
                 let handle = world.get::<Handle<ShapeMaterial>>(entity).unwrap().clone();
-                if let Some(mut mat) = world
+                if let Some(mut material) = world
                     .get_resource_mut::<Assets<ShapeMaterial>>()
                     .unwrap()
                     .remove(&handle)
@@ -309,7 +329,7 @@ impl RepresentationMaterial {
                     match shape {
                         RepShape::Circle { radius } => {
                             let radius = radius.get_float(context, world).unwrap_or(1.0);
-                            let t = &mut mat.data[10];
+                            let t = &mut material.data[10];
                             if radius != t.x {
                                 refresh_mesh = true;
                             }
@@ -317,7 +337,7 @@ impl RepresentationMaterial {
                         }
                         RepShape::Rectangle { size } => {
                             let size = size.get_vec2(context, world).unwrap_or(vec2(1.0, 1.0));
-                            let t = &mut mat.data[10];
+                            let t = &mut material.data[10];
                             if t.xy() != size {
                                 refresh_mesh = true;
                             }
@@ -326,13 +346,13 @@ impl RepresentationMaterial {
                     }
                     match shape_type {
                         RepShapeType::Line { thickness } => {
-                            mat.data[10].w = thickness.get_float(context, world).unwrap_or(1.0)
+                            material.data[10].w = thickness.get_float(context, world).unwrap_or(1.0)
                         }
                         RepShapeType::Opaque => {}
                     }
                     match fill {
                         RepFill::Solid { color } => {
-                            mat.colors[0] =
+                            material.colors[0] =
                                 color.get_color(context, world).unwrap_or(Color::FUCHSIA)
                         }
                         RepFill::GradientLinear {
@@ -343,10 +363,10 @@ impl RepresentationMaterial {
                         } => {
                             let point1 = point1.get_vec2(context, world).unwrap_or_default();
                             let point2 = point2.get_vec2(context, world).unwrap_or_default();
-                            mat.data[0].x = point1.x;
-                            mat.data[0].y = point1.y;
-                            mat.data[1].x = point2.x;
-                            mat.data[1].y = point2.y;
+                            material.data[0].x = point1.x;
+                            material.data[0].y = point1.y;
+                            material.data[1].x = point2.x;
+                            material.data[1].y = point2.y;
                         }
                         RepFill::GradientRadial {
                             center,
@@ -355,10 +375,10 @@ impl RepresentationMaterial {
                             colors: _,
                         } => {
                             let center = center.get_vec2(context, world).unwrap_or_default();
-                            mat.data[0].x = center.x;
-                            mat.data[0].y = center.y;
+                            material.data[0].x = center.x;
+                            material.data[0].y = center.y;
                             let radius = radius.get_float(context, world).unwrap_or(1.0);
-                            mat.data[0].z = radius;
+                            material.data[0].z = radius;
                         }
                     }
                     match fill {
@@ -368,13 +388,30 @@ impl RepresentationMaterial {
                                 let color =
                                     color.get_color(context, world).unwrap_or(Color::FUCHSIA);
                                 let part = parts[i].get_float(context, world).unwrap_or(0.5);
-                                mat.colors[i] = color;
-                                mat.data[i].w = part;
+                                material.colors[i] = color;
+                                material.data[i].w = part;
                             }
                         }
                         RepFill::Solid { .. } => {}
                     }
-                    mat.data[10].z = alpha.get_float(context, world).unwrap_or(1.0);
+                    material.data[10].z = alpha.get_float(context, world).unwrap_or(1.0);
+
+                    if let Some(RepFbm {
+                        octaves,
+                        lacunarity,
+                        gain,
+                        offset,
+                    }) = fbm
+                    {
+                        let octaves = octaves.get_int(context, world).unwrap_or(1);
+                        let lacunarity = lacunarity.get_float(context, world).unwrap_or(1.0);
+                        let gain = gain.get_float(context, world).unwrap_or(1.0);
+                        let offset = offset.get_float(context, world).unwrap_or(1.0);
+                        material.data[9].x = octaves as f32;
+                        material.data[9].y = lacunarity;
+                        material.data[9].z = gain;
+                        material.data[9].w = offset;
+                    }
                     if refresh_mesh {
                         let mesh = world.entity(entity).get::<Mesh2dHandle>().unwrap().clone();
                         if let Some(mesh) = world
@@ -382,13 +419,13 @@ impl RepresentationMaterial {
                             .unwrap()
                             .get_mut(&mesh.0)
                         {
-                            *mesh = shape.shader_shape().mesh(mat.data[10].xy());
+                            *mesh = shape.shader_shape().mesh(material.data[10].xy());
                         }
                     }
                     let _ = world
                         .get_resource_mut::<Assets<ShapeMaterial>>()
                         .unwrap()
-                        .set(handle, mat);
+                        .set(handle, material);
                 }
             }
             RepresentationMaterial::Text {
@@ -527,6 +564,7 @@ impl RepresentationMaterial {
                         shape_type,
                         fill,
                         alpha,
+                        fbm,
                     } => {
                         ui.horizontal(|ui| {
                             ComboBox::from_label("shape")
@@ -569,6 +607,14 @@ impl RepresentationMaterial {
                                         }
                                     }
                                 });
+                            let mut fbm_enabled = fbm.is_some();
+                            if ui.checkbox(&mut fbm_enabled, "fbm").changed() {
+                                *fbm = if fbm_enabled {
+                                    Some(ron::from_str("()").unwrap())
+                                } else {
+                                    None
+                                };
+                            }
                         });
                         show_tree("alpha:", alpha, context, ui, world);
                         match shape {
@@ -638,6 +684,19 @@ impl RepresentationMaterial {
                                 }
                             }
                             RepFill::Solid { .. } => {}
+                        }
+
+                        if let Some(RepFbm {
+                            octaves,
+                            lacunarity,
+                            gain,
+                            offset,
+                        }) = fbm
+                        {
+                            show_tree("octaves:", octaves, context, ui, world);
+                            show_tree("lacunarity:", lacunarity, context, ui, world);
+                            show_tree("gain:", gain, context, ui, world);
+                            show_tree("offset:", offset, context, ui, world);
                         }
                     }
                     RepresentationMaterial::Text {

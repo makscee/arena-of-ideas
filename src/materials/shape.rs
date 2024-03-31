@@ -15,6 +15,7 @@ pub struct ShapeMaterial {
     pub shape: ShaderShape,
     pub shape_type: ShaderShapeType,
     pub shape_fill: ShaderShapeFill,
+    pub fbm: bool,
 }
 
 #[derive(
@@ -91,6 +92,10 @@ impl Material2d for ShapeMaterial {
         fragment
             .shader_defs
             .push(key.bind_group_data.fill_color.def().into());
+        if key.bind_group_data.fbm {
+            debug!("fbm def push");
+            fragment.shader_defs.push("FBM".into());
+        }
         Ok(())
     }
 }
@@ -100,6 +105,7 @@ pub struct ShapeMaterialKey {
     shape: ShaderShape,
     fill: ShaderShapeType,
     fill_color: ShaderShapeFill,
+    fbm: bool,
 }
 
 impl From<&ShapeMaterial> for ShapeMaterialKey {
@@ -108,6 +114,7 @@ impl From<&ShapeMaterial> for ShapeMaterialKey {
             shape: material.shape,
             fill: material.shape_type,
             fill_color: material.shape_fill,
+            fbm: material.fbm,
         }
     }
 }
@@ -120,6 +127,7 @@ impl Default for ShapeMaterial {
             shape_fill: default(),
             colors: default(),
             data: default(),
+            fbm: default(),
         }
     }
 }

@@ -6,6 +6,7 @@ mod prelude;
 pub mod resourses;
 mod utils;
 
+use noisy_bevy::NoisyShaderPlugin;
 pub use prelude::*;
 
 #[derive(Parser, Debug, Default)]
@@ -112,6 +113,7 @@ fn main() {
         .add_plugins(bevy_egui::EguiPlugin)
         .add_plugins(DefaultPickingPlugins)
         .add_plugins(bevy_kira_audio::AudioPlugin)
+        .add_plugins(NoisyShaderPlugin)
         .add_plugins(Material2dPlugin::<ShapeMaterial>::default())
         .add_plugins(Material2dPlugin::<CurveMaterial>::default())
         .add_plugins(RonAssetPlugin::<PackedUnit>::new(&["unit.ron"]))
