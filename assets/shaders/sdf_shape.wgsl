@@ -37,7 +37,8 @@ const GLOW = 0.1;
 const AA = 0.01;
 @fragment
 fn fragment(in: MeshVertexOutput) -> @location(0) vec4<f32> {
-    let size = material.data[10].xy;
+    let padding = material.data[1].z;
+    let size = material.data[10].xy + vec2(padding);
     let alpha = material.data[10].z;
     let thickness = material.data[10].w * 0.03;
 

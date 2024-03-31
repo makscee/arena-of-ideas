@@ -69,6 +69,8 @@ pub enum RepresentationMaterial {
         fbm: Option<RepFbm>,
         #[serde(default = "f32_one_e")]
         alpha: Expression,
+        #[serde(default = "f32_zero_e")]
+        padding: Expression,
     },
     Text {
         #[serde(default = "f32_one_e")]
@@ -317,6 +319,7 @@ impl RepresentationMaterial {
                 shape_type,
                 fill,
                 alpha,
+                padding,
                 fbm,
             } => {
                 let handle = world.get::<Handle<ShapeMaterial>>(entity).unwrap().clone();
@@ -326,6 +329,8 @@ impl RepresentationMaterial {
                     .remove(&handle)
                 {
                     let mut refresh_mesh = false;
+                    let padding = padding.get_float(context, world).unwrap_or_default();
+                    material.data[1].z = padding;
                     match shape {
                         RepShape::Circle { radius } => {
                             let radius = radius.get_float(context, world).unwrap_or(1.0);
@@ -419,7 +424,9 @@ impl RepresentationMaterial {
                             .unwrap()
                             .get_mut(&mesh.0)
                         {
-                            *mesh = shape.shader_shape().mesh(material.data[10].xy());
+                            *mesh = shape
+                                .shader_shape()
+                                .mesh(material.data[10].xy() + vec2(padding, padding));
                         }
                     }
                     let _ = world
@@ -564,6 +571,7 @@ impl RepresentationMaterial {
                         shape_type,
                         fill,
                         alpha,
+                        padding,
                         fbm,
                     } => {
                         ui.horizontal(|ui| {
@@ -616,6 +624,7 @@ impl RepresentationMaterial {
                                 };
                             }
                         });
+                        show_tree("padding:", padding, context, ui, world);
                         show_tree("alpha:", alpha, context, ui, world);
                         match shape {
                             RepShape::Circle { radius } => {
