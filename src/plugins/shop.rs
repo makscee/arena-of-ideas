@@ -1,8 +1,8 @@
 use std::thread::sleep;
 
 use crate::module_bindings::{
-    run_buy, run_change_g, run_fuse, run_reroll, run_sell, run_submit_result, ArenaPool, ArenaRun,
-    TeamUnit,
+    run_buy, run_change_g, run_fuse, run_reroll, run_sell, run_stack, run_submit_result, ArenaPool,
+    ArenaRun, TeamUnit,
 };
 
 use super::*;
@@ -407,8 +407,33 @@ impl ShopPlugin {
             }
             world.resource_mut::<DraggedUnit>().0 = Some((dragged, new_action));
         } else {
-            for entity in UnitPlugin::collect_faction(Faction::Team, world) {
-                let state = VarState::get(entity, world);
+            let units = UnitPlugin::collect_faction(Faction::Team, world);
+            let stackable = UnitPlugin::collect_stack_targets(world);
+            const BTN_OFFSET: Vec2 = vec2(0.0, 1.5);
+            for entity in units {
+                if let Some(target) = stackable.get(&entity) {
+                    window("STACK")
+                        .id(entity)
+                        .set_width(120.0)
+                        .title_bar(false)
+                        .stroke(false)
+                        .entity_anchor(entity, Align2::CENTER_BOTTOM, BTN_OFFSET * 2.0, world)
+                        .show(ctx, |ui| {
+                            frame(ui, |ui| {
+                                ui.set_width(100.0);
+                                let text = "STACK".add_color(orange()).rich_text(ui).size(20.0);
+                                if ui.button(text).clicked() {
+                                    let target = UnitPlugin::get_id(*target, world).unwrap();
+                                    let e_id = UnitPlugin::get_id(entity, world).unwrap();
+                                    run_stack(target, e_id);
+                                    world.entity_mut(entity).despawn_recursive();
+                                    UnitPlugin::fill_slot_gaps(Faction::Team, world);
+                                    UnitPlugin::translate_to_slots(world);
+                                }
+                            });
+                        });
+                }
+                let state = VarState::try_get(entity, world)?;
                 if state.get_int(VarName::Slot).context("Failed to get slot")?
                     == UnitPlugin::get_closest_slot(cursor_pos, Faction::Team).0 as i32
                 {
@@ -417,7 +442,7 @@ impl ShopPlugin {
                         .set_width(120.0)
                         .title_bar(false)
                         .stroke(false)
-                        .entity_anchor(entity, Align2::CENTER_BOTTOM, vec2(0.0, 2.0), world)
+                        .entity_anchor(entity, Align2::CENTER_BOTTOM, BTN_OFFSET, world)
                         .show(ctx, |ui| {
                             frame(ui, |ui| {
                                 ui.set_width(100.0);
@@ -457,16 +482,42 @@ impl ShopPlugin {
                     )
                 }),
         );
+        const BTN_OFFSET: Vec2 = vec2(0.0, -1.8);
+        let stackable = UnitPlugin::collect_stack_targets(world);
         for offer in run.state.case {
             let id = offer.unit.id;
-
             if let Some(entity) = units.get(&id) {
+                if let Some(target) = stackable.get(entity) {
+                    window("STACK")
+                        .id(entity)
+                        .set_width(120.0)
+                        .title_bar(false)
+                        .stroke(false)
+                        .entity_anchor(*entity, Align2::CENTER_TOP, BTN_OFFSET * 1.5, world)
+                        .show(ctx, |ui| {
+                            frame(ui, |ui| {
+                                ui.set_width(100.0);
+                                let text = format!("-{} g", offer.price)
+                                    .add_color(yellow())
+                                    .push_colored(
+                                        "+stack"
+                                            .add_color(orange())
+                                            .set_style(ColoredStringStyle::Small),
+                                    )
+                                    .rich_text(ui);
+                                if ui.button(text).clicked() {
+                                    let target = UnitPlugin::get_id(*target, world).unwrap();
+                                    run_stack(target, id);
+                                }
+                            });
+                        });
+                }
                 window("BUY")
                     .id(entity)
                     .set_width(120.0)
                     .title_bar(false)
                     .stroke(false)
-                    .entity_anchor(*entity, Align2::CENTER_TOP, vec2(0.0, -1.8), world)
+                    .entity_anchor(*entity, Align2::CENTER_TOP, BTN_OFFSET, world)
                     .show(ctx, |ui| {
                         // ui.set_enabled(
                         //     offer.available

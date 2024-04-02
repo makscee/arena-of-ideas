@@ -418,6 +418,28 @@ impl UnitPlugin {
             .unwrap()
     }
 
+    pub fn collect_stack_targets(world: &mut World) -> HashMap<Entity, Entity> {
+        let units = HashMap::from_iter(UnitPlugin::collect_factions(
+            [Faction::Team, Faction::Shop].into(),
+            world,
+        ));
+        let names = HashMap::from_iter(units.clone().into_iter().map(|(u, _)| {
+            (
+                u,
+                VarState::get(u, world).get_string(VarName::Name).unwrap(),
+            )
+        }));
+        HashMap::from_iter(units.clone().into_iter().filter_map(|(u, _)| {
+            let name = names.get(&u).unwrap();
+            names.iter().find_map(|(e, n)| {
+                match name.eq(n) && !e.eq(&u) && Faction::Team.eq(units.get(e).unwrap()) {
+                    true => Some((u, *e)),
+                    false => None,
+                }
+            })
+        }))
+    }
+
     pub fn spawn_slot(slot: usize, faction: Faction, world: &mut World) {
         let pos = UnitPlugin::get_slot_position(Faction::Team, slot);
         if let Some(team) = TeamPlugin::find_entity(faction, world) {
