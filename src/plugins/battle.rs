@@ -1,6 +1,6 @@
 use bevy_egui::egui::Align2;
 
-use crate::module_bindings::{run_submit_result, ArenaRun};
+use crate::module_bindings::ArenaRun;
 
 use self::module_bindings::GlobalSettings;
 
@@ -37,7 +37,7 @@ impl BattlePlugin {
         bd.result = result;
         if bd.run_id.is_some() {
             if let Some(win) = result.is_win() {
-                run_submit_result(win);
+                ServerOperation::SubmitResult(win).send(world).unwrap();
             } else {
                 error!("Failed to get battle result");
             }

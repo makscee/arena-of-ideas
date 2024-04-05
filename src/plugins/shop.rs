@@ -1,9 +1,6 @@
 use std::thread::sleep;
 
-use crate::module_bindings::{
-    run_buy, run_change_g, run_fuse, run_reroll, run_sell, run_submit_result, ArenaPool, ArenaRun,
-    TeamUnit,
-};
+use crate::module_bindings::{run_change_g, ArenaPool, ArenaRun, TeamUnit};
 
 use self::module_bindings::{GlobalSettings, ShopOffer};
 
@@ -62,8 +59,6 @@ impl ShopData {
     }
 }
 
-const REROLL_PRICE: i32 = 1;
-
 impl Plugin for ShopPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(GameState::Shop), Self::on_enter)
@@ -89,8 +84,8 @@ impl Plugin for ShopPlugin {
 }
 
 impl ShopPlugin {
-    fn win() {
-        run_submit_result(true);
+    fn win(world: &mut World) {
+        ServerOperation::SubmitResult(true).send(world).unwrap();
         OperationsPlugin::add(|w| {
             Self::on_exit(w);
             Self::on_enter(w);
@@ -276,6 +271,7 @@ impl ShopPlugin {
 
         Area::new("reroll").fixed_pos(pos).show(ctx, |ui| {
             ui.set_width(120.0);
+            ui.set_enabled(!ServerPlugin::pending(world).is_some());
             frame(ui, |ui| {
                 "Reroll".add_color(white()).label(ui);
                 let text = format!(
@@ -288,7 +284,7 @@ impl ShopPlugin {
                 .rich_text(ui)
                 .size(20.0);
                 if ui.button(text).clicked() {
-                    Self::buy_reroll();
+                    Self::buy_reroll(world);
                 }
             });
         });
@@ -307,6 +303,7 @@ impl ShopPlugin {
         Area::new("battle button")
             .anchor(Align2::RIGHT_CENTER, [-40.0, -50.0])
             .show(ctx, |ui| {
+                ui.set_enabled(!ServerPlugin::pending(world).is_some());
                 if ui.button("START BATTLE").clicked() {
                     Self::go_to_battle(world);
                 }
@@ -364,10 +361,14 @@ impl ShopPlugin {
                                 ui[i].vertical_centered(|ui| {
                                     frame(ui, |ui| {
                                         if ui.button("ACCEPT").clicked() {
-                                            let fused = candidates.remove(i);
-                                            let a = UnitPlugin::get_id(*source, world).unwrap();
-                                            let b = UnitPlugin::get_id(*target, world).unwrap();
-                                            run_fuse(a, b, fused.into());
+                                            let fused = candidates.remove(i).into();
+                                            ServerOperation::Fuse {
+                                                a: *source,
+                                                b: *target,
+                                                fused,
+                                            }
+                                            .send(world)
+                                            .unwrap();
                                             candidates.clear();
                                         }
                                     });
@@ -508,21 +509,19 @@ impl ShopPlugin {
                         }
 
                         if is_shop {
-                            if let Some(id) = UnitPlugin::get_id(entity, world) {
-                                Self::draw_unit_button(
-                                    entity,
-                                    offset,
-                                    yellow(),
-                                    &format!("-{} g", gs.price_unit_buy.min(price)),
-                                    discount.or_else(|| Some("buy")),
-                                    false,
-                                    |_| {
-                                        run_buy(id);
-                                    },
-                                    ctx,
-                                    world,
-                                );
-                            }
+                            Self::draw_unit_button(
+                                entity,
+                                offset,
+                                yellow(),
+                                &format!("-{} g", gs.price_unit_buy.min(price)),
+                                discount.or_else(|| Some("buy")),
+                                false,
+                                |world| {
+                                    ServerOperation::Buy(entity).send(world).unwrap();
+                                },
+                                ctx,
+                                world,
+                            );
                         } else {
                             let state = VarState::try_get(entity, world)?;
                             if state.get_int(VarName::Slot).context("Failed to get slot")?
@@ -536,15 +535,7 @@ impl ShopPlugin {
                                     Some("sell"),
                                     false,
                                     |world| {
-                                        run_sell(
-                                            VarState::get(entity, world)
-                                                .get_int(VarName::Id)
-                                                .unwrap()
-                                                as u64,
-                                        );
-                                        world.entity_mut(entity).despawn_recursive();
-                                        UnitPlugin::fill_slot_gaps(Faction::Team, world);
-                                        UnitPlugin::translate_to_slots(world);
+                                        ServerOperation::Sell(entity).send(world).unwrap();
                                     },
                                     ctx,
                                     world,
@@ -624,6 +615,7 @@ impl ShopPlugin {
             .stroke(false)
             .entity_anchor(entity, Align2::CENTER_BOTTOM, *offset, world)
             .show(ctx, |ui| {
+                ui.set_enabled(!ServerPlugin::pending(world).is_some());
                 *offset += OFFSET_DELTA;
                 frame(ui, |ui| {
                     ui.set_width(100.0);
@@ -669,8 +661,8 @@ impl ShopPlugin {
         GameState::change(GameState::Battle, world);
     }
 
-    pub fn buy_reroll() {
-        run_reroll(false);
+    pub fn buy_reroll(world: &mut World) {
+        ServerOperation::Reroll.send(world).unwrap();
     }
 }
 
