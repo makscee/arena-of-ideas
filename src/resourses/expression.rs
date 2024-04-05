@@ -258,9 +258,6 @@ impl Expression {
                 let mut min_distance = 999999;
                 for unit in UnitPlugin::collect_faction(faction, world) {
                     let state = VarState::get(unit, world);
-                    if state.get_int(VarName::Hp)? <= 0 {
-                        continue;
-                    }
                     let slot = state.get_int(VarName::Slot)?;
                     let delta = (slot - own_slot).abs();
                     if delta == 0 {

@@ -54,6 +54,9 @@ impl TextColumn {
             });
     }
     pub fn add_colored(entity: Entity, text: ColoredString, world: &mut World) -> Result<()> {
+        if SkipVisual::active(world) {
+            return Ok(());
+        }
         world
             .get_mut::<Self>(entity)
             .context("No TextColumn component")?

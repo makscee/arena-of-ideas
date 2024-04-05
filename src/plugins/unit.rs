@@ -214,12 +214,16 @@ impl UnitPlugin {
     }
 
     pub fn is_dead(entity: Entity, world: &World) -> bool {
-        Context::from_owner(entity, world)
+        let context = Context::from_owner(entity, world);
+        context
             .get_var(VarName::Hp, world)
             .unwrap()
             .get_int()
             .unwrap()
-            <= 0
+            <= context
+                .get_var(VarName::Dmg, world)
+                .map(|v| v.get_int().unwrap_or_default())
+                .unwrap_or_default()
     }
 
     pub fn despawn_all_teams(world: &mut World) {

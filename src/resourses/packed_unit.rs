@@ -126,7 +126,8 @@ impl PackedUnit {
                 VarName::Description,
                 VarValue::String(self.description.clone()),
             )
-            .init(VarName::Description, VarValue::String(description));
+            .init(VarName::Description, VarValue::String(description))
+            .init(VarName::Dmg, VarValue::Int(0));
         self.trigger.inject_description(&mut state);
         let house_colors = self
             .houses

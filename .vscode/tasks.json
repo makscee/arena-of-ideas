@@ -201,7 +201,7 @@
 				"--mode",
 				"test",
 				"--path",
-				"ron/scenarios/already_dead.scenario.ron"
+				"ron/scenarios/strength.scenario.ron"
 			],
 			"group": {
 				"kind": "build"

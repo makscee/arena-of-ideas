@@ -54,9 +54,9 @@ impl Effect {
                 debug!("Value after map {value:?}");
                 let value = value.get_int()?;
                 if value > 0 {
-                    let new_hp = VarState::get(target, world).get_int(VarName::Hp)? - value;
+                    let new_dmg = VarState::get(target, world).get_int(VarName::Dmg)? + value;
                     VarState::get_mut(target, world)
-                        .push_back(VarName::Hp, VarChange::new(VarValue::Int(new_hp)));
+                        .push_back(VarName::Dmg, VarChange::new(VarValue::Int(new_dmg)));
                     VarState::get_mut(target, world).push_back(
                         VarName::LastAttacker,
                         VarChange::new(VarValue::Entity(context.owner())),
@@ -86,7 +86,7 @@ impl Effect {
                         VarName::LastAttacker,
                         VarChange::new(VarValue::Entity(context.owner())),
                     )
-                    .change_int(VarName::Hp, -9999999);
+                    .change_int(VarName::Dmg, 9999999);
                 TextColumn::add(target, "Kill", red(), world)?;
             }
             Effect::Debug(msg) => {
