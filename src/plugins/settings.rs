@@ -1,3 +1,5 @@
+use bevy::window::WindowResized;
+
 use super::*;
 
 pub struct SettingsPlugin;
@@ -8,6 +10,7 @@ pub struct SettingsData {
     pub expanded_hint: bool,
     pub always_show_card: bool,
     pub window_mode: WindowMode,
+    pub resolution: Vec2,
 }
 
 #[derive(
@@ -23,8 +26,9 @@ pub enum WindowMode {
 impl Default for SettingsData {
     fn default() -> Self {
         Self {
-            master_volume: 0.5,
+            master_volume: 0.0,
             expanded_hint: false,
+            resolution: vec2(1280.0, 720.0),
             window_mode: default(),
             always_show_card: default(),
         }
@@ -33,7 +37,8 @@ impl Default for SettingsData {
 
 impl Plugin for SettingsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, Self::init);
+        app.add_systems(Startup, Self::init)
+            .add_systems(Update, Self::on_resize);
     }
 }
 
@@ -115,8 +120,24 @@ impl SettingsPlugin {
                     });
                 });
                 frame(ui, |ui| {
+                    ui.columns(3, |ui| {
+                        "resolution".to_colored().label(&mut ui[0]);
+                        ui[1].vertical_centered_justified(|ui| {
+                            DragValue::new(&mut data.resolution.x).ui(ui);
+                        });
+                        ui[2].vertical_centered_justified(|ui| {
+                            DragValue::new(&mut data.resolution.y).ui(ui);
+                        });
+                    })
+                });
+                frame(ui, |ui| {
+                    if ui.button_red("RESET TO DEFAULTS").clicked() {
+                        data = default();
+                    }
+                });
+                frame(ui, |ui| {
                     if ui
-                        .button("CLEAR DATA")
+                        .button_red("CLEAR DATA")
                         .on_hover_text("Clear saved game and other data")
                         .clicked()
                     {
@@ -124,9 +145,27 @@ impl SettingsPlugin {
                         SettingsData::default().save(world).unwrap();
                     }
                 });
+                ui.add_space(30.0);
+                frame(ui, |ui| {
+                    if ui.button_primary("APPLY").clicked() {
+                        Self::updated(data, world);
+                    }
+                });
             });
         if !data.eq(SettingsData::get(world)) {
-            Self::updated(data, world);
+            data.save(world).unwrap();
+        }
+    }
+
+    fn on_resize(mut resize_reader: EventReader<WindowResized>) {
+        for e in resize_reader.read() {
+            debug!("On resize {e:?}");
+            let size = vec2(e.width, e.height);
+            OperationsPlugin::add(move |world| {
+                let mut settings = SettingsData::load(world);
+                settings.resolution = size;
+                settings.save(world).unwrap();
+            });
         }
     }
 
@@ -143,6 +182,7 @@ impl SettingsPlugin {
                 WindowMode::FullScreen => bevy::window::WindowMode::Fullscreen,
                 WindowMode::BorderlessFullScreen => bevy::window::WindowMode::BorderlessFullscreen,
             };
+            window.resolution.set(data.resolution.x, data.resolution.y);
         }
     }
 }
