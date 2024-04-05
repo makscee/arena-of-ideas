@@ -23,6 +23,10 @@ impl HeroEditorPlugin {
         let mut pd = PersistentData::load(world);
         pd.hero_editor_data.active = None;
         pd.hero_editor_data.load(world);
+        world.insert_resource(HeroEditorHistory {
+            frames: vec![(0.0, pd.hero_editor_data.clone())],
+            ind: default(),
+        });
         pd.save(world).unwrap();
         Pools::get_mut(world).only_local_cache = true;
     }
@@ -50,18 +54,21 @@ impl HeroEditorPlugin {
     fn input(world: &mut World) {
         let mut pd = PersistentData::load(world);
         let ed = &mut pd.hero_editor_data;
-        if world
-            .resource::<ButtonInput<KeyCode>>()
-            .just_pressed(KeyCode::ArrowUp)
-        {
+        let input = world.resource::<ButtonInput<KeyCode>>();
+        if input.just_pressed(KeyCode::ArrowUp) {
             ed.camera_scale *= 1.2;
             pd.save(world).unwrap();
-        } else if world
-            .resource::<ButtonInput<KeyCode>>()
-            .just_pressed(KeyCode::ArrowDown)
-        {
+        } else if input.just_pressed(KeyCode::ArrowDown) {
             ed.camera_scale /= 1.2;
             pd.save(world).unwrap();
+        } else if input.pressed(KeyCode::SuperLeft) && input.pressed(KeyCode::ControlLeft) {
+            if input.just_pressed(KeyCode::KeyZ) {
+                if input.pressed(KeyCode::ShiftLeft) {
+                    HeroEditorHistory::redo(world);
+                } else {
+                    HeroEditorHistory::undo(world);
+                }
+            }
         }
     }
 
@@ -355,6 +362,56 @@ impl HeroEditorPlugin {
     }
 }
 
+#[derive(Serialize, Deserialize, Resource, Default)]
+struct HeroEditorHistory {
+    frames: Vec<(f32, HeroEditorData)>,
+    ind: usize,
+}
+
+impl HeroEditorHistory {
+    fn push(ed: HeroEditorData, world: &mut World) {
+        const CD: f32 = 0.5;
+        const LIMIT: usize = 100;
+        let ts = world.resource::<Time>().elapsed_seconds();
+        let mut heh = world.resource_mut::<HeroEditorHistory>();
+        if heh.frames.last().is_some_and(|(t, _)| ts - *t < CD) {
+            return;
+        }
+        debug!("Push frame, total frames: {}", heh.frames.len());
+        heh.frames.push((ts, ed));
+        heh.ind = 0;
+        if heh.frames.len() > LIMIT {
+            heh.frames.remove(0);
+        }
+    }
+    fn undo(world: &mut World) {
+        let mut pd = PersistentData::load(world);
+        let mut heh = world.resource_mut::<HeroEditorHistory>();
+        heh.ind += 1;
+        debug!("Undo {}, total frames: {}", heh.ind, heh.frames.len());
+        if let Some((_, data)) = heh.frames.get(heh.frames.len() - heh.ind - 1) {
+            let mut data = data.clone();
+            data.active = None;
+            data.load(world);
+            pd.hero_editor_data = data;
+            pd.save(world).unwrap();
+        }
+    }
+    fn redo(world: &mut World) {
+        let mut pd = PersistentData::load(world);
+        let mut heh = world.resource_mut::<HeroEditorHistory>();
+        heh.ind -= 1;
+        debug!("Redo {}, total frames: {}", heh.ind, heh.frames.len());
+        if let Some((_, data)) = heh.frames.get(heh.frames.len() - heh.ind - 1) {
+            let mut data = data.clone();
+            data.active = None;
+            data.load(world);
+            pd.hero_editor_data = data;
+            pd.save(world).unwrap();
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct HeroEditorData {
     pub active: Option<(Entity, PackedUnit)>,
@@ -397,9 +454,10 @@ impl HeroEditorData {
             };
             units.push(packed);
         }
+        HeroEditorHistory::push(self.clone(), world);
     }
 
-    fn load(&mut self, world: &mut World) {
+    fn load(&self, world: &mut World) {
         debug!("Load hero editor data start");
         UnitPlugin::despawn_all_teams(world);
         let left = TeamPlugin::spawn(Faction::Left, world);
