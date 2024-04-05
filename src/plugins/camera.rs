@@ -43,7 +43,7 @@ impl CameraPlugin {
     fn respawn_camera(mut commands: Commands, data: Option<ResMut<CameraData>>) {
         let mut camera = Camera2dBundle::default();
         camera.projection.scaling_mode = ScalingMode::FixedVertical(15.0);
-        let entity = commands.spawn((camera, RaycastPickCamera::default())).id();
+        let entity = commands.spawn(camera).id();
         if let Some(data) = data {
             commands.entity(data.entity).despawn_recursive();
         }
@@ -56,7 +56,7 @@ impl CameraPlugin {
     }
 
     fn adjust_to_fit_units(
-        visible: Query<(&Transform, &ComputedVisibility)>,
+        visible: Query<(&Transform, &InheritedVisibility)>,
         mut projection: Query<(&mut OrthographicProjection, &Camera)>,
         mut data: ResMut<CameraData>,
         time: Res<Time>,
@@ -67,8 +67,8 @@ impl CameraPlugin {
             .logical_target_size()
             .map(|v| v.x / v.y)
             .unwrap_or(1.0);
-        for (t, cv) in visible.iter() {
-            if cv.is_visible_in_hierarchy() {
+        for (t, iv) in visible.iter() {
+            if iv.get() {
                 width = width
                     .max((t.translation.x.abs() + 1.5) * 2.0)
                     .max(((t.translation.y.abs() + 2.0) * aspect_ratio) * 2.0);

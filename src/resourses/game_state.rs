@@ -30,7 +30,9 @@ impl GameState {
     }
     pub fn exit(&self, world: &mut World) {
         match self {
-            GameState::MainMenu | GameState::Login => world.send_event(AppExit),
+            GameState::MainMenu | GameState::Login => {
+                world.send_event(AppExit);
+            }
             GameState::CustomBattle | GameState::LastBattle | GameState::Battle => {
                 GameTimer::get().skip_to_end();
             }

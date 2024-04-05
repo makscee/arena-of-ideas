@@ -11,7 +11,7 @@ pub use bevy::{
     app::*,
     asset::*,
     core::*,
-    core_pipeline::{clear_color::*, core_2d::*},
+    core_pipeline::core_2d::*,
     ecs::{
         component::*,
         entity::*,
@@ -28,7 +28,7 @@ pub use bevy::{
     log::LogPlugin,
     math::*,
     math::{vec2, vec3},
-    reflect::{Reflect, TypePath, TypeUuid},
+    reflect::{Reflect, TypePath},
     render::{
         camera::{Camera, OrthographicProjection, ScalingMode},
         color::*,

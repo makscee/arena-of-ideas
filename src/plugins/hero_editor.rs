@@ -50,12 +50,15 @@ impl HeroEditorPlugin {
     fn input(world: &mut World) {
         let mut pd = PersistentData::load(world);
         let ed = &mut pd.hero_editor_data;
-        if world.resource::<Input<KeyCode>>().just_pressed(KeyCode::Up) {
+        if world
+            .resource::<ButtonInput<KeyCode>>()
+            .just_pressed(KeyCode::ArrowUp)
+        {
             ed.camera_scale *= 1.2;
             pd.save(world).unwrap();
         } else if world
-            .resource::<Input<KeyCode>>()
-            .just_pressed(KeyCode::Down)
+            .resource::<ButtonInput<KeyCode>>()
+            .just_pressed(KeyCode::ArrowDown)
         {
             ed.camera_scale /= 1.2;
             pd.save(world).unwrap();

@@ -7,7 +7,7 @@ use super::*;
 
 pub fn just_pressed(key: KeyCode, world: &World) -> bool {
     world
-        .get_resource::<Input<KeyCode>>()
+        .get_resource::<ButtonInput<KeyCode>>()
         .unwrap()
         .just_pressed(key)
 }

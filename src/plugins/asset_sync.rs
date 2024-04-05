@@ -66,6 +66,8 @@ fn do_sync(world: &mut World) {
             }
             spacetimedb_sdk::reducer::Status::OutOfEnergy => panic!(),
         };
-        OperationsPlugin::add(|w| w.send_event(AppExit));
+        OperationsPlugin::add(|w| {
+            w.send_event(AppExit);
+        });
     });
 }

@@ -235,7 +235,7 @@ impl UnitPlugin {
     pub fn despawn_all_units(world: &mut World) {
         debug!("Called despawn all units");
         for entity in world
-            .query_filtered::<Entity, Or<(&Unit, &Corpse)>>()
+            .query_filtered::<Entity, Or<(With<Unit>, With<Corpse>)>>()
             .iter(world)
             .collect_vec()
         {
@@ -409,7 +409,7 @@ impl UnitPlugin {
         };
         let show_card = SettingsData::get(world).always_show_card;
         for (entity, state) in world
-            .query_filtered::<(Entity, &VarState), Or<(&Unit, &Corpse)>>()
+            .query_filtered::<(Entity, &VarState), Or<(With<Unit>, With<Corpse>)>>()
             .iter(world)
         {
             let statuses =

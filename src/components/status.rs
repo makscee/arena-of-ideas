@@ -1,5 +1,3 @@
-use bevy::ecs::world::EntityMut;
-
 use crate::resourses::event::Event;
 
 use super::*;
@@ -64,11 +62,11 @@ impl PackedStatus {
 }
 
 impl Status {
-    pub fn spawn_new(name: String, trigger: Trigger, world: &mut World) -> EntityMut {
+    pub fn spawn_new(name: String, trigger: Trigger, world: &mut World) -> EntityWorldMut {
         Status { name, trigger }.spawn(world)
     }
 
-    pub fn spawn(self, world: &mut World) -> EntityMut {
+    pub fn spawn(self, world: &mut World) -> EntityWorldMut {
         world.spawn((Name::from(self.name.clone()), self))
     }
 

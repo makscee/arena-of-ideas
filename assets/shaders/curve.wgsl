@@ -1,17 +1,19 @@
-#import bevy_sprite::mesh2d_view_bindings globals
-#import bevy_sprite::mesh2d_view_bindings view
-#import bevy_sprite::mesh2d_vertex_output MeshVertexOutput
+#import bevy_sprite::{
+    mesh2d_view_bindings::globals,
+    mesh2d_view_bindings::view,
+    mesh2d_vertex_output::VertexOutput,
+}
 
 struct CurveMaterial {
     color: vec4<f32>,
     aa: f32,
 };
 
-@group(1) @binding(0)
+@group(2) @binding(0)
 var<uniform> material: CurveMaterial;
 
 @fragment
-fn fragment(in: MeshVertexOutput) -> @location(0) vec4<f32> {
+fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     let color = material.color.rgb;
     return vec4<f32>(color, smoothstep(1.0, 1.0 - material.aa, abs(in.uv.y)));
 }

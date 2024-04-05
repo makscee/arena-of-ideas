@@ -2,8 +2,7 @@ use crate::module_bindings::{StatusCharges, TableUnit};
 
 use super::*;
 
-#[derive(Deserialize, Serialize, TypeUuid, TypePath, Debug, Clone, PartialEq, Default)]
-#[uuid = "028620be-3b01-4e20-b62e-a631f0db4777"]
+#[derive(Asset, Deserialize, Serialize, TypePath, Debug, Clone, PartialEq, Default)]
 #[serde(deny_unknown_fields)]
 pub struct PackedUnit {
     #[serde(default = "default_text")]
@@ -71,7 +70,6 @@ impl PackedUnit {
             let mut emut = world.entity_mut(entity);
             emut.get_mut::<Transform>().unwrap().translation.z += 100.0;
             emut.insert(PickableBundle::default())
-                .insert(RaycastPickTarget::default())
                 .insert(On::<Pointer<Over>>::run(UnitPlugin::hover_unit))
                 .insert(On::<Pointer<Out>>::run(UnitPlugin::unhover_unit));
             if draggable {

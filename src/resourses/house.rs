@@ -1,7 +1,6 @@
 use super::*;
 
-#[derive(Serialize, Deserialize, Clone, Debug, TypeUuid, TypePath)]
-#[uuid = "96ef0a80-906b-458c-8c3e-3d91cfb62276"]
+#[derive(Asset, Serialize, Deserialize, Clone, Debug, TypePath)]
 pub struct House {
     pub name: String,
     pub color: HexColor,

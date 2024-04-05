@@ -78,8 +78,8 @@ impl Plugin for ShopPlugin {
                 Update,
                 ((
                     Self::ui.after(PanelsPlugin::ui),
-                    Self::win.run_if(input_just_pressed(KeyCode::V)),
-                    Self::fuse_front.run_if(input_just_pressed(KeyCode::F)),
+                    Self::win.run_if(input_just_pressed(KeyCode::KeyV)),
+                    Self::fuse_front.run_if(input_just_pressed(KeyCode::KeyF)),
                 )
                     .run_if(in_state(GameState::Shop)),),
             );
@@ -156,7 +156,7 @@ impl ShopPlugin {
     }
 
     fn input(world: &mut World) {
-        if just_pressed(KeyCode::G, world) {
+        if just_pressed(KeyCode::KeyG, world) {
             run_change_g(10);
         }
     }

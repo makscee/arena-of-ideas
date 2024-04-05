@@ -26,7 +26,9 @@ fn archive_save() {
 
     path.push(ARCHIVE_FILE);
     std::fs::write(&path, pool).unwrap();
-    OperationsPlugin::add(|w| w.send_event(AppExit));
+    OperationsPlugin::add(|w| {
+        w.send_event(AppExit);
+    });
 }
 
 fn archive_upload() {
@@ -43,7 +45,9 @@ fn archive_upload() {
             upload_pool(pool);
             once_on_upload_pool(|_, _, s, _| {
                 debug!("{s:?}");
-                OperationsPlugin::add(|w| w.send_event(AppExit));
+                OperationsPlugin::add(|w| {
+                    w.send_event(AppExit);
+                });
             });
         }
     }

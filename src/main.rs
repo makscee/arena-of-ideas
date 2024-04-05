@@ -6,6 +6,7 @@ mod prelude;
 pub mod resourses;
 mod utils;
 
+use bevy::render::camera::ClearColor;
 use noisy_bevy::NoisyShaderPlugin;
 pub use prelude::*;
 
@@ -56,15 +57,11 @@ fn main() {
         RunMode::Upload => set_after_login_state(GameState::ArenaArchiveUpload),
         _ => {}
     }
-    let mut default_plugins = DefaultPlugins
-        .set(AssetPlugin {
-            watch_for_changes: ChangeWatcher::with_delay(Duration::from_millis(100)),
-            ..default()
-        })
-        .set(LogPlugin {
-            level: bevy::log::Level::DEBUG,
-            filter: "info,debug,wgpu_core=warn,wgpu_hal=warn,naga=warn".into(),
-        });
+    let mut default_plugins = DefaultPlugins.set(LogPlugin {
+        level: bevy::log::Level::DEBUG,
+        filter: "info,debug,wgpu_core=warn,wgpu_hal=warn,naga=warn".into(),
+        ..default()
+    });
     match args.mode {
         RunMode::Regular
         | RunMode::Offline
@@ -93,21 +90,24 @@ fn main() {
         set_offline(true);
     }
     let mut app = App::new();
-    app.add_state::<GameState>()
+    app.init_state::<GameState>()
         .insert_resource(ClearColor(Color::rgb(0.1, 0.1, 0.1)))
         .insert_resource(PkvStore::new("makscee", "arena_of_ideas"))
         .add_plugins((default_plugins, FrameTimeDiagnosticsPlugin))
-        .add_loading_state(LoadingState::new(GameState::Loading).continue_to_state(next_state))
         .add_loading_state(
-            LoadingState::new(GameState::TestsLoading).continue_to_state(GameState::BattleTest),
+            LoadingState::new(GameState::Loading)
+                .continue_to_state(next_state)
+                .load_collection::<Options>()
+                .load_collection::<Pools>()
+                .with_dynamic_assets_file::<StandardDynamicAssetCollection>(
+                    "ron/_dynamic.assets.ron",
+                ),
         )
-        .add_dynamic_collection_to_loading_state::<_, StandardDynamicAssetCollection>(
-            GameState::Loading,
-            "ron/_dynamic.assets.ron",
+        .add_loading_state(
+            LoadingState::new(GameState::TestsLoading)
+                .continue_to_state(GameState::BattleTest)
+                .load_collection::<TestScenarios>(),
         )
-        .add_collection_to_loading_state::<_, Options>(GameState::Loading)
-        .add_collection_to_loading_state::<_, Pools>(GameState::Loading)
-        .add_collection_to_loading_state::<_, TestScenarios>(GameState::TestsLoading)
         .add_systems(PreUpdate, update)
         .add_systems(PostUpdate, detect_changes)
         .add_plugins(bevy_egui::EguiPlugin)
@@ -194,11 +194,11 @@ fn update(time: Res<Time>, audio: Res<AudioData>) {
 }
 
 fn input_world(world: &mut World) {
-    let input = world.get_resource::<Input<KeyCode>>().unwrap();
+    let input = world.get_resource::<ButtonInput<KeyCode>>().unwrap();
     if !input.pressed(KeyCode::ControlLeft) {
         return;
     }
-    if input.just_pressed(KeyCode::R) {
+    if input.just_pressed(KeyCode::KeyR) {
         GameState::change(GameState::Restart, world);
     }
 }
@@ -211,16 +211,16 @@ fn detect_changes(
     mut state: ResMut<NextState<GameState>>,
 ) {
     if unit_events
-        .into_iter()
+        .read()
         .any(|x| matches!(x, AssetEvent::Modified { .. }))
         || rep_events
-            .into_iter()
+            .read()
             .any(|x| matches!(x, AssetEvent::Modified { .. }))
         || battle_state_events
-            .into_iter()
+            .read()
             .any(|x| matches!(x, AssetEvent::Modified { .. }))
         || vfx_events
-            .into_iter()
+            .read()
             .any(|x| matches!(x, AssetEvent::Modified { .. }))
     {
         state.set(GameState::Loading)
@@ -239,7 +239,7 @@ fn show_build_version(world: &mut World) {
         .show(ctx, |ui| {
             if let Some(fps) = world
                 .resource::<DiagnosticsStore>()
-                .get(FrameTimeDiagnosticsPlugin::FPS)
+                .get(&FrameTimeDiagnosticsPlugin::FPS)
             {
                 if let Some(fps) = fps.smoothed() {
                     ui.label(format!("fps: {fps:.0}"));

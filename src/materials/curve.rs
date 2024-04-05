@@ -2,8 +2,7 @@ use bevy::render::render_resource::{PolygonMode, RenderPipelineDescriptor};
 
 use super::*;
 
-#[derive(AsBindGroup, TypeUuid, TypePath, Debug, Clone)]
-#[uuid = "e50d51b6-c3bd-44fd-a3d4-149afb164c3d"]
+#[derive(Asset, AsBindGroup, TypePath, Debug, Clone)]
 pub struct CurveMaterial {
     #[uniform(0)]
     pub color: Color,

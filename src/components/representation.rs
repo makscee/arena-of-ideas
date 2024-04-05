@@ -1,5 +1,5 @@
 use bevy::{
-    prelude::{Bezier, CubicGenerator},
+    prelude::{CubicBezier, CubicGenerator},
     sprite::Mesh2dHandle,
     transform::TransformBundle,
 };
@@ -10,18 +10,8 @@ use ron::ser::{to_string_pretty, PrettyConfig};
 use super::*;
 
 #[derive(
-    Serialize,
-    TypeUuid,
-    TypePath,
-    Deserialize,
-    Debug,
-    Component,
-    Resource,
-    Clone,
-    Default,
-    PartialEq,
+    Asset, Serialize, TypePath, Deserialize, Debug, Component, Resource, Clone, Default, PartialEq,
 )]
-#[uuid = "cc360991-638e-4066-af03-f4f8abbbc450"]
 #[serde(deny_unknown_fields)]
 pub struct Representation {
     pub material: RepresentationMaterial,
@@ -263,7 +253,7 @@ impl RepresentationMaterial {
                 let material = materials.add(material);
                 let mesh = world
                     .resource_mut::<Assets<Mesh>>()
-                    .add(Mesh::new(default()));
+                    .add(Mesh::new(default(), default()));
                 world.entity_mut(entity).insert(MaterialMesh2dBundle {
                     material,
                     mesh: mesh.into(),
@@ -292,7 +282,7 @@ impl RepresentationMaterial {
                 let material = materials.add(material);
                 let mesh = world
                     .resource_mut::<Assets<Mesh>>()
-                    .add(Mesh::new(PrimitiveTopology::TriangleStrip));
+                    .add(Mesh::new(PrimitiveTopology::TriangleStrip, default()));
                 world.entity_mut(entity).insert(MaterialMesh2dBundle {
                     material,
                     mesh: mesh.into(),
@@ -424,15 +414,16 @@ impl RepresentationMaterial {
                             .unwrap()
                             .get_mut(&mesh.0)
                         {
-                            *mesh = shape
-                                .shader_shape()
-                                .mesh(material.data[10].xy() + vec2(padding, padding));
+                            let size = material.data[10].xy() + vec2(padding, padding);
+                            if size.x > 0.0 && size.y >= 0.0 {
+                                *mesh = shape.shader_shape().mesh(size);
+                            }
                         }
                     }
                     let _ = world
                         .get_resource_mut::<Assets<ShapeMaterial>>()
                         .unwrap()
-                        .set(handle, material);
+                        .insert(handle, material);
                 }
             }
             RepresentationMaterial::Text {
@@ -493,7 +484,7 @@ impl RepresentationMaterial {
                     .unwrap_or(vec2(1.0, 0.0));
                 let control_delta = vec2(0.0, curvature);
                 let curve =
-                    Bezier::new([[Vec2::ZERO, control_delta, delta + control_delta, delta]])
+                    CubicBezier::new([[Vec2::ZERO, control_delta, delta + control_delta, delta]])
                         .to_curve();
                 let mut points: Vec<Vec3> = default();
                 let mut uvs: Vec<Vec2> = default();

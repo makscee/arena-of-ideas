@@ -409,8 +409,8 @@ impl VarState {
         ctx: &egui::Context,
         world: &World,
     ) {
-        if let Some(visibility) = world.get::<ComputedVisibility>(entity) {
-            if !visibility.is_visible() {
+        if let Some(visibility) = world.get::<ViewVisibility>(entity) {
+            if !visibility.get() {
                 return;
             }
         }

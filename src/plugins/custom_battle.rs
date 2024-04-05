@@ -31,8 +31,7 @@ impl CustomBattlePlugin {
     }
 }
 
-#[derive(Deserialize, TypeUuid, TypePath, Debug, Clone)]
-#[uuid = "6cb61798-ec2c-4875-bec8-464c4f56c229"]
+#[derive(Asset, Deserialize, TypePath, Debug, Clone)]
 pub struct CustomBattleData {
     pub left: PackedTeam,
     pub right: PackedTeam,

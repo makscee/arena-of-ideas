@@ -8,8 +8,7 @@ pub struct TestScenarios {
     pub tests_handles: HashMap<String, Handle<TestScenario>>,
 }
 
-#[derive(Deserialize, TypeUuid, TypePath, Debug, Clone)]
-#[uuid = "d112970f-9d3f-412d-b7a3-25db4f52c6b8"]
+#[derive(Asset, Deserialize, TypePath, Debug, Clone)]
 pub struct TestScenario {
     pub left: PackedTeam,
     pub right: PackedTeam,

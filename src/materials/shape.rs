@@ -1,11 +1,13 @@
-use bevy::render::{mesh::MeshVertexBufferLayout, render_resource::RenderPipelineDescriptor};
+use bevy::{
+    math::primitives::{Circle, Rectangle},
+    render::{mesh::MeshVertexBufferLayout, render_resource::RenderPipelineDescriptor},
+};
 use convert_case::Casing;
 use strum_macros::Display;
 
 use super::*;
 
-#[derive(AsBindGroup, TypeUuid, TypePath, Debug, Clone)]
-#[uuid = "ec09cb82-5a6b-43cd-ab8a-56d0979f7cc4"]
+#[derive(Asset, AsBindGroup, TypePath, Debug, Clone)]
 #[bind_group_data(ShapeMaterialKey)]
 pub struct ShapeMaterial {
     #[uniform(0)]
@@ -52,8 +54,8 @@ impl ShaderShape {
     }
     pub fn mesh(&self, size: Vec2) -> Mesh {
         match self {
-            ShaderShape::Rectangle => Mesh::from(bevy::render::mesh::shape::Quad::new(size)),
-            ShaderShape::Circle => Mesh::from(bevy::render::mesh::shape::Circle::new(size.x)),
+            ShaderShape::Rectangle => Mesh::from(Rectangle::new(size.x, size.y)),
+            ShaderShape::Circle => Mesh::from(Circle::new(size.x)),
         }
     }
 }

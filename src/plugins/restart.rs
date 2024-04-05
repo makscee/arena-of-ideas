@@ -11,10 +11,19 @@ impl Plugin for RestartPlugin {
 impl RestartPlugin {
     #[allow(clippy::type_complexity)]
     fn restart(
-        query: Query<Entity, Or<(&Unit, &Corpse, &Representation, &VarState, &Status)>>,
+        query: Query<
+            Entity,
+            Or<(
+                With<Unit>,
+                With<Corpse>,
+                With<Representation>,
+                With<VarState>,
+                With<Status>,
+            )>,
+        >,
         mut commands: Commands,
         mut state: ResMut<NextState<GameState>>,
-        mut time: ResMut<Time>,
+        mut time: ResMut<Time<Real>>,
     ) {
         for unit in query.iter() {
             commands.entity(unit).despawn_recursive();

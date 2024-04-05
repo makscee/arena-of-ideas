@@ -1,7 +1,6 @@
 use super::*;
 
-#[derive(Deserialize, Serialize, Debug, Clone, TypeUuid, TypePath)]
-#[uuid = "4269cdf4-b418-4851-99ca-ce144438d2a3"]
+#[derive(Asset, Deserialize, Serialize, Debug, Clone, TypePath)]
 pub struct Vfx {
     pub anim: Anim,
     pub representation: Representation,

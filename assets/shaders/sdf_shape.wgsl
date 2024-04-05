@@ -1,14 +1,16 @@
-#import bevy_sprite::mesh2d_view_bindings globals
-#import bevy_sprite::mesh2d_view_bindings view
-#import bevy_sprite::mesh2d_vertex_output MeshVertexOutput
-#import noisy_bevy fbm_simplex_2d
+#import bevy_sprite::{
+    mesh2d_view_bindings::globals,
+    mesh2d_view_bindings::view,
+    mesh2d_vertex_output::VertexOutput,
+}
+#import noisy_bevy::fbm_simplex_2d
 
 struct ShapeMaterial {
     colors: array<vec4<f32>, 11>,
     data: array<vec4<f32>, 11>,
 };
 
-@group(1) @binding(0)
+@group(2) @binding(0)
 var<uniform> material: ShapeMaterial;
 
 #ifdef RECTANGLE
@@ -36,7 +38,7 @@ fn get_circle_t(center: vec2<f32>, radius: f32, p: vec2<f32>) -> f32 {
 const GLOW = 0.1;
 const AA = 0.01;
 @fragment
-fn fragment(in: MeshVertexOutput) -> @location(0) vec4<f32> {
+fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     let padding = material.data[1].z;
     let size = material.data[10].xy + vec2(padding);
     let alpha = material.data[10].z;

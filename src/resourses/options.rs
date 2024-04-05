@@ -16,8 +16,7 @@ pub struct Options {
     pub options: Handle<OptionsData>,
 }
 
-#[derive(Serialize, Deserialize, Debug, TypeUuid, TypePath)]
-#[uuid = "e96699ce-cabf-461f-86df-913957687d72"]
+#[derive(Asset, Serialize, Deserialize, Debug, TypePath)]
 pub struct Animations(HashMap<AnimationType, Anim>);
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy)]
@@ -32,8 +31,7 @@ impl Animations {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, TypeUuid, TypePath)]
-#[uuid = "aa3e27a5-20e4-4c3e-9af2-672e23ec9751"]
+#[derive(Asset, Serialize, Deserialize, Debug, TypePath)]
 pub struct OptionsData {
     pub address: String,
     pub server: String,
