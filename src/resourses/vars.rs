@@ -68,6 +68,7 @@ pub enum VarName {
     Id,
     Caster,
     Damage,
+    Price,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Reflect, PartialEq, Default)]

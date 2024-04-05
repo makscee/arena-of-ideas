@@ -1,6 +1,6 @@
 use itertools::Itertools;
 use rand::seq::IteratorRandom;
-use rand::thread_rng;
+use rand::{thread_rng, Rng};
 
 use crate::unit::TableUnit;
 
@@ -33,6 +33,7 @@ pub struct TeamUnit {
 #[derive(SpacetimeType, Clone)]
 pub struct ShopOffer {
     available: bool,
+    discount: bool,
     unit: TeamUnit,
 }
 
@@ -111,7 +112,13 @@ fn run_reroll(ctx: ReducerContext, force: bool) -> Result<(), String> {
 #[spacetimedb(reducer)]
 fn run_buy(ctx: ReducerContext, id: u64) -> Result<(), String> {
     let (_, mut run) = ArenaRun::get_by_identity(&ctx.sender)?;
-    run.buy(id, 0, GlobalSettings::get().price_unit_buy, false)?;
+    let gs = GlobalSettings::get();
+    let price = if run.find_offer(id)?.1.discount {
+        gs.price_unit_sell
+    } else {
+        gs.price_unit_buy
+    };
+    run.buy(id, 0, price, false)?;
     run.save();
     Ok(())
 }
@@ -141,7 +148,12 @@ fn run_stack(ctx: ReducerContext, target: u64, source: u64) -> Result<(), String
         // }
         ind
     } else {
-        let price = GlobalSettings::get().price_unit_buy_stack;
+        let gs = GlobalSettings::get();
+        let price = if run.find_offer(source)?.1.discount {
+            gs.price_unit_sell
+        } else {
+            gs.price_unit_buy_stack
+        };
         if !run.can_afford(price) {
             return Err("Can't afford".to_owned());
         }
@@ -257,6 +269,8 @@ impl ArenaRun {
                     .map(|unit| ShopOffer {
                         available: true,
                         unit: TeamUnit { id, unit },
+                        discount: (&mut thread_rng())
+                            .gen_bool(GlobalSettings::get().discount_chance),
                     })
                     .unwrap(),
             );
@@ -281,12 +295,15 @@ impl ArenaRun {
         let index = self.position_team(id)?;
         Ok((index, &self.state.team[index]))
     }
-    fn find_case(&self, id: u64) -> Result<(usize, &TeamUnit), String> {
+    fn find_offer(&self, id: u64) -> Result<(usize, &ShopOffer), String> {
         let index = self.position_case(id)?;
-        Ok((index, &self.state.case[index].unit))
+        Ok((index, &self.state.case[index]))
     }
     fn find_unit(&self, id: u64) -> Result<&TeamUnit, String> {
-        Ok(self.find_team(id).or_else(|_| self.find_case(id))?.1)
+        Ok(self
+            .find_team(id)
+            .or_else(|_| self.find_offer(id).map(|(i, o)| (i, &o.unit)))?
+            .1)
     }
 
     fn buy(

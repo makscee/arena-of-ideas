@@ -26,6 +26,7 @@ pub struct GlobalSettings {
     pub shop_slots_per_round: f32,
     pub g_per_round_min: i64,
     pub g_per_round_max: i64,
+    pub discount_chance: f64,
 }
 
 impl TableType for GlobalSettings {
@@ -81,5 +82,9 @@ impl GlobalSettings {
     #[allow(unused)]
     pub fn filter_by_g_per_round_max(g_per_round_max: i64) -> TableIter<Self> {
         Self::filter(|row| row.g_per_round_max == g_per_round_max)
+    }
+    #[allow(unused)]
+    pub fn filter_by_discount_chance(discount_chance: f64) -> TableIter<Self> {
+        Self::filter(|row| row.discount_chance == discount_chance)
     }
 }

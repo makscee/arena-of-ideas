@@ -5,7 +5,7 @@ use crate::module_bindings::{
     TeamUnit,
 };
 
-use self::module_bindings::GlobalSettings;
+use self::module_bindings::{GlobalSettings, ShopOffer};
 
 use super::*;
 
@@ -171,6 +171,7 @@ impl ShopPlugin {
                 Self::sync_units(&new.state.team, Faction::Team, world);
                 Self::sync_units_state(&new.state.team, Faction::Team, world);
                 Self::sync_units(&new.get_case_units(), Faction::Shop, world);
+                Self::sync_prices(&new.state.case, world);
                 let phase = ShopPhase::initial(world);
                 if let Some(mut data) = world.get_resource_mut::<ShopData>() {
                     data.phase = phase;
@@ -182,6 +183,7 @@ impl ShopPlugin {
             .context("No active run")?;
         Self::sync_units(&run.state.team, Faction::Team, world);
         Self::sync_units(&run.get_case_units(), Faction::Shop, world);
+        Self::sync_prices(&run.state.case, world);
         debug!("Shop insert data");
         let phase = ShopPhase::initial(world);
         world.insert_resource(ShopData {
@@ -226,8 +228,28 @@ impl ShopPlugin {
             state.set_int(VarName::Atk, unit.atk);
             state.set_int(VarName::Stacks, unit.stacks);
             state.set_int(VarName::Level, unit.level);
-            // state.set_string(VarName::AbilityDescription, unit.description.clone());
             state.set_string(VarName::Houses, unit.houses.clone());
+        }
+    }
+
+    fn sync_prices(offers: &Vec<ShopOffer>, world: &mut World) {
+        let gs = GlobalSettings::filter_by_always_zero(0).unwrap();
+        let world_units = UnitPlugin::collect_faction_ids(Faction::Shop, world);
+        for ShopOffer {
+            available: _,
+            discount,
+            unit,
+        } in offers
+        {
+            let price = if *discount {
+                gs.price_unit_sell
+            } else {
+                gs.price_unit_buy
+            };
+            if let Some(entity) = world_units.get(&unit.id) {
+                let mut state = VarState::get_mut(*entity, world);
+                state.set_int(VarName::Price, price as i32);
+            }
         }
     }
 
@@ -256,10 +278,15 @@ impl ShopPlugin {
             ui.set_width(120.0);
             frame(ui, |ui| {
                 "Reroll".add_color(white()).label(ui);
-                let text = format!("-{}g", REROLL_PRICE)
-                    .add_color(yellow())
-                    .rich_text(ui)
-                    .size(20.0);
+                let text = format!(
+                    "-{}g",
+                    GlobalSettings::filter_by_always_zero(0)
+                        .unwrap()
+                        .price_reroll
+                )
+                .add_color(yellow())
+                .rich_text(ui)
+                .size(20.0);
                 if ui.button(text).clicked() {
                     Self::buy_reroll();
                 }
@@ -410,13 +437,21 @@ impl ShopPlugin {
             let gs = GlobalSettings::filter_by_always_zero(0).unwrap();
             for (entity, faction) in units {
                 let is_shop = faction == Faction::Shop;
+                let price = VarState::get(entity, world)
+                    .get_int(VarName::Price)
+                    .unwrap_or_default() as i64;
+                let discount = if is_shop && price < gs.price_unit_buy {
+                    Some("discount")
+                } else {
+                    None
+                };
                 let offset = &mut (vec2(0.0, -2.7));
                 match &phase {
                     ShopPhase::None { stack, fuse } => {
                         if let Some(stack) = stack.get(&entity) {
                             if !stack.is_empty() {
                                 let text = if is_shop {
-                                    format!("Stack -{} g", gs.price_unit_buy_stack)
+                                    format!("Stack -{} g", gs.price_unit_buy_stack.min(price))
                                 } else {
                                     "Stack".to_owned()
                                 };
@@ -425,7 +460,7 @@ impl ShopPlugin {
                                     offset,
                                     orange(),
                                     &text,
-                                    None,
+                                    discount,
                                     false,
                                     |_| {
                                         data.phase = ShopPhase::Stack {
@@ -478,8 +513,8 @@ impl ShopPlugin {
                                     entity,
                                     offset,
                                     yellow(),
-                                    &format!("-{} g", gs.price_unit_buy),
-                                    Some("buy"),
+                                    &format!("-{} g", gs.price_unit_buy.min(price)),
+                                    discount.or_else(|| Some("buy")),
                                     false,
                                     |_| {
                                         run_buy(id);
@@ -640,16 +675,22 @@ impl ShopPlugin {
 }
 
 pub trait ArenaRunExt {
-    fn get_case_units(self) -> Vec<TeamUnit>;
+    fn get_case_units(&self) -> Vec<TeamUnit>;
     fn current() -> Option<ArenaRun>;
 }
 
 impl ArenaRunExt for ArenaRun {
-    fn get_case_units(self) -> Vec<TeamUnit> {
+    fn get_case_units(&self) -> Vec<TeamUnit> {
         self.state
             .case
-            .into_iter()
-            .filter_map(|o| if o.available { Some(o.unit) } else { None })
+            .iter()
+            .filter_map(|o| {
+                if o.available {
+                    Some(o.unit.clone())
+                } else {
+                    None
+                }
+            })
             .collect_vec()
     }
     fn current() -> Option<Self> {

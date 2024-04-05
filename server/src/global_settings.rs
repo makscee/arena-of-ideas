@@ -15,6 +15,7 @@ pub struct GlobalSettings {
     pub shop_slots_per_round: f32,
     pub g_per_round_min: i64,
     pub g_per_round_max: i64,
+    pub discount_chance: f64,
 }
 
 impl GlobalSettings {
@@ -33,6 +34,7 @@ impl GlobalSettings {
             shop_slots_per_round: 0.34,
             g_per_round_min: 5,
             g_per_round_max: 9,
+            discount_chance: 0.1,
         })?;
         Ok(())
     }
