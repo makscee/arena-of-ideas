@@ -121,6 +121,16 @@ pub fn get_from_clipboard(world: &mut World) -> Option<String> {
         .resource_mut::<bevy_egui::EguiClipboard>()
         .get_contents()
 }
+pub fn draw_curve(p1: Pos2, p2: Pos2, p3: Pos2, p4: Pos2, width: f32, color: Color32, ui: &mut Ui) {
+    let points = [p1, p2, p3, p4];
+    let curve = egui::Shape::CubicBezier(egui::epaint::CubicBezierShape::from_points_stroke(
+        points,
+        false,
+        Color32::TRANSPARENT,
+        Stroke { width, color },
+    ));
+    ui.painter().add(curve);
+}
 
 pub trait StrExtensions {
     fn split_by_brackets(self, pattern: (&str, &str)) -> Vec<(String, bool)>;

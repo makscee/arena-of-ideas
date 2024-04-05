@@ -1,4 +1,4 @@
-use bevy_egui::egui::{Frame, Key, ScrollArea, SelectableLabel, Sense, Shape, SidePanel};
+use bevy_egui::egui::{Frame, Key, ScrollArea, SelectableLabel, Sense, SidePanel};
 use ron::ser::{to_string_pretty, PrettyConfig};
 use serde::de::DeserializeOwned;
 
@@ -631,17 +631,7 @@ pub fn show_node(
         mid1.x += 5.0;
         let mut mid2 = end;
         mid2.x -= 5.0;
-        let points = [pos, mid1, mid2, end];
-        let curve = Shape::CubicBezier(egui::epaint::CubicBezierShape::from_points_stroke(
-            points,
-            false,
-            Color32::TRANSPARENT,
-            Stroke {
-                width: 1.0,
-                color: dark_gray(),
-            },
-        ));
-        ui.painter().add(curve);
+        draw_curve(pos, mid1, mid2, end, 1.0, dark_gray(), ui);
     }
 
     source.show_children(

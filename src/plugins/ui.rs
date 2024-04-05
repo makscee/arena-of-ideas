@@ -180,16 +180,20 @@ pub struct GameWindow<'a> {
 }
 
 impl GameWindow<'_> {
-    pub fn show(
+    pub fn show<R>(
         self,
         ctx: &egui::Context,
-        add_contents: impl FnOnce(&mut Ui),
-    ) -> InnerResponse<()> {
+        add_contents: impl FnOnce(&mut Ui) -> R,
+    ) -> InnerResponse<R> {
         self.area
             .show(ctx, |ui| self.show_ui(ui, add_contents))
             .inner
     }
-    pub fn show_ui(mut self, ui: &mut Ui, add_contents: impl FnOnce(&mut Ui)) -> InnerResponse<()> {
+    pub fn show_ui<R>(
+        mut self,
+        ui: &mut Ui,
+        add_contents: impl FnOnce(&mut Ui) -> R,
+    ) -> InnerResponse<R> {
         if !self.stroke {
             self.frame = Some(Frame::none());
         }

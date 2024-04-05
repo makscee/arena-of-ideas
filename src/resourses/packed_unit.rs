@@ -208,22 +208,23 @@ impl PackedUnit {
         }
     }
 
-    fn fuse_base(a: &Self, b: &Self, trigger: Trigger, world: &World) -> Self {
-        let mut fused = a.clone();
+    fn fuse_base(target: &Self, source: &Self, trigger: Trigger, world: &World) -> Self {
+        let mut fused = target.clone();
         fused.representation.children.push(Box::new({
-            let mut rep = b.representation.clone();
+            let mut rep = source.representation.clone();
             rep.mapping.insert(
                 VarName::Color,
                 Expression::Value(VarValue::Color(
-                    Pools::get_house_color(b.houses.split('+').next().unwrap(), world).unwrap(),
+                    Pools::get_house_color(source.houses.split('+').next().unwrap(), world)
+                        .unwrap(),
                 )),
             );
             rep
         }));
-        fused.hp = fused.hp.max(b.hp);
-        fused.atk = fused.atk.max(b.atk);
-        fused.houses = format!("{}+{}", a.houses, b.houses);
-        fused.name = format!("{}+{}", fused.name, b.name);
+        fused.hp = fused.hp.max(source.hp);
+        fused.atk = fused.atk.max(source.atk);
+        fused.houses = format!("{}+{}", target.houses, source.houses);
+        fused.name = format!("{}+{}", fused.name, source.name);
         fused.level = 1;
         fused.stacks = 1;
         fused.trigger = trigger;

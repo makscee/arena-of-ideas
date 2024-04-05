@@ -32,9 +32,8 @@ impl UnitPlugin {
     }
 
     pub fn get_id(entity: Entity, world: &World) -> Option<u64> {
-        VarState::get(entity, world)
-            .get_int(VarName::Id)
-            .map(|v| v as u64)
+        VarState::try_get(entity, world)
+            .and_then(|state| state.get_int(VarName::Id).map(|v| v as u64))
             .ok()
     }
     pub fn get_by_id(id: u64, world: &mut World) -> Option<Entity> {
@@ -55,8 +54,8 @@ impl UnitPlugin {
         match faction {
             Faction::Left => vec2(slot as f32 * -3.0, 0.0),
             Faction::Right => vec2(slot as f32 * 3.0, 0.0),
-            Faction::Team => vec2(slot as f32 * -3.0 + 14.0, -4.0),
-            Faction::Shop => vec2(slot as f32 * 3.0 - 4.0, 4.0),
+            Faction::Team => vec2(slot as f32 * -3.0 + 14.0, -3.0),
+            Faction::Shop => vec2(slot as f32 * 3.0 - 4.0, 5.5),
         }
     }
 
@@ -104,6 +103,18 @@ impl UnitPlugin {
 
     pub fn collect_faction(faction: Faction, world: &mut World) -> Vec<Entity> {
         if let Some(team) = TeamPlugin::find_entity(faction, world) {
+            if let Some(children) = world.get::<Children>(team) {
+                return children
+                    .iter()
+                    .filter_map(|e| world.get::<Unit>(*e).map(|_| *e))
+                    .collect_vec();
+            }
+        }
+        default()
+    }
+
+    pub fn collect_unit_faction(unit: Entity, world: &World) -> Vec<Entity> {
+        if let Some(team) = unit.get_parent(world) {
             if let Some(children) = world.get::<Children>(team) {
                 return children
                     .iter()
@@ -279,7 +290,7 @@ impl UnitPlugin {
         parent: Query<&Parent>,
         shop_data: Res<ShopData>,
     ) {
-        if shop_data.fusion_candidates.is_some() {
+        if !shop_data.is_initial_phase() {
             return;
         }
         let entity: Entity = event.target;
@@ -385,7 +396,10 @@ impl UnitPlugin {
 
     fn ui(world: &mut World) {
         let hovered = UnitPlugin::get_hovered(world);
-        if ShopPlugin::is_fusing(world) {
+        if !world
+            .get_resource::<ShopData>()
+            .is_some_and(|d| d.show_other_ui())
+        {
             return;
         }
         let ctx = &if let Some(context) = egui_context(world) {
@@ -438,6 +452,69 @@ impl UnitPlugin {
                 }
             })
         }))
+    }
+
+    fn filter_unit_stack_targets(
+        unit: Entity,
+        targets: &Vec<Entity>,
+        world: &World,
+    ) -> Vec<Entity> {
+        let name = VarState::get(unit, world)
+            .get_string(VarName::Name)
+            .unwrap();
+        targets
+            .clone()
+            .into_iter()
+            .filter(|target| {
+                !unit.eq(target)
+                    && VarState::get(*target, world)
+                        .get_string(VarName::Name)
+                        .unwrap()
+                        .eq(&name)
+            })
+            .collect_vec()
+    }
+    fn filter_unit_fuse_targets(unit: Entity, targets: &Vec<Entity>, world: &World) -> Vec<Entity> {
+        let state = VarState::get(unit, world);
+        if !state.is_fuse_source().unwrap() {
+            return default();
+        }
+        targets
+            .clone()
+            .into_iter()
+            .filter(|target| {
+                !unit.eq(target) && VarState::get(*target, world).is_fuse_target(state).unwrap()
+            })
+            .collect_vec()
+    }
+
+    pub fn collect_merge_targets(
+        sources: Vec<Entity>,
+        targets: Vec<Entity>,
+        world: &World,
+    ) -> (HashMap<Entity, Vec<Entity>>, HashMap<Entity, Vec<Entity>>) {
+        let mut fuse: HashMap<Entity, Vec<Entity>> = default();
+        let mut stack: HashMap<Entity, Vec<Entity>> = default();
+        for unit in sources {
+            let stack_targets = Self::filter_unit_stack_targets(unit, &targets, world);
+            let fuse_targets = Self::filter_unit_fuse_targets(unit, &targets, world);
+            if !stack_targets.is_empty() {
+                stack.insert(unit, stack_targets);
+            }
+            if !fuse_targets.is_empty() {
+                fuse.insert(unit, fuse_targets);
+            }
+        }
+        (stack, fuse)
+    }
+
+    pub fn stack_units(target: Entity, source: Entity, world: &mut World) {
+        let base_id = Self::get_id(target, world).unwrap();
+        let source_id = Self::get_id(source, world).unwrap();
+        run_stack(base_id, source_id);
+        world.entity_mut(source).despawn_recursive();
+        UnitPlugin::fill_slot_gaps(Faction::Team, world);
+        UnitPlugin::translate_to_slots(world);
     }
 
     pub fn spawn_slot(slot: usize, faction: Faction, world: &mut World) {
@@ -519,3 +596,24 @@ pub enum DragAction {
 
 #[derive(Component)]
 pub struct ActiveTeam;
+
+#[derive(Clone, Display)]
+pub enum MergeType {
+    Stack,
+    Fuse,
+}
+
+impl VarState {
+    pub fn is_fuse_source(&self) -> Result<bool> {
+        let level = self.get_int(VarName::Level)?;
+        let houses = self.get_houses_vec()?;
+        Ok(level > 1 && houses.len() == 1)
+    }
+    pub fn is_fuse_target(&self, source: &VarState) -> Result<bool> {
+        let level = self.get_int(VarName::Level)?;
+        let houses = self.get_houses_vec()?;
+        Ok(level > 1
+            && (0..3).contains(&houses.len())
+            && !houses.contains(&source.get_houses_vec()?.into_iter().exactly_one().unwrap()))
+    }
+}
