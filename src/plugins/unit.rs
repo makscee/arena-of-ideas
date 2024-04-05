@@ -13,6 +13,7 @@ impl Plugin for UnitPlugin {
 }
 
 pub const TEAM_SLOTS: usize = 7;
+pub const SLOT_SPACING: f32 = 3.0;
 
 #[derive(Resource, Debug, Copy, Clone)]
 pub struct ClosestSlot(usize, f32, bool);
@@ -52,10 +53,10 @@ impl UnitPlugin {
 
     pub fn get_slot_position(faction: Faction, slot: usize) -> Vec2 {
         match faction {
-            Faction::Left => vec2(slot as f32 * -3.0, 0.0),
-            Faction::Right => vec2(slot as f32 * 3.0, 0.0),
-            Faction::Team => vec2(slot as f32 * -3.0 + 14.0, -3.0),
-            Faction::Shop => vec2(slot as f32 * 3.0 - 4.0, 5.5),
+            Faction::Left => vec2(slot as f32 * -SLOT_SPACING, 0.0),
+            Faction::Right => vec2(slot as f32 * SLOT_SPACING, 0.0),
+            Faction::Team => vec2(slot as f32 * -SLOT_SPACING + 14.0, -3.0),
+            Faction::Shop => vec2(slot as f32 * SLOT_SPACING - 4.0, 5.5),
         }
     }
 
@@ -324,33 +325,7 @@ impl UnitPlugin {
                     DragAction::Fuse(target) => {
                         ShopPlugin::start_fuse(target, dragged, world);
                     }
-                    DragAction::Stack(target) => {
-                        let t_id = Self::get_id(target, world).unwrap();
-                        let dragged = Self::get_id(dragged, world).unwrap();
-                        run_stack(t_id, dragged);
-                        once_on_run_stack(|_, _, s, target, _| match s {
-                            spacetimedb_sdk::reducer::Status::Committed => {
-                                let target = *target;
-                                OperationsPlugin::add(move |world| {
-                                    if let Some(target) = Self::get_by_id(target, world) {
-                                        Vfx::show_text(
-                                            "+Stack".to_owned(),
-                                            yellow().to_color(),
-                                            target,
-                                            world,
-                                        )
-                                        .unwrap()
-                                    }
-                                })
-                            }
-                            spacetimedb_sdk::reducer::Status::Failed(e) => AlertPlugin::add_error(
-                                Some("Stack error".to_owned()),
-                                e.to_string(),
-                                None,
-                            ),
-                            spacetimedb_sdk::reducer::Status::OutOfEnergy => panic!(),
-                        });
-                    }
+                    DragAction::Stack(target) => Self::stack_units(target, dragged, world),
                     DragAction::Insert(_) | DragAction::None => {
                         let sorted_ids = UnitPlugin::collect_faction_ids(Faction::Team, world)
                             .into_iter()
@@ -396,11 +371,10 @@ impl UnitPlugin {
 
     fn ui(world: &mut World) {
         let hovered = UnitPlugin::get_hovered(world);
-        if !world
-            .get_resource::<ShopData>()
-            .is_some_and(|d| d.show_other_ui())
-        {
-            return;
+        if let Some(sd) = world.get_resource::<ShopData>() {
+            if !sd.show_other_ui() {
+                return;
+            }
         }
         let ctx = &if let Some(context) = egui_context(world) {
             context
@@ -412,8 +386,18 @@ impl UnitPlugin {
             .query_filtered::<(Entity, &VarState), Or<(With<Unit>, With<Corpse>)>>()
             .iter(world)
         {
-            let statuses =
-                Status::collect_statuses_name_charges(entity, GameTimer::get().play_head(), world);
+            let t = GameTimer::get().play_head();
+            if !state
+                .get_value_at(VarName::Visible, t)
+                .and_then(|v| v.get_bool())
+                .unwrap_or(true)
+            {
+                continue;
+            }
+            if let Some(text) = world.get::<TextColumn>(entity) {
+                text.render(ctx, world);
+            }
+            let statuses = Status::collect_statuses_name_charges(entity, t, world);
             state.show_entity_card_window(
                 entity,
                 statuses,
@@ -512,6 +496,20 @@ impl UnitPlugin {
         let base_id = Self::get_id(target, world).unwrap();
         let source_id = Self::get_id(source, world).unwrap();
         run_stack(base_id, source_id);
+        once_on_run_stack(|_, _, s, target, _| match s {
+            spacetimedb_sdk::reducer::Status::Committed => {
+                let target = *target;
+                OperationsPlugin::add(move |world| {
+                    if let Some(target) = Self::get_by_id(target, world) {
+                        TextColumn::add(target, "+Stack", yellow(), world).unwrap();
+                    }
+                })
+            }
+            spacetimedb_sdk::reducer::Status::Failed(e) => {
+                AlertPlugin::add_error(Some("Stack error".to_owned()), e.to_string(), None)
+            }
+            spacetimedb_sdk::reducer::Status::OutOfEnergy => panic!(),
+        });
         world.entity_mut(source).despawn_recursive();
         UnitPlugin::fill_slot_gaps(Faction::Team, world);
         UnitPlugin::translate_to_slots(world);

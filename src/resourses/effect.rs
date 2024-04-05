@@ -77,7 +77,7 @@ impl Effect {
                         .unpack(world)?;
                 }
                 let value = value.max(0);
-                Vfx::show_text(format!("-{value}"), Color::ORANGE_RED, target, world)?;
+                TextColumn::add(target, &format!("-{value}"), orange(), world)?;
             }
             Effect::Kill => {
                 let target = context.get_target().context("No target")?;
@@ -87,15 +87,7 @@ impl Effect {
                         VarChange::new(VarValue::Entity(context.owner())),
                     )
                     .change_int(VarName::Hp, -9999999);
-                Pools::get_vfx("text", world)
-                    .clone()
-                    .set_var(
-                        VarName::Position,
-                        VarValue::Vec2(UnitPlugin::get_unit_position(target, world)?),
-                    )
-                    .set_var(VarName::Text, VarValue::String("Kill".to_string()))
-                    .set_var(VarName::Color, VarValue::Color(Color::RED))
-                    .unpack(world)?;
+                TextColumn::add(target, "Kill", red(), world)?;
             }
             Effect::Debug(msg) => {
                 let msg = msg.get_string(context, world)?;
@@ -110,7 +102,15 @@ impl Effect {
                 let color = Pools::get_color_by_name(ability, world)?;
                 let faction = context.get_faction(world)?;
                 TeamPlugin::inject_ability_state(faction, ability, context, world);
-                Vfx::show_text(format!("Use {ability}"), color, context.owner(), world)?;
+                TextColumn::add_colored(
+                    context.owner(),
+                    "Use "
+                        .add_color(white())
+                        .push_colored(ability.add_color(color.c32()))
+                        .set_style_ref(ColoredStringStyle::Bold)
+                        .take(),
+                    world,
+                )?;
                 {
                     let mut context = context
                         .clone()
@@ -149,15 +149,12 @@ impl Effect {
                 unit.atk += extra_atk;
 
                 let color = Pools::get_color_by_name(name, world)?;
-                Pools::get_vfx("text", world)
-                    .clone()
-                    .set_var(
-                        VarName::Position,
-                        VarState::get(context.owner(), world).get_value_last(VarName::Position)?,
-                    )
-                    .set_var(VarName::Text, VarValue::String(format!("Summon {name}")))
-                    .set_var(VarName::Color, VarValue::Color(color))
-                    .unpack(world)?;
+                TextColumn::add(
+                    context.owner(),
+                    &format!("Summon {name}"),
+                    color.c32(),
+                    world,
+                )?;
                 {
                     let mut context = context
                         .clone()
@@ -188,24 +185,22 @@ impl Effect {
                 let color = Pools::get_color_by_name(status, world)?;
                 let target = context.get_target().context("No target")?;
                 Status::change_charges(status, target, charges, world)?;
-                Pools::get_vfx("text", world)
-                    .clone()
-                    .set_var(
-                        VarName::Position,
-                        VarState::get(target, world).get_value_last(VarName::Position)?,
-                    )
-                    .set_var(
-                        VarName::Text,
-                        VarValue::String(format!(
-                            "{status} {}",
+
+                TextColumn::add_colored(
+                    context.target(),
+                    format!("{status} ")
+                        .add_color(color.c32())
+                        .push(
                             match charges.is_positive() {
                                 true => format!("+{charges}"),
                                 false => charges.to_string(),
-                            }
-                        )),
-                    )
-                    .set_var(VarName::Color, VarValue::Color(color))
-                    .unpack(world)?;
+                            },
+                            white(),
+                        )
+                        .set_style_ref(ColoredStringStyle::Bold)
+                        .take(),
+                    world,
+                )?;
             }
             Effect::ClearStatus(status) => {
                 let target = context.get_target().context("No target")?;
@@ -215,15 +210,15 @@ impl Effect {
                 }
                 let color = Pools::get_color_by_name(status, world)?;
                 Status::change_charges(status, target, -charges, world)?;
-                Pools::get_vfx("text", world)
-                    .clone()
-                    .set_var(
-                        VarName::Position,
-                        VarState::get(target, world).get_value_last(VarName::Position)?,
-                    )
-                    .set_var(VarName::Text, VarValue::String(format!("Clear {status}")))
-                    .set_var(VarName::Color, VarValue::Color(color))
-                    .unpack(world)?;
+                TextColumn::add_colored(
+                    target,
+                    "Clear"
+                        .add_color(white())
+                        .push_colored(status.add_color(color.c32()))
+                        .set_style_ref(ColoredStringStyle::Bold)
+                        .take(),
+                    world,
+                )?;
             }
             Effect::List(list) => {
                 for effect in list.into_iter().rev() {
@@ -244,15 +239,7 @@ impl Effect {
             }
             Effect::Text(text) => {
                 let text = text.get_string(context, world)?;
-                Pools::get_vfx("text", world)
-                    .clone()
-                    .set_var(
-                        VarName::Position,
-                        VarValue::Vec2(UnitPlugin::get_unit_position(context.owner(), world)?),
-                    )
-                    .set_var(VarName::Text, VarValue::String(text))
-                    .set_var(VarName::Color, VarValue::Color(Color::PINK))
-                    .unpack(world)?;
+                TextColumn::add(context.owner(), &text, Color::PINK.c32(), world)?;
             }
             Effect::Vfx(name) => {
                 let owner_pos = UnitPlugin::get_unit_position(context.owner(), world)?;
@@ -326,7 +313,7 @@ impl Effect {
                 let text = format!("{ability} {var} add {value}");
                 TeamPlugin::add_ability_var(faction, ability, *var, value, world)?;
                 let color = Pools::get_color_by_name(ability, world)?;
-                Vfx::show_text(text, color, context.owner(), world)?;
+                TextColumn::add(context.owner(), &text, color.c32(), world)?;
             }
             Effect::FullCopy => {
                 let owner = context.owner();

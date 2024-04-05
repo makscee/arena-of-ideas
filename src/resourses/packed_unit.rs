@@ -63,6 +63,7 @@ impl PackedUnit {
         );
         self.state.clone().attach(entity, world);
         if !SkipVisual::active(world) {
+            world.entity_mut(entity).insert(TextColumn::new(entity));
             self.representation.unpack(entity, world);
             let entity = Options::get_unit_rep(world)
                 .clone()

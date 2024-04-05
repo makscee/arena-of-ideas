@@ -85,14 +85,20 @@ impl ColoredString {
     pub fn label(&self, ui: &mut Ui) -> Response {
         self.as_label(ui).ui(ui)
     }
+    pub fn label_alpha(&self, a: f32, ui: &mut Ui) -> Response {
+        self.as_label_alpha(a, ui).ui(ui)
+    }
     pub fn as_label(&self, ui: &mut Ui) -> Label {
-        Label::new(self.widget(ui))
+        self.as_label_alpha(1.0, ui)
+    }
+    pub fn as_label_alpha(&self, a: f32, ui: &mut Ui) -> Label {
+        Label::new(self.widget(a, ui))
     }
 
-    pub fn widget(&self, ui: &mut Ui) -> WidgetText {
+    pub fn widget(&self, alpha: f32, ui: &mut Ui) -> WidgetText {
         let mut job = LayoutJob::default();
         for (s, color, style) in self.lines.iter() {
-            let color = color.unwrap_or(light_gray());
+            let color = color.unwrap_or(light_gray()).gamma_multiply(alpha);
             job.append(
                 s,
                 0.0,

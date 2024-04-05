@@ -1,11 +1,13 @@
 mod representation;
 mod status;
+mod text_column;
 mod var_state;
 mod var_state_delta;
 
 use super::*;
 pub use representation::*;
 pub use status::*;
+pub use text_column::*;
 pub use var_state::*;
 pub use var_state_delta::*;
 

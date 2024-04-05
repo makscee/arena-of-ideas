@@ -1,3 +1,5 @@
+use bevy::window::PrimaryWindow;
+
 use super::*;
 
 pub struct CameraPlugin;
@@ -22,6 +24,7 @@ pub struct CameraData {
     pub entity: Entity,
     pub need_scale: f32,
     pub cur_scale: f32,
+    pub slot_pixel_spacing: f32,
 }
 
 const SCALE_CHANGE_SPEED: f32 = 3.0;
@@ -49,8 +52,9 @@ impl CameraPlugin {
         }
         let data = CameraData {
             entity,
-            need_scale: default(),
             cur_scale: 100.0,
+            need_scale: default(),
+            slot_pixel_spacing: default(),
         };
         commands.insert_resource(data);
     }
@@ -59,10 +63,11 @@ impl CameraPlugin {
         visible: Query<(&Transform, &InheritedVisibility)>,
         mut projection: Query<(&mut OrthographicProjection, &Camera)>,
         mut data: ResMut<CameraData>,
+        window: Query<&bevy::window::Window, With<PrimaryWindow>>,
         time: Res<Time>,
     ) {
         let (mut projection, camera) = projection.single_mut();
-        let mut width = 28.0_f32;
+        let mut width: f32 = 28.0;
         let aspect_ratio = camera
             .logical_target_size()
             .map(|v| v.x / v.y)
@@ -77,6 +82,8 @@ impl CameraPlugin {
         data.need_scale = width;
         data.cur_scale +=
             (data.need_scale - data.cur_scale) * time.delta_seconds() * SCALE_CHANGE_SPEED;
+        let window_width = window.single().resolution.width();
+        data.slot_pixel_spacing = SLOT_SPACING / data.cur_scale * window_width;
 
         projection.scaling_mode = ScalingMode::FixedHorizontal(data.cur_scale);
     }
