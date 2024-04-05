@@ -286,6 +286,7 @@ fn subscribe_to_tables(user_id: u64) {
     match subscribe(&[
         "select * from User",
         "select * from GlobalData",
+        "select * from GlobalSettings",
         "select * from TableUnit",
         "select * from House",
         "select * from Statuses",

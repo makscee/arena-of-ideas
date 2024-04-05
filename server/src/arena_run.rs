@@ -1,5 +1,3 @@
-use std::ops::Range;
-
 use itertools::Itertools;
 use rand::seq::IteratorRandom;
 use rand::thread_rng;
@@ -35,16 +33,8 @@ pub struct TeamUnit {
 #[derive(SpacetimeType, Clone)]
 pub struct ShopOffer {
     available: bool,
-    price: i64,
     unit: TeamUnit,
 }
-
-const G_PER_ROUND: Range<i64> = 4..7;
-const PRICE_REROLL: i64 = 1;
-const PRICE_UNIT: i64 = 3;
-const PRICE_SELL: i64 = 1;
-const SHOP_SLOTS_PER_ROUND: f32 = 0.34;
-const SHOP_SLOTS: Range<usize> = 3..6;
 
 #[spacetimedb(reducer)]
 fn run_start(ctx: ReducerContext) -> Result<(), String> {
@@ -93,7 +83,8 @@ fn run_submit_result(ctx: ReducerContext, win: bool) -> Result<(), String> {
             run.enemies.push(enemy.id);
         }
     }
-    run.change_g((G_PER_ROUND.start + run.round() as i64).min(G_PER_ROUND.end));
+    let settings = GlobalSettings::get();
+    run.change_g((settings.g_per_round_min + run.round() as i64).min(settings.g_per_round_max));
     run.state.case.clear();
     run.fill_case();
     run.save();
@@ -103,9 +94,10 @@ fn run_submit_result(ctx: ReducerContext, win: bool) -> Result<(), String> {
 #[spacetimedb(reducer)]
 fn run_reroll(ctx: ReducerContext, force: bool) -> Result<(), String> {
     let (_, mut run) = ArenaRun::get_by_identity(&ctx.sender)?;
-    if force || run.can_afford(PRICE_REROLL) {
+    let reroll_price = GlobalSettings::get().price_reroll;
+    if force || run.can_afford(reroll_price) {
         if !force {
-            run.change_g(-PRICE_REROLL);
+            run.change_g(-reroll_price);
         }
         run.state.case.clear();
         run.fill_case();
@@ -119,7 +111,7 @@ fn run_reroll(ctx: ReducerContext, force: bool) -> Result<(), String> {
 #[spacetimedb(reducer)]
 fn run_buy(ctx: ReducerContext, id: u64) -> Result<(), String> {
     let (_, mut run) = ArenaRun::get_by_identity(&ctx.sender)?;
-    run.buy(id, 0, false)?;
+    run.buy(id, 0, GlobalSettings::get().price_unit_buy, false)?;
     run.save();
     Ok(())
 }
@@ -134,25 +126,32 @@ fn run_sell(ctx: ReducerContext, id: u64) -> Result<(), String> {
         .position(|u| u.id.eq(&id))
         .context_str("Unit not found")?;
     run.state.team.remove(index);
-    run.change_g(PRICE_SELL);
+    run.change_g(GlobalSettings::get().price_unit_sell);
     run.save();
     Ok(())
 }
 
 #[spacetimedb(reducer)]
-fn run_stack(ctx: ReducerContext, target: u64, dragged: u64) -> Result<(), String> {
+fn run_stack(ctx: ReducerContext, target: u64, source: u64) -> Result<(), String> {
     let (_, mut run) = ArenaRun::get_by_identity(&ctx.sender)?;
-    let (i_dragged, dragged) = if let Ok((ind, unit)) = run.find_team(dragged) {
-        (ind, unit)
+    // let target_unit = &run.find_unit(target)?.unit;
+    let i_source = if let Ok((ind, unit)) = run.find_team(source) {
+        // if !target_unit.name.eq(&unit.unit.name) {
+        //     return Err("Can onyl stack duplicate units".to_owned());
+        // }
+        ind
     } else {
-        run.buy(dragged, 0, true)?;
-        run.find_team(dragged)?
+        let price = GlobalSettings::get().price_unit_buy_stack;
+        if !run.can_afford(price) {
+            return Err("Can't afford".to_owned());
+        }
+        // if !run.find_case(source)?.1.unit.name.eq(&target_unit.name) {
+        //     return Err("Can onyl stack duplicate units".to_owned());
+        // }
+        run.buy(source, 0, price, true)?;
+        run.find_team(source)?.0
     };
-    let (i_target, target) = run.find_team(target)?;
-    let d_houses = dragged.unit.houses.split("+").collect_vec();
-    if !target.unit.houses.split("+").any(|h| d_houses.contains(&h)) {
-        return Err("Houses should match for stacking".to_owned());
-    }
+    let (i_target, _) = run.find_team(target)?;
     let target = &mut run.state.team[i_target].unit;
     target.atk += 1;
     target.hp += 1;
@@ -161,7 +160,7 @@ fn run_stack(ctx: ReducerContext, target: u64, dragged: u64) -> Result<(), Strin
         target.stacks -= target.level;
         target.level += 1;
     }
-    run.state.team.remove(i_dragged);
+    run.state.team.remove(i_source);
     run.save();
     Ok(())
 }
@@ -210,7 +209,7 @@ impl ArenaRun {
             state: GameState {
                 wins: 0,
                 loses: 0,
-                g: G_PER_ROUND.start,
+                g: GlobalSettings::get().g_per_round_min,
                 team: Vec::default(),
                 case: Vec::default(),
                 next_id: 0,
@@ -246,8 +245,10 @@ impl ArenaRun {
     }
 
     fn fill_case(&mut self) {
-        let slots = (SHOP_SLOTS.start + (self.round() as f32 * SHOP_SLOTS_PER_ROUND) as usize)
-            .min(SHOP_SLOTS.end);
+        let settings = GlobalSettings::get();
+        let slots = (settings.shop_slots_min
+            + (self.round() as f32 * settings.shop_slots_per_round) as u32)
+            .min(settings.shop_slots_max);
         for _ in 0..slots {
             let id = self.next_id();
             self.state.case.push(
@@ -255,7 +256,6 @@ impl ArenaRun {
                     .choose(&mut thread_rng())
                     .map(|unit| ShopOffer {
                         available: true,
-                        price: PRICE_UNIT,
                         unit: TeamUnit { id, unit },
                     })
                     .unwrap(),
@@ -270,12 +270,32 @@ impl ArenaRun {
             .position(|u| u.id.eq(&id))
             .context_str("Unit not found")
     }
+    fn position_case(&self, id: u64) -> Result<usize, String> {
+        self.state
+            .case
+            .iter()
+            .position(|u| u.unit.id.eq(&id))
+            .context_str("Unit not found")
+    }
     fn find_team(&self, id: u64) -> Result<(usize, &TeamUnit), String> {
         let index = self.position_team(id)?;
         Ok((index, &self.state.team[index]))
     }
+    fn find_case(&self, id: u64) -> Result<(usize, &TeamUnit), String> {
+        let index = self.position_case(id)?;
+        Ok((index, &self.state.case[index].unit))
+    }
+    fn find_unit(&self, id: u64) -> Result<&TeamUnit, String> {
+        Ok(self.find_team(id).or_else(|_| self.find_case(id))?.1)
+    }
 
-    fn buy(&mut self, id: u64, slot: usize, skip_limit_check: bool) -> Result<(), String> {
+    fn buy(
+        &mut self,
+        id: u64,
+        slot: usize,
+        price: i64,
+        skip_limit_check: bool,
+    ) -> Result<(), String> {
         let offer = self
             .state
             .case
@@ -287,14 +307,13 @@ impl ArenaRun {
         }
         offer.available = false;
         let offer = offer.clone();
-        let price = offer.price;
         if !self.can_afford(price) {
             return Err("Not enough g".to_owned());
         }
         if !skip_limit_check && self.state.team.len() >= GlobalSettings::get().team_slots as usize {
             return Err("Team is already full".to_owned());
         }
-        self.change_g(-PRICE_UNIT);
+        self.change_g(-price);
         self.state.team.insert(slot, offer.unit);
         Ok(())
     }

@@ -41,7 +41,7 @@ fn archive_upload() {
         Err(e) => panic!("{e}"),
         Ok(file_contents) => {
             let pool = bsatn::from_slice::<Vec<ArenaPool>>(&file_contents).unwrap();
-            info!("{} teams loaded", pool.len());
+            info!("{} teams uploaded", pool.len());
             upload_pool(pool);
             once_on_upload_pool(|_, _, s, _| {
                 debug!("{s:?}");

@@ -17,6 +17,15 @@ pub struct GlobalSettings {
     pub always_zero: u32,
     pub team_slots: u32,
     pub fatigue_start: u32,
+    pub price_unit_buy: i64,
+    pub price_unit_buy_stack: i64,
+    pub price_unit_sell: i64,
+    pub price_reroll: i64,
+    pub shop_slots_min: u32,
+    pub shop_slots_max: u32,
+    pub shop_slots_per_round: f32,
+    pub g_per_round_min: i64,
+    pub g_per_round_max: i64,
 }
 
 impl TableType for GlobalSettings {
@@ -36,5 +45,41 @@ impl GlobalSettings {
     #[allow(unused)]
     pub fn filter_by_fatigue_start(fatigue_start: u32) -> TableIter<Self> {
         Self::filter(|row| row.fatigue_start == fatigue_start)
+    }
+    #[allow(unused)]
+    pub fn filter_by_price_unit_buy(price_unit_buy: i64) -> TableIter<Self> {
+        Self::filter(|row| row.price_unit_buy == price_unit_buy)
+    }
+    #[allow(unused)]
+    pub fn filter_by_price_unit_buy_stack(price_unit_buy_stack: i64) -> TableIter<Self> {
+        Self::filter(|row| row.price_unit_buy_stack == price_unit_buy_stack)
+    }
+    #[allow(unused)]
+    pub fn filter_by_price_unit_sell(price_unit_sell: i64) -> TableIter<Self> {
+        Self::filter(|row| row.price_unit_sell == price_unit_sell)
+    }
+    #[allow(unused)]
+    pub fn filter_by_price_reroll(price_reroll: i64) -> TableIter<Self> {
+        Self::filter(|row| row.price_reroll == price_reroll)
+    }
+    #[allow(unused)]
+    pub fn filter_by_shop_slots_min(shop_slots_min: u32) -> TableIter<Self> {
+        Self::filter(|row| row.shop_slots_min == shop_slots_min)
+    }
+    #[allow(unused)]
+    pub fn filter_by_shop_slots_max(shop_slots_max: u32) -> TableIter<Self> {
+        Self::filter(|row| row.shop_slots_max == shop_slots_max)
+    }
+    #[allow(unused)]
+    pub fn filter_by_shop_slots_per_round(shop_slots_per_round: f32) -> TableIter<Self> {
+        Self::filter(|row| row.shop_slots_per_round == shop_slots_per_round)
+    }
+    #[allow(unused)]
+    pub fn filter_by_g_per_round_min(g_per_round_min: i64) -> TableIter<Self> {
+        Self::filter(|row| row.g_per_round_min == g_per_round_min)
+    }
+    #[allow(unused)]
+    pub fn filter_by_g_per_round_max(g_per_round_max: i64) -> TableIter<Self> {
+        Self::filter(|row| row.g_per_round_max == g_per_round_max)
     }
 }

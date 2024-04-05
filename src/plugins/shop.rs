@@ -5,6 +5,8 @@ use crate::module_bindings::{
     TeamUnit,
 };
 
+use self::module_bindings::GlobalSettings;
+
 use super::*;
 
 use bevy::input::common_conditions::input_just_pressed;
@@ -282,6 +284,24 @@ impl ShopPlugin {
                     Self::go_to_battle(world);
                 }
             });
+        match &data.phase {
+            ShopPhase::FuseStart { source, targets } => {
+                if let Ok(target) = targets.iter().exactly_one() {
+                    data.phase = ShopPhase::FuseEnd {
+                        source: *source,
+                        target: *target,
+                        candidates: Self::get_fuse_candidates(*source, *target, world),
+                    };
+                }
+            }
+            ShopPhase::Stack { source, targets } => {
+                if let Ok(target) = targets.iter().exactly_one() {
+                    UnitPlugin::stack_units(*target, *source, world);
+                    data.phase = ShopPhase::initial(world);
+                }
+            }
+            _ => {}
+        }
         world.insert_resource(data);
     }
 
@@ -387,6 +407,7 @@ impl ShopPlugin {
         } else {
             let units = UnitPlugin::collect_factions([Faction::Team, Faction::Shop].into(), world);
             let phase = data.phase.clone();
+            let gs = GlobalSettings::filter_by_always_zero(0).unwrap();
             for (entity, faction) in units {
                 let is_shop = faction == Faction::Shop;
                 let offset = &mut (vec2(0.0, -2.7));
@@ -394,22 +415,23 @@ impl ShopPlugin {
                     ShopPhase::None { stack, fuse } => {
                         if let Some(stack) = stack.get(&entity) {
                             if !stack.is_empty() {
+                                let text = if is_shop {
+                                    format!("Stack -{} g", gs.price_unit_buy_stack)
+                                } else {
+                                    "Stack".to_owned()
+                                };
                                 let resp = Self::draw_unit_button(
                                     entity,
                                     offset,
                                     orange(),
-                                    if is_shop { "Stack -2 g" } else { "Stack" },
+                                    &text,
                                     None,
                                     false,
-                                    |world| {
-                                        if let Ok(target) = stack.iter().exactly_one() {
-                                            UnitPlugin::stack_units(*target, entity, world)
-                                        } else {
-                                            data.phase = ShopPhase::Stack {
-                                                source: entity,
-                                                targets: stack.clone(),
-                                            };
-                                        }
+                                    |_| {
+                                        data.phase = ShopPhase::Stack {
+                                            source: entity,
+                                            targets: stack.clone(),
+                                        };
                                     },
                                     ctx,
                                     world,
@@ -456,7 +478,7 @@ impl ShopPlugin {
                                     entity,
                                     offset,
                                     yellow(),
-                                    "-3 g",
+                                    &format!("-{} g", gs.price_unit_buy),
                                     Some("buy"),
                                     false,
                                     |_| {
@@ -475,7 +497,7 @@ impl ShopPlugin {
                                     entity,
                                     offset,
                                     yellow(),
-                                    "+1 g",
+                                    &format!("+{} g", gs.price_unit_sell),
                                     Some("sell"),
                                     false,
                                     |world| {

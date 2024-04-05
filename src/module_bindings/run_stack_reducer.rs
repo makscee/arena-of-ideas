@@ -15,7 +15,7 @@ use spacetimedb_sdk::{
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct RunStackArgs {
     pub target: u64,
-    pub dragged: u64,
+    pub source: u64,
 }
 
 impl Reducer for RunStackArgs {
@@ -23,8 +23,8 @@ impl Reducer for RunStackArgs {
 }
 
 #[allow(unused)]
-pub fn run_stack(target: u64, dragged: u64) {
-    RunStackArgs { target, dragged }.invoke();
+pub fn run_stack(target: u64, source: u64) {
+    RunStackArgs { target, source }.invoke();
 }
 
 #[allow(unused)]
@@ -32,8 +32,8 @@ pub fn on_run_stack(
     mut __callback: impl FnMut(&Identity, Option<Address>, &Status, &u64, &u64) + Send + 'static,
 ) -> ReducerCallbackId<RunStackArgs> {
     RunStackArgs::on_reducer(move |__identity, __addr, __status, __args| {
-        let RunStackArgs { target, dragged } = __args;
-        __callback(__identity, __addr, __status, target, dragged);
+        let RunStackArgs { target, source } = __args;
+        __callback(__identity, __addr, __status, target, source);
     })
 }
 
@@ -42,8 +42,8 @@ pub fn once_on_run_stack(
     __callback: impl FnOnce(&Identity, Option<Address>, &Status, &u64, &u64) + Send + 'static,
 ) -> ReducerCallbackId<RunStackArgs> {
     RunStackArgs::once_on_reducer(move |__identity, __addr, __status, __args| {
-        let RunStackArgs { target, dragged } = __args;
-        __callback(__identity, __addr, __status, target, dragged);
+        let RunStackArgs { target, source } = __args;
+        __callback(__identity, __addr, __status, target, source);
     })
 }
 

@@ -443,18 +443,20 @@ impl UnitPlugin {
         targets: &Vec<Entity>,
         world: &World,
     ) -> Vec<Entity> {
-        let name = VarState::get(unit, world)
-            .get_string(VarName::Name)
-            .unwrap();
+        let state = VarState::get(unit, world);
+        let name = state.get_string(VarName::Name).unwrap();
+        let houses = state.get_houses_vec().unwrap();
         targets
             .clone()
             .into_iter()
             .filter(|target| {
-                !unit.eq(target)
-                    && VarState::get(*target, world)
-                        .get_string(VarName::Name)
-                        .unwrap()
-                        .eq(&name)
+                !unit.eq(target) && {
+                    let state = VarState::get(*target, world);
+                    let target_houses = state.get_houses_vec().unwrap();
+                    state.get_string(VarName::Name).unwrap().eq(&name)
+                        || target_houses.len() > 1
+                            && houses.iter().any(|h| target_houses.contains(h))
+                }
             })
             .collect_vec()
     }
@@ -493,10 +495,10 @@ impl UnitPlugin {
     }
 
     pub fn stack_units(target: Entity, source: Entity, world: &mut World) {
-        let base_id = Self::get_id(target, world).unwrap();
+        let target_id = Self::get_id(target, world).unwrap();
         let source_id = Self::get_id(source, world).unwrap();
-        run_stack(base_id, source_id);
-        once_on_run_stack(|_, _, s, target, _| match s {
+        run_stack(target_id, source_id);
+        once_on_run_stack(move |_, _, s, target, _| match s {
             spacetimedb_sdk::reducer::Status::Committed => {
                 let target = *target;
                 OperationsPlugin::add(move |world| {
@@ -510,9 +512,6 @@ impl UnitPlugin {
             }
             spacetimedb_sdk::reducer::Status::OutOfEnergy => panic!(),
         });
-        world.entity_mut(source).despawn_recursive();
-        UnitPlugin::fill_slot_gaps(Faction::Team, world);
-        UnitPlugin::translate_to_slots(world);
     }
 
     pub fn spawn_slot(slot: usize, faction: Faction, world: &mut World) {

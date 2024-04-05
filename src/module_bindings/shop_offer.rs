@@ -16,6 +16,5 @@ use spacetimedb_sdk::{
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct ShopOffer {
     pub available: bool,
-    pub price: i64,
     pub unit: TeamUnit,
 }
