@@ -950,7 +950,7 @@ impl EditorNodeGenerator for Expression {
     }
 
     fn wrap(&mut self) {
-        *self = Expression::Abs(Box::new(self.clone()))
+        *self = Self::Mul(Box::new(self.clone()), Box::new(Self::Float(0.1)))
     }
 }
 

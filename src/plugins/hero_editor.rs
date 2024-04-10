@@ -39,10 +39,8 @@ impl HeroEditorPlugin {
     fn update(world: &mut World) {
         let mut pd = PersistentData::load(world);
         let ed = &mut pd.hero_editor_data;
-        let pos = if let Some((entity, _)) = ed.active {
-            VarState::get(entity, world)
-                .get_vec2(VarName::Position)
-                .unwrap_or(ed.camera_need_pos)
+        let pos = if let Some((faction, slot, _)) = ed.active {
+            UnitPlugin::get_slot_position(faction, slot)
         } else {
             default()
         };
@@ -98,7 +96,15 @@ impl HeroEditorPlugin {
                     .show(ctx, |ui| {
                         let button = ui.button("Edit");
                         if button.clicked() {
-                            ed.active = Some((unit, PackedUnit::pack(unit, world)));
+                            let state = VarState::get(unit, world);
+                            let faction = state
+                                .parent(world)
+                                .unwrap()
+                                .get_faction(VarName::Faction)
+                                .unwrap();
+                            let slot = state.get_int(VarName::Slot).unwrap();
+                            ed.active =
+                                Some((faction, slot as usize, PackedUnit::pack(unit, world)));
                         }
                         ui.add_space(5.0);
                         if ui.button_red("Delete").clicked() {
@@ -202,14 +208,14 @@ impl HeroEditorPlugin {
     }
 
     fn show_edit_panel(ed: &mut HeroEditorData, world: &mut World) {
-        if let Some((entity, old_unit)) = ed.active.as_ref() {
+        if let Some((faction, slot, old_unit)) = ed.active.as_ref() {
             let ctx = &if let Some(context) = egui_context(world) {
                 context
             } else {
                 return;
             };
             let mut unit = old_unit.clone();
-            let entity = *entity;
+            let entity = UnitPlugin::find_unit(*faction, *slot, world).unwrap();
 
             SidePanel::left("edit panel")
                 .frame(Frame {
@@ -336,16 +342,14 @@ impl HeroEditorPlugin {
                         });
                 });
 
-            if let Some((entity, old_unit)) = ed.active.as_ref() {
-                let entity = *entity;
+            if let Some((faction, slot, old_unit)) = ed.active.as_ref() {
                 if !unit.eq(old_unit) {
-                    let slot =
-                        VarState::get(entity, world).get_int(VarName::Slot).unwrap() as usize;
+                    let entity = UnitPlugin::find_unit(*faction, *slot, world).unwrap();
                     let parent = entity.get_parent(world).unwrap();
                     world.entity_mut(entity).despawn_recursive();
-                    let entity = unit.clone().unpack(parent, Some(slot), world);
+                    let entity = unit.clone().unpack(parent, Some(*slot), world);
                     UnitPlugin::place_into_slot(entity, world).unwrap();
-                    ed.active = Some((entity, unit));
+                    ed.active = Some((*faction, *slot, unit));
                     ed.save(world);
                 }
             }
@@ -391,7 +395,6 @@ impl HeroEditorHistory {
         debug!("Undo {}, total frames: {}", heh.ind, heh.frames.len());
         if let Some((_, data)) = heh.frames.get(heh.frames.len() - heh.ind - 1) {
             let mut data = data.clone();
-            data.active = None;
             data.load(world);
             pd.hero_editor_data = data;
             pd.save(world).unwrap();
@@ -400,6 +403,9 @@ impl HeroEditorHistory {
     fn redo(world: &mut World) {
         let mut pd = PersistentData::load(world);
         let mut heh = world.resource_mut::<HeroEditorHistory>();
+        if heh.ind == 0 {
+            return;
+        }
         heh.ind -= 1;
         debug!("Redo {}, total frames: {}", heh.ind, heh.frames.len());
         if let Some((_, data)) = heh.frames.get(heh.frames.len() - heh.ind - 1) {
@@ -414,7 +420,7 @@ impl HeroEditorHistory {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct HeroEditorData {
-    pub active: Option<(Entity, PackedUnit)>,
+    pub active: Option<(Faction, usize, PackedUnit)>,
 
     pub teams: (Vec<PackedUnit>, Vec<PackedUnit>),
     pub camera_pos: Vec2,

@@ -40,11 +40,11 @@ const AA = 0.01;
 @fragment
 fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     let padding = material.data[1].z;
-    let size = material.data[10].xy + vec2(padding);
+    let size = material.data[10].xy;
     let alpha = material.data[10].z;
     let thickness = material.data[10].w * 0.03;
-
-    var uv = (in.uv - vec2(0.5)) * size * 2.0;
+    var uv = (in.uv - vec2(0.5));
+    uv = uv * (size + vec2(padding)) * 2.0;
 #ifdef FBM
     let octaves = i32(material.data[9].x);
     let lacunarity = material.data[9].y;
@@ -55,15 +55,16 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
         fbm_simplex_2d(uv + vec2(offset), octaves, lacunarity, gain)
     );
 #endif
-    let sdf = sdf(uv, size) - AA;
-    var v = f32(sdf > -thickness);
+    let sdf = sdf(uv, size);
+    var v = f32(abs(sdf) < thickness);
 #ifdef LINE
-    v = min(v, smoothstep(0.0, AA, -sdf)) * v;
-    v = max(v, smoothstep(AA, 0.0, -sdf - thickness));
+    // v = min(v, smoothstep(0.0, AA, -sdf)) * v;
+    // v = max(v, smoothstep(AA, 0.0, -sdf - thickness));
+
 #else ifdef OPAQUE
     v = f32(sdf < 0.0);
 #endif
-    v = max(v, smoothstep(thickness + GLOW, thickness, -sdf) * 0.1);
+    v = max(v, smoothstep(thickness + GLOW, thickness, abs(sdf)) * 0.1);
 #ifdef SOLID
     var color = material.colors[0];
 #else ifdef GRADIENT_LINEAR
