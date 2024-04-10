@@ -53,8 +53,8 @@ impl CameraPlugin {
         let data = CameraData {
             entity,
             cur_scale: 100.0,
+            slot_pixel_spacing: 150.0,
             need_scale: default(),
-            slot_pixel_spacing: default(),
         };
         commands.insert_resource(data);
     }
