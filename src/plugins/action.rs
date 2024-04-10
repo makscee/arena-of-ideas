@@ -101,11 +101,11 @@ impl ActionPlugin {
         died
     }
 
-    pub fn get_event(world: &World) -> Option<Event> {
+    pub fn get_event(world: &World) -> Option<(Event, f32)> {
         let t = GameTimer::get().play_head();
         world.get_resource::<ActionsData>().and_then(|d| {
             d.events.iter().rev().find_map(|(ts, e)| match t >= *ts {
-                true => Some(*e),
+                true => Some((*e, t - *ts)),
                 false => None,
             })
         })
@@ -117,12 +117,12 @@ impl ActionPlugin {
             .push((GameTimer::get().insert_head(), event));
     }
 
-    pub fn get_round(t: f32, world: &World) -> usize {
+    pub fn get_round(t: f32, world: &World) -> (usize, f32) {
         world
             .get_resource::<ActionsData>()
             .and_then(|d| {
                 d.rounds.iter().rev().find_map(|(ts, e)| match t >= *ts {
-                    true => Some(*e),
+                    true => Some((*e, t - *ts)),
                     false => None,
                 })
             })

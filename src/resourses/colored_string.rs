@@ -5,6 +5,8 @@ use super::*;
 #[derive(Clone, Debug, Default)]
 pub struct ColoredString {
     pub lines: Vec<(String, Option<Color32>, ColoredStringStyle)>,
+    extra_size: f32,
+    extra_spacing: f32,
 }
 
 #[derive(Clone, Copy, Debug, Default)]
@@ -34,12 +36,16 @@ impl ColoredString {
     pub fn simple(text: String) -> Self {
         Self {
             lines: [(text, None, default())].into(),
+            extra_size: 0.0,
+            extra_spacing: 0.0,
         }
     }
 
     pub fn new(text: String, color: Color32) -> Self {
         Self {
             lines: vec![(text, Some(color), default())],
+            extra_size: 0.0,
+            extra_spacing: 0.0,
         }
     }
 
@@ -73,7 +79,25 @@ impl ColoredString {
         self
     }
     pub fn set_style(mut self, style: ColoredStringStyle) -> Self {
-        self.lines.iter_mut().for_each(|(_, _, s)| *s = style);
+        self.set_style_ref(style);
+        self
+    }
+
+    pub fn set_extra_size_ref(&mut self, extra_size: f32) -> &mut Self {
+        self.extra_size = extra_size;
+        self
+    }
+    pub fn set_extra_size(mut self, extra_size: f32) -> Self {
+        self.set_extra_size_ref(extra_size);
+        self
+    }
+
+    pub fn set_extra_spacing_ref(&mut self, extra_spacing: f32) -> &mut Self {
+        self.extra_spacing = extra_spacing;
+        self
+    }
+    pub fn set_extra_spacing(mut self, extra_spacing: f32) -> Self {
+        self.set_extra_spacing_ref(extra_spacing);
         self
     }
 
@@ -99,12 +123,15 @@ impl ColoredString {
         let mut job = LayoutJob::default();
         for (s, color, style) in self.lines.iter() {
             let color = color.unwrap_or(light_gray()).gamma_multiply(alpha);
+            let mut font_id = style.get_font(ui.style());
+            font_id.size += self.extra_size;
             job.append(
                 s,
                 0.0,
                 TextFormat {
                     color,
-                    font_id: style.get_font(ui.style()),
+                    font_id,
+                    extra_letter_spacing: self.extra_spacing,
                     ..default()
                 },
             );
@@ -113,12 +140,16 @@ impl ColoredString {
     }
 
     pub fn rich_text(&self, ui: &mut Ui) -> RichText {
-        let (color, font) = if let Some((_, c, f)) = self.lines.get(0) {
+        let (color, mut font) = if let Some((_, c, f)) = self.lines.get(0) {
             (c.unwrap_or(light_gray()), f.get_font(ui.style()))
         } else {
             (light_gray(), default())
         };
-        RichText::new(self.to_string()).color(color).font(font)
+        font.size += self.extra_size;
+        RichText::new(self.to_string())
+            .color(color)
+            .font(font)
+            .extra_letter_spacing(self.extra_spacing)
     }
 
     pub fn inject_definitions(mut self, world: &World) -> Self {
@@ -214,6 +245,8 @@ impl From<&str> for ColoredString {
     fn from(value: &str) -> Self {
         Self {
             lines: vec![(value.to_owned(), None, default())],
+            extra_size: 0.0,
+            extra_spacing: 0.0,
         }
     }
 }

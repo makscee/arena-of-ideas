@@ -195,13 +195,13 @@ impl BattlePlugin {
     }
 
     fn fatigue(world: &mut World) -> Result<()> {
-        let round = ActionPlugin::get_round(GameTimer::get().insert_head(), world) as i32;
+        let (round, _) = ActionPlugin::get_round(GameTimer::get().insert_head(), world);
         let fatigue = if let Some(settings) = GlobalSettings::filter_by_always_zero(0) {
             settings.fatigue_start
         } else {
             20
         } as i32;
-        let fatigue = round - fatigue;
+        let fatigue = round as i32 - fatigue;
         if fatigue > 0 {
             info!("Fatigue {fatigue}");
             let effect = Effect::Damage(Some(Expression::Int(fatigue)));
@@ -235,25 +235,31 @@ impl BattlePlugin {
     }
 
     fn draw_round_num(ctx: &egui::Context, world: &World) {
-        let round = ActionPlugin::get_round(GameTimer::get().play_head(), world);
+        let (round, ts) = ActionPlugin::get_round(GameTimer::get().play_head(), world);
+        let x = smoothstep(0.2, 0.0, ts);
+        let spacing = x * 4.0;
         TopBottomPanel::top("round num").show(ctx, |ui| {
             ui.vertical_centered_justified(|ui| {
                 format!("Round {round}")
                     .add_color(orange())
                     .set_style(ColoredStringStyle::Heading)
+                    .set_extra_spacing(spacing)
                     .label(ui)
             })
         });
     }
 
     fn draw_current_event(ctx: &egui::Context, world: &World) {
-        if let Some(event) = ActionPlugin::get_event(world) {
+        if let Some((event, ts)) = ActionPlugin::get_event(world) {
+            let x = smoothstep(0.2, 0.0, ts);
+            let spacing = x * 4.0;
             TopBottomPanel::top("event text").show(ctx, |ui| {
                 ui.vertical_centered_justified(|ui| {
                     let text = event
                         .to_string()
                         .add_color(yellow())
                         .set_style(ColoredStringStyle::Heading2)
+                        .set_extra_spacing(spacing)
                         .rich_text(ui);
                     ui.heading(text);
                 });
