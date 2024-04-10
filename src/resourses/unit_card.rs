@@ -181,8 +181,8 @@ impl VarState {
                                     .description
                                     .clone()
                                     .to_colored()
-                                    .inject_definitions(world)
                                     .inject_vars(&state)
+                                    .inject_definitions(world)
                             } else {
                                 ColoredString::default()
                             };
@@ -241,14 +241,16 @@ impl VarState {
                 .add_color(color)
                 .set_style_ref(ColoredStringStyle::Bold)
                 .take();
-            let description = description.to_colored().inject_definitions(world);
+            let description = description.to_colored();
             let vars = self
                 .parent(world)
                 .and_then(|s| s.get_faction(VarName::Faction).ok())
                 .and_then(|f| TeamPlugin::get_ability_state(f, &name, world));
             definitions.push((
                 name_colored,
-                description.inject_vars(vars.unwrap_or(&default())),
+                description
+                    .inject_vars(vars.unwrap_or(&default()))
+                    .inject_definitions(world),
             ));
         }
         Ok(definitions)

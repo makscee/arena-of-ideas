@@ -155,10 +155,6 @@ impl ColoredString {
     pub fn inject_definitions(mut self, world: &World) -> Self {
         let mut result: Vec<(String, Option<Color32>, ColoredStringStyle)> = default();
         for (s, color, style) in self.lines.drain(..) {
-            // if color.is_some() {
-            //     result.push((s, color, style));
-            //     continue;
-            // }
             for (s, bracketed) in s.split_by_brackets(("[", "]")) {
                 if bracketed {
                     let color = if let Ok(color) = Pools::get_color_by_name(&s, world) {
@@ -210,16 +206,21 @@ impl ColoredString {
     }
 
     pub fn inject_vars(mut self, state: &VarState) -> Self {
+        let t = GameTimer::get().play_head();
         let mut result: Vec<(String, Option<Color32>, ColoredStringStyle)> = default();
         for (s, color, style) in self.lines.drain(..) {
-            // if color.is_some() {
-            //     result.push((s, color, style));
-            //     continue;
-            // }
             for (mut s, bracketed) in s.split_by_brackets(("{", "}")) {
                 if bracketed {
+                    if let Some((var, s)) = s.split_once("|") {
+                        if VarName::from_str(var)
+                            .is_ok_and(|var| state.get_bool_at(var, t).unwrap_or_default())
+                        {
+                            result.push((s.to_owned(), Some(white()), style));
+                        }
+                        continue;
+                    }
                     if let Ok(var) = VarName::from_str(&s) {
-                        if let Ok(value) = state.get_string(var) {
+                        if let Ok(value) = state.get_string_at(var, t) {
                             s = value;
                         }
                     }

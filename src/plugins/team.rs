@@ -46,7 +46,7 @@ impl TeamPlugin {
         let mut states = world.get_mut::<AbilityStates>(team).unwrap();
         let state = states.0.get_mut(ability).unwrap();
         let prev = state.get_value_last(var).unwrap_or(VarValue::Int(0));
-        state.init(var, VarValue::sum(&prev, &value)?);
+        state.push_back(var, VarChange::new(VarValue::sum(&prev, &value)?));
         Ok(())
     }
     pub fn inject_ability_state(

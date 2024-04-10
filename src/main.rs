@@ -37,7 +37,6 @@ pub enum RunMode {
 
 fn main() {
     let args = Args::try_parse().unwrap_or_default();
-    dbg!(&args);
     let next_state = match args.mode {
         RunMode::Regular
         | RunMode::Offline
