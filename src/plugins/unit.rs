@@ -267,6 +267,13 @@ impl UnitPlugin {
         Self::fill_slot_gaps(Faction::Right, world);
         Self::translate_to_slots(world);
     }
+    pub fn fill_gaps_and_place(world: &mut World) {
+        Self::fill_slot_gaps(Faction::Left, world);
+        Self::fill_slot_gaps(Faction::Right, world);
+        for (unit, _) in Self::collect_factions([Faction::Left, Faction::Right].into(), world) {
+            Self::place_into_slot(unit, world).unwrap();
+        }
+    }
 
     pub fn get_hovered(world: &World) -> Option<Entity> {
         world

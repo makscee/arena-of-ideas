@@ -20,8 +20,7 @@ impl Plugin for HeroEditorPlugin {
 
 impl HeroEditorPlugin {
     fn on_enter(world: &mut World) {
-        let mut pd = PersistentData::load(world);
-        pd.hero_editor_data.active = None;
+        let pd = PersistentData::load(world);
         pd.hero_editor_data.load(world);
         world.insert_resource(HeroEditorHistory {
             frames: vec![(0.0, pd.hero_editor_data.clone())],
@@ -115,7 +114,7 @@ impl HeroEditorPlugin {
         }
         if let Some(unit) = delete {
             world.entity_mut(unit).despawn_recursive();
-            UnitPlugin::fill_gaps_and_translate(world);
+            UnitPlugin::fill_gaps_and_place(world);
             ed.save(world);
         }
         Self::show_edit_panel(ed, world);
@@ -231,10 +230,10 @@ impl HeroEditorPlugin {
                 .default_width(ctx.screen_rect().width() * 0.7)
                 .show(ctx, |ui| {
                     ui.with_layout(Layout::right_to_left(egui::Align::Min), |ui| {
-                        if ui.button_red("CLOSE").clicked() {
+                        if ui.button_red("Close").clicked() {
                             ed.active = None;
                         }
-                        if ui.button("PASTE").clicked() {
+                        if ui.button("Paste").clicked() {
                             if let Some(s) = get_from_clipboard(world) {
                                 match ron::from_str(&s) {
                                     Ok(u) => unit = u,
@@ -254,7 +253,7 @@ impl HeroEditorPlugin {
                                 world,
                             );
                         }
-                        ui.add_space(20.0);
+                        ui.add_space(10.0);
                         const SELECTED_STATUS_KEY: &str = "selected_status";
                         let mut status = get_context_string(world, SELECTED_STATUS_KEY);
                         ComboBox::from_id_source(SELECTED_STATUS_KEY)
@@ -284,7 +283,7 @@ impl HeroEditorPlugin {
                             }
                         });
 
-                        ui.add_space(20.0);
+                        ui.add_space(10.0);
                         const LOAD_HERO_KEY: &str = "load_hero";
                         let mut hero = get_context_string(world, LOAD_HERO_KEY);
                         let heroes = Pools::get(world)
@@ -301,7 +300,6 @@ impl HeroEditorPlugin {
                             unit = Pools::get(world).heroes.get(&hero).unwrap().clone();
                         }
                         ComboBox::from_id_source(LOAD_HERO_KEY)
-                            .width(150.0)
                             .selected_text(hero.clone())
                             .show_ui(ui, |ui| {
                                 for option in heroes {
@@ -327,13 +325,25 @@ impl HeroEditorPlugin {
                             unit = Pools::get(world).heroes.get(&hero).unwrap().clone();
                         }
 
-                        ui.add_space(20.0);
+                        ui.add_space(10.0);
                         let mut sd = SettingsData::get(world).clone();
                         let card = &mut sd.always_show_card;
                         if ui.checkbox(card, "").changed() {
                             sd.save(world).unwrap();
                         }
                         ui.label("card:");
+
+                        ui.add_space(10.0);
+                        ui.add_enabled_ui(HeroEditorHistory::get_mut(world).can_redo(), |ui| {
+                            if ui.button("->").clicked() {
+                                HeroEditorHistory::redo(world);
+                            }
+                        });
+                        ui.add_enabled_ui(HeroEditorHistory::get_mut(world).can_undo(), |ui| {
+                            if ui.button("<-").clicked() {
+                                HeroEditorHistory::undo(world);
+                            }
+                        })
                     });
                     ScrollArea::new([true, true])
                         .scroll_bar_visibility(egui::scroll_area::ScrollBarVisibility::AlwaysHidden)
@@ -373,11 +383,14 @@ struct HeroEditorHistory {
 }
 
 impl HeroEditorHistory {
+    fn get_mut(world: &mut World) -> Mut<Self> {
+        world.resource_mut::<HeroEditorHistory>()
+    }
     fn push(ed: HeroEditorData, world: &mut World) {
         const CD: f32 = 0.5;
         const LIMIT: usize = 100;
         let ts = world.resource::<Time>().elapsed_seconds();
-        let mut heh = world.resource_mut::<HeroEditorHistory>();
+        let mut heh = Self::get_mut(world);
         if heh.frames.last().is_some_and(|(t, _)| ts - *t < CD) {
             return;
         }
@@ -388,13 +401,22 @@ impl HeroEditorHistory {
             heh.frames.remove(0);
         }
     }
+    fn can_undo(&self) -> bool {
+        self.frames.len() > self.ind + 1
+    }
+    fn can_redo(&self) -> bool {
+        self.ind > 0
+    }
     fn undo(world: &mut World) {
         let mut pd = PersistentData::load(world);
-        let mut heh = world.resource_mut::<HeroEditorHistory>();
+        let mut heh = Self::get_mut(world);
+        if !heh.can_undo() {
+            return;
+        }
         heh.ind += 1;
         debug!("Undo {}, total frames: {}", heh.ind, heh.frames.len());
         if let Some((_, data)) = heh.frames.get(heh.frames.len() - heh.ind - 1) {
-            let mut data = data.clone();
+            let data = data.clone();
             data.load(world);
             pd.hero_editor_data = data;
             pd.save(world).unwrap();
@@ -402,15 +424,14 @@ impl HeroEditorHistory {
     }
     fn redo(world: &mut World) {
         let mut pd = PersistentData::load(world);
-        let mut heh = world.resource_mut::<HeroEditorHistory>();
-        if heh.ind == 0 {
+        let mut heh = Self::get_mut(world);
+        if !heh.can_redo() {
             return;
         }
         heh.ind -= 1;
         debug!("Redo {}, total frames: {}", heh.ind, heh.frames.len());
         if let Some((_, data)) = heh.frames.get(heh.frames.len() - heh.ind - 1) {
-            let mut data = data.clone();
-            data.active = None;
+            let data = data.clone();
             data.load(world);
             pd.hero_editor_data = data;
             pd.save(world).unwrap();
@@ -474,7 +495,7 @@ impl HeroEditorData {
         self.teams.1.iter().for_each(|u| {
             u.clone().unpack(right, None, world);
         });
-        UnitPlugin::fill_gaps_and_translate(world);
+        UnitPlugin::fill_gaps_and_place(world);
     }
 
     fn clear(&mut self) {
