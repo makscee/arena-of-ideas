@@ -6,8 +6,11 @@ use rand::{
     Rng, SeedableRng,
 };
 use rand_chacha::ChaCha8Rng;
-use std::hash::{Hash, Hasher};
 use std::{collections::hash_map::DefaultHasher, f32::consts::PI};
+use std::{
+    collections::VecDeque,
+    hash::{Hash, Hasher},
+};
 
 use super::*;
 
@@ -605,6 +608,44 @@ impl Expression {
     pub fn get_color(&self, context: &Context, world: &mut World) -> Result<Color> {
         self.get_value(context, world)?.get_color()
     }
+
+    pub fn try_randomize(&mut self, range: f32) -> bool {
+        let delta = || (&mut thread_rng()).gen_range(-range..range);
+        match self {
+            Expression::Float(x) => *x += delta(),
+            Expression::Int(x) => *x += delta() as i32,
+            Expression::Value(x) => match x {
+                VarValue::Float(x) => *x += delta(),
+                VarValue::Int(x) => *x += delta() as i32,
+                VarValue::Vec2(x) => {
+                    x.x += delta();
+                    x.y += delta();
+                }
+                _ => {
+                    return false;
+                }
+            },
+            Expression::Vec2(x, y) => {
+                *x += delta();
+                *y += delta();
+            }
+            _ => {
+                return false;
+            }
+        }
+        true
+    }
+
+    pub fn mut_all(&mut self, f: impl Fn(&mut Self)) {
+        f(self);
+        let mut q: VecDeque<&mut Box<Self>> = VecDeque::from_iter(self.get_inner().into_iter());
+        while let Some(t) = q.pop_front() {
+            f(t);
+            for e in t.get_inner() {
+                q.push_back(e);
+            }
+        }
+    }
 }
 
 impl EditorNodeGenerator for Expression {
@@ -951,6 +992,27 @@ impl EditorNodeGenerator for Expression {
 
     fn wrap(&mut self) {
         *self = Self::Mul(Box::new(self.clone()), Box::new(Self::Float(0.1)))
+    }
+
+    fn show_context_menu(&mut self, ui: &mut Ui) {
+        if ui.button("Randomize 0.1").clicked() {
+            self.mut_all(|e| {
+                e.try_randomize(0.1);
+            });
+            ui.close_menu();
+        }
+        if ui.button("Randomize 1.0").clicked() {
+            self.mut_all(|e| {
+                e.try_randomize(1.0);
+            });
+            ui.close_menu();
+        }
+        if ui.button("Randomize 10.0").clicked() {
+            self.mut_all(|e| {
+                e.try_randomize(10.0);
+            });
+            ui.close_menu();
+        }
     }
 }
 

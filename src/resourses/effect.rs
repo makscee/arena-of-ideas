@@ -744,6 +744,8 @@ impl EditorNodeGenerator for Effect {
     fn wrap(&mut self) {
         *self = Effect::List([Box::new(self.clone())].into());
     }
+
+    fn show_context_menu(&mut self, ui: &mut Ui) {}
 }
 
 impl std::fmt::Display for Effect {

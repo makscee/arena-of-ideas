@@ -731,20 +731,21 @@ pub fn show_node(
     );
 
     name_resp.context_menu(|ui| {
-        if ui.button("COPY").clicked() {
+        if ui.button("Copy").clicked() {
             save_to_clipboard(
                 &to_string_pretty(source, PrettyConfig::new()).unwrap(),
                 world,
             );
             ui.close_menu();
         }
-        if ui.button("PASTE").clicked() {
+        if ui.button("Paste").clicked() {
             let o = get_from_clipboard(world).unwrap();
             if let Ok(o) = ron::from_str(o.as_str()) {
                 *source = o;
             }
             ui.close_menu();
         }
+        source.show_context_menu(ui);
     });
 }
 
@@ -760,5 +761,6 @@ pub trait EditorNodeGenerator: AsRef<str> + Sized + Serialize + DeserializeOwned
     );
     fn show_extra(&mut self, path: &str, context: &Context, world: &mut World, ui: &mut Ui);
     fn show_replace_buttons(&mut self, lookup: &str, submit: bool, ui: &mut Ui) -> bool;
+    fn show_context_menu(&mut self, ui: &mut Ui);
     fn wrap(&mut self);
 }

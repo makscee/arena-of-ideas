@@ -243,6 +243,8 @@ impl EditorNodeGenerator for FireTrigger {
     fn wrap(&mut self) {
         *self = FireTrigger::List([Box::new(self.clone())].into());
     }
+
+    fn show_context_menu(&mut self, ui: &mut Ui) {}
 }
 
 impl DeltaTrigger {
