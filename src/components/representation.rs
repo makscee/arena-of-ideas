@@ -913,11 +913,11 @@ impl Representation {
                 });
             });
         response.header_response.context_menu(|ui| {
-            if ui.button("COPY").clicked() {
+            if ui.button("Copy").clicked() {
                 save_to_clipboard(&to_string_pretty(self, PrettyConfig::new()).unwrap(), world);
                 ui.close_menu();
             }
-            if ui.button("PASTE").clicked() {
+            if ui.button("Paste").clicked() {
                 if let Some(s) = get_from_clipboard(world) {
                     match ron::from_str(&s) {
                         Ok(o) => *self = o,

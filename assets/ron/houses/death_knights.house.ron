@@ -55,7 +55,7 @@
             trigger: Fire(
                 triggers: [(AfterDamageDealt, None)],
                 targets: [(Target, None)],
-                effects: [(If(AbilityState("Summon Skeleton", T), UseAbility("Plague", 0), Noop), None)],
+                effects: [(If(AbilityState("Summon Skeleton", M1), UseAbility("Plague", 0), Noop), None)],
             ),
             representation: (
                 material: Shape(

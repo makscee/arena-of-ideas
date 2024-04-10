@@ -1,11 +1,6 @@
 (
     material: Shape(
-        shape: Circle(
-            radius: Sum(
-                Mul(If(Even(OwnerState(Slot)), Mul(Beat, Float(-1.0)), Beat), Float(0.1)),
-                Float(1.0),
-            ),
-        ),
+        shape: Circle(radius: Sum(Mul(Beat, Float(0.1)), Float(1.0))),
         shape_type: Line(thickness: Float(1.0)),
         fill: Solid(color: Hex("#B0BEC5")),
     ),

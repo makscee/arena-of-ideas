@@ -245,7 +245,7 @@ impl HeroEditorPlugin {
                                 }
                             }
                         }
-                        if ui.button("COPY").clicked() {
+                        if ui.button("Copy").clicked() {
                             let mut unit = unit.clone();
                             unit.state = default();
                             save_to_clipboard(

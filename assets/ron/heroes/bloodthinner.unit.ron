@@ -1,0 +1,39 @@
+(
+    name: "Bloodthinner",
+    hp: 2,
+    atk: 2,
+    stacks: 1,
+    level: 1,
+    houses: "Vampires",
+    description: "%trigger → %effect on %target",
+    trigger: Fire(
+        triggers: [(BattleStart, None)],
+        targets: [],
+        effects: [(AbilityStateAddVar("Siphon", M1, Bool(true)), Some("[Siphon] gives ATK"))],
+    ),
+    representation: (
+        material: Shape(
+            shape: Circle(radius: Sum(Float(0.86), Mul(Beat, Float(0.1)))),
+            shape_type: Line(thickness: Float(3.0)),
+            fill: GradientLinear(
+                point1: Vec2(-1.0, 0.0),
+                point2: Vec2(1.0, 0.0),
+                parts: [Float(0.0), Float(0.55)],
+                colors: [OwnerState(Color), Hex("272727ff")],
+            ),
+            fbm: Some(
+                (
+                    octaves: Int(2),
+                    lacunarity: Sum(Float(1.0), Mul(Index, Float(1.0))),
+                    gain: Sin(Mul(GameTime, Float(1.0))),
+                    offset: Mul(GameTime, Float(0.3)),
+                ),
+            ),
+            alpha: Float(0.6),
+            padding: Float(0.0),
+        ),
+        children: [],
+        mapping: {},
+        count: 2,
+    ),
+)

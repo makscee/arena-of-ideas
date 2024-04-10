@@ -2,26 +2,33 @@
 (
     name: "Vampires",
     color: ("#BA002F"),
+    defaults: {"Siphon": {M1: Bool(false)}},
     statuses: [
         (
             name: "Siphoned Out",
-            description: "-{Charges} Hp",
+            description: "-{Charges} HP",
             trigger: Change(trigger: Var(Hp), expr: Sub(Int(0), Context(Charges))),
         ),
         (
-            name: "Siphon Bonus",
+            name: "Siphon HP",
             description: "+{Charges} Hp",
             trigger: Change(trigger: Var(Hp), expr: Context(Charges)),
+        ),
+        (
+            name: "Siphon ATK",
+            description: "+{Charges} Atk",
+            trigger: Change(trigger: Var(Atk), expr: Context(Charges)),
         ),
     ],
     abilities: [
         (
             name: "Siphon",
-            description: "Drain 1 HP from target",
+            description: "Drain 1 HP from target{M1|, gain +1 ATK for each}",
             effect: List(
                 [
                     AddStatus("Siphoned Out"),
-                    WithTarget(Owner, AddStatus("Siphon Bonus")),
+                    WithTarget(Owner, AddStatus("Siphon HP")),
+                    If(AbilityState("Siphon", M1), WithTarget(Owner, AddStatus("Siphon ATK")), Noop),
                     Vfx("apply_status"),
                 ],
             ),
