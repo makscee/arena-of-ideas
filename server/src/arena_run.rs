@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use itertools::Itertools;
 use rand::seq::IteratorRandom;
 use rand::{thread_rng, Rng};
@@ -261,10 +263,20 @@ impl ArenaRun {
         let slots = (settings.shop_slots_min
             + (self.round() as f32 * settings.shop_slots_per_round) as u32)
             .min(settings.shop_slots_max);
-        for _ in 0..slots {
+        let team_houses: HashSet<String> = HashSet::from_iter(
+            self.state
+                .team
+                .iter()
+                .map(|u| u.unit.houses.split("+"))
+                .flatten()
+                .map(|s| s.to_owned())
+                .collect_vec(),
+        );
+        for i in 0..slots {
             let id = self.next_id();
             self.state.case.push(
                 TableUnit::iter()
+                    .filter(|u| i > 0 || team_houses.is_empty() || team_houses.contains(&u.houses))
                     .choose(&mut thread_rng())
                     .map(|unit| ShopOffer {
                         available: true,
