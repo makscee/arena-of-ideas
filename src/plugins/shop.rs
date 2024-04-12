@@ -136,7 +136,7 @@ impl ShopPlugin {
 
     fn transition_to_battle(world: &mut World) {
         let run = ArenaRun::filter_by_active(true).next().unwrap();
-        let round = run.state.wins + run.state.loses;
+        let round = run.wins;
         let left =
             PackedTeam::from_table_units(run.state.team.into_iter().map(|u| u.unit).collect());
         let right = if let Some(right) = run.enemies.get(round as usize) {
@@ -403,12 +403,12 @@ impl ShopPlugin {
                 frame(ui, |ui| {
                     text_dots_text(
                         &"wins".to_colored(),
-                        &run.state.wins.to_string().add_color(white()),
+                        &run.wins.to_string().add_color(white()),
                         ui,
                     );
                     text_dots_text(
                         &"loses".to_colored(),
-                        &run.state.loses.to_string().add_color(white()),
+                        &run.loses.to_string().add_color(white()),
                         ui,
                     );
                 });
@@ -442,7 +442,7 @@ impl ShopPlugin {
                     .get_int(VarName::Price)
                     .unwrap_or_default() as i64;
                 let discount = if is_shop && price < gs.price_unit_buy {
-                    Some("discount")
+                    Some("discount".add_color(yellow()))
                 } else {
                     None
                 };
@@ -461,7 +461,7 @@ impl ShopPlugin {
                                     offset,
                                     orange(),
                                     &text,
-                                    discount,
+                                    &discount,
                                     false,
                                     |_| {
                                         data.phase = ShopPhase::Stack {
@@ -490,7 +490,7 @@ impl ShopPlugin {
                                     offset,
                                     red(),
                                     "Fuse",
-                                    None,
+                                    &None,
                                     false,
                                     |_| {
                                         data.phase = ShopPhase::FuseStart {
@@ -514,7 +514,7 @@ impl ShopPlugin {
                                 offset,
                                 yellow(),
                                 &format!("-{} g", gs.price_unit_buy.min(price)),
-                                discount.or_else(|| Some("buy")),
+                                &discount.clone().or_else(|| Some("buy".to_colored())),
                                 false,
                                 |world| {
                                     ServerOperation::Buy(entity).send(world).unwrap();
@@ -532,7 +532,7 @@ impl ShopPlugin {
                                     offset,
                                     yellow(),
                                     &format!("+{} g", gs.price_unit_sell),
-                                    Some("sell"),
+                                    &Some("sell".to_colored()),
                                     false,
                                     |world| {
                                         ServerOperation::Sell(entity).send(world).unwrap();
@@ -552,7 +552,7 @@ impl ShopPlugin {
                                 offset,
                                 red(),
                                 &format!("Cancel {}", if is_stack { "Stack" } else { "Fuse" }),
-                                None,
+                                &None,
                                 false,
                                 |world| {
                                     data.phase = ShopPhase::initial(world);
@@ -566,7 +566,7 @@ impl ShopPlugin {
                                 offset,
                                 yellow(),
                                 "Choose",
-                                None,
+                                &None,
                                 false,
                                 |world| {
                                     if is_stack {
@@ -598,7 +598,7 @@ impl ShopPlugin {
         offset: &mut Vec2,
         color: Color32,
         text: &str,
-        label: Option<&str>,
+        label: &Option<ColoredString>,
         small: bool,
         action: impl FnOnce(&mut World),
         ctx: &egui::Context,
@@ -620,7 +620,7 @@ impl ShopPlugin {
                 frame(ui, |ui| {
                     ui.set_width(100.0);
                     if let Some(label) = label {
-                        ui.label(label);
+                        label.label(ui);
                     }
                     let text = text
                         .add_color(color)

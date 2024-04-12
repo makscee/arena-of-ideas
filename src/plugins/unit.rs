@@ -393,6 +393,7 @@ impl UnitPlugin {
             return;
         };
         let show_card = SettingsData::get(world).always_show_card;
+        let dragging = world.resource::<DraggedUnit>().0.is_some();
         for (entity, state) in world
             .query_filtered::<(Entity, &VarState), Or<(With<Unit>, With<Corpse>)>>()
             .iter(world)
@@ -412,7 +413,7 @@ impl UnitPlugin {
             state.show_entity_card_window(
                 entity,
                 statuses,
-                show_card || hovered == Some(entity),
+                (show_card || hovered == Some(entity)) && !dragging,
                 ctx,
                 world,
             );

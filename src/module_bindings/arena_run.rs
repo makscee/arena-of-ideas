@@ -17,9 +17,12 @@ use spacetimedb_sdk::{
 pub struct ArenaRun {
     pub id: u64,
     pub user_id: u64,
+    pub wins: u8,
+    pub loses: u8,
     pub enemies: Vec<u64>,
     pub state: GameState,
     pub active: bool,
+    pub last_updated: u64,
 }
 
 impl TableType for ArenaRun {
@@ -44,6 +47,14 @@ impl ArenaRun {
         Self::filter(|row| row.user_id == user_id)
     }
     #[allow(unused)]
+    pub fn filter_by_wins(wins: u8) -> TableIter<Self> {
+        Self::filter(|row| row.wins == wins)
+    }
+    #[allow(unused)]
+    pub fn filter_by_loses(loses: u8) -> TableIter<Self> {
+        Self::filter(|row| row.loses == loses)
+    }
+    #[allow(unused)]
     pub fn filter_by_enemies(enemies: Vec<u64>) -> TableIter<Self> {
         Self::filter(|row| row.enemies == enemies)
     }
@@ -54,5 +65,9 @@ impl ArenaRun {
     #[allow(unused)]
     pub fn filter_by_active(active: bool) -> TableIter<Self> {
         Self::filter(|row| row.active == active)
+    }
+    #[allow(unused)]
+    pub fn filter_by_last_updated(last_updated: u64) -> TableIter<Self> {
+        Self::filter(|row| row.last_updated == last_updated)
     }
 }

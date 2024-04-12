@@ -3,6 +3,7 @@ use std::collections::HashSet;
 use itertools::Itertools;
 use rand::seq::IteratorRandom;
 use rand::{thread_rng, Rng};
+use spacetimedb::Timestamp;
 
 use crate::unit::TableUnit;
 
@@ -14,14 +15,15 @@ pub struct ArenaRun {
     #[autoinc]
     id: u64,
     user_id: u64,
+    wins: u8,
+    loses: u8,
     enemies: Vec<u64>,
     state: GameState,
     active: bool,
+    last_updated: Timestamp,
 }
 #[derive(SpacetimeType)]
 pub struct GameState {
-    wins: u8,
-    loses: u8,
     g: i64,
     team: Vec<TeamUnit>,
     case: Vec<ShopOffer>,
@@ -71,25 +73,29 @@ fn run_submit_result(ctx: ReducerContext, win: bool) -> Result<(), String> {
         team,
     })?;
     if win {
-        run.state.wins += 1;
+        run.wins += 1;
     } else {
-        run.state.loses += 1;
+        run.loses += 1;
     }
-    if run.state.loses > 2 || run.state.wins > 9 {
+    if run.loses > 2 {
         run.active = false;
     } else {
         let round = run.round();
-        if let Some(enemy) = ArenaPool::filter_by_round(&round)
+        if (round as usize) > run.enemies.len() {
+            run.active = false;
+        } else if let Some(enemy) = ArenaPool::filter_by_round(&round)
             // .filter(|e| e.owner != user_id)
             .choose(&mut thread_rng())
         {
             run.enemies.push(enemy.id);
         }
     }
-    let settings = GlobalSettings::get();
-    run.change_g((settings.g_per_round_min + run.round() as i64).min(settings.g_per_round_max));
-    run.state.case.clear();
-    run.fill_case();
+    if run.active {
+        let settings = GlobalSettings::get();
+        run.change_g((settings.g_per_round_min + run.round() as i64).min(settings.g_per_round_max));
+        run.state.case.clear();
+        run.fill_case();
+    }
     run.save();
     Ok(())
 }
@@ -211,11 +217,12 @@ impl ArenaRun {
         Self {
             user_id,
             active: true,
+            wins: 0,
+            loses: 0,
+            last_updated: Timestamp::now(),
             id: 0,
             enemies: Vec::default(),
             state: GameState {
-                wins: 0,
-                loses: 0,
                 g: GlobalSettings::get().g_per_round_min,
                 team: Vec::default(),
                 case: Vec::default(),
@@ -225,7 +232,7 @@ impl ArenaRun {
     }
 
     fn round(&self) -> u8 {
-        self.state.loses + self.state.wins
+        self.wins
     }
 
     fn get_by_identity(identity: &Identity) -> Result<(u64, Self), String> {
@@ -340,7 +347,8 @@ impl ArenaRun {
         Ok(())
     }
 
-    fn save(self) {
+    fn save(mut self) {
+        self.last_updated = Timestamp::now();
         Self::update_by_id(&self.id.clone(), self);
     }
 }

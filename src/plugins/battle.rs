@@ -67,7 +67,6 @@ impl BattlePlugin {
         GameTimer::get().insert_to_end();
         ActionPlugin::spin(world)?;
         Event::BattleStart.send(world).spin(world)?;
-
         loop {
             if let Some((left, right)) = Self::get_strikers(world) {
                 Self::run_strike(left, right, world)?;
@@ -284,9 +283,9 @@ impl BattlePlugin {
                 }
                 subtext
                     .push("Wins: ".to_owned(), light_gray())
-                    .push(format!("{}/10", run.state.wins), white())
+                    .push(format!("{}", run.wins), white())
                     .push("\nLoses: ".to_owned(), light_gray())
-                    .push(format!("{}/3", run.state.loses), red());
+                    .push(format!("{}/3", run.loses), red());
             }
             let color = match win {
                 true => {

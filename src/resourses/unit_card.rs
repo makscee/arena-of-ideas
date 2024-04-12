@@ -204,7 +204,6 @@ impl VarState {
     ) -> Result<Vec<(ColoredString, ColoredString)>> {
         let t = GameTimer::get().play_head();
         let description = self.get_string_at(VarName::EffectDescription, t)?;
-        let original_description = self.get_string_at(VarName::Description, t)?;
         let mut definitions: Vec<(ColoredString, ColoredString)> = default();
         let mut added_definitions: HashSet<String> = default();
         let mut raw_definitions = VecDeque::from_iter(
@@ -212,11 +211,6 @@ impl VarState {
                 .extract_bracketed(("[", "]"))
                 .into_iter()
                 .chain(statuses.iter().map(|(s, _)| s.to_owned()))
-                .chain(
-                    original_description
-                        .extract_bracketed(("[", "]"))
-                        .into_iter(),
-                )
                 .unique(),
         );
         while let Some(name) = raw_definitions.pop_front() {
@@ -344,8 +338,8 @@ impl VarState {
                 Self::show_status_lines(statuses, open, ui);
             });
         }
-        let definition = self.definitions(statuses.as_ref(), world);
-        if let Ok(definitions) = definition {
+        let definitions = self.definitions(statuses.as_ref(), world);
+        if let Ok(definitions) = definitions {
             for (name, text) in &definitions {
                 frame(ui, |ui| {
                     name.label(ui);

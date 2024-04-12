@@ -16,8 +16,6 @@ use spacetimedb_sdk::{
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct GameState {
-    pub wins: u8,
-    pub loses: u8,
     pub g: i64,
     pub team: Vec<TeamUnit>,
     pub case: Vec<ShopOffer>,

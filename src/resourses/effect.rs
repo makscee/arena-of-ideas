@@ -363,8 +363,6 @@ impl Effect {
                 if let Some(entity) = local_trigger {
                     VarState::get_mut(entity, world).set_int(VarName::Charges, 0);
                 }
-                VarState::get_mut(target, world)
-                    .set_string(VarName::Description, "--removed--".into());
             }
             Effect::If(cond, th, el) => {
                 if cond.get_bool(context, world)? {
