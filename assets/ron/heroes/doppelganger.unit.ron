@@ -3,6 +3,8 @@
     name: "Doppelganger",
     hp: 2,
     atk: 3,
+    stacks: 1,
+    level: 1,
     houses: "Shifters",
     trigger: Fire(
         triggers: [(BattleStart, None)],
@@ -13,7 +15,10 @@
         material: Shape(
             shape: Circle(radius: Float(0.72)),
             shape_type: Line(thickness: Float(2.0)),
+            fill: Solid(color: OwnerState(Color)),
+            fbm: None,
             alpha: Float(0.4),
+            padding: Float(0.0),
         ),
         children: [],
         mapping: {

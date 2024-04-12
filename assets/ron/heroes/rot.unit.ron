@@ -1,3 +1,4 @@
+#![enable(implicit_some)]
 (
     name: "Rot",
     hp: 5,
@@ -15,7 +16,9 @@
             shape: Rectangle(size: Vec2E(Float(0.19))),
             shape_type: Line(thickness: Float(2.0)),
             fill: Solid(color: OwnerState(Color)),
+            fbm: None,
             alpha: Sin(Sum(GameTime, Mul(RandomFloat(Index), PI2))),
+            padding: Float(0.0),
         ),
         children: [],
         mapping: {Offset: Mul(UnitVec(Mul(RandomFloat(Index), PI2)), Float(0.88))},

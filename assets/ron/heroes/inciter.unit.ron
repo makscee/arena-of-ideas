@@ -1,3 +1,4 @@
+#![enable(implicit_some)]
 (
     name: "Inciter",
     hp: 2,
@@ -7,7 +8,7 @@
     houses: "Meta",
     trigger: Fire(
         triggers: [(AllyDeath, None)],
-        targets: [(TargetStateLast(LastAttacker), Some("killer"))],
+        targets: [(TargetStateLast(LastAttacker), "killer")],
         effects: [(UseAbility("Betray", 0), None)],
     ),
     representation: (
@@ -20,7 +21,9 @@
             ),
             shape_type: Line(thickness: Float(1.0)),
             fill: Solid(color: OwnerState(Color)),
+            fbm: None,
             alpha: Float(0.3),
+            padding: Float(0.0),
         ),
         children: [],
         mapping: {

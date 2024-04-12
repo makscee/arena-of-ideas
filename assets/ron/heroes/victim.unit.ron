@@ -1,3 +1,4 @@
+#![enable(implicit_some)]
 (
     name: "Victim",
     hp: 1,
@@ -15,7 +16,9 @@
             shape: Circle(radius: Sum(Float(0.2), Sub(Zero, Mul(Index, Float(0.03))))),
             shape_type: Line(thickness: Float(1.0)),
             fill: Solid(color: OwnerState(Color)),
+            fbm: None,
             alpha: Float(1.0),
+            padding: Float(0.0),
         ),
         children: [],
         mapping: {

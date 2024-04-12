@@ -1,3 +1,4 @@
+#![enable(implicit_some)]
 (
     name: "Protector",
     hp: 2,
@@ -7,7 +8,7 @@
     houses: "Paladins",
     trigger: Fire(
         triggers: [(BattleStart, None)],
-        targets: [(SlotUnit(Int(1)), Some("front ally"))],
+        targets: [(SlotUnit(Int(1)), "front ally")],
         effects: [(UseAbility("Shield", 0), None)],
     ),
     representation: (
@@ -15,7 +16,9 @@
             shape: Circle(radius: Float(0.67)),
             shape_type: Line(thickness: Float(0.37)),
             fill: Solid(color: OwnerState(Color)),
+            fbm: None,
             alpha: Float(0.36),
+            padding: Float(0.0),
         ),
         children: [],
         mapping: {

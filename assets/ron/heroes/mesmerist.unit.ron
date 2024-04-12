@@ -1,3 +1,4 @@
+#![enable(implicit_some)]
 (
     name: "Mesmerist",
     hp: 1,
@@ -14,10 +15,15 @@
         material: Shape(
             shape: Circle(radius: Mul(Index, Mul(Float(0.1), Abs(Sin(Sum(GameTime, Index)))))),
             shape_type: Line(thickness: Float(1.0)),
+            fill: Solid(color: OwnerState(Color)),
+            fbm: None,
             alpha: Float(1.0),
+            padding: Float(0.0),
         ),
         children: [],
         mapping: {},
         count: 10,
     ),
+    state: (history: {}, birth: 0.0),
+    statuses: [],
 )

@@ -3,6 +3,8 @@
     name: "Wizard",
     hp: 3,
     atk: 1,
+    stacks: 1,
+    level: 1,
     houses: "Mages",
     trigger: Fire(
         triggers: [(TurnEnd, None)],
@@ -14,15 +16,21 @@
             shape: Circle(radius: Sum(Float(0.7), Mul(Beat, Float(0.3)))),
             shape_type: Line(thickness: Sum(Float(2.5), Cos(GameTime))),
             fill: Solid(color: OwnerState(Color)),
+            fbm: None,
+            alpha: Float(1.0),
+            padding: Float(0.0),
         ),
         children: [
             (
-                count: 5,
                 material: Shape(
                     shape: Circle(radius: Float(0.2)),
                     shape_type: Opaque,
                     fill: Solid(color: OwnerState(Color)),
+                    fbm: None,
+                    alpha: Float(1.0),
+                    padding: Float(0.0),
                 ),
+                children: [],
                 mapping: {
                     Offset: Mul(
                         Vec2EE(Sin(Sum(GameTime, IntFloat(OwnerState(Index)))), Cos(GameTime)),
@@ -32,7 +40,12 @@
                         ),
                     ),
                 },
+                count: 5,
             ),
         ],
+        mapping: {},
+        count: 0,
     ),
+    state: (history: {}, birth: 0.0),
+    statuses: [],
 )

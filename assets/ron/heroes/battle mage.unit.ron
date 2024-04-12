@@ -1,3 +1,4 @@
+#![enable(implicit_some)]
 (
     name: "Battle Mage",
     hp: 4,
@@ -11,7 +12,7 @@
         effects: [
             (
                 Repeat(Int(3), WithTarget(RandomEnemy, UseAbility("Magic Missile", 0))),
-                Some("use [Magic Missile] ({Level}) on random enemy 3 times"),
+                "use [Magic Missile] ({Level}) on random enemy 3 times",
             ),
         ],
     ),
@@ -20,7 +21,9 @@
             shape: Circle(radius: Float(0.12)),
             shape_type: Opaque,
             fill: Solid(color: OwnerState(Color)),
+            fbm: None,
             alpha: Float(1.0),
+            padding: Float(0.0),
         ),
         children: [],
         mapping: {

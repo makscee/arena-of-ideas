@@ -1,3 +1,4 @@
+#![enable(implicit_some)]
 (
     name: "Henchman",
     hp: 4,
@@ -19,10 +20,15 @@
                 ),
             ),
             shape_type: Line(thickness: Float(1.0)),
+            fill: Solid(color: OwnerState(Color)),
+            fbm: None,
             alpha: Float(1.0),
+            padding: Float(0.0),
         ),
         children: [],
         mapping: {Offset: Mul(UnitVec(Mul(GameTime, Float(100.0))), Float(0.05))},
         count: 0,
     ),
+    state: (history: {}, birth: 0.0),
+    statuses: [],
 )

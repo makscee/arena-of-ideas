@@ -1,3 +1,4 @@
+#![enable(implicit_some)]
 (
     name: "Commander",
     hp: 2,
@@ -22,7 +23,9 @@
             ),
             shape_type: Line(thickness: Sum(Float(0.6), Mul(Sin(Sum(GameTime, Index)), Float(0.4)))),
             fill: Solid(color: OwnerState(Color)),
+            fbm: None,
             alpha: Float(1.0),
+            padding: Float(0.0),
         ),
         children: [],
         mapping: {
@@ -33,4 +36,6 @@
         },
         count: 6,
     ),
+    state: (history: {}, birth: 0.0),
+    statuses: [],
 )

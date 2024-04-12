@@ -1,3 +1,4 @@
+#![enable(implicit_some)]
 (
     name: "Rose",
     hp: 3,
@@ -15,10 +16,14 @@
             shape: Rectangle(size: Vec2E(Float(1.13))),
             shape_type: Line(thickness: Float(1.0)),
             fill: Solid(color: OwnerState(Color)),
+            fbm: None,
             alpha: Float(1.0),
+            padding: Float(0.0),
         ),
         children: [],
         mapping: {Rotation: Mul(Mul(Index, Float(0.1)), Sin(GameTime))},
         count: 7,
     ),
+    state: (history: {}, birth: 0.0),
+    statuses: [],
 )

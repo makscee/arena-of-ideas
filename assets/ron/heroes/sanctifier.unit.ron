@@ -1,3 +1,4 @@
+#![enable(implicit_some)]
 (
     name: "Sanctifier",
     hp: 4,
@@ -15,9 +16,14 @@
             shape: Circle(radius: Sum(Float(0.59), Mul(Beat, Float(0.05)))),
             shape_type: Line(thickness: Float(2.0)),
             fill: Solid(color: OwnerState(Color)),
+            fbm: None,
             alpha: Float(1.0),
+            padding: Float(0.0),
         ),
+        children: [],
         mapping: {Offset: Mul(UnitVec(Mul(Index, PI)), Mul(Sin(Mul(GameTime, Float(0.3))), Float(0.3)))},
         count: 2,
     ),
+    state: (history: {}, birth: 0.0),
+    statuses: [],
 )

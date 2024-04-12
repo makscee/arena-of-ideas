@@ -1,3 +1,4 @@
+#![enable(implicit_some)]
 (
     name: "Fodder",
     hp: 4,
@@ -22,10 +23,14 @@
             ),
             shape_type: Line(thickness: Sum(Float(1.0), Mul(Sin(Sum(GameTime, Index)), Float(6.0)))),
             fill: Solid(color: OwnerState(Color)),
+            fbm: None,
             alpha: Float(0.5),
+            padding: Float(0.0),
         ),
         children: [],
         mapping: {Offset: Vec2EE(Sum(Mul(Float(0.2), Index), Float(-0.8)), Zero)},
         count: 5,
     ),
+    state: (history: {}, birth: 0.0),
+    statuses: [],
 )

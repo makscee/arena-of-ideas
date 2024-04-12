@@ -3,6 +3,8 @@
     name: "Mentalist",
     hp: 1,
     atk: 2,
+    stacks: 1,
+    level: 1,
     houses: "Meta",
     trigger: Fire(
         triggers: [(BeforeDeath, None)],
@@ -13,7 +15,10 @@
         material: Shape(
             shape: Circle(radius: Float(0.25)),
             shape_type: Opaque,
+            fill: Solid(color: OwnerState(Color)),
+            fbm: None,
             alpha: If(Equals(OwnerState(Index), Zero), Float(1.0), Float(0.1)),
+            padding: Float(0.0),
         ),
         children: [],
         mapping: {

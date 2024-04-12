@@ -1,3 +1,4 @@
+#![enable(implicit_some)]
 (
     name: "Harvest",
     hp: 4,
@@ -6,7 +7,7 @@
     level: 1,
     houses: "Druids",
     trigger: Fire(
-        triggers: [(OnceAfter(4, TurnEnd), Some("in 5 turns"))],
+        triggers: [(OnceAfter(4, TurnEnd), "in 5 turns")],
         targets: [],
         effects: [(UseAbility("Summon Treant", 2), None)],
     ),
@@ -15,7 +16,9 @@
             shape: Circle(radius: Float(0.12)),
             shape_type: Line(thickness: Float(1.0)),
             fill: Solid(color: OwnerState(Color)),
+            fbm: None,
             alpha: Sin(Context(T)),
+            padding: Float(0.0),
         ),
         children: [],
         mapping: {

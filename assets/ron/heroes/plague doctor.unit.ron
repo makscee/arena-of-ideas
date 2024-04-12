@@ -1,3 +1,4 @@
+#![enable(implicit_some)]
 (
     name: "Plague Doctor",
     hp: 5,
@@ -6,14 +7,9 @@
     level: 1,
     houses: "Death Knights",
     trigger: Fire(
-        triggers: [(Period(0, 1, TurnEnd), Some("every 2 turns"))],
-        targets: [(FindUnit(StatusCharges(String("Plague"))), Some("ally"))],
-        effects: [
-            (
-                List([ClearStatus("Plague"), Vfx("ron/vfx/apply_status.vfx.ron")]),
-                Some("clear [Plague]"),
-            ),
-        ],
+        triggers: [(Period(0, 1, TurnEnd), "every 2 turns")],
+        targets: [(FindUnit(StatusCharges(String("Plague"))), "ally")],
+        effects: [(List([ClearStatus("Plague"), Vfx("ron/vfx/apply_status.vfx.ron")]), "clear [Plague]")],
     ),
     representation: (
         material: Shape(
@@ -25,7 +21,9 @@
                 parts: [Float(0.55), Float(-0.09)],
                 colors: [Hex("00000000"), OwnerState(Color)],
             ),
+            fbm: None,
             alpha: Float(1.0),
+            padding: Float(0.0),
         ),
         children: [],
         mapping: {

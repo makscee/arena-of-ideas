@@ -1,3 +1,4 @@
+#![enable(implicit_some)]
 (
     name: "Caster",
     hp: 1,
@@ -7,7 +8,7 @@
     houses: "Mages",
     trigger: Fire(
         triggers: [(AllyDeath, None)],
-        targets: [(TargetStateLast(LastAttacker), Some("killer"))],
+        targets: [(TargetStateLast(LastAttacker), "killer")],
         effects: [(UseAbility("Magic Missile", 2), None)],
     ),
     representation: (
@@ -15,7 +16,9 @@
             shape: Circle(radius: Float(0.15)),
             shape_type: Opaque,
             fill: Solid(color: OwnerState(Color)),
+            fbm: None,
             alpha: Float(1.0),
+            padding: Float(0.0),
         ),
         children: [
             (
@@ -23,7 +26,9 @@
                     shape: Circle(radius: Float(0.32)),
                     shape_type: Line(thickness: Float(1.0)),
                     fill: Solid(color: OwnerState(Color)),
+                    fbm: None,
                     alpha: Float(1.0),
+                    padding: Float(0.0),
                 ),
                 children: [],
                 mapping: {},

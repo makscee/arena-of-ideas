@@ -1,3 +1,4 @@
+#![enable(implicit_some)]
 (
     name: "Experimenter",
     hp: 3,
@@ -11,7 +12,7 @@
         effects: [
             (
                 AbilityStateAddVar("Summon Skeleton", T, String("Plague on damage dealt")),
-                Some("[Skeleton] applies [Plague] on attack"),
+                "[Skeleton] applies [Plague] on attack",
             ),
         ],
     ),
@@ -25,7 +26,9 @@
             ),
             shape_type: Line(thickness: Float(1.0)),
             fill: Solid(color: OwnerState(Color)),
+            fbm: None,
             alpha: Context(T),
+            padding: Float(0.0),
         ),
         children: [],
         mapping: {T: Sin(Sum(GameTime, Index))},

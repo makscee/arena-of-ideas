@@ -1,3 +1,4 @@
+#![enable(implicit_some)]
 (
     name: "Guardian",
     hp: 2,
@@ -6,8 +7,8 @@
     level: 1,
     houses: "Paladins",
     trigger: Fire(
-        triggers: [(Period(0, 1, TurnEnd), Some("every 2 turns"))],
-        targets: [(FindUnit(Equals(StatusCharges(String("Shield")), Zero)), Some("ally with no [Shield]"))],
+        triggers: [(Period(0, 1, TurnEnd), "every 2 turns")],
+        targets: [(FindUnit(Equals(StatusCharges(String("Shield")), Zero)), "ally with no [Shield]")],
         effects: [(UseAbility("Shield", 0), None)],
     ),
     representation: (
@@ -15,7 +16,9 @@
             shape: Circle(radius: Float(0.8)),
             shape_type: Line(thickness: Float(0.6)),
             fill: Solid(color: OwnerState(Color)),
+            fbm: None,
             alpha: Float(1.0),
+            padding: Float(0.0),
         ),
         children: [],
         mapping: {

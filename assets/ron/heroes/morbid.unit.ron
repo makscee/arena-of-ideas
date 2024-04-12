@@ -1,3 +1,4 @@
+#![enable(implicit_some)]
 (
     name: "Morbid",
     hp: 2,
@@ -7,7 +8,7 @@
     houses: "Death Knights",
     trigger: Fire(
         triggers: [(AllyDeath, None)],
-        targets: [(TargetStateLast(LastAttacker), Some("killer"))],
+        targets: [(TargetStateLast(LastAttacker), "killer")],
         effects: [(UseAbility("Decay", 2), None)],
     ),
     representation: (
@@ -15,7 +16,9 @@
             shape: Rectangle(size: Vec2E(Float(0.35))),
             shape_type: Line(thickness: Float(0.5)),
             fill: Solid(color: OwnerState(Color)),
+            fbm: None,
             alpha: Sin(Sum(Mul(GameTime, Float(1.0)), Mul(Index, Float(1000.0)))),
+            padding: Float(0.0),
         ),
         children: [],
         mapping: {Offset: Mul(UnitVec(Mul(RandomFloat(Owner), PI)), Float(0.67))},

@@ -1,3 +1,4 @@
+#![enable(implicit_some)]
 (
     name: "Fruiter",
     hp: 1,
@@ -23,7 +24,9 @@
                 parts: [Float(0.0), Float(1.2)],
                 colors: [OwnerState(Color), Hex("000000ff")],
             ),
+            fbm: None,
             alpha: Float(1.0),
+            padding: Float(0.0),
         ),
         children: [],
         mapping: {

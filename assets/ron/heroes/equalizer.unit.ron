@@ -18,7 +18,10 @@
                 material: Shape(
                     shape: Rectangle(size: Vec2E(Float(1.5))),
                     shape_type: Line(thickness: Float(1.0)),
+                    fill: Solid(color: OwnerState(Color)),
+                    fbm: None,
                     alpha: Float(1.0),
+                    padding: Float(0.0),
                 ),
                 children: [],
                 mapping: {
@@ -33,5 +36,9 @@
                 count: 8,
             ),
         ],
+        mapping: {},
+        count: 0,
     ),
+    state: (history: {}, birth: 0.0),
+    statuses: [],
 )

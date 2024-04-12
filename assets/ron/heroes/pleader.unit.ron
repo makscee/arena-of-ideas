@@ -1,3 +1,4 @@
+#![enable(implicit_some)]
 (
     name: "Pleader",
     hp: 4,
@@ -15,7 +16,9 @@
             shape: Rectangle(size: Vec2(0.15, 1.66)),
             shape_type: Line(thickness: Float(2.0)),
             fill: Solid(color: OwnerState(Color)),
+            fbm: None,
             alpha: Float(0.7),
+            padding: Float(0.0),
         ),
         children: [],
         mapping: {
@@ -27,4 +30,6 @@
         },
         count: 8,
     ),
+    state: (history: {}, birth: 0.0),
+    statuses: [],
 )

@@ -1,3 +1,4 @@
+#![enable(implicit_some)]
 (
     name: "Director",
     hp: 3,
@@ -15,7 +16,9 @@
             shape: Circle(radius: Float(0.15)),
             shape_type: Opaque,
             fill: Solid(color: OwnerState(Color)),
+            fbm: None,
             alpha: Float(1.0),
+            padding: Float(0.0),
         ),
         children: [
             (
@@ -23,8 +26,12 @@
                     shape: Circle(radius: Sum(Mul(Float(0.06), Index), Float(0.21))),
                     shape_type: Line(thickness: Float(1.0)),
                     fill: Solid(color: OwnerState(Color)),
+                    fbm: None,
                     alpha: Float(1.0),
+                    padding: Float(0.0),
                 ),
+                children: [],
+                mapping: {},
                 count: 3,
             ),
         ],
@@ -36,4 +43,6 @@
         },
         count: 3,
     ),
+    state: (history: {}, birth: 0.0),
+    statuses: [],
 )

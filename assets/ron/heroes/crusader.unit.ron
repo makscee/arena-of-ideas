@@ -1,3 +1,4 @@
+#![enable(implicit_some)]
 (
     name: "Crusader",
     hp: 1,
@@ -19,7 +20,7 @@
                         UseAbility("Blessing", 0),
                     ),
                 ),
-                Some("use [Blessing] ({Level}) per enemy"),
+                "use [Blessing] ({Level}) per enemy",
             ),
         ],
     ),
@@ -28,7 +29,9 @@
             shape: Rectangle(size: Vec2(0.5, 1.82)),
             shape_type: Line(thickness: Float(3.0)),
             fill: Solid(color: OwnerState(Color)),
+            fbm: None,
             alpha: Float(0.3),
+            padding: Float(0.0),
         ),
         children: [],
         mapping: {

@@ -1,3 +1,4 @@
+#![enable(implicit_some)]
 (
     name: "Virus",
     hp: 1,
@@ -15,7 +16,9 @@
             shape: Circle(radius: Float(0.12)),
             shape_type: Line(thickness: Float(1.0)),
             fill: Solid(color: OwnerState(Color)),
+            fbm: None,
             alpha: Float(1.0),
+            padding: Float(0.0),
         ),
         children: [],
         mapping: {
@@ -26,4 +29,6 @@
         },
         count: 16,
     ),
+    state: (history: {}, birth: 0.0),
+    statuses: [],
 )

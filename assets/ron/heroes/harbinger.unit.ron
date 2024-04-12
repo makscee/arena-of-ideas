@@ -1,3 +1,4 @@
+#![enable(implicit_some)]
 (
     name: "Harbinger",
     hp: 4,
@@ -6,8 +7,8 @@
     level: 1,
     houses: "Warlocks",
     trigger: Fire(
-        triggers: [(OnceAfter(0, AfterStrike), Some("after strike once"))],
-        targets: [(FilterMaxEnemy(Context(Slot)), Some("last enemy"))],
+        triggers: [(OnceAfter(0, AfterStrike), "after strike once")],
+        targets: [(FilterMaxEnemy(Context(Slot)), "last enemy")],
         effects: [(UseAbility("Doom", 0), None)],
     ),
     representation: (
@@ -15,7 +16,9 @@
             shape: Circle(radius: Float(0.53)),
             shape_type: Line(thickness: Float(1.0)),
             fill: Solid(color: OwnerState(Color)),
+            fbm: None,
             alpha: Float(1.0),
+            padding: Float(0.0),
         ),
         children: [
             (
@@ -28,7 +31,9 @@
                         parts: [Float(-0.62), Float(1.05)],
                         colors: [Context(Color), Hex("00000000")],
                     ),
+                    fbm: None,
                     alpha: Float(1.0),
+                    padding: Float(0.0),
                 ),
                 children: [],
                 mapping: {},
@@ -38,4 +43,6 @@
         mapping: {Offset: Mul(UnitVec(Mul(Index, Mul(PI, Float(0.5)))), Mul(Sin(GameTime), Float(0.21)))},
         count: 4,
     ),
+    state: (history: {}, birth: 0.0),
+    statuses: [],
 )

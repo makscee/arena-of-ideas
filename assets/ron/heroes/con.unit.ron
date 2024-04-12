@@ -1,3 +1,4 @@
+#![enable(implicit_some)]
 (
     name: "Con",
     hp: 2,
@@ -20,7 +21,9 @@
             ),
             shape_type: Line(thickness: Float(1.0)),
             fill: Solid(color: OwnerState(Color)),
+            fbm: None,
             alpha: Float(0.3),
+            padding: Float(0.0),
         ),
         children: [],
         mapping: {
@@ -36,4 +39,6 @@
         },
         count: 6,
     ),
+    state: (history: {}, birth: 0.0),
+    statuses: [],
 )

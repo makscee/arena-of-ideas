@@ -1,3 +1,4 @@
+#![enable(implicit_some)]
 (
     name: "Injector",
     hp: 6,
@@ -15,7 +16,9 @@
             shape: Circle(radius: Sub(Float(0.19), Mul(Index, Float(0.02)))),
             shape_type: Line(thickness: Float(1.0)),
             fill: Solid(color: OwnerState(Color)),
+            fbm: None,
             alpha: Float(1.0),
+            padding: Float(0.0),
         ),
         children: [],
         mapping: {
