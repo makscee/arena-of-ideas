@@ -5,7 +5,6 @@
     stacks: 1,
     level: 1,
     houses: "Alchemists",
-    description: "%trigger → %effect on enemy with most HP",
     trigger: Fire(
         triggers: [(AfterStrike, None)],
         targets: [(Target, None)],

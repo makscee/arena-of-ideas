@@ -1,15 +1,1 @@
-{
-    "Handler": {
-        "prefix": "handler",
-        "body": [
-            "fn ${1:input_handler}(",
-            "    event: HandleEvent,",
-            "    entity: legion::Entity,",
-            "    shader: &mut Shader,",
-            "    world: &mut legion::World,",
-            "    resources: &mut Resources,",
-            ")"
-        ],
-        "description": "Handler"
-    }
-}
+{}

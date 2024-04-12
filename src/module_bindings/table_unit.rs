@@ -19,7 +19,6 @@ pub struct TableUnit {
     pub hp: i32,
     pub atk: i32,
     pub houses: String,
-    pub description: String,
     pub stacks: i32,
     pub level: i32,
     pub statuses: Vec<StatusCharges>,
@@ -56,10 +55,6 @@ impl TableUnit {
     #[allow(unused)]
     pub fn filter_by_houses(houses: String) -> TableIter<Self> {
         Self::filter(|row| row.houses == houses)
-    }
-    #[allow(unused)]
-    pub fn filter_by_description(description: String) -> TableIter<Self> {
-        Self::filter(|row| row.description == description)
     }
     #[allow(unused)]
     pub fn filter_by_stacks(stacks: i32) -> TableIter<Self> {

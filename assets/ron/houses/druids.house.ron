@@ -33,7 +33,6 @@
             stacks: 1,
             level: 1,
             houses: "Druids",
-            description: "",
             representation: (
                 material: Shape(
                     shape: Circle(

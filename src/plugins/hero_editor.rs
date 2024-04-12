@@ -141,6 +141,13 @@ impl HeroEditorPlugin {
             }
         }
         Self::draw_top_buttons(ed, ctx, world);
+        TopBottomPanel::new(egui::panel::TopBottomSide::Bottom, "bot btns").show(ctx, |ui| {
+            ui.with_layout(Layout::right_to_left(egui::Align::Center), |ui| {
+                if ui.button("Table").clicked() {
+                    GameState::HeroTable.change(world);
+                }
+            });
+        });
         if !pd.hero_editor_data.eq(ed) {
             ed.save(world);
             mem::swap(&mut pd.hero_editor_data, ed);

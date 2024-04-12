@@ -6,7 +6,6 @@
     stacks: 1,
     level: 1,
     houses: "Alchemists",
-    description: "%trigger → %effect on %target",
     trigger: Fire(
         triggers: [(BattleStart, None)],
         targets: [(AllUnits, None)],

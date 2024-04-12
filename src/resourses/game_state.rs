@@ -13,6 +13,7 @@ pub enum GameState {
     Battle,
     Shop,
     HeroEditor,
+    HeroTable,
     HeroGallery,
     Login,
     AssetSync,
@@ -36,9 +37,10 @@ impl GameState {
             GameState::CustomBattle | GameState::LastBattle | GameState::Battle => {
                 GameTimer::get().skip_to_end();
             }
-            GameState::Shop | GameState::HeroEditor | GameState::HeroGallery => {
-                Self::MainMenu.change(world)
-            }
+            GameState::Shop
+            | GameState::HeroEditor
+            | GameState::HeroTable
+            | GameState::HeroGallery => Self::MainMenu.change(world),
             GameState::TestsLoading
             | GameState::BattleTest
             | GameState::Restart

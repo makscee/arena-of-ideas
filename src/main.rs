@@ -32,6 +32,7 @@ pub enum RunMode {
     Archive,
     Upload,
     Editor,
+    Table,
     Gallery,
 }
 
@@ -47,6 +48,7 @@ fn main() {
         RunMode::Gallery => GameState::HeroGallery,
         RunMode::Last => GameState::LastBattle,
         RunMode::Editor => GameState::HeroEditor,
+        RunMode::Table => GameState::HeroTable,
         RunMode::Continue => GameState::Shop,
         RunMode::Test => GameState::TestsLoading,
     };
@@ -68,7 +70,8 @@ fn main() {
         | RunMode::Gallery
         | RunMode::Last
         | RunMode::Continue
-        | RunMode::Editor => {
+        | RunMode::Editor
+        | RunMode::Table => {
             default_plugins = default_plugins.set(bevy::window::WindowPlugin {
                 primary_window: Some(bevy::prelude::Window {
                     title: "Arena of Ideas".into(),
@@ -150,16 +153,11 @@ fn main() {
             OperationsPlugin,
             TeamPlugin,
             ArenaArchivePlugin,
+            HeroTablePlugin,
         ))
         .add_systems(Update, input_world)
         .register_type::<VarState>()
-        .register_type::<VarStateDelta>()
-        .add_systems(
-            Update,
-            show_build_version
-                .after(ShopPlugin::ui)
-                .after(HeroEditorPlugin::ui),
-        );
+        .register_type::<VarStateDelta>();
     app.add_systems(Startup, setup);
     match args.mode {
         RunMode::Regular
@@ -171,7 +169,7 @@ fn main() {
         | RunMode::Upload => {
             app.add_systems(OnExit(GameState::Loading), LoginPlugin::setup);
         }
-        RunMode::Test | RunMode::Custom | RunMode::Gallery | RunMode::Editor => {}
+        RunMode::Test | RunMode::Custom | RunMode::Gallery | RunMode::Editor | RunMode::Table => {}
     }
 
     app.run();
@@ -227,23 +225,3 @@ fn detect_changes(
 }
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
-fn show_build_version(world: &mut World) {
-    let ctx = &if let Some(context) = egui_context(world) {
-        context
-    } else {
-        return;
-    };
-    Area::new("build version")
-        .anchor(Align2::LEFT_BOTTOM, [10.0, -10.0])
-        .show(ctx, |ui| {
-            if let Some(fps) = world
-                .resource::<DiagnosticsStore>()
-                .get(&FrameTimeDiagnosticsPlugin::FPS)
-            {
-                if let Some(fps) = fps.smoothed() {
-                    ui.label(format!("fps: {fps:.0}"));
-                }
-            }
-            ui.label(format!("arena-of-ideas {VERSION}"));
-        });
-}

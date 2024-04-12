@@ -143,11 +143,7 @@ fn run_sell(ctx: ReducerContext, id: u64) -> Result<(), String> {
 #[spacetimedb(reducer)]
 fn run_stack(ctx: ReducerContext, target: u64, source: u64) -> Result<(), String> {
     let (_, mut run) = ArenaRun::get_by_identity(&ctx.sender)?;
-    // let target_unit = &run.find_unit(target)?.unit;
-    let i_source = if let Ok((ind, unit)) = run.find_team(source) {
-        // if !target_unit.name.eq(&unit.unit.name) {
-        //     return Err("Can onyl stack duplicate units".to_owned());
-        // }
+    let i_source = if let Ok((ind, _)) = run.find_team(source) {
         ind
     } else {
         let gs = GlobalSettings::get();
@@ -159,9 +155,6 @@ fn run_stack(ctx: ReducerContext, target: u64, source: u64) -> Result<(), String
         if !run.can_afford(price) {
             return Err("Can't afford".to_owned());
         }
-        // if !run.find_case(source)?.1.unit.name.eq(&target_unit.name) {
-        //     return Err("Can onyl stack duplicate units".to_owned());
-        // }
         run.buy(source, 0, price, true)?;
         run.find_team(source)?.0
     };

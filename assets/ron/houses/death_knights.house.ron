@@ -51,7 +51,6 @@
             stacks: 1,
             level: 1,
             houses: "Death Knights",
-            description: "",
             trigger: Fire(
                 triggers: [(AfterDamageDealt, None)],
                 targets: [(Target, None)],

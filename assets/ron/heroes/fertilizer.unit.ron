@@ -5,7 +5,6 @@
     stacks: 1,
     level: 1,
     houses: "Druids",
-    description: "%trigger → %effect on %target",
     trigger: Fire(
         triggers: [(BattleStart, None)],
         targets: [(AllAllyUnits, None)],

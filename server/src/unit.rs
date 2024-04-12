@@ -8,7 +8,6 @@ pub struct TableUnit {
     pub hp: i32,
     pub atk: i32,
     pub houses: String,
-    pub description: String,
     pub stacks: i32,
     pub level: i32,
     pub statuses: Vec<StatusCharges>,

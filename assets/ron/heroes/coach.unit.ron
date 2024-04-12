@@ -5,7 +5,6 @@
     stacks: 1,
     level: 1,
     houses: "Warriors",
-    description: "%trigger → %effect on %target",
     trigger: Fire(
         triggers: [(AllySummon, None)],
         targets: [(Target, None)],

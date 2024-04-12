@@ -2,7 +2,7 @@ use crate::resourses::event::Event;
 
 use super::*;
 
-#[derive(Deserialize, Serialize, Clone, Debug)]
+#[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct PackedStatus {
     pub name: String,

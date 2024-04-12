@@ -4,6 +4,7 @@ use super::*;
 pub struct PersistentData {
     pub hero_editor_data: HeroEditorData,
     pub hero_gallery_data: HeroGalleryData,
+    pub hero_table_data: HeroTableData,
     pub last_battle: (PackedTeam, PackedTeam),
 }
 

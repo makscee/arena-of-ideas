@@ -17,8 +17,6 @@ pub struct PackedUnit {
     pub level: i32,
     #[serde(default = "default_houses")]
     pub houses: String,
-    #[serde(default = "default_description")]
-    pub description: String,
     #[serde(default)]
     pub trigger: Trigger,
     #[serde(default)]
@@ -29,11 +27,6 @@ pub struct PackedUnit {
     pub statuses: Vec<(String, i32)>,
 }
 
-pub const DEFAULT_UNIT_DESCRIPTION: &str = "%trigger → %effect on %target";
-
-fn default_description() -> String {
-    DEFAULT_UNIT_DESCRIPTION.to_owned()
-}
 fn default_houses() -> String {
     "Default".to_owned()
 }
@@ -112,7 +105,6 @@ impl PackedUnit {
 
     pub fn generate_state(&self, world: &World) -> VarState {
         let mut state = self.state.clone();
-        let description = self.description.clone();
         state
             .init(VarName::Hp, VarValue::Int(self.hp))
             .init(VarName::Atk, VarValue::Int(self.atk))
@@ -122,11 +114,6 @@ impl PackedUnit {
             .init(VarName::Name, VarValue::String(self.name.clone()))
             .init(VarName::Position, VarValue::Vec2(default()))
             .init(VarName::Index, VarValue::Int(0))
-            .init(
-                VarName::Description,
-                VarValue::String(self.description.clone()),
-            )
-            .init(VarName::Description, VarValue::String(description))
             .init(VarName::Dmg, VarValue::Int(0));
         self.trigger.inject_description(&mut state);
         let house_colors = self
@@ -163,7 +150,6 @@ impl PackedUnit {
         let stacks = state.get_int(VarName::Stacks).unwrap();
         let level = state.get_int(VarName::Level).unwrap();
         let name = state.get_string(VarName::Name).unwrap();
-        let description = state.get_string(VarName::Description).unwrap();
         let houses = state.get_string(VarName::Houses).unwrap();
         let mut trigger = None;
         let mut statuses = Vec::default();
@@ -201,7 +187,6 @@ impl PackedUnit {
             trigger,
             representation,
             state,
-            description,
             statuses,
             stacks,
             level,
@@ -350,16 +335,6 @@ impl PackedUnit {
                     }
                 });
         });
-        ui.horizontal(|ui| {
-            ui.label("desc:");
-            let description = &mut self.description;
-            TextEdit::singleline(description)
-                .desired_width(ui.available_width().min(200.0))
-                .ui(ui);
-            if ui.button("reset").clicked() {
-                *description = DEFAULT_UNIT_DESCRIPTION.to_owned();
-            }
-        });
 
         let context = &Context::from_owner(entity, world);
         ui.horizontal(|ui| {
@@ -405,7 +380,6 @@ impl From<PackedUnit> for TableUnit {
             name: val.name,
             hp: val.hp,
             atk: val.atk,
-            description: val.description,
             stacks: val.stacks,
             level: val.level,
             statuses: val
@@ -429,7 +403,6 @@ impl From<TableUnit> for PackedUnit {
             level: value.level,
             houses: value.houses,
             name: value.name,
-            description: value.description,
             trigger: ron::from_str(&value.trigger).unwrap(),
             representation: ron::from_str(&value.representation).unwrap(),
             state: ron::from_str(&value.state).unwrap(),

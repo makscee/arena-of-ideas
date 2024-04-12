@@ -5,7 +5,6 @@
     stacks: 1,
     level: 1,
     houses: "Death Knights",
-    description: "%trigger → %effect on %target",
     trigger: Fire(
         triggers: [(AfterStrike, None)],
         targets: [(RandomEnemy, None)],

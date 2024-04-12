@@ -11,7 +11,7 @@ pub use text_column::*;
 pub use var_state::*;
 pub use var_state_delta::*;
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct HexColor(pub String);
 
 impl From<HexColor> for Color {

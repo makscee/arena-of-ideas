@@ -104,23 +104,38 @@ impl PanelsPlugin {
                 margin.top = 2.0;
                 Frame::none().inner_margin(margin).show(ui, |ui| {
                     let columns = top_data.len();
-                    ui.set_max_width(columns as f32 * 150.0);
-                    ui.columns(columns, |ui| {
-                        for (ind, (t, value)) in top_data.iter().enumerate() {
-                            ui[ind].vertical_centered_justified(|ui| {
-                                ui.set_enabled(t.enabled());
-                                let name = t.name();
-                                let btn = if *value {
-                                    ui.button_primary(name)
-                                } else {
-                                    ui.button(name)
-                                };
-                                if btn.clicked() {
-                                    t.click(world);
+                    ui.horizontal(|ui| {
+                        let width = columns as f32 * 150.0;
+                        ui.set_max_width(width);
+                        ui.columns(columns, |ui| {
+                            for (ind, (t, value)) in top_data.iter().enumerate() {
+                                ui[ind].vertical_centered_justified(|ui| {
+                                    ui.set_enabled(t.enabled());
+                                    let name = t.name();
+                                    let btn = if *value {
+                                        ui.button_primary(name)
+                                    } else {
+                                        ui.button(name)
+                                    };
+                                    if btn.clicked() {
+                                        t.click(world);
+                                    }
+                                });
+                            }
+                        });
+                        ui.set_max_width(ctx.screen_rect().width() - width - 20.0);
+                        ui.with_layout(Layout::right_to_left(egui::Align::Min), |ui| {
+                            if let Some(fps) = world
+                                .resource::<DiagnosticsStore>()
+                                .get(&FrameTimeDiagnosticsPlugin::FPS)
+                            {
+                                if let Some(fps) = fps.smoothed() {
+                                    ui.label(format!("fps: {fps:.0}"));
                                 }
-                            });
-                        }
-                    });
+                            }
+                            ui.label(format!("arena-of-ideas {VERSION}"));
+                        })
+                    })
                 });
             });
         for (button, value) in top_data {

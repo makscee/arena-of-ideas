@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Asset, Serialize, Deserialize, Clone, Debug, TypePath)]
+#[derive(Asset, Serialize, Deserialize, Clone, Debug, TypePath, PartialEq)]
 pub struct House {
     pub name: String,
     pub color: HexColor,

@@ -5,7 +5,6 @@
     stacks: 1,
     level: 1,
     houses: "Warlocks",
-    description: "%trigger → %effect on %target",
     trigger: Fire(
         triggers: [(OnceAfter(0, AfterStrike), Some("after strike once"))],
         targets: [(FilterMaxEnemy(Context(Slot)), Some("last enemy"))],

@@ -46,7 +46,6 @@
             stacks: 1,
             level: 1,
             houses: "Paladins",
-            description: "",
             representation: (
                 material: Shape(
                     shape: Circle(
