@@ -23,6 +23,19 @@ impl GlobalData {
 }
 
 #[spacetimedb(reducer)]
+fn upload_units(ctx: ReducerContext, units: Vec<TableUnit>) -> Result<(), String> {
+    UserRight::UnitSync.check(&ctx.sender)?;
+    for unit in units {
+        TableUnit::delete_by_name(&unit.name);
+        TableUnit::insert(unit)?;
+    }
+    let mut gd = GlobalData::filter_by_always_zero(&0).unwrap();
+    gd.last_sync = Timestamp::now();
+    GlobalData::update_by_always_zero(&0, gd);
+    Ok(())
+}
+
+#[spacetimedb(reducer)]
 fn sync_data(
     ctx: ReducerContext,
     houses: Vec<House>,

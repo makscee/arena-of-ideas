@@ -114,7 +114,9 @@ impl AlertPlugin {
                 .set_min_width(400.0)
                 .show(ctx, |ui| {
                     frame(ui, |ui| {
-                        alert.text.add_color(white()).label(ui);
+                        ui.vertical(|ui| {
+                            alert.text.add_color(white()).label(ui);
+                        });
                         if ui.button("OK").clicked() {
                             if let Some(action) = alert.action.take() {
                                 actions.push(action);

@@ -52,6 +52,7 @@ pub mod sync_data_reducer;
 pub mod table_unit;
 pub mod team_unit;
 pub mod upload_pool_reducer;
+pub mod upload_units_reducer;
 pub mod user;
 pub mod user_access;
 pub mod user_right;
@@ -89,6 +90,7 @@ pub use sync_data_reducer::*;
 pub use table_unit::*;
 pub use team_unit::*;
 pub use upload_pool_reducer::*;
+pub use upload_units_reducer::*;
 pub use user::*;
 pub use user_access::*;
 pub use user_right::*;
@@ -116,6 +118,7 @@ pub enum ReducerEvent {
     SetPassword(set_password_reducer::SetPasswordArgs),
     SyncData(sync_data_reducer::SyncDataArgs),
     UploadPool(upload_pool_reducer::UploadPoolArgs),
+    UploadUnits(upload_units_reducer::UploadUnitsArgs),
 }
 
 #[allow(unused)]
@@ -232,6 +235,7 @@ match &function_call.reducer[..] {
 			"set_password" => _reducer_callbacks.handle_event_of_type::<set_password_reducer::SetPasswordArgs, ReducerEvent>(event, _state, ReducerEvent::SetPassword),
 			"sync_data" => _reducer_callbacks.handle_event_of_type::<sync_data_reducer::SyncDataArgs, ReducerEvent>(event, _state, ReducerEvent::SyncData),
 			"upload_pool" => _reducer_callbacks.handle_event_of_type::<upload_pool_reducer::UploadPoolArgs, ReducerEvent>(event, _state, ReducerEvent::UploadPool),
+			"upload_units" => _reducer_callbacks.handle_event_of_type::<upload_units_reducer::UploadUnitsArgs, ReducerEvent>(event, _state, ReducerEvent::UploadUnits),
 			unknown => { spacetimedb_sdk::log::error!("Event on an unknown reducer: {:?}", unknown); None }
 }
     }

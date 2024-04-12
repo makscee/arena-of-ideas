@@ -1,4 +1,8 @@
-use egui_extras::TableBuilder;
+use egui_extras::{TableBuilder, TableRow};
+use ron::{
+    extensions::Extensions,
+    ser::{to_string_pretty, PrettyConfig},
+};
 
 use super::*;
 
@@ -14,6 +18,8 @@ impl Plugin for HeroTablePlugin {
         );
     }
 }
+
+const HEROES_FOLDER: &str = "/Users/admin/Documents/GitHub/arena-of-ideas/assets/ron/heroes";
 
 impl HeroTablePlugin {
     fn ui(world: &mut World) {
@@ -37,12 +43,11 @@ impl HeroTablePlugin {
                 });
 
                 let columns = Column::iter().collect_vec();
-                let style = ui.style_mut();
-                style.visuals.widgets.inactive.bg_stroke = Stroke::NONE;
+                ui.style_mut().visuals.widgets.inactive.bg_stroke = Stroke::NONE;
                 TableBuilder::new(ui)
-                    .striped(true)
                     .auto_shrink(false)
-                    .columns(egui_extras::Column::auto(), columns.len() + 1)
+                    .column(egui_extras::Column::exact(100.0))
+                    .columns(egui_extras::Column::auto(), columns.len())
                     .header(20.0, |mut h| {
                         let mut do_sort = false;
                         for column in columns.iter() {
@@ -65,7 +70,18 @@ impl HeroTablePlugin {
                             });
                         }
                         h.col(|ui| {
-                            ui.label("action");
+                            ui.style_mut().visuals.widgets.inactive.bg_stroke =
+                                Stroke::new(1.0, white());
+                            ui.horizontal(|ui| {
+                                if ui.button("s").clicked() {
+                                    for unit in &td.units {
+                                        Self::save_unit(unit);
+                                    }
+                                }
+                                if ui.button_red("-").clicked() {
+                                    td.units.clear();
+                                }
+                            });
                         });
                         if do_sort {
                             match td.sorting.as_ref().unwrap().0 {
@@ -131,13 +147,14 @@ impl HeroTablePlugin {
                     })
                     .body(|mut body| {
                         let pools = Pools::get(world);
-                        let houses: HashMap<String, Color> = HashMap::from_iter(
+                        let houses: HashMap<String, Color32> = HashMap::from_iter(
                             pools
                                 .houses
                                 .iter()
                                 .map(|(k, v)| (k.clone(), v.color.clone().into())),
                         );
-                        for (i, unit) in td.units.iter_mut().enumerate() {
+                        let mut delete: Option<usize> = None;
+                        for unit in td.units.iter_mut() {
                             let height = 20.0
                                 * match &unit.trigger {
                                     Trigger::Fire {
@@ -150,138 +167,29 @@ impl HeroTablePlugin {
                                 }
                                 .max(1) as f32;
                             body.row(height, |mut row| {
-                                row.col(|ui| {
-                                    TextEdit::singleline(&mut unit.name)
-                                        .text_color(
-                                            pools
-                                                .house_color(&unit.houses)
-                                                .unwrap_or_default()
-                                                .c32(),
-                                        )
-                                        .ui(ui);
-                                });
-                                row.col(|ui| {
-                                    DragValue::new(&mut unit.hp).clamp_range(0..=99).ui(ui);
-                                });
-                                row.col(|ui| {
-                                    DragValue::new(&mut unit.atk).clamp_range(0..=99).ui(ui);
-                                });
-
-                                row.col(|ui| {
-                                    let house: &mut String = &mut unit.houses;
-                                    ComboBox::from_id_source(Id::new(&unit.name).with(i))
-                                        .selected_text(house.clone())
-                                        .width(140.0)
-                                        .show_ui(ui, |ui| {
-                                            for (h, _) in
-                                                houses.iter().sorted_by_key(|(k, _)| k.to_owned())
-                                            {
-                                                ui.selectable_value(house, h.clone(), h.clone());
-                                            }
-                                        });
-                                });
-                                match &mut unit.trigger {
-                                    Trigger::Fire {
-                                        triggers,
-                                        targets,
-                                        effects,
-                                    } => {
-                                        row.col(|ui| {
-                                            ui.vertical(|ui| {
-                                                for (trigger, text) in triggers {
-                                                    ui.horizontal(|ui| {
-                                                        let mut is_override = text.is_some();
-                                                        if ui
-                                                            .checkbox(&mut is_override, "")
-                                                            .changed()
-                                                        {
-                                                            if is_override {
-                                                                *text = Some(default());
-                                                            } else {
-                                                                *text = None;
-                                                            }
-                                                        }
-                                                        if let Some(text) = text {
-                                                            TextEdit::singleline(text).ui(ui);
-                                                        } else {
-                                                            ui.label(trigger.to_string());
-                                                        }
-                                                    });
-                                                }
-                                            });
-                                        });
-
-                                        row.col(|ui| {
-                                            ui.vertical(|ui| {
-                                                for (target, text) in targets {
-                                                    ui.horizontal(|ui| {
-                                                        let mut is_override = text.is_some();
-                                                        if ui
-                                                            .checkbox(&mut is_override, "")
-                                                            .changed()
-                                                        {
-                                                            if is_override {
-                                                                *text = Some(default());
-                                                            } else {
-                                                                *text = None;
-                                                            }
-                                                        }
-                                                        if let Some(text) = text {
-                                                            TextEdit::singleline(text).ui(ui);
-                                                        } else {
-                                                            ui.label(target.to_string());
-                                                        }
-                                                    });
-                                                }
-                                            });
-                                        });
-                                        row.col(|ui| {
-                                            ui.vertical(|ui| {
-                                                for (effect, text) in effects {
-                                                    ui.horizontal(|ui| {
-                                                        let mut is_override = text.is_some();
-                                                        if ui
-                                                            .checkbox(&mut is_override, "")
-                                                            .changed()
-                                                        {
-                                                            if is_override {
-                                                                *text = Some(default());
-                                                            } else {
-                                                                *text = None;
-                                                            }
-                                                        }
-                                                        if let Some(text) = text {
-                                                            TextEdit::singleline(text).ui(ui);
-                                                        } else {
-                                                            let text = effect.to_string();
-                                                            ui.label(text.clone())
-                                                                .on_hover_text(text);
-                                                        }
-                                                    });
-                                                }
-                                            });
-                                        });
-                                    }
-                                    _ => {}
+                                for column in Column::iter() {
+                                    column.show_row(unit, &houses, &mut row);
                                 }
+                                let i = row.index();
                                 row.col(|ui| {
                                     ui.horizontal(|ui| {
-                                        if ui.button("u").clicked() {}
                                         if ui.button("s").clicked() {
-                                            let path = format!("/Users/admin/Documents/GitHub/arena-of-ideas/assets/ron/heroes/{}.unit.ron", unit.name.to_lowercase());
-                                            match std::fs::write(&path, ron::to_string(&unit).unwrap()) {
-                                                Ok(_) => {
-                                                    info!("Unit {} saved to {}", unit.name, &path);
-                                                }
-                                                Err(e) => {
-                                                    error!("Failed to save unit {}: {}", unit.name, e);
-                                                }
-                                            };
+                                            Self::save_unit(unit);
                                         }
-                                        if ui.button_red("-").clicked() {}
+                                        if ui.button_red("-").clicked() {
+                                            delete = Some(i);
+                                        }
+                                        if ui.button("e").clicked() {
+                                            HeroEditorPlugin::load_unit(unit.clone(), world);
+                                            GameState::HeroEditor.change(world);
+                                            return;
+                                        }
                                     });
                                 });
                             });
+                        }
+                        if let Some(delete) = delete {
+                            td.units.remove(delete);
                         }
                         body.row(50.0, |mut row| {
                             row.col(|ui| {
@@ -292,18 +200,35 @@ impl HeroTablePlugin {
                         });
                     });
             });
-
-        TopBottomPanel::new(egui::panel::TopBottomSide::Bottom, "bot btns").show(ctx, |ui| {
-            ui.with_layout(Layout::right_to_left(egui::Align::Center), |ui| {
-                if ui.button("Editor").clicked() {
-                    GameState::HeroEditor.change(world);
-                }
-            });
-        });
         if !pd.hero_table_data.eq(td) {
             mem::swap(&mut pd.hero_table_data, td);
             pd.save(world).unwrap();
         }
+    }
+
+    fn save_unit(unit: &PackedUnit) {
+        if unit.name.is_empty() {
+            AlertPlugin::add_error(None, "Can't save unit with empty name".to_owned(), None);
+            return;
+        }
+        let path = format!("{HEROES_FOLDER}/{}.unit.ron", unit.name.to_lowercase());
+        match std::fs::write(
+            &path,
+            to_string_pretty(
+                &unit,
+                PrettyConfig::new()
+                    .extensions(Extensions::IMPLICIT_SOME)
+                    .compact_arrays(true),
+            )
+            .unwrap(),
+        ) {
+            Ok(_) => {
+                info!("Unit {} saved to {}", unit.name, &path);
+            }
+            Err(e) => {
+                error!("Failed to save unit {}: {}", unit.name, e);
+            }
+        };
     }
 }
 
@@ -316,9 +241,9 @@ pub struct HeroTableData {
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, EnumIter, PartialEq, Display)]
 enum Column {
     Name,
-    Hp,
-    Atk,
     House,
+    Atk,
+    Hp,
     Trigger,
     Target,
     Effect,
@@ -328,4 +253,91 @@ enum Column {
 enum Sorting {
     Asc,
     Desc,
+}
+
+impl Column {
+    fn show_row(
+        self,
+        unit: &mut PackedUnit,
+        houses: &HashMap<String, Color32>,
+        row: &mut TableRow,
+    ) {
+        let i = row.index();
+        row.col(|ui| {
+            match self {
+                Column::Name => {
+                    TextEdit::singleline(&mut unit.name)
+                        .text_color(houses.get(&unit.houses).cloned().unwrap_or_default())
+                        .ui(ui);
+                }
+                Column::House => {
+                    let house: &mut String = &mut unit.houses;
+                    ComboBox::from_id_source(Id::new(&unit.name).with(i))
+                        .selected_text(
+                            house
+                                .clone()
+                                .add_color(*houses.get(house).unwrap())
+                                .rich_text(ui),
+                        )
+                        .width(140.0)
+                        .show_ui(ui, |ui| {
+                            for (h, c) in houses.iter().sorted_by_key(|(k, _)| k.to_owned()) {
+                                let text = h.clone().add_color(*c).rich_text(ui);
+                                ui.selectable_value(house, h.clone(), text);
+                            }
+                        });
+                }
+                Column::Atk => {
+                    DragValue::new(&mut unit.atk).clamp_range(0..=99).ui(ui);
+                }
+                Column::Hp => {
+                    DragValue::new(&mut unit.hp).clamp_range(0..=99).ui(ui);
+                }
+                Column::Trigger | Column::Target | Column::Effect => match &mut unit.trigger {
+                    Trigger::Fire {
+                        triggers,
+                        targets,
+                        effects,
+                    } => {
+                        let list = match &self {
+                            Column::Trigger => triggers
+                                .iter_mut()
+                                .map(|(t, s)| (t.to_string(), s))
+                                .collect_vec(),
+                            Column::Target => targets
+                                .iter_mut()
+                                .map(|(t, s)| (t.to_string(), s))
+                                .collect_vec(),
+                            Column::Effect => effects
+                                .iter_mut()
+                                .map(|(t, s)| (t.to_string(), s))
+                                .collect_vec(),
+                            _ => panic!(),
+                        };
+
+                        ui.vertical(|ui| {
+                            for (name, text) in list {
+                                ui.horizontal(|ui| {
+                                    let mut is_override = text.is_some();
+                                    if ui.checkbox(&mut is_override, "").changed() {
+                                        if is_override {
+                                            *text = Some(default());
+                                        } else {
+                                            *text = None;
+                                        }
+                                    }
+                                    if let Some(text) = text {
+                                        TextEdit::singleline(text).ui(ui);
+                                    } else {
+                                        ui.label(name.to_string());
+                                    }
+                                });
+                            }
+                        });
+                    }
+                    _ => {}
+                },
+            };
+        });
+    }
 }

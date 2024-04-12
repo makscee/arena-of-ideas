@@ -2,9 +2,9 @@ use crate::module_bindings::{once_on_sync_data, sync_data, TableUnit};
 
 use super::*;
 
-pub struct AssetsSyncPlugin;
+pub struct AssetsUploadPlugin;
 
-impl Plugin for AssetsSyncPlugin {
+impl Plugin for AssetsUploadPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(GameState::AssetSync), do_sync);
     }

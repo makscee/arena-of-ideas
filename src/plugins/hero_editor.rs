@@ -19,6 +19,16 @@ impl Plugin for HeroEditorPlugin {
 }
 
 impl HeroEditorPlugin {
+    pub fn load_unit(unit: PackedUnit, world: &mut World) {
+        let mut pd = PersistentData::load(world);
+        let ed = &mut pd.hero_editor_data;
+        ed.saved_teams = ed.teams.clone();
+        ed.clear();
+        ed.teams.0 = [unit.clone()].into();
+        ed.active = Some((Faction::Left, 1, unit));
+        pd.save(world).unwrap();
+    }
+
     fn on_enter(world: &mut World) {
         let pd = PersistentData::load(world);
         pd.hero_editor_data.load(world);
@@ -454,7 +464,6 @@ pub struct HeroEditorData {
     pub camera_pos: Vec2,
     pub camera_need_pos: Vec2,
     pub camera_scale: f32,
-    pub hovered_id: Option<String>,
 
     pub saved_teams: (Vec<PackedUnit>, Vec<PackedUnit>),
 }
@@ -465,7 +474,6 @@ impl Default for HeroEditorData {
             camera_pos: default(),
             camera_need_pos: default(),
             camera_scale: 1.0,
-            hovered_id: default(),
             active: default(),
             teams: default(),
             saved_teams: default(),
@@ -506,9 +514,9 @@ impl HeroEditorData {
     }
 
     fn clear(&mut self) {
+        self.active = None;
         self.teams.0.clear();
         self.teams.1.clear();
-        self.hovered_id = None;
     }
 
     fn apply_camera(&mut self, world: &mut World) {

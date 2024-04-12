@@ -2,7 +2,7 @@ use super::*;
 
 mod action;
 mod alert;
-mod asset_sync;
+mod asset_upload;
 mod audio;
 mod battle;
 mod camera;
@@ -28,7 +28,7 @@ mod unit;
 
 pub use action::*;
 pub use alert::*;
-pub use asset_sync::*;
+pub use asset_upload::*;
 pub use audio::*;
 pub use battle::*;
 pub use camera::*;

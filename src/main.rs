@@ -149,7 +149,7 @@ fn main() {
             PanelsPlugin,
             UiPlugin,
             AlertPlugin,
-            AssetsSyncPlugin,
+            AssetsUploadPlugin,
             OperationsPlugin,
             TeamPlugin,
             ArenaArchivePlugin,
