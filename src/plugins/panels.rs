@@ -12,6 +12,7 @@ enum TopButton {
     Exit,
     Settings,
     Profile,
+    Leaderboard,
 }
 
 impl Plugin for PanelsPlugin {
@@ -42,7 +43,7 @@ impl TopButton {
 
     fn enabled(&self) -> bool {
         match self {
-            TopButton::Profile => LoginPlugin::is_connected(),
+            TopButton::Profile | TopButton::Leaderboard => LoginPlugin::is_connected(),
             TopButton::Exit | TopButton::Settings => true,
         }
     }
@@ -57,7 +58,7 @@ impl TopButton {
                     .exit(world);
                 false
             }
-            TopButton::Settings | TopButton::Profile => {
+            TopButton::Settings | TopButton::Profile | TopButton::Leaderboard => {
                 let mut data = world.resource_mut::<TopOpenWindows>();
                 let entry = data.0.get_mut(self).unwrap();
                 *entry = !*entry;
@@ -73,6 +74,7 @@ impl TopButton {
         match self {
             TopButton::Settings => SettingsPlugin::ui(world),
             TopButton::Profile => ProfilePlugin::ui(world),
+            TopButton::Leaderboard => LeaderboardPlugin::ui(world),
             TopButton::Exit => {}
         }
     }

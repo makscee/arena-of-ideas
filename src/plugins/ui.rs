@@ -205,6 +205,7 @@ impl GameWindow<'_> {
             .show(ui, |ui| {
                 ui.set_min_width(self.min_width);
                 ui.set_max_width(self.max_width);
+                let id = ui.id();
                 if self.title_bar {
                     let v = &ui.style().visuals.clone();
                     let mut rounding = v.window_rounding;
@@ -215,6 +216,9 @@ impl GameWindow<'_> {
                         .rounding(rounding)
                         .stroke(stroke)
                         .show(ui, |ui| {
+                            if let Some(w) = ui.data_mut(|w| w.get_temp::<f32>(id)) {
+                                ui.set_width(w);
+                            }
                             ui.with_layout(
                                 Layout::top_down(egui::Align::Min).with_cross_justify(true),
                                 |ui| {
@@ -232,7 +236,11 @@ impl GameWindow<'_> {
                             );
                         });
                 }
-                add_contents(ui)
+                let resp = add_contents(ui);
+                if self.title_bar {
+                    ui.data_mut(|w| w.insert_temp(id, ui.available_width()));
+                }
+                resp
             })
     }
     pub fn default_pos_vec(mut self, pos: Vec2) -> Self {
