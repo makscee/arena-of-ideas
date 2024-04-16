@@ -1,0 +1,38 @@
+#![enable(implicit_some)]
+(
+    name: "Sexton",
+    hp: 2,
+    atk: 1,
+    stacks: 1,
+    level: 1,
+    houses: "Paladins",
+    trigger: Fire(
+        triggers: [(Period(0, 2, AllyDeath), None)],
+        targets: [],
+        effects: [(UseAbility("Summon Guardian Angel", 0), None)],
+    ),
+    representation: (
+        material: Shape(
+            shape: Circle(
+                radius: Float(0.51),
+            ),
+            shape_type: Opaque,
+            fill: Solid(
+                color: OwnerState(Color),
+            ),
+            fbm: None,
+            alpha: Float(0.3),
+            padding: Float(0.0),
+        ),
+        children: [],
+        mapping: {
+            Offset: Mul(UnitVec(Sum(Mul(Index, Mul(PI, Float(0.66))), Mul(GameTime, Float(0.2)))), Mul(Sin(GameTime), Float(0.3))),
+        },
+        count: 3,
+    ),
+    state: (
+        history: {},
+        birth: 0.0,
+    ),
+    statuses: [],
+)

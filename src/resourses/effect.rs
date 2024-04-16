@@ -300,7 +300,7 @@ impl Effect {
             }
             Effect::StateAddVar(var, target, value) => {
                 let target = target.get_entity(context, world)?;
-                let value = value.get_value(context, world)?;
+                let value = value.get_value(context, world).unwrap_or(VarValue::Int(0));
                 let mut state = VarState::try_get_mut(target, world)?;
                 let value = match state.get_value_last(*var) {
                     Ok(prev) => VarValue::sum(&value, &prev)?,
