@@ -47,7 +47,7 @@
         (
             name: "Summon Guardian Angel",
             description: "Summon {10}/{1} with [Shield] ({1})",
-            effect: Summon("Guardian Angel"),
+            effect: Repeat(Context(Charges), Summon("Guardian Angel")),
         ),
     ],
     summons: [
