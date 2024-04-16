@@ -1,6 +1,6 @@
 #![enable(implicit_some)]
 (
-    name: "Con",
+    name: "Deceptor",
     hp: 2,
     atk: 2,
     stacks: 1,
