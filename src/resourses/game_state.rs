@@ -37,10 +37,10 @@ impl GameState {
             GameState::CustomBattle | GameState::LastBattle | GameState::Battle => {
                 GameTimer::get().skip_to_end();
             }
-            GameState::Shop
-            | GameState::HeroEditor
-            | GameState::HeroTable
-            | GameState::HeroGallery => Self::MainMenu.change(world),
+            GameState::Shop | GameState::HeroEditor | GameState::HeroGallery => {
+                Self::MainMenu.change(world)
+            }
+            GameState::HeroTable => Self::HeroEditor.change(world),
             GameState::TestsLoading
             | GameState::BattleTest
             | GameState::Restart

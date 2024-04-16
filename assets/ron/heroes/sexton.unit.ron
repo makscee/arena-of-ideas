@@ -13,26 +13,22 @@
     ),
     representation: (
         material: Shape(
-            shape: Circle(
-                radius: Float(0.51),
-            ),
+            shape: Circle(radius: Float(0.51)),
             shape_type: Opaque,
-            fill: Solid(
-                color: OwnerState(Color),
-            ),
+            fill: Solid(color: OwnerState(Color)),
             fbm: None,
             alpha: Float(0.3),
             padding: Float(0.0),
         ),
         children: [],
         mapping: {
-            Offset: Mul(UnitVec(Sum(Mul(Index, Mul(PI, Float(0.66))), Mul(GameTime, Float(0.2)))), Mul(Sin(GameTime), Float(0.3))),
+            Offset: Mul(
+                UnitVec(Sum(Mul(Index, Mul(PI, Float(0.66))), Mul(GameTime, Float(0.2)))),
+                Mul(Sin(GameTime), Float(0.3)),
+            ),
         },
         count: 3,
     ),
-    state: (
-        history: {},
-        birth: 0.0,
-    ),
+    state: (history: {}, birth: 0.0),
     statuses: [],
 )
