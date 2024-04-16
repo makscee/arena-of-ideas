@@ -15,7 +15,6 @@ pub use bevy::{
     ecs::{
         component::*,
         entity::*,
-        event::Event as BevyEvent,
         event::EventReader,
         event::EventWriter,
         query::*,

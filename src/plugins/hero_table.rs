@@ -40,6 +40,18 @@ impl HeroTablePlugin {
                         PoolsPlugin::setup_heroes(world);
                         td.units = Pools::get(world).heroes.values().cloned().collect_vec();
                     }
+                    if ui.button("Paste").clicked() {
+                        if let Some(s) = get_from_clipboard(world) {
+                            match ron::from_str(&s) {
+                                Ok(u) => td.units.insert(0, u),
+                                Err(e) => AlertPlugin::add_error(
+                                    Some("Paste Failed".to_owned()),
+                                    e.to_string(),
+                                    None,
+                                ),
+                            }
+                        }
+                    }
                 });
 
                 let columns = Column::iter().collect_vec();

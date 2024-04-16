@@ -2,6 +2,7 @@
 (
     name: "Paladins",
     color: ("#F06292"),
+    defaults: {"Shield": {M1: Int(0)}},
     statuses: [
         (
             name: "Shield",
@@ -16,6 +17,17 @@
                                 If(
                                     GreaterThen(Context(Value), Int(0)),
                                     WithVar(Charges, Int(-1), AddStatus("Shield")),
+                                    Noop,
+                                ),
+                                None,
+                            ),
+                            (
+                                If(
+                                    AbilityState("Shield", M1),
+                                    WithTarget(
+                                        Caster,
+                                        Damage(Mul(AbilityState("Shield", M1), Context(Value))),
+                                    ),
                                     Noop,
                                 ),
                                 None,

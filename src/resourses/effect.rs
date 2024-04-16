@@ -1,3 +1,4 @@
+use event::Event;
 use std::{collections::VecDeque, ops::Deref};
 
 use super::*;

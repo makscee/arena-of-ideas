@@ -1,0 +1,31 @@
+#![enable(implicit_some)]
+(
+    name: "Spike",
+    hp: 2,
+    atk: 1,
+    stacks: 1,
+    level: 1,
+    houses: "Paladins",
+    trigger: Fire(
+        triggers: [(BattleStart, None)],
+        targets: [],
+        effects: [(AbilityStateAddVar("Shield", M1, Int(1)), "[Shield] reflects damage x{Level}")],
+    ),
+    representation: (
+        material: Shape(
+            shape: Rectangle(
+                size: Mul(Vec2EE(Float(2.0), Float(0.03)), Sum(Mul(Beat, Float(0.3)), Float(1.0))),
+            ),
+            shape_type: Line(thickness: Float(1.0)),
+            fill: Solid(color: OwnerState(Color)),
+            fbm: None,
+            alpha: Float(1.0),
+            padding: Float(0.0),
+        ),
+        children: [],
+        mapping: {Rotation: Sum(Mul(Index, Mul(PI, Float(0.125))), Mul(Sin(GameTime), Float(0.1)))},
+        count: 9,
+    ),
+    state: (history: {}, birth: 0.0),
+    statuses: [],
+)
