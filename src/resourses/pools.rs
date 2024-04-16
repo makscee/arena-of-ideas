@@ -89,6 +89,14 @@ impl Pools {
     pub fn get_default_ability_state<'a>(name: &str, world: &'a World) -> Option<&'a VarState> {
         Self::try_get(world)?.default_ability_states.get(name)
     }
+    pub fn clear(&mut self) {
+        self.heroes.clear();
+        self.houses.clear();
+        self.abilities.clear();
+        self.statuses.clear();
+        self.vfx.clear();
+        self.summons.clear();
+    }
 }
 
 pub struct PoolsPlugin;
@@ -255,11 +263,7 @@ impl PoolsPlugin {
             return;
         }
         debug!("Cache server pools start");
-        pools.heroes.clear();
-        pools.houses.clear();
-        pools.abilities.clear();
-        pools.statuses.clear();
-        pools.vfx.clear();
+        pools.clear();
         for unit in TableUnit::iter() {
             pools.heroes.insert(unit.name.clone(), unit.into());
         }
