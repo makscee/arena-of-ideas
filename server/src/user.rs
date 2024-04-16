@@ -22,7 +22,7 @@ fn register_empty(ctx: ReducerContext) -> Result<(), String> {
     let user = User {
         id: 0,
         identities: vec![ctx.sender],
-        name: format!("user#{}", User::iter().count()),
+        name: format!("player#{}", User::iter().count()),
         pass_hash: None,
         online: false,
         last_login: Timestamp::UNIX_EPOCH,

@@ -46,6 +46,7 @@ impl HeroTablePlugin {
                 ui.style_mut().visuals.widgets.inactive.bg_stroke = Stroke::NONE;
                 TableBuilder::new(ui)
                     .auto_shrink(false)
+                    .striped(true)
                     .column(egui_extras::Column::exact(100.0))
                     .columns(egui_extras::Column::auto(), columns.len())
                     .header(20.0, |mut h| {

@@ -63,6 +63,7 @@ lazy_static = "1.4.0"
 convert_case = "0.6.0"
 indexmap = { version = "2.2.5", features = ["serde"] }
 noisy_bevy = "0.6.0"
+chrono = "0.4.38"
 
 [dependencies.winit]
 # version = "*"

@@ -423,9 +423,10 @@ impl ShopPlugin {
         };
         let cursor_pos = CameraPlugin::cursor_world_pos(world).context("Failed to get cursor")?;
         let dragged = world.resource::<DraggedUnit>().0;
+        let gs = GlobalSettings::filter_by_always_zero(0).unwrap();
         if let Some((dragged, _)) = dragged {
             let mut new_action = DragAction::None;
-            for slot in 1..TEAM_SLOTS {
+            for slot in 1..=gs.team_slots as usize {
                 let pos = UnitPlugin::get_slot_position(Faction::Team, slot);
                 if (pos - cursor_pos).length() < 1.0 {
                     new_action = DragAction::Insert(slot);
@@ -435,7 +436,6 @@ impl ShopPlugin {
         } else {
             let units = UnitPlugin::collect_factions([Faction::Team, Faction::Shop].into(), world);
             let phase = data.phase.clone();
-            let gs = GlobalSettings::filter_by_always_zero(0).unwrap();
             for (entity, faction) in units {
                 let is_shop = faction == Faction::Shop;
                 let price = VarState::get(entity, world)

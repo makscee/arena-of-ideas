@@ -62,7 +62,7 @@ impl UnitPlugin {
 
     pub fn get_closest_slot(pos: Vec2, faction: Faction) -> (usize, f32) {
         let mut closest_slot = (0, f32::MAX);
-        for slot in 0..TEAM_SLOTS {
+        for slot in 0..=TEAM_SLOTS {
             let dist = (Self::get_slot_position(faction, slot).x - pos.x).abs();
             if dist < closest_slot.1 {
                 closest_slot = (slot, dist);

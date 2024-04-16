@@ -140,6 +140,7 @@ impl UiPlugin {
                 fg_stroke: Stroke::new(1.0, light_gray()),
                 expansion: 0.0,
             };
+            style.visuals.faint_bg_color = light_black();
             // style.spacing.item_spacing = [12.0, 2.0].into();
         });
     }
@@ -225,12 +226,14 @@ impl GameWindow<'_> {
                                     Frame::none()
                                         .inner_margin(Margin::symmetric(8.0, 0.0))
                                         .show(ui, |ui| {
-                                            ui.label(
+                                            Label::new(
                                                 RichText::new(self.title)
                                                     .text_style(TextStyle::Heading)
                                                     .size(15.0)
                                                     .color(black()),
-                                            );
+                                            )
+                                            .selectable(false)
+                                            .ui(ui);
                                         })
                                 },
                             );

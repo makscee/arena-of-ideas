@@ -194,13 +194,13 @@ impl BattlePlugin {
     }
 
     fn fatigue(world: &mut World) -> Result<()> {
-        let (round, _) = ActionPlugin::get_round(GameTimer::get().insert_head(), world);
+        let (turn, _) = ActionPlugin::get_turn(GameTimer::get().insert_head(), world);
         let fatigue = if let Some(settings) = GlobalSettings::filter_by_always_zero(0) {
             settings.fatigue_start
         } else {
             20
         } as i32;
-        let fatigue = round as i32 - fatigue;
+        let fatigue = turn as i32 - fatigue;
         if fatigue > 0 {
             info!("Fatigue {fatigue}");
             let effect = Effect::Damage(Some(Expression::Int(fatigue)));
@@ -226,20 +226,20 @@ impl BattlePlugin {
             return;
         };
         if !GameTimer::get().ended() {
-            Self::draw_round_num(ctx, world);
+            Self::draw_turn_num(ctx, world);
             Self::draw_current_event(ctx, world);
             return;
         }
         Self::draw_final_panel(ctx, world);
     }
 
-    fn draw_round_num(ctx: &egui::Context, world: &World) {
-        let (round, ts) = ActionPlugin::get_round(GameTimer::get().play_head(), world);
+    fn draw_turn_num(ctx: &egui::Context, world: &World) {
+        let (turn, ts) = ActionPlugin::get_turn(GameTimer::get().play_head(), world);
         let x = smoothstep(0.2, 0.0, ts);
         let spacing = x * 4.0;
-        TopBottomPanel::top("round num").show(ctx, |ui| {
+        TopBottomPanel::top("turn num").show(ctx, |ui| {
             ui.vertical_centered_justified(|ui| {
-                format!("Round {round}")
+                format!("Turn {turn}")
                     .add_color(orange())
                     .set_style(ColoredStringStyle::Heading)
                     .set_extra_spacing(spacing)

@@ -68,6 +68,9 @@ impl TopButton {
         if open && self.eq(&TopButton::Profile) {
             ProfilePlugin::load(world);
         }
+        if open && self.eq(&TopButton::Leaderboard) {
+            LeaderboardPlugin::load(world);
+        }
     }
 
     fn show(&self, world: &mut World) {

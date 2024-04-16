@@ -21,7 +21,7 @@ struct ActionQueue(VecDeque<Action>);
 #[derive(Resource, Default)]
 struct ActionsData {
     events: Vec<(f32, Event)>,
-    rounds: Vec<(f32, usize)>,
+    turns: Vec<(f32, usize)>,
 }
 
 struct Action {
@@ -117,11 +117,11 @@ impl ActionPlugin {
             .push((GameTimer::get().insert_head(), event));
     }
 
-    pub fn get_round(t: f32, world: &World) -> (usize, f32) {
+    pub fn get_turn(t: f32, world: &World) -> (usize, f32) {
         world
             .get_resource::<ActionsData>()
             .and_then(|d| {
-                d.rounds.iter().rev().find_map(|(ts, e)| match t >= *ts {
+                d.turns.iter().rev().find_map(|(ts, e)| match t >= *ts {
                     true => Some((*e, t - *ts)),
                     false => None,
                 })
@@ -130,8 +130,8 @@ impl ActionPlugin {
     }
     pub fn register_next_round(world: &mut World) {
         let mut data = world.resource_mut::<ActionsData>();
-        let next = data.rounds.last().map(|(_, r)| *r).unwrap_or_default() + 1;
-        data.rounds.push((GameTimer::get().insert_head(), next));
+        let next = data.turns.last().map(|(_, r)| *r).unwrap_or_default() + 1;
+        data.turns.push((GameTimer::get().insert_head(), next));
     }
 
     pub fn event_push_back(event: Event, context: Context, world: &mut World) {

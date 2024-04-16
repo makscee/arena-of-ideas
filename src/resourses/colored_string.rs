@@ -107,7 +107,7 @@ impl ColoredString {
     }
 
     pub fn label(&self, ui: &mut Ui) -> Response {
-        self.as_label(ui).ui(ui)
+        self.as_label(ui).selectable(false).ui(ui)
     }
     pub fn label_alpha(&self, a: f32, ui: &mut Ui) -> Response {
         self.as_label_alpha(a, ui).ui(ui)
