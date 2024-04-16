@@ -1,0 +1,42 @@
+#![enable(implicit_some)]
+(
+    name: "Folla",
+    hp: 1,
+    atk: 0,
+    stacks: 1,
+    level: 1,
+    houses: "Dragons",
+    trigger: Fire(
+        triggers: [(BeforeStrike, None)],
+        targets: [(Owner, None)],
+        effects: [(UseAbility("Grow", 1), None)],
+    ),
+    representation: (
+        material: Shape(
+            shape: Circle(radius: Float(0.5)),
+            shape_type: Line(thickness: Float(1.0)),
+            fill: Solid(color: OwnerState(Color)),
+            fbm: None,
+            alpha: Float(0.3),
+            padding: Float(0.1),
+        ),
+        children: [],
+        mapping: {
+            Offset: Mul(
+                UnitVec(
+                    Sum(
+                        GameTime,
+                        Mul(
+                            IntFloat(OwnerState(Index)),
+                            Sum(Float(1.04), Mul(Sin(GameTime), Float(0.24))),
+                        ),
+                    ),
+                ),
+                Float(0.19),
+            ),
+        },
+        count: 6,
+    ),
+    state: (history: {}, birth: 0.0),
+    statuses: [],
+)
