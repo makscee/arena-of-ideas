@@ -1,0 +1,40 @@
+#![enable(implicit_some)]
+(
+    name: "Balancer",
+    hp: 3,
+    atk: 1,
+    stacks: 1,
+    level: 1,
+    houses: "Witches",
+    trigger: Fire(
+        triggers: [(BattleStart, None)],
+        targets: [(FilterMaxEnemy(OwnerState(Atk)), "enemy with max {HP}")],
+        effects: [(UseAbility("Weakness", 4), None)],
+    ),
+    representation: (
+        material: Shape(
+            shape: Rectangle(
+                size: Vec2(1.0, 1.0),
+            ),
+            shape_type: Line(
+                thickness: Float(1.0),
+            ),
+            fill: Solid(
+                color: OwnerState(Color),
+            ),
+            fbm: None,
+            alpha: Float(1.0),
+            padding: Float(0.0),
+        ),
+        children: [],
+        mapping: {
+            Rotation: Sum(Mul(Mul(PI, Float(0.25)), Index), Mul(Sin(Sum(GameTime, Index)), Float(0.3))),
+        },
+        count: 2,
+    ),
+    state: (
+        history: {},
+        birth: 0.0,
+    ),
+    statuses: [],
+)

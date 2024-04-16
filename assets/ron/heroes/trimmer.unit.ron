@@ -7,7 +7,7 @@
     level: 1,
     houses: "Alchemists",
     trigger: Fire(
-        triggers: [(AfterStrike, None)],
+        triggers: [(BattleStart, None)],
         targets: [(FilterMaxEnemy(OwnerState(Hp)), "enemy with max Hp")],
         effects: [(UseAbility("Petrify", 0), None)],
     ),
