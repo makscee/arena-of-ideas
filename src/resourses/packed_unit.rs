@@ -216,12 +216,12 @@ impl PackedUnit {
         fused
     }
 
-    pub fn fuse(a: Self, b: Self, world: &World) -> Vec<Self> {
+    pub fn fuse(target: Self, source: Self, world: &World) -> Vec<Self> {
         let mut result: Vec<Self> = default();
-        let trigger_a = &a.trigger;
-        let trigger_b = &b.trigger;
+        let t_target = &target.trigger;
+        let t_source = &source.trigger;
 
-        match (trigger_a, trigger_b) {
+        match (t_target, t_source) {
             (
                 Trigger::Fire {
                     triggers: trigger_a,
@@ -234,27 +234,25 @@ impl PackedUnit {
                     effects: effect_b,
                 },
             ) => {
-                if !trigger_a.eq(trigger_b) {
-                    {
-                        let trigger = Trigger::Fire {
-                            triggers: Vec::from_iter(
-                                trigger_a.iter().cloned().chain(trigger_b.iter().cloned()),
-                            ),
-                            targets: target_a.clone(),
-                            effects: effect_a.clone(),
-                        };
-                        result.push(Self::fuse_base(&a, &b, trigger, world))
-                    }
-                    {
-                        let trigger = Trigger::Fire {
-                            triggers: Vec::from_iter(
-                                trigger_a.iter().cloned().chain(trigger_b.iter().cloned()),
-                            ),
-                            targets: target_b.clone(),
-                            effects: effect_b.clone(),
-                        };
-                        result.push(Self::fuse_base(&b, &a, trigger, world))
-                    }
+                {
+                    let trigger = Trigger::Fire {
+                        triggers: Vec::from_iter(
+                            trigger_a.iter().cloned().chain(trigger_b.iter().cloned()),
+                        ),
+                        targets: target_a.clone(),
+                        effects: effect_a.clone(),
+                    };
+                    result.push(Self::fuse_base(&target, &source, trigger, world))
+                }
+                {
+                    let trigger = Trigger::Fire {
+                        triggers: trigger_a.clone(),
+                        targets: Vec::from_iter(
+                            target_a.iter().cloned().chain(target_b.iter().cloned()),
+                        ),
+                        effects: effect_a.clone(),
+                    };
+                    result.push(Self::fuse_base(&target, &source, trigger, world))
                 }
                 {
                     let trigger = Trigger::Fire {
@@ -264,24 +262,13 @@ impl PackedUnit {
                             effect_a.iter().cloned().chain(effect_b.iter().cloned()),
                         ),
                     };
-                    result.push(Self::fuse_base(&a, &b, trigger, world))
-                }
-                {
-                    let trigger = Trigger::Fire {
-                        triggers: trigger_b.clone(),
-                        targets: target_b.clone(),
-                        effects: Vec::from_iter(
-                            effect_a.iter().cloned().chain(effect_b.iter().cloned()),
-                        ),
-                    };
-                    result.push(Self::fuse_base(&b, &a, trigger, world))
+                    result.push(Self::fuse_base(&target, &source, trigger, world))
                 }
             }
             _ => {
-                let trigger = Trigger::List(
-                    [Box::new(trigger_a.clone()), Box::new(trigger_b.clone())].into(),
-                );
-                result.push(Self::fuse_base(&a, &b, trigger, world));
+                let trigger =
+                    Trigger::List([Box::new(t_target.clone()), Box::new(t_source.clone())].into());
+                result.push(Self::fuse_base(&target, &source, trigger, world));
             }
         }
 

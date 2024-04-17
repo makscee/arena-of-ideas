@@ -479,7 +479,7 @@ impl ShopPlugin {
                                     )
                                     .hovered()
                                 {
-                                    Self::draw_curves(rect.center_bottom(), stack, ctx, world);
+                                    Self::draw_arrows(rect.center_top(), stack, ctx, world);
                                 }
                             }
                         }
@@ -503,7 +503,7 @@ impl ShopPlugin {
                                 );
                                 let rect = resp.rect;
                                 if resp.on_hover_text("Fuse heroes together, combining their abilities\nHeroes of Level greater than 1 can be fused").hovered() {
-                                    Self::draw_curves(rect.center_bottom(), fuse, ctx, world);
+                                    Self::draw_arrows(rect.center_top(), fuse, ctx, world);
                                 }
                             }
                         }
@@ -639,20 +639,20 @@ impl ShopPlugin {
             })
             .response
     }
-    fn draw_curves(from: Pos2, targets: &Vec<Entity>, ctx: &egui::Context, world: &World) {
+    fn draw_arrows(from: Pos2, targets: &Vec<Entity>, ctx: &egui::Context, world: &World) {
         let screen_rect = ctx.screen_rect();
         egui::Window::new("curves")
             .fixed_rect(screen_rect)
             .frame(Frame::none())
             .title_bar(false)
             .show(ctx, |ui| {
-                const OFFSET: egui::Vec2 = egui::vec2(0.0, 30.0);
+                const OFFSET: egui::Vec2 = egui::vec2(0.0, 40.0);
                 let p1 = from;
-                let p2 = p1 + OFFSET;
+                let p2 = p1 - OFFSET;
                 for target in targets {
                     let p4 = entity_screen_pos(*target, vec2(0.0, 0.0), world).to_pos2();
-                    let p3 = p4 - OFFSET;
-                    draw_curve(p1, p2, p3, p4, 3.0, red(), ui);
+                    let p3 = p4 + OFFSET;
+                    draw_curve(p1, p2, p3, p4, 3.0, red(), true, ui);
                 }
             });
     }

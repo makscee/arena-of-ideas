@@ -734,7 +734,7 @@ pub fn show_node(
         mid1.x += 5.0;
         let mut mid2 = end;
         mid2.x -= 5.0;
-        draw_curve(pos, mid1, mid2, end, 1.0, dark_gray(), ui);
+        draw_curve(pos, mid1, mid2, end, 1.0, dark_gray(), false, ui);
     }
 
     source.show_children(

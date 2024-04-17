@@ -1,5 +1,5 @@
 use bevy_egui::{
-    egui::{Align2, Context, Id, Pos2},
+    egui::{epaint::PathShape, Align2, Context, Id, Pos2},
     EguiContext,
 };
 
@@ -121,15 +121,35 @@ pub fn get_from_clipboard(world: &mut World) -> Option<String> {
         .resource_mut::<bevy_egui::EguiClipboard>()
         .get_contents()
 }
-pub fn draw_curve(p1: Pos2, p2: Pos2, p3: Pos2, p4: Pos2, width: f32, color: Color32, ui: &mut Ui) {
+pub fn draw_curve(
+    p1: Pos2,
+    p2: Pos2,
+    p3: Pos2,
+    p4: Pos2,
+    width: f32,
+    color: Color32,
+    arrow: bool,
+    ui: &mut Ui,
+) {
     let points = [p1, p2, p3, p4];
+    let stroke = Stroke { width, color };
     let curve = egui::Shape::CubicBezier(egui::epaint::CubicBezierShape::from_points_stroke(
         points,
         false,
         Color32::TRANSPARENT,
-        Stroke { width, color },
+        stroke,
     ));
     ui.painter().add(curve);
+    if !arrow {
+        return;
+    }
+    let t = p4.to_vec2();
+    let t1 = (p3.to_vec2() - t).normalized() * 15.0;
+    let p1 = (t + t1 + t1.rot90()).to_pos2();
+    let p2 = (t + t1 - t1.rot90()).to_pos2();
+    let points = [p1, p4, p2];
+    let arrow = egui::Shape::Path(PathShape::line(points.into(), stroke));
+    ui.painter().add(arrow);
 }
 pub fn smoothstep(edge0: f32, edge1: f32, x: f32) -> f32 {
     let x = ((x - edge0) / (edge1 - edge0)).clamp(0.0, 1.0);
