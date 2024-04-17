@@ -105,7 +105,7 @@ impl ActionPlugin {
         let t = GameTimer::get().play_head();
         world.get_resource::<ActionsData>().and_then(|d| {
             d.events.iter().rev().find_map(|(ts, e)| match t >= *ts {
-                true => Some((*e, t - *ts)),
+                true => Some((e.clone(), t - *ts)),
                 false => None,
             })
         })

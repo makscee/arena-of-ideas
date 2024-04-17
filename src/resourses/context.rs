@@ -45,7 +45,7 @@ impl ContextLayer {
     }
     pub fn get_event(&self) -> Option<Event> {
         match self {
-            ContextLayer::Event(entity, ..) => Some(*entity),
+            ContextLayer::Event(event, ..) => Some(event.clone()),
             _ => None,
         }
     }

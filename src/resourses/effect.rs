@@ -12,7 +12,6 @@ pub enum Effect {
     Debug(Expression),
     Text(Expression),
     Damage(Option<Expression>),
-    AoeFaction(Expression, Box<Effect>),
     WithTarget(Expression, Box<Effect>),
     WithOwner(Expression, Box<Effect>),
     List(Vec<Box<Effect>>),
@@ -46,12 +45,12 @@ impl Effect {
                         .context("Can't find ATK")?,
                 };
                 debug!("Damage {} {target:?}", value.to_string());
-                Event::IncomingDamage {
+                let event = Event::IncomingDamage {
                     owner: target,
                     value: value.get_int()?,
-                }
-                .send_with_context(context.clone(), world)
-                .map(&mut value, world);
+                };
+                event.clone().send_with_context(context.clone(), world);
+                event.map(&mut value, world);
                 debug!("Value after map {value:?}");
                 let value = value.get_int()?;
                 if value > 0 {
@@ -112,25 +111,19 @@ impl Effect {
                         .take(),
                     world,
                 )?;
-                {
-                    let mut context = context
-                        .clone()
-                        .set_var(VarName::Color, VarValue::Color(color))
-                        .take();
 
-                    context.set_var(
-                        VarName::Charges,
-                        VarValue::Int(
-                            context
-                                .get_var(VarName::Level, world)
-                                .map(|v| v.get_int().unwrap())
-                                .unwrap_or(1)
-                                + *base,
-                        ),
-                    );
-
-                    ActionPlugin::action_push_front(effect, context, world);
-                }
+                let mut context = context
+                    .clone()
+                    .set_var(VarName::Color, VarValue::Color(color))
+                    .take();
+                let charges = context
+                    .get_var(VarName::Level, world)
+                    .map(|v| v.get_int().unwrap())
+                    .unwrap_or(1)
+                    + *base;
+                context.set_var(VarName::Charges, VarValue::Int(charges));
+                Event::UseAbility(ability.to_owned()).send_with_context(context.clone(), world);
+                ActionPlugin::action_push_front(effect, context, world);
             }
             Effect::Summon(name) => {
                 let mut unit = Pools::get_summon(name, world)
@@ -150,33 +143,25 @@ impl Effect {
                 unit.atk += extra_atk;
 
                 let color = Pools::get_color_by_name(name, world)?;
-                TextColumn::add(
-                    context.owner(),
-                    &format!("Summon {name}"),
-                    color.c32(),
-                    world,
-                )?;
-                {
-                    let mut context = context
-                        .clone()
-                        .set_var(VarName::Color, VarValue::Color(color))
-                        .take();
-                    if context.get_var(VarName::Charges, world).is_none() {
-                        context.set_var(
-                            VarName::Charges,
-                            context
-                                .get_var(VarName::Level, world)
-                                .unwrap_or(VarValue::Int(1)),
-                        );
-                    }
-                    let faction = context.get_faction(world)?;
-                    let parent =
-                        TeamPlugin::find_entity(faction, world).context("Team not found")?;
-                    let entity = unit.unpack(parent, None, world);
-                    UnitPlugin::fill_slot_gaps(faction, world);
-                    UnitPlugin::translate_to_slots(world);
-                    Event::Summon(entity).send_with_context(context.clone(), world);
+
+                let mut context = context
+                    .clone()
+                    .set_var(VarName::Color, VarValue::Color(color))
+                    .take();
+                if context.get_var(VarName::Charges, world).is_none() {
+                    context.set_var(
+                        VarName::Charges,
+                        context
+                            .get_var(VarName::Level, world)
+                            .unwrap_or(VarValue::Int(1)),
+                    );
                 }
+                let faction = context.get_faction(world)?;
+                let parent = TeamPlugin::find_entity(faction, world).context("Team not found")?;
+                let entity = unit.unpack(parent, None, world);
+                UnitPlugin::fill_slot_gaps(faction, world);
+                UnitPlugin::translate_to_slots(world);
+                Event::Summon(entity).send_with_context(context.clone(), world);
             }
             Effect::AddStatus(status) => {
                 let charges = context
@@ -229,13 +214,6 @@ impl Effect {
             Effect::ListSpread(list) => {
                 for effect in list {
                     ActionPlugin::action_push_front(effect.deref().clone(), context.clone(), world);
-                }
-            }
-            Effect::AoeFaction(faction, effect) => {
-                for unit in UnitPlugin::collect_faction(faction.get_faction(context, world)?, world)
-                {
-                    let context = context.clone().set_target(unit, world).take();
-                    ActionPlugin::action_push_front(effect.deref().clone(), context, world);
                 }
             }
             Effect::Text(text) => {
@@ -400,8 +378,7 @@ impl Effect {
             | Effect::StateAddVar(..)
             | Effect::AbilityStateAddVar(..)
             | Effect::SendEvent(..) => default(),
-            Effect::AoeFaction(_, e)
-            | Effect::WithTarget(_, e)
+            Effect::WithTarget(_, e)
             | Effect::Repeat(_, e)
             | Effect::WithOwner(_, e)
             | Effect::WithVar(_, _, e) => vec![e],
@@ -432,8 +409,7 @@ impl EditorNodeGenerator for Effect {
 
     fn show_extra(&mut self, path: &str, context: &Context, world: &mut World, ui: &mut Ui) {
         match self {
-            Effect::AoeFaction(_, _)
-            | Effect::WithTarget(_, _)
+            Effect::WithTarget(_, _)
             | Effect::WithOwner(_, _)
             | Effect::Noop
             | Effect::Kill
@@ -622,10 +598,7 @@ impl EditorNodeGenerator for Effect {
                     show_node(e, format!("{path}:e"), connect_pos, context, ui, world);
                 }
             }
-            Effect::AoeFaction(e, eff)
-            | Effect::WithTarget(e, eff)
-            | Effect::WithOwner(e, eff)
-            | Effect::Repeat(e, eff) => {
+            Effect::WithTarget(e, eff) | Effect::WithOwner(e, eff) | Effect::Repeat(e, eff) => {
                 ui.vertical(|ui| {
                     ui.horizontal(|ui| {
                         show_node(e, format!("{path}:e"), connect_pos, context, ui, world);
@@ -764,7 +737,7 @@ impl std::fmt::Display for Effect {
                     .and_then(|x| Some(x.to_string()))
                     .unwrap_or_default()
             ),
-            Effect::WithOwner(x, e) | Effect::WithTarget(x, e) | Effect::AoeFaction(x, e) => {
+            Effect::WithOwner(x, e) | Effect::WithTarget(x, e) => {
                 write!(f, "{} ({x}, {e})", self.as_ref())
             }
             Effect::List(list) | Effect::ListSpread(list) => write!(

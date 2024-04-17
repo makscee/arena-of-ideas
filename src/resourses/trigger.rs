@@ -37,6 +37,7 @@ pub enum FireTrigger {
     List(Vec<Box<FireTrigger>>),
     Period(usize, usize, Box<FireTrigger>),
     OnceAfter(i32, Box<FireTrigger>),
+    UnitUsedAbility(String),
     AfterIncomingDamage,
     AfterDamageTaken,
     AfterDamageDealt,
@@ -74,6 +75,10 @@ impl FireTrigger {
             FireTrigger::AllySummon => match event {
                 Event::Summon(e) => UnitPlugin::get_faction(*e, world)
                     .eq(&UnitPlugin::get_faction(context.owner(), world)),
+                _ => false,
+            },
+            FireTrigger::UnitUsedAbility(name) => match event {
+                Event::UseAbility(e) => e.eq(name),
                 _ => false,
             },
             FireTrigger::BeforeDeath => match event {
@@ -134,7 +139,8 @@ impl EditorNodeGenerator for FireTrigger {
             | FireTrigger::AnyDeath
             | FireTrigger::AllySummon
             | FireTrigger::BeforeDeath
-            | FireTrigger::AfterKill => hex_color!("#80D8FF"),
+            | FireTrigger::AfterKill
+            | FireTrigger::UnitUsedAbility(..) => hex_color!("#80D8FF"),
             FireTrigger::Period(..) | FireTrigger::OnceAfter(..) => hex_color!("#18FFFF"),
             FireTrigger::List(_) => hex_color!("#FFEB3B"),
         }
@@ -189,11 +195,12 @@ impl EditorNodeGenerator for FireTrigger {
             | FireTrigger::AnyDeath
             | FireTrigger::AllySummon
             | FireTrigger::BeforeDeath
-            | FireTrigger::AfterKill => default(),
+            | FireTrigger::AfterKill
+            | FireTrigger::UnitUsedAbility(..) => default(),
         }
     }
 
-    fn show_extra(&mut self, _: &str, _: &Context, _: &mut World, ui: &mut Ui) {
+    fn show_extra(&mut self, path: &str, _: &Context, world: &mut World, ui: &mut Ui) {
         match self {
             FireTrigger::List(list) => {
                 if ui.button("CLEAR").clicked() {
@@ -205,6 +212,16 @@ impl EditorNodeGenerator for FireTrigger {
             }
             FireTrigger::OnceAfter(delay, _) => {
                 DragValue::new(delay).ui(ui);
+            }
+            FireTrigger::UnitUsedAbility(name) => {
+                ComboBox::from_id_source(&path)
+                    .selected_text(name.to_owned())
+                    .show_ui(ui, |ui| {
+                        for option in Pools::get(world).abilities.keys().sorted() {
+                            let text = option.to_string();
+                            ui.selectable_value(name, option.to_owned(), text);
+                        }
+                    });
             }
             FireTrigger::Noop
             | FireTrigger::AfterIncomingDamage
@@ -419,6 +436,12 @@ impl std::fmt::Display for FireTrigger {
             FireTrigger::OnceAfter(delay, trigger) => {
                 write!(f, "Once in {delay} {trigger}")
             }
+            FireTrigger::UnitUsedAbility(name) => write!(
+                f,
+                "{} [{}]",
+                self.as_ref().to_case(convert_case::Case::Lower),
+                name
+            ),
         }
     }
 }

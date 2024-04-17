@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Debug, Display, PartialEq, Eq, Serialize, Deserialize, Default, Clone, Copy)]
+#[derive(Debug, Display, PartialEq, Eq, Serialize, Deserialize, Default, Clone)]
 pub enum Event {
     IncomingDamage {
         owner: Entity,
@@ -32,13 +32,14 @@ pub enum Event {
         target: Entity,
     },
     Summon(Entity),
+    UseAbility(String),
 }
 
 impl Event {
-    pub fn send_with_context(self, mut context: Context, world: &mut World) -> Self {
+    pub fn send_with_context(self, mut context: Context, world: &mut World) {
         debug!("Send event {self:?}");
-        context.set_event(self);
-        ActionPlugin::register_event(self, world);
+        context.set_event(self.clone());
+        ActionPlugin::register_event(self.clone(), world);
         let units = match &self {
             Event::DamageTaken { owner, value } | Event::IncomingDamage { owner, value } => {
                 context.set_var(VarName::Value, VarValue::Int(*value));
@@ -48,12 +49,13 @@ impl Event {
             | Event::TurnStart
             | Event::TurnEnd
             | Event::Death(..)
-            | Event::Summon(..) => {
+            | Event::Summon(..)
+            | Event::UseAbility(..) => {
                 let mut units = UnitPlugin::collect_all(world);
                 units.sort_by_key(|e| VarState::get(*e, world).get_int(VarName::Slot).unwrap());
-                match self {
+                match &self {
                     Event::Death(e) | Event::Summon(e) => {
-                        context.set_target(e, world);
+                        context.set_target(*e, world);
                     }
                     _ => {}
                 };
@@ -90,10 +92,9 @@ impl Event {
                 world,
             );
         }
-        self
     }
 
-    pub fn send(self, world: &mut World) -> Self {
+    pub fn send(self, world: &mut World) {
         self.send_with_context(Context::new_empty(), world)
     }
 
@@ -119,9 +120,5 @@ impl Event {
             Status::map_var(status, &self, value, &context, world);
         }
         self
-    }
-
-    pub fn spin(self, world: &mut World) -> Result<bool> {
-        ActionPlugin::spin(world)
     }
 }

@@ -1,4 +1,5 @@
 use bevy_egui::egui::Align2;
+use event::Event;
 
 use crate::module_bindings::ArenaRun;
 
@@ -66,7 +67,8 @@ impl BattlePlugin {
         UnitPlugin::translate_to_slots(world);
         GameTimer::get().insert_to_end();
         ActionPlugin::spin(world)?;
-        Event::BattleStart.send(world).spin(world)?;
+        Event::BattleStart.send(world);
+        ActionPlugin::spin(world)?;
         loop {
             if let Some((left, right)) = Self::get_strikers(world) {
                 Self::run_strike(left, right, world)?;
@@ -126,16 +128,20 @@ impl BattlePlugin {
         Self::strike(left, right, world)?;
         Self::after_strike(left, right, world)?;
         Self::fatigue(world)?;
-        Event::TurnEnd.send(world).spin(world)?;
+        Event::TurnEnd.send(world);
+        ActionPlugin::spin(world)?;
         ActionPlugin::spin(world)?;
         Ok(())
     }
 
     fn before_strike(left: Entity, right: Entity, world: &mut World) -> Result<()> {
         debug!("Before strike {left:?} {right:?}");
-        Event::TurnStart.send(world).spin(world)?;
-        Event::BeforeStrike(left, right).send(world).spin(world)?;
-        Event::BeforeStrike(right, left).send(world).spin(world)?;
+        Event::TurnStart.send(world);
+        ActionPlugin::spin(world)?;
+        Event::BeforeStrike(left, right).send(world);
+        ActionPlugin::spin(world)?;
+        Event::BeforeStrike(right, left).send(world);
+        ActionPlugin::spin(world)?;
         if Self::stricker_death_check(left, right, world) {
             return Ok(());
         }
@@ -188,8 +194,10 @@ impl BattlePlugin {
             GameTimer::get().to_batch_start();
         }
         GameTimer::get().insert_to_end().end_batch();
-        Event::AfterStrike(left, right).send(world).spin(world)?;
-        Event::AfterStrike(right, left).send(world).spin(world)?;
+        Event::AfterStrike(left, right).send(world);
+        ActionPlugin::spin(world)?;
+        Event::AfterStrike(right, left).send(world);
+        ActionPlugin::spin(world)?;
         Ok(())
     }
 
