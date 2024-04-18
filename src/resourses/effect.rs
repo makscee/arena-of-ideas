@@ -121,7 +121,10 @@ impl Effect {
                     .map(|v| v.get_int().unwrap())
                     .unwrap_or(1)
                     + *base;
-                context.set_var(VarName::Charges, VarValue::Int(charges));
+                let caster = context.owner();
+                context
+                    .set_var(VarName::Charges, VarValue::Int(charges))
+                    .set_caster(caster, world);
                 Event::UseAbility(ability.to_owned()).send_with_context(context.clone(), world);
                 ActionPlugin::action_push_front(effect, context, world);
             }
@@ -161,7 +164,10 @@ impl Effect {
                 let entity = unit.unpack(parent, None, world);
                 UnitPlugin::fill_slot_gaps(faction, world);
                 UnitPlugin::translate_to_slots(world);
-                Event::Summon(entity).send_with_context(context.clone(), world);
+                Event::Summon(entity).send_with_context(
+                    context.clone().set_caster(context.owner(), world).take(),
+                    world,
+                );
             }
             Effect::AddStatus(status) => {
                 let charges = context

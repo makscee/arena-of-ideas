@@ -291,6 +291,7 @@ fn subscribe_to_tables(user_id: u64) {
         "select * from House",
         "select * from Statuses",
         "select * from Ability",
+        "select * from Summon",
         "select * from Vfx",
         "select * from ArenaRun",
         "select * from ArenaPool",
