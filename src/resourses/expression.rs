@@ -58,6 +58,8 @@ pub enum Expression {
     Value(VarValue),
     RandomStatusAlly(String),
     RandomStatusEnemy(String),
+    AllStatusAllies(String),
+    AllStatusEnemies(String),
     HasStatus(String),
 
     Vec2(f32, f32),
@@ -78,6 +80,7 @@ pub enum Expression {
     SlotUnit(Box<Expression>),
     FactionCount(Box<Expression>),
     StatusCharges(Box<Expression>),
+    FilterUnits(Box<Expression>),
     FilterMaxEnemy(Box<Expression>),
     FindUnit(Box<Expression>),
     UnitCount(Box<Expression>),
@@ -402,6 +405,19 @@ impl Expression {
                     .get_int(context, world)?
                     > 0,
             )),
+            Expression::FilterUnits(condition) => {
+                let faction = context.get_faction(world)?;
+                Ok(VarValue::EntityList(
+                    UnitPlugin::collect_faction(faction, world)
+                        .into_iter()
+                        .filter(|u| {
+                            condition
+                                .get_bool(&Context::from_owner(*u, world), world)
+                                .unwrap_or_default()
+                        })
+                        .collect_vec(),
+                ))
+            }
             Expression::FilterMaxEnemy(value) => {
                 let faction = Self::OppositeFaction.get_faction(context, world)?;
                 let (unit, _) = UnitPlugin::collect_faction(faction, world)
@@ -447,6 +463,19 @@ impl Expression {
             }
             Expression::RandomStatusEnemy(name) => {
                 Expression::FindUnit(Box::new(Expression::HasStatus(name.to_owned()))).get_value(
+                    context.clone().set_var(
+                        VarName::Faction,
+                        VarValue::Faction(context.get_faction(world)?.opposite()),
+                    ),
+                    world,
+                )
+            }
+            Expression::AllStatusAllies(name) => {
+                Expression::FilterUnits(Box::new(Expression::HasStatus(name.to_owned())))
+                    .get_value(context, world)
+            }
+            Expression::AllStatusEnemies(name) => {
+                Expression::FilterUnits(Box::new(Expression::HasStatus(name.to_owned()))).get_value(
                     context.clone().set_var(
                         VarName::Faction,
                         VarValue::Faction(context.get_faction(world)?.opposite()),
@@ -555,6 +584,8 @@ impl Expression {
             | Self::Vec2(..)
             | Self::RandomStatusAlly(..)
             | Self::RandomStatusEnemy(..)
+            | Self::AllStatusAllies(..)
+            | Self::AllStatusEnemies(..)
             | Self::HasStatus(..) => default(),
             Self::StringInt(x)
             | Self::StringFloat(x)
@@ -581,6 +612,7 @@ impl Expression {
             | Self::RandomFloat(x)
             | Self::RandomFloatUnit(x)
             | Self::RandomEnemySubset(x)
+            | Self::FilterUnits(x)
             | Self::Vec2E(x) => vec![x],
 
             Self::Vec2EE(a, b)
@@ -721,6 +753,8 @@ impl EditorNodeGenerator for Expression {
             | Expression::RandomStatusAlly(_)
             | Expression::RandomStatusEnemy(_)
             | Expression::HasStatus(_)
+            | Expression::AllStatusAllies(_)
+            | Expression::AllStatusEnemies(_)
             | Expression::Vec2(_, _) => hex_color!("#18FFFF"),
             Expression::Vec2E(_)
             | Expression::StringInt(_)
@@ -747,7 +781,8 @@ impl EditorNodeGenerator for Expression {
             | Expression::RandomFloat(_)
             | Expression::RandomFloatUnit(_)
             | Expression::RandomEnemySubset(_)
-            | Expression::StatusCharges(_) => hex_color!("#448AFF"),
+            | Expression::StatusCharges(_)
+            | Expression::FilterUnits(_) => hex_color!("#448AFF"),
             Expression::Vec2EE(_, _)
             | Expression::Sum(_, _)
             | Expression::Sub(_, _)
@@ -819,7 +854,9 @@ impl EditorNodeGenerator for Expression {
             }
             Expression::HasStatus(name)
             | Expression::RandomStatusAlly(name)
-            | Expression::RandomStatusEnemy(name) => Status::show_selector(name, path, ui, world),
+            | Expression::RandomStatusEnemy(name)
+            | Expression::AllStatusAllies(name)
+            | Expression::AllStatusEnemies(name) => Status::show_selector(name, path, ui, world),
             _ => show_value(&value, ui),
         };
     }
@@ -873,6 +910,8 @@ impl EditorNodeGenerator for Expression {
             | Expression::RandomStatusAlly(_)
             | Expression::RandomStatusEnemy(_)
             | Expression::HasStatus(_)
+            | Expression::AllStatusAllies(_)
+            | Expression::AllStatusEnemies(_)
             | Expression::Vec2(_, _) => default(),
             Expression::Sin(x)
             | Expression::Cos(x)
@@ -899,7 +938,8 @@ impl EditorNodeGenerator for Expression {
             | Expression::RandomFloat(x)
             | Expression::RandomFloatUnit(x)
             | Expression::RandomEnemySubset(x)
-            | Expression::StatusCharges(x) => show_node(
+            | Expression::StatusCharges(x)
+            | Expression::FilterUnits(x) => show_node(
                 x.as_mut(),
                 format!("{path}:x"),
                 connect_pos,
@@ -1101,7 +1141,9 @@ impl std::fmt::Display for Expression {
             Expression::Vec2E(x) => write!(f, "({x}, {x})"),
             Expression::RandomStatusAlly(v)
             | Expression::RandomStatusEnemy(v)
-            | Expression::HasStatus(v) => write!(f, "{}({v})", self.as_ref()),
+            | Expression::HasStatus(v)
+            | Expression::AllStatusAllies(v)
+            | Expression::AllStatusEnemies(v) => write!(f, "{}({v})", self.as_ref()),
             Expression::StringInt(v)
             | Expression::StringFloat(v)
             | Expression::StringVec(v)
@@ -1123,7 +1165,8 @@ impl std::fmt::Display for Expression {
             | Expression::UnitCount(v)
             | Expression::RandomFloat(v)
             | Expression::RandomFloatUnit(v)
-            | Expression::StatusCharges(v) => {
+            | Expression::StatusCharges(v)
+            | Expression::FilterUnits(v) => {
                 write!(f, "{} ({v})", self.as_ref().to_case(Case::Title),)
             }
             Expression::Vec2EE(x, y)
