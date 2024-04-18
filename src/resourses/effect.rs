@@ -520,16 +520,7 @@ impl EditorNodeGenerator for Effect {
                 });
             }
             Effect::AddStatus(name) | Effect::ClearStatus(name) => {
-                ui.vertical(|ui| {
-                    ComboBox::from_id_source(&path)
-                        .selected_text(name.to_owned())
-                        .show_ui(ui, |ui| {
-                            for option in Pools::get(world).statuses.keys().sorted() {
-                                let text = option.to_string();
-                                ui.selectable_value(name, option.to_owned(), text);
-                            }
-                        });
-                });
+                Status::show_selector(name, path, ui, world)
             }
             Effect::Vfx(name) => {
                 ui.vertical(|ui| {

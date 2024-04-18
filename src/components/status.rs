@@ -273,4 +273,21 @@ impl Status {
         let s = world.get::<Status>(status).unwrap();
         let _ = s.trigger.clone().change(event, context, value, world);
     }
+
+    pub fn show_selector(value: &mut String, path: &str, ui: &mut Ui, world: &World) {
+        let colors = &Pools::get(world).colors;
+        ui.vertical(|ui| {
+            ComboBox::from_id_source(&path)
+                .selected_text(value.to_owned())
+                .show_ui(ui, |ui| {
+                    for option in Pools::get(world).statuses.keys().sorted() {
+                        let text = option
+                            .to_string()
+                            .add_color(colors.get(option).map(|c| c.c32()).unwrap_or(light_gray()))
+                            .rich_text(ui);
+                        ui.selectable_value(value, option.to_owned(), text);
+                    }
+                });
+        });
+    }
 }

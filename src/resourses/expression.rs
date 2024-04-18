@@ -56,6 +56,9 @@ pub enum Expression {
     AbilityContext(String, VarName),
     AbilityState(String, VarName),
     Value(VarValue),
+    RandomStatusAlly(String),
+    RandomStatusEnemy(String),
+    HasStatus(String),
 
     Vec2(f32, f32),
 
@@ -394,6 +397,11 @@ impl Expression {
                 }
                 Ok(VarValue::Int(0))
             }
+            Expression::HasStatus(name) => Ok(VarValue::Bool(
+                Expression::StatusCharges(Box::new(Expression::String(name.to_owned())))
+                    .get_int(context, world)?
+                    > 0,
+            )),
             Expression::FilterMaxEnemy(value) => {
                 let faction = Self::OppositeFaction.get_faction(context, world)?;
                 let (unit, _) = UnitPlugin::collect_faction(faction, world)
@@ -418,7 +426,12 @@ impl Expression {
                     .get_var(VarName::Faction, world)
                     .context("No Faction var in context")?
                     .get_faction()?;
-                let unit = UnitPlugin::collect_faction(faction, world)
+                let mut units = UnitPlugin::collect_faction(faction, world)
+                    .into_iter()
+                    .collect_vec();
+                units.shuffle(&mut thread_rng());
+
+                let unit = units
                     .into_iter()
                     .find(|u| {
                         condition
@@ -427,6 +440,19 @@ impl Expression {
                     })
                     .context("Failed to find unit")?;
                 Ok(VarValue::Entity(unit))
+            }
+            Expression::RandomStatusAlly(name) => {
+                Expression::FindUnit(Box::new(Expression::HasStatus(name.to_owned())))
+                    .get_value(context, world)
+            }
+            Expression::RandomStatusEnemy(name) => {
+                Expression::FindUnit(Box::new(Expression::HasStatus(name.to_owned()))).get_value(
+                    context.clone().set_var(
+                        VarName::Faction,
+                        VarValue::Faction(context.get_faction(world)?.opposite()),
+                    ),
+                    world,
+                )
             }
             Expression::Parent(entity) => Ok(VarValue::Entity(
                 entity
@@ -526,7 +552,10 @@ impl Expression {
             | Self::AbilityContext(..)
             | Self::AbilityState(..)
             | Self::Value(..)
-            | Self::Vec2(..) => default(),
+            | Self::Vec2(..)
+            | Self::RandomStatusAlly(..)
+            | Self::RandomStatusEnemy(..)
+            | Self::HasStatus(..) => default(),
             Self::StringInt(x)
             | Self::StringFloat(x)
             | Self::StringVec(x)
@@ -689,6 +718,9 @@ impl EditorNodeGenerator for Expression {
             | Expression::AbilityContext(..)
             | Expression::AbilityState(..)
             | Expression::Value(_)
+            | Expression::RandomStatusAlly(_)
+            | Expression::RandomStatusEnemy(_)
+            | Expression::HasStatus(_)
             | Expression::Vec2(_, _) => hex_color!("#18FFFF"),
             Expression::Vec2E(_)
             | Expression::StringInt(_)
@@ -785,6 +817,9 @@ impl EditorNodeGenerator for Expression {
                 ui.add(DragValue::new(x).speed(0.1));
                 ui.add(DragValue::new(y).speed(0.1));
             }
+            Expression::HasStatus(name)
+            | Expression::RandomStatusAlly(name)
+            | Expression::RandomStatusEnemy(name) => Status::show_selector(name, path, ui, world),
             _ => show_value(&value, ui),
         };
     }
@@ -835,6 +870,9 @@ impl EditorNodeGenerator for Expression {
             | Expression::AbilityContext(_, _)
             | Expression::AbilityState(_, _)
             | Expression::Value(_)
+            | Expression::RandomStatusAlly(_)
+            | Expression::RandomStatusEnemy(_)
+            | Expression::HasStatus(_)
             | Expression::Vec2(_, _) => default(),
             Expression::Sin(x)
             | Expression::Cos(x)
@@ -1061,6 +1099,9 @@ impl std::fmt::Display for Expression {
             Expression::Value(v) => write!(f, "{}({v})", self.as_ref()),
             Expression::Vec2(x, y) => write!(f, "({x}, {y})"),
             Expression::Vec2E(x) => write!(f, "({x}, {x})"),
+            Expression::RandomStatusAlly(v)
+            | Expression::RandomStatusEnemy(v)
+            | Expression::HasStatus(v) => write!(f, "{}({v})", self.as_ref()),
             Expression::StringInt(v)
             | Expression::StringFloat(v)
             | Expression::StringVec(v)
