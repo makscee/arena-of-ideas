@@ -44,7 +44,18 @@ impl Vfx {
         self
     }
 
-    pub fn attach_context(mut self, context: &Context) -> Self {
+    pub fn attach_context(mut self, context: &Context, world: &World) -> Self {
+        if let Ok(owner_pos) = UnitPlugin::get_unit_position(context.owner(), world) {
+            if let Some(target_pos) = context
+                .get_target()
+                .and_then(|t| UnitPlugin::get_unit_position(t, world).ok())
+            {
+                let delta = target_pos - owner_pos;
+                self = self.set_var(VarName::Delta, VarValue::Vec2(delta));
+            }
+        }
+        self = self.set_parent(context.owner());
+
         for (var, value) in context.get_all_vars() {
             self = self.set_var(var, value);
         }

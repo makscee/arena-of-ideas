@@ -82,6 +82,8 @@ pub enum RepresentationMaterial {
         curvature: Expression,
         #[serde(default = "f32_zero_e")]
         aa: Expression,
+        #[serde(default = "f32_one_e")]
+        alpha: Expression,
         #[serde(default = "color_e")]
         color: Expression,
     },
@@ -456,11 +458,13 @@ impl RepresentationMaterial {
                 color,
                 dilations,
                 aa,
+                alpha,
             } => {
                 let thickness = thickness.get_float(context, world).unwrap_or(1.0) * 0.05;
                 let curvature = curvature.get_float(context, world).unwrap_or(1.0);
                 let aa = aa.get_float(context, world).unwrap_or(1.0);
                 let color = color.get_color(context, world).unwrap_or_default();
+                let alpha = alpha.get_float(context, world).unwrap_or(1.0);
                 let mut dilations = dilations
                     .iter()
                     .map(|(t, v)| {
@@ -522,6 +526,7 @@ impl RepresentationMaterial {
                 if let Some(mat) = materials.get_mut(&handle) {
                     mat.color = color;
                     mat.aa = aa;
+                    mat.alpha = alpha;
                     let mesh = world.entity(entity).get::<Mesh2dHandle>().unwrap().clone();
                     if let Some(mesh) = world
                         .get_resource_mut::<Assets<Mesh>>()
@@ -719,10 +724,12 @@ impl RepresentationMaterial {
                         curvature,
                         aa,
                         color,
+                        alpha,
                     } => {
                         show_tree("thickness:", thickness, context, ui, world);
                         show_tree("curvature:", curvature, context, ui, world);
                         show_tree("aa:", aa, context, ui, world);
+                        show_tree("alpha:", alpha, context, ui, world);
                         show_tree("color:", color, context, ui, world);
                     }
                 };

@@ -8,6 +8,8 @@ pub struct CurveMaterial {
     pub color: Color,
     #[uniform(0)]
     pub aa: f32,
+    #[uniform(0)]
+    pub alpha: f32,
 }
 
 impl Material2d for CurveMaterial {
@@ -30,6 +32,7 @@ impl Default for CurveMaterial {
         Self {
             color: Color::PINK,
             aa: 0.0,
+            alpha: 1.0,
         }
     }
 }

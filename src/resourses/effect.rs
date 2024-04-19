@@ -75,6 +75,9 @@ impl Effect {
                     Pools::get_vfx("pain", world)
                         .set_parent(target)
                         .unpack(world)?;
+                    Pools::get_vfx("damage", world)
+                        .attach_context(context, world)
+                        .unpack(world)?;
                 }
                 let value = value.max(0);
                 TextColumn::add(target, &format!("-{value}"), orange(), world)?;
@@ -227,21 +230,9 @@ impl Effect {
                 TextColumn::add(context.owner(), &text, Color::PINK.c32(), world)?;
             }
             Effect::Vfx(name) => {
-                let owner_pos = UnitPlugin::get_unit_position(context.owner(), world)?;
-                let target = context.get_target().context("No target")?;
-                let delta = UnitPlugin::get_unit_position(target, world)? - owner_pos;
-
                 Pools::get_vfx(name, world)
                     .clone()
-                    .attach_context(context)
-                    .set_var(VarName::Delta, VarValue::Vec2(delta))
-                    .set_var(VarName::Position, VarValue::Vec2(owner_pos))
-                    .set_var(
-                        VarName::Color,
-                        context
-                            .get_var(VarName::Color, world)
-                            .context("Color not found in context")?,
-                    )
+                    .attach_context(context, world)
                     .unpack(world)?;
             }
             Effect::WithTarget(target, effect) => {
