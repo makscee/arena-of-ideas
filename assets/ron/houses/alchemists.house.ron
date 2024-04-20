@@ -1,7 +1,7 @@
 #![enable(implicit_some)]
 (
     name: "Alchemists",
-    color: ("#FFCA28"),
+    color: ("#FFAB00"),
     statuses: [
         (
             name: "Petrify",
