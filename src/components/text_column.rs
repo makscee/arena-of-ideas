@@ -21,16 +21,15 @@ impl TextColumn {
         const EASE_OUT: f32 = 0.5;
 
         let width = world.resource::<CameraData>().slot_pixel_spacing * 0.5;
-        let pos = entity_screen_pos(self.entity, vec2(0.0, 0.0), world).to_pos2();
-        let rect = Rect::from_two_pos(pos, pos2(pos.x, 0.0))
-            .expand2(egui::vec2(width, 0.0))
-            .translate(egui::vec2(0.0, 110.0));
+        let pos = entity_screen_pos(self.entity, vec2(0.0, 1.0), world).to_pos2();
+        let rect = Rect::from_two_pos(pos, pos2(pos.x, ctx.screen_rect().top() + 50.0))
+            .expand2(egui::vec2(width, 0.0));
         let t = GameTimer::get().play_head();
 
         Window::new("Text column")
             .id(Id::new(self.entity).with("text_column"))
             .fixed_rect(rect)
-            .pivot(Align2::LEFT_CENTER)
+            .pivot(Align2::LEFT_TOP)
             .title_bar(false)
             .constrain(false)
             .interactable(false)
