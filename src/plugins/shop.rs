@@ -269,7 +269,7 @@ impl ShopPlugin {
         let _ = Self::show_hero_ui(&mut data, world);
         Self::show_info_table(world);
 
-        Area::new("reroll").fixed_pos(pos).show(ctx, |ui| {
+        Area::new("reroll".into()).fixed_pos(pos).show(ctx, |ui| {
             ui.set_width(120.0);
             ui.set_enabled(!ServerPlugin::pending(world).is_some());
             frame(ui, |ui| {
@@ -290,7 +290,7 @@ impl ShopPlugin {
         });
 
         let g = ArenaRun::filter_by_active(true).next().unwrap().state.g;
-        Area::new("g")
+        Area::new("g".into())
             .fixed_pos(pos + egui::vec2(0.0, -60.0))
             .show(ctx, |ui| {
                 ui.label(
@@ -300,7 +300,7 @@ impl ShopPlugin {
                         .color(hex_color!("#FFC107")),
                 );
             });
-        Area::new("battle button")
+        Area::new("battle button".into())
             .anchor(Align2::RIGHT_CENTER, [-40.0, -50.0])
             .show(ctx, |ui| {
                 ui.set_enabled(!ServerPlugin::pending(world).is_some());

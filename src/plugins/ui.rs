@@ -310,7 +310,7 @@ impl GameWindow<'_> {
 
 pub fn window(title: &str) -> GameWindow<'_> {
     GameWindow {
-        area: Area::new(title.to_owned())
+        area: Area::new(title.to_owned().into())
             .constrain(true)
             .pivot(Align2::CENTER_CENTER),
         title,
