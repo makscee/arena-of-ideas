@@ -82,6 +82,7 @@ pub enum Expression {
     StatusCharges(Box<Expression>),
     FilterUnits(Box<Expression>),
     FilterMaxEnemy(Box<Expression>),
+    FilterMaxAlly(Box<Expression>),
     FindUnit(Box<Expression>),
     UnitCount(Box<Expression>),
     ToInt(Box<Expression>),
@@ -418,8 +419,12 @@ impl Expression {
                         .collect_vec(),
                 ))
             }
-            Expression::FilterMaxEnemy(value) => {
-                let faction = Self::OppositeFaction.get_faction(context, world)?;
+            Expression::FilterMaxEnemy(value) | Expression::FilterMaxAlly(value) => {
+                let faction = if matches!(self, Expression::FilterMaxAlly(..)) {
+                    context.get_faction(world)?
+                } else {
+                    context.get_faction(world)?.opposite()
+                };
                 let (unit, _) = UnitPlugin::collect_faction(faction, world)
                     .into_iter()
                     .filter_map(
@@ -606,6 +611,7 @@ impl Expression {
             | Self::FactionCount(x)
             | Self::StatusCharges(x)
             | Self::FilterMaxEnemy(x)
+            | Self::FilterMaxAlly(x)
             | Self::FindUnit(x)
             | Self::Parent(x)
             | Self::UnitCount(x)
@@ -775,6 +781,7 @@ impl EditorNodeGenerator for Expression {
             | Expression::StateLast(..)
             | Expression::FactionCount(_)
             | Expression::FilterMaxEnemy(_)
+            | Expression::FilterMaxAlly(_)
             | Expression::FindUnit(_)
             | Expression::Parent(_)
             | Expression::UnitCount(_)
@@ -932,6 +939,7 @@ impl EditorNodeGenerator for Expression {
             | Expression::StateLast(_, x)
             | Expression::FactionCount(x)
             | Expression::FilterMaxEnemy(x)
+            | Expression::FilterMaxAlly(x)
             | Expression::FindUnit(x)
             | Expression::Parent(x)
             | Expression::UnitCount(x)
@@ -1156,6 +1164,7 @@ impl std::fmt::Display for Expression {
             | Expression::SlotUnit(v)
             | Expression::FactionCount(v)
             | Expression::FilterMaxEnemy(v)
+            | Expression::FilterMaxAlly(v)
             | Expression::FindUnit(v)
             | Expression::Parent(v)
             | Expression::UnitCount(v)
