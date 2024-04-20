@@ -1,0 +1,34 @@
+#![enable(implicit_some)]
+(
+    name: "Digger",
+    hp: 1,
+    atk: 0,
+    stacks: 1,
+    level: 1,
+    houses: "Rogues",
+    trigger: Fire(
+        triggers: [(TurnEnd, None)],
+        targets: [(RandomStatusEnemy("Expose"), None)],
+        effects: [(UseAbility("Expose", 0), None)],
+    ),
+    representation: (
+        material: Shape(
+            shape: Circle(radius: Float(0.8)),
+            shape_type: Line(thickness: Float(1.0)),
+            fill: Solid(color: OwnerState(Color)),
+            fbm: (
+                octaves: Int(3),
+                lacunarity: Mul(Index, Float(2.0)),
+                gain: Sum(Float(0.2), Mul(Beat, Float(0.2))),
+                offset: Mul(GameTime, Float(0.2)),
+            ),
+            alpha: Float(0.5),
+            padding: Float(0.1),
+        ),
+        children: [],
+        mapping: {},
+        count: 4,
+    ),
+    state: (history: {}, birth: 0.0),
+    statuses: [],
+)

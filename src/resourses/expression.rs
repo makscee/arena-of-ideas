@@ -1139,9 +1139,7 @@ impl std::fmt::Display for Expression {
             Expression::Value(v) => write!(f, "{}({v})", self.as_ref()),
             Expression::Vec2(x, y) => write!(f, "({x}, {y})"),
             Expression::Vec2E(x) => write!(f, "({x}, {x})"),
-            Expression::RandomStatusAlly(v)
-            | Expression::RandomStatusEnemy(v)
-            | Expression::HasStatus(v)
+            Expression::HasStatus(v)
             | Expression::AllStatusAllies(v)
             | Expression::AllStatusEnemies(v) => write!(f, "{}({v})", self.as_ref()),
             Expression::StringInt(v)
@@ -1194,6 +1192,15 @@ impl std::fmt::Display for Expression {
             Expression::RandomEnemySubset(amount) => {
                 write!(f, "{{{amount}}} random enemies")
             }
+            Expression::RandomStatusAlly(v) | Expression::RandomStatusEnemy(v) => write!(
+                f,
+                "random {} with [{v}]",
+                if matches!(self, Self::RandomStatusAlly(..)) {
+                    "ally"
+                } else {
+                    "enemy"
+                }
+            ),
         }
     }
 }
