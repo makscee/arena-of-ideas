@@ -1139,9 +1139,7 @@ impl std::fmt::Display for Expression {
             Expression::Value(v) => write!(f, "{}({v})", self.as_ref()),
             Expression::Vec2(x, y) => write!(f, "({x}, {y})"),
             Expression::Vec2E(x) => write!(f, "({x}, {x})"),
-            Expression::HasStatus(v)
-            | Expression::AllStatusAllies(v)
-            | Expression::AllStatusEnemies(v) => write!(f, "{}({v})", self.as_ref()),
+            Expression::HasStatus(v) => write!(f, "{}({v})", self.as_ref()),
             Expression::StringInt(v)
             | Expression::StringFloat(v)
             | Expression::StringVec(v)
@@ -1199,6 +1197,15 @@ impl std::fmt::Display for Expression {
                     "ally"
                 } else {
                     "enemy"
+                }
+            ),
+            Expression::AllStatusAllies(v) | Expression::AllStatusEnemies(v) => write!(
+                f,
+                "all {} with [{v}]",
+                if matches!(self, Self::AllStatusAllies(..)) {
+                    "allies"
+                } else {
+                    "enemies"
                 }
             ),
         }

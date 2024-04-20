@@ -75,12 +75,12 @@ impl Effect {
                     Pools::get_vfx("pain", world)
                         .set_parent(target)
                         .unpack(world)?;
-                    Pools::get_vfx("damage", world)
-                        .attach_context(context, world)
-                        .unpack(world)?;
                 }
                 let value = value.max(0);
                 TextColumn::add(target, &format!("-{value}"), orange(), world)?;
+                Pools::get_vfx("damage", world)
+                    .attach_context(context, world)
+                    .unpack(world)?;
             }
             Effect::Kill => {
                 let target = context.get_target().context("No target")?;
