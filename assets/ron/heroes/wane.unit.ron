@@ -1,15 +1,15 @@
 #![enable(implicit_some)]
 (
-    name: "Digger",
-    hp: 2,
-    atk: 1,
+    name: "Wane",
+    hp: 3,
+    atk: 0,
     stacks: 1,
     level: 1,
-    houses: "Rogues",
+    houses: "Witches",
     trigger: Fire(
         triggers: [(TurnEnd, None)],
-        targets: [(RandomStatusEnemy("Expose"), None)],
-        effects: [(UseAbility("Expose", 0), None)],
+        targets: [(RandomStatusEnemy("Weakness"), None)],
+        effects: [(UseAbility("Weakness", 0), None)],
     ),
     representation: (
         material: Shape(
