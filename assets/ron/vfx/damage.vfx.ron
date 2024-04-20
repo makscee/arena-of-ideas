@@ -15,10 +15,7 @@
             thickness: Float(2.0),
             aa: Float(0.5),
             alpha: LessThen(Age, Float(0.05)),
-            dilations: [
-                (Float(0.0), Float(-1.0)),
-                (Float(1.0), Float(2.0)),
-            ],
+            dilations: [(Float(0.0), Float(-1.0)), (Float(1.0), Float(2.0))],
         ),
         children: [
             (
@@ -28,12 +25,9 @@
                     thickness: OwnerState(Thickness),
                     aa: Float(0.5),
                     alpha: OwnerState(Alpha),
-                    dilations: [
-                        (Float(0.0), Float(-1.0)),
-                        (Float(1.0), Float(4.0)),
-                    ],
+                    dilations: [(Float(0.0), Float(-1.0)), (Float(1.0), Float(4.0))],
                 ),
-            )
-        ]
+            ),
+        ],
     ),
 )

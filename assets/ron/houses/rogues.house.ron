@@ -1,0 +1,19 @@
+#![enable(implicit_some)]
+(
+    name: "Rogues",
+    color: ("#FFD600"),
+    statuses: [
+        (
+            name: "Expose",
+            description: "Damage taken +{Charges}",
+            trigger: Change(trigger: IncomingDamage, expr: Context(Charges)),
+        ),
+    ],
+    abilities: [
+        (
+            name: "Expose",
+            description: "Increase taken damage by 1",
+            effect: List([AddStatus("Expose"), Vfx("apply_status")]),
+        ),
+    ],
+)

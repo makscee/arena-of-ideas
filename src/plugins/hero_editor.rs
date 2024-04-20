@@ -695,6 +695,7 @@ pub fn show_node(
                 Frame::none().inner_margin(8.0).show(ui, |ui| {
                     let mut lookup = get_context_string(world, LOOKUP_KEY);
                     let mut submit = false;
+                    let mut close = false;
                     ctx.input(|i| {
                         for e in &i.events {
                             match e {
@@ -705,6 +706,8 @@ pub fn show_node(
                                             lookup.pop();
                                         } else if matches!(key, Key::Enter | Key::Tab) {
                                             submit = true;
+                                        } else if key.eq(&Key::Escape) {
+                                            close = true;
                                         }
                                     }
                                 }
@@ -712,6 +715,9 @@ pub fn show_node(
                             }
                         }
                     });
+                    if close {
+                        set_context_string(world, OPEN_KEY, default());
+                    }
                     ui.label(&lookup);
                     set_context_string(world, LOOKUP_KEY, lookup.clone());
                     ScrollArea::new([false, true])

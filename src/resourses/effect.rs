@@ -490,8 +490,14 @@ impl EditorNodeGenerator for Effect {
                     ComboBox::from_id_source(&path)
                         .selected_text(name.to_owned())
                         .show_ui(ui, |ui| {
+                            let colors = &Pools::get(world).colors;
                             for option in Pools::get(world).abilities.keys().sorted() {
-                                let text = option.to_string();
+                                let text = option
+                                    .to_string()
+                                    .add_color(
+                                        colors.get(option).map(|c| c.c32()).unwrap_or(light_gray()),
+                                    )
+                                    .rich_text(ui);
                                 ui.selectable_value(name, option.to_owned(), text);
                             }
                         });

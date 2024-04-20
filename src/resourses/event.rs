@@ -105,7 +105,7 @@ impl Event {
     }
 
     pub fn map(self, value: &mut VarValue, world: &mut World) -> Self {
-        let (context, statuses) = match &self {
+        let (mut context, statuses) = match &self {
             Event::IncomingDamage { owner, .. } => (
                 Context::new_named(self.to_string())
                     .set_owner(*owner, world)
@@ -117,7 +117,13 @@ impl Event {
         let statuses =
             Status::filter_active_statuses(statuses, GameTimer::get().insert_head(), world);
         for status in statuses {
-            Status::map_var(status, &self, value, &context, world);
+            Status::map_var(
+                status,
+                &self,
+                value,
+                &context.set_status(status, world),
+                world,
+            );
         }
         self
     }
