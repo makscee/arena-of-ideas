@@ -682,11 +682,11 @@ pub fn show_node(
     }
 
     const LOOKUP_KEY: &str = "lookup";
-    if name_resp.clicked() {
-        name_resp.request_focus();
-        set_context_string(world, LOOKUP_KEY, default());
-    }
-    if name_resp.has_focus() || name_resp.lost_focus() {
+    const OPEN_KEY: &str = "replace_window";
+    if get_context_string(world, OPEN_KEY).eq(&path) {
+        if name_resp.clicked_elsewhere() {
+            set_context_string(world, OPEN_KEY, default());
+        }
         window("replace")
             .order(egui::Order::Foreground)
             .title_bar(false)
@@ -719,13 +719,15 @@ pub fn show_node(
                         .show(ui, |ui| {
                             let lookup = lookup.to_lowercase();
                             frame(ui, |ui| {
-                                if source.show_replace_buttons(&lookup, submit, ui) {
-                                    set_context_string(world, LOOKUP_KEY, default());
-                                }
+                                source.show_replace_buttons(&lookup, submit, ui);
                             });
                         });
                 });
             });
+    }
+    if name_resp.clicked() {
+        set_context_string(world, LOOKUP_KEY, default());
+        set_context_string(world, OPEN_KEY, path.clone());
     }
 
     if let Some(pos) = connect_pos {
