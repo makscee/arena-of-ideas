@@ -40,7 +40,7 @@ impl MainMenuPlugin {
                         ui.label(format!("Welcome {name}!"));
                     });
                     frame(ui, |ui| {
-                        let enabled = ArenaRun::filter_by_active(true).next().is_some();
+                        let enabled = ArenaRun::current().is_some();
                         ui.set_enabled(enabled);
                         let btn = if enabled {
                             ui.button_primary("CONTINUE")

@@ -135,8 +135,8 @@ impl ShopPlugin {
     }
 
     fn transition_to_battle(world: &mut World) {
-        let run = ArenaRun::filter_by_active(true).next().unwrap();
-        let round = run.wins;
+        let run = ArenaRun::current().unwrap();
+        let round = run.wins + run.loses;
         let left =
             PackedTeam::from_table_units(run.state.team.into_iter().map(|u| u.unit).collect());
         let right = if let Some(right) = run.enemies.get(round as usize) {
@@ -173,9 +173,7 @@ impl ShopPlugin {
                 }
             })
         });
-        let run = ArenaRun::filter_by_active(true)
-            .next()
-            .context("No active run")?;
+        let run = ArenaRun::current().context("No active run")?;
         Self::sync_units(&run.state.team, Faction::Team, world);
         Self::sync_units(&run.get_case_units(), Faction::Shop, world);
         Self::sync_prices(&run.state.case, world);
@@ -289,7 +287,7 @@ impl ShopPlugin {
             });
         });
 
-        let g = ArenaRun::filter_by_active(true).next().unwrap().state.g;
+        let g = ArenaRun::current().unwrap().state.g;
         Area::new("g".into())
             .fixed_pos(pos + egui::vec2(0.0, -60.0))
             .show(ctx, |ui| {
@@ -686,6 +684,7 @@ impl ArenaRunExt for ArenaRun {
             .collect_vec()
     }
     fn current() -> Option<Self> {
-        ArenaRun::filter_by_active(true).next()
+        LoginPlugin::get_user_data()
+            .and_then(|user| Self::filter_by_user_id(user.id).find(|r| r.active))
     }
 }
