@@ -87,7 +87,7 @@ impl FireTrigger {
                 Event::UseAbility(e) => {
                     e.eq(name)
                         && UnitPlugin::get_faction(context.owner(), world)
-                            .eq(&UnitPlugin::get_faction(context.target(), world))
+                            .eq(&UnitPlugin::get_faction(context.caster(), world))
                 }
                 _ => false,
             },

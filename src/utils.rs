@@ -46,6 +46,28 @@ pub fn set_context_string(world: &mut World, key: &str, value: String) {
         context.data_mut(|w| w.insert_temp(id, value))
     }
 }
+pub fn check_context_id(world: &mut World, key: &str, value: Id) -> bool {
+    let id = Id::new(key);
+    if let Some(context) = egui_context(world) {
+        context
+            .data(|r| r.get_temp::<Id>(id).and_then(|v| Some(v.eq(&value))))
+            .unwrap_or_default()
+    } else {
+        false
+    }
+}
+pub fn set_context_id(world: &mut World, key: &str, value: Id) {
+    let id = Id::new(key);
+    if let Some(context) = egui_context(world) {
+        context.data_mut(|w| w.insert_temp(id, value))
+    }
+}
+pub fn clear_context_id(world: &mut World, key: &str) {
+    let id = Id::new(key);
+    if let Some(context) = egui_context(world) {
+        context.data_mut(|w| w.remove::<Id>(id));
+    }
+}
 pub fn get_context_expression(world: &mut World, key: &str) -> Expression {
     let id = Id::new(key);
     if let Some(context) = egui_context(world) {

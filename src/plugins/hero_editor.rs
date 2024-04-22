@@ -674,9 +674,10 @@ pub fn show_node(
 
     const LOOKUP_KEY: &str = "lookup";
     const OPEN_KEY: &str = "replace_window";
-    if get_context_string(world, OPEN_KEY).eq(&path) {
+    let id = name_resp.id;
+    if check_context_id(world, OPEN_KEY, id) {
         if name_resp.clicked_elsewhere() {
-            set_context_string(world, OPEN_KEY, default());
+            clear_context_id(world, OPEN_KEY);
         }
         window("replace")
             .order(egui::Order::Foreground)
@@ -724,7 +725,7 @@ pub fn show_node(
     }
     if name_resp.clicked() {
         set_context_string(world, LOOKUP_KEY, default());
-        set_context_string(world, OPEN_KEY, path.clone());
+        set_context_id(world, OPEN_KEY, id);
     }
 
     if let Some(pos) = connect_pos {
