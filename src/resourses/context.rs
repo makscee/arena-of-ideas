@@ -128,19 +128,24 @@ impl Context {
         }
         result
     }
-    pub fn get_var(&self, var: VarName, world: &World) -> Option<VarValue> {
-        self.layers.iter().rev().find_map(|l| l.get_var(var, world))
+    pub fn get_var(&self, var: VarName, world: &World) -> Result<VarValue> {
+        self.layers
+            .iter()
+            .rev()
+            .find_map(|l| l.get_var(var, world))
+            .with_context(|| format!("Failed to find var {var}"))
     }
     pub fn set_var(&mut self, var: VarName, value: VarValue) -> &mut Self {
         self.layers.push(ContextLayer::Var(var, value));
         self
     }
 
-    pub fn get_ability_var(&self, ability: &str, var: VarName) -> Option<VarValue> {
+    pub fn get_ability_var(&self, ability: &str, var: VarName) -> Result<VarValue> {
         self.layers
             .iter()
             .rev()
             .find_map(|l| l.get_ability_var(ability, var))
+            .with_context(|| format!("Failed to find ability [{ability}] var {var}"))
     }
     pub fn set_ability_var(&mut self, ability: String, var: VarName, value: VarValue) -> &mut Self {
         self.layers
@@ -160,8 +165,12 @@ impl Context {
     pub fn owner(&self) -> Entity {
         self.get_owner().expect("Owner not found")
     }
-    pub fn get_owner(&self) -> Option<Entity> {
-        self.layers.iter().rev().find_map(|l| l.get_owner())
+    pub fn get_owner(&self) -> Result<Entity> {
+        self.layers
+            .iter()
+            .rev()
+            .find_map(|l| l.get_owner())
+            .with_context(|| format!("Failed to get owner"))
     }
 
     pub fn from_caster(entity: Entity, world: &World) -> Self {
@@ -176,8 +185,12 @@ impl Context {
     pub fn caster(&self) -> Entity {
         self.get_caster().expect("Caster not found")
     }
-    pub fn get_caster(&self) -> Option<Entity> {
-        self.layers.iter().rev().find_map(|l| l.get_caster())
+    pub fn get_caster(&self) -> Result<Entity> {
+        self.layers
+            .iter()
+            .rev()
+            .find_map(|l| l.get_caster())
+            .with_context(|| format!("Failed to get caster"))
     }
 
     pub fn from_target(entity: Entity, world: &World) -> Self {
@@ -192,8 +205,12 @@ impl Context {
     pub fn target(&self) -> Entity {
         self.get_target().expect("Target not found")
     }
-    pub fn get_target(&self) -> Option<Entity> {
-        self.layers.iter().rev().find_map(|l| l.get_target())
+    pub fn get_target(&self) -> Result<Entity> {
+        self.layers
+            .iter()
+            .rev()
+            .find_map(|l| l.get_target())
+            .with_context(|| format!("Failed to get target"))
     }
 
     pub fn set_status(&mut self, entity: Entity, world: &World) -> &mut Self {
@@ -205,8 +222,12 @@ impl Context {
     pub fn status(&self) -> Entity {
         self.get_status().expect("Target not found")
     }
-    pub fn get_status(&self) -> Option<Entity> {
-        self.layers.iter().rev().find_map(|l| l.get_status())
+    pub fn get_status(&self) -> Result<Entity> {
+        self.layers
+            .iter()
+            .rev()
+            .find_map(|l| l.get_status())
+            .with_context(|| format!("Failed to get status"))
     }
     pub fn has_status(&self, entity: Entity) -> bool {
         self.layers
@@ -225,8 +246,12 @@ impl Context {
         self
     }
 
-    pub fn get_event(&self) -> Option<Event> {
-        self.layers.iter().rev().find_map(|l| l.get_event())
+    pub fn get_event(&self) -> Result<Event> {
+        self.layers
+            .iter()
+            .rev()
+            .find_map(|l| l.get_event())
+            .with_context(|| format!("Failed to get event"))
     }
     pub fn set_event(&mut self, event: Event) -> &mut Self {
         self.layers.push(ContextLayer::Event(event));

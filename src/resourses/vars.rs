@@ -320,7 +320,7 @@ impl VarName {
             .selected_text(self.to_string())
             .show_ui(ui, |ui| {
                 for option in VarName::iter() {
-                    if context.get_var(option, world).is_some() {
+                    if context.get_var(option, world).is_ok() {
                         let text = option
                             .to_string()
                             .add_color(white())
@@ -330,7 +330,7 @@ impl VarName {
                     }
                 }
                 for option in VarName::iter() {
-                    if context.get_var(option, world).is_none() {
+                    if context.get_var(option, world).is_err() {
                         let text = option.to_string().to_colored().rich_text(ui).size(10.0);
                         ui.selectable_value(self, option, text);
                     }

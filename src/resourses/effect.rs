@@ -36,13 +36,11 @@ impl Effect {
         debug!("Processing {:?}\n{}", self, context);
         match self {
             Effect::Damage(value) => {
-                let target = context.get_target().context("No target")?;
-                let owner = context.get_owner().context("No owner")?;
+                let target = context.get_target()?;
+                let owner = context.get_owner()?;
                 let mut value = match value {
                     Some(value) => value.get_value(context, world)?,
-                    None => context
-                        .get_var(VarName::Atk, world)
-                        .context("Can't find ATK")?,
+                    None => context.get_var(VarName::Atk, world)?,
                 };
                 debug!("Damage {} {target:?}", value.to_string());
                 let event = Event::IncomingDamage {
@@ -83,7 +81,7 @@ impl Effect {
                     .unpack(world)?;
             }
             Effect::Kill => {
-                let target = context.get_target().context("No target")?;
+                let target = context.get_target()?;
                 VarState::get_mut(target, world)
                     .push_back(
                         VarName::LastAttacker,
@@ -154,7 +152,7 @@ impl Effect {
                     .clone()
                     .set_var(VarName::Color, VarValue::Color(color))
                     .take();
-                if context.get_var(VarName::Charges, world).is_none() {
+                if context.get_var(VarName::Charges, world).is_err() {
                     context.set_var(
                         VarName::Charges,
                         context
@@ -178,7 +176,7 @@ impl Effect {
                     .unwrap_or(VarValue::Int(1))
                     .get_int()?;
                 let color = Pools::get_color_by_name(status, world)?;
-                let target = context.get_target().context("No target")?;
+                let target = context.get_target()?;
                 Status::change_charges(status, target, charges, world)?;
 
                 TextColumn::add_colored(
@@ -198,7 +196,7 @@ impl Effect {
                 )?;
             }
             Effect::ClearStatus(status) => {
-                let target = context.get_target().context("No target")?;
+                let target = context.get_target()?;
                 let charges = Status::get_status_charges(target, status, world)?;
                 if charges <= 0 {
                     return Err(anyhow!("Charges <= 0: {status} ({charges})"));
@@ -293,7 +291,7 @@ impl Effect {
             }
             Effect::FullCopy => {
                 let owner = context.owner();
-                let target = context.get_target().context("No target")?;
+                let target = context.get_target()?;
                 let history = VarState::get(target, world).history.clone();
                 for (var, history) in history.into_iter() {
                     if var.eq(&VarName::Position)
@@ -328,7 +326,7 @@ impl Effect {
                 event.clone().send_with_context(context.clone(), world);
             }
             Effect::RemoveLocalTrigger => {
-                let target = context.get_target().context("No target")?;
+                let target = context.get_target()?;
                 let local_trigger = Status::collect_unit_statuses(target, world)
                     .into_iter()
                     .find(|e| {

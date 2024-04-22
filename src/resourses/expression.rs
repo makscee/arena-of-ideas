@@ -187,19 +187,13 @@ impl Expression {
             }
             Expression::TargetState(var) => {
                 let t = GameTimer::get().play_head();
-                VarState::find_value(
-                    context.get_target().context("No target in context")?,
-                    *var,
-                    t,
-                    world,
-                )
+                VarState::find_value(context.get_target()?, *var, t, world)
             }
             Expression::StateLast(var, target) => {
                 VarState::get(target.get_entity(context, world)?, world).get_value_last(*var)
             }
             Expression::TargetStateLast(var) => {
-                VarState::get(context.get_target().context("No target in context")?, world)
-                    .get_value_last(*var)
+                VarState::get(context.get_target()?, world).get_value_last(*var)
             }
             Expression::OwnerStateLast(var) => Ok(VarState::get(context.owner(), world)
                 .get_value_last(*var)
@@ -207,12 +201,8 @@ impl Expression {
             Expression::Age => Ok(VarValue::Float(
                 GameTimer::get().play_head() - VarState::find(context.owner(), world).birth,
             )),
-            Expression::Context(var) => context
-                .get_var(*var, world)
-                .with_context(|| format!("Var {var} was not found")),
-            Expression::AbilityContext(ability, var) => context
-                .get_ability_var(ability, *var)
-                .with_context(|| format!("Var {var} was not found")),
+            Expression::Context(var) => context.get_var(*var, world),
+            Expression::AbilityContext(ability, var) => context.get_ability_var(ability, *var),
             Expression::AbilityState(ability, var) => {
                 let faction = context.get_faction(world)?;
                 TeamPlugin::get_ability_state(faction, ability, world)
@@ -220,18 +210,10 @@ impl Expression {
                     .get_value_at(*var, GameTimer::get().play_head())
             }
             Expression::Index => Expression::Context(VarName::Index).get_value(context, world),
-            Expression::Owner => Ok(VarValue::Entity(
-                context.get_owner().context("Owner not found")?,
-            )),
-            Expression::Caster => Ok(VarValue::Entity(
-                context.get_caster().context("Caster not found")?,
-            )),
-            Expression::Target => Ok(VarValue::Entity(
-                context.get_target().context("Target not found")?,
-            )),
-            Expression::Status => Ok(VarValue::Entity(
-                context.get_status().context("Status not found")?,
-            )),
+            Expression::Owner => Ok(VarValue::Entity(context.get_owner()?)),
+            Expression::Caster => Ok(VarValue::Entity(context.get_caster()?)),
+            Expression::Target => Ok(VarValue::Entity(context.get_target()?)),
+            Expression::Status => Ok(VarValue::Entity(context.get_status()?)),
             Expression::SlotPosition => Ok(VarValue::Vec2(UnitPlugin::get_entity_slot_position(
                 context.owner(),
                 world,
@@ -260,11 +242,8 @@ impl Expression {
                 Ok(VarValue::EntityList(entities))
             }
             Expression::AdjacentUnits => {
-                let own_slot = context.get_var(VarName::Slot, world).unwrap().get_int()?;
-                let faction = context
-                    .get_var(VarName::Faction, world)
-                    .unwrap()
-                    .get_faction()?;
+                let own_slot = context.get_var(VarName::Slot, world)?.get_int()?;
+                let faction = context.get_var(VarName::Faction, world)?.get_faction()?;
                 let mut min_distance = 999999;
                 for unit in UnitPlugin::collect_faction(faction, world) {
                     let state = VarState::get(unit, world);
@@ -311,10 +290,7 @@ impl Expression {
             )),
             Expression::SlotUnit(index) => Ok(VarValue::Entity(
                 UnitPlugin::find_unit(
-                    context
-                        .get_var(VarName::Faction, world)
-                        .unwrap()
-                        .get_faction()?,
+                    context.get_var(VarName::Faction, world)?.get_faction()?,
                     index.get_int(context, world)? as usize,
                     world,
                 )
@@ -327,10 +303,7 @@ impl Expression {
             )),
             Expression::RandomUnit => Ok(VarValue::Entity(
                 UnitPlugin::collect_faction(
-                    context
-                        .get_var(VarName::Faction, world)
-                        .unwrap()
-                        .get_faction()?,
+                    context.get_var(VarName::Faction, world)?.get_faction()?,
                     world,
                 )
                 .into_iter()
@@ -365,10 +338,7 @@ impl Expression {
                     as i32,
             )),
             Expression::UnitCount(condition) => {
-                let faction = context
-                    .get_var(VarName::Faction, world)
-                    .context("No faction in context")?
-                    .get_faction()?;
+                let faction = context.get_var(VarName::Faction, world)?.get_faction()?;
                 let mut cnt = 0;
                 for unit in UnitPlugin::collect_faction(faction, world) {
                     let context = Context::from_owner(unit, world);
@@ -443,10 +413,7 @@ impl Expression {
                 Ok(VarValue::Entity(unit))
             }
             Expression::FindUnit(condition) => {
-                let faction = context
-                    .get_var(VarName::Faction, world)
-                    .context("No Faction var in context")?
-                    .get_faction()?;
+                let faction = context.get_var(VarName::Faction, world)?.get_faction()?;
                 let mut units = UnitPlugin::collect_faction(faction, world)
                     .into_iter()
                     .collect_vec();

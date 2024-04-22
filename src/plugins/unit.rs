@@ -73,11 +73,8 @@ impl UnitPlugin {
 
     pub fn get_entity_slot_position(entity: Entity, world: &World) -> Result<Vec2> {
         let context = Context::from_owner(entity, world);
-        let slot = context.get_var(VarName::Slot, world).unwrap().get_int()? as usize;
-        let faction = context
-            .get_var(VarName::Faction, world)
-            .unwrap()
-            .get_faction()?;
+        let slot = context.get_var(VarName::Slot, world)?.get_int()? as usize;
+        let faction = context.get_var(VarName::Faction, world)?.get_faction()?;
         Ok(Self::get_slot_position(faction, slot))
     }
 
@@ -158,14 +155,8 @@ impl UnitPlugin {
 
     pub fn place_into_slot(entity: Entity, world: &mut World) -> Result<()> {
         let context = Context::from_owner(entity, world);
-        let faction = context
-            .get_var(VarName::Faction, world)
-            .context("No faction var")?
-            .get_faction()?;
-        let slot = context
-            .get_var(VarName::Slot, world)
-            .context("No slot var")?
-            .get_int()?;
+        let faction = context.get_var(VarName::Faction, world)?.get_faction()?;
+        let slot = context.get_var(VarName::Slot, world)?.get_int()?;
         let pos = Self::get_slot_position(faction, slot as usize);
         VarState::get_mut(entity, world)
             .push_back(VarName::Position, VarChange::new(VarValue::Vec2(pos)));

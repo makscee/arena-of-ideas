@@ -8,7 +8,7 @@
     houses: "Witches",
     trigger: Fire(
         triggers: [(BeforeDeath, None)],
-        targets: [(OwnerStateLast(LastAttacker), None)],
+        targets: [(OwnerStateLast(LastAttacker), "killer")],
         effects: [(UseAbility("Weakness", 4), None)],
     ),
     representation: (
@@ -20,6 +20,7 @@
                 Abs(Sin(Sum(GameTime, Mul(Index, Float(0.2))))),
             ),
             aa: Float(1.0),
+            alpha: Float(1.0),
             color: OwnerState(Color),
         ),
         children: [],
