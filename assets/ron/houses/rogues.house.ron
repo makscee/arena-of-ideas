@@ -9,5 +9,12 @@
             trigger: Change(trigger: IncomingDamage, expr: Context(Charges)),
         ),
     ],
-    abilities: [(name: "Expose", description: "Increase taken damage by 1", effect: AddStatus("Expose"))],
+    abilities: [
+        (name: "Expose", description: "Increase taken damage by 1", effect: AddStatus("Expose")),
+        (
+            name: "Rob",
+            description: "Steal all statuses, limit max {Charges}",
+            effect: StealAllStatuses,
+        ),
+    ],
 )

@@ -1,0 +1,39 @@
+#![enable(implicit_some)]
+(
+    name: "Saboteur",
+    hp: 2,
+    atk: 2,
+    stacks: 1,
+    level: 1,
+    houses: "Rogues",
+    trigger: Fire(
+        triggers: [(BattleStart, None)],
+        targets: [(WithVar(Faction, OppositeFaction, SlotUnit(Int(1))), "front enemy")],
+        effects: [(UseAbility("Rob", 0), None)],
+    ),
+    representation: (
+        material: Shape(
+            shape: Circle(radius: Float(1.0)),
+            shape_type: Opaque,
+            fill: GradientLinear(
+                point1: Vec2(0.0, 0.0),
+                point2: Vec2(1.0, 1.0),
+                parts: [Float(0.31), Float(0.34)],
+                colors: [OwnerState(Color), Hex("#ffffff")],
+            ),
+            fbm: (
+                octaves: Int(3),
+                lacunarity: Float(1.6),
+                gain: Sum(Float(2.3), Mul(Beat, Float(0.5))),
+                offset: Mul(Sum(GameTime, Float(0.1)), Float(0.13)),
+            ),
+            alpha: Float(1.0),
+            padding: Float(0.0),
+        ),
+        children: [],
+        mapping: {Rotation: Mul(Index, Float(0.13))},
+        count: 3,
+    ),
+    state: (history: {}, birth: 0.0),
+    statuses: [],
+)

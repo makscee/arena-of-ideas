@@ -126,7 +126,13 @@ impl Status {
                     return None;
                 }
                 match state.get_string(VarName::Name) {
-                    Ok(name) => Some((name, charges.unwrap())),
+                    Ok(name) => {
+                        if !name.eq(LOCAL_TRIGGER) {
+                            Some((name, charges.unwrap()))
+                        } else {
+                            None
+                        }
+                    }
                     Err(_) => None,
                 }
             })

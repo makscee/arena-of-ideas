@@ -20,6 +20,7 @@
                 Sin(Sum(GameTime, Mul(Index, Float(0.1)))),
             ),
             aa: Float(0.5),
+            alpha: Float(1.0),
             color: OwnerState(Color),
         ),
         children: [],

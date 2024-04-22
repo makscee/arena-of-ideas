@@ -329,9 +329,9 @@ impl Expression {
                 context.owner(),
                 world,
             ))),
-            Expression::OppositeFaction => Ok(VarValue::Faction(
-                UnitPlugin::get_faction(context.owner(), world).opposite(),
-            )),
+            Expression::OppositeFaction => {
+                Ok(VarValue::Faction(context.get_faction(world)?.opposite()))
+            }
             Expression::Faction(faction) => Ok(VarValue::Faction(*faction)),
             Expression::FactionCount(faction) => Ok(VarValue::Int(
                 UnitPlugin::collect_faction(faction.get_faction(context, world)?, world).len()
@@ -817,8 +817,8 @@ impl EditorNodeGenerator for Expression {
                 x.show_editor_with_context(context, path, world, ui);
             }
             Expression::WithVar(x, ..) => {
-                x.show_editor_with_context(context, path, world, ui);
                 ui.vertical(|ui| {
+                    x.show_editor_with_context(context, path, world, ui);
                     show_value(&value, ui);
                 });
             }

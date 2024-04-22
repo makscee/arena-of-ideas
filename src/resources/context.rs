@@ -295,9 +295,7 @@ impl std::fmt::Display for Context {
     fn fmt(&self, f: &mut __private::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "o:{:?} t:{:?}\n>>>\n{}\n<<<",
-            self.get_owner(),
-            self.get_target(),
+            "{}",
             self.layers.iter().map(|x| x.to_string()).join(" → "),
         )
     }
