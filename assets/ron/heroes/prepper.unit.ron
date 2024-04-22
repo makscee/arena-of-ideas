@@ -1,0 +1,50 @@
+#![enable(implicit_some)]
+(
+    name: "Prepper",
+    hp: 1,
+    atk: 1,
+    stacks: 1,
+    level: 1,
+    houses: "Medics",
+    trigger: Fire(
+        triggers: [(BattleStart, None)],
+        targets: [(SlotUnit(Int(1)), "front ally")],
+        effects: [
+            (
+                WithVar(
+                    Level,
+                    Mul(
+                        Sum(
+                            UnitCount(Bool(true)),
+                            WithVar(Faction, OppositeFaction, UnitCount(Bool(true))),
+                        ),
+                        Context(Level),
+                    ),
+                    UseAbility("Vitality", 0),
+                ),
+                "use [Vitality] ({Level}) per unit in battle",
+            ),
+        ],
+    ),
+    representation: (
+        material: Shape(
+            shape: Rectangle(size: Vec2(1.5, 0.38)),
+            shape_type: Line(thickness: Float(3.0)),
+            fill: Solid(color: OwnerState(Color)),
+            fbm: None,
+            alpha: Float(0.3),
+            padding: Float(0.0),
+        ),
+        children: [],
+        mapping: {
+            Rotation: Even(Index),
+            Offset: Vec2EE(
+                Mul(Sin(Sum(Mul(Index, Float(0.3)), GameTime)), Float(0.1)),
+                Mul(Cos(Sum(Mul(Index, Float(0.3)), GameTime)), Float(0.1)),
+            ),
+        },
+        count: 8,
+    ),
+    state: (history: {}, birth: 0.0),
+    statuses: [],
+)
