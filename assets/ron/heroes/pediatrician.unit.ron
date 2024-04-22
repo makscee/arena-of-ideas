@@ -1,0 +1,36 @@
+#![enable(implicit_some)]
+(
+    name: "Pediatrician",
+    hp: 3,
+    atk: 1,
+    stacks: 1,
+    level: 1,
+    houses: "Medics",
+    trigger: Fire(
+        triggers: [(AllySummon, None)],
+        targets: [(Target, None)],
+        effects: [(UseAbility("Vitality", 0), None)],
+    ),
+    representation: (
+        material: Shape(
+            shape: Rectangle(
+                size: Vec2E(
+                    Sum(
+                        Mul(Float(0.23), Index),
+                        Sum(Float(0.08), Sub(Zero, Mul(Beat, Float(0.02)))),
+                    ),
+                ),
+            ),
+            shape_type: Line(thickness: Sum(Float(0.6), Mul(Sin(Sum(GameTime, Index)), Float(0.4)))),
+            fill: Solid(color: OwnerState(Color)),
+            fbm: None,
+            alpha: Float(1.0),
+            padding: Float(0.2),
+        ),
+        children: [],
+        mapping: {},
+        count: 6,
+    ),
+    state: (history: {}, birth: 0.0),
+    statuses: [],
+)
