@@ -1,17 +1,19 @@
 (
     material: Shape(
         shape: Circle(radius: Sum(Mul(Beat, Float(0.1)), Float(1.0))),
-        shape_type: Line(thickness: Float(1.0)),
+        shape_type: Line(thickness: Float(0.7)),
         fill: Solid(color: Hex("#B0BEC5")),
+        padding: Float(0.2),
     ),
     children: [
         (
             material: Shape(
                 shape: Circle(radius: Float(0.3)),
                 fill: Solid(color: Hex("#FF3D00")),
-                shape_type: Line(thickness: Float(1.0)),
+                shape_type: Line(thickness: Float(0.7)),
+                padding: Float(0.2),
             ),
-            mapping: {Offset: Vec2(0.9, -0.9)},
+            mapping: {Offset: Vec2(0.98, -0.98)},
             children: [
                 (
                     material: Text(
@@ -26,9 +28,10 @@
             material: Shape(
                 shape: Circle(radius: Float(0.3)),
                 fill: Solid(color: Hex("#FBC02D")),
-                shape_type: Line(thickness: Float(1.0)),
+                shape_type: Line(thickness: Float(0.7)),
+                padding: Float(0.2),
             ),
-            mapping: {Offset: Vec2(-0.9, -0.9)},
+            mapping: {Offset: Vec2(-0.98, -0.98)},
             children: [
                 (
                     material: Text(text: StringInt(OwnerState(Atk)), size: Float(0.6), color: Hex("#FBC02D")),

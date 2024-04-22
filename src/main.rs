@@ -3,7 +3,7 @@ mod materials;
 mod module_bindings;
 mod plugins;
 mod prelude;
-pub mod resourses;
+pub mod resources;
 mod utils;
 
 use bevy::render::camera::ClearColor;

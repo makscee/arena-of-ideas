@@ -3,7 +3,7 @@ pub use std::time::Duration;
 pub use crate::components::*;
 pub use crate::materials::*;
 pub use crate::plugins::*;
-pub use crate::resourses::*;
+pub use crate::resources::*;
 pub use anyhow::Context as _;
 pub use anyhow::{anyhow, Result};
 

@@ -882,7 +882,7 @@ impl Representation {
                             ui.collapsing(key.to_string(), |ui| {
                                 frame(ui, |ui| {
                                     new_key.show_editor(Id::new(&id).with(*key), ui);
-                                    show_tree("", value, context, ui, world);
+                                    show_tree(&key.to_string(), value, context, ui, world);
                                 });
                             });
                         });

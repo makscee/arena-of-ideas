@@ -9,11 +9,5 @@
             trigger: Change(trigger: Var(Hp), expr: Context(Charges)),
         ),
     ],
-    abilities: [
-        (
-            name: "Vitality",
-            description: "Give +1 HP",
-            effect: List([AddStatus("Vitality"), Vfx("apply_status")]),
-        ),
-    ],
+    abilities: [(name: "Vitality", description: "Give +1 HP", effect: AddStatus("Vitality"))],
 )

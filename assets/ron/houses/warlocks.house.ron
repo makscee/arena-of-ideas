@@ -38,7 +38,6 @@
             effect: List(
                 [
                     WithVar(Charges, Int(5), AddStatus("Doom")),
-                    Vfx("apply_status"),
                     StateSetVar(Caster, StatusEntity("Doom", Target), Owner),
                 ],
             ),

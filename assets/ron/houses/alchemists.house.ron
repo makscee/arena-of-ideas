@@ -9,11 +9,5 @@
             trigger: Fire(triggers: [(AfterDamageTaken, None)], effects: [(Kill, None)]),
         ),
     ],
-    abilities: [
-        (
-            name: "Petrify",
-            description: "Next taken damage is lethal",
-            effect: List([AddStatus("Petrify"), Vfx("apply_status")]),
-        ),
-    ],
+    abilities: [(name: "Petrify", description: "Next taken damage is lethal", effect: AddStatus("Petrify"))],
 )

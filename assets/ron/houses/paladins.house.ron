@@ -39,11 +39,7 @@
         ),
     ],
     abilities: [
-        (
-            name: "Shield",
-            description: "Block next incoming damage",
-            effect: List([AddStatus("Shield"), Vfx("apply_status")]),
-        ),
+        (name: "Shield", description: "Block next incoming damage", effect: AddStatus("Shield")),
         (
             name: "Summon Guardian Angel",
             description: "Summon {10}/{1} with [Shield] ({1})",

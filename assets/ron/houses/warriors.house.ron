@@ -9,11 +9,5 @@
             trigger: Change(trigger: Var(Atk), expr: Context(Charges)),
         ),
     ],
-    abilities: [
-        (
-            name: "Strength",
-            description: "Give +1 ATK",
-            effect: List([AddStatus("Strength"), Vfx("apply_status")]),
-        ),
-    ],
+    abilities: [(name: "Strength", description: "Give +1 ATK", effect: AddStatus("Strength"))],
 )

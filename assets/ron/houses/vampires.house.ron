@@ -29,7 +29,6 @@
                     AddStatus("Siphoned Out"),
                     WithTarget(Owner, AddStatus("Siphon HP")),
                     If(AbilityState("Siphon", M1), WithTarget(Owner, AddStatus("Siphon ATK")), Noop),
-                    Vfx("apply_status"),
                 ],
             ),
         ),

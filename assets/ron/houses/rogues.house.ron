@@ -9,11 +9,5 @@
             trigger: Change(trigger: IncomingDamage, expr: Context(Charges)),
         ),
     ],
-    abilities: [
-        (
-            name: "Expose",
-            description: "Increase taken damage by 1",
-            effect: List([AddStatus("Expose"), Vfx("apply_status")]),
-        ),
-    ],
+    abilities: [(name: "Expose", description: "Increase taken damage by 1", effect: AddStatus("Expose"))],
 )

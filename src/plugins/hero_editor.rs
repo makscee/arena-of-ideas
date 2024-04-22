@@ -273,21 +273,12 @@ impl HeroEditorPlugin {
                         ui.add_space(10.0);
                         const SELECTED_STATUS_KEY: &str = "selected_status";
                         let mut status = get_context_string(world, SELECTED_STATUS_KEY);
-                        ComboBox::from_id_source(SELECTED_STATUS_KEY)
-                            .selected_text(status.clone())
-                            .show_ui(ui, |ui| {
-                                for option in
-                                    Pools::get(world).statuses.keys().cloned().collect_vec()
-                                {
-                                    let text = option.to_string();
-                                    if ui
-                                        .selectable_value(&mut status, option.to_owned(), text)
-                                        .changed()
-                                    {
-                                        set_context_string(world, SELECTED_STATUS_KEY, option);
-                                    }
-                                }
-                            });
+
+                        if let Some(option) =
+                            Status::show_selector(&mut status, "apply status selector", ui, world)
+                        {
+                            set_context_string(world, SELECTED_STATUS_KEY, option);
+                        }
                         ui.add_enabled_ui(!status.is_empty(), |ui| {
                             if ui.button("Add Status").clicked() {
                                 if let Some((i, _)) =

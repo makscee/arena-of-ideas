@@ -1,3 +1,4 @@
+use convert_case::{Case, Casing};
 use event::Event;
 use std::{collections::VecDeque, ops::Deref};
 
@@ -23,6 +24,7 @@ pub enum Effect {
     UseAbility(String, i32),
     Summon(String),
     AddStatus(String),
+    StealStatus(String),
     ClearStatus(String),
     Vfx(String),
     SendEvent(Event),
@@ -180,7 +182,7 @@ impl Effect {
                 Status::change_charges(status, target, charges, world)?;
 
                 TextColumn::add_colored(
-                    context.target(),
+                    target,
                     format!("{status} ")
                         .add_color(color.c32())
                         .push(
@@ -194,6 +196,46 @@ impl Effect {
                         .take(),
                     world,
                 )?;
+                Pools::get_vfx("apply_status", world)
+                    .attach_context(
+                        &context
+                            .clone()
+                            .set_var(VarName::Color, VarValue::Color(color)),
+                        world,
+                    )
+                    .unpack(world)?;
+            }
+            Effect::StealStatus(status) => {
+                let target = context.get_target()?;
+                let owner = context.owner();
+                let charges = context
+                    .get_var(VarName::Charges, world)
+                    .unwrap_or(VarValue::Int(1))
+                    .get_int()?
+                    .min(Status::get_status_charges(target, status, world)?);
+                if charges <= 0 {
+                    return Err(anyhow!("Can't steal nonpositive charges amount"));
+                }
+                let color = Pools::get_color_by_name(status, world)?;
+                Status::change_charges(status, target, -charges, world)?;
+                Status::change_charges(status, context.owner(), charges, world)?;
+                let text = "steal "
+                    .add_color(white())
+                    .push(format!("{status} "), color.c32())
+                    .push(format!("({charges})"), white())
+                    .set_style_ref(ColoredStringStyle::Bold)
+                    .take();
+                TextColumn::add_colored(target, text, world)?;
+                Pools::get_vfx("apply_status", world)
+                    .attach_context(
+                        &context
+                            .clone()
+                            .set_target(owner, world)
+                            .set_owner(target, world)
+                            .set_var(VarName::Color, VarValue::Color(color)),
+                        world,
+                    )
+                    .unpack(world)?;
             }
             Effect::ClearStatus(status) => {
                 let target = context.get_target()?;
@@ -367,6 +409,7 @@ impl Effect {
             | Effect::UseAbility(..)
             | Effect::Summon(..)
             | Effect::AddStatus(..)
+            | Effect::StealStatus(..)
             | Effect::ClearStatus(..)
             | Effect::Vfx(..)
             | Effect::StateSetVar(..)
@@ -514,8 +557,8 @@ impl EditorNodeGenerator for Effect {
                         });
                 });
             }
-            Effect::AddStatus(name) | Effect::ClearStatus(name) => {
-                Status::show_selector(name, path, ui, world)
+            Effect::AddStatus(name) | Effect::ClearStatus(name) | Effect::StealStatus(name) => {
+                Status::show_selector(name, path, ui, world);
             }
             Effect::Vfx(name) => {
                 ui.vertical(|ui| {
@@ -576,6 +619,7 @@ impl EditorNodeGenerator for Effect {
             | Effect::UseAbility(..)
             | Effect::Summon(..)
             | Effect::AddStatus(..)
+            | Effect::StealStatus(..)
             | Effect::ClearStatus(..)
             | Effect::Vfx(..)
             | Effect::SendEvent(..)
@@ -757,8 +801,9 @@ impl std::fmt::Display for Effect {
             Effect::Vfx(name)
             | Effect::ClearStatus(name)
             | Effect::AddStatus(name)
+            | Effect::StealStatus(name)
             | Effect::Summon(name) => {
-                write!(f, "{} ({name})", self.as_ref())
+                write!(f, "{} [{name}]", self.as_ref().to_case(Case::Lower))
             }
             Effect::If(c, t, e) => write!(f, "{} {c} ({t} else {e})", self.as_ref()),
             Effect::Repeat(c, e) => write!(f, "{} ({e}) x {c}", self.as_ref()),

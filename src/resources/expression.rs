@@ -830,7 +830,9 @@ impl EditorNodeGenerator for Expression {
             | Expression::RandomStatusAlly(name)
             | Expression::RandomStatusEnemy(name)
             | Expression::AllStatusAllies(name)
-            | Expression::AllStatusEnemies(name) => Status::show_selector(name, path, ui, world),
+            | Expression::AllStatusEnemies(name) => {
+                Status::show_selector(name, path, ui, world);
+            }
             _ => show_value(&value, ui),
         };
     }
