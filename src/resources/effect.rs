@@ -218,7 +218,7 @@ impl Effect {
                 if charges <= 0 {
                     return Err(anyhow!("Can't add nonpositive charges amount"));
                 }
-                for (status, c) in Status::collect_statuses_name_charges(
+                for (status, _) in Status::collect_statuses_name_charges(
                     target,
                     GameTimer::get().insert_head(),
                     world,
@@ -227,7 +227,7 @@ impl Effect {
                         Self::AddStatus(status),
                         context
                             .clone()
-                            .set_var(VarName::Charges, VarValue::Int(charges.min(c)))
+                            .set_var(VarName::Charges, VarValue::Int(charges))
                             .take(),
                         world,
                     )
