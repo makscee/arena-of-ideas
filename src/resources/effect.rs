@@ -36,7 +36,7 @@ pub enum Effect {
 
 impl Effect {
     pub fn invoke(&self, context: &mut Context, world: &mut World) -> Result<()> {
-        debug!("Processing {:?}\n{}", self, context);
+        info!("Processing {:?}\n{}", self, context);
         match self {
             Effect::Damage(value) => {
                 let target = context.get_target()?;
@@ -45,14 +45,14 @@ impl Effect {
                     Some(value) => value.get_value(context, world)?,
                     None => context.get_var(VarName::Atk, world)?,
                 };
-                debug!("Damage {} {target:?}", value.to_string());
+                info!("Damage {} {target:?}", value.to_string());
                 let event = Event::IncomingDamage {
                     owner: target,
                     value: value.get_int()?,
                 };
                 event.clone().send_with_context(context.clone(), world);
                 event.map(&mut value, world);
-                debug!("Value after map {value:?}");
+                info!("Value after map {value:?}");
                 let value = value.get_int()?;
                 if value > 0 {
                     let new_dmg = VarState::get(target, world).get_int(VarName::Dmg)? + value;
@@ -95,7 +95,7 @@ impl Effect {
             }
             Effect::Debug(msg) => {
                 let msg = msg.get_string(context, world)?;
-                debug!("Debug effect: {msg}");
+                info!("Debug effect: {msg}");
             }
             Effect::Noop => {}
             Effect::UseAbility(ability, base) => {

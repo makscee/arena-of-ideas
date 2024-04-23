@@ -68,10 +68,15 @@ impl FireTrigger {
             FireTrigger::BeforeStrike => matches!(event, Event::BeforeStrike { .. }),
             FireTrigger::AfterStrike => matches!(event, Event::AfterStrike { .. }),
             FireTrigger::AfterKill => matches!(event, Event::Kill { .. }),
-            FireTrigger::AnyDeath => matches!(event, Event::Death { .. }),
+            FireTrigger::AnyDeath => {
+                matches!(event, Event::Death (dead) if !context.owner().eq(dead))
+            }
             FireTrigger::AllyDeath => match event {
-                Event::Death(dead) => UnitPlugin::get_faction(*dead, world)
-                    .eq(&UnitPlugin::get_faction(context.owner(), world)),
+                Event::Death(dead) => {
+                    !context.owner().eq(dead)
+                        && UnitPlugin::get_faction(*dead, world)
+                            .eq(&UnitPlugin::get_faction(context.owner(), world))
+                }
                 _ => false,
             },
             FireTrigger::AllySummon => match event {

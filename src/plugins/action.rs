@@ -40,7 +40,7 @@ impl ActionPlugin {
         let mut limit = 100000;
         loop {
             if limit == 0 {
-                return Err(anyhow!("Limit exceeeded"));
+                return Err(anyhow!("Limit exceeded"));
             }
             limit -= 1;
             if let Some(Action {
