@@ -3,6 +3,7 @@ use std::time::UNIX_EPOCH;
 use bevy::utils::hashbrown::HashMap;
 use chrono::DateTime;
 use egui_extras::{Column, TableBuilder};
+use spacetimedb_sdk::on_subscription_applied;
 
 use self::module_bindings::{ArenaRun, User};
 
@@ -10,9 +11,18 @@ use super::*;
 
 pub struct LeaderboardPlugin;
 
+impl Plugin for LeaderboardPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(Startup, Self::load);
+    }
+}
+
 impl LeaderboardPlugin {
-    pub fn load(world: &mut World) {
-        LeaderboardData::load(world);
+    fn load() {
+        info!("Leaderboard startup");
+
+        ArenaRun::on_update(|_, _, _| OperationsPlugin::add(LeaderboardData::load));
+        on_subscription_applied(|| OperationsPlugin::add(LeaderboardData::load));
     }
 
     pub fn ui(world: &mut World) {
@@ -32,6 +42,7 @@ impl LeaderboardPlugin {
         window("LEADERBOARD")
             .set_width(400.0)
             .order(egui::Order::Foreground)
+            .anchor(Align2::RIGHT_TOP, egui::Vec2::ZERO)
             .show(ctx, |ui| {
                 frame(ui, |ui| {
                     TableBuilder::new(ui)
@@ -69,8 +80,9 @@ impl LeaderboardPlugin {
                                         row.col(|ui| {
                                             let cnt = run.len() - 1;
                                             ui.add_enabled_ui(cnt > 0, |ui| {
-                                                if ui
-                                                    .button(format!("+{}", run.len() - 1))
+                                                if egui::Button::new(format!("+{}", run.len() - 1))
+                                                    .wrap(false)
+                                                    .ui(ui)
                                                     .clicked()
                                                 {
                                                     new_round = Some(Some(run[0].round as usize));
@@ -106,6 +118,9 @@ impl LeaderboardData {
         info!("Load Leaderboard");
         let mut data: HashMap<usize, Vec<ArenaRun>> = default();
         for run in ArenaRun::iter() {
+            if run.active {
+                continue;
+            }
             let round = run.round as usize;
             data.entry(round).or_default().push(run);
         }

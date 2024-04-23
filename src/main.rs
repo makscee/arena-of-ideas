@@ -154,6 +154,7 @@ fn main() {
             TeamPlugin,
             ArenaArchivePlugin,
             HeroTablePlugin,
+            LeaderboardPlugin,
         ))
         .add_systems(Update, input_world)
         .register_type::<VarState>()

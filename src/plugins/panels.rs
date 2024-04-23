@@ -7,8 +7,8 @@ pub struct PanelsPlugin;
 #[derive(Resource)]
 struct TopOpenWindows(ordered_hash_map::OrderedHashMap<TopButton, bool>);
 
-#[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Clone, EnumIter, Display)]
-enum TopButton {
+#[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy, EnumIter, Display)]
+pub enum TopButton {
     Exit,
     Settings,
     Profile,
@@ -48,7 +48,7 @@ impl TopButton {
         }
     }
 
-    fn click(&self, world: &mut World) {
+    pub fn click(&self, world: &mut World) {
         let open = match self {
             TopButton::Exit => {
                 world
@@ -67,9 +67,6 @@ impl TopButton {
         };
         if open && self.eq(&TopButton::Profile) {
             ProfilePlugin::load(world);
-        }
-        if open && self.eq(&TopButton::Leaderboard) {
-            LeaderboardPlugin::load(world);
         }
     }
 
