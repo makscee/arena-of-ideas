@@ -221,8 +221,8 @@ impl Expression {
             Expression::AllUnits => Ok(VarValue::EntityList(
                 UnitPlugin::collect_factions(
                     [
-                        UnitPlugin::get_faction(context.owner(), world),
-                        UnitPlugin::get_faction(context.owner(), world).opposite(),
+                        context.get_faction(world)?,
+                        context.get_faction(world)?.opposite(),
                     ]
                     .into(),
                     world,
@@ -273,11 +273,11 @@ impl Expression {
                     .context("No adjacent units found")?,
             )),
             Expression::AllAllyUnits => Ok(VarValue::EntityList(UnitPlugin::collect_faction(
-                UnitPlugin::get_faction(context.owner(), world),
+                context.get_faction(world)?,
                 world,
             ))),
             Expression::AllEnemyUnits => Ok(VarValue::EntityList(UnitPlugin::collect_faction(
-                UnitPlugin::get_faction(context.owner(), world).opposite(),
+                context.get_faction(world)?.opposite(),
                 world,
             ))),
             Expression::RandomEnemySubset(max) => Ok(VarValue::EntityList(
@@ -314,21 +314,18 @@ impl Expression {
             Expression::RandomAlly => Self::RandomUnit.get_value(
                 context.clone().set_var(
                     VarName::Faction,
-                    VarValue::Faction(UnitPlugin::get_faction(context.owner(), world)),
+                    VarValue::Faction(context.get_faction(world)?),
                 ),
                 world,
             ),
             Expression::RandomEnemy => Self::RandomUnit.get_value(
                 context.clone().set_var(
                     VarName::Faction,
-                    VarValue::Faction(UnitPlugin::get_faction(context.owner(), world).opposite()),
+                    VarValue::Faction(context.get_faction(world)?.opposite()),
                 ),
                 world,
             ),
-            Expression::OwnerFaction => Ok(VarValue::Faction(UnitPlugin::get_faction(
-                context.owner(),
-                world,
-            ))),
+            Expression::OwnerFaction => Ok(VarValue::Faction(context.get_faction(world)?)),
             Expression::OppositeFaction => {
                 Ok(VarValue::Faction(context.get_faction(world)?.opposite()))
             }

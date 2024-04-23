@@ -49,11 +49,12 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     let octaves = i32(material.data[9].x);
     let lacunarity = material.data[9].y;
     let gain = material.data[9].z;
-    let offset = material.data[9].w;
+    let offset = material.data[8].xy;
+    let strength = material.data[8].z;
     uv += vec2(
-        fbm_simplex_2d(uv, octaves, lacunarity, gain),
-        fbm_simplex_2d(uv + vec2(offset), octaves, lacunarity, gain)
-    );
+        fbm_simplex_2d(uv + offset, octaves, lacunarity, gain),
+        fbm_simplex_2d(uv + offset + vec2(123.45), octaves, lacunarity, gain)
+    ) * strength;
 #endif
     let sdf = sdf(uv, size);
     var v = f32(abs(sdf) < thickness);

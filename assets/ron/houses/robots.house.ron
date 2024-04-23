@@ -1,0 +1,7 @@
+#![enable(implicit_some)]
+(
+    name: "Robots",
+    color: ("#00B08B"),
+    statuses: [],
+    abilities: [(name: "Charge", description: "Increase all status charges", effect: AddAllStatuses)],
+)

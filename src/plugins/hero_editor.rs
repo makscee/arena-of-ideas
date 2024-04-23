@@ -708,7 +708,7 @@ pub fn show_node(
                         }
                     });
                     if close {
-                        set_context_string(world, OPEN_KEY, default());
+                        clear_context_id(world, OPEN_KEY);
                     }
                     ui.label(&lookup);
                     set_context_string(world, LOOKUP_KEY, lookup.clone());
@@ -717,7 +717,9 @@ pub fn show_node(
                         .show(ui, |ui| {
                             let lookup = lookup.to_lowercase();
                             frame(ui, |ui| {
-                                source.show_replace_buttons(&lookup, submit, ui);
+                                if source.show_replace_buttons(&lookup, submit, ui) {
+                                    clear_context_id(world, OPEN_KEY);
+                                }
                             });
                         });
                 });

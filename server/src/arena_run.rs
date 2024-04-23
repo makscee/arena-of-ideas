@@ -316,12 +316,6 @@ impl ArenaRun {
         let index = self.position_case(id)?;
         Ok((index, &self.state.case[index]))
     }
-    fn find_unit(&self, id: u64) -> Result<&TeamUnit, String> {
-        Ok(self
-            .find_team(id)
-            .or_else(|_| self.find_offer(id).map(|(i, o)| (i, &o.unit)))?
-            .1)
-    }
 
     fn buy(
         &mut self,

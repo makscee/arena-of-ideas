@@ -95,7 +95,6 @@ impl Material2d for ShapeMaterial {
             .shader_defs
             .push(key.bind_group_data.fill_color.def().into());
         if key.bind_group_data.fbm {
-            debug!("fbm def push");
             fragment.shader_defs.push("FBM".into());
         }
         Ok(())

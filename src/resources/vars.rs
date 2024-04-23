@@ -111,6 +111,8 @@ impl VarValue {
     pub fn get_vec2(&self) -> Result<Vec2> {
         match self {
             VarValue::Vec2(value) => Ok(*value),
+            VarValue::Float(x) => Ok(vec2(*x, *x)),
+            VarValue::Int(x) => Ok(vec2(*x as f32, *x as f32)),
             VarValue::None => Ok(Vec2::ZERO),
             _ => Err(anyhow!("Vec2 not supported by {self:?}")),
         }

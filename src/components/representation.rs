@@ -180,6 +180,8 @@ pub struct RepFbm {
     #[serde(default = "f32_one_e")]
     pub gain: Expression,
     #[serde(default = "f32_one_e")]
+    pub strength: Expression,
+    #[serde(default = "vec2_one_e")]
     pub offset: Expression,
 }
 
@@ -398,16 +400,20 @@ impl RepresentationMaterial {
                         lacunarity,
                         gain,
                         offset,
+                        strength,
                     }) = fbm
                     {
                         let octaves = octaves.get_int(context, world).unwrap_or(1);
                         let lacunarity = lacunarity.get_float(context, world).unwrap_or(1.0);
                         let gain = gain.get_float(context, world).unwrap_or(1.0);
-                        let offset = offset.get_float(context, world).unwrap_or(1.0);
+                        let strength = strength.get_float(context, world).unwrap_or(1.0);
+                        let offset = offset.get_vec2(context, world).unwrap_or(Vec2::ONE);
                         material.data[9].x = octaves as f32;
                         material.data[9].y = lacunarity;
                         material.data[9].z = gain;
-                        material.data[9].w = offset;
+                        material.data[8].x = offset.x;
+                        material.data[8].y = offset.y;
+                        material.data[8].z = strength;
                     }
                     if refresh_mesh {
                         let mesh = world.entity(entity).get::<Mesh2dHandle>().unwrap().clone();
@@ -696,11 +702,13 @@ impl RepresentationMaterial {
                             lacunarity,
                             gain,
                             offset,
+                            strength,
                         }) = fbm
                         {
                             show_tree("octaves:", octaves, context, ui, world);
                             show_tree("lacunarity:", lacunarity, context, ui, world);
                             show_tree("gain:", gain, context, ui, world);
+                            show_tree("strength:", strength, context, ui, world);
                             show_tree("offset:", offset, context, ui, world);
                         }
                     }
