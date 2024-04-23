@@ -114,7 +114,7 @@ impl BattlePlugin {
         None
     }
 
-    fn stricker_death_check(left: Entity, right: Entity, world: &mut World) -> bool {
+    fn striker_death_check(left: Entity, right: Entity, world: &mut World) -> bool {
         UnitPlugin::is_dead(left, world) || UnitPlugin::is_dead(right, world)
     }
 
@@ -122,7 +122,7 @@ impl BattlePlugin {
         ActionPlugin::spin(world)?;
         ActionPlugin::register_next_round(world);
         Self::before_strike(left, right, world)?;
-        if Self::stricker_death_check(left, right, world) {
+        if Self::striker_death_check(left, right, world) {
             return Ok(());
         }
         Self::strike(left, right, world)?;
@@ -142,7 +142,7 @@ impl BattlePlugin {
         ActionPlugin::spin(world)?;
         Event::BeforeStrike(right, left).send(world);
         ActionPlugin::spin(world)?;
-        if Self::stricker_death_check(left, right, world) {
+        if Self::striker_death_check(left, right, world) {
             return Ok(());
         }
         let units = vec![(left, -1.0), (right, 1.0)];
@@ -291,9 +291,9 @@ impl BattlePlugin {
                 }
                 subtext
                     .push("Wins: ".to_owned(), light_gray())
-                    .push(format!("{}", run.wins), white())
+                    .push(format!("{}", run.wins()), white())
                     .push("\nLoses: ".to_owned(), light_gray())
-                    .push(format!("{}/3", run.loses), red());
+                    .push(format!("{}/3", run.loses()), red());
             }
             let color = match win {
                 true => {

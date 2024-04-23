@@ -8,7 +8,7 @@ pub struct ArenaPool {
     #[autoinc]
     pub id: u64,
     pub owner: u64,
-    pub round: u8,
+    pub round: u32,
     pub team: Vec<TableUnit>,
 }
 

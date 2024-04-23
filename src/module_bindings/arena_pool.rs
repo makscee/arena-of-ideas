@@ -17,7 +17,7 @@ use spacetimedb_sdk::{
 pub struct ArenaPool {
     pub id: u64,
     pub owner: u64,
-    pub round: u8,
+    pub round: u32,
     pub team: Vec<TableUnit>,
 }
 
@@ -43,7 +43,7 @@ impl ArenaPool {
         Self::filter(|row| row.owner == owner)
     }
     #[allow(unused)]
-    pub fn filter_by_round(round: u8) -> TableIter<Self> {
+    pub fn filter_by_round(round: u32) -> TableIter<Self> {
         Self::filter(|row| row.round == round)
     }
     #[allow(unused)]

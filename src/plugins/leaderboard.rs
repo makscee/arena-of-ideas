@@ -73,7 +73,7 @@ impl LeaderboardPlugin {
                                                     .button(format!("+{}", run.len() - 1))
                                                     .clicked()
                                                 {
-                                                    new_round = Some(Some(run[0].wins as usize));
+                                                    new_round = Some(Some(run[0].round as usize));
                                                 }
                                             });
                                         });
@@ -106,7 +106,7 @@ impl LeaderboardData {
         info!("Load Leaderboard");
         let mut data: HashMap<usize, Vec<ArenaRun>> = default();
         for run in ArenaRun::iter() {
-            let round = run.wins as usize;
+            let round = run.round as usize;
             data.entry(round).or_default().push(run);
         }
         for (_, list) in data.iter_mut() {
@@ -118,6 +118,7 @@ impl LeaderboardData {
 
 #[derive(Clone, Copy, Debug, EnumIter, PartialEq, Display)]
 enum Columns {
+    Round,
     Wins,
     Loses,
     Name,
@@ -154,8 +155,9 @@ impl Columns {
                 }
                 str.as_label(ui)
             }
-            Columns::Wins => run.wins.to_string().add_color(white()).as_label(ui),
-            Columns::Loses => run.loses.to_string().add_color(red()).as_label(ui),
+            Columns::Round => run.round.to_string().add_color(white()).as_label(ui),
+            Columns::Wins => run.wins().to_string().add_color(white()).as_label(ui),
+            Columns::Loses => run.loses().to_string().add_color(red()).as_label(ui),
             Columns::Time => DateTime::<chrono::Local>::from(
                 UNIX_EPOCH + Duration::from_micros(run.last_updated),
             )

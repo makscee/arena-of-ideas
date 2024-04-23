@@ -97,7 +97,7 @@ impl ShopPlugin {
         TeamPlugin::spawn(Faction::Shop, world);
         TeamPlugin::spawn(Faction::Team, world);
         UnitPlugin::translate_to_slots(world);
-        // So there's enough time for subscription if we run staight into Shop state
+        // So there's enough time for subscription if we run straight into Shop state
         if Self::load_state(world).is_err() {
             sleep(Duration::from_secs_f32(0.1));
         } else {
@@ -136,11 +136,10 @@ impl ShopPlugin {
 
     fn transition_to_battle(world: &mut World) {
         let run = ArenaRun::current().unwrap();
-        let round = run.wins + run.loses;
         let left =
             PackedTeam::from_table_units(run.state.team.into_iter().map(|u| u.unit).collect());
-        let right = if let Some(right) = run.enemies.get(round as usize) {
-            let right = ArenaPool::filter_by_id(*right).unwrap().team;
+        let right = if let Some(right) = run.battles.get(run.round as usize) {
+            let right = ArenaPool::filter_by_id(right.enemy).unwrap().team;
             PackedTeam::from_table_units(right)
         } else {
             default()
@@ -401,12 +400,12 @@ impl ShopPlugin {
                 frame(ui, |ui| {
                     text_dots_text(
                         &"wins".to_colored(),
-                        &run.wins.to_string().add_color(white()),
+                        &run.wins().to_string().add_color(white()),
                         ui,
                     );
                     text_dots_text(
                         &"loses".to_colored(),
-                        &run.loses.to_string().add_color(white()),
+                        &run.loses().to_string().add_color(white()),
                         ui,
                     );
                 });
@@ -667,6 +666,8 @@ impl ShopPlugin {
 pub trait ArenaRunExt {
     fn get_case_units(&self) -> Vec<TeamUnit>;
     fn current() -> Option<ArenaRun>;
+    fn wins(&self) -> usize;
+    fn loses(&self) -> usize;
 }
 
 impl ArenaRunExt for ArenaRun {
@@ -686,5 +687,19 @@ impl ArenaRunExt for ArenaRun {
     fn current() -> Option<Self> {
         LoginPlugin::get_user_data()
             .and_then(|user| Self::filter_by_user_id(user.id).find(|r| r.active))
+    }
+
+    fn wins(&self) -> usize {
+        self.battles
+            .iter()
+            .filter(|b| b.result.is_some_and(|r| r))
+            .count()
+    }
+
+    fn loses(&self) -> usize {
+        self.battles
+            .iter()
+            .filter(|b| b.result.is_some_and(|r| !r))
+            .count()
     }
 }

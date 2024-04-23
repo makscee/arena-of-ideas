@@ -555,7 +555,7 @@ pub fn show_value(value: &Result<VarValue>, ui: &mut Ui) {
 }
 
 pub fn show_trees_desc(
-    label: &str,
+    _label: &str,
     roots: &mut Vec<(impl EditorNodeGenerator, Option<String>)>,
     context: &Context,
     ui: &mut Ui,

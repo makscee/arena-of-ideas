@@ -13,7 +13,7 @@
                 shape_type: Line(thickness: Float(0.7)),
                 padding: Float(0.2),
             ),
-            mapping: {Offset: Vec2(1.0, -1.0)},
+            mapping: {Offset: Vec2(0.9, -0.9)},
             children: [
                 (
                     material: Text(
@@ -31,7 +31,7 @@
                 shape_type: Line(thickness: Float(0.7)),
                 padding: Float(0.2),
             ),
-            mapping: {Offset: Vec2(-1.0, -1.0)},
+            mapping: {Offset: Vec2(-0.9, -0.9)},
             children: [
                 (
                     material: Text(text: StringInt(OwnerState(Atk)), size: Float(0.6), color: Hex("#FBC02D")),

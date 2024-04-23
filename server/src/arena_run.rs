@@ -15,15 +15,19 @@ pub struct ArenaRun {
     #[autoinc]
     id: u64,
     user_id: u64,
-    wins: u8,
-    loses: u8,
-    enemies: Vec<u64>,
-    state: GameState,
+    battles: Vec<ArenaBattle>,
+    round: u32,
+    state: RunState,
     active: bool,
     last_updated: Timestamp,
 }
 #[derive(SpacetimeType)]
-pub struct GameState {
+pub struct ArenaBattle {
+    enemy: u64,
+    result: Option<bool>,
+}
+#[derive(SpacetimeType)]
+pub struct RunState {
     g: i64,
     team: Vec<TeamUnit>,
     case: Vec<ShopOffer>,
@@ -50,7 +54,10 @@ fn run_start(ctx: ReducerContext) -> Result<(), String> {
     }
     let mut run = ArenaRun::new(user.id);
     if let Some(enemy) = ArenaPool::filter_by_round(&0).choose(&mut thread_rng()) {
-        run.enemies.push(enemy.id);
+        run.battles.push(ArenaBattle {
+            enemy: enemy.id,
+            result: None,
+        });
     }
     run.fill_case();
     ArenaRun::insert(run).unwrap();
@@ -69,30 +76,26 @@ fn run_submit_result(ctx: ReducerContext, win: bool) -> Result<(), String> {
     ArenaPool::insert(ArenaPool {
         id: 0,
         owner: user_id,
-        round: run.round(),
+        round: run.round,
         team,
     })?;
-    if win {
-        run.wins += 1;
+    if let Some(last_battle) = run.battles.get_mut(run.round as usize) {
+        last_battle.result = Some(win);
     } else {
-        run.loses += 1;
+        run.active = false;
     }
-    if run.loses > 2 {
+    run.round += 1;
+
+    if run.loses() > 2 {
         run.active = false;
     } else {
-        let round = run.round();
-        if (round as usize) > run.enemies.len() {
-            run.active = false;
-        } else if let Some(enemy) = ArenaPool::filter_by_round(&round)
-            // .filter(|e| e.owner != user_id)
-            .choose(&mut thread_rng())
-        {
-            run.enemies.push(enemy.id);
+        if let Some(enemy) = ArenaBattle::next(&run) {
+            run.battles.push(enemy);
         }
     }
     if run.active {
         let settings = GlobalSettings::get();
-        run.change_g((settings.g_per_round_min + run.round() as i64).min(settings.g_per_round_max));
+        run.change_g((settings.g_per_round_min + run.round as i64).min(settings.g_per_round_max));
         run.state.case.clear();
         run.fill_case();
     }
@@ -217,12 +220,11 @@ impl ArenaRun {
         Self {
             user_id,
             active: true,
-            wins: 0,
-            loses: 0,
             last_updated: Timestamp::now(),
             id: 0,
-            enemies: Vec::default(),
-            state: GameState {
+            battles: Vec::default(),
+            round: 0,
+            state: RunState {
                 g: GlobalSettings::get().g_per_round_min,
                 team: Vec::default(),
                 case: Vec::default(),
@@ -231,8 +233,11 @@ impl ArenaRun {
         }
     }
 
-    fn round(&self) -> u8 {
-        self.wins
+    fn loses(&self) -> u32 {
+        self.battles
+            .iter()
+            .filter(|b| b.result.is_some_and(|r| !r))
+            .count() as u32
     }
 
     fn get_by_identity(identity: &Identity) -> Result<(u64, Self), String> {
@@ -261,7 +266,7 @@ impl ArenaRun {
     fn fill_case(&mut self) {
         let settings = GlobalSettings::get();
         let slots = (settings.shop_slots_min
-            + (self.round() as f32 * settings.shop_slots_per_round) as u32)
+            + (self.round as f32 * settings.shop_slots_per_round) as u32)
             .min(settings.shop_slots_max);
         let team_houses: HashSet<String> = HashSet::from_iter(
             self.state
@@ -350,5 +355,16 @@ impl ArenaRun {
     fn save(mut self) {
         self.last_updated = Timestamp::now();
         Self::update_by_id(&self.id.clone(), self);
+    }
+}
+
+impl ArenaBattle {
+    fn next(run: &ArenaRun) -> Option<Self> {
+        ArenaPool::filter_by_round(&run.round)
+            .choose(&mut thread_rng())
+            .map(|a| ArenaBattle {
+                enemy: a.id,
+                result: None,
+            })
     }
 }

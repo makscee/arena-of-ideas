@@ -33,7 +33,7 @@ bevy_asset_loader = { version = "0.20.0", features = [
 bevy_common_assets = { version = "0.10.0", features = ["ron"] }
 bevy_mod_picking = { version = "0.18.2", default-features = false, features = [
     "backend_raycast",
-    "backend_bevy_ui",
+    # "backend_bevy_ui",
     "selection",
 ] }
 bevy_egui = { version = "0.27.0", features = ["serde"] }

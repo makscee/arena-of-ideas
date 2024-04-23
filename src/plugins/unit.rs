@@ -274,7 +274,7 @@ impl UnitPlugin {
     }
 
     pub fn hover_unit(
-        event: Listener<Pointer<Over>>,
+        event: Listener<Pointer<Move>>,
         mut hovered: ResMut<HoveredUnit>,
         parent: Query<&Parent>,
     ) {

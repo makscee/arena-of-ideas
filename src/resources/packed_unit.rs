@@ -64,7 +64,7 @@ impl PackedUnit {
             let mut emut = world.entity_mut(entity);
             emut.get_mut::<Transform>().unwrap().translation.z += 100.0;
             emut.insert(PickableBundle::default())
-                .insert(On::<Pointer<Over>>::run(UnitPlugin::hover_unit))
+                .insert(On::<Pointer<Move>>::run(UnitPlugin::hover_unit))
                 .insert(On::<Pointer<Out>>::run(UnitPlugin::unhover_unit));
             if draggable {
                 emut.insert(On::<Pointer<DragStart>>::run(UnitPlugin::drag_unit_start))

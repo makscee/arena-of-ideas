@@ -21,9 +21,9 @@ use spacetimedb_sdk::{
 use std::sync::Arc;
 
 pub mod ability;
+pub mod arena_battle;
 pub mod arena_pool;
 pub mod arena_run;
-pub mod game_state;
 pub mod give_right_reducer;
 pub mod global_data;
 pub mod global_settings;
@@ -40,6 +40,7 @@ pub mod run_reroll_reducer;
 pub mod run_sell_reducer;
 pub mod run_stack_reducer;
 pub mod run_start_reducer;
+pub mod run_state;
 pub mod run_submit_result_reducer;
 pub mod run_team_reorder_reducer;
 pub mod set_name_reducer;
@@ -59,9 +60,9 @@ pub mod user_right;
 pub mod vfx;
 
 pub use ability::*;
+pub use arena_battle::*;
 pub use arena_pool::*;
 pub use arena_run::*;
-pub use game_state::*;
 pub use give_right_reducer::*;
 pub use global_data::*;
 pub use global_settings::*;
@@ -78,6 +79,7 @@ pub use run_reroll_reducer::*;
 pub use run_sell_reducer::*;
 pub use run_stack_reducer::*;
 pub use run_start_reducer::*;
+pub use run_state::*;
 pub use run_submit_result_reducer::*;
 pub use run_team_reorder_reducer::*;
 pub use set_name_reducer::*;
