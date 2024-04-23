@@ -1,4 +1,4 @@
-use bevy::window::WindowResized;
+use bevy::window::{PresentMode, WindowResized};
 
 use super::*;
 
@@ -11,6 +11,7 @@ pub struct SettingsData {
     pub always_show_card: bool,
     pub window_mode: WindowMode,
     pub resolution: Vec2,
+    pub vsync: VsyncMode,
 }
 
 #[derive(
@@ -23,6 +24,15 @@ pub enum WindowMode {
     BorderlessFullScreen,
 }
 
+#[derive(
+    Default, Serialize, Deserialize, Debug, Copy, Clone, PartialEq, EnumString, EnumIter, Display,
+)]
+pub enum VsyncMode {
+    #[default]
+    On,
+    Off,
+}
+
 impl Default for SettingsData {
     fn default() -> Self {
         Self {
@@ -31,6 +41,7 @@ impl Default for SettingsData {
             resolution: vec2(1280.0, 720.0),
             window_mode: default(),
             always_show_card: default(),
+            vsync: default(),
         }
     }
 }
@@ -120,6 +131,23 @@ impl SettingsPlugin {
                     });
                 });
                 frame(ui, |ui| {
+                    let value = &mut data.vsync;
+                    ui.columns(2, |ui| {
+                        "vsync".to_colored().label(&mut ui[0]);
+                        ui[1].vertical_centered_justified(|ui| {
+                            ComboBox::from_id_source("vsync mode")
+                                .width(240.0)
+                                .selected_text(value.to_string())
+                                .show_ui(ui, |ui| {
+                                    for option in VsyncMode::iter() {
+                                        let text = option.to_string();
+                                        ui.selectable_value(value, option, text).changed();
+                                    }
+                                });
+                        });
+                    });
+                });
+                frame(ui, |ui| {
                     ui.columns(3, |ui| {
                         "resolution".to_colored().label(&mut ui[0]);
                         ui[1].vertical_centered_justified(|ui| {
@@ -183,6 +211,10 @@ impl SettingsPlugin {
                 WindowMode::BorderlessFullScreen => bevy::window::WindowMode::BorderlessFullscreen,
             };
             window.resolution.set(data.resolution.x, data.resolution.y);
+            window.present_mode = match data.vsync {
+                VsyncMode::On => PresentMode::AutoVsync,
+                VsyncMode::Off => PresentMode::AutoNoVsync,
+            }
         }
     }
 }
