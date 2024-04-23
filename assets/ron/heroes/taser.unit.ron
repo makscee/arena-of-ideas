@@ -1,0 +1,35 @@
+#![enable(implicit_some)]
+(
+    name: "Taser",
+    hp: 2,
+    atk: 1,
+    stacks: 1,
+    level: 1,
+    houses: "Robots",
+    trigger: Fire(
+        triggers: [(BeforeStrike, None)],
+        targets: [(Owner, None)],
+        effects: [(UseAbility("Charge", 0), None)],
+    ),
+    representation: (
+        material: Shape(
+            shape: Rectangle(size: Vec2(1.0, 1.0)),
+            shape_type: Line(thickness: Float(1.0)),
+            fill: Solid(color: OwnerState(Color)),
+            fbm: (
+                octaves: Int(1),
+                lacunarity: Float(1.0),
+                gain: Float(1.0),
+                strength: Mul(Beat, Float(0.3)),
+                offset: Index,
+            ),
+            alpha: Float(0.5),
+            padding: Float(0.2),
+        ),
+        children: [],
+        mapping: {},
+        count: 3,
+    ),
+    state: (history: {}, birth: 0.0),
+    statuses: [],
+)

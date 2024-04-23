@@ -198,14 +198,16 @@ impl Effect {
                         .take(),
                     world,
                 )?;
-                Pools::get_vfx("apply_status", world)
-                    .attach_context(
-                        &context
-                            .clone()
-                            .set_var(VarName::Color, VarValue::Color(color)),
-                        world,
-                    )
-                    .unpack(world)?;
+                if charges > 0 {
+                    Pools::get_vfx("apply_status", world)
+                        .attach_context(
+                            &context
+                                .clone()
+                                .set_var(VarName::Color, VarValue::Color(color)),
+                            world,
+                        )
+                        .unpack(world)?;
+                }
             }
             Effect::AddAllStatuses => {
                 let target = context.get_target()?;
