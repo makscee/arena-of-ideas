@@ -25,6 +25,8 @@
                 octaves: Int(3),
                 lacunarity: Sin(Sum(Mul(GameTime, Float(0.2)), Mul(Index, Float(1.25)))),
                 gain: Float(0.33),
+                strength: Float(1.0),
+                offset: Vec2(1.0, 1.0),
             ),
             alpha: Float(1.0),
             padding: Zero,

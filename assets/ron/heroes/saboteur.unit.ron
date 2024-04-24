@@ -25,6 +25,7 @@
                 octaves: Int(3),
                 lacunarity: Float(1.6),
                 gain: Sum(Float(2.3), Mul(Beat, Float(0.5))),
+                strength: Float(1.0),
                 offset: Mul(Sum(GameTime, Float(0.1)), Float(0.13)),
             ),
             alpha: Float(1.0),

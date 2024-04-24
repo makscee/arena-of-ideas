@@ -1,0 +1,35 @@
+#![enable(implicit_some)]
+(
+    name: "Pathologist",
+    hp: 1,
+    atk: 3,
+    stacks: 1,
+    level: 1,
+    houses: "Medics",
+    trigger: Fire(
+        triggers: [(AllyDeath, None)],
+        targets: [(AllAllyUnits, None)],
+        effects: [(Heal(None), None)],
+    ),
+    representation: (
+        material: Shape(
+            shape: Circle(radius: Float(0.5)),
+            shape_type: Line(thickness: Float(1.0)),
+            fill: Solid(color: OwnerState(Color)),
+            fbm: (
+                octaves: Int(1),
+                lacunarity: Float(1.0),
+                gain: Float(1.0),
+                strength: Float(0.1),
+                offset: Vec2EE(Mul(GameTime, Float(0.2)), Zero),
+            ),
+            alpha: Float(1.0),
+            padding: Float(0.2),
+        ),
+        children: [],
+        mapping: {Offset: Vec2EE(Zero, Mul(Sin(GameTime), Float(0.1)))},
+        count: 0,
+    ),
+    state: (history: {}, birth: 0.0),
+    statuses: [],
+)
