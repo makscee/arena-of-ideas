@@ -302,6 +302,11 @@ impl PackedUnit {
             let hp = &mut self.hp;
             ui.label("hp:");
             DragValue::new(hp).clamp_range(0..=99).ui(ui);
+            let dmg = &mut self.state.get_int(VarName::Dmg).unwrap_or_default();
+            ui.label("dmg:");
+            if DragValue::new(dmg).clamp_range(0..=99).ui(ui).changed() {
+                self.state.init(VarName::Dmg, VarValue::Int(*dmg));
+            }
             let lvl = &mut self.level;
             ui.label("lvl:");
             DragValue::new(lvl).clamp_range(1..=99).ui(ui);

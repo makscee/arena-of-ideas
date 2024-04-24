@@ -1,0 +1,40 @@
+#![enable(implicit_some)]
+(
+    name: "Physician",
+    hp: 2,
+    atk: 2,
+    stacks: 1,
+    level: 1,
+    houses: "Medics",
+    trigger: Fire(
+        triggers: [(TurnEnd, None)],
+        targets: [(AllStatusAllies("Vitality"), None)],
+        effects: [(Heal(None), None)],
+    ),
+    representation: (
+        material: Shape(
+            shape: Circle(
+                radius: Sum(Float(0.5), Mul(Beat, Float(0.03))),
+            ),
+            shape_type: Line(
+                thickness: Float(1.0),
+            ),
+            fill: Solid(
+                color: OwnerState(Color),
+            ),
+            fbm: None,
+            alpha: Float(1.0),
+            padding: Float(0.2),
+        ),
+        children: [],
+        mapping: {
+            Offset: Vec2EE(Zero, Mul(Sin(GameTime), Float(0.1))),
+        },
+        count: 0,
+    ),
+    state: (
+        history: {},
+        birth: 0.0,
+    ),
+    statuses: [],
+)
