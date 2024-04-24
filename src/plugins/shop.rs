@@ -217,7 +217,7 @@ impl ShopPlugin {
             let entity = world_units.get(id).unwrap();
             let mut state = VarState::get_mut(*entity, world);
             state.set_int(VarName::Hp, unit.hp);
-            state.set_int(VarName::Atk, unit.atk);
+            state.set_int(VarName::Pwr, unit.pwr);
             state.set_int(VarName::Stacks, unit.stacks);
             state.set_int(VarName::Level, unit.level);
             state.set_string(VarName::Houses, unit.houses.clone());
@@ -472,7 +472,7 @@ impl ShopPlugin {
                                 let rect = resp.rect;
                                 if resp
                                     .on_hover_text_at_pointer(
-                                        "Stack heroes together,\nget +1 HP and +1 ATK per stack\nand increase Level",
+                                        "Stack heroes together,\nget +1 HP and +1 PWR per stack\nand increase Level",
                                     )
                                     .hovered()
                                 {

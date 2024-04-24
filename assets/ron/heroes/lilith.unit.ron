@@ -2,7 +2,7 @@
 (
     name: "Lilith",
     hp: 2,
-    atk: 4,
+    pwr: 4,
     stacks: 1,
     level: 1,
     houses: "Vampires",

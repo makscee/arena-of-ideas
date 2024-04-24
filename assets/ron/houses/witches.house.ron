@@ -5,9 +5,9 @@
     statuses: [
         (
             name: "Weakness",
-            description: "-{Charges} ATK",
-            trigger: Change(trigger: Var(Atk), expr: Sub(Int(0), Context(Charges))),
+            description: "-{Charges} PWR",
+            trigger: Change(trigger: Var(Pwr), expr: Sub(Int(0), Context(Charges))),
         ),
     ],
-    abilities: [(name: "Weakness", description: "-1 ATK", effect: AddStatus("Weakness"))],
+    abilities: [(name: "Weakness", description: "-1 PWR", effect: AddStatus("Weakness"))],
 )

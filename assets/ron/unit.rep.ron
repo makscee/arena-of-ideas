@@ -34,7 +34,7 @@
             mapping: {Offset: Vec2(-0.9, -0.9)},
             children: [
                 (
-                    material: Text(text: StringInt(OwnerState(Atk)), size: Float(0.6), color: Hex("#FBC02D")),
+                    material: Text(text: StringInt(OwnerState(Pwr)), size: Float(0.6), color: Hex("#FBC02D")),
                 ),
             ],
         ),

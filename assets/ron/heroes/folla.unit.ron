@@ -2,7 +2,7 @@
 (
     name: "Folla",
     hp: 1,
-    atk: 0,
+    pwr: 0,
     stacks: 1,
     level: 1,
     houses: "Dragons",

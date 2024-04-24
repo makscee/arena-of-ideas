@@ -145,7 +145,7 @@ impl VarState {
                 .push_styled(level.to_string(), white(), ColoredStringStyle::Bold)
                 .take(),
         );
-        let atk = self.get_int_at(VarName::Atk, t)?;
+        let pwr = self.get_int_at(VarName::Pwr, t)?;
         let hp = self.get_int_at(VarName::Hp, t)?;
         let hp_line = (
             "hp".to_colored(),
@@ -155,8 +155,8 @@ impl VarState {
                 .take(),
         );
         let atk_line = (
-            "atk".to_colored(),
-            atk.to_string()
+            "pwr".to_colored(),
+            pwr.to_string()
                 .add_color(yellow())
                 .set_style_ref(ColoredStringStyle::Bold)
                 .take(),

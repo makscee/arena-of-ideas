@@ -13,7 +13,7 @@ Global competition is on of the design pillars of the game. It should manifest i
 Currently, gameplay is a minimalistic auto battler, where core loop has 2 phases:
 - **Shop** – you improve and manage your team of units
 - **Battle** – you watch your team fight other team
-Every unit in the game has 2 main stats: *HP* and *ATK*. Units can attack simultaneously each other, decreasing own *HP* value by *ATK* value of the attacker. When *HP* reaches zero, unit dies. If 2 units have same stats, on hit they will simply kill each other.
+Every unit in the game has 2 main stats: *HP* and *PWR*. Units can attack simultaneously each other, decreasing own *HP* value by *PWR* value of the attacker. When *HP* reaches zero, unit dies. If 2 units have same stats, on hit they will simply kill each other.
 
 In battle, team units that are in front hit each other until on of the teams dies completely.
 
@@ -22,7 +22,7 @@ Game units are split in two categories: **Heroes** and **Enemies**. Player build
 
 Unit is described by following things
 ### State
-A state is simply a set of variables. Every unit has *HP* and *ATK* variables, for example. They also might have a *Name*, *Description*, or some values that are necessary to implement specific mechanics for their ability.
+A state is simply a set of variables. Every unit has *HP* and *PWR* variables, for example. They also might have a *Name*, *Description*, or some values that are necessary to implement specific mechanics for their ability.
 
 ### House
 Every unit belongs to at least one House.
@@ -51,7 +51,7 @@ Status is a trigger that can be attached to any unit. It has a *state* which mai
 
 Statuses can also modify state of a unit when active
 
-*e.g.* **Holy** house has a **Blessing** status, that increases *ATK* and *HP* by 1 per *Charge*
+*e.g.* **Holy** house has a **Blessing** status, that increases *PWR* and *HP* by 1 per *Charge*
 
 ### Innate Ability
 Every unit can have an innate ability, which is a trigger that is a part of units' initial state. It is like a status for the most part, except it doesn't have charges and cannot be removed. This ability is what is described in units' description.

@@ -15,20 +15,20 @@
             trigger: Change(trigger: Var(Hp), expr: Context(Charges)),
         ),
         (
-            name: "Siphon ATK",
-            description: "+{Charges} Atk",
-            trigger: Change(trigger: Var(Atk), expr: Context(Charges)),
+            name: "Siphon PWR",
+            description: "+{Charges} Pwr",
+            trigger: Change(trigger: Var(Pwr), expr: Context(Charges)),
         ),
     ],
     abilities: [
         (
             name: "Siphon",
-            description: "Drain 1 HP from target{M1|, gain +1 ATK for each}",
+            description: "Drain 1 HP from target{M1|, gain +1 PWR for each}",
             effect: List(
                 [
                     AddStatus("Siphoned Out"),
                     WithTarget(Owner, AddStatus("Siphon HP")),
-                    If(AbilityState("Siphon", M1), WithTarget(Owner, AddStatus("Siphon ATK")), Noop),
+                    If(AbilityState("Siphon", M1), WithTarget(Owner, AddStatus("Siphon PWR")), Noop),
                 ],
             ),
         ),

@@ -2,7 +2,7 @@
 (
     name: "Master",
     hp: 3,
-    atk: 2,
+    pwr: 2,
     stacks: 1,
     level: 1,
     houses: "Death Knights",
@@ -10,7 +10,7 @@
         triggers: [(BattleStart, None)],
         targets: [],
         effects: [
-            (AbilityStateAddVar("Skeleton", Atk, Sum(Context(Level), Int(1))), None),
+            (AbilityStateAddVar("Skeleton", Pwr, Sum(Context(Level), Int(1))), None),
             (AbilityStateAddVar("Skeleton", Hp, Sum(Context(Level), Int(1))), None),
         ],
     ),

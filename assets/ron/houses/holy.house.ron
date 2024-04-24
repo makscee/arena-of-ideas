@@ -9,7 +9,7 @@
             trigger: List(
                 [
                     Change(trigger: Var(Hp), expr: Context(Charges)),
-                    Change(trigger: Var(Atk), expr: Context(Charges)),
+                    Change(trigger: Var(Pwr), expr: Context(Charges)),
                 ],
             ),
         ),

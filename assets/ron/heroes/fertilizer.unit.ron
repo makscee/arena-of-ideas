@@ -2,7 +2,7 @@
 (
     name: "Fertilizer",
     hp: 3,
-    atk: 1,
+    pwr: 1,
     stacks: 1,
     level: 1,
     houses: "Druids",

@@ -2,7 +2,7 @@
 (
     name: "Bat",
     hp: 1,
-    atk: 3,
+    pwr: 3,
     stacks: 1,
     level: 1,
     houses: "Vampires",

@@ -169,7 +169,7 @@ fn run_stack(ctx: ReducerContext, target: u64, source: u64) -> Result<(), String
     };
     let (i_target, _) = run.find_team(target)?;
     let target = &mut run.state.team[i_target].unit;
-    target.atk += 1;
+    target.pwr += 1;
     target.hp += 1;
     target.stacks += 1;
     if target.stacks >= target.level + 1 {

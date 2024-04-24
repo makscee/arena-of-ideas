@@ -5,7 +5,12 @@ pub struct MainMenuPlugin;
 
 impl Plugin for MainMenuPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, Self::ui.run_if(in_state(GameState::MainMenu)));
+        app.add_systems(
+            Update,
+            Self::ui
+                .after(PanelsPlugin::ui)
+                .run_if(in_state(GameState::MainMenu)),
+        );
     }
 }
 

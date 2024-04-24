@@ -2,14 +2,14 @@
 (
     name: "Rod",
     hp: 2,
-    atk: 2,
+    pwr: 2,
     stacks: 1,
     level: 1,
     houses: "Robots",
     trigger: Fire(
         triggers: [(AllyUsedAbility("Charge"), None)],
         targets: [(RandomEnemy, None)],
-        effects: [(Damage(None), "Damage {Atk}")],
+        effects: [(Damage(None), "Damage {Pwr}")],
     ),
     representation: (
         material: Shape(

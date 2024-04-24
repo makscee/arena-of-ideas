@@ -1,2 +1,2 @@
 #![enable(implicit_some)]
-(left: (units: [(hp: 10, atk: 1)]), right: (units: [(hp: 10, atk: 1)]))
+(left: (units: [(hp: 10, pwr: 1)]), right: (units: [(hp: 10, pwr: 1)]))

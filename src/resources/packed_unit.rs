@@ -10,7 +10,7 @@ pub struct PackedUnit {
     #[serde(default = "default_one")]
     pub hp: i32,
     #[serde(default)]
-    pub atk: i32,
+    pub pwr: i32,
     #[serde(default = "default_one")]
     pub stacks: i32,
     #[serde(default = "default_one")]
@@ -107,7 +107,7 @@ impl PackedUnit {
         let mut state = self.state.clone();
         state
             .init(VarName::Hp, VarValue::Int(self.hp))
-            .init(VarName::Atk, VarValue::Int(self.atk))
+            .init(VarName::Pwr, VarValue::Int(self.pwr))
             .init(VarName::Stacks, VarValue::Int(self.stacks))
             .init(VarName::Level, VarValue::Int(self.level))
             .init(VarName::Houses, VarValue::String(self.houses.clone()))
@@ -148,7 +148,7 @@ impl PackedUnit {
         let representation = Representation::pack(entity, world);
         let mut state = VarState::get(entity, world).clone();
         let hp = state.get_int(VarName::Hp).unwrap();
-        let atk = state.get_int(VarName::Atk).unwrap();
+        let pwr = state.get_int(VarName::Pwr).unwrap();
         let stacks = state.get_int(VarName::Stacks).unwrap();
         let level = state.get_int(VarName::Level).unwrap();
         let name = state.get_string(VarName::Name).unwrap();
@@ -171,7 +171,7 @@ impl PackedUnit {
         let trigger = trigger.unwrap();
         state
             .clear_value(VarName::Hp)
-            .clear_value(VarName::Atk)
+            .clear_value(VarName::Pwr)
             .clear_value(VarName::Level)
             .clear_value(VarName::Stacks)
             .clear_value(VarName::Name)
@@ -183,7 +183,7 @@ impl PackedUnit {
 
         Self {
             hp,
-            atk,
+            pwr,
             houses,
             name,
             trigger,
@@ -209,7 +209,7 @@ impl PackedUnit {
             rep
         }));
         fused.hp = fused.hp.max(source.hp);
-        fused.atk = fused.atk.max(source.atk);
+        fused.pwr = fused.pwr.max(source.pwr);
         fused.houses = format!("{}+{}", target.houses, source.houses);
         fused.name = format!("{}+{}", fused.name, source.name);
         fused.level = 1;
@@ -296,9 +296,9 @@ impl PackedUnit {
             let name = &mut self.name;
             ui.label("name:");
             TextEdit::singleline(name).desired_width(60.0).ui(ui);
-            let atk = &mut self.atk;
-            ui.label("atk:");
-            DragValue::new(atk).clamp_range(0..=99).ui(ui);
+            let pwr = &mut self.pwr;
+            ui.label("pwr:");
+            DragValue::new(pwr).clamp_range(0..=99).ui(ui);
             let hp = &mut self.hp;
             ui.label("hp:");
             DragValue::new(hp).clamp_range(0..=99).ui(ui);
@@ -373,7 +373,7 @@ impl From<PackedUnit> for TableUnit {
             houses: val.houses,
             name: val.name,
             hp: val.hp,
-            atk: val.atk,
+            pwr: val.pwr,
             stacks: val.stacks,
             level: val.level,
             statuses: val
@@ -392,7 +392,7 @@ impl From<TableUnit> for PackedUnit {
     fn from(value: TableUnit) -> Self {
         Self {
             hp: value.hp,
-            atk: value.atk,
+            pwr: value.pwr,
             stacks: value.stacks,
             level: value.level,
             houses: value.houses,

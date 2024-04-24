@@ -2,7 +2,7 @@
 (
     name: "Victim",
     hp: 1,
-    atk: 1,
+    pwr: 1,
     stacks: 1,
     level: 1,
     houses: "Paladins",

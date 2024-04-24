@@ -2,14 +2,14 @@
 (
     name: "Bloodthinner",
     hp: 2,
-    atk: 2,
+    pwr: 2,
     stacks: 1,
     level: 1,
     houses: "Vampires",
     trigger: Fire(
         triggers: [(BattleStart, None)],
         targets: [],
-        effects: [(AbilityStateAddVar("Siphon", M1, Bool(true)), "[Siphon] gives ATK")],
+        effects: [(AbilityStateAddVar("Siphon", M1, Bool(true)), "[Siphon] gives PWR")],
     ),
     representation: (
         material: Shape(

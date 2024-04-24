@@ -2,7 +2,7 @@
 (
     name: "Saboteur",
     hp: 2,
-    atk: 2,
+    pwr: 2,
     stacks: 1,
     level: 1,
     houses: "Rogues",

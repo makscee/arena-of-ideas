@@ -11,7 +11,7 @@
         ),
         (
             name: "Betray",
-            description: "Deal ATK DMG to adjacent allies",
+            description: "Deal PWR DMG to adjacent allies",
             effect: WithOwner(
                 Target,
                 List([Text(String("Betray")), WithTarget(AdjacentUnits, Damage(None))]),

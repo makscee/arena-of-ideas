@@ -43,7 +43,7 @@
         (
             name: "Skeleton",
             hp: 4,
-            atk: 1,
+            pwr: 1,
             stacks: 1,
             level: 1,
             houses: "Death Knights",

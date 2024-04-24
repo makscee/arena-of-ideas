@@ -2,7 +2,7 @@
 (
     name: "Wither",
     hp: 4,
-    atk: 0,
+    pwr: 0,
     stacks: 1,
     level: 1,
     houses: "Death Knights",

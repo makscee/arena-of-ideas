@@ -30,7 +30,7 @@ pub enum VarName {
     Rotation,
     Charges,
     Hp,
-    Atk,
+    Pwr,
     Dmg,
     Faction,
     Position,

@@ -6,7 +6,7 @@ pub struct TableUnit {
     #[primarykey]
     pub name: String,
     pub hp: i32,
-    pub atk: i32,
+    pub pwr: i32,
     pub houses: String,
     pub stacks: i32,
     pub level: i32,

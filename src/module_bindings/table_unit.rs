@@ -17,7 +17,7 @@ use spacetimedb_sdk::{
 pub struct TableUnit {
     pub name: String,
     pub hp: i32,
-    pub atk: i32,
+    pub pwr: i32,
     pub houses: String,
     pub stacks: i32,
     pub level: i32,
@@ -49,8 +49,8 @@ impl TableUnit {
         Self::filter(|row| row.hp == hp)
     }
     #[allow(unused)]
-    pub fn filter_by_atk(atk: i32) -> TableIter<Self> {
-        Self::filter(|row| row.atk == atk)
+    pub fn filter_by_atk(pwr: i32) -> TableIter<Self> {
+        Self::filter(|row| row.pwr == pwr)
     }
     #[allow(unused)]
     pub fn filter_by_houses(houses: String) -> TableIter<Self> {

@@ -2,13 +2,13 @@
 (
     name: "Balancer",
     hp: 3,
-    atk: 1,
+    pwr: 1,
     stacks: 1,
     level: 1,
     houses: "Witches",
     trigger: Fire(
         triggers: [(BattleStart, None)],
-        targets: [(FilterMaxEnemy(OwnerState(Atk)), "enemy with max {HP}")],
+        targets: [(FilterMaxEnemy(OwnerState(Pwr)), "enemy with max {HP}")],
         effects: [(UseAbility("Weakness", 4), None)],
     ),
     representation: (

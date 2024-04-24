@@ -45,7 +45,7 @@ impl Effect {
                 let owner = context.get_owner()?;
                 let mut value = match value {
                     Some(value) => value.get_value(context, world)?,
-                    None => context.get_var(VarName::Atk, world)?,
+                    None => context.get_var(VarName::Pwr, world)?,
                 };
                 info!("Damage {} {target:?}", value.to_string());
                 let event = Event::IncomingDamage {
@@ -89,7 +89,7 @@ impl Effect {
                 let target = context.get_target()?;
                 let value = match value {
                     Some(value) => value.get_value(context, world)?,
-                    None => context.get_var(VarName::Atk, world)?,
+                    None => context.get_var(VarName::Pwr, world)?,
                 };
                 info!("Heal {} {target:?}", value.to_string());
                 let value = value.get_int()?;
@@ -168,11 +168,11 @@ impl Effect {
                     .unwrap_or(VarValue::Int(0))
                     .get_int()?;
                 let extra_atk = context
-                    .get_ability_var(name, VarName::Atk)
+                    .get_ability_var(name, VarName::Pwr)
                     .unwrap_or(VarValue::Int(0))
                     .get_int()?;
                 unit.hp += extra_hp;
-                unit.atk += extra_atk;
+                unit.pwr += extra_atk;
 
                 let color = Pools::get_color_by_name(name, world)?;
 

@@ -50,7 +50,7 @@
         (
             name: "Guardian Angel",
             hp: 1,
-            atk: 10,
+            pwr: 10,
             stacks: 1,
             level: 1,
             houses: "Paladins",

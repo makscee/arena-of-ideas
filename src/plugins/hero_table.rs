@@ -100,7 +100,7 @@ impl HeroTablePlugin {
                             match td.sorting.as_ref().unwrap().0 {
                                 Column::Name => td.units.sort_by_cached_key(|u| u.name.to_owned()),
                                 Column::Hp => td.units.sort_by_cached_key(|u| u.hp),
-                                Column::Atk => td.units.sort_by_cached_key(|u| u.atk),
+                                Column::Pwr => td.units.sort_by_cached_key(|u| u.pwr),
                                 Column::House => {
                                     td.units.sort_by_cached_key(|u| u.houses.to_owned())
                                 }
@@ -255,7 +255,7 @@ pub struct HeroTableData {
 enum Column {
     Name,
     House,
-    Atk,
+    Pwr,
     Hp,
     Trigger,
     Target,
@@ -300,8 +300,8 @@ impl Column {
                             }
                         });
                 }
-                Column::Atk => {
-                    DragValue::new(&mut unit.atk).clamp_range(0..=99).ui(ui);
+                Column::Pwr => {
+                    DragValue::new(&mut unit.pwr).clamp_range(0..=99).ui(ui);
                 }
                 Column::Hp => {
                     DragValue::new(&mut unit.hp).clamp_range(0..=99).ui(ui);

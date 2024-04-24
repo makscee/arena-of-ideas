@@ -2,14 +2,19 @@
 (
     name: "Robber",
     hp: 3,
-    atk: 1,
+    pwr: 1,
     stacks: 1,
     level: 1,
     houses: "Rogues",
     trigger: Fire(
         triggers: [(AllyDeath, "Last ally died")],
         targets: [(AllEnemyUnits, None)],
-        effects: [(UseAbility("Rob", 1), None)],
+        effects: [
+            (
+                If(Equals(UnitCount(Bool(true)), Int(1)), UseAbility("Rob", 1), Noop),
+                "use [Rob] ({Level}+1)",
+            ),
+        ],
     ),
     representation: (
         material: Shape(

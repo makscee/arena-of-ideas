@@ -1,11 +1,11 @@
 #![enable(implicit_some)]
 (
-    left: (units: [(name: "left", hp: 15, atk: 3)]),
+    left: (units: [(name: "left", hp: 15, pwr: 3)]),
     right: (
         units: [
             (
                 hp: 3,
-                atk: 3,
+                pwr: 3,
                 name: "right",
                 trigger: Fire(
                     triggers: [(AfterDamageDealt, None)],

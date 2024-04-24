@@ -2,7 +2,7 @@
 (
     name: "Rogue Bat",
     hp: 2,
-    atk: 0,
+    pwr: 0,
     stacks: 1,
     level: 1,
     houses: "Rogues",

@@ -5,9 +5,9 @@
     statuses: [
         (
             name: "Strength",
-            description: "+{Charges} ATK",
-            trigger: Change(trigger: Var(Atk), expr: Context(Charges)),
+            description: "+{Charges} PWR",
+            trigger: Change(trigger: Var(Pwr), expr: Context(Charges)),
         ),
     ],
-    abilities: [(name: "Strength", description: "Give +1 ATK", effect: AddStatus("Strength"))],
+    abilities: [(name: "Strength", description: "Give +1 PWR", effect: AddStatus("Strength"))],
 )

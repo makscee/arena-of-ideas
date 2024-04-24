@@ -2,7 +2,7 @@
 (
     name: "Fruiter",
     hp: 1,
-    atk: 1,
+    pwr: 1,
     stacks: 1,
     level: 1,
     houses: "Druids",
@@ -10,7 +10,7 @@
         triggers: [(BattleStart, None)],
         targets: [],
         effects: [
-            (AbilityStateAddVar("Treant", Atk, Context(Level)), None),
+            (AbilityStateAddVar("Treant", Pwr, Context(Level)), None),
             (AbilityStateAddVar("Treant", Hp, Context(Level)), None),
         ],
     ),

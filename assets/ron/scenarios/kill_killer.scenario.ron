@@ -4,7 +4,7 @@
         units: [
             (
                 hp: 1,
-                atk: 0,
+                pwr: 0,
                 trigger: Fire(
                     triggers: [(AllyDeath, None)],
                     targets: [(TargetStateLast(LastAttacker), "killer")],
@@ -13,6 +13,6 @@
             ),
         ],
     ),
-    right: (units: [(hp: 1, atk: 1)]),
+    right: (units: [(hp: 1, pwr: 1)]),
     condition: And(Equals(FactionCount(Faction(Left)), Int(0)), Equals(FactionCount(Faction(Right)), Int(1))),
 )
