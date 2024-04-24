@@ -26,6 +26,9 @@ pub fn orange() -> Color32 {
 pub fn red() -> Color32 {
     hex_color!("#E53935")
 }
+pub fn green() -> Color32 {
+    hex_color!("#64DD17")
+}
 pub struct UiPlugin;
 
 impl Plugin for UiPlugin {

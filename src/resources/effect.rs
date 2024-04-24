@@ -13,6 +13,7 @@ pub enum Effect {
     Debug(Expression),
     Text(Expression),
     Damage(Option<Expression>),
+    Heal(Option<Expression>),
     WithTarget(Expression, Box<Effect>),
     WithOwner(Expression, Box<Effect>),
     List(Vec<Box<Effect>>),
@@ -81,6 +82,29 @@ impl Effect {
                 let value = value.max(0);
                 TextColumn::add(target, &format!("-{value}"), orange(), world)?;
                 Pools::get_vfx("damage", world)
+                    .attach_context(context, world)
+                    .unpack(world)?;
+            }
+            Effect::Heal(value) => {
+                let target = context.get_target()?;
+                let value = match value {
+                    Some(value) => value.get_value(context, world)?,
+                    None => context.get_var(VarName::Atk, world)?,
+                };
+                info!("Heal {} {target:?}", value.to_string());
+                let value = value.get_int()?;
+                if value > 0 {
+                    let new_dmg =
+                        (VarState::get(target, world).get_int(VarName::Dmg)? - value).max(0);
+                    VarState::get_mut(target, world)
+                        .push_back(VarName::Dmg, VarChange::new(VarValue::Int(new_dmg)));
+                    Pools::get_vfx("pleasure", world)
+                        .set_parent(target)
+                        .unpack(world)?;
+                }
+                let value = value.max(0);
+                TextColumn::add(target, &format!("+{value}"), green(), world)?;
+                Pools::get_vfx("heal", world)
                     .attach_context(context, world)
                     .unpack(world)?;
             }
@@ -215,9 +239,6 @@ impl Effect {
                     .get_var(VarName::Charges, world)
                     .unwrap_or(VarValue::Int(1))
                     .get_int()?;
-                if charges <= 0 {
-                    return Err(anyhow!("Can't add nonpositive charges amount"));
-                }
                 for (status, _) in Status::collect_statuses_name_charges(
                     target,
                     GameTimer::get().insert_head(),
@@ -458,6 +479,7 @@ impl Effect {
             | Effect::Debug(..)
             | Effect::Text(..)
             | Effect::Damage(..)
+            | Effect::Heal(..)
             | Effect::UseAbility(..)
             | Effect::Summon(..)
             | Effect::AddStatus(..)
@@ -517,7 +539,7 @@ impl EditorNodeGenerator for Effect {
                     list.clear()
                 }
             }
-            Effect::Damage(e) => {
+            Effect::Damage(e) | Effect::Heal(e) => {
                 let mut v = e.is_some();
                 if ui.checkbox(&mut v, "").changed() {
                     *e = match v {
@@ -687,7 +709,7 @@ impl EditorNodeGenerator for Effect {
             Effect::Text(e) | Effect::AbilityStateAddVar(_, _, e) => {
                 show_node(e, format!("{path}:e"), connect_pos, context, ui, world)
             }
-            Effect::Damage(e) => {
+            Effect::Damage(e) | Effect::Heal(e) => {
                 if let Some(e) = e {
                     show_node(e, format!("{path}:e"), connect_pos, context, ui, world);
                 }
@@ -828,7 +850,7 @@ impl std::fmt::Display for Effect {
             Effect::Text(x) | Effect::Debug(x) => {
                 write!(f, "{}({x})", self.as_ref())
             }
-            Effect::Damage(x) => write!(
+            Effect::Damage(x) | Effect::Heal(x) => write!(
                 f,
                 "{}({})",
                 self.as_ref(),

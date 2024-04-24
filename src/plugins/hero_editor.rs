@@ -188,7 +188,9 @@ impl HeroEditorPlugin {
 
                 ui.add_space(10.0);
                 if ui.button_color("Save", yellow()).clicked() {
-                    ed.saved_teams = ed.teams.clone();
+                    let left = PackedTeam::pack(Faction::Left, world);
+                    let right = PackedTeam::pack(Faction::Right, world);
+                    ed.saved_teams = (left.units, right.units);
                 }
                 if ui.button_color("Load", yellow()).clicked() {
                     ed.teams = ed.saved_teams.clone();

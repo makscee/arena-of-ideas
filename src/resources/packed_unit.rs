@@ -113,8 +113,10 @@ impl PackedUnit {
             .init(VarName::Houses, VarValue::String(self.houses.clone()))
             .init(VarName::Name, VarValue::String(self.name.clone()))
             .init(VarName::Position, VarValue::Vec2(default()))
-            .init(VarName::Index, VarValue::Int(0))
-            .init(VarName::Dmg, VarValue::Int(0));
+            .init(VarName::Index, VarValue::Int(0));
+        if !state.has_value(VarName::Dmg) {
+            state.init(VarName::Dmg, VarValue::Int(0));
+        }
         self.trigger.inject_description(&mut state);
         let house_colors = self
             .houses

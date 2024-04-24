@@ -1,0 +1,19 @@
+(
+    anim: Run(
+        [
+            Change(var: Alpha, value: Float(1.0)),
+            Change(var: Alpha, value: Float(0.0), tween: QuartOut, duration: Float(1.0)),
+            Change(var: T, value: Float(0.7)),
+            Change(var: T, value: Float(1.6), tween: QuadOut, duration: Float(1.0)),
+            Change(var: Visible, value: Bool(false), t: 1.0),
+        ],
+    ),
+    representation: (
+        material: Shape(
+            shape: Circle(radius: OwnerState(T)),
+            shape_type: Opaque,
+            fill: Solid(color: Hex("#64DD17")),
+            alpha: OwnerState(Alpha),
+        ),
+    ),
+)

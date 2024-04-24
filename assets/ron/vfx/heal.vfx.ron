@@ -1,0 +1,33 @@
+(
+    anim: Run(
+        [
+            Change(var: Thickness, value: Float(1.0)),
+            Change(var: Thickness, value: Float(3.0), tween: QuartOut, duration: Float(0.5)),
+            Change(var: Alpha, value: Float(0.4)),
+            Change(var: Alpha, value: Float(0.0), tween: QuartOut, duration: Float(0.5)),
+            Change(var: Visible, value: Bool(false), t: 0.5),
+        ],
+    ),
+    representation: (
+        material: Curve(
+            color: Hex("#64DD17"),
+            curvature: Float(1.0),
+            thickness: Float(2.0),
+            aa: Float(0.5),
+            alpha: LessThen(Age, Float(0.1)),
+            dilations: [(Float(0.0), Float(-1.0)), (Float(1.0), Float(2.0))],
+        ),
+        children: [
+            (
+                material: Curve(
+                    color: Hex("#64DD17"),
+                    curvature: Float(1.0),
+                    thickness: OwnerState(Thickness),
+                    aa: Float(0.5),
+                    alpha: OwnerState(Alpha),
+                    dilations: [(Float(0.0), Float(-1.0)), (Float(1.0), Float(4.0))],
+                ),
+            ),
+        ],
+    ),
+)

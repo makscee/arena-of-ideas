@@ -284,6 +284,10 @@ impl VarState {
         }
         world.entity_mut(entity).insert(transform);
     }
+
+    pub fn has_value(&self, var: VarName) -> bool {
+        self.history.contains_key(&var)
+    }
 }
 
 impl History {
