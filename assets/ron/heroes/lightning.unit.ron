@@ -13,12 +13,8 @@
     ),
     representation: (
         material: Shape(
-            shape: Rectangle(
-                size: Sum(Vec2E(Mul(Beat, Float(0.1))), Vec2(0.13, 1.69)),
-            ),
-            shape_type: Line(
-                thickness: Float(0.2),
-            ),
+            shape: Rectangle(size: Sum(Vec2E(Mul(Beat, Float(0.1))), Vec2(0.13, 1.69))),
+            shape_type: Line(thickness: Float(0.2)),
             fill: GradientLinear(
                 point1: Vec2(0.0, 0.0),
                 point2: Vec2(0.0, 0.5),
@@ -39,9 +35,6 @@
         mapping: {},
         count: 4,
     ),
-    state: (
-        history: {},
-        birth: 0.0,
-    ),
+    state: (history: {}, birth: 0.0),
     statuses: [],
 )

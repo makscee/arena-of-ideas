@@ -1,20 +1,20 @@
 #![enable(implicit_some)]
 (
-    name: "Physician",
+    name: "Surgeon",
     hp: 2,
     atk: 2,
     stacks: 1,
     level: 1,
     houses: "Medics",
     trigger: Fire(
-        triggers: [(TurnEnd, None)],
-        targets: [(AllStatusAllies("Vitality"), None)],
+        triggers: [(Period(0, 2, TurnEnd), None)],
+        targets: [(AllAllyUnits, None)],
         effects: [(Heal(None), None)],
     ),
     representation: (
         material: Shape(
-            shape: Circle(radius: Sum(Float(0.5), Mul(Beat, Float(0.03)))),
-            shape_type: Line(thickness: Float(1.0)),
+            shape: Rectangle(size: Vec2(1.0, 1.0)),
+            shape_type: Line(thickness: Float(2.0)),
             fill: Solid(color: OwnerState(Color)),
             fbm: None,
             alpha: Float(1.0),
