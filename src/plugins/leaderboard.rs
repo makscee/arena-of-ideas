@@ -42,7 +42,7 @@ impl LeaderboardPlugin {
         window("LEADERBOARD")
             .set_width(400.0)
             .order(egui::Order::Foreground)
-            .anchor(Align2::RIGHT_TOP, egui::Vec2::ZERO)
+            .anchor(Align2::RIGHT_TOP, [-15.0, 15.0])
             .show(ctx, |ui| {
                 frame(ui, |ui| {
                     TableBuilder::new(ui)

@@ -1,3 +1,5 @@
+use bevy_egui::egui::Sense;
+
 use crate::module_bindings::{once_on_run_start, run_start, ArenaRun};
 
 use super::*;
@@ -24,7 +26,7 @@ impl MainMenuPlugin {
 
         window("MAIN MENU")
             .set_width(400.0)
-            .anchor(Align2::LEFT_TOP, [20.0, 200.0])
+            .anchor(Align2::LEFT_TOP, [15.0, 200.0])
             .show(ctx, |ui| {
                 if LoginPlugin::is_connected() {
                     if LoginPlugin::get_user_data().is_none() {
@@ -109,6 +111,50 @@ impl MainMenuPlugin {
                         })
                     });
                 }
+            });
+        window("CONTACTS")
+            .anchor(Align2::RIGHT_BOTTOM, [-15.0, -15.0])
+            .set_width(85.0)
+            .show(ctx, |ui| {
+                Frame::none()
+                    .inner_margin(Margin::same(8.0))
+                    .show(ui, |ui| {
+                        ui.vertical_centered(|ui| {
+                            let mut resp = Icon::Discord.image().sense(Sense::click()).ui(ui);
+                            resp = resp.on_hover_text("Discord server");
+                            if resp.hovered() {
+                                Icon::Discord.image().tint(yellow()).paint_at(ui, resp.rect);
+                            }
+                            if resp.clicked() {
+                                ctx.open_url(egui::OpenUrl {
+                                    url: "https://discord.com/invite/YxjYxc3ZXP".to_owned(),
+                                    new_tab: true,
+                                });
+                            }
+                            let mut resp = Icon::Youtube.image().sense(Sense::click()).ui(ui);
+                            resp = resp.on_hover_text("Youtube channel");
+                            if resp.hovered() {
+                                Icon::Youtube.image().tint(yellow()).paint_at(ui, resp.rect);
+                            }
+                            if resp.clicked() {
+                                ctx.open_url(egui::OpenUrl {
+                                    url: "https://www.youtube.com/@makscee".to_owned(),
+                                    new_tab: true,
+                                });
+                            }
+                            let mut resp = Icon::Itch.image().sense(Sense::click()).ui(ui);
+                            resp = resp.on_hover_text("Itch.io page");
+                            if resp.hovered() {
+                                Icon::Itch.image().tint(yellow()).paint_at(ui, resp.rect);
+                            }
+                            if resp.clicked() {
+                                ctx.open_url(egui::OpenUrl {
+                                    url: "https://makscee.itch.io/arena-of-ideas".to_owned(),
+                                    new_tab: true,
+                                });
+                            }
+                        });
+                    });
             });
         LeaderboardPlugin::ui(world);
     }

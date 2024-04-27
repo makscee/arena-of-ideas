@@ -1,4 +1,4 @@
-use bevy_egui::egui::{Id, Order};
+use bevy_egui::egui::{Id, Image, Order, TextureOptions};
 
 use super::*;
 
@@ -400,5 +400,40 @@ impl PrimarySecondaryExtensions for Ui {
         let r = self.button(text);
         self.set_style(prev_style);
         r
+    }
+}
+
+#[derive(Clone, Copy)]
+pub enum Icon {
+    Lightning,
+    Target,
+    Flame,
+    Discord,
+    Youtube,
+    Itch,
+}
+
+impl Icon {
+    pub fn show(self, ui: &mut Ui) {
+        self.image().fit_to_original_size(1.0).ui(ui);
+    }
+
+    pub fn image(self) -> Image<'static> {
+        match self {
+            Icon::Lightning => {
+                egui::Image::new(egui::include_image!("../../assets/svg/lightning.svg"))
+                    .fit_to_original_size(1.0)
+            }
+            Icon::Target => egui::Image::new(egui::include_image!("../../assets/svg/target.svg"))
+                .fit_to_original_size(1.0),
+            Icon::Flame => egui::Image::new(egui::include_image!("../../assets/svg/flame.svg"))
+                .fit_to_original_size(1.0),
+            Icon::Discord => egui::Image::new(egui::include_image!("../../assets/svg/discord.svg"))
+                .fit_to_original_size(0.8),
+            Icon::Youtube => egui::Image::new(egui::include_image!("../../assets/svg/youtube.svg"))
+                .fit_to_original_size(0.8),
+            Icon::Itch => egui::Image::new(egui::include_image!("../../assets/svg/itch.svg"))
+                .fit_to_original_size(0.8),
+        }
     }
 }

@@ -282,7 +282,7 @@ impl VarState {
     fn show_description(lines: Vec<(Icon, ColoredString)>, ui: &mut Ui) {
         for (icon, value) in lines {
             ui.horizontal(|ui| {
-                icon.paint_icon(ui);
+                icon.show(ui);
                 value.as_label(ui).wrap(true).ui(ui);
             });
         }
@@ -440,37 +440,5 @@ impl VarState {
             .show_ui(ui, |ui| {
                 let _ = self.show_frames(statuses, open, ui, world);
             });
-    }
-}
-
-#[derive(Clone, Copy)]
-enum Icon {
-    Lightning,
-    Target,
-    Flame,
-}
-
-impl Icon {
-    fn paint_icon(self, ui: &mut Ui) {
-        match self {
-            Icon::Lightning => {
-                egui::Image::new(egui::include_image!("../../assets/svg/lightning.svg"))
-                    .max_width(16.0)
-                    .texture_options(TextureOptions::NEAREST)
-                    .ui(ui);
-            }
-            Icon::Target => {
-                egui::Image::new(egui::include_image!("../../assets/svg/target.svg"))
-                    .max_width(16.0)
-                    .texture_options(TextureOptions::NEAREST)
-                    .ui(ui);
-            }
-            Icon::Flame => {
-                egui::Image::new(egui::include_image!("../../assets/svg/flame.svg"))
-                    .max_width(16.0)
-                    .texture_options(TextureOptions::NEAREST)
-                    .ui(ui);
-            }
-        }
     }
 }
