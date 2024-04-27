@@ -118,7 +118,7 @@ impl LeaderboardData {
         info!("Load Leaderboard");
         let mut data: HashMap<usize, Vec<ArenaRun>> = default();
         for run in ArenaRun::iter() {
-            if run.active {
+            if run.active || run.round == 0 {
                 continue;
             }
             let round = run.round as usize;
@@ -155,33 +155,56 @@ impl Columns {
                 .unwrap()
                 .name
                 .add_color(white())
-                .as_label(ui),
+                .label(ui),
             Columns::Team => {
                 let mut str = ColoredString::default();
                 for unit in run.state.team.iter().rev() {
-                    let name = format!("{} ", unit.unit.name);
+                    let name = format!("{} ", unit.unit.name.split_at(3).0);
                     str.push_colored(
                         name.add_color(
                             Pools::get_color_by_name(&unit.unit.name, world)
                                 .map(|c| c.c32())
-                                .unwrap_or(light_gray()),
+                                .unwrap_or(white()),
                         ),
                     );
                 }
-                str.as_label(ui)
+                str.button(ui).on_hover_ui(|ui| {
+                    for unit in run.state.team.iter().rev() {
+                        let unit = &unit.unit;
+                        ui.horizontal(|ui| {
+                            unit.name
+                                .add_color(
+                                    Pools::get_color_by_name(&unit.name, world)
+                                        .map(|c| c.c32())
+                                        .unwrap_or(white()),
+                                )
+                                .label(ui);
+                            format!("{}/{} lvl:{}", unit.pwr, unit.hp, unit.level)
+                                .to_colored()
+                                .label(ui);
+                            for house in unit.houses.split("+") {
+                                house
+                                    .add_color(
+                                        Pools::get_house_color(house, world)
+                                            .map(|c| c.c32())
+                                            .unwrap_or(light_gray()),
+                                    )
+                                    .label(ui);
+                            }
+                        });
+                    }
+                })
             }
-            Columns::Round => run.round.to_string().add_color(white()).as_label(ui),
-            Columns::Wins => run.wins().to_string().add_color(white()).as_label(ui),
-            Columns::Loses => run.loses().to_string().add_color(red()).as_label(ui),
+            Columns::Round => run.round.to_string().add_color(white()).label(ui),
+            Columns::Wins => run.wins().to_string().add_color(white()).label(ui),
+            Columns::Loses => run.loses().to_string().add_color(red()).label(ui),
             Columns::Time => DateTime::<chrono::Local>::from(
                 UNIX_EPOCH + Duration::from_micros(run.last_updated),
             )
             .format("%d/%m/%Y %H:%M")
             .to_string()
             .to_colored()
-            .as_label(ui),
+            .label(ui),
         }
-        .wrap(false)
-        .ui(ui)
     }
 }
