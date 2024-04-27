@@ -45,10 +45,11 @@ impl MainMenuPlugin {
                         ui.label(format!("Welcome {name}!"));
                     });
                     frame(ui, |ui| {
-                        let enabled = ArenaRun::current().is_some();
+                        let run = ArenaRun::current();
+                        let enabled = run.is_some();
                         ui.set_enabled(enabled);
                         let btn = if enabled {
-                            ui.button_primary("CONTINUE")
+                            ui.button_primary(format!("CONTINUE ({})", run.unwrap().round))
                         } else {
                             ui.button("CONTINUE")
                         };
