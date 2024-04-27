@@ -106,8 +106,11 @@ impl ColoredString {
         self
     }
 
+    pub fn button(&self, ui: &mut Ui) -> Response {
+        Button::new(self.widget(1.0, ui)).wrap(false).ui(ui)
+    }
     pub fn label(&self, ui: &mut Ui) -> Response {
-        self.as_label(ui).selectable(false).ui(ui)
+        self.as_label(ui).selectable(false).wrap(false).ui(ui)
     }
     pub fn label_alpha(&self, a: f32, ui: &mut Ui) -> Response {
         self.as_label_alpha(a, ui).ui(ui)

@@ -1,9 +1,9 @@
-use bevy_egui::egui::Align2;
+use bevy_egui::egui::{Align2, SidePanel};
 use event::Event;
 
 use crate::module_bindings::ArenaRun;
 
-use self::module_bindings::GlobalSettings;
+use self::module_bindings::{ArenaPool, GlobalSettings, User};
 
 use super::*;
 
@@ -26,8 +26,25 @@ impl Plugin for BattlePlugin {
 struct BattleData {
     left: Option<PackedTeam>,
     right: Option<PackedTeam>,
+    left_player_data: Option<PlayerData>,
+    right_player_data: Option<PlayerData>,
     result: BattleResult,
     run_id: Option<u64>,
+}
+
+#[derive(Clone)]
+struct PlayerData {
+    id: u64,
+    name: String,
+}
+
+impl PlayerData {
+    fn from_id(id: u64) -> Option<Self> {
+        Some(Self {
+            id,
+            name: User::filter_by_id(id)?.name,
+        })
+    }
 }
 
 impl BattlePlugin {
@@ -46,12 +63,23 @@ impl BattlePlugin {
     }
 
     pub fn load_teams(left: PackedTeam, right: PackedTeam, run_id: Option<u64>, world: &mut World) {
-        world.insert_resource(BattleData {
+        let mut data = BattleData {
             left: Some(left),
             right: Some(right),
             run_id,
             ..default()
-        });
+        };
+        if let Some(run) = run_id.and_then(|id| ArenaRun::filter_by_id(id)) {
+            data.left_player_data = PlayerData::from_id(run.user_id);
+            if let Some(enemy) = run
+                .battles
+                .get(run.round as usize)
+                .and_then(|e| ArenaPool::filter_by_id(e.enemy))
+            {
+                data.right_player_data = PlayerData::from_id(enemy.owner);
+            }
+        }
+        world.insert_resource(data);
     }
 
     pub fn on_leave(world: &mut World) {
@@ -234,22 +262,57 @@ impl BattlePlugin {
             return;
         };
         if !GameTimer::get().ended() {
-            Self::draw_turn_num(ctx, world);
+            let bd = world.resource::<BattleData>();
+            Self::draw_player_names(bd, ctx, world);
+            Self::draw_round_turn_num(bd, ctx, world);
             Self::draw_current_event(ctx, world);
             return;
         }
         Self::draw_final_panel(ctx, world);
     }
 
-    fn draw_turn_num(ctx: &egui::Context, world: &World) {
+    fn draw_player_names(bd: &BattleData, ctx: &egui::Context, world: &World) {
+        if let Some(left) = &bd.left_player_data {
+            SidePanel::left("left player")
+                .resizable(false)
+                .frame(Frame::none())
+                .show(ctx, |ui| {
+                    left.name
+                        .add_color(white())
+                        .set_style(ColoredStringStyle::Heading)
+                        .label(ui);
+                });
+        }
+        if let Some(right) = &bd.right_player_data {
+            SidePanel::right("right player")
+                .resizable(false)
+                .frame(Frame::none())
+                .show(ctx, |ui| {
+                    right
+                        .name
+                        .add_color(white())
+                        .set_style(ColoredStringStyle::Heading)
+                        .label(ui);
+                });
+        }
+    }
+
+    fn draw_round_turn_num(bd: &BattleData, ctx: &egui::Context, world: &World) {
         let (turn, ts) = ActionPlugin::get_turn(GameTimer::get().play_head(), world);
         let x = smoothstep(0.2, 0.0, ts);
         let spacing = x * 4.0;
         TopBottomPanel::top("turn num").show(ctx, |ui| {
             ui.vertical_centered_justified(|ui| {
+                if let Some(run) = bd.run_id.and_then(|id| ArenaRun::filter_by_id(id)) {
+                    format!("Round {}", run.round)
+                        .add_color(orange())
+                        .set_style(ColoredStringStyle::Heading)
+                        .set_extra_spacing(spacing)
+                        .label(ui);
+                }
                 format!("Turn {turn}")
                     .add_color(orange())
-                    .set_style(ColoredStringStyle::Heading)
+                    .set_style(ColoredStringStyle::Heading2)
                     .set_extra_spacing(spacing)
                     .label(ui)
             })

@@ -362,7 +362,7 @@ impl UnitPlugin {
             if let DragAction::Insert(slot) = action {
                 let mut state = VarState::get_mut(dragged, world);
                 let slot = slot as i32;
-                if state.get_int(VarName::Slot).unwrap() != slot {
+                if state.get_int(VarName::Slot).is_ok_and(|s| s != slot) {
                     state.init(VarName::Slot, VarValue::Int(slot));
                     UnitPlugin::make_slot_gap(Faction::Team, slot, world);
                     UnitPlugin::translate_to_slots(world);
