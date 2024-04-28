@@ -21,7 +21,7 @@ bevy = { version = "0.13.2", default-features = false, features = [
     "bevy_render",
     "bevy_winit",
     "multi-threaded",
-    "file_watcher",
+    # "file_watcher",
     "bevy_ui",
     "bevy_text",
     "default_font",
