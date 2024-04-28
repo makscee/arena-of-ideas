@@ -324,10 +324,11 @@ impl VarState {
         if !expanded {
             ui.vertical_centered(|ui| {
                 "SHIFT to expand"
-                    .to_colored()
+                    .add_color(white())
                     .set_style_ref(ColoredStringStyle::Small)
                     .label(ui);
             });
+            ui.add_space(2.0);
             return Ok(());
         }
         if let Ok(statuses) = statuses_colored.as_ref() {
