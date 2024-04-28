@@ -263,7 +263,7 @@ impl BattlePlugin {
         };
         if !GameTimer::get().ended() {
             let bd = world.resource::<BattleData>();
-            Self::draw_player_names(bd, ctx, world);
+            Self::draw_player_names(bd, ctx);
             Self::draw_round_turn_num(bd, ctx, world);
             Self::draw_current_event(ctx, world);
             return;
@@ -271,7 +271,7 @@ impl BattlePlugin {
         Self::draw_final_panel(ctx, world);
     }
 
-    fn draw_player_names(bd: &BattleData, ctx: &egui::Context, world: &World) {
+    fn draw_player_names(bd: &BattleData, ctx: &egui::Context) {
         if let Some(left) = &bd.left_player_data {
             SidePanel::left("left player")
                 .resizable(false)

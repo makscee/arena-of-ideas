@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-use bevy_egui::egui::{Order, TextureOptions};
+use bevy_egui::egui::Order;
 
 use super::*;
 

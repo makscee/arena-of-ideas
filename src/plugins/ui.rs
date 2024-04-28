@@ -1,4 +1,4 @@
-use bevy_egui::egui::{Id, Image, Order, TextureOptions};
+use bevy_egui::egui::{Id, Image, Order};
 
 use super::*;
 
