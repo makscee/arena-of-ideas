@@ -21,7 +21,7 @@ bevy = { version = "0.13.2", default-features = false, features = [
     "bevy_render",
     "bevy_winit",
     "multi-threaded",
-    # "file_watcher",
+    "file_watcher",
     "bevy_ui",
     "bevy_text",
     "default_font",
@@ -64,7 +64,7 @@ convert_case = "0.6.0"
 indexmap = { version = "2.2.5", features = ["serde"] }
 noisy_bevy = "0.6.0"
 chrono = "0.4.38"
-openssl = { version = "0.10.35", features = ["vendored"] }
+# openssl = { version = "0.10.35", features = ["vendored"] }
 
 [dependencies.winit]
 # version = "*"
