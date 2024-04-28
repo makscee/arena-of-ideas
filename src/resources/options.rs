@@ -12,7 +12,8 @@ pub struct Options {
     pub custom_battle: Handle<CustomBattleData>,
     #[asset(key = "anim")]
     pub animations: Handle<Animations>,
-    #[asset(key = "options")]
+    #[cfg_attr(debug_assertions, asset(key = "dev_options"))]
+    #[cfg_attr(not(debug_assertions), asset(key = "prod_options"))]
     pub options: Handle<OptionsData>,
 }
 
