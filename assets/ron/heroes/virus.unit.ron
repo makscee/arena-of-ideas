@@ -1,14 +1,14 @@
 #![enable(implicit_some)]
 (
     name: "Virus",
-    hp: 1,
-    pwr: 1,
+    hp: 3,
+    pwr: 0,
     stacks: 1,
     level: 1,
     houses: "Death Knights",
     trigger: Fire(
-        triggers: [(BattleStart, None)],
-        targets: [(AllEnemyUnits, None)],
+        triggers: [(AfterDamageTaken, None)],
+        targets: [(Caster, None)],
         effects: [(UseAbility("Plague", 0), None)],
     ),
     representation: (
