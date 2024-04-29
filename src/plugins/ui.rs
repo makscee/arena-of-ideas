@@ -411,6 +411,7 @@ pub enum Icon {
     Discord,
     Youtube,
     Itch,
+    Github,
 }
 
 impl Icon {
@@ -433,6 +434,8 @@ impl Icon {
             Icon::Youtube => egui::Image::new(egui::include_image!("../../assets/svg/youtube.svg"))
                 .fit_to_original_size(0.8),
             Icon::Itch => egui::Image::new(egui::include_image!("../../assets/svg/itch.svg"))
+                .fit_to_original_size(0.8),
+            Icon::Github => egui::Image::new(egui::include_image!("../../assets/svg/github.svg"))
                 .fit_to_original_size(0.8),
         }
     }

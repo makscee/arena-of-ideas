@@ -114,7 +114,7 @@ impl MainMenuPlugin {
             });
         window("CONTACTS")
             .anchor(Align2::RIGHT_BOTTOM, [-15.0, -15.0])
-            .set_width(85.0)
+            .set_width(75.0)
             .show(ctx, |ui| {
                 Frame::none()
                     .inner_margin(Margin::same(8.0))
@@ -150,6 +150,17 @@ impl MainMenuPlugin {
                             if resp.clicked() {
                                 ctx.open_url(egui::OpenUrl {
                                     url: "https://makscee.itch.io/arena-of-ideas".to_owned(),
+                                    new_tab: true,
+                                });
+                            }
+                            let mut resp = Icon::Github.image().sense(Sense::click()).ui(ui);
+                            resp = resp.on_hover_text("Github page");
+                            if resp.hovered() {
+                                Icon::Github.image().tint(yellow()).paint_at(ui, resp.rect);
+                            }
+                            if resp.clicked() {
+                                ctx.open_url(egui::OpenUrl {
+                                    url: "https://github.com/makscee/arena-of-ideas".to_owned(),
                                     new_tab: true,
                                 });
                             }
