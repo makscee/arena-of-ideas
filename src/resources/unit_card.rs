@@ -345,7 +345,7 @@ impl VarState {
                 frame(ui, |ui| {
                     name.label(ui);
                     ui.horizontal_wrapped(|ui| {
-                        text.label(ui);
+                        text.as_label(ui).wrap(true).ui(ui);
                     });
                 });
             }
