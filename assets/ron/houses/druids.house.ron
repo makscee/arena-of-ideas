@@ -17,15 +17,15 @@
         (name: "Thorns", description: "Deal 1 DMG to attacker", effect: AddStatus("Thorns")),
         (
             name: "Summon Treant",
-            description: "Summon {1}/{5} with [Thorns] ({5})",
+            description: "Summon {0}/{3} with [Thorns] ({3})",
             effect: Repeat(Context(Charges), Summon("Treant")),
         ),
     ],
     summons: [
         (
             name: "Treant",
-            hp: 5,
-            pwr: 1,
+            hp: 3,
+            pwr: 0,
             stacks: 1,
             level: 1,
             houses: "Druids",
@@ -54,7 +54,7 @@
                 count: 4,
             ),
             state: (history: {}, birth: 0.0),
-            statuses: [("Thorns", 5)],
+            statuses: [("Thorns", 3)],
         ),
     ],
 )
