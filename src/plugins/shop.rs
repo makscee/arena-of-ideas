@@ -230,6 +230,7 @@ impl ShopPlugin {
         for ShopOffer {
             available: _,
             discount,
+            freeze: _,
             unit,
         } in offers
         {

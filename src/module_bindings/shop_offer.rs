@@ -17,5 +17,6 @@ use spacetimedb_sdk::{
 pub struct ShopOffer {
     pub available: bool,
     pub discount: bool,
+    pub freeze: bool,
     pub unit: TeamUnit,
 }

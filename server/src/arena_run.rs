@@ -43,6 +43,7 @@ pub struct TeamUnit {
 pub struct ShopOffer {
     available: bool,
     discount: bool,
+    freeze: bool,
     unit: TeamUnit,
 }
 
@@ -293,6 +294,7 @@ impl ArenaRun {
                     .choose(&mut thread_rng())
                     .map(|unit| ShopOffer {
                         available: true,
+                        freeze: false,
                         unit: TeamUnit { id, unit },
                         discount: (&mut thread_rng())
                             .gen_bool(GlobalSettings::get().discount_chance),

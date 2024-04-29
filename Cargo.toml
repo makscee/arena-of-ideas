@@ -64,6 +64,7 @@ convert_case = "0.6.0"
 indexmap = { version = "2.2.5", features = ["serde"] }
 noisy_bevy = "0.6.0"
 chrono = "0.4.38"
+egui_commonmark = "0.15.0"
 # openssl = { version = "0.10.35", features = ["vendored"] }
 
 [dependencies.winit]

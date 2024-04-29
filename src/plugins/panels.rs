@@ -13,6 +13,7 @@ pub enum TopButton {
     Settings,
     Profile,
     Leaderboard,
+    Help,
 }
 
 impl Plugin for PanelsPlugin {
@@ -43,14 +44,14 @@ impl TopButton {
 
     fn enabled(&self) -> bool {
         match self {
-            TopButton::Profile | TopButton::Leaderboard => LoginPlugin::is_connected(),
-            TopButton::Exit | TopButton::Settings => true,
+            Self::Profile | Self::Leaderboard => LoginPlugin::is_connected(),
+            Self::Exit | Self::Settings | Self::Help => true,
         }
     }
 
     pub fn click(&self, world: &mut World) {
         let open = match self {
-            TopButton::Exit => {
+            Self::Exit => {
                 world
                     .resource::<State<GameState>>()
                     .get()
@@ -58,24 +59,25 @@ impl TopButton {
                     .exit(world);
                 false
             }
-            TopButton::Settings | TopButton::Profile | TopButton::Leaderboard => {
+            Self::Settings | Self::Profile | Self::Leaderboard | Self::Help => {
                 let mut data = world.resource_mut::<TopOpenWindows>();
                 let entry = data.0.get_mut(self).unwrap();
                 *entry = !*entry;
                 *entry
             }
         };
-        if open && self.eq(&TopButton::Profile) {
+        if open && self.eq(&Self::Profile) {
             ProfilePlugin::load(world);
         }
     }
 
     fn show(&self, world: &mut World) {
         match self {
-            TopButton::Settings => SettingsPlugin::ui(world),
-            TopButton::Profile => ProfilePlugin::ui(world),
-            TopButton::Leaderboard => LeaderboardPlugin::ui(world),
-            TopButton::Exit => {}
+            Self::Settings => SettingsPlugin::ui(world),
+            Self::Profile => ProfilePlugin::ui(world),
+            Self::Leaderboard => LeaderboardPlugin::ui(world),
+            Self::Help => HelpPlugin::ui(world),
+            Self::Exit => {}
         }
     }
 }
