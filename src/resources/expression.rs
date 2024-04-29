@@ -207,7 +207,7 @@ impl Expression {
                 let faction = context.get_faction(world)?;
                 TeamPlugin::get_ability_state(faction, ability, world)
                     .with_context(|| format!("No ability state for {faction} {ability}"))?
-                    .get_value_at(*var, GameTimer::get().play_head())
+                    .get_value_at(*var, GameTimer::get().insert_head())
             }
             Expression::Index => Expression::Context(VarName::Index).get_value(context, world),
             Expression::Owner => Ok(VarValue::Entity(context.get_owner()?)),
