@@ -17,6 +17,7 @@ use spacetimedb_sdk::{
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct RunState {
     pub g: i64,
+    pub free_rerolls: u32,
     pub team: Vec<TeamUnit>,
     pub case: Vec<ShopOffer>,
     pub next_id: u64,

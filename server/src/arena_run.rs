@@ -29,6 +29,7 @@ pub struct ArenaBattle {
 #[derive(SpacetimeType)]
 pub struct RunState {
     g: i64,
+    free_rerolls: u32,
     team: Vec<TeamUnit>,
     case: Vec<ShopOffer>,
     next_id: u64,
@@ -98,6 +99,7 @@ fn run_submit_result(ctx: ReducerContext, win: bool) -> Result<(), String> {
         run.change_g((settings.g_per_round_min + run.round as i64).min(settings.g_per_round_max));
         run.state.case.clear();
         run.fill_case();
+        run.state.free_rerolls = 1;
     }
     run.save();
     Ok(())
@@ -107,8 +109,13 @@ fn run_submit_result(ctx: ReducerContext, win: bool) -> Result<(), String> {
 fn run_reroll(ctx: ReducerContext, force: bool) -> Result<(), String> {
     let (_, mut run) = ArenaRun::get_by_identity(&ctx.sender)?;
     let reroll_price = GlobalSettings::get().price_reroll;
-    if force || run.can_afford(reroll_price) {
-        if !force {
+    let mut pay = !force;
+    if pay && run.state.free_rerolls > 0 {
+        pay = false;
+        run.state.free_rerolls -= 1;
+    }
+    if !pay || run.can_afford(reroll_price) {
+        if pay {
             run.change_g(-reroll_price);
         }
         run.state.case.clear();
@@ -229,6 +236,7 @@ impl ArenaRun {
                 team: Vec::default(),
                 case: Vec::default(),
                 next_id: 0,
+                free_rerolls: 2,
             },
         }
     }

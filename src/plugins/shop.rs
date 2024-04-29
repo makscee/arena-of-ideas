@@ -271,15 +271,18 @@ impl ShopPlugin {
             ui.set_enabled(!ServerPlugin::pending(world).is_some());
             frame(ui, |ui| {
                 "Reroll".add_color(white()).label(ui);
-                let text = format!(
-                    "-{}g",
-                    GlobalSettings::filter_by_always_zero(0)
-                        .unwrap()
-                        .price_reroll
-                )
-                .add_color(yellow())
-                .rich_text(ui)
-                .size(20.0);
+                let run = ArenaRun::current().unwrap();
+                let text = if run.state.free_rerolls > 0 {
+                    format!("-0g ({})", run.state.free_rerolls)
+                } else {
+                    format!(
+                        "-{}g",
+                        GlobalSettings::filter_by_always_zero(0)
+                            .unwrap()
+                            .price_reroll
+                    )
+                };
+                let text = text.add_color(yellow()).rich_text(ui).size(16.0);
                 if ui.button(text).clicked() {
                     Self::buy_reroll(world);
                 }

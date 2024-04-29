@@ -49,7 +49,7 @@ impl TableUnit {
         Self::filter(|row| row.hp == hp)
     }
     #[allow(unused)]
-    pub fn filter_by_atk(pwr: i32) -> TableIter<Self> {
+    pub fn filter_by_pwr(pwr: i32) -> TableIter<Self> {
         Self::filter(|row| row.pwr == pwr)
     }
     #[allow(unused)]
