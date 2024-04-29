@@ -235,6 +235,7 @@ impl GameWindow<'_> {
                                                     .size(15.0)
                                                     .color(black()),
                                             )
+                                            .wrap(false)
                                             .selectable(false)
                                             .ui(ui);
                                         })
