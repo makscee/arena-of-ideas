@@ -2,7 +2,7 @@ use std::thread::sleep;
 
 use crate::module_bindings::{run_change_g, ArenaPool, ArenaRun, TeamUnit};
 
-use self::module_bindings::{GlobalSettings, ShopOffer};
+use self::module_bindings::{GlobalSettings, ShopOffer, User};
 
 use super::*;
 
@@ -401,6 +401,17 @@ impl ShopPlugin {
             .anchor(Align2::LEFT_TOP, [10.0, 10.0])
             .show(ctx, |ui| {
                 frame(ui, |ui| {
+                    text_dots_text(
+                        &"name".to_colored(),
+                        &format!("{}", User::filter_by_id(run.user_id).unwrap().name)
+                            .add_color(white()),
+                        ui,
+                    );
+                    text_dots_text(
+                        &"round".to_colored(),
+                        &run.round.to_string().add_color(white()),
+                        ui,
+                    );
                     text_dots_text(
                         &"wins".to_colored(),
                         &run.wins().to_string().add_color(white()),

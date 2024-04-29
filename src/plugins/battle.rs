@@ -273,9 +273,8 @@ impl BattlePlugin {
 
     fn draw_player_names(bd: &BattleData, ctx: &egui::Context) {
         if let Some(left) = &bd.left_player_data {
-            SidePanel::left("left player")
-                .resizable(false)
-                .frame(Frame::none())
+            Area::new("left player".into())
+                .anchor(Align2::LEFT_TOP, egui::vec2(8.0, 8.0))
                 .show(ctx, |ui| {
                     left.name
                         .add_color(white())
@@ -284,9 +283,8 @@ impl BattlePlugin {
                 });
         }
         if let Some(right) = &bd.right_player_data {
-            SidePanel::right("right player")
-                .resizable(false)
-                .frame(Frame::none())
+            Area::new("right player".into())
+                .anchor(Align2::RIGHT_TOP, egui::vec2(-8.0, 8.0))
                 .show(ctx, |ui| {
                     right
                         .name
