@@ -1,7 +1,7 @@
 #![enable(implicit_some)]
 (
     name: "Injector",
-    hp: 6,
+    hp: 3,
     pwr: 1,
     stacks: 1,
     level: 1,
