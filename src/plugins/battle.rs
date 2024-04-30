@@ -1,4 +1,4 @@
-use bevy_egui::egui::{Align2, SidePanel};
+use bevy_egui::egui::Align2;
 use event::Event;
 
 use crate::module_bindings::ArenaRun;

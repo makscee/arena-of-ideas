@@ -52,13 +52,21 @@ impl TopButton {
     pub fn click(&self, world: &mut World) {
         let open = match self {
             Self::Exit => {
-                world
-                    .resource::<State<GameState>>()
-                    .get()
-                    .clone()
-                    .exit(world);
+                AlertPlugin::add(
+                    Some("Exit?".to_owned()),
+                    "Are you sure you want to exit the the game?".to_owned(),
+                    Some(Box::new(|world: &mut World| {
+                        world
+                            .resource::<State<GameState>>()
+                            .get()
+                            .clone()
+                            .exit(world);
+                    })),
+                );
+
                 false
             }
+
             Self::Settings | Self::Profile | Self::Leaderboard | Self::Help => {
                 let mut data = world.resource_mut::<TopOpenWindows>();
                 let entry = data.0.get_mut(self).unwrap();
