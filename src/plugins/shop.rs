@@ -159,6 +159,9 @@ impl ShopPlugin {
 
     fn load_state(world: &mut World) -> Result<()> {
         let update_callback = ArenaRun::on_update(|_, new, event| {
+            if !new.user_id.eq(&LoginPlugin::get_user_data().unwrap().id) {
+                return;
+            }
             debug!("ArenaRun callback: {event:?}");
             let new = new.clone();
             OperationsPlugin::add(move |world| {
