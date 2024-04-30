@@ -917,10 +917,10 @@ impl std::fmt::Display for Effect {
             Effect::Summon(name, then) => {
                 write!(
                     f,
-                    "{} [{name}] -> {}",
+                    "{} [{name}]{}",
                     self.as_ref().to_case(Case::Lower),
                     then.as_ref()
-                        .and_then(|x| Some(x.to_string()))
+                        .and_then(|x| Some(format!(" -> {}", x)))
                         .unwrap_or_default()
                 )
             }

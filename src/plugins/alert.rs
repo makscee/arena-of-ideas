@@ -117,12 +117,16 @@ impl AlertPlugin {
                         ui.vertical(|ui| {
                             alert.text.add_color(white()).label(ui);
                         });
-                        if ui.button("OK").clicked() {
-                            if let Some(action) = alert.action.take() {
-                                actions.push(action);
+                        ui.horizontal(|ui| {
+                            if ui.button("Close").clicked() {
+                                closed.insert(*key);
                             }
-                            closed.insert(*key);
-                        }
+                            if alert.action.is_some() {
+                                if ui.button_primary("Ok").clicked() {
+                                    actions.push(alert.action.take().unwrap());
+                                }
+                            }
+                        });
                     });
                 });
         }

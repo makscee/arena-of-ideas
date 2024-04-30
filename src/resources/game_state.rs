@@ -32,7 +32,13 @@ impl GameState {
     pub fn exit(&self, world: &mut World) {
         match self {
             GameState::MainMenu | GameState::Login => {
-                world.send_event(AppExit);
+                AlertPlugin::add(
+                    Some("Exit?".to_owned()),
+                    "Are you sure you want to exit the the game?".to_owned(),
+                    Some(Box::new(|world: &mut World| {
+                        world.send_event(AppExit);
+                    })),
+                );
             }
             GameState::CustomBattle | GameState::LastBattle | GameState::Battle => {
                 GameTimer::get().skip_to_end();

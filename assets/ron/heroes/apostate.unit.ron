@@ -16,7 +16,7 @@
                     UseAbility("Summon Guardian Angel", 1),
                     Noop,
                 ),
-                "[Summon Guardian Angel]",
+                "[Summon Guardian Angel] ({Level}+1)",
             ),
         ],
     ),

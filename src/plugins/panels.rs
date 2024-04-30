@@ -52,17 +52,11 @@ impl TopButton {
     pub fn click(&self, world: &mut World) {
         let open = match self {
             Self::Exit => {
-                AlertPlugin::add(
-                    Some("Exit?".to_owned()),
-                    "Are you sure you want to exit the the game?".to_owned(),
-                    Some(Box::new(|world: &mut World| {
-                        world
-                            .resource::<State<GameState>>()
-                            .get()
-                            .clone()
-                            .exit(world);
-                    })),
-                );
+                world
+                    .resource::<State<GameState>>()
+                    .get()
+                    .clone()
+                    .exit(world);
 
                 false
             }
