@@ -1,8 +1,10 @@
 use std::time::UNIX_EPOCH;
 
 use bevy::utils::hashbrown::HashMap;
+use bevy_egui::egui::ScrollArea;
 use chrono::DateTime;
 use egui_extras::{Column, TableBuilder};
+use ron::ser::{to_string_pretty, PrettyConfig};
 use spacetimedb_sdk::on_subscription_applied;
 
 use self::module_bindings::{ArenaRun, User};
@@ -33,8 +35,8 @@ impl LeaderboardPlugin {
         };
 
         let columns = Columns::iter().collect_vec();
-        let (data, round) = if let Some(data) = world.get_resource::<LeaderboardData>() {
-            (&data.data, data.round)
+        let data = if let Some(data) = world.remove_resource::<LeaderboardData>() {
+            data
         } else {
             return;
         };
@@ -44,63 +46,72 @@ impl LeaderboardPlugin {
             .order(egui::Order::Foreground)
             .anchor(Align2::RIGHT_TOP, [-15.0, 15.0])
             .show(ctx, |ui| {
-                frame(ui, |ui| {
-                    TableBuilder::new(ui)
-                        .columns(
-                            Column::auto_with_initial_suggestion(50.0),
-                            columns.len() + round.is_none() as usize,
-                        )
-                        .striped(true)
-                        .header(20.0, |mut row| {
-                            for col in columns.iter() {
-                                row.col(|ui| {
-                                    col.header(ui);
-                                });
-                            }
-                        })
-                        .body(|mut body| {
-                            if let Some(round) = round {
-                                for run in &data[&round] {
-                                    body.row(20.0, |mut row| {
-                                        for col in columns.iter() {
-                                            row.col(|ui| {
-                                                col.row(run, ui, world);
-                                            });
-                                        }
+                ScrollArea::new([false, true]).show(ui, |ui| {
+                    frame(ui, |ui| {
+                        TableBuilder::new(ui)
+                            .columns(
+                                Column::auto_with_initial_suggestion(50.0),
+                                columns.len() + data.round.is_none() as usize,
+                            )
+                            .striped(true)
+                            .header(20.0, |mut row| {
+                                for col in columns.iter() {
+                                    row.col(|ui| {
+                                        col.header(ui);
                                     });
                                 }
-                            } else {
-                                for (_, run) in data.iter().sorted_by_key(|(k, _)| -(**k as i32)) {
-                                    body.row(20.0, |mut row| {
-                                        for col in columns.iter() {
+                            })
+                            .body(|mut body| {
+                                if let Some(round) = data.round {
+                                    for run in &data.data[&round] {
+                                        body.row(20.0, |mut row| {
+                                            for col in columns.iter() {
+                                                row.col(|ui| {
+                                                    col.row(run, ui, world);
+                                                });
+                                            }
+                                        });
+                                    }
+                                } else {
+                                    for (_, run) in
+                                        data.data.iter().sorted_by_key(|(k, _)| -(**k as i32))
+                                    {
+                                        body.row(20.0, |mut row| {
+                                            for col in columns.iter() {
+                                                row.col(|ui| {
+                                                    col.row(&run[0], ui, world);
+                                                });
+                                            }
                                             row.col(|ui| {
-                                                col.row(&run[0], ui, world);
-                                            });
-                                        }
-                                        row.col(|ui| {
-                                            let cnt = run.len() - 1;
-                                            ui.add_enabled_ui(cnt > 0, |ui| {
-                                                if egui::Button::new(format!("+{}", run.len() - 1))
+                                                let cnt = run.len() - 1;
+                                                ui.add_enabled_ui(cnt > 0, |ui| {
+                                                    if egui::Button::new(format!(
+                                                        "+{}",
+                                                        run.len() - 1
+                                                    ))
                                                     .wrap(false)
                                                     .ui(ui)
                                                     .clicked()
-                                                {
-                                                    new_round = Some(Some(run[0].round as usize));
-                                                }
+                                                    {
+                                                        new_round =
+                                                            Some(Some(run[0].round as usize));
+                                                    }
+                                                });
                                             });
                                         });
-                                    });
+                                    }
                                 }
-                            }
-                        });
+                            });
 
-                    if round.is_some() {
-                        if ui.button("<-").clicked() {
-                            new_round = Some(None);
+                        if data.round.is_some() {
+                            if ui.button("<-").clicked() {
+                                new_round = Some(None);
+                            }
                         }
-                    }
+                    });
                 });
             });
+        world.insert_resource(data);
         if let Some(round) = new_round {
             world.resource_mut::<LeaderboardData>().round = round;
         }
@@ -149,7 +160,7 @@ impl Columns {
             .selectable(false)
             .ui(ui)
     }
-    fn row(&self, run: &ArenaRun, ui: &mut Ui, world: &World) -> Response {
+    fn row(&self, run: &ArenaRun, ui: &mut Ui, world: &mut World) -> Response {
         match self {
             Columns::Name => User::filter_by_id(run.user_id)
                 .unwrap()
@@ -168,7 +179,7 @@ impl Columns {
                         ),
                     );
                 }
-                str.button(ui).on_hover_ui(|ui| {
+                let resp = str.button(ui).on_hover_ui(|ui| {
                     for unit in run.state.team.iter().rev() {
                         let unit = &unit.unit;
                         ui.horizontal(|ui| {
@@ -193,7 +204,25 @@ impl Columns {
                             }
                         });
                     }
-                })
+                });
+                if resp.clicked() {
+                    save_to_clipboard(
+                        &to_string_pretty(
+                            &PackedTeam::from_table_units(
+                                run.state
+                                    .team
+                                    .clone()
+                                    .into_iter()
+                                    .map(|u| u.unit)
+                                    .collect_vec(),
+                            ),
+                            PrettyConfig::new(),
+                        )
+                        .unwrap(),
+                        world,
+                    )
+                }
+                resp
             }
             Columns::Round => run.round.to_string().add_color(white()).label(ui),
             Columns::Wins => run.wins().to_string().add_color(white()).label(ui),
