@@ -18,7 +18,7 @@
         (
             name: "Summon Treant",
             description: "Summon {0}/{3} with [Thorns] ({3})",
-            effect: Repeat(Context(Charges), Summon("Treant")),
+            effect: Summon("Treant", AddStatus("Thorns")),
         ),
     ],
     summons: [
@@ -54,7 +54,7 @@
                 count: 4,
             ),
             state: (history: {}, birth: 0.0),
-            statuses: [("Thorns", 3)],
+            statuses: [("Thorns", 2)],
         ),
     ],
 )

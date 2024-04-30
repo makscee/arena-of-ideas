@@ -23,7 +23,7 @@ pub enum Effect {
     StateAddVar(VarName, Expression, Expression),
     AbilityStateAddVar(String, VarName, Expression),
     UseAbility(String, i32),
-    Summon(String),
+    Summon(String, Option<Box<Effect>>),
     AddStatus(String),
     AddAllStatuses,
     StealStatus(String),
@@ -157,7 +157,7 @@ impl Effect {
                 Event::UseAbility(ability.to_owned()).send_with_context(context.clone(), world);
                 ActionPlugin::action_push_front(effect, context, world);
             }
-            Effect::Summon(name) => {
+            Effect::Summon(name, then) => {
                 let mut unit = Pools::get_summon(name, world)
                     .with_context(|| format!("Summon unit not found {name}"))?
                     .clone();
@@ -191,6 +191,13 @@ impl Effect {
                 let faction = context.get_faction(world)?;
                 let parent = TeamPlugin::find_entity(faction, world).context("Team not found")?;
                 let entity = unit.unpack(parent, None, world);
+                if let Some(then) = then {
+                    ActionPlugin::action_push_front(
+                        *then.clone(),
+                        context.clone().set_target(entity, world).take(),
+                        world,
+                    );
+                }
                 UnitPlugin::fill_slot_gaps(faction, world);
                 UnitPlugin::translate_to_slots(world);
                 Event::Summon(entity).send_with_context(
@@ -623,7 +630,7 @@ impl EditorNodeGenerator for Effect {
                     DragValue::new(base).ui(ui);
                 });
             }
-            Effect::Summon(name) => {
+            Effect::Summon(name, then) => {
                 ui.vertical(|ui| {
                     ComboBox::from_id_source(&path)
                         .selected_text(name.to_owned())
@@ -633,6 +640,13 @@ impl EditorNodeGenerator for Effect {
                                 ui.selectable_value(name, option.to_owned(), text);
                             }
                         });
+                    let mut v = then.is_some();
+                    if ui.checkbox(&mut v, "").changed() {
+                        *then = match v {
+                            true => Some(default()),
+                            false => None,
+                        };
+                    }
                 });
             }
             Effect::AddStatus(name) | Effect::ClearStatus(name) | Effect::StealStatus(name) => {
@@ -695,7 +709,6 @@ impl EditorNodeGenerator for Effect {
             | Effect::Kill
             | Effect::FullCopy
             | Effect::UseAbility(..)
-            | Effect::Summon(..)
             | Effect::AddStatus(..)
             | Effect::StealStatus(..)
             | Effect::StealAllStatuses
@@ -712,6 +725,18 @@ impl EditorNodeGenerator for Effect {
             Effect::Damage(e) | Effect::Heal(e) => {
                 if let Some(e) = e {
                     show_node(e, format!("{path}:e"), connect_pos, context, ui, world);
+                }
+            }
+            Effect::Summon(_, then) => {
+                if let Some(then) = then {
+                    show_node(
+                        &mut **then,
+                        format!("{path}:then"),
+                        connect_pos,
+                        context,
+                        ui,
+                        world,
+                    );
                 }
             }
             Effect::WithTarget(e, eff) | Effect::WithOwner(e, eff) | Effect::Repeat(e, eff) => {
@@ -886,9 +911,18 @@ impl std::fmt::Display for Effect {
             Effect::Vfx(name)
             | Effect::ClearStatus(name)
             | Effect::AddStatus(name)
-            | Effect::StealStatus(name)
-            | Effect::Summon(name) => {
+            | Effect::StealStatus(name) => {
                 write!(f, "{} [{name}]", self.as_ref().to_case(Case::Lower))
+            }
+            Effect::Summon(name, then) => {
+                write!(
+                    f,
+                    "{} [{name}] -> {}",
+                    self.as_ref().to_case(Case::Lower),
+                    then.as_ref()
+                        .and_then(|x| Some(x.to_string()))
+                        .unwrap_or_default()
+                )
             }
             Effect::If(c, t, e) => write!(f, "{} {c} ({t} else {e})", self.as_ref()),
             Effect::Repeat(c, e) => write!(f, "{} ({e}) x {c}", self.as_ref()),

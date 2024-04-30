@@ -18,7 +18,7 @@
                                     WithVar(
                                         Faction,
                                         StateLast(Faction, Parent(Context(Caster))),
-                                        Summon("Doomguard"),
+                                        Summon("Doomguard", None),
                                     ),
                                 ],
                             ),
