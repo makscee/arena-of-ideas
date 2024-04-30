@@ -26,8 +26,9 @@ impl CustomBattlePlugin {
         BattlePlugin::load_teams(cb.left, cb.right, None, world);
     }
     fn load_teams_last(world: &mut World) {
-        let (left, right) = PersistentData::load(world).last_battle;
-        BattlePlugin::load_teams(left, right, None, world);
+        let mut data = PersistentData::load(world).last_battle;
+        data.run_id = None;
+        world.insert_resource(data);
     }
 }
 

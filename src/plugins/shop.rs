@@ -144,11 +144,10 @@ impl ShopPlugin {
         } else {
             default()
         };
-        PersistentData::load(world)
-            .set_last_battle(left.clone(), right.clone())
-            .save(world)
-            .unwrap();
         BattlePlugin::load_teams(left, right, Some(run.id), world);
+        let mut pd = PersistentData::load(world);
+        pd.last_battle = world.resource::<BattleData>().clone();
+        pd.save(world).unwrap();
     }
 
     fn input(world: &mut World) {

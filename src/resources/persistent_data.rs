@@ -5,7 +5,7 @@ pub struct PersistentData {
     pub hero_editor_data: HeroEditorData,
     pub hero_gallery_data: HeroGalleryData,
     pub hero_table_data: HeroTableData,
-    pub last_battle: (PackedTeam, PackedTeam),
+    pub last_battle: BattleData,
 }
 
 const PERSISTENT_DATA_KEY: &str = "persistent_data";
@@ -25,10 +25,6 @@ impl PersistentData {
 
     pub fn set_hero_editor_data(mut self, data: HeroEditorData) -> Self {
         self.hero_editor_data = data;
-        self
-    }
-    pub fn set_last_battle(mut self, left: PackedTeam, right: PackedTeam) -> Self {
-        self.last_battle = (left, right);
         self
     }
 }

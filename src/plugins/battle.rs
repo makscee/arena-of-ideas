@@ -22,17 +22,17 @@ impl Plugin for BattlePlugin {
     }
 }
 
-#[derive(Resource, Clone, Default)]
-struct BattleData {
+#[derive(Resource, Serialize, Deserialize, Clone, Default, Debug)]
+pub struct BattleData {
     left: Option<PackedTeam>,
     right: Option<PackedTeam>,
     left_player_data: Option<PlayerData>,
     right_player_data: Option<PlayerData>,
     result: BattleResult,
-    run_id: Option<u64>,
+    pub run_id: Option<u64>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 struct PlayerData {
     id: u64,
     name: String,
@@ -276,21 +276,27 @@ impl BattlePlugin {
             Area::new("left player".into())
                 .anchor(Align2::LEFT_TOP, egui::vec2(8.0, 8.0))
                 .show(ctx, |ui| {
-                    left.name
-                        .add_color(white())
-                        .set_style(ColoredStringStyle::Heading)
-                        .label(ui);
+                    ui.horizontal(|ui| {
+                        left.name
+                            .add_color(white())
+                            .set_style(ColoredStringStyle::Heading)
+                            .label(ui);
+                        format!("#{}", left.id).to_colored().label(ui);
+                    });
                 });
         }
         if let Some(right) = &bd.right_player_data {
             Area::new("right player".into())
                 .anchor(Align2::RIGHT_TOP, egui::vec2(-8.0, 8.0))
                 .show(ctx, |ui| {
-                    right
-                        .name
-                        .add_color(white())
-                        .set_style(ColoredStringStyle::Heading)
-                        .label(ui);
+                    ui.horizontal(|ui| {
+                        right
+                            .name
+                            .add_color(white())
+                            .set_style(ColoredStringStyle::Heading)
+                            .label(ui);
+                        format!("#{}", right.id).to_colored().label(ui);
+                    });
                 });
         }
     }
@@ -399,7 +405,7 @@ impl BattlePlugin {
     }
 }
 
-#[derive(Debug, Default, Clone, Copy)]
+#[derive(Debug, Default, Clone, Copy, Serialize, Deserialize)]
 pub enum BattleResult {
     #[default]
     Tbd,
