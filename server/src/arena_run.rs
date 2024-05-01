@@ -75,12 +75,14 @@ fn run_submit_result(ctx: ReducerContext, win: bool) -> Result<(), String> {
         .into_iter()
         .map(|u| u.unit)
         .collect_vec();
-    ArenaPool::insert(ArenaPool {
-        id: 0,
-        owner: user_id,
-        round: run.round,
-        team,
-    })?;
+    if !team.is_empty() {
+        ArenaPool::insert(ArenaPool {
+            id: 0,
+            owner: user_id,
+            round: run.round,
+            team,
+        })?;
+    }
     if let Some(last_battle) = run.battles.get_mut(run.round as usize) {
         last_battle.result = Some(win);
     } else {
