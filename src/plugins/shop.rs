@@ -134,7 +134,7 @@ impl ShopPlugin {
         ArenaRun::remove_on_update(world.resource::<ShopData>().update_callback.clone());
     }
 
-    fn transition_to_battle(world: &mut World) {
+    pub fn load_next_battle(world: &mut World) {
         let run = ArenaRun::current().unwrap();
         let left =
             PackedTeam::from_table_units(run.state.team.into_iter().map(|u| u.unit).collect());
@@ -145,6 +145,10 @@ impl ShopPlugin {
             default()
         };
         BattlePlugin::load_teams(left, right, Some(run.id), world);
+    }
+
+    fn transition_to_battle(world: &mut World) {
+        Self::load_next_battle(world);
         let mut pd = PersistentData::load(world);
         pd.last_battle = world.resource::<BattleData>().clone();
         pd.save(world).unwrap();

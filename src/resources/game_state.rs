@@ -10,6 +10,7 @@ pub enum GameState {
     Restart,
     CustomBattle,
     LastBattle,
+    ClipboardBattle,
     Battle,
     Shop,
     HeroEditor,
@@ -40,7 +41,10 @@ impl GameState {
                     })),
                 );
             }
-            GameState::CustomBattle | GameState::LastBattle | GameState::Battle => {
+            GameState::CustomBattle
+            | GameState::ClipboardBattle
+            | GameState::LastBattle
+            | GameState::Battle => {
                 GameTimer::get().skip_to_end();
             }
             GameState::Shop | GameState::HeroEditor | GameState::HeroGallery => {

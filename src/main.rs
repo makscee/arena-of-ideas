@@ -27,6 +27,7 @@ pub enum RunMode {
     Test,
     Custom,
     Last,
+    Clipboard,
     Continue,
     Sync,
     Archive,
@@ -47,6 +48,7 @@ fn main() {
         RunMode::Custom => GameState::CustomBattle,
         RunMode::Gallery => GameState::HeroGallery,
         RunMode::Last => GameState::LastBattle,
+        RunMode::Clipboard => GameState::ClipboardBattle,
         RunMode::Editor => GameState::HeroEditor,
         RunMode::Table => GameState::HeroTable,
         RunMode::Continue => GameState::Shop,
@@ -69,6 +71,7 @@ fn main() {
         | RunMode::Custom
         | RunMode::Gallery
         | RunMode::Last
+        | RunMode::Clipboard
         | RunMode::Continue
         | RunMode::Editor
         | RunMode::Table => {
@@ -166,6 +169,7 @@ fn main() {
         | RunMode::Offline
         | RunMode::Continue
         | RunMode::Last
+        | RunMode::Clipboard
         | RunMode::Sync
         | RunMode::Archive
         | RunMode::Upload => {

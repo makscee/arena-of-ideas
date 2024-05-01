@@ -14,6 +14,7 @@ pub enum TopButton {
     Profile,
     Leaderboard,
     Help,
+    Report,
 }
 
 impl Plugin for PanelsPlugin {
@@ -42,10 +43,14 @@ impl TopButton {
         self.to_string().to_uppercase()
     }
 
-    fn enabled(&self) -> bool {
+    fn enabled(&self, world: &World) -> bool {
         match self {
             Self::Profile | Self::Leaderboard => LoginPlugin::is_connected(),
             Self::Exit | Self::Settings | Self::Help => true,
+            Self::Report => match world.resource::<State<GameState>>().get() {
+                GameState::Battle | GameState::Shop => true,
+                _ => false,
+            },
         }
     }
 
@@ -67,9 +72,26 @@ impl TopButton {
                 *entry = !*entry;
                 *entry
             }
+            Self::Report => true,
         };
         if open && self.eq(&Self::Profile) {
             ProfilePlugin::load(world);
+        }
+        if open && self.eq(&Self::Report) {
+            info!("Report data saved to clipboard");
+            let text = "Report data will be copied to clipboard,\nopen new thread in Discord and paste it there please!".to_owned();
+            AlertPlugin::add(
+                Some("SUBMIT BUG REPORT".to_owned()),
+                text,
+                Some(Box::new(|world| {
+                    ReportPlugin::save_to_clipboard(world);
+                    egui_context(world).unwrap().open_url(egui::OpenUrl {
+                        url: "https://discord.com/channels/1034174161679044660/1234637719423029248"
+                            .to_owned(),
+                        new_tab: false,
+                    })
+                })),
+            );
         }
     }
 
@@ -79,7 +101,7 @@ impl TopButton {
             Self::Profile => ProfilePlugin::ui(world),
             Self::Leaderboard => LeaderboardPlugin::ui(world),
             Self::Help => HelpPlugin::ui(world),
-            Self::Exit => {}
+            Self::Exit | Self::Report => {}
         }
     }
 }
@@ -116,7 +138,7 @@ impl PanelsPlugin {
                         ui.columns(columns, |ui| {
                             for (ind, (t, value)) in top_data.iter().enumerate() {
                                 ui[ind].vertical_centered_justified(|ui| {
-                                    ui.set_enabled(t.enabled());
+                                    ui.set_enabled(t.enabled(world));
                                     let name = t.name();
                                     let btn = if *value {
                                         ui.button_primary(name)

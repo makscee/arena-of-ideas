@@ -134,6 +134,27 @@
 			"problemMatcher": [
 				"$rustc"
 			],
+			"label": "Clipboard",
+			"args": [
+				"--features",
+				"bevy/dynamic_linking",
+				"--",
+				"--mode",
+				"clipboard"
+			],
+			"group": {
+				"kind": "build"
+			},
+			"env": {
+				"RUST_BACKTRACE": "1"
+			}
+		},
+		{
+			"type": "cargo",
+			"command": "run",
+			"problemMatcher": [
+				"$rustc"
+			],
 			"label": "Editor",
 			"args": [
 				"--features",

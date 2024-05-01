@@ -124,6 +124,7 @@ impl AlertPlugin {
                             if alert.action.is_some() {
                                 if ui.button_primary("Ok").clicked() {
                                     actions.push(alert.action.take().unwrap());
+                                    closed.insert(*key);
                                 }
                             }
                         });
