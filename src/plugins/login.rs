@@ -69,7 +69,7 @@ fn on_connected(creds: &Credentials, _client_address: Address) {
                         return;
                     };
                     ctx.open_url(egui::OpenUrl {
-                        url: "https://makscee.itch.io/arena-of-ideas".to_owned(),
+                        url: "https://github.com/makscee/arena-of-ideas/releases".to_owned(),
                         new_tab: true,
                     });
                     w.send_event(AppExit);
