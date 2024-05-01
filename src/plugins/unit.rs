@@ -14,6 +14,7 @@ impl Plugin for UnitPlugin {
 
 pub const TEAM_SLOTS: usize = 7;
 pub const SLOT_SPACING: f32 = 3.0;
+pub const UNITS_LIMIT: usize = 100;
 
 #[derive(Resource, Debug, Copy, Clone)]
 pub struct ClosestSlot(usize, f32, bool);

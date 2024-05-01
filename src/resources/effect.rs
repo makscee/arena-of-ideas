@@ -162,6 +162,9 @@ impl Effect {
                     .with_context(|| format!("Summon unit not found {name}"))?
                     .clone();
                 let faction = context.get_faction(world)?;
+                if UnitPlugin::collect_faction(faction, world).len() > UNITS_LIMIT {
+                    return Err(anyhow!("Units limit {UNITS_LIMIT} reached"));
+                }
                 TeamPlugin::inject_ability_state(faction, name, context, world);
                 let extra_hp = context
                     .get_ability_var(name, VarName::Hp)
