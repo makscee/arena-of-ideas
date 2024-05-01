@@ -90,7 +90,12 @@ impl MainMenuPlugin {
                         GameState::change(GameState::HeroGallery, world);
                     }
                 });
-                if cfg!(debug_assertions) {
+                if SettingsData::get(world).dev_mode {
+                    frame(ui, |ui| {
+                        if ui.button("CLIPBOARD BATTLE").clicked() {
+                            GameState::change(GameState::ClipboardBattle, world);
+                        }
+                    });
                     frame(ui, |ui| {
                         ui.columns(3, |ui| {
                             ui[0].vertical_centered_justified(|ui| {

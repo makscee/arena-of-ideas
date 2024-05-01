@@ -9,6 +9,7 @@ pub struct SettingsData {
     pub master_volume: f64,
     pub expanded_hint: bool,
     pub always_show_card: bool,
+    pub dev_mode: bool,
     pub window_mode: WindowMode,
     pub resolution: Vec2,
     pub vsync: VsyncMode,
@@ -41,6 +42,7 @@ impl Default for SettingsData {
             resolution: vec2(1280.0, 720.0),
             window_mode: default(),
             always_show_card: default(),
+            dev_mode: default(),
             vsync: default(),
         }
     }
@@ -158,6 +160,24 @@ impl SettingsPlugin {
                         });
                     })
                 });
+
+                frame(ui, |ui| {
+                    ui.columns(2, |ui| {
+                        "dev mode".to_colored().label(&mut ui[0]);
+                        ui[1].vertical_centered_justified(|ui| {
+                            let value = &mut data.dev_mode;
+                            if ui
+                                .button_or_primary(
+                                    if *value { "ENABLED" } else { "DISABLED" },
+                                    *value,
+                                )
+                                .clicked()
+                            {
+                                *value = !*value;
+                            }
+                        });
+                    });
+                });
                 frame(ui, |ui| {
                     if ui.button_red("RESET TO DEFAULTS").clicked() {
                         data = default();
@@ -166,7 +186,7 @@ impl SettingsPlugin {
                 frame(ui, |ui| {
                     if ui
                         .button_red("CLEAR DATA")
-                        .on_hover_text("Clear saved game and other data")
+                        .on_hover_text("Clear any persistent data")
                         .clicked()
                     {
                         PersistentData::default().save(world).unwrap();
