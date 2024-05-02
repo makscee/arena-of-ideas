@@ -117,16 +117,19 @@ impl AlertPlugin {
                         ui.vertical(|ui| {
                             alert.text.add_color(white()).label(ui);
                         });
+                        ui.add_space(20.0);
                         ui.horizontal(|ui| {
-                            if ui.button("Close").clicked() {
-                                closed.insert(*key);
-                            }
-                            if alert.action.is_some() {
-                                if ui.button_primary("Ok").clicked() {
-                                    actions.push(alert.action.take().unwrap());
+                            ui.columns(2, |ui| {
+                                if ui[0].button("Close").clicked() {
                                     closed.insert(*key);
                                 }
-                            }
+                                if alert.action.is_some() {
+                                    if ui[1].button_primary("Ok").clicked() {
+                                        actions.push(alert.action.take().unwrap());
+                                        closed.insert(*key);
+                                    }
+                                }
+                            })
                         });
                     });
                 });
