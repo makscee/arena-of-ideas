@@ -172,6 +172,5 @@ impl MainMenuPlugin {
                         });
                     });
             });
-        LeaderboardPlugin::ui(world);
     }
 }

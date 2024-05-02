@@ -1,7 +1,10 @@
+use std::time::UNIX_EPOCH;
+
 use bevy_egui::{
     egui::{epaint::PathShape, Align2, Context, Id, Pos2},
     EguiContext,
 };
+use chrono::DateTime;
 
 use super::*;
 
@@ -176,6 +179,11 @@ pub fn draw_curve(
 pub fn smoothstep(edge0: f32, edge1: f32, x: f32) -> f32 {
     let x = ((x - edge0) / (edge1 - edge0)).clamp(0.0, 1.0);
     x * x * (3.0 - 2.0 * x)
+}
+pub fn format_timestamp(ts: u64) -> String {
+    DateTime::<chrono::Local>::from(UNIX_EPOCH + Duration::from_micros(ts))
+        .format("%d/%m/%Y %H:%M")
+        .to_string()
 }
 
 pub trait StrExtensions {

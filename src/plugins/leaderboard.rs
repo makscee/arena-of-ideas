@@ -1,8 +1,5 @@
-use std::time::UNIX_EPOCH;
-
 use bevy::utils::hashbrown::HashMap;
 use bevy_egui::egui::ScrollArea;
-use chrono::DateTime;
 use egui_extras::{Column, TableBuilder};
 use ron::ser::{to_string_pretty, PrettyConfig};
 
@@ -15,6 +12,7 @@ pub struct LeaderboardPlugin;
 impl Plugin for LeaderboardPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, Self::load)
+            .add_systems(OnEnter(GameState::MainMenu), Self::open)
             .init_resource::<LeaderboardData>();
     }
 }
@@ -26,6 +24,10 @@ impl LeaderboardPlugin {
             let run = run.clone();
             OperationsPlugin::add(|world| LeaderboardData::load(run, world));
         });
+    }
+
+    fn open(world: &mut World) {
+        TopButton::Leaderboard.click(world);
     }
 
     pub fn ui(world: &mut World) {
@@ -44,7 +46,6 @@ impl LeaderboardPlugin {
         let mut new_round: Option<Option<usize>> = None;
         window("LEADERBOARD")
             .set_width(400.0)
-            .order(egui::Order::Foreground)
             .anchor(Align2::RIGHT_TOP, [-15.0, 15.0])
             .show(ctx, |ui| {
                 ScrollArea::new([false, true]).show(ui, |ui| {
@@ -213,13 +214,7 @@ impl Columns {
             Columns::Round => run.round.to_string().add_color(white()).label(ui),
             Columns::Wins => run.wins.to_string().add_color(white()).label(ui),
             Columns::Loses => run.loses.to_string().add_color(red()).label(ui),
-            Columns::Time => {
-                DateTime::<chrono::Local>::from(UNIX_EPOCH + Duration::from_micros(run.timestamp))
-                    .format("%d/%m/%Y %H:%M")
-                    .to_string()
-                    .to_colored()
-                    .label(ui)
-            }
+            Columns::Time => format_timestamp(run.timestamp).to_colored().label(ui),
         }
     }
 }

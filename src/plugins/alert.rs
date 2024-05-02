@@ -3,7 +3,7 @@ use super::*;
 use bevy::input::common_conditions::input_just_pressed;
 use bevy_egui::egui::Order;
 
-type AlertAction = Box<dyn FnOnce(&mut World) + Send + Sync>;
+pub type StoredAction = Box<dyn FnOnce(&mut World) + Send + Sync>;
 pub struct AlertPlugin;
 
 lazy_static! {
@@ -19,7 +19,7 @@ pub struct AlertData {
 struct Alert {
     title: Option<String>,
     text: String,
-    action: Option<AlertAction>,
+    action: Option<StoredAction>,
     r#type: AlertType,
 }
 
@@ -58,7 +58,7 @@ impl Alert {
 }
 
 impl AlertPlugin {
-    pub fn add(title: Option<String>, text: String, action: Option<AlertAction>) {
+    pub fn add(title: Option<String>, text: String, action: Option<StoredAction>) {
         Alert {
             title,
             text,
@@ -67,7 +67,7 @@ impl AlertPlugin {
         }
         .do_add()
     }
-    pub fn add_error(title: Option<String>, text: String, action: Option<AlertAction>) {
+    pub fn add_error(title: Option<String>, text: String, action: Option<StoredAction>) {
         error!("{title:?} {text}");
         Alert {
             title,
@@ -95,7 +95,7 @@ impl AlertPlugin {
             return;
         };
         let mut data = ALERTS.lock().unwrap();
-        let mut actions: Vec<AlertAction> = default();
+        let mut actions: Vec<StoredAction> = default();
         let offset = 15.0;
         let mut closed: HashSet<usize> = default();
 

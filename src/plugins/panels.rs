@@ -23,7 +23,9 @@ impl Plugin for PanelsPlugin {
             Update,
             (
                 Self::ui,
-                Self::close_all.run_if(input_just_pressed(KeyCode::Escape)),
+                Self::close_all.run_if(input_just_pressed(KeyCode::Escape).or_else(
+                    state_changed::<GameState>.and_then(not(in_state(GameState::MainMenu))),
+                )),
             ),
         )
         .init_resource::<TopOpenWindows>();
@@ -98,7 +100,7 @@ impl TopButton {
     fn show(&self, world: &mut World) {
         match self {
             Self::Settings => SettingsPlugin::ui(world),
-            Self::Profile => ProfilePlugin::ui(world),
+            Self::Profile => ProfilePlugin::edit_ui(world),
             Self::Leaderboard => LeaderboardPlugin::ui(world),
             Self::Help => HelpPlugin::ui(world),
             Self::Exit | Self::Report => {}

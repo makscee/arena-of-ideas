@@ -1,4 +1,4 @@
-use bevy_egui::egui::{Id, Image, Order};
+use bevy_egui::egui::{Id, Image, Order, Sense};
 
 use super::*;
 
@@ -181,6 +181,7 @@ pub struct GameWindow<'a> {
     min_width: f32,
     max_width: f32,
     color: Option<Color32>,
+    close_action: Option<StoredAction>,
 }
 
 impl GameWindow<'_> {
@@ -229,15 +230,36 @@ impl GameWindow<'_> {
                                     Frame::none()
                                         .inner_margin(Margin::symmetric(8.0, 0.0))
                                         .show(ui, |ui| {
-                                            Label::new(
-                                                RichText::new(self.title)
-                                                    .text_style(TextStyle::Heading)
-                                                    .size(15.0)
-                                                    .color(black()),
-                                            )
-                                            .wrap(false)
-                                            .selectable(false)
-                                            .ui(ui);
+                                            ui.horizontal(|ui| {
+                                                Label::new(
+                                                    RichText::new(self.title)
+                                                        .text_style(TextStyle::Heading)
+                                                        .size(15.0)
+                                                        .color(black()),
+                                                )
+                                                .wrap(false)
+                                                .selectable(false)
+                                                .ui(ui);
+                                                if let Some(action) = self.close_action {
+                                                    ui.with_layout(
+                                                        Layout::right_to_left(egui::Align::Center),
+                                                        |ui| {
+                                                            if " x "
+                                                                .add_color(black())
+                                                                .as_label(ui)
+                                                                .selectable(false)
+                                                                .sense(Sense::click())
+                                                                .ui(ui)
+                                                                .clicked()
+                                                            {
+                                                                OperationsPlugin::add(|w| {
+                                                                    action(w)
+                                                                });
+                                                            }
+                                                        },
+                                                    );
+                                                }
+                                            });
                                         })
                                 },
                             );
@@ -310,6 +332,10 @@ impl GameWindow<'_> {
         self.area = self.area.fixed_pos([pos.x, pos.y]).pivot(pivot);
         self
     }
+    pub fn set_close_action(mut self, action: StoredAction) -> Self {
+        self.close_action = Some(action);
+        self
+    }
 }
 
 pub fn window(title: &str) -> GameWindow<'_> {
@@ -324,6 +350,7 @@ pub fn window(title: &str) -> GameWindow<'_> {
         min_width: 250.0,
         max_width: 250.0,
         frame: None,
+        close_action: None,
     }
 }
 
