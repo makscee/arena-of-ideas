@@ -5,7 +5,6 @@ use bevy_egui::egui::ScrollArea;
 use chrono::DateTime;
 use egui_extras::{Column, TableBuilder};
 use ron::ser::{to_string_pretty, PrettyConfig};
-use spacetimedb_sdk::on_subscription_applied;
 
 use crate::module_bindings::{ArenaArchive, User};
 
@@ -15,15 +14,18 @@ pub struct LeaderboardPlugin;
 
 impl Plugin for LeaderboardPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, Self::load);
+        app.add_systems(Startup, Self::load)
+            .init_resource::<LeaderboardData>();
     }
 }
 
 impl LeaderboardPlugin {
     fn load() {
         info!("Leaderboard startup");
-        ArenaArchive::on_insert(|_, _| OperationsPlugin::add(LeaderboardData::load));
-        on_subscription_applied(|| OperationsPlugin::add(LeaderboardData::load));
+        ArenaArchive::on_insert(|run, _| {
+            let run = run.clone();
+            OperationsPlugin::add(|world| LeaderboardData::load(run, world));
+        });
     }
 
     pub fn ui(world: &mut World) {
@@ -124,20 +126,13 @@ struct LeaderboardData {
 }
 
 impl LeaderboardData {
-    fn load(world: &mut World) {
+    fn load(run: ArenaArchive, world: &mut World) {
         info!("Load Leaderboard");
-        let round = world
-            .get_resource::<LeaderboardData>()
-            .and_then(|d| d.round);
-        let mut data: HashMap<usize, Vec<ArenaArchive>> = default();
-        for run in ArenaArchive::iter() {
-            let round = run.round as usize;
-            data.entry(round).or_default().push(run);
-        }
-        for (_, list) in data.iter_mut() {
-            list.sort_by_key(|r| r.timestamp)
-        }
-        world.insert_resource(LeaderboardData { data, round })
+        let mut ld = world.resource_mut::<LeaderboardData>();
+        let round = run.round as usize;
+        let entry = ld.data.entry(round).or_default();
+        entry.push(run);
+        entry.sort_by_key(|r| r.timestamp);
     }
 }
 
