@@ -159,6 +159,7 @@ fn main() {
             HeroTablePlugin,
             LeaderboardPlugin,
             HelpPlugin,
+            PlayerTablePlugin,
         ))
         .add_systems(Update, input_world)
         .register_type::<VarState>()

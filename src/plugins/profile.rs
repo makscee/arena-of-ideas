@@ -26,15 +26,31 @@ struct ProfileEditData {
 }
 
 #[derive(Resource, Default)]
-struct OpenProfiles(HashMap<u64, ProfileViewData>);
+struct OpenProfiles(HashMap<u64, PlayerProfileData>);
 
 #[derive(Default)]
-struct ProfileViewData {
-    max_round: u32,
-    total_runs: u32,
-    total_wins: u32,
-    total_loses: u32,
-    win_rate: f32,
+pub struct PlayerProfileData {
+    pub max_round: u32,
+    pub total_runs: u32,
+    pub total_wins: u32,
+    pub total_loses: u32,
+    pub win_rate: f32,
+}
+
+impl PlayerProfileData {
+    pub fn from_id(id: u64) -> Self {
+        let mut data = PlayerProfileData::default();
+        for run in ArenaArchive::filter_by_user_id(id) {
+            data.total_wins += run.wins;
+            data.total_loses += run.loses;
+            data.total_runs += 1;
+            data.max_round = data.max_round.max(run.round);
+        }
+        if data.total_wins > 0 || data.total_loses > 0 {
+            data.win_rate = data.total_wins as f32 / (data.total_loses + data.total_wins) as f32;
+        }
+        data
+    }
 }
 
 impl ProfilePlugin {
@@ -51,17 +67,10 @@ impl ProfilePlugin {
     }
 
     pub fn open_player_profile(user_id: u64, world: &mut World) {
-        let mut data = ProfileViewData::default();
-        for run in ArenaArchive::filter_by_user_id(user_id) {
-            data.total_wins += run.wins;
-            data.total_loses += run.loses;
-            data.total_runs += 1;
-            data.max_round = data.max_round.max(run.round);
-        }
-        if data.total_wins > 0 || data.total_loses > 0 {
-            data.win_rate = data.total_wins as f32 / (data.total_loses + data.total_wins) as f32;
-        }
-        world.resource_mut::<OpenProfiles>().0.insert(user_id, data);
+        world
+            .resource_mut::<OpenProfiles>()
+            .0
+            .insert(user_id, PlayerProfileData::from_id(user_id));
     }
     pub fn close_player_profile(user_id: u64, world: &mut World) {
         world.resource_mut::<OpenProfiles>().0.remove(&user_id);

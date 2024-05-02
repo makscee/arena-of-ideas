@@ -13,6 +13,7 @@ pub enum TopButton {
     Settings,
     Profile,
     Leaderboard,
+    Players,
     Help,
     Report,
 }
@@ -47,7 +48,7 @@ impl TopButton {
 
     fn enabled(&self, world: &World) -> bool {
         match self {
-            Self::Profile | Self::Leaderboard => LoginPlugin::is_connected(),
+            Self::Profile | Self::Leaderboard | Self::Players => LoginPlugin::is_connected(),
             Self::Exit | Self::Settings | Self::Help => true,
             Self::Report => match world.resource::<State<GameState>>().get() {
                 GameState::Battle | GameState::Shop => true,
@@ -68,7 +69,7 @@ impl TopButton {
                 false
             }
 
-            Self::Settings | Self::Profile | Self::Leaderboard | Self::Help => {
+            Self::Settings | Self::Profile | Self::Leaderboard | Self::Players | Self::Help => {
                 let mut data = world.resource_mut::<TopOpenWindows>();
                 let entry = data.0.get_mut(self).unwrap();
                 *entry = !*entry;
@@ -78,6 +79,9 @@ impl TopButton {
         };
         if open && self.eq(&Self::Profile) {
             ProfilePlugin::load(world);
+        }
+        if open && self.eq(&Self::Players) {
+            PlayerTablePlugin::load(world);
         }
         if open && self.eq(&Self::Report) {
             info!("Report data saved to clipboard");
@@ -102,6 +106,7 @@ impl TopButton {
             Self::Settings => SettingsPlugin::ui(world),
             Self::Profile => ProfilePlugin::edit_ui(world),
             Self::Leaderboard => LeaderboardPlugin::ui(world),
+            Self::Players => PlayerTablePlugin::ui(world),
             Self::Help => HelpPlugin::ui(world),
             Self::Exit | Self::Report => {}
         }
@@ -132,7 +137,7 @@ impl PanelsPlugin {
                 Frame::none().inner_margin(margin).show(ui, |ui| {
                     let columns = top_data.len();
                     ui.horizontal(|ui| {
-                        let width = columns as f32 * 150.0;
+                        let width = columns as f32 * 130.0;
                         ui.set_max_width(width);
                         ui.columns(columns, |ui| {
                             for (ind, (t, value)) in top_data.iter().enumerate() {
