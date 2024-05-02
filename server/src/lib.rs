@@ -1,4 +1,5 @@
 mod ability;
+mod arena_archive;
 mod arena_pool;
 mod arena_run;
 mod global_data;
@@ -13,6 +14,7 @@ mod vfx;
 
 pub use ability::*;
 pub use anyhow::Context;
+pub use arena_archive::*;
 pub use arena_pool::*;
 pub use arena_run::*;
 pub use global_data::GlobalData;

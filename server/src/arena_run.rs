@@ -14,11 +14,11 @@ pub struct ArenaRun {
     #[primarykey]
     #[autoinc]
     id: u64,
+    #[unique]
     user_id: u64,
     battles: Vec<ArenaBattle>,
     round: u32,
     state: RunState,
-    active: bool,
     last_updated: Timestamp,
 }
 #[derive(SpacetimeType)]
@@ -50,10 +50,7 @@ pub struct ShopOffer {
 #[spacetimedb(reducer)]
 fn run_start(ctx: ReducerContext) -> Result<(), String> {
     let user = User::find_by_identity(&ctx.sender)?;
-    if let Some(mut run) = ArenaRun::filter_by_user_id(&user.id).find(|r| r.active) {
-        run.active = false;
-        run.save();
-    }
+    ArenaRun::delete_by_user_id(&user.id);
     let mut run = ArenaRun::new(user.id);
     if let Some(enemy) = ArenaPool::filter_by_round(&0).choose(&mut thread_rng()) {
         run.battles.push(ArenaBattle {
@@ -83,28 +80,33 @@ fn run_submit_result(ctx: ReducerContext, win: bool) -> Result<(), String> {
             team,
         })?;
     }
+    let mut finish = false;
     if let Some(last_battle) = run.battles.get_mut(run.round as usize) {
         last_battle.result = Some(win);
     } else {
-        run.active = false;
+        finish = true;
     }
     run.round += 1;
 
     if run.loses() > 2 {
-        run.active = false;
+        finish = true;
     } else {
         if let Some(enemy) = ArenaBattle::next(&run) {
             run.battles.push(enemy);
         }
     }
-    if run.active {
+    if !finish {
         let settings = GlobalSettings::get();
         run.change_g((settings.g_per_round_min + run.round as i64).min(settings.g_per_round_max));
         run.state.case.clear();
         run.fill_case();
         run.state.free_rerolls = 1;
     }
-    run.save();
+    if finish {
+        run.finish();
+    } else {
+        run.save();
+    }
     Ok(())
 }
 
@@ -228,10 +230,9 @@ fn run_fuse(ctx: ReducerContext, a: u64, b: u64, unit: TableUnit) -> Result<(), 
 impl ArenaRun {
     fn new(user_id: u64) -> Self {
         Self {
-            user_id,
-            active: true,
-            last_updated: Timestamp::now(),
             id: 0,
+            user_id,
+            last_updated: Timestamp::now(),
             battles: Vec::default(),
             round: 0,
             state: RunState {
@@ -251,15 +252,20 @@ impl ArenaRun {
             .count() as u32
     }
 
+    fn wins(&self) -> u32 {
+        self.battles
+            .iter()
+            .filter(|b| b.result.is_some_and(|r| r))
+            .count() as u32
+    }
+
     fn get_by_identity(identity: &Identity) -> Result<(u64, Self), String> {
         let user_id = User::find_by_identity(identity)?.id;
         Ok((user_id, Self::get_active(&user_id)?))
     }
 
     fn get_active(user_id: &u64) -> Result<Self, String> {
-        ArenaRun::filter_by_user_id(user_id)
-            .find(|r| r.active)
-            .context_str("No arena run in progress")
+        ArenaRun::filter_by_user_id(user_id).context_str("No arena run in progress")
     }
 
     fn can_afford(&self, price: i64) -> bool {
@@ -360,7 +366,21 @@ impl ArenaRun {
 
     fn save(mut self) {
         self.last_updated = Timestamp::now();
-        Self::update_by_id(&self.id.clone(), self);
+        Self::update_by_user_id(&self.user_id.clone(), self);
+    }
+
+    fn finish(self) {
+        ArenaRun::delete_by_id(&self.id);
+        let archive = ArenaArchive {
+            id: self.id,
+            user_id: self.user_id,
+            round: self.round,
+            wins: self.wins(),
+            loses: self.loses(),
+            team: self.state.team.into_iter().map(|u| u.unit).collect_vec(),
+            timestamp: self.last_updated,
+        };
+        ArenaArchive::insert(archive).unwrap();
     }
 }
 

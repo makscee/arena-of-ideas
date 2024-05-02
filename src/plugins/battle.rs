@@ -3,7 +3,7 @@ use event::Event;
 
 use crate::module_bindings::ArenaRun;
 
-use self::module_bindings::{ArenaPool, GlobalSettings, User};
+use self::module_bindings::{ArenaArchive, ArenaPool, GlobalSettings, User};
 
 use super::*;
 
@@ -62,23 +62,37 @@ impl BattlePlugin {
         }
     }
 
-    pub fn load_teams(left: PackedTeam, right: PackedTeam, run_id: Option<u64>, world: &mut World) {
-        let mut data = BattleData {
+    pub fn load_from_run(run: ArenaRun, world: &mut World) {
+        let left =
+            PackedTeam::from_table_units(run.state.team.into_iter().map(|u| u.unit).collect());
+        let right = if let Some(right) = run.battles.get(run.round as usize) {
+            let right = ArenaPool::filter_by_id(right.enemy).unwrap().team;
+            PackedTeam::from_table_units(right)
+        } else {
+            default()
+        };
+
+        let data = BattleData {
             left: Some(left),
             right: Some(right),
-            run_id,
-            ..default()
-        };
-        if let Some(run) = run_id.and_then(|id| ArenaRun::filter_by_id(id)) {
-            data.left_player_data = PlayerData::from_id(run.user_id);
-            if let Some(enemy) = run
+            left_player_data: PlayerData::from_id(run.user_id),
+            right_player_data: run
                 .battles
                 .get(run.round as usize)
                 .and_then(|e| ArenaPool::filter_by_id(e.enemy))
-            {
-                data.right_player_data = PlayerData::from_id(enemy.owner);
-            }
-        }
+                .and_then(|e| PlayerData::from_id(e.owner)),
+            run_id: Some(run.id),
+            ..default()
+        };
+        world.insert_resource(data);
+    }
+
+    pub fn load_teams(left: PackedTeam, right: PackedTeam, world: &mut World) {
+        let data = BattleData {
+            left: Some(left),
+            right: Some(right),
+            ..default()
+        };
         world.insert_resource(data);
     }
 
@@ -307,12 +321,14 @@ impl BattlePlugin {
         let spacing = x * 4.0;
         TopBottomPanel::top("turn num").show(ctx, |ui| {
             ui.vertical_centered_justified(|ui| {
-                if let Some(run) = bd.run_id.and_then(|id| ArenaRun::filter_by_id(id)) {
-                    format!("Round {}", run.round)
-                        .add_color(orange())
-                        .set_style(ColoredStringStyle::Heading)
-                        .set_extra_spacing(spacing)
-                        .label(ui);
+                if bd.run_id.is_some() {
+                    if let Some(run) = ArenaRun::current() {
+                        format!("Round {}", run.round)
+                            .add_color(orange())
+                            .set_style(ColoredStringStyle::Heading)
+                            .set_extra_spacing(spacing)
+                            .label(ui);
+                    }
                 }
                 format!("Turn {turn}")
                     .add_color(orange())
@@ -350,17 +366,23 @@ impl BattlePlugin {
             };
             let mut subtext = "".to_colored();
             let mut run_active = false;
-            if let Some(run) = bd.run_id.and_then(ArenaRun::filter_by_id) {
-                if !run.active {
-                    subtext.push("Run Over\n\n".to_owned(), yellow());
-                } else {
+            if let Some(id) = bd.run_id {
+                let data = if let Some(run) = ArenaRun::filter_by_id(id) {
                     run_active = true;
+                    Some((run.wins(), run.loses()))
+                } else if let Some(run) = ArenaArchive::filter_by_id(id) {
+                    subtext.push("Run Over\n\n".to_owned(), yellow());
+                    Some((run.wins as usize, run.loses as usize))
+                } else {
+                    None
+                };
+                if let Some((wins, loses)) = data {
+                    subtext
+                        .push("Wins: ".to_owned(), light_gray())
+                        .push(format!("{}", wins), white())
+                        .push("\nLoses: ".to_owned(), light_gray())
+                        .push(format!("{}/3", loses), red());
                 }
-                subtext
-                    .push("Wins: ".to_owned(), light_gray())
-                    .push(format!("{}", run.wins()), white())
-                    .push("\nLoses: ".to_owned(), light_gray())
-                    .push(format!("{}/3", run.loses()), red());
             }
             let color = match win {
                 true => {

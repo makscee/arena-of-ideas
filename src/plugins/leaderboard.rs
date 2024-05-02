@@ -7,7 +7,7 @@ use egui_extras::{Column, TableBuilder};
 use ron::ser::{to_string_pretty, PrettyConfig};
 use spacetimedb_sdk::on_subscription_applied;
 
-use self::module_bindings::{ArenaRun, User};
+use crate::module_bindings::{ArenaArchive, User};
 
 use super::*;
 
@@ -22,8 +22,7 @@ impl Plugin for LeaderboardPlugin {
 impl LeaderboardPlugin {
     fn load() {
         info!("Leaderboard startup");
-
-        ArenaRun::on_update(|_, _, _| OperationsPlugin::add(LeaderboardData::load));
+        ArenaArchive::on_insert(|_, _| OperationsPlugin::add(LeaderboardData::load));
         on_subscription_applied(|| OperationsPlugin::add(LeaderboardData::load));
     }
 
@@ -120,25 +119,25 @@ impl LeaderboardPlugin {
 
 #[derive(Resource, Default, Debug)]
 struct LeaderboardData {
-    data: HashMap<usize, Vec<ArenaRun>>,
+    data: HashMap<usize, Vec<ArenaArchive>>,
     round: Option<usize>,
 }
 
 impl LeaderboardData {
     fn load(world: &mut World) {
         info!("Load Leaderboard");
-        let mut data: HashMap<usize, Vec<ArenaRun>> = default();
-        for run in ArenaRun::iter() {
-            if run.active || run.round == 0 {
-                continue;
-            }
+        let round = world
+            .get_resource::<LeaderboardData>()
+            .and_then(|d| d.round);
+        let mut data: HashMap<usize, Vec<ArenaArchive>> = default();
+        for run in ArenaArchive::iter() {
             let round = run.round as usize;
             data.entry(round).or_default().push(run);
         }
         for (_, list) in data.iter_mut() {
-            list.sort_by_key(|r| r.last_updated)
+            list.sort_by_key(|r| r.timestamp)
         }
-        world.insert_resource(LeaderboardData { data, round: None })
+        world.insert_resource(LeaderboardData { data, round })
     }
 }
 
@@ -160,7 +159,7 @@ impl Columns {
             .selectable(false)
             .ui(ui)
     }
-    fn row(&self, run: &ArenaRun, ui: &mut Ui, world: &mut World) -> Response {
+    fn row(&self, run: &ArenaArchive, ui: &mut Ui, world: &mut World) -> Response {
         match self {
             Columns::Name => User::filter_by_id(run.user_id)
                 .unwrap()
@@ -169,19 +168,18 @@ impl Columns {
                 .label(ui),
             Columns::Team => {
                 let mut str = ColoredString::default();
-                for unit in run.state.team.iter().rev() {
-                    let name = format!("{} ", unit.unit.name.split_at(3).0);
+                for unit in run.team.iter().rev() {
+                    let name = format!("{} ", unit.name.split_at(3).0);
                     str.push_colored(
                         name.add_color(
-                            Pools::get_color_by_name(&unit.unit.name, world)
+                            Pools::get_color_by_name(&unit.name, world)
                                 .map(|c| c.c32())
                                 .unwrap_or(white()),
                         ),
                     );
                 }
                 let resp = str.button(ui).on_hover_ui(|ui| {
-                    for unit in run.state.team.iter().rev() {
-                        let unit = &unit.unit;
+                    for unit in run.team.iter().rev() {
                         ui.horizontal(|ui| {
                             unit.name
                                 .add_color(
@@ -208,14 +206,7 @@ impl Columns {
                 if resp.clicked() {
                     save_to_clipboard(
                         &to_string_pretty(
-                            &PackedTeam::from_table_units(
-                                run.state
-                                    .team
-                                    .clone()
-                                    .into_iter()
-                                    .map(|u| u.unit)
-                                    .collect_vec(),
-                            ),
+                            &PackedTeam::from_table_units(run.team.clone()),
                             PrettyConfig::new(),
                         )
                         .unwrap(),
@@ -225,15 +216,15 @@ impl Columns {
                 resp
             }
             Columns::Round => run.round.to_string().add_color(white()).label(ui),
-            Columns::Wins => run.wins().to_string().add_color(white()).label(ui),
-            Columns::Loses => run.loses().to_string().add_color(red()).label(ui),
-            Columns::Time => DateTime::<chrono::Local>::from(
-                UNIX_EPOCH + Duration::from_micros(run.last_updated),
-            )
-            .format("%d/%m/%Y %H:%M")
-            .to_string()
-            .to_colored()
-            .label(ui),
+            Columns::Wins => run.wins.to_string().add_color(white()).label(ui),
+            Columns::Loses => run.loses.to_string().add_color(red()).label(ui),
+            Columns::Time => {
+                DateTime::<chrono::Local>::from(UNIX_EPOCH + Duration::from_micros(run.timestamp))
+                    .format("%d/%m/%Y %H:%M")
+                    .to_string()
+                    .to_colored()
+                    .label(ui)
+            }
         }
     }
 }

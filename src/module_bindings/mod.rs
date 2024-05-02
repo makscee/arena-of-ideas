@@ -21,6 +21,7 @@ use spacetimedb_sdk::{
 use std::sync::Arc;
 
 pub mod ability;
+pub mod arena_archive;
 pub mod arena_battle;
 pub mod arena_pool;
 pub mod arena_run;
@@ -60,6 +61,7 @@ pub mod user_right;
 pub mod vfx;
 
 pub use ability::*;
+pub use arena_archive::*;
 pub use arena_battle::*;
 pub use arena_pool::*;
 pub use arena_run::*;
@@ -136,6 +138,11 @@ impl SpacetimeModule for Module {
         match table_name {
             "Ability" => client_cache
                 .handle_table_update_with_primary_key::<ability::Ability>(callbacks, table_update),
+            "ArenaArchive" => client_cache
+                .handle_table_update_with_primary_key::<arena_archive::ArenaArchive>(
+                    callbacks,
+                    table_update,
+                ),
             "ArenaPool" => client_cache
                 .handle_table_update_with_primary_key::<arena_pool::ArenaPool>(
                     callbacks,
@@ -190,6 +197,7 @@ impl SpacetimeModule for Module {
         state: &Arc<ClientCache>,
     ) {
         reminders.invoke_callbacks::<ability::Ability>(worker, &reducer_event, state);
+        reminders.invoke_callbacks::<arena_archive::ArenaArchive>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<arena_pool::ArenaPool>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<arena_run::ArenaRun>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<global_data::GlobalData>(worker, &reducer_event, state);
@@ -252,6 +260,8 @@ match &function_call.reducer[..] {
             "Ability" => {
                 client_cache.handle_resubscribe_for_type::<ability::Ability>(callbacks, new_subs)
             }
+            "ArenaArchive" => client_cache
+                .handle_resubscribe_for_type::<arena_archive::ArenaArchive>(callbacks, new_subs),
             "ArenaPool" => client_cache
                 .handle_resubscribe_for_type::<arena_pool::ArenaPool>(callbacks, new_subs),
             "ArenaRun" => {

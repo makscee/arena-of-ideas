@@ -32,7 +32,7 @@ impl CustomBattlePlugin {
 
     fn load_teams(world: &mut World) {
         let cb = Options::get_custom_battle(world).clone();
-        BattlePlugin::load_teams(cb.left, cb.right, None, world);
+        BattlePlugin::load_teams(cb.left, cb.right, world);
     }
     fn load_teams_last(world: &mut World) {
         let mut data = PersistentData::load(world).last_battle;

@@ -293,8 +293,9 @@ fn subscribe_to_tables(user_id: u64) {
         "select * from Ability",
         "select * from Summon",
         "select * from Vfx",
-        "select * from ArenaRun",
+        &format!("select * from ArenaRun where user_id = {user_id}"),
         "select * from ArenaPool",
+        "select * from ArenaArchive",
     ]) {
         Ok(_) => {
             debug!("Subscribe successful");

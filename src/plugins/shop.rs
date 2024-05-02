@@ -1,6 +1,6 @@
 use std::thread::sleep;
 
-use crate::module_bindings::{run_change_g, ArenaPool, ArenaRun, TeamUnit};
+use crate::module_bindings::{run_change_g, ArenaRun, TeamUnit};
 
 use self::module_bindings::{GlobalSettings, ShopOffer, User};
 
@@ -136,15 +136,7 @@ impl ShopPlugin {
 
     pub fn load_next_battle(world: &mut World) {
         let run = ArenaRun::current().unwrap();
-        let left =
-            PackedTeam::from_table_units(run.state.team.into_iter().map(|u| u.unit).collect());
-        let right = if let Some(right) = run.battles.get(run.round as usize) {
-            let right = ArenaPool::filter_by_id(right.enemy).unwrap().team;
-            PackedTeam::from_table_units(right)
-        } else {
-            default()
-        };
-        BattlePlugin::load_teams(left, right, Some(run.id), world);
+        BattlePlugin::load_from_run(run, world);
     }
 
     fn transition_to_battle(world: &mut World) {
@@ -706,8 +698,7 @@ impl ArenaRunExt for ArenaRun {
             .collect_vec()
     }
     fn current() -> Option<Self> {
-        LoginPlugin::get_user_data()
-            .and_then(|user| Self::filter_by_user_id(user.id).find(|r| r.active))
+        LoginPlugin::get_user_data().and_then(|user| Self::filter_by_user_id(user.id))
     }
 
     fn wins(&self) -> usize {
