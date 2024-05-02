@@ -243,7 +243,7 @@
 				"--mode",
 				"test",
 				"--path",
-				"ron/scenarios/strength.scenario.ron"
+				"ron/scenarios/amnesia_stop_other_battle_start.scenario.ron"
 			],
 			"group": {
 				"kind": "build"

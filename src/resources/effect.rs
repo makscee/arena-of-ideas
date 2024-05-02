@@ -29,6 +29,7 @@ pub enum Effect {
     StealStatus(String),
     StealAllStatuses,
     ClearStatus(String),
+    ClearAllStatuses,
     Vfx(String),
     SendEvent(Event),
     RemoveLocalTrigger,
@@ -338,6 +339,30 @@ impl Effect {
                     world,
                 )?;
             }
+            Effect::ClearAllStatuses => {
+                let target = context.get_target()?;
+                let charges = context
+                    .get_var(VarName::Charges, world)
+                    .unwrap_or(VarValue::Int(1))
+                    .get_int()?;
+                if charges <= 0 {
+                    return Err(anyhow!("Can't clear nonpositive charges amount"));
+                }
+                for (status, c) in Status::collect_statuses_name_charges(
+                    target,
+                    GameTimer::get().insert_head(),
+                    world,
+                ) {
+                    ActionPlugin::action_push_front(
+                        Self::AddStatus(status),
+                        context
+                            .clone()
+                            .set_var(VarName::Charges, VarValue::Int(-charges.min(c)))
+                            .take(),
+                        world,
+                    )
+                }
+            }
             Effect::List(list) => {
                 for effect in list.into_iter().rev() {
                     ActionPlugin::action_push_front(effect.deref().clone(), context.clone(), world);
@@ -497,6 +522,7 @@ impl Effect {
             | Effect::StealAllStatuses
             | Effect::AddAllStatuses
             | Effect::ClearStatus(..)
+            | Effect::ClearAllStatuses
             | Effect::Vfx(..)
             | Effect::StateSetVar(..)
             | Effect::StateAddVar(..)
@@ -540,6 +566,7 @@ impl EditorNodeGenerator for Effect {
             | Effect::FullCopy
             | Effect::RemoveLocalTrigger
             | Effect::StealAllStatuses
+            | Effect::ClearAllStatuses
             | Effect::AddAllStatuses
             | Effect::Debug(_)
             | Effect::Text(_) => {}
@@ -715,6 +742,7 @@ impl EditorNodeGenerator for Effect {
             | Effect::AddStatus(..)
             | Effect::StealStatus(..)
             | Effect::StealAllStatuses
+            | Effect::ClearAllStatuses
             | Effect::AddAllStatuses
             | Effect::ClearStatus(..)
             | Effect::Vfx(..)
@@ -869,6 +897,7 @@ impl std::fmt::Display for Effect {
         match self {
             Effect::RemoveLocalTrigger
             | Effect::StealAllStatuses
+            | Effect::ClearAllStatuses
             | Effect::AddAllStatuses
             | Effect::FullCopy
             | Effect::Kill

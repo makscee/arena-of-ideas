@@ -6,8 +6,8 @@
     abilities: [
         (
             name: "Amnesia",
-            description: "Remove ability of a unit",
-            effect: List([RemoveLocalTrigger, Vfx("apply_status")]),
+            description: "Reduce all statuses, limit max {Charges}",
+            effect: List([ClearAllStatuses, Vfx("apply_status")]),
         ),
         (
             name: "Betray",
