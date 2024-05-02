@@ -328,8 +328,10 @@ impl Trigger {
                 targets,
                 effects,
             } => {
+                let mut result = false;
                 for (trigger, _) in triggers {
                     if trigger.catch(event, context, world) {
+                        result = true;
                         for (effect, _) in effects.iter() {
                             if targets.is_empty() {
                                 ActionPlugin::action_push_back(
@@ -349,7 +351,7 @@ impl Trigger {
                         }
                     }
                 }
-                true
+                result
             }
             Trigger::Change { .. } => false,
         }

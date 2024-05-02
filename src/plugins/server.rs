@@ -50,7 +50,7 @@ fn clear_pending(status: &Status) {
             e.to_owned(),
             None,
         ),
-        Status::Committed => info!("Server operation commited"),
+        Status::Committed => info!("Server operation committed"),
         _ => {}
     }
     OperationsPlugin::add(move |world| {
