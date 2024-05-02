@@ -69,6 +69,7 @@ pub enum VarName {
     Caster,
     Damage,
     Price,
+    Freeze,
     M1,
     M2,
     M3,

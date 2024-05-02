@@ -98,7 +98,7 @@ fn run_submit_result(ctx: ReducerContext, win: bool) -> Result<(), String> {
     if !finish {
         let settings = GlobalSettings::get();
         run.change_g((settings.g_per_round_min + run.round as i64).min(settings.g_per_round_max));
-        run.state.case.clear();
+        run.state.case.retain(|o| o.freeze && o.available);
         run.fill_case();
         run.state.free_rerolls = 1;
     }
@@ -123,7 +123,7 @@ fn run_reroll(ctx: ReducerContext, force: bool) -> Result<(), String> {
         if pay {
             run.change_g(-reroll_price);
         }
-        run.state.case.clear();
+        run.state.case.retain(|o| o.freeze && o.available);
         run.fill_case();
         run.save();
         Ok(())
@@ -142,6 +142,14 @@ fn run_buy(ctx: ReducerContext, id: u64) -> Result<(), String> {
         gs.price_unit_buy
     };
     run.buy(id, 0, price, false)?;
+    run.save();
+    Ok(())
+}
+
+#[spacetimedb(reducer)]
+fn run_freeze(ctx: ReducerContext, id: u64) -> Result<(), String> {
+    let (_, mut run) = ArenaRun::get_by_identity(&ctx.sender)?;
+    run.freeze(id)?;
     run.save();
     Ok(())
 }
@@ -284,7 +292,8 @@ impl ArenaRun {
         let settings = GlobalSettings::get();
         let slots = (settings.shop_slots_min
             + (self.round as f32 * settings.shop_slots_per_round) as u32)
-            .min(settings.shop_slots_max);
+            .min(settings.shop_slots_max)
+            - self.state.case.len() as u32;
         let team_houses: HashSet<String> = HashSet::from_iter(
             self.state
                 .team
@@ -334,6 +343,10 @@ impl ArenaRun {
         let index = self.position_case(id)?;
         Ok((index, &self.state.case[index]))
     }
+    fn find_offer_mut(&mut self, id: u64) -> Result<(usize, &mut ShopOffer), String> {
+        let index = self.position_case(id)?;
+        Ok((index, &mut self.state.case[index]))
+    }
 
     fn buy(
         &mut self,
@@ -342,12 +355,7 @@ impl ArenaRun {
         price: i64,
         skip_limit_check: bool,
     ) -> Result<(), String> {
-        let offer = self
-            .state
-            .case
-            .iter_mut()
-            .find(|o| o.unit.id.eq(&id))
-            .context_str("Offer not found")?;
+        let (_, offer) = self.find_offer_mut(id)?;
         if !offer.available {
             return Err("Offer is already bought".to_owned());
         }
@@ -361,6 +369,12 @@ impl ArenaRun {
         }
         self.change_g(-price);
         self.state.team.insert(slot, offer.unit);
+        Ok(())
+    }
+
+    fn freeze(&mut self, id: u64) -> Result<(), String> {
+        let (_, offer) = self.find_offer_mut(id)?;
+        offer.freeze = !offer.freeze;
         Ok(())
     }
 

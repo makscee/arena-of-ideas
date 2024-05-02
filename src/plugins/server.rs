@@ -1,9 +1,9 @@
 use spacetimedb_sdk::reducer::Status;
 
 use self::module_bindings::{
-    once_on_run_buy, once_on_run_fuse, once_on_run_reroll, once_on_run_sell, once_on_run_stack,
-    once_on_run_submit_result, once_on_upload_units, run_buy, run_fuse, run_reroll, run_sell,
-    run_stack, run_submit_result, upload_units, TableUnit,
+    once_on_run_buy, once_on_run_freeze, once_on_run_fuse, once_on_run_reroll, once_on_run_sell,
+    once_on_run_stack, once_on_run_submit_result, once_on_upload_units, run_buy, run_freeze,
+    run_fuse, run_reroll, run_sell, run_stack, run_submit_result, upload_units, TableUnit,
 };
 
 use super::*;
@@ -28,6 +28,7 @@ pub struct PendingOperation(ServerOperation);
 pub enum ServerOperation {
     Sell(Entity),
     Buy(Entity),
+    Freeze(Entity),
     Stack {
         target: Entity,
         source: Entity,
@@ -70,6 +71,11 @@ impl ServerOperation {
                 let id = UnitPlugin::get_id(entity, world).context("Id not found")?;
                 run_sell(id);
                 once_on_run_sell(|_, _, status, _| clear_pending(status));
+            }
+            ServerOperation::Freeze(entity) => {
+                let id = UnitPlugin::get_id(entity, world).context("Id not found")?;
+                run_freeze(id);
+                once_on_run_freeze(|_, _, status, _| clear_pending(status));
             }
             ServerOperation::Buy(entity) => {
                 let id = UnitPlugin::get_id(entity, world).context("Id not found")?;

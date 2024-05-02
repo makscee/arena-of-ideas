@@ -163,7 +163,7 @@ impl ShopPlugin {
                 Self::sync_units(&new.state.team, Faction::Team, world);
                 Self::sync_units_state(&new.state.team, Faction::Team, world);
                 Self::sync_units(&new.get_case_units(), Faction::Shop, world);
-                Self::sync_prices(&new.state.case, world);
+                Self::sync_offers(&new.state.case, world);
                 let phase = ShopPhase::initial(world);
                 if let Some(mut data) = world.get_resource_mut::<ShopData>() {
                     data.phase = phase;
@@ -173,7 +173,7 @@ impl ShopPlugin {
         let run = ArenaRun::current().context("No active run")?;
         Self::sync_units(&run.state.team, Faction::Team, world);
         Self::sync_units(&run.get_case_units(), Faction::Shop, world);
-        Self::sync_prices(&run.state.case, world);
+        Self::sync_offers(&run.state.case, world);
         debug!("Shop insert data");
         let phase = ShopPhase::initial(world);
         world.insert_resource(ShopData {
@@ -222,13 +222,13 @@ impl ShopPlugin {
         }
     }
 
-    fn sync_prices(offers: &Vec<ShopOffer>, world: &mut World) {
+    fn sync_offers(offers: &Vec<ShopOffer>, world: &mut World) {
         let gs = GlobalSettings::filter_by_always_zero(0).unwrap();
         let world_units = UnitPlugin::collect_faction_ids(Faction::Shop, world);
         for ShopOffer {
             available: _,
             discount,
-            freeze: _,
+            freeze,
             unit,
         } in offers
         {
@@ -240,6 +240,7 @@ impl ShopPlugin {
             if let Some(entity) = world_units.get(&unit.id) {
                 let mut state = VarState::get_mut(*entity, world);
                 state.set_int(VarName::Price, price as i32);
+                state.set_bool(VarName::Freeze, *freeze);
             }
         }
     }
@@ -448,9 +449,9 @@ impl ShopPlugin {
             let phase = data.phase.clone();
             for (entity, faction) in units {
                 let is_shop = faction == Faction::Shop;
-                let price = VarState::get(entity, world)
-                    .get_int(VarName::Price)
-                    .unwrap_or_default() as i64;
+                let state = VarState::get(entity, world);
+                let price = state.get_int(VarName::Price).unwrap_or_default() as i64;
+                let freeze = state.get_bool(VarName::Freeze).unwrap_or_default();
                 let discount = if is_shop && price < gs.price_unit_buy {
                     Some("discount".add_color(yellow()))
                 } else {
@@ -528,6 +529,19 @@ impl ShopPlugin {
                                 false,
                                 |world| {
                                     ServerOperation::Buy(entity).send(world).unwrap();
+                                },
+                                ctx,
+                                world,
+                            );
+                            Self::draw_unit_button(
+                                entity,
+                                &mut vec2(0.0, 1.0),
+                                if freeze { yellow() } else { white() },
+                                if freeze { "unfreeze" } else { "freeze" },
+                                &None,
+                                true,
+                                |world| {
+                                    ServerOperation::Freeze(entity).send(world).unwrap();
                                 },
                                 ctx,
                                 world,

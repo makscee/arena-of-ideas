@@ -127,6 +127,10 @@ impl VarState {
         self.push_back(var, VarChange::new(VarValue::Int(value)));
         self
     }
+    pub fn set_bool(&mut self, var: VarName, value: bool) -> &mut Self {
+        self.push_back(var, VarChange::new(VarValue::Bool(value)));
+        self
+    }
     pub fn set_string(&mut self, var: VarName, value: String) -> &mut Self {
         self.push_back(var, VarChange::new(VarValue::String(value)));
         self

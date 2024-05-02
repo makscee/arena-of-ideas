@@ -36,6 +36,7 @@ pub mod register_empty_reducer;
 pub mod register_reducer;
 pub mod run_buy_reducer;
 pub mod run_change_g_reducer;
+pub mod run_freeze_reducer;
 pub mod run_fuse_reducer;
 pub mod run_reroll_reducer;
 pub mod run_sell_reducer;
@@ -76,6 +77,7 @@ pub use register_empty_reducer::*;
 pub use register_reducer::*;
 pub use run_buy_reducer::*;
 pub use run_change_g_reducer::*;
+pub use run_freeze_reducer::*;
 pub use run_fuse_reducer::*;
 pub use run_reroll_reducer::*;
 pub use run_sell_reducer::*;
@@ -111,6 +113,7 @@ pub enum ReducerEvent {
     RegisterEmpty(register_empty_reducer::RegisterEmptyArgs),
     RunBuy(run_buy_reducer::RunBuyArgs),
     RunChangeG(run_change_g_reducer::RunChangeGArgs),
+    RunFreeze(run_freeze_reducer::RunFreezeArgs),
     RunFuse(run_fuse_reducer::RunFuseArgs),
     RunReroll(run_reroll_reducer::RunRerollArgs),
     RunSell(run_sell_reducer::RunSellArgs),
@@ -234,6 +237,7 @@ match &function_call.reducer[..] {
 			"register_empty" => _reducer_callbacks.handle_event_of_type::<register_empty_reducer::RegisterEmptyArgs, ReducerEvent>(event, _state, ReducerEvent::RegisterEmpty),
 			"run_buy" => _reducer_callbacks.handle_event_of_type::<run_buy_reducer::RunBuyArgs, ReducerEvent>(event, _state, ReducerEvent::RunBuy),
 			"run_change_g" => _reducer_callbacks.handle_event_of_type::<run_change_g_reducer::RunChangeGArgs, ReducerEvent>(event, _state, ReducerEvent::RunChangeG),
+			"run_freeze" => _reducer_callbacks.handle_event_of_type::<run_freeze_reducer::RunFreezeArgs, ReducerEvent>(event, _state, ReducerEvent::RunFreeze),
 			"run_fuse" => _reducer_callbacks.handle_event_of_type::<run_fuse_reducer::RunFuseArgs, ReducerEvent>(event, _state, ReducerEvent::RunFuse),
 			"run_reroll" => _reducer_callbacks.handle_event_of_type::<run_reroll_reducer::RunRerollArgs, ReducerEvent>(event, _state, ReducerEvent::RunReroll),
 			"run_sell" => _reducer_callbacks.handle_event_of_type::<run_sell_reducer::RunSellArgs, ReducerEvent>(event, _state, ReducerEvent::RunSell),

@@ -162,13 +162,6 @@ enum Sorting {
 }
 
 impl Columns {
-    fn header(&self, ui: &mut Ui) -> Response {
-        self.to_string()
-            .add_color(white())
-            .as_label(ui)
-            .selectable(false)
-            .ui(ui)
-    }
     fn row(&self, player: &PlayerTableData, ui: &mut Ui, world: &mut World) {
         match self {
             Columns::Name => {
