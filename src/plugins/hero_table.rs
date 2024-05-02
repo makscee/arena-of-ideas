@@ -69,11 +69,9 @@ impl HeroTablePlugin {
                                     do_sort = true;
                                     td.sorting = Some((
                                         *column,
-                                        if td
-                                            .sorting
-                                            .as_ref()
-                                            .is_some_and(|(_, s)| matches!(s, Sorting::Asc))
-                                        {
+                                        if td.sorting.as_ref().is_some_and(|(c, s)| {
+                                            matches!(s, Sorting::Asc) && c.eq(column)
+                                        }) {
                                             Sorting::Desc
                                         } else {
                                             Sorting::Asc
