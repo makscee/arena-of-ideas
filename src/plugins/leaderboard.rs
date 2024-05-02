@@ -157,11 +157,17 @@ impl Columns {
     }
     fn row(&self, run: &ArenaArchive, ui: &mut Ui, world: &mut World) -> Response {
         match self {
-            Columns::Name => User::filter_by_id(run.user_id)
-                .unwrap()
-                .name
-                .add_color(white())
-                .label(ui),
+            Columns::Name => {
+                let resp = User::filter_by_id(run.user_id)
+                    .unwrap()
+                    .name
+                    .add_color(white())
+                    .button(ui);
+                if resp.clicked() {
+                    ProfilePlugin::open_player_profile(run.user_id, world);
+                }
+                resp
+            }
             Columns::Team => {
                 let mut str = ColoredString::default();
                 for unit in run.team.iter().rev() {
