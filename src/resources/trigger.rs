@@ -328,20 +328,24 @@ impl Trigger {
                 targets,
                 effects,
             } => {
-                if !triggers
-                    .into_iter()
-                    .any(|(trigger, _)| trigger.catch(event, context, world))
-                {
-                    return false;
-                }
-                for (effect, _) in effects {
-                    if targets.is_empty() {
-                        ActionPlugin::action_push_back(effect.clone(), context.clone(), world);
-                    } else {
-                        for (target, _) in targets.iter() {
-                            let effect =
-                                Effect::WithTarget(target.clone(), Box::new(effect.clone()));
-                            ActionPlugin::action_push_back(effect, context.clone(), world);
+                for (trigger, _) in triggers {
+                    if trigger.catch(event, context, world) {
+                        for (effect, _) in effects.iter() {
+                            if targets.is_empty() {
+                                ActionPlugin::action_push_back(
+                                    effect.clone(),
+                                    context.clone(),
+                                    world,
+                                );
+                            } else {
+                                for (target, _) in targets.iter() {
+                                    let effect = Effect::WithTarget(
+                                        target.clone(),
+                                        Box::new(effect.clone()),
+                                    );
+                                    ActionPlugin::action_push_back(effect, context.clone(), world);
+                                }
+                            }
                         }
                     }
                 }

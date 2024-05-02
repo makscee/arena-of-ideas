@@ -1,0 +1,18 @@
+#![enable(implicit_some)]
+(
+    left: (
+        units: [
+            (
+                name: "left",
+                hp: 1,
+                pwr: 1,
+                trigger: Fire(
+                    triggers: [(BattleStart, None), (BattleStart, None)],
+                    targets: [(RandomEnemy, None)],
+                    effects: [(Damage(None), None)],
+                ),
+            ),
+        ],
+    ),
+    right: (units: [(hp: 3, pwr: 1, name: "right")]),
+)

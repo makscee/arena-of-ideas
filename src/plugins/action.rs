@@ -1,3 +1,4 @@
+use crate::event::Event;
 use std::collections::VecDeque;
 
 use super::*;
