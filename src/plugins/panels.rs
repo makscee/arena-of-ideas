@@ -118,9 +118,6 @@ impl PanelsPlugin {
             return;
         };
         let top_data = world.resource::<TopOpenWindows>().0.clone();
-        if !ctx.is_pointer_over_area() && ctx.input(|r| r.pointer.primary_clicked()) {
-            Self::close_all(world);
-        }
         TopBottomPanel::top("top")
             .frame(
                 Frame::window(&ctx.style())
