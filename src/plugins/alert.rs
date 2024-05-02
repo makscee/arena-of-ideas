@@ -114,24 +114,28 @@ impl AlertPlugin {
                 .set_min_width(400.0)
                 .show(ctx, |ui| {
                     frame(ui, |ui| {
-                        ui.vertical(|ui| {
-                            alert.text.add_color(white()).label(ui);
+                        ui.vertical_centered(|ui| {
+                            alert.text.add_color(white()).as_label(ui).wrap(true).ui(ui);
                         });
-                        ui.add_space(20.0);
-                        ui.horizontal(|ui| {
-                            ui.columns(2, |ui| {
-                                if ui[0].button("Close").clicked() {
+                    });
+                    frame(ui, |ui| {
+                        let has_action = alert.action.is_some();
+                        ui.columns(1 + has_action as usize, |ui| {
+                            ui[0].vertical_centered_justified(|ui| {
+                                if ui.button("CLOSE").clicked() {
                                     closed.insert(*key);
                                 }
-                                if alert.action.is_some() {
-                                    if ui[1].button_primary("Ok").clicked() {
+                            });
+                            if has_action {
+                                ui[1].vertical_centered_justified(|ui| {
+                                    if ui.button_primary("OK").clicked() {
                                         actions.push(alert.action.take().unwrap());
                                         closed.insert(*key);
                                     }
-                                }
-                            })
-                        });
-                    });
+                                });
+                            }
+                        })
+                    })
                 });
         }
         data.alerts.retain(|k, _| !closed.contains(k));
