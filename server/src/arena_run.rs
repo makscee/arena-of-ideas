@@ -400,11 +400,14 @@ impl ArenaRun {
 
 impl ArenaBattle {
     fn next(run: &ArenaRun) -> Option<Self> {
-        ArenaPool::filter_by_round(&run.round)
-            .choose(&mut thread_rng())
-            .map(|a| ArenaBattle {
-                enemy: a.id,
-                result: None,
-            })
+        if ArenaPool::filter_by_round(&(run.round + 1)).count() == 0 {
+            ArenaPool::filter_by_round(&run.round).min_by_key(|r| r.id)
+        } else {
+            ArenaPool::filter_by_round(&run.round).choose(&mut thread_rng())
+        }
+        .map(|a| ArenaBattle {
+            enemy: a.id,
+            result: None,
+        })
     }
 }
