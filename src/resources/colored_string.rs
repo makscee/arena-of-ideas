@@ -107,7 +107,13 @@ impl ColoredString {
     }
 
     pub fn button(&self, ui: &mut Ui) -> Response {
-        Button::new(self.widget(1.0, ui)).wrap(false).ui(ui)
+        self.as_button(ui).ui(ui)
+    }
+    pub fn as_button(&self, ui: &mut Ui) -> Button {
+        Button::new(self.widget(1.0, ui)).wrap(false)
+    }
+    pub fn as_button_uncolored(&self, ui: &mut Ui) -> Button {
+        Button::new(self.rich_text_uncolored(ui)).wrap(false)
     }
     pub fn label(&self, ui: &mut Ui) -> Response {
         self.as_label(ui).selectable(false).wrap(false).ui(ui)
@@ -151,6 +157,17 @@ impl ColoredString {
         font.size += self.extra_size;
         RichText::new(self.to_string())
             .color(color)
+            .font(font)
+            .extra_letter_spacing(self.extra_spacing)
+    }
+    pub fn rich_text_uncolored(&self, ui: &mut Ui) -> RichText {
+        let mut font = if let Some((_, _, f)) = self.lines.get(0) {
+            f.get_font(ui.style())
+        } else {
+            default()
+        };
+        font.size += self.extra_size;
+        RichText::new(self.to_string())
             .font(font)
             .extra_letter_spacing(self.extra_spacing)
     }

@@ -43,11 +43,29 @@ impl LeaderboardPlugin {
         } else {
             return;
         };
+        if data.data.is_empty() {
+            world.insert_resource(data);
+            return;
+        }
         let mut new_round: Option<Option<usize>> = None;
         window("LEADERBOARD")
             .set_width(400.0)
             .anchor(Align2::RIGHT_TOP, [-15.0, 15.0])
             .show(ctx, |ui| {
+                let mut iter = data.data.iter().sorted_by_key(|(k, _)| -(**k as i32));
+                if data.round.is_none() {
+                    if let Some((round, data)) = iter.next() {
+                        frame(ui, |ui| {
+                            ui.vertical_centered(|ui| {
+                                let run = &data[0];
+                                "Current leader".to_colored().label(ui);
+                                show_name(run, ColoredStringStyle::Heading, ui, world);
+                                format!("Round #{}", round).add_color(orange()).label(ui);
+                                show_team(run, false, ui, world);
+                            })
+                        });
+                    }
+                }
                 ScrollArea::new([false, true]).show(ui, |ui| {
                     frame(ui, |ui| {
                         TableBuilder::new(ui)
@@ -75,9 +93,7 @@ impl LeaderboardPlugin {
                                         });
                                     }
                                 } else {
-                                    for (_, run) in
-                                        data.data.iter().sorted_by_key(|(k, _)| -(**k as i32))
-                                    {
+                                    for (_, run) in iter {
                                         body.row(20.0, |mut row| {
                                             for col in columns.iter() {
                                                 row.col(|ui| {
@@ -147,6 +163,83 @@ enum Columns {
     Time,
 }
 
+fn show_name(
+    run: &ArenaArchive,
+    style: ColoredStringStyle,
+    ui: &mut Ui,
+    world: &mut World,
+) -> Response {
+    let resp = User::filter_by_id(run.user_id)
+        .unwrap()
+        .name
+        .to_colored()
+        .set_style(style)
+        .as_button_uncolored(ui)
+        .frame(false)
+        .ui(ui);
+    if resp.clicked() {
+        ProfilePlugin::open_player_profile(run.user_id, world);
+    }
+    resp
+}
+
+fn show_team(run: &ArenaArchive, short: bool, ui: &mut Ui, world: &mut World) -> Response {
+    let mut str = ColoredString::default();
+    for unit in run.team.iter().rev() {
+        let name = format!(
+            "{} ",
+            if short {
+                unit.name.split_at(3).0
+            } else {
+                &unit.name
+            }
+        );
+        str.push_colored(
+            name.add_color(
+                Pools::get_color_by_name(&unit.name, world)
+                    .map(|c| c.c32())
+                    .unwrap_or(white()),
+            ),
+        );
+    }
+    let resp = str.button(ui).on_hover_ui(|ui| {
+        for unit in run.team.iter().rev() {
+            ui.horizontal(|ui| {
+                unit.name
+                    .add_color(
+                        Pools::get_color_by_name(&unit.name, world)
+                            .map(|c| c.c32())
+                            .unwrap_or(white()),
+                    )
+                    .label(ui);
+                format!("{}/{} lvl:{}", unit.pwr, unit.hp, unit.level)
+                    .to_colored()
+                    .label(ui);
+                for house in unit.houses.split("+") {
+                    house
+                        .add_color(
+                            Pools::get_house_color(house, world)
+                                .map(|c| c.c32())
+                                .unwrap_or(light_gray()),
+                        )
+                        .label(ui);
+                }
+            });
+        }
+    });
+    if resp.clicked() {
+        save_to_clipboard(
+            &to_string_pretty(
+                &PackedTeam::from_table_units(run.team.clone()),
+                PrettyConfig::new(),
+            )
+            .unwrap(),
+            world,
+        )
+    }
+    resp
+}
+
 impl Columns {
     fn header(&self, ui: &mut Ui) -> Response {
         self.to_string()
@@ -157,66 +250,8 @@ impl Columns {
     }
     fn row(&self, run: &ArenaArchive, ui: &mut Ui, world: &mut World) -> Response {
         match self {
-            Columns::Name => {
-                let resp = User::filter_by_id(run.user_id)
-                    .unwrap()
-                    .name
-                    .add_color(white())
-                    .button(ui);
-                if resp.clicked() {
-                    ProfilePlugin::open_player_profile(run.user_id, world);
-                }
-                resp
-            }
-            Columns::Team => {
-                let mut str = ColoredString::default();
-                for unit in run.team.iter().rev() {
-                    let name = format!("{} ", unit.name.split_at(3).0);
-                    str.push_colored(
-                        name.add_color(
-                            Pools::get_color_by_name(&unit.name, world)
-                                .map(|c| c.c32())
-                                .unwrap_or(white()),
-                        ),
-                    );
-                }
-                let resp = str.button(ui).on_hover_ui(|ui| {
-                    for unit in run.team.iter().rev() {
-                        ui.horizontal(|ui| {
-                            unit.name
-                                .add_color(
-                                    Pools::get_color_by_name(&unit.name, world)
-                                        .map(|c| c.c32())
-                                        .unwrap_or(white()),
-                                )
-                                .label(ui);
-                            format!("{}/{} lvl:{}", unit.pwr, unit.hp, unit.level)
-                                .to_colored()
-                                .label(ui);
-                            for house in unit.houses.split("+") {
-                                house
-                                    .add_color(
-                                        Pools::get_house_color(house, world)
-                                            .map(|c| c.c32())
-                                            .unwrap_or(light_gray()),
-                                    )
-                                    .label(ui);
-                            }
-                        });
-                    }
-                });
-                if resp.clicked() {
-                    save_to_clipboard(
-                        &to_string_pretty(
-                            &PackedTeam::from_table_units(run.team.clone()),
-                            PrettyConfig::new(),
-                        )
-                        .unwrap(),
-                        world,
-                    )
-                }
-                resp
-            }
+            Columns::Name => show_name(run, ColoredStringStyle::Normal, ui, world),
+            Columns::Team => show_team(run, true, ui, world),
             Columns::Round => run.round.to_string().add_color(white()).label(ui),
             Columns::Wins => run.wins.to_string().add_color(white()).label(ui),
             Columns::Loses => run.loses.to_string().add_color(red()).label(ui),

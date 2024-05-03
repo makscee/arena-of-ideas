@@ -165,7 +165,14 @@ impl Columns {
     fn row(&self, player: &PlayerTableData, ui: &mut Ui, world: &mut World) {
         match self {
             Columns::Name => {
-                if ui.button(&player.name).clicked() {
+                if player
+                    .name
+                    .add_color(white())
+                    .as_button_uncolored(ui)
+                    .frame(false)
+                    .ui(ui)
+                    .clicked()
+                {
                     ProfilePlugin::open_player_profile(player.id, world);
                 }
             }
