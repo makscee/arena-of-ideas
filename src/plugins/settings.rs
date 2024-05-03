@@ -44,7 +44,7 @@ impl Default for SettingsData {
             window_mode: default(),
             always_show_card: default(),
             dev_mode: default(),
-            disable_console_output: default(),
+            disable_console_output: false,
             vsync: default(),
         }
     }
@@ -180,29 +180,31 @@ impl SettingsPlugin {
                         });
                     });
                 });
-                frame(ui, |ui| {
-                    ui.columns(2, |ui| {
-                        "toggle console output".to_colored().label(&mut ui[0]);
-                        ui[1].vertical_centered_justified(|ui| {
-                            let value = &mut data.disable_console_output;
-                            if ui
-                                .button_or_primary(
-                                    if *value { "ENABLED" } else { "DISABLED" },
-                                    *value,
-                                )
-                                .clicked()
-                            {
-                                *value = !*value;
-                            }
-                            if *value == false {
-                                log::set_max_level(LevelFilter::Info);
-                            }
-                            if *value == true {
-                                log::set_max_level(LevelFilter::Off);
-                            }
+                if data.dev_mode {
+                    frame(ui, |ui| {
+                        ui.columns(2, |ui| {
+                            "disable console output".to_colored().label(&mut ui[0]);
+                            ui[1].vertical_centered_justified(|ui| {
+                                let value = &mut data.disable_console_output;
+                                if ui
+                                    .button_or_primary(
+                                        if *value { "ENABLED" } else { "DISABLED" },
+                                        *value,
+                                    )
+                                    .clicked()
+                                {
+                                    *value = !*value;
+                                }
+                                if *value == false {
+                                    log::set_max_level(LevelFilter::Info);
+                                }
+                                if *value == true {
+                                    log::set_max_level(LevelFilter::Off);
+                                }
+                            });
                         });
                     });
-                });
+                }
                 frame(ui, |ui| {
                     if ui.button_red("RESET TO DEFAULTS").clicked() {
                         data = default();
