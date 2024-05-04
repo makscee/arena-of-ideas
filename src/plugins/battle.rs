@@ -22,12 +22,13 @@ impl Plugin for BattlePlugin {
     }
 }
 
-#[derive(Resource, Serialize, Deserialize, Clone, Default, Debug)]
+#[derive(Asset, TypePath, Resource, Serialize, Deserialize, Clone, Default, Debug)]
 pub struct BattleData {
     left: Option<PackedTeam>,
     right: Option<PackedTeam>,
     left_player_data: Option<PlayerData>,
     right_player_data: Option<PlayerData>,
+    #[serde(default)]
     result: BattleResult,
     pub run_id: Option<u64>,
 }

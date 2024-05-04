@@ -123,7 +123,7 @@ fn main() {
         .add_plugins(Material2dPlugin::<CurveMaterial>::default())
         .add_plugins(RonAssetPlugin::<PackedUnit>::new(&["unit.ron"]))
         .add_plugins(RonAssetPlugin::<House>::new(&["house.ron"]))
-        .add_plugins(RonAssetPlugin::<CustomBattleData>::new(&["battle.ron"]))
+        .add_plugins(RonAssetPlugin::<BattleData>::new(&["battle.ron"]))
         .add_plugins(RonAssetPlugin::<Representation>::new(&["rep.ron"]))
         .add_plugins(RonAssetPlugin::<OptionsData>::new(&["options.ron"]))
         .add_plugins(RonAssetPlugin::<Animations>::new(&["anim.ron"]))
@@ -210,7 +210,6 @@ fn input_world(world: &mut World) {
 fn detect_changes(
     mut unit_events: EventReader<AssetEvent<PackedUnit>>,
     mut rep_events: EventReader<AssetEvent<Representation>>,
-    mut battle_state_events: EventReader<AssetEvent<CustomBattleData>>,
     mut vfx_events: EventReader<AssetEvent<Vfx>>,
     mut state: ResMut<NextState<GameState>>,
 ) {
@@ -218,9 +217,6 @@ fn detect_changes(
         .read()
         .any(|x| matches!(x, AssetEvent::Modified { .. }))
         || rep_events
-            .read()
-            .any(|x| matches!(x, AssetEvent::Modified { .. }))
-        || battle_state_events
             .read()
             .any(|x| matches!(x, AssetEvent::Modified { .. }))
         || vfx_events

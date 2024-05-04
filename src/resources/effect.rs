@@ -455,20 +455,29 @@ impl Effect {
                     }
                 }
                 if !SkipVisual::active(world) {
-                    Representation::pack(target, world).unpack(owner, world);
+                    Representation::pack(target, world)
+                        .unpack(world.spawn_empty().set_parent(owner).id(), world);
                 }
                 for entity in Status::collect_unit_statuses(owner, world) {
-                    VarState::get_mut(entity, world).set_int(VarName::Charges, 0);
+                    let mut state = VarState::get_mut(entity, world);
+                    if state.get_int(VarName::Charges).is_ok_and(|v| v > 0) {
+                        state.set_int(VarName::Charges, 0);
+                    }
                 }
                 for entity in Status::collect_unit_statuses(target, world) {
-                    let status = world.get::<Status>(entity).unwrap();
+                    let status = world.get::<Status>(entity).unwrap().clone();
                     if Pools::get_status(&status.name, world).is_some() {
                         let delta = VarState::get(entity, world).get_int(VarName::Charges)?;
-                        let name = status.name.clone();
+                        let name = status.name;
                         Status::change_charges(&name, owner, delta, world)?;
                     } else {
-                        let state = VarState::get(entity, world).final_snapshot();
-                        status.clone().spawn(world).insert(state).set_parent(owner);
+                        if let Some((entity, mut old_status)) =
+                            Status::find_unit_status(owner, LOCAL_TRIGGER, world)
+                        {
+                            *old_status = status.clone();
+                            let state = VarState::get(entity, world).final_snapshot();
+                            world.entity_mut(entity).insert(state);
+                        }
                     }
                 }
             }

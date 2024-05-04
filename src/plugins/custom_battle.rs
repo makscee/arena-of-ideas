@@ -31,8 +31,9 @@ impl CustomBattlePlugin {
     }
 
     fn load_teams(world: &mut World) {
-        let cb = Options::get_custom_battle(world).clone();
-        BattlePlugin::load_teams(cb.left, cb.right, world);
+        let mut data = Options::get_custom_battle(world).clone();
+        data.run_id = None;
+        world.insert_resource(data);
     }
     fn load_teams_last(world: &mut World) {
         let mut data = PersistentData::load(world).last_battle;
@@ -46,10 +47,4 @@ impl CustomBattlePlugin {
         data.run_id = None;
         world.insert_resource(data);
     }
-}
-
-#[derive(Asset, Deserialize, TypePath, Debug, Clone)]
-pub struct CustomBattleData {
-    pub left: PackedTeam,
-    pub right: PackedTeam,
 }

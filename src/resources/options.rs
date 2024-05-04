@@ -9,7 +9,7 @@ pub struct Options {
     #[asset(key = "slot.rep")]
     pub slot: Handle<Representation>,
     #[asset(key = "custom.battle")]
-    pub custom_battle: Handle<CustomBattleData>,
+    pub custom_battle: Handle<BattleData>,
     #[asset(key = "anim")]
     pub animations: Handle<Animations>,
     #[cfg_attr(debug_assertions, asset(key = "dev_options"))]
@@ -57,9 +57,9 @@ impl Options {
             .get(&world.resource::<Options>().slot)
             .unwrap()
     }
-    pub fn get_custom_battle(world: &World) -> &CustomBattleData {
+    pub fn get_custom_battle(world: &World) -> &BattleData {
         world
-            .resource::<Assets<CustomBattleData>>()
+            .resource::<Assets<BattleData>>()
             .get(&world.resource::<Options>().custom_battle)
             .unwrap()
     }
