@@ -42,7 +42,7 @@ impl GameTimer {
         if self.paused {
             return self;
         }
-        self.play_head += delta;
+        self.play_head = (self.play_head + delta).max(0.0);
         self.insert_head = self.insert_head.max(self.play_head);
         self
     }
@@ -91,7 +91,7 @@ impl GameTimer {
     }
 
     pub fn skip_to_end(&mut self) -> &mut Self {
-        self.play_head = self.end;
+        self.play_head = self.end + 5.0;
         self
     }
 
