@@ -203,7 +203,9 @@ impl VarState {
         world: &World,
     ) -> Result<Vec<(ColoredString, ColoredString)>> {
         let t = GameTimer::get().play_head();
-        let description = self.get_string_at(VarName::EffectDescription, t)?;
+        let description = self.get_string_at(VarName::EffectDescription, t)?
+            + &self.get_string_at(VarName::TriggerDescription, t)?
+            + &self.get_string_at(VarName::TargetDescription, t)?;
         let mut definitions: Vec<(ColoredString, ColoredString)> = default();
         let mut added_definitions: HashSet<String> = default();
         let mut raw_definitions = VecDeque::from_iter(
