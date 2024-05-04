@@ -153,10 +153,14 @@ impl SettingsPlugin {
                     ui.columns(3, |ui| {
                         "resolution".to_colored().label(&mut ui[0]);
                         ui[1].vertical_centered_justified(|ui| {
-                            DragValue::new(&mut data.resolution.x).ui(ui);
+                            DragValue::new(&mut data.resolution.x)
+                                .clamp_range(100.0..=10000.0)
+                                .ui(ui);
                         });
                         ui[2].vertical_centered_justified(|ui| {
-                            DragValue::new(&mut data.resolution.y).ui(ui);
+                            DragValue::new(&mut data.resolution.y)
+                                .clamp_range(100.0..=10000.0)
+                                .ui(ui);
                         });
                     })
                 });
@@ -230,7 +234,9 @@ impl SettingsPlugin {
                 WindowMode::FullScreen => bevy::window::WindowMode::Fullscreen,
                 WindowMode::BorderlessFullScreen => bevy::window::WindowMode::BorderlessFullscreen,
             };
-            window.resolution.set(data.resolution.x, data.resolution.y);
+            window
+                .resolution
+                .set(data.resolution.x.max(100.0), data.resolution.y.max(100.0));
             window.present_mode = match data.vsync {
                 VsyncMode::On => PresentMode::AutoVsync,
                 VsyncMode::Off => PresentMode::AutoNoVsync,
