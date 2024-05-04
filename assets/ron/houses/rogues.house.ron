@@ -10,7 +10,7 @@
         ),
     ],
     abilities: [
-        (name: "Expose", description: "Increase taken damage by 1", effect: AddStatus("Expose")),
+        (name: "Expose", description: "Increase taken damage by {1}", effect: AddStatus("Expose")),
         (
             name: "Rob",
             description: "Steal all statuses, limit max {Charges}",

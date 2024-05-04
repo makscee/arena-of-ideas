@@ -9,5 +9,5 @@
             trigger: Change(trigger: Var(Pwr), expr: Sub(Int(0), Context(Charges))),
         ),
     ],
-    abilities: [(name: "Weakness", description: "-1 PWR", effect: AddStatus("Weakness"))],
+    abilities: [(name: "Weakness", description: "-{1} PWR", effect: AddStatus("Weakness"))],
 )

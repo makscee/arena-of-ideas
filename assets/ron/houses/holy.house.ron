@@ -14,5 +14,5 @@
             ),
         ),
     ],
-    abilities: [(name: "Blessing", description: "Give +1/+1", effect: AddStatus("Blessing"))],
+    abilities: [(name: "Blessing", description: "Give +{1}/+{1}", effect: AddStatus("Blessing"))],
 )

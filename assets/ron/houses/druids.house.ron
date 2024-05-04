@@ -14,10 +14,10 @@
         ),
     ],
     abilities: [
-        (name: "Thorns", description: "Deal 1 DMG to attacker", effect: AddStatus("Thorns")),
+        (name: "Thorns", description: "Deal {1} DMG to attacker", effect: AddStatus("Thorns")),
         (
             name: "Summon Treant",
-            description: "Summon {0}/{3} with [Thorns] ({3})",
+            description: "Summon 0/3 unit with [Thorns] ({3})",
             effect: Summon("Treant", AddStatus("Thorns")),
         ),
     ],

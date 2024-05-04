@@ -42,7 +42,7 @@
         (name: "Shield", description: "Block next incoming damage", effect: AddStatus("Shield")),
         (
             name: "Summon Guardian Angel",
-            description: "Summon {10}/{1} with [Shield] ({Charges})",
+            description: "Summon 10/1 with [Shield] ({Charges})",
             effect: Summon("Guardian Angel", AddStatus("Shield")),
         ),
     ],

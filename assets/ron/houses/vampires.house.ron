@@ -23,7 +23,7 @@
     abilities: [
         (
             name: "Siphon",
-            description: "Drain 1 HP from target{M1|, gain +1 PWR for each}",
+            description: "Drain {1} HP from target{M1|, gain +1 PWR for each}",
             effect: List(
                 [
                     AddStatus("Siphoned Out"),
