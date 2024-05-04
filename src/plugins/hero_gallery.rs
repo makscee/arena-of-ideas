@@ -70,7 +70,7 @@ impl HeroGallery {
         TopBottomPanel::bottom("gallery controls").show(ctx, |ui| {
             ui.horizontal(|ui| {
                 ui.label("per row:");
-                DragValue::new(&mut data.per_row).ui(ui);
+                DragValue::new(&mut data.per_row).clamp_range(1..=50).ui(ui);
             });
         });
         if !data.eq(&pd.hero_gallery_data) {
