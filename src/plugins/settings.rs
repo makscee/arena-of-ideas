@@ -10,7 +10,7 @@ pub struct SettingsData {
     pub expanded_hint: bool,
     pub always_show_card: bool,
     pub dev_mode: bool,
-    pub disable_console_output: bool,
+    pub console_output: bool,
     pub window_mode: WindowMode,
     pub resolution: Vec2,
     pub vsync: VsyncMode,
@@ -44,7 +44,7 @@ impl Default for SettingsData {
             window_mode: default(),
             always_show_card: default(),
             dev_mode: default(),
-            disable_console_output: false,
+            console_output: default(),
             vsync: default(),
         }
     }
@@ -184,7 +184,7 @@ impl SettingsPlugin {
                     ui.columns(2, |ui| {
                         "console output".to_colored().label(&mut ui[0]);
                         ui[1].vertical_centered_justified(|ui| {
-                            let value = &mut data.disable_console_output;
+                            let value = &mut data.console_output;
                             if ui
                                 .button_or_primary(
                                     if *value { "ENABLED" } else { "DISABLED" },
