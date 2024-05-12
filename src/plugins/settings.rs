@@ -44,7 +44,7 @@ impl Default for SettingsData {
             window_mode: default(),
             always_show_card: default(),
             dev_mode: default(),
-            console_output: default(),
+            console_output: false,
             vsync: default(),
         }
     }
