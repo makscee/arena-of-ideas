@@ -180,31 +180,28 @@ impl SettingsPlugin {
                         });
                     });
                 });
-                if data.dev_mode {
-                    frame(ui, |ui| {
-                        ui.columns(2, |ui| {
-                            "disable console output".to_colored().label(&mut ui[0]);
-                            ui[1].vertical_centered_justified(|ui| {
-                                let value = &mut data.disable_console_output;
-                                if ui
-                                    .button_or_primary(
-                                        if *value { "ENABLED" } else { "DISABLED" },
-                                        *value,
-                                    )
-                                    .clicked()
-                                {
-                                    *value = !*value;
-                                }
-                                if *value == false {
-                                    log::set_max_level(LevelFilter::Info);
-                                }
-                                if *value == true {
-                                    log::set_max_level(LevelFilter::Off);
-                                }
-                            });
+                frame(ui, |ui| {
+                    ui.columns(2, |ui| {
+                        "console output".to_colored().label(&mut ui[0]);
+                        ui[1].vertical_centered_justified(|ui| {
+                            let value = &mut data.disable_console_output;
+                            if ui
+                                .button_or_primary(
+                                    if *value { "ENABLED" } else { "DISABLED" },
+                                    *value,
+                                )
+                                .clicked()
+                            {
+                                *value = !*value;
+                            }
+                            if *value {
+                                log::set_max_level(LevelFilter::Info);
+                            } else {
+                                log::set_max_level(LevelFilter::Off);
+                            }
                         });
                     });
-                }
+                });
                 frame(ui, |ui| {
                     if ui.button_red("RESET TO DEFAULTS").clicked() {
                         data = default();
