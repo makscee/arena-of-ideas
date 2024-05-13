@@ -56,8 +56,8 @@ fn main() {
     };
     match args.mode {
         RunMode::Sync => set_after_login_state(GameState::AssetSync),
-        RunMode::Archive => set_after_login_state(GameState::ArenaArchiveSave),
-        RunMode::Upload => set_after_login_state(GameState::ArenaArchiveUpload),
+        RunMode::Archive => set_after_login_state(GameState::MigrationSave),
+        RunMode::Upload => set_after_login_state(GameState::MigrationUpload),
         _ => {}
     }
     let mut default_plugins = DefaultPlugins.set(LogPlugin {
@@ -155,7 +155,7 @@ fn main() {
             AssetsUploadPlugin,
             OperationsPlugin,
             TeamPlugin,
-            ArenaArchivePlugin,
+            MigrationPlugin,
             HeroTablePlugin,
             LeaderboardPlugin,
             HelpPlugin,

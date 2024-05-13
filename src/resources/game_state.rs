@@ -18,8 +18,8 @@ pub enum GameState {
     HeroGallery,
     Login,
     AssetSync,
-    ArenaArchiveSave,
-    ArenaArchiveUpload,
+    MigrationSave,
+    MigrationUpload,
 }
 
 impl GameState {
@@ -55,8 +55,8 @@ impl GameState {
             | GameState::BattleTest
             | GameState::Restart
             | GameState::AssetSync
-            | GameState::ArenaArchiveSave
-            | GameState::ArenaArchiveUpload
+            | GameState::MigrationSave
+            | GameState::MigrationUpload
             | GameState::Loading => {}
         }
     }
