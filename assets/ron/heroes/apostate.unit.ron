@@ -7,18 +7,9 @@
     level: 1,
     houses: "Paladins",
     trigger: Fire(
-        triggers: [(AllyDeath, "Last ally died")],
-        targets: [],
-        effects: [
-            (
-                If(
-                    Equals(UnitCount(Bool(true)), Int(1)),
-                    UseAbility("Summon Guardian Angel", 1),
-                    Noop,
-                ),
-                "[Summon Guardian Angel] ({Level}+1)",
-            ),
-        ],
+        triggers: [(AllyDeath, None)],
+        targets: [(SlotUnit(Int(1)), "front ally")],
+        effects: [(UseAbility("Shield", 0), None)],
     ),
     representation: (
         material: Shape(
