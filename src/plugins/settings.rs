@@ -10,6 +10,7 @@ pub struct SettingsData {
     pub expanded_hint: bool,
     pub always_show_card: bool,
     pub dev_mode: bool,
+    pub console_output: bool,
     pub window_mode: WindowMode,
     pub resolution: Vec2,
     pub vsync: VsyncMode,
@@ -43,6 +44,7 @@ impl Default for SettingsData {
             window_mode: default(),
             always_show_card: default(),
             dev_mode: default(),
+            console_output: false,
             vsync: default(),
         }
     }
@@ -178,6 +180,28 @@ impl SettingsPlugin {
                                 .clicked()
                             {
                                 *value = !*value;
+                            }
+                        });
+                    });
+                });
+                frame(ui, |ui| {
+                    ui.columns(2, |ui| {
+                        "console output".to_colored().label(&mut ui[0]);
+                        ui[1].vertical_centered_justified(|ui| {
+                            let value = &mut data.console_output;
+                            if ui
+                                .button_or_primary(
+                                    if *value { "ENABLED" } else { "DISABLED" },
+                                    *value,
+                                )
+                                .clicked()
+                            {
+                                *value = !*value;
+                            }
+                            if *value {
+                                log::set_max_level(LevelFilter::Info);
+                            } else {
+                                log::set_max_level(LevelFilter::Off);
                             }
                         });
                     });
