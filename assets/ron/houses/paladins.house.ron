@@ -9,7 +9,7 @@
             description: "Block next incoming damage {Charges} times",
             trigger: List(
                 [
-                    Change(trigger: IncomingDamage, expr: Mul(Context(Value), Int(-1))),
+                    Change(trigger: IncomingDamage, expr: Int(-9999999)),
                     Fire(
                         triggers: [(AfterIncomingDamage, None)],
                         effects: [
