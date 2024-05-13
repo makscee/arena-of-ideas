@@ -282,7 +282,7 @@ impl Effect {
                 let text = "steal "
                     .add_color(white())
                     .push(format!("{status} "), color.c32())
-                    .push(format!("({charges})"), white())
+                    .push(format!("-{charges}"), white())
                     .set_style_ref(ColoredStringStyle::Bold)
                     .take();
                 TextColumn::add_colored(target, text, world)?;

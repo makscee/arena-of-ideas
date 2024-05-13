@@ -79,7 +79,7 @@ impl TestPlugin {
         };
         for (path, scenario) in scenarios {
             match scenario.run(world) {
-                Ok(value) => debug!(
+                Ok(value) => info!(
                     "Test run {}",
                     match value {
                         true => {
@@ -104,11 +104,11 @@ impl TestPlugin {
                     let str =
                         format!("{} {}\n{}", "Error".bold(), path.color(path_color), err).red();
                     failure.push(str.clone());
-                    debug!("Test fail: {}", str.clone())
+                    info!("Test fail: {}", str.clone())
                 }
             }
         }
-        debug!(
+        info!(
             "Tests run complete with {} successes and {} failures.\n{}\n{}",
             success.len(),
             failure.len(),
