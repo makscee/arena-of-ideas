@@ -198,11 +198,6 @@ impl SettingsPlugin {
                             {
                                 *value = !*value;
                             }
-                            if *value {
-                                log::set_max_level(LevelFilter::Info);
-                            } else {
-                                log::set_max_level(LevelFilter::Off);
-                            }
                         });
                     });
                 });
@@ -265,6 +260,11 @@ impl SettingsPlugin {
                 VsyncMode::On => PresentMode::AutoVsync,
                 VsyncMode::Off => PresentMode::AutoNoVsync,
             }
+        }
+        if data.console_output {
+            log::set_max_level(LevelFilter::Info);
+        } else {
+            log::set_max_level(LevelFilter::Off);
         }
     }
 }
