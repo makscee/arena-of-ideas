@@ -8,13 +8,17 @@
     houses: "Rogues",
     trigger: Fire(
         triggers: [(AllyDeath, None)],
-        targets: [(TargetStateLast(LastAttacker), "killer")],
+        targets: [(TargetStateLast(LastAttacker), "last attacker")],
         effects: [(UseAbility("Rob", 0), None)],
     ),
     representation: (
         material: Shape(
-            shape: Circle(radius: Sum(Sum(Float(0.81), Mul(Index, Float(-0.17))), Mul(Beat, Float(0.05)))),
-            shape_type: Line(thickness: Float(2.27)),
+            shape: Circle(
+                radius: Sum(Sum(Float(0.81), Mul(Index, Float(-0.17))), Mul(Beat, Float(0.05))),
+            ),
+            shape_type: Line(
+                thickness: Float(2.27),
+            ),
             fill: GradientLinear(
                 point1: Vec2(0.0, -0.5),
                 point2: Vec2(0.0, 0.5),
@@ -27,13 +31,13 @@
         ),
         children: [],
         mapping: {
-            Offset: Vec2EE(
-                Zero,
-                Sum(Mul(Index, Float(-0.04)), Mul(Sub(Zero, Abs(Beat)), Mul(Float(0.1), Index))),
-            ),
+            Offset: Vec2EE(Zero, Sum(Mul(Index, Float(-0.04)), Mul(Sub(Zero, Abs(Beat)), Mul(Float(0.1), Index)))),
         },
         count: 3,
     ),
-    state: (history: {}, birth: 0.0),
+    state: (
+        history: {},
+        birth: 0.0,
+    ),
     statuses: [],
 )

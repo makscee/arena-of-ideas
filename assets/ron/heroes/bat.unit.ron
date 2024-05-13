@@ -8,7 +8,7 @@
     houses: "Vampires",
     trigger: Fire(
         triggers: [(AllyDeath, None)],
-        targets: [(TargetStateLast(LastAttacker), "killer")],
+        targets: [(TargetStateLast(LastAttacker), "last attacker")],
         effects: [(UseAbility("Siphon", 1), None)],
     ),
     representation: (

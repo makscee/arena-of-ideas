@@ -8,7 +8,7 @@
     houses: "Witches",
     trigger: Fire(
         triggers: [(BeforeDeath, None)],
-        targets: [(OwnerStateLast(LastAttacker), "killer")],
+        targets: [(OwnerStateLast(LastAttacker), "last attacker")],
         effects: [(UseAbility("Weakness", 4), None)],
     ),
     representation: (
