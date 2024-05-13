@@ -187,7 +187,7 @@ impl Columns {
             Columns::TotalRuns => {
                 player
                     .data
-                    .max_round
+                    .total_runs
                     .to_string()
                     .add_color(white())
                     .label(ui);
