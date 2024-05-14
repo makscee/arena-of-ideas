@@ -4,7 +4,6 @@ use ron::{
     extensions::Extensions,
     ser::{to_string_pretty, PrettyConfig},
 };
-use spacetimedb_sdk::spacetimedb_lib::bsatn;
 
 use crate::module_bindings::*;
 
@@ -20,67 +19,66 @@ impl Plugin for MigrationPlugin {
 }
 
 const ARCHIVE_FILE: &str = "migration_archive";
-fn stash_save() {
-    info!("Arena stash save start");
-    let pool = ArenaPool::iter().collect_vec();
-    info!("Got {} teams", pool.len());
-    let pool = bsatn::to_vec(&pool).unwrap();
-
-    let mut path = home::home_dir().unwrap();
-    path.push(HOME_DIR);
-    std::fs::create_dir_all(&path).unwrap();
-
-    path.push(ARCHIVE_FILE);
-    std::fs::write(&path, pool).unwrap();
-    OperationsPlugin::add(|w| {
-        w.send_event(AppExit);
-    });
+fn stash_save(world: &mut World) {
+    info!("Stash save start");
+    Stash::create().store();
+    world.send_event(AppExit);
 }
 
 fn stash_upload() {
-    info!("Arena stash upload start");
-    let mut path = home::home_dir().unwrap();
-    path.push(HOME_DIR);
-    path.push(ARCHIVE_FILE);
-
-    match std::fs::read(&path) {
-        Err(e) => panic!("{e}"),
-        Ok(file_contents) => {
-            let pool = bsatn::from_slice::<Vec<ArenaPool>>(&file_contents).unwrap();
-            info!("{} teams uploaded", pool.len());
-            upload_pool(pool);
-            once_on_upload_pool(|_, _, s, _| {
-                debug!("{s:?}");
-                OperationsPlugin::add(|w| {
-                    w.send_event(AppExit);
-                });
-            });
-        }
-    }
+    info!("Stash upload start");
+    let (arena_archive, arena_pool, users) = Stash::load().unwrap().get_data();
+    migrate_data(arena_archive, arena_pool, users);
+    once_on_migrate_data(|_, _, s, _, _, _| {
+        info!("Upload finish with status {s:?}");
+        OperationsPlugin::add(|w| {
+            w.send_event(AppExit);
+        });
+    });
 }
 
 #[derive(Serialize, Deserialize)]
 struct Stash {
     arena_archive: Vec<StashedArenaArchive>,
+    arena_pool: Vec<StashedArenaPool>,
+    users: Vec<StashedUser>,
 }
 
 impl Stash {
+    fn get_data(self) -> (Vec<ArenaArchive>, Vec<ArenaPool>, Vec<User>) {
+        let arena_archive = self
+            .arena_archive
+            .into_iter()
+            .map(|v| v.into())
+            .collect_vec();
+        let arena_pool = self.arena_pool.into_iter().map(|v| v.into()).collect_vec();
+        let users = self.users.into_iter().map(|v| v.into()).collect_vec();
+        (arena_archive, arena_pool, users)
+    }
+
     fn path() -> PathBuf {
         let mut path = home::home_dir().unwrap();
         path.push(HOME_DIR);
+        std::fs::create_dir_all(&path).unwrap();
         path.push(ARCHIVE_FILE);
         path
     }
 
     fn create() -> Self {
         let arena_archive = ArenaArchive::iter().map(|v| v.into()).collect_vec();
+        let arena_pool = ArenaPool::iter().map(|v| v.into()).collect_vec();
+        let users = User::iter().map(|v| v.into()).collect_vec();
 
-        Self { arena_archive }
+        Self {
+            arena_archive,
+            arena_pool,
+            users,
+        }
     }
 
     fn store(self) {
         let path = Self::path();
-        std::fs::create_dir_all(&path).unwrap();
+
         match std::fs::write(
             path,
             to_string_pretty(
@@ -141,6 +139,79 @@ impl From<StashedArenaArchive> for ArenaArchive {
             loses: value.loses,
             team: value.team.into_iter().map(|u| u.into()).collect_vec(),
             timestamp: value.timestamp.into(),
+            season: 0,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct StashedArenaPool {
+    id: u64,
+    owner: u64,
+    round: u32,
+    team: Vec<PackedUnit>,
+}
+
+impl From<ArenaPool> for StashedArenaPool {
+    fn from(value: ArenaPool) -> Self {
+        Self {
+            id: value.id,
+            owner: value.owner,
+            round: value.round,
+            team: value.team.into_iter().map(|u| u.into()).collect_vec(),
+        }
+    }
+}
+
+impl From<StashedArenaPool> for ArenaPool {
+    fn from(value: StashedArenaPool) -> Self {
+        Self {
+            id: value.id,
+            owner: value.owner,
+            round: value.round,
+            team: value.team.into_iter().map(|u| u.into()).collect_vec(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct StashedUser {
+    id: u64,
+    name: String,
+    identities: Vec<Vec<u8>>,
+    pass_hash: Option<String>,
+    last_login: u64,
+}
+
+impl From<User> for StashedUser {
+    fn from(value: User) -> Self {
+        Self {
+            id: value.id,
+            name: value.name,
+            identities: value
+                .identities
+                .into_iter()
+                .map(|i| i.bytes().to_vec())
+                .collect_vec(),
+            pass_hash: value.pass_hash,
+            last_login: value.last_login.into(),
+        }
+    }
+}
+
+impl From<StashedUser> for User {
+    fn from(value: StashedUser) -> Self {
+        Self {
+            id: value.id,
+            name: value.name,
+            identities: value
+                .identities
+                .into_iter()
+                .map(|i| Identity::from_bytes(i))
+                .collect_vec(),
+            pass_hash: value.pass_hash,
+            online: false,
+            last_login: value.last_login.into(),
         }
     }
 }

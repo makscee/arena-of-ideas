@@ -16,6 +16,7 @@ pub struct GlobalSettings {
     pub g_per_round_min: i64,
     pub g_per_round_max: i64,
     pub discount_chance: f64,
+    pub season: u32,
 }
 
 impl GlobalSettings {
@@ -35,6 +36,7 @@ impl GlobalSettings {
             g_per_round_min: 5,
             g_per_round_max: 9,
             discount_chance: 0.1,
+            season: 0,
         })?;
         Ok(())
     }

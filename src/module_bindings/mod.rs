@@ -32,6 +32,7 @@ pub mod house;
 pub mod login_by_identity_reducer;
 pub mod login_reducer;
 pub mod logout_reducer;
+pub mod migrate_data_reducer;
 pub mod register_empty_reducer;
 pub mod register_reducer;
 pub mod run_buy_reducer;
@@ -73,6 +74,7 @@ pub use house::*;
 pub use login_by_identity_reducer::*;
 pub use login_reducer::*;
 pub use logout_reducer::*;
+pub use migrate_data_reducer::*;
 pub use register_empty_reducer::*;
 pub use register_reducer::*;
 pub use run_buy_reducer::*;
@@ -109,6 +111,7 @@ pub enum ReducerEvent {
     Login(login_reducer::LoginArgs),
     LoginByIdentity(login_by_identity_reducer::LoginByIdentityArgs),
     Logout(logout_reducer::LogoutArgs),
+    MigrateData(migrate_data_reducer::MigrateDataArgs),
     Register(register_reducer::RegisterArgs),
     RegisterEmpty(register_empty_reducer::RegisterEmptyArgs),
     RunBuy(run_buy_reducer::RunBuyArgs),
@@ -233,6 +236,7 @@ match &function_call.reducer[..] {
 			"login" => _reducer_callbacks.handle_event_of_type::<login_reducer::LoginArgs, ReducerEvent>(event, _state, ReducerEvent::Login),
 			"login_by_identity" => _reducer_callbacks.handle_event_of_type::<login_by_identity_reducer::LoginByIdentityArgs, ReducerEvent>(event, _state, ReducerEvent::LoginByIdentity),
 			"logout" => _reducer_callbacks.handle_event_of_type::<logout_reducer::LogoutArgs, ReducerEvent>(event, _state, ReducerEvent::Logout),
+			"migrate_data" => _reducer_callbacks.handle_event_of_type::<migrate_data_reducer::MigrateDataArgs, ReducerEvent>(event, _state, ReducerEvent::MigrateData),
 			"register" => _reducer_callbacks.handle_event_of_type::<register_reducer::RegisterArgs, ReducerEvent>(event, _state, ReducerEvent::Register),
 			"register_empty" => _reducer_callbacks.handle_event_of_type::<register_empty_reducer::RegisterEmptyArgs, ReducerEvent>(event, _state, ReducerEvent::RegisterEmpty),
 			"run_buy" => _reducer_callbacks.handle_event_of_type::<run_buy_reducer::RunBuyArgs, ReducerEvent>(event, _state, ReducerEvent::RunBuy),

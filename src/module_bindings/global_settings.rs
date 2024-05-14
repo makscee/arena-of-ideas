@@ -27,6 +27,7 @@ pub struct GlobalSettings {
     pub g_per_round_min: i64,
     pub g_per_round_max: i64,
     pub discount_chance: f64,
+    pub season: u32,
 }
 
 impl TableType for GlobalSettings {
@@ -86,5 +87,9 @@ impl GlobalSettings {
     #[allow(unused)]
     pub fn filter_by_discount_chance(discount_chance: f64) -> TableIter<Self> {
         Self::filter(|row| row.discount_chance == discount_chance)
+    }
+    #[allow(unused)]
+    pub fn filter_by_season(season: u32) -> TableIter<Self> {
+        Self::filter(|row| row.season == season)
     }
 }

@@ -279,7 +279,7 @@
 			"problemMatcher": [
 				"$rustc"
 			],
-			"label": "Archive Runs",
+			"label": "Stash Store",
 			"args": [
 				"--features",
 				"bevy/dynamic_linking",
@@ -300,7 +300,7 @@
 			"problemMatcher": [
 				"$rustc"
 			],
-			"label": "Upload Runs",
+			"label": "Stash Upload",
 			"args": [
 				"--features",
 				"bevy/dynamic_linking",

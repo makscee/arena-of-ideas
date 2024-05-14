@@ -6,7 +6,6 @@ use super::*;
 #[spacetimedb(table)]
 pub struct User {
     #[primarykey]
-    #[autoinc]
     pub id: u64,
     #[unique]
     pub name: String,
@@ -20,7 +19,7 @@ pub struct User {
 fn register_empty(ctx: ReducerContext) -> Result<(), String> {
     User::clear_identity(&ctx.sender);
     let user = User {
-        id: 0,
+        id: GlobalData::next_id(),
         identities: vec![ctx.sender],
         name: format!("player#{}", User::iter().count()),
         pass_hash: None,
@@ -37,7 +36,7 @@ fn register(ctx: ReducerContext, name: String, pass: String) -> Result<(), Strin
     let pass_hash = Some(User::hash_pass(pass)?);
     User::clear_identity(&ctx.sender);
     User::insert(User {
-        id: 0,
+        id: GlobalData::next_id(),
         identities: vec![ctx.sender],
         name,
         pass_hash,

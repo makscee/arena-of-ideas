@@ -6,6 +6,7 @@ use super::*;
 pub struct GlobalData {
     #[unique]
     always_zero: u32,
+    next_id: u64,
     pub game_version: String,
     pub last_sync: Timestamp,
 }
@@ -15,10 +16,23 @@ impl GlobalData {
     pub fn init() -> Result<(), String> {
         GlobalData::insert(GlobalData {
             always_zero: 0,
+            next_id: 1,
             game_version: VERSION.to_owned(),
             last_sync: Timestamp::UNIX_EPOCH,
         })?;
         Ok(())
+    }
+
+    pub fn next_id() -> u64 {
+        let mut gd = GlobalData::filter_by_always_zero(&0).unwrap();
+        let id = gd.next_id;
+        gd.next_id += 1;
+        GlobalData::update_by_always_zero(&0, gd);
+        id
+    }
+
+    pub fn get() -> Self {
+        GlobalData::filter_by_always_zero(&0).unwrap()
     }
 }
 
@@ -84,6 +98,36 @@ fn sync_data(
     }
     let mut gd = GlobalData::filter_by_always_zero(&0).unwrap();
     gd.last_sync = Timestamp::now();
+    GlobalData::update_by_always_zero(&0, gd);
+    Ok(())
+}
+
+#[spacetimedb(reducer)]
+fn migrate_data(
+    ctx: ReducerContext,
+    arena_archive: Vec<ArenaArchive>,
+    arena_pool: Vec<ArenaPool>,
+    users: Vec<User>,
+) -> Result<(), String> {
+    UserRight::UnitSync.check(&ctx.sender)?;
+    let mut max_id = 0;
+    for v in arena_archive {
+        max_id = max_id.max(v.id);
+        ArenaArchive::insert(v)?;
+    }
+    for v in arena_pool {
+        max_id = max_id.max(v.id);
+        ArenaPool::insert(v)?;
+    }
+    for v in User::iter() {
+        User::delete_by_id(&v.id);
+    }
+    for v in users {
+        max_id = max_id.max(v.id);
+        User::insert(v)?;
+    }
+    let mut gd = GlobalData::get();
+    gd.next_id = max_id + 1;
     GlobalData::update_by_always_zero(&0, gd);
     Ok(())
 }

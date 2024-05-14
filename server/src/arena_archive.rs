@@ -11,5 +11,6 @@ pub struct ArenaArchive {
     pub wins: u32,
     pub loses: u32,
     pub team: Vec<TableUnit>,
+    pub season: u32,
     pub timestamp: Timestamp,
 }

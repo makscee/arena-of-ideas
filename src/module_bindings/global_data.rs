@@ -15,6 +15,7 @@ use spacetimedb_sdk::{
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct GlobalData {
     pub always_zero: u32,
+    pub next_id: u64,
     pub game_version: String,
     pub last_sync: u64,
 }
@@ -28,6 +29,10 @@ impl GlobalData {
     #[allow(unused)]
     pub fn filter_by_always_zero(always_zero: u32) -> Option<Self> {
         Self::find(|row| row.always_zero == always_zero)
+    }
+    #[allow(unused)]
+    pub fn filter_by_next_id(next_id: u64) -> TableIter<Self> {
+        Self::filter(|row| row.next_id == next_id)
     }
     #[allow(unused)]
     pub fn filter_by_game_version(game_version: String) -> TableIter<Self> {

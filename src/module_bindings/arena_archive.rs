@@ -21,6 +21,7 @@ pub struct ArenaArchive {
     pub wins: u32,
     pub loses: u32,
     pub team: Vec<TableUnit>,
+    pub season: u32,
     pub timestamp: u64,
 }
 
@@ -60,6 +61,10 @@ impl ArenaArchive {
     #[allow(unused)]
     pub fn filter_by_team(team: Vec<TableUnit>) -> TableIter<Self> {
         Self::filter(|row| row.team == team)
+    }
+    #[allow(unused)]
+    pub fn filter_by_season(season: u32) -> TableIter<Self> {
+        Self::filter(|row| row.season == season)
     }
     #[allow(unused)]
     pub fn filter_by_timestamp(timestamp: u64) -> TableIter<Self> {

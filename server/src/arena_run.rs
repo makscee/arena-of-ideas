@@ -12,7 +12,6 @@ use super::*;
 #[spacetimedb(table)]
 pub struct ArenaRun {
     #[primarykey]
-    #[autoinc]
     id: u64,
     #[unique]
     user_id: u64,
@@ -74,7 +73,7 @@ fn run_submit_result(ctx: ReducerContext, win: bool) -> Result<(), String> {
         .collect_vec();
     if !team.is_empty() {
         ArenaPool::insert(ArenaPool {
-            id: 0,
+            id: GlobalData::next_id(),
             owner: user_id,
             round: run.round,
             team,
@@ -238,7 +237,7 @@ fn run_fuse(ctx: ReducerContext, a: u64, b: u64, unit: TableUnit) -> Result<(), 
 impl ArenaRun {
     fn new(user_id: u64) -> Self {
         Self {
-            id: 0,
+            id: GlobalData::next_id(),
             user_id,
             last_updated: Timestamp::now(),
             battles: Vec::default(),
@@ -391,6 +390,7 @@ impl ArenaRun {
             round: self.round,
             wins: self.wins(),
             loses: self.loses(),
+            season: GlobalSettings::get().season,
             team: self.state.team.into_iter().map(|u| u.unit).collect_vec(),
             timestamp: self.last_updated,
         };
