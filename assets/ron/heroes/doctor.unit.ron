@@ -1,10 +1,10 @@
 #![enable(implicit_some)]
 (
     name: "Doctor",
-    hp: 2,
-    pwr: 0,
+    hp: 3,
+    pwr: 1,
     stacks: 1,
-    level: 1,
+    rarity: 3,
     houses: "Medics",
     trigger: Fire(
         triggers: [(BattleStart, None)],

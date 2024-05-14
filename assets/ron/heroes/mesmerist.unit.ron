@@ -4,7 +4,7 @@
     hp: 1,
     pwr: 3,
     stacks: 1,
-    level: 1,
+    rarity: 0,
     houses: "Meta",
     trigger: Fire(
         triggers: [(BattleStart, None)],

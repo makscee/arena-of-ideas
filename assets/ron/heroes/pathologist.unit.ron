@@ -1,10 +1,10 @@
 #![enable(implicit_some)]
 (
     name: "Pathologist",
-    hp: 1,
+    hp: 3,
     pwr: 3,
     stacks: 1,
-    level: 1,
+    rarity: 3,
     houses: "Medics",
     trigger: Fire(
         triggers: [(AllyDeath, None)],

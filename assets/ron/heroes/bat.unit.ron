@@ -4,7 +4,7 @@
     hp: 1,
     pwr: 3,
     stacks: 1,
-    level: 1,
+    rarity: 1,
     houses: "Vampires",
     trigger: Fire(
         triggers: [(AllyDeath, None)],

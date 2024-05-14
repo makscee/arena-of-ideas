@@ -4,7 +4,7 @@
     hp: 2,
     pwr: 4,
     stacks: 1,
-    level: 1,
+    rarity: 3,
     houses: "Vampires",
     trigger: Fire(
         triggers: [(BattleStart, None)],

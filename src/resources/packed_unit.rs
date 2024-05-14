@@ -1,3 +1,5 @@
+use strum_macros::FromRepr;
+
 use crate::module_bindings::{StatusCharges, TableUnit};
 
 use super::*;
@@ -13,8 +15,8 @@ pub struct PackedUnit {
     pub pwr: i32,
     #[serde(default = "default_one")]
     pub stacks: i32,
-    #[serde(default = "default_one")]
-    pub level: i32,
+    #[serde(default = "default_zero")]
+    pub rarity: i32,
     #[serde(default = "default_houses")]
     pub houses: String,
     #[serde(default)]
@@ -35,6 +37,9 @@ fn default_text() -> String {
 }
 fn default_one() -> i32 {
     1
+}
+fn default_zero() -> i32 {
+    0
 }
 
 pub const LOCAL_TRIGGER: &str = "_local";
@@ -109,7 +114,15 @@ impl PackedUnit {
             .init(VarName::Hp, VarValue::Int(self.hp))
             .init(VarName::Pwr, VarValue::Int(self.pwr))
             .init(VarName::Stacks, VarValue::Int(self.stacks))
-            .init(VarName::Level, VarValue::Int(self.level))
+            .init(
+                VarName::Level,
+                VarValue::Int(Self::level_from_stacks(self.stacks).0),
+            )
+            .init(VarName::Rarity, VarValue::Int(self.rarity))
+            .init(
+                VarName::RarityColor,
+                VarValue::Color(Rarity::from_repr(self.rarity).unwrap().color().to_color()),
+            )
             .init(VarName::Houses, VarValue::String(self.houses.clone()))
             .init(VarName::Name, VarValue::String(self.name.clone()))
             .init(VarName::Position, VarValue::Vec2(default()))
@@ -144,13 +157,23 @@ impl PackedUnit {
             .copied()
     }
 
+    /// 1 = 1
+    /// 2 = 2
+    /// 4 = 3
+    /// 7 = 4
+    pub fn level_from_stacks(stacks: i32) -> (i32, i32) {
+        let lvl = (-1 + (1.0 + 8.0 * (stacks - 1) as f32).sqrt() as i32) / 2 + 1;
+        let to_next = lvl * (lvl + 1) / 2 + 1 - stacks;
+        (lvl, to_next)
+    }
+
     pub fn pack(entity: Entity, world: &World) -> Self {
         let representation = Representation::pack(entity, world);
         let mut state = VarState::get(entity, world).clone();
         let hp = state.get_int(VarName::Hp).unwrap();
         let pwr = state.get_int(VarName::Pwr).unwrap();
         let stacks = state.get_int(VarName::Stacks).unwrap();
-        let level = state.get_int(VarName::Level).unwrap();
+        let rarity = state.get_int(VarName::Rarity).unwrap();
         let name = state.get_string(VarName::Name).unwrap();
         let houses = state.get_string(VarName::Houses).unwrap();
         let mut trigger = None;
@@ -191,7 +214,7 @@ impl PackedUnit {
             state,
             statuses,
             stacks,
-            level,
+            rarity,
         }
     }
 
@@ -212,8 +235,7 @@ impl PackedUnit {
         fused.pwr = fused.pwr.max(source.pwr);
         fused.houses = format!("{}+{}", target.houses, source.houses);
         fused.name = format!("{}+{}", fused.name, source.name);
-        fused.level = 1;
-        fused.stacks = 1;
+        fused.stacks = target.stacks + source.stacks - 3;
         fused.trigger = trigger;
         fused
     }
@@ -307,9 +329,12 @@ impl PackedUnit {
             if DragValue::new(dmg).clamp_range(0..=99).ui(ui).changed() {
                 self.state.init(VarName::Dmg, VarValue::Int(*dmg));
             }
-            let lvl = &mut self.level;
-            ui.label("lvl:");
-            DragValue::new(lvl).clamp_range(1..=99).ui(ui);
+            let stacks = &mut self.stacks;
+            ui.label("stacks:");
+            DragValue::new(stacks).clamp_range(1..=99).ui(ui);
+            let rarity = &mut self.rarity;
+            ui.label("rarity:");
+            DragValue::new(rarity).clamp_range(0..=3).ui(ui);
         });
         ui.horizontal(|ui| {
             let houses: HashMap<String, Color> = HashMap::from_iter(
@@ -367,6 +392,26 @@ impl PackedUnit {
     }
 }
 
+#[derive(FromRepr, AsRefStr, EnumIter, PartialEq, Clone)]
+#[repr(i32)]
+pub enum Rarity {
+    Common,
+    Rare,
+    Epic,
+    Legendary,
+}
+
+impl Rarity {
+    pub fn color(&self) -> Color32 {
+        match self {
+            Rarity::Common => hex_color!("#B0BEC5"),
+            Rarity::Rare => hex_color!("#0277BD"),
+            Rarity::Epic => hex_color!("#AB47BC"),
+            Rarity::Legendary => hex_color!("#F57C00"),
+        }
+    }
+}
+
 impl From<PackedUnit> for TableUnit {
     fn from(val: PackedUnit) -> Self {
         TableUnit {
@@ -375,7 +420,7 @@ impl From<PackedUnit> for TableUnit {
             hp: val.hp,
             pwr: val.pwr,
             stacks: val.stacks,
-            level: val.level,
+            rarity: val.rarity,
             statuses: val
                 .statuses
                 .into_iter()
@@ -394,7 +439,7 @@ impl From<TableUnit> for PackedUnit {
             hp: value.hp,
             pwr: value.pwr,
             stacks: value.stacks,
-            level: value.level,
+            rarity: value.rarity,
             houses: value.houses,
             name: value.name,
             trigger: ron::from_str(&value.trigger).unwrap(),

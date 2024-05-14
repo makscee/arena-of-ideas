@@ -49,7 +49,6 @@
             hp: 10,
             pwr: 10,
             stacks: 1,
-            level: 1,
             houses: "Warlocks",
             representation: (
                 material: Shape(

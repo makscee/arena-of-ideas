@@ -217,7 +217,7 @@ impl ShopPlugin {
             state.set_int(VarName::Hp, unit.hp);
             state.set_int(VarName::Pwr, unit.pwr);
             state.set_int(VarName::Stacks, unit.stacks);
-            state.set_int(VarName::Level, unit.level);
+            state.set_int(VarName::Level, PackedUnit::level_from_stacks(unit.stacks).0);
             state.set_string(VarName::Houses, unit.houses.clone());
         }
     }

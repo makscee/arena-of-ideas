@@ -67,6 +67,10 @@ impl VarState {
             );
         Ok(result)
     }
+    fn rarity(&self) -> Result<ColoredString> {
+        let r = Rarity::from_repr(self.get_int(VarName::Rarity)?).context("No rarity for disc")?;
+        Ok(r.as_ref().add_color(r.color()))
+    }
     fn description(&self, expanded: bool, world: &World) -> Result<Vec<(Icon, ColoredString)>> {
         let t = GameTimer::get().play_head();
         let mut result: Vec<(Icon, ColoredString)> = default();
@@ -135,18 +139,27 @@ impl VarState {
     }
     fn extra_lines(&self) -> Result<Vec<(ColoredString, ColoredString)>> {
         let t = GameTimer::get().play_head();
-        let level = self.get_int_at(VarName::Level, t)?;
         let stacks = self.get_int_at(VarName::Stacks, t)?;
-        let stacks = format!("{stacks}/{} ", level + 1);
+        let (level, to_next) = PackedUnit::level_from_stacks(stacks);
+        let to_next = format!("({} stack to next) ", to_next);
         let level_line = (
             "level".to_colored(),
-            stacks
+            to_next
                 .to_colored()
                 .push_styled(level.to_string(), white(), ColoredStringStyle::Bold)
                 .take(),
         );
+        let stacks = self.get_int_at(VarName::Stacks, t)?;
         let pwr = self.get_int_at(VarName::Pwr, t)?;
         let hp = self.get_int_at(VarName::Hp, t)?;
+        let stacks_line = (
+            "stacks".to_colored(),
+            stacks
+                .to_string()
+                .add_color(white())
+                .set_style_ref(ColoredStringStyle::Bold)
+                .take(),
+        );
         let hp_line = (
             "hp".to_colored(),
             hp.to_string()
@@ -161,7 +174,7 @@ impl VarState {
                 .set_style_ref(ColoredStringStyle::Bold)
                 .take(),
         );
-        Ok([level_line, atk_line, hp_line].into())
+        Ok([level_line, stacks_line, atk_line, hp_line].into())
     }
     fn statuses(
         &self,
@@ -271,6 +284,10 @@ impl VarState {
         ui.vertical_centered(|ui| name.label(ui));
     }
 
+    fn show_rarity(rarity: ColoredString, ui: &mut Ui) {
+        ui.vertical_centered(|ui| rarity.label(ui));
+    }
+
     fn show_houses(houses: ColoredString, ui: &mut Ui) {
         ui.vertical_centered(|ui| houses.label(ui));
     }
@@ -304,6 +321,10 @@ impl VarState {
         }
         let houses = self.houses(world)?;
         Self::show_houses(houses, ui);
+        let rarity = self.rarity();
+        if let Ok(rarity) = rarity {
+            Self::show_rarity(rarity, ui);
+        }
         let expanded = ui.input(|i| i.modifiers.shift) || SettingsData::get(world).expanded_hint;
         let description = self.description(expanded, world);
         let statuses_colored = self.statuses(&statuses, world);
@@ -356,28 +377,6 @@ impl VarState {
         Ok(())
     }
 
-    pub fn show_state_card_window(
-        &self,
-        id: impl std::hash::Hash,
-        statuses: Vec<(String, i32)>,
-        open: bool,
-        ctx: &egui::Context,
-        world: &World,
-    ) {
-        window("UNIT")
-            .id(id)
-            .set_width(if open { 300.0 } else { 140.0 })
-            .title_bar(false)
-            .order(if open {
-                egui::Order::Foreground
-            } else {
-                Order::Middle
-            })
-            .show(ctx, |ui| {
-                let _ = self.show_frames(statuses, open, ui, world);
-            });
-    }
-
     pub fn show_state_card_ui(
         &self,
         id: impl std::hash::Hash,
@@ -386,18 +385,9 @@ impl VarState {
         ui: &mut Ui,
         world: &World,
     ) {
-        window("UNIT")
-            .id(id)
-            .set_width(if open { 200.0 } else { 140.0 })
-            .title_bar(false)
-            .order(if open {
-                egui::Order::Foreground
-            } else {
-                Order::Middle
-            })
-            .show_ui(ui, |ui| {
-                let _ = self.show_frames(statuses, open, ui, world);
-            });
+        Self::window(self, id, open).show_ui(ui, |ui| {
+            let _ = self.show_frames(statuses, open, ui, world);
+        });
     }
 
     pub fn show_entity_card_window(
@@ -413,35 +403,28 @@ impl VarState {
                 return;
             }
         }
-        window("UNIT")
-            .id(entity)
-            .set_width(if open { 300.0 } else { 120.0 })
-            .title_bar(false)
-            .order(if open {
-                egui::Order::Foreground
-            } else {
-                Order::Middle
-            })
+        let id = Id::new(entity);
+        Self::window(self, id, open)
             .entity_anchor(entity, Align2::CENTER_TOP, vec2(0.0, -1.2), world)
             .show(ctx, |ui| {
                 let _ = self.show_frames(statuses, open, ui, world);
             });
     }
 
-    pub fn show_entity_card_ui(
-        &self,
-        entity: Entity,
-        statuses: Vec<(String, i32)>,
-        open: bool,
-        ui: &mut Ui,
-        world: &World,
-    ) {
-        window("UNIT")
-            .id(entity)
-            .set_width(if open { 300.0 } else { 120.0 })
+    fn window(&self, id: impl std::hash::Hash, open: bool) -> GameWindow<'static> {
+        let w = window("UNIT")
+            .id(id)
+            .set_width(if open { 300.0 } else { 140.0 })
             .title_bar(false)
-            .show_ui(ui, |ui| {
-                let _ = self.show_frames(statuses, open, ui, world);
+            .order(if open {
+                egui::Order::Foreground
+            } else {
+                Order::Middle
             });
+        if let Ok(c) = self.get_color(VarName::RarityColor) {
+            w.set_color(c.c32())
+        } else {
+            w
+        }
     }
 }

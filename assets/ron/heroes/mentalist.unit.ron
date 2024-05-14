@@ -4,7 +4,7 @@
     hp: 1,
     pwr: 2,
     stacks: 1,
-    level: 1,
+    rarity: 3,
     houses: "Meta",
     trigger: Fire(
         triggers: [(BeforeDeath, None)],

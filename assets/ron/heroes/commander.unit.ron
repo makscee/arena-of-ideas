@@ -4,7 +4,7 @@
     hp: 2,
     pwr: 3,
     stacks: 1,
-    level: 1,
+    rarity: 1,
     houses: "Warriors",
     trigger: Fire(
         triggers: [(BattleStart, None)],

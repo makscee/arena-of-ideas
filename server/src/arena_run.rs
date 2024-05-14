@@ -191,10 +191,6 @@ fn run_stack(ctx: ReducerContext, target: u64, source: u64) -> Result<(), String
     target.pwr += 1;
     target.hp += 1;
     target.stacks += 1;
-    if target.stacks >= target.level + 1 {
-        target.stacks -= target.level;
-        target.level += 1;
-    }
     run.state.team.remove(i_source);
     run.save();
     Ok(())

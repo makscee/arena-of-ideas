@@ -4,7 +4,7 @@
     hp: 5,
     pwr: 1,
     stacks: 1,
-    level: 1,
+    rarity: 0,
     houses: "Death Knights",
     trigger: Fire(
         triggers: [(Period(0, 1, TurnEnd), "every 2 turns")],

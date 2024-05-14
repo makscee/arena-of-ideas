@@ -212,9 +212,14 @@ fn show_team(run: &ArenaArchive, short: bool, ui: &mut Ui, world: &mut World) ->
                             .unwrap_or(white()),
                     )
                     .label(ui);
-                format!("{}/{} lvl:{}", unit.pwr, unit.hp, unit.level)
-                    .to_colored()
-                    .label(ui);
+                format!(
+                    "{}/{} lvl:{}",
+                    unit.pwr,
+                    unit.hp,
+                    PackedUnit::level_from_stacks(unit.stacks).0
+                )
+                .to_colored()
+                .label(ui);
                 for house in unit.houses.split("+") {
                     house
                         .add_color(

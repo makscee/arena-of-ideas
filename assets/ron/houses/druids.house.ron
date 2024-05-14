@@ -27,7 +27,6 @@
             hp: 3,
             pwr: 0,
             stacks: 1,
-            level: 1,
             houses: "Druids",
             representation: (
                 material: Shape(

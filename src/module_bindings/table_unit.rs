@@ -20,7 +20,7 @@ pub struct TableUnit {
     pub pwr: i32,
     pub houses: String,
     pub stacks: i32,
-    pub level: i32,
+    pub rarity: i32,
     pub statuses: Vec<StatusCharges>,
     pub trigger: String,
     pub representation: String,
@@ -61,8 +61,8 @@ impl TableUnit {
         Self::filter(|row| row.stacks == stacks)
     }
     #[allow(unused)]
-    pub fn filter_by_level(level: i32) -> TableIter<Self> {
-        Self::filter(|row| row.level == level)
+    pub fn filter_by_rarity(rarity: i32) -> TableIter<Self> {
+        Self::filter(|row| row.rarity == rarity)
     }
     #[allow(unused)]
     pub fn filter_by_statuses(statuses: Vec<StatusCharges>) -> TableIter<Self> {

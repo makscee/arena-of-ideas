@@ -4,7 +4,7 @@
     hp: 4,
     pwr: 1,
     stacks: 1,
-    level: 1,
+    rarity: 1,
     houses: "Mages",
     trigger: Fire(
         triggers: [(AfterStrike, None)],

@@ -4,7 +4,7 @@
     hp: 3,
     pwr: 2,
     stacks: 1,
-    level: 1,
+    rarity: 0,
     houses: "Rogues",
     trigger: Fire(
         triggers: [(AllyUsedAbility("Rob"), None)],

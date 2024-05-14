@@ -52,7 +52,6 @@
             hp: 1,
             pwr: 10,
             stacks: 1,
-            level: 1,
             houses: "Paladins",
             representation: (
                 material: Shape(

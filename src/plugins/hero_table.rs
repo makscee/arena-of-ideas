@@ -102,6 +102,7 @@ impl HeroTablePlugin {
                                 Column::House => {
                                     td.units.sort_by_cached_key(|u| u.houses.to_owned())
                                 }
+                                Column::Rarity => td.units.sort_by_cached_key(|u| u.rarity),
                                 Column::Trigger => {
                                     td.units.sort_by_cached_key(|u| match &u.trigger {
                                         Trigger::Fire {
@@ -253,6 +254,7 @@ pub struct HeroTableData {
 enum Column {
     Name,
     House,
+    Rarity,
     Pwr,
     Hp,
     Trigger,
@@ -282,7 +284,7 @@ impl Column {
                         .ui(ui);
                 }
                 Column::House => {
-                    let house: &mut String = &mut unit.houses;
+                    let house = &mut unit.houses;
                     ComboBox::from_id_source(Id::new(&unit.name).with(i))
                         .selected_text(
                             house
@@ -295,6 +297,21 @@ impl Column {
                             for (h, c) in houses.iter().sorted_by_key(|(k, _)| k.to_owned()) {
                                 let text = h.clone().add_color(*c).rich_text(ui);
                                 ui.selectable_value(house, h.clone(), text);
+                            }
+                        });
+                }
+                Column::Rarity => {
+                    let r = &mut unit.rarity;
+                    let mut rarity = Rarity::from_repr(*r).unwrap();
+                    ComboBox::from_id_source(Id::new(&unit.name).with(i).with("rarity"))
+                        .selected_text(rarity.as_ref().add_color(rarity.color()).rich_text(ui))
+                        .width(140.0)
+                        .show_ui(ui, |ui| {
+                            for v in Rarity::iter() {
+                                let text = v.as_ref().add_color(v.color()).rich_text(ui);
+                                if ui.selectable_value(&mut rarity, v.clone(), text).changed() {
+                                    *r = rarity.clone() as i32;
+                                }
                             }
                         });
                 }

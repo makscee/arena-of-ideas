@@ -4,7 +4,7 @@
     hp: 3,
     pwr: 0,
     stacks: 1,
-    level: 1,
+    rarity: 1,
     houses: "Death Knights",
     trigger: Fire(
         triggers: [(AfterDamageTaken, None)],

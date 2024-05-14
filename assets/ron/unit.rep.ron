@@ -2,7 +2,7 @@
     material: Shape(
         shape: Circle(radius: Sum(Mul(Beat, Float(0.1)), Float(1.0))),
         shape_type: Line(thickness: Float(0.7)),
-        fill: Solid(color: Hex("#B0BEC5")),
+        fill: Solid(color: OwnerState(RarityColor)),
         padding: Float(0.2),
     ),
     children: [

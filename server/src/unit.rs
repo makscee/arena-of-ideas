@@ -9,7 +9,7 @@ pub struct TableUnit {
     pub pwr: i32,
     pub houses: String,
     pub stacks: i32,
-    pub level: i32,
+    pub rarity: i32,
     pub statuses: Vec<StatusCharges>,
     pub trigger: String,
     pub representation: String,

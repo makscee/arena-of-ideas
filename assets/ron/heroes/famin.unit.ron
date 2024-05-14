@@ -1,10 +1,10 @@
 #![enable(implicit_some)]
 (
     name: "Famin",
-    hp: 1,
+    hp: 3,
     pwr: 1,
     stacks: 1,
-    level: 1,
+    rarity: 3,
     houses: "Death Knights",
     trigger: Fire(
         triggers: [(Period(0, 4, TurnEnd), "every 5 turns")],

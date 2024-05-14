@@ -45,7 +45,6 @@
             hp: 4,
             pwr: 1,
             stacks: 1,
-            level: 1,
             houses: "Death Knights",
             trigger: Fire(
                 triggers: [(AfterDamageDealt, None)],

@@ -4,7 +4,7 @@
     hp: 1,
     pwr: 1,
     stacks: 1,
-    level: 1,
+    rarity: 2,
     houses: "Dragons",
     trigger: Fire(
         triggers: [(TurnEnd, None)],

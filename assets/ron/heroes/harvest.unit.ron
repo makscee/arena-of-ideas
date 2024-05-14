@@ -4,7 +4,7 @@
     hp: 4,
     pwr: 1,
     stacks: 1,
-    level: 1,
+    rarity: 1,
     houses: "Druids",
     trigger: Fire(
         triggers: [(OnceAfter(4, TurnEnd), "in 5 turns")],
