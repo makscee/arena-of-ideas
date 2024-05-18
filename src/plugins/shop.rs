@@ -232,11 +232,11 @@ impl ShopPlugin {
             unit,
         } in offers
         {
-            let price = if *discount {
-                gs.price_unit_sell
-            } else {
-                gs.price_unit_buy
-            };
+            let mut price = gs.rarity_prices.prices[unit.unit.rarity as usize];
+            if *discount {
+                price = (price as f32 * gs.price_unit_discount) as i32;
+            }
+
             if let Some(entity) = world_units.get(&unit.id) {
                 let mut state = VarState::get_mut(*entity, world);
                 state.set_int(VarName::Price, price as i32);
@@ -450,9 +450,11 @@ impl ShopPlugin {
             for (entity, faction) in units {
                 let is_shop = faction == Faction::Shop;
                 let state = VarState::get(entity, world);
-                let price = state.get_int(VarName::Price).unwrap_or_default() as i64;
+                let price = state.get_int(VarName::Price).unwrap_or_default();
+                let rarity = state.get_int(VarName::Rarity).unwrap_or_default() as usize;
                 let freeze = state.get_bool(VarName::Freeze).unwrap_or_default();
-                let discount = if is_shop && price < gs.price_unit_buy {
+                let initial_price = gs.rarity_prices.prices[rarity];
+                let discount = if is_shop && price < initial_price {
                     Some("discount".add_color(yellow()))
                 } else {
                     None
@@ -463,7 +465,11 @@ impl ShopPlugin {
                         if let Some(stack) = stack.get(&entity) {
                             if !stack.is_empty() {
                                 let text = if is_shop {
-                                    format!("Stack -{} g", gs.price_unit_buy_stack.min(price))
+                                    format!(
+                                        "Stack -{} g",
+                                        ((gs.price_unit_buy_stack * initial_price as f32) as i32)
+                                            .min(price)
+                                    )
                                 } else {
                                     "Stack".to_owned()
                                 };
@@ -524,7 +530,7 @@ impl ShopPlugin {
                                 entity,
                                 offset,
                                 yellow(),
-                                &format!("-{} g", gs.price_unit_buy.min(price)),
+                                &format!("-{} g", price),
                                 &discount.clone().or_else(|| Some("buy".to_colored())),
                                 false,
                                 |world| {

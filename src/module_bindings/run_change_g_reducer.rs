@@ -14,7 +14,7 @@ use spacetimedb_sdk::{
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct RunChangeGArgs {
-    pub delta: i64,
+    pub delta: i32,
 }
 
 impl Reducer for RunChangeGArgs {
@@ -22,13 +22,13 @@ impl Reducer for RunChangeGArgs {
 }
 
 #[allow(unused)]
-pub fn run_change_g(delta: i64) {
+pub fn run_change_g(delta: i32) {
     RunChangeGArgs { delta }.invoke();
 }
 
 #[allow(unused)]
 pub fn on_run_change_g(
-    mut __callback: impl FnMut(&Identity, Option<Address>, &Status, &i64) + Send + 'static,
+    mut __callback: impl FnMut(&Identity, Option<Address>, &Status, &i32) + Send + 'static,
 ) -> ReducerCallbackId<RunChangeGArgs> {
     RunChangeGArgs::on_reducer(move |__identity, __addr, __status, __args| {
         let RunChangeGArgs { delta } = __args;
@@ -38,7 +38,7 @@ pub fn on_run_change_g(
 
 #[allow(unused)]
 pub fn once_on_run_change_g(
-    __callback: impl FnOnce(&Identity, Option<Address>, &Status, &i64) + Send + 'static,
+    __callback: impl FnOnce(&Identity, Option<Address>, &Status, &i32) + Send + 'static,
 ) -> ReducerCallbackId<RunChangeGArgs> {
     RunChangeGArgs::once_on_reducer(move |__identity, __addr, __status, __args| {
         let RunChangeGArgs { delta } = __args;

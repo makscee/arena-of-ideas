@@ -27,7 +27,7 @@ pub struct ArenaBattle {
 }
 #[derive(SpacetimeType)]
 pub struct RunState {
-    g: i64,
+    g: i32,
     free_rerolls: u32,
     team: Vec<TeamUnit>,
     case: Vec<ShopOffer>,
@@ -96,7 +96,7 @@ fn run_submit_result(ctx: ReducerContext, win: bool) -> Result<(), String> {
     }
     if !finish {
         let settings = GlobalSettings::get();
-        run.change_g((settings.g_per_round_min + run.round as i64).min(settings.g_per_round_max));
+        run.change_g((settings.g_per_round_min + run.round as i32).min(settings.g_per_round_max));
         run.state.case.retain(|o| o.freeze && o.available);
         run.fill_case();
         run.state.free_rerolls = 1;
@@ -135,11 +135,11 @@ fn run_reroll(ctx: ReducerContext, force: bool) -> Result<(), String> {
 fn run_buy(ctx: ReducerContext, id: u64) -> Result<(), String> {
     let (_, mut run) = ArenaRun::get_by_identity(&ctx.sender)?;
     let gs = GlobalSettings::get();
-    let price = if run.find_offer(id)?.1.discount {
-        gs.price_unit_sell
-    } else {
-        gs.price_unit_buy
-    };
+    let (_, offer) = run.find_offer(id)?;
+    let mut price = gs.rarity_prices.prices[offer.unit.unit.rarity as usize];
+    if offer.discount {
+        price = (price as f32 * gs.price_unit_discount) as i32;
+    }
     run.buy(id, 0, price, false)?;
     run.save();
     Ok(())
@@ -156,14 +156,12 @@ fn run_freeze(ctx: ReducerContext, id: u64) -> Result<(), String> {
 #[spacetimedb(reducer)]
 fn run_sell(ctx: ReducerContext, id: u64) -> Result<(), String> {
     let (_, mut run) = ArenaRun::get_by_identity(&ctx.sender)?;
-    let index = run
-        .state
-        .team
-        .iter()
-        .position(|u| u.id.eq(&id))
-        .context_str("Unit not found")?;
+    let (index, unit) = run.find_team(id)?;
+    let gs = GlobalSettings::get();
+    run.change_g(
+        (gs.rarity_prices.prices[unit.unit.rarity as usize] as f32 * gs.price_unit_sell) as i32,
+    );
     run.state.team.remove(index);
-    run.change_g(GlobalSettings::get().price_unit_sell);
     run.save();
     Ok(())
 }
@@ -175,11 +173,15 @@ fn run_stack(ctx: ReducerContext, target: u64, source: u64) -> Result<(), String
         ind
     } else {
         let gs = GlobalSettings::get();
-        let price = if run.find_offer(source)?.1.discount {
-            gs.price_unit_sell
+
+        let (_, offer) = run.find_offer(source)?;
+        let mut price = gs.rarity_prices.prices[offer.unit.unit.rarity as usize];
+        let mul = if offer.discount {
+            gs.price_unit_discount
         } else {
             gs.price_unit_buy_stack
         };
+        price = (price as f32 * mul) as i32;
         if !run.can_afford(price) {
             return Err("Can't afford".to_owned());
         }
@@ -207,7 +209,7 @@ fn run_team_reorder(ctx: ReducerContext, order: Vec<u64>) -> Result<(), String> 
 }
 
 #[spacetimedb(reducer)]
-fn run_change_g(ctx: ReducerContext, delta: i64) -> Result<(), String> {
+fn run_change_g(ctx: ReducerContext, delta: i32) -> Result<(), String> {
     UserRight::UnitSync.check(&ctx.sender)?;
     let (_, mut run) = ArenaRun::get_by_identity(&ctx.sender)?;
     run.change_g(delta);
@@ -271,10 +273,10 @@ impl ArenaRun {
         ArenaRun::filter_by_user_id(user_id).context_str("No arena run in progress")
     }
 
-    fn can_afford(&self, price: i64) -> bool {
+    fn can_afford(&self, price: i32) -> bool {
         self.state.g >= price
     }
-    fn change_g(&mut self, delta: i64) {
+    fn change_g(&mut self, delta: i32) {
         self.state.g += delta;
     }
 
@@ -347,7 +349,7 @@ impl ArenaRun {
         &mut self,
         id: u64,
         slot: usize,
-        price: i64,
+        price: i32,
         skip_limit_check: bool,
     ) -> Result<(), String> {
         let (_, offer) = self.find_offer_mut(id)?;
