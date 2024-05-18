@@ -370,19 +370,24 @@ impl BattlePlugin {
             if let Some(id) = bd.run_id {
                 let data = if let Some(run) = ArenaRun::filter_by_id(id) {
                     run_active = true;
-                    Some((run.wins(), run.loses()))
+                    Some((run.wins(), run.loses(), run.lives))
                 } else if let Some(run) = ArenaArchive::filter_by_id(id) {
                     subtext.push("Run Over\n\n".to_owned(), yellow());
-                    Some((run.wins as usize, run.loses as usize))
+                    Some((run.wins as usize, run.loses as usize, 0))
                 } else {
                     None
                 };
-                if let Some((wins, loses)) = data {
+                if let Some((wins, loses, lives)) = data {
                     subtext
                         .push("Wins: ".to_owned(), light_gray())
                         .push(format!("{}", wins), white())
                         .push("\nLoses: ".to_owned(), light_gray())
-                        .push(format!("{}/3", loses), red());
+                        .push(format!("{}", loses), red());
+                    if lives > 0 {
+                        subtext
+                            .push("\nLives: ".to_owned(), light_gray())
+                            .push(format!("{}", lives), green());
+                    }
                 }
             }
             let color = match win {

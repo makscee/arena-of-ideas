@@ -20,6 +20,7 @@ pub struct ArenaRun {
     pub user_id: u64,
     pub battles: Vec<ArenaBattle>,
     pub round: u32,
+    pub lives: u32,
     pub state: RunState,
     pub last_updated: u64,
 }
@@ -52,6 +53,10 @@ impl ArenaRun {
     #[allow(unused)]
     pub fn filter_by_round(round: u32) -> TableIter<Self> {
         Self::filter(|row| row.round == round)
+    }
+    #[allow(unused)]
+    pub fn filter_by_lives(lives: u32) -> TableIter<Self> {
+        Self::filter(|row| row.lives == lives)
     }
     #[allow(unused)]
     pub fn filter_by_state(state: RunState) -> TableIter<Self> {

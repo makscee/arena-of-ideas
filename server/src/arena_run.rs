@@ -18,6 +18,7 @@ pub struct ArenaRun {
     user_id: u64,
     battles: Vec<ArenaBattle>,
     round: u32,
+    lives: u32,
     state: RunState,
     last_updated: Timestamp,
 }
@@ -72,6 +73,7 @@ fn run_submit_result(ctx: ReducerContext, win: bool) -> Result<(), String> {
         .into_iter()
         .map(|u| u.unit)
         .collect_vec();
+    let gs = GlobalSettings::get();
     if !team.is_empty() {
         ArenaPool::insert(ArenaPool {
             id: GlobalData::next_id(),
@@ -87,8 +89,13 @@ fn run_submit_result(ctx: ReducerContext, win: bool) -> Result<(), String> {
         finish = true;
     }
     run.round += 1;
+    if !win {
+        run.lives -= 1;
+    } else if run.round % 3 == 0 && run.lives < gs.max_lives {
+        run.lives += 1;
+    }
 
-    if run.loses() > 2 {
+    if run.lives == 0 {
         finish = true;
     } else {
         if let Some(enemy) = ArenaBattle::next(&run) {
@@ -96,8 +103,7 @@ fn run_submit_result(ctx: ReducerContext, win: bool) -> Result<(), String> {
         }
     }
     if !finish {
-        let settings = GlobalSettings::get();
-        run.change_g((settings.g_per_round_min + run.round as i32).min(settings.g_per_round_max));
+        run.change_g((gs.g_per_round_min + run.round as i32).min(gs.g_per_round_max));
         run.state.case.retain(|o| o.freeze && o.available);
         run.fill_case();
         run.state.free_rerolls = 1;
@@ -235,14 +241,16 @@ fn run_fuse(ctx: ReducerContext, a: u64, b: u64, unit: TableUnit) -> Result<(), 
 
 impl ArenaRun {
     fn new(user_id: u64) -> Self {
+        let gs = GlobalSettings::get();
         Self {
             id: GlobalData::next_id(),
             user_id,
             last_updated: Timestamp::now(),
             battles: Vec::default(),
             round: 0,
+            lives: gs.max_lives,
             state: RunState {
-                g: GlobalSettings::get().g_per_round_min,
+                g: gs.g_per_round_min,
                 team: Vec::default(),
                 case: Vec::default(),
                 next_id: 0,

@@ -262,7 +262,6 @@ impl ShopPlugin {
         let pos = world_to_screen(pos.extend(0.0), world);
         let pos = pos2(pos.x, pos.y);
 
-        // Self::draw_buy_panels(world);
         let _ = Self::show_hero_ui(&mut data, world);
         Self::show_info_table(world);
 
@@ -420,6 +419,17 @@ impl ShopPlugin {
                     text_dots_text(
                         &"loses".to_colored(),
                         &run.loses().to_string().add_color(white()),
+                        ui,
+                    );
+                    let max_lives = GlobalSettings::filter_by_always_zero(0).unwrap().max_lives;
+
+                    text_dots_text(
+                        &"lives".to_colored(),
+                        &run.lives
+                            .to_string()
+                            .add_color(green())
+                            .push_colored("/".to_colored())
+                            .push_colored(max_lives.to_string().add_color(white())),
                         ui,
                     );
                 });

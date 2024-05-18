@@ -18,6 +18,7 @@ pub struct GlobalSettings {
     pub discount_chance: f64,
     pub season: u32,
     pub rarities: Rarities,
+    pub max_lives: u32,
 }
 
 #[derive(SpacetimeType)]
@@ -50,6 +51,7 @@ impl GlobalSettings {
                 weights_initial: [100, 5, -10, -20].into(),
                 weights_per_round: [0, 5, 5, 5].into(),
             },
+            max_lives: 3,
         })?;
         Ok(())
     }
