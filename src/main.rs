@@ -161,9 +161,7 @@ fn main() {
             HelpPlugin,
             PlayerTablePlugin,
         ))
-        .add_systems(Update, input_world)
-        .register_type::<VarState>()
-        .register_type::<VarStateDelta>();
+        .add_systems(Update, input_world);
     app.add_systems(Startup, setup);
     match args.mode {
         RunMode::Regular

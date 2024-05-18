@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Component, Serialize, Deserialize, Clone, Debug, Reflect, Default)]
+#[derive(Component, Serialize, Deserialize, Clone, Debug, Default)]
 pub struct VarStateDelta {
     pub state: VarState,
 }

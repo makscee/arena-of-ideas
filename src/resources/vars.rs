@@ -39,9 +39,7 @@ pub enum VarName {
     Size,
     Radius,
     Houses,
-    HouseColor1,
-    HouseColor2,
-    HouseColor3,
+    HouseColors,
     Name,
     Description,
     EffectDescription,
@@ -77,7 +75,7 @@ pub enum VarName {
     RarityColor,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Reflect, PartialEq, Default)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Default)]
 pub enum VarValue {
     #[default]
     None,
@@ -90,6 +88,7 @@ pub enum VarValue {
     Entity(Entity),
     EntityList(Vec<Entity>),
     Color(Color),
+    ColorList(Vec<Color>),
 }
 
 impl VarValue {
@@ -150,6 +149,7 @@ impl VarValue {
     pub fn get_color(&self) -> Result<Color> {
         match self {
             VarValue::Color(value) => Ok(*value),
+            VarValue::ColorList(value) => value.get(0).cloned().context("No colors in list"),
             _ => Err(anyhow!("Color not supported by {self:?}")),
         }
     }
@@ -268,6 +268,9 @@ impl Display for VarValue {
             VarValue::EntityList(v) => {
                 write!(f, "[{}]", v.iter().map(|v| format!("{v:?}")).join(", "))
             }
+            VarValue::ColorList(v) => {
+                write!(f, "[{}]", v.iter().map(|v| format!("{v:?}")).join(", "))
+            }
             VarValue::Color(v) => write!(f, "{v:?}"),
             VarValue::None => write!(f, "none"),
         }
@@ -291,6 +294,13 @@ impl std::hash::Hash for VarValue {
             VarValue::EntityList(v) => {
                 for v in v {
                     (*v).to_bits().hash(state)
+                }
+            }
+            VarValue::ColorList(v) => {
+                for v in v {
+                    v.r().ord().hash(state);
+                    v.g().ord().hash(state);
+                    v.b().ord().hash(state);
                 }
             }
             VarValue::Color(v) => {

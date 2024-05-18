@@ -529,7 +529,7 @@ impl ShopPlugin {
                                     world,
                                 );
                                 let rect = resp.rect;
-                                if resp.on_hover_text("Fuse heroes together, combining their abilities\nHeroes of Level greater than 1 can be fused").hovered() {
+                                if resp.on_hover_text("Fuse heroes together, combining their abilities\nHeroes of Level greater than 1 can be a fuse source").hovered() {
                                     Self::draw_arrows(rect.center_top(), fuse, ctx, world);
                                 }
                             }
@@ -571,7 +571,11 @@ impl ShopPlugin {
                                     entity,
                                     offset,
                                     yellow(),
-                                    &format!("+{} g", gs.price_unit_sell),
+                                    &format!(
+                                        "+{} g",
+                                        (gs.rarities.prices[rarity] as f32 * gs.price_unit_sell)
+                                            as i32
+                                    ),
                                     &Some("sell".to_colored()),
                                     false,
                                     |world| {

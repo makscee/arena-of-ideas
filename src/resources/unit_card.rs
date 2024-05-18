@@ -16,32 +16,20 @@ impl VarState {
             .collect_vec();
         let len = names.len();
         for (i, name) in names.into_iter().enumerate() {
-            let name = match i {
-                0 => {
-                    if len > 1 {
-                        name.split_at(name.len() / 2).0
-                    } else {
-                        name.as_str()
-                    }
-                }
-                1 => {
-                    if len > 2 {
-                        name.split_at(name.len() / 2).0
-                    } else {
-                        name.split_at(name.len() / 2).1
-                    }
-                }
-                2 => name.split_at(name.len() / 2).1,
-                _ => name.as_str(),
+            let name = if len == 1 {
+                name.as_str()
+            } else if i == 0 {
+                name.split_at(name.len() / 2).0
+            } else {
+                name.split_at(name.len() / 2).1
             };
-            let var = match i {
-                0 => VarName::HouseColor1,
-                1 => VarName::HouseColor2,
-                2 => VarName::HouseColor3,
-                _ => panic!("Too many houses"),
+
+            let color = match self.get_value_at(VarName::HouseColors, t)? {
+                VarValue::ColorList(list) => list.get(i).map(|c| c.c32()).unwrap_or(white()),
+                _ => white(),
             };
             result
-                .push(name.to_owned(), self.get_color_at(var, t)?.c32())
+                .push(name.to_owned(), color)
                 .set_style_ref(match open {
                     true => ColoredStringStyle::Heading2,
                     false => ColoredStringStyle::Normal,

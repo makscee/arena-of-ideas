@@ -137,14 +137,8 @@ impl PackedUnit {
             .map(|h| Pools::get_house_color(h, world).unwrap_or(Color::FUCHSIA))
             .collect_vec();
         state
-            .init(VarName::HouseColor1, VarValue::Color(house_colors[0]))
-            .init(VarName::Color, VarValue::Color(house_colors[0]));
-        if let Some(color) = house_colors.get(1) {
-            state.init(VarName::HouseColor2, VarValue::Color(*color));
-        }
-        if let Some(color) = house_colors.get(2) {
-            state.init(VarName::HouseColor3, VarValue::Color(*color));
-        }
+            .init(VarName::Color, VarValue::Color(house_colors[0].clone()))
+            .init(VarName::HouseColors, VarValue::ColorList(house_colors));
         state
     }
 

@@ -25,12 +25,14 @@
 - Fusing give the most powerful heroes
 - Fusing combines heroes **Abilities** giving option of combining: triggers, targets or effects
 - Multiple targets reuse the **Ability** for each target. So e.g. Summon with multiple targets will summon multiple units (really OP)
-- Up to 3 heroes can be Fused
+- Any amount of heroes can be fused
+- Fused hero requires **Level = (fused_amount + 1)** to add a new hero
 - You can stack any hero of same **House** (color) into Fused hero
 
 # Battle
 ### Strike
 - Front heroes hit each other, dealing **PWR** damage to each other until one team dies
 - Win if your team kills all enemies
-- Play until you lose 3 times or defeat all other players
+- Play until you lose 3 lives or defeat all other players
+- Every 3 round, 1 life is replenished
 - You are always faced with random other players team of same round number
