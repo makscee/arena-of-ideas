@@ -14,13 +14,13 @@ struct BackgroundChannel {
 pub struct AudioData {
     pub play_delta: Option<f32>,
     pub prev_pos: Option<f32>,
-    pub need_rate: f64,
-    pub speed: f64,
-    pub cur_rate: f64,
+    pub need_rate: f32,
+    pub speed: f32,
+    pub cur_rate: f32,
     pub background: Handle<AudioSource>,
     pub background_filtered: Handle<AudioSource>,
 }
-const RATE_CHANGE_SPEED: f64 = 2.0;
+const RATE_CHANGE_SPEED: f32 = 2.0;
 
 impl Default for AudioData {
     fn default() -> Self {
@@ -69,23 +69,7 @@ impl AudioPlugin {
         let mut data = world.resource::<AudioData>().clone();
         data.cur_rate += (data.need_rate * data.speed - data.cur_rate)
             * RATE_CHANGE_SPEED
-            * world.resource::<Time>().delta_seconds_f64();
-        Self::background_channel(world).set_playback_rate(data.cur_rate);
-
-        let pos = Self::background_position(world);
-        if let Some(pos) = pos {
-            if let Some(prev_pos) = data.prev_pos {
-                let delta = pos as f32 - prev_pos;
-                if delta.abs() < 1.0 {
-                    data.play_delta = Some(delta);
-                } else {
-                    data.play_delta = None;
-                }
-            } else {
-                data.play_delta = None;
-            }
-            data.prev_pos = Some(pos as f32);
-        }
+            * world.resource::<Time>().delta_seconds();
         world.insert_resource(data);
     }
 
@@ -172,7 +156,7 @@ impl AudioPlugin {
         window("PLAYBACK")
             .anchor(Align2::CENTER_BOTTOM, [0.0, -50.0])
             .title_bar(false)
-            .set_width(300.0)
+            .set_width(380.0)
             .show(ctx, |ui| {
                 frame(ui, |ui| {
                     ui.columns(5, |ui| {
@@ -199,13 +183,13 @@ impl AudioPlugin {
                             AudioControls::SkipStart.show(&mut data, ui);
                         });
                         ui[1].vertical_centered_justified(|ui| {
-                            AudioControls::Speed1.show(&mut data, ui);
+                            AudioControls::SpeedHalf.show(&mut data, ui);
                         });
                         ui[2].vertical_centered_justified(|ui| {
-                            AudioControls::Speed2.show(&mut data, ui);
+                            AudioControls::SpeedNormal.show(&mut data, ui);
                         });
                         ui[3].vertical_centered_justified(|ui| {
-                            AudioControls::Speed3.show(&mut data, ui);
+                            AudioControls::SpeedDouble.show(&mut data, ui);
                         });
                         ui[4].vertical_centered_justified(|ui| {
                             AudioControls::SkipEnd.show(&mut data, ui);
@@ -224,9 +208,9 @@ enum AudioControls {
     Pause,
     StepForward,
     StepBackward,
-    Speed1,
-    Speed2,
-    Speed3,
+    SpeedHalf,
+    SpeedNormal,
+    SpeedDouble,
     SkipStart,
     SkipEnd,
 }
@@ -239,55 +223,36 @@ impl AudioControls {
             AudioControls::Pause => "Pause",
             AudioControls::StepForward => "Step forward",
             AudioControls::StepBackward => "Step backward",
-            AudioControls::Speed1 => "Speed x1",
-            AudioControls::Speed2 => "Speed x2",
-            AudioControls::Speed3 => "Speed x4",
+            AudioControls::SpeedDouble => "Set double speed",
+            AudioControls::SpeedNormal => "Set normal speed",
+            AudioControls::SpeedHalf => "Set half speed",
             AudioControls::SkipStart => "Skip to start",
             AudioControls::SkipEnd => "Skip to end",
         };
         match &self {
-            AudioControls::Speed1 => {
-                let active = data.speed == 1.0;
-                let text = "x1";
-                if if active {
-                    ui.button_primary(text)
-                } else {
-                    ui.button(text)
-                }
-                .on_hover_text(hint)
-                .clicked()
+            AudioControls::SpeedNormal => {
+                let text = format!("x{}", data.speed);
+                if Button::new(text)
+                    .wrap(false)
+                    .ui(ui)
+                    .on_hover_text(hint)
+                    .clicked()
                 {
                     data.speed = 1.0;
                 }
                 return;
             }
-            AudioControls::Speed2 => {
-                let active = data.speed == 2.0;
-                let text = "x2";
-                if if active {
-                    ui.button_primary(text)
-                } else {
-                    ui.button(text)
-                }
-                .on_hover_text(hint)
-                .clicked()
-                {
-                    data.speed = 2.0;
+            AudioControls::SpeedHalf => {
+                let text = "/ 2";
+                if ui.button(text).on_hover_text(hint).clicked() {
+                    data.speed = (data.speed / 2.0).max(0.125);
                 }
                 return;
             }
-            AudioControls::Speed3 => {
-                let active = data.speed == 4.0;
-                let text = "x4";
-                if if active {
-                    ui.button_primary(text)
-                } else {
-                    ui.button(text)
-                }
-                .on_hover_text(hint)
-                .clicked()
-                {
-                    data.speed = 4.0;
+            AudioControls::SpeedDouble => {
+                let text = "* 2";
+                if ui.button(text).on_hover_text(hint).clicked() {
+                    data.speed = (data.speed * 2.0).min(512.0);
                 }
                 return;
             }
@@ -298,9 +263,9 @@ impl AudioControls {
             AudioControls::Play
             | AudioControls::Reverse
             | AudioControls::Pause
-            | AudioControls::Speed1
-            | AudioControls::Speed2
-            | AudioControls::Speed3 => egui::vec2(30.0, 30.0),
+            | AudioControls::SpeedHalf
+            | AudioControls::SpeedNormal
+            | AudioControls::SpeedDouble => egui::vec2(30.0, 30.0),
             AudioControls::SkipStart | AudioControls::SkipEnd => egui::vec2(75.0, 30.0) * 0.5,
             AudioControls::StepBackward | AudioControls::StepForward => egui::vec2(45.0, 30.0),
         };

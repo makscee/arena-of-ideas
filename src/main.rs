@@ -190,11 +190,7 @@ fn setup(world: &mut World) {
 
 fn update(time: Res<Time>, audio: Res<AudioData>) {
     let mut timer = GameTimer::get();
-    if let Some(play_delta) = audio.play_delta {
-        timer.advance_play(play_delta);
-    } else {
-        timer.advance_play(time.delta_seconds());
-    }
+    timer.advance_play(time.delta_seconds() * audio.cur_rate);
 }
 
 fn input_world(world: &mut World) {
