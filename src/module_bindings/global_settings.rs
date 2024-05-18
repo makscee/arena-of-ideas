@@ -29,7 +29,7 @@ pub struct GlobalSettings {
     pub g_per_round_max: i32,
     pub discount_chance: f64,
     pub season: u32,
-    pub rarity_prices: Rarities,
+    pub rarities: Rarities,
 }
 
 impl TableType for GlobalSettings {
@@ -95,7 +95,7 @@ impl GlobalSettings {
         Self::filter(|row| row.season == season)
     }
     #[allow(unused)]
-    pub fn filter_by_rarity_prices(rarity_prices: Rarities) -> TableIter<Self> {
-        Self::filter(|row| row.rarity_prices == rarity_prices)
+    pub fn filter_by_rarities(rarities: Rarities) -> TableIter<Self> {
+        Self::filter(|row| row.rarities == rarities)
     }
 }

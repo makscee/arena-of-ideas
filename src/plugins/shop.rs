@@ -232,7 +232,7 @@ impl ShopPlugin {
             unit,
         } in offers
         {
-            let mut price = gs.rarity_prices.prices[unit.unit.rarity as usize];
+            let mut price = gs.rarities.prices[unit.unit.rarity as usize];
             if *discount {
                 price = (price as f32 * gs.price_unit_discount) as i32;
             }
@@ -453,7 +453,7 @@ impl ShopPlugin {
                 let price = state.get_int(VarName::Price).unwrap_or_default();
                 let rarity = state.get_int(VarName::Rarity).unwrap_or_default() as usize;
                 let freeze = state.get_bool(VarName::Freeze).unwrap_or_default();
-                let initial_price = gs.rarity_prices.prices[rarity];
+                let initial_price = gs.rarities.prices[rarity];
                 let discount = if is_shop && price < initial_price {
                     Some("discount".add_color(yellow()))
                 } else {

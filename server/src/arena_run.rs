@@ -1,8 +1,9 @@
 use std::collections::HashSet;
 
 use itertools::Itertools;
+use rand::distributions::WeightedIndex;
 use rand::seq::IteratorRandom;
-use rand::{thread_rng, Rng};
+use rand::{distributions::Distribution, thread_rng, Rng};
 use spacetimedb::Timestamp;
 
 use crate::unit::TableUnit;
@@ -136,7 +137,7 @@ fn run_buy(ctx: ReducerContext, id: u64) -> Result<(), String> {
     let (_, mut run) = ArenaRun::get_by_identity(&ctx.sender)?;
     let gs = GlobalSettings::get();
     let (_, offer) = run.find_offer(id)?;
-    let mut price = gs.rarity_prices.prices[offer.unit.unit.rarity as usize];
+    let mut price = gs.rarities.prices[offer.unit.unit.rarity as usize];
     if offer.discount {
         price = (price as f32 * gs.price_unit_discount) as i32;
     }
@@ -159,7 +160,7 @@ fn run_sell(ctx: ReducerContext, id: u64) -> Result<(), String> {
     let (index, unit) = run.find_team(id)?;
     let gs = GlobalSettings::get();
     run.change_g(
-        (gs.rarity_prices.prices[unit.unit.rarity as usize] as f32 * gs.price_unit_sell) as i32,
+        (gs.rarities.prices[unit.unit.rarity as usize] as f32 * gs.price_unit_sell) as i32,
     );
     run.state.team.remove(index);
     run.save();
@@ -175,7 +176,7 @@ fn run_stack(ctx: ReducerContext, target: u64, source: u64) -> Result<(), String
         let gs = GlobalSettings::get();
 
         let (_, offer) = run.find_offer(source)?;
-        let mut price = gs.rarity_prices.prices[offer.unit.unit.rarity as usize];
+        let mut price = gs.rarities.prices[offer.unit.unit.rarity as usize];
         let mul = if offer.discount {
             gs.price_unit_discount
         } else {
@@ -285,6 +286,13 @@ impl ArenaRun {
         self.state.next_id
     }
 
+    fn get_weight(&self, unit: &TableUnit) -> i32 {
+        let gs = GlobalSettings::get();
+        let round = self.round as i32;
+        let rarity = unit.rarity as usize;
+        (gs.rarities.weights_initial[rarity] + gs.rarities.weights_per_round[rarity] * round).max(0)
+    }
+
     fn fill_case(&mut self) {
         let settings = GlobalSettings::get();
         let slots = (settings.shop_slots_min
@@ -300,21 +308,38 @@ impl ArenaRun {
                 .map(|s| s.to_owned())
                 .collect_vec(),
         );
+        let items = TableUnit::iter()
+            .map(|u| {
+                let weight = self.get_weight(&u) as f32;
+                (u, weight)
+            })
+            .collect_vec();
+        let family_items = TableUnit::iter()
+            .filter(|u| team_houses.is_empty() || team_houses.contains(&u.houses))
+            .map(|u| {
+                let weight = self.get_weight(&u) as f32;
+                (u, weight)
+            })
+            .collect_vec();
+
+        let dist = WeightedIndex::new(items.iter().map(|item| item.1)).unwrap();
+        let dist_family = WeightedIndex::new(family_items.iter().map(|item| item.1)).unwrap();
         for i in 0..slots {
             let id = self.next_id();
-            self.state.case.push(
-                TableUnit::iter()
-                    .filter(|u| i > 0 || team_houses.is_empty() || team_houses.contains(&u.houses))
-                    .choose(&mut thread_rng())
-                    .map(|unit| ShopOffer {
-                        available: true,
-                        freeze: false,
-                        unit: TeamUnit { id, unit },
-                        discount: (&mut thread_rng())
-                            .gen_bool(GlobalSettings::get().discount_chance),
-                    })
-                    .unwrap(),
-            );
+            let unit = if i == 0 {
+                family_items[dist_family.sample(&mut thread_rng())]
+                    .0
+                    .clone()
+            } else {
+                items[dist.sample(&mut thread_rng())].0.clone()
+            };
+            let unit = ShopOffer {
+                available: true,
+                freeze: false,
+                unit: TeamUnit { id, unit },
+                discount: (&mut thread_rng()).gen_bool(GlobalSettings::get().discount_chance),
+            };
+            self.state.case.push(unit);
         }
     }
 

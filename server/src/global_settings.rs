@@ -17,12 +17,14 @@ pub struct GlobalSettings {
     pub g_per_round_max: i32,
     pub discount_chance: f64,
     pub season: u32,
-    pub rarity_prices: Rarities,
+    pub rarities: Rarities,
 }
 
 #[derive(SpacetimeType)]
 pub struct Rarities {
     pub prices: Vec<i32>,
+    pub weights_initial: Vec<i32>,
+    pub weights_per_round: Vec<i32>,
 }
 
 impl GlobalSettings {
@@ -39,12 +41,14 @@ impl GlobalSettings {
             shop_slots_min: 3,
             shop_slots_max: 6,
             shop_slots_per_round: 0.34,
-            g_per_round_min: 5,
-            g_per_round_max: 9,
+            g_per_round_min: 6,
+            g_per_round_max: 14,
             discount_chance: 0.1,
             season: 0,
-            rarity_prices: Rarities {
+            rarities: Rarities {
                 prices: [4, 6, 8, 10].into(),
+                weights_initial: [100, 5, -10, -20].into(),
+                weights_per_round: [0, 5, 5, 5].into(),
             },
         })?;
         Ok(())
