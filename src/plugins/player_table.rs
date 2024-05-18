@@ -193,10 +193,7 @@ impl Columns {
                     .label(ui);
             }
             Columns::WinRate => {
-                player
-                    .data
-                    .win_rate
-                    .to_string()
+                format!("{:.2}", player.data.win_rate)
                     .add_color(white())
                     .label(ui);
             }
