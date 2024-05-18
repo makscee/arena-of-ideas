@@ -100,6 +100,8 @@ fn run_submit_result(ctx: ReducerContext, win: bool) -> Result<(), String> {
     } else {
         if let Some(enemy) = ArenaBattle::next(&run) {
             run.battles.push(enemy);
+        } else if !win {
+            finish = true;
         }
     }
     if !finish {
