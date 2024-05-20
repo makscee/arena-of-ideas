@@ -170,10 +170,10 @@ impl BattlePlugin {
         }
         Self::strike(left, right, world)?;
         Self::after_strike(left, right, world)?;
-        Self::fatigue(world)?;
         Event::TurnEnd.send(world);
         ActionPlugin::spin(world)?;
         ActionPlugin::spin(world)?;
+        Self::fatigue(world)?;
         Ok(())
     }
 
@@ -254,17 +254,37 @@ impl BattlePlugin {
         let fatigue = turn as i32 - fatigue;
         if fatigue > 0 {
             info!("Fatigue {fatigue}");
-            let effect = Effect::Damage(Some(Expression::Int(fatigue)));
+            let damage = Effect::Damage(Some(Expression::Int(fatigue)));
+            let clear_statuses = Effect::ClearAllStatuses;
+            let text = Effect::Text(Expression::String(format!("Fatigue {fatigue}")));
+            ActionPlugin::spin(world)?;
             for (unit, _) in
                 UnitPlugin::collect_factions([Faction::Left, Faction::Right].into(), world)
             {
+                let context = Context::from_owner(unit, world)
+                    .set_target(unit, world)
+                    .take();
                 ActionPlugin::action_push_back(
-                    effect.clone(),
-                    Context::from_owner(unit, world)
-                        .set_target(unit, world)
+                    text.clone(),
+                    context
+                        .clone()
+                        .set_var(
+                            VarName::Color,
+                            VarValue::Color(hex_color!("#A1887F").color()),
+                        )
                         .take(),
                     world,
                 );
+                ActionPlugin::action_push_back(
+                    clear_statuses.clone(),
+                    context
+                        .clone()
+                        .set_var(VarName::Charges, VarValue::Int(fatigue))
+                        .take(),
+                    world,
+                );
+                ActionPlugin::spin(world)?;
+                ActionPlugin::action_push_back(damage.clone(), context.clone(), world);
             }
         }
         Ok(())

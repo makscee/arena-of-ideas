@@ -375,7 +375,12 @@ impl Effect {
             }
             Effect::Text(text) => {
                 let text = text.get_string(context, world)?;
-                TextColumn::add(context.owner(), &text, Color::PINK.c32(), world)?;
+                TextColumn::add(
+                    context.get_owner()?,
+                    &text,
+                    context.get_var(VarName::Color, world)?.get_color()?.c32(),
+                    world,
+                )?;
             }
             Effect::Vfx(name) => {
                 Pools::get_vfx(name, world)

@@ -389,6 +389,16 @@ impl IntoC32 for Color {
     }
 }
 
+pub trait IntoColor {
+    fn color(&self) -> Color;
+}
+
+impl IntoColor for Color32 {
+    fn color(&self) -> Color {
+        Color::rgba_u8(self.r(), self.g(), self.b(), self.a())
+    }
+}
+
 pub trait PrimarySecondaryExtensions {
     fn button_color(&mut self, text: impl Into<WidgetText>, color: Color32) -> Response;
     fn button_red(&mut self, text: impl Into<WidgetText>) -> Response;
