@@ -469,10 +469,10 @@ impl Effect {
                         state.set_int(VarName::Charges, 0);
                     }
                 }
-                for entity in Status::collect_unit_statuses(target, world) {
-                    let status = world.get::<Status>(entity).unwrap().clone();
+                for target_status in Status::collect_unit_statuses(target, world) {
+                    let status = world.get::<Status>(target_status).unwrap().clone();
                     if Pools::get_status(&status.name, world).is_some() {
-                        let delta = VarState::get(entity, world).get_int(VarName::Charges)?;
+                        let delta = VarState::get(target_status, world).get_int(VarName::Charges)?;
                         let name = status.name;
                         Status::change_charges(&name, owner, delta, world)?;
                     } else {
@@ -480,7 +480,7 @@ impl Effect {
                             Status::find_unit_status(owner, LOCAL_TRIGGER, world)
                         {
                             *old_status = status.clone();
-                            let state = VarState::get(entity, world).final_snapshot();
+                            let state = VarState::get(target_status, world).final_snapshot();
                             world.entity_mut(entity).insert(state);
                         }
                     }

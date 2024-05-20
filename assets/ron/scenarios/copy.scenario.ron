@@ -1,0 +1,28 @@
+#![enable(implicit_some)]
+(
+    left: (
+        units: [
+            (
+                hp: 1,
+                pwr: 1,
+                name: "left",
+                trigger: Fire(
+                    triggers: [(AfterDamageDealt, None)],
+                    targets: [(Target, None)],
+                    effects: [(UseAbility("Siphon", 2), None)],
+                ),
+            ),
+            (
+                hp: 1,
+                pwr: 0,
+                name: "left",
+                trigger: Fire(
+                    triggers: [(BattleStart, None)],
+                    targets: [(RandomAdjacentUnit, None)],
+                    effects: [(UseAbility("Copy", 0), None)],
+                ),
+            ),
+        ],
+    ),
+    right: (units: [(hp: 8, pwr: 5, name: "right")]),
+)
