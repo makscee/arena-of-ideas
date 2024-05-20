@@ -18,10 +18,13 @@ impl VarState {
         for (i, name) in names.into_iter().enumerate() {
             let name = if len == 1 {
                 name.as_str()
-            } else if i == 0 {
-                name.split_at(name.len() / 2).0
             } else {
-                name.split_at(name.len() / 2).1
+                let name = name.split(" ").last().unwrap();
+                if i == 0 {
+                    name.split_at(name.len() / 2).0
+                } else {
+                    name.split_at(name.len() / 2).1
+                }
             };
 
             let color = match self.get_value_at(VarName::HouseColors, t)? {
