@@ -51,6 +51,7 @@ pub enum FireTrigger {
     AllyDeath,
     AnyDeath,
     AllySummon,
+    EnemySummon,
     BeforeDeath,
     AfterKill,
 }
@@ -82,6 +83,11 @@ impl FireTrigger {
             FireTrigger::AllySummon => match event {
                 Event::Summon(e) => UnitPlugin::get_faction(*e, world)
                     .eq(&UnitPlugin::get_faction(context.owner(), world)),
+                _ => false,
+            },
+            FireTrigger::EnemySummon => match event {
+                Event::Summon(e) => UnitPlugin::get_faction(*e, world)
+                    .eq(&UnitPlugin::get_faction(context.owner(), world).opposite()),
                 _ => false,
             },
             FireTrigger::UnitUsedAbility(name) => match event {
@@ -162,6 +168,7 @@ impl EditorNodeGenerator for FireTrigger {
             | FireTrigger::AllyDeath
             | FireTrigger::AnyDeath
             | FireTrigger::AllySummon
+            | FireTrigger::EnemySummon
             | FireTrigger::BeforeDeath
             | FireTrigger::AfterKill
             | FireTrigger::AllyUsedAbility(..)
@@ -220,6 +227,7 @@ impl EditorNodeGenerator for FireTrigger {
             | FireTrigger::AllyDeath
             | FireTrigger::AnyDeath
             | FireTrigger::AllySummon
+            | FireTrigger::EnemySummon
             | FireTrigger::BeforeDeath
             | FireTrigger::AfterKill
             | FireTrigger::AllyUsedAbility(..)
@@ -265,6 +273,7 @@ impl EditorNodeGenerator for FireTrigger {
             | FireTrigger::AllyDeath
             | FireTrigger::AnyDeath
             | FireTrigger::AllySummon
+            | FireTrigger::EnemySummon
             | FireTrigger::BeforeDeath
             | FireTrigger::AfterKill => {}
         }
@@ -466,6 +475,7 @@ impl std::fmt::Display for FireTrigger {
             | FireTrigger::AllyDeath
             | FireTrigger::AnyDeath
             | FireTrigger::AllySummon
+            | FireTrigger::EnemySummon
             | FireTrigger::BeforeDeath
             | FireTrigger::AfterKill => {
                 write!(f, "{}", self.as_ref().to_case(convert_case::Case::Lower))
