@@ -311,10 +311,13 @@ impl VarState {
             return Ok(());
         }
         let houses = self.houses(world)?;
+        let fused = houses.lines.len() > 1;
         Self::show_houses(houses, ui);
-        let rarity = self.rarity();
-        if let Ok(rarity) = rarity {
-            Self::show_rarity(rarity, ui);
+        if !fused {
+            let rarity = self.rarity();
+            if let Ok(rarity) = rarity {
+                Self::show_rarity(rarity, ui);
+            }
         }
         let expanded = ui.input(|i| i.modifiers.shift) || SettingsData::get(world).expanded_hint;
         let description = self.description(expanded, world);
