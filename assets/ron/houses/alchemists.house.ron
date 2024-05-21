@@ -5,18 +5,21 @@
     statuses: [
         (
             name: "Petrify",
-            description: "Next damage taken increased by 25% per {Charge}",
+            description: "Next damage taken will deal\nhalf of remaining HP as damage,\nthen consume 1 charge",
             polarity: -1,
-            trigger: Change(
-                trigger: IncomingDamage,
-                expr: Mul(Context(Value), Mul(Float(0.25), Context(Charges))),
+            trigger: Fire(
+                triggers: [(AfterIncomingDamage, None)],
+                effects: [
+                    (WithVar(Charges, Int(-1), AddStatus("Petrify")), None),
+                    (Damage(Mul(Sub(Context(Hp), Context(Dmg)), Float(0.5))), None),
+                ],
             ),
         ),
     ],
     abilities: [
         (
             name: "Petrify",
-            description: "Next damage taken increased by 25%",
+            description: "Next damage taken will deal\nhalf of remaining HP as damage,\nthen consume 1 charge",
             effect: AddStatus("Petrify"),
         ),
     ],
