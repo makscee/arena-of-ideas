@@ -5,10 +5,19 @@
     statuses: [
         (
             name: "Petrify",
-            description: "Next taken damage is lethal",
+            description: "Next damage taken increased by 25% per {Charge}",
             polarity: -1,
-            trigger: Fire(triggers: [(AfterDamageTaken, None)], effects: [(Kill, None)]),
+            trigger: Change(
+                trigger: IncomingDamage,
+                expr: Mul(Context(Value), Mul(Float(0.25), Context(Charges))),
+            ),
         ),
     ],
-    abilities: [(name: "Petrify", description: "Next taken damage is lethal", effect: AddStatus("Petrify"))],
+    abilities: [
+        (
+            name: "Petrify",
+            description: "Next damage taken increased by 25%",
+            effect: AddStatus("Petrify"),
+        ),
+    ],
 )
