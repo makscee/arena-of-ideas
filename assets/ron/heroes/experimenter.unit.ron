@@ -11,7 +11,7 @@
         targets: [],
         effects: [
             (
-                AbilityStateAddVar("Summon Skeleton", T, String("Plague on damage dealt")),
+                AbilityStateAddVar("Summon Skeleton", M1, Int(1)),
                 "[Skeleton] applies [Plague] on attack",
             ),
         ],

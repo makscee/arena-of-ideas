@@ -40,7 +40,11 @@
         ),
     ],
     abilities: [
-        (name: "Shield", description: "Block next incoming damage", effect: AddStatus("Shield")),
+        (
+            name: "Shield",
+            description: "Block next incoming damage{M1|, reflect any blocked damage back to attacker}",
+            effect: AddStatus("Shield"),
+        ),
         (
             name: "Summon Guardian Angel",
             description: "Summon 10/1 with [Shield] ({Charges})",

@@ -36,7 +36,7 @@
         ),
         (
             name: "Summon Skeleton",
-            description: "Summon unfriendly 1/4 unit {M1|, applies [Plague] on damage dealt}",
+            description: "Summon unfriendly 1/4 unit{M1|, applies [Plague] on damage dealt}",
             effect: WithVar(Faction, OppositeFaction, Summon("Skeleton", None)),
         ),
         (name: "Decay", description: "Give -{1} HP", effect: AddStatus("Decay")),
