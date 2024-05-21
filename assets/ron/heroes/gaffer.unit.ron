@@ -1,6 +1,6 @@
 #![enable(implicit_some)]
 (
-    name: "Ganger",
+    name: "Gaffer",
     hp: 2,
     pwr: 1,
     stacks: 1,
@@ -8,13 +8,13 @@
     houses: "Mages",
     trigger: Fire(
         triggers: [(EnemySummon, None)],
-        targets: [(Caster, None)],
+        targets: [(Target, None)],
         effects: [(UseAbility("Magic Missile", 0), None)],
     ),
     representation: (
         material: Shape(
             shape: Circle(radius: Mul(Index, Float(0.13))),
-            shape_type: Opaque,
+            shape_type: Line(thickness: Float(1.0)),
             fill: GradientLinear(
                 point1: Vec2(0.0, 0.0),
                 point2: Vec2(1.0, 1.0),
