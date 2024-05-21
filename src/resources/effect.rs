@@ -155,7 +155,6 @@ impl Effect {
                 context
                     .set_var(VarName::Charges, VarValue::Int(charges))
                     .set_caster(caster, world);
-                Event::UseAbility(ability.to_owned()).send_with_context(context.clone(), world);
                 ActionPlugin::action_push_front(effect, context, world);
             }
             Effect::Summon(name, then) => {

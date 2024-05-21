@@ -333,6 +333,15 @@ impl Trigger {
                     if trigger.catch(event, context, world) {
                         result = true;
                         for (effect, _) in effects.iter() {
+                            match effect {
+                                Effect::UseAbility(name, _) => {
+                                    Event::UseAbility(name.clone()).send_with_context(
+                                        context.clone().set_caster(context.owner(), world).take(),
+                                        world,
+                                    );
+                                }
+                                _ => {}
+                            }
                             if targets.is_empty() {
                                 ActionPlugin::action_push_back(
                                     effect.clone(),
