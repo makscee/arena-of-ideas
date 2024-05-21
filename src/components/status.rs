@@ -34,7 +34,6 @@ impl PackedStatus {
                 VarValue::String(self.description.to_owned()),
             )
             .init(VarName::Name, VarValue::String(self.name.to_owned()))
-            .init(VarName::Position, VarValue::Vec2(default()))
             .init(VarName::Polarity, VarValue::Int(self.polarity));
         let add_delta = self.trigger.has_stat_change();
         let entity = Status::spawn_new(self.name, self.trigger, world).id();
