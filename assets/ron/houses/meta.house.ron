@@ -12,9 +12,14 @@
         (
             name: "Betray",
             description: "Deal PWR DMG to adjacent allies",
-            effect: WithOwner(
-                Target,
-                List([Text(String("Betray")), WithTarget(AdjacentUnits, Damage(None))]),
+            effect: List(
+                [
+                    Vfx("apply_status"),
+                    WithOwner(
+                        Target,
+                        List([Text(String("Betray")), WithTarget(AdjacentUnits, Damage(None))]),
+                    ),
+                ],
             ),
         ),
     ],
