@@ -6,7 +6,7 @@
     abilities: [
         (
             name: "Magic Missile",
-            description: "Deal {Damage} DMG to random enemy",
+            description: "Deal {Damage} DMG",
             effect: Repeat(
                 Context(Charges),
                 List([Damage(AbilityContext("Magic Missile", Damage)), Vfx("magic_missile")]),
