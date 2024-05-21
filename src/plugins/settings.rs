@@ -264,7 +264,7 @@ impl SettingsPlugin {
         if data.console_output {
             log::set_max_level(LevelFilter::Debug);
         } else {
-            log::set_max_level(LevelFilter::Off);
+            log::set_max_level(LevelFilter::Info);
         }
     }
 }

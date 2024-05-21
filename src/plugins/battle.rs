@@ -246,6 +246,7 @@ impl BattlePlugin {
 
     fn fatigue(world: &mut World) -> Result<()> {
         let (turn, _) = ActionPlugin::get_turn(GameTimer::get().insert_head(), world);
+        info!("Turn {turn}");
         let fatigue = if let Some(settings) = GlobalSettings::filter_by_always_zero(0) {
             settings.fatigue_start
         } else {

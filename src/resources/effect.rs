@@ -39,7 +39,7 @@ pub enum Effect {
 
 impl Effect {
     pub fn invoke(&self, context: &mut Context, world: &mut World) -> Result<()> {
-        info!("Processing {:?}\n{}", self, context);
+        debug!("Processing {:?}\n{}", self, context);
         match self {
             Effect::Damage(value) => {
                 let target = context.get_target()?;
@@ -48,14 +48,14 @@ impl Effect {
                     Some(value) => value.get_value(context, world)?,
                     None => context.get_var(VarName::Pwr, world)?,
                 };
-                info!("Damage {} {target:?}", value.to_string());
+                debug!("Damage {} {target:?}", value.to_string());
                 let event = Event::IncomingDamage {
                     owner: target,
                     value: value.get_int()?,
                 };
                 event.clone().send_with_context(context.clone(), world);
                 event.map(&mut value, world);
-                info!("Value after map {value:?}");
+                debug!("Value after map {value:?}");
                 let value = value.get_int()?;
                 if value > 0 {
                     let new_dmg = VarState::get(target, world).get_int(VarName::Dmg)? + value;
@@ -92,7 +92,7 @@ impl Effect {
                     Some(value) => value.get_value(context, world)?,
                     None => context.get_var(VarName::Pwr, world)?,
                 };
-                info!("Heal {} {target:?}", value.to_string());
+                debug!("Heal {} {target:?}", value.to_string());
                 let value = value.get_int()?;
                 if value > 0 {
                     let new_dmg =
@@ -121,7 +121,7 @@ impl Effect {
             }
             Effect::Debug(msg) => {
                 let msg = msg.get_string(context, world)?;
-                info!("Debug effect: {msg}");
+                debug!("Debug effect: {msg}");
             }
             Effect::Noop => {}
             Effect::UseAbility(ability, base) => {
