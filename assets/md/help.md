@@ -21,12 +21,11 @@
 - Stacking gives +1 **HP** and +1 **PWR**
 - Stacking increases **Level**. **Ability** numbers usually use **Level** as their value. Bigger **Level** requires more **Stacks**
 ### Fuse heroes
-- Heroes of different **House** (color) and 2+ **Level** can be Fused
+- Heroes of different **House** (color) and **Level >= fused_amount** required
 - Fusing give the most powerful heroes
 - Fusing combines heroes **Abilities** giving option of combining: triggers, targets or effects
 - Multiple targets reuse the **Ability** for each target. So e.g. Summon with multiple targets will summon multiple units (really OP)
 - Any amount of heroes can be fused
-- Fused hero requires **Level = (fused_amount + 1)** to add a new hero
 - You can stack any hero of same **House** (color) into Fused hero
 
 # Battle

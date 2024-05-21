@@ -529,7 +529,8 @@ impl ShopPlugin {
                                     world,
                                 );
                                 let rect = resp.rect;
-                                if resp.on_hover_text("Fuse heroes together, combining their abilities\nHeroes of Level greater than 1 can be a fuse source").hovered() {
+                                let text = "Fuse heroes together, combining their abilities\nHeroes of Level greater than Fused count is required";
+                                if resp.on_hover_text(text).hovered() {
                                     Self::draw_arrows(rect.center_top(), fuse, ctx, world);
                                 }
                             }

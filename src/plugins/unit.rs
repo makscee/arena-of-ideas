@@ -612,8 +612,11 @@ impl VarState {
     }
     pub fn is_fuse_target(&self, source: &VarState) -> Result<bool> {
         let level = self.get_int(VarName::Level)?;
+        let source_level = source.get_int(VarName::Level)?;
         let houses = self.get_houses_vec()?;
-        Ok(level > houses.len() as i32
+        let level_req = houses.len() as i32 + 1;
+        Ok(level >= level_req
+            && source_level >= level_req
             && !houses.contains(&source.get_houses_vec()?.into_iter().exactly_one().unwrap()))
     }
 }
