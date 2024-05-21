@@ -7,16 +7,19 @@
         (
             name: "Siphoned Out",
             description: "-{Charges} HP",
+            polarity: -1,
             trigger: Change(trigger: Var(Hp), expr: Sub(Int(0), Context(Charges))),
         ),
         (
             name: "Siphon HP",
             description: "+{Charges} Hp",
+            polarity: 1,
             trigger: Change(trigger: Var(Hp), expr: Context(Charges)),
         ),
         (
             name: "Siphon PWR",
             description: "+{Charges} Pwr",
+            polarity: 1,
             trigger: Change(trigger: Var(Pwr), expr: Context(Charges)),
         ),
     ],

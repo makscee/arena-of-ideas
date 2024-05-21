@@ -401,7 +401,7 @@ impl UnitPlugin {
             if let Some(text) = world.get::<TextColumn>(entity) {
                 text.render(ctx, world);
             }
-            let statuses = Status::collect_statuses_name_charges(entity, t, world);
+            let statuses = Status::collect_statuses_name_charges(entity, None, t, world);
             state.show_entity_card_window(
                 entity,
                 statuses,

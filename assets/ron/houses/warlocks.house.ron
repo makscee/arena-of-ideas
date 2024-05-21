@@ -6,6 +6,7 @@
         (
             name: "Doom",
             description: "Die in {Charges} turns then summon Doomguard",
+            polarity: 0,
             trigger: Fire(
                 triggers: [(TurnEnd, None)],
                 effects: [

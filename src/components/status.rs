@@ -8,6 +8,8 @@ pub struct PackedStatus {
     pub name: String,
     #[serde(default)]
     pub description: String,
+    #[serde(default)]
+    pub polarity: i32,
     pub trigger: Trigger,
     #[serde(default)]
     pub representation: Option<Representation>,
@@ -32,7 +34,8 @@ impl PackedStatus {
                 VarValue::String(self.description.to_owned()),
             )
             .init(VarName::Name, VarValue::String(self.name.to_owned()))
-            .init(VarName::Position, VarValue::Vec2(default()));
+            .init(VarName::Position, VarValue::Vec2(default()))
+            .init(VarName::Polarity, VarValue::Int(self.polarity));
         let add_delta = self.trigger.has_stat_change();
         let entity = Status::spawn_new(self.name, self.trigger, world).id();
         self.state.attach(entity, world);
@@ -114,6 +117,7 @@ impl Status {
 
     pub fn collect_statuses_name_charges(
         entity: Entity,
+        polarity: Option<i32>,
         t: f32,
         world: &World,
     ) -> Vec<(String, i32)> {
@@ -124,6 +128,14 @@ impl Status {
                 let charges = state.get_int(VarName::Charges);
                 if charges.is_err() || *charges.as_ref().unwrap() <= 0 {
                     return None;
+                }
+                if let Some(polarity) = polarity {
+                    if state
+                        .get_int(VarName::Polarity)
+                        .is_ok_and(|v| v != polarity)
+                    {
+                        return None;
+                    }
                 }
                 match state.get_string(VarName::Name) {
                     Ok(name) => {

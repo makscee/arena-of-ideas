@@ -6,6 +6,7 @@
         (
             name: "Thorns",
             description: "Deal {Charges} DMG to attacker",
+            polarity: 1,
             trigger: Fire(
                 triggers: [(AfterDamageTaken, None)],
                 targets: [(OwnerStateLast(LastAttacker), None)],

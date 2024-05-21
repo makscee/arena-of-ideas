@@ -255,7 +255,11 @@ impl BattlePlugin {
         if fatigue > 0 {
             info!("Fatigue {fatigue}");
             let damage = Effect::Damage(Some(Expression::Int(fatigue)));
-            let clear_statuses = Effect::ClearAllStatuses;
+            let clear_statuses = Effect::WithVar(
+                VarName::Polarity,
+                Expression::Int(1),
+                Box::new(Effect::ClearAllStatuses),
+            );
             let text = Effect::Text(Expression::String(format!("Fatigue {fatigue}")));
             ActionPlugin::spin(world)?;
             for (unit, _) in

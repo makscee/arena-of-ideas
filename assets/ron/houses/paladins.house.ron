@@ -7,6 +7,7 @@
         (
             name: "Shield",
             description: "Block next incoming damage {Charges} times",
+            polarity: 1,
             trigger: List(
                 [
                     Change(trigger: IncomingDamage, expr: Int(-9999999)),

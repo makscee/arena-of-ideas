@@ -1,0 +1,5 @@
+#![enable(implicit_some)]
+(
+    left: (units: [(hp: 5, pwr: 0, name: "left", statuses: [("Decay", 2)])]),
+    right: (units: [(hp: 3, pwr: 0, name: "right", statuses: [("Vitality", 3)])]),
+)

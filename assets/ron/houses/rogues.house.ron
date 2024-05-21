@@ -6,6 +6,7 @@
         (
             name: "Expose",
             description: "Damage taken +{Charges}",
+            polarity: -1,
             trigger: Change(trigger: IncomingDamage, expr: Context(Charges)),
         ),
     ],
@@ -14,7 +15,7 @@
         (
             name: "Rob",
             description: "Steal all statuses, limit max {Charges}",
-            effect: StealAllStatuses,
+            effect: WithVar(Polarity, Int(1), StealAllStatuses),
         ),
     ],
 )

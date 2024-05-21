@@ -250,8 +250,13 @@ impl Effect {
                     .get_var(VarName::Charges, world)
                     .unwrap_or(VarValue::Int(1))
                     .get_int()?;
+                let polarity = context
+                    .get_var(VarName::Polarity, world)
+                    .and_then(|v| v.get_int())
+                    .ok();
                 for (status, _) in Status::collect_statuses_name_charges(
                     target,
+                    polarity,
                     GameTimer::get().insert_head(),
                     world,
                 ) {
@@ -306,8 +311,13 @@ impl Effect {
                 if charges <= 0 {
                     return Err(anyhow!("Can't steal nonpositive charges amount"));
                 }
+                let polarity = context
+                    .get_var(VarName::Polarity, world)
+                    .and_then(|v| v.get_int())
+                    .ok();
                 for (status, c) in Status::collect_statuses_name_charges(
                     target,
+                    polarity,
                     GameTimer::get().insert_head(),
                     world,
                 ) {
@@ -348,8 +358,13 @@ impl Effect {
                 if charges <= 0 {
                     return Err(anyhow!("Can't clear nonpositive charges amount"));
                 }
+                let polarity = context
+                    .get_var(VarName::Polarity, world)
+                    .and_then(|v| v.get_int())
+                    .ok();
                 for (status, c) in Status::collect_statuses_name_charges(
                     target,
+                    polarity,
                     GameTimer::get().insert_head(),
                     world,
                 ) {
@@ -472,7 +487,8 @@ impl Effect {
                 for target_status in Status::collect_unit_statuses(target, world) {
                     let status = world.get::<Status>(target_status).unwrap().clone();
                     if Pools::get_status(&status.name, world).is_some() {
-                        let delta = VarState::get(target_status, world).get_int(VarName::Charges)?;
+                        let delta =
+                            VarState::get(target_status, world).get_int(VarName::Charges)?;
                         let name = status.name;
                         Status::change_charges(&name, owner, delta, world)?;
                     } else {

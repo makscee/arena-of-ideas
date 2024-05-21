@@ -6,6 +6,7 @@
         (
             name: "Petrify",
             description: "Next taken damage is lethal",
+            polarity: -1,
             trigger: Fire(triggers: [(AfterDamageTaken, None)], effects: [(Kill, None)]),
         ),
     ],

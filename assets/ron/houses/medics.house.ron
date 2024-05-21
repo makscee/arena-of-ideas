@@ -6,6 +6,7 @@
         (
             name: "Vitality",
             description: "+{Charges} HP",
+            polarity: 1,
             trigger: Change(trigger: Var(Hp), expr: Context(Charges)),
         ),
     ],

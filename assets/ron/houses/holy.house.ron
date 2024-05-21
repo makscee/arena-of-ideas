@@ -6,6 +6,7 @@
         (
             name: "Blessing",
             description: "+{Charges}/+{Charges}",
+            polarity: 1,
             trigger: List(
                 [
                     Change(trigger: Var(Hp), expr: Context(Charges)),

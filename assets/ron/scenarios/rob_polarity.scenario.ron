@@ -1,0 +1,18 @@
+#![enable(implicit_some)]
+(
+    left: (
+        units: [
+            (
+                hp: 1,
+                pwr: 1,
+                name: "left",
+                trigger: Fire(
+                    triggers: [(BeforeStrike, None)],
+                    targets: [(Target, None)],
+                    effects: [(UseAbility("Rob", 0), None)],
+                ),
+            ),
+        ],
+    ),
+    right: (units: [(hp: 3, pwr: 1, name: "right", statuses: [("Shield", 1), ("Decay", 1)])]),
+)
