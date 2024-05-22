@@ -386,7 +386,7 @@ impl PackedUnit {
     }
 }
 
-#[derive(FromRepr, AsRefStr, EnumIter, PartialEq, Clone)]
+#[derive(FromRepr, AsRefStr, EnumIter, PartialEq, Clone, Copy)]
 #[repr(i32)]
 pub enum Rarity {
     Common,

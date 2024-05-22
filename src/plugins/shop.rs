@@ -396,10 +396,12 @@ impl ShopPlugin {
             return;
         };
         let run = ArenaRun::current().expect("Current run not found");
+        let gs = GlobalSettings::filter_by_always_zero(0).unwrap();
         window("INFO")
             .anchor(Align2::LEFT_TOP, [10.0, 10.0])
             .show(ctx, |ui| {
                 frame(ui, |ui| {
+                    let round = run.round;
                     text_dots_text(
                         &"name".to_colored(),
                         &format!("{}", User::filter_by_id(run.user_id).unwrap().name)
@@ -408,7 +410,7 @@ impl ShopPlugin {
                     );
                     text_dots_text(
                         &"round".to_colored(),
-                        &run.round.to_string().add_color(white()),
+                        &round.to_string().add_color(white()),
                         ui,
                     );
                     text_dots_text(
@@ -421,8 +423,7 @@ impl ShopPlugin {
                         &run.loses().to_string().add_color(white()),
                         ui,
                     );
-                    let max_lives = GlobalSettings::filter_by_always_zero(0).unwrap().max_lives;
-
+                    let max_lives = gs.max_lives;
                     text_dots_text(
                         &"lives".to_colored(),
                         &run.lives
@@ -432,6 +433,30 @@ impl ShopPlugin {
                             .push_colored(max_lives.to_string().add_color(white())),
                         ui,
                     );
+
+                    "Chances"
+                        .add_color(white())
+                        .set_style(ColoredStringStyle::Bold)
+                        .label(ui);
+                    let total_weight: i32 = gs
+                        .rarities
+                        .weights_initial
+                        .iter()
+                        .zip(gs.rarities.weights_per_round.iter())
+                        .map(|(a, b)| (a + b * round as i32).max(0))
+                        .sum();
+                    for rarity in Rarity::iter() {
+                        let i = rarity as usize;
+                        let weight = (gs.rarities.weights_initial[i]
+                            + gs.rarities.weights_per_round[i] * round as i32)
+                            .max(0);
+                        let chance = (weight as f32 / total_weight as f32 * 100.0).round() as i32;
+                        text_dots_text(
+                            &rarity.as_ref().add_color(rarity.color()),
+                            &format!("{chance}%").add_color(white()),
+                            ui,
+                        );
+                    }
                 });
             });
     }
