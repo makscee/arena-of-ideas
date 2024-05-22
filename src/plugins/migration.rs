@@ -65,8 +65,10 @@ impl Stash {
     }
 
     fn create() -> Self {
-        let arena_archive = ArenaArchive::iter().map(|v| v.into()).collect_vec();
-        let arena_pool = ArenaPool::iter().map(|v| v.into()).collect_vec();
+        // let arena_archive = ArenaArchive::iter().map(|v| v.into()).collect_vec();
+        // let arena_pool = ArenaPool::iter().map(|v| v.into()).collect_vec();
+        let arena_archive = default();
+        let arena_pool = default();
         let users = User::iter().map(|v| v.into()).collect_vec();
 
         Self {

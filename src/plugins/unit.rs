@@ -458,7 +458,7 @@ impl UnitPlugin {
                     let state = VarState::get(*target, world);
                     let target_houses = state.get_houses_vec().unwrap();
                     state.get_string(VarName::Name).unwrap().eq(&name)
-                        || target_houses.len() > 1
+                        || (target_houses.len() > 1 || state.get_int(VarName::Level).unwrap() > 1)
                             && houses.iter().any(|h| target_houses.contains(h))
                 }
             })
@@ -597,12 +597,6 @@ pub enum DragAction {
 
 #[derive(Component)]
 pub struct ActiveTeam;
-
-#[derive(Clone, Display)]
-pub enum MergeType {
-    Stack,
-    Fuse,
-}
 
 impl VarState {
     pub fn is_fuse_source(&self) -> Result<bool> {
