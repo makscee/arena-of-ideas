@@ -62,6 +62,7 @@ impl LeaderboardPlugin {
                                 show_name(run, ColoredStringStyle::Heading, ui, world);
                                 format!("Round #{}", round).add_color(orange()).label(ui);
                                 show_team(run, false, ui, world);
+                                draw_plus(data, &mut new_round, ui);
                             })
                         });
                     }
@@ -101,20 +102,7 @@ impl LeaderboardPlugin {
                                                 });
                                             }
                                             row.col(|ui| {
-                                                let cnt = run.len() - 1;
-                                                ui.add_enabled_ui(cnt > 0, |ui| {
-                                                    if egui::Button::new(format!(
-                                                        "+{}",
-                                                        run.len() - 1
-                                                    ))
-                                                    .wrap(false)
-                                                    .ui(ui)
-                                                    .clicked()
-                                                    {
-                                                        new_round =
-                                                            Some(Some(run[0].round as usize));
-                                                    }
-                                                });
+                                                draw_plus(run, &mut new_round, ui);
                                             });
                                         });
                                     }
@@ -134,6 +122,19 @@ impl LeaderboardPlugin {
             world.resource_mut::<LeaderboardData>().round = round;
         }
     }
+}
+
+fn draw_plus(runs: &Vec<ArenaArchive>, new_round: &mut Option<Option<usize>>, ui: &mut Ui) {
+    let cnt = runs.len() - 1;
+    ui.add_enabled_ui(cnt > 0, |ui| {
+        if egui::Button::new(format!("+{}", runs.len() - 1))
+            .wrap(false)
+            .ui(ui)
+            .clicked()
+        {
+            *new_round = Some(Some(runs[0].round as usize));
+        }
+    });
 }
 
 #[derive(Resource, Default, Debug)]

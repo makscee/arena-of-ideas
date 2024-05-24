@@ -133,12 +133,16 @@ impl PlayerTableCache {
         let mut utc = world.resource_mut::<PlayerTableCache>();
         utc.players.clear();
         for user in User::iter().sorted_by(|a, b| a.id.cmp(&b.id)) {
+            let data = PlayerProfileData::from_id(user.id);
+            if data.total_runs == 0 {
+                continue;
+            }
             utc.players.push(PlayerTableData {
                 name: user.name,
                 id: user.id,
                 online: user.online,
                 last_login: format_timestamp(user.last_login),
-                data: PlayerProfileData::from_id(user.id),
+                data,
             });
         }
     }
