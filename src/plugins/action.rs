@@ -23,6 +23,7 @@ struct ActionQueue(VecDeque<Action>);
 struct ActionsData {
     events: Vec<(f32, Event)>,
     turns: Vec<(f32, usize)>,
+    chain: usize,
 }
 
 struct Action {
@@ -52,6 +53,7 @@ impl ActionPlugin {
             {
                 match effect.invoke(&mut context, world) {
                     Ok(_) => {
+                        world.resource_mut::<ActionsData>().chain += 1;
                         processed = true;
                         for status in world
                             .query_filtered::<Entity, (With<Status>, With<VarStateDelta>, With<Parent>)>()
@@ -118,6 +120,10 @@ impl ActionPlugin {
             .push((GameTimer::get().insert_head(), event));
     }
 
+    pub fn get_chain_len(world: &World) -> usize {
+        world.resource::<ActionsData>().chain
+    }
+
     pub fn get_turn(t: f32, world: &World) -> (usize, f32) {
         world
             .get_resource::<ActionsData>()
@@ -129,10 +135,11 @@ impl ActionPlugin {
             })
             .unwrap_or_default()
     }
-    pub fn register_next_round(world: &mut World) {
+    pub fn register_next_turn(world: &mut World) {
         let mut data = world.resource_mut::<ActionsData>();
         let next = data.turns.last().map(|(_, r)| *r).unwrap_or_default() + 1;
         data.turns.push((GameTimer::get().insert_head(), next));
+        data.chain = 0;
     }
 
     pub fn event_push_back(event: Event, context: Context, world: &mut World) {

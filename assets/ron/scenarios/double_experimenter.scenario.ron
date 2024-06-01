@@ -19,7 +19,7 @@
     right: (
         units: [
             (
-                name: "left",
+                name: "right",
                 hp: 1,
                 pwr: 1,
                 trigger: Fire(

@@ -251,8 +251,18 @@ impl Status {
         world: &mut World,
     ) -> bool {
         let mut result = false;
+        let deaf_chance = (world
+            .get_resource::<BattleData>()
+            .and_then(|d| Some(d.deaf_chance as f64))
+            .unwrap_or_default()
+            / 100.0)
+            .min(1.0);
         for (status, mut trigger) in Self::collect_triggers(statuses, world) {
             if context.has_status(status) {
+                continue;
+            }
+            if (&mut thread_rng()).gen_bool(deaf_chance) {
+                info!("Trigger skip due to deafness");
                 continue;
             }
             result |= trigger.fire(

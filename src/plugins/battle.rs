@@ -31,6 +31,8 @@ pub struct BattleData {
     #[serde(default)]
     result: BattleResult,
     pub run_id: Option<u64>,
+    #[serde(default)]
+    pub deaf_chance: usize,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -163,7 +165,7 @@ impl BattlePlugin {
 
     pub fn run_strike(left: Entity, right: Entity, world: &mut World) -> Result<()> {
         ActionPlugin::spin(world)?;
-        ActionPlugin::register_next_round(world);
+        ActionPlugin::register_next_turn(world);
         Self::before_strike(left, right, world)?;
         if Self::striker_death_check(left, right, world) {
             return Ok(());
@@ -173,7 +175,10 @@ impl BattlePlugin {
         Event::TurnEnd.send(world);
         ActionPlugin::spin(world)?;
         ActionPlugin::spin(world)?;
-        Self::fatigue(world)?;
+
+        let (turn, _) = ActionPlugin::get_turn(GameTimer::get().insert_head(), world);
+        Self::calculate_deafness(turn, world);
+        Self::fatigue(turn, world)?;
         Ok(())
     }
 
@@ -244,8 +249,18 @@ impl BattlePlugin {
         Ok(())
     }
 
-    fn fatigue(world: &mut World) -> Result<()> {
-        let (turn, _) = ActionPlugin::get_turn(GameTimer::get().insert_head(), world);
+    pub fn calculate_deafness(turn: usize, world: &mut World) {
+        let turn = if turn > 100 { turn - 100 } else { 0 };
+        let chain = ActionPlugin::get_chain_len(world);
+        let chain = if chain > 10000 {
+            (chain - 10000) / 10
+        } else {
+            0
+        };
+        world.resource_mut::<BattleData>().deaf_chance = turn.max(chain);
+    }
+
+    fn fatigue(turn: usize, world: &mut World) -> Result<()> {
         info!("Turn {turn}");
         let fatigue = if let Some(settings) = GlobalSettings::filter_by_always_zero(0) {
             settings.fatigue_start
@@ -284,7 +299,7 @@ impl BattlePlugin {
                     clear_statuses.clone(),
                     context
                         .clone()
-                        .set_var(VarName::Charges, VarValue::Int(fatigue))
+                        .set_var(VarName::Charges, VarValue::Int(fatigue * fatigue))
                         .take(),
                     world,
                 );
