@@ -21,18 +21,58 @@ use spacetimedb_sdk::{
 use std::sync::Arc;
 
 pub mod base_unit;
+pub mod fuse_start_reducer;
 pub mod fused_unit;
+pub mod fusion_type;
+pub mod global_data;
+pub mod global_settings;
+pub mod login_by_identity_reducer;
+pub mod login_reducer;
+pub mod logout_reducer;
+pub mod register_empty_reducer;
+pub mod register_reducer;
 pub mod representation;
-pub mod run_state;
+pub mod run;
+pub mod run_start_reducer;
+pub mod set_name_reducer;
+pub mod set_password_reducer;
+pub mod shop_slot;
+pub mod team_slot;
+pub mod user;
 
 pub use base_unit::*;
+pub use fuse_start_reducer::*;
 pub use fused_unit::*;
+pub use fusion_type::*;
+pub use global_data::*;
+pub use global_settings::*;
+pub use login_by_identity_reducer::*;
+pub use login_reducer::*;
+pub use logout_reducer::*;
+pub use register_empty_reducer::*;
+pub use register_reducer::*;
 pub use representation::*;
-pub use run_state::*;
+pub use run::*;
+pub use run_start_reducer::*;
+pub use set_name_reducer::*;
+pub use set_password_reducer::*;
+pub use shop_slot::*;
+pub use team_slot::*;
+pub use user::*;
 
 #[allow(unused)]
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
-pub enum ReducerEvent {}
+pub enum ReducerEvent {
+    FuseStart(fuse_start_reducer::FuseStartArgs),
+    Login(login_reducer::LoginArgs),
+    LoginByIdentity(login_by_identity_reducer::LoginByIdentityArgs),
+    Logout(logout_reducer::LogoutArgs),
+    Register(register_reducer::RegisterArgs),
+    RegisterEmpty(register_empty_reducer::RegisterEmptyArgs),
+    RunStart(run_start_reducer::RunStartArgs),
+    SetName(set_name_reducer::SetNameArgs),
+    SetPassword(set_password_reducer::SetPasswordArgs),
+}
 
 #[allow(unused)]
 pub struct Module;
@@ -49,15 +89,25 @@ impl SpacetimeModule for Module {
                 callbacks,
                 table_update,
             ),
+            "GlobalData" => client_cache
+                .handle_table_update_no_primary_key::<global_data::GlobalData>(
+                    callbacks,
+                    table_update,
+                ),
+            "GlobalSettings" => client_cache
+                .handle_table_update_no_primary_key::<global_settings::GlobalSettings>(
+                    callbacks,
+                    table_update,
+                ),
             "Representation" => client_cache
                 .handle_table_update_no_primary_key::<representation::Representation>(
                     callbacks,
                     table_update,
                 ),
-            "RunState" => client_cache.handle_table_update_with_primary_key::<run_state::RunState>(
-                callbacks,
-                table_update,
-            ),
+            "Run" => client_cache
+                .handle_table_update_with_primary_key::<run::Run>(callbacks, table_update),
+            "User" => client_cache
+                .handle_table_update_with_primary_key::<user::User>(callbacks, table_update),
             _ => {
                 spacetimedb_sdk::log::error!("TableRowOperation on unknown table {:?}", table_name)
             }
@@ -71,8 +121,15 @@ impl SpacetimeModule for Module {
         state: &Arc<ClientCache>,
     ) {
         reminders.invoke_callbacks::<base_unit::BaseUnit>(worker, &reducer_event, state);
+        reminders.invoke_callbacks::<global_data::GlobalData>(worker, &reducer_event, state);
+        reminders.invoke_callbacks::<global_settings::GlobalSettings>(
+            worker,
+            &reducer_event,
+            state,
+        );
         reminders.invoke_callbacks::<representation::Representation>(worker, &reducer_event, state);
-        reminders.invoke_callbacks::<run_state::RunState>(worker, &reducer_event, state);
+        reminders.invoke_callbacks::<run::Run>(worker, &reducer_event, state);
+        reminders.invoke_callbacks::<user::User>(worker, &reducer_event, state);
     }
     fn handle_event(
         &self,
@@ -85,12 +142,18 @@ impl SpacetimeModule for Module {
             return None;
         };
         #[allow(clippy::match_single_binding)]
-        match &function_call.reducer[..] {
-            unknown => {
-                spacetimedb_sdk::log::error!("Event on an unknown reducer: {:?}", unknown);
-                None
-            }
-        }
+match &function_call.reducer[..] {
+						"fuse_start" => _reducer_callbacks.handle_event_of_type::<fuse_start_reducer::FuseStartArgs, ReducerEvent>(event, _state, ReducerEvent::FuseStart),
+			"login" => _reducer_callbacks.handle_event_of_type::<login_reducer::LoginArgs, ReducerEvent>(event, _state, ReducerEvent::Login),
+			"login_by_identity" => _reducer_callbacks.handle_event_of_type::<login_by_identity_reducer::LoginByIdentityArgs, ReducerEvent>(event, _state, ReducerEvent::LoginByIdentity),
+			"logout" => _reducer_callbacks.handle_event_of_type::<logout_reducer::LogoutArgs, ReducerEvent>(event, _state, ReducerEvent::Logout),
+			"register" => _reducer_callbacks.handle_event_of_type::<register_reducer::RegisterArgs, ReducerEvent>(event, _state, ReducerEvent::Register),
+			"register_empty" => _reducer_callbacks.handle_event_of_type::<register_empty_reducer::RegisterEmptyArgs, ReducerEvent>(event, _state, ReducerEvent::RegisterEmpty),
+			"run_start" => _reducer_callbacks.handle_event_of_type::<run_start_reducer::RunStartArgs, ReducerEvent>(event, _state, ReducerEvent::RunStart),
+			"set_name" => _reducer_callbacks.handle_event_of_type::<set_name_reducer::SetNameArgs, ReducerEvent>(event, _state, ReducerEvent::SetName),
+			"set_password" => _reducer_callbacks.handle_event_of_type::<set_password_reducer::SetPasswordArgs, ReducerEvent>(event, _state, ReducerEvent::SetPassword),
+			unknown => { spacetimedb_sdk::log::error!("Event on an unknown reducer: {:?}", unknown); None }
+}
     }
     fn handle_resubscribe(
         &self,
@@ -103,11 +166,16 @@ impl SpacetimeModule for Module {
             "BaseUnit" => {
                 client_cache.handle_resubscribe_for_type::<base_unit::BaseUnit>(callbacks, new_subs)
             }
+            "GlobalData" => client_cache
+                .handle_resubscribe_for_type::<global_data::GlobalData>(callbacks, new_subs),
+            "GlobalSettings" => client_cache
+                .handle_resubscribe_for_type::<global_settings::GlobalSettings>(
+                    callbacks, new_subs,
+                ),
             "Representation" => client_cache
                 .handle_resubscribe_for_type::<representation::Representation>(callbacks, new_subs),
-            "RunState" => {
-                client_cache.handle_resubscribe_for_type::<run_state::RunState>(callbacks, new_subs)
-            }
+            "Run" => client_cache.handle_resubscribe_for_type::<run::Run>(callbacks, new_subs),
+            "User" => client_cache.handle_resubscribe_for_type::<user::User>(callbacks, new_subs),
             _ => {
                 spacetimedb_sdk::log::error!("TableRowOperation on unknown table {:?}", table_name)
             }

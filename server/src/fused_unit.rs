@@ -1,11 +1,10 @@
 use super::*;
 
-#[derive(SpacetimeType)]
+#[derive(SpacetimeType, Clone)]
 pub struct FusedUnit {
-    id: u64,
-    bases: Vec<String>,
-    triggers: Vec<u32>,
-    targets: Vec<u32>,
-    effects: Vec<u32>,
-    stacks: u32,
+    pub bases: Vec<String>,
+    pub triggers: Vec<u32>,
+    pub targets: Vec<u32>,
+    pub effects: Vec<u32>,
+    pub stacks: u32,
 }

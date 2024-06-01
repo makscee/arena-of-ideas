@@ -13,10 +13,11 @@ use spacetimedb_sdk::{
 };
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
-pub struct FusedUnit {
-    pub bases: Vec<String>,
-    pub triggers: Vec<u32>,
-    pub targets: Vec<u32>,
-    pub effects: Vec<u32>,
-    pub stacks: u32,
+pub struct ShopSlot {
+    pub unit: u64,
+    pub price: i32,
+    pub open: bool,
+    pub freeze: bool,
+    pub discount: bool,
+    pub available: bool,
 }
