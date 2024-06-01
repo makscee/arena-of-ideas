@@ -1,6 +1,0 @@
-#![enable(implicit_some)]
-(
-    left: (units: [(hp: 1, pwr: 1, name: "left")]),
-    right: (units: [(hp: 0, pwr: 1, name: "right")]),
-    condition: And(Equals(FactionCount(Faction(Left)), Int(1)), Equals(FactionCount(Faction(Right)), Int(0))),
-)

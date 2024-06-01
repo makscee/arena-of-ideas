@@ -1,2 +1,0 @@
-#![enable(implicit_some)]
-(name: "Default", color: ("#6F6F6F"))
