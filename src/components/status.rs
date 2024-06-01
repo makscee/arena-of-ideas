@@ -78,6 +78,11 @@ impl Status {
         delta: i32,
         world: &mut World,
     ) -> Result<Entity> {
+        if let Ok(immune) = VarState::get(unit, world).get_string(VarName::StatusImmunity) {
+            if immune.eq(status) {
+                return Err(anyhow!("Immune to status {status}"));
+            }
+        }
         for entity in Self::collect_unit_statuses(unit, world) {
             if let Some(s) = world.entity(entity).get::<Status>() {
                 if s.name.eq(status) {

@@ -1,0 +1,35 @@
+#![enable(implicit_some)]
+(
+    left: (
+        units: [
+            (
+                name: "left",
+                hp: 1,
+                pwr: 1,
+                trigger: Fire(
+                    triggers: [(BattleStart, None)],
+                    targets: [],
+                    effects: [(AbilityStateAddVar("Summon Skeleton", M1, Int(1)), None)],
+                ),
+                state: (history: {}, birth: 0.0),
+                statuses: [("Plague", 1)],
+            ),
+        ],
+    ),
+    right: (
+        units: [
+            (
+                name: "left",
+                hp: 1,
+                pwr: 1,
+                trigger: Fire(
+                    triggers: [(BattleStart, None)],
+                    targets: [],
+                    effects: [(AbilityStateAddVar("Summon Skeleton", M1, Int(1)), None)],
+                ),
+                state: (history: {}, birth: 0.0),
+                statuses: [("Plague", 1)],
+            ),
+        ],
+    ),
+)

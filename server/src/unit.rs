@@ -21,3 +21,8 @@ pub struct StatusCharges {
     pub name: String,
     pub charges: i32,
 }
+
+#[spacetimedb(table)]
+pub struct BaseUnit {
+    trigger: u64,
+}

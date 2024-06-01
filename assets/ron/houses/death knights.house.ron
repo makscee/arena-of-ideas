@@ -48,6 +48,7 @@
             pwr: 1,
             stacks: 1,
             houses: "Death Knights",
+            state: (history: {StatusImmunity: ([(t: 0, value: String("Plague"))])}),
             trigger: Fire(
                 triggers: [(AfterDamageDealt, None)],
                 targets: [(Target, None)],
@@ -86,7 +87,6 @@
                 },
                 count: 12,
             ),
-            state: (history: {}, birth: 0.0),
             statuses: [],
         ),
     ],

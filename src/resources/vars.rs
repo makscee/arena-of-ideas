@@ -74,6 +74,7 @@ pub enum VarName {
     Rarity,
     RarityColor,
     Polarity,
+    StatusImmunity,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Default)]
