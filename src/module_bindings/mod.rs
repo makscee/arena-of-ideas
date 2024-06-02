@@ -21,9 +21,11 @@ use spacetimedb_sdk::{
 use std::sync::Arc;
 
 pub mod base_unit;
+pub mod fuse_cancel_reducer;
+pub mod fuse_choose_reducer;
 pub mod fuse_start_reducer;
 pub mod fused_unit;
-pub mod fusion_type;
+pub mod fusion;
 pub mod global_data;
 pub mod global_settings;
 pub mod login_by_identity_reducer;
@@ -36,14 +38,19 @@ pub mod run;
 pub mod run_start_reducer;
 pub mod set_name_reducer;
 pub mod set_password_reducer;
+pub mod shop_buy_reducer;
+pub mod shop_reroll_reducer;
 pub mod shop_slot;
+pub mod stack_reducer;
 pub mod team_slot;
 pub mod user;
 
 pub use base_unit::*;
+pub use fuse_cancel_reducer::*;
+pub use fuse_choose_reducer::*;
 pub use fuse_start_reducer::*;
 pub use fused_unit::*;
-pub use fusion_type::*;
+pub use fusion::*;
 pub use global_data::*;
 pub use global_settings::*;
 pub use login_by_identity_reducer::*;
@@ -56,13 +63,18 @@ pub use run::*;
 pub use run_start_reducer::*;
 pub use set_name_reducer::*;
 pub use set_password_reducer::*;
+pub use shop_buy_reducer::*;
+pub use shop_reroll_reducer::*;
 pub use shop_slot::*;
+pub use stack_reducer::*;
 pub use team_slot::*;
 pub use user::*;
 
 #[allow(unused)]
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub enum ReducerEvent {
+    FuseCancel(fuse_cancel_reducer::FuseCancelArgs),
+    FuseChoose(fuse_choose_reducer::FuseChooseArgs),
     FuseStart(fuse_start_reducer::FuseStartArgs),
     Login(login_reducer::LoginArgs),
     LoginByIdentity(login_by_identity_reducer::LoginByIdentityArgs),
@@ -72,6 +84,9 @@ pub enum ReducerEvent {
     RunStart(run_start_reducer::RunStartArgs),
     SetName(set_name_reducer::SetNameArgs),
     SetPassword(set_password_reducer::SetPasswordArgs),
+    ShopBuy(shop_buy_reducer::ShopBuyArgs),
+    ShopReroll(shop_reroll_reducer::ShopRerollArgs),
+    Stack(stack_reducer::StackArgs),
 }
 
 #[allow(unused)]
@@ -143,7 +158,9 @@ impl SpacetimeModule for Module {
         };
         #[allow(clippy::match_single_binding)]
 match &function_call.reducer[..] {
-						"fuse_start" => _reducer_callbacks.handle_event_of_type::<fuse_start_reducer::FuseStartArgs, ReducerEvent>(event, _state, ReducerEvent::FuseStart),
+						"fuse_cancel" => _reducer_callbacks.handle_event_of_type::<fuse_cancel_reducer::FuseCancelArgs, ReducerEvent>(event, _state, ReducerEvent::FuseCancel),
+			"fuse_choose" => _reducer_callbacks.handle_event_of_type::<fuse_choose_reducer::FuseChooseArgs, ReducerEvent>(event, _state, ReducerEvent::FuseChoose),
+			"fuse_start" => _reducer_callbacks.handle_event_of_type::<fuse_start_reducer::FuseStartArgs, ReducerEvent>(event, _state, ReducerEvent::FuseStart),
 			"login" => _reducer_callbacks.handle_event_of_type::<login_reducer::LoginArgs, ReducerEvent>(event, _state, ReducerEvent::Login),
 			"login_by_identity" => _reducer_callbacks.handle_event_of_type::<login_by_identity_reducer::LoginByIdentityArgs, ReducerEvent>(event, _state, ReducerEvent::LoginByIdentity),
 			"logout" => _reducer_callbacks.handle_event_of_type::<logout_reducer::LogoutArgs, ReducerEvent>(event, _state, ReducerEvent::Logout),
@@ -152,6 +169,9 @@ match &function_call.reducer[..] {
 			"run_start" => _reducer_callbacks.handle_event_of_type::<run_start_reducer::RunStartArgs, ReducerEvent>(event, _state, ReducerEvent::RunStart),
 			"set_name" => _reducer_callbacks.handle_event_of_type::<set_name_reducer::SetNameArgs, ReducerEvent>(event, _state, ReducerEvent::SetName),
 			"set_password" => _reducer_callbacks.handle_event_of_type::<set_password_reducer::SetPasswordArgs, ReducerEvent>(event, _state, ReducerEvent::SetPassword),
+			"shop_buy" => _reducer_callbacks.handle_event_of_type::<shop_buy_reducer::ShopBuyArgs, ReducerEvent>(event, _state, ReducerEvent::ShopBuy),
+			"shop_reroll" => _reducer_callbacks.handle_event_of_type::<shop_reroll_reducer::ShopRerollArgs, ReducerEvent>(event, _state, ReducerEvent::ShopReroll),
+			"stack" => _reducer_callbacks.handle_event_of_type::<stack_reducer::StackArgs, ReducerEvent>(event, _state, ReducerEvent::Stack),
 			unknown => { spacetimedb_sdk::log::error!("Event on an unknown reducer: {:?}", unknown); None }
 }
     }
