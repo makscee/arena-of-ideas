@@ -1,4 +1,5 @@
 use super::*;
+use bevy::ecs::{schedule::NextState, world};
 use spacetimedb_lib::de::serde::DeserializeWrapper;
 
 #[derive(AssetCollection, Resource)]
@@ -15,6 +16,12 @@ pub struct GameAssets {
 #[derive(Deserialize, Asset, TypePath)]
 pub struct GlobalSettingsAsset {
     settings: DeserializeWrapper<GlobalSettings>,
+}
+
+impl GameAssets {
+    pub fn get(world: &World) -> &Self {
+        world.resource::<Self>()
+    }
 }
 
 pub struct LoadingPlugin;
@@ -36,5 +43,9 @@ impl LoadingPlugin {
             .clone();
 
         world.insert_resource(GameAssets { global_settings });
+
+        world
+            .resource_mut::<NextState<GameState>>()
+            .set(GameState::Connect);
     }
 }
