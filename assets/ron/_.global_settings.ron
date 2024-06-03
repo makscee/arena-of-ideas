@@ -1,0 +1,10 @@
+#![enable(implicit_some)]
+(
+    settings: (
+        always_zero: 0,
+        shop_slots_min: 3,
+        shop_slots_max: 6,
+        shop_slots_per_round: 0.34,
+        team_slots: 6,
+    ),
+)
