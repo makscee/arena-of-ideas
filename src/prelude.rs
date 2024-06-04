@@ -9,9 +9,11 @@ pub use anyhow::{anyhow, Result};
 pub use crate::module_bindings::*;
 pub use bevy::app::App;
 pub use bevy::app::Plugin;
+pub use bevy::ecs::component::Component;
 pub use bevy::ecs::schedule::States;
 pub use bevy::ecs::system::Resource;
-pub use bevy::ecs::world;
+pub use bevy::ecs::world::Mut;
+pub use bevy::utils::hashbrown::HashMap;
 pub use bevy::DefaultPlugins;
 pub use bevy::{
     asset::{Asset, Assets, Handle},
@@ -41,6 +43,8 @@ pub use bevy_egui::{
 pub use chrono::DateTime;
 pub use ecolor::Color32;
 pub use itertools::Itertools;
+pub use lazy_static::lazy_static;
 pub use serde::{Deserialize, Serialize};
+pub use std::sync::{Mutex, MutexGuard};
 pub use std::time::UNIX_EPOCH;
-pub use strum_macros::Display;
+pub use strum_macros::{AsRefStr, Display, EnumIter};

@@ -1,5 +1,5 @@
 use super::*;
-use bevy::ecs::{schedule::NextState, world};
+use bevy::ecs::schedule::NextState;
 use spacetimedb_lib::de::serde::DeserializeWrapper;
 
 #[derive(AssetCollection, Resource)]
