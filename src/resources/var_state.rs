@@ -22,6 +22,18 @@ pub struct VarChange {
     pub value: VarValue,
 }
 
+impl VarChange {
+    pub fn new(value: VarValue) -> Self {
+        Self {
+            t: default(),
+            duration: default(),
+            timeframe: default(),
+            tween: default(),
+            value,
+        }
+    }
+}
+
 impl VarState {
     pub fn attach(mut self, entity: Entity, world: &mut World) {
         self.birth = GameTimer::get().insert_head();
@@ -44,6 +56,13 @@ impl VarState {
             .get_mut::<Self>(entity)
             .with_context(|| format!("VarState not found for {entity:?}"))
     }
+    pub fn init(&mut self, var: VarName, value: VarValue) -> &mut Self {
+        self.vars.insert(
+            var,
+            HashMap::from([(String::default(), History::new(value))]),
+        );
+        self
+    }
     pub fn push_change(&mut self, var: VarName, key: String, mut change: VarChange) -> &mut Self {
         let head = GameTimer::get().insert_head();
         let birth = self.birth;
@@ -57,6 +76,9 @@ impl VarState {
             .0
             .push(change);
         self
+    }
+    pub fn has_value(&self, var: VarName) -> bool {
+        self.vars.contains_key(&var)
     }
     pub fn get_value_at(&self, var: VarName, t: f32) -> Result<VarValue> {
         Ok(self
@@ -84,9 +106,32 @@ impl VarState {
             })
             .unwrap_or_default())
     }
+
+    pub fn get_int(&self, var: VarName) -> Result<i32> {
+        self.get_value_last(var)?.get_int()
+    }
+    pub fn set_int(&mut self, var: VarName, value: i32) -> &mut Self {
+        self.push_change(var, default(), VarChange::new(VarValue::Int(value)));
+        self
+    }
+    pub fn change_int(&mut self, var: VarName, delta: i32) -> &mut Self {
+        let value = self.get_int(var).unwrap_or_default() + delta;
+        self.set_int(var, value)
+    }
+
+    pub fn get_faction(&self, var: VarName) -> Result<Faction> {
+        self.get_value_last(var)?.get_faction()
+    }
+
+    pub fn take(&mut self) -> Self {
+        mem::take(self)
+    }
 }
 
 impl History {
+    fn new(value: VarValue) -> Self {
+        Self(vec![VarChange::new(value)])
+    }
     fn get_value_at(&self, t: f32) -> Result<VarValue> {
         if t < 0.0 {
             return Err(anyhow!("Not born yet"));

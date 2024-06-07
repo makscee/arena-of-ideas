@@ -11,6 +11,68 @@ impl Context {
             layers: [ContextLayer::Owner(owner)].into(),
         }
     }
+    fn stack(&mut self, layer: ContextLayer, world: &World) -> &mut Self {
+        match &layer {
+            ContextLayer::Owner(entity) => {
+                let entity = *entity;
+                if let Some(parent) = world.get::<Parent>(entity) {
+                    let parent = parent.get();
+                    self.stack(ContextLayer::Owner(parent), world);
+                }
+                self.layers.push(layer);
+            }
+            _ => self.layers.push(layer),
+        }
+        self
+    }
+    pub fn owner(&self) -> Entity {
+        self.layers
+            .iter()
+            .rev()
+            .find_map(|l| l.get_owner())
+            .expect("Context always supposed to have an owner")
+    }
+    pub fn set_target(&mut self, entity: Entity, world: &World) -> &mut Self {
+        self.stack(ContextLayer::Target(entity), world)
+    }
+    pub fn target(&self) -> Entity {
+        self.get_target().expect("Target not found")
+    }
+    pub fn get_target(&self) -> Result<Entity> {
+        self.layers
+            .iter()
+            .rev()
+            .find_map(|l| l.get_target())
+            .with_context(|| format!("Failed to get target"))
+    }
+    pub fn set_caster(&mut self, entity: Entity, world: &World) -> &mut Self {
+        self.stack(ContextLayer::Caster(entity), world)
+    }
+    pub fn caster(&self) -> Entity {
+        self.get_caster().expect("Target not found")
+    }
+    pub fn get_caster(&self) -> Result<Entity> {
+        self.layers
+            .iter()
+            .rev()
+            .find_map(|l| l.get_caster())
+            .with_context(|| format!("Failed to get caster"))
+    }
+    pub fn get_var(&self, var: VarName, world: &World) -> Result<VarValue> {
+        self.layers
+            .iter()
+            .rev()
+            .find_map(|l| l.get_var(var, world))
+            .with_context(|| format!("Failed to find var {var}"))
+    }
+    pub fn set_var(&mut self, var: VarName, value: VarValue) -> &mut Self {
+        self.layers.push(ContextLayer::Var(var, value));
+        self
+    }
+
+    pub fn take(&mut self) -> Self {
+        mem::take(self)
+    }
 }
 
 #[derive(Debug, Clone, AsRefStr)]

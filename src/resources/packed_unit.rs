@@ -1,0 +1,46 @@
+use super::*;
+
+#[derive(Asset, Deserialize, Serialize, TypePath, Debug, Clone, PartialEq, Default)]
+#[serde(deny_unknown_fields)]
+pub struct PackedUnit {
+    #[serde(default = "default_empty")]
+    pub name: String,
+    #[serde(default = "default_one")]
+    pub pwr: i32,
+    #[serde(default = "default_one")]
+    pub hp: i32,
+    #[serde(default)]
+    pub state: VarState,
+}
+
+fn default_one() -> i32 {
+    1
+}
+
+fn default_empty() -> String {
+    "_empty".to_owned()
+}
+
+impl PackedUnit {
+    pub fn unpack(mut self, parent: Entity, slot: Option<i32>, world: &mut World) -> Entity {
+        let entity = world.spawn_empty().set_parent(parent).id();
+        self.state = self.generate_state(world);
+        self.state
+            .init(VarName::Slot, VarValue::Int(slot.unwrap_or_default()));
+        self.state.attach(entity, world);
+        entity
+    }
+
+    pub fn generate_state(&self, world: &World) -> VarState {
+        let mut state = self.state.clone();
+        state
+            .init(VarName::Hp, VarValue::Int(self.hp))
+            .init(VarName::Pwr, VarValue::Int(self.pwr))
+            .init(VarName::Name, VarValue::String(self.name.clone()))
+            .init(VarName::Position, VarValue::Vec2(default()));
+        if !state.has_value(VarName::Dmg) {
+            state.init(VarName::Dmg, VarValue::Int(0));
+        }
+        state
+    }
+}

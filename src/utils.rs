@@ -6,7 +6,7 @@ pub fn just_pressed(key: KeyCode, world: &World) -> bool {
         .unwrap()
         .just_pressed(key)
 }
-pub fn egui_context(world: &mut World) -> Option<Context> {
+pub fn egui_context(world: &mut World) -> Option<egui::Context> {
     world
         .query::<&mut EguiContext>()
         .get_single_mut(world)
@@ -176,6 +176,9 @@ pub fn format_timestamp(ts: u64) -> String {
     DateTime::<chrono::Local>::from(UNIX_EPOCH + Duration::from_micros(ts))
         .format("%d/%m/%Y %H:%M")
         .to_string()
+}
+pub fn global_settings() -> GlobalSettings {
+    GlobalSettings::filter_by_always_zero(0).unwrap()
 }
 
 pub trait StrExtensions {

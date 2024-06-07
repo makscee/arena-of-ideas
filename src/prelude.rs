@@ -10,9 +10,11 @@ pub use crate::module_bindings::*;
 pub use bevy::app::App;
 pub use bevy::app::Plugin;
 pub use bevy::ecs::component::Component;
+pub use bevy::ecs::query::With;
 pub use bevy::ecs::schedule::States;
 pub use bevy::ecs::system::Resource;
 pub use bevy::ecs::world::Mut;
+pub use bevy::hierarchy::BuildWorldChildren;
 pub use bevy::utils::hashbrown::HashMap;
 pub use bevy::DefaultPlugins;
 pub use bevy::{
@@ -37,7 +39,7 @@ pub use bevy_asset_loader::{
 };
 pub use bevy_common_assets::ron::RonAssetPlugin;
 pub use bevy_egui::{
-    egui::{self, epaint::PathShape, pos2, Align2, Context, Id, Pos2, Stroke, Ui},
+    egui::{self, epaint::PathShape, pos2, Align2, Id, Pos2, Stroke, Ui},
     EguiContext,
 };
 pub use chrono::DateTime;
@@ -47,4 +49,6 @@ pub use lazy_static::lazy_static;
 pub use serde::{Deserialize, Serialize};
 pub use std::sync::{Mutex, MutexGuard};
 pub use std::time::UNIX_EPOCH;
+pub use strum::IntoEnumIterator;
+pub use strum_macros::EnumString;
 pub use strum_macros::{AsRefStr, Display, EnumIter};

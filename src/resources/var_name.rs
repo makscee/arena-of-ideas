@@ -10,5 +10,10 @@ pub enum VarName {
     Description,
     Hp,
     Pwr,
+    Dmg,
     Value,
+    Damage,
+    Slot,
+    Visible,
+    Faction,
 }

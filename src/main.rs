@@ -22,6 +22,6 @@ fn main() {
         .add_plugins(RonAssetPlugin::<GlobalSettingsAsset>::new(&[
             "global_settings.ron",
         ]))
-        .add_plugins((LoadingPlugin, LoginPlugin))
+        .add_plugins((LoadingPlugin, LoginPlugin, BattlePlugin, TeamPlugin))
         .run();
 }
