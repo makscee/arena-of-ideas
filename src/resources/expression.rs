@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Clone, Default, Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, EnumIter, AsRefStr)]
 pub enum Expression {
     #[default]
     Zero,

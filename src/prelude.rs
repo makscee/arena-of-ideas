@@ -10,6 +10,7 @@ pub use crate::module_bindings::*;
 pub use bevy::app::prelude::PluginGroup;
 pub use bevy::app::App;
 pub use bevy::app::Plugin;
+pub use bevy::core::Name;
 pub use bevy::ecs::component::Component;
 pub use bevy::ecs::query::With;
 pub use bevy::ecs::schedule::States;

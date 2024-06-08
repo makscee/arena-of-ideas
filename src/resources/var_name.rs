@@ -16,4 +16,6 @@ pub enum VarName {
     Slot,
     Visible,
     Faction,
+    Charges,
+    Polarity,
 }

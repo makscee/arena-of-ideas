@@ -3,6 +3,7 @@ use super::*;
 #[derive(Component, Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
 pub struct VarState {
     vars: HashMap<VarName, HashMap<String, History>>,
+    statuses: HashMap<String, VarState>,
     birth: f32,
     entity: Option<Entity>,
 }
@@ -55,6 +56,15 @@ impl VarState {
         world
             .get_mut::<Self>(entity)
             .with_context(|| format!("VarState not found for {entity:?}"))
+    }
+    pub fn add_status(&mut self, name: String, state: VarState) {
+        self.statuses.insert(name, state);
+    }
+    pub fn get_status(&self, name: &str) -> Option<&VarState> {
+        self.statuses.get(name)
+    }
+    pub fn get_status_mut(&mut self, name: &str) -> Option<&mut VarState> {
+        self.statuses.get_mut(name)
     }
     pub fn init(&mut self, var: VarName, value: VarValue) -> &mut Self {
         self.vars.insert(
@@ -114,9 +124,10 @@ impl VarState {
         self.push_change(var, default(), VarChange::new(VarValue::Int(value)));
         self
     }
-    pub fn change_int(&mut self, var: VarName, delta: i32) -> &mut Self {
+    pub fn change_int(&mut self, var: VarName, delta: i32) -> i32 {
         let value = self.get_int(var).unwrap_or_default() + delta;
-        self.set_int(var, value)
+        self.set_int(var, value);
+        delta
     }
 
     pub fn get_faction(&self, var: VarName) -> Result<Faction> {

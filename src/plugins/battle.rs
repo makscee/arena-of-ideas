@@ -85,7 +85,7 @@ impl BattlePlugin {
         Ok(())
     }
     fn strike(left: Entity, right: Entity, world: &mut World) -> Result<()> {
-        debug!("atrike {left:?} {right:?}");
+        debug!("strike {left:?} {right:?}");
         let units = vec![(left, right), (right, left)];
         for (caster, target) in units {
             let context = Context::new(caster)
