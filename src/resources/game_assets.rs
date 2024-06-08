@@ -5,12 +5,15 @@ use spacetimedb_lib::de::serde::DeserializeWrapper;
 #[derive(AssetCollection, Resource)]
 pub struct GameAssetsHandles {
     #[asset(key = "global_settings")]
-    global_settings_handle: Handle<GlobalSettingsAsset>,
+    global_settings: Handle<GlobalSettingsAsset>,
+    #[asset(key = "custom_battle")]
+    custom_battle: Handle<BattleData>,
 }
 
 #[derive(Resource)]
 pub struct GameAssets {
     pub global_settings: GlobalSettings,
+    pub custom_battle: BattleData,
 }
 
 #[derive(Deserialize, Asset, TypePath)]
@@ -36,13 +39,21 @@ impl LoadingPlugin {
     fn setup(world: &mut World) {
         let global_settings = world
             .resource::<Assets<GlobalSettingsAsset>>()
-            .get(&world.resource::<GameAssetsHandles>().global_settings_handle)
+            .get(&world.resource::<GameAssetsHandles>().global_settings)
             .unwrap()
             .settings
             .0
             .clone();
+        let custom_battle = world
+            .resource::<Assets<BattleData>>()
+            .get(&world.resource::<GameAssetsHandles>().custom_battle)
+            .unwrap()
+            .clone();
 
-        world.insert_resource(GameAssets { global_settings });
+        world.insert_resource(GameAssets {
+            global_settings,
+            custom_battle,
+        });
 
         world
             .resource_mut::<NextState<GameState>>()

@@ -7,6 +7,7 @@ pub struct PackedTeam {
 
 impl PackedTeam {
     pub fn unpack(self, faction: Faction, world: &mut World) {
+        debug!("unpack team: {self:?}");
         for (slot, unit) in self.units.into_iter().enumerate() {
             unit.unpack(
                 TeamPlugin::entity(faction, world),

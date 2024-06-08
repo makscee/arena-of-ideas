@@ -40,7 +40,6 @@ impl TeamPlugin {
                 VisibilityBundle::default(),
             ))
             .id();
-        world.resource_mut::<Teams>().0.insert(faction, team);
         team
     }
 }

@@ -62,6 +62,20 @@ impl UnitPlugin {
                 && !Self::is_dead(*e, world)
         })
     }
+    pub fn fill_slot_gaps(faction: Faction, world: &mut World) {
+        Self::make_slot_gap(faction, i32::MAX, world);
+    }
+    pub fn make_slot_gap(faction: Faction, slot: i32, world: &mut World) {
+        for (unit, ind) in Self::collect_faction(faction, world)
+            .into_iter()
+            .sorted_by_key(|x| VarState::get(*x, world).get_int(VarName::Slot).unwrap())
+            .zip(1..)
+            .collect_vec()
+        {
+            let slot = ind + if ind >= slot { 1 } else { 0 };
+            VarState::get_mut(unit, world).init(VarName::Slot, VarValue::Int(slot));
+        }
+    }
 }
 
 #[derive(

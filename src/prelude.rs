@@ -7,6 +7,7 @@ pub use anyhow::Context as _;
 pub use anyhow::{anyhow, Result};
 
 pub use crate::module_bindings::*;
+pub use bevy::app::prelude::PluginGroup;
 pub use bevy::app::App;
 pub use bevy::app::Plugin;
 pub use bevy::ecs::component::Component;
@@ -14,9 +15,17 @@ pub use bevy::ecs::query::With;
 pub use bevy::ecs::schedule::States;
 pub use bevy::ecs::system::Resource;
 pub use bevy::ecs::world::Mut;
+pub use bevy::ecs::{
+    schedule::{NextState, State},
+    system::{Res, ResMut},
+};
 pub use bevy::hierarchy::BuildWorldChildren;
 pub use bevy::utils::hashbrown::HashMap;
 pub use bevy::DefaultPlugins;
+pub use bevy::{
+    app::Update,
+    ecs::schedule::{common_conditions::state_changed, IntoSystemConfigs},
+};
 pub use bevy::{
     asset::{Asset, Assets, Handle},
     ecs::schedule::OnEnter,
@@ -47,6 +56,7 @@ pub use ecolor::Color32;
 pub use itertools::Itertools;
 pub use lazy_static::lazy_static;
 pub use serde::{Deserialize, Serialize};
+pub use std::mem;
 pub use std::sync::{Mutex, MutexGuard};
 pub use std::time::UNIX_EPOCH;
 pub use strum::IntoEnumIterator;

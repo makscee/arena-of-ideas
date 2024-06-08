@@ -23,7 +23,8 @@ fn default_empty() -> String {
 
 impl PackedUnit {
     pub fn unpack(mut self, parent: Entity, slot: Option<i32>, world: &mut World) -> Entity {
-        let entity = world.spawn_empty().set_parent(parent).id();
+        debug!("unpack unit: {self:?}");
+        let entity = world.spawn_empty().set_parent(parent).insert(Unit).id();
         self.state = self.generate_state(world);
         self.state
             .init(VarName::Slot, VarValue::Int(slot.unwrap_or_default()));

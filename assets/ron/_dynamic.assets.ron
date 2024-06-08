@@ -1,1 +1,6 @@
-({"global_settings": File(path: "ron/_.global_settings.ron")})
+(
+    {
+        "global_settings": File(path: "ron/_.global_settings.ron"),
+        "custom_battle": File(path: "ron/custom.battle.ron"),
+    },
+)

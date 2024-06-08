@@ -3,12 +3,31 @@ use super::*;
 pub struct BattlePlugin;
 
 impl Plugin for BattlePlugin {
-    fn build(&self, app: &mut App) {}
+    fn build(&self, app: &mut App) {
+        app.add_systems(OnEnter(GameState::Battle), Self::on_enter)
+            .add_systems(OnEnter(GameState::CustomBattle), Self::on_enter_custom)
+            .init_resource::<BattleData>();
+    }
 }
 
 impl BattlePlugin {
+    fn on_enter(world: &mut World) {
+        info!("Start battle");
+        GameTimer::get().reset();
+        let result = Self::run(world).unwrap();
+        let mut bd = world.resource_mut::<BattleData>();
+        bd.result = result;
+        info!("Battle finished {result:?}");
+    }
+    fn on_enter_custom(world: &mut World) {
+        world.insert_resource(GameAssets::get(world).custom_battle.clone());
+    }
     pub fn load_teams(left: PackedTeam, right: PackedTeam, world: &mut World) {
-        world.insert_resource(BattleData { left, right });
+        world.insert_resource(BattleData {
+            left,
+            right,
+            result: default(),
+        });
     }
     pub fn run(world: &mut World) -> Result<BattleResult> {
         let bd = world.resource::<BattleData>();
@@ -16,11 +35,15 @@ impl BattlePlugin {
         let right = bd.right.clone();
         left.unpack(Faction::Left, world);
         right.unpack(Faction::Right, world);
+        UnitPlugin::fill_slot_gaps(Faction::Left, world);
+        UnitPlugin::fill_slot_gaps(Faction::Right, world);
         ActionPlugin::spin(world)?;
         loop {
             if let Some((left, right)) = Self::get_strikers(world) {
                 Self::run_strike(left, right, world)?;
                 continue;
+            } else {
+                debug!("no strikers");
             }
             if ActionPlugin::spin(world)? || ActionPlugin::clear_dead(world) {
                 continue;
@@ -52,7 +75,7 @@ impl BattlePlugin {
         Ok(())
     }
     fn before_strike(left: Entity, right: Entity, world: &mut World) -> Result<()> {
-        debug!("Before strike {left:?} {right:?}");
+        debug!("before strike {left:?} {right:?}");
         ActionPlugin::spin(world)?;
         if Self::striker_death_check(left, right, world) {
             return Ok(());
@@ -62,7 +85,7 @@ impl BattlePlugin {
         Ok(())
     }
     fn strike(left: Entity, right: Entity, world: &mut World) -> Result<()> {
-        debug!("Strike {left:?} {right:?}");
+        debug!("atrike {left:?} {right:?}");
         let units = vec![(left, right), (right, left)];
         for (caster, target) in units {
             let context = Context::new(caster)
@@ -76,7 +99,7 @@ impl BattlePlugin {
         Ok(())
     }
     fn after_strike(left: Entity, right: Entity, world: &mut World) -> Result<()> {
-        debug!("After strike {left:?} {right:?}");
+        debug!("after strike {left:?} {right:?}");
         let units = vec![left, right];
         ActionPlugin::spin(world)?;
         Ok(())
@@ -105,10 +128,12 @@ impl BattlePlugin {
     }
 }
 
-#[derive(Resource)]
-struct BattleData {
+#[derive(Asset, TypePath, Resource, Default, Clone, Debug, Deserialize)]
+pub struct BattleData {
     left: PackedTeam,
     right: PackedTeam,
+    #[serde(default)]
+    result: BattleResult,
 }
 
 #[derive(Debug, Default, Clone, Copy, Serialize, Deserialize)]
