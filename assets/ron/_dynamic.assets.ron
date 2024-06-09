@@ -4,5 +4,6 @@
         "custom_battle": File(path: "ron/custom.battle.ron"),
         "heroes": Folder(path: "ron/heroes"),
         "houses": Folder(path: "ron/houses"),
+        "test_scenarios": Folder(path: "ron/scenarios"),
     },
 )

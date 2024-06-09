@@ -21,6 +21,7 @@ pub use bevy::ecs::{
     system::{Res, ResMut},
 };
 pub use bevy::hierarchy::BuildWorldChildren;
+pub use bevy::hierarchy::DespawnRecursiveExt;
 pub use bevy::utils::hashbrown::HashMap;
 pub use bevy::DefaultPlugins;
 pub use bevy::{

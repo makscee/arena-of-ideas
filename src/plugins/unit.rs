@@ -1,3 +1,5 @@
+use bevy::ecs::query::Or;
+
 use super::*;
 
 pub struct UnitPlugin;
@@ -47,7 +49,13 @@ impl UnitPlugin {
             VarChange::new(VarValue::Bool(false)),
         );
     }
-    pub fn collect_faction(faction: Faction, world: &mut World) -> Vec<Entity> {
+    pub fn collect_all(world: &mut World) -> Vec<Entity> {
+        world
+            .query_filtered::<Entity, Or<(With<Unit>, With<Corpse>)>>()
+            .iter(world)
+            .collect_vec()
+    }
+    pub fn collect_faction(faction: Faction, world: &World) -> Vec<Entity> {
         if let Some(children) = world.get::<Children>(TeamPlugin::entity(faction, world)) {
             return children
                 .iter()

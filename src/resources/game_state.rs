@@ -10,6 +10,8 @@ pub enum GameState {
     Connect,
     CustomBattle,
     Battle,
+    TestScenariosLoad,
+    TestScenariosRun,
 }
 
 static TARGET_STATE: Mutex<GameState> = Mutex::new(GameState::Loaded);
@@ -24,6 +26,10 @@ lazy_static! {
                 GameState::CustomBattle,
                 GameState::Battle,
             ],
+        );
+        m.insert(
+            GameState::TestScenariosRun,
+            vec![GameState::Loaded, GameState::TestScenariosLoad],
         );
         m
     };

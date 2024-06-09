@@ -52,6 +52,11 @@ impl BattlePlugin {
         }
         Self::get_result(world)
     }
+    pub fn clear(world: &mut World) {
+        for unit in UnitPlugin::collect_all(world) {
+            world.entity_mut(unit).despawn_recursive();
+        }
+    }
     fn get_strikers(world: &mut World) -> Option<(Entity, Entity)> {
         if let Some(left) = UnitPlugin::find_unit(Faction::Left, 1, world) {
             if let Some(right) = UnitPlugin::find_unit(Faction::Right, 1, world) {
@@ -136,7 +141,7 @@ pub struct BattleData {
     result: BattleResult,
 }
 
-#[derive(Debug, Default, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Copy, Serialize, Deserialize, PartialEq, Display)]
 pub enum BattleResult {
     #[default]
     Tbd,

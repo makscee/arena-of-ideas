@@ -9,9 +9,12 @@ pub enum Expression {
     Mod(Box<Expression>),
     Sin(Box<Expression>),
     Cos(Box<Expression>),
+    FactionCount(Box<Expression>),
 
     Sum(Box<Expression>, Box<Expression>),
     Sub(Box<Expression>, Box<Expression>),
     Mul(Box<Expression>, Box<Expression>),
     Div(Box<Expression>, Box<Expression>),
+    Equals(Box<Expression>, Box<Expression>),
+    And(Box<Expression>, Box<Expression>),
 }
