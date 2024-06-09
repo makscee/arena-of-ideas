@@ -55,6 +55,12 @@ impl UnitPlugin {
             .iter(world)
             .collect_vec()
     }
+    pub fn collect_alive(world: &mut World) -> Vec<Entity> {
+        world
+            .query_filtered::<Entity, With<Unit>>()
+            .iter(world)
+            .collect_vec()
+    }
     pub fn collect_faction(faction: Faction, world: &World) -> Vec<Entity> {
         if let Some(children) = world.get::<Children>(TeamPlugin::entity(faction, world)) {
             return children

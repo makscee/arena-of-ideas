@@ -58,6 +58,7 @@ pub use ecolor::Color32;
 pub use itertools::Itertools;
 pub use lazy_static::lazy_static;
 pub use serde::{Deserialize, Serialize};
+pub use std::cmp::Ordering;
 pub use std::mem;
 pub use std::sync::{Mutex, MutexGuard};
 pub use std::time::UNIX_EPOCH;

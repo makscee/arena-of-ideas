@@ -1,3 +1,4 @@
+#![enable(implicit_some)]
 (
     left: (units: [(hp: 1, pwr: 1, statuses: [("Blessing", 1)])]),
     right: (units: [(hp: 1, pwr: 1), (hp: 1, pwr: 1)]),

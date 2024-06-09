@@ -50,28 +50,46 @@ impl Status {
             .set_parent(owner)
             .id()
     }
-    pub fn change_charges(
-        status: &str,
-        entity: Entity,
-        delta: i32,
-        world: &mut World,
-    ) -> Result<i32> {
-        let mut owner_state = VarState::try_get_mut(entity, world)?;
-        let state = if let Some(state) = owner_state.get_status_mut(status) {
-            state
+    pub fn change_charges(status: &str, entity: Entity, delta: i32, world: &mut World) -> i32 {
+        if let Some(state) = VarState::get_mut(entity, world).get_status_mut(status) {
+            state.change_int(VarName::Charges, delta)
         } else {
-            PackedStatus {
-                name: todo!(),
-                description: todo!(),
-                polarity: todo!(),
-                state: todo!(),
-                trigger: todo!(),
-            }
-            .unpack(entity, world);
-            VarState::get_mut(entity, world)
-                .get_status_mut(status)
+            GameAssets::get(world)
+                .statuses
+                .get(status)
                 .unwrap()
-        };
-        Ok(state.change_int(VarName::Charges, delta))
+                .clone()
+                .unpack(entity, world);
+            Self::change_charges(status, entity, delta, world)
+        }
+    }
+    pub fn get_charges(status: &str, entity: Entity, world: &World) -> Result<i32> {
+        Ok(VarState::try_get(entity, world)?
+            .get_status(status)
+            .and_then(|s| s.get_int(VarName::Charges).ok())
+            .unwrap_or_default())
+    }
+    pub fn collect_statuses(entity: Entity, world: &World) -> Vec<Status> {
+        get_children(entity, world)
+            .into_iter()
+            .filter_map(|e| world.get::<Status>(e).cloned())
+            .collect_vec()
+    }
+    pub fn refresh_mappings(entity: Entity, world: &mut World) {
+        let statuses = Self::collect_statuses(entity, world);
+        for Status { name, trigger } in statuses {
+            let context = &Context::new(entity).set_status(entity, name.clone()).take();
+            let mappings = trigger.collect_mappings(context, world);
+            let mut state = VarState::get_mut(entity, world);
+            for (var, value) in mappings {
+                if !state
+                    .get_key_value_last(&name, var)
+                    .unwrap_or_default()
+                    .eq(&value)
+                {
+                    state.set_key_value(name.clone(), var, value);
+                }
+            }
+        }
     }
 }

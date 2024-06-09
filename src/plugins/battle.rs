@@ -94,8 +94,8 @@ impl BattlePlugin {
         let units = vec![(left, right), (right, left)];
         for (caster, target) in units {
             let context = Context::new(caster)
-                .set_target(target, world)
-                .set_caster(caster, world)
+                .set_target(target)
+                .set_caster(caster)
                 .take();
             let effect = Effect::Damage;
             ActionPlugin::action_push_back(effect, context, world);

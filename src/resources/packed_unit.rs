@@ -11,6 +11,8 @@ pub struct PackedUnit {
     pub hp: i32,
     #[serde(default)]
     pub state: VarState,
+    #[serde(default)]
+    pub statuses: Vec<(String, i32)>,
 }
 
 fn default_one() -> i32 {
@@ -23,12 +25,16 @@ fn default_empty() -> String {
 
 impl PackedUnit {
     pub fn unpack(mut self, parent: Entity, slot: Option<i32>, world: &mut World) -> Entity {
-        debug!("unpack unit: {self:?}");
         let entity = world.spawn_empty().set_parent(parent).insert(Unit).id();
+        debug!("unpack unit: {entity:?} {self:?}");
         self.state = self.generate_state(world);
         self.state
             .init(VarName::Slot, VarValue::Int(slot.unwrap_or_default()));
         self.state.attach(entity, world);
+        for (status, charges) in self.statuses {
+            let _ = Status::change_charges(&status, entity, charges, world);
+        }
+        Status::refresh_mappings(entity, world);
         entity
     }
 

@@ -5,6 +5,8 @@ pub enum Effect {
     #[default]
     Noop,
     Damage,
+    ChangeStatus(String),
+    UseAbility(String),
 }
 
 impl Effect {
@@ -23,6 +25,8 @@ impl Effect {
                     VarState::get_mut(target, world).change_int(VarName::Dmg, value);
                 }
             }
+            Effect::ChangeStatus(name) => todo!(),
+            Effect::UseAbility(name) => todo!(),
         }
         Ok(())
     }

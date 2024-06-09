@@ -1,0 +1,19 @@
+#![enable(implicit_some)]
+(
+    name: "Holy",
+    color: ("#FFF176"),
+    statuses: [
+        (
+            name: "Blessing",
+            description: "+{Charges}/+{Charges}",
+            polarity: 1,
+            trigger: List(
+                [
+                    Change(trigger: Var(Hp), expr: Context(Charges)),
+                    Change(trigger: Var(Pwr), expr: Context(Charges)),
+                ],
+            ),
+        ),
+    ],
+    abilities: [(name: "Blessing", description: "Give +{1}/+{1}", effect: ChangeStatus("Blessing"))],
+)

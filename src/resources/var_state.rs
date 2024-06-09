@@ -116,6 +116,33 @@ impl VarState {
             })
             .unwrap_or_default())
     }
+    pub fn get_key_value_last(&self, key: &str, var: VarName) -> Result<VarValue> {
+        Ok(self
+            .vars
+            .get(&var)
+            .with_context(|| format!("Var {var} not set for {:?}", self.entity))?
+            .get(key)
+            .and_then(|h| h.get_value_last())
+            .unwrap_or_default())
+    }
+    pub fn get_key_value_at(&self, key: &str, var: VarName, t: f32) -> Result<VarValue> {
+        Ok(self
+            .vars
+            .get(&var)
+            .with_context(|| format!("Var {var} not set for {:?}", self.entity))?
+            .get(key)
+            .and_then(|h| h.get_value_at(t).ok())
+            .unwrap_or_default())
+    }
+
+    pub fn set_value(&mut self, var: VarName, value: VarValue) -> &mut Self {
+        self.push_change(var, default(), VarChange::new(value));
+        self
+    }
+    pub fn set_key_value(&mut self, key: String, var: VarName, value: VarValue) -> &mut Self {
+        self.push_change(var, key, VarChange::new(value));
+        self
+    }
 
     pub fn get_int(&self, var: VarName) -> Result<i32> {
         self.get_value_last(var)?.get_int()

@@ -1,3 +1,5 @@
+use colored::Colorize;
+
 use super::*;
 
 #[derive(Deserialize, Serialize, Clone, Debug, Display, PartialEq, EnumIter)]
@@ -49,4 +51,30 @@ pub enum FireTrigger {
     EnemySummon,
     BeforeDeath,
     AfterKill,
+}
+
+impl Trigger {
+    pub fn collect_mappings(
+        &self,
+        context: &Context,
+        world: &mut World,
+    ) -> Vec<(VarName, VarValue)> {
+        match self {
+            Trigger::List(list) => list
+                .iter()
+                .flat_map(|t| t.collect_mappings(context, world))
+                .collect_vec(),
+            Trigger::Change { trigger, expr } => match trigger {
+                DeltaTrigger::IncomingDamage => default(),
+                DeltaTrigger::Var(var) => match expr.get_value(context, world) {
+                    Ok(value) => [(*var, value)].into(),
+                    Err(e) => {
+                        debug!("{} {e}", "Mapping error:".red());
+                        default()
+                    }
+                },
+            },
+            Trigger::Fire { .. } => default(),
+        }
+    }
 }

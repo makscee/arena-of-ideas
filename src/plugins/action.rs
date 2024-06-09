@@ -29,6 +29,9 @@ impl ActionPlugin {
                     Ok(_) => {
                         processed = true;
                         GameTimer::get().advance_insert(delay);
+                        for unit in UnitPlugin::collect_alive(world) {
+                            Status::refresh_mappings(unit, world);
+                        }
                     }
                     Err(e) => error!("Effect process error: {e}"),
                 }

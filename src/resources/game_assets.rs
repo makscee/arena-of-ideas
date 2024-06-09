@@ -20,6 +20,8 @@ pub struct GameAssets {
     pub custom_battle: BattleData,
     pub heroes: HashMap<String, PackedUnit>,
     pub houses: HashMap<String, House>,
+    pub abilities: HashMap<String, Ability>,
+    pub statuses: HashMap<String, PackedStatus>,
 }
 
 #[derive(Deserialize, Asset, TypePath)]
@@ -70,12 +72,28 @@ impl LoadingPlugin {
                 .iter()
                 .map(|(name, h)| (name.clone(), houses.get(h).unwrap().clone())),
         );
+        let abilities = HashMap::from_iter(
+            houses
+                .values()
+                .flat_map(|h| &h.abilities)
+                .cloned()
+                .map(|a| (a.name.clone(), a)),
+        );
+        let statuses = HashMap::from_iter(
+            houses
+                .values()
+                .flat_map(|h| &h.statuses)
+                .cloned()
+                .map(|a| (a.name.clone(), a)),
+        );
 
         let assets = GameAssets {
             global_settings,
             custom_battle,
             heroes,
             houses,
+            abilities,
+            statuses,
         };
         dbg!(&assets);
         world.insert_resource(assets);

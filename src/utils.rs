@@ -125,7 +125,10 @@ pub fn cursor_pos(world: &mut World) -> Option<Vec2> {
     window.cursor_position()
 }
 pub fn get_children(entity: Entity, world: &World) -> Vec<Entity> {
-    world.get::<Children>(entity).unwrap().to_vec()
+    world
+        .get::<Children>(entity)
+        .map(|c| c.to_vec())
+        .unwrap_or_default()
 }
 pub fn save_to_clipboard(text: &str, world: &mut World) {
     world
