@@ -8,12 +8,18 @@ pub struct GameAssetsHandles {
     global_settings: Handle<GlobalSettingsAsset>,
     #[asset(key = "custom_battle")]
     custom_battle: Handle<BattleData>,
+    #[asset(key = "heroes", collection(typed, mapped))]
+    heroes: HashMap<String, Handle<PackedUnit>>,
+    #[asset(key = "houses", collection(typed, mapped))]
+    houses: HashMap<String, Handle<House>>,
 }
 
-#[derive(Resource)]
+#[derive(Resource, Debug)]
 pub struct GameAssets {
     pub global_settings: GlobalSettings,
     pub custom_battle: BattleData,
+    pub heroes: HashMap<String, PackedUnit>,
+    pub houses: HashMap<String, House>,
 }
 
 #[derive(Deserialize, Asset, TypePath)]
@@ -37,23 +43,42 @@ impl Plugin for LoadingPlugin {
 
 impl LoadingPlugin {
     fn setup(world: &mut World) {
+        let handles = world.resource::<GameAssetsHandles>();
         let global_settings = world
             .resource::<Assets<GlobalSettingsAsset>>()
-            .get(&world.resource::<GameAssetsHandles>().global_settings)
+            .get(&handles.global_settings)
             .unwrap()
             .settings
             .0
             .clone();
         let custom_battle = world
             .resource::<Assets<BattleData>>()
-            .get(&world.resource::<GameAssetsHandles>().custom_battle)
+            .get(&handles.custom_battle)
             .unwrap()
             .clone();
+        let heroes = world.resource::<Assets<PackedUnit>>();
+        let heroes = HashMap::from_iter(
+            handles
+                .heroes
+                .iter()
+                .map(|(name, h)| (name.clone(), heroes.get(h).unwrap().clone())),
+        );
+        let houses = world.resource::<Assets<House>>();
+        let houses = HashMap::from_iter(
+            handles
+                .houses
+                .iter()
+                .map(|(name, h)| (name.clone(), houses.get(h).unwrap().clone())),
+        );
 
-        world.insert_resource(GameAssets {
+        let assets = GameAssets {
             global_settings,
             custom_battle,
-        });
+            heroes,
+            houses,
+        };
+        dbg!(&assets);
+        world.insert_resource(assets);
 
         world
             .resource_mut::<NextState<GameState>>()

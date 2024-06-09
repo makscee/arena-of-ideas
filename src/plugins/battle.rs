@@ -17,7 +17,7 @@ impl BattlePlugin {
         let result = Self::run(world).unwrap();
         let mut bd = world.resource_mut::<BattleData>();
         bd.result = result;
-        info!("Battle finished {result:?}");
+        info!("Battle finished with result: {result:?}");
     }
     fn on_enter_custom(world: &mut World) {
         world.insert_resource(GameAssets::get(world).custom_battle.clone());

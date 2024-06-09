@@ -30,6 +30,8 @@ fn main() {
             "global_settings.ron",
         ]))
         .add_plugins(RonAssetPlugin::<BattleData>::new(&["battle.ron"]))
+        .add_plugins(RonAssetPlugin::<PackedUnit>::new(&["unit.ron"]))
+        .add_plugins(RonAssetPlugin::<House>::new(&["house.ron"]))
         .add_plugins((
             LoadingPlugin,
             LoginPlugin,
