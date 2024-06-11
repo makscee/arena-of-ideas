@@ -60,6 +60,7 @@ pub use lazy_static::lazy_static;
 pub use serde::{Deserialize, Serialize};
 pub use std::cmp::Ordering;
 pub use std::mem;
+pub use std::ops::Deref;
 pub use std::sync::{Mutex, MutexGuard};
 pub use std::time::UNIX_EPOCH;
 pub use strum::IntoEnumIterator;

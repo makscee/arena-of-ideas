@@ -18,4 +18,5 @@ pub enum VarName {
     Faction,
     Charges,
     Polarity,
+    Level,
 }

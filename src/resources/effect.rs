@@ -6,7 +6,8 @@ pub enum Effect {
     Noop,
     Damage,
     ChangeStatus(String),
-    UseAbility(String),
+    UseAbility(String, i32),
+    WithTarget(Expression, Box<Effect>),
 }
 
 impl Effect {
@@ -25,8 +26,49 @@ impl Effect {
                     VarState::get_mut(target, world).change_int(VarName::Dmg, value);
                 }
             }
-            Effect::ChangeStatus(name) => todo!(),
-            Effect::UseAbility(name) => todo!(),
+            Effect::ChangeStatus(name) => {
+                let delta = context
+                    .get_var(VarName::Charges, world)
+                    .unwrap_or(VarValue::Int(1))
+                    .get_int()?;
+                Status::change_charges(&name, context.get_target()?, delta, world);
+            }
+            Effect::UseAbility(name, base) => {
+                let ability = GameAssets::get(world)
+                    .abilities
+                    .get(name)
+                    .with_context(|| format!("Ability not found {name}"))?;
+                let charges = context
+                    .get_var(VarName::Level, world)
+                    .map(|v| v.get_int().unwrap())
+                    .unwrap_or(1)
+                    + *base;
+                let caster = owner;
+                let context = context
+                    .clone()
+                    .set_var(VarName::Charges, VarValue::Int(charges))
+                    .set_caster(caster)
+                    .take();
+                ActionPlugin::action_push_front(ability.effect.clone(), context, world);
+            }
+            Effect::WithTarget(target, effect) => {
+                let target = target.get_value(context, world)?;
+                let targets = target
+                    .get_entity_list()?
+                    .into_iter()
+                    .sorted_by_key(|e| -VarState::get(*e, world).get_int(VarName::Slot).unwrap())
+                    .collect_vec();
+                let delay = 0.2;
+                for target in targets {
+                    let context = context.set_target(target).clone();
+                    ActionPlugin::action_push_front_with_delay(
+                        effect.deref().clone(),
+                        context,
+                        delay,
+                        world,
+                    );
+                }
+            }
         }
         Ok(())
     }

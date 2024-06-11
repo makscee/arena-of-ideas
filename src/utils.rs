@@ -239,17 +239,24 @@ impl ToPos2 for Vec2 {
 }
 
 pub trait EntityExt {
-    fn get_parent(&self, world: &World) -> Option<Entity>;
-    fn get_parent_query(&self, query: &Query<&Parent>) -> Option<Entity>;
+    fn get_parent(self, world: &World) -> Option<Entity>;
+    fn get_parent_query(self, query: &Query<&Parent>) -> Option<Entity>;
+    fn faction(self, world: &World) -> Faction;
 }
 
 impl EntityExt for Entity {
-    fn get_parent(&self, world: &World) -> Option<Entity> {
-        world.get::<Parent>(*self).map(|p| p.get())
+    fn get_parent(self, world: &World) -> Option<Entity> {
+        world.get::<Parent>(self).map(|p| p.get())
     }
-
-    fn get_parent_query(&self, query: &Query<&Parent>) -> Option<Entity> {
-        query.get(*self).ok().map(|p| p.get())
+    fn get_parent_query(self, query: &Query<&Parent>) -> Option<Entity> {
+        query.get(self).ok().map(|p| p.get())
+    }
+    fn faction(self, world: &World) -> Faction {
+        Context::new(self)
+            .get_var(VarName::Faction, world)
+            .unwrap()
+            .get_faction()
+            .unwrap()
     }
 }
 

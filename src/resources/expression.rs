@@ -5,6 +5,10 @@ pub enum Expression {
     #[default]
     Zero,
 
+    Owner,
+    Caster,
+    Target,
+
     Value(VarValue),
     Context(VarName),
     StatusCharges(String),
@@ -69,6 +73,9 @@ impl Expression {
                 .get_value(context, world)?
                 .eq(&b.get_value(context, world)?)
                 .into()),
+            Expression::Owner => Ok(VarValue::Entity(context.owner())),
+            Expression::Caster => Ok(VarValue::Entity(context.get_caster()?)),
+            Expression::Target => Ok(VarValue::Entity(context.get_target()?)),
         }
     }
     pub fn get_float(&self, context: &Context, world: &mut World) -> Result<f32> {

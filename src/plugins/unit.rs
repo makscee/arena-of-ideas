@@ -116,3 +116,13 @@ pub enum Faction {
     Team,
     Shop,
 }
+
+impl Faction {
+    pub fn opposite(&self) -> Self {
+        match self {
+            Faction::Left => Faction::Right,
+            Faction::Right => Faction::Left,
+            _ => panic!("Can't get opposite of {self}"),
+        }
+    }
+}

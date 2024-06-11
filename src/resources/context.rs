@@ -6,10 +6,17 @@ pub struct Context {
 }
 
 impl Context {
+    pub fn empty() -> Self {
+        Self { ..default() }
+    }
     pub fn new(owner: Entity) -> Self {
         Self {
             layers: [ContextLayer::Owner(owner)].into(),
         }
+    }
+    pub fn set_owner(&mut self, entity: Entity) -> &mut Self {
+        self.layers.push(ContextLayer::Owner(entity));
+        self
     }
     pub fn owner(&self) -> Entity {
         self.layers
@@ -71,6 +78,15 @@ impl Context {
             .find_map(|l| l.get_status())
             .with_context(|| format!("Failed to get status"))
     }
+    pub fn has_status(&self, entity: Entity) -> bool {
+        self.layers
+            .iter()
+            .any(|l| matches!(l, ContextLayer::Status(e, ..) if entity.eq(e)))
+    }
+    pub fn set_event(&mut self, event: Event) -> &mut Self {
+        self.layers.push(ContextLayer::Event(event));
+        self
+    }
 
     pub fn take(&mut self) -> Self {
         mem::take(self)
@@ -84,6 +100,7 @@ pub enum ContextLayer {
     Owner(Entity),
     Status(Entity, String),
     Var(VarName, VarValue),
+    Event(Event),
 }
 
 impl ContextLayer {

@@ -4,13 +4,36 @@ use super::*;
 
 pub struct ActionPlugin;
 
+#[derive(Resource, Default)]
+struct ActionQueue(VecDeque<Action>);
+#[derive(Resource, Default)]
+struct EventQueue(VecDeque<(Event, Context)>);
+
+struct Action {
+    effect: Effect,
+    context: Context,
+    delay: f32,
+}
+#[derive(Resource, Default)]
+struct ActionsData {
+    events: Vec<(f32, Event)>,
+    turns: Vec<(f32, usize)>,
+    chain: usize,
+}
+
 impl Plugin for ActionPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<ActionQueue>();
+        app.init_resource::<EventQueue>()
+            .init_resource::<ActionQueue>()
+            .init_resource::<ActionsData>()
+            .add_systems(Update, Self::update);
     }
 }
 
 impl ActionPlugin {
+    fn update(world: &mut World) {
+        Self::spin(world).expect("Spin failed");
+    }
     pub fn spin(world: &mut World) -> Result<bool> {
         let mut processed = false;
         let mut limit = 100000;
@@ -28,6 +51,7 @@ impl ActionPlugin {
                 match effect.invoke(&mut context, world) {
                     Ok(_) => {
                         processed = true;
+                        world.resource_mut::<ActionsData>().chain += 1;
                         GameTimer::get().advance_insert(delay);
                         for unit in UnitPlugin::collect_alive(world) {
                             Status::refresh_mappings(unit, world);
@@ -36,6 +60,17 @@ impl ActionPlugin {
                     Err(e) => error!("Effect process error: {e}"),
                 }
                 continue;
+            }
+            let mut actions_added = false;
+            while let Some((event, context)) = Self::pop_event(world) {
+                if event.process(context, world) {
+                    GameTimer::get().advance_insert(0.2);
+                    actions_added = true;
+                    break;
+                }
+            }
+            if !actions_added {
+                break;
             }
             break;
         }
@@ -60,9 +95,6 @@ impl ActionPlugin {
             GameTimer::get().advance_insert(0.3);
         }
         died
-    }
-    fn pop_action(world: &mut World) -> Option<Action> {
-        world.resource_mut::<ActionQueue>().0.pop_front()
     }
     pub fn action_push_back(effect: Effect, context: Context, world: &mut World) {
         world.resource_mut::<ActionQueue>().0.push_back(Action {
@@ -102,13 +134,28 @@ impl ActionPlugin {
             delay,
         });
     }
-}
-
-#[derive(Resource, Default)]
-struct ActionQueue(VecDeque<Action>);
-
-struct Action {
-    effect: Effect,
-    context: Context,
-    delay: f32,
+    pub fn event_push_back(event: Event, context: Context, world: &mut World) {
+        world
+            .resource_mut::<EventQueue>()
+            .0
+            .push_back((event, context));
+    }
+    fn pop_action(world: &mut World) -> Option<Action> {
+        world.resource_mut::<ActionQueue>().0.pop_front()
+    }
+    fn pop_event(world: &mut World) -> Option<(Event, Context)> {
+        world.resource_mut::<EventQueue>().0.pop_front()
+    }
+    pub fn register_event(event: Event, world: &mut World) {
+        world
+            .resource_mut::<ActionsData>()
+            .events
+            .push((GameTimer::get().insert_head(), event));
+    }
+    pub fn register_next_turn(world: &mut World) {
+        let mut data = world.resource_mut::<ActionsData>();
+        let next = data.turns.last().map(|(_, r)| *r).unwrap_or_default() + 1;
+        data.turns.push((GameTimer::get().insert_head(), next));
+        data.chain = 0;
+    }
 }

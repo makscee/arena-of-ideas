@@ -38,6 +38,8 @@ impl BattlePlugin {
         UnitPlugin::fill_slot_gaps(Faction::Left, world);
         UnitPlugin::fill_slot_gaps(Faction::Right, world);
         ActionPlugin::spin(world)?;
+        Event::BattleStart.send(world);
+        ActionPlugin::spin(world)?;
         loop {
             if let Some((left, right)) = Self::get_strikers(world) {
                 Self::run_strike(left, right, world)?;

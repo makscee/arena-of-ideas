@@ -10,6 +10,8 @@ pub struct PackedUnit {
     #[serde(default = "default_one")]
     pub hp: i32,
     #[serde(default)]
+    pub trigger: Trigger,
+    #[serde(default)]
     pub state: VarState,
     #[serde(default)]
     pub statuses: Vec<(String, i32)>,
@@ -30,6 +32,17 @@ impl PackedUnit {
         self.state = self.generate_state(world);
         self.state
             .init(VarName::Slot, VarValue::Int(slot.unwrap_or_default()));
+        Status {
+            name: "_local".to_owned(),
+            trigger: self.trigger,
+        }
+        .spawn(entity, world);
+        self.state.add_status(
+            "_local".to_owned(),
+            VarState::default()
+                .init(VarName::Charges, VarValue::Int(1))
+                .take(),
+        );
         self.state.attach(entity, world);
         for (status, charges) in self.statuses {
             let _ = Status::change_charges(&status, entity, charges, world);

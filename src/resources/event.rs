@@ -34,3 +34,71 @@ pub enum Event {
     Summon(Entity),
     UseAbility(String),
 }
+
+impl Event {
+    pub fn send_with_context(self, mut context: Context, world: &mut World) {
+        debug!("Send event {self:?}");
+        context.set_event(self.clone());
+        ActionPlugin::register_event(self.clone(), world);
+        let units = match &self {
+            Event::DamageTaken { owner, value } | Event::IncomingDamage { owner, value } => {
+                context.set_var(VarName::Value, VarValue::Int(*value));
+                [*owner].into()
+            }
+            Event::BattleStart
+            | Event::TurnStart
+            | Event::TurnEnd
+            | Event::Death(..)
+            | Event::Summon(..)
+            | Event::UseAbility(..) => {
+                let mut units = UnitPlugin::collect_all(world);
+                units.sort_by_key(|e| VarState::get(*e, world).get_int(VarName::Slot).unwrap());
+                match &self {
+                    Event::Death(e) | Event::Summon(e) => {
+                        context.set_target(*e);
+                    }
+                    _ => {}
+                };
+                units
+            }
+            Event::BeforeStrike(owner, target) | Event::AfterStrike(owner, target) => {
+                context.set_target(*target);
+                [*owner].into()
+            }
+            Event::Kill { owner, target } => {
+                context.set_target(*target);
+                [*owner].into()
+            }
+            Event::OutgoingDamage {
+                owner,
+                target,
+                value,
+            }
+            | Event::DamageDealt {
+                owner,
+                target,
+                value,
+            } => {
+                context
+                    .set_target(*target)
+                    .set_var(VarName::Value, VarValue::Int(*value));
+                [*owner].into()
+            }
+        };
+        for unit in units {
+            ActionPlugin::event_push_back(
+                self.clone(),
+                context.clone().set_owner(unit).take(),
+                world,
+            );
+        }
+    }
+
+    pub fn send(self, world: &mut World) {
+        self.send_with_context(Context::empty(), world)
+    }
+
+    pub fn process(self, context: Context, world: &mut World) -> bool {
+        Status::notify(&self, &context, world)
+    }
+}
