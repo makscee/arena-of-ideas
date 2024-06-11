@@ -72,22 +72,29 @@ impl BattlePlugin {
     }
     fn run_strike(left: Entity, right: Entity, world: &mut World) -> Result<()> {
         ActionPlugin::spin(world)?;
+        ActionPlugin::register_next_turn(world);
+        Event::TurnStart.send(world);
+        ActionPlugin::spin(world)?;
         Self::before_strike(left, right, world)?;
         if Self::striker_death_check(left, right, world) {
             return Ok(());
         }
         Self::strike(left, right, world)?;
         Self::after_strike(left, right, world)?;
+        Event::TurnEnd.send(world);
+        ActionPlugin::spin(world)?;
         ActionPlugin::spin(world)?;
         Ok(())
     }
     fn before_strike(left: Entity, right: Entity, world: &mut World) -> Result<()> {
         debug!("before strike {left:?} {right:?}");
+        Event::BeforeStrike(left, right).send(world);
+        ActionPlugin::spin(world)?;
+        Event::BeforeStrike(right, left).send(world);
         ActionPlugin::spin(world)?;
         if Self::striker_death_check(left, right, world) {
             return Ok(());
         }
-        let units = vec![(left, -1.0), (right, 1.0)];
         ActionPlugin::spin(world)?;
         Ok(())
     }
@@ -107,7 +114,9 @@ impl BattlePlugin {
     }
     fn after_strike(left: Entity, right: Entity, world: &mut World) -> Result<()> {
         debug!("after strike {left:?} {right:?}");
-        let units = vec![left, right];
+        Event::AfterStrike(left, right).send(world);
+        ActionPlugin::spin(world)?;
+        Event::AfterStrike(right, left).send(world);
         ActionPlugin::spin(world)?;
         Ok(())
     }

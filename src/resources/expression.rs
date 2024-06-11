@@ -5,9 +5,12 @@ pub enum Expression {
     #[default]
     Zero,
 
+    OppositeFaction,
+
     Owner,
     Caster,
     Target,
+    SlotUnit(Box<Expression>),
 
     Value(VarValue),
     Context(VarName),
@@ -25,6 +28,8 @@ pub enum Expression {
     And(Box<Expression>, Box<Expression>),
     Or(Box<Expression>, Box<Expression>),
     Equals(Box<Expression>, Box<Expression>),
+
+    WithVar(VarName, Box<Expression>, Box<Expression>),
 }
 
 impl Expression {
@@ -33,6 +38,12 @@ impl Expression {
             Expression::Zero => Ok(VarValue::None),
             Expression::Value(v) => Ok(v.clone()),
             Expression::Context(var) => context.get_var(*var, world),
+            Expression::WithVar(var, value, e) => e.get_value(
+                context
+                    .clone()
+                    .set_var(*var, value.get_value(context, world)?),
+                world,
+            ),
             Expression::StatusCharges(name) => {
                 Ok(Status::get_charges(name, context.owner(), world)?.into())
             }
@@ -73,9 +84,23 @@ impl Expression {
                 .get_value(context, world)?
                 .eq(&b.get_value(context, world)?)
                 .into()),
+            Expression::OppositeFaction => Ok(VarValue::Faction(
+                context
+                    .get_var(VarName::Faction, world)?
+                    .get_faction()?
+                    .opposite(),
+            )),
             Expression::Owner => Ok(VarValue::Entity(context.owner())),
             Expression::Caster => Ok(VarValue::Entity(context.get_caster()?)),
             Expression::Target => Ok(VarValue::Entity(context.get_target()?)),
+            Expression::SlotUnit(index) => Ok(VarValue::Entity(
+                UnitPlugin::find_unit(
+                    context.get_var(VarName::Faction, world)?.get_faction()?,
+                    index.get_int(context, world)?,
+                    world,
+                )
+                .context("No unit in slot")?,
+            )),
         }
     }
     pub fn get_float(&self, context: &Context, world: &mut World) -> Result<f32> {

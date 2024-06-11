@@ -8,6 +8,7 @@ pub enum Effect {
     ChangeStatus(String),
     UseAbility(String, i32),
     WithTarget(Expression, Box<Effect>),
+    WithVar(VarName, Expression, Box<Effect>),
 }
 
 impl Effect {
@@ -23,6 +24,7 @@ impl Effect {
                     .unwrap_or(context.get_var(VarName::Pwr, world)?)
                     .get_int()?;
                 if value > 0 {
+                    debug!("deal {value} dmg to {target:?}");
                     VarState::get_mut(target, world).change_int(VarName::Dmg, value);
                 }
             }
@@ -68,6 +70,12 @@ impl Effect {
                         world,
                     );
                 }
+            }
+            Effect::WithVar(var, value, effect) => {
+                let context = context
+                    .set_var(*var, value.get_value(context, world)?)
+                    .clone();
+                ActionPlugin::action_push_front(effect.deref().clone(), context, world);
             }
         }
         Ok(())
