@@ -29,6 +29,48 @@
 			"problemMatcher": [
 				"$rustc"
 			],
+			"label": "Test Scenarios",
+			"args": [
+				"--features",
+				"bevy/dynamic_linking",
+				"--",
+				"--mode",
+				"test"
+			],
+			"group": {
+				"kind": "build"
+			},
+			"env": {
+				"RUST_BACKTRACE": "1"
+			}
+		},
+		{
+			"type": "cargo",
+			"command": "run",
+			"problemMatcher": [
+				"$rustc"
+			],
+			"label": "Sync Assets",
+			"args": [
+				"--features",
+				"bevy/dynamic_linking",
+				"--",
+				"--mode",
+				"sync"
+			],
+			"group": {
+				"kind": "build"
+			},
+			"env": {
+				"RUST_BACKTRACE": "1"
+			}
+		},
+		{
+			"type": "cargo",
+			"command": "run",
+			"problemMatcher": [
+				"$rustc"
+			],
 			"label": "Offline",
 			"args": [
 				"--features",
@@ -82,7 +124,7 @@
 			"group": {
 				"kind": "build"
 			},
-			"command": "spacetime generate --lang rust --out-dir src/module_bindings --project-path server"
+			"command": "spacetime generate --lang rust --out-dir src/stdb --project-path server"
 		},
 		{
 			"label": "STDB: Run SQL",

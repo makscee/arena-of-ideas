@@ -15,10 +15,10 @@ use spacetimedb_sdk::{
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct BaseUnit {
     pub name: String,
-    pub hp: i32,
     pub pwr: i32,
-    pub house: String,
+    pub hp: i32,
     pub rarity: i8,
+    pub house: String,
     pub repr: u64,
     pub triggers: Vec<String>,
     pub targets: Vec<String>,
@@ -43,20 +43,20 @@ impl BaseUnit {
         Self::find(|row| row.name == name)
     }
     #[allow(unused)]
-    pub fn filter_by_hp(hp: i32) -> TableIter<Self> {
-        Self::filter(|row| row.hp == hp)
-    }
-    #[allow(unused)]
     pub fn filter_by_pwr(pwr: i32) -> TableIter<Self> {
         Self::filter(|row| row.pwr == pwr)
     }
     #[allow(unused)]
-    pub fn filter_by_house(house: String) -> TableIter<Self> {
-        Self::filter(|row| row.house == house)
+    pub fn filter_by_hp(hp: i32) -> TableIter<Self> {
+        Self::filter(|row| row.hp == hp)
     }
     #[allow(unused)]
     pub fn filter_by_rarity(rarity: i8) -> TableIter<Self> {
         Self::filter(|row| row.rarity == rarity)
+    }
+    #[allow(unused)]
+    pub fn filter_by_house(house: String) -> TableIter<Self> {
+        Self::filter(|row| row.house == house)
     }
     #[allow(unused)]
     pub fn filter_by_repr(repr: u64) -> TableIter<Self> {

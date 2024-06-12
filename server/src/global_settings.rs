@@ -10,14 +10,12 @@ pub struct GlobalSettings {
     pub team_slots: u32,
 }
 
-#[spacetimedb(reducer)]
-fn upload_settings(ctx: ReducerContext, data: GlobalSettings) -> Result<(), String> {
-    GlobalSettings::insert(data)?;
-    Ok(())
-}
-
 impl GlobalSettings {
     pub fn get() -> Self {
         GlobalSettings::filter_by_always_zero(&0).unwrap()
+    }
+    pub fn replace(self) {
+        GlobalSettings::delete_by_always_zero(&0);
+        let _ = GlobalSettings::insert(self);
     }
 }

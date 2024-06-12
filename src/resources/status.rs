@@ -1,3 +1,5 @@
+use ron::to_string;
+
 use super::*;
 
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq)]
@@ -7,7 +9,7 @@ pub struct PackedStatus {
     #[serde(default)]
     pub description: String,
     #[serde(default)]
-    pub polarity: i32,
+    pub polarity: i8,
     #[serde(default)]
     pub state: VarState,
     pub trigger: Trigger,
@@ -30,7 +32,7 @@ impl PackedStatus {
                 VarValue::String(self.description.to_owned()),
             )
             .init(VarName::Name, VarValue::String(self.name.to_owned()))
-            .init(VarName::Polarity, VarValue::Int(self.polarity));
+            .init(VarName::Polarity, VarValue::Int(self.polarity as i32));
         let entity = Status {
             name: self.name.clone(),
             trigger: self.trigger.clone(),
@@ -110,6 +112,29 @@ impl Status {
                     state.set_key_value(name.clone(), var, value);
                 }
             }
+        }
+    }
+}
+
+impl From<TStatus> for PackedStatus {
+    fn from(value: TStatus) -> Self {
+        Self {
+            name: value.name,
+            description: value.description,
+            polarity: value.polarity,
+            state: default(),
+            trigger: ron::from_str::<Trigger>(&value.trigger).unwrap(),
+        }
+    }
+}
+
+impl From<PackedStatus> for TStatus {
+    fn from(value: PackedStatus) -> Self {
+        Self {
+            name: value.name,
+            description: value.description,
+            polarity: value.polarity,
+            trigger: to_string(&value.trigger).unwrap(),
         }
     }
 }

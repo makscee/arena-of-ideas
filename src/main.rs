@@ -1,8 +1,8 @@
 mod components;
-mod module_bindings;
 mod plugins;
 pub mod prelude;
 mod resources;
+mod stdb;
 mod utils;
 
 use bevy::log::LogPlugin;
@@ -24,6 +24,7 @@ pub enum RunMode {
     Regular,
     Custom,
     Test,
+    Sync,
 }
 
 fn main() {
@@ -32,6 +33,7 @@ fn main() {
     let target = match args.mode {
         RunMode::Regular | RunMode::Custom => GameState::CustomBattle,
         RunMode::Test => GameState::TestScenariosRun,
+        RunMode::Sync => GameState::ServerSync,
     };
     GameState::set_target(target);
     let default_plugins = DefaultPlugins.set(LogPlugin {
@@ -69,6 +71,7 @@ fn main() {
             TeamPlugin,
             GameStateGraphPlugin,
             TestScenariosPlugin,
+            ServerSyncPlugin,
         ))
         .run();
 }

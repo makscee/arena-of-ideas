@@ -11,3 +11,39 @@ pub struct House {
     #[serde(default)]
     pub summons: Vec<PackedUnit>,
 }
+
+impl From<THouse> for House {
+    fn from(value: THouse) -> Self {
+        Self {
+            name: value.name,
+            color: HexColor(value.color),
+            abilities: value
+                .abilities
+                .into_iter()
+                .filter_map(|a| TAbility::filter_by_name(a).map(|a| a.into()))
+                .collect_vec(),
+            statuses: value
+                .statuses
+                .into_iter()
+                .filter_map(|s| TStatus::filter_by_name(s).map(|s| s.into()))
+                .collect_vec(),
+            summons: value
+                .summons
+                .into_iter()
+                .filter_map(|u| BaseUnit::filter_by_name(u).map(|u| u.into()))
+                .collect_vec(),
+        }
+    }
+}
+
+impl From<House> for THouse {
+    fn from(value: House) -> Self {
+        Self {
+            name: value.name,
+            color: value.color.0,
+            abilities: value.abilities.into_iter().map(|a| a.name).collect_vec(),
+            statuses: value.statuses.into_iter().map(|s| s.name).collect_vec(),
+            summons: value.summons.into_iter().map(|u| u.name).collect_vec(),
+        }
+    }
+}

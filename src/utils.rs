@@ -183,6 +183,12 @@ pub fn format_timestamp(ts: u64) -> String {
 pub fn global_settings() -> GlobalSettings {
     GlobalSettings::filter_by_always_zero(0).unwrap()
 }
+pub fn app_exit(world: &mut World) {
+    world
+        .get_resource_mut::<bevy::prelude::Events<bevy::app::AppExit>>()
+        .unwrap()
+        .send(bevy::app::AppExit);
+}
 
 pub trait StrExtensions {
     fn split_by_brackets(self, pattern: (&str, &str)) -> Vec<(String, bool)>;

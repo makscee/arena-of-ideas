@@ -1,3 +1,5 @@
+use ron::to_string;
+
 use super::*;
 
 #[derive(Asset, Deserialize, Serialize, TypePath, Debug, Clone, PartialEq, Default)]
@@ -9,6 +11,10 @@ pub struct PackedUnit {
     pub pwr: i32,
     #[serde(default = "default_one")]
     pub hp: i32,
+    #[serde(default = "default_zero_i8")]
+    pub rarity: i8,
+    #[serde(default = "default_house")]
+    pub houses: Vec<String>,
     #[serde(default)]
     pub trigger: Trigger,
     #[serde(default)]
@@ -20,9 +26,14 @@ pub struct PackedUnit {
 fn default_one() -> i32 {
     1
 }
-
+fn default_zero_i8() -> i8 {
+    0
+}
 fn default_empty() -> String {
     "_empty".to_owned()
+}
+fn default_house() -> Vec<String> {
+    vec!["Default".to_owned()]
 }
 
 impl PackedUnit {
@@ -62,5 +73,76 @@ impl PackedUnit {
             state.init(VarName::Dmg, VarValue::Int(0));
         }
         state
+    }
+}
+
+impl From<PackedUnit> for BaseUnit {
+    fn from(value: PackedUnit) -> Self {
+        let (triggers, targets, effects) = match value.trigger {
+            Trigger::Fire {
+                triggers,
+                targets,
+                effects,
+            } => (
+                triggers
+                    .into_iter()
+                    .map(|t| to_string(&t).unwrap())
+                    .collect_vec(),
+                targets
+                    .into_iter()
+                    .map(|t| to_string(&t).unwrap())
+                    .collect_vec(),
+                effects
+                    .into_iter()
+                    .map(|t| to_string(&t).unwrap())
+                    .collect_vec(),
+            ),
+            _ => (default(), default(), default()),
+        };
+        Self {
+            name: value.name,
+            pwr: value.pwr,
+            hp: value.hp,
+            rarity: value.rarity,
+            house: value.houses.first().unwrap().clone(),
+            repr: default(),
+            triggers,
+            targets,
+            effects,
+        }
+    }
+}
+
+impl From<BaseUnit> for PackedUnit {
+    fn from(value: BaseUnit) -> Self {
+        let triggers = value
+            .triggers
+            .into_iter()
+            .map(|t| ron::from_str::<(FireTrigger, Option<String>)>(&t).unwrap())
+            .collect_vec();
+        let targets = value
+            .targets
+            .into_iter()
+            .map(|t| ron::from_str::<(Expression, Option<String>)>(&t).unwrap())
+            .collect_vec();
+        let effects = value
+            .effects
+            .into_iter()
+            .map(|t| ron::from_str::<(Effect, Option<String>)>(&t).unwrap())
+            .collect_vec();
+        Self {
+            name: value.name,
+            pwr: value.pwr,
+            hp: value.hp,
+            rarity: value.rarity,
+            houses: vec![value.house],
+            trigger: Trigger::Fire {
+                triggers,
+                targets,
+                effects,
+            },
+            state: default(),
+            statuses: default(),
+        }
     }
 }

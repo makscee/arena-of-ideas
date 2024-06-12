@@ -42,8 +42,11 @@ pub mod shop_buy_reducer;
 pub mod shop_reroll_reducer;
 pub mod shop_slot;
 pub mod stack_reducer;
+pub mod sync_all_assets_reducer;
+pub mod t_ability;
+pub mod t_house;
+pub mod t_status;
 pub mod team_slot;
-pub mod upload_settings_reducer;
 pub mod user;
 
 pub use base_unit::*;
@@ -68,8 +71,11 @@ pub use shop_buy_reducer::*;
 pub use shop_reroll_reducer::*;
 pub use shop_slot::*;
 pub use stack_reducer::*;
+pub use sync_all_assets_reducer::*;
+pub use t_ability::*;
+pub use t_house::*;
+pub use t_status::*;
 pub use team_slot::*;
-pub use upload_settings_reducer::*;
 pub use user::*;
 
 #[allow(unused)]
@@ -89,7 +95,7 @@ pub enum ReducerEvent {
     ShopBuy(shop_buy_reducer::ShopBuyArgs),
     ShopReroll(shop_reroll_reducer::ShopRerollArgs),
     Stack(stack_reducer::StackArgs),
-    UploadSettings(upload_settings_reducer::UploadSettingsArgs),
+    SyncAllAssets(sync_all_assets_reducer::SyncAllAssetsArgs),
 }
 
 #[allow(unused)]
@@ -124,6 +130,14 @@ impl SpacetimeModule for Module {
                 ),
             "Run" => client_cache
                 .handle_table_update_with_primary_key::<run::Run>(callbacks, table_update),
+            "TAbility" => client_cache.handle_table_update_with_primary_key::<t_ability::TAbility>(
+                callbacks,
+                table_update,
+            ),
+            "THouse" => client_cache
+                .handle_table_update_with_primary_key::<t_house::THouse>(callbacks, table_update),
+            "TStatus" => client_cache
+                .handle_table_update_with_primary_key::<t_status::TStatus>(callbacks, table_update),
             "User" => client_cache
                 .handle_table_update_with_primary_key::<user::User>(callbacks, table_update),
             _ => {
@@ -147,6 +161,9 @@ impl SpacetimeModule for Module {
         );
         reminders.invoke_callbacks::<representation::Representation>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<run::Run>(worker, &reducer_event, state);
+        reminders.invoke_callbacks::<t_ability::TAbility>(worker, &reducer_event, state);
+        reminders.invoke_callbacks::<t_house::THouse>(worker, &reducer_event, state);
+        reminders.invoke_callbacks::<t_status::TStatus>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<user::User>(worker, &reducer_event, state);
     }
     fn handle_event(
@@ -175,7 +192,7 @@ match &function_call.reducer[..] {
 			"shop_buy" => _reducer_callbacks.handle_event_of_type::<shop_buy_reducer::ShopBuyArgs, ReducerEvent>(event, _state, ReducerEvent::ShopBuy),
 			"shop_reroll" => _reducer_callbacks.handle_event_of_type::<shop_reroll_reducer::ShopRerollArgs, ReducerEvent>(event, _state, ReducerEvent::ShopReroll),
 			"stack" => _reducer_callbacks.handle_event_of_type::<stack_reducer::StackArgs, ReducerEvent>(event, _state, ReducerEvent::Stack),
-			"upload_settings" => _reducer_callbacks.handle_event_of_type::<upload_settings_reducer::UploadSettingsArgs, ReducerEvent>(event, _state, ReducerEvent::UploadSettings),
+			"sync_all_assets" => _reducer_callbacks.handle_event_of_type::<sync_all_assets_reducer::SyncAllAssetsArgs, ReducerEvent>(event, _state, ReducerEvent::SyncAllAssets),
 			unknown => { spacetimedb_sdk::log::error!("Event on an unknown reducer: {:?}", unknown); None }
 }
     }
@@ -199,6 +216,15 @@ match &function_call.reducer[..] {
             "Representation" => client_cache
                 .handle_resubscribe_for_type::<representation::Representation>(callbacks, new_subs),
             "Run" => client_cache.handle_resubscribe_for_type::<run::Run>(callbacks, new_subs),
+            "TAbility" => {
+                client_cache.handle_resubscribe_for_type::<t_ability::TAbility>(callbacks, new_subs)
+            }
+            "THouse" => {
+                client_cache.handle_resubscribe_for_type::<t_house::THouse>(callbacks, new_subs)
+            }
+            "TStatus" => {
+                client_cache.handle_resubscribe_for_type::<t_status::TStatus>(callbacks, new_subs)
+            }
             "User" => client_cache.handle_resubscribe_for_type::<user::User>(callbacks, new_subs),
             _ => {
                 spacetimedb_sdk::log::error!("TableRowOperation on unknown table {:?}", table_name)

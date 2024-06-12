@@ -14,7 +14,7 @@ pub struct GameAssetsHandles {
     houses: HashMap<String, Handle<House>>,
 }
 
-#[derive(Resource, Debug)]
+#[derive(Resource, Debug, Clone)]
 pub struct GameAssets {
     pub global_settings: GlobalSettings,
     pub custom_battle: BattleData,

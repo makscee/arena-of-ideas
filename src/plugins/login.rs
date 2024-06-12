@@ -34,7 +34,5 @@ impl LoginPlugin {
             }
         }
         info!("Connected");
-        upload_settings(GameAssets::get(world).global_settings.clone());
-        info!("Uploaded");
     }
 }

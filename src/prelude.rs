@@ -6,7 +6,7 @@ pub use crate::utils::*;
 pub use anyhow::Context as _;
 pub use anyhow::{anyhow, Result};
 
-pub use crate::module_bindings::*;
+pub use crate::stdb::*;
 pub use bevy::app::prelude::PluginGroup;
 pub use bevy::app::App;
 pub use bevy::app::Plugin;

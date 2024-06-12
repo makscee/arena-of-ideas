@@ -34,4 +34,9 @@ impl GlobalData {
     pub fn get() -> Self {
         GlobalData::filter_by_always_zero(&0).unwrap()
     }
+    pub fn register_sync() {
+        let mut gd = Self::get();
+        gd.last_sync = Timestamp::now();
+        Self::update_by_always_zero(&0, gd);
+    }
 }

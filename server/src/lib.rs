@@ -4,7 +4,11 @@ mod global_data;
 mod global_settings;
 mod representation;
 mod run;
+mod sync;
 mod user;
+mod status;
+mod ability;
+mod house;
 
 use anyhow::Context;
 pub use fused_unit::*;
@@ -22,4 +26,10 @@ impl<T> StrContext<T> for Option<T> {
     fn context_str(self, str: &'static str) -> Result<T, String> {
         self.context(str).map_err(|e| e.to_string())
     }
+}
+
+#[spacetimedb(init)]
+fn init() -> Result<(), String> {
+    GlobalData::init()?;
+    Ok(())
 }

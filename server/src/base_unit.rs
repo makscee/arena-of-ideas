@@ -4,10 +4,10 @@ use super::*;
 pub struct BaseUnit {
     #[primarykey]
     pub name: String,
-    pub hp: i32,
     pub pwr: i32,
-    pub house: String,
+    pub hp: i32,
     pub rarity: i8,
+    pub house: String,
     pub repr: u64,
     pub triggers: Vec<String>,
     pub targets: Vec<String>,
