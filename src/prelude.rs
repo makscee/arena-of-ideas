@@ -24,6 +24,7 @@ pub use bevy::hierarchy::BuildWorldChildren;
 pub use bevy::hierarchy::DespawnRecursiveExt;
 pub use bevy::utils::hashbrown::HashMap;
 pub use bevy::DefaultPlugins;
+pub use bevy::{app::Startup, diagnostic::DiagnosticsStore};
 pub use bevy::{
     app::Update,
     ecs::schedule::{common_conditions::state_changed, IntoSystemConfigs},
@@ -55,6 +56,12 @@ pub use bevy_egui::{
 };
 pub use chrono::DateTime;
 pub use ecolor::Color32;
+pub use egui::{
+    epaint::Shadow,
+    style::{HandleShape, Spacing, WidgetVisuals, Widgets},
+    CentralPanel, Frame, Layout, Margin, Response, RichText, Rounding, SidePanel, Slider,
+    TopBottomPanel, Widget, WidgetText,
+};
 pub use itertools::Itertools;
 pub use lazy_static::lazy_static;
 pub use serde::{Deserialize, Serialize};

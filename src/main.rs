@@ -5,7 +5,7 @@ mod resources;
 mod stdb;
 mod utils;
 
-use bevy::log::LogPlugin;
+use bevy::{diagnostic::FrameTimeDiagnosticsPlugin, log::LogPlugin, render::camera::ClearColor};
 use clap::{command, Parser, ValueEnum};
 pub use prelude::*;
 
@@ -31,7 +31,8 @@ fn main() {
     let mut app = App::new();
     let args = Args::try_parse().unwrap_or_default();
     let target = match args.mode {
-        RunMode::Regular | RunMode::Custom => GameState::CustomBattle,
+        RunMode::Regular => GameState::MainMenu,
+        RunMode::Custom => GameState::CustomBattle,
         RunMode::Test => GameState::TestScenariosRun,
         RunMode::Sync => GameState::ServerSync,
     };
@@ -42,7 +43,8 @@ fn main() {
         ..default()
     });
     app.init_state::<GameState>()
-        .add_plugins(default_plugins)
+        .insert_resource(ClearColor(DARK_BLACK.to_color()))
+        .add_plugins((default_plugins, FrameTimeDiagnosticsPlugin))
         .add_loading_state(
             LoadingState::new(GameState::Loading)
                 .continue_to_state(GameState::Loaded)
@@ -63,15 +65,19 @@ fn main() {
         .add_plugins(RonAssetPlugin::<PackedUnit>::new(&["unit.ron"]))
         .add_plugins(RonAssetPlugin::<House>::new(&["house.ron"]))
         .add_plugins(RonAssetPlugin::<TestScenario>::new(&["scenario.ron"]))
+        .add_plugins(bevy_egui::EguiPlugin)
         .add_plugins((
             LoadingPlugin,
             LoginPlugin,
             ActionPlugin,
             BattlePlugin,
             TeamPlugin,
-            GameStateGraphPlugin,
+            GameStatePlugin,
             TestScenariosPlugin,
             ServerSyncPlugin,
+            TilingPlugin,
         ))
         .run();
 }
+
+pub const VERSION: &str = env!("CARGO_PKG_VERSION");

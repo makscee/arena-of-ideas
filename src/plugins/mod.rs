@@ -4,6 +4,8 @@ mod login;
 mod server_sync;
 mod team;
 mod test_scenarios;
+mod tiles;
+mod tiling;
 mod unit;
 
 use super::*;
@@ -13,4 +15,5 @@ pub use login::*;
 pub use server_sync::*;
 pub use team::*;
 pub use test_scenarios::*;
+pub use tiling::*;
 pub use unit::*;

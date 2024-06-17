@@ -7,6 +7,7 @@ pub enum GameState {
     #[default]
     Loading,
     Loaded,
+    MainMenu,
     Connect,
     CustomBattle,
     Battle,
@@ -20,6 +21,10 @@ static TARGET_STATE: Mutex<GameState> = Mutex::new(GameState::Loaded);
 lazy_static! {
     static ref STATE_PATHS: HashMap<GameState, Vec<GameState>> = {
         let mut m = HashMap::new();
+        m.insert(
+            GameState::MainMenu,
+            vec![GameState::Loaded, GameState::MainMenu],
+        );
         m.insert(
             GameState::CustomBattle,
             vec![
@@ -49,16 +54,16 @@ impl GameState {
     }
 }
 
-pub struct GameStateGraphPlugin;
+pub struct GameStatePlugin;
 
-impl Plugin for GameStateGraphPlugin {
+impl Plugin for GameStatePlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Update, Self::on_changed.run_if(state_changed::<GameState>));
     }
 }
 
-impl GameStateGraphPlugin {
-    fn on_changed(state: Res<State<GameState>>, mut next_state: ResMut<NextState<GameState>>) {
+impl GameStatePlugin {
+    pub fn on_changed(state: Res<State<GameState>>, mut next_state: ResMut<NextState<GameState>>) {
         let state = state.get();
         info!("Enter state: {state}");
         if let Some(path) = STATE_PATHS.get(&GameState::get_target()) {
