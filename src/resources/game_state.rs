@@ -58,7 +58,8 @@ pub struct GameStatePlugin;
 
 impl Plugin for GameStatePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, Self::on_changed.run_if(state_changed::<GameState>));
+        app.add_systems(Update, Self::on_changed.run_if(state_changed::<GameState>))
+            .add_systems(Update, Self::update);
     }
 }
 
@@ -76,5 +77,9 @@ impl GameStatePlugin {
                 }
             }
         }
+    }
+    fn update(time: Res<Time>) {
+        let mut timer = GameTimer::get();
+        timer.advance_play(time.delta_seconds());
     }
 }

@@ -1,5 +1,6 @@
 mod action;
 mod battle;
+mod camera;
 mod login;
 mod representation;
 mod server_sync;
@@ -12,6 +13,7 @@ mod unit;
 use super::*;
 pub use action::*;
 pub use battle::*;
+pub use camera::*;
 pub use login::*;
 pub use representation::*;
 pub use server_sync::*;

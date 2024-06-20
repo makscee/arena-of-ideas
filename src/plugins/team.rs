@@ -1,5 +1,3 @@
-use bevy::{render::view::VisibilityBundle, transform::components::Transform};
-
 use super::*;
 
 pub struct TeamPlugin;
@@ -35,8 +33,7 @@ impl TeamPlugin {
                     .init(VarName::Name, VarValue::String(format!("Team {faction}")))
                     .take(),
                 Team,
-                Transform::default(),
-                GlobalTransform::default(),
+                TransformBundle::default(),
                 VisibilityBundle::default(),
             ))
             .id();

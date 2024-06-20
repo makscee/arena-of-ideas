@@ -83,6 +83,7 @@ impl VarValue {
             VarValue::None => Ok(Vec2::ZERO),
             VarValue::Int(v) => Ok(vec2(*v as f32, *v as f32)),
             VarValue::Float(v) => Ok(vec2(*v, *v)),
+            VarValue::Vec2(v) => Ok(*v),
             _ => Err(anyhow!("Vec2 not supported by {self:?}")),
         }
     }

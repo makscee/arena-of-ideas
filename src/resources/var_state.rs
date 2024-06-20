@@ -85,7 +85,6 @@ impl VarState {
         let head = GameTimer::get().insert_head();
         let birth = self.birth;
         change.t += head - birth;
-        GameTimer::get().advance_insert(change.timeframe);
         self.vars
             .entry(var)
             .or_insert(default())
@@ -110,6 +109,17 @@ impl VarState {
                 Err(_) => acc,
             })
             .unwrap_or_default())
+    }
+    pub fn find_value_at(entity: Entity, var: VarName, t: f32, world: &World) -> Result<VarValue> {
+        match Self::try_get(entity, world).and_then(|s| s.get_value_at(var, t)) {
+            Ok(v) => Ok(v),
+            Err(_) => Self::find_value_at(
+                entity.get_parent(world).context("No parent")?,
+                var,
+                t,
+                world,
+            ),
+        }
     }
     pub fn get_value_last(&self, var: VarName) -> Result<VarValue> {
         Ok(self
@@ -216,6 +226,14 @@ impl VarState {
         e.insert(transform);
     }
 
+    pub fn sort_history(mut self) -> Self {
+        self.vars.values_mut().for_each(|v| {
+            v.values_mut().for_each(|h| {
+                h.0.sort_by(|a, b| a.t.total_cmp(&b.t));
+            })
+        });
+        self
+    }
     pub fn take(&mut self) -> Self {
         mem::take(self)
     }

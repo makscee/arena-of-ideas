@@ -8,6 +8,8 @@ pub struct GameAssetsHandles {
     global_settings: Handle<GlobalSettingsAsset>,
     #[asset(key = "custom_battle")]
     custom_battle: Handle<BattleData>,
+    #[asset(key = "unit.rep")]
+    unit_rep: Handle<Representation>,
     #[asset(key = "heroes", collection(typed, mapped))]
     heroes: HashMap<String, Handle<PackedUnit>>,
     #[asset(key = "houses", collection(typed, mapped))]
@@ -18,6 +20,8 @@ pub struct GameAssetsHandles {
 pub struct GameAssets {
     pub global_settings: GlobalSettings,
     pub custom_battle: BattleData,
+    pub unit_rep: Representation,
+
     pub heroes: HashMap<String, PackedUnit>,
     pub houses: HashMap<String, House>,
     pub abilities: HashMap<String, Ability>,
@@ -58,6 +62,12 @@ impl LoadingPlugin {
             .get(&handles.custom_battle)
             .unwrap()
             .clone();
+        let unit_rep = world
+            .resource::<Assets<Representation>>()
+            .get(&handles.unit_rep)
+            .unwrap()
+            .clone();
+
         let heroes = world.resource::<Assets<PackedUnit>>();
         let heroes = HashMap::from_iter(
             handles
@@ -90,6 +100,7 @@ impl LoadingPlugin {
         let assets = GameAssets {
             global_settings,
             custom_battle,
+            unit_rep,
             heroes,
             houses,
             abilities,

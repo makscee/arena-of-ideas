@@ -1,6 +1,3 @@
-use color_hex::color_from_hex;
-use ecolor::hex_color;
-
 use super::*;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, EnumIter, AsRefStr)]
@@ -35,6 +32,10 @@ pub enum Expression {
     And(Box<Expression>, Box<Expression>),
     Or(Box<Expression>, Box<Expression>),
     Equals(Box<Expression>, Box<Expression>),
+    GreaterThen(Box<Expression>, Box<Expression>),
+    LessThen(Box<Expression>, Box<Expression>),
+
+    If(Box<Expression>, Box<Expression>, Box<Expression>),
 
     WithVar(VarName, Box<Expression>, Box<Expression>),
 }
@@ -45,12 +46,21 @@ impl Expression {
             Expression::Zero => Ok(VarValue::None),
             Expression::Value(v) => Ok(v.clone()),
             Expression::Context(var) => context.get_var(*var, world),
-            Expression::OwnerState(var) => Ok(VarState::try_get(context.owner(), world)?
-                .get_value_at(*var, GameTimer::get().play_head())?),
-            Expression::TargetState(var) => Ok(VarState::try_get(context.get_target()?, world)?
-                .get_value_at(*var, GameTimer::get().play_head())?),
-            Expression::CasterState(var) => Ok(VarState::try_get(context.get_caster()?, world)?
-                .get_value_at(*var, GameTimer::get().play_head())?),
+            Expression::OwnerState(var) => {
+                VarState::find_value_at(context.owner(), *var, GameTimer::get().play_head(), world)
+            }
+            Expression::TargetState(var) => VarState::find_value_at(
+                context.get_target()?,
+                *var,
+                GameTimer::get().play_head(),
+                world,
+            ),
+            Expression::CasterState(var) => VarState::find_value_at(
+                context.get_caster()?,
+                *var,
+                GameTimer::get().play_head(),
+                world,
+            ),
             Expression::WithVar(var, value, e) => e.get_value(
                 context
                     .clone()
@@ -98,6 +108,14 @@ impl Expression {
                 .get_value(context, world)?
                 .eq(&b.get_value(context, world)?)
                 .into()),
+            Expression::GreaterThen(a, b) => Ok(VarValue::Bool(matches!(
+                VarValue::compare(&a.get_value(context, world)?, &b.get_value(context, world)?,)?,
+                std::cmp::Ordering::Greater
+            ))),
+            Expression::LessThen(a, b) => Ok(VarValue::Bool(matches!(
+                VarValue::compare(&a.get_value(context, world)?, &b.get_value(context, world)?,)?,
+                std::cmp::Ordering::Less
+            ))),
             Expression::OppositeFaction => Ok(VarValue::Faction(
                 context
                     .get_var(VarName::Faction, world)?
@@ -115,6 +133,13 @@ impl Expression {
                 )
                 .context("No unit in slot")?,
             )),
+            Expression::If(cond, th, el) => {
+                if cond.get_bool(context, world)? {
+                    th.get_value(context, world)
+                } else {
+                    el.get_value(context, world)
+                }
+            }
         }
     }
     pub fn get_float(&self, context: &Context, world: &mut World) -> Result<f32> {

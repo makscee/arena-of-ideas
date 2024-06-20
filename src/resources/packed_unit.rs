@@ -38,7 +38,15 @@ fn default_house() -> Vec<String> {
 
 impl PackedUnit {
     pub fn unpack(mut self, parent: Entity, slot: Option<i32>, world: &mut World) -> Entity {
-        let entity = world.spawn_empty().set_parent(parent).insert(Unit).id();
+        let entity = world
+            .spawn_empty()
+            .set_parent(parent)
+            .insert((
+                Unit,
+                VisibilityBundle::default(),
+                TransformBundle::default(),
+            ))
+            .id();
         debug!("unpack unit: {entity:?} {self:?}");
         self.state = self.generate_state(world);
         self.state
@@ -59,6 +67,14 @@ impl PackedUnit {
             let _ = Status::change_charges(&status, entity, charges, world);
         }
         Status::refresh_mappings(entity, world);
+        {
+            let entity = GameAssets::get(world)
+                .unit_rep
+                .clone()
+                .unpack(world.spawn_empty().set_parent(entity).id(), world);
+            let mut emut = world.entity_mut(entity);
+            emut.get_mut::<Transform>().unwrap().translation.z += 100.0;
+        }
         entity
     }
 

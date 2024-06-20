@@ -18,6 +18,7 @@ pub enum VarName {
     Delta,
     Damage,
     Color,
+    RarityColor,
     Slot,
     Visible,
     Faction,

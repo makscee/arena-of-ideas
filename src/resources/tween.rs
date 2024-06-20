@@ -45,19 +45,19 @@ impl Tween {
                 true => a.into(),
                 false => b.into(),
             }),
-            // (VarValue::Vec2(a), VarValue::Vec2(b)) => VarValue::Vec2(*a + (*b - *a) * t),
-            // (VarValue::Color(a), VarValue::Color(b)) => {
-            //     let mut sub = *b;
-            //     sub.set_r(b.r() - a.r());
-            //     sub.set_g(b.g() - a.g());
-            //     sub.set_b(b.b() - a.b());
-            //     sub.set_a(b.a() - a.a());
-            //     VarValue::Color(*a + sub * t)
-            // }
-            // (VarValue::Bool(a), VarValue::Bool(b)) => VarValue::Bool(match t > 0.5 {
-            //     true => *a,
-            //     false => *b,
-            // }),
+            (VarValue::Vec2(a), VarValue::Vec2(b)) => VarValue::Vec2(*a + (*b - *a) * t),
+            (VarValue::Color(a), VarValue::Color(b)) => {
+                let mut sub = *b;
+                sub.set_r(b.r() - a.r());
+                sub.set_g(b.g() - a.g());
+                sub.set_b(b.b() - a.b());
+                sub.set_a(b.a() - a.a());
+                VarValue::Color(*a + sub * t)
+            }
+            (VarValue::Bool(a), VarValue::Bool(b)) => VarValue::Bool(match t > 0.5 {
+                true => *a,
+                false => *b,
+            }),
             _ => panic!("Tweening not supported for {a:?} and {b:?}"),
         };
         Ok(v)

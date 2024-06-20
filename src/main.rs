@@ -5,8 +5,12 @@ mod resources;
 mod stdb;
 mod utils;
 
-use bevy::{diagnostic::FrameTimeDiagnosticsPlugin, log::LogPlugin, render::camera::ClearColor};
+use bevy::{
+    diagnostic::FrameTimeDiagnosticsPlugin, log::LogPlugin, render::camera::ClearColor,
+    sprite::Material2dPlugin,
+};
 use clap::{command, Parser, ValueEnum};
+use noisy_bevy::NoisyShaderPlugin;
 pub use prelude::*;
 
 #[derive(Parser, Debug, Default)]
@@ -61,11 +65,15 @@ fn main() {
         .add_plugins(RonAssetPlugin::<GlobalSettingsAsset>::new(&[
             "global_settings.ron",
         ]))
+        .add_plugins(Material2dPlugin::<ShapeMaterial>::default())
+        .add_plugins(Material2dPlugin::<CurveMaterial>::default())
         .add_plugins(RonAssetPlugin::<BattleData>::new(&["battle.ron"]))
         .add_plugins(RonAssetPlugin::<PackedUnit>::new(&["unit.ron"]))
         .add_plugins(RonAssetPlugin::<House>::new(&["house.ron"]))
         .add_plugins(RonAssetPlugin::<TestScenario>::new(&["scenario.ron"]))
+        .add_plugins(RonAssetPlugin::<Representation>::new(&["rep.ron"]))
         .add_plugins(bevy_egui::EguiPlugin)
+        .add_plugins(NoisyShaderPlugin)
         .add_plugins((
             LoadingPlugin,
             LoginPlugin,
@@ -77,6 +85,7 @@ fn main() {
             ServerSyncPlugin,
             TilingPlugin,
             RepresentationPlugin,
+            CameraPlugin,
         ))
         .run();
 }

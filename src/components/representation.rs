@@ -41,7 +41,9 @@ impl Representation {
             self.material_entities.push(entity);
         }
         self.unpack_children(world);
-        *self.material_entities.first().unwrap()
+        let entity = *self.material_entities.first().unwrap();
+        debug!("Unpack material {} {entity:?}", self.material);
+        entity
     }
     fn unpack_children(&mut self, world: &mut World) {
         let parent = *self.material_entities.first().unwrap();
@@ -106,7 +108,10 @@ impl Representation {
             HashMap::from_iter(self.mapping.iter().filter_map(|(var, value)| {
                 match value.get_value(&context, world) {
                     Ok(value) => Some((*var, value)),
-                    Err(_) => None,
+                    Err(_) => {
+                        // debug!("{e}");
+                        None
+                    }
                 }
             }));
         let mut state = VarState::get_mut(entity, world);
