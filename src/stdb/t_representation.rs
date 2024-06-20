@@ -13,17 +13,17 @@ use spacetimedb_sdk::{
 };
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
-pub struct Representation {
+pub struct TRepresentation {
     pub id: u64,
     pub data: String,
 }
 
-impl TableType for Representation {
-    const TABLE_NAME: &'static str = "Representation";
+impl TableType for TRepresentation {
+    const TABLE_NAME: &'static str = "TRepresentation";
     type ReducerEvent = super::ReducerEvent;
 }
 
-impl Representation {
+impl TRepresentation {
     #[allow(unused)]
     pub fn filter_by_id(id: u64) -> TableIter<Self> {
         Self::filter(|row| row.id == id)

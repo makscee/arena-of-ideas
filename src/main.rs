@@ -31,7 +31,7 @@ fn main() {
     let mut app = App::new();
     let args = Args::try_parse().unwrap_or_default();
     let target = match args.mode {
-        RunMode::Regular => GameState::MainMenu,
+        RunMode::Regular => GameState::CustomBattle,
         RunMode::Custom => GameState::CustomBattle,
         RunMode::Test => GameState::TestScenariosRun,
         RunMode::Sync => GameState::ServerSync,
@@ -76,6 +76,7 @@ fn main() {
             TestScenariosPlugin,
             ServerSyncPlugin,
             TilingPlugin,
+            RepresentationPlugin,
         ))
         .run();
 }

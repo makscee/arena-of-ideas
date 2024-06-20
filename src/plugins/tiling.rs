@@ -75,7 +75,6 @@ impl TilingPlugin {
                 },
             };
         });
-        egui_context(world).unwrap().flip_tile_open("Main Menu");
     }
     fn ui(world: &mut World) {
         let ctx = &if let Some(context) = egui_context(world) {

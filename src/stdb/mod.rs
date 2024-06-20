@@ -33,7 +33,6 @@ pub mod login_reducer;
 pub mod logout_reducer;
 pub mod register_empty_reducer;
 pub mod register_reducer;
-pub mod representation;
 pub mod run;
 pub mod run_start_reducer;
 pub mod set_name_reducer;
@@ -45,6 +44,7 @@ pub mod stack_reducer;
 pub mod sync_all_assets_reducer;
 pub mod t_ability;
 pub mod t_house;
+pub mod t_representation;
 pub mod t_status;
 pub mod team_slot;
 pub mod user;
@@ -62,7 +62,6 @@ pub use login_reducer::*;
 pub use logout_reducer::*;
 pub use register_empty_reducer::*;
 pub use register_reducer::*;
-pub use representation::*;
 pub use run::*;
 pub use run_start_reducer::*;
 pub use set_name_reducer::*;
@@ -74,6 +73,7 @@ pub use stack_reducer::*;
 pub use sync_all_assets_reducer::*;
 pub use t_ability::*;
 pub use t_house::*;
+pub use t_representation::*;
 pub use t_status::*;
 pub use team_slot::*;
 pub use user::*;
@@ -123,11 +123,6 @@ impl SpacetimeModule for Module {
                     callbacks,
                     table_update,
                 ),
-            "Representation" => client_cache
-                .handle_table_update_no_primary_key::<representation::Representation>(
-                    callbacks,
-                    table_update,
-                ),
             "Run" => client_cache
                 .handle_table_update_with_primary_key::<run::Run>(callbacks, table_update),
             "TAbility" => client_cache.handle_table_update_with_primary_key::<t_ability::TAbility>(
@@ -136,6 +131,11 @@ impl SpacetimeModule for Module {
             ),
             "THouse" => client_cache
                 .handle_table_update_with_primary_key::<t_house::THouse>(callbacks, table_update),
+            "TRepresentation" => client_cache
+                .handle_table_update_no_primary_key::<t_representation::TRepresentation>(
+                    callbacks,
+                    table_update,
+                ),
             "TStatus" => client_cache
                 .handle_table_update_with_primary_key::<t_status::TStatus>(callbacks, table_update),
             "User" => client_cache
@@ -159,10 +159,14 @@ impl SpacetimeModule for Module {
             &reducer_event,
             state,
         );
-        reminders.invoke_callbacks::<representation::Representation>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<run::Run>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_ability::TAbility>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_house::THouse>(worker, &reducer_event, state);
+        reminders.invoke_callbacks::<t_representation::TRepresentation>(
+            worker,
+            &reducer_event,
+            state,
+        );
         reminders.invoke_callbacks::<t_status::TStatus>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<user::User>(worker, &reducer_event, state);
     }
@@ -213,8 +217,6 @@ match &function_call.reducer[..] {
                 .handle_resubscribe_for_type::<global_settings::GlobalSettings>(
                     callbacks, new_subs,
                 ),
-            "Representation" => client_cache
-                .handle_resubscribe_for_type::<representation::Representation>(callbacks, new_subs),
             "Run" => client_cache.handle_resubscribe_for_type::<run::Run>(callbacks, new_subs),
             "TAbility" => {
                 client_cache.handle_resubscribe_for_type::<t_ability::TAbility>(callbacks, new_subs)
@@ -222,6 +224,10 @@ match &function_call.reducer[..] {
             "THouse" => {
                 client_cache.handle_resubscribe_for_type::<t_house::THouse>(callbacks, new_subs)
             }
+            "TRepresentation" => client_cache
+                .handle_resubscribe_for_type::<t_representation::TRepresentation>(
+                    callbacks, new_subs,
+                ),
             "TStatus" => {
                 client_cache.handle_resubscribe_for_type::<t_status::TStatus>(callbacks, new_subs)
             }

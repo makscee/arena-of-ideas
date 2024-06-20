@@ -1,3 +1,6 @@
+use color_hex::color_from_hex;
+use ecolor::hex_color;
+
 use super::*;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, EnumIter, AsRefStr)]
@@ -14,7 +17,11 @@ pub enum Expression {
 
     Value(VarValue),
     Context(VarName),
+    OwnerState(VarName),
+    TargetState(VarName),
+    CasterState(VarName),
     StatusCharges(String),
+    HexColor(String),
 
     Sin(Box<Expression>),
     Cos(Box<Expression>),
@@ -38,6 +45,12 @@ impl Expression {
             Expression::Zero => Ok(VarValue::None),
             Expression::Value(v) => Ok(v.clone()),
             Expression::Context(var) => context.get_var(*var, world),
+            Expression::OwnerState(var) => Ok(VarState::try_get(context.owner(), world)?
+                .get_value_at(*var, GameTimer::get().play_head())?),
+            Expression::TargetState(var) => Ok(VarState::try_get(context.get_target()?, world)?
+                .get_value_at(*var, GameTimer::get().play_head())?),
+            Expression::CasterState(var) => Ok(VarState::try_get(context.get_caster()?, world)?
+                .get_value_at(*var, GameTimer::get().play_head())?),
             Expression::WithVar(var, value, e) => e.get_value(
                 context
                     .clone()
@@ -47,6 +60,7 @@ impl Expression {
             Expression::StatusCharges(name) => {
                 Ok(Status::get_charges(name, context.owner(), world)?.into())
             }
+            Expression::HexColor(s) => Ok(VarValue::Color(Color::hex(s)?)),
             Expression::Sin(v) => Ok(v.get_float(context, world)?.sin().into()),
             Expression::Cos(v) => Ok(v.get_float(context, world)?.cos().into()),
             Expression::FactionCount(v) => Ok(UnitPlugin::collect_faction(

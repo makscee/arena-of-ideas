@@ -1,7 +1,7 @@
 use super::*;
 
 #[spacetimedb(table)]
-pub struct Representation {
+pub struct TRepresentation {
     id: u64,
     data: String,
 }

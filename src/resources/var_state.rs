@@ -1,3 +1,5 @@
+use bevy::math::Quat;
+
 use super::*;
 
 #[derive(Component, Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
@@ -36,6 +38,12 @@ impl VarChange {
 }
 
 impl VarState {
+    pub fn birth(&self) -> f32 {
+        self.birth
+    }
+    pub fn new_with(var: VarName, value: VarValue) -> Self {
+        Self::default().init(var, value).take()
+    }
     pub fn attach(mut self, entity: Entity, world: &mut World) {
         self.birth = GameTimer::get().insert_head();
         self.entity = Some(entity);
@@ -157,8 +165,55 @@ impl VarState {
         delta
     }
 
+    pub fn get_bool_at(&self, var: VarName, t: f32) -> Result<bool> {
+        self.get_value_at(var, t)?.get_bool()
+    }
+
     pub fn get_faction(&self, var: VarName) -> Result<Faction> {
         self.get_value_last(var)?.get_faction()
+    }
+
+    pub fn apply_transform(entity: Entity, t: f32, vars: Vec<VarName>, world: &mut World) {
+        let mut e = world.entity_mut(entity);
+        let mut transform = e.get::<Transform>().unwrap().clone();
+        let state = e.get::<VarState>().unwrap();
+        for var in vars {
+            match var {
+                VarName::Position => {
+                    let position = state
+                        .get_value_at(var, t)
+                        .and_then(|x| x.get_vec2())
+                        .unwrap_or_default();
+                    transform.translation.x = position.x;
+                    transform.translation.y = position.y;
+                }
+                VarName::Scale => {
+                    let scale = state
+                        .get_value_at(var, t)
+                        .and_then(|x| x.get_vec2())
+                        .unwrap_or(Vec2::ONE);
+                    transform.scale.x = scale.x;
+                    transform.scale.y = scale.y;
+                }
+                VarName::Rotation => {
+                    let rotation = state
+                        .get_value_at(var, t)
+                        .and_then(|x| x.get_float())
+                        .unwrap_or_default();
+                    transform.rotation = Quat::from_rotation_z(rotation);
+                }
+                VarName::Offset => {
+                    let position = state
+                        .get_value_at(var, t)
+                        .and_then(|x| x.get_vec2())
+                        .unwrap_or_default();
+                    transform.translation.x = position.x;
+                    transform.translation.y = position.y;
+                }
+                _ => {}
+            }
+        }
+        e.insert(transform);
     }
 
     pub fn take(&mut self) -> Self {
