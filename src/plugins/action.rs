@@ -87,9 +87,7 @@ impl ActionPlugin {
         }
         if died {
             GameTimer::get().advance_insert(0.5);
-            UnitPlugin::fill_slot_gaps(Faction::Left, world);
-            UnitPlugin::fill_slot_gaps(Faction::Right, world);
-            // UnitPlugin::translate_to_slots(world);
+            UnitPlugin::fill_gaps_and_translate(world);
             GameTimer::get().insert_to_end();
         } else {
             GameTimer::get().advance_insert(0.3);

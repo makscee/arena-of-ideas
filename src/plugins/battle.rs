@@ -35,8 +35,7 @@ impl BattlePlugin {
         let right = bd.right.clone();
         left.unpack(Faction::Left, world);
         right.unpack(Faction::Right, world);
-        UnitPlugin::fill_slot_gaps(Faction::Left, world);
-        UnitPlugin::fill_slot_gaps(Faction::Right, world);
+        UnitPlugin::fill_gaps_and_translate(world);
         ActionPlugin::spin(world)?;
         Event::BattleStart.send(world);
         ActionPlugin::spin(world)?;
@@ -95,6 +94,24 @@ impl BattlePlugin {
         if Self::striker_death_check(left, right, world) {
             return Ok(());
         }
+        let units = vec![(left, -1.0), (right, 1.0)];
+        let mut shift: f32 = 0.0;
+        for (caster, dir) in units {
+            shift = shift.max(
+                GameAssets::get(world)
+                    .animations
+                    .before_strike
+                    .clone()
+                    .apply(
+                        Context::new(caster)
+                            .set_var(VarName::Direction, VarValue::Float(dir))
+                            .take(),
+                        world,
+                    )
+                    .unwrap(),
+            );
+        }
+        GameTimer::get().advance_insert(shift);
         ActionPlugin::spin(world)?;
         Ok(())
     }
@@ -114,6 +131,7 @@ impl BattlePlugin {
     }
     fn after_strike(left: Entity, right: Entity, world: &mut World) -> Result<()> {
         debug!("after strike {left:?} {right:?}");
+        UnitPlugin::translate_to_slots(world);
         Event::AfterStrike(left, right).send(world);
         ActionPlugin::spin(world)?;
         Event::AfterStrike(right, left).send(world);

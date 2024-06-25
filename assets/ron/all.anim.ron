@@ -1,0 +1,16 @@
+(
+    before_strike: Change(
+        var: Position,
+        value: Vec2EE(Context(Direction), Value(Float(0.0))),
+        duration: Value(Float(0.2)),
+        timeframe: Value(Float(0.2)),
+        tween: QuartOut,
+    ),
+    move_to_slot: Change(
+        var: Position,
+        value: SlotPosition,
+        duration: Value(Float(0.2)),
+        timeframe: Value(Float(0.4)),
+        tween: QuartOut,
+    ),
+)

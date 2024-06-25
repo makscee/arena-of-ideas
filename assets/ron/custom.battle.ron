@@ -1,16 +1,1 @@
-(
-    left: (
-        units: [
-            (
-                hp: 3,
-                pwr: 1,
-                trigger: Fire(
-                    triggers: [(BattleStart, None)],
-                    targets: [(WithVar(Faction, OppositeFaction, SlotUnit(Value(Int(2)))), None)],
-                    effects: [(WithVar(Damage, Value(Int(5)), Damage), None)],
-                ),
-            ),
-        ],
-    ),
-    right: (units: []),
-)
+(left: (units: [(hp: 10, pwr: 1)]), right: (units: [(hp: 9, pwr: 1)]))

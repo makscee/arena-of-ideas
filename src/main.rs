@@ -35,7 +35,7 @@ fn main() {
     let mut app = App::new();
     let args = Args::try_parse().unwrap_or_default();
     let target = match args.mode {
-        RunMode::Regular => GameState::CustomBattle,
+        RunMode::Regular => GameState::MainMenu,
         RunMode::Custom => GameState::CustomBattle,
         RunMode::Test => GameState::TestScenariosRun,
         RunMode::Sync => GameState::ServerSync,
@@ -72,6 +72,7 @@ fn main() {
         .add_plugins(RonAssetPlugin::<House>::new(&["house.ron"]))
         .add_plugins(RonAssetPlugin::<TestScenario>::new(&["scenario.ron"]))
         .add_plugins(RonAssetPlugin::<Representation>::new(&["rep.ron"]))
+        .add_plugins(RonAssetPlugin::<Animations>::new(&["anim.ron"]))
         .add_plugins(bevy_egui::EguiPlugin)
         .add_plugins(NoisyShaderPlugin)
         .add_plugins((

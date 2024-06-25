@@ -25,4 +25,5 @@ pub enum VarName {
     Charges,
     Polarity,
     Level,
+    Direction,
 }

@@ -16,6 +16,8 @@ pub struct PackedUnit {
     #[serde(default = "default_house")]
     pub houses: Vec<String>,
     #[serde(default)]
+    pub representation: Representation,
+    #[serde(default)]
     pub trigger: Trigger,
     #[serde(default)]
     pub state: VarState,
@@ -49,6 +51,15 @@ impl PackedUnit {
             .id();
         debug!("unpack unit: {entity:?} {self:?}");
         self.state = self.generate_state(world);
+        {
+            self.representation.unpack(entity, world);
+            let entity = GameAssets::get(world)
+                .unit_rep
+                .clone()
+                .unpack(world.spawn_empty().set_parent(entity).id(), world);
+            let mut emut = world.entity_mut(entity);
+            emut.get_mut::<Transform>().unwrap().translation.z += 100.0;
+        }
         self.state
             .init(VarName::Slot, VarValue::Int(slot.unwrap_or_default()));
         Status {
@@ -67,24 +78,17 @@ impl PackedUnit {
             let _ = Status::change_charges(&status, entity, charges, world);
         }
         Status::refresh_mappings(entity, world);
-        {
-            let entity = GameAssets::get(world)
-                .unit_rep
-                .clone()
-                .unpack(world.spawn_empty().set_parent(entity).id(), world);
-            let mut emut = world.entity_mut(entity);
-            emut.get_mut::<Transform>().unwrap().translation.z += 100.0;
-        }
         entity
     }
 
     pub fn generate_state(&self, world: &World) -> VarState {
         let mut state = self.state.clone();
         state
-            .init(VarName::Hp, VarValue::Int(self.hp))
-            .init(VarName::Pwr, VarValue::Int(self.pwr))
-            .init(VarName::Name, VarValue::String(self.name.clone()))
-            .init(VarName::Position, VarValue::Vec2(default()));
+            .init(VarName::Hp, self.hp.into())
+            .init(VarName::Pwr, self.pwr.into())
+            .init(VarName::Name, self.name.clone().into())
+            .init(VarName::Position, Vec2::ZERO.into())
+            .init(VarName::Visible, true.into());
         if !state.has_value(VarName::Dmg) {
             state.init(VarName::Dmg, VarValue::Int(0));
         }
@@ -159,6 +163,7 @@ impl From<BaseUnit> for PackedUnit {
             },
             state: default(),
             statuses: default(),
+            representation: default(),
         }
     }
 }

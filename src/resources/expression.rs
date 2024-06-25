@@ -6,11 +6,11 @@ pub enum Expression {
     Zero,
 
     OppositeFaction,
+    SlotPosition,
 
     Owner,
     Caster,
     Target,
-    SlotUnit(Box<Expression>),
 
     Value(VarValue),
     Context(VarName),
@@ -20,10 +20,13 @@ pub enum Expression {
     StatusCharges(String),
     HexColor(String),
 
+    Vec2E(Box<Expression>),
     Sin(Box<Expression>),
     Cos(Box<Expression>),
     FactionCount(Box<Expression>),
+    SlotUnit(Box<Expression>),
 
+    Vec2EE(Box<Expression>, Box<Expression>),
     Sum(Box<Expression>, Box<Expression>),
     Sub(Box<Expression>, Box<Expression>),
     Mul(Box<Expression>, Box<Expression>),
@@ -140,6 +143,18 @@ impl Expression {
                     el.get_value(context, world)
                 }
             }
+            Expression::Vec2E(e) => {
+                let v = e.get_float(context, world)?;
+                Ok(VarValue::Vec2(vec2(v, v)))
+            }
+            Expression::Vec2EE(x, y) => Ok(VarValue::Vec2(vec2(
+                x.get_float(context, world)?,
+                y.get_float(context, world)?,
+            ))),
+            Expression::SlotPosition => Ok(VarValue::Vec2(UnitPlugin::get_entity_slot_position(
+                context.owner(),
+                world,
+            )?)),
         }
     }
     pub fn get_float(&self, context: &Context, world: &mut World) -> Result<f32> {

@@ -1,5 +1,4 @@
 use super::*;
-use bevy::ecs::schedule::NextState;
 use spacetimedb_lib::de::serde::DeserializeWrapper;
 
 #[derive(AssetCollection, Resource)]
@@ -10,6 +9,8 @@ pub struct GameAssetsHandles {
     custom_battle: Handle<BattleData>,
     #[asset(key = "unit.rep")]
     unit_rep: Handle<Representation>,
+    #[asset(key = "animations")]
+    animations: Handle<Animations>,
     #[asset(key = "heroes", collection(typed, mapped))]
     heroes: HashMap<String, Handle<PackedUnit>>,
     #[asset(key = "houses", collection(typed, mapped))]
@@ -21,6 +22,7 @@ pub struct GameAssets {
     pub global_settings: GlobalSettings,
     pub custom_battle: BattleData,
     pub unit_rep: Representation,
+    pub animations: Animations,
 
     pub heroes: HashMap<String, PackedUnit>,
     pub houses: HashMap<String, House>,
@@ -37,6 +39,12 @@ impl GameAssets {
     pub fn get(world: &World) -> &Self {
         world.resource::<Self>()
     }
+}
+
+#[derive(Deserialize, Asset, TypePath, Debug, Clone)]
+pub struct Animations {
+    pub before_strike: Anim,
+    pub move_to_slot: Anim,
 }
 
 pub struct LoadingPlugin;
@@ -65,6 +73,11 @@ impl LoadingPlugin {
         let unit_rep = world
             .resource::<Assets<Representation>>()
             .get(&handles.unit_rep)
+            .unwrap()
+            .clone();
+        let animations = world
+            .resource::<Assets<Animations>>()
+            .get(&handles.animations)
             .unwrap()
             .clone();
 
@@ -101,16 +114,12 @@ impl LoadingPlugin {
             global_settings,
             custom_battle,
             unit_rep,
+            animations,
             heroes,
             houses,
             abilities,
             statuses,
         };
-        dbg!(&assets);
         world.insert_resource(assets);
-
-        world
-            .resource_mut::<NextState<GameState>>()
-            .set(GameState::Connect);
     }
 }
