@@ -1,1 +1,4 @@
-(left: (units: [(hp: 10, pwr: 1)]), right: (units: [(hp: 9, pwr: 1)]))
+(
+    left: (units: [(name: "Left One", hp: 10, pwr: 1)]),
+    right: (units: [(name: "Right", hp: 9, pwr: 1)]),
+)

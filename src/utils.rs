@@ -77,12 +77,12 @@ pub fn clear_context_id(world: &mut World, key: &str) {
 //         context.data_mut(|w| w.insert_temp(id, value))
 //     }
 // }
-// pub fn world_to_screen(pos: Vec3, world: &World) -> Vec2 {
-//     let entity = world.entity(world.resource::<CameraData>().entity);
-//     let camera = entity.get::<Camera>().unwrap();
-//     let transform = entity.get::<GlobalTransform>().unwrap();
-//     camera.world_to_viewport(transform, pos).unwrap_or_default()
-// }
+pub fn world_to_screen(pos: Vec3, world: &World) -> Vec2 {
+    let entity = world.entity(world.resource::<CameraData>().entity);
+    let camera = entity.get::<Camera>().unwrap();
+    let transform = entity.get::<GlobalTransform>().unwrap();
+    camera.world_to_viewport(transform, pos).unwrap_or_default()
+}
 pub fn screen_to_world(pos: Vec2, camera: &Camera, transform: &GlobalTransform) -> Vec2 {
     camera.viewport_to_world_2d(transform, pos).unwrap()
 }

@@ -87,6 +87,7 @@ fn main() {
             TilingPlugin,
             RepresentationPlugin,
             CameraPlugin,
+            TextColumnPlugin,
         ))
         .run();
 }

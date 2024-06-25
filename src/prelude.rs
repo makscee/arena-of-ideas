@@ -73,6 +73,7 @@ pub use egui::{
     CentralPanel, Frame, Layout, Margin, Response, RichText, Rounding, SidePanel, Slider,
     TopBottomPanel, Widget, WidgetText,
 };
+pub use egui::{FontData, FontDefinitions, FontFamily};
 pub use itertools::Itertools;
 pub use lazy_static::lazy_static;
 pub use log::*;

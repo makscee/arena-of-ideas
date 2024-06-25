@@ -9,73 +9,11 @@ pub struct TilingPlugin;
 
 impl Plugin for TilingPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, Self::ui)
-            .add_systems(Startup, Self::setup)
-            .init_resource::<Data>();
+        app.add_systems(Update, Self::ui).init_resource::<Data>();
     }
 }
 
 impl TilingPlugin {
-    fn setup(world: &mut World) {
-        let ctx = &if let Some(context) = egui_context(world) {
-            context
-        } else {
-            return;
-        };
-        ctx.style_mut(|style| {
-            style.spacing = Spacing {
-                item_spacing: egui::vec2(13.0, 6.0),
-                button_padding: egui::vec2(5.0, 6.0),
-                ..default()
-            };
-            style.spacing.slider_rail_height = 2.0;
-            style.visuals.slider_trailing_fill = true;
-            style.visuals.handle_shape = HandleShape::Rect { aspect_ratio: 0.1 };
-            style.visuals.selection.bg_fill = WHITE;
-            style.visuals.widgets = Widgets {
-                noninteractive: WidgetVisuals {
-                    weak_bg_fill: Color32::TRANSPARENT,
-                    bg_fill: Color32::from_gray(27),
-                    bg_stroke: Stroke::new(1.0, GRAY), // separators, indentation lines
-                    fg_stroke: Stroke::new(1.0, LIGHT_GRAY), // normal text color
-                    rounding: Rounding::same(13.0),
-                    expansion: 0.0,
-                },
-                inactive: WidgetVisuals {
-                    weak_bg_fill: Color32::TRANSPARENT,
-                    bg_fill: LIGHT_GRAY, // checkbox background
-                    bg_stroke: Default::default(),
-                    fg_stroke: Stroke::new(1.0, WHITE), // button text
-                    rounding: Rounding::same(13.0),
-                    expansion: 0.0,
-                },
-                hovered: WidgetVisuals {
-                    weak_bg_fill: Color32::TRANSPARENT,
-                    bg_fill: Color32::from_gray(70),
-                    bg_stroke: Stroke::new(1.0, LIGHT_GRAY), // e.g. hover over window edge or button
-                    fg_stroke: Stroke::new(1.5, WHITE),
-                    rounding: Rounding::same(13.0),
-                    expansion: 1.0,
-                },
-                active: WidgetVisuals {
-                    weak_bg_fill: Color32::TRANSPARENT,
-                    bg_fill: Color32::from_gray(55),
-                    bg_stroke: Stroke::new(1.0, YELLOW),
-                    fg_stroke: Stroke::new(2.0, YELLOW),
-                    rounding: Rounding::same(13.0),
-                    expansion: 1.0,
-                },
-                open: WidgetVisuals {
-                    weak_bg_fill: Color32::from_gray(45),
-                    bg_fill: Color32::from_gray(27),
-                    bg_stroke: Stroke::new(1.0, Color32::from_gray(60)),
-                    fg_stroke: Stroke::new(1.0, Color32::from_gray(210)),
-                    rounding: Rounding::same(13.0),
-                    expansion: 0.0,
-                },
-            };
-        });
-    }
     fn ui(world: &mut World) {
         let ctx = &if let Some(context) = egui_context(world) {
             context
@@ -263,18 +201,6 @@ const FRAME: Frame = Frame {
     stroke: Stroke::NONE,
 };
 
-pub const WHITE: Color32 = Color32::from_rgb(0xFF, 0xFF, 0xFF);
-pub const DARK_WHITE: Color32 = Color32::from_rgb(0xBF, 0xBF, 0xBF);
-pub const LIGHT_GRAY: Color32 = Color32::from_rgb(0x6F, 0x6F, 0x6F);
-pub const GRAY: Color32 = Color32::from_rgb(0x4F, 0x4F, 0x4F);
-pub const DARK_GRAY: Color32 = Color32::from_rgb(0x37, 0x37, 0x37);
-pub const LIGHT_BLACK: Color32 = Color32::from_rgb(0x20, 0x20, 0x20);
-pub const DARK_BLACK: Color32 = Color32::from_rgb(0x13, 0x13, 0x13);
-pub const BLACK: Color32 = Color32::from_rgb(0x00, 0x00, 0x00);
-
-pub const YELLOW: Color32 = Color32::from_rgb(0xD9, 0x8F, 0x00);
-
-const TILE_PREF: &str = "tile_";
 const PATH: &str = "tile_path";
 trait CtxExt {
     fn is_tile_open(&self, name: &str) -> bool;
@@ -320,7 +246,7 @@ impl CtxExt for egui::Context {
     fn remove_path(&self) {
         let mut p = self.get_path();
         if let Some(pos) = p.rfind('/') {
-            p.split_off(pos);
+            let _ = p.split_off(pos);
             self.data_mut(|w| w.insert_temp(Id::new(PATH), p));
         }
     }
