@@ -26,4 +26,6 @@ pub enum VarName {
     Polarity,
     Level,
     Direction,
+    Alpha,
+    T,
 }

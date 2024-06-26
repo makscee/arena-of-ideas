@@ -15,9 +15,7 @@ impl Plugin for TilingPlugin {
 
 impl TilingPlugin {
     fn ui(world: &mut World) {
-        let ctx = &if let Some(context) = egui_context(world) {
-            context
-        } else {
+        let Some(ctx) = &egui_context(world) else {
             return;
         };
         if just_pressed(KeyCode::Escape, world) {

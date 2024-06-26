@@ -47,16 +47,7 @@ impl PackedUnit {
                 Unit,
                 VisibilityBundle::default(),
                 TransformBundle::default(),
-                TextColumn {
-                    lines: vec![
-                        (0.0, "Test".cstr_c(WHITE)),
-                        (0.2, "Test 2".cstr_c(RED).bold().take()),
-                        (0.5, "Test asd asd asd 2".cstr_c(YELLOW)),
-                        (2.0, "Test test 4".cstr_c(WHITE)),
-                        (3.0, "Test test 5".cstr_c(GREEN)),
-                        (4.0, "Test test 6".cstr_c(WHITE)),
-                    ],
-                },
+                TextColumn::default(),
             ))
             .id();
         debug!("unpack unit: {entity:?} {self:?}");

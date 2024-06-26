@@ -1,13 +1,10 @@
-use egui::{epaint, Label, Rect};
-use itertools::PeekingNext;
-
 use super::*;
 
 pub struct TextColumnPlugin;
 
-#[derive(Component)]
+#[derive(Component, Default)]
 pub struct TextColumn {
-    pub lines: Vec<(f32, Cstr)>,
+    lines: Vec<(f32, Cstr)>,
 }
 
 impl Plugin for TextColumnPlugin {
@@ -17,17 +14,20 @@ impl Plugin for TextColumnPlugin {
 }
 
 impl TextColumnPlugin {
+    pub fn add(entity: Entity, text: Cstr, world: &mut World) {
+        if let Some(mut tc) = world.get_mut::<TextColumn>(entity) {
+            tc.lines.push((GameTimer::get().insert_head(), text));
+        }
+    }
     fn ui(world: &mut World) {
-        let ctx = &if let Some(context) = egui_context(world) {
-            context
-        } else {
+        let Some(ctx) = &egui_context(world) else {
             return;
         };
         let mut drawn: Vec<Vec<Rect>> = [default()].into();
         let mut prev_lvl: HashMap<Entity, usize> = default();
         let t = GameTimer::get().play_head();
         let start_height = world_to_screen(vec3(0.0, 2.0, 0.0), world).y;
-        const Y_PER_LEVEL: f32 = 20.0;
+        const Y_PER_LEVEL: f32 = 22.0;
         const LIFETIME: f32 = 4.0;
         const EASE_IN: f32 = 0.3;
         const EASE_OUT: f32 = 0.5;

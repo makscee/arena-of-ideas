@@ -15,6 +15,8 @@ pub struct GameAssetsHandles {
     heroes: HashMap<String, Handle<PackedUnit>>,
     #[asset(key = "houses", collection(typed, mapped))]
     houses: HashMap<String, Handle<House>>,
+    #[asset(key = "vfxs", collection(typed, mapped))]
+    vfxs: HashMap<String, Handle<Vfx>>,
 }
 
 #[derive(Resource, Debug, Clone)]
@@ -28,6 +30,7 @@ pub struct GameAssets {
     pub houses: HashMap<String, House>,
     pub abilities: HashMap<String, Ability>,
     pub statuses: HashMap<String, PackedStatus>,
+    pub vfxs: HashMap<String, Vfx>,
 }
 
 #[derive(Deserialize, Asset, TypePath)]
@@ -86,14 +89,14 @@ impl LoadingPlugin {
             handles
                 .heroes
                 .iter()
-                .map(|(name, h)| (name.clone(), heroes.get(h).unwrap().clone())),
+                .map(|(name, h)| (name_from_path(name), heroes.get(h).unwrap().clone())),
         );
         let houses = world.resource::<Assets<House>>();
         let houses = HashMap::from_iter(
             handles
                 .houses
                 .iter()
-                .map(|(name, h)| (name.clone(), houses.get(h).unwrap().clone())),
+                .map(|(name, h)| (name_from_path(name), houses.get(h).unwrap().clone())),
         );
         let abilities = HashMap::from_iter(
             houses
@@ -109,6 +112,13 @@ impl LoadingPlugin {
                 .cloned()
                 .map(|a| (a.name.clone(), a)),
         );
+        let vfxs = world.resource::<Assets<Vfx>>();
+        let vfxs = HashMap::from_iter(
+            handles
+                .vfxs
+                .iter()
+                .map(|(name, h)| (name_from_path(name), vfxs.get(h).unwrap().clone())),
+        );
 
         let assets = GameAssets {
             global_settings,
@@ -119,7 +129,16 @@ impl LoadingPlugin {
             houses,
             abilities,
             statuses,
+            vfxs,
         };
         world.insert_resource(assets);
     }
+}
+
+fn name_from_path(path: &str) -> String {
+    dbg!(path);
+    let (path, _) = path.split_once('.').unwrap();
+    dbg!(path);
+    let from = path.rfind('/').unwrap_or_default();
+    path.split_at(from).1.trim_matches('/').to_owned()
 }

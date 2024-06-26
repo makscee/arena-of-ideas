@@ -13,7 +13,7 @@ pub struct VarState {
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
 struct History(Vec<VarChange>);
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Default)]
 pub struct VarChange {
     pub t: f32,
     #[serde(default)]
@@ -103,7 +103,7 @@ impl VarState {
             .get(&var)
             .with_context(|| format!("Var {var} not set for {:?}", self.entity))?
             .iter()
-            .filter_map(|(_, v)| v.get_value_at(t).ok())
+            .filter_map(|(_, v)| v.get_value_at(t - self.birth).ok())
             .reduce(|acc, v| match VarValue::sum(&acc, &v) {
                 Ok(v) => v,
                 Err(_) => acc,
@@ -149,7 +149,7 @@ impl VarState {
             .get(&var)
             .with_context(|| format!("Var {var} not set for {:?}", self.entity))?
             .get(key)
-            .and_then(|h| h.get_value_at(t).ok())
+            .and_then(|h| h.get_value_at(t - self.birth).ok())
             .unwrap_or_default())
     }
 

@@ -26,6 +26,12 @@ impl Effect {
                 if value > 0 {
                     debug!("deal {value} dmg to {target:?}");
                     VarState::get_mut(target, world).change_int(VarName::Dmg, value);
+                    TextColumnPlugin::add(
+                        target,
+                        format!("-{value}").cstr_cs(RED, CstrStyle::Bold),
+                        world,
+                    );
+                    Vfx::get("pain", world).set_parent(target).unpack(world)?;
                 }
             }
             Effect::ChangeStatus(name) => {

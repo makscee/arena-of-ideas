@@ -8,10 +8,20 @@ pub struct Vfx {
     pub state: VarState,
     #[serde(default)]
     pub timeframe: f32,
+    #[serde(default)]
+    pub duration: Option<f32>,
     pub parent: Option<Entity>,
 }
 
 impl Vfx {
+    pub fn get(name: &str, world: &World) -> Self {
+        GameAssets::get(world)
+            .vfxs
+            .get(name)
+            .with_context(|| format!("Vfx {name} not loaded"))
+            .unwrap()
+            .clone()
+    }
     pub fn unpack(self, world: &mut World) -> Result<f32> {
         let entity = world.spawn_empty().id();
         self.representation.unpack(entity, world);
@@ -20,6 +30,18 @@ impl Vfx {
         }
         self.state.attach(entity, world);
         let result = self.anim.apply(Context::new(entity), world);
+        if let Some(duration) = self.duration {
+            let mut state = VarState::get_mut(entity, world);
+            state.init(VarName::Visible, true.into());
+            state.push_change(
+                VarName::Visible,
+                default(),
+                VarChange {
+                    t: duration,
+                    ..default()
+                },
+            );
+        }
         if self.timeframe > 0.0 {
             GameTimer::get().advance_insert(self.timeframe);
         }

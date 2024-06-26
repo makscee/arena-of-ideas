@@ -6,6 +6,7 @@
         "animations": File(path: "ron/all.anim.ron"),
         "heroes": Folder(path: "ron/heroes"),
         "houses": Folder(path: "ron/houses"),
+        "vfxs": Folder(path: "ron/vfxs"),
         "test_scenarios": Folder(path: "ron/scenarios"),
     },
 )
