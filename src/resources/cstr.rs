@@ -1,7 +1,6 @@
-use colored::{Colorize, CustomColor};
-
 use super::*;
 
+#[derive(Default)]
 pub struct Cstr {
     subs: Vec<CstrSub>,
 }
@@ -22,6 +21,19 @@ pub enum CstrStyle {
     Heading2,
 }
 
+impl CstrStyle {
+    fn get_font(&self, style: &Style) -> FontId {
+        match self {
+            Self::Normal => TextStyle::Body,
+            Self::Small => TextStyle::Small,
+            Self::Bold => TextStyle::Name("Bold".into()),
+            Self::Heading => TextStyle::Heading,
+            Self::Heading2 => TextStyle::Name("Heading2".into()),
+        }
+        .resolve(style)
+    }
+}
+
 impl Cstr {
     pub fn push(&mut self, cstr: Cstr) -> &mut Self {
         self.subs.extend(cstr.subs.into_iter());
@@ -30,15 +42,21 @@ impl Cstr {
     fn to_colored(&self) -> String {
         self.subs
             .iter()
-            .map(|CstrSub { text, color, style }| {
-                let color = color.unwrap_or(LIGHT_GRAY);
-                let color = CustomColor {
-                    r: color.r(),
-                    g: color.g(),
-                    b: color.b(),
-                };
-                text.custom_color(color)
-            })
+            .map(
+                |CstrSub {
+                     text,
+                     color,
+                     style: _,
+                 }| {
+                    let color = color.unwrap_or(LIGHT_GRAY);
+                    let color = CustomColor {
+                        r: color.r(),
+                        g: color.g(),
+                        b: color.b(),
+                    };
+                    text.custom_color(color)
+                },
+            )
             .join(" ")
     }
     pub fn print(&self) {
@@ -49,6 +67,52 @@ impl Cstr {
     }
     pub fn debug(&self) {
         debug!("{}", self.to_colored())
+    }
+
+    pub fn bold(&mut self) -> &mut Self {
+        self.subs.iter_mut().for_each(
+            |CstrSub {
+                 text: _,
+                 color: _,
+                 style,
+             }| *style = CstrStyle::Bold,
+        );
+        self
+    }
+
+    pub fn label(&self, ui: &mut Ui) -> Response {
+        self.as_label(ui).selectable(false).wrap(false).ui(ui)
+    }
+    pub fn label_alpha(&self, a: f32, ui: &mut Ui) -> Response {
+        self.as_label_alpha(a, ui).ui(ui)
+    }
+    pub fn as_label(&self, ui: &mut Ui) -> Label {
+        self.as_label_alpha(1.0, ui)
+    }
+    pub fn as_label_alpha(&self, a: f32, ui: &mut Ui) -> Label {
+        Label::new(self.widget(a, ui))
+    }
+
+    pub fn widget(&self, alpha: f32, ui: &mut Ui) -> WidgetText {
+        let mut job = LayoutJob::default();
+        for CstrSub { text, color, style } in self.subs.iter() {
+            let color = color.unwrap_or(LIGHT_GRAY).gamma_multiply(alpha);
+            let font_id = style.get_font(ui.style());
+            job.append(
+                text,
+                0.0,
+                TextFormat {
+                    color,
+                    font_id,
+                    ..default()
+                },
+            );
+        }
+        WidgetText::LayoutJob(job)
+    }
+
+    pub fn take(&mut self) -> Self {
+        mem::take(self)
     }
 }
 

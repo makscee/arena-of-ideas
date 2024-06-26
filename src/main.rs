@@ -77,6 +77,7 @@ fn main() {
         .add_plugins(NoisyShaderPlugin)
         .add_plugins((
             LoadingPlugin,
+            UiPlugin,
             LoginPlugin,
             ActionPlugin,
             BattlePlugin,

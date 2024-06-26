@@ -65,6 +65,7 @@ pub use bevy_egui::{
     EguiContext,
 };
 pub use chrono::DateTime;
+pub use colored::{Colorize, CustomColor};
 pub use convert_case::Casing;
 pub use ecolor::Color32;
 pub use egui::{
@@ -73,6 +74,7 @@ pub use egui::{
     CentralPanel, Frame, Layout, Margin, Response, RichText, Rounding, SidePanel, Slider,
     TopBottomPanel, Widget, WidgetText,
 };
+pub use egui::{text::LayoutJob, FontId, Label, Style, TextFormat, TextStyle};
 pub use egui::{FontData, FontDefinitions, FontFamily};
 pub use itertools::Itertools;
 pub use lazy_static::lazy_static;
