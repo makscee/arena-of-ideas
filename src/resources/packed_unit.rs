@@ -89,7 +89,8 @@ impl PackedUnit {
             .init(VarName::Pwr, self.pwr.into())
             .init(VarName::Name, self.name.clone().into())
             .init(VarName::Position, Vec2::ZERO.into())
-            .init(VarName::Visible, true.into());
+            .init(VarName::Visible, true.into())
+            .init(VarName::RarityColor, DARK_WHITE.into());
         if !state.has_value(VarName::Dmg) {
             state.init(VarName::Dmg, VarValue::Int(0));
         }

@@ -136,9 +136,7 @@ impl LoadingPlugin {
 }
 
 fn name_from_path(path: &str) -> String {
-    dbg!(path);
     let (path, _) = path.split_once('.').unwrap();
-    dbg!(path);
     let from = path.rfind('/').unwrap_or_default();
     path.split_at(from).1.trim_matches('/').to_owned()
 }

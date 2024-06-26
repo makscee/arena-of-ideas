@@ -5,15 +5,129 @@ struct Data {
     t: f32,
 }
 
+#[derive(Default)]
+struct Tile {
+    name: &'static str,
+    side: Side,
+    close_btn: bool,
+    title: bool,
+    content: Option<Box<dyn FnOnce(&mut Ui, &mut World) + Send + Sync>>,
+    child: Option<Box<dyn FnOnce(&mut Ui, &mut World) + Send + Sync>>,
+}
+
+impl Tile {
+    fn right(name: &'static str) -> Self {
+        Self {
+            name,
+            side: Side::Right,
+            ..default()
+        }
+    }
+    fn left(name: &'static str) -> Self {
+        Self {
+            name,
+            side: Side::Left,
+            ..default()
+        }
+    }
+    fn top(name: &'static str) -> Self {
+        Self {
+            name,
+            side: Side::Top,
+            ..default()
+        }
+    }
+    fn bottom(name: &'static str) -> Self {
+        Self {
+            name,
+            side: Side::Bottom,
+            ..default()
+        }
+    }
+    fn title(mut self) -> Self {
+        self.title = true;
+        self
+    }
+    fn close_btn(mut self) -> Self {
+        self.close_btn = true;
+        self
+    }
+    fn content(
+        mut self,
+        content: impl FnOnce(&mut Ui, &mut World) + Send + Sync + 'static,
+    ) -> Self {
+        self.content = Some(Box::new(content));
+        self
+    }
+    fn child(mut self, child: impl FnOnce(&mut Ui, &mut World) + Send + Sync + 'static) -> Self {
+        self.child = Some(Box::new(child));
+        self
+    }
+    fn show(self, ui: &mut Ui, world: &mut World) {
+        let content = self.content.unwrap_or(Box::new(|_, _| {}));
+        ui.ctx().add_path(&self.name);
+        if let Some(child) = self.child {
+            child(ui, world);
+        }
+        let path = ui.ctx().get_path();
+        let content = |ui: &mut Ui| {
+            if self.title {
+                self.name.cstr().label(ui);
+            }
+            ui.vertical_centered_justified(|ui| {
+                content(ui, world);
+                if self.close_btn && ui.button_gray("Close").clicked() {
+                    ui.ctx().flip_path_open(&path);
+                }
+            });
+        };
+        match self.side {
+            Side::Right => {
+                SidePanel::right(Id::new(&path))
+                    .frame(FRAME)
+                    .show_separator_line(false)
+                    .show_animated_inside(ui, ui.ctx().is_path_open(&path), content);
+            }
+            Side::Left => {
+                SidePanel::left(Id::new(&path))
+                    .frame(FRAME)
+                    .show_separator_line(false)
+                    .show_animated_inside(ui, ui.ctx().is_path_open(&path), content);
+            }
+            Side::Top => {
+                TopBottomPanel::top(Id::new(&path))
+                    .frame(FRAME)
+                    .show_separator_line(false)
+                    .show_animated_inside(ui, ui.ctx().is_path_open(&path), content);
+            }
+            Side::Bottom => {
+                TopBottomPanel::bottom(Id::new(&path))
+                    .frame(FRAME)
+                    .show_separator_line(false)
+                    .show_animated_inside(ui, ui.ctx().is_path_open(&path), content);
+            }
+        }
+        ui.ctx().remove_path();
+    }
+}
+
 pub struct TilingPlugin;
 
 impl Plugin for TilingPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, Self::ui).init_resource::<Data>();
+        app.add_systems(Update, Self::ui)
+            .add_systems(Startup, Self::setup)
+            .init_resource::<Data>();
     }
 }
 
 impl TilingPlugin {
+    fn setup(world: &mut World) {
+        let Some(ctx) = &egui_context(world) else {
+            return;
+        };
+        ctx.flip_tile_open("Playback");
+    }
     fn ui(world: &mut World) {
         let Some(ctx) = &egui_context(world) else {
             return;
@@ -39,38 +153,47 @@ impl TilingPlugin {
                 })
             });
 
-        let mut data = world.remove_resource::<Data>().unwrap();
         CentralPanel::default()
             .frame(Frame::none())
             .show(ctx, |ui| {
-                panel_right(
-                    "Main Menu",
-                    ui,
-                    |ui| {
+                if matches!(cur_state(world), GameState::Battle) {
+                    Tile::bottom("Playback")
+                        .content(|ui, world| {})
+                        .show(ui, world);
+                }
+                Tile::right("Main Menu")
+                    .title()
+                    .close_btn()
+                    .content(|ui, _| {
                         let name = "New Game";
-                        if ui.button_toggle(name, ctx.is_tile_open(name)).clicked() {
-                            ctx.flip_tile_open(name);
+                        if ui
+                            .button_toggle(name, ui.ctx().is_tile_open(name))
+                            .clicked()
+                        {
+                            ui.ctx().flip_tile_open(name);
                         }
                         let name = "Settings";
-                        if ui.button_toggle(name, ctx.is_tile_open(name)).clicked() {
-                            ctx.flip_tile_open(name);
+                        if ui
+                            .button_toggle(name, ui.ctx().is_tile_open(name))
+                            .clicked()
+                        {
+                            ui.ctx().flip_tile_open(name);
                         }
-                    },
-                    |ui| {
-                        panel_right(
-                            "New Game",
-                            ui,
-                            |ui| {
-                                if ui.button("test test").clicked() {
-                                    debug!("Test click");
+                    })
+                    .child(|ui, world| {
+                        Tile::right("New Game")
+                            .title()
+                            .close_btn()
+                            .content(|ui, _| {
+                                if ui.button("test").clicked() {
+                                    debug!("test");
                                 }
-                            },
-                            |_| {},
-                        );
-                        panel_right(
-                            "Settings",
-                            ui,
-                            |ui| {
+                            })
+                            .show(ui, world);
+                        Tile::right("Settings")
+                            .title()
+                            .close_btn()
+                            .content(|ui, world| {
                                 if ui.button("setting 1").clicked() {
                                     debug!("Test click");
                                 }
@@ -79,89 +202,16 @@ impl TilingPlugin {
                                     debug!("Test click");
                                 }
                                 br(ui);
-                                slider("Test", &mut data.t, ui);
+                                slider("Test", &mut world.resource_mut::<Data>().t, ui);
                                 br(ui);
-                            },
-                            |_| {},
-                        );
-                    },
-                );
+                            })
+                            .show(ui, world);
+                    })
+                    .show(ui, world);
             });
-        world.insert_resource(data);
     }
 }
 
-fn panel(
-    side: Side,
-    name: &str,
-    ui: &mut Ui,
-    content: impl FnOnce(&mut Ui),
-    child: impl FnOnce(&mut Ui),
-) {
-    ui.ctx().add_path(name);
-    child(ui);
-    let path = ui.ctx().get_path();
-
-    let content = |ui: &mut Ui| {
-        ui.label(RichText::new(name).color(LIGHT_GRAY));
-        ui.vertical_centered_justified(|ui| {
-            content(ui);
-            if ui.button_gray("Close").clicked() {
-                ui.ctx().flip_path_open(&path);
-            }
-        });
-    };
-    match side {
-        Side::Right => {
-            SidePanel::right(Id::new(&path))
-                .frame(FRAME)
-                .show_separator_line(false)
-                .show_animated_inside(ui, ui.ctx().is_path_open(&path), content);
-        }
-        Side::Left => {
-            SidePanel::left(Id::new(&path))
-                .frame(FRAME)
-                .show_separator_line(false)
-                .show_animated_inside(ui, ui.ctx().is_path_open(&path), content);
-        }
-        Side::Top => {
-            TopBottomPanel::top(Id::new(&path))
-                .frame(FRAME)
-                .show_separator_line(false)
-                .show_animated_inside(ui, ui.ctx().is_path_open(&path), content);
-        }
-        Side::Bottom => {
-            TopBottomPanel::bottom(Id::new(&path))
-                .frame(FRAME)
-                .show_separator_line(false)
-                .show_animated_inside(ui, ui.ctx().is_path_open(&path), content);
-        }
-    }
-    ui.ctx().remove_path();
-}
-
-fn panel_right(
-    name: &str,
-    ui: &mut Ui,
-    content: impl FnOnce(&mut Ui),
-    child: impl FnOnce(&mut Ui),
-) {
-    panel(Side::Right, name, ui, content, child);
-}
-fn panel_left(name: &str, ui: &mut Ui, content: impl FnOnce(&mut Ui), child: impl FnOnce(&mut Ui)) {
-    panel(Side::Left, name, ui, content, child);
-}
-fn panel_top(name: &str, ui: &mut Ui, content: impl FnOnce(&mut Ui), child: impl FnOnce(&mut Ui)) {
-    panel(Side::Top, name, ui, content, child);
-}
-fn panel_bottom(
-    name: &str,
-    ui: &mut Ui,
-    content: impl FnOnce(&mut Ui),
-    child: impl FnOnce(&mut Ui),
-) {
-    panel(Side::Bottom, name, ui, content, child);
-}
 fn slider(name: &str, value: &mut f32, ui: &mut Ui) {
     ui.label(name);
     ui.spacing_mut().slider_width = ui.available_width() - 60.0;

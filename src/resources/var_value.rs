@@ -299,6 +299,11 @@ impl From<Color> for VarValue {
         VarValue::Color(value)
     }
 }
+impl From<Color32> for VarValue {
+    fn from(value: Color32) -> Self {
+        VarValue::Color(value.to_color())
+    }
+}
 impl From<Faction> for VarValue {
     fn from(value: Faction) -> Self {
         VarValue::Faction(value)
