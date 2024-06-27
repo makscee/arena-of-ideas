@@ -75,6 +75,7 @@ pub use egui::{
     CentralPanel, Frame, Layout, Margin, Response, RichText, Rounding, SidePanel, Slider,
     TopBottomPanel, Widget, WidgetText,
 };
+pub use egui::{include_image, Image};
 pub use egui::{text::LayoutJob, FontId, Style, TextFormat, TextStyle};
 pub use egui::{FontData, FontDefinitions, FontFamily};
 pub use itertools::Itertools;

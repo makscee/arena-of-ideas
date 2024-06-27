@@ -48,6 +48,7 @@ fn main() {
     });
     app.init_state::<GameState>()
         .insert_resource(ClearColor(DARK_BLACK.to_color()))
+        .add_systems(Startup, setup)
         .add_plugins((default_plugins, FrameTimeDiagnosticsPlugin))
         .add_loading_state(
             LoadingState::new(GameState::Loading)
@@ -95,3 +96,9 @@ fn main() {
 }
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
+
+fn setup(world: &mut World) {
+    if let Some(ctx) = egui_context(world) {
+        egui_extras::install_image_loaders(&ctx);
+    }
+}

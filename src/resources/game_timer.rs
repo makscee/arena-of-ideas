@@ -14,6 +14,12 @@ pub struct GameTimer {
 }
 
 impl GameTimer {
+    pub fn update(&mut self, delta: f32) {
+        if !self.paused {
+            self.advance_play(delta);
+        }
+    }
+
     pub fn pause(&mut self, value: bool) -> &mut Self {
         self.paused = value;
         self
@@ -37,9 +43,6 @@ impl GameTimer {
     }
 
     pub fn advance_play(&mut self, delta: f32) -> &mut Self {
-        if self.paused {
-            return self;
-        }
         self.play_head = (self.play_head + delta).max(0.0);
         self.insert_head = self.insert_head.max(self.play_head);
         self

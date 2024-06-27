@@ -1,10 +1,14 @@
+use bevy::input::mouse::MouseButton;
+
 use super::*;
 
 pub fn just_pressed(key: KeyCode, world: &World) -> bool {
+    world.resource::<ButtonInput<KeyCode>>().just_pressed(key)
+}
+pub fn left_mouse_pressed(world: &World) -> bool {
     world
-        .get_resource::<ButtonInput<KeyCode>>()
-        .unwrap()
-        .just_pressed(key)
+        .resource::<ButtonInput<MouseButton>>()
+        .pressed(MouseButton::Left)
 }
 pub fn egui_context(world: &mut World) -> Option<egui::Context> {
     world
@@ -13,16 +17,25 @@ pub fn egui_context(world: &mut World) -> Option<egui::Context> {
         .map(|c| c.into_inner().get_mut().clone())
         .ok()
 }
+pub fn delta_time(world: &World) -> f32 {
+    world.resource::<Time>().delta_seconds()
+}
 pub fn get_context_bool(world: &mut World, key: &str) -> bool {
     let id = Id::new(key);
+    get_context_bool_id(world, id)
+}
+pub fn set_context_bool(world: &mut World, key: &str, value: bool) {
+    let id = Id::new(key);
+    set_context_bool_id(world, id, value)
+}
+pub fn get_context_bool_id(world: &mut World, id: Id) -> bool {
     if let Some(context) = egui_context(world) {
         context.data(|r| r.get_temp::<bool>(id).unwrap_or_default())
     } else {
         default()
     }
 }
-pub fn set_context_bool(world: &mut World, key: &str, value: bool) {
-    let id = Id::new(key);
+pub fn set_context_bool_id(world: &mut World, id: Id, value: bool) {
     if let Some(context) = egui_context(world) {
         context.data_mut(|w| w.insert_temp(id, value))
     }

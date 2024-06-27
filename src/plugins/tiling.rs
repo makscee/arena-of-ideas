@@ -1,3 +1,5 @@
+use egui::{Align, ImageButton};
+
 use super::*;
 
 #[derive(Resource, Default)]
@@ -152,15 +154,10 @@ impl TilingPlugin {
                     ui.label(format!("arena-of-ideas {VERSION}"));
                 })
             });
-
+        let visuals = &ctx.style().visuals;
         CentralPanel::default()
             .frame(Frame::none())
             .show(ctx, |ui| {
-                if matches!(cur_state(world), GameState::Battle) {
-                    Tile::bottom("Playback")
-                        .content(|ui, world| {})
-                        .show(ui, world);
-                }
                 Tile::right("Main Menu")
                     .title()
                     .close_btn()
@@ -208,6 +205,83 @@ impl TilingPlugin {
                             .show(ui, world);
                     })
                     .show(ui, world);
+                if matches!(cur_state(world), GameState::Battle) {
+                    Tile::bottom("Playback")
+                        .content(|ui, world| {
+                            ui.vertical_centered(|ui| {
+                                let mut gt = GameTimer::get();
+                                if ImageButton::new(if gt.paused() {
+                                    Icon::Pause.image()
+                                } else {
+                                    Icon::Play.image()
+                                })
+                                .ui(ui)
+                                .clicked()
+                                {
+                                    let paused = gt.paused();
+                                    gt.pause(!paused);
+                                }
+                            });
+
+                            const CENTER_WIDTH: f32 = 100.0;
+                            let rect = ui.max_rect().translate(egui::vec2(0.0, 25.0));
+                            let side_width = (rect.width() - CENTER_WIDTH) * 0.5;
+                            let rect_center = Rect::from_center_size(
+                                rect.center(),
+                                egui::vec2(CENTER_WIDTH, rect.height()),
+                            );
+                            let mut child_ui = ui.child_ui(
+                                rect_center,
+                                Layout::centered_and_justified(egui::Direction::TopDown),
+                            );
+                            let rect_center = format!("{:.2}", GameTimer::get().play_head())
+                                .cstr_cs(WHITE, CstrStyle::Heading)
+                                .label(&mut child_ui)
+                                .rect;
+                            let rect_left = Rect::from_min_size(
+                                rect.min,
+                                egui::vec2(side_width, rect_center.height()),
+                            );
+                            let rect_right = Rect::from_min_size(
+                                rect_center.right_top(),
+                                egui::vec2(side_width, rect_center.height()),
+                            );
+
+                            let mut child_ui =
+                                ui.child_ui(rect_left, Layout::right_to_left(Align::Center));
+                            const FF_LEFT_KEY: &str = "ff_back_btn";
+                            let pressed = get_context_bool(world, FF_LEFT_KEY);
+                            if pressed {
+                                GameTimer::get().advance_play(-delta_time(world) * 2.0);
+                            }
+                            let resp = ImageButton::new(Icon::FFBack.image())
+                                .tint(if pressed { YELLOW } else { WHITE })
+                                .ui(&mut child_ui);
+                            set_context_bool(
+                                world,
+                                FF_LEFT_KEY,
+                                resp.contains_pointer() && left_mouse_pressed(world),
+                            );
+
+                            let mut child_ui =
+                                ui.child_ui(rect_right, Layout::left_to_right(Align::Center));
+                            const FF_RIGHT_KEY: &str = "ff_forward_btn";
+                            let pressed = get_context_bool(world, FF_RIGHT_KEY);
+                            if pressed {
+                                GameTimer::get().advance_play(delta_time(world));
+                            }
+                            let resp = ImageButton::new(Icon::FFForward.image())
+                                .tint(if pressed { YELLOW } else { WHITE })
+                                .ui(&mut child_ui);
+                            set_context_bool(
+                                world,
+                                FF_RIGHT_KEY,
+                                resp.contains_pointer() && left_mouse_pressed(world),
+                            );
+                            ui.advance_cursor_after_rect(resp.rect);
+                        })
+                        .show(ui, world);
+                }
             });
     }
 }

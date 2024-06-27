@@ -80,6 +80,6 @@ impl GameStatePlugin {
     }
     fn update(time: Res<Time>) {
         let mut timer = GameTimer::get();
-        timer.advance_play(time.delta_seconds());
+        timer.update(time.delta_seconds());
     }
 }
