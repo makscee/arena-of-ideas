@@ -149,3 +149,57 @@ impl UiPlugin {
         });
     }
 }
+
+const PATH: &str = "tile_path";
+pub trait CtxExt {
+    fn is_name_enabled(&self, name: &str) -> bool;
+    fn is_path_enabled(&self, path: &str) -> bool;
+    fn cur_enabled(&self) -> bool;
+    fn flip_name_enabled(&self, name: &str);
+    fn flip_path_enabled(&self, path: &str);
+    fn path(&self) -> String;
+    fn path_with(&self, name: &str) -> String;
+    fn add_path(&self, name: &str);
+    fn remove_path(&self);
+}
+
+impl CtxExt for egui::Context {
+    fn is_name_enabled(&self, name: &str) -> bool {
+        self.data(|r| r.get_temp(self.path_with(name).into()))
+            .unwrap_or_default()
+    }
+    fn is_path_enabled(&self, path: &str) -> bool {
+        self.data(|r| r.get_temp(Id::new(path))).unwrap_or_default()
+    }
+    fn cur_enabled(&self) -> bool {
+        self.is_path_enabled(&self.path())
+    }
+    fn flip_name_enabled(&self, name: &str) {
+        let p = self.path_with(name);
+        self.flip_path_enabled(&p)
+    }
+    fn flip_path_enabled(&self, path: &str) {
+        let v = self.is_path_enabled(&path);
+        self.data_mut(|w| w.insert_temp(Id::new(path), !v))
+    }
+    fn path(&self) -> String {
+        self.data(|r| r.get_temp(Id::new(PATH))).unwrap_or_default()
+    }
+    fn path_with(&self, name: &str) -> String {
+        let p = self.path();
+        format!("{p}/{name}")
+    }
+    fn add_path(&self, name: &str) {
+        let mut p = self.path();
+        p.push('/');
+        p.push_str(name);
+        self.data_mut(|w| w.insert_temp(Id::new(PATH), p));
+    }
+    fn remove_path(&self) {
+        let mut p = self.path();
+        if let Some(pos) = p.rfind('/') {
+            let _ = p.split_off(pos);
+            self.data_mut(|w| w.insert_temp(Id::new(PATH), p));
+        }
+    }
+}

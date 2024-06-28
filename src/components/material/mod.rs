@@ -1,7 +1,7 @@
 pub use super::*;
 
-pub mod curve;
-pub mod shape;
+mod curve;
+mod shape;
 
 pub use curve::*;
 pub use shape::*;

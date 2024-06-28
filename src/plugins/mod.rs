@@ -7,7 +7,6 @@ mod server_sync;
 mod team;
 mod test_scenarios;
 mod text_column;
-mod tiles;
 mod tiling;
 mod unit;
 

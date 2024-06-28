@@ -68,6 +68,7 @@ pub use chrono::DateTime;
 pub use colored::{Colorize, CustomColor};
 pub use convert_case::Casing;
 pub use ecolor::Color32;
+pub use egui::Align;
 pub use egui::{epaint, Label, Rect};
 pub use egui::{
     epaint::Shadow,

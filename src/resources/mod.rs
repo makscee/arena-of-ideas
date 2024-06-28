@@ -21,6 +21,7 @@ mod var_name;
 mod var_state;
 mod var_value;
 mod vfx;
+mod widgets;
 
 use super::*;
 pub use ability::*;
@@ -46,3 +47,4 @@ pub use var_name::*;
 pub use var_state::*;
 pub use var_value::*;
 pub use vfx::*;
+pub use widgets::*;
