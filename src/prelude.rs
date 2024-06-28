@@ -73,8 +73,8 @@ pub use egui::{epaint, Label, Rect};
 pub use egui::{
     epaint::Shadow,
     style::{HandleShape, Spacing, WidgetVisuals, Widgets},
-    CentralPanel, Frame, Layout, Margin, Response, RichText, Rounding, SidePanel, Slider,
-    TopBottomPanel, Widget, WidgetText,
+    CentralPanel, Frame, Layout, Margin, Response, RichText, Rounding, SidePanel, TopBottomPanel,
+    Widget, WidgetText,
 };
 pub use egui::{include_image, Image};
 pub use egui::{text::LayoutJob, FontId, Style, TextFormat, TextStyle};

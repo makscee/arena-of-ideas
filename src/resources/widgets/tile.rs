@@ -6,6 +6,7 @@ pub struct Tile {
     side: Side,
     close_btn: bool,
     title: bool,
+    transparent: bool,
     content: Option<Box<dyn FnOnce(&mut Ui, &mut World) + Send + Sync>>,
     child: Option<Box<dyn FnOnce(&mut Ui, &mut World) + Send + Sync>>,
 }
@@ -41,6 +42,10 @@ impl Tile {
     }
     pub fn title(mut self) -> Self {
         self.title = true;
+        self
+    }
+    pub fn transparent(mut self) -> Self {
+        self.transparent = true;
         self
     }
     pub fn close_btn(mut self) -> Self {
@@ -79,28 +84,32 @@ impl Tile {
                 }
             });
         };
+        let mut frame = FRAME;
+        if self.transparent {
+            frame = frame.fill(Color32::TRANSPARENT);
+        }
         match self.side {
             Side::Right => {
                 SidePanel::right(Id::new(&path))
-                    .frame(FRAME)
+                    .frame(frame)
                     .show_separator_line(false)
                     .show_animated_inside(ui, ui.ctx().is_path_enabled(&path), content);
             }
             Side::Left => {
                 SidePanel::left(Id::new(&path))
-                    .frame(FRAME)
+                    .frame(frame)
                     .show_separator_line(false)
                     .show_animated_inside(ui, ui.ctx().is_path_enabled(&path), content);
             }
             Side::Top => {
                 TopBottomPanel::top(Id::new(&path))
-                    .frame(FRAME)
+                    .frame(frame)
                     .show_separator_line(false)
                     .show_animated_inside(ui, ui.ctx().is_path_enabled(&path), content);
             }
             Side::Bottom => {
                 TopBottomPanel::bottom(Id::new(&path))
-                    .frame(FRAME)
+                    .frame(frame)
                     .show_separator_line(false)
                     .show_animated_inside(ui, ui.ctx().is_path_enabled(&path), content);
             }

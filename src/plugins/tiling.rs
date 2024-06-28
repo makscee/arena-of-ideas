@@ -80,14 +80,13 @@ impl TilingPlugin {
                                     debug!("Test click");
                                 }
                                 br(ui);
-                                slider("Test", &mut world.resource_mut::<Data>().t, ui);
-                                br(ui);
                             })
                             .ui(ui, world);
                     })
                     .ui(ui, world);
                 if matches!(cur_state(world), GameState::Battle) {
                     Tile::bottom("Playback")
+                        .transparent()
                         .content(|ui, world| {
                             ui.vertical_centered(|ui| {
                                 let mut gt = GameTimer::get();
@@ -104,39 +103,67 @@ impl TilingPlugin {
                                 }
                             });
 
-                            Middle3::default().ui(ui, |ui| {
-                                format!("{:.2}", GameTimer::get().play_head())
-                                    .cstr_cs(WHITE, CstrStyle::Heading)
-                                    .label(&mut ui[1]);
-
-                                const FF_LEFT_KEY: &str = "ff_back_btn";
-                                let pressed = get_context_bool(world, FF_LEFT_KEY);
-                                if pressed {
-                                    GameTimer::get().advance_play(-delta_time(world) * 2.0);
-                                }
-                                let resp = ImageButton::new(Icon::FFBack.image())
-                                    .tint(if pressed { YELLOW } else { WHITE })
-                                    .ui(&mut ui[0]);
-                                set_context_bool(
-                                    world,
-                                    FF_LEFT_KEY,
-                                    resp.contains_pointer() && left_mouse_pressed(world),
-                                );
-
-                                const FF_RIGHT_KEY: &str = "ff_forward_btn";
-                                let pressed = get_context_bool(world, FF_RIGHT_KEY);
-                                if pressed {
-                                    GameTimer::get().advance_play(delta_time(world));
-                                }
-                                let resp = ImageButton::new(Icon::FFForward.image())
-                                    .tint(if pressed { YELLOW } else { WHITE })
-                                    .ui(&mut ui[2]);
-                                set_context_bool(
-                                    world,
-                                    FF_RIGHT_KEY,
-                                    resp.contains_pointer() && left_mouse_pressed(world),
-                                );
-                            });
+                            Middle3::default().ui(
+                                ui,
+                                world,
+                                |ui, world| {
+                                    format!("{:.2}", GameTimer::get().play_head())
+                                        .cstr_cs(WHITE, CstrStyle::Heading)
+                                        .label(ui);
+                                },
+                                |ui, world| {
+                                    const FF_LEFT_KEY: &str = "ff_back_btn";
+                                    let pressed = get_context_bool(world, FF_LEFT_KEY);
+                                    if pressed {
+                                        GameTimer::get().advance_play(-delta_time(world) * 2.0);
+                                    }
+                                    let resp = ImageButton::new(Icon::FFBack.image())
+                                        .tint(if pressed { YELLOW } else { WHITE })
+                                        .ui(ui);
+                                    set_context_bool(
+                                        world,
+                                        FF_LEFT_KEY,
+                                        resp.contains_pointer() && left_mouse_pressed(world),
+                                    );
+                                },
+                                |ui, world| {
+                                    const FF_RIGHT_KEY: &str = "ff_forward_btn";
+                                    let pressed = get_context_bool(world, FF_RIGHT_KEY);
+                                    if pressed {
+                                        GameTimer::get().advance_play(delta_time(world));
+                                    }
+                                    let resp = ImageButton::new(Icon::FFForward.image())
+                                        .tint(if pressed { YELLOW } else { WHITE })
+                                        .ui(ui);
+                                    set_context_bool(
+                                        world,
+                                        FF_RIGHT_KEY,
+                                        resp.contains_pointer() && left_mouse_pressed(world),
+                                    );
+                                },
+                            );
+                            Middle3::default().width(400.0).ui(
+                                ui,
+                                world,
+                                |ui, world| {
+                                    Slider::new("Playback Speed")
+                                        .log()
+                                        .name(false)
+                                        .range(-20.0..=20.0)
+                                        .ui(&mut GameTimer::get().playback_speed, ui);
+                                },
+                                |ui, _| {
+                                    if ImageButton::new(Icon::SkipBack.image()).ui(ui).clicked() {
+                                        GameTimer::get().play_head_to(0.0);
+                                    }
+                                },
+                                |ui, _| {
+                                    if ImageButton::new(Icon::SkipForward.image()).ui(ui).clicked()
+                                    {
+                                        GameTimer::get().skip_to_end();
+                                    }
+                                },
+                            );
                         })
                         .ui(ui, world);
                 }

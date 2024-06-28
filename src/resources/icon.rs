@@ -11,6 +11,8 @@ pub enum Icon {
     Github,
     FFBack,
     FFForward,
+    SkipBack,
+    SkipForward,
     Play,
     Pause,
 }
@@ -47,6 +49,12 @@ impl Icon {
             }
             Icon::FFForward => Image::new(include_image!("../../assets/svg/ff_forward.svg"))
                 .fit_to_original_size(1.0),
+            Icon::SkipBack => {
+                Image::new(include_image!("../../assets/svg/skip_b.svg")).fit_to_original_size(1.0)
+            }
+            Icon::SkipForward => {
+                Image::new(include_image!("../../assets/svg/skip_f.svg")).fit_to_original_size(1.0)
+            }
             Icon::Play => {
                 Image::new(include_image!("../../assets/svg/play.svg")).fit_to_original_size(1.0)
             }

@@ -6,17 +6,11 @@ impl Plugin for BattlePlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(GameState::Battle), Self::on_enter)
             .add_systems(OnEnter(GameState::CustomBattle), Self::on_enter_custom)
-            .add_systems(Update, Self::update)
             .init_resource::<BattleData>();
     }
 }
 
 impl BattlePlugin {
-    fn update(world: &mut World) {
-        if just_pressed(KeyCode::KeyR, world) {
-            GameTimer::get().reset();
-        }
-    }
     fn on_enter(world: &mut World) {
         info!("Start battle");
         GameTimer::get().reset();
