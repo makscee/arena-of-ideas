@@ -7,7 +7,7 @@ pub enum GameState {
     #[default]
     Loading,
     Loaded,
-    MainMenu,
+    Title,
     Connect,
     CustomBattle,
     Battle,
@@ -21,10 +21,7 @@ static TARGET_STATE: Mutex<GameState> = Mutex::new(GameState::Loaded);
 lazy_static! {
     static ref STATE_PATHS: HashMap<GameState, Vec<GameState>> = {
         let mut m = HashMap::new();
-        m.insert(
-            GameState::MainMenu,
-            vec![GameState::Loaded, GameState::MainMenu],
-        );
+        m.insert(GameState::Title, vec![GameState::Loaded, GameState::Title]);
         m.insert(
             GameState::CustomBattle,
             vec![
@@ -46,11 +43,17 @@ lazy_static! {
 }
 
 impl GameState {
-    pub fn set_target(state: GameState) {
-        *TARGET_STATE.lock().unwrap() = state;
+    pub fn set_target(self) {
+        *TARGET_STATE.lock().unwrap() = self;
     }
-    fn get_target() -> GameState {
+    pub fn get_target() -> GameState {
         *TARGET_STATE.lock().unwrap()
+    }
+    pub fn change(self, world: &mut World) {
+        self.set_target();
+        world
+            .resource_mut::<NextState<GameState>>()
+            .set(GameState::Loaded);
     }
 }
 

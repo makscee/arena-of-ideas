@@ -5,6 +5,7 @@ pub struct BattlePlugin;
 impl Plugin for BattlePlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(GameState::Battle), Self::on_enter)
+            .add_systems(OnExit(GameState::Battle), Self::on_exit)
             .add_systems(OnEnter(GameState::CustomBattle), Self::on_enter_custom)
             .init_resource::<BattleData>();
     }
@@ -18,6 +19,10 @@ impl BattlePlugin {
         let mut bd = world.resource_mut::<BattleData>();
         bd.result = result;
         info!("Battle finished with result: {result:?}");
+    }
+    fn on_exit(world: &mut World) {
+        GameTimer::get().reset();
+        world.game_clear();
     }
     fn on_enter_custom(world: &mut World) {
         world.insert_resource(GameAssets::get(world).custom_battle.clone());

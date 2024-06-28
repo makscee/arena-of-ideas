@@ -1,4 +1,4 @@
-use egui::ImageButton;
+use egui::{Area, ImageButton, Window};
 
 use super::*;
 
@@ -31,12 +31,11 @@ impl TilingPlugin {
         if just_pressed(KeyCode::Escape, world) {
             ctx.flip_name_enabled("Main Menu");
         }
-        TopBottomPanel::top("top")
-            .frame(Frame::none().inner_margin(Margin::same(4.0)))
-            .resizable(false)
-            .show_separator_line(false)
+        Area::new(Id::new("top_right_info"))
+            .anchor(Align2::RIGHT_TOP, [0.0, 0.0])
             .show(ctx, |ui| {
                 ui.with_layout(Layout::right_to_left(egui::Align::Min), |ui| {
+                    ui.add_space(13.0);
                     if let Some(fps) = world
                         .resource::<DiagnosticsStore>()
                         .get(&FrameTimeDiagnosticsPlugin::FPS)
@@ -51,6 +50,7 @@ impl TilingPlugin {
         CentralPanel::default()
             .frame(Frame::none())
             .show(ctx, |ui| {
+                StateMenu::default().ui(ui, world);
                 Tile::right("Main Menu")
                     .title()
                     .close_btn()
@@ -85,6 +85,7 @@ impl TilingPlugin {
                     })
                     .ui(ui, world);
                 if matches!(cur_state(world), GameState::Battle) {
+                    TopMenu::new(vec!["Playback", "Test", "Test2"]).ui(ui);
                     Tile::bottom("Playback")
                         .transparent()
                         .content(|ui, world| {

@@ -292,3 +292,13 @@ impl ToColor for Color32 {
         Color::rgba_u8(a[0], a[1], a[2], a[3])
     }
 }
+
+pub trait WorldExt {
+    fn game_clear(&mut self);
+}
+
+impl WorldExt for World {
+    fn game_clear(&mut self) {
+        Representation::despawn_all(self);
+    }
+}

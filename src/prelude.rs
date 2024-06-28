@@ -8,6 +8,7 @@ pub use anyhow::Context as _;
 pub use anyhow::{anyhow, Result};
 
 pub use crate::stdb::*;
+pub use bevy::ecs::schedule::OnExit;
 pub use bevy::time::Time;
 pub use bevy::{
     app::{prelude::PluginGroup, App, Plugin},
