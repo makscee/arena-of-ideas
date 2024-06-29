@@ -4,10 +4,7 @@ pub struct RepresentationPlugin;
 
 impl Plugin for RepresentationPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
-            Update,
-            Self::injector_system.run_if(in_state(GameState::Battle)),
-        );
+        app.add_systems(Update, Self::injector_system);
     }
 }
 

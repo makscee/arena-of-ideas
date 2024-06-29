@@ -19,7 +19,11 @@ impl TopMenu {
     }
     pub fn ui(self, ui: &mut Ui) {
         TopBottomPanel::top("Top Menu")
-            .frame(Frame::none().inner_margin(Margin::same(13.0)))
+            .frame(Frame::none().inner_margin(Margin {
+                left: 13.0,
+                top: 3.0,
+                ..default()
+            }))
             .resizable(false)
             .show_separator_line(false)
             .show_inside(ui, |ui| {
@@ -31,7 +35,7 @@ impl TopMenu {
                         ui.visuals_mut().widgets.inactive.fg_stroke.color =
                             if enabled { LIGHT_GRAY } else { GRAY };
                         let resp = egui::Button::new(name)
-                            .min_size(egui::vec2(75.0, 0.0))
+                            .min_size(egui::vec2(100.0, 0.0))
                             .ui(ui);
                         if resp.clicked() {
                             ui.ctx().flip_path_enabled(path);

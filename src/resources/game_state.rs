@@ -11,6 +11,7 @@ pub enum GameState {
     Connect,
     CustomBattle,
     Battle,
+    Shop,
     TestScenariosLoad,
     TestScenariosRun,
     ServerSync,
@@ -30,6 +31,7 @@ lazy_static! {
                 GameState::Battle,
             ],
         );
+        m.insert(GameState::Shop, vec![GameState::Loaded, GameState::Shop]);
         m.insert(
             GameState::TestScenariosRun,
             vec![GameState::Loaded, GameState::TestScenariosLoad],

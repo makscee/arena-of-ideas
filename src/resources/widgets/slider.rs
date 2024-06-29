@@ -1,7 +1,5 @@
 use std::ops::RangeInclusive;
 
-use egui::DragValue;
-
 use super::*;
 
 pub struct Slider {

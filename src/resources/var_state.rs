@@ -175,6 +175,14 @@ impl VarState {
         delta
     }
 
+    pub fn get_vec2(&self, var: VarName) -> Result<Vec2> {
+        self.get_value_last(var)?.get_vec2()
+    }
+    pub fn set_vec2(&mut self, var: VarName, value: Vec2) -> &mut Self {
+        self.push_change(var, default(), VarChange::new(VarValue::Vec2(value)));
+        self
+    }
+
     pub fn get_bool_at(&self, var: VarName, t: f32) -> Result<bool> {
         self.get_value_at(var, t)?.get_bool()
     }

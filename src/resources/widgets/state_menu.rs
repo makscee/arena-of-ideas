@@ -9,6 +9,7 @@ impl Default for StateMenu {
         Self {
             buttons: vec![
                 ("TITLE", GameState::Title),
+                ("SHOP", GameState::Shop),
                 ("GAME", GameState::CustomBattle),
                 ("TEST", GameState::TestScenariosRun),
             ],
@@ -19,7 +20,10 @@ impl Default for StateMenu {
 impl StateMenu {
     pub fn ui(self, ui: &mut Ui, world: &mut World) {
         TopBottomPanel::top("State Menu")
-            .frame(Frame::none().inner_margin(Margin::same(13.0)))
+            .frame(Frame::none().outer_margin(Margin {
+                left: 13.0,
+                ..default()
+            }))
             .resizable(false)
             .show_separator_line(false)
             .show_inside(ui, |ui| {

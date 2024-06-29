@@ -35,19 +35,16 @@ const SCALE_CHANGE_SPEED: f32 = 3.0;
 pub const SLOT_SPACING: f32 = 3.0;
 
 impl CameraPlugin {
+    pub fn entity(world: &World) -> Entity {
+        world.resource::<CameraData>().entity
+    }
     pub fn cursor_world_pos(world: &mut World) -> Option<Vec2> {
         if let Some(cursor_pos) = cursor_pos(world) {
-            let cam = world.resource::<CameraData>().entity;
-            Some(screen_to_world(
-                cursor_pos,
-                world.get::<Camera>(cam).unwrap(),
-                world.get::<GlobalTransform>(cam).unwrap(),
-            ))
+            Some(screen_to_world(cursor_pos, world))
         } else {
             None
         }
     }
-
     fn respawn_camera(mut commands: Commands, data: Option<ResMut<CameraData>>) {
         let mut camera = Camera2dBundle::default();
         camera.projection.scaling_mode = ScalingMode::FixedVertical(15.0);
@@ -63,7 +60,6 @@ impl CameraPlugin {
         };
         commands.insert_resource(data);
     }
-
     fn adjust_to_fit_units(
         visible: Query<(&Transform, &InheritedVisibility)>,
         mut projection: Query<(&mut OrthographicProjection, &Camera)>,

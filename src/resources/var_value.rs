@@ -289,6 +289,11 @@ impl From<Vec2> for VarValue {
         VarValue::Vec2(value)
     }
 }
+impl From<Pos2> for VarValue {
+    fn from(value: Pos2) -> Self {
+        VarValue::Vec2(vec2(value.x, value.y))
+    }
+}
 impl From<Entity> for VarValue {
     fn from(value: Entity) -> Self {
         VarValue::Entity(value)
