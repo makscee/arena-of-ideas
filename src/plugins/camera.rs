@@ -38,6 +38,9 @@ impl CameraPlugin {
     pub fn entity(world: &World) -> Entity {
         world.resource::<CameraData>().entity
     }
+    pub fn get_entity(world: &World) -> Option<Entity> {
+        world.get_resource::<CameraData>().map(|cd| cd.entity)
+    }
     pub fn cursor_world_pos(world: &mut World) -> Option<Vec2> {
         if let Some(cursor_pos) = cursor_pos(world) {
             Some(screen_to_world(cursor_pos, world))

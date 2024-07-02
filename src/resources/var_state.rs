@@ -182,6 +182,11 @@ impl VarState {
         self.push_change(var, default(), VarChange::new(VarValue::Vec2(value)));
         self
     }
+    pub fn change_vec2(&mut self, var: VarName, delta: Vec2) -> Vec2 {
+        let value = self.get_vec2(var).unwrap_or_default() + delta;
+        self.set_vec2(var, value);
+        delta
+    }
 
     pub fn get_bool_at(&self, var: VarName, t: f32) -> Result<bool> {
         self.get_value_at(var, t)?.get_bool()

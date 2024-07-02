@@ -43,20 +43,18 @@ impl ShopPlugin {
             .unpack(TeamPlugin::entity(Faction::Shop, world), None, world);
         unit.clone()
             .unpack(TeamPlugin::entity(Faction::Shop, world), None, world);
-        unit.clone()
-            .unpack(TeamPlugin::entity(Faction::Shop, world), None, world);
         UnitPlugin::fill_slot_gaps(Faction::Shop, world);
     }
-    fn exit(world: &mut World) {}
+    fn exit(world: &mut World) {
+        world.game_clear();
+    }
     pub fn show_container(ui: &mut Ui, world: &mut World) {
         TopMenu::new(vec!["Container Config"]).ui(ui);
-        let data = world.resource::<ShopData>();
-        TeamContainer::new(
-            ui.ctx().screen_rect().center() + egui::vec2(0.0, -data.case_height),
-            Faction::Shop,
-            egui::vec2(data.unit_offset, 0.0),
-        )
-        .ui(ui, world);
+        let mut data = world.remove_resource::<WidgetData>().unwrap();
+
+        UnitContainer::new(Faction::Shop)
+            .slots(6)
+            .ui(&mut data, ui);
         Tile::left("Container Config")
             .content(move |ui, world| {
                 let mut data = world.resource_mut::<ShopData>();
@@ -65,5 +63,6 @@ impl ShopPlugin {
                     .ui(&mut data.unit_offset, ui);
             })
             .ui(ui, world);
+        world.insert_resource(data);
     }
 }

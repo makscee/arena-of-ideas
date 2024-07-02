@@ -92,6 +92,7 @@ fn main() {
             CameraPlugin,
             TextColumnPlugin,
             ShopPlugin,
+            UnitPlugin,
         ))
         .run();
 }

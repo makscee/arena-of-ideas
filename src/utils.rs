@@ -100,6 +100,9 @@ pub fn screen_to_world(pos: Vec2, world: &World) -> Vec2 {
     let entity = CameraPlugin::entity(world);
     let camera = world.get::<Camera>(entity).unwrap();
     let transform = world.get::<GlobalTransform>(entity).unwrap();
+    screen_to_world_cam(pos, camera, transform)
+}
+pub fn screen_to_world_cam(pos: Vec2, camera: &Camera, transform: &GlobalTransform) -> Vec2 {
     camera.viewport_to_world_2d(transform, pos).unwrap()
 }
 // pub fn entity_window(

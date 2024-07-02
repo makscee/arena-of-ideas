@@ -1,9 +1,13 @@
+use bevy::app::PreUpdate;
+
 use super::*;
 
 pub struct UnitPlugin;
 
 impl Plugin for UnitPlugin {
-    fn build(&self, app: &mut App) {}
+    fn build(&self, app: &mut App) {
+        app.add_systems(PreUpdate, Self::place_into_slots);
+    }
 }
 
 #[derive(Component)]
@@ -133,6 +137,29 @@ impl UnitPlugin {
             );
         }
         GameTimer::get().advance_insert(shift);
+    }
+    fn place_into_slots(world: &mut World) {
+        let Some(cam_entity) = CameraPlugin::get_entity(world) else {
+            return;
+        };
+        let delta = delta_time(world);
+        let units = Self::collect_factions([Faction::Shop].into(), world);
+        let data = world.remove_resource::<WidgetData>().unwrap();
+        let camera = world.get::<Camera>(cam_entity).unwrap().clone();
+        let transform = world.get::<GlobalTransform>(cam_entity).unwrap().clone();
+        for (entity, faction) in units {
+            let mut state = VarState::get_mut(entity, world);
+            let slot = state.get_int(VarName::Slot).unwrap();
+            let position = state.get_vec2(VarName::Position).unwrap();
+            let need_pos = data
+                .unit_container
+                .get(&faction)
+                .and_then(|d| d.positions.get(slot as usize - 1))
+                .map(|p| screen_to_world_cam(p.to_bvec2(), &camera, &transform))
+                .unwrap_or_default();
+            state.change_vec2(VarName::Position, (need_pos - position) * delta * 5.0);
+        }
+        world.insert_resource(data);
     }
 }
 

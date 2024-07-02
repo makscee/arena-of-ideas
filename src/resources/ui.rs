@@ -23,12 +23,20 @@ pub const YELLOW: Color32 = hex_color_noa!("#D98F00");
 pub const RED: Color32 = hex_color_noa!("#E53935");
 pub const GREEN: Color32 = hex_color_noa!("#64DD17");
 
+pub const TRANSPARENT: Color32 = Color32::TRANSPARENT;
+
 pub struct UiPlugin;
 
 impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, Self::setup);
+        app.add_systems(Startup, Self::setup)
+            .init_resource::<WidgetData>();
     }
+}
+
+#[derive(Resource, Default)]
+pub struct WidgetData {
+    pub unit_container: HashMap<Faction, UnitContainerData>,
 }
 
 impl UiPlugin {
