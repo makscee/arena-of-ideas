@@ -18,7 +18,7 @@ impl Default for StateMenu {
 }
 
 impl StateMenu {
-    pub fn ui(self, ui: &mut Ui, world: &mut World) {
+    pub fn show(self, ctx: &egui::Context, world: &mut World) {
         TopBottomPanel::top("State Menu")
             .frame(Frame::none().outer_margin(Margin {
                 left: 13.0,
@@ -26,7 +26,7 @@ impl StateMenu {
             }))
             .resizable(false)
             .show_separator_line(false)
-            .show_inside(ui, |ui| {
+            .show(ctx, |ui| {
                 ui.horizontal(|ui| {
                     let target = GameState::get_target();
                     ui.visuals_mut().widgets.hovered.fg_stroke.color = WHITE;

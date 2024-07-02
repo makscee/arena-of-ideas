@@ -4,6 +4,7 @@ use super::*;
 pub struct Button {
     name: &'static str,
     variant: ButtonVariant,
+    title: Option<&'static str>,
 }
 
 #[derive(Default)]
@@ -22,17 +23,26 @@ impl Button {
         Self {
             name,
             variant: ButtonVariant::ToggleChild,
+            ..default()
         }
     }
     pub fn gray(name: &'static str) -> Self {
         Self {
             name,
             variant: ButtonVariant::ClickGray,
+            ..default()
         }
+    }
+    pub fn title(mut self, text: &'static str) -> Self {
+        self.title = Some(text);
+        self
     }
     pub fn ui(self, ui: &mut Ui) -> Response {
         ui.ctx().add_path(self.name);
         let path = ui.ctx().path();
+        if let Some(title) = self.title {
+            title.cstr().label(ui);
+        }
 
         match self.variant {
             ButtonVariant::Click => {}

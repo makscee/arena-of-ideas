@@ -8,8 +8,8 @@ mod shop;
 mod team;
 mod test_scenarios;
 mod text_column;
-mod tiling;
 mod unit;
+mod widgets;
 
 use super::*;
 pub use action::*;
@@ -22,5 +22,5 @@ pub use shop::*;
 pub use team::*;
 pub use test_scenarios::*;
 pub use text_column::*;
-pub use tiling::*;
 pub use unit::*;
+pub use widgets::*;

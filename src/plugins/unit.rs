@@ -143,7 +143,7 @@ impl UnitPlugin {
             return;
         };
         let delta = delta_time(world);
-        let units = Self::collect_factions([Faction::Shop].into(), world);
+        let units = Self::collect_factions([Faction::Shop, Faction::Team].into(), world);
         let data = world.remove_resource::<WidgetData>().unwrap();
         let camera = world.get::<Camera>(cam_entity).unwrap().clone();
         let transform = world.get::<GlobalTransform>(cam_entity).unwrap().clone();
@@ -154,7 +154,7 @@ impl UnitPlugin {
             let need_pos = data
                 .unit_container
                 .get(&faction)
-                .and_then(|d| d.positions.get(slot as usize - 1))
+                .and_then(|d| d.positions.get(slot as usize))
                 .map(|p| screen_to_world_cam(p.to_bvec2(), &camera, &transform))
                 .unwrap_or_default();
             state.change_vec2(VarName::Position, (need_pos - position) * delta * 5.0);

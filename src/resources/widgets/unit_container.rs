@@ -6,11 +6,22 @@ pub struct UnitContainer {
     faction: Faction,
     slots: usize,
     left_to_right: bool,
+    offset: egui::Vec2,
+    side_content: Option<Box<dyn FnOnce(&mut Ui, &mut World) + Send + Sync>>,
+    slot_content: Option<Box<dyn Fn(usize, &mut Ui, &mut World) + Send + Sync>>,
+    direction: Side,
 }
 
-#[derive(Default)]
 pub struct UnitContainerData {
     pub positions: Vec<Pos2>,
+}
+
+impl Default for UnitContainerData {
+    fn default() -> Self {
+        Self {
+            positions: vec![pos2(0.0, 0.0)],
+        }
+    }
 }
 
 impl UnitContainer {
@@ -18,7 +29,11 @@ impl UnitContainer {
         Self {
             faction,
             slots: 5,
+            offset: default(),
             left_to_right: false,
+            side_content: default(),
+            slot_content: default(),
+            direction: Side::Top,
         }
     }
     pub fn slots(mut self, value: usize) -> Self {
@@ -29,14 +44,49 @@ impl UnitContainer {
         self.left_to_right = true;
         self
     }
-    pub fn ui(self, data: &mut WidgetData, ui: &mut Ui) {
+    pub fn offset(mut self, value: [f32; 2]) -> Self {
+        self.offset = value.into();
+        self
+    }
+    pub fn direction(mut self, side: Side) -> Self {
+        self.direction = side;
+        self
+    }
+    pub fn side_content(
+        mut self,
+        content: impl FnOnce(&mut Ui, &mut World) + Send + Sync + 'static,
+    ) -> Self {
+        self.side_content = Some(Box::new(content));
+        self
+    }
+    pub fn slot_content(
+        mut self,
+        content: impl Fn(usize, &mut Ui, &mut World) + Send + Sync + 'static,
+    ) -> Self {
+        self.slot_content = Some(Box::new(content));
+        self
+    }
+    pub fn ui(self, data: &mut WidgetData, ui: &mut Ui, world: &mut World) {
         let data = data.unit_container.entry(self.faction).or_insert(default());
-        data.positions.resize(self.slots, default());
-        Window::new("Unit Container")
-            .anchor(Align2::CENTER_CENTER, [0.0, -150.0])
+        data.positions.resize(self.slots + 1, default());
+        let name = format!("{}", self.faction);
+        let center = ui.max_rect().center();
+        let (anchor, offset) = match self.direction {
+            Side::Right => (Align2::LEFT_CENTER, egui::vec2(center.x, 0.0)),
+            Side::Left => (Align2::RIGHT_CENTER, egui::vec2(-center.x, 0.0)),
+            Side::Top => (Align2::CENTER_BOTTOM, egui::vec2(0.0, -center.y)),
+            Side::Bottom => (Align2::CENTER_TOP, egui::vec2(0.0, center.y)),
+        };
+        let margin = Margin::same(8.0);
+        let max_size = ui.available_rect_before_wrap().width() / self.slots as f32
+            - margin.left
+            - margin.right;
+        let resp = Window::new(&name)
+            .anchor(anchor, self.offset + offset)
+            .constrain_to(ui.available_rect_before_wrap())
             .resizable([true, false])
             .frame(Frame {
-                inner_margin: Margin::same(8.0),
+                inner_margin: margin,
                 outer_margin: default(),
                 rounding: Rounding::same(13.0),
                 shadow: default(),
@@ -49,29 +99,34 @@ impl UnitContainer {
             .title_bar(false)
             .show(ui.ctx(), |ui| {
                 ui.columns(self.slots, |ui| {
-                    for i in 0..self.slots {
+                    for i in 1..=self.slots {
                         let col = if self.left_to_right {
                             i
                         } else {
-                            self.slots - i - 1
+                            self.slots - i
                         };
                         ui[col].vertical_centered(|ui| {
-                            show_frame(i, data, ui);
-                            Button::click("Test").ui(ui);
-                            if i == 1 {
-                                Button::click("Test 1").ui(ui);
-                                Button::click("Test 2").ui(ui);
-                            }
+                            show_frame(i, max_size, data, ui);
                         });
+                        if let Some(content) = &self.slot_content {
+                            content(i, &mut ui[col], world);
+                        }
                     }
                 });
             });
+        let rect = resp.unwrap().response.rect;
+        {
+            let pos = rect.left_top();
+            let rect = Rect::from_two_pos(pos, pos + egui::vec2(30.0, -10.0));
+            let ui = &mut ui.child_ui(rect, Layout::bottom_up(Align::Min));
+            name.cstr().label(ui);
+        }
     }
 }
 
-fn show_frame(ind: usize, data: &mut UnitContainerData, ui: &mut Ui) {
-    const SIZE: f32 = 130.0;
-    let (rect, response) = ui.allocate_exact_size(egui::vec2(SIZE, SIZE), Sense::hover());
+fn show_frame(ind: usize, max_size: f32, data: &mut UnitContainerData, ui: &mut Ui) {
+    let size = max_size.min(130.0);
+    let (rect, response) = ui.allocate_exact_size(egui::vec2(size, size), Sense::hover());
     data.positions[ind] = rect.center();
     let color = if response.hovered() {
         YELLOW
@@ -87,7 +142,7 @@ fn show_frame(ind: usize, data: &mut UnitContainerData, ui: &mut Ui) {
     );
     {
         let ui = &mut ui.child_ui(ind_rect, Layout::top_down(Align::Max));
-        (ind + 1).to_string().cstr_c(color).label(ui);
+        ind.to_string().cstr_cs(color, CstrStyle::Bold).label(ui);
     }
     ui.painter().add(egui::Shape::dashed_line(
         &[rect.left_top(), rect.right_top()],

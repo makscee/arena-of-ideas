@@ -8,7 +8,7 @@ pub struct Tile {
     title: bool,
     transparent: bool,
     content: Option<Box<dyn FnOnce(&mut Ui, &mut World) + Send + Sync>>,
-    child: Option<Box<dyn FnOnce(&mut Ui, &mut World) + Send + Sync>>,
+    child: Option<Box<dyn FnOnce(&egui::Context, &mut World) + Send + Sync>>,
 }
 
 impl Tile {
@@ -61,18 +61,18 @@ impl Tile {
     }
     pub fn child(
         mut self,
-        child: impl FnOnce(&mut Ui, &mut World) + Send + Sync + 'static,
+        child: impl FnOnce(&egui::Context, &mut World) + Send + Sync + 'static,
     ) -> Self {
         self.child = Some(Box::new(child));
         self
     }
-    pub fn ui(self, ui: &mut Ui, world: &mut World) {
-        ui.ctx().add_path(&self.name);
+    pub fn show(self, ctx: &egui::Context, world: &mut World) {
+        ctx.add_path(&self.name);
         let content = self.content.unwrap_or(Box::new(|_, _| {}));
         if let Some(child) = self.child {
-            child(ui, world);
+            child(ctx, world);
         }
-        let path = ui.ctx().path();
+        let path = ctx.path();
         let content = |ui: &mut Ui| {
             if self.title {
                 self.name.cstr().label(ui);
@@ -93,38 +93,29 @@ impl Tile {
                 SidePanel::right(Id::new(&path))
                     .frame(frame)
                     .show_separator_line(false)
-                    .show_animated_inside(ui, ui.ctx().is_path_enabled(&path), content);
+                    .show_animated(ctx, ctx.is_path_enabled(&path), content);
             }
             Side::Left => {
                 SidePanel::left(Id::new(&path))
                     .frame(frame)
                     .show_separator_line(false)
-                    .show_animated_inside(ui, ui.ctx().is_path_enabled(&path), content);
+                    .show_animated(ctx, ctx.is_path_enabled(&path), content);
             }
             Side::Top => {
                 TopBottomPanel::top(Id::new(&path))
                     .frame(frame)
                     .show_separator_line(false)
-                    .show_animated_inside(ui, ui.ctx().is_path_enabled(&path), content);
+                    .show_animated(ctx, ctx.is_path_enabled(&path), content);
             }
             Side::Bottom => {
                 TopBottomPanel::bottom(Id::new(&path))
                     .frame(frame)
                     .show_separator_line(false)
-                    .show_animated_inside(ui, ui.ctx().is_path_enabled(&path), content);
+                    .show_animated(ctx, ctx.is_path_enabled(&path), content);
             }
         }
-        ui.ctx().remove_path();
+        ctx.remove_path();
     }
-}
-
-#[derive(Default, Debug)]
-enum Side {
-    #[default]
-    Right,
-    Left,
-    Top,
-    Bottom,
 }
 
 const FRAME: Frame = Frame {

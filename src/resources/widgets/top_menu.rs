@@ -17,7 +17,7 @@ impl TopMenu {
                 .collect_vec(),
         }
     }
-    pub fn ui(self, ui: &mut Ui) {
+    pub fn show(self, ctx: &egui::Context) {
         TopBottomPanel::top("Top Menu")
             .frame(Frame::none().inner_margin(Margin {
                 left: 13.0,
@@ -26,7 +26,7 @@ impl TopMenu {
             }))
             .resizable(false)
             .show_separator_line(false)
-            .show_inside(ui, |ui| {
+            .show(ctx, |ui| {
                 ui.horizontal(|ui| {
                     ui.visuals_mut().widgets.hovered.bg_fill = LIGHT_GRAY;
                     for TopMenuButton { name } in self.buttons {

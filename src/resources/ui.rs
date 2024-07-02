@@ -211,3 +211,12 @@ impl CtxExt for egui::Context {
         }
     }
 }
+
+#[derive(Default, Debug)]
+pub enum Side {
+    #[default]
+    Right,
+    Left,
+    Top,
+    Bottom,
+}

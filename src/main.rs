@@ -87,7 +87,7 @@ fn main() {
             GameStatePlugin,
             TestScenariosPlugin,
             ServerSyncPlugin,
-            TilingPlugin,
+            WidgetsPlugin,
             RepresentationPlugin,
             CameraPlugin,
             TextColumnPlugin,
