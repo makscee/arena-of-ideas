@@ -9,6 +9,7 @@ pub enum GameState {
     Loaded,
     Title,
     Connect,
+    Login,
     CustomBattle,
     Battle,
     Shop,
@@ -18,11 +19,20 @@ pub enum GameState {
 }
 
 static TARGET_STATE: Mutex<GameState> = Mutex::new(GameState::Loaded);
+static STATE_READY: Mutex<bool> = Mutex::new(true);
 
 lazy_static! {
     static ref STATE_PATHS: HashMap<GameState, Vec<GameState>> = {
         let mut m = HashMap::new();
-        m.insert(GameState::Title, vec![GameState::Loaded, GameState::Title]);
+        m.insert(
+            GameState::Title,
+            vec![
+                GameState::Loaded,
+                GameState::Connect,
+                GameState::Login,
+                GameState::Title,
+            ],
+        );
         m.insert(
             GameState::CustomBattle,
             vec![
@@ -51,11 +61,21 @@ impl GameState {
     pub fn get_target() -> GameState {
         *TARGET_STATE.lock().unwrap()
     }
-    pub fn change(self, world: &mut World) {
+    pub fn run_to_target(self, world: &mut World) {
         self.set_target();
         world
             .resource_mut::<NextState<GameState>>()
             .set(GameState::Loaded);
+    }
+    pub fn change(self, world: &mut World) {
+        info!("State change to {self}");
+        world.resource_mut::<NextState<GameState>>().set(self);
+    }
+    pub fn set_ready(value: bool) {
+        *STATE_READY.lock().unwrap() = value;
+    }
+    pub fn is_ready() -> bool {
+        *STATE_READY.lock().unwrap()
     }
 }
 
@@ -69,19 +89,34 @@ impl Plugin for GameStatePlugin {
 }
 
 impl GameStatePlugin {
-    pub fn on_changed(state: Res<State<GameState>>, mut next_state: ResMut<NextState<GameState>>) {
+    fn on_changed(state: Res<State<GameState>>, mut next_state: ResMut<NextState<GameState>>) {
         let state = state.get();
         info!("Enter state: {state}");
+        Self::proceed(*state, next_state.as_mut());
+    }
+    fn proceed(state: GameState, next_state: &mut NextState<GameState>) {
+        if !GameState::is_ready() {
+            info!("Game state not ready");
+            return;
+        }
         if let Some(path) = STATE_PATHS.get(&GameState::get_target()) {
             if state.eq(path.last().unwrap()) {
                 return;
             }
             for i in 0..path.len() {
                 if state.eq(&path[i]) {
+                    info!("Path proceed from {state} to {}", path[i + 1]);
                     next_state.set(path[i + 1]);
                 }
             }
         }
+    }
+    pub fn path_proceed(world: &mut World) {
+        GameState::set_ready(true);
+        Self::proceed(
+            cur_state(world),
+            world.resource_mut::<NextState<GameState>>().as_mut(),
+        );
     }
     fn update(time: Res<Time>) {
         let mut timer = GameTimer::get();

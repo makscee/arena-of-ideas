@@ -8,23 +8,18 @@ pub use anyhow::Context as _;
 pub use anyhow::{anyhow, Result};
 
 pub use crate::stdb::*;
-pub use bevy::ecs::schedule::OnExit;
-pub use bevy::time::Time;
 pub use bevy::{
-    app::{prelude::PluginGroup, App, Plugin},
-    core::Name,
-};
-pub use bevy::{
-    app::{Startup, Update},
+    app::{prelude::PluginGroup, App, Plugin, Startup, Update},
     asset::{Asset, Assets, Handle},
+    core::Name,
     diagnostic::DiagnosticsStore,
     ecs::{
         component::Component,
         entity::Entity,
-        query::With,
+        query::{Or, With},
         schedule::{
             common_conditions::{in_state, state_changed},
-            IntoSystemConfigs, NextState, OnEnter, State, States,
+            IntoSystemConfigs, NextState, OnEnter, OnExit, State, States,
         },
         system::{Query, Res, ResMut, Resource},
         world::{Mut, World},
@@ -47,16 +42,16 @@ pub use bevy::{
     },
     sprite::{Material2d, MaterialMesh2dBundle, Mesh2dHandle},
     text::{Text, Text2dBundle},
+    time::Time,
     transform::{
         components::{GlobalTransform, Transform},
         TransformBundle,
     },
-    utils::hashbrown::HashMap,
+    utils::hashbrown::{HashMap, HashSet},
     DefaultPlugins,
 };
-pub use bevy::{ecs::query::Or, utils::hashbrown::HashSet};
-pub use bevy_asset_loader::asset_collection::AssetCollection;
 pub use bevy_asset_loader::{
+    asset_collection::AssetCollection,
     loading_state::{config::ConfigureLoadingState, LoadingState, LoadingStateAppExt},
     standard_dynamic_asset::StandardDynamicAssetCollection,
 };
@@ -69,25 +64,25 @@ pub use chrono::DateTime;
 pub use colored::{Colorize, CustomColor};
 pub use convert_case::Casing;
 pub use ecolor::Color32;
-pub use egui::Align;
-pub use egui::{epaint, Label, Rect};
 pub use egui::{
-    epaint::Shadow,
+    epaint::{self, Shadow},
+    include_image,
     style::{HandleShape, Spacing, WidgetVisuals, Widgets},
-    CentralPanel, Frame, Layout, Margin, Response, RichText, Rounding, SidePanel, TopBottomPanel,
-    Widget, WidgetText,
+    text::LayoutJob,
+    Align, CentralPanel, FontData, FontDefinitions, FontFamily, FontId, Frame, Image, Label,
+    Layout, Margin, Rect, Response, RichText, Rounding, SidePanel, Style, TextFormat, TextStyle,
+    TopBottomPanel, Widget, WidgetText, Window,
 };
-pub use egui::{include_image, Image};
-pub use egui::{text::LayoutJob, FontId, Style, TextFormat, TextStyle};
-pub use egui::{FontData, FontDefinitions, FontFamily};
 pub use itertools::Itertools;
 pub use lazy_static::lazy_static;
 pub use log::*;
 pub use serde::{Deserialize, Serialize};
-pub use std::cmp::Ordering;
-pub use std::mem;
-pub use std::ops::Deref;
-pub use std::sync::{Mutex, MutexGuard};
-pub use std::time::UNIX_EPOCH;
+pub use std::{
+    cmp::Ordering,
+    mem,
+    ops::Deref,
+    sync::{Mutex, MutexGuard},
+    time::UNIX_EPOCH,
+};
 pub use strum::IntoEnumIterator;
 pub use strum_macros::{AsRefStr, Display, EnumIter, EnumString};

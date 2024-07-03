@@ -38,7 +38,7 @@ impl StateMenu {
                             .min_size(egui::vec2(100.0, 0.0))
                             .ui(ui);
                         if resp.clicked() {
-                            state.change(world);
+                            state.run_to_target(world);
                         }
                         ui.painter().line_segment(
                             [

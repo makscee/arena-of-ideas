@@ -112,6 +112,13 @@ impl UiPlugin {
             style.visuals.slider_trailing_fill = true;
             style.visuals.handle_shape = HandleShape::Rect { aspect_ratio: 0.1 };
             style.visuals.selection.bg_fill = WHITE;
+            style.visuals.resize_corner_size = 0.0;
+            style.visuals.window_stroke = Stroke {
+                width: 1.0,
+                color: DARK_GRAY,
+            };
+            style.spacing.window_margin = Margin::same(13.0);
+            style.visuals.window_fill = LIGHT_BLACK;
             style.visuals.widgets = Widgets {
                 noninteractive: WidgetVisuals {
                     weak_bg_fill: Color32::TRANSPARENT,

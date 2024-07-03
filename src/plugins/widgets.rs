@@ -64,7 +64,7 @@ impl WidgetsPlugin {
                 Tile::right("Settings")
                     .title()
                     .close_btn()
-                    .content(|ui, world| {
+                    .content(|ui, _| {
                         if ui.button("setting 1").clicked() {
                             debug!("Test click");
                         }
@@ -113,7 +113,7 @@ impl WidgetsPlugin {
                         Middle3::default().ui(
                             ui,
                             world,
-                            |ui, world| {
+                            |ui, _| {
                                 format!("{:.2}", GameTimer::get().play_head())
                                     .cstr_cs(WHITE, CstrStyle::Heading)
                                     .label(ui);
@@ -152,7 +152,7 @@ impl WidgetsPlugin {
                         Middle3::default().width(400.0).ui(
                             ui,
                             world,
-                            |ui, world| {
+                            |ui, _| {
                                 Slider::new("Playback Speed")
                                     .log()
                                     .name(false)
@@ -178,9 +178,8 @@ impl WidgetsPlugin {
         CentralPanel::default()
             .frame(Frame::none())
             .show(ctx, |ui| match state {
-                GameState::Shop => {
-                    ShopPlugin::show_containers(ui, world);
-                }
+                GameState::Shop => ShopPlugin::show_containers(ui, world),
+                GameState::Connect => LoginPlugin::connect_ui(ui, world),
                 _ => {}
             });
     }
