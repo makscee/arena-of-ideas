@@ -20,6 +20,9 @@ pub fn egui_context(world: &mut World) -> Option<egui::Context> {
 pub fn delta_time(world: &World) -> f32 {
     world.resource::<Time>().delta_seconds()
 }
+pub fn elapsed_time(world: &World) -> f32 {
+    world.resource::<Time>().elapsed_seconds()
+}
 pub fn get_context_bool(world: &mut World, key: &str) -> bool {
     let id = Id::new(key);
     get_context_bool_id(world, id)

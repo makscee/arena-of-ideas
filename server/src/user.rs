@@ -18,10 +18,11 @@ pub struct User {
 #[spacetimedb(reducer)]
 fn register_empty(ctx: ReducerContext) -> Result<(), String> {
     User::clear_identity(&ctx.sender);
+    let id = GlobalData::next_id();
     let user = User {
-        id: GlobalData::next_id(),
+        id,
         identities: vec![ctx.sender],
-        name: format!("player#{}", User::iter().count()),
+        name: format!("player#{}", id),
         pass_hash: None,
         online: false,
         last_login: Timestamp::UNIX_EPOCH,

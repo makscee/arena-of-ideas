@@ -94,6 +94,7 @@ fn main() {
             ShopPlugin,
             UnitPlugin,
         ))
+        .add_plugins(OperationsPlugin)
         .run();
 }
 

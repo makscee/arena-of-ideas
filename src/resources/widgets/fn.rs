@@ -12,3 +12,11 @@ pub fn br(ui: &mut Ui) {
         ui.painter().add(line);
     });
 }
+pub fn center_window(name: &str, ui: &mut Ui, add_contents: impl FnOnce(&mut Ui)) {
+    Window::new(name)
+        .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
+        .title_bar(false)
+        .default_width(300.0)
+        .resizable([true, false])
+        .show(ui.ctx(), add_contents);
+}

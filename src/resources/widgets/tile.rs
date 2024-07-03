@@ -7,6 +7,8 @@ pub struct Tile {
     close_btn: bool,
     title: bool,
     transparent: bool,
+    open: bool,
+    non_resizable: bool,
     content: Option<Box<dyn FnOnce(&mut Ui, &mut World) + Send + Sync>>,
     child: Option<Box<dyn FnOnce(&egui::Context, &mut World) + Send + Sync>>,
 }
@@ -52,6 +54,14 @@ impl Tile {
         self.close_btn = true;
         self
     }
+    pub fn open(mut self) -> Self {
+        self.open = true;
+        self
+    }
+    pub fn non_resizable(mut self) -> Self {
+        self.non_resizable = true;
+        self
+    }
     pub fn content(
         mut self,
         content: impl FnOnce(&mut Ui, &mut World) + Send + Sync + 'static,
@@ -88,30 +98,35 @@ impl Tile {
         if self.transparent {
             frame = frame.fill(Color32::TRANSPARENT);
         }
+        let open = self.open || ctx.is_path_enabled(&path);
         match self.side {
             Side::Right => {
                 SidePanel::right(Id::new(&path))
                     .frame(frame)
+                    .resizable(!self.non_resizable)
                     .show_separator_line(false)
-                    .show_animated(ctx, ctx.is_path_enabled(&path), content);
+                    .show_animated(ctx, open, content);
             }
             Side::Left => {
                 SidePanel::left(Id::new(&path))
                     .frame(frame)
+                    .resizable(!self.non_resizable)
                     .show_separator_line(false)
-                    .show_animated(ctx, ctx.is_path_enabled(&path), content);
+                    .show_animated(ctx, open, content);
             }
             Side::Top => {
                 TopBottomPanel::top(Id::new(&path))
                     .frame(frame)
+                    .resizable(!self.non_resizable)
                     .show_separator_line(false)
-                    .show_animated(ctx, ctx.is_path_enabled(&path), content);
+                    .show_animated(ctx, open, content);
             }
             Side::Bottom => {
                 TopBottomPanel::bottom(Id::new(&path))
                     .frame(frame)
+                    .resizable(!self.non_resizable)
                     .show_separator_line(false)
-                    .show_animated(ctx, ctx.is_path_enabled(&path), content);
+                    .show_animated(ctx, open, content);
             }
         }
         ctx.remove_path();

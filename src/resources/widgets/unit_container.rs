@@ -12,6 +12,7 @@ pub struct UnitContainer {
     direction: Side,
 }
 
+#[derive(Debug)]
 pub struct UnitContainerData {
     pub positions: Vec<Pos2>,
 }

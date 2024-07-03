@@ -49,8 +49,7 @@ impl ShopPlugin {
     fn exit(world: &mut World) {
         world.game_clear();
     }
-    pub fn show_containers(ui: &mut Ui, world: &mut World) {
-        let mut wd = world.remove_resource::<WidgetData>().unwrap();
+    pub fn show_containers(wd: &mut WidgetData, ui: &mut Ui, world: &mut World) {
         let sd = world.resource::<ShopData>().clone();
 
         UnitContainer::new(Faction::Shop)
@@ -62,12 +61,11 @@ impl ShopPlugin {
                     Button::click("-3 G").title("buy").ui(ui);
                 });
             })
-            .ui(&mut wd, ui, world);
+            .ui(wd, ui, world);
         UnitContainer::new(Faction::Team)
             .direction(Side::Bottom)
             .offset([0.0, sd.case_height])
             .slots(5)
-            .ui(&mut wd, ui, world);
-        world.insert_resource(wd);
+            .ui(wd, ui, world);
     }
 }

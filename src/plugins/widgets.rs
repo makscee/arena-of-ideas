@@ -79,6 +79,14 @@ impl WidgetsPlugin {
             .show(ctx, world);
         let state = cur_state(world);
         match state {
+            GameState::Title => Tile::right("Title Menu")
+                .content(|ui, world| {
+                    format!("Welcome, {}!", LoginPlugin::user(world).name)
+                        .cstr_cs(DARK_WHITE, CstrStyle::Heading2)
+                        .label(ui);
+                })
+                .open()
+                .show(ctx, world),
             GameState::Shop => {
                 TopMenu::new(vec!["Container Config"]).show(ctx);
                 Tile::left("Container Config")
@@ -175,12 +183,16 @@ impl WidgetsPlugin {
             }
             _ => {}
         }
+        let mut wd = world.remove_resource::<WidgetData>().unwrap();
         CentralPanel::default()
             .frame(Frame::none())
             .show(ctx, |ui| match state {
-                GameState::Shop => ShopPlugin::show_containers(ui, world),
+                GameState::Shop => ShopPlugin::show_containers(&mut wd, ui, world),
                 GameState::Connect => LoginPlugin::connect_ui(ui, world),
+                GameState::Login => LoginPlugin::login_ui(ui, world),
                 _ => {}
             });
+        Notification::show_all(&wd, ctx, world);
+        world.insert_resource(wd);
     }
 }

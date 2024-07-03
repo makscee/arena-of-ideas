@@ -1,7 +1,11 @@
 use std::thread::sleep;
 
-use bevy_tasks::{IoTaskPool, Task};
-use spacetimedb_sdk::identity::{load_credentials, Credentials};
+use bevy_tasks::IoTaskPool;
+use spacetimedb_sdk::{
+    identity::{load_credentials, once_on_connect, Credentials},
+    once_on_subscription_applied, subscribe,
+    table::TableType,
+};
 
 use super::*;
 
@@ -15,14 +19,23 @@ impl Plugin for LoginPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(GameState::Connect), Self::connect)
             .add_systems(OnEnter(GameState::Login), Self::login)
-            .init_resource::<ConnectionData>();
+            .init_resource::<ConnectionData>()
+            .init_resource::<LoginData>();
     }
 }
 
 #[derive(Resource, Default)]
 struct ConnectionData {
-    connect_task: Option<Task<()>>,
     state: ConnectionState,
+    creds: Option<Credentials>,
+    identity_user: Option<User>,
+    user: Option<User>,
+}
+
+#[derive(Resource, Default)]
+struct LoginData {
+    name: String,
+    pass: String,
 }
 
 #[derive(Default)]
@@ -34,12 +47,15 @@ enum ConnectionState {
 }
 
 impl LoginPlugin {
+    pub fn user(world: &World) -> &User {
+        world.resource::<ConnectionData>().user.as_ref().unwrap()
+    }
     fn load_credentials() -> Option<Credentials> {
         load_credentials(HOME_DIR).expect("Failed to load credentials")
     }
     fn connect(world: &mut World) {
         GameState::set_ready(false);
-        let mut cd = world.resource_mut::<ConnectionData>();
+        let cd = world.resource_mut::<ConnectionData>();
         if !matches!(cd.state, ConnectionState::Disconnected) {
             info!("Already connected");
             GameStatePlugin::path_proceed(world);
@@ -47,21 +63,34 @@ impl LoginPlugin {
         }
         let thread_pool = IoTaskPool::get();
         info!("Connect start");
-        let task = thread_pool.spawn(async {
-            info!("Connect task start");
-            let creds: Option<Credentials> = Self::load_credentials();
-            let mut tries = 5;
-            while let Err(e) = connect(URI, MODULE, creds.clone()) {
-                error!("Connection error: {e}");
-                sleep(Duration::from_secs(1));
-                tries -= 1;
-                if tries <= 0 {
-                    return;
-                }
-            }
-            info!("Connected");
+        once_on_connect(|creds, _| {
+            let creds = creds.clone();
+            subscribe(&["select * from User"]).expect("Failed to subscribe to tables");
+            once_on_subscription_applied(|| {
+                OperationsPlugin::add(|world| {
+                    let mut cd = world.resource_mut::<ConnectionData>();
+                    cd.creds = Some(creds);
+                    cd.state = ConnectionState::Connected;
+                    GameStatePlugin::path_proceed(world);
+                });
+            });
         });
-        cd.connect_task = Some(task);
+        thread_pool
+            .spawn(async {
+                info!("Connect task start");
+                let creds: Option<Credentials> = Self::load_credentials();
+                let mut tries = 5;
+                while let Err(e) = connect(URI, MODULE, creds.clone()) {
+                    error!("Connection error: {e}");
+                    sleep(Duration::from_secs(1));
+                    tries -= 1;
+                    if tries <= 0 {
+                        return;
+                    }
+                }
+                info!("Connected");
+            })
+            .detach();
     }
     fn login(world: &mut World) {
         GameState::set_ready(false);
@@ -74,27 +103,90 @@ impl LoginPlugin {
                 return;
             }
             ConnectionState::Connected => {
-                debug!("Do login..");
-                cd.state = ConnectionState::LoggedIn;
-                GameStatePlugin::path_proceed(world);
+                let identity = cd.creds.clone().unwrap().identity;
+                if let Some(user) = User::find(|u| u.identities.contains(&identity)) {
+                    cd.identity_user = Some(user);
+                }
             }
         }
     }
     pub fn connect_ui(ui: &mut Ui, world: &mut World) {
-        Window::new("State")
-            .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
-            .title_bar(false)
-            .auto_sized()
-            .show(ui.ctx(), |ui| {
-                "Connecting...".cstr_cs(WHITE, CstrStyle::Heading).label(ui);
+        center_window("status", ui, |ui| {
+            "Connecting...".cstr_cs(WHITE, CstrStyle::Heading).label(ui);
+        });
+    }
+    pub fn login_ui(ui: &mut Ui, world: &mut World) {
+        center_window("login", ui, |ui| {
+            ui.vertical_centered_justified(|ui| {
+                let mut cd = world.resource_mut::<ConnectionData>();
+                if let Some(user) = cd.identity_user.clone() {
+                    format!("Login as {}", user.name)
+                        .cstr_cs(LIGHT_GRAY, CstrStyle::Heading2)
+                        .label(ui);
+                    if Button::click("Login").ui(ui).clicked() {
+                        login_by_identity();
+                        once_on_login_by_identity(|_, _, status| match status {
+                            spacetimedb_sdk::reducer::Status::Committed => {
+                                OperationsPlugin::add(|world| {
+                                    let mut cd = world.resource_mut::<ConnectionData>();
+                                    cd.user = cd.identity_user.clone();
+                                    cd.state = ConnectionState::LoggedIn;
+                                    GameStatePlugin::path_proceed(world);
+                                })
+                            }
+                            spacetimedb_sdk::reducer::Status::Failed(e) => {
+                                Notification::new(format!("Login failed: {e}")).push_op()
+                            }
+                            _ => panic!(),
+                        });
+                    }
+                    br(ui);
+                    if Button::gray("Logout").ui(ui).clicked() {
+                        cd.identity_user = None;
+                    }
+                } else {
+                    let mut ld = world.resource_mut::<LoginData>();
+                    "Register".cstr_cs(LIGHT_GRAY, CstrStyle::Heading).label(ui);
+                    if Button::click("New Player").ui(ui).clicked() {
+                        register_empty();
+                        once_on_register_empty(|_, _, status| match status {
+                            spacetimedb_sdk::reducer::Status::Committed => {
+                                OperationsPlugin::add(|world| {
+                                    Notification::new("New player created".to_owned()).push(world);
+                                    let mut cd = world.resource_mut::<ConnectionData>();
+                                    let user = User::find(|u| {
+                                        u.identities.contains(&cd.creds.clone().unwrap().identity)
+                                    })
+                                    .expect("Failed to find user after registration");
+                                    cd.identity_user = Some(user);
+                                })
+                            }
+                            spacetimedb_sdk::reducer::Status::Failed(e) => {
+                                Notification::new(format!("Registration failed: {e}"))
+                                    .error()
+                                    .push_op()
+                            }
+                            _ => panic!(),
+                        });
+                    }
+                    br(ui);
+                    "Login".cstr_cs(LIGHT_GRAY, CstrStyle::Heading).label(ui);
+                    Input::new("name").ui(&mut ld.name, ui);
+                    Input::new("password").password().ui(&mut ld.pass, ui);
+                    if Button::click("Submit").ui(ui).clicked() {
+                        login(ld.name.clone(), ld.pass.clone());
+                        once_on_login(|_, _, status, _, _| match status {
+                            spacetimedb_sdk::reducer::Status::Committed => todo!(),
+                            spacetimedb_sdk::reducer::Status::Failed(e) => {
+                                let text = format!("Login failed: {e}");
+                                error!("{text}");
+                                Notification::new(text).error().push_op();
+                            }
+                            _ => panic!(),
+                        });
+                    }
+                }
             });
-        let mut cd = world.resource_mut::<ConnectionData>();
-        if let Some(task) = &cd.connect_task {
-            if task.is_finished() {
-                cd.state = ConnectionState::Connected;
-                cd.connect_task = None;
-                GameStatePlugin::path_proceed(world);
-            }
-        }
+        });
     }
 }

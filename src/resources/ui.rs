@@ -25,6 +25,13 @@ pub const GREEN: Color32 = hex_color_noa!("#64DD17");
 
 pub const TRANSPARENT: Color32 = Color32::TRANSPARENT;
 
+pub const SHADOW: Shadow = Shadow {
+    offset: egui::vec2(10.0, 20.0),
+    blur: 15.0,
+    spread: 0.0,
+    color: Color32::from_black_alpha(96),
+};
+
 pub struct UiPlugin;
 
 impl Plugin for UiPlugin {
@@ -34,9 +41,10 @@ impl Plugin for UiPlugin {
     }
 }
 
-#[derive(Resource, Default)]
+#[derive(Resource, Default, Debug)]
 pub struct WidgetData {
     pub unit_container: HashMap<Faction, UnitContainerData>,
+    pub notifications: NotificationsData,
 }
 
 impl UiPlugin {

@@ -63,12 +63,11 @@ impl GameState {
     }
     pub fn run_to_target(self, world: &mut World) {
         self.set_target();
-        world
-            .resource_mut::<NextState<GameState>>()
-            .set(GameState::Loaded);
+        GameState::Loaded.change(world);
     }
     pub fn change(self, world: &mut World) {
         info!("State change to {self}");
+        Self::set_ready(true);
         world.resource_mut::<NextState<GameState>>().set(self);
     }
     pub fn set_ready(value: bool) {
