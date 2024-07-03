@@ -1,10 +1,12 @@
+use egui::Sense;
+
 use super::*;
 
-#[derive(Default)]
 pub struct Button {
     name: &'static str,
     variant: ButtonVariant,
     title: Option<&'static str>,
+    enabled: bool,
 }
 
 #[derive(Default)]
@@ -13,6 +15,17 @@ enum ButtonVariant {
     Click,
     ClickGray,
     ToggleChild,
+}
+
+impl Default for Button {
+    fn default() -> Self {
+        Self {
+            name: default(),
+            variant: default(),
+            title: default(),
+            enabled: true,
+        }
+    }
 }
 
 impl Button {
@@ -37,6 +50,10 @@ impl Button {
         self.title = Some(text);
         self
     }
+    pub fn enabled(mut self, value: bool) -> Self {
+        self.enabled = value;
+        self
+    }
     pub fn ui(self, ui: &mut Ui) -> Response {
         ui.ctx().add_path(self.name);
         let path = ui.ctx().path();
@@ -59,7 +76,18 @@ impl Button {
                 }
             }
         }
-        let r = ui.button(self.name);
+        if !self.enabled {
+            let style = ui.style_mut();
+            style.visuals.widgets.noninteractive.bg_stroke.color = TRANSPARENT;
+            style.visuals.widgets.noninteractive.fg_stroke.color = DARK_GRAY;
+        }
+        let r = egui::Button::new(self.name)
+            .sense(if self.enabled {
+                Sense::click()
+            } else {
+                Sense::hover()
+            })
+            .ui(ui);
         if r.clicked() {
             if matches!(self.variant, ButtonVariant::ToggleChild) {
                 ui.ctx().flip_path_enabled(&path);

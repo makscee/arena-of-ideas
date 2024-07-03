@@ -13,6 +13,16 @@ pub const HOME_DIR: &str = ".aoi";
 const URI: &str = "http://161.35.88.206:3000";
 const MODULE: &str = "aoi_dev";
 
+static USER_NAME: Mutex<&'static str> = Mutex::new("");
+static USER_ID: Mutex<u64> = Mutex::new(0);
+
+pub fn user_id() -> u64 {
+    *USER_ID.lock().unwrap()
+}
+pub fn user_name() -> &'static str {
+    *USER_NAME.lock().unwrap()
+}
+
 pub struct LoginPlugin;
 
 impl Plugin for LoginPlugin {
@@ -49,6 +59,13 @@ enum ConnectionState {
 impl LoginPlugin {
     pub fn user(world: &World) -> &User {
         world.resource::<ConnectionData>().user.as_ref().unwrap()
+    }
+    pub fn save_user(user: User, world: &mut World) {
+        let mut cd = world.resource_mut::<ConnectionData>();
+        cd.identity_user = Some(user.clone());
+        cd.user = Some(user.clone());
+        *USER_ID.lock().unwrap() = user.id;
+        *USER_NAME.lock().unwrap() = user.name.leak();
     }
     fn load_credentials() -> Option<Credentials> {
         load_credentials(HOME_DIR).expect("Failed to load credentials")
@@ -110,7 +127,7 @@ impl LoginPlugin {
             }
         }
     }
-    pub fn connect_ui(ui: &mut Ui, world: &mut World) {
+    pub fn connect_ui(ui: &mut Ui, _: &mut World) {
         center_window("status", ui, |ui| {
             "Connecting...".cstr_cs(WHITE, CstrStyle::Heading).label(ui);
         });
@@ -129,8 +146,8 @@ impl LoginPlugin {
                             spacetimedb_sdk::reducer::Status::Committed => {
                                 OperationsPlugin::add(|world| {
                                     let mut cd = world.resource_mut::<ConnectionData>();
-                                    cd.user = cd.identity_user.clone();
                                     cd.state = ConnectionState::LoggedIn;
+                                    Self::save_user(cd.identity_user.clone().unwrap(), world);
                                     GameStatePlugin::path_proceed(world);
                                 })
                             }
@@ -175,8 +192,14 @@ impl LoginPlugin {
                     Input::new("password").password().ui(&mut ld.pass, ui);
                     if Button::click("Submit").ui(ui).clicked() {
                         login(ld.name.clone(), ld.pass.clone());
-                        once_on_login(|_, _, status, _, _| match status {
-                            spacetimedb_sdk::reducer::Status::Committed => todo!(),
+                        once_on_login(|_, _, status, name, _| match status {
+                            spacetimedb_sdk::reducer::Status::Committed => {
+                                let name = name.clone();
+                                OperationsPlugin::add(move |world| {
+                                    let user = User::filter_by_name(name).unwrap();
+                                    Self::save_user(user, world);
+                                });
+                            }
                             spacetimedb_sdk::reducer::Status::Failed(e) => {
                                 let text = format!("Login failed: {e}");
                                 error!("{text}");

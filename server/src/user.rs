@@ -49,12 +49,12 @@ fn register(ctx: ReducerContext, name: String, pass: String) -> Result<(), Strin
 
 #[spacetimedb(reducer)]
 fn login(ctx: ReducerContext, name: String, pass: String) -> Result<(), String> {
-    let mut user = User::filter_by_name(&name).context_str("User not found")?;
+    let mut user = User::filter_by_name(&name).context_str("Wrong name or password")?;
     if user.pass_hash.is_none() {
         return Err("No password set for user".to_owned());
     }
     if !user.check_pass(pass) {
-        Err("Wrong password".to_owned())
+        Err("Wrong name or password".to_owned())
     } else {
         if let Ok(mut user) = User::find_by_identity(&ctx.sender) {
             user.online = false;

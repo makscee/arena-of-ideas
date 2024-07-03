@@ -16,6 +16,7 @@ pub enum GameState {
     TestScenariosLoad,
     TestScenariosRun,
     ServerSync,
+    Profile,
 }
 
 static TARGET_STATE: Mutex<GameState> = Mutex::new(GameState::Loaded);
@@ -49,6 +50,15 @@ lazy_static! {
         m.insert(
             GameState::ServerSync,
             vec![GameState::Loaded, GameState::Connect, GameState::ServerSync],
+        );
+        m.insert(
+            GameState::Profile,
+            vec![
+                GameState::Loaded,
+                GameState::Connect,
+                GameState::Login,
+                GameState::Profile,
+            ],
         );
         m
     };

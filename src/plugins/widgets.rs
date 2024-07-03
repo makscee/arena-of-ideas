@@ -44,48 +44,60 @@ impl WidgetsPlugin {
 
         StateMenu::default().show(ctx, world);
 
-        Tile::right("Main Menu")
-            .title()
-            .close_btn()
-            .content(|ui, _| {
-                Button::toggle_child("New Game").ui(ui);
-                Button::toggle_child("Settings").ui(ui);
-            })
-            .child(|ctx, world| {
-                Tile::right("New Game")
-                    .title()
-                    .close_btn()
-                    .content(|ui, _| {
-                        if ui.button("test").clicked() {
-                            debug!("test");
-                        }
-                    })
-                    .show(ctx, world);
-                Tile::right("Settings")
-                    .title()
-                    .close_btn()
-                    .content(|ui, _| {
-                        if ui.button("setting 1").clicked() {
-                            debug!("Test click");
-                        }
-                        br(ui);
-                        if ui.button("setting 2").clicked() {
-                            debug!("Test click");
-                        }
-                        br(ui);
-                    })
-                    .show(ctx, world);
-            })
-            .show(ctx, world);
         let state = cur_state(world);
         match state {
-            GameState::Title => Tile::right("Title Menu")
+            GameState::Title => Tile::right("Main Menu")
+                .title()
+                .open()
                 .content(|ui, world| {
                     format!("Welcome, {}!", LoginPlugin::user(world).name)
                         .cstr_cs(DARK_WHITE, CstrStyle::Heading2)
                         .label(ui);
+                    br(ui);
+                    Button::toggle_child("New Game").ui(ui);
+                    Button::toggle_child("Settings").ui(ui);
                 })
+                .child(|ctx, world| {
+                    Tile::right("New Game")
+                        .title()
+                        .close_btn()
+                        .content(|ui, _| {
+                            if ui.button("test").clicked() {
+                                debug!("test");
+                            }
+                        })
+                        .show(ctx, world);
+                    Tile::right("Settings")
+                        .title()
+                        .close_btn()
+                        .content(|ui, _| {
+                            if ui.button("setting 1").clicked() {
+                                debug!("Test click");
+                            }
+                            br(ui);
+                            if ui.button("setting 2").clicked() {
+                                debug!("Test click");
+                            }
+                            br(ui);
+                        })
+                        .show(ctx, world);
+                })
+                .show(ctx, world),
+            GameState::Profile => Tile::right("Profile")
+                .title()
                 .open()
+                .content(|ui, _| {
+                    Button::toggle_child("Settings").ui(ui);
+                })
+                .child(|ctx, world| {
+                    Tile::right("Settings")
+                        .title()
+                        .close_btn()
+                        .content(|ui, world| {
+                            ProfilePlugin::settings_ui(ui, world);
+                        })
+                        .show(ctx, world);
+                })
                 .show(ctx, world),
             GameState::Shop => {
                 TopMenu::new(vec!["Container Config"]).show(ctx);
@@ -99,7 +111,7 @@ impl WidgetsPlugin {
                     .show(ctx, world);
             }
             GameState::Battle => {
-                TopMenu::new(vec!["Playback", "Main Menu"]).show(ctx);
+                TopMenu::new(vec!["Playback"]).show(ctx);
                 Tile::bottom("Playback")
                     .transparent()
                     .content(|ui, world| {
