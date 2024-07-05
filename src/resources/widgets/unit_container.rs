@@ -5,6 +5,7 @@ use super::*;
 pub struct UnitContainer {
     faction: Faction,
     slots: usize,
+    max_slots: usize,
     left_to_right: bool,
     offset: egui::Vec2,
     top_content: Option<Box<dyn FnOnce(&mut Ui, &mut World) + Send + Sync>>,
@@ -30,6 +31,7 @@ impl UnitContainer {
         Self {
             faction,
             slots: 5,
+            max_slots: 5,
             offset: default(),
             left_to_right: false,
             top_content: default(),
@@ -39,6 +41,11 @@ impl UnitContainer {
     }
     pub fn slots(mut self, value: usize) -> Self {
         self.slots = value;
+        self.max_slots = value;
+        self
+    }
+    pub fn max_slots(mut self, value: usize) -> Self {
+        self.max_slots = value;
         self
     }
     pub fn left_to_right(mut self) -> Self {
@@ -111,7 +118,7 @@ impl UnitContainer {
                             self.slots - i
                         };
                         ui[col].vertical_centered(|ui| {
-                            show_frame(i, max_size, data, ui);
+                            show_frame(i, max_size, i > self.max_slots, data, ui);
                         });
                         if let Some(content) = &self.slot_content {
                             ui[col].vertical_centered_justified(|ui| {
@@ -131,14 +138,24 @@ impl UnitContainer {
     }
 }
 
-fn show_frame(ind: usize, max_size: f32, data: &mut UnitContainerData, ui: &mut Ui) {
+fn show_frame(
+    ind: usize,
+    max_size: f32,
+    overflow: bool,
+    data: &mut UnitContainerData,
+    ui: &mut Ui,
+) {
     let size = max_size.min(130.0);
     let (rect, response) = ui.allocate_exact_size(egui::vec2(size, size), Sense::hover());
     data.positions[ind] = rect.center();
     let color = if response.hovered() {
         YELLOW
     } else {
-        LIGHT_GRAY
+        if overflow {
+            RED
+        } else {
+            LIGHT_GRAY
+        }
     };
     let stroke = Stroke { width: 1.0, color };
     const DASH: f32 = 10.0;

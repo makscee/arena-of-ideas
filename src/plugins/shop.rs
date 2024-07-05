@@ -110,11 +110,12 @@ impl ShopPlugin {
         for (i, TeamSlot { unit, extra: _ }) in run.team.into_iter().enumerate() {
             if let Some(unit) = unit {
                 let id = unit.id;
-                if team_units.contains_key(&id) {
+                let slot = i as i32 + 1;
+                if let Some(entity) = team_units.get(&id) {
+                    VarState::get_mut(*entity, world).set_int(VarName::Slot, slot.into());
                     team_units.remove(&id);
                     continue;
                 }
-                let slot = i as i32 + 1;
                 let unit: PackedUnit = unit.into();
                 unit.unpack(team, Some(slot), Some(id), world);
             }
@@ -187,11 +188,13 @@ impl ShopPlugin {
                     }
                 })
                 .ui(wd, ui, world);
+            let slots = GameAssets::get(world).global_settings.team_slots as usize;
             UnitContainer::new(Faction::Team)
                 .direction(Side::Bottom)
                 .offset([0.0, sd.case_height])
-                .slots(5)
-                .slot_content(move |slot, ui, world| {
+                .slots(slots.max(team.len()))
+                .max_slots(slots)
+                .slot_content(move |slot, ui, _| {
                     let ind = slot - 1;
                     if team[ind].unit.is_some() {
                         if Button::click("+1 G".into())

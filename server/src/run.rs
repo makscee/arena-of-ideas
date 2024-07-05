@@ -249,16 +249,9 @@ impl Run {
         Ok(())
     }
     fn sell(&mut self, slot: u8) -> Result<(), String> {
-        let s = self
-            .team
-            .get_mut(slot as usize)
-            .context_str("Wrong team slot")?;
-        if let Some(_) = s.unit.take() {
-            self.g += self.price_sell;
-            Ok(())
-        } else {
-            Err("Slot is empty".into())
-        }
+        self.remove_team(slot)?;
+        self.g += self.price_sell;
+        Ok(())
     }
     fn get_team_mut(&mut self, slot: u8) -> Result<&mut FusedUnit, String> {
         self.team
@@ -269,6 +262,7 @@ impl Run {
     fn remove_team(&mut self, slot: u8) -> Result<FusedUnit, String> {
         if let Some(slot) = self.team.get_mut(slot as usize) {
             if let Some(unit) = slot.unit.take() {
+                self.truncate_team();
                 return Ok(unit);
             } else {
                 return Err("Slot is empty".to_owned());
@@ -293,6 +287,15 @@ impl Run {
             s.price = self.price_unit;
             s.id = id;
             s.unit = BaseUnit::iter().choose(&mut thread_rng()).unwrap().name;
+        }
+    }
+    fn truncate_team(&mut self) {
+        while self.team.len() > GlobalSettings::get().team_slots as usize {
+            if let Some(pos) = self.team.iter().rev().position(|s| s.unit.is_none()) {
+                self.team.remove(self.team.len() - pos - 1);
+            } else {
+                break;
+            }
         }
     }
 }
