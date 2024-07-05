@@ -83,7 +83,7 @@ impl LoginPlugin {
         info!("Connect start");
         once_on_connect(|creds, _| {
             let creds = creds.clone();
-            ServerPlugin::subscribe_user();
+            ServerPlugin::subscribe_connect();
             once_on_subscription_applied(|| {
                 OperationsPlugin::add(|world| {
                     let mut cd = world.resource_mut::<ConnectionData>();

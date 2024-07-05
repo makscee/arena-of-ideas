@@ -32,6 +32,7 @@ pub struct GameAssets {
     pub abilities: HashMap<String, Ability>,
     pub statuses: HashMap<String, PackedStatus>,
     pub vfxs: HashMap<String, Vfx>,
+    pub colors: HashMap<String, Color>,
 }
 
 #[derive(Deserialize, Asset, TypePath)]
@@ -52,6 +53,9 @@ impl GameAssets {
         for unit in BaseUnit::iter() {
             assets.heroes.insert(unit.name.clone(), unit.into());
         }
+    }
+    pub fn color(name: &str, world: &World) -> Color {
+        Self::get(world).colors.get(name).unwrap().clone()
     }
 }
 
@@ -95,6 +99,7 @@ impl LoadingPlugin {
             .unwrap()
             .clone();
 
+        let mut colors: HashMap<String, Color> = default();
         let heroes = world.resource::<Assets<PackedUnit>>();
         let heroes = HashMap::from_iter(handles.heroes.iter().map(|(_, h)| {
             let hero = heroes.get(h).unwrap().clone();
@@ -103,6 +108,7 @@ impl LoadingPlugin {
         let houses = world.resource::<Assets<House>>();
         let houses = HashMap::from_iter(handles.houses.iter().map(|(_, h)| {
             let house = houses.get(h).unwrap().clone();
+            colors.insert(house.name.clone(), house.color.clone().into());
             (house.name.clone(), house)
         }));
         let abilities = HashMap::from_iter(
@@ -137,6 +143,7 @@ impl LoadingPlugin {
             abilities,
             statuses,
             vfxs,
+            colors,
         };
         world.insert_resource(assets);
     }

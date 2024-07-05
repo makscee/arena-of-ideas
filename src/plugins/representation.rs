@@ -1,3 +1,5 @@
+use spacetimedb_sdk::table::TableType;
+
 use super::*;
 
 pub struct RepresentationPlugin;
@@ -9,11 +11,8 @@ impl Plugin for RepresentationPlugin {
 }
 
 impl RepresentationPlugin {
-    pub fn get_by_id(id: u64) -> Representation {
-        if id == 0 {
-            return default();
-        }
-        ron::from_str(&TRepresentation::filter_by_id(id).unwrap().data).unwrap()
+    pub fn get_by_id(id: String) -> Option<Representation> {
+        TRepresentation::filter_by_id(id).and_then(|r| ron::from_str(&r.data).ok())
     }
     fn injector_system(world: &mut World) {
         let reps = world

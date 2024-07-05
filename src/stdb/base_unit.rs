@@ -19,7 +19,6 @@ pub struct BaseUnit {
     pub hp: i32,
     pub rarity: i8,
     pub house: String,
-    pub repr: u64,
     pub triggers: Vec<String>,
     pub targets: Vec<String>,
     pub effects: Vec<String>,
@@ -57,10 +56,6 @@ impl BaseUnit {
     #[allow(unused)]
     pub fn filter_by_house(house: String) -> TableIter<Self> {
         Self::filter(|row| row.house == house)
-    }
-    #[allow(unused)]
-    pub fn filter_by_repr(repr: u64) -> TableIter<Self> {
-        Self::filter(|row| row.repr == repr)
     }
     #[allow(unused)]
     pub fn filter_by_triggers(triggers: Vec<String>) -> TableIter<Self> {

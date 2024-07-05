@@ -2,7 +2,7 @@ use super::*;
 
 #[spacetimedb(table)]
 pub struct TRepresentation {
-    #[primarykey]
-    id: u64,
+    #[unique]
+    id: String,
     data: String,
 }

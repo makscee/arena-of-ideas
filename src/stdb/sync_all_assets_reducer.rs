@@ -6,6 +6,7 @@ use super::base_unit::BaseUnit;
 use super::global_settings::GlobalSettings;
 use super::t_ability::TAbility;
 use super::t_house::THouse;
+use super::t_representation::TRepresentation;
 use super::t_status::TStatus;
 use spacetimedb_sdk::{
     anyhow::{anyhow, Result},
@@ -20,6 +21,7 @@ use spacetimedb_sdk::{
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct SyncAllAssetsArgs {
     pub gs: GlobalSettings,
+    pub representations: Vec<TRepresentation>,
     pub units: Vec<BaseUnit>,
     pub houses: Vec<THouse>,
     pub abilities: Vec<TAbility>,
@@ -33,6 +35,7 @@ impl Reducer for SyncAllAssetsArgs {
 #[allow(unused)]
 pub fn sync_all_assets(
     gs: GlobalSettings,
+    representations: Vec<TRepresentation>,
     units: Vec<BaseUnit>,
     houses: Vec<THouse>,
     abilities: Vec<TAbility>,
@@ -40,6 +43,7 @@ pub fn sync_all_assets(
 ) {
     SyncAllAssetsArgs {
         gs,
+        representations,
         units,
         houses,
         abilities,
@@ -55,6 +59,7 @@ pub fn on_sync_all_assets(
             Option<Address>,
             &Status,
             &GlobalSettings,
+            &Vec<TRepresentation>,
             &Vec<BaseUnit>,
             &Vec<THouse>,
             &Vec<TAbility>,
@@ -65,13 +70,22 @@ pub fn on_sync_all_assets(
     SyncAllAssetsArgs::on_reducer(move |__identity, __addr, __status, __args| {
         let SyncAllAssetsArgs {
             gs,
+            representations,
             units,
             houses,
             abilities,
             statuses,
         } = __args;
         __callback(
-            __identity, __addr, __status, gs, units, houses, abilities, statuses,
+            __identity,
+            __addr,
+            __status,
+            gs,
+            representations,
+            units,
+            houses,
+            abilities,
+            statuses,
         );
     })
 }
@@ -83,6 +97,7 @@ pub fn once_on_sync_all_assets(
             Option<Address>,
             &Status,
             &GlobalSettings,
+            &Vec<TRepresentation>,
             &Vec<BaseUnit>,
             &Vec<THouse>,
             &Vec<TAbility>,
@@ -93,13 +108,22 @@ pub fn once_on_sync_all_assets(
     SyncAllAssetsArgs::once_on_reducer(move |__identity, __addr, __status, __args| {
         let SyncAllAssetsArgs {
             gs,
+            representations,
             units,
             houses,
             abilities,
             statuses,
         } = __args;
         __callback(
-            __identity, __addr, __status, gs, units, houses, abilities, statuses,
+            __identity,
+            __addr,
+            __status,
+            gs,
+            representations,
+            units,
+            houses,
+            abilities,
+            statuses,
         );
     })
 }

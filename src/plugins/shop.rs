@@ -1,8 +1,5 @@
 use bevy::input::common_conditions::input_just_pressed;
-use spacetimedb_sdk::{
-    once_on_subscription_applied,
-    table::{TableWithPrimaryKey, UpdateCallbackId},
-};
+use spacetimedb_sdk::table::{TableWithPrimaryKey, UpdateCallbackId};
 
 use super::*;
 

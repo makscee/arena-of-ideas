@@ -141,7 +141,7 @@ impl GameStatePlugin {
         );
     }
     fn update(time: Res<Time>) {
-        let mut timer = GameTimer::get();
+        let mut timer = gt();
         timer.update(time.delta_seconds());
     }
 }

@@ -136,7 +136,7 @@ impl UnitPlugin {
                     .unwrap(),
             );
         }
-        GameTimer::get().advance_insert(shift);
+        gt().advance_insert(shift);
     }
     fn place_into_slots(world: &mut World) {
         let Some(cam_entity) = CameraPlugin::get_entity(world) else {

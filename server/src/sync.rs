@@ -1,6 +1,7 @@
 use ability::TAbility;
 use base_unit::BaseUnit;
 use house::THouse;
+use representation::TRepresentation;
 use spacetimedb::TableType;
 use status::TStatus;
 
@@ -10,12 +11,19 @@ use super::*;
 fn sync_all_assets(
     ctx: ReducerContext,
     gs: GlobalSettings,
+    representations: Vec<TRepresentation>,
     units: Vec<BaseUnit>,
     houses: Vec<THouse>,
     abilities: Vec<TAbility>,
     statuses: Vec<TStatus>,
 ) -> Result<(), String> {
     gs.replace();
+    for r in TRepresentation::iter() {
+        r.delete();
+    }
+    for r in representations {
+        TRepresentation::insert(r)?;
+    }
     for unit in BaseUnit::iter() {
         unit.delete();
     }

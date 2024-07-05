@@ -86,7 +86,7 @@ impl PackedUnit {
         entity
     }
 
-    pub fn generate_state(&self, _: &World) -> VarState {
+    pub fn generate_state(&self, world: &World) -> VarState {
         let mut state = self.state.clone();
         state
             .init(VarName::Hp, self.hp.into())
@@ -95,6 +95,9 @@ impl PackedUnit {
             .init(VarName::Position, Vec2::ZERO.into())
             .init(VarName::Visible, true.into())
             .init(VarName::RarityColor, DARK_WHITE.into());
+        if let Some(house) = self.houses.iter().next() {
+            state.init(VarName::Color, GameAssets::color(house, world).into());
+        }
         if !state.has_value(VarName::Dmg) {
             state.init(VarName::Dmg, VarValue::Int(0));
         }
@@ -131,7 +134,6 @@ impl From<PackedUnit> for BaseUnit {
             hp: value.hp,
             rarity: value.rarity,
             house: value.houses.first().unwrap().clone(),
-            repr: default(),
             triggers,
             targets,
             effects,
@@ -144,6 +146,8 @@ impl From<BaseUnit> for PackedUnit {
         let triggers = value.triggers();
         let targets = value.targets();
         let effects = value.effects();
+        let representation =
+            RepresentationPlugin::get_by_id(value.name.clone()).unwrap_or_default();
         Self {
             name: value.name,
             pwr: value.pwr,
@@ -155,7 +159,7 @@ impl From<BaseUnit> for PackedUnit {
                 targets,
                 effects,
             },
-            representation: RepresentationPlugin::get_by_id(value.repr),
+            representation,
             state: default(),
             statuses: default(),
         }
@@ -199,10 +203,9 @@ impl From<FusedUnit> for PackedUnit {
             result.hp = result.hp.max(base.hp);
             result.rarity = result.rarity.max(base.rarity);
             result.houses.push(base.house);
-            result
-                .representation
-                .children
-                .push(Box::new(RepresentationPlugin::get_by_id(base.repr)));
+            if let Some(repr) = RepresentationPlugin::get_by_id(base.name.clone()) {
+                result.representation.children.push(Box::new(repr));
+            }
         }
         result.name = value.bases.join("+");
 

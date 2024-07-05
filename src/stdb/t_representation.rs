@@ -14,7 +14,7 @@ use spacetimedb_sdk::{
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct TRepresentation {
-    pub id: u64,
+    pub id: String,
     pub data: String,
 }
 
@@ -23,16 +23,9 @@ impl TableType for TRepresentation {
     type ReducerEvent = super::ReducerEvent;
 }
 
-impl TableWithPrimaryKey for TRepresentation {
-    type PrimaryKey = u64;
-    fn primary_key(&self) -> &Self::PrimaryKey {
-        &self.id
-    }
-}
-
 impl TRepresentation {
     #[allow(unused)]
-    pub fn filter_by_id(id: u64) -> Option<Self> {
+    pub fn filter_by_id(id: String) -> Option<Self> {
         Self::find(|row| row.id == id)
     }
     #[allow(unused)]

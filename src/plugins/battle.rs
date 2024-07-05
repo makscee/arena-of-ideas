@@ -16,14 +16,14 @@ impl Plugin for BattlePlugin {
 impl BattlePlugin {
     fn on_enter(world: &mut World) {
         info!("Start battle");
-        GameTimer::get().reset();
+        gt().reset();
         let result = Self::run(world).unwrap();
         let mut bd = world.resource_mut::<BattleData>();
         bd.result = result;
         info!("Battle finished with result: {result:?}");
     }
     fn on_exit(world: &mut World) {
-        GameTimer::get().reset();
+        gt().reset();
         world.game_clear();
     }
     fn on_enter_custom(world: &mut World) {
@@ -118,7 +118,7 @@ impl BattlePlugin {
                     .unwrap(),
             );
         }
-        GameTimer::get().advance_insert(shift);
+        gt().advance_insert(shift);
         ActionPlugin::spin(world)?;
         Ok(())
     }
@@ -173,7 +173,7 @@ impl BattlePlugin {
             .transparent()
             .content(|ui, world| {
                 ui.vertical_centered(|ui| {
-                    let mut gt = GameTimer::get();
+                    let mut gt = gt();
                     if ImageButton::new(if gt.paused() {
                         Icon::Pause.image()
                     } else {
@@ -191,7 +191,7 @@ impl BattlePlugin {
                     ui,
                     world,
                     |ui, _| {
-                        format!("{:.2}", GameTimer::get().play_head())
+                        format!("{:.2}", gt().play_head())
                             .cstr_cs(WHITE, CstrStyle::Heading)
                             .label(ui);
                     },
@@ -199,7 +199,7 @@ impl BattlePlugin {
                         const FF_LEFT_KEY: &str = "ff_back_btn";
                         let pressed = get_context_bool(world, FF_LEFT_KEY);
                         if pressed {
-                            GameTimer::get().advance_play(-delta_time(world) * 2.0);
+                            gt().advance_play(-delta_time(world) * 2.0);
                         }
                         let resp = ImageButton::new(Icon::FFBack.image())
                             .tint(if pressed { YELLOW } else { WHITE })
@@ -214,7 +214,7 @@ impl BattlePlugin {
                         const FF_RIGHT_KEY: &str = "ff_forward_btn";
                         let pressed = get_context_bool(world, FF_RIGHT_KEY);
                         if pressed {
-                            GameTimer::get().advance_play(delta_time(world));
+                            gt().advance_play(delta_time(world));
                         }
                         let resp = ImageButton::new(Icon::FFForward.image())
                             .tint(if pressed { YELLOW } else { WHITE })
@@ -234,16 +234,16 @@ impl BattlePlugin {
                             .log()
                             .name(false)
                             .range(-20.0..=20.0)
-                            .ui(&mut GameTimer::get().playback_speed, ui);
+                            .ui(&mut gt().playback_speed, ui);
                     },
                     |ui, _| {
                         if ImageButton::new(Icon::SkipBack.image()).ui(ui).clicked() {
-                            GameTimer::get().play_head_to(0.0);
+                            gt().play_head_to(0.0);
                         }
                     },
                     |ui, _| {
                         if ImageButton::new(Icon::SkipForward.image()).ui(ui).clicked() {
-                            GameTimer::get().skip_to_end();
+                            gt().skip_to_end();
                         }
                     },
                 );

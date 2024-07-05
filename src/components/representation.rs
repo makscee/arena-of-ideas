@@ -61,7 +61,7 @@ impl Representation {
         rep
     }
     pub fn update(self, world: &mut World) {
-        let t = GameTimer::get().play_head();
+        let t = gt().play_head();
         let entity = self.entity.unwrap();
         let context = Context::new(entity);
         {

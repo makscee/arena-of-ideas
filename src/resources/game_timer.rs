@@ -27,6 +27,10 @@ impl Default for GameTimer {
     }
 }
 
+pub fn gt() -> MutexGuard<'static, GameTimer> {
+    GAME_TIMER.lock().unwrap()
+}
+
 impl GameTimer {
     pub fn update(&mut self, delta: f32) {
         if !self.paused {
@@ -39,9 +43,6 @@ impl GameTimer {
     }
     pub fn paused(&self) -> bool {
         self.paused
-    }
-    pub fn get() -> MutexGuard<'static, GameTimer> {
-        GAME_TIMER.lock().unwrap()
     }
     pub fn play_head(&self) -> f32 {
         self.play_head

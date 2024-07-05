@@ -43,7 +43,7 @@ impl Vfx {
             );
         }
         if self.timeframe > 0.0 {
-            GameTimer::get().advance_insert(self.timeframe);
+            gt().advance_insert(self.timeframe);
         }
         result
     }

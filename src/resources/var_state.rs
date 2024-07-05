@@ -49,7 +49,7 @@ impl VarState {
         self.id
     }
     pub fn attach(mut self, entity: Entity, id: u64, world: &mut World) {
-        self.birth = GameTimer::get().insert_head();
+        self.birth = gt().insert_head();
         self.id = id;
         self.entity = Some(entity);
         world.entity_mut(entity).insert(self);
@@ -87,7 +87,7 @@ impl VarState {
         self
     }
     pub fn push_change(&mut self, var: VarName, key: String, mut change: VarChange) -> &mut Self {
-        let head = GameTimer::get().insert_head();
+        let head = gt().insert_head();
         let birth = self.birth;
         change.t += head - birth;
         self.vars

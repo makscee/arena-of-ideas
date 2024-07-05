@@ -25,13 +25,20 @@ impl ServerPlugin {
             panic!("Failed to subscribe: {e}");
         }
     }
-    pub fn subscribe_user() {
-        Self::subscribe(["select * from User".to_owned()].into());
+    pub fn subscribe_connect() {
+        Self::subscribe(
+            [
+                "select * from User".to_owned(),
+                "select * from GlobalData".to_owned(),
+            ]
+            .into(),
+        );
     }
     pub fn subscribe_game() {
         let q = [
             format!("select * from Run where user_id = {}", user_id()),
             "select * from BaseUnit".to_owned(),
+            "select * from TRepresentation".to_owned(),
             "select * from GlobalSettings".to_owned(),
         ];
         Self::subscribe(q.into());

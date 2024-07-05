@@ -8,7 +8,6 @@ pub struct BaseUnit {
     pub hp: i32,
     pub rarity: i8,
     pub house: String,
-    pub repr: u64,
     pub triggers: Vec<String>,
     pub targets: Vec<String>,
     pub effects: Vec<String>,

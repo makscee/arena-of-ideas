@@ -16,7 +16,7 @@ impl Plugin for TextColumnPlugin {
 impl TextColumnPlugin {
     pub fn add(entity: Entity, text: Cstr, world: &mut World) {
         if let Some(mut tc) = world.get_mut::<TextColumn>(entity) {
-            tc.lines.push((GameTimer::get().insert_head(), text));
+            tc.lines.push((gt().insert_head(), text));
         }
     }
     fn ui(world: &mut World) {
@@ -25,7 +25,7 @@ impl TextColumnPlugin {
         };
         let mut drawn: Vec<Vec<Rect>> = [default()].into();
         let mut prev_lvl: HashMap<Entity, usize> = default();
-        let t = GameTimer::get().play_head();
+        let t = gt().play_head();
         let start_height = world_to_screen(vec3(0.0, 2.0, 0.0), world).y;
         const Y_PER_LEVEL: f32 = 22.0;
         const LIFETIME: f32 = 4.0;

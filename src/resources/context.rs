@@ -87,6 +87,9 @@ impl Context {
         self.layers.push(ContextLayer::Event(event));
         self
     }
+    pub fn get_faction(&self, world: &World) -> Result<Faction> {
+        self.get_var(VarName::Faction, world)?.get_faction()
+    }
 
     pub fn take(&mut self) -> Self {
         mem::take(self)

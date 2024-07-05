@@ -52,7 +52,7 @@ impl ActionPlugin {
                     Ok(_) => {
                         processed = true;
                         world.resource_mut::<ActionsData>().chain += 1;
-                        GameTimer::get().advance_insert(delay);
+                        gt().advance_insert(delay);
                         for unit in UnitPlugin::collect_alive(world) {
                             Status::refresh_mappings(unit, world);
                         }
@@ -64,7 +64,7 @@ impl ActionPlugin {
             let mut actions_added = false;
             while let Some((event, context)) = Self::pop_event(world) {
                 if event.process(context, world) {
-                    GameTimer::get().advance_insert(0.2);
+                    gt().advance_insert(0.2);
                     actions_added = true;
                     break;
                 }
@@ -86,11 +86,11 @@ impl ActionPlugin {
             UnitPlugin::turn_into_corpse(unit, world);
         }
         if died {
-            GameTimer::get().advance_insert(0.5);
+            gt().advance_insert(0.5);
             UnitPlugin::fill_gaps_and_translate(world);
-            GameTimer::get().insert_to_end();
+            gt().insert_to_end();
         } else {
-            GameTimer::get().advance_insert(0.3);
+            gt().advance_insert(0.3);
         }
         died
     }
@@ -148,12 +148,12 @@ impl ActionPlugin {
         world
             .resource_mut::<ActionsData>()
             .events
-            .push((GameTimer::get().insert_head(), event));
+            .push((gt().insert_head(), event));
     }
     pub fn register_next_turn(world: &mut World) {
         let mut data = world.resource_mut::<ActionsData>();
         let next = data.turns.last().map(|(_, r)| *r).unwrap_or_default() + 1;
-        data.turns.push((GameTimer::get().insert_head(), next));
+        data.turns.push((gt().insert_head(), next));
         data.chain = 0;
     }
 }

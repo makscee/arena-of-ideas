@@ -1,3 +1,7 @@
+use std::f32::consts::PI;
+
+use rand::{seq::IteratorRandom, thread_rng};
+
 use super::*;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, EnumIter, AsRefStr)]
@@ -7,10 +11,23 @@ pub enum Expression {
 
     OppositeFaction,
     SlotPosition,
+    GT,
+    Beat,
+    PI,
+    PI2,
 
     Owner,
     Caster,
     Target,
+
+    RandomAlly,
+    RandomEnemy,
+    RandomAdjacentUnit,
+    AllAllyUnits,
+    AllEnemyUnits,
+    AllUnits,
+    AllOtherUnits,
+    AdjacentUnits,
 
     Value(VarValue),
     Context(VarName),
@@ -19,8 +36,13 @@ pub enum Expression {
     CasterState(VarName),
     StatusCharges(String),
     HexColor(String),
+    F(f32),
+    I(i32),
+    B(bool),
+    S(String),
 
     Vec2E(Box<Expression>),
+    UnitVec(Box<Expression>),
     Sin(Box<Expression>),
     Cos(Box<Expression>),
     FactionCount(Box<Expression>),
@@ -50,20 +72,14 @@ impl Expression {
             Expression::Value(v) => Ok(v.clone()),
             Expression::Context(var) => context.get_var(*var, world),
             Expression::OwnerState(var) => {
-                VarState::find_value_at(context.owner(), *var, GameTimer::get().play_head(), world)
+                VarState::find_value_at(context.owner(), *var, gt().play_head(), world)
             }
-            Expression::TargetState(var) => VarState::find_value_at(
-                context.get_target()?,
-                *var,
-                GameTimer::get().play_head(),
-                world,
-            ),
-            Expression::CasterState(var) => VarState::find_value_at(
-                context.get_caster()?,
-                *var,
-                GameTimer::get().play_head(),
-                world,
-            ),
+            Expression::TargetState(var) => {
+                VarState::find_value_at(context.get_target()?, *var, gt().play_head(), world)
+            }
+            Expression::CasterState(var) => {
+                VarState::find_value_at(context.get_caster()?, *var, gt().play_head(), world)
+            }
             Expression::WithVar(var, value, e) => e.get_value(
                 context
                     .clone()
@@ -143,6 +159,11 @@ impl Expression {
                     el.get_value(context, world)
                 }
             }
+            Expression::UnitVec(x) => {
+                let x = x.get_float(context, world)?;
+                let x = vec2(x.cos(), x.sin());
+                Ok(x.into())
+            }
             Expression::Vec2E(e) => {
                 let v = e.get_float(context, world)?;
                 Ok(VarValue::Vec2(vec2(v, v)))
@@ -155,6 +176,93 @@ impl Expression {
                 context.owner(),
                 world,
             )?)),
+            Expression::F(v) => Ok((*v).into()),
+            Expression::I(v) => Ok((*v).into()),
+            Expression::B(v) => Ok((*v).into()),
+            Expression::S(v) => Ok((v.clone()).into()),
+            Expression::GT => Ok(gt().play_head().into()),
+            Expression::Beat => Ok(gt().play_head().sin().into()),
+
+            Expression::PI => Ok(VarValue::Float(PI)),
+            Expression::PI2 => Ok(VarValue::Float(PI * 2.0)),
+            Expression::RandomAlly => {
+                UnitPlugin::collect_faction(context.get_faction(world)?, world)
+                    .into_iter()
+                    .filter(|e| !context.owner().eq(e))
+                    .choose(&mut thread_rng())
+                    .context("No other units found")
+                    .map(|v| v.into())
+            }
+            Expression::RandomEnemy => Self::RandomAlly.get_value(
+                &context.clone().set_var(
+                    VarName::Faction,
+                    context.get_faction(world)?.opposite().into(),
+                ),
+                world,
+            ),
+            Expression::AdjacentUnits => {
+                let own_slot = context.get_var(VarName::Slot, world)?.get_int()?;
+                let faction = context.get_var(VarName::Faction, world)?.get_faction()?;
+                let mut left: (i32, Option<Entity>) = (-i32::MAX, None);
+                let mut right: (i32, Option<Entity>) = (i32::MAX, None);
+                for unit in UnitPlugin::collect_faction(faction, world) {
+                    let state = VarState::get(unit, world);
+                    let slot = state.get_int(VarName::Slot)?;
+                    let delta = slot - own_slot;
+                    if delta == 0 {
+                        continue;
+                    }
+                    if left.0 < delta {
+                        left.0 = delta;
+                        left.1 = Some(unit);
+                    }
+                    if right.0 > delta {
+                        right.0 = delta;
+                        right.1 = Some(unit);
+                    }
+                }
+                Ok(VarValue::List(
+                    left.1
+                        .into_iter()
+                        .chain(right.1.into_iter())
+                        .map(|e| e.into())
+                        .collect_vec(),
+                ))
+            }
+            Expression::RandomAdjacentUnit => Ok(Self::AdjacentUnits
+                .get_value(context, world)?
+                .get_entity_list()?
+                .into_iter()
+                .choose(&mut thread_rng())
+                .context("No adjacent units")?
+                .into()),
+            Expression::AllAllyUnits => Ok(VarValue::List(
+                UnitPlugin::collect_faction(context.get_faction(world)?, world)
+                    .into_iter()
+                    .map(|e| e.into())
+                    .collect_vec(),
+            )),
+            Expression::AllEnemyUnits => Ok(VarValue::List(
+                UnitPlugin::collect_faction(context.get_faction(world)?.opposite(), world)
+                    .into_iter()
+                    .map(|e| e.into())
+                    .collect_vec(),
+            )),
+            Expression::AllUnits => Ok(VarValue::List(
+                UnitPlugin::collect_alive(world)
+                    .into_iter()
+                    .map(|e| e.into())
+                    .collect_vec(),
+            )),
+            Expression::AllOtherUnits => Ok(VarValue::List(
+                UnitPlugin::collect_alive(world)
+                    .into_iter()
+                    .filter_map(|e| match e.eq(&context.owner()) {
+                        true => None,
+                        false => Some(e.into()),
+                    })
+                    .collect_vec(),
+            )),
         }
     }
     pub fn get_float(&self, context: &Context, world: &mut World) -> Result<f32> {
