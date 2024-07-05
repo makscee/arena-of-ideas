@@ -23,10 +23,17 @@ impl TableType for TRepresentation {
     type ReducerEvent = super::ReducerEvent;
 }
 
+impl TableWithPrimaryKey for TRepresentation {
+    type PrimaryKey = u64;
+    fn primary_key(&self) -> &Self::PrimaryKey {
+        &self.id
+    }
+}
+
 impl TRepresentation {
     #[allow(unused)]
-    pub fn filter_by_id(id: u64) -> TableIter<Self> {
-        Self::filter(|row| row.id == id)
+    pub fn filter_by_id(id: u64) -> Option<Self> {
+        Self::find(|row| row.id == id)
     }
     #[allow(unused)]
     pub fn filter_by_data(data: String) -> TableIter<Self> {

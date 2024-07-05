@@ -18,17 +18,21 @@ struct ServerData {
 }
 
 impl ServerPlugin {
-    pub fn subscribe(query: String) {
+    pub fn subscribe(queries: Vec<String>) {
         let q = &mut SERVER_DATA.lock().unwrap().subscribed_queries;
-        q.push(query);
+        q.extend(queries.into_iter());
         if let Err(e) = subscribe_owned(q.clone()) {
             panic!("Failed to subscribe: {e}");
         }
     }
     pub fn subscribe_users() {
-        Self::subscribe("select * from User".to_owned());
+        Self::subscribe(["select * from User".to_owned()].into());
     }
     pub fn subscribe_run() {
-        Self::subscribe(format!("select * from Run where user_id = {}", user_id()));
+        let q = [
+            format!("select * from Run where user_id = {}", user_id()),
+            "select * from BaseUnit".to_owned(),
+        ];
+        Self::subscribe(q.into());
     }
 }

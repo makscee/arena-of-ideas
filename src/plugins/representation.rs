@@ -9,6 +9,12 @@ impl Plugin for RepresentationPlugin {
 }
 
 impl RepresentationPlugin {
+    pub fn get_by_id(id: u64) -> Representation {
+        if id == 0 {
+            return default();
+        }
+        ron::from_str(&TRepresentation::filter_by_id(id).unwrap().data).unwrap()
+    }
     fn injector_system(world: &mut World) {
         let reps = world
             .query::<(Entity, &Representation)>()

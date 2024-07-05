@@ -83,8 +83,29 @@ impl ShopPlugin {
                     .unpack(team, Some(slot), Some(id), world);
             }
         }
-        for entity in shop_units.values() {
-            UnitPlugin::despawn(*entity, world);
+        for entity in shop_units.into_values() {
+            UnitPlugin::despawn(entity, world);
+        }
+        let mut team_units: HashMap<u64, Entity> = HashMap::from_iter(
+            UnitPlugin::collect_faction(Faction::Team, world)
+                .into_iter()
+                .map(|e| (VarState::get(e, world).id(), e)),
+        );
+        let team = TeamPlugin::entity(Faction::Team, world);
+        for (i, TeamSlot { unit, extra }) in run.team.into_iter().enumerate() {
+            if let Some(unit) = unit {
+                let id = unit.id;
+                if team_units.contains_key(&id) {
+                    team_units.remove(&id);
+                    continue;
+                }
+                let slot = i as i32 + 1;
+                let unit: PackedUnit = unit.into();
+                unit.unpack(team, Some(slot), Some(id), world);
+            }
+        }
+        for entity in team_units.into_values() {
+            UnitPlugin::despawn(entity, world);
         }
     }
     pub fn show_containers(wd: &mut WidgetData, ui: &mut Ui, world: &mut World) {

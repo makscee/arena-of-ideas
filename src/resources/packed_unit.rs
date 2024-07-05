@@ -141,21 +141,9 @@ impl From<PackedUnit> for BaseUnit {
 
 impl From<BaseUnit> for PackedUnit {
     fn from(value: BaseUnit) -> Self {
-        let triggers = value
-            .triggers
-            .into_iter()
-            .map(|t| ron::from_str::<(FireTrigger, Option<String>)>(&t).unwrap())
-            .collect_vec();
-        let targets = value
-            .targets
-            .into_iter()
-            .map(|t| ron::from_str::<(Expression, Option<String>)>(&t).unwrap())
-            .collect_vec();
-        let effects = value
-            .effects
-            .into_iter()
-            .map(|t| ron::from_str::<(Effect, Option<String>)>(&t).unwrap())
-            .collect_vec();
+        let triggers = value.triggers();
+        let targets = value.targets();
+        let effects = value.effects();
         Self {
             name: value.name,
             pwr: value.pwr,
@@ -167,9 +155,84 @@ impl From<BaseUnit> for PackedUnit {
                 targets,
                 effects,
             },
+            representation: RepresentationPlugin::get_by_id(value.repr),
             state: default(),
             statuses: default(),
-            representation: default(),
         }
+    }
+}
+
+impl From<FusedUnit> for PackedUnit {
+    fn from(value: FusedUnit) -> Self {
+        let bases: Vec<BaseUnit> = value
+            .bases
+            .iter()
+            .map(|name| {
+                BaseUnit::filter_by_name(name.clone())
+                    .with_context(|| format!("BaseUnit {name} not found"))
+                    .unwrap()
+            })
+            .collect_vec();
+        let mut result = Self::default();
+        let triggers = value
+            .triggers
+            .into_iter()
+            .flat_map(|i| bases[i as usize].triggers())
+            .collect_vec();
+        let targets = value
+            .targets
+            .into_iter()
+            .flat_map(|i| bases[i as usize].targets())
+            .collect_vec();
+        let effects = value
+            .effects
+            .into_iter()
+            .flat_map(|i| bases[i as usize].effects())
+            .collect_vec();
+        result.trigger = Trigger::Fire {
+            triggers,
+            targets,
+            effects,
+        };
+        for base in bases {
+            result.pwr = result.pwr.max(base.pwr);
+            result.hp = result.hp.max(base.hp);
+            result.rarity = result.rarity.max(base.rarity);
+            result.houses.push(base.house);
+            result
+                .representation
+                .children
+                .push(Box::new(RepresentationPlugin::get_by_id(base.repr)));
+        }
+        result.name = value.bases.join("+");
+
+        result
+    }
+}
+
+trait BaseUnitExtract {
+    fn triggers(&self) -> Vec<(FireTrigger, Option<String>)>;
+    fn targets(&self) -> Vec<(Expression, Option<String>)>;
+    fn effects(&self) -> Vec<(Effect, Option<String>)>;
+}
+
+impl BaseUnitExtract for BaseUnit {
+    fn triggers(&self) -> Vec<(FireTrigger, Option<String>)> {
+        self.triggers
+            .iter()
+            .map(|t| ron::from_str::<(FireTrigger, Option<String>)>(t).unwrap())
+            .collect_vec()
+    }
+    fn targets(&self) -> Vec<(Expression, Option<String>)> {
+        self.targets
+            .iter()
+            .map(|t| ron::from_str::<(Expression, Option<String>)>(t).unwrap())
+            .collect_vec()
+    }
+    fn effects(&self) -> Vec<(Effect, Option<String>)> {
+        self.effects
+            .iter()
+            .map(|t| ron::from_str::<(Effect, Option<String>)>(t).unwrap())
+            .collect_vec()
     }
 }

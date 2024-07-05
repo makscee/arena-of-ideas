@@ -132,7 +132,7 @@ impl SpacetimeModule for Module {
             "THouse" => client_cache
                 .handle_table_update_with_primary_key::<t_house::THouse>(callbacks, table_update),
             "TRepresentation" => client_cache
-                .handle_table_update_no_primary_key::<t_representation::TRepresentation>(
+                .handle_table_update_with_primary_key::<t_representation::TRepresentation>(
                     callbacks,
                     table_update,
                 ),
