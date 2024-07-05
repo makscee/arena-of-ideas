@@ -10,6 +10,7 @@ pub enum GameState {
     Title,
     Connect,
     Login,
+    ForceLogin,
     CustomBattle,
     Battle,
     Shop,
@@ -27,38 +28,50 @@ lazy_static! {
         let mut m = HashMap::new();
         m.insert(
             GameState::Title,
-            vec![
+            [
                 GameState::Loaded,
                 GameState::Connect,
                 GameState::Login,
                 GameState::Title,
-            ],
+            ]
+            .into(),
         );
         m.insert(
             GameState::CustomBattle,
-            vec![
+            [
                 GameState::Loaded,
                 GameState::CustomBattle,
                 GameState::Battle,
-            ],
+            ]
+            .into(),
         );
-        m.insert(GameState::Shop, vec![GameState::Loaded, GameState::Shop]);
+        m.insert(
+            GameState::Shop,
+            [
+                GameState::Loaded,
+                GameState::Connect,
+                GameState::ForceLogin,
+                GameState::Shop,
+            ]
+            .into(),
+        );
         m.insert(
             GameState::TestScenariosRun,
-            vec![GameState::Loaded, GameState::TestScenariosLoad],
+            [GameState::Loaded, GameState::TestScenariosLoad].into(),
         );
         m.insert(
             GameState::ServerSync,
-            vec![GameState::Loaded, GameState::Connect, GameState::ServerSync],
+            [GameState::Loaded, GameState::Connect, GameState::ServerSync].into(),
         );
         m.insert(
             GameState::Profile,
-            vec![
+            [
                 GameState::Loaded,
                 GameState::Connect,
                 GameState::Login,
                 GameState::Profile,
-            ],
+            ]
+            .into(),
         );
         m
     };

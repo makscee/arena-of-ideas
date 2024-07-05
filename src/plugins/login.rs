@@ -29,6 +29,7 @@ impl Plugin for LoginPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(GameState::Connect), Self::connect)
             .add_systems(OnEnter(GameState::Login), Self::login)
+            .add_systems(OnEnter(GameState::ForceLogin), Self::login)
             .init_resource::<ConnectionData>()
             .init_resource::<LoginData>();
     }
@@ -111,6 +112,7 @@ impl LoginPlugin {
     }
     fn login(world: &mut World) {
         GameState::set_ready(false);
+        let state = cur_state(world);
         let mut cd = world.resource_mut::<ConnectionData>();
         match cd.state {
             ConnectionState::Disconnected => panic!("Disconnected"),
@@ -122,7 +124,12 @@ impl LoginPlugin {
             ConnectionState::Connected => {
                 let identity = cd.creds.clone().unwrap().identity;
                 if let Some(user) = User::find(|u| u.identities.contains(&identity)) {
-                    cd.identity_user = Some(user);
+                    if matches!(state, GameState::ForceLogin) {
+                        Self::save_user(user, world);
+                        GameStatePlugin::path_proceed(world);
+                    } else {
+                        cd.identity_user = Some(user);
+                    }
                 }
             }
         }
