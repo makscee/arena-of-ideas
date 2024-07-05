@@ -43,11 +43,16 @@ impl ShopPlugin {
     }
     fn enter(mut sd: ResMut<ShopData>) {
         run_start();
-        ServerPlugin::subscribe_run();
-        once_on_subscription_applied(|| {
-            OperationsPlugin::add(|world| {
+        once_on_run_start(|_, _, status| match status {
+            spacetimedb_sdk::reducer::Status::Committed => OperationsPlugin::add(|world| {
                 Self::sync_run(Run::current(), world);
-            });
+            }),
+            spacetimedb_sdk::reducer::Status::Failed(e) => {
+                Notification::new(format!("Run start error: {e}"))
+                    .error()
+                    .push_op()
+            }
+            _ => panic!(),
         });
         let cb = Run::on_update(|_, run, _| {
             let run = run.clone();
@@ -148,8 +153,8 @@ impl ShopPlugin {
             .show(ctx, world);
     }
     pub fn show_containers(wd: &mut WidgetData, ui: &mut Ui, world: &mut World) {
-        let sd = world.resource::<ShopData>().clone();
         if let Some(run) = Run::get_current() {
+            let sd = world.resource::<ShopData>().clone();
             let shop = run.shop;
             let team = run.team;
             let g = run.g;

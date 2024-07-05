@@ -1,5 +1,6 @@
 use super::*;
 use spacetimedb_lib::de::serde::DeserializeWrapper;
+use spacetimedb_sdk::table::TableType;
 
 #[derive(AssetCollection, Resource)]
 pub struct GameAssetsHandles {
@@ -41,6 +42,16 @@ pub struct GlobalSettingsAsset {
 impl GameAssets {
     pub fn get(world: &World) -> &Self {
         world.resource::<Self>()
+    }
+    pub fn cache_tables(world: &mut World) {
+        let mut assets = world.resource_mut::<Self>();
+
+        assets.global_settings = GlobalSettings::iter().exactly_one().ok().unwrap();
+
+        assets.heroes.clear();
+        for unit in BaseUnit::iter() {
+            assets.heroes.insert(unit.name.clone(), unit.into());
+        }
     }
 }
 

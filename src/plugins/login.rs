@@ -83,7 +83,7 @@ impl LoginPlugin {
         info!("Connect start");
         once_on_connect(|creds, _| {
             let creds = creds.clone();
-            ServerPlugin::subscribe_users();
+            ServerPlugin::subscribe_user();
             once_on_subscription_applied(|| {
                 OperationsPlugin::add(|world| {
                     let mut cd = world.resource_mut::<ConnectionData>();
@@ -152,7 +152,13 @@ impl LoginPlugin {
                                     let mut cd = world.resource_mut::<ConnectionData>();
                                     cd.state = ConnectionState::LoggedIn;
                                     Self::save_user(cd.identity_user.clone().unwrap(), world);
-                                    GameStatePlugin::path_proceed(world);
+                                    ServerPlugin::subscribe_game();
+                                    once_on_subscription_applied(|| {
+                                        OperationsPlugin::add(|world| {
+                                            GameAssets::cache_tables(world);
+                                            GameStatePlugin::path_proceed(world);
+                                        });
+                                    });
                                 })
                             }
                             spacetimedb_sdk::reducer::Status::Failed(e) => {
