@@ -11,6 +11,7 @@
         shop_g_income_per_round: 1,
         shop_price_reroll: 1,
         shop_price_unit: 3,
+        shop_price_sell: 1,
         team_slots: 6,
     ),
 )

@@ -20,6 +20,7 @@ struct Run {
     g: i32,
     price_reroll: i32,
     price_unit: i32,
+    price_sell: i32,
 
     round: u32,
 
@@ -75,6 +76,22 @@ fn shop_reroll(ctx: ReducerContext) -> Result<(), String> {
 fn shop_buy(ctx: ReducerContext, slot: u8) -> Result<(), String> {
     let mut run = Run::current(&ctx)?;
     run.buy(slot)?;
+    run.save();
+    Ok(())
+}
+
+#[spacetimedb(reducer)]
+fn shop_sell(ctx: ReducerContext, slot: u8) -> Result<(), String> {
+    let mut run = Run::current(&ctx)?;
+    run.sell(slot)?;
+    run.save();
+    Ok(())
+}
+
+#[spacetimedb(reducer)]
+fn shop_change_g(ctx: ReducerContext, delta: i32) -> Result<(), String> {
+    let mut run = Run::current(&ctx)?;
+    run.g += delta;
     run.save();
     Ok(())
 }
@@ -194,6 +211,7 @@ impl Run {
             g: gs.shop_g_start,
             price_reroll: gs.shop_price_reroll,
             price_unit: gs.shop_price_unit,
+            price_sell: gs.shop_price_sell,
         }
     }
     fn next_id(&mut self) -> u64 {
@@ -229,6 +247,18 @@ impl Run {
         };
         slot.unit = Some(unit);
         Ok(())
+    }
+    fn sell(&mut self, slot: u8) -> Result<(), String> {
+        let s = self
+            .team
+            .get_mut(slot as usize)
+            .context_str("Wrong team slot")?;
+        if let Some(_) = s.unit.take() {
+            self.g += self.price_sell;
+            Ok(())
+        } else {
+            Err("Slot is empty".into())
+        }
     }
     fn get_team_mut(&mut self, slot: u8) -> Result<&mut FusedUnit, String> {
         self.team

@@ -1,3 +1,4 @@
+use bevy::input::common_conditions::input_just_pressed;
 use spacetimedb_sdk::{
     once_on_subscription_applied,
     table::{TableWithPrimaryKey, UpdateCallbackId},
@@ -12,6 +13,12 @@ impl Plugin for ShopPlugin {
         app.add_systems(OnEnter(GameState::Shop), Self::enter)
             .add_systems(OnExit(GameState::Shop), Self::exit)
             .init_resource::<ShopData>();
+        if cfg!(debug_assertions) {
+            app.add_systems(
+                Update,
+                Self::give_g.run_if(input_just_pressed(KeyCode::KeyG)),
+            );
+        }
     }
 }
 
@@ -31,6 +38,9 @@ impl Default for ShopData {
 }
 
 impl ShopPlugin {
+    fn give_g() {
+        shop_change_g(10);
+    }
     fn enter(mut sd: ResMut<ShopData>) {
         run_start();
         ServerPlugin::subscribe_run();
@@ -141,6 +151,7 @@ impl ShopPlugin {
         let sd = world.resource::<ShopData>().clone();
         if let Some(run) = Run::get_current() {
             let shop = run.shop;
+            let team = run.team;
             let g = run.g;
             UnitContainer::new(Faction::Shop)
                 .direction(Side::Top)
@@ -157,26 +168,36 @@ impl ShopPlugin {
                     }
                 })
                 .slot_content(move |slot, ui, _| {
-                    ui.vertical_centered_justified(|ui| {
-                        let ind = slot - 1;
-                        let ss = &shop[ind];
-                        if ss.available {
-                            if Button::click(format!("-{} G", ss.price))
-                                .title("buy".into())
-                                .enabled(g >= ss.price)
-                                .ui(ui)
-                                .clicked()
-                            {
-                                shop_buy(ind as u8);
-                            }
+                    let ind = slot - 1;
+                    let ss = &shop[ind];
+                    if ss.available {
+                        if Button::click(format!("-{} G", ss.price))
+                            .title("buy".into())
+                            .enabled(g >= ss.price)
+                            .ui(ui)
+                            .clicked()
+                        {
+                            shop_buy(ind as u8);
                         }
-                    });
+                    }
                 })
                 .ui(wd, ui, world);
             UnitContainer::new(Faction::Team)
                 .direction(Side::Bottom)
                 .offset([0.0, sd.case_height])
                 .slots(5)
+                .slot_content(move |slot, ui, world| {
+                    let ind = slot - 1;
+                    if team[ind].unit.is_some() {
+                        if Button::click("+1 G".into())
+                            .title("Sell".into())
+                            .ui(ui)
+                            .clicked()
+                        {
+                            shop_sell(ind as u8);
+                        }
+                    }
+                })
                 .ui(wd, ui, world);
         }
     }

@@ -38,7 +38,9 @@ pub mod run_start_reducer;
 pub mod set_name_reducer;
 pub mod set_password_reducer;
 pub mod shop_buy_reducer;
+pub mod shop_change_g_reducer;
 pub mod shop_reroll_reducer;
+pub mod shop_sell_reducer;
 pub mod shop_slot;
 pub mod stack_reducer;
 pub mod sync_all_assets_reducer;
@@ -67,7 +69,9 @@ pub use run_start_reducer::*;
 pub use set_name_reducer::*;
 pub use set_password_reducer::*;
 pub use shop_buy_reducer::*;
+pub use shop_change_g_reducer::*;
 pub use shop_reroll_reducer::*;
+pub use shop_sell_reducer::*;
 pub use shop_slot::*;
 pub use stack_reducer::*;
 pub use sync_all_assets_reducer::*;
@@ -93,7 +97,9 @@ pub enum ReducerEvent {
     SetName(set_name_reducer::SetNameArgs),
     SetPassword(set_password_reducer::SetPasswordArgs),
     ShopBuy(shop_buy_reducer::ShopBuyArgs),
+    ShopChangeG(shop_change_g_reducer::ShopChangeGArgs),
     ShopReroll(shop_reroll_reducer::ShopRerollArgs),
+    ShopSell(shop_sell_reducer::ShopSellArgs),
     Stack(stack_reducer::StackArgs),
     SyncAllAssets(sync_all_assets_reducer::SyncAllAssetsArgs),
 }
@@ -194,7 +200,9 @@ match &function_call.reducer[..] {
 			"set_name" => _reducer_callbacks.handle_event_of_type::<set_name_reducer::SetNameArgs, ReducerEvent>(event, _state, ReducerEvent::SetName),
 			"set_password" => _reducer_callbacks.handle_event_of_type::<set_password_reducer::SetPasswordArgs, ReducerEvent>(event, _state, ReducerEvent::SetPassword),
 			"shop_buy" => _reducer_callbacks.handle_event_of_type::<shop_buy_reducer::ShopBuyArgs, ReducerEvent>(event, _state, ReducerEvent::ShopBuy),
+			"shop_change_g" => _reducer_callbacks.handle_event_of_type::<shop_change_g_reducer::ShopChangeGArgs, ReducerEvent>(event, _state, ReducerEvent::ShopChangeG),
 			"shop_reroll" => _reducer_callbacks.handle_event_of_type::<shop_reroll_reducer::ShopRerollArgs, ReducerEvent>(event, _state, ReducerEvent::ShopReroll),
+			"shop_sell" => _reducer_callbacks.handle_event_of_type::<shop_sell_reducer::ShopSellArgs, ReducerEvent>(event, _state, ReducerEvent::ShopSell),
 			"stack" => _reducer_callbacks.handle_event_of_type::<stack_reducer::StackArgs, ReducerEvent>(event, _state, ReducerEvent::Stack),
 			"sync_all_assets" => _reducer_callbacks.handle_event_of_type::<sync_all_assets_reducer::SyncAllAssetsArgs, ReducerEvent>(event, _state, ReducerEvent::SyncAllAssets),
 			unknown => { spacetimedb_sdk::log::error!("Event on an unknown reducer: {:?}", unknown); None }

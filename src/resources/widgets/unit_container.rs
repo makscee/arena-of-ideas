@@ -114,7 +114,9 @@ impl UnitContainer {
                             show_frame(i, max_size, data, ui);
                         });
                         if let Some(content) = &self.slot_content {
-                            content(i, &mut ui[col], world);
+                            ui[col].vertical_centered_justified(|ui| {
+                                content(i, ui, world);
+                            });
                         }
                     }
                 });

@@ -24,6 +24,7 @@ pub struct GlobalSettings {
     pub shop_g_income_per_round: i32,
     pub shop_price_reroll: i32,
     pub shop_price_unit: i32,
+    pub shop_price_sell: i32,
     pub team_slots: u32,
 }
 
@@ -72,6 +73,10 @@ impl GlobalSettings {
     #[allow(unused)]
     pub fn filter_by_shop_price_unit(shop_price_unit: i32) -> TableIter<Self> {
         Self::filter(|row| row.shop_price_unit == shop_price_unit)
+    }
+    #[allow(unused)]
+    pub fn filter_by_shop_price_sell(shop_price_sell: i32) -> TableIter<Self> {
+        Self::filter(|row| row.shop_price_sell == shop_price_sell)
     }
     #[allow(unused)]
     pub fn filter_by_team_slots(team_slots: u32) -> TableIter<Self> {

@@ -13,6 +13,7 @@ pub struct GlobalSettings {
     pub shop_g_income_per_round: i32,
     pub shop_price_reroll: i32,
     pub shop_price_unit: i32,
+    pub shop_price_sell: i32,
     pub team_slots: u32,
 }
 
