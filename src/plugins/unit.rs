@@ -161,6 +161,9 @@ impl UnitPlugin {
         }
         world.insert_resource(data);
     }
+    pub fn despawn(entity: Entity, world: &mut World) {
+        world.entity_mut(entity).despawn_recursive();
+    }
 }
 
 #[derive(

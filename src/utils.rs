@@ -1,4 +1,5 @@
 use bevy::input::mouse::MouseButton;
+use spacetimedb_sdk::table::TableType;
 
 use super::*;
 
@@ -309,5 +310,19 @@ pub trait WorldExt {
 impl WorldExt for World {
     fn game_clear(&mut self) {
         Representation::despawn_all(self);
+    }
+}
+
+pub trait TableExt {
+    fn current() -> Self;
+    fn get_current() -> Option<Box<Self>>;
+}
+
+impl TableExt for Run {
+    fn current() -> Self {
+        *Self::get_current().unwrap()
+    }
+    fn get_current() -> Option<Box<Self>> {
+        Run::iter().exactly_one().ok().map(|d| Box::new(d))
     }
 }

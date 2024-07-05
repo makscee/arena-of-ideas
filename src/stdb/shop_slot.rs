@@ -15,8 +15,8 @@ use spacetimedb_sdk::{
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct ShopSlot {
     pub unit: String,
+    pub id: u64,
     pub price: i32,
-    pub open: bool,
     pub freeze: bool,
     pub discount: bool,
     pub available: bool,

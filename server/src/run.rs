@@ -12,6 +12,8 @@ struct Run {
     #[unique]
     user_id: u64,
 
+    next_id: u64,
+
     team: Vec<TeamSlot>,
     shop: Vec<ShopSlot>,
     fusion: Option<Fusion>,
@@ -24,8 +26,8 @@ struct Run {
 #[derive(SpacetimeType, Clone, Default)]
 struct ShopSlot {
     unit: String,
+    id: u64,
     price: i32,
-    open: bool,
     freeze: bool,
     discount: bool,
     available: bool,
@@ -181,7 +183,12 @@ impl Run {
             fusion: None,
             round: 0,
             last_updated: Timestamp::now(),
+            next_id: 0,
         }
+    }
+    fn next_id(&mut self) -> u64 {
+        self.next_id += 1;
+        self.next_id
     }
     fn current(ctx: &ReducerContext) -> Result<Self, String> {
         Run::filter_by_user_id(&User::find_by_identity(&ctx.sender)?.id)
@@ -195,11 +202,8 @@ impl Run {
         if !s.available {
             return Err("Unit already bought".to_owned());
         }
-        if !s.open {
-            return Err("Shop slot not open".to_owned());
-        }
         s.available = false;
-        let unit = FusedUnit::from_base(s.unit.clone());
+        let unit = FusedUnit::from_base(s.unit.clone(), self.next_id());
         let slot = if let Some(slot) = self.team.iter_mut().find(|s| s.unit.is_none()) {
             slot
         } else {
@@ -234,14 +238,16 @@ impl Run {
         Self::update_by_user_id(&self.user_id.clone(), self);
     }
     fn fill_case(&mut self) {
-        self.shop = vec![ShopSlot::default(); self.shop.len()];
         let gs = GlobalSettings::get();
         let slots = (gs.shop_slots_min + (gs.shop_slots_per_round * self.round as f32) as u32)
             .min(gs.shop_slots_max) as usize;
+        self.shop = vec![ShopSlot::default(); slots];
         for i in 0..slots {
+            let id = self.next_id();
             let s = &mut self.shop[i];
             s.available = true;
-            s.open = true;
+            s.price = 3;
+            s.id = id;
             s.unit = BaseUnit::iter().choose(&mut thread_rng()).unwrap().name;
         }
     }

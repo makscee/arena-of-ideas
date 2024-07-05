@@ -14,6 +14,7 @@ use spacetimedb_sdk::{
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct FusedUnit {
+    pub id: u64,
     pub bases: Vec<String>,
     pub triggers: Vec<u32>,
     pub targets: Vec<u32>,

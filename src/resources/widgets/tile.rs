@@ -89,7 +89,7 @@ impl Tile {
             }
             ui.vertical_centered_justified(|ui| {
                 content(ui, world);
-                if self.close_btn && Button::gray("Close").ui(ui).clicked() {
+                if self.close_btn && Button::gray("Close".into()).ui(ui).clicked() {
                     ui.ctx().flip_path_enabled(&path);
                 }
             });

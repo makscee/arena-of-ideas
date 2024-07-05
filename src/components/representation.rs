@@ -31,12 +31,12 @@ impl Representation {
             .entity_mut(entity)
             .insert(TransformBundle::default())
             .insert(VisibilityBundle::default());
-        VarState::default().attach(entity, world);
+        VarState::default().attach(entity, 0, world);
         self.entity = Some(entity);
         for i in 0..self.count.max(1) {
             let entity = world.spawn_empty().set_parent(entity).id();
             self.material.unpack(entity, world);
-            VarState::new_with(VarName::Index, VarValue::Int(i as i32)).attach(entity, world);
+            VarState::new_with(VarName::Index, VarValue::Int(i as i32)).attach(entity, 0, world);
             world.get_mut::<Transform>(entity).unwrap().translation.z += 0.001 * i as f32;
             self.material_entities.push(entity);
         }

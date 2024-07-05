@@ -6,6 +6,7 @@ use super::*;
 
 #[derive(SpacetimeType, Clone)]
 pub struct FusedUnit {
+    pub id: u64,
     pub bases: Vec<String>,
     pub triggers: Vec<u32>,
     pub targets: Vec<u32>,
@@ -14,13 +15,14 @@ pub struct FusedUnit {
 }
 
 impl FusedUnit {
-    pub fn from_base(name: String) -> Self {
+    pub fn from_base(name: String, id: u64) -> Self {
         Self {
             bases: vec![name],
             triggers: vec![0],
             targets: vec![0],
             effects: vec![0],
             stacks: 1,
+            id,
         }
     }
     pub fn get_bases(&self) -> Vec<BaseUnit> {

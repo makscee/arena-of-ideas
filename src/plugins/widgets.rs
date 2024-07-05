@@ -54,8 +54,8 @@ impl WidgetsPlugin {
                         .cstr_cs(DARK_WHITE, CstrStyle::Heading2)
                         .label(ui);
                     br(ui);
-                    Button::toggle_child("New Game").ui(ui);
-                    Button::toggle_child("Settings").ui(ui);
+                    Button::toggle_child("New Game".into()).ui(ui);
+                    Button::toggle_child("Settings".into()).ui(ui);
                 })
                 .child(|ctx, world| {
                     Tile::right("New Game")
@@ -87,7 +87,7 @@ impl WidgetsPlugin {
                 .title()
                 .open()
                 .content(|ui, _| {
-                    Button::toggle_child("Settings").ui(ui);
+                    Button::toggle_child("Settings".into()).ui(ui);
                 })
                 .child(|ctx, world| {
                     Tile::right("Settings")
@@ -105,7 +105,7 @@ impl WidgetsPlugin {
                     .content(move |ui, world| {
                         let mut data = world.resource_mut::<ShopData>();
                         Slider::new("offset")
-                            .range(0.0..=400.0)
+                            .range(-100.0..=400.0)
                             .ui(&mut data.case_height, ui);
                     })
                     .show(ctx, world);
@@ -201,7 +201,7 @@ impl WidgetsPlugin {
             .show(ctx, |ui| match state {
                 GameState::Shop => ShopPlugin::show_containers(&mut wd, ui, world),
                 GameState::Connect => LoginPlugin::connect_ui(ui, world),
-                GameState::Login => LoginPlugin::login_ui(ui, world),
+                GameState::Login | GameState::ForceLogin => LoginPlugin::login_ui(ui, world),
                 _ => {}
             });
         Notification::show_all(&wd, ctx, world);

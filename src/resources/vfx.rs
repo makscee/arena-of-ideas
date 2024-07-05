@@ -28,7 +28,7 @@ impl Vfx {
         if let Some(parent) = self.parent {
             world.entity_mut(entity).set_parent(parent);
         }
-        self.state.attach(entity, world);
+        self.state.attach(entity, 0, world);
         let result = self.anim.apply(Context::new(entity), world);
         if let Some(duration) = self.duration {
             let mut state = VarState::get_mut(entity, world);

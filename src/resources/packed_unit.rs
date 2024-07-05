@@ -39,7 +39,13 @@ fn default_house() -> Vec<String> {
 }
 
 impl PackedUnit {
-    pub fn unpack(mut self, parent: Entity, slot: Option<i32>, world: &mut World) -> Entity {
+    pub fn unpack(
+        mut self,
+        parent: Entity,
+        slot: Option<i32>,
+        id: Option<u64>,
+        world: &mut World,
+    ) -> Entity {
         let entity = world
             .spawn_empty()
             .set_parent(parent)
@@ -50,7 +56,7 @@ impl PackedUnit {
                 TextColumn::default(),
             ))
             .id();
-        debug!("unpack unit: {entity:?} {self:?}");
+        debug!("unpack unit: #{id:?} {entity:?} {self:?}");
         self.state = self.generate_state(world);
         {
             self.representation.unpack(entity, world);
@@ -62,7 +68,7 @@ impl PackedUnit {
             emut.get_mut::<Transform>().unwrap().translation.z += 100.0;
         }
         self.state
-            .init(VarName::Slot, VarValue::Int(slot.unwrap_or_default()));
+            .init(VarName::Slot, slot.unwrap_or_default().into());
         Status {
             name: "_local".to_owned(),
             trigger: self.trigger,
@@ -70,11 +76,9 @@ impl PackedUnit {
         .spawn(entity, world);
         self.state.add_status(
             "_local".to_owned(),
-            VarState::default()
-                .init(VarName::Charges, VarValue::Int(1))
-                .take(),
+            VarState::default().init(VarName::Charges, 1.into()).take(),
         );
-        self.state.attach(entity, world);
+        self.state.attach(entity, id.unwrap_or_default(), world);
         for (status, charges) in self.statuses {
             let _ = Status::change_charges(&status, entity, charges, world);
         }
@@ -82,7 +86,7 @@ impl PackedUnit {
         entity
     }
 
-    pub fn generate_state(&self, world: &World) -> VarState {
+    pub fn generate_state(&self, _: &World) -> VarState {
         let mut state = self.state.clone();
         state
             .init(VarName::Hp, self.hp.into())

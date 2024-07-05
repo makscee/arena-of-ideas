@@ -78,25 +78,26 @@ impl UnitContainer {
             Side::Top => (Align2::CENTER_BOTTOM, egui::vec2(0.0, -center.y)),
             Side::Bottom => (Align2::CENTER_TOP, egui::vec2(0.0, center.y)),
         };
-        let margin = Margin::same(8.0);
+        const MARGIN: Margin = Margin::same(8.0);
         let max_size = ui.available_rect_before_wrap().width() / self.slots as f32
-            - margin.left
-            - margin.right;
+            - MARGIN.left
+            - MARGIN.right;
+        const FRAME: Frame = Frame {
+            inner_margin: MARGIN,
+            outer_margin: Margin::ZERO,
+            rounding: Rounding::same(13.0),
+            shadow: Shadow::NONE,
+            fill: TRANSPARENT,
+            stroke: Stroke {
+                width: 1.0,
+                color: LIGHT_GRAY,
+            },
+        };
         let resp = Window::new(&name)
             .anchor(anchor, self.offset + offset)
             .constrain_to(ui.available_rect_before_wrap())
             .resizable([true, false])
-            .frame(Frame {
-                inner_margin: margin,
-                outer_margin: default(),
-                rounding: Rounding::same(13.0),
-                shadow: default(),
-                fill: TRANSPARENT,
-                stroke: Stroke {
-                    width: 1.0,
-                    color: LIGHT_GRAY,
-                },
-            })
+            .frame(FRAME)
             .title_bar(false)
             .show(ui.ctx(), |ui| {
                 ui.columns(self.slots, |ui| {

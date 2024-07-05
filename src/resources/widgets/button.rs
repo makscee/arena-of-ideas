@@ -3,9 +3,9 @@ use egui::Sense;
 use super::*;
 
 pub struct Button {
-    name: &'static str,
+    name: String,
     variant: ButtonVariant,
-    title: Option<&'static str>,
+    title: Option<String>,
     enabled: bool,
 }
 
@@ -29,24 +29,24 @@ impl Default for Button {
 }
 
 impl Button {
-    pub fn click(name: &'static str) -> Self {
+    pub fn click(name: String) -> Self {
         Self { name, ..default() }
     }
-    pub fn toggle_child(name: &'static str) -> Self {
+    pub fn toggle_child(name: String) -> Self {
         Self {
             name,
             variant: ButtonVariant::ToggleChild,
             ..default()
         }
     }
-    pub fn gray(name: &'static str) -> Self {
+    pub fn gray(name: String) -> Self {
         Self {
             name,
             variant: ButtonVariant::ClickGray,
             ..default()
         }
     }
-    pub fn title(mut self, text: &'static str) -> Self {
+    pub fn title(mut self, text: String) -> Self {
         self.title = Some(text);
         self
     }
@@ -55,7 +55,7 @@ impl Button {
         self
     }
     pub fn ui(self, ui: &mut Ui) -> Response {
-        ui.ctx().add_path(self.name);
+        ui.ctx().add_path(&self.name);
         let path = ui.ctx().path();
         if let Some(title) = self.title {
             title.cstr().label(ui);

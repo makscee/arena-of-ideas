@@ -83,7 +83,7 @@ impl LoginPlugin {
         info!("Connect start");
         once_on_connect(|creds, _| {
             let creds = creds.clone();
-            subscribe(&["select * from User"]).expect("Failed to subscribe to tables");
+            ServerPlugin::subscribe_users();
             once_on_subscription_applied(|| {
                 OperationsPlugin::add(|world| {
                     let mut cd = world.resource_mut::<ConnectionData>();
@@ -147,7 +147,7 @@ impl LoginPlugin {
                     format!("Login as {}", user.name)
                         .cstr_cs(LIGHT_GRAY, CstrStyle::Heading2)
                         .label(ui);
-                    if Button::click("Login").ui(ui).clicked() {
+                    if Button::click("Login".into()).ui(ui).clicked() {
                         login_by_identity();
                         once_on_login_by_identity(|_, _, status| match status {
                             spacetimedb_sdk::reducer::Status::Committed => {
@@ -165,13 +165,13 @@ impl LoginPlugin {
                         });
                     }
                     br(ui);
-                    if Button::gray("Logout").ui(ui).clicked() {
+                    if Button::gray("Logout".into()).ui(ui).clicked() {
                         cd.identity_user = None;
                     }
                 } else {
                     let mut ld = world.resource_mut::<LoginData>();
                     "Register".cstr_cs(LIGHT_GRAY, CstrStyle::Heading).label(ui);
-                    if Button::click("New Player").ui(ui).clicked() {
+                    if Button::click("New Player".into()).ui(ui).clicked() {
                         register_empty();
                         once_on_register_empty(|_, _, status| match status {
                             spacetimedb_sdk::reducer::Status::Committed => {
@@ -197,7 +197,7 @@ impl LoginPlugin {
                     "Login".cstr_cs(LIGHT_GRAY, CstrStyle::Heading).label(ui);
                     Input::new("name").ui(&mut ld.name, ui);
                     Input::new("password").password().ui(&mut ld.pass, ui);
-                    if Button::click("Submit").ui(ui).clicked() {
+                    if Button::click("Submit".into()).ui(ui).clicked() {
                         login(ld.name.clone(), ld.pass.clone());
                         once_on_login(|_, _, status, name, _| match status {
                             spacetimedb_sdk::reducer::Status::Committed => {

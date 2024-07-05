@@ -19,6 +19,7 @@ use spacetimedb_sdk::{
 pub struct Run {
     pub id: u64,
     pub user_id: u64,
+    pub next_id: u64,
     pub team: Vec<TeamSlot>,
     pub shop: Vec<ShopSlot>,
     pub fusion: Option<Fusion>,
@@ -46,6 +47,10 @@ impl Run {
     #[allow(unused)]
     pub fn filter_by_user_id(user_id: u64) -> Option<Self> {
         Self::find(|row| row.user_id == user_id)
+    }
+    #[allow(unused)]
+    pub fn filter_by_next_id(next_id: u64) -> TableIter<Self> {
+        Self::filter(|row| row.next_id == next_id)
     }
     #[allow(unused)]
     pub fn filter_by_team(team: Vec<TeamSlot>) -> TableIter<Self> {

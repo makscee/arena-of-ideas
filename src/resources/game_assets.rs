@@ -85,19 +85,15 @@ impl LoadingPlugin {
             .clone();
 
         let heroes = world.resource::<Assets<PackedUnit>>();
-        let heroes = HashMap::from_iter(
-            handles
-                .heroes
-                .iter()
-                .map(|(name, h)| (name_from_path(name), heroes.get(h).unwrap().clone())),
-        );
+        let heroes = HashMap::from_iter(handles.heroes.iter().map(|(_, h)| {
+            let hero = heroes.get(h).unwrap().clone();
+            (hero.name.clone(), hero)
+        }));
         let houses = world.resource::<Assets<House>>();
-        let houses = HashMap::from_iter(
-            handles
-                .houses
-                .iter()
-                .map(|(name, h)| (name_from_path(name), houses.get(h).unwrap().clone())),
-        );
+        let houses = HashMap::from_iter(handles.houses.iter().map(|(_, h)| {
+            let house = houses.get(h).unwrap().clone();
+            (house.name.clone(), house)
+        }));
         let abilities = HashMap::from_iter(
             houses
                 .values()

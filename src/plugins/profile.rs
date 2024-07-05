@@ -29,7 +29,7 @@ impl ProfilePlugin {
         let has_pass = LoginPlugin::user(world).pass_hash.is_some();
         let mut ped = world.resource_mut::<ProfileEditData>();
         Input::new("name").ui(&mut ped.name, ui);
-        if Button::click("Submit")
+        if Button::click("Submit".into())
             .enabled(!ped.name.eq(user_name()))
             .ui(ui)
             .clicked()
@@ -64,7 +64,7 @@ impl ProfilePlugin {
         Input::new("new password repeat")
             .password()
             .ui(&mut ped.pass_repeat, ui);
-        if Button::click("Submit")
+        if Button::click("Submit".into())
             .enabled(!ped.pass.is_empty() && ped.pass.eq(&ped.pass_repeat))
             .ui(ui)
             .clicked()

@@ -12,6 +12,7 @@ impl PackedTeam {
             unit.unpack(
                 TeamPlugin::entity(faction, world),
                 Some(slot as i32 + 1),
+                None,
                 world,
             );
         }
