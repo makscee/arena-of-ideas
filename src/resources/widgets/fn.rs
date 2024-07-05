@@ -20,3 +20,25 @@ pub fn center_window(name: &str, ui: &mut Ui, add_contents: impl FnOnce(&mut Ui)
         .resizable([true, false])
         .show(ui.ctx(), add_contents);
 }
+pub fn text_dots_text(text1: &Cstr, text2: &Cstr, ui: &mut Ui) {
+    ui.horizontal(|ui| {
+        let rect = ui.max_rect();
+        let left = rect.left() + text1.label(ui).rect.width() + 3.0;
+        let right = rect.right()
+            - 3.0
+            - ui.with_layout(Layout::right_to_left(egui::Align::Min), |ui| {
+                text2.label(ui);
+            })
+            .response
+            .rect
+            .width();
+        let bottom = rect.bottom() - 6.0;
+        let line = egui::Shape::dotted_line(
+            &[[left, bottom].into(), [right, bottom].into()],
+            LIGHT_GRAY,
+            8.0,
+            0.5,
+        );
+        ui.painter().add(line);
+    });
+}

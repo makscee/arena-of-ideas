@@ -5,7 +5,7 @@ use super::*;
 pub struct ServerPlugin;
 
 impl Plugin for ServerPlugin {
-    fn build(&self, app: &mut App) {}
+    fn build(&self, _: &mut App) {}
 }
 
 static SERVER_DATA: Mutex<ServerData> = Mutex::new(ServerData {

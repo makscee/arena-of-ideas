@@ -23,6 +23,9 @@ pub struct Run {
     pub team: Vec<TeamSlot>,
     pub shop: Vec<ShopSlot>,
     pub fusion: Option<Fusion>,
+    pub g: i32,
+    pub price_reroll: i32,
+    pub price_unit: i32,
     pub round: u32,
     pub last_updated: u64,
 }
@@ -63,6 +66,18 @@ impl Run {
     #[allow(unused)]
     pub fn filter_by_fusion(fusion: Option<Fusion>) -> TableIter<Self> {
         Self::filter(|row| row.fusion == fusion)
+    }
+    #[allow(unused)]
+    pub fn filter_by_g(g: i32) -> TableIter<Self> {
+        Self::filter(|row| row.g == g)
+    }
+    #[allow(unused)]
+    pub fn filter_by_price_reroll(price_reroll: i32) -> TableIter<Self> {
+        Self::filter(|row| row.price_reroll == price_reroll)
+    }
+    #[allow(unused)]
+    pub fn filter_by_price_unit(price_unit: i32) -> TableIter<Self> {
+        Self::filter(|row| row.price_unit == price_unit)
     }
     #[allow(unused)]
     pub fn filter_by_round(round: u32) -> TableIter<Self> {

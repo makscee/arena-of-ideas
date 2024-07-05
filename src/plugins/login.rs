@@ -3,7 +3,7 @@ use std::thread::sleep;
 use bevy_tasks::IoTaskPool;
 use spacetimedb_sdk::{
     identity::{load_credentials, once_on_connect, Credentials},
-    once_on_subscription_applied, subscribe,
+    once_on_subscription_applied,
     table::TableType,
 };
 
@@ -112,7 +112,6 @@ impl LoginPlugin {
     }
     fn login(world: &mut World) {
         GameState::set_ready(false);
-        let state = cur_state(world);
         let mut cd = world.resource_mut::<ConnectionData>();
         match cd.state {
             ConnectionState::Disconnected => panic!("Disconnected"),
@@ -124,12 +123,7 @@ impl LoginPlugin {
             ConnectionState::Connected => {
                 let identity = cd.creds.clone().unwrap().identity;
                 if let Some(user) = User::find(|u| u.identities.contains(&identity)) {
-                    if matches!(state, GameState::ForceLogin) {
-                        Self::save_user(user, world);
-                        GameStatePlugin::path_proceed(world);
-                    } else {
-                        cd.identity_user = Some(user);
-                    }
+                    cd.identity_user = Some(user);
                 }
             }
         }
@@ -140,6 +134,7 @@ impl LoginPlugin {
         });
     }
     pub fn login_ui(ui: &mut Ui, world: &mut World) {
+        let state = cur_state(world);
         center_window("login", ui, |ui| {
             ui.vertical_centered_justified(|ui| {
                 let mut cd = world.resource_mut::<ConnectionData>();
@@ -147,7 +142,9 @@ impl LoginPlugin {
                     format!("Login as {}", user.name)
                         .cstr_cs(LIGHT_GRAY, CstrStyle::Heading2)
                         .label(ui);
-                    if Button::click("Login".into()).ui(ui).clicked() {
+                    if Button::click("Login".into()).ui(ui).clicked()
+                        || matches!(state, GameState::ForceLogin)
+                    {
                         login_by_identity();
                         once_on_login_by_identity(|_, _, status| match status {
                             spacetimedb_sdk::reducer::Status::Committed => {

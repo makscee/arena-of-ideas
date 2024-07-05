@@ -7,7 +7,7 @@ pub struct UnitContainer {
     slots: usize,
     left_to_right: bool,
     offset: egui::Vec2,
-    side_content: Option<Box<dyn FnOnce(&mut Ui, &mut World) + Send + Sync>>,
+    top_content: Option<Box<dyn FnOnce(&mut Ui, &mut World) + Send + Sync>>,
     slot_content: Option<Box<dyn Fn(usize, &mut Ui, &mut World) + Send + Sync>>,
     direction: Side,
 }
@@ -32,7 +32,7 @@ impl UnitContainer {
             slots: 5,
             offset: default(),
             left_to_right: false,
-            side_content: default(),
+            top_content: default(),
             slot_content: default(),
             direction: Side::Top,
         }
@@ -53,11 +53,11 @@ impl UnitContainer {
         self.direction = side;
         self
     }
-    pub fn side_content(
+    pub fn top_content(
         mut self,
         content: impl FnOnce(&mut Ui, &mut World) + Send + Sync + 'static,
     ) -> Self {
-        self.side_content = Some(Box::new(content));
+        self.top_content = Some(Box::new(content));
         self
     }
     pub fn slot_content(
@@ -100,6 +100,9 @@ impl UnitContainer {
             .frame(FRAME)
             .title_bar(false)
             .show(ui.ctx(), |ui| {
+                if let Some(content) = self.top_content {
+                    content(ui, world);
+                }
                 ui.columns(self.slots, |ui| {
                     for i in 1..=self.slots {
                         let col = if self.left_to_right {

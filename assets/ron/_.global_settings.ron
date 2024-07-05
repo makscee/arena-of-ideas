@@ -5,6 +5,12 @@
         shop_slots_min: 3,
         shop_slots_max: 6,
         shop_slots_per_round: 0.34,
+        shop_g_start: 4,
+        shop_g_income_min: 3,
+        shop_g_income_max: 6,
+        shop_g_income_per_round: 1,
+        shop_price_reroll: 1,
+        shop_price_unit: 3,
         team_slots: 6,
     ),
 )

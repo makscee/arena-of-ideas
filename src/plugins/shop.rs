@@ -92,7 +92,7 @@ impl ShopPlugin {
                 .map(|e| (VarState::get(e, world).id(), e)),
         );
         let team = TeamPlugin::entity(Faction::Team, world);
-        for (i, TeamSlot { unit, extra }) in run.team.into_iter().enumerate() {
+        for (i, TeamSlot { unit, extra: _ }) in run.team.into_iter().enumerate() {
             if let Some(unit) = unit {
                 let id = unit.id;
                 if team_units.contains_key(&id) {
@@ -108,14 +108,54 @@ impl ShopPlugin {
             UnitPlugin::despawn(entity, world);
         }
     }
+    pub fn widgets(ctx: &egui::Context, world: &mut World) {
+        TopMenu::new(vec!["Container Config"]).show(ctx);
+        Tile::left("Container Config")
+            .content(|ui, world| {
+                let mut data = world.resource_mut::<ShopData>();
+                Slider::new("offset")
+                    .range(-100.0..=400.0)
+                    .ui(&mut data.case_height, ui);
+            })
+            .show(ctx, world);
+    }
+    pub fn overlay_widgets(ctx: &egui::Context, world: &mut World) {
+        Tile::left("Stats")
+            .open()
+            .transparent()
+            .non_resizable()
+            .content(|ui, _| {
+                text_dots_text(&"name".cstr(), &user_name().cstr_c(WHITE), ui);
+                if let Some(run) = Run::get_current() {
+                    text_dots_text(
+                        &"G".cstr(),
+                        &run.g.to_string().cstr_cs(YELLOW, CstrStyle::Bold),
+                        ui,
+                    );
+                    text_dots_text(&"round".cstr(), &run.round.to_string().cstr_c(WHITE), ui);
+                }
+            })
+            .show(ctx, world);
+    }
     pub fn show_containers(wd: &mut WidgetData, ui: &mut Ui, world: &mut World) {
         let sd = world.resource::<ShopData>().clone();
         if let Some(run) = Run::get_current() {
             let shop = run.shop;
+            let g = run.g;
             UnitContainer::new(Faction::Shop)
                 .direction(Side::Top)
                 .offset([0.0, -sd.case_height])
                 .slots(shop.len())
+                .top_content(move |ui, _| {
+                    if Button::click(format!("-1 G"))
+                        .title("Reroll".into())
+                        .enabled(g >= 1)
+                        .ui(ui)
+                        .clicked()
+                    {
+                        shop_reroll();
+                    }
+                })
                 .slot_content(move |slot, ui, _| {
                     ui.vertical_centered_justified(|ui| {
                         let ind = slot - 1;
@@ -123,6 +163,7 @@ impl ShopPlugin {
                         if ss.available {
                             if Button::click(format!("-{} G", ss.price))
                                 .title("buy".into())
+                                .enabled(g >= ss.price)
                                 .ui(ui)
                                 .clicked()
                             {

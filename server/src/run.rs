@@ -17,6 +17,9 @@ struct Run {
     team: Vec<TeamSlot>,
     shop: Vec<ShopSlot>,
     fusion: Option<Fusion>,
+    g: i32,
+    price_reroll: i32,
+    price_unit: i32,
 
     round: u32,
 
@@ -59,6 +62,10 @@ fn run_start(ctx: ReducerContext) -> Result<(), String> {
 #[spacetimedb(reducer)]
 fn shop_reroll(ctx: ReducerContext) -> Result<(), String> {
     let mut run = Run::current(&ctx)?;
+    if run.g < run.price_reroll {
+        return Err("Not enough G".into());
+    }
+    run.g -= run.price_reroll;
     run.fill_case();
     run.save();
     Ok(())
@@ -184,6 +191,9 @@ impl Run {
             round: 0,
             last_updated: Timestamp::now(),
             next_id: 0,
+            g: gs.shop_g_start,
+            price_reroll: gs.shop_price_reroll,
+            price_unit: gs.shop_price_unit,
         }
     }
     fn next_id(&mut self) -> u64 {
@@ -202,6 +212,10 @@ impl Run {
         if !s.available {
             return Err("Unit already bought".to_owned());
         }
+        if s.price > self.g {
+            return Err("Not enough G".to_owned());
+        }
+        self.g -= s.price;
         s.available = false;
         let unit = FusedUnit::from_base(s.unit.clone(), self.next_id());
         let slot = if let Some(slot) = self.team.iter_mut().find(|s| s.unit.is_none()) {
@@ -246,7 +260,7 @@ impl Run {
             let id = self.next_id();
             let s = &mut self.shop[i];
             s.available = true;
-            s.price = 3;
+            s.price = self.price_unit;
             s.id = id;
             s.unit = BaseUnit::iter().choose(&mut thread_rng()).unwrap().name;
         }
