@@ -144,20 +144,28 @@ impl UnitPlugin {
         };
         let delta = delta_time(world);
         let units = Self::collect_factions([Faction::Shop, Faction::Team].into(), world);
-        let data = world.remove_resource::<WidgetData>().unwrap();
+        let mut data = world.remove_resource::<WidgetData>().unwrap();
         let camera = world.get::<Camera>(cam_entity).unwrap().clone();
         let transform = world.get::<GlobalTransform>(cam_entity).unwrap().clone();
+        for cd in data.unit_container.values_mut() {
+            for e in cd.entities.iter_mut() {
+                *e = None;
+            }
+        }
         for (entity, faction) in units {
-            let mut state = VarState::get_mut(entity, world);
-            let slot = state.get_int(VarName::Slot).unwrap();
-            let position = state.get_vec2(VarName::Position).unwrap();
-            let need_pos = data
-                .unit_container
-                .get(&faction)
-                .and_then(|d| d.positions.get(slot as usize))
-                .map(|p| screen_to_world_cam(p.to_bvec2(), &camera, &transform))
-                .unwrap_or_default();
-            state.change_vec2(VarName::Position, (need_pos - position) * delta * 5.0);
+            if let Some(cd) = data.unit_container.get_mut(&faction) {
+                let mut state = VarState::get_mut(entity, world);
+                let slot = state.get_int(VarName::Slot).unwrap();
+                let position = state.get_vec2(VarName::Position).unwrap();
+                let slot = slot as usize;
+                let need_pos = cd
+                    .positions
+                    .get(slot)
+                    .map(|p| screen_to_world_cam(p.to_bvec2(), &camera, &transform))
+                    .unwrap_or_default();
+                cd.entities[slot] = Some(entity);
+                state.change_vec2(VarName::Position, (need_pos - position) * delta * 5.0);
+            }
         }
         world.insert_resource(data);
     }

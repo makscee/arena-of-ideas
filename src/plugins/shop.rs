@@ -170,7 +170,7 @@ impl ShopPlugin {
                         shop_reroll();
                     }
                 })
-                .slot_content(move |slot, ui, _| {
+                .slot_content(move |slot, _, ui, _| {
                     let ind = slot - 1;
                     let ss = &shop[ind];
                     if ss.available {
@@ -184,6 +184,28 @@ impl ShopPlugin {
                         }
                     }
                 })
+                .hover_content(|_, entity, ui, world| {
+                    let Some(entity) = entity else {
+                        return;
+                    };
+                    let state = VarState::get(entity, world);
+                    let t = gt().play_head();
+                    let houses = state
+                        .get_value_at(VarName::Houses, t)
+                        .unwrap()
+                        .get_string_list()
+                        .unwrap();
+                    state
+                        .get_string_at(VarName::Name, t)
+                        .unwrap()
+                        .cstr_cs(GameAssets::color(&houses[0], world), CstrStyle::Heading)
+                        .label(ui);
+                    ui.horizontal(|ui| {
+                        for house in houses {
+                            house.cstr_c(GameAssets::color(&house, world)).label(ui);
+                        }
+                    });
+                })
                 .ui(wd, ui, world);
             let slots = GameAssets::get(world).global_settings.team_slots as usize;
             UnitContainer::new(Faction::Team)
@@ -191,7 +213,7 @@ impl ShopPlugin {
                 .offset([0.0, sd.case_height])
                 .slots(slots.max(team.len()))
                 .max_slots(slots)
-                .slot_content(move |slot, ui, _| {
+                .slot_content(move |slot, _, ui, _| {
                     let ind = slot - 1;
                     if team[ind].unit.is_some() {
                         if Button::click("+1 G".into())

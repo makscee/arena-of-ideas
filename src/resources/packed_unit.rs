@@ -92,6 +92,16 @@ impl PackedUnit {
             .init(VarName::Hp, self.hp.into())
             .init(VarName::Pwr, self.pwr.into())
             .init(VarName::Name, self.name.clone().into())
+            .init(
+                VarName::Houses,
+                VarValue::List(
+                    self.houses
+                        .clone()
+                        .into_iter()
+                        .map(|s| s.into())
+                        .collect_vec(),
+                ),
+            )
             .init(VarName::Position, Vec2::ZERO.into())
             .init(VarName::Visible, true.into())
             .init(VarName::RarityColor, DARK_WHITE.into());

@@ -1,5 +1,3 @@
-use spacetimedb_sdk::table::TableType;
-
 use super::*;
 
 pub struct RepresentationPlugin;

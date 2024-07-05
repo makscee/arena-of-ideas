@@ -9,19 +9,22 @@ pub struct UnitContainer {
     left_to_right: bool,
     offset: egui::Vec2,
     top_content: Option<Box<dyn FnOnce(&mut Ui, &mut World) + Send + Sync>>,
-    slot_content: Option<Box<dyn Fn(usize, &mut Ui, &mut World) + Send + Sync>>,
+    slot_content: Option<Box<dyn Fn(usize, Option<Entity>, &mut Ui, &mut World) + Send + Sync>>,
+    hover_content: Option<Box<dyn Fn(usize, Option<Entity>, &mut Ui, &mut World) + Send + Sync>>,
     direction: Side,
 }
 
 #[derive(Debug)]
 pub struct UnitContainerData {
     pub positions: Vec<Pos2>,
+    pub entities: Vec<Option<Entity>>,
 }
 
 impl Default for UnitContainerData {
     fn default() -> Self {
         Self {
             positions: vec![pos2(0.0, 0.0)],
+            entities: vec![None],
         }
     }
 }
@@ -36,6 +39,7 @@ impl UnitContainer {
             left_to_right: false,
             top_content: default(),
             slot_content: default(),
+            hover_content: default(),
             direction: Side::Top,
         }
     }
@@ -69,14 +73,22 @@ impl UnitContainer {
     }
     pub fn slot_content(
         mut self,
-        content: impl Fn(usize, &mut Ui, &mut World) + Send + Sync + 'static,
+        content: impl Fn(usize, Option<Entity>, &mut Ui, &mut World) + Send + Sync + 'static,
     ) -> Self {
         self.slot_content = Some(Box::new(content));
+        self
+    }
+    pub fn hover_content(
+        mut self,
+        content: impl Fn(usize, Option<Entity>, &mut Ui, &mut World) + Send + Sync + 'static,
+    ) -> Self {
+        self.hover_content = Some(Box::new(content));
         self
     }
     pub fn ui(self, data: &mut WidgetData, ui: &mut Ui, world: &mut World) {
         let data = data.unit_container.entry(self.faction).or_insert(default());
         data.positions.resize(self.slots + 1, default());
+        data.entities.resize(self.slots + 1, None);
         let name = format!("{}", self.faction);
         let center = ui.max_rect().center();
         let (anchor, offset) = match self.direction {
@@ -86,9 +98,8 @@ impl UnitContainer {
             Side::Bottom => (Align2::CENTER_TOP, egui::vec2(0.0, center.y)),
         };
         const MARGIN: Margin = Margin::same(8.0);
-        let max_size = ui.available_rect_before_wrap().width() / self.slots as f32
-            - MARGIN.left
-            - MARGIN.right;
+        let available_rect = ui.available_rect_before_wrap();
+        let max_size = available_rect.width() / self.slots as f32 - MARGIN.left - MARGIN.right;
         const FRAME: Frame = Frame {
             inner_margin: MARGIN,
             outer_margin: Margin::ZERO,
@@ -100,6 +111,7 @@ impl UnitContainer {
                 color: LIGHT_GRAY,
             },
         };
+        let mut hovered_rect: Option<(usize, Rect)> = None;
         let resp = Window::new(&name)
             .anchor(anchor, self.offset + offset)
             .constrain_to(ui.available_rect_before_wrap())
@@ -118,11 +130,14 @@ impl UnitContainer {
                             self.slots - i
                         };
                         ui[col].vertical_centered(|ui| {
-                            show_frame(i, max_size, i > self.max_slots, data, ui);
+                            let response = show_frame(i, max_size, i > self.max_slots, data, ui);
+                            if response.hovered() {
+                                hovered_rect = Some((i, response.rect));
+                            }
                         });
                         if let Some(content) = &self.slot_content {
                             ui[col].vertical_centered_justified(|ui| {
-                                content(i, ui, world);
+                                content(i, data.entities[i], ui, world);
                             });
                         }
                     }
@@ -135,6 +150,37 @@ impl UnitContainer {
             let ui = &mut ui.child_ui(rect, Layout::bottom_up(Align::Min));
             name.cstr().label(ui);
         }
+        if let Some(hover_content) = self.hover_content {
+            if let Some((i, rect)) = hovered_rect {
+                const WIDTH: f32 = 200.0;
+                let (pos, pivot) = if available_rect.right() - rect.right() < WIDTH {
+                    (rect.left_center(), Align2::RIGHT_CENTER)
+                } else {
+                    (rect.right_center(), Align2::LEFT_CENTER)
+                };
+                const FRAME: Frame = Frame {
+                    inner_margin: Margin::same(13.0),
+                    outer_margin: Margin::ZERO,
+                    rounding: Rounding::same(13.0),
+                    shadow: Shadow::NONE,
+                    fill: LIGHT_BLACK,
+                    stroke: Stroke::NONE,
+                };
+                Window::new("hover_slot")
+                    .title_bar(false)
+                    .frame(FRAME)
+                    .max_width(WIDTH)
+                    .pivot(pivot)
+                    .fixed_pos(pos)
+                    .resizable(false)
+                    .interactable(false)
+                    .show(ui.ctx(), |ui| {
+                        ui.vertical_centered_justified(|ui| {
+                            hover_content(i, data.entities[i], ui, world)
+                        })
+                    });
+            }
+        }
     }
 }
 
@@ -144,7 +190,7 @@ fn show_frame(
     overflow: bool,
     data: &mut UnitContainerData,
     ui: &mut Ui,
-) {
+) -> Response {
     let size = max_size.min(130.0);
     let (rect, response) = ui.allocate_exact_size(egui::vec2(size, size), Sense::hover());
     data.positions[ind] = rect.center();
@@ -192,4 +238,5 @@ fn show_frame(
         DASH,
         GAP,
     ));
+    response
 }

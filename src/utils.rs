@@ -303,6 +303,17 @@ impl ToColor for Color32 {
     }
 }
 
+pub trait ToC32 {
+    fn c32(&self) -> Color32;
+}
+
+impl ToC32 for Color {
+    fn c32(&self) -> Color32 {
+        let c = self.as_rgba_u8();
+        Color32::from_rgba_unmultiplied(c[0], c[1], c[2], c[3])
+    }
+}
+
 pub trait WorldExt {
     fn game_clear(&mut self);
 }

@@ -28,4 +28,5 @@ pub enum VarName {
     Direction,
     Alpha,
     T,
+    Houses,
 }
