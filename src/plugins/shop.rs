@@ -190,21 +190,7 @@ impl ShopPlugin {
                     };
                     let state = VarState::get(entity, world);
                     let t = gt().play_head();
-                    let houses = state
-                        .get_value_at(VarName::Houses, t)
-                        .unwrap()
-                        .get_string_list()
-                        .unwrap();
-                    state
-                        .get_string_at(VarName::Name, t)
-                        .unwrap()
-                        .cstr_cs(GameAssets::color(&houses[0], world), CstrStyle::Heading)
-                        .label(ui);
-                    ui.horizontal(|ui| {
-                        for house in houses {
-                            house.cstr_c(GameAssets::color(&house, world)).label(ui);
-                        }
-                    });
+                    unit_card(t, state, ui, world);
                 })
                 .ui(wd, ui, world);
             let slots = GameAssets::get(world).global_settings.team_slots as usize;

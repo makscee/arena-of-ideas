@@ -167,6 +167,9 @@ impl VarState {
         self
     }
 
+    pub fn get_int_at(&self, var: VarName, t: f32) -> Result<i32> {
+        self.get_value_at(var, t)?.get_int()
+    }
     pub fn get_int(&self, var: VarName) -> Result<i32> {
         self.get_value_last(var)?.get_int()
     }

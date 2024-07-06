@@ -152,6 +152,9 @@ impl UnitContainer {
         }
         if let Some(hover_content) = self.hover_content {
             if let Some((i, rect)) = hovered_rect {
+                if data.entities[i].is_none() {
+                    return;
+                }
                 const WIDTH: f32 = 200.0;
                 let (pos, pivot) = if available_rect.right() - rect.right() < WIDTH {
                     (rect.left_center(), Align2::RIGHT_CENTER)

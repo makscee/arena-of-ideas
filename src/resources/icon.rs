@@ -15,6 +15,7 @@ pub enum Icon {
     SkipForward,
     Play,
     Pause,
+    Sword,
 }
 
 impl Icon {
@@ -60,6 +61,9 @@ impl Icon {
             }
             Icon::Pause => {
                 Image::new(include_image!("../../assets/svg/pause.svg")).fit_to_original_size(1.0)
+            }
+            Icon::Sword => {
+                Image::new(include_image!("../../assets/svg/sword.svg")).fit_to_original_size(1.0)
             }
         }
     }

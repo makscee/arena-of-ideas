@@ -1,10 +1,11 @@
 use super::*;
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct Cstr {
     subs: Vec<CstrSub>,
 }
 
+#[derive(Clone)]
 struct CstrSub {
     text: String,
     color: Option<Color32>,
@@ -77,6 +78,21 @@ impl Cstr {
                  style,
              }| *style = CstrStyle::Bold,
         );
+        self
+    }
+
+    pub fn join(&mut self, char: &Cstr) -> &mut Self {
+        let subs = mem::take(&mut self.subs);
+        let len = subs.len();
+        for (i, sub) in subs.into_iter().enumerate() {
+            self.subs.push(sub);
+            if i == len - 1 {
+                break;
+            }
+            for sub in &char.subs {
+                self.subs.push(sub.clone());
+            }
+        }
         self
     }
 

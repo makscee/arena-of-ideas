@@ -187,7 +187,7 @@ impl BattlePlugin {
                     }
                 });
 
-                Middle3::default().ui(
+                Middle3::default().ui_mut(
                     ui,
                     world,
                     |ui, _| {
@@ -226,7 +226,7 @@ impl BattlePlugin {
                         );
                     },
                 );
-                Middle3::default().width(400.0).ui(
+                Middle3::default().width(400.0).ui_mut(
                     ui,
                     world,
                     |ui, _| {

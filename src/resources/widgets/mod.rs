@@ -7,6 +7,7 @@ mod slider;
 mod state_menu;
 mod tile;
 mod top_menu;
+mod unit_card;
 mod unit_container;
 
 use super::*;
@@ -19,4 +20,5 @@ pub use slider::*;
 pub use state_menu::*;
 pub use tile::*;
 pub use top_menu::*;
+pub use unit_card::*;
 pub use unit_container::*;
