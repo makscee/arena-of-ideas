@@ -64,6 +64,18 @@ impl Context {
         self.layers.push(ContextLayer::Var(var, value));
         self
     }
+    pub fn get_ability_var(&self, ability: &str, var: VarName) -> Result<VarValue> {
+        self.layers
+            .iter()
+            .rev()
+            .find_map(|l| l.get_ability_var(ability, var))
+            .with_context(|| format!("Failed to find ability var {var}"))
+    }
+    pub fn set_ability_var(&mut self, ability: String, var: VarName, value: VarValue) -> &mut Self {
+        self.layers
+            .push(ContextLayer::AbilityVar(ability, var, value));
+        self
+    }
     pub fn set_status(&mut self, owner: Entity, name: String) -> &mut Self {
         self.layers.push(ContextLayer::Status(owner, name));
         self
@@ -91,6 +103,24 @@ impl Context {
         self.get_var(VarName::Faction, world)?.get_faction()
     }
 
+    pub fn inject_ability_state(&mut self, ability: &str, world: &World) -> Result<&mut Self> {
+        let team = TeamPlugin::entity(self.get_faction(world)?, world);
+        let mut values = GameAssets::get(world)
+            .ability_defaults
+            .get(ability)
+            .cloned()
+            .unwrap_or_default();
+        if let Some(state) = world.get::<AbilityStates>(team).unwrap().0.get(ability) {
+            for (var, value) in state.all_values() {
+                values.insert(var, value);
+            }
+        }
+        for (var, value) in values {
+            self.set_ability_var(ability.into(), var, value);
+        }
+        Ok(self)
+    }
+
     pub fn take(&mut self) -> Self {
         mem::take(self)
     }
@@ -103,6 +133,7 @@ pub enum ContextLayer {
     Owner(Entity),
     Status(Entity, String),
     Var(VarName, VarValue),
+    AbilityVar(String, VarName, VarValue),
     Event(Event),
 }
 
@@ -128,6 +159,18 @@ impl ContextLayer {
     fn get_status(&self) -> Option<(Entity, String)> {
         match self {
             ContextLayer::Status(entity, name) => Some((*entity, name.clone())),
+            _ => None,
+        }
+    }
+    fn get_ability_var(&self, ability: &str, var: VarName) -> Option<VarValue> {
+        match self {
+            ContextLayer::AbilityVar(a, v, val) => {
+                if a.eq(ability) && var.eq(v) {
+                    Some(val.clone())
+                } else {
+                    None
+                }
+            }
             _ => None,
         }
     }

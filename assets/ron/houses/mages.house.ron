@@ -1,0 +1,21 @@
+#![enable(implicit_some)]
+(
+    name: "Mages",
+    color: ("#1E88E5"),
+    defaults: {"Magic Missile": {Damage: Int(1)}},
+    abilities: [
+        (
+            name: "Magic Missile",
+            description: "Deal {Damage} DMG",
+            effect: Repeat(
+                Context(Charges),
+                List(
+                    [
+                        WithVar(Damage, AbilityContext("Magic Missile", Damage), Damage),
+                        Vfx("magic_missile"),
+                    ],
+                ),
+            ),
+        ),
+    ],
+)

@@ -19,6 +19,7 @@ pub struct THouse {
     pub abilities: Vec<String>,
     pub statuses: Vec<String>,
     pub summons: Vec<String>,
+    pub defaults: String,
 }
 
 impl TableType for THouse {
@@ -53,5 +54,9 @@ impl THouse {
     #[allow(unused)]
     pub fn filter_by_summons(summons: Vec<String>) -> TableIter<Self> {
         Self::filter(|row| row.summons == summons)
+    }
+    #[allow(unused)]
+    pub fn filter_by_defaults(defaults: String) -> TableIter<Self> {
+        Self::filter(|row| row.defaults == defaults)
     }
 }

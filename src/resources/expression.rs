@@ -34,6 +34,8 @@ pub enum Expression {
     OwnerState(VarName),
     TargetState(VarName),
     CasterState(VarName),
+    AbilityContext(String, VarName),
+    AbilityState(String, VarName),
     StatusCharges(String),
     HexColor(String),
     F(f32),
@@ -79,6 +81,14 @@ impl Expression {
             }
             Expression::CasterState(var) => {
                 VarState::find_value_at(context.get_caster()?, *var, gt().play_head(), world)
+            }
+            Expression::AbilityContext(ability, var) => context.get_ability_var(ability, *var),
+            Expression::AbilityState(ability, var) => {
+                Ok(
+                    TeamPlugin::get_ability_state(ability, context.get_faction(world)?, world)
+                        .and_then(|s| s.get_value_at(*var, gt().play_head()).ok())
+                        .unwrap_or_else(|| GameAssets::ability_default(&ability, *var, world)),
+                )
             }
             Expression::WithVar(var, value, e) => e.get_value(
                 context

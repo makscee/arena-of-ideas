@@ -8,4 +8,5 @@ pub struct THouse {
     pub abilities: Vec<String>,
     pub statuses: Vec<String>,
     pub summons: Vec<String>,
+    pub defaults: String,
 }

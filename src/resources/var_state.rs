@@ -208,6 +208,17 @@ impl VarState {
         self.get_value_last(var)?.get_faction()
     }
 
+    pub fn all_values(&self) -> HashMap<VarName, VarValue> {
+        HashMap::from_iter(
+            self.vars
+                .keys()
+                .filter_map(|k| match self.get_value_last(*k) {
+                    Ok(v) => Some((*k, v)),
+                    Err(_) => None,
+                }),
+        )
+    }
+
     pub fn apply_transform(entity: Entity, t: f32, vars: Vec<VarName>, world: &mut World) {
         let mut e = world.entity_mut(entity);
         let mut transform = e.get::<Transform>().unwrap().clone();

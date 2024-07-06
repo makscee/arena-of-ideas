@@ -39,4 +39,12 @@ impl TeamPlugin {
             .id();
         team
     }
+    pub fn get_ability_state<'a>(
+        ability: &str,
+        faction: Faction,
+        world: &'a World,
+    ) -> Option<&'a VarState> {
+        let entity = Self::entity(faction, world);
+        world.get::<AbilityStates>(entity).unwrap().0.get(ability)
+    }
 }

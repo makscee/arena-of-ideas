@@ -9,6 +9,9 @@ pub enum Effect {
     UseAbility(String, i32),
     WithTarget(Expression, Box<Effect>),
     WithVar(VarName, Expression, Box<Effect>),
+    List(Vec<Effect>),
+    Repeat(Expression, Box<Effect>),
+    Vfx(String),
 }
 
 impl Effect {
@@ -54,6 +57,7 @@ impl Effect {
                 let caster = owner;
                 let context = context
                     .clone()
+                    .inject_ability_state(name, world)?
                     .set_var(VarName::Charges, VarValue::Int(charges))
                     .set_caster(caster)
                     .take();
@@ -83,6 +87,18 @@ impl Effect {
                     .clone();
                 ActionPlugin::action_push_front(effect.deref().clone(), context, world);
             }
+            Effect::List(list) => {
+                for effect in list.into_iter().rev() {
+                    ActionPlugin::action_push_front(effect.clone(), context.clone(), world);
+                }
+            }
+            Effect::Repeat(count, effect) => {
+                let count = count.get_int(context, world)?;
+                for _ in 0..count {
+                    ActionPlugin::action_push_front(effect.deref().clone(), context.clone(), world);
+                }
+            }
+            Effect::Vfx(_) => todo!(),
         }
         Ok(())
     }

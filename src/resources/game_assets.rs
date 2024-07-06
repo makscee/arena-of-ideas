@@ -30,6 +30,7 @@ pub struct GameAssets {
     pub heroes: HashMap<String, PackedUnit>,
     pub houses: HashMap<String, House>,
     pub abilities: HashMap<String, Ability>,
+    pub ability_defaults: HashMap<String, HashMap<VarName, VarValue>>,
     pub statuses: HashMap<String, PackedStatus>,
     pub vfxs: HashMap<String, Vfx>,
     pub colors: HashMap<String, Color32>,
@@ -56,6 +57,14 @@ impl GameAssets {
     }
     pub fn color(name: &str, world: &World) -> Color32 {
         Self::get(world).colors.get(name).unwrap().clone()
+    }
+    pub fn ability_default(name: &str, var: VarName, world: &World) -> VarValue {
+        Self::get(world)
+            .ability_defaults
+            .get(name)
+            .and_then(|m| m.get(&var))
+            .cloned()
+            .unwrap_or_default()
     }
 }
 
@@ -100,31 +109,23 @@ impl LoadingPlugin {
             .clone();
 
         let mut colors: HashMap<String, Color32> = default();
+        let mut ability_defaults: HashMap<String, HashMap<VarName, VarValue>> = default();
+        let mut abilities: HashMap<String, Ability> = default();
+        let mut statuses: HashMap<String, PackedStatus> = default();
+        let houses = world.resource::<Assets<House>>();
+        let houses = HashMap::from_iter(handles.houses.iter().map(|(_, h)| {
+            let house = houses.get(h).unwrap().clone();
+            colors.insert(house.name.clone(), house.color.clone().into());
+            abilities.extend(house.abilities.iter().map(|a| (a.name.clone(), a.clone())));
+            ability_defaults.extend(house.defaults.iter().map(|(k, v)| (k.clone(), v.clone())));
+            statuses.extend(house.statuses.iter().map(|s| (s.name.clone(), s.clone())));
+            (house.name.clone(), house)
+        }));
         let heroes = world.resource::<Assets<PackedUnit>>();
         let heroes = HashMap::from_iter(handles.heroes.iter().map(|(_, h)| {
             let hero = heroes.get(h).unwrap().clone();
             (hero.name.clone(), hero)
         }));
-        let houses = world.resource::<Assets<House>>();
-        let houses = HashMap::from_iter(handles.houses.iter().map(|(_, h)| {
-            let house = houses.get(h).unwrap().clone();
-            colors.insert(house.name.clone(), house.color.clone().into());
-            (house.name.clone(), house)
-        }));
-        let abilities = HashMap::from_iter(
-            houses
-                .values()
-                .flat_map(|h| &h.abilities)
-                .cloned()
-                .map(|a| (a.name.clone(), a)),
-        );
-        let statuses = HashMap::from_iter(
-            houses
-                .values()
-                .flat_map(|h| &h.statuses)
-                .cloned()
-                .map(|a| (a.name.clone(), a)),
-        );
         let vfxs = world.resource::<Assets<Vfx>>();
         let vfxs = HashMap::from_iter(
             handles
@@ -144,6 +145,7 @@ impl LoadingPlugin {
             statuses,
             vfxs,
             colors,
+            ability_defaults,
         };
         world.insert_resource(assets);
     }
