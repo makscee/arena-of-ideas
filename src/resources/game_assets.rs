@@ -115,10 +115,17 @@ impl LoadingPlugin {
         let houses = world.resource::<Assets<House>>();
         let houses = HashMap::from_iter(handles.houses.iter().map(|(_, h)| {
             let house = houses.get(h).unwrap().clone();
-            colors.insert(house.name.clone(), house.color.clone().into());
-            abilities.extend(house.abilities.iter().map(|a| (a.name.clone(), a.clone())));
+            let color: Color32 = house.color.clone().into();
+            colors.insert(house.name.clone(), color);
             ability_defaults.extend(house.defaults.iter().map(|(k, v)| (k.clone(), v.clone())));
-            statuses.extend(house.statuses.iter().map(|s| (s.name.clone(), s.clone())));
+            for ability in house.abilities.iter() {
+                abilities.insert(ability.name.clone(), ability.clone());
+                colors.insert(ability.name.clone(), color);
+            }
+            for status in house.statuses.iter() {
+                statuses.insert(status.name.clone(), status.clone());
+                colors.insert(status.name.clone(), color);
+            }
             (house.name.clone(), house)
         }));
         let heroes = world.resource::<Assets<PackedUnit>>();

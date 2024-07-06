@@ -64,6 +64,7 @@ impl Representation {
         let t = gt().play_head();
         let entity = self.entity.unwrap();
         let context = Context::new(entity);
+        self.apply_mapping(entity, world);
         {
             let state = VarState::get_mut(entity, world);
             let visible = state.get_bool_at(VarName::Visible, t).unwrap_or(true);
@@ -73,7 +74,6 @@ impl Representation {
                 return;
             }
         }
-        self.apply_mapping(entity, world);
         let vars: Vec<VarName> = [VarName::Position, VarName::Scale].into();
         VarState::apply_transform(entity, t, vars, world);
         for (i, entity) in self.material_entities.iter().enumerate() {

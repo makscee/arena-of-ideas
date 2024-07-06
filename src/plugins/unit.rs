@@ -110,6 +110,11 @@ impl UnitPlugin {
             VarState::get_mut(unit, world).init(VarName::Slot, VarValue::Int(slot));
         }
     }
+    pub fn get_unit_position(entity: Entity, world: &World) -> Result<Vec2> {
+        VarState::get(entity, world)
+            .get_value_last(VarName::Position)?
+            .get_vec2()
+    }
     pub fn get_slot_position(faction: Faction, slot: usize) -> Vec2 {
         match faction {
             Faction::Left => vec2(slot as f32 * -SLOT_SPACING, 0.0),

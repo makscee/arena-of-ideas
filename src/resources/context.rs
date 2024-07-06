@@ -60,6 +60,15 @@ impl Context {
             .find_map(|l| l.get_var(var, world))
             .with_context(|| format!("Failed to find var {var}"))
     }
+    pub fn get_all_vars(&self) -> HashMap<VarName, VarValue> {
+        let mut result: HashMap<VarName, VarValue> = default();
+        for layer in self.layers.iter().rev() {
+            if let ContextLayer::Var(var, value) = layer {
+                result.insert(*var, value.clone());
+            }
+        }
+        result
+    }
     pub fn set_var(&mut self, var: VarName, value: VarValue) -> &mut Self {
         self.layers.push(ContextLayer::Var(var, value));
         self

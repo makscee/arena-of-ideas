@@ -29,4 +29,5 @@ pub enum VarName {
     Alpha,
     T,
     Houses,
+    Thickness,
 }

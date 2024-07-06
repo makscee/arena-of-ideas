@@ -62,6 +62,14 @@ impl Effect {
                     .set_caster(caster)
                     .take();
                 ActionPlugin::action_push_front(ability.effect.clone(), context, world);
+                TextColumnPlugin::add(
+                    caster,
+                    "use "
+                        .cstr()
+                        .push(name.cstr_cs(GameAssets::color(name, world), CstrStyle::Bold))
+                        .take(),
+                    world,
+                );
             }
             Effect::WithTarget(target, effect) => {
                 let target = target.get_value(context, world)?;
@@ -98,7 +106,11 @@ impl Effect {
                     ActionPlugin::action_push_front(effect.deref().clone(), context.clone(), world);
                 }
             }
-            Effect::Vfx(_) => todo!(),
+            Effect::Vfx(name) => {
+                Vfx::get(name, world)
+                    .attach_context(context, world)
+                    .unpack(world)?;
+            }
         }
         Ok(())
     }

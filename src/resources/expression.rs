@@ -15,6 +15,7 @@ pub enum Expression {
     Beat,
     PI,
     PI2,
+    Age,
 
     Owner,
     Caster,
@@ -273,6 +274,9 @@ impl Expression {
                     })
                     .collect_vec(),
             )),
+            Expression::Age => {
+                Ok((gt().play_head() - VarState::get(context.owner(), world).birth()).into())
+            }
         }
     }
     pub fn get_float(&self, context: &Context, world: &mut World) -> Result<f32> {
