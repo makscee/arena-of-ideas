@@ -6,7 +6,7 @@ use super::*;
 #[spacetimedb(table)]
 pub struct User {
     #[primarykey]
-    pub id: u64,
+    pub id: GID,
     #[unique]
     pub name: String,
     identities: Vec<Identity>,

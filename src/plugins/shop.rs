@@ -104,18 +104,21 @@ impl ShopPlugin {
                 .map(|e| (VarState::get(e, world).id(), e)),
         );
         let team = TeamPlugin::entity(Faction::Team, world);
-        for (i, TeamSlot { unit, extra: _ }) in run.team.into_iter().enumerate() {
-            if let Some(unit) = unit {
-                let id = unit.id;
-                let slot = i as i32 + 1;
-                if let Some(entity) = team_units.get(&id) {
-                    VarState::get_mut(*entity, world).set_int(VarName::Slot, slot.into());
-                    team_units.remove(&id);
-                    continue;
-                }
-                let unit: PackedUnit = unit.into();
-                unit.unpack(team, Some(slot), Some(id), world);
+        for (i, unit) in TTeam::filter_by_id(run.team)
+            .unwrap()
+            .units
+            .into_iter()
+            .enumerate()
+        {
+            let id = unit.id;
+            let slot = i as i32 + 1;
+            if let Some(entity) = team_units.get(&id) {
+                VarState::get_mut(*entity, world).set_int(VarName::Slot, slot.into());
+                team_units.remove(&id);
+                continue;
             }
+            let unit: PackedUnit = unit.into();
+            unit.unpack(team, Some(slot), Some(id), world);
         }
         for entity in team_units.into_values() {
             UnitPlugin::despawn(entity, world);
@@ -154,7 +157,7 @@ impl ShopPlugin {
         if let Some(run) = Run::get_current() {
             let sd = world.resource::<ShopData>().clone();
             let shop = run.shop;
-            let team = run.team;
+            let team = TTeam::filter_by_id(run.team).unwrap();
             let g = run.g;
             UnitContainer::new(Faction::Shop)
                 .direction(Side::Top)
@@ -197,11 +200,11 @@ impl ShopPlugin {
             UnitContainer::new(Faction::Team)
                 .direction(Side::Bottom)
                 .offset([0.0, sd.case_height])
-                .slots(slots.max(team.len()))
+                .slots(slots.max(team.units.len()))
                 .max_slots(slots)
                 .slot_content(move |slot, _, ui, _| {
                     let ind = slot - 1;
-                    if team[ind].unit.is_some() {
+                    if team.units.get(ind).is_some() {
                         if Button::click("+1 G".into())
                             .title("Sell".into())
                             .ui(ui)

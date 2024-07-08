@@ -146,25 +146,28 @@ impl LoginPlugin {
                         || matches!(state, GameState::ForceLogin)
                     {
                         login_by_identity();
-                        once_on_login_by_identity(|_, _, status| match status {
-                            spacetimedb_sdk::reducer::Status::Committed => {
-                                OperationsPlugin::add(|world| {
-                                    let mut cd = world.resource_mut::<ConnectionData>();
-                                    cd.state = ConnectionState::LoggedIn;
-                                    Self::save_user(cd.identity_user.clone().unwrap(), world);
-                                    ServerPlugin::subscribe_game();
-                                    once_on_subscription_applied(|| {
-                                        OperationsPlugin::add(|world| {
-                                            GameAssets::cache_tables(world);
-                                            GameStatePlugin::path_proceed(world);
+                        once_on_login_by_identity(|_, _, status| {
+                            debug!("login reducer {status:?}");
+                            match status {
+                                spacetimedb_sdk::reducer::Status::Committed => {
+                                    OperationsPlugin::add(|world| {
+                                        let mut cd = world.resource_mut::<ConnectionData>();
+                                        cd.state = ConnectionState::LoggedIn;
+                                        Self::save_user(cd.identity_user.clone().unwrap(), world);
+                                        ServerPlugin::subscribe_game();
+                                        once_on_subscription_applied(|| {
+                                            OperationsPlugin::add(|world| {
+                                                GameAssets::cache_tables(world);
+                                                GameStatePlugin::path_proceed(world);
+                                            });
                                         });
-                                    });
-                                })
-                            }
-                            spacetimedb_sdk::reducer::Status::Failed(e) => {
-                                Notification::new(format!("Login failed: {e}")).push_op()
-                            }
-                            _ => panic!(),
+                                    })
+                                }
+                                spacetimedb_sdk::reducer::Status::Failed(e) => {
+                                    Notification::new(format!("Login failed: {e}")).push_op()
+                                }
+                                _ => panic!(),
+                            };
                         });
                     }
                     br(ui);

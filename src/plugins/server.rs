@@ -35,11 +35,13 @@ impl ServerPlugin {
         );
     }
     pub fn subscribe_game() {
+        let uid = user_id();
         let q = [
-            format!("select * from Run where user_id = {}", user_id()),
+            format!("select * from Run where user_id = {uid}"),
             "select * from BaseUnit".to_owned(),
             "select * from TRepresentation".to_owned(),
             "select * from GlobalSettings".to_owned(),
+            format!("select * from TTeam where owner = {uid}"),
         ];
         Self::subscribe(q.into());
     }

@@ -35,7 +35,7 @@ fn main() {
     let mut app = App::new();
     let args = Args::try_parse().unwrap_or_default();
     let target = match args.mode {
-        RunMode::Regular => GameState::Shop,
+        RunMode::Regular => GameState::Title,
         RunMode::Custom => GameState::CustomBattle,
         RunMode::Test => GameState::TestScenariosRun,
         RunMode::Sync => GameState::ServerSync,

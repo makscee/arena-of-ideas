@@ -8,6 +8,7 @@ mod representation;
 mod run;
 mod status;
 mod sync;
+mod team;
 mod user;
 
 use anyhow::Context;
@@ -16,6 +17,7 @@ pub use global_data::*;
 pub use global_settings::*;
 pub use spacetimedb::SpacetimeType;
 pub use spacetimedb::{spacetimedb, Identity, ReducerContext};
+pub use team::*;
 pub use user::*;
 
 pub type GID = u64;

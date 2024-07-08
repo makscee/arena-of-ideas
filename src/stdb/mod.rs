@@ -48,7 +48,7 @@ pub mod t_ability;
 pub mod t_house;
 pub mod t_representation;
 pub mod t_status;
-pub mod team_slot;
+pub mod t_team;
 pub mod user;
 
 pub use base_unit::*;
@@ -79,7 +79,7 @@ pub use t_ability::*;
 pub use t_house::*;
 pub use t_representation::*;
 pub use t_status::*;
-pub use team_slot::*;
+pub use t_team::*;
 pub use user::*;
 
 #[allow(unused)]
@@ -144,6 +144,8 @@ impl SpacetimeModule for Module {
                 ),
             "TStatus" => client_cache
                 .handle_table_update_with_primary_key::<t_status::TStatus>(callbacks, table_update),
+            "TTeam" => client_cache
+                .handle_table_update_no_primary_key::<t_team::TTeam>(callbacks, table_update),
             "User" => client_cache
                 .handle_table_update_with_primary_key::<user::User>(callbacks, table_update),
             _ => {
@@ -174,6 +176,7 @@ impl SpacetimeModule for Module {
             state,
         );
         reminders.invoke_callbacks::<t_status::TStatus>(worker, &reducer_event, state);
+        reminders.invoke_callbacks::<t_team::TTeam>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<user::User>(worker, &reducer_event, state);
     }
     fn handle_event(
@@ -238,6 +241,9 @@ match &function_call.reducer[..] {
                 ),
             "TStatus" => {
                 client_cache.handle_resubscribe_for_type::<t_status::TStatus>(callbacks, new_subs)
+            }
+            "TTeam" => {
+                client_cache.handle_resubscribe_for_type::<t_team::TTeam>(callbacks, new_subs)
             }
             "User" => client_cache.handle_resubscribe_for_type::<user::User>(callbacks, new_subs),
             _ => {
