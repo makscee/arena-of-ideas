@@ -66,7 +66,7 @@ impl Effect {
                     caster,
                     "use "
                         .cstr()
-                        .push(name.cstr_cs(GameAssets::color(name, world), CstrStyle::Bold))
+                        .push(name.cstr_cs(name_color(name), CstrStyle::Bold))
                         .take(),
                     world,
                 );
@@ -113,5 +113,32 @@ impl Effect {
             }
         }
         Ok(())
+    }
+}
+
+impl ToCstr for Effect {
+    fn cstr(self) -> Cstr {
+        match self {
+            Effect::UseAbility(name, base) => {
+                let color = name_color(&name);
+                let mut s = format!("use ability ")
+                    .cstr_c(DARK_WHITE)
+                    .push(name.cstr_cs(color, CstrStyle::Bold))
+                    .take();
+                if base > 1 {
+                    s.push(format!(" ({base})").cstr_cs(color, CstrStyle::Bold));
+                }
+                s
+            }
+            _ => todo!(),
+        }
+    }
+
+    fn cstr_c(self, color: Color32) -> Cstr {
+        todo!()
+    }
+
+    fn cstr_cs(self, color: Color32, style: CstrStyle) -> Cstr {
+        todo!()
     }
 }

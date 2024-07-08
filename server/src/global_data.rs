@@ -6,7 +6,7 @@ use super::*;
 pub struct GlobalData {
     #[unique]
     always_zero: u32,
-    next_id: u64,
+    next_id: GID,
     pub game_version: String,
     pub last_sync: Timestamp,
 }
@@ -23,7 +23,7 @@ impl GlobalData {
         Ok(())
     }
 
-    pub fn next_id() -> u64 {
+    pub fn next_id() -> GID {
         let mut gd = GlobalData::filter_by_always_zero(&0).unwrap();
         let id = gd.next_id;
         gd.next_id += 1;

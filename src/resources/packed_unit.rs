@@ -91,6 +91,8 @@ impl PackedUnit {
         state
             .init(VarName::Hp, self.hp.into())
             .init(VarName::Pwr, self.pwr.into())
+            .init(VarName::Lvl, 1.into())
+            .init(VarName::Stacks, 1.into())
             .init(VarName::Name, self.name.clone().into())
             .init(
                 VarName::Houses,
@@ -106,7 +108,7 @@ impl PackedUnit {
             .init(VarName::Visible, true.into())
             .init(VarName::RarityColor, DARK_WHITE.into());
         if let Some(house) = self.houses.iter().next() {
-            state.init(VarName::Color, GameAssets::color(house, world).into());
+            state.init(VarName::Color, name_color(house).into());
         }
         if !state.has_value(VarName::Dmg) {
             state.init(VarName::Dmg, VarValue::Int(0));

@@ -155,23 +155,15 @@ impl UnitContainer {
                 if data.entities[i].is_none() {
                     return;
                 }
-                const WIDTH: f32 = 200.0;
+                const WIDTH: f32 = 300.0;
                 let (pos, pivot) = if available_rect.right() - rect.right() < WIDTH {
                     (rect.left_center(), Align2::RIGHT_CENTER)
                 } else {
                     (rect.right_center(), Align2::LEFT_CENTER)
                 };
-                const FRAME: Frame = Frame {
-                    inner_margin: Margin::same(13.0),
-                    outer_margin: Margin::ZERO,
-                    rounding: Rounding::same(13.0),
-                    shadow: Shadow::NONE,
-                    fill: LIGHT_BLACK,
-                    stroke: Stroke::NONE,
-                };
                 Window::new("hover_slot")
                     .title_bar(false)
-                    .frame(FRAME)
+                    .frame(Frame::none())
                     .max_width(WIDTH)
                     .pivot(pivot)
                     .fixed_pos(pos)

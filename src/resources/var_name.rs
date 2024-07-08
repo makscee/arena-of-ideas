@@ -13,6 +13,8 @@ pub enum VarName {
     Rotation,
     Hp,
     Pwr,
+    Lvl,
+    Stacks,
     Dmg,
     Value,
     Delta,

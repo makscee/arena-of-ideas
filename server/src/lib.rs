@@ -1,14 +1,14 @@
+mod ability;
 mod base_unit;
 mod fused_unit;
 mod global_data;
 mod global_settings;
+mod house;
 mod representation;
 mod run;
+mod status;
 mod sync;
 mod user;
-mod status;
-mod ability;
-mod house;
 
 use anyhow::Context;
 pub use fused_unit::*;
@@ -17,6 +17,8 @@ pub use global_settings::*;
 pub use spacetimedb::SpacetimeType;
 pub use spacetimedb::{spacetimedb, Identity, ReducerContext};
 pub use user::*;
+
+pub type GID = u64;
 
 trait StrContext<T> {
     fn context_str(self, str: &'static str) -> Result<T, String>;
@@ -32,4 +34,8 @@ impl<T> StrContext<T> for Option<T> {
 fn init() -> Result<(), String> {
     GlobalData::init()?;
     Ok(())
+}
+
+pub fn next_id() -> GID {
+    GlobalData::next_id()
 }

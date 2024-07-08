@@ -80,6 +80,18 @@ impl Cstr {
         );
         self
     }
+    pub fn color(&mut self, color: Color32) -> &mut Self {
+        for sub in self.subs.iter_mut() {
+            sub.color = Some(color);
+        }
+        self
+    }
+    pub fn style(&mut self, style: CstrStyle) -> &mut Self {
+        for sub in self.subs.iter_mut() {
+            sub.style = style;
+        }
+        self
+    }
 
     pub fn join(&mut self, char: &Cstr) -> &mut Self {
         let subs = mem::take(&mut self.subs);

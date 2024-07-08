@@ -1,11 +1,7 @@
 pub use std::time::Duration;
 
-pub use crate::components::*;
-pub use crate::plugins::*;
-pub use crate::resources::*;
-pub use crate::utils::*;
-pub use anyhow::Context as _;
-pub use anyhow::{anyhow, Result};
+pub use crate::{components::*, plugins::*, resources::*, utils::*};
+pub use anyhow::{anyhow, Context as _, Result};
 
 pub use crate::stdb::*;
 pub use bevy::{
@@ -63,7 +59,7 @@ pub use bevy_egui::{
 pub use chrono::DateTime;
 pub use colored::{Colorize, CustomColor};
 pub use convert_case::Casing;
-pub use ecolor::Color32;
+pub use ecolor::{hex_color, Color32};
 pub use egui::{
     epaint::{self, Shadow},
     include_image,
@@ -85,4 +81,5 @@ pub use std::{
     time::UNIX_EPOCH,
 };
 pub use strum::IntoEnumIterator;
+pub use strum_macros::FromRepr;
 pub use strum_macros::{AsRefStr, Display, EnumIter, EnumString};

@@ -20,8 +20,14 @@ pub const DARK_BLACK: Color32 = hex_color_noa!("#131313");
 pub const BLACK: Color32 = hex_color_noa!("#000000");
 
 pub const YELLOW: Color32 = hex_color_noa!("#D98F00");
-pub const RED: Color32 = hex_color_noa!("#E53935");
+pub const RED: Color32 = hex_color_noa!("#DC143C");
 pub const GREEN: Color32 = hex_color_noa!("#64DD17");
+pub const PURPLE: Color32 = hex_color_noa!("#B50DA4");
+pub const LIGHT_PURPLE: Color32 = hex_color_noa!("#95408D");
+
+pub const EVENT_COLOR: Color32 = hex_color_noa!("#F7CA55");
+pub const TARGET_COLOR: Color32 = hex_color_noa!("#DC6814");
+pub const EFFECT_COLOR: Color32 = hex_color_noa!("#DE1C1C");
 
 pub const TRANSPARENT: Color32 = Color32::TRANSPARENT;
 

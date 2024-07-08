@@ -8,11 +8,9 @@ use super::*;
 #[spacetimedb(table)]
 struct Run {
     #[primarykey]
-    id: u64,
+    id: GID,
     #[unique]
-    user_id: u64,
-
-    next_id: u64,
+    user_id: GID,
 
     team: Vec<TeamSlot>,
     shop: Vec<ShopSlot>,
@@ -200,23 +198,18 @@ impl Run {
     fn new(user_id: u64) -> Self {
         let gs = GlobalSettings::get();
         Self {
-            id: GlobalData::next_id(),
+            id: next_id(),
             user_id,
             team: vec![TeamSlot::default(); gs.team_slots as usize],
             shop: vec![ShopSlot::default(); gs.shop_slots_max as usize],
             fusion: None,
             round: 0,
             last_updated: Timestamp::now(),
-            next_id: 0,
             g: gs.shop_g_start,
             price_reroll: gs.shop_price_reroll,
             price_unit: gs.shop_price_unit,
             price_sell: gs.shop_price_sell,
         }
-    }
-    fn next_id(&mut self) -> u64 {
-        self.next_id += 1;
-        self.next_id
     }
     fn current(ctx: &ReducerContext) -> Result<Self, String> {
         Run::filter_by_user_id(&User::find_by_identity(&ctx.sender)?.id)
@@ -235,7 +228,7 @@ impl Run {
         }
         self.g -= s.price;
         s.available = false;
-        let unit = FusedUnit::from_base(s.unit.clone(), self.next_id());
+        let unit = FusedUnit::from_base(s.unit.clone(), next_id());
         let slot = if let Some(slot) = self.team.iter_mut().find(|s| s.unit.is_none()) {
             slot
         } else {
@@ -281,7 +274,7 @@ impl Run {
             .min(gs.shop_slots_max) as usize;
         self.shop = vec![ShopSlot::default(); slots];
         for i in 0..slots {
-            let id = self.next_id();
+            let id = next_id();
             let s = &mut self.shop[i];
             s.available = true;
             s.price = self.price_unit;

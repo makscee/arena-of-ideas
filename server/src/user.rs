@@ -18,7 +18,7 @@ pub struct User {
 #[spacetimedb(reducer)]
 fn register_empty(ctx: ReducerContext) -> Result<(), String> {
     User::clear_identity(&ctx.sender);
-    let id = GlobalData::next_id();
+    let id = next_id();
     let user = User {
         id,
         identities: vec![ctx.sender],
@@ -37,7 +37,7 @@ fn register(ctx: ReducerContext, name: String, pass: String) -> Result<(), Strin
     let pass_hash = Some(User::hash_pass(pass)?);
     User::clear_identity(&ctx.sender);
     User::insert(User {
-        id: GlobalData::next_id(),
+        id: next_id(),
         identities: vec![ctx.sender],
         name,
         pass_hash,
