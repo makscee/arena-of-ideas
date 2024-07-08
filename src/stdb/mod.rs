@@ -21,6 +21,7 @@ use spacetimedb_sdk::{
 use std::sync::Arc;
 
 pub mod base_unit;
+pub mod battle_result;
 pub mod fuse_cancel_reducer;
 pub mod fuse_choose_reducer;
 pub mod fuse_start_reducer;
@@ -39,12 +40,16 @@ pub mod set_name_reducer;
 pub mod set_password_reducer;
 pub mod shop_buy_reducer;
 pub mod shop_change_g_reducer;
+pub mod shop_finish_reducer;
 pub mod shop_reroll_reducer;
 pub mod shop_sell_reducer;
 pub mod shop_slot;
 pub mod stack_reducer;
+pub mod submit_battle_result_reducer;
 pub mod sync_all_assets_reducer;
 pub mod t_ability;
+pub mod t_arena_pool;
+pub mod t_battle;
 pub mod t_house;
 pub mod t_representation;
 pub mod t_status;
@@ -52,6 +57,7 @@ pub mod t_team;
 pub mod user;
 
 pub use base_unit::*;
+pub use battle_result::*;
 pub use fuse_cancel_reducer::*;
 pub use fuse_choose_reducer::*;
 pub use fuse_start_reducer::*;
@@ -70,12 +76,16 @@ pub use set_name_reducer::*;
 pub use set_password_reducer::*;
 pub use shop_buy_reducer::*;
 pub use shop_change_g_reducer::*;
+pub use shop_finish_reducer::*;
 pub use shop_reroll_reducer::*;
 pub use shop_sell_reducer::*;
 pub use shop_slot::*;
 pub use stack_reducer::*;
+pub use submit_battle_result_reducer::*;
 pub use sync_all_assets_reducer::*;
 pub use t_ability::*;
+pub use t_arena_pool::*;
+pub use t_battle::*;
 pub use t_house::*;
 pub use t_representation::*;
 pub use t_status::*;
@@ -98,9 +108,11 @@ pub enum ReducerEvent {
     SetPassword(set_password_reducer::SetPasswordArgs),
     ShopBuy(shop_buy_reducer::ShopBuyArgs),
     ShopChangeG(shop_change_g_reducer::ShopChangeGArgs),
+    ShopFinish(shop_finish_reducer::ShopFinishArgs),
     ShopReroll(shop_reroll_reducer::ShopRerollArgs),
     ShopSell(shop_sell_reducer::ShopSellArgs),
     Stack(stack_reducer::StackArgs),
+    SubmitBattleResult(submit_battle_result_reducer::SubmitBattleResultArgs),
     SyncAllAssets(sync_all_assets_reducer::SyncAllAssetsArgs),
 }
 
@@ -135,6 +147,13 @@ impl SpacetimeModule for Module {
                 callbacks,
                 table_update,
             ),
+            "TArenaPool" => client_cache
+                .handle_table_update_with_primary_key::<t_arena_pool::TArenaPool>(
+                    callbacks,
+                    table_update,
+                ),
+            "TBattle" => client_cache
+                .handle_table_update_with_primary_key::<t_battle::TBattle>(callbacks, table_update),
             "THouse" => client_cache
                 .handle_table_update_with_primary_key::<t_house::THouse>(callbacks, table_update),
             "TRepresentation" => client_cache
@@ -145,7 +164,7 @@ impl SpacetimeModule for Module {
             "TStatus" => client_cache
                 .handle_table_update_with_primary_key::<t_status::TStatus>(callbacks, table_update),
             "TTeam" => client_cache
-                .handle_table_update_no_primary_key::<t_team::TTeam>(callbacks, table_update),
+                .handle_table_update_with_primary_key::<t_team::TTeam>(callbacks, table_update),
             "User" => client_cache
                 .handle_table_update_with_primary_key::<user::User>(callbacks, table_update),
             _ => {
@@ -169,6 +188,8 @@ impl SpacetimeModule for Module {
         );
         reminders.invoke_callbacks::<run::Run>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_ability::TAbility>(worker, &reducer_event, state);
+        reminders.invoke_callbacks::<t_arena_pool::TArenaPool>(worker, &reducer_event, state);
+        reminders.invoke_callbacks::<t_battle::TBattle>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_house::THouse>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_representation::TRepresentation>(
             worker,
@@ -204,9 +225,11 @@ match &function_call.reducer[..] {
 			"set_password" => _reducer_callbacks.handle_event_of_type::<set_password_reducer::SetPasswordArgs, ReducerEvent>(event, _state, ReducerEvent::SetPassword),
 			"shop_buy" => _reducer_callbacks.handle_event_of_type::<shop_buy_reducer::ShopBuyArgs, ReducerEvent>(event, _state, ReducerEvent::ShopBuy),
 			"shop_change_g" => _reducer_callbacks.handle_event_of_type::<shop_change_g_reducer::ShopChangeGArgs, ReducerEvent>(event, _state, ReducerEvent::ShopChangeG),
+			"shop_finish" => _reducer_callbacks.handle_event_of_type::<shop_finish_reducer::ShopFinishArgs, ReducerEvent>(event, _state, ReducerEvent::ShopFinish),
 			"shop_reroll" => _reducer_callbacks.handle_event_of_type::<shop_reroll_reducer::ShopRerollArgs, ReducerEvent>(event, _state, ReducerEvent::ShopReroll),
 			"shop_sell" => _reducer_callbacks.handle_event_of_type::<shop_sell_reducer::ShopSellArgs, ReducerEvent>(event, _state, ReducerEvent::ShopSell),
 			"stack" => _reducer_callbacks.handle_event_of_type::<stack_reducer::StackArgs, ReducerEvent>(event, _state, ReducerEvent::Stack),
+			"submit_battle_result" => _reducer_callbacks.handle_event_of_type::<submit_battle_result_reducer::SubmitBattleResultArgs, ReducerEvent>(event, _state, ReducerEvent::SubmitBattleResult),
 			"sync_all_assets" => _reducer_callbacks.handle_event_of_type::<sync_all_assets_reducer::SyncAllAssetsArgs, ReducerEvent>(event, _state, ReducerEvent::SyncAllAssets),
 			unknown => { spacetimedb_sdk::log::error!("Event on an unknown reducer: {:?}", unknown); None }
 }
@@ -231,6 +254,11 @@ match &function_call.reducer[..] {
             "Run" => client_cache.handle_resubscribe_for_type::<run::Run>(callbacks, new_subs),
             "TAbility" => {
                 client_cache.handle_resubscribe_for_type::<t_ability::TAbility>(callbacks, new_subs)
+            }
+            "TArenaPool" => client_cache
+                .handle_resubscribe_for_type::<t_arena_pool::TArenaPool>(callbacks, new_subs),
+            "TBattle" => {
+                client_cache.handle_resubscribe_for_type::<t_battle::TBattle>(callbacks, new_subs)
             }
             "THouse" => {
                 client_cache.handle_resubscribe_for_type::<t_house::THouse>(callbacks, new_subs)

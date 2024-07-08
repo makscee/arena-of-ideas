@@ -73,6 +73,7 @@ pub use itertools::Itertools;
 pub use lazy_static::lazy_static;
 pub use log::*;
 pub use serde::{Deserialize, Serialize};
+pub use spacetimedb_sdk::reducer::Status as StdbStatus;
 pub use std::{
     cmp::Ordering,
     mem,

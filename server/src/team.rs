@@ -1,6 +1,7 @@
 use super::*;
 
 #[spacetimedb(table)]
+#[derive(Clone)]
 pub struct TTeam {
     #[primarykey]
     pub id: GID,
@@ -23,5 +24,10 @@ impl TTeam {
         })
         .unwrap();
         team.id
+    }
+    pub fn save_clone(&self) -> Self {
+        let mut c = self.clone();
+        c.id = next_id();
+        TTeam::insert(c).expect("Failed to clone team")
     }
 }

@@ -152,6 +152,27 @@ impl ShopPlugin {
                 }
             })
             .show(ctx, world);
+        Tile::right("To battle")
+            .open()
+            .transparent()
+            .non_resizable()
+            .content(|ui, _| {
+                if Button::click("Start Battle".into()).ui(ui).clicked() {
+                    shop_finish();
+                    once_on_shop_finish(|_, _, status| match status {
+                        spacetimedb_sdk::reducer::Status::Committed => {
+                            OperationsPlugin::add(|world| {
+                                GameState::ShopBattle.run_to_target(world)
+                            });
+                        }
+                        spacetimedb_sdk::reducer::Status::Failed(e) => {
+                            error!("Failed to finish shop: {e}")
+                        }
+                        _ => panic!(),
+                    });
+                }
+            })
+            .show(ctx, world);
     }
     pub fn show_containers(wd: &mut WidgetData, ui: &mut Ui, world: &mut World) {
         if let Some(run) = Run::get_current() {

@@ -1,5 +1,7 @@
 mod ability;
+mod arena_pool;
 mod base_unit;
+mod battle;
 mod fused_unit;
 mod global_data;
 mod global_settings;
@@ -12,6 +14,8 @@ mod team;
 mod user;
 
 use anyhow::Context;
+pub use arena_pool::*;
+pub use battle::*;
 pub use fused_unit::*;
 pub use global_data::*;
 pub use global_settings::*;

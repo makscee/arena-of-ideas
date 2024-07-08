@@ -2,7 +2,7 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN RUST INSTEAD.
 
 #![allow(unused_imports)]
-use super::fused_unit::FusedUnit;
+use super::battle_result::BattleResult;
 use spacetimedb_sdk::{
     anyhow::{anyhow, Result},
     identity::Identity,
@@ -14,25 +14,27 @@ use spacetimedb_sdk::{
 };
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
-pub struct TTeam {
+pub struct TBattle {
     pub id: u64,
     pub owner: u64,
-    pub units: Vec<FusedUnit>,
+    pub team_left: u64,
+    pub team_right: u64,
+    pub result: BattleResult,
 }
 
-impl TableType for TTeam {
-    const TABLE_NAME: &'static str = "TTeam";
+impl TableType for TBattle {
+    const TABLE_NAME: &'static str = "TBattle";
     type ReducerEvent = super::ReducerEvent;
 }
 
-impl TableWithPrimaryKey for TTeam {
+impl TableWithPrimaryKey for TBattle {
     type PrimaryKey = u64;
     fn primary_key(&self) -> &Self::PrimaryKey {
         &self.id
     }
 }
 
-impl TTeam {
+impl TBattle {
     #[allow(unused)]
     pub fn filter_by_id(id: u64) -> Option<Self> {
         Self::find(|row| row.id == id)
@@ -42,7 +44,15 @@ impl TTeam {
         Self::filter(|row| row.owner == owner)
     }
     #[allow(unused)]
-    pub fn filter_by_units(units: Vec<FusedUnit>) -> TableIter<Self> {
-        Self::filter(|row| row.units == units)
+    pub fn filter_by_team_left(team_left: u64) -> TableIter<Self> {
+        Self::filter(|row| row.team_left == team_left)
+    }
+    #[allow(unused)]
+    pub fn filter_by_team_right(team_right: u64) -> TableIter<Self> {
+        Self::filter(|row| row.team_right == team_right)
+    }
+    #[allow(unused)]
+    pub fn filter_by_result(result: BattleResult) -> TableIter<Self> {
+        Self::filter(|row| row.result == result)
     }
 }

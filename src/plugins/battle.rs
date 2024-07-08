@@ -9,6 +9,7 @@ impl Plugin for BattlePlugin {
         app.add_systems(OnEnter(GameState::Battle), Self::on_enter)
             .add_systems(OnExit(GameState::Battle), Self::on_exit)
             .add_systems(OnEnter(GameState::CustomBattle), Self::on_enter_custom)
+            .add_systems(OnEnter(GameState::ShopBattle), Self::on_enter_shop)
             .init_resource::<BattleData>();
     }
 }
@@ -20,6 +21,21 @@ impl BattlePlugin {
         let result = Self::run(world).unwrap();
         let mut bd = world.resource_mut::<BattleData>();
         bd.result = result;
+        if bd.id > 0 {
+            submit_battle_result(match result {
+                BattleResult::Tbd => stdb::BattleResult::Tbd,
+                BattleResult::Left(_) => stdb::BattleResult::Left,
+                BattleResult::Right(_) => stdb::BattleResult::Right,
+                BattleResult::Even => stdb::BattleResult::Even,
+            });
+            once_on_submit_battle_result(|_, _, status, _| match status {
+                StdbStatus::Committed => {}
+                StdbStatus::Failed(e) => {
+                    error!("Battle result submit error: {e}")
+                }
+                _ => panic!(),
+            });
+        }
         info!("Battle finished with result: {result:?}");
     }
     fn on_exit(world: &mut World) {
@@ -29,11 +45,24 @@ impl BattlePlugin {
     fn on_enter_custom(world: &mut World) {
         world.insert_resource(GameAssets::get(world).custom_battle.clone());
     }
+    fn on_enter_shop(world: &mut World) {
+        let run = Run::current();
+        let bid = *run.battles.last().unwrap();
+        let battle = TBattle::filter_by_id(bid).unwrap();
+        let left = PackedTeam::from_id(battle.team_left);
+        let right = PackedTeam::from_id(battle.team_right);
+        world.insert_resource(BattleData {
+            left,
+            right,
+            id: bid,
+            ..default()
+        });
+    }
     pub fn load_teams(left: PackedTeam, right: PackedTeam, world: &mut World) {
         world.insert_resource(BattleData {
             left,
             right,
-            result: default(),
+            ..default()
         });
     }
     pub fn run(world: &mut World) -> Result<BattleResult> {
@@ -171,6 +200,7 @@ impl BattlePlugin {
         TopMenu::new(vec!["Playback"]).show(ctx);
         Tile::bottom("Playback")
             .transparent()
+            .non_resizable()
             .content(|ui, world| {
                 ui.vertical_centered(|ui| {
                     let mut gt = gt();
@@ -254,6 +284,8 @@ impl BattlePlugin {
 
 #[derive(Asset, TypePath, Resource, Default, Clone, Debug, Deserialize)]
 pub struct BattleData {
+    #[serde(default)]
+    id: u64,
     left: PackedTeam,
     right: PackedTeam,
     #[serde(default)]

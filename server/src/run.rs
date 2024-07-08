@@ -10,8 +10,9 @@ struct Run {
     #[primarykey]
     id: GID,
     #[unique]
-    user_id: GID,
+    owner: GID,
     team: GID,
+    battles: Vec<GID>,
     shop: Vec<ShopSlot>,
     fusion: Option<Fusion>,
     g: i32,
@@ -44,10 +45,40 @@ struct Fusion {
 #[spacetimedb(reducer)]
 fn run_start(ctx: ReducerContext) -> Result<(), String> {
     let user = User::find_by_identity(&ctx.sender)?;
-    Run::delete_by_user_id(&user.id);
+    Run::delete_by_owner(&user.id);
     let mut run = Run::new(user.id);
     run.fill_case();
     Run::insert(run)?;
+    Ok(())
+}
+
+#[spacetimedb(reducer)]
+fn shop_finish(ctx: ReducerContext) -> Result<(), String> {
+    let mut run = Run::current(&ctx)?;
+    let team = TTeam::get(run.team)?.save_clone();
+    run.round += 1;
+    run.fill_case();
+    run.g += 4;
+    let enemy = TArenaPool::get_random(run.round)
+        .map(|t| t.team)
+        .unwrap_or_default();
+    run.battles.push(TBattle::new(run.owner, team.id, enemy));
+    TArenaPool::add(team.id, run.round);
+    run.save();
+    Ok(())
+}
+
+#[spacetimedb(reducer)]
+fn submit_battle_result(ctx: ReducerContext, result: BattleResult) -> Result<(), String> {
+    let run = Run::current(&ctx)?;
+    let bid = *run.battles.last().context_str("Last battle not present")?;
+    let mut battle = TBattle::get(bid)?;
+    if !matches!(battle.result, BattleResult::Tbd) {
+        return Err("Result already submitted".to_owned());
+    }
+    battle.result = result;
+    battle.save();
+    run.save();
     Ok(())
 }
 
@@ -193,7 +224,7 @@ impl Run {
         let gs = GlobalSettings::get();
         Self {
             id: next_id(),
-            user_id,
+            owner: user_id,
             team: TTeam::new(user_id),
             shop: vec![ShopSlot::default(); gs.shop_slots_max as usize],
             fusion: None,
@@ -203,10 +234,11 @@ impl Run {
             price_reroll: gs.shop_price_reroll,
             price_unit: gs.shop_price_unit,
             price_sell: gs.shop_price_sell,
+            battles: Vec::new(),
         }
     }
     fn current(ctx: &ReducerContext) -> Result<Self, String> {
-        Run::filter_by_user_id(&User::find_by_identity(&ctx.sender)?.id)
+        Self::filter_by_owner(&User::find_by_identity(&ctx.sender)?.id)
             .context_str("No arena run in progress")
     }
     fn buy(&mut self, slot: u8) -> Result<(), String> {
@@ -248,7 +280,7 @@ impl Run {
     }
     fn save(mut self) {
         self.last_updated = Timestamp::now();
-        Self::update_by_user_id(&self.user_id.clone(), self);
+        Self::update_by_owner(&self.owner.clone(), self);
     }
     fn fill_case(&mut self) {
         let gs = GlobalSettings::get();

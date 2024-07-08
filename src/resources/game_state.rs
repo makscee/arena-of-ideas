@@ -12,6 +12,7 @@ pub enum GameState {
     Login,
     ForceLogin,
     CustomBattle,
+    ShopBattle,
     Battle,
     Shop,
     TestScenariosLoad,
@@ -44,6 +45,10 @@ lazy_static! {
                 GameState::Battle,
             ]
             .into(),
+        );
+        m.insert(
+            GameState::ShopBattle,
+            [GameState::Loaded, GameState::ShopBattle, GameState::Battle].into(),
         );
         m.insert(
             GameState::Shop,
@@ -87,6 +92,12 @@ impl GameState {
     pub fn run_to_target(self, world: &mut World) {
         self.set_target();
         GameState::Loaded.change(world);
+    }
+    pub fn run_to_target_op(self) {
+        OperationsPlugin::add(move |world| {
+            self.set_target();
+            GameState::Loaded.change(world);
+        });
     }
     pub fn change(self, world: &mut World) {
         info!("State change to {self}");

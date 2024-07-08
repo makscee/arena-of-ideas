@@ -17,8 +17,9 @@ use spacetimedb_sdk::{
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct Run {
     pub id: u64,
-    pub user_id: u64,
+    pub owner: u64,
     pub team: u64,
+    pub battles: Vec<u64>,
     pub shop: Vec<ShopSlot>,
     pub fusion: Option<Fusion>,
     pub g: i32,
@@ -47,12 +48,16 @@ impl Run {
         Self::find(|row| row.id == id)
     }
     #[allow(unused)]
-    pub fn filter_by_user_id(user_id: u64) -> Option<Self> {
-        Self::find(|row| row.user_id == user_id)
+    pub fn filter_by_owner(owner: u64) -> Option<Self> {
+        Self::find(|row| row.owner == owner)
     }
     #[allow(unused)]
     pub fn filter_by_team(team: u64) -> TableIter<Self> {
         Self::filter(|row| row.team == team)
+    }
+    #[allow(unused)]
+    pub fn filter_by_battles(battles: Vec<u64>) -> TableIter<Self> {
+        Self::filter(|row| row.battles == battles)
     }
     #[allow(unused)]
     pub fn filter_by_shop(shop: Vec<ShopSlot>) -> TableIter<Self> {

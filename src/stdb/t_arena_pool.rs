@@ -2,7 +2,6 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN RUST INSTEAD.
 
 #![allow(unused_imports)]
-use super::fused_unit::FusedUnit;
 use spacetimedb_sdk::{
     anyhow::{anyhow, Result},
     identity::Identity,
@@ -14,35 +13,30 @@ use spacetimedb_sdk::{
 };
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
-pub struct TTeam {
-    pub id: u64,
-    pub owner: u64,
-    pub units: Vec<FusedUnit>,
+pub struct TArenaPool {
+    pub team: u64,
+    pub round: u32,
 }
 
-impl TableType for TTeam {
-    const TABLE_NAME: &'static str = "TTeam";
+impl TableType for TArenaPool {
+    const TABLE_NAME: &'static str = "TArenaPool";
     type ReducerEvent = super::ReducerEvent;
 }
 
-impl TableWithPrimaryKey for TTeam {
+impl TableWithPrimaryKey for TArenaPool {
     type PrimaryKey = u64;
     fn primary_key(&self) -> &Self::PrimaryKey {
-        &self.id
+        &self.team
     }
 }
 
-impl TTeam {
+impl TArenaPool {
     #[allow(unused)]
-    pub fn filter_by_id(id: u64) -> Option<Self> {
-        Self::find(|row| row.id == id)
+    pub fn filter_by_team(team: u64) -> Option<Self> {
+        Self::find(|row| row.team == team)
     }
     #[allow(unused)]
-    pub fn filter_by_owner(owner: u64) -> TableIter<Self> {
-        Self::filter(|row| row.owner == owner)
-    }
-    #[allow(unused)]
-    pub fn filter_by_units(units: Vec<FusedUnit>) -> TableIter<Self> {
-        Self::filter(|row| row.units == units)
+    pub fn filter_by_round(round: u32) -> TableIter<Self> {
+        Self::filter(|row| row.round == round)
     }
 }

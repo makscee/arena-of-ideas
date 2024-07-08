@@ -11,6 +11,16 @@ pub struct PackedTeam {
 pub struct AbilityStates(pub HashMap<String, VarState>);
 
 impl PackedTeam {
+    pub fn from_id(id: u64) -> Self {
+        if id == 0 {
+            return default();
+        }
+        let team = TTeam::filter_by_id(id).unwrap();
+        Self {
+            units: team.units.into_iter().map(|u| u.into()).collect_vec(),
+            ..default()
+        }
+    }
     pub fn unpack(self, faction: Faction, world: &mut World) {
         debug!("unpack team: {self:?}");
         let entity = TeamPlugin::entity(faction, world);
