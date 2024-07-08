@@ -110,6 +110,8 @@ impl WidgetsPlugin {
                 GameState::Shop => ShopPlugin::show_containers(&mut wd, ui, world),
                 GameState::Connect => LoginPlugin::connect_ui(ui, world),
                 GameState::Login | GameState::ForceLogin => LoginPlugin::login_ui(ui, world),
+                GameState::Battle => BattlePlugin::ui(ui, world),
+                GameState::GameOver => ShopPlugin::game_over_ui(ui),
                 _ => {}
             });
         match state {

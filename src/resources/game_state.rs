@@ -15,6 +15,7 @@ pub enum GameState {
     ShopBattle,
     Battle,
     Shop,
+    GameOver,
     TestScenariosLoad,
     TestScenariosRun,
     ServerSync,
@@ -103,6 +104,9 @@ impl GameState {
         info!("State change to {self}");
         Self::set_ready(true);
         world.resource_mut::<NextState<GameState>>().set(self);
+    }
+    pub fn change_op(self) {
+        OperationsPlugin::add(move |world| self.change(world))
     }
     pub fn set_ready(value: bool) {
         *STATE_READY.lock().unwrap() = value;

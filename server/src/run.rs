@@ -19,10 +19,35 @@ struct Run {
     price_reroll: i32,
     price_unit: i32,
     price_sell: i32,
+    lives: u32,
+    active: bool,
 
     round: u32,
 
     last_updated: Timestamp,
+}
+
+#[spacetimedb(table)]
+struct RunArchive {
+    #[primarykey]
+    id: GID,
+    owner: GID,
+    team: GID,
+    battles: Vec<GID>,
+    round: u32,
+}
+
+impl RunArchive {
+    fn add_from_run(run: &Run) {
+        Self::insert(Self {
+            id: run.id,
+            owner: run.owner,
+            team: run.team,
+            battles: run.battles.clone(),
+            round: run.round,
+        })
+        .expect("Failed to archive a run");
+    }
 }
 
 #[derive(SpacetimeType, Clone, Default)]
@@ -53,31 +78,48 @@ fn run_start(ctx: ReducerContext) -> Result<(), String> {
 }
 
 #[spacetimedb(reducer)]
+fn run_finish(ctx: ReducerContext) -> Result<(), String> {
+    let run = Run::current(&ctx)?;
+    Run::delete_by_id(&run.id);
+    RunArchive::add_from_run(&run);
+    Ok(())
+}
+
+#[spacetimedb(reducer)]
 fn shop_finish(ctx: ReducerContext) -> Result<(), String> {
     let mut run = Run::current(&ctx)?;
     let team = TTeam::get(run.team)?.save_clone();
-    run.round += 1;
-    run.fill_case();
-    run.g += 4;
     let enemy = TArenaPool::get_random(run.round)
         .map(|t| t.team)
         .unwrap_or_default();
     run.battles.push(TBattle::new(run.owner, team.id, enemy));
-    TArenaPool::add(team.id, run.round);
+    if !team.units.is_empty() {
+        TArenaPool::add(team.id, run.round);
+    }
+    run.round += 1;
+    run.fill_case();
+    run.g += 4;
     run.save();
     Ok(())
 }
 
 #[spacetimedb(reducer)]
 fn submit_battle_result(ctx: ReducerContext, result: BattleResult) -> Result<(), String> {
-    let run = Run::current(&ctx)?;
+    let mut run = Run::current(&ctx)?;
     let bid = *run.battles.last().context_str("Last battle not present")?;
     let mut battle = TBattle::get(bid)?;
+    let is_no_enemy = battle.team_right == 0;
     if !matches!(battle.result, BattleResult::Tbd) {
         return Err("Result already submitted".to_owned());
     }
     battle.result = result;
     battle.save();
+    if matches!(result, BattleResult::Right) {
+        run.lives -= 1;
+    }
+    if run.lives == 0 || is_no_enemy {
+        run.active = false;
+    }
     run.save();
     Ok(())
 }
@@ -235,6 +277,8 @@ impl Run {
             price_unit: gs.shop_price_unit,
             price_sell: gs.shop_price_sell,
             battles: Vec::new(),
+            lives: 1,
+            active: true,
         }
     }
     fn current(ctx: &ReducerContext) -> Result<Self, String> {

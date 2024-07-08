@@ -280,6 +280,25 @@ impl BattlePlugin {
             })
             .show(ctx, world);
     }
+    pub fn ui(ui: &mut Ui, world: &mut World) {
+        if !gt().ended() {
+            return;
+        }
+        center_window("end_panel", ui, |ui| {
+            ui.vertical_centered(|ui| {
+                let bd = world.resource::<BattleData>();
+                if bd.result.is_win().unwrap_or_default() {
+                    "Victory".cstr_cs(GREEN, CstrStyle::Bold)
+                } else {
+                    "Defeat".cstr_cs(RED, CstrStyle::Bold)
+                }
+                .label(ui);
+                if Button::click("Finish".into()).ui(ui).clicked() {
+                    GameState::Shop.run_to_target(world);
+                }
+            });
+        });
+    }
 }
 
 #[derive(Asset, TypePath, Resource, Default, Clone, Debug, Deserialize)]

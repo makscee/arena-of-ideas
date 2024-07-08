@@ -10,7 +10,7 @@ pub struct TBattle {
     pub result: BattleResult,
 }
 
-#[derive(SpacetimeType, Default)]
+#[derive(SpacetimeType, Default, Copy, Clone)]
 pub enum BattleResult {
     #[default]
     Tbd,

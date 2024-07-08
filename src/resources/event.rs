@@ -51,7 +51,7 @@ impl Event {
             | Event::Death(..)
             | Event::Summon(..)
             | Event::UseAbility(..) => {
-                let mut units = UnitPlugin::collect_all(world);
+                let mut units = UnitPlugin::collect_alive(world);
                 units.sort_by_key(|e| VarState::get(*e, world).get_int(VarName::Slot).unwrap());
                 match &self {
                     Event::Death(e) | Event::Summon(e) => {

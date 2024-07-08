@@ -26,6 +26,8 @@ pub struct Run {
     pub price_reroll: i32,
     pub price_unit: i32,
     pub price_sell: i32,
+    pub lives: u32,
+    pub active: bool,
     pub round: u32,
     pub last_updated: u64,
 }
@@ -82,6 +84,14 @@ impl Run {
     #[allow(unused)]
     pub fn filter_by_price_sell(price_sell: i32) -> TableIter<Self> {
         Self::filter(|row| row.price_sell == price_sell)
+    }
+    #[allow(unused)]
+    pub fn filter_by_lives(lives: u32) -> TableIter<Self> {
+        Self::filter(|row| row.lives == lives)
+    }
+    #[allow(unused)]
+    pub fn filter_by_active(active: bool) -> TableIter<Self> {
+        Self::filter(|row| row.active == active)
     }
     #[allow(unused)]
     pub fn filter_by_round(round: u32) -> TableIter<Self> {

@@ -39,18 +39,26 @@ impl ShopPlugin {
         shop_change_g(10);
     }
     fn enter(mut sd: ResMut<ShopData>) {
-        run_start();
-        once_on_run_start(|_, _, status| match status {
-            spacetimedb_sdk::reducer::Status::Committed => OperationsPlugin::add(|world| {
-                Self::sync_run(Run::current(), world);
-            }),
-            spacetimedb_sdk::reducer::Status::Failed(e) => {
-                Notification::new(format!("Run start error: {e}"))
-                    .error()
-                    .push_op()
+        if let Some(run) = Run::get_current() {
+            if !run.active {
+                GameState::GameOver.change_op();
+                return;
             }
-            _ => panic!(),
-        });
+            OperationsPlugin::add(|world| Self::sync_run(*run, world));
+        } else {
+            run_start();
+            once_on_run_start(|_, _, status| match status {
+                spacetimedb_sdk::reducer::Status::Committed => OperationsPlugin::add(|world| {
+                    Self::sync_run(Run::current(), world);
+                }),
+                spacetimedb_sdk::reducer::Status::Failed(e) => {
+                    Notification::new(format!("Run start error: {e}"))
+                        .error()
+                        .push_op()
+                }
+                _ => panic!(),
+            });
+        }
         let cb = Run::on_update(|_, run, _| {
             let run = run.clone();
             OperationsPlugin::add(|world| Self::sync_run(run, world))
@@ -237,5 +245,34 @@ impl ShopPlugin {
                 })
                 .ui(wd, ui, world);
         }
+    }
+    pub fn game_over_ui(ui: &mut Ui) {
+        let Some(run) = Run::get_current() else {
+            return;
+        };
+        center_window("game_over", ui, |ui| {
+            ui.set_width(300.0);
+            ui.vertical_centered_justified(|ui| {
+                if run.lives > 0 {
+                    "Victory".cstr_cs(GREEN, CstrStyle::Heading)
+                } else {
+                    "Defeat".cstr_cs(RED, CstrStyle::Heading)
+                }
+                .label(ui);
+                "Run Over".cstr_cs(YELLOW, CstrStyle::Bold).label(ui);
+                format!("Final round: ")
+                    .cstr()
+                    .push(run.round.to_string().cstr_cs(YELLOW, CstrStyle::Bold))
+                    .label(ui);
+                if Button::click("Finish".into()).ui(ui).clicked() {
+                    run_finish();
+                    once_on_run_finish(|_, _, status| match status {
+                        StdbStatus::Committed => GameState::Title.run_to_target_op(),
+                        StdbStatus::Failed(e) => error!("Failed to finish run: {e}"),
+                        _ => panic!(),
+                    });
+                }
+            });
+        });
     }
 }

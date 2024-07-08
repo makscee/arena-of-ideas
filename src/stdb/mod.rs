@@ -35,6 +35,8 @@ pub mod logout_reducer;
 pub mod register_empty_reducer;
 pub mod register_reducer;
 pub mod run;
+pub mod run_archive;
+pub mod run_finish_reducer;
 pub mod run_start_reducer;
 pub mod set_name_reducer;
 pub mod set_password_reducer;
@@ -71,6 +73,8 @@ pub use logout_reducer::*;
 pub use register_empty_reducer::*;
 pub use register_reducer::*;
 pub use run::*;
+pub use run_archive::*;
+pub use run_finish_reducer::*;
 pub use run_start_reducer::*;
 pub use set_name_reducer::*;
 pub use set_password_reducer::*;
@@ -103,6 +107,7 @@ pub enum ReducerEvent {
     Logout(logout_reducer::LogoutArgs),
     Register(register_reducer::RegisterArgs),
     RegisterEmpty(register_empty_reducer::RegisterEmptyArgs),
+    RunFinish(run_finish_reducer::RunFinishArgs),
     RunStart(run_start_reducer::RunStartArgs),
     SetName(set_name_reducer::SetNameArgs),
     SetPassword(set_password_reducer::SetPasswordArgs),
@@ -143,6 +148,11 @@ impl SpacetimeModule for Module {
                 ),
             "Run" => client_cache
                 .handle_table_update_with_primary_key::<run::Run>(callbacks, table_update),
+            "RunArchive" => client_cache
+                .handle_table_update_with_primary_key::<run_archive::RunArchive>(
+                    callbacks,
+                    table_update,
+                ),
             "TAbility" => client_cache.handle_table_update_with_primary_key::<t_ability::TAbility>(
                 callbacks,
                 table_update,
@@ -187,6 +197,7 @@ impl SpacetimeModule for Module {
             state,
         );
         reminders.invoke_callbacks::<run::Run>(worker, &reducer_event, state);
+        reminders.invoke_callbacks::<run_archive::RunArchive>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_ability::TAbility>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_arena_pool::TArenaPool>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_battle::TBattle>(worker, &reducer_event, state);
@@ -220,6 +231,7 @@ match &function_call.reducer[..] {
 			"logout" => _reducer_callbacks.handle_event_of_type::<logout_reducer::LogoutArgs, ReducerEvent>(event, _state, ReducerEvent::Logout),
 			"register" => _reducer_callbacks.handle_event_of_type::<register_reducer::RegisterArgs, ReducerEvent>(event, _state, ReducerEvent::Register),
 			"register_empty" => _reducer_callbacks.handle_event_of_type::<register_empty_reducer::RegisterEmptyArgs, ReducerEvent>(event, _state, ReducerEvent::RegisterEmpty),
+			"run_finish" => _reducer_callbacks.handle_event_of_type::<run_finish_reducer::RunFinishArgs, ReducerEvent>(event, _state, ReducerEvent::RunFinish),
 			"run_start" => _reducer_callbacks.handle_event_of_type::<run_start_reducer::RunStartArgs, ReducerEvent>(event, _state, ReducerEvent::RunStart),
 			"set_name" => _reducer_callbacks.handle_event_of_type::<set_name_reducer::SetNameArgs, ReducerEvent>(event, _state, ReducerEvent::SetName),
 			"set_password" => _reducer_callbacks.handle_event_of_type::<set_password_reducer::SetPasswordArgs, ReducerEvent>(event, _state, ReducerEvent::SetPassword),
@@ -252,6 +264,8 @@ match &function_call.reducer[..] {
                     callbacks, new_subs,
                 ),
             "Run" => client_cache.handle_resubscribe_for_type::<run::Run>(callbacks, new_subs),
+            "RunArchive" => client_cache
+                .handle_resubscribe_for_type::<run_archive::RunArchive>(callbacks, new_subs),
             "TAbility" => {
                 client_cache.handle_resubscribe_for_type::<t_ability::TAbility>(callbacks, new_subs)
             }
