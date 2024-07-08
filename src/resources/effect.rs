@@ -11,6 +11,7 @@ pub enum Effect {
     WithVar(VarName, Expression, Box<Effect>),
     List(Vec<Effect>),
     Repeat(Expression, Box<Effect>),
+    If(Expression, Box<Effect>, Box<Effect>),
     Vfx(String),
 }
 
@@ -105,6 +106,19 @@ impl Effect {
                 for _ in 0..count {
                     ActionPlugin::action_push_front(effect.deref().clone(), context.clone(), world);
                 }
+            }
+            Effect::If(cond, th, el) => {
+                ActionPlugin::action_push_front(
+                    if cond.get_bool(context, world)? {
+                        th
+                    } else {
+                        el
+                    }
+                    .deref()
+                    .clone(),
+                    context.clone(),
+                    world,
+                );
             }
             Effect::Vfx(name) => {
                 Vfx::get(name, world)

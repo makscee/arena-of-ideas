@@ -1,0 +1,43 @@
+#![enable(implicit_some)]
+(
+    name: "Vampires",
+    color: ("#BA002F"),
+    defaults: {"Siphon": {M1: Bool(false)}},
+    statuses: [
+        (
+            name: "Siphoned Out",
+            description: "-{Charges} HP",
+            polarity: -1,
+            trigger: Change(trigger: Var(Hp), expr: Sub(I(0), Context(Charges))),
+        ),
+        (
+            name: "Siphon HP",
+            description: "+{Charges} Hp",
+            polarity: 1,
+            trigger: Change(trigger: Var(Hp), expr: Context(Charges)),
+        ),
+        (
+            name: "Siphon PWR",
+            description: "+{Charges} Pwr",
+            polarity: 1,
+            trigger: Change(trigger: Var(Pwr), expr: Context(Charges)),
+        ),
+    ],
+    abilities: [
+        (
+            name: "Siphon",
+            description: "Drain {1} HP from target{M1|, gain +1 PWR for each}",
+            effect: List(
+                [
+                    ChangeStatus("Siphoned Out"),
+                    WithTarget(Owner, ChangeStatus("Siphon HP")),
+                    If(
+                        AbilityState("Siphon", M1),
+                        WithTarget(Owner, ChangeStatus("Siphon PWR")),
+                        Noop,
+                    ),
+                ],
+            ),
+        ),
+    ],
+)

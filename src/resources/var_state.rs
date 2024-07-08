@@ -200,6 +200,14 @@ impl VarState {
         self.get_value_at(var, t)?.get_bool()
     }
 
+    pub fn get_color(&self, var: VarName) -> Result<Color> {
+        self.get_value_last(var)?.get_color()
+    }
+    pub fn set_color(&mut self, var: VarName, value: Color) -> &mut Self {
+        self.push_change(var, default(), VarChange::new(VarValue::Color(value)));
+        self
+    }
+
     pub fn get_string(&self, var: VarName) -> Result<String> {
         self.get_value_last(var)?.get_string()
     }

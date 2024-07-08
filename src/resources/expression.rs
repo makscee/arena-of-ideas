@@ -16,6 +16,7 @@ pub enum Expression {
     PI,
     PI2,
     Age,
+    Index,
 
     Owner,
     Caster,
@@ -43,6 +44,7 @@ pub enum Expression {
     I(i32),
     B(bool),
     S(String),
+    V2(f32, f32),
 
     Vec2E(Box<Expression>),
     UnitVec(Box<Expression>),
@@ -191,6 +193,7 @@ impl Expression {
             Expression::I(v) => Ok((*v).into()),
             Expression::B(v) => Ok((*v).into()),
             Expression::S(v) => Ok((v.clone()).into()),
+            Expression::V2(x, y) => Ok(vec2(*x, *y).into()),
             Expression::GT => Ok(gt().play_head().into()),
             Expression::Beat => Ok(gt().play_head().sin().into()),
 
@@ -277,6 +280,7 @@ impl Expression {
             Expression::Age => {
                 Ok((gt().play_head() - VarState::get(context.owner(), world).birth()).into())
             }
+            Expression::Index => Expression::Context(VarName::Index).get_value(context, world),
         }
     }
     pub fn get_float(&self, context: &Context, world: &mut World) -> Result<f32> {

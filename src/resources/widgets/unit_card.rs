@@ -61,10 +61,6 @@ pub fn unit_card(t: f32, state: &VarState, ui: &mut Ui, world: &World) {
     })
     .response
     .rect;
-    // let ui = ui.child_ui(
-    //     Rect::from_center_size(rect.center_bottom(), egui::vec2(20.0, 20.0)),
-    //     Layout::left_to_right(Align::Center),
-    // );
     ui.add_space(-ui.style().spacing.item_spacing.y + 0.5);
     Frame {
         inner_margin: Margin::same(8.0),
@@ -125,8 +121,11 @@ pub fn unit_card(t: f32, state: &VarState, ui: &mut Ui, world: &World) {
 
     ui.painter()
         .circle_filled(rect.center_bottom(), 13.0, LIGHT_BLACK);
-    ui.painter()
-        .circle_filled(rect.center_bottom(), 10.0, rarity_color(1));
+    ui.painter().circle_filled(
+        rect.center_bottom(),
+        10.0,
+        state.get_color(VarName::RarityColor).unwrap().c32(),
+    );
 }
 
 fn show_trigger_part(title: &str, content: Vec<&Cstr>, color: Color32, ui: &mut Ui) {

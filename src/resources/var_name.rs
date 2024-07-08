@@ -32,4 +32,7 @@ pub enum VarName {
     T,
     Houses,
     Thickness,
+    M1,
+    M2,
+    M3,
 }

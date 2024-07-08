@@ -106,7 +106,10 @@ impl PackedUnit {
             )
             .init(VarName::Position, Vec2::ZERO.into())
             .init(VarName::Visible, true.into())
-            .init(VarName::RarityColor, DARK_WHITE.into());
+            .init(
+                VarName::RarityColor,
+                rarity_color(self.rarity as usize).into(),
+            );
         if let Some(house) = self.houses.iter().next() {
             state.init(VarName::Color, name_color(house).into());
         }

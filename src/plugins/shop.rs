@@ -216,14 +216,7 @@ impl ShopPlugin {
                         }
                     }
                 })
-                .hover_content(|_, entity, ui, world| {
-                    let Some(entity) = entity else {
-                        return;
-                    };
-                    let state = VarState::get(entity, world);
-                    let t = gt().play_head();
-                    unit_card(t, state, ui, world);
-                })
+                .hover_content(Self::container_on_hover)
                 .ui(wd, ui, world);
             let slots = GameAssets::get(world).global_settings.team_slots as usize;
             UnitContainer::new(Faction::Team)
@@ -243,8 +236,17 @@ impl ShopPlugin {
                         }
                     }
                 })
+                .hover_content(Self::container_on_hover)
                 .ui(wd, ui, world);
         }
+    }
+    fn container_on_hover(_: usize, entity: Option<Entity>, ui: &mut Ui, world: &mut World) {
+        let Some(entity) = entity else {
+            return;
+        };
+        let state = VarState::get(entity, world);
+        let t = gt().play_head();
+        unit_card(t, state, ui, world);
     }
     pub fn game_over_ui(ui: &mut Ui) {
         let Some(run) = Run::get_current() else {
