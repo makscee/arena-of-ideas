@@ -1,6 +1,6 @@
 use super::*;
 
-pub fn unit_card(t: f32, state: &VarState, ui: &mut Ui, world: &World) {
+pub fn unit_card(t: f32, state: &VarState, ui: &mut Ui) {
     let houses = state
         .get_value_at(VarName::Houses, t)
         .unwrap()

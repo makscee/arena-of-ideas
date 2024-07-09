@@ -41,7 +41,7 @@ impl ShopPlugin {
     fn enter(mut sd: ResMut<ShopData>) {
         if let Some(run) = Run::get_current() {
             if !run.active {
-                GameState::GameOver.change_op();
+                GameState::GameOver.set_next_op();
                 return;
             }
             OperationsPlugin::add(|world| Self::sync_run(*run, world));
@@ -169,9 +169,7 @@ impl ShopPlugin {
                     shop_finish();
                     once_on_shop_finish(|_, _, status| match status {
                         spacetimedb_sdk::reducer::Status::Committed => {
-                            OperationsPlugin::add(|world| {
-                                GameState::ShopBattle.run_to_target(world)
-                            });
+                            GameState::ShopBattle.proceed_to_target_op()
                         }
                         spacetimedb_sdk::reducer::Status::Failed(e) => {
                             error!("Failed to finish shop: {e}")
@@ -246,7 +244,7 @@ impl ShopPlugin {
         };
         let state = VarState::get(entity, world);
         let t = gt().play_head();
-        unit_card(t, state, ui, world);
+        unit_card(t, state, ui);
     }
     pub fn game_over_ui(ui: &mut Ui) {
         let Some(run) = Run::get_current() else {
@@ -269,7 +267,7 @@ impl ShopPlugin {
                 if Button::click("Finish".into()).ui(ui).clicked() {
                     run_finish();
                     once_on_run_finish(|_, _, status| match status {
-                        StdbStatus::Committed => GameState::Title.run_to_target_op(),
+                        StdbStatus::Committed => GameState::Title.proceed_to_target_op(),
                         StdbStatus::Failed(e) => error!("Failed to finish run: {e}"),
                         _ => panic!(),
                     });

@@ -104,17 +104,17 @@ fn shop_finish(ctx: ReducerContext) -> Result<(), String> {
 }
 
 #[spacetimedb(reducer)]
-fn submit_battle_result(ctx: ReducerContext, result: BattleResult) -> Result<(), String> {
+fn submit_battle_result(ctx: ReducerContext, result: TBattleResult) -> Result<(), String> {
     let mut run = Run::current(&ctx)?;
     let bid = *run.battles.last().context_str("Last battle not present")?;
     let mut battle = TBattle::get(bid)?;
     let is_no_enemy = battle.team_right == 0;
-    if !matches!(battle.result, BattleResult::Tbd) {
+    if !matches!(battle.result, TBattleResult::Tbd) {
         return Err("Result already submitted".to_owned());
     }
     battle.result = result;
     battle.save();
-    if matches!(result, BattleResult::Right) {
+    if matches!(result, TBattleResult::Right) {
         run.lives -= 1;
     }
     if run.lives == 0 || is_no_enemy {

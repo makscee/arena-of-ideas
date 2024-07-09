@@ -1,6 +1,7 @@
 mod action;
 mod battle;
 mod camera;
+mod connect;
 mod login;
 mod operations;
 mod profile;
@@ -18,6 +19,7 @@ use super::*;
 pub use action::*;
 pub use battle::*;
 pub use camera::*;
+pub use connect::*;
 pub use login::*;
 pub use operations::*;
 pub use profile::*;

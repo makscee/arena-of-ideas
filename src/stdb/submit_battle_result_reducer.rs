@@ -2,7 +2,7 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN RUST INSTEAD.
 
 #![allow(unused_imports)]
-use super::battle_result::BattleResult;
+use super::t_battle_result::TBattleResult;
 use spacetimedb_sdk::{
     anyhow::{anyhow, Result},
     identity::Identity,
@@ -15,7 +15,7 @@ use spacetimedb_sdk::{
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct SubmitBattleResultArgs {
-    pub result: BattleResult,
+    pub result: TBattleResult,
 }
 
 impl Reducer for SubmitBattleResultArgs {
@@ -23,13 +23,13 @@ impl Reducer for SubmitBattleResultArgs {
 }
 
 #[allow(unused)]
-pub fn submit_battle_result(result: BattleResult) {
+pub fn submit_battle_result(result: TBattleResult) {
     SubmitBattleResultArgs { result }.invoke();
 }
 
 #[allow(unused)]
 pub fn on_submit_battle_result(
-    mut __callback: impl FnMut(&Identity, Option<Address>, &Status, &BattleResult) + Send + 'static,
+    mut __callback: impl FnMut(&Identity, Option<Address>, &Status, &TBattleResult) + Send + 'static,
 ) -> ReducerCallbackId<SubmitBattleResultArgs> {
     SubmitBattleResultArgs::on_reducer(move |__identity, __addr, __status, __args| {
         let SubmitBattleResultArgs { result } = __args;
@@ -39,7 +39,7 @@ pub fn on_submit_battle_result(
 
 #[allow(unused)]
 pub fn once_on_submit_battle_result(
-    __callback: impl FnOnce(&Identity, Option<Address>, &Status, &BattleResult) + Send + 'static,
+    __callback: impl FnOnce(&Identity, Option<Address>, &Status, &TBattleResult) + Send + 'static,
 ) -> ReducerCallbackId<SubmitBattleResultArgs> {
     SubmitBattleResultArgs::once_on_reducer(move |__identity, __addr, __status, __args| {
         let SubmitBattleResultArgs { result } = __args;

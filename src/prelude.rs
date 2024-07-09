@@ -56,6 +56,7 @@ pub use bevy_egui::{
     egui::{self, epaint::PathShape, pos2, Align2, Id, Pos2, Stroke, Ui},
     EguiContext,
 };
+pub use bevy_tasks::IoTaskPool;
 pub use chrono::DateTime;
 pub use colored::{Colorize, CustomColor};
 pub use convert_case::Casing;
@@ -73,6 +74,7 @@ pub use itertools::Itertools;
 pub use lazy_static::lazy_static;
 pub use log::*;
 pub use serde::{Deserialize, Serialize};
+pub use spacetimedb_sdk::identity::Credentials;
 pub use spacetimedb_sdk::reducer::Status as StdbStatus;
 pub use std::{
     cmp::Ordering,

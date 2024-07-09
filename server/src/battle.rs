@@ -7,11 +7,11 @@ pub struct TBattle {
     pub owner: GID,
     pub team_left: GID,
     pub team_right: GID,
-    pub result: BattleResult,
+    pub result: TBattleResult,
 }
 
 #[derive(SpacetimeType, Default, Copy, Clone)]
-pub enum BattleResult {
+pub enum TBattleResult {
     #[default]
     Tbd,
     Left,
@@ -27,7 +27,7 @@ impl TBattle {
             owner,
             team_left,
             team_right,
-            result: BattleResult::default(),
+            result: TBattleResult::default(),
         })
         .expect("Failed to insert TBattle");
         id

@@ -25,8 +25,15 @@ impl ProfilePlugin {
             pass_repeat: default(),
         })
     }
+    fn update_user(world: &mut World) {
+        LoginOption {
+            user: User::filter_by_id(user_id()).unwrap(),
+        }
+        .save(world);
+    }
     pub fn settings_ui(ui: &mut Ui, world: &mut World) {
-        let has_pass = LoginPlugin::user(world).pass_hash.is_some();
+        let user = &LoginOption::get(world).user;
+        let has_pass = user.pass_hash.is_some();
         let mut ped = world.resource_mut::<ProfileEditData>();
         Input::new("name").ui(&mut ped.name, ui);
         if Button::click("Submit".into())
@@ -42,7 +49,7 @@ impl ProfilePlugin {
                         OperationsPlugin::add(move |world| {
                             Notification::new(format!("Name successfully changed to {name}"))
                                 .push(world);
-                            LoginPlugin::save_user(User::filter_by_id(user_id()).unwrap(), world);
+                            Self::update_user(world);
                         })
                     }
                     spacetimedb_sdk::reducer::Status::Failed(e) => {
@@ -74,7 +81,7 @@ impl ProfilePlugin {
                 spacetimedb_sdk::reducer::Status::Committed => {
                     OperationsPlugin::add(|world| {
                         Notification::new("Password updated successfully".to_owned()).push(world);
-                        LoginPlugin::save_user(User::filter_by_id(user_id()).unwrap(), world);
+                        Self::update_user(world);
                         let mut ped = world.resource_mut::<ProfileEditData>();
                         ped.pass.clear();
                         ped.pass_repeat.clear();

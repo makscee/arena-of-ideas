@@ -21,7 +21,6 @@ use spacetimedb_sdk::{
 use std::sync::Arc;
 
 pub mod base_unit;
-pub mod battle_result;
 pub mod fuse_cancel_reducer;
 pub mod fuse_choose_reducer;
 pub mod fuse_start_reducer;
@@ -52,6 +51,7 @@ pub mod sync_all_assets_reducer;
 pub mod t_ability;
 pub mod t_arena_pool;
 pub mod t_battle;
+pub mod t_battle_result;
 pub mod t_house;
 pub mod t_representation;
 pub mod t_status;
@@ -59,7 +59,6 @@ pub mod t_team;
 pub mod user;
 
 pub use base_unit::*;
-pub use battle_result::*;
 pub use fuse_cancel_reducer::*;
 pub use fuse_choose_reducer::*;
 pub use fuse_start_reducer::*;
@@ -90,6 +89,7 @@ pub use sync_all_assets_reducer::*;
 pub use t_ability::*;
 pub use t_arena_pool::*;
 pub use t_battle::*;
+pub use t_battle_result::*;
 pub use t_house::*;
 pub use t_representation::*;
 pub use t_status::*;

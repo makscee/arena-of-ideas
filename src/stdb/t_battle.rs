@@ -2,7 +2,7 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN RUST INSTEAD.
 
 #![allow(unused_imports)]
-use super::battle_result::BattleResult;
+use super::t_battle_result::TBattleResult;
 use spacetimedb_sdk::{
     anyhow::{anyhow, Result},
     identity::Identity,
@@ -19,7 +19,7 @@ pub struct TBattle {
     pub owner: u64,
     pub team_left: u64,
     pub team_right: u64,
-    pub result: BattleResult,
+    pub result: TBattleResult,
 }
 
 impl TableType for TBattle {
@@ -52,7 +52,7 @@ impl TBattle {
         Self::filter(|row| row.team_right == team_right)
     }
     #[allow(unused)]
-    pub fn filter_by_result(result: BattleResult) -> TableIter<Self> {
+    pub fn filter_by_result(result: TBattleResult) -> TableIter<Self> {
         Self::filter(|row| row.result == result)
     }
 }

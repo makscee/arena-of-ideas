@@ -50,7 +50,7 @@ impl WidgetsPlugin {
                 .title()
                 .open()
                 .content(|ui, world| {
-                    format!("Welcome, {}!", LoginPlugin::user(world).name)
+                    format!("Welcome, {}!", LoginOption::get(world).user.name)
                         .cstr_cs(DARK_WHITE, CstrStyle::Heading2)
                         .label(ui);
                     br(ui);
@@ -108,8 +108,8 @@ impl WidgetsPlugin {
             .frame(Frame::none())
             .show(ctx, |ui| match state {
                 GameState::Shop => ShopPlugin::show_containers(&mut wd, ui, world),
-                GameState::Connect => LoginPlugin::connect_ui(ui, world),
-                GameState::Login | GameState::ForceLogin => LoginPlugin::login_ui(ui, world),
+                GameState::Connect => ConnectPlugin::ui(ui),
+                GameState::Login => LoginPlugin::login_ui(ui, world),
                 GameState::Battle => BattlePlugin::ui(ui, world),
                 GameState::GameOver => ShopPlugin::game_over_ui(ui),
                 _ => {}

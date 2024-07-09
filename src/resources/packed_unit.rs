@@ -57,7 +57,7 @@ impl PackedUnit {
             ))
             .id();
         debug!("unpack unit: #{id:?} {entity:?} {self:?}");
-        self.state = self.generate_state(world);
+        self.state = self.generate_state();
         {
             self.representation.unpack(entity, world);
             let entity = GameAssets::get(world)
@@ -86,7 +86,7 @@ impl PackedUnit {
         entity
     }
 
-    pub fn generate_state(&self, world: &World) -> VarState {
+    pub fn generate_state(&self) -> VarState {
         let mut state = self.state.clone();
         state
             .init(VarName::Hp, self.hp.into())

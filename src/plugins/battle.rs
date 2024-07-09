@@ -23,10 +23,10 @@ impl BattlePlugin {
         bd.result = result;
         if bd.id > 0 {
             submit_battle_result(match result {
-                BattleResult::Tbd => stdb::BattleResult::Tbd,
-                BattleResult::Left(_) => stdb::BattleResult::Left,
-                BattleResult::Right(_) => stdb::BattleResult::Right,
-                BattleResult::Even => stdb::BattleResult::Even,
+                BattleResult::Tbd => TBattleResult::Tbd,
+                BattleResult::Left(_) => TBattleResult::Left,
+                BattleResult::Right(_) => TBattleResult::Right,
+                BattleResult::Even => TBattleResult::Even,
             });
             once_on_submit_battle_result(|_, _, status, _| match status {
                 StdbStatus::Committed => {}
@@ -294,7 +294,7 @@ impl BattlePlugin {
                 }
                 .label(ui);
                 if Button::click("Finish".into()).ui(ui).clicked() {
-                    GameState::Shop.run_to_target(world);
+                    GameState::Shop.proceed_to_target(world);
                 }
             });
         });
