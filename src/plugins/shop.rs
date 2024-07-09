@@ -21,19 +21,12 @@ impl Plugin for ShopPlugin {
     }
 }
 
-#[derive(Resource, Clone)]
+#[derive(Resource, Clone, Default)]
 pub struct ShopData {
     pub case_height: f32,
     callback: Option<UpdateCallbackId<Run>>,
-}
-
-impl Default for ShopData {
-    fn default() -> Self {
-        Self {
-            case_height: 0.0,
-            callback: None,
-        }
-    }
+    stack_source: Option<usize>,
+    stack_targets: Vec<usize>,
 }
 
 impl ShopPlugin {
@@ -184,6 +177,22 @@ impl ShopPlugin {
             })
             .show(ctx, world);
     }
+    fn do_stack(target: u8, world: &mut World) {
+        let mut sd = world.resource_mut::<ShopData>();
+        let source = sd.stack_source.unwrap();
+        stack_shop(source as u8, target);
+        once_on_stack_shop(|_, _, status, _, _| match status {
+            StdbStatus::Committed => {}
+            StdbStatus::Failed(e) => Notification::new(format!("Stack failed: {e}"))
+                .error()
+                .push_op(),
+            _ => panic!(),
+        });
+        sd.stack_source = None;
+    }
+    fn cancel_stack(world: &mut World) {
+        world.resource_mut::<ShopData>().stack_source = None;
+    }
     pub fn show_containers(wd: &mut WidgetData, ui: &mut Ui, world: &mut World) {
         if let Some(run) = Run::get_current() {
             if let Some((_, pos)) = ui.ctx().get_dragged() {
@@ -228,36 +237,41 @@ impl ShopPlugin {
                         shop_reroll();
                     }
                 })
-                .slot_content(move |slot, _, ui, _| {
+                .slot_content(move |slot, _, ui, world| {
                     let ind = slot - 1;
                     let ss = &shop[ind];
                     if ss.available {
-                        if Button::click(format!("-{} G", ss.price))
-                            .title("buy".into())
-                            .enabled(g >= ss.price)
-                            .ui(ui)
-                            .clicked()
-                        {
-                            shop_buy(slot as u8);
-                        }
-                        if !ss.stack_targets.is_empty() {
-                            let price = ss.price - 1;
-                            if Button::click(format!("-{} G", price))
-                                .title("stack".into())
-                                .enabled(g >= price)
+                        if let Some(stack_source) = sd.stack_source {
+                            if slot == stack_source {
+                                if Button::click("Cancel".into()).ui(ui).clicked() {
+                                    Self::cancel_stack(world);
+                                }
+                            }
+                        } else {
+                            if Button::click(format!("-{} G", ss.price))
+                                .title("buy".into())
+                                .enabled(g >= ss.price)
                                 .ui(ui)
                                 .clicked()
                             {
-                                stack_shop(slot as u8, ss.stack_targets[0]);
-                                once_on_stack_shop(|_, _, status, _, _| match status {
-                                    StdbStatus::Committed => {}
-                                    StdbStatus::Failed(e) => {
-                                        Notification::new(format!("Stack failed: {e}"))
-                                            .error()
-                                            .push_op()
+                                shop_buy(slot as u8);
+                            }
+                            if !ss.stack_targets.is_empty() {
+                                let price = ss.price - 1;
+                                if Button::click(format!("-{} G", price))
+                                    .title("stack".into())
+                                    .enabled(g >= price)
+                                    .ui(ui)
+                                    .clicked()
+                                {
+                                    let mut sd = world.resource_mut::<ShopData>();
+                                    sd.stack_source = Some(slot);
+                                    sd.stack_targets =
+                                        ss.stack_targets.iter().map(|v| *v as usize).collect_vec();
+                                    if ss.stack_targets.len() == 1 {
+                                        Self::do_stack(ss.stack_targets[0], world);
                                     }
-                                    _ => panic!(),
-                                });
+                                }
                             }
                         }
                     }
@@ -270,10 +284,16 @@ impl ShopPlugin {
                 .offset([0.0, sd.case_height])
                 .slots(slots.max(team.units.len()))
                 .max_slots(slots)
-                .slot_content(move |slot, e, ui, _| {
+                .slot_content(move |slot, e, ui, world| {
                     let ind = slot - 1;
                     if e.is_some() {
-                        if Button::click("+1 G".into())
+                        if sd.stack_source.is_some() {
+                            if sd.stack_targets.contains(&slot) {
+                                if Button::click("Stack".into()).ui(ui).clicked() {
+                                    Self::do_stack(slot as u8, world);
+                                }
+                            }
+                        } else if Button::click("+1 G".into())
                             .title("Sell".into())
                             .ui(ui)
                             .clicked()
