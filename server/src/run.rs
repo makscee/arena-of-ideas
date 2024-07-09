@@ -125,6 +125,22 @@ fn submit_battle_result(ctx: ReducerContext, result: TBattleResult) -> Result<()
 }
 
 #[spacetimedb(reducer)]
+fn shop_reorder(ctx: ReducerContext, from: u8, to: u8) -> Result<(), String> {
+    let run = Run::current(&ctx)?;
+    let mut team = TTeam::get(run.team)?;
+    let from = from as usize - 1;
+    let to = to as usize - 1;
+    if team.units.len() < from {
+        return Err("Wrong from index".into());
+    }
+    let unit = team.units.remove(from);
+    team.units.insert(to, unit);
+    team.save();
+    run.save();
+    Ok(())
+}
+
+#[spacetimedb(reducer)]
 fn shop_reroll(ctx: ReducerContext) -> Result<(), String> {
     let mut run = Run::current(&ctx)?;
     if run.g < run.price_reroll {

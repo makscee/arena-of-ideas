@@ -179,7 +179,13 @@ impl UiPlugin {
     }
 }
 
-const PATH: &str = "tile_path";
+lazy_static! {
+    static ref PATH: Id = Id::new("widget_path");
+    static ref DRAGGED_PATH: Id = Id::new("dragged_path");
+    static ref DRAG_FINISHED_DATA: Id = Id::new("drag_finished");
+    static ref HOVERED_PATH: Id = Id::new("hovered_path");
+}
+
 pub trait CtxExt {
     fn is_name_enabled(&self, name: &str) -> bool;
     fn is_path_enabled(&self, path: &str) -> bool;
@@ -190,6 +196,12 @@ pub trait CtxExt {
     fn path_with(&self, name: &str) -> String;
     fn add_path(&self, name: &str);
     fn remove_path(&self);
+    fn drag_start(&self, pos: Pos2);
+    fn drag_end(&self);
+    fn get_dragged(&self) -> Option<(String, Pos2)>;
+    fn drag_finished(&self) -> Option<(String, String)>;
+    fn set_hovered(&self, rect: Rect);
+    fn get_hovered(&self) -> Option<(String, Rect)>;
 }
 
 impl CtxExt for egui::Context {
@@ -212,7 +224,7 @@ impl CtxExt for egui::Context {
         self.data_mut(|w| w.insert_temp(Id::new(path), !v))
     }
     fn path(&self) -> String {
-        self.data(|r| r.get_temp(Id::new(PATH))).unwrap_or_default()
+        self.data(|r| r.get_temp(*PATH)).unwrap_or_default()
     }
     fn path_with(&self, name: &str) -> String {
         let p = self.path();
@@ -222,14 +234,40 @@ impl CtxExt for egui::Context {
         let mut p = self.path();
         p.push('/');
         p.push_str(name);
-        self.data_mut(|w| w.insert_temp(Id::new(PATH), p));
+        self.data_mut(|w| w.insert_temp(*PATH, p));
     }
     fn remove_path(&self) {
         let mut p = self.path();
         if let Some(pos) = p.rfind('/') {
             let _ = p.split_off(pos);
-            self.data_mut(|w| w.insert_temp(Id::new(PATH), p));
+            self.data_mut(|w| w.insert_temp(*PATH, p));
         }
+    }
+    fn drag_start(&self, pos: Pos2) {
+        let p = self.path();
+        self.data_mut(|w| w.insert_temp(*DRAGGED_PATH, (p, pos)));
+    }
+    fn drag_end(&self) {
+        if let Some((from, _)) = self.data_mut(|w| w.remove_temp::<(String, Pos2)>(*DRAGGED_PATH)) {
+            if let Some((to, rect)) = self.get_hovered() {
+                if !from.eq(&to) && self.pointer_latest_pos().is_some_and(|p| rect.contains(p)) {
+                    self.data_mut(|w| w.insert_temp(*DRAG_FINISHED_DATA, (from, to)));
+                }
+            }
+        }
+    }
+    fn drag_finished(&self) -> Option<(String, String)> {
+        self.data_mut(|w| w.remove_temp::<(String, String)>(*DRAG_FINISHED_DATA))
+    }
+    fn get_dragged(&self) -> Option<(String, Pos2)> {
+        self.data(|r| r.get_temp::<(String, Pos2)>(*DRAGGED_PATH))
+    }
+    fn set_hovered(&self, rect: Rect) {
+        let p = self.path();
+        self.data_mut(|w| w.insert_temp(*HOVERED_PATH, (p, rect)))
+    }
+    fn get_hovered(&self) -> Option<(String, Rect)> {
+        self.data(|r| r.get_temp::<(String, Rect)>(*HOVERED_PATH))
     }
 }
 

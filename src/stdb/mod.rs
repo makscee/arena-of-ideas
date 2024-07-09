@@ -42,6 +42,7 @@ pub mod set_password_reducer;
 pub mod shop_buy_reducer;
 pub mod shop_change_g_reducer;
 pub mod shop_finish_reducer;
+pub mod shop_reorder_reducer;
 pub mod shop_reroll_reducer;
 pub mod shop_sell_reducer;
 pub mod shop_slot;
@@ -80,6 +81,7 @@ pub use set_password_reducer::*;
 pub use shop_buy_reducer::*;
 pub use shop_change_g_reducer::*;
 pub use shop_finish_reducer::*;
+pub use shop_reorder_reducer::*;
 pub use shop_reroll_reducer::*;
 pub use shop_sell_reducer::*;
 pub use shop_slot::*;
@@ -114,6 +116,7 @@ pub enum ReducerEvent {
     ShopBuy(shop_buy_reducer::ShopBuyArgs),
     ShopChangeG(shop_change_g_reducer::ShopChangeGArgs),
     ShopFinish(shop_finish_reducer::ShopFinishArgs),
+    ShopReorder(shop_reorder_reducer::ShopReorderArgs),
     ShopReroll(shop_reroll_reducer::ShopRerollArgs),
     ShopSell(shop_sell_reducer::ShopSellArgs),
     Stack(stack_reducer::StackArgs),
@@ -238,6 +241,7 @@ match &function_call.reducer[..] {
 			"shop_buy" => _reducer_callbacks.handle_event_of_type::<shop_buy_reducer::ShopBuyArgs, ReducerEvent>(event, _state, ReducerEvent::ShopBuy),
 			"shop_change_g" => _reducer_callbacks.handle_event_of_type::<shop_change_g_reducer::ShopChangeGArgs, ReducerEvent>(event, _state, ReducerEvent::ShopChangeG),
 			"shop_finish" => _reducer_callbacks.handle_event_of_type::<shop_finish_reducer::ShopFinishArgs, ReducerEvent>(event, _state, ReducerEvent::ShopFinish),
+			"shop_reorder" => _reducer_callbacks.handle_event_of_type::<shop_reorder_reducer::ShopReorderArgs, ReducerEvent>(event, _state, ReducerEvent::ShopReorder),
 			"shop_reroll" => _reducer_callbacks.handle_event_of_type::<shop_reroll_reducer::ShopRerollArgs, ReducerEvent>(event, _state, ReducerEvent::ShopReroll),
 			"shop_sell" => _reducer_callbacks.handle_event_of_type::<shop_sell_reducer::ShopSellArgs, ReducerEvent>(event, _state, ReducerEvent::ShopSell),
 			"stack" => _reducer_callbacks.handle_event_of_type::<stack_reducer::StackArgs, ReducerEvent>(event, _state, ReducerEvent::Stack),

@@ -90,6 +90,7 @@ impl UnitContainer {
         data.positions.resize(self.slots + 1, default());
         data.entities.resize(self.slots + 1, None);
         let name = format!("{}", self.faction);
+        ui.ctx().add_path(&name);
         let center = ui.max_rect().center();
         let (anchor, offset) = match self.direction {
             Side::Right => (Align2::LEFT_CENTER, egui::vec2(center.x, 0.0)),
@@ -129,21 +130,32 @@ impl UnitContainer {
                         } else {
                             self.slots - i
                         };
-                        ui[col].vertical_centered(|ui| {
+                        let ui = &mut ui[col];
+                        ui.ctx().add_path(&i.to_string());
+                        ui.vertical_centered(|ui| {
                             let response = show_frame(i, max_size, i > self.max_slots, data, ui);
-                            if response.hovered() {
+                            if response.hovered() && ui.ctx().dragged_id().is_none() {
                                 hovered_rect = Some((i, response.rect));
+                            }
+                            if response.drag_started() {
+                                ui.ctx()
+                                    .drag_start(response.interact_pointer_pos().unwrap());
+                            }
+                            if response.drag_stopped() {
+                                ui.ctx().drag_end();
                             }
                         });
                         if let Some(content) = &self.slot_content {
-                            ui[col].vertical_centered_justified(|ui| {
+                            ui.vertical_centered_justified(|ui| {
                                 content(i, data.entities[i], ui, world);
                             });
                         }
+                        ui.ctx().remove_path();
                     }
                 });
-            });
-        let rect = resp.unwrap().response.rect;
+            })
+            .unwrap();
+        let rect = resp.response.rect;
         {
             let pos = rect.left_top();
             let rect = Rect::from_two_pos(pos, pos + egui::vec2(30.0, -10.0));
@@ -152,30 +164,30 @@ impl UnitContainer {
         }
         if let Some(hover_content) = self.hover_content {
             if let Some((i, rect)) = hovered_rect {
-                if data.entities[i].is_none() {
-                    return;
+                if data.entities[i].is_some() {
+                    const WIDTH: f32 = 300.0;
+                    let (pos, pivot) = if available_rect.right() - rect.right() < WIDTH {
+                        (rect.left_center(), Align2::RIGHT_CENTER)
+                    } else {
+                        (rect.right_center(), Align2::LEFT_CENTER)
+                    };
+                    Window::new("hover_slot")
+                        .title_bar(false)
+                        .frame(Frame::none())
+                        .max_width(WIDTH)
+                        .pivot(pivot)
+                        .fixed_pos(pos)
+                        .resizable(false)
+                        .interactable(false)
+                        .show(ui.ctx(), |ui| {
+                            ui.vertical_centered_justified(|ui| {
+                                hover_content(i, data.entities[i], ui, world)
+                            })
+                        });
                 }
-                const WIDTH: f32 = 300.0;
-                let (pos, pivot) = if available_rect.right() - rect.right() < WIDTH {
-                    (rect.left_center(), Align2::RIGHT_CENTER)
-                } else {
-                    (rect.right_center(), Align2::LEFT_CENTER)
-                };
-                Window::new("hover_slot")
-                    .title_bar(false)
-                    .frame(Frame::none())
-                    .max_width(WIDTH)
-                    .pivot(pivot)
-                    .fixed_pos(pos)
-                    .resizable(false)
-                    .interactable(false)
-                    .show(ui.ctx(), |ui| {
-                        ui.vertical_centered_justified(|ui| {
-                            hover_content(i, data.entities[i], ui, world)
-                        })
-                    });
             }
         }
+        ui.ctx().remove_path();
     }
 }
 
@@ -187,9 +199,10 @@ fn show_frame(
     ui: &mut Ui,
 ) -> Response {
     let size = max_size.min(130.0);
-    let (rect, response) = ui.allocate_exact_size(egui::vec2(size, size), Sense::hover());
+    let (rect, response) = ui.allocate_exact_size(egui::vec2(size, size), Sense::drag());
     data.positions[ind] = rect.center();
-    let color = if response.hovered() {
+    let color = if response.contains_pointer() {
+        ui.ctx().set_hovered(rect);
         YELLOW
     } else {
         if overflow {
