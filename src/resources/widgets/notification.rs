@@ -35,7 +35,6 @@ impl Notification {
         OperationsPlugin::add(|w| self.push(w));
     }
     pub fn push(self, world: &mut World) {
-        debug!("push notification");
         let t = elapsed_time(world);
         world
             .resource_mut::<WidgetData>()

@@ -123,7 +123,9 @@ impl ShopPlugin {
             let id = unit.id;
             let slot = i as i32 + 1;
             if let Some(entity) = team_units.get(&id) {
-                VarState::get_mut(*entity, world).set_int(VarName::Slot, slot.into());
+                let mut state = VarState::get_mut(*entity, world);
+                state.set_int(VarName::Slot, slot.into());
+                state.set_int(VarName::Stacks, unit.stacks as i32);
                 team_units.remove(&id);
                 continue;
             }
@@ -236,7 +238,27 @@ impl ShopPlugin {
                             .ui(ui)
                             .clicked()
                         {
-                            shop_buy(ind as u8);
+                            shop_buy(slot as u8);
+                        }
+                        if !ss.stack_targets.is_empty() {
+                            let price = ss.price - 1;
+                            if Button::click(format!("-{} G", price))
+                                .title("stack".into())
+                                .enabled(g >= price)
+                                .ui(ui)
+                                .clicked()
+                            {
+                                stack_shop(slot as u8, ss.stack_targets[0]);
+                                once_on_stack_shop(|_, _, status, _, _| match status {
+                                    StdbStatus::Committed => {}
+                                    StdbStatus::Failed(e) => {
+                                        Notification::new(format!("Stack failed: {e}"))
+                                            .error()
+                                            .push_op()
+                                    }
+                                    _ => panic!(),
+                                });
+                            }
                         }
                     }
                 })
@@ -248,9 +270,9 @@ impl ShopPlugin {
                 .offset([0.0, sd.case_height])
                 .slots(slots.max(team.units.len()))
                 .max_slots(slots)
-                .slot_content(move |slot, _, ui, _| {
+                .slot_content(move |slot, e, ui, _| {
                     let ind = slot - 1;
-                    if team.units.get(ind).is_some() {
+                    if e.is_some() {
                         if Button::click("+1 G".into())
                             .title("Sell".into())
                             .ui(ui)

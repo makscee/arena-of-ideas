@@ -38,6 +38,7 @@ lazy_static! {
             GameState::Shop,
             [GameOption::Connect, GameOption::ForceLogin].into(),
         );
+        m.insert(GameState::ServerSync, [GameOption::Connect].into());
         m
     };
 }

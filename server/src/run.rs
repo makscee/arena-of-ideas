@@ -58,6 +58,7 @@ struct ShopSlot {
     freeze: bool,
     discount: bool,
     available: bool,
+    stack_targets: Vec<u8>,
 }
 
 #[derive(SpacetimeType)]
@@ -155,7 +156,8 @@ fn shop_reroll(ctx: ReducerContext) -> Result<(), String> {
 #[spacetimedb(reducer)]
 fn shop_buy(ctx: ReducerContext, slot: u8) -> Result<(), String> {
     let mut run = Run::current(&ctx)?;
-    run.buy(slot)?;
+    let unit = run.buy(slot, 0)?;
+    run.add_to_team(FusedUnit::from_base(unit, next_id()))?;
     run.save();
     Ok(())
 }
@@ -250,30 +252,23 @@ fn fuse_choose(ctx: ReducerContext, ind: u8) -> Result<(), String> {
 }
 
 #[spacetimedb(reducer)]
-fn stack(ctx: ReducerContext, source: u8, target: u8) -> Result<(), String> {
+fn stack_shop(ctx: ReducerContext, source: u8, target: u8) -> Result<(), String> {
     let mut run = Run::current(&ctx)?;
-    // let source = run.remove_team(source)?;
-    // let target = run.get_team_mut(target)?;
-    // if source.bases.len() != 1 {
-    //     return Err("Fused unit can't be stack source".to_owned());
-    // }
-    // if !(target.stacks == 1
-    //     && source
-    //         .bases
-    //         .first()
-    //         .unwrap()
-    //         .eq(target.bases.first().unwrap()))
-    // {
-    //     return Err("First level unit can only be stacked with same unit".to_owned());
-    // }
-    // if !target
-    //     .get_houses()
-    //     .contains(&source.get_houses().first().unwrap())
-    // {
-    //     return Err("Source house has to be one of target houses".to_owned());
-    // }
-    // target.stacks += source.stacks;
-    // run.save();
+    let unit = run.buy(source, 1)?;
+    let mut team = run.team()?;
+    let target = team
+        .units
+        .get_mut(target as usize - 1)
+        .context_str("Team unit not found")?;
+    if !target.can_stack(&unit) {
+        return Err(format!(
+            "Units {unit} and {} can not be stacked",
+            target.bases.join("+")
+        ));
+    }
+    target.stacks += 1;
+    team.save();
+    run.save();
     Ok(())
 }
 
@@ -301,10 +296,10 @@ impl Run {
         Self::filter_by_owner(&User::find_by_identity(&ctx.sender)?.id)
             .context_str("No arena run in progress")
     }
-    fn buy(&mut self, slot: u8) -> Result<(), String> {
+    fn buy(&mut self, slot: u8, discount: i32) -> Result<String, String> {
         let s = self
             .shop
-            .get_mut(slot as usize)
+            .get_mut(slot as usize - 1)
             .context_str("Wrong shop slot")?;
         if !s.available {
             return Err("Unit already bought".to_owned());
@@ -312,9 +307,11 @@ impl Run {
         if s.price > self.g {
             return Err("Not enough G".to_owned());
         }
-        self.g -= s.price;
+        self.g -= s.price - discount;
         s.available = false;
-        let unit = FusedUnit::from_base(s.unit.clone(), next_id());
+        Ok(s.unit.clone())
+    }
+    fn add_to_team(&mut self, unit: FusedUnit) -> Result<(), String> {
         let mut team = self.team()?;
         team.units.insert(0, unit);
         team.save();
@@ -340,6 +337,18 @@ impl Run {
     }
     fn save(mut self) {
         self.last_updated = Timestamp::now();
+        let team = TTeam::get(self.team).unwrap();
+        for slot in &mut self.shop {
+            slot.stack_targets.clear();
+            if !slot.available {
+                continue;
+            }
+            for (i, unit) in team.units.iter().enumerate() {
+                if unit.can_stack(&slot.unit) {
+                    slot.stack_targets.push(i as u8 + 1);
+                }
+            }
+        }
         Self::update_by_owner(&self.owner.clone(), self);
     }
     fn fill_case(&mut self) {

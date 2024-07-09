@@ -20,4 +20,5 @@ pub struct ShopSlot {
     pub freeze: bool,
     pub discount: bool,
     pub available: bool,
+    pub stack_targets: Vec<u8>,
 }

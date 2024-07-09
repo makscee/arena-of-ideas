@@ -26,11 +26,18 @@ impl FusedUnit {
         }
     }
     pub fn get_bases(&self) -> Vec<BaseUnit> {
-        BaseUnit::iter()
-            .filter(|u| self.bases.contains(&u.name))
+        self.bases
+            .iter()
+            .map(|b| BaseUnit::filter_by_name(b).unwrap())
             .collect_vec()
     }
     pub fn get_houses(&self) -> Vec<String> {
         self.get_bases().into_iter().map(|u| u.house).collect_vec()
+    }
+    pub fn can_stack(&self, name: &str) -> bool {
+        if self.bases.len() == 1 && name.eq(&self.bases[0]) {
+            return true;
+        }
+        false
     }
 }

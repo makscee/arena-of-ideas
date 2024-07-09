@@ -10,6 +10,7 @@ impl Plugin for ServerSyncPlugin {
 
 impl ServerSyncPlugin {
     fn sync(world: &mut World) {
+        info!("Sync assets start");
         let ga = GameAssets::get(world).clone();
         let gs = ga.global_settings;
 
