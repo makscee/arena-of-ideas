@@ -47,6 +47,7 @@ pub mod shop_reroll_reducer;
 pub mod shop_sell_reducer;
 pub mod shop_slot;
 pub mod stack_shop_reducer;
+pub mod stack_team_reducer;
 pub mod submit_battle_result_reducer;
 pub mod sync_all_assets_reducer;
 pub mod t_ability;
@@ -57,6 +58,7 @@ pub mod t_house;
 pub mod t_representation;
 pub mod t_status;
 pub mod t_team;
+pub mod team_slot;
 pub mod user;
 
 pub use base_unit::*;
@@ -86,6 +88,7 @@ pub use shop_reroll_reducer::*;
 pub use shop_sell_reducer::*;
 pub use shop_slot::*;
 pub use stack_shop_reducer::*;
+pub use stack_team_reducer::*;
 pub use submit_battle_result_reducer::*;
 pub use sync_all_assets_reducer::*;
 pub use t_ability::*;
@@ -96,6 +99,7 @@ pub use t_house::*;
 pub use t_representation::*;
 pub use t_status::*;
 pub use t_team::*;
+pub use team_slot::*;
 pub use user::*;
 
 #[allow(unused)]
@@ -120,6 +124,7 @@ pub enum ReducerEvent {
     ShopReroll(shop_reroll_reducer::ShopRerollArgs),
     ShopSell(shop_sell_reducer::ShopSellArgs),
     StackShop(stack_shop_reducer::StackShopArgs),
+    StackTeam(stack_team_reducer::StackTeamArgs),
     SubmitBattleResult(submit_battle_result_reducer::SubmitBattleResultArgs),
     SyncAllAssets(sync_all_assets_reducer::SyncAllAssetsArgs),
 }
@@ -245,6 +250,7 @@ match &function_call.reducer[..] {
 			"shop_reroll" => _reducer_callbacks.handle_event_of_type::<shop_reroll_reducer::ShopRerollArgs, ReducerEvent>(event, _state, ReducerEvent::ShopReroll),
 			"shop_sell" => _reducer_callbacks.handle_event_of_type::<shop_sell_reducer::ShopSellArgs, ReducerEvent>(event, _state, ReducerEvent::ShopSell),
 			"stack_shop" => _reducer_callbacks.handle_event_of_type::<stack_shop_reducer::StackShopArgs, ReducerEvent>(event, _state, ReducerEvent::StackShop),
+			"stack_team" => _reducer_callbacks.handle_event_of_type::<stack_team_reducer::StackTeamArgs, ReducerEvent>(event, _state, ReducerEvent::StackTeam),
 			"submit_battle_result" => _reducer_callbacks.handle_event_of_type::<submit_battle_result_reducer::SubmitBattleResultArgs, ReducerEvent>(event, _state, ReducerEvent::SubmitBattleResult),
 			"sync_all_assets" => _reducer_callbacks.handle_event_of_type::<sync_all_assets_reducer::SyncAllAssetsArgs, ReducerEvent>(event, _state, ReducerEvent::SyncAllAssets),
 			unknown => { spacetimedb_sdk::log::error!("Event on an unknown reducer: {:?}", unknown); None }

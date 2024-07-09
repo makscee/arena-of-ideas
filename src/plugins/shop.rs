@@ -25,7 +25,7 @@ impl Plugin for ShopPlugin {
 pub struct ShopData {
     pub case_height: f32,
     callback: Option<UpdateCallbackId<Run>>,
-    stack_source: Option<usize>,
+    stack_source: Option<(usize, Faction)>,
     stack_targets: Vec<usize>,
 }
 
@@ -82,7 +82,7 @@ impl ShopPlugin {
                 id,
                 ..
             },
-        ) in run.shop.into_iter().enumerate()
+        ) in run.shop_slots.into_iter().enumerate()
         {
             let slot = i as i32 + 1;
             if available {
@@ -179,15 +179,30 @@ impl ShopPlugin {
     }
     fn do_stack(target: u8, world: &mut World) {
         let mut sd = world.resource_mut::<ShopData>();
-        let source = sd.stack_source.unwrap();
-        stack_shop(source as u8, target);
-        once_on_stack_shop(|_, _, status, _, _| match status {
-            StdbStatus::Committed => {}
-            StdbStatus::Failed(e) => Notification::new(format!("Stack failed: {e}"))
-                .error()
-                .push_op(),
+        let (source, faction) = sd.stack_source.unwrap();
+        match faction {
+            Faction::Team => {
+                stack_team(source as u8, target);
+                once_on_stack_team(|_, _, status, _, _| match status {
+                    StdbStatus::Committed => {}
+                    StdbStatus::Failed(e) => Notification::new(format!("Stack failed: {e}"))
+                        .error()
+                        .push_op(),
+                    _ => panic!(),
+                });
+            }
+            Faction::Shop => {
+                stack_shop(source as u8, target);
+                once_on_stack_shop(|_, _, status, _, _| match status {
+                    StdbStatus::Committed => {}
+                    StdbStatus::Failed(e) => Notification::new(format!("Stack failed: {e}"))
+                        .error()
+                        .push_op(),
+                    _ => panic!(),
+                });
+            }
             _ => panic!(),
-        });
+        }
         sd.stack_source = None;
     }
     fn cancel_stack(world: &mut World) {
@@ -220,13 +235,15 @@ impl ShopPlugin {
             }
 
             let sd = world.resource::<ShopData>().clone();
-            let shop = run.shop;
+            let shop_slots = run.shop_slots;
+            let team_slots = run.team_slots;
+
             let team = TTeam::filter_by_id(run.team).unwrap();
             let g = run.g;
             UnitContainer::new(Faction::Shop)
                 .direction(Side::Top)
                 .offset([0.0, -sd.case_height])
-                .slots(shop.len())
+                .slots(shop_slots.len())
                 .top_content(move |ui, _| {
                     if Button::click(format!("-1 G"))
                         .title("Reroll".into())
@@ -239,10 +256,10 @@ impl ShopPlugin {
                 })
                 .slot_content(move |slot, _, ui, world| {
                     let ind = slot - 1;
-                    let ss = &shop[ind];
+                    let ss = &shop_slots[ind];
                     if ss.available {
-                        if let Some(stack_source) = sd.stack_source {
-                            if slot == stack_source {
+                        if let Some((stack_source, faction)) = sd.stack_source {
+                            if slot == stack_source && faction.eq(&Faction::Shop) {
                                 if Button::click("Cancel".into()).ui(ui).clicked() {
                                     Self::cancel_stack(world);
                                 }
@@ -265,7 +282,7 @@ impl ShopPlugin {
                                     .clicked()
                                 {
                                     let mut sd = world.resource_mut::<ShopData>();
-                                    sd.stack_source = Some(slot);
+                                    sd.stack_source = Some((slot, Faction::Shop));
                                     sd.stack_targets =
                                         ss.stack_targets.iter().map(|v| *v as usize).collect_vec();
                                     if ss.stack_targets.len() == 1 {
@@ -287,18 +304,40 @@ impl ShopPlugin {
                 .slot_content(move |slot, e, ui, world| {
                     let ind = slot - 1;
                     if e.is_some() {
-                        if sd.stack_source.is_some() {
-                            if sd.stack_targets.contains(&slot) {
+                        if let Some((stack_source, faction)) = sd.stack_source {
+                            if slot == stack_source && faction.eq(&Faction::Team) {
+                                if Button::click("Cancel".into()).ui(ui).clicked() {
+                                    Self::cancel_stack(world);
+                                }
+                            } else if sd.stack_targets.contains(&slot) {
                                 if Button::click("Stack".into()).ui(ui).clicked() {
                                     Self::do_stack(slot as u8, world);
                                 }
                             }
-                        } else if Button::click("+1 G".into())
-                            .title("Sell".into())
-                            .ui(ui)
-                            .clicked()
-                        {
-                            shop_sell(ind as u8);
+                        } else {
+                            if let Some(ts) = team_slots.get(ind) {
+                                if Button::click("+1 G".into())
+                                    .title("Sell".into())
+                                    .ui(ui)
+                                    .clicked()
+                                {
+                                    shop_sell(ind as u8);
+                                }
+                                if !ts.stack_targets.is_empty() {
+                                    if Button::click("Stack".into()).ui(ui).clicked() {
+                                        let mut sd = world.resource_mut::<ShopData>();
+                                        sd.stack_source = Some((slot, Faction::Team));
+                                        sd.stack_targets = ts
+                                            .stack_targets
+                                            .iter()
+                                            .map(|v| *v as usize)
+                                            .collect_vec();
+                                        if ts.stack_targets.len() == 1 {
+                                            Self::do_stack(ts.stack_targets[0], world);
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 })

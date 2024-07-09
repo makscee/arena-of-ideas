@@ -4,6 +4,7 @@
 #![allow(unused_imports)]
 use super::fusion::Fusion;
 use super::shop_slot::ShopSlot;
+use super::team_slot::TeamSlot;
 use spacetimedb_sdk::{
     anyhow::{anyhow, Result},
     identity::Identity,
@@ -20,7 +21,8 @@ pub struct Run {
     pub owner: u64,
     pub team: u64,
     pub battles: Vec<u64>,
-    pub shop: Vec<ShopSlot>,
+    pub shop_slots: Vec<ShopSlot>,
+    pub team_slots: Vec<TeamSlot>,
     pub fusion: Option<Fusion>,
     pub g: i32,
     pub price_reroll: i32,
@@ -62,8 +64,12 @@ impl Run {
         Self::filter(|row| row.battles == battles)
     }
     #[allow(unused)]
-    pub fn filter_by_shop(shop: Vec<ShopSlot>) -> TableIter<Self> {
-        Self::filter(|row| row.shop == shop)
+    pub fn filter_by_shop_slots(shop_slots: Vec<ShopSlot>) -> TableIter<Self> {
+        Self::filter(|row| row.shop_slots == shop_slots)
+    }
+    #[allow(unused)]
+    pub fn filter_by_team_slots(team_slots: Vec<TeamSlot>) -> TableIter<Self> {
+        Self::filter(|row| row.team_slots == team_slots)
     }
     #[allow(unused)]
     pub fn filter_by_fusion(fusion: Option<Fusion>) -> TableIter<Self> {

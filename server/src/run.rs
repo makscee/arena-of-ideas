@@ -13,7 +13,8 @@ struct Run {
     owner: GID,
     team: GID,
     battles: Vec<GID>,
-    shop: Vec<ShopSlot>,
+    shop_slots: Vec<ShopSlot>,
+    team_slots: Vec<TeamSlot>,
     fusion: Option<Fusion>,
     g: i32,
     price_reroll: i32,
@@ -58,6 +59,11 @@ struct ShopSlot {
     freeze: bool,
     discount: bool,
     available: bool,
+    stack_targets: Vec<u8>,
+}
+
+#[derive(SpacetimeType, Clone, Default)]
+struct TeamSlot {
     stack_targets: Vec<u8>,
 }
 
@@ -228,7 +234,7 @@ fn fuse_cancel(ctx: ReducerContext) -> Result<(), String> {
 
 #[spacetimedb(reducer)]
 fn fuse_choose(ctx: ReducerContext, ind: u8) -> Result<(), String> {
-    let mut run = Run::current(&ctx)?;
+    // let mut run = Run::current(&ctx)?;
     // let fusion = run.fusion.take().context_str("Fusion not started")?;
     // if fusion.options.len() > ind as usize {
     //     return Err("Wrong fusion index".to_owned());
@@ -272,6 +278,29 @@ fn stack_shop(ctx: ReducerContext, source: u8, target: u8) -> Result<(), String>
     Ok(())
 }
 
+#[spacetimedb(reducer)]
+fn stack_team(ctx: ReducerContext, source: u8, target: u8) -> Result<(), String> {
+    let mut run = Run::current(&ctx)?;
+    let mut team = run.team()?;
+    let source_unit = team.units[source as usize - 1].clone();
+    let target_unit = team
+        .units
+        .get_mut(target as usize - 1)
+        .context_str("Team unit not found")?;
+    if !target_unit.can_stack_fused(&source_unit) {
+        return Err(format!(
+            "Units {} and {} can not be stacked",
+            source_unit.bases.join("+"),
+            target_unit.bases.join("+")
+        ));
+    }
+    target_unit.stacks += 1;
+    team.units.remove(source as usize - 1);
+    team.save();
+    run.save();
+    Ok(())
+}
+
 impl Run {
     fn new(user_id: u64) -> Self {
         let gs = GlobalSettings::get();
@@ -279,7 +308,8 @@ impl Run {
             id: next_id(),
             owner: user_id,
             team: TTeam::new(user_id),
-            shop: vec![ShopSlot::default(); gs.shop_slots_max as usize],
+            shop_slots: Vec::new(),
+            team_slots: Vec::new(),
             fusion: None,
             round: 0,
             last_updated: Timestamp::now(),
@@ -298,7 +328,7 @@ impl Run {
     }
     fn buy(&mut self, slot: u8, discount: i32) -> Result<String, String> {
         let s = self
-            .shop
+            .shop_slots
             .get_mut(slot as usize - 1)
             .context_str("Wrong shop slot")?;
         if !s.available {
@@ -338,7 +368,7 @@ impl Run {
     fn save(mut self) {
         self.last_updated = Timestamp::now();
         let team = TTeam::get(self.team).unwrap();
-        for slot in &mut self.shop {
+        for slot in &mut self.shop_slots {
             slot.stack_targets.clear();
             if !slot.available {
                 continue;
@@ -349,16 +379,25 @@ impl Run {
                 }
             }
         }
+        self.team_slots = vec![TeamSlot::default(); team.units.len()];
+        for (slot_i, slot) in self.team_slots.iter_mut().enumerate() {
+            slot.stack_targets.clear();
+            for (i, unit) in team.units.iter().enumerate() {
+                if i != slot_i && team.units[slot_i].can_stack_fused(unit) {
+                    slot.stack_targets.push(i as u8 + 1);
+                }
+            }
+        }
         Self::update_by_owner(&self.owner.clone(), self);
     }
     fn fill_case(&mut self) {
         let gs = GlobalSettings::get();
         let slots = (gs.shop_slots_min + (gs.shop_slots_per_round * self.round as f32) as u32)
             .min(gs.shop_slots_max) as usize;
-        self.shop = vec![ShopSlot::default(); slots];
+        self.shop_slots = vec![ShopSlot::default(); slots];
         for i in 0..slots {
             let id = next_id();
-            let s = &mut self.shop[i];
+            let s = &mut self.shop_slots[i];
             s.available = true;
             s.price = self.price_unit;
             s.id = id;

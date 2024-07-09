@@ -40,4 +40,7 @@ impl FusedUnit {
         }
         false
     }
+    pub fn can_stack_fused(&self, unit: &FusedUnit) -> bool {
+        unit.bases.len() == 1 && self.can_stack(&unit.bases[0])
+    }
 }

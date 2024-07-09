@@ -2,7 +2,6 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN RUST INSTEAD.
 
 #![allow(unused_imports)]
-use super::fused_unit::FusedUnit;
 use spacetimedb_sdk::{
     anyhow::{anyhow, Result},
     identity::Identity,
@@ -15,6 +14,5 @@ use spacetimedb_sdk::{
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct TeamSlot {
-    pub unit: Option<FusedUnit>,
-    pub extra: bool,
+    pub stack_targets: Vec<u8>,
 }
