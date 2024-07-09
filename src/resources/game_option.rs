@@ -2,24 +2,34 @@ use spacetimedb_sdk::identity::Credentials;
 
 use super::*;
 
-#[derive(Clone, Copy, Debug, Display)]
+#[derive(Clone, Copy, Debug, Display, PartialEq, Eq)]
 pub enum GameOption {
     Connect,
     Login,
+    ForceLogin,
+}
+
+static CURRENTLY_FULFILLING: Mutex<GameOption> = Mutex::new(GameOption::Connect);
+pub fn currently_fulfilling() -> GameOption {
+    *CURRENTLY_FULFILLING.lock().unwrap()
 }
 
 impl GameOption {
     pub fn is_fulfilled(self, world: &World) -> bool {
         match self {
             GameOption::Connect => world.get_resource::<ConnectOption>().is_some(),
-            GameOption::Login => world.get_resource::<LoginOption>().is_some(),
+            GameOption::Login | GameOption::ForceLogin => {
+                world.get_resource::<LoginOption>().is_some()
+            }
         }
     }
     pub fn fulfill(self, world: &mut World) {
         info!("Start fulfill option: {self}");
+        *CURRENTLY_FULFILLING.lock().unwrap() = self;
         match self {
             GameOption::Connect => ConnectOption::fulfill(world),
             GameOption::Login => LoginOption::fulfill(world),
+            GameOption::ForceLogin => LoginOption::fulfill(world),
         }
     }
 }

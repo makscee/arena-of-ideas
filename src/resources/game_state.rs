@@ -34,6 +34,10 @@ lazy_static! {
             GameState::Profile,
             [GameOption::Connect, GameOption::Login].into(),
         );
+        m.insert(
+            GameState::Shop,
+            [GameOption::Connect, GameOption::ForceLogin].into(),
+        );
         m
     };
 }

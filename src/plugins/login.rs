@@ -25,6 +25,9 @@ impl LoginPlugin {
         let co = ConnectOption::get(world);
         let mut identity_user = None;
         if let Some(user) = User::iter().find(|u| u.identities.contains(&co.creds.identity)) {
+            if matches!(currently_fulfilling(), GameOption::ForceLogin) {
+                Self::complete(user.clone(), world);
+            }
             identity_user = Some(user);
         }
         world.insert_resource(LoginData {
