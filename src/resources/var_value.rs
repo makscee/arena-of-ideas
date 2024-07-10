@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Clone, Default, Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Clone, Default, Serialize, Deserialize, Debug, PartialEq, AsRefStr)]
 pub enum VarValue {
     #[default]
     None,
@@ -8,6 +8,7 @@ pub enum VarValue {
     Float(f32),
     Vec2(Vec2),
     String(String),
+    Cstr(Cstr),
     Bool(bool),
     Faction(Faction),
     Color(Color),
@@ -158,6 +159,25 @@ impl VarValue {
         }
         Ok(vec![self.get_string()?])
     }
+    pub fn get_cstr(&self) -> Result<Cstr> {
+        match self {
+            VarValue::None => Ok(default()),
+            VarValue::Cstr(v) => Ok(v.clone()),
+            _ => Err(anyhow!("String not supported by {self:?}")),
+        }
+    }
+    pub fn get_cstr_list(&self) -> Result<Vec<Cstr>> {
+        match self {
+            VarValue::List(list) => {
+                return Ok(list
+                    .into_iter()
+                    .filter_map(|v| v.get_cstr().ok())
+                    .collect_vec());
+            }
+            _ => {}
+        }
+        Ok(vec![self.get_cstr()?])
+    }
     pub fn get_faction(&self) -> Result<Faction> {
         match self {
             VarValue::Faction(v) => Ok(*v),
@@ -259,6 +279,28 @@ impl VarValue {
     }
 }
 
+impl ToCstr for &VarValue {
+    fn cstr(self) -> Cstr {
+        match self {
+            VarValue::None => self.as_ref().cstr(),
+            VarValue::Int(v) => format!("Int({v}").cstr_c(WHITE),
+            VarValue::Float(v) => format!("Float({v}").cstr_c(WHITE),
+            VarValue::Vec2(v) => format!("Vec2({v}").cstr_c(WHITE),
+            VarValue::String(v) => format!("String({v}").cstr_c(WHITE),
+            VarValue::Cstr(v) => v.clone(),
+            VarValue::Bool(v) => format!("Bool({v}").cstr_c(WHITE),
+            VarValue::Faction(v) => format!("Faction({v}").cstr_c(WHITE),
+            VarValue::Color(v) => format!("Color({v:?}").cstr_c(WHITE),
+            VarValue::Entity(v) => format!("Entity({v:?}").cstr_c(WHITE),
+            VarValue::List(list) => {
+                Cstr::join_vec(list.into_iter().map(|v| v.cstr()).collect_vec())
+                    .join(&" + ".cstr())
+                    .take()
+            }
+        }
+    }
+}
+
 impl From<i32> for VarValue {
     fn from(value: i32) -> Self {
         VarValue::Int(value)
@@ -312,5 +354,18 @@ impl From<Color32> for VarValue {
 impl From<Faction> for VarValue {
     fn from(value: Faction) -> Self {
         VarValue::Faction(value)
+    }
+}
+impl From<Cstr> for VarValue {
+    fn from(value: Cstr) -> Self {
+        VarValue::Cstr(value)
+    }
+}
+impl<T> From<Vec<T>> for VarValue
+where
+    T: Into<VarValue>,
+{
+    fn from(value: Vec<T>) -> Self {
+        VarValue::List(value.into_iter().map(|v| v.into()).collect_vec())
     }
 }

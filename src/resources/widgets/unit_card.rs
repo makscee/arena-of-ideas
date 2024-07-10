@@ -1,11 +1,18 @@
 use super::*;
 
-pub fn unit_card(t: f32, state: &VarState, ui: &mut Ui) {
-    let houses = state
-        .get_value_at(VarName::Houses, t)
-        .unwrap()
-        .get_string_list()
-        .unwrap();
+pub fn unit_card(t: f32, state: &VarState, ui: &mut Ui) -> Result<()> {
+    let houses = state.get_value_at(VarName::Houses, t)?.get_string_list()?;
+    let name = state.get_string_at(VarName::Name, t)?;
+    let triggers = state
+        .get_value_at(VarName::TriggersDescription, t)?
+        .get_cstr_list()?;
+    let targets = state
+        .get_value_at(VarName::TargetsDescription, t)?
+        .get_cstr_list()?;
+    let effects = state
+        .get_value_at(VarName::EffectsDescription, t)?
+        .get_cstr_list()?;
+
     let rect = Frame {
         inner_margin: Margin::same(8.0),
         outer_margin: Margin::ZERO,
@@ -19,14 +26,11 @@ pub fn unit_card(t: f32, state: &VarState, ui: &mut Ui) {
         fill: DARK_BLACK,
         stroke: Stroke {
             width: 1.0,
-            color: name_color(houses.first().unwrap()),
+            color: name_color(&houses[0]),
         },
     }
     .show(ui, |ui| {
-        state
-            .get_string_at(VarName::Name, t)
-            .unwrap()
-            .cstr_cs(name_color(&houses[0]), CstrStyle::Heading)
+        name.cstr_cs(name_color(&houses[0]), CstrStyle::Heading)
             .label(ui);
 
         const SHOWN_VARS: [(VarName, Color32); 4] = [
@@ -76,37 +80,10 @@ pub fn unit_card(t: f32, state: &VarState, ui: &mut Ui) {
         stroke: Stroke::NONE,
     }
     .show(ui, |ui| {
-        // ui.add_space(5.0);
-        const TEXT_COLOR: Color32 = DARK_WHITE;
         ui.set_min_width(ui.available_width());
-        show_trigger_part(
-            "evt:",
-            [
-                &FireTrigger::TurnEnd.as_ref().cstr_c(TEXT_COLOR),
-                &FireTrigger::TurnEnd.as_ref().cstr_c(TEXT_COLOR),
-                &FireTrigger::BattleStart.as_ref().cstr_c(TEXT_COLOR),
-                &FireTrigger::TurnEnd.as_ref().cstr_c(TEXT_COLOR),
-            ]
-            .into(),
-            EVENT_COLOR,
-            ui,
-        );
-        show_trigger_part(
-            "trg:",
-            [
-                &Expression::RandomEnemy.as_ref().cstr_c(TEXT_COLOR),
-                &Expression::AdjacentUnits.as_ref().cstr_c(TEXT_COLOR),
-            ]
-            .into(),
-            TARGET_COLOR,
-            ui,
-        );
-        show_trigger_part(
-            "eff:",
-            [&Effect::UseAbility("Blessing".into(), 2).cstr()].into(),
-            EFFECT_COLOR,
-            ui,
-        );
+        show_trigger_part("trg:", triggers, EVENT_COLOR, ui);
+        show_trigger_part("tar:", targets, TARGET_COLOR, ui);
+        show_trigger_part("eff:", effects, EFFECT_COLOR, ui);
 
         br(ui);
         let statuses = [("Blessing", 3), ("Blessing", 3), ("Blessing", 3)];
@@ -124,11 +101,12 @@ pub fn unit_card(t: f32, state: &VarState, ui: &mut Ui) {
     ui.painter().circle_filled(
         rect.center_bottom(),
         10.0,
-        state.get_color(VarName::RarityColor).unwrap().c32(),
+        state.get_color(VarName::RarityColor)?.c32(),
     );
+    Ok(())
 }
 
-fn show_trigger_part(title: &str, content: Vec<&Cstr>, color: Color32, ui: &mut Ui) {
+fn show_trigger_part(title: &str, content: Vec<Cstr>, color: Color32, ui: &mut Ui) {
     ui.horizontal(|ui| {
         title.cstr_c(LIGHT_GRAY).label(ui);
         let rect = Frame::none()

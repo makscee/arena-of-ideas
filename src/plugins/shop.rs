@@ -351,7 +351,10 @@ impl ShopPlugin {
         };
         let state = VarState::get(entity, world);
         let t = gt().play_head();
-        unit_card(t, state, ui);
+        match unit_card(t, state, ui) {
+            Ok(_) => {}
+            Err(e) => error!("Unit card error: {e}"),
+        }
     }
     pub fn game_over_ui(ui: &mut Ui) {
         let Some(run) = Run::get_current() else {

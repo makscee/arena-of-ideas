@@ -37,6 +37,7 @@ pub struct GameAssets {
 
 lazy_static! {
     static ref NAME_COLORS: Mutex<HashMap<String, Color32>> = Mutex::new(HashMap::new());
+    static ref NAME_DEFINITIONS: Mutex<HashMap<String, Cstr>> = Mutex::new(HashMap::new());
 }
 
 #[derive(Deserialize, Asset, TypePath)]
@@ -45,7 +46,13 @@ pub struct GlobalSettingsAsset {
 }
 
 pub fn name_color(name: &str) -> Color32 {
-    NAME_COLORS.lock().unwrap().get(name).unwrap().clone()
+    NAME_COLORS
+        .lock()
+        .unwrap()
+        .get(name)
+        .with_context(|| format!("Failed to find color for {name}"))
+        .unwrap()
+        .clone()
 }
 
 impl GameAssets {

@@ -35,4 +35,14 @@ pub enum VarName {
     M1,
     M2,
     M3,
+    TriggersDescription,
+    TargetsDescription,
+    EffectsDescription,
+    UsedDefinitions,
+}
+
+impl ToCstr for VarName {
+    fn cstr(self) -> Cstr {
+        self.to_string().cstr()
+    }
 }

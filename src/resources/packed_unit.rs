@@ -112,6 +112,10 @@ impl PackedUnit {
                 VarName::RarityColor,
                 rarity_color(self.rarity as usize).into(),
             );
+        let (triggers, targets, effects) = self.trigger.parse_fire_strings();
+        state.init(VarName::TriggersDescription, triggers.into());
+        state.init(VarName::TargetsDescription, targets.into());
+        state.init(VarName::EffectsDescription, effects.into());
         if let Some(house) = self.houses.iter().next() {
             state.init(VarName::Color, name_color(house).into());
         }

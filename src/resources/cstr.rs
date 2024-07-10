@@ -1,18 +1,18 @@
 use super::*;
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]
 pub struct Cstr {
     subs: Vec<CstrSub>,
 }
 
-#[derive(Clone)]
+#[derive(Default, Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]
 struct CstrSub {
     text: String,
     color: Option<Color32>,
     style: CstrStyle,
 }
 
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Clone, Copy, Debug, Default, Serialize, Deserialize, PartialEq, Eq)]
 pub enum CstrStyle {
     #[default]
     Normal,
@@ -92,6 +92,13 @@ impl Cstr {
         }
         self
     }
+    pub fn wrap(&mut self, mut cs: (Cstr, Cstr)) -> &mut Self {
+        let mut subs = cs.0.subs;
+        subs.append(&mut self.subs);
+        subs.append(&mut cs.1.subs);
+        self.subs = subs;
+        self
+    }
 
     pub fn join(&mut self, char: &Cstr) -> &mut Self {
         let subs = mem::take(&mut self.subs);
@@ -106,6 +113,11 @@ impl Cstr {
             }
         }
         self
+    }
+    pub fn join_vec(v: Vec<Self>) -> Self {
+        Self {
+            subs: v.into_iter().flat_map(|v| v.subs).collect_vec(),
+        }
     }
 
     pub fn label(&self, ui: &mut Ui) -> Response {
@@ -150,10 +162,14 @@ impl ToString for Cstr {
     }
 }
 
-pub trait ToCstr {
+pub trait ToCstr: Sized {
     fn cstr(self) -> Cstr;
-    fn cstr_c(self, color: Color32) -> Cstr;
-    fn cstr_cs(self, color: Color32, style: CstrStyle) -> Cstr;
+    fn cstr_c(self, color: Color32) -> Cstr {
+        self.cstr().color(color).take()
+    }
+    fn cstr_cs(self, color: Color32, style: CstrStyle) -> Cstr {
+        self.cstr().color(color).style(style).take()
+    }
 }
 
 impl<'a> ToCstr for &'a str {

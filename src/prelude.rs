@@ -59,6 +59,7 @@ pub use bevy_egui::{
 pub use bevy_tasks::IoTaskPool;
 pub use chrono::DateTime;
 pub use colored::{Colorize, CustomColor};
+pub use convert_case::Case;
 pub use convert_case::Casing;
 pub use ecolor::{hex_color, Color32};
 pub use egui::{

@@ -308,3 +308,156 @@ impl Expression {
         self.get_value(context, world)?.get_color()
     }
 }
+
+impl ToCstr for &Expression {
+    fn cstr(self) -> Cstr {
+        let mut s = self.as_ref().to_case(Case::Lower).cstr_c(DARK_WHITE);
+        match self {
+            Expression::Value(v) => {
+                s.push(v.cstr_c(DARK_WHITE).wrap(("(".cstr(), ")".cstr())).take());
+            }
+            Expression::OwnerState(v)
+            | Expression::TargetState(v)
+            | Expression::CasterState(v)
+            | Expression::Context(v) => {
+                s.push(v.cstr_c(DARK_WHITE).wrap(("(".cstr(), ")".cstr())).take());
+            }
+            Expression::AbilityContext(name, v) | Expression::AbilityState(name, v) => {
+                s.push(
+                    name.cstr_cs(name_color(name), CstrStyle::Bold)
+                        .push(format!(", {v}").cstr_c(DARK_WHITE))
+                        .wrap(("(".cstr(), ")".cstr()))
+                        .take(),
+                );
+            }
+            Expression::StatusCharges(v) => {
+                s.push(
+                    v.cstr_cs(name_color(v), CstrStyle::Bold)
+                        .wrap(("(".cstr(), ")".cstr()))
+                        .take(),
+                );
+            }
+            Expression::HexColor(v) => {
+                s.push(v.cstr_c(DARK_WHITE).wrap(("(".cstr(), ")".cstr())).take());
+            }
+            Expression::F(v) => {
+                s.push(
+                    v.to_string()
+                        .cstr_c(DARK_WHITE)
+                        .wrap(("(".cstr(), ")".cstr()))
+                        .take(),
+                );
+            }
+            Expression::I(v) => {
+                s.push(
+                    v.to_string()
+                        .cstr_c(DARK_WHITE)
+                        .wrap(("(".cstr(), ")".cstr()))
+                        .take(),
+                );
+            }
+            Expression::B(v) => {
+                s.push(
+                    v.to_string()
+                        .cstr_c(DARK_WHITE)
+                        .wrap(("(".cstr(), ")".cstr()))
+                        .take(),
+                );
+            }
+            Expression::S(v) => {
+                s.push(
+                    v.cstr_c(DARK_WHITE)
+                        .wrap(("(\"".cstr(), "\")".cstr()))
+                        .take(),
+                );
+            }
+            Expression::V2(x, y) => {
+                s.push(
+                    format!("{x}, {y}")
+                        .cstr_c(DARK_WHITE)
+                        .wrap(("(".cstr(), ")".cstr()))
+                        .take(),
+                );
+            }
+            Expression::Vec2E(v)
+            | Expression::UnitVec(v)
+            | Expression::Sin(v)
+            | Expression::Cos(v)
+            | Expression::FactionCount(v)
+            | Expression::SlotUnit(v) => {
+                s.push(v.cstr().wrap(("(".cstr(), ")".cstr())).take());
+            }
+            Expression::Vec2EE(a, b)
+            | Expression::Sum(a, b)
+            | Expression::Sub(a, b)
+            | Expression::Mul(a, b)
+            | Expression::Div(a, b)
+            | Expression::Mod(a, b)
+            | Expression::And(a, b)
+            | Expression::Or(a, b)
+            | Expression::Equals(a, b)
+            | Expression::GreaterThen(a, b)
+            | Expression::LessThen(a, b) => {
+                s.push(
+                    a.cstr()
+                        .push(", ".cstr())
+                        .push(b.cstr())
+                        .wrap(("(".cstr(), ")".cstr()))
+                        .take(),
+                );
+            }
+            Expression::If(i, t, e) => {
+                s.push(
+                    format!("if ")
+                        .cstr()
+                        .push(i.cstr().wrap(("(".cstr(), ")".cstr())).take())
+                        .take(),
+                )
+                .push(
+                    format!("then ")
+                        .cstr()
+                        .push(t.cstr().wrap(("(".cstr(), ")".cstr())).take())
+                        .take(),
+                )
+                .push(
+                    format!("else ")
+                        .cstr()
+                        .push(e.cstr().wrap(("(".cstr(), ")".cstr())).take())
+                        .take(),
+                );
+            }
+            Expression::WithVar(var, val, e) => {
+                s.push(
+                    var.cstr()
+                        .push(val.cstr())
+                        .push(e.cstr())
+                        .join(&", ".cstr())
+                        .wrap(("(".cstr(), ")".cstr()))
+                        .take(),
+                );
+            }
+
+            Expression::Zero
+            | Expression::OppositeFaction
+            | Expression::SlotPosition
+            | Expression::GT
+            | Expression::Beat
+            | Expression::PI
+            | Expression::PI2
+            | Expression::Age
+            | Expression::Index
+            | Expression::Owner
+            | Expression::Caster
+            | Expression::Target
+            | Expression::RandomAlly
+            | Expression::RandomEnemy
+            | Expression::RandomAdjacentUnit
+            | Expression::AllAllyUnits
+            | Expression::AllEnemyUnits
+            | Expression::AllUnits
+            | Expression::AllOtherUnits
+            | Expression::AdjacentUnits => {}
+        }
+        s
+    }
+}
