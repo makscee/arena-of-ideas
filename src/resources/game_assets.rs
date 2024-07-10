@@ -1,6 +1,5 @@
 use super::*;
 use spacetimedb_lib::de::serde::DeserializeWrapper;
-use spacetimedb_sdk::table::TableType;
 
 #[derive(AssetCollection, Resource)]
 pub struct GameAssetsHandles {
@@ -53,6 +52,17 @@ pub fn name_color(name: &str) -> Color32 {
         .with_context(|| format!("Failed to find color for {name}"))
         .unwrap()
         .clone()
+}
+pub fn definition(name: &str) -> Cstr {
+    NAME_DEFINITIONS.lock().unwrap().get(name).unwrap().clone()
+}
+pub fn definition_names() -> Vec<String> {
+    NAME_DEFINITIONS
+        .lock()
+        .unwrap()
+        .keys()
+        .cloned()
+        .collect_vec()
 }
 
 impl GameAssets {
@@ -120,6 +130,7 @@ impl LoadingPlugin {
             .clone();
 
         let mut colors = NAME_COLORS.lock().unwrap();
+        let mut definitions = NAME_DEFINITIONS.lock().unwrap();
         let mut ability_defaults: HashMap<String, HashMap<VarName, VarValue>> = default();
         let mut abilities: HashMap<String, Ability> = default();
         let mut statuses: HashMap<String, PackedStatus> = default();
@@ -128,14 +139,16 @@ impl LoadingPlugin {
             let house = houses.get(h).unwrap().clone();
             let color: Color32 = house.color.clone().into();
             colors.insert(house.name.clone(), color);
+            for status in house.statuses.iter() {
+                statuses.insert(status.name.clone(), status.clone());
+                colors.insert(status.name.clone(), color);
+                definitions.insert(status.name.clone(), Cstr::parse(&status.description));
+            }
             ability_defaults.extend(house.defaults.iter().map(|(k, v)| (k.clone(), v.clone())));
             for ability in house.abilities.iter() {
                 abilities.insert(ability.name.clone(), ability.clone());
                 colors.insert(ability.name.clone(), color);
-            }
-            for status in house.statuses.iter() {
-                statuses.insert(status.name.clone(), status.clone());
-                colors.insert(status.name.clone(), color);
+                definitions.insert(ability.name.clone(), Cstr::parse(&ability.description));
             }
             (house.name.clone(), house)
         }));

@@ -77,6 +77,7 @@ pub use log::*;
 pub use serde::{Deserialize, Serialize};
 pub use spacetimedb_sdk::identity::Credentials;
 pub use spacetimedb_sdk::reducer::Status as StdbStatus;
+pub use spacetimedb_sdk::table::TableType;
 pub use std::{
     cmp::Ordering,
     mem,

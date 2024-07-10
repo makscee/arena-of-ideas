@@ -1,6 +1,19 @@
 use super::*;
 
-#[derive(Clone, Copy, Deserialize, Serialize, Debug, Default, PartialEq, Eq, Hash, Display)]
+#[derive(
+    Clone,
+    Copy,
+    Deserialize,
+    Serialize,
+    Debug,
+    Default,
+    PartialEq,
+    Eq,
+    Hash,
+    Display,
+    AsRefStr,
+    EnumString,
+)]
 pub enum VarName {
     #[default]
     None,

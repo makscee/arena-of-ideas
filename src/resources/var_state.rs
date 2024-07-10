@@ -79,6 +79,13 @@ impl VarState {
     pub fn get_status_mut(&mut self, name: &str) -> Option<&mut VarState> {
         self.statuses.get_mut(name)
     }
+    pub fn all_statuses_at(&self, t: f32) -> HashMap<String, i32> {
+        HashMap::from_iter(
+            self.statuses
+                .iter()
+                .map(|(name, state)| (name.into(), state.get_int_at(VarName::Charges, t).unwrap())),
+        )
+    }
     pub fn init(&mut self, var: VarName, value: VarValue) -> &mut Self {
         self.vars.insert(
             var,

@@ -1,8 +1,11 @@
 use super::*;
 
-pub fn unit_card(t: f32, state: &VarState, ui: &mut Ui) -> Result<()> {
+pub fn unit_card(t: f32, state: &VarState, ui: &mut Ui, world: &World) -> Result<()> {
     let houses = state.get_value_at(VarName::Houses, t)?.get_string_list()?;
     let name = state.get_string_at(VarName::Name, t)?;
+    let used_definitions = state
+        .get_value_at(VarName::UsedDefinitions, t)?
+        .get_string_list()?;
     let triggers = state
         .get_value_at(VarName::TriggersDescription, t)?
         .get_cstr_list()?;
@@ -86,16 +89,29 @@ pub fn unit_card(t: f32, state: &VarState, ui: &mut Ui) -> Result<()> {
         show_trigger_part("eff:", effects, EFFECT_COLOR, ui);
 
         br(ui);
-        let statuses = [("Blessing", 3), ("Blessing", 3), ("Blessing", 3)];
+        let statuses = state.all_statuses_at(t);
         ui.horizontal_wrapped(|ui| {
             for (name, charges) in statuses {
+                if name.eq(LOCAL_STATUS) {
+                    continue;
+                }
                 format!("{name} ({charges})")
                     .cstr_c(name_color(&name))
                     .label(ui);
             }
         });
+        br(ui);
+        ui.horizontal_wrapped(|ui| {
+            for name in used_definitions {
+                name.cstr_cs(name_color(&name), CstrStyle::Bold).label(ui);
+                definition(&name)
+                    .inject_ability_defaults(&name, world)
+                    .as_label(ui)
+                    .wrap(true)
+                    .ui(ui);
+            }
+        });
     });
-
     ui.painter()
         .circle_filled(rect.center_bottom(), 13.0, LIGHT_BLACK);
     ui.painter().circle_filled(

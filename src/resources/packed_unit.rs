@@ -40,6 +40,8 @@ fn default_house() -> Vec<String> {
     vec!["Default".to_owned()]
 }
 
+pub const LOCAL_STATUS: &str = "_local";
+
 impl PackedUnit {
     pub fn unpack(
         mut self,
@@ -48,6 +50,7 @@ impl PackedUnit {
         id: Option<u64>,
         world: &mut World,
     ) -> Entity {
+        self.statuses.push(("Blessing".into(), 2));
         let entity = world
             .spawn_empty()
             .set_parent(parent)
@@ -72,12 +75,12 @@ impl PackedUnit {
         self.state
             .init(VarName::Slot, slot.unwrap_or_default().into());
         Status {
-            name: "_local".to_owned(),
+            name: LOCAL_STATUS.to_owned(),
             trigger: self.trigger,
         }
         .spawn(entity, world);
         self.state.add_status(
-            "_local".to_owned(),
+            LOCAL_STATUS.to_owned(),
             VarState::default().init(VarName::Charges, 1.into()).take(),
         );
         self.state.attach(entity, id.unwrap_or_default(), world);
@@ -113,9 +116,26 @@ impl PackedUnit {
                 rarity_color(self.rarity as usize).into(),
             );
         let (triggers, targets, effects) = self.trigger.parse_fire_strings();
-        state.init(VarName::TriggersDescription, triggers.into());
-        state.init(VarName::TargetsDescription, targets.into());
-        state.init(VarName::EffectsDescription, effects.into());
+        let mut used_definitions: HashSet<String> = default();
+        let full_description = triggers
+            .iter()
+            .chain(targets.iter())
+            .chain(effects.iter())
+            .map(|c| c.to_string())
+            .join(" ");
+        for name in definition_names() {
+            if full_description.contains(&name) {
+                used_definitions.insert(name);
+            }
+        }
+        state
+            .init(VarName::TriggersDescription, triggers.into())
+            .init(VarName::TargetsDescription, targets.into())
+            .init(VarName::EffectsDescription, effects.into())
+            .init(
+                VarName::UsedDefinitions,
+                used_definitions.into_iter().collect_vec().into(),
+            );
         if let Some(house) = self.houses.iter().next() {
             state.init(VarName::Color, name_color(house).into());
         }

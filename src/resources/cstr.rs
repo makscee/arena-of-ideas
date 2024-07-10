@@ -1,3 +1,7 @@
+use std::str::FromStr;
+
+use regex::Regex;
+
 use super::*;
 
 #[derive(Default, Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]
@@ -5,11 +9,26 @@ pub struct Cstr {
     subs: Vec<CstrSub>,
 }
 
-#[derive(Default, Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]
 struct CstrSub {
-    text: String,
+    text: SubText,
     color: Option<Color32>,
     style: CstrStyle,
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]
+enum SubText {
+    String(String),
+    Var(VarName),
+}
+
+impl SubText {
+    fn str(&self) -> &str {
+        match self {
+            SubText::String(s) => s,
+            SubText::Var(var) => var.as_ref(),
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, Default, Serialize, Deserialize, PartialEq, Eq)]
@@ -55,10 +74,10 @@ impl Cstr {
                         g: color.g(),
                         b: color.b(),
                     };
-                    text.custom_color(color)
+                    text.str().custom_color(color)
                 },
             )
-            .join(" ")
+            .join("")
     }
     pub fn print(&self) {
         println!("{}", self.to_colored())
@@ -139,7 +158,7 @@ impl Cstr {
             let color = color.unwrap_or(LIGHT_GRAY).gamma_multiply(alpha);
             let font_id = style.get_font(ui.style());
             job.append(
-                text,
+                text.str(),
                 0.0,
                 TextFormat {
                     color,
@@ -151,14 +170,78 @@ impl Cstr {
         WidgetText::LayoutJob(job)
     }
 
+    pub fn inject_state(&mut self, state: &VarState, t: f32) -> &mut Self {
+        for sub in self.subs.iter_mut() {
+            match &sub.text {
+                SubText::String(_) => continue,
+                SubText::Var(var) => {
+                    sub.text = match state.get_string_at(*var, t) {
+                        Ok(v) => v,
+                        Err(e) => format!("err: {e}"),
+                    }
+                    .into();
+                }
+            };
+        }
+        self
+    }
+
+    pub fn inject_ability_defaults(&mut self, ability: &str, world: &World) -> &mut Self {
+        let Some(m) = GameAssets::get(world).ability_defaults.get(ability) else {
+            return self;
+        };
+        for sub in &mut self.subs {
+            match &sub.text {
+                SubText::String(_) => {}
+                SubText::Var(var) => {
+                    if let Some(value) = m.get(var) {
+                        sub.text = SubText::String(value.get_string().unwrap())
+                    }
+                }
+            };
+        }
+        self
+    }
+    pub fn parse(mut s: &str) -> Self {
+        let mut cs = Cstr::default();
+        let mut cut = 0;
+        for ele in EXTRACT_BRACKETED.captures_iter(s) {
+            let range = ele.get(0).unwrap().range();
+            let (a, _) = s.split_at(range.start - cut);
+            cs.push(a.cstr());
+            let (a, b) = s.split_at(range.end - cut);
+            s = b;
+            cut += a.len();
+            let var_str = ele.get(1).unwrap().as_str();
+            match VarName::from_str(var_str) {
+                Ok(var) => {
+                    let mut var: CstrSub = var.into();
+                    var.color = Some(WHITE);
+                    cs.subs.push(var);
+                }
+                Err(_) => {
+                    cs.push(var_str.cstr_c(WHITE));
+                }
+            };
+        }
+        if !s.is_empty() {
+            cs.push(s.cstr());
+        }
+        cs
+    }
+
     pub fn take(&mut self) -> Self {
         mem::take(self)
     }
 }
 
+lazy_static! {
+    static ref EXTRACT_BRACKETED: Regex = Regex::new(r"\{(.*?)\}").unwrap();
+}
+
 impl ToString for Cstr {
     fn to_string(&self) -> String {
-        self.subs.iter().map(|s| &s.text).join(" ")
+        self.subs.iter().map(|s| s.text.str()).join(" ")
     }
 }
 
@@ -176,7 +259,7 @@ impl<'a> ToCstr for &'a str {
     fn cstr(self) -> Cstr {
         Cstr {
             subs: vec![CstrSub {
-                text: self.to_owned(),
+                text: self.into(),
                 color: None,
                 style: default(),
             }],
@@ -185,7 +268,7 @@ impl<'a> ToCstr for &'a str {
     fn cstr_c(self, color: Color32) -> Cstr {
         Cstr {
             subs: vec![CstrSub {
-                text: self.to_owned(),
+                text: self.into(),
                 color: Some(color),
                 style: default(),
             }],
@@ -194,10 +277,45 @@ impl<'a> ToCstr for &'a str {
     fn cstr_cs(self, color: Color32, style: CstrStyle) -> Cstr {
         Cstr {
             subs: vec![CstrSub {
-                text: self.to_owned(),
+                text: self.into(),
                 color: Some(color),
                 style,
             }],
+        }
+    }
+}
+
+impl From<&str> for SubText {
+    fn from(value: &str) -> Self {
+        SubText::String(value.into())
+    }
+}
+impl From<String> for SubText {
+    fn from(value: String) -> Self {
+        SubText::String(value)
+    }
+}
+impl From<VarName> for SubText {
+    fn from(value: VarName) -> Self {
+        SubText::Var(value)
+    }
+}
+
+impl From<VarName> for CstrSub {
+    fn from(value: VarName) -> Self {
+        Self {
+            text: value.into(),
+            color: default(),
+            style: default(),
+        }
+    }
+}
+impl From<&str> for CstrSub {
+    fn from(value: &str) -> Self {
+        Self {
+            text: value.into(),
+            color: default(),
+            style: default(),
         }
     }
 }

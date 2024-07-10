@@ -216,40 +216,6 @@ pub fn cur_state(world: &World) -> GameState {
     *world.resource::<State<GameState>>().get()
 }
 
-pub trait StrExtensions {
-    fn split_by_brackets(self, pattern: (&str, &str)) -> Vec<(String, bool)>;
-    fn extract_bracketed(self, pattern: (&str, &str)) -> Vec<String>;
-}
-
-impl<'a> StrExtensions for &'a str {
-    fn split_by_brackets(mut self, pattern: (&str, &str)) -> Vec<(String, bool)> {
-        let mut lines: Vec<(String, bool)> = default();
-        while let Some(opening) = self.find(pattern.0) {
-            let left = &self[..opening];
-            if let Some(closing) = self.find(pattern.1) {
-                let mid = &self[opening + 1..closing];
-                lines.push((left.to_owned(), false));
-                lines.push((mid.to_owned(), true));
-                self = &self[closing + 1..];
-            } else {
-                break;
-            }
-        }
-        lines.push((self.to_owned(), false));
-        lines
-    }
-
-    fn extract_bracketed(self, pattern: (&str, &str)) -> Vec<String> {
-        self.split_by_brackets(pattern)
-            .into_iter()
-            .filter_map(|(s, v)| match v {
-                true => Some(s),
-                false => None,
-            })
-            .collect_vec()
-    }
-}
-
 pub trait ToBVec2 {
     fn to_bvec2(&self) -> Vec2;
 }

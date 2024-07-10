@@ -351,7 +351,7 @@ impl ShopPlugin {
         };
         let state = VarState::get(entity, world);
         let t = gt().play_head();
-        match unit_card(t, state, ui) {
+        match unit_card(t, state, ui, world) {
             Ok(_) => {}
             Err(e) => error!("Unit card error: {e}"),
         }
