@@ -15,6 +15,7 @@ pub fn unit_card(t: f32, state: &VarState, ui: &mut Ui, world: &World) -> Result
     let effects = state
         .get_value_at(VarName::EffectsDescription, t)?
         .get_cstr_list()?;
+    let faction = TeamPlugin::unit_faction(state.entity().unwrap(), world);
 
     let rect = Frame {
         inner_margin: Margin::same(8.0),
@@ -105,7 +106,7 @@ pub fn unit_card(t: f32, state: &VarState, ui: &mut Ui, world: &World) -> Result
             for name in used_definitions {
                 name.cstr_cs(name_color(&name), CstrStyle::Bold).label(ui);
                 definition(&name)
-                    .inject_ability_defaults(&name, world)
+                    .inject_ability_state(&name, faction, t, world)
                     .as_label(ui)
                     .wrap(true)
                     .ui(ui);

@@ -42,6 +42,9 @@ impl VarState {
     pub fn birth(&self) -> f32 {
         self.birth
     }
+    pub fn entity(&self) -> Option<Entity> {
+        self.entity
+    }
     pub fn new_with(var: VarName, value: VarValue) -> Self {
         Self::default().init(var, value).take()
     }
@@ -187,7 +190,7 @@ impl VarState {
     pub fn change_int(&mut self, var: VarName, delta: i32) -> i32 {
         let value = self.get_int(var).unwrap_or_default() + delta;
         self.set_int(var, value);
-        delta
+        value
     }
 
     pub fn get_vec2(&self, var: VarName) -> Result<Vec2> {

@@ -20,6 +20,7 @@ struct CstrSub {
 enum SubText {
     String(String),
     Var(VarName),
+    VarText(VarName, String),
 }
 
 impl SubText {
@@ -27,6 +28,7 @@ impl SubText {
         match self {
             SubText::String(s) => s,
             SubText::Var(var) => var.as_ref(),
+            SubText::VarText(var, _) => default(),
         }
     }
 }
@@ -181,21 +183,53 @@ impl Cstr {
                     }
                     .into();
                 }
+                SubText::VarText(var, text) => {
+                    sub.text = match state.get_bool_at(*var, t) {
+                        Ok(v) => {
+                            if v {
+                                text.clone()
+                            } else {
+                                default()
+                            }
+                        }
+                        Err(_) => default(),
+                    }
+                    .into();
+                }
             };
         }
         self
     }
 
-    pub fn inject_ability_defaults(&mut self, ability: &str, world: &World) -> &mut Self {
+    pub fn inject_ability_state(
+        &mut self,
+        ability: &str,
+        faction: Faction,
+        t: f32,
+        world: &World,
+    ) -> &mut Self {
         let Some(m) = GameAssets::get(world).ability_defaults.get(ability) else {
             return self;
+        };
+        let ability_state = TeamPlugin::get_ability_state(ability, faction, world);
+        let get_value = |var: &VarName| {
+            ability_state
+                .and_then(|s| s.get_value_at(*var, t).ok())
+                .or_else(|| m.get(var).cloned())
         };
         for sub in &mut self.subs {
             match &sub.text {
                 SubText::String(_) => {}
                 SubText::Var(var) => {
-                    if let Some(value) = m.get(var) {
+                    if let Some(value) = get_value(var) {
                         sub.text = SubText::String(value.get_string().unwrap())
+                    }
+                }
+                SubText::VarText(var, text) => {
+                    if let Some(value) = get_value(var) {
+                        if value.get_bool().unwrap() {
+                            sub.text = SubText::String(text.clone())
+                        }
                     }
                 }
             };
@@ -213,16 +247,25 @@ impl Cstr {
             s = b;
             cut += a.len();
             let var_str = ele.get(1).unwrap().as_str();
-            match VarName::from_str(var_str) {
-                Ok(var) => {
-                    let mut var: CstrSub = var.into();
-                    var.color = Some(WHITE);
-                    cs.subs.push(var);
-                }
-                Err(_) => {
-                    cs.push(var_str.cstr_c(WHITE));
-                }
-            };
+            if let Some((var_str, text)) = var_str.split_once('|') {
+                let var = VarName::from_str(var_str).unwrap();
+                cs.subs.push(CstrSub {
+                    text: SubText::VarText(var, text.into()),
+                    color: Some(WHITE),
+                    style: default(),
+                });
+            } else {
+                match VarName::from_str(var_str) {
+                    Ok(var) => {
+                        let mut var: CstrSub = var.into();
+                        var.color = Some(WHITE);
+                        cs.subs.push(var);
+                    }
+                    Err(_) => {
+                        cs.push(var_str.cstr_c(WHITE));
+                    }
+                };
+            }
         }
         if !s.is_empty() {
             cs.push(s.cstr());

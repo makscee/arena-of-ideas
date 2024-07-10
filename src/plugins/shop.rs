@@ -16,7 +16,8 @@ impl Plugin for ShopPlugin {
             app.add_systems(
                 Update,
                 Self::give_g.run_if(input_just_pressed(KeyCode::KeyG)),
-            );
+            )
+            .add_systems(Update, Self::test.run_if(input_just_pressed(KeyCode::KeyT)));
         }
     }
 }
@@ -32,6 +33,9 @@ pub struct ShopData {
 impl ShopPlugin {
     fn give_g() {
         shop_change_g(10);
+    }
+    fn test(world: &mut World) {
+        TeamPlugin::change_ability_var_int("Siphon".into(), VarName::M1, 1, Faction::Team, world);
     }
     fn enter(mut sd: ResMut<ShopData>) {
         if let Some(run) = Run::get_current() {
