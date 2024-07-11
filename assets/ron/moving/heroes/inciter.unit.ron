@@ -31,6 +31,4 @@
         },
         count: 10,
     ),
-    state: (history: {}, birth: 0.0),
-    statuses: [],
 )

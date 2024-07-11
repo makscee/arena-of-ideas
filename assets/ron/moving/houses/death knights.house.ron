@@ -32,14 +32,14 @@
         (
             name: "Plague",
             description: "Target takes {1} DMG every turn, [Summon Skeleton] after death",
-            effect: AddStatus("Plague"),
+            effect: ChangeStatus("Plague"),
         ),
         (
             name: "Summon Skeleton",
             description: "Summon unfriendly 1/4 unit{M1|, applies [Plague] on damage dealt}",
             effect: WithVar(Faction, OppositeFaction, Summon("Skeleton", None)),
         ),
-        (name: "Decay", description: "Give -{1} HP", effect: AddStatus("Decay")),
+        (name: "Decay", description: "Give -{1} HP", effect: ChangeStatus("Decay")),
     ],
     summons: [
         (
@@ -48,7 +48,6 @@
             pwr: 1,
             stacks: 1,
             houses: ["Death Knights"],
-            state: (history: {StatusImmunity: ([(t: 0, value: String("Plague"))])}),
             trigger: Fire(
                 triggers: [(AfterDamageDealt, None)],
                 targets: [(Target, None)],
@@ -81,7 +80,6 @@
                 },
                 count: 12,
             ),
-            statuses: [],
         ),
     ],
 )

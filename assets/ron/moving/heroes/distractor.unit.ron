@@ -24,7 +24,7 @@
                 material: Shape(
                     shape: Circle(radius: Sum(Mul(Sum(Index, I(1)), F(0.2)), Mul(Beat, F(0.07)))),
                     shape_type: Line(thickness: F(0.33)),
-                    fill: Solid(color: Hex("fffafaff")),
+                    fill: Solid(color: HexColor("fffafaff")),
                     fbm: None,
                     alpha: F(0.5),
                     padding: F(0.2),

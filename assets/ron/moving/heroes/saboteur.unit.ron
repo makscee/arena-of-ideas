@@ -18,7 +18,7 @@
                 point1: Vec2(0.0, 0.0),
                 point2: Vec2(1.0, 1.0),
                 parts: [F(0.31), F(0.34)],
-                colors: [OwnerState(Color), Hex("#ffffff")],
+                colors: [OwnerState(Color), HexColor("#ffffff")],
             ),
             fbm: (
                 octaves: I(3),

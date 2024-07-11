@@ -21,7 +21,7 @@
                 center: Vec2(0.0, 0.1),
                 radius: F(0.45),
                 parts: [F(0.0), F(1.2)],
-                colors: [OwnerState(Color), Hex("000000ff")],
+                colors: [OwnerState(Color), HexColor("000000ff")],
             ),
             fbm: None,
             alpha: F(1.0),

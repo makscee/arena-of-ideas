@@ -10,5 +10,5 @@
             trigger: Change(trigger: Var(Hp), expr: Context(Charges)),
         ),
     ],
-    abilities: [(name: "Vitality", description: "Give +{1} HP", effect: AddStatus("Vitality"))],
+    abilities: [(name: "Vitality", description: "Give +{1} HP", effect: ChangeStatus("Vitality"))],
 )

@@ -33,7 +33,7 @@
                 point1: UnitVec(Mul(GT, F(0.3))),
                 point2: UnitVec(Sum(Mul(GT, F(0.3)), PI)),
                 parts: [F(0.5), F(0.51)],
-                colors: [OwnerState(Color), Hex("101010ff")],
+                colors: [OwnerState(Color), HexColor("101010ff")],
             ),
             fbm: None,
             alpha: F(1.0),

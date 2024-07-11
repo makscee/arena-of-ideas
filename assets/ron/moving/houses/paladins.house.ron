@@ -17,7 +17,7 @@
                             (
                                 If(
                                     GreaterThen(Context(Value), I(0)),
-                                    WithVar(Charges, I(-1), AddStatus("Shield")),
+                                    WithVar(Charges, I(-1), ChangeStatus("Shield")),
                                     Noop,
                                 ),
                                 None,
@@ -43,12 +43,12 @@
         (
             name: "Shield",
             description: "Block next incoming damage{M1|, reflect any blocked damage back to attacker}",
-            effect: AddStatus("Shield"),
+            effect: ChangeStatus("Shield"),
         ),
         (
             name: "Summon Guardian Angel",
             description: "Summon 10/1 with [Shield] ({Charges})",
-            effect: Summon("Guardian Angel", AddStatus("Shield")),
+            effect: Summon("Guardian Angel", ChangeStatus("Shield")),
         ),
     ],
     summons: [
@@ -73,7 +73,6 @@
                 mapping: {},
                 count: 7,
             ),
-            state: (history: {}, birth: 0.0),
         ),
     ],
 )

@@ -92,6 +92,7 @@ impl PackedUnit {
 
     pub fn generate_state(&self) -> VarState {
         let mut state = self.state.clone();
+
         state
             .init(VarName::Hp, self.hp.into())
             .init(VarName::Pwr, self.pwr.into())
@@ -110,10 +111,7 @@ impl PackedUnit {
             )
             .init(VarName::Position, Vec2::ZERO.into())
             .init(VarName::Visible, true.into())
-            .init(
-                VarName::RarityColor,
-                rarity_color(self.rarity as usize).into(),
-            );
+            .init(VarName::RarityColor, rarity_color(self.rarity).into());
         let (triggers, targets, effects) = self.trigger.parse_fire_strings();
         let mut used_definitions: HashSet<String> = default();
         let full_description = triggers
@@ -192,7 +190,7 @@ impl From<BaseUnit> for PackedUnit {
         state.init(VarName::HouseColors, vec![name_color(&value.house)].into());
         state.init(
             VarName::RarityColors,
-            vec![rarity_color(value.rarity as usize)].into(),
+            vec![rarity_color(value.rarity)].into(),
         );
         Self {
             name: value.name,
@@ -249,7 +247,7 @@ impl From<FusedUnit> for PackedUnit {
         let mut rarity_colors: Vec<Color> = default();
         let mut house_colors: Vec<Color> = default();
         for base in bases {
-            rarity_colors.push(rarity_color(base.rarity as usize).to_color());
+            rarity_colors.push(rarity_color(base.rarity).to_color());
             house_colors.push(name_color(&base.house).to_color());
             result.pwr = result.pwr.max(base.pwr);
             result.hp = result.hp.max(base.hp);

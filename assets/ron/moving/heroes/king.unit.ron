@@ -18,7 +18,7 @@
                 point1: Vec2(0.0, -0.74),
                 point2: Vec2(0.0, 0.0),
                 parts: [F(0.0), F(1.0)],
-                colors: [Hex("ffffffff"), OwnerState(Color)],
+                colors: [HexColor("ffffffff"), OwnerState(Color)],
             ),
             fbm: None,
             alpha: F(1.0),

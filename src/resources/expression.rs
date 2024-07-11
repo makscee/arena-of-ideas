@@ -8,6 +8,7 @@ use super::*;
 pub enum Expression {
     #[default]
     Zero,
+    Dbg(Box<Expression>),
 
     OppositeFaction,
     SlotPosition,
@@ -36,6 +37,9 @@ pub enum Expression {
     OwnerState(VarName),
     TargetState(VarName),
     CasterState(VarName),
+    OwnerStateLast(VarName),
+    TargetStateLast(VarName),
+    CasterStateLast(VarName),
     AbilityContext(String, VarName),
     AbilityState(String, VarName),
     StatusCharges(String),
@@ -74,6 +78,7 @@ impl Expression {
     pub fn get_value(&self, context: &Context, world: &mut World) -> Result<VarValue> {
         match self {
             Expression::Zero => Ok(VarValue::Int(0)),
+            Expression::Dbg(e) => dbg!(e.get_value(context, world)),
             Expression::Value(v) => Ok(v.clone()),
             Expression::Context(var) => context.get_var(*var, world),
             Expression::OwnerState(var) => {
@@ -84,6 +89,15 @@ impl Expression {
             }
             Expression::CasterState(var) => {
                 VarState::find_value_at(context.get_caster()?, *var, gt().play_head(), world)
+            }
+            Expression::OwnerStateLast(var) => {
+                VarState::find_value_last(context.owner(), *var, world)
+            }
+            Expression::TargetStateLast(var) => {
+                VarState::find_value_last(context.get_target()?, *var, world)
+            }
+            Expression::CasterStateLast(var) => {
+                VarState::find_value_last(context.get_caster()?, *var, world)
             }
             Expression::AbilityContext(ability, var) => context.get_ability_var(ability, *var),
             Expression::AbilityState(ability, var) => {
@@ -319,6 +333,9 @@ impl ToCstr for &Expression {
             Expression::OwnerState(v)
             | Expression::TargetState(v)
             | Expression::CasterState(v)
+            | Expression::OwnerStateLast(v)
+            | Expression::TargetStateLast(v)
+            | Expression::CasterStateLast(v)
             | Expression::Context(v) => {
                 s.push(v.cstr_c(DARK_WHITE).wrap(("(".cstr(), ")".cstr())).take());
             }
@@ -380,6 +397,7 @@ impl ToCstr for &Expression {
                 );
             }
             Expression::Vec2E(v)
+            | Expression::Dbg(v)
             | Expression::UnitVec(v)
             | Expression::Sin(v)
             | Expression::Cos(v)

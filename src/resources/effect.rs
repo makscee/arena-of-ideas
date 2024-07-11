@@ -7,6 +7,7 @@ pub enum Effect {
     Damage,
     ChangeStatus(String),
     UseAbility(String, i32),
+    Summon(String, Option<Box<Effect>>),
     WithTarget(Expression, Box<Effect>),
     WithVar(VarName, Expression, Box<Effect>),
     List(Vec<Effect>),
@@ -29,7 +30,20 @@ impl Effect {
                     .get_int()?;
                 if value > 0 {
                     debug!("deal {value} dmg to {target:?}");
-                    VarState::get_mut(target, world).change_int(VarName::Dmg, value);
+                    let mut state = VarState::get_mut(target, world);
+                    state.change_int(VarName::Dmg, value);
+                    state.set_value(VarName::LastAttacker, owner.into());
+                    Event::DamageTaken {
+                        owner: target,
+                        value,
+                    }
+                    .send_with_context(context.clone(), world);
+                    Event::DamageDealt {
+                        owner,
+                        target,
+                        value,
+                    }
+                    .send_with_context(context.clone(), world);
                     TextColumnPlugin::add(
                         target,
                         format!("-{value}").cstr_cs(RED, CstrStyle::Bold),
@@ -37,6 +51,9 @@ impl Effect {
                     );
                     Vfx::get("pain", world).set_parent(target).unpack(world)?;
                 }
+                Vfx::get("damage", world)
+                    .attach_context(context, world)
+                    .unpack(world)?;
             }
             Effect::ChangeStatus(name) => {
                 let delta = context
@@ -71,6 +88,25 @@ impl Effect {
                         .take(),
                     world,
                 );
+            }
+            Effect::Summon(name, then) => {
+                let unit = GameAssets::get(world)
+                    .summons
+                    .get(name)
+                    .with_context(|| format!("Summon {name} not found"))?
+                    .clone();
+                let faction = context.get_faction(world)?;
+                let unit = unit.unpack(TeamPlugin::entity(faction, world), None, None, world);
+                UnitPlugin::fill_gaps_and_translate(world);
+                if let Some(then) = then {
+                    ActionPlugin::action_push_front(
+                        *then.clone(),
+                        context.clone().set_target(unit).take(),
+                        world,
+                    );
+                }
+                Event::Summon(unit)
+                    .send_with_context(context.clone().set_caster(owner).take(), world);
             }
             Effect::WithTarget(target, effect) => {
                 let target = target.get_value(context, world)?;
@@ -144,7 +180,7 @@ impl ToCstr for &Effect {
                     .push(format!("{name_base}").cstr_cs(name_color(&name), CstrStyle::Bold))
                     .take()
             }
-            _ => todo!(),
+            _ => self.as_ref().cstr_c(DARK_WHITE),
         }
     }
 }

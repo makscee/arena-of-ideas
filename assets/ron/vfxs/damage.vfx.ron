@@ -1,0 +1,33 @@
+(
+    duration: Some(1.0),
+    anim: Run(
+        [
+            Change(var: Thickness, value: F(1.0)),
+            Change(var: Thickness, value: F(3.0), tween: QuartOut, duration: F(0.3)),
+            Change(var: Alpha, value: F(0.4)),
+            Change(var: Alpha, value: F(0.0), tween: QuartOut, duration: F(0.3)),
+        ],
+    ),
+    representation: (
+        material: Curve(
+            color: HexColor("#ffffff"),
+            curvature: F(1.0),
+            thickness: F(2.0),
+            aa: F(0.5),
+            alpha: LessThen(Age, F(0.05)),
+            dilations: [(F(0.0), F(-1.0)), (F(1.0), F(2.0))],
+        ),
+        children: [
+            (
+                material: Curve(
+                    color: HexColor("#ffffff"),
+                    curvature: F(1.0),
+                    thickness: OwnerState(Thickness),
+                    aa: F(0.5),
+                    alpha: OwnerState(Alpha),
+                    dilations: [(F(0.0), F(-1.0)), (F(1.0), F(4.0))],
+                ),
+            ),
+        ],
+    ),
+)

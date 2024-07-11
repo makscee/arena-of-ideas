@@ -138,6 +138,14 @@ impl VarState {
             ),
         }
     }
+    pub fn find_value_last(entity: Entity, var: VarName, world: &World) -> Result<VarValue> {
+        match Self::try_get(entity, world).and_then(|s| s.get_value_last(var)) {
+            Ok(v) => Ok(v),
+            Err(_) => {
+                Self::find_value_last(entity.get_parent(world).context("No parent")?, var, world)
+            }
+        }
+    }
     pub fn get_value_last(&self, var: VarName) -> Result<VarValue> {
         Ok(self
             .vars

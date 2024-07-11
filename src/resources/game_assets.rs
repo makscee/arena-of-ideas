@@ -25,13 +25,14 @@ pub struct GameAssets {
     pub custom_battle: BattleData,
     pub unit_rep: Representation,
     pub animations: Animations,
-
+    pub vfxs: HashMap<String, Vfx>,
     pub heroes: HashMap<String, PackedUnit>,
     pub houses: HashMap<String, House>,
+
     pub abilities: HashMap<String, Ability>,
     pub ability_defaults: HashMap<String, HashMap<VarName, VarValue>>,
     pub statuses: HashMap<String, PackedStatus>,
-    pub vfxs: HashMap<String, Vfx>,
+    pub summons: HashMap<String, PackedUnit>,
 }
 
 lazy_static! {
@@ -70,14 +71,30 @@ impl GameAssets {
         world.resource::<Self>()
     }
     pub fn cache_tables(world: &mut World) {
-        let mut assets = world.resource_mut::<Self>();
-
-        assets.global_settings = GlobalSettings::iter().exactly_one().ok().unwrap();
-
-        assets.heroes.clear();
+        let global_settings = GlobalSettings::iter().exactly_one().ok().unwrap();
+        let mut heroes: HashMap<String, PackedUnit> = default();
         for unit in BaseUnit::iter() {
-            assets.heroes.insert(unit.name.clone(), unit.into());
+            heroes.insert(unit.name.clone(), unit.into());
         }
+        let mut houses: HashMap<String, House> = default();
+        for house in THouse::iter() {
+            houses.insert(house.name.clone(), house.into());
+        }
+
+        let ga = world.remove_resource::<GameAssets>().unwrap();
+        let unit_rep = ga.unit_rep;
+        let animations = ga.animations;
+        let vfxs = ga.vfxs;
+        LoadingPlugin::save_assets(
+            global_settings,
+            default(),
+            unit_rep,
+            animations,
+            heroes,
+            houses,
+            vfxs,
+            world,
+        );
     }
     pub fn ability_default(name: &str, var: VarName, world: &World) -> VarValue {
         Self::get(world)
@@ -104,6 +121,57 @@ impl Plugin for LoadingPlugin {
 }
 
 impl LoadingPlugin {
+    fn save_assets(
+        global_settings: GlobalSettings,
+        custom_battle: BattleData,
+        unit_rep: Representation,
+        animations: Animations,
+        heroes: HashMap<String, PackedUnit>,
+        houses: HashMap<String, House>,
+        vfxs: HashMap<String, Vfx>,
+        world: &mut World,
+    ) {
+        let mut colors = NAME_COLORS.lock().unwrap();
+        let mut definitions = NAME_DEFINITIONS.lock().unwrap();
+        let mut ability_defaults: HashMap<String, HashMap<VarName, VarValue>> = default();
+        let mut abilities: HashMap<String, Ability> = default();
+        let mut statuses: HashMap<String, PackedStatus> = default();
+        let mut summons: HashMap<String, PackedUnit> = default();
+        for (_, house) in houses.iter() {
+            let color: Color32 = house.color.clone().into();
+            colors.insert(house.name.clone(), color);
+            for status in house.statuses.iter() {
+                statuses.insert(status.name.clone(), status.clone());
+                colors.insert(status.name.clone(), color);
+                definitions.insert(status.name.clone(), Cstr::parse(&status.description));
+            }
+            ability_defaults.extend(house.defaults.iter().map(|(k, v)| (k.clone(), v.clone())));
+            for ability in house.abilities.iter() {
+                abilities.insert(ability.name.clone(), ability.clone());
+                colors.insert(ability.name.clone(), color);
+                definitions.insert(ability.name.clone(), Cstr::parse(&ability.description));
+            }
+            for unit in house.summons.iter() {
+                let mut unit = unit.clone();
+                unit.rarity = -1;
+                summons.insert(unit.name.clone(), unit.clone());
+            }
+        }
+        let assets = GameAssets {
+            global_settings,
+            custom_battle,
+            unit_rep,
+            animations,
+            heroes,
+            houses,
+            abilities,
+            statuses,
+            vfxs,
+            ability_defaults,
+            summons,
+        };
+        world.insert_resource(assets);
+    }
     fn setup(world: &mut World) {
         let handles = world.resource::<GameAssetsHandles>();
         let global_settings = world
@@ -128,35 +196,6 @@ impl LoadingPlugin {
             .get(&handles.animations)
             .unwrap()
             .clone();
-
-        let mut colors = NAME_COLORS.lock().unwrap();
-        let mut definitions = NAME_DEFINITIONS.lock().unwrap();
-        let mut ability_defaults: HashMap<String, HashMap<VarName, VarValue>> = default();
-        let mut abilities: HashMap<String, Ability> = default();
-        let mut statuses: HashMap<String, PackedStatus> = default();
-        let houses = world.resource::<Assets<House>>();
-        let houses = HashMap::from_iter(handles.houses.iter().map(|(_, h)| {
-            let house = houses.get(h).unwrap().clone();
-            let color: Color32 = house.color.clone().into();
-            colors.insert(house.name.clone(), color);
-            for status in house.statuses.iter() {
-                statuses.insert(status.name.clone(), status.clone());
-                colors.insert(status.name.clone(), color);
-                definitions.insert(status.name.clone(), Cstr::parse(&status.description));
-            }
-            ability_defaults.extend(house.defaults.iter().map(|(k, v)| (k.clone(), v.clone())));
-            for ability in house.abilities.iter() {
-                abilities.insert(ability.name.clone(), ability.clone());
-                colors.insert(ability.name.clone(), color);
-                definitions.insert(ability.name.clone(), Cstr::parse(&ability.description));
-            }
-            (house.name.clone(), house)
-        }));
-        let heroes = world.resource::<Assets<PackedUnit>>();
-        let heroes = HashMap::from_iter(handles.heroes.iter().map(|(_, h)| {
-            let hero = heroes.get(h).unwrap().clone();
-            (hero.name.clone(), hero)
-        }));
         let vfxs = world.resource::<Assets<Vfx>>();
         let vfxs = HashMap::from_iter(
             handles
@@ -164,20 +203,26 @@ impl LoadingPlugin {
                 .iter()
                 .map(|(name, h)| (name_from_path(name), vfxs.get(h).unwrap().clone())),
         );
-
-        let assets = GameAssets {
+        let houses = world.resource::<Assets<House>>();
+        let houses = HashMap::from_iter(handles.houses.iter().map(|(_, h)| {
+            let house = houses.get(h).unwrap().clone();
+            (house.name.clone(), house)
+        }));
+        let heroes = world.resource::<Assets<PackedUnit>>();
+        let heroes = HashMap::from_iter(handles.heroes.iter().map(|(_, h)| {
+            let hero = heroes.get(h).unwrap().clone();
+            (hero.name.clone(), hero)
+        }));
+        Self::save_assets(
             global_settings,
             custom_battle,
             unit_rep,
             animations,
             heroes,
             houses,
-            abilities,
-            statuses,
             vfxs,
-            ability_defaults,
-        };
-        world.insert_resource(assets);
+            world,
+        );
     }
 }
 

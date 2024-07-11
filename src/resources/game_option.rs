@@ -7,6 +7,7 @@ pub enum GameOption {
     Connect,
     Login,
     ForceLogin,
+    TestScenariosLoad,
 }
 
 static CURRENTLY_FULFILLING: Mutex<GameOption> = Mutex::new(GameOption::Connect);
@@ -21,6 +22,7 @@ impl GameOption {
             GameOption::Login | GameOption::ForceLogin => {
                 world.get_resource::<LoginOption>().is_some()
             }
+            GameOption::TestScenariosLoad => world.get_resource::<TestScenarios>().is_some(),
         }
     }
     pub fn fulfill(self, world: &mut World) {
@@ -28,8 +30,8 @@ impl GameOption {
         *CURRENTLY_FULFILLING.lock().unwrap() = self;
         match self {
             GameOption::Connect => ConnectOption::fulfill(world),
-            GameOption::Login => LoginOption::fulfill(world),
-            GameOption::ForceLogin => LoginOption::fulfill(world),
+            GameOption::Login | GameOption::ForceLogin => LoginOption::fulfill(world),
+            GameOption::TestScenariosLoad => GameState::TestScenariosLoad.set_next(world),
         }
     }
 }

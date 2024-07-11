@@ -10,7 +10,7 @@
             trigger: Fire(
                 triggers: [(AfterIncomingDamage, None)],
                 effects: [
-                    (WithVar(Charges, I(-1), AddStatus("Petrify")), None),
+                    (WithVar(Charges, I(-1), ChangeStatus("Petrify")), None),
                     (Damage(Mul(Sub(Context(Hp), Context(Dmg)), F(0.5))), None),
                 ],
             ),
@@ -20,7 +20,7 @@
         (
             name: "Petrify",
             description: "Next damage taken will deal\nhalf of remaining HP as damage,\nthen consume 1 charge",
-            effect: AddStatus("Petrify"),
+            effect: ChangeStatus("Petrify"),
         ),
     ],
 )

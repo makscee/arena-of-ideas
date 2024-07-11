@@ -76,6 +76,7 @@ impl BattlePlugin {
         ActionPlugin::spin(world)?;
         Event::BattleStart.send(world);
         ActionPlugin::spin(world)?;
+        ActionPlugin::spin(world)?;
         loop {
             if let Some((left, right)) = Self::get_strikers(world) {
                 Self::run_strike(left, right, world)?;

@@ -27,7 +27,7 @@
                         ),
                         None,
                     ),
-                    (WithVar(Charges, I(-1), WithTarget(Owner, AddStatus("Doom"))), None),
+                    (WithVar(Charges, I(-1), WithTarget(Owner, ChangeStatus("Doom"))), None),
                 ],
             ),
         ),
@@ -38,7 +38,7 @@
             description: "Kill target in 5 turns then summon friendly [Doomguard]",
             effect: List(
                 [
-                    WithVar(Charges, I(5), AddStatus("Doom")),
+                    WithVar(Charges, I(5), ChangeStatus("Doom")),
                     StateSetVar(Caster, StatusEntity("Doom", Target), Owner),
                 ],
             ),

@@ -15,5 +15,5 @@
             ),
         ),
     ],
-    abilities: [(name: "Grow", description: "Give +{1}/+{1}", effect: AddStatus("Growth"))],
+    abilities: [(name: "Grow", description: "Give +{1}/+{1}", effect: ChangeStatus("Growth"))],
 )

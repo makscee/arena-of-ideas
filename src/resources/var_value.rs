@@ -22,6 +22,7 @@ impl VarValue {
             VarValue::None => Ok(0),
             VarValue::Int(v) => Ok(*v),
             VarValue::Float(v) => Ok(*v as i32),
+            VarValue::Bool(v) => Ok(*v as i32),
             _ => Err(anyhow!("Int not supported by {self:?}")),
         }
     }
@@ -42,6 +43,7 @@ impl VarValue {
             VarValue::None => Ok(0.0),
             VarValue::Int(v) => Ok(*v as f32),
             VarValue::Float(v) => Ok(*v),
+            VarValue::Bool(v) => Ok(*v as i32 as f32),
             _ => Err(anyhow!("Float not supported by {self:?}")),
         }
     }

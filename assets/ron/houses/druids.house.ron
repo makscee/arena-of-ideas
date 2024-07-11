@@ -10,16 +10,16 @@
             trigger: Fire(
                 triggers: [(AfterDamageTaken, None)],
                 targets: [(OwnerStateLast(LastAttacker), None)],
-                effects: [(Damage(Context(Charges)), None)],
+                effects: [(WithVar(Damage, Context(Charges), Damage), None)],
             ),
         ),
     ],
     abilities: [
-        (name: "Thorns", description: "Deal {1} DMG to attacker", effect: AddStatus("Thorns")),
+        (name: "Thorns", description: "Deal {1} DMG to attacker", effect: ChangeStatus("Thorns")),
         (
             name: "Summon Treant",
             description: "Summon 0/3 unit with [Thorns] ({3})",
-            effect: Summon("Treant", AddStatus("Thorns")),
+            effect: Summon("Treant", ChangeStatus("Thorns")),
         ),
     ],
     summons: [
@@ -41,7 +41,7 @@
                     fill: GradientLinear(
                         point1: UnitVec(Mul(GT, F(0.3))),
                         point2: UnitVec(Sum(Mul(GT, F(0.3)), PI)),
-                        colors: [OwnerState(Color), Hex("101010ff")],
+                        colors: [OwnerState(Color), HexColor("101010ff")],
                         parts: [F(0.5), F(0.51)],
                     ),
                     alpha: F(1.0),
@@ -50,7 +50,6 @@
                 mapping: {Rotation: Sin(Sum(Mul(GT, F(0.2)), Mul(Index, F(0.13))))},
                 count: 4,
             ),
-            state: (history: {}, birth: 0.0),
             statuses: [("Thorns", 2)],
         ),
     ],

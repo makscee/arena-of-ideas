@@ -39,6 +39,10 @@ lazy_static! {
             [GameOption::Connect, GameOption::ForceLogin].into(),
         );
         m.insert(GameState::ServerSync, [GameOption::Connect].into());
+        m.insert(
+            GameState::TestScenariosRun,
+            [GameOption::TestScenariosLoad].into(),
+        );
         m
     };
 }

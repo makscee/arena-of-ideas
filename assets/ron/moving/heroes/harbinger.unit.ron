@@ -28,7 +28,7 @@
                         center: Vec2(0.0, 0.0),
                         radius: F(1.0),
                         parts: [F(-0.62), F(1.05)],
-                        colors: [Context(Color), Hex("00000000")],
+                        colors: [Context(Color), HexColor("00000000")],
                     ),
                     fbm: None,
                     alpha: F(1.0),
