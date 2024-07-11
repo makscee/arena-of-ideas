@@ -82,7 +82,7 @@ impl ShopPlugin {
         let team = TeamPlugin::entity(Faction::Shop, world);
         if let Some(Fusion {
             options,
-            source,
+            source: _,
             target: _,
         }) = run.fusion
         {

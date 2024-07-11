@@ -34,6 +34,8 @@ pub enum VarName {
     Damage,
     Color,
     RarityColor,
+    RarityColors,
+    HouseColors,
     Slot,
     Visible,
     Faction,

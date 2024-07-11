@@ -188,6 +188,12 @@ impl From<BaseUnit> for PackedUnit {
         let effects = value.effects();
         let representation =
             RepresentationPlugin::get_by_id(value.name.clone()).unwrap_or_default();
+        let mut state = VarState::default();
+        state.init(VarName::HouseColors, vec![name_color(&value.house)].into());
+        state.init(
+            VarName::RarityColors,
+            vec![rarity_color(value.rarity as usize)].into(),
+        );
         Self {
             name: value.name,
             pwr: value.pwr,
@@ -201,7 +207,7 @@ impl From<BaseUnit> for PackedUnit {
                 effects,
             },
             representation,
-            state: default(),
+            state,
             statuses: default(),
         }
     }
@@ -239,7 +245,12 @@ impl From<FusedUnit> for PackedUnit {
             targets,
             effects,
         };
+        let mut state = VarState::default();
+        let mut rarity_colors: Vec<Color> = default();
+        let mut house_colors: Vec<Color> = default();
         for base in bases {
+            rarity_colors.push(rarity_color(base.rarity as usize).to_color());
+            house_colors.push(name_color(&base.house).to_color());
             result.pwr = result.pwr.max(base.pwr);
             result.hp = result.hp.max(base.hp);
             result.rarity = result.rarity.max(base.rarity);
@@ -248,8 +259,11 @@ impl From<FusedUnit> for PackedUnit {
                 result.representation.children.push(Box::new(repr));
             }
         }
+        state.init(VarName::RarityColors, rarity_colors.into());
+        state.init(VarName::HouseColors, house_colors.into());
         result.name = value.bases.join("+");
         result.stacks = value.stacks as i32;
+        result.state = state;
 
         result
     }
