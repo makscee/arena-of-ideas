@@ -1,3 +1,4 @@
+#![enable(implicit_some)]
 (
     left: (
         units: [
@@ -5,28 +6,38 @@
             (hp: 1, pwr: 1),
             (hp: 1, pwr: 1),
             (
-                name: "Fertilizer",
-                hp: 3,
+                name: "Battle Mage",
+                hp: 4,
                 pwr: 1,
-                rarity: 3,
-                houses: ["Druids"],
+                rarity: 1,
+                houses: ["Mages"],
                 trigger: Fire(
-                    triggers: [(BattleStart, None)],
-                    targets: [(AllAllyUnits, None)],
-                    effects: [(UseAbility("Thorns", 0), None)],
+                    triggers: [(AfterStrike, None)],
+                    targets: [],
+                    effects: [
+                        (
+                            Repeat(I(3), WithTarget(RandomEnemy, UseAbility("Magic Missile", 0))),
+                            "use [Magic Missile] ({Level}) on random enemy 3 times",
+                        ),
+                    ],
                 ),
                 representation: (
                     material: Shape(
-                        shape: Rectangle(size: Vec2E(F(1.0))),
-                        shape_type: Line(thickness: F(2.0)),
+                        shape: Circle(radius: F(0.12)),
+                        shape_type: Opaque,
                         fill: Solid(color: OwnerState(Color)),
                         fbm: None,
                         alpha: F(1.0),
                         padding: F(0.0),
                     ),
                     children: [],
-                    mapping: {Rotation: Sum(F(0.0), Sin(Sum(Index, GT)))},
-                    count: 4,
+                    mapping: {
+                        Offset: Mul(
+                            UnitVec(Sum(Index, Mul(Sin(Sum(GT, Mul(Index, F(10.0)))), PI2))),
+                            Sum(F(0.3), Mul(Sin(Sum(GT, Index)), F(0.4))),
+                        ),
+                    },
+                    count: 3,
                 ),
             ),
         ],
