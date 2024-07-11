@@ -1,0 +1,14 @@
+#![enable(implicit_some)]
+(
+    name: "Warriors",
+    color: ("#B86125"),
+    statuses: [
+        (
+            name: "Strength",
+            description: "+{Charges} PWR",
+            polarity: 1,
+            trigger: Change(trigger: Var(Pwr), expr: Context(Charges)),
+        ),
+    ],
+    abilities: [(name: "Strength", description: "Give +{1} PWR", effect: AddStatus("Strength"))],
+)

@@ -1,0 +1,26 @@
+#![enable(implicit_some)]
+(
+    name: "Physician",
+    hp: 2,
+    pwr: 2,
+    rarity: 2,
+    houses: ["Medics"],
+    trigger: Fire(
+        triggers: [(TurnEnd, None)],
+        targets: [(AllStatusAllies("Vitality"), None)],
+        effects: [(Heal(None), None)],
+    ),
+    representation: (
+        material: Shape(
+            shape: Circle(radius: Sum(F(0.5), Mul(Beat, F(0.03)))),
+            shape_type: Line(thickness: F(1.0)),
+            fill: Solid(color: OwnerState(Color)),
+            fbm: None,
+            alpha: F(1.0),
+            padding: F(0.2),
+        ),
+        children: [],
+        mapping: {Offset: Vec2EE(Zero, Mul(Sin(GT), F(0.1)))},
+        count: 0,
+    ),
+)

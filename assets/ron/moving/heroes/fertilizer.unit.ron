@@ -1,0 +1,26 @@
+#![enable(implicit_some)]
+(
+    name: "Fertilizer",
+    hp: 3,
+    pwr: 1,
+    rarity: 3,
+    houses: ["Druids"],
+    trigger: Fire(
+        triggers: [(BattleStart, None)],
+        targets: [(AllAllyUnits, None)],
+        effects: [(UseAbility("Thorns", 0), None)],
+    ),
+    representation: (
+        material: Shape(
+            shape: Rectangle(size: Vec2E(F(1.0))),
+            shape_type: Line(thickness: F(2.0)),
+            fill: Solid(color: OwnerState(Color)),
+            fbm: None,
+            alpha: F(1.0),
+            padding: F(0.0),
+        ),
+        children: [],
+        mapping: {Rotation: Sum(F(0.0), Sin(Sum(Index, GT)))},
+        count: 4,
+    ),
+)

@@ -1,0 +1,34 @@
+#![enable(implicit_some)]
+(
+    name: "Leech",
+    hp: 4,
+    pwr: 1,
+    rarity: 1,
+    houses: ["Vampires"],
+    trigger: Fire(
+        triggers: [(AfterDamageDealt, None)],
+        targets: [(Target, None)],
+        effects: [(UseAbility("Siphon", 2), None)],
+    ),
+    representation: (
+        material: Shape(
+            shape: Circle(radius: Sum(Sum(F(0.7), Mul(Index, F(0.08))), Mul(Beat, F(0.05)))),
+            shape_type: Line(thickness: F(1.0)),
+            fill: GradientLinear(
+                point1: Vec2(0.0, -0.5),
+                point2: Vec2(0.0, 0.5),
+                parts: [F(0.0), Sum(F(1.24), Mul(Index, F(0.0)))],
+                colors: [OwnerState(Color), Hex("00000000")],
+            ),
+            fbm: None,
+            alpha: F(1.0),
+            padding: F(0.0),
+        ),
+        children: [],
+        mapping: {
+            Offset: Vec2EE(Sum(Mul(Index, F(-0.04)), Mul(Abs(Beat), Mul(F(0.1), Index))), Zero),
+            Rotation: F(1.57),
+        },
+        count: 2,
+    ),
+)

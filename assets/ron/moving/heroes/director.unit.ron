@@ -1,0 +1,42 @@
+#![enable(implicit_some)]
+(
+    name: "Director",
+    hp: 3,
+    pwr: 1,
+    rarity: 1,
+    houses: ["Mages"],
+    trigger: Fire(
+        triggers: [(AllySummon, None)],
+        targets: [(RandomEnemy, None)],
+        effects: [(UseAbility("Magic Missile", 3), None)],
+    ),
+    representation: (
+        material: Shape(
+            shape: Circle(radius: F(0.15)),
+            shape_type: Opaque,
+            fill: Solid(color: OwnerState(Color)),
+            fbm: None,
+            alpha: F(1.0),
+            padding: F(0.0),
+        ),
+        children: [
+            (
+                material: Shape(
+                    shape: Circle(radius: Sum(Mul(F(0.06), Index), F(0.21))),
+                    shape_type: Line(thickness: F(1.0)),
+                    fill: Solid(color: OwnerState(Color)),
+                    fbm: None,
+                    alpha: F(1.0),
+                    padding: F(0.0),
+                ),
+                children: [],
+                mapping: {},
+                count: 3,
+            ),
+        ],
+        mapping: {
+            Offset: Mul(UnitVec(Sum(Mul(Index, Mul(PI, F(0.666))), GT)), Sum(F(0.3), Mul(Beat, F(0.1)))),
+        },
+        count: 3,
+    ),
+)

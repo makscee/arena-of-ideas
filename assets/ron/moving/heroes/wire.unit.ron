@@ -1,0 +1,38 @@
+#![enable(implicit_some)]
+(
+    name: "Wire",
+    hp: 2,
+    pwr: 1,
+    rarity: 0,
+    houses: ["Robots"],
+    trigger: Fire(
+        triggers: [(BattleStart, None)],
+        targets: [
+            (SlotUnit(I(1)), "front ally"),
+            (WithVar(Faction, OppositeFaction, SlotUnit(I(1))), "front enemy"),
+        ],
+        effects: [(UseAbility("Charge", 4), None)],
+    ),
+    representation: (
+        material: Shape(
+            shape: Rectangle(size: Vec2(0.47, 0.1)),
+            shape_type: Opaque,
+            fill: Solid(color: OwnerState(Color)),
+            fbm: (
+                octaves: I(1),
+                lacunarity: F(1.0),
+                gain: F(1.0),
+                strength: Mul(Beat, F(0.3)),
+                offset: Sum(Index, GT),
+            ),
+            alpha: F(1.0),
+            padding: F(0.2),
+        ),
+        children: [],
+        mapping: {
+            Offset: Vec2EE(Sum(Mul(Index, F(0.26)), F(-0.64)), F(0.0)),
+            Rotation: Mul(Mul(PI, If(Even(Index), F(1.0), F(-1.0))), F(0.25)),
+        },
+        count: 6,
+    ),
+)

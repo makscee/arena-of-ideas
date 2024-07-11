@@ -73,7 +73,7 @@ pub enum Expression {
 impl Expression {
     pub fn get_value(&self, context: &Context, world: &mut World) -> Result<VarValue> {
         match self {
-            Expression::Zero => Ok(VarValue::None),
+            Expression::Zero => Ok(VarValue::Int(0)),
             Expression::Value(v) => Ok(v.clone()),
             Expression::Context(var) => context.get_var(*var, world),
             Expression::OwnerState(var) => {

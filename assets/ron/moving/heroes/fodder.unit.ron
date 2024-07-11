@@ -1,0 +1,28 @@
+#![enable(implicit_some)]
+(
+    name: "Fodder",
+    hp: 4,
+    pwr: 2,
+    rarity: 0,
+    houses: ["Warriors"],
+    trigger: Fire(
+        triggers: [(BeforeStrike, None)],
+        targets: [(RandomAlly, None)],
+        effects: [(UseAbility("Strength", 1), None)],
+    ),
+    representation: (
+        material: Shape(
+            shape: Rectangle(
+                size: Vec2E(Sum(Mul(F(0.26), Index), Sum(F(0.27), Sub(Zero, Mul(Beat, F(0.05)))))),
+            ),
+            shape_type: Line(thickness: Sum(F(1.0), Mul(Sin(Sum(GT, Index)), F(6.0)))),
+            fill: Solid(color: OwnerState(Color)),
+            fbm: None,
+            alpha: F(0.5),
+            padding: F(0.0),
+        ),
+        children: [],
+        mapping: {Offset: Vec2EE(Sum(Mul(F(0.2), Index), F(-0.8)), Zero)},
+        count: 5,
+    ),
+)

@@ -1,0 +1,26 @@
+#![enable(implicit_some)]
+(
+    name: "Cursed",
+    hp: 3,
+    pwr: 1,
+    rarity: 0,
+    houses: ["Witches"],
+    trigger: Fire(
+        triggers: [(BeforeDeath, None)],
+        targets: [(OwnerStateLast(LastAttacker), "last attacker")],
+        effects: [(UseAbility("Weakness", 4), None)],
+    ),
+    representation: (
+        material: Curve(
+            thickness: F(0.5),
+            dilations: [],
+            curvature: Mul(Sum(F(0.5), Mul(Index, F(0.1))), Abs(Sin(Sum(GT, Mul(Index, F(0.2)))))),
+            aa: F(1.0),
+            alpha: F(1.0),
+            color: OwnerState(Color),
+        ),
+        children: [],
+        mapping: {Offset: Vec2EE(F(-1.0), F(0.0)), Delta: Vec2EE(F(2.0), F(0.0))},
+        count: 9,
+    ),
+)

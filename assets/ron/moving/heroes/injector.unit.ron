@@ -1,0 +1,26 @@
+#![enable(implicit_some)]
+(
+    name: "Injector",
+    hp: 3,
+    pwr: 1,
+    rarity: 0,
+    houses: ["Death Knights"],
+    trigger: Fire(
+        triggers: [(AfterDamageDealt, None)],
+        targets: [(Target, None)],
+        effects: [(UseAbility("Plague", 0), None)],
+    ),
+    representation: (
+        material: Shape(
+            shape: Circle(radius: Sub(F(0.19), Mul(Index, F(0.02)))),
+            shape_type: Line(thickness: F(1.0)),
+            fill: Solid(color: OwnerState(Color)),
+            fbm: None,
+            alpha: F(1.0),
+            padding: F(0.0),
+        ),
+        children: [],
+        mapping: {Offset: Vec2EE(Sum(Mul(Index, F(0.21)), F(-0.65)), Mul(Sin(Sum(GT, Index)), F(0.04)))},
+        count: 8,
+    ),
+)

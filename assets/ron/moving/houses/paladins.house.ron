@@ -1,0 +1,79 @@
+#![enable(implicit_some)]
+(
+    name: "Paladins",
+    color: ("#F06292"),
+    defaults: {"Shield": {M1: I(0)}},
+    statuses: [
+        (
+            name: "Shield",
+            description: "Block next incoming damage {Charges} times",
+            polarity: 1,
+            trigger: List(
+                [
+                    Change(trigger: IncomingDamage, expr: I(-9999999)),
+                    Fire(
+                        triggers: [(AfterIncomingDamage, None)],
+                        effects: [
+                            (
+                                If(
+                                    GreaterThen(Context(Value), I(0)),
+                                    WithVar(Charges, I(-1), AddStatus("Shield")),
+                                    Noop,
+                                ),
+                                None,
+                            ),
+                            (
+                                If(
+                                    AbilityState("Shield", M1),
+                                    WithTarget(
+                                        Caster,
+                                        Damage(Mul(AbilityState("Shield", M1), Context(Value))),
+                                    ),
+                                    Noop,
+                                ),
+                                None,
+                            ),
+                        ],
+                    ),
+                ],
+            ),
+        ),
+    ],
+    abilities: [
+        (
+            name: "Shield",
+            description: "Block next incoming damage{M1|, reflect any blocked damage back to attacker}",
+            effect: AddStatus("Shield"),
+        ),
+        (
+            name: "Summon Guardian Angel",
+            description: "Summon 10/1 with [Shield] ({Charges})",
+            effect: Summon("Guardian Angel", AddStatus("Shield")),
+        ),
+    ],
+    summons: [
+        (
+            name: "Guardian Angel",
+            hp: 1,
+            pwr: 10,
+            stacks: 1,
+            houses: ["Paladins"],
+            representation: (
+                material: Shape(
+                    shape: Circle(
+                        radius: Mul(
+                            Abs(Sin(Sum(Mul(GT, F(0.5)), Mul(Index, Mul(PI, F(0.05)))))),
+                            Sum(F(0.95), Mul(Beat, F(0.1))),
+                        ),
+                    ),
+                    shape_type: Line(thickness: F(1.0)),
+                    alpha: F(1.0),
+                ),
+                children: [],
+                mapping: {},
+                count: 7,
+            ),
+            state: (history: {}, birth: 0.0),
+        ),
+    ],
+)

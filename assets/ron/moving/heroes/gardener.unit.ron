@@ -1,0 +1,33 @@
+#![enable(implicit_some)]
+(
+    name: "Gardener",
+    hp: 5,
+    pwr: 1,
+    rarity: 2,
+    houses: ["Druids"],
+    trigger: Fire(
+        triggers: [(TurnEnd, None)],
+        targets: [(SlotUnit(I(1)), "front ally")],
+        effects: [(UseAbility("Thorns", 0), None)],
+    ),
+    representation: (
+        material: Shape(
+            shape: Rectangle(
+                size: Vec2E(Sum(Mul(Index, F(-0.03)), Sum(F(1.23), Mul(Sub(Zero, Beat), F(0.1))))),
+            ),
+            shape_type: Line(thickness: F(1.4)),
+            fill: GradientLinear(
+                point1: UnitVec(Mul(GT, F(0.3))),
+                point2: UnitVec(Sum(Mul(GT, F(0.3)), PI)),
+                parts: [F(0.5), F(0.51)],
+                colors: [OwnerState(Color), Hex("101010ff")],
+            ),
+            fbm: None,
+            alpha: F(1.0),
+            padding: F(0.0),
+        ),
+        children: [],
+        mapping: {Rotation: Mul(Index, F(0.18))},
+        count: 8,
+    ),
+)

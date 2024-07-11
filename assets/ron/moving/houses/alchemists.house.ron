@@ -1,0 +1,26 @@
+#![enable(implicit_some)]
+(
+    name: "Alchemists",
+    color: ("#FFAB00"),
+    statuses: [
+        (
+            name: "Petrify",
+            description: "Next damage taken will deal\nhalf of remaining HP as damage,\nthen consume 1 charge",
+            polarity: -1,
+            trigger: Fire(
+                triggers: [(AfterIncomingDamage, None)],
+                effects: [
+                    (WithVar(Charges, I(-1), AddStatus("Petrify")), None),
+                    (Damage(Mul(Sub(Context(Hp), Context(Dmg)), F(0.5))), None),
+                ],
+            ),
+        ),
+    ],
+    abilities: [
+        (
+            name: "Petrify",
+            description: "Next damage taken will deal\nhalf of remaining HP as damage,\nthen consume 1 charge",
+            effect: AddStatus("Petrify"),
+        ),
+    ],
+)

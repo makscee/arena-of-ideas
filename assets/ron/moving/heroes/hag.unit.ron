@@ -1,0 +1,29 @@
+#![enable(implicit_some)]
+(
+    name: "Hag",
+    hp: 2,
+    pwr: 2,
+    rarity: 2,
+    houses: ["Witches"],
+    trigger: Fire(
+        triggers: [(BattleStart, None)],
+        targets: [(AllEnemyUnits, None)],
+        effects: [(UseAbility("Weakness", 0), None)],
+    ),
+    representation: (
+        material: Curve(
+            thickness: F(0.3),
+            dilations: [],
+            curvature: Mul(Sub(F(0.5), Mul(Index, F(0.14))), Sin(Sum(GT, Mul(Index, F(0.1))))),
+            aa: F(0.5),
+            alpha: F(1.0),
+            color: OwnerState(Color),
+        ),
+        children: [],
+        mapping: {
+            Offset: Vec2EE(Sum(F(-1.0), Mul(Beat, F(0.2))), F(0.0)),
+            Delta: Vec2EE(Sum(F(2.0), Mul(Sub(Zero, Beat), F(0.4))), F(0.0)),
+        },
+        count: 14,
+    ),
+)

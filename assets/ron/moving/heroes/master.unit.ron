@@ -1,0 +1,29 @@
+#![enable(implicit_some)]
+(
+    name: "Master",
+    hp: 3,
+    pwr: 2,
+    rarity: 0,
+    houses: ["Death Knights"],
+    trigger: Fire(
+        triggers: [(BattleStart, None)],
+        targets: [],
+        effects: [
+            (AbilityStateAddVar("Skeleton", Pwr, Sum(Context(Level), I(1))), None),
+            (AbilityStateAddVar("Skeleton", Hp, Sum(Context(Level), I(1))), None),
+        ],
+    ),
+    representation: (
+        material: Shape(
+            shape: Circle(radius: Max(Sin(Sum(Sum(GT, Mul(PI, F(1.5))), Sum(Index, I(3)))), F(0.11))),
+            shape_type: Line(thickness: F(1.0)),
+            fill: Solid(color: OwnerState(Color)),
+            fbm: None,
+            alpha: Context(T),
+            padding: F(0.0),
+        ),
+        children: [],
+        mapping: {T: Sin(Sum(GT, Index)), Offset: Mul(UnitVec(Mul(RandomF(Owner), PI2)), F(0.2))},
+        count: 4,
+    ),
+)

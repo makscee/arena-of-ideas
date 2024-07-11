@@ -1,0 +1,21 @@
+#![enable(implicit_some)]
+(
+    name: "Rogues",
+    color: ("#FFD600"),
+    statuses: [
+        (
+            name: "Expose",
+            description: "Damage taken +{Charges}",
+            polarity: -1,
+            trigger: Change(trigger: IncomingDamage, expr: Context(Charges)),
+        ),
+    ],
+    abilities: [
+        (name: "Expose", description: "Increase taken damage by {1}", effect: AddStatus("Expose")),
+        (
+            name: "Rob",
+            description: "Steal all positive statuses, limit max {Charges}",
+            effect: WithVar(Polarity, I(1), StealAllStatuses),
+        ),
+    ],
+)

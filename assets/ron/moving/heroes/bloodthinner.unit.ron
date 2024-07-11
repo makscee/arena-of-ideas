@@ -1,0 +1,37 @@
+#![enable(implicit_some)]
+(
+    name: "Bloodthinner",
+    hp: 2,
+    pwr: 2,
+    rarity: 0,
+    houses: ["Vampires"],
+    trigger: Fire(
+        triggers: [(BattleStart, None)],
+        targets: [],
+        effects: [(AbilityStateAddVar("Siphon", M1, Bool(true)), "[Siphon] gives PWR")],
+    ),
+    representation: (
+        material: Shape(
+            shape: Circle(radius: Sum(F(0.86), Mul(Beat, F(0.1)))),
+            shape_type: Line(thickness: F(3.0)),
+            fill: GradientLinear(
+                point1: Vec2(-1.0, 0.0),
+                point2: Vec2(1.0, 0.0),
+                parts: [F(0.0), F(0.55)],
+                colors: [OwnerState(Color), Hex("272727ff")],
+            ),
+            fbm: (
+                octaves: I(2),
+                lacunarity: Sum(F(1.0), Mul(Index, F(1.0))),
+                gain: Sin(Mul(GT, F(1.0))),
+                strength: F(1.0),
+                offset: Mul(GT, F(0.3)),
+            ),
+            alpha: F(0.6),
+            padding: F(0.0),
+        ),
+        children: [],
+        mapping: {},
+        count: 2,
+    ),
+)

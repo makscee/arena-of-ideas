@@ -1,0 +1,14 @@
+#![enable(implicit_some)]
+(
+    name: "Medics",
+    color: ("#42A5F5"),
+    statuses: [
+        (
+            name: "Vitality",
+            description: "+{Charges} HP",
+            polarity: 1,
+            trigger: Change(trigger: Var(Hp), expr: Context(Charges)),
+        ),
+    ],
+    abilities: [(name: "Vitality", description: "Give +{1} HP", effect: AddStatus("Vitality"))],
+)

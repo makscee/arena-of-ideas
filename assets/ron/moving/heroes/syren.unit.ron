@@ -1,0 +1,30 @@
+#![enable(implicit_some)]
+(
+    name: "Syren",
+    hp: 3,
+    pwr: 1,
+    rarity: 0,
+    houses: ["Witches"],
+    trigger: Fire(
+        triggers: [(BeforeStrike, None)],
+        targets: [(Target, None)],
+        effects: [(UseAbility("Weakness", 1), None)],
+    ),
+    representation: (
+        material: Curve(
+            thickness: F(0.3),
+            dilations: [],
+            curvature: Mul(Sub(F(0.5), Mul(Index, F(0.22))), Sin(Sum(GT, Mul(Index, F(0.1))))),
+            aa: F(0.5),
+            alpha: F(1.0),
+            color: OwnerState(Color),
+        ),
+        children: [],
+        mapping: {
+            Offset: Vec2EE(Mul(Beat, F(0.05)), F(-1.0)),
+            Delta: Vec2EE(F(2.0), F(0.0)),
+            Rotation: Mul(PI, F(0.5)),
+        },
+        count: 9,
+    ),
+)

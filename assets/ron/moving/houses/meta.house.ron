@@ -1,0 +1,26 @@
+#![enable(implicit_some)]
+(
+    name: "Meta",
+    color: ("#EA80FC"),
+    statuses: [],
+    abilities: [
+        (
+            name: "Amnesia",
+            description: "Reduce all statuses, limit max {Charges}",
+            effect: List([ClearAllStatuses, Vfx("apply_status")]),
+        ),
+        (
+            name: "Betray",
+            description: "Deal PWR DMG to adjacent allies",
+            effect: List(
+                [
+                    Vfx("apply_status"),
+                    WithOwner(
+                        Target,
+                        List([Text(String("Betray")), WithTarget(AdjacentUnits, Damage(None))]),
+                    ),
+                ],
+            ),
+        ),
+    ],
+)

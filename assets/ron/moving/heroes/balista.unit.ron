@@ -1,0 +1,31 @@
+#![enable(implicit_some)]
+(
+    name: "Balista",
+    hp: 1,
+    pwr: 0,
+    rarity: 1,
+    houses: ["Paladins"],
+    trigger: Fire(
+        triggers: [(TurnEnd, None)],
+        targets: [(AllStatusEnemies("Shield"), None)],
+        effects: [(Damage(Context(Level)), None)],
+    ),
+    representation: (
+        material: Shape(
+            shape: Rectangle(size: Vec2(1.5, 0.5)),
+            shape_type: Line(thickness: F(7.4)),
+            fill: GradientLinear(
+                point1: Vec2(0.0, 0.0),
+                point2: Vec2(1.0, 1.0),
+                parts: [F(0.07), F(-0.01)],
+                colors: [OwnerState(Color), Hex("ffffffff")],
+            ),
+            fbm: None,
+            alpha: F(0.27),
+            padding: F(0.3),
+        ),
+        children: [],
+        mapping: {Rotation: Mul(Index, Sum(Mul(F(0.07), Beat), F(0.07)))},
+        count: 5,
+    ),
+)

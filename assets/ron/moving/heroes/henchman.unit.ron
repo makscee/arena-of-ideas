@@ -1,0 +1,26 @@
+#![enable(implicit_some)]
+(
+    name: "Henchman",
+    hp: 4,
+    pwr: 1,
+    rarity: 0,
+    houses: ["Warlocks"],
+    trigger: Fire(
+        triggers: [(BattleStart, None)],
+        targets: [(Owner, None)],
+        effects: [(UseAbility("Doom", 0), None)],
+    ),
+    representation: (
+        material: Shape(
+            shape: Circle(radius: Sum(F(0.5), Mul(Sin(GT), Sum(F(0.1), Mul(Sub(Zero, Beat), F(0.2)))))),
+            shape_type: Line(thickness: F(1.0)),
+            fill: Solid(color: OwnerState(Color)),
+            fbm: None,
+            alpha: F(1.0),
+            padding: F(0.0),
+        ),
+        children: [],
+        mapping: {Offset: Mul(UnitVec(Mul(GT, F(100.0))), F(0.05))},
+        count: 0,
+    ),
+)

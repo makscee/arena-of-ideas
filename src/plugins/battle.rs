@@ -44,6 +44,7 @@ impl BattlePlugin {
     }
     fn on_enter_custom(world: &mut World) {
         world.insert_resource(GameAssets::get(world).custom_battle.clone());
+        GameState::Battle.set_next(world);
     }
     fn on_enter_shop(world: &mut World) {
         let run = Run::current();

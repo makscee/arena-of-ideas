@@ -1,0 +1,31 @@
+#![enable(implicit_some)]
+(
+    name: "Doctor",
+    hp: 3,
+    pwr: 1,
+    rarity: 3,
+    houses: ["Medics"],
+    trigger: Fire(
+        triggers: [(BattleStart, None)],
+        targets: [(AllAllyUnits, None)],
+        effects: [(UseAbility("Vitality", 0), None)],
+    ),
+    representation: (
+        material: Shape(
+            shape: Circle(radius: Sum(F(0.5), Mul(Beat, F(0.1)))),
+            shape_type: Line(thickness: Sum(F(2.5), Cos(GT))),
+            fill: Solid(color: OwnerState(Color)),
+            fbm: None,
+            alpha: F(1.0),
+            padding: F(0.0),
+        ),
+        children: [],
+        mapping: {
+            Offset: Mul(
+                UnitVec(Mul(Sum(GT, Mul(Mul(PI, F(0.5)), IntF(OwnerState(Index)))), F(3.0))),
+                F(0.3),
+            ),
+        },
+        count: 4,
+    ),
+)

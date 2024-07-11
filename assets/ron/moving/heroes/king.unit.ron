@@ -1,0 +1,37 @@
+#![enable(implicit_some)]
+(
+    name: "King",
+    hp: 3,
+    pwr: 1,
+    rarity: 1,
+    houses: ["Paladins"],
+    trigger: Fire(
+        triggers: [(BattleStart, None)],
+        targets: [(AllStatusAllies("Shield"), None), (AllStatusEnemies("Shield"), None)],
+        effects: [(WithVar(Charges, Context(Level), StealStatus("Shield")), "steal [Shield] ({Level})")],
+    ),
+    representation: (
+        material: Shape(
+            shape: Rectangle(size: Vec2(0.2, 0.86)),
+            shape_type: Line(thickness: F(1.0)),
+            fill: GradientLinear(
+                point1: Vec2(0.0, -0.74),
+                point2: Vec2(0.0, 0.0),
+                parts: [F(0.0), F(1.0)],
+                colors: [Hex("ffffffff"), OwnerState(Color)],
+            ),
+            fbm: None,
+            alpha: F(1.0),
+            padding: F(0.1),
+        ),
+        children: [],
+        mapping: {
+            Rotation: Mul(Sub(Index, I(1)), Mul(PI, F(0.25))),
+            Offset: Mul(
+                UnitVec(Sum(OwnerState(Rotation), Mul(PI, F(0.5)))),
+                Mul(F(0.7), Sum(F(1.0), Mul(Beat, F(0.1)))),
+            ),
+        },
+        count: 3,
+    ),
+)

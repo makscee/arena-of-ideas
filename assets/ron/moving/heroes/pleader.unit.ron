@@ -1,0 +1,32 @@
+#![enable(implicit_some)]
+(
+    name: "Pleader",
+    hp: 4,
+    pwr: 2,
+    rarity: 0,
+    houses: ["Holy"],
+    trigger: Fire(
+        triggers: [(AfterStrike, None)],
+        targets: [(Owner, None)],
+        effects: [(UseAbility("Blessing", 0), None)],
+    ),
+    representation: (
+        material: Shape(
+            shape: Rectangle(size: Vec2(0.15, 1.66)),
+            shape_type: Line(thickness: F(2.0)),
+            fill: Solid(color: OwnerState(Color)),
+            fbm: None,
+            alpha: F(0.7),
+            padding: F(0.0),
+        ),
+        children: [],
+        mapping: {
+            Rotation: Sum(Mul(ToI(Even(Index)), F(1.93)), Mul(Sin(Sum(GT, Index)), F(0.18))),
+            Offset: Vec2EE(
+                Mul(Sin(Sum(Mul(Index, F(0.17)), GT)), F(0.12)),
+                Mul(Cos(Sum(Mul(Index, F(0.11)), GT)), F(0.07)),
+            ),
+        },
+        count: 8,
+    ),
+)

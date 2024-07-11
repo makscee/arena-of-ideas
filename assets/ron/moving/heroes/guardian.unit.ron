@@ -1,0 +1,31 @@
+#![enable(implicit_some)]
+(
+    name: "Guardian",
+    hp: 2,
+    pwr: 1,
+    rarity: 1,
+    houses: ["Paladins"],
+    trigger: Fire(
+        triggers: [(Period(0, 1, TurnEnd), "every 2 turns")],
+        targets: [(FindUnit(Equals(StatusCharges(String("Shield")), Zero)), "ally with no [Shield]")],
+        effects: [(UseAbility("Shield", 0), None)],
+    ),
+    representation: (
+        material: Shape(
+            shape: Circle(radius: F(0.8)),
+            shape_type: Line(thickness: F(0.6)),
+            fill: Solid(color: OwnerState(Color)),
+            fbm: None,
+            alpha: F(1.0),
+            padding: F(0.0),
+        ),
+        children: [],
+        mapping: {
+            Offset: Mul(
+                UnitVec(Mul(Sum(Index, I(1)), Mul(PI, F(0.1)))),
+                Mul(F(0.3), Sin(Sum(GT, Mul(Beat, F(0.5))))),
+            ),
+        },
+        count: 9,
+    ),
+)

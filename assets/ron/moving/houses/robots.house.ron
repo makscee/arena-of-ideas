@@ -1,0 +1,13 @@
+#![enable(implicit_some)]
+(
+    name: "Robots",
+    color: ("#00B08B"),
+    statuses: [],
+    abilities: [
+        (
+            name: "Charge",
+            description: "Increase all status charges by {1}",
+            effect: List([Vfx("apply_status"), AddAllStatuses]),
+        ),
+    ],
+)

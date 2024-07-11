@@ -1,0 +1,35 @@
+#![enable(implicit_some)]
+(
+    name: "Harvest",
+    hp: 4,
+    pwr: 1,
+    rarity: 1,
+    houses: ["Druids"],
+    trigger: Fire(
+        triggers: [(OnceAfter(4, TurnEnd), "in 5 turns")],
+        targets: [],
+        effects: [(UseAbility("Summon Treant", 2), None)],
+    ),
+    representation: (
+        material: Shape(
+            shape: Circle(radius: F(0.12)),
+            shape_type: Line(thickness: F(1.0)),
+            fill: Solid(color: OwnerState(Color)),
+            fbm: None,
+            alpha: Sin(Context(T)),
+            padding: F(0.0),
+        ),
+        children: [],
+        mapping: {
+            Offset: Vec2EE(
+                Mul(
+                    RandomFloatUnit(Owner),
+                    Mul(Sin(Mul(GT, Sum(F(0.4), Mul(Index, F(0.1))))), F(0.73)),
+                ),
+                Mul(Sin(Context(T)), F(1.0)),
+            ),
+            T: Sum(Mul(GT, F(2.0)), Index),
+        },
+        count: 16,
+    ),
+)
