@@ -124,16 +124,16 @@ impl UnitContainer {
                     content(ui, world);
                 }
                 ui.columns(self.slots, |ui| {
-                    for i in 1..=self.slots {
+                    for i in 0..self.slots {
                         let col = if self.left_to_right {
                             i
                         } else {
-                            self.slots - i
+                            self.slots - i - 1
                         };
                         let ui = &mut ui[col];
                         ui.ctx().add_path(&i.to_string());
                         ui.vertical_centered(|ui| {
-                            let response = show_frame(i, max_size, i > self.max_slots, data, ui);
+                            let response = show_frame(i, max_size, i >= self.max_slots, data, ui);
                             if response.hovered() && ui.ctx().dragged_id().is_none() {
                                 hovered_rect = Some((i, response.rect));
                             }

@@ -14,7 +14,7 @@ use spacetimedb_sdk::{
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct FuseChooseArgs {
-    pub ind: u8,
+    pub slot: u8,
 }
 
 impl Reducer for FuseChooseArgs {
@@ -22,8 +22,8 @@ impl Reducer for FuseChooseArgs {
 }
 
 #[allow(unused)]
-pub fn fuse_choose(ind: u8) {
-    FuseChooseArgs { ind }.invoke();
+pub fn fuse_choose(slot: u8) {
+    FuseChooseArgs { slot }.invoke();
 }
 
 #[allow(unused)]
@@ -31,8 +31,8 @@ pub fn on_fuse_choose(
     mut __callback: impl FnMut(&Identity, Option<Address>, &Status, &u8) + Send + 'static,
 ) -> ReducerCallbackId<FuseChooseArgs> {
     FuseChooseArgs::on_reducer(move |__identity, __addr, __status, __args| {
-        let FuseChooseArgs { ind } = __args;
-        __callback(__identity, __addr, __status, ind);
+        let FuseChooseArgs { slot } = __args;
+        __callback(__identity, __addr, __status, slot);
     })
 }
 
@@ -41,8 +41,8 @@ pub fn once_on_fuse_choose(
     __callback: impl FnOnce(&Identity, Option<Address>, &Status, &u8) + Send + 'static,
 ) -> ReducerCallbackId<FuseChooseArgs> {
     FuseChooseArgs::once_on_reducer(move |__identity, __addr, __status, __args| {
-        let FuseChooseArgs { ind } = __args;
-        __callback(__identity, __addr, __status, ind);
+        let FuseChooseArgs { slot } = __args;
+        __callback(__identity, __addr, __status, slot);
     })
 }
 

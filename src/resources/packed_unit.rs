@@ -50,7 +50,6 @@ impl PackedUnit {
         id: Option<u64>,
         world: &mut World,
     ) -> Entity {
-        self.statuses.push(("Blessing".into(), 2));
         let entity = world
             .spawn_empty()
             .set_parent(parent)

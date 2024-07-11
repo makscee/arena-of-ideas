@@ -28,11 +28,21 @@ pub type GID = u64;
 
 trait StrContext<T> {
     fn context_str(self, str: &'static str) -> Result<T, String>;
+    fn with_context_str<F>(self, f: F) -> Result<T, String>
+    where
+        F: FnOnce() -> String;
 }
 
 impl<T> StrContext<T> for Option<T> {
     fn context_str(self, str: &'static str) -> Result<T, String> {
         self.context(str).map_err(|e| e.to_string())
+    }
+
+    fn with_context_str<F>(self, f: F) -> Result<T, String>
+    where
+        F: FnOnce() -> String,
+    {
+        self.with_context(f).map_err(|e| e.to_string())
     }
 }
 

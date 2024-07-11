@@ -65,6 +65,7 @@ struct ShopSlot {
 #[derive(SpacetimeType, Clone, Default)]
 struct TeamSlot {
     stack_targets: Vec<u8>,
+    fuse_targets: Vec<u8>,
 }
 
 #[derive(SpacetimeType)]
@@ -135,8 +136,8 @@ fn submit_battle_result(ctx: ReducerContext, result: TBattleResult) -> Result<()
 fn shop_reorder(ctx: ReducerContext, from: u8, to: u8) -> Result<(), String> {
     let run = Run::current(&ctx)?;
     let mut team = TTeam::get(run.team)?;
-    let from = from as usize - 1;
-    let to = to as usize - 1;
+    let from = from as usize;
+    let to = to as usize;
     if team.units.len() < from {
         return Err("Wrong from index".into());
     }
@@ -187,37 +188,46 @@ fn shop_change_g(ctx: ReducerContext, delta: i32) -> Result<(), String> {
 #[spacetimedb(reducer)]
 fn fuse_start(ctx: ReducerContext, target: u8, source: u8) -> Result<(), String> {
     let mut run = Run::current(&ctx)?;
-    // let source_unit = run.get_team_mut(source)?.clone();
-    // if source_unit.bases.len() != 1 {
-    //     return Err("Source can only be non-fused unit".to_owned());
-    // }
-    // let target_unit = run.get_team_mut(target)?.clone();
-    // run.fusion = Some(Fusion {
-    //     options: Vec::default(),
-    //     source,
-    //     target,
-    // });
-    // let options = &mut run.fusion.as_mut().unwrap().options;
-    // TTeam::filter_by_id(&run.team);
+    let team = run.team()?;
 
-    // let mut target_trigger = target_unit.clone();
-    // target_trigger
-    //     .triggers
-    //     .extend(source_unit.triggers.clone().into_iter());
-    // options.push(target_trigger);
-
-    // let mut target_target = target_unit.clone();
-    // target_target
-    //     .targets
-    //     .extend(source_unit.targets.clone().into_iter());
-    // options.push(target_target);
-
-    // let mut target_effect = target_unit.clone();
-    // target_effect
-    //     .effects
-    //     .extend(source_unit.effects.clone().into_iter());
-    // options.push(target_effect);
-    // run.save();
+    let mut fusion = Fusion {
+        options: Vec::default(),
+        source,
+        target,
+    };
+    let options = &mut fusion.options;
+    let source = team.get_unit(source)?;
+    let target = team.get_unit(target)?;
+    if !target.can_fuse_source(source) {
+        return Err(format!(
+            "Can't fuse {} with {}",
+            source.name(),
+            target.name()
+        ));
+    }
+    if source.bases.len() != 1 {
+        return Err("Source can only be non-fused unit".to_owned());
+    }
+    let mut option = target.clone();
+    option.bases.push(source.bases[0].clone());
+    let i = option.bases.len() as u32 - 1;
+    if !source.triggers.is_empty() {
+        let mut option = option.clone().new_id();
+        option.triggers.push(i);
+        options.push(option);
+    }
+    if !source.targets.is_empty() {
+        let mut option = option.clone().new_id();
+        option.targets.push(i);
+        options.push(option);
+    }
+    if !source.effects.is_empty() {
+        let mut option = option.clone().new_id();
+        option.effects.push(i);
+        options.push(option);
+    }
+    run.fusion = Some(fusion);
+    run.save();
     Ok(())
 }
 
@@ -233,27 +243,25 @@ fn fuse_cancel(ctx: ReducerContext) -> Result<(), String> {
 }
 
 #[spacetimedb(reducer)]
-fn fuse_choose(ctx: ReducerContext, ind: u8) -> Result<(), String> {
-    // let mut run = Run::current(&ctx)?;
-    // let fusion = run.fusion.take().context_str("Fusion not started")?;
-    // if fusion.options.len() > ind as usize {
-    //     return Err("Wrong fusion index".to_owned());
-    // }
-    // run.remove_team(fusion.source)?;
-    // run.remove_team(fusion.target)?;
-    // let slot = fusion.source.min(fusion.target);
-    // let mut team = TTeam::get(run.team)?;
-    // *team
-    //     .units
-    //     .get_mut(slot as usize)
-    //     .context_str("Fusion insert error")? = fusion
-    //     .options
-    //     .get(ind as usize)
-    //     .cloned()
-    //     .context_str("Fusion option get error")?;
-    // team.save();
-    // run.fusion = None;
-    // run.save();
+fn fuse_choose(ctx: ReducerContext, slot: u8) -> Result<(), String> {
+    let mut run = Run::current(&ctx)?;
+    let Fusion {
+        options,
+        source,
+        target,
+    } = run.fusion.take().context_str("Fusion not started")?;
+    let slot = slot as usize;
+    let target = target as usize;
+    let source = source as usize;
+    if slot >= options.len() {
+        return Err("Wrong fusion index".to_owned());
+    }
+    let mut team = run.team()?;
+    team.units.remove(target);
+    team.units.insert(target, options[slot].clone());
+    team.units.remove(source);
+    team.save();
+    run.save();
     Ok(())
 }
 
@@ -264,7 +272,7 @@ fn stack_shop(ctx: ReducerContext, source: u8, target: u8) -> Result<(), String>
     let mut team = run.team()?;
     let target = team
         .units
-        .get_mut(target as usize - 1)
+        .get_mut(target as usize)
         .context_str("Team unit not found")?;
     if !target.can_stack(&unit) {
         return Err(format!(
@@ -282,10 +290,10 @@ fn stack_shop(ctx: ReducerContext, source: u8, target: u8) -> Result<(), String>
 fn stack_team(ctx: ReducerContext, source: u8, target: u8) -> Result<(), String> {
     let mut run = Run::current(&ctx)?;
     let mut team = run.team()?;
-    let source_unit = team.units[source as usize - 1].clone();
+    let source_unit = team.units[source as usize].clone();
     let target_unit = team
         .units
-        .get_mut(target as usize - 1)
+        .get_mut(target as usize)
         .context_str("Team unit not found")?;
     if !target_unit.can_stack_fused(&source_unit) {
         return Err(format!(
@@ -295,7 +303,7 @@ fn stack_team(ctx: ReducerContext, source: u8, target: u8) -> Result<(), String>
         ));
     }
     target_unit.stacks += 1;
-    team.units.remove(source as usize - 1);
+    team.units.remove(source as usize);
     team.save();
     run.save();
     Ok(())
@@ -329,7 +337,7 @@ impl Run {
     fn buy(&mut self, slot: u8, discount: i32) -> Result<String, String> {
         let s = self
             .shop_slots
-            .get_mut(slot as usize - 1)
+            .get_mut(slot as usize)
             .context_str("Wrong shop slot")?;
         if !s.available {
             return Err("Unit already bought".to_owned());
@@ -375,7 +383,7 @@ impl Run {
             }
             for (i, unit) in team.units.iter().enumerate() {
                 if unit.can_stack(&slot.unit) {
-                    slot.stack_targets.push(i as u8 + 1);
+                    slot.stack_targets.push(i as u8);
                 }
             }
         }
@@ -383,8 +391,14 @@ impl Run {
         for (slot_i, slot) in self.team_slots.iter_mut().enumerate() {
             slot.stack_targets.clear();
             for (i, unit) in team.units.iter().enumerate() {
-                if i != slot_i && team.units[slot_i].can_stack_fused(unit) {
-                    slot.stack_targets.push(i as u8 + 1);
+                if i == slot_i {
+                    continue;
+                }
+                if unit.can_stack_fused(&team.units[slot_i]) {
+                    slot.stack_targets.push(i as u8);
+                }
+                if unit.can_fuse_source(&team.units[slot_i]) {
+                    slot.fuse_targets.push(i as u8);
                 }
             }
         }

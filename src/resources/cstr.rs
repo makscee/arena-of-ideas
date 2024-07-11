@@ -28,7 +28,7 @@ impl SubText {
         match self {
             SubText::String(s) => s,
             SubText::Var(var) => var.as_ref(),
-            SubText::VarText(var, _) => default(),
+            SubText::VarText(_, _) => default(),
         }
     }
 }

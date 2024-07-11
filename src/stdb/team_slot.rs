@@ -15,4 +15,5 @@ use spacetimedb_sdk::{
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct TeamSlot {
     pub stack_targets: Vec<u8>,
+    pub fuse_targets: Vec<u8>,
 }

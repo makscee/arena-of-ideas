@@ -28,6 +28,8 @@ pub struct ShopData {
     callback: Option<UpdateCallbackId<Run>>,
     stack_source: Option<(usize, Faction)>,
     stack_targets: Vec<usize>,
+    fuse_source: Option<usize>,
+    fuse_targets: Vec<usize>,
 }
 
 impl ShopPlugin {
@@ -78,28 +80,48 @@ impl ShopPlugin {
                 .map(|e| (VarState::get(e, world).id(), e)),
         );
         let team = TeamPlugin::entity(Faction::Shop, world);
-        for (
-            i,
-            ShopSlot {
-                unit,
-                available,
-                id,
-                ..
-            },
-        ) in run.shop_slots.into_iter().enumerate()
+        if let Some(Fusion {
+            options,
+            source,
+            target: _,
+        }) = run.fusion
         {
-            let slot = i as i32 + 1;
-            if available {
+            for (slot, unit) in (0..).zip(options.into_iter()) {
+                let id = unit.id;
                 if shop_units.contains_key(&id) {
                     shop_units.remove(&id);
                     continue;
                 }
-                GameAssets::get(world)
-                    .heroes
-                    .get(&unit)
-                    .cloned()
-                    .unwrap()
-                    .unpack(team, Some(slot), Some(id), world);
+                let unit: PackedUnit = unit.into();
+                unit.unpack(team, Some(slot), Some(id), world);
+            }
+        } else {
+            let mut sd = world.resource_mut::<ShopData>();
+            sd.fuse_source = None;
+            sd.fuse_targets.clear();
+
+            for (
+                slot,
+                ShopSlot {
+                    unit,
+                    available,
+                    id,
+                    ..
+                },
+            ) in (0..).zip(run.shop_slots.into_iter())
+            {
+                if available {
+                    if shop_units.contains_key(&id) {
+                        shop_units.remove(&id);
+                        continue;
+                    }
+                    GameAssets::get(world)
+                        .heroes
+                        .get(&unit)
+                        .cloned()
+                        .unwrap()
+                        .unpack(team, Some(slot), Some(id), world);
+                }
             }
         }
         for entity in shop_units.into_values() {
@@ -111,14 +133,8 @@ impl ShopPlugin {
                 .map(|e| (VarState::get(e, world).id(), e)),
         );
         let team = TeamPlugin::entity(Faction::Team, world);
-        for (i, unit) in TTeam::filter_by_id(run.team)
-            .unwrap()
-            .units
-            .into_iter()
-            .enumerate()
-        {
+        for (slot, unit) in (0..).zip(TTeam::filter_by_id(run.team).unwrap().units.into_iter()) {
             let id = unit.id;
-            let slot = i as i32 + 1;
             if let Some(entity) = team_units.get(&id) {
                 let mut state = VarState::get_mut(*entity, world);
                 state.set_int(VarName::Slot, slot.into());
@@ -239,58 +255,75 @@ impl ShopPlugin {
             }
 
             let sd = world.resource::<ShopData>().clone();
-            let shop_slots = run.shop_slots;
-            let team_slots = run.team_slots;
 
             let team = TTeam::filter_by_id(run.team).unwrap();
             let g = run.g;
             UnitContainer::new(Faction::Shop)
                 .direction(Side::Top)
                 .offset([0.0, -sd.case_height])
-                .slots(shop_slots.len())
+                .slots(run.shop_slots.len())
                 .top_content(move |ui, _| {
-                    if Button::click(format!("-1 G"))
-                        .title("Reroll".into())
-                        .enabled(g >= 1)
-                        .ui(ui)
-                        .clicked()
-                    {
-                        shop_reroll();
+                    if Run::current().fusion.is_some() {
+                        if Button::click("Cancel".into()).ui(ui).clicked() {
+                            fuse_cancel();
+                        }
+                    } else {
+                        if Button::click(format!("-1 G"))
+                            .title("Reroll".into())
+                            .enabled(g >= 1)
+                            .ui(ui)
+                            .clicked()
+                        {
+                            shop_reroll();
+                        }
                     }
                 })
                 .slot_content(move |slot, _, ui, world| {
-                    let ind = slot - 1;
-                    let ss = &shop_slots[ind];
-                    if ss.available {
-                        if let Some((stack_source, faction)) = sd.stack_source {
-                            if slot == stack_source && faction.eq(&Faction::Shop) {
-                                if Button::click("Cancel".into()).ui(ui).clicked() {
-                                    Self::cancel_stack(world);
+                    if run.fusion.is_some() {
+                        if Button::click("Choose".into()).ui(ui).clicked() {
+                            fuse_choose(slot as u8);
+                            once_on_fuse_choose(|_, _, status, _| match status {
+                                StdbStatus::Committed => {}
+                                StdbStatus::Failed(e) => e.notify_error(),
+                                _ => panic!(),
+                            });
+                        }
+                    } else {
+                        let ss = &run.shop_slots[slot];
+                        if ss.available {
+                            if let Some((stack_source, faction)) = sd.stack_source {
+                                if slot == stack_source && faction.eq(&Faction::Shop) {
+                                    if Button::click("Cancel".into()).ui(ui).clicked() {
+                                        Self::cancel_stack(world);
+                                    }
                                 }
-                            }
-                        } else {
-                            if Button::click(format!("-{} G", ss.price))
-                                .title("buy".into())
-                                .enabled(g >= ss.price)
-                                .ui(ui)
-                                .clicked()
-                            {
-                                shop_buy(slot as u8);
-                            }
-                            if !ss.stack_targets.is_empty() {
-                                let price = ss.price - 1;
-                                if Button::click(format!("-{} G", price))
-                                    .title("stack".into())
-                                    .enabled(g >= price)
+                            } else {
+                                if Button::click(format!("-{} G", ss.price))
+                                    .title("buy".into())
+                                    .enabled(g >= ss.price)
                                     .ui(ui)
                                     .clicked()
                                 {
-                                    let mut sd = world.resource_mut::<ShopData>();
-                                    sd.stack_source = Some((slot, Faction::Shop));
-                                    sd.stack_targets =
-                                        ss.stack_targets.iter().map(|v| *v as usize).collect_vec();
-                                    if ss.stack_targets.len() == 1 {
-                                        Self::do_stack(ss.stack_targets[0], world);
+                                    shop_buy(slot as u8);
+                                }
+                                if !ss.stack_targets.is_empty() {
+                                    let price = ss.price - 1;
+                                    if Button::click(format!("-{} G", price))
+                                        .title("stack".into())
+                                        .enabled(g >= price)
+                                        .ui(ui)
+                                        .clicked()
+                                    {
+                                        let mut sd = world.resource_mut::<ShopData>();
+                                        sd.stack_source = Some((slot, Faction::Shop));
+                                        sd.stack_targets = ss
+                                            .stack_targets
+                                            .iter()
+                                            .map(|v| *v as usize)
+                                            .collect_vec();
+                                        if ss.stack_targets.len() == 1 {
+                                            Self::do_stack(ss.stack_targets[0], world);
+                                        }
                                     }
                                 }
                             }
@@ -300,14 +333,14 @@ impl ShopPlugin {
                 .hover_content(Self::container_on_hover)
                 .ui(wd, ui, world);
             let slots = GameAssets::get(world).global_settings.team_slots as usize;
+            let run = Run::current();
             UnitContainer::new(Faction::Team)
                 .direction(Side::Bottom)
                 .offset([0.0, sd.case_height])
                 .slots(slots.max(team.units.len()))
                 .max_slots(slots)
                 .slot_content(move |slot, e, ui, world| {
-                    let ind = slot - 1;
-                    if e.is_some() {
+                    if e.is_some() && run.fusion.is_none() {
                         if let Some((stack_source, faction)) = sd.stack_source {
                             if slot == stack_source && faction.eq(&Faction::Team) {
                                 if Button::click("Cancel".into()).ui(ui).clicked() {
@@ -318,14 +351,31 @@ impl ShopPlugin {
                                     Self::do_stack(slot as u8, world);
                                 }
                             }
+                        } else if let Some(fuse_source) = sd.fuse_source {
+                            if slot == fuse_source {
+                                if Button::click("Cancel".into()).ui(ui).clicked() {
+                                    let mut sd = world.resource_mut::<ShopData>();
+                                    sd.fuse_source = None;
+                                    sd.fuse_targets.clear();
+                                }
+                            } else if sd.fuse_targets.contains(&slot) {
+                                if Button::click("Choose".into()).ui(ui).clicked() {
+                                    fuse_start(slot as u8, fuse_source as u8);
+                                    once_on_fuse_start(|_, _, status, _, _| match status {
+                                        StdbStatus::Committed => {}
+                                        StdbStatus::Failed(e) => e.notify_error(),
+                                        _ => panic!(),
+                                    });
+                                }
+                            }
                         } else {
-                            if let Some(ts) = team_slots.get(ind) {
+                            if let Some(ts) = run.team_slots.get(slot) {
                                 if Button::click("+1 G".into())
                                     .title("Sell".into())
                                     .ui(ui)
                                     .clicked()
                                 {
-                                    shop_sell(ind as u8);
+                                    shop_sell(slot as u8);
                                 }
                                 if !ts.stack_targets.is_empty() {
                                     if Button::click("Stack".into()).ui(ui).clicked() {
@@ -336,9 +386,17 @@ impl ShopPlugin {
                                             .iter()
                                             .map(|v| *v as usize)
                                             .collect_vec();
-                                        if ts.stack_targets.len() == 1 {
-                                            Self::do_stack(ts.stack_targets[0], world);
-                                        }
+                                    }
+                                }
+                                if !ts.fuse_targets.is_empty() {
+                                    if Button::click("Fuse".into()).ui(ui).clicked() {
+                                        let mut sd = world.resource_mut::<ShopData>();
+                                        sd.fuse_source = Some(slot);
+                                        sd.fuse_targets = ts
+                                            .fuse_targets
+                                            .iter()
+                                            .map(|v| *v as usize)
+                                            .collect_vec();
                                     }
                                 }
                             }

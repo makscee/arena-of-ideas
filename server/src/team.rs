@@ -30,4 +30,9 @@ impl TTeam {
         c.id = next_id();
         TTeam::insert(c).expect("Failed to clone team")
     }
+    pub fn get_unit(&self, i: u8) -> Result<&FusedUnit, String> {
+        self.units
+            .get(i as usize)
+            .with_context_str(|| format!("Failed to find unit team#{} slot {i}", self.id))
+    }
 }
