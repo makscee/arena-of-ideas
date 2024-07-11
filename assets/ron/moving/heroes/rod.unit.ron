@@ -15,8 +15,8 @@
             shape: Rectangle(size: Vec2EE(Sum(F(0.1), Mul(Index, F(0.12))), F(1.8))),
             shape_type: Opaque,
             fill: GradientLinear(
-                point1: Vec2(0.0, -0.56),
-                point2: Vec2(0.0, 1.2),
+                point1: V2(0.0, -0.56),
+                point2: V2(0.0, 1.2),
                 parts: [F(0.0), Sum(Mul(Index, F(0.73)), F(0.39))],
                 colors: [OwnerState(Color), HexColor("#ffffff")],
             ),

@@ -15,7 +15,7 @@
             shape: Circle(radius: F(0.43)),
             shape_type: Opaque,
             fill: GradientRadial(
-                center: Vec2(0.0, 0.0),
+                center: V2(0.0, 0.0),
                 radius: F(0.65),
                 parts: [F(0.55), F(-0.09)],
                 colors: [HexColor("00000000"), OwnerState(Color)],

@@ -17,11 +17,11 @@
     ),
     representation: (
         material: Shape(
-            shape: Rectangle(size: Vec2(1.0, 1.0)),
+            shape: Rectangle(size: V2(1.0, 1.0)),
             shape_type: Line(thickness: F(2.19)),
             fill: GradientLinear(
-                point1: Vec2(0.0, 0.0),
-                point2: Vec2(1.0, 1.0),
+                point1: V2(0.0, 0.0),
+                point2: V2(1.0, 1.0),
                 parts: [F(0.0), F(0.5)],
                 colors: [OwnerState(Color), HexColor("00000000")],
             ),

@@ -25,7 +25,7 @@
                     shape: Circle(radius: F(1.0)),
                     shape_type: Opaque,
                     fill: GradientRadial(
-                        center: Vec2(0.0, 0.0),
+                        center: V2(0.0, 0.0),
                         radius: F(1.0),
                         parts: [F(-0.62), F(1.05)],
                         colors: [Context(Color), HexColor("00000000")],

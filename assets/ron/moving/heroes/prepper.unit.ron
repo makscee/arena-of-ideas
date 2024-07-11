@@ -27,7 +27,7 @@
     ),
     representation: (
         material: Shape(
-            shape: Rectangle(size: Vec2(1.5, 0.38)),
+            shape: Rectangle(size: V2(1.5, 0.38)),
             shape_type: Line(thickness: F(3.0)),
             fill: Solid(color: OwnerState(Color)),
             fbm: None,

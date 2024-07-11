@@ -15,7 +15,7 @@
         children: [
             (
                 material: Shape(
-                    shape: Rectangle(size: Vec2(1.0, 1.0)),
+                    shape: Rectangle(size: V2(1.0, 1.0)),
                     shape_type: Line(thickness: F(1.0)),
                     fill: Solid(color: OwnerState(Color)),
                     fbm: None,

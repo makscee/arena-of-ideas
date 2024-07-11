@@ -15,7 +15,7 @@
             shape: Circle(radius: Sum(Sum(F(0.81), Mul(Index, F(-0.13))), Mul(Beat, F(0.05)))),
             shape_type: Line(thickness: F(0.4)),
             fill: GradientRadial(
-                center: Vec2(0.0, 0.0),
+                center: V2(0.0, 0.0),
                 radius: F(1.0),
                 parts: [F(0.0), F(0.75)],
                 colors: [OwnerState(Color), HexColor("6262621f")],
