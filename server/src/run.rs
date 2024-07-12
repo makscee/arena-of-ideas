@@ -24,6 +24,7 @@ struct Run {
     active: bool,
 
     round: u32,
+    score: u32,
 
     last_updated: Timestamp,
 }
@@ -124,6 +125,8 @@ fn submit_battle_result(ctx: ReducerContext, result: TBattleResult) -> Result<()
     battle.save();
     if matches!(result, TBattleResult::Right) {
         run.lives -= 1;
+    } else {
+        run.score += run.round;
     }
     if run.lives == 0 || is_no_enemy {
         run.active = false;
@@ -320,6 +323,7 @@ impl Run {
             team_slots: Vec::new(),
             fusion: None,
             round: 0,
+            score: 0,
             last_updated: Timestamp::now(),
             g: gs.shop_g_start,
             price_reroll: gs.shop_price_reroll,
@@ -415,7 +419,11 @@ impl Run {
             s.available = true;
             s.price = self.price_unit;
             s.id = id;
-            s.unit = BaseUnit::iter().choose(&mut thread_rng()).unwrap().name;
+            s.unit = BaseUnit::iter()
+                .filter(|u| u.rarity >= 0)
+                .choose(&mut thread_rng())
+                .unwrap()
+                .name;
         }
     }
 }

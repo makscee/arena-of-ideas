@@ -58,6 +58,7 @@ impl BattlePlugin {
             id: bid,
             ..default()
         });
+        GameState::Battle.set_next(world);
     }
     pub fn load_teams(left: PackedTeam, right: PackedTeam, world: &mut World) {
         world.insert_resource(BattleData {

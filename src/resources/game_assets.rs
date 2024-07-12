@@ -80,7 +80,6 @@ impl GameAssets {
         for house in THouse::iter() {
             houses.insert(house.name.clone(), house.into());
         }
-
         let ga = world.remove_resource::<GameAssets>().unwrap();
         let unit_rep = ga.unit_rep;
         let animations = ga.animations;

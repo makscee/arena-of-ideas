@@ -16,7 +16,14 @@ impl ServerSyncPlugin {
 
         let mut representations: HashMap<String, TRepresentation> = default();
         let mut units: Vec<BaseUnit> = default();
-        for unit in ga.heroes.into_values() {
+        let mut packed_units = ga.heroes.into_values().collect_vec();
+        for house in ga.houses.values() {
+            for mut summon in house.summons.iter().cloned() {
+                summon.rarity = -1;
+                packed_units.push(summon);
+            }
+        }
+        for unit in packed_units {
             if representations
                 .insert(
                     unit.name.clone(),

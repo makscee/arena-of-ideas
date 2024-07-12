@@ -247,13 +247,16 @@ impl From<FusedUnit> for PackedUnit {
         let mut rarity_colors: Vec<Color> = default();
         let mut house_colors: Vec<Color> = default();
         for base in bases {
+            let house_color = name_color(&base.house).to_color();
             rarity_colors.push(rarity_color(base.rarity).to_color());
-            house_colors.push(name_color(&base.house).to_color());
+            house_colors.push(house_color);
             result.pwr = result.pwr.max(base.pwr);
             result.hp = result.hp.max(base.hp);
             result.rarity = result.rarity.max(base.rarity);
             result.houses.push(base.house);
-            if let Some(repr) = RepresentationPlugin::get_by_id(base.name.clone()) {
+            if let Some(mut repr) = RepresentationPlugin::get_by_id(base.name.clone()) {
+                repr.mapping
+                    .insert(VarName::Color, Expression::Value(house_color.into()));
                 result.representation.children.push(Box::new(repr));
             }
         }

@@ -41,6 +41,9 @@ impl ServerPlugin {
             "select * from BaseUnit".to_owned(),
             "select * from TRepresentation".to_owned(),
             "select * from GlobalSettings".to_owned(),
+            "select * from THouse".to_owned(),
+            "select * from TAbility".to_owned(),
+            "select * from TStatus".to_owned(),
             format!("select * from TTeam where owner = {uid}"),
             format!("select * from TBattle where owner = {uid}"),
         ];

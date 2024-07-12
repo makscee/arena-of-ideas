@@ -31,6 +31,7 @@ pub struct Run {
     pub lives: u32,
     pub active: bool,
     pub round: u32,
+    pub score: u32,
     pub last_updated: u64,
 }
 
@@ -102,6 +103,10 @@ impl Run {
     #[allow(unused)]
     pub fn filter_by_round(round: u32) -> TableIter<Self> {
         Self::filter(|row| row.round == round)
+    }
+    #[allow(unused)]
+    pub fn filter_by_score(score: u32) -> TableIter<Self> {
+        Self::filter(|row| row.score == score)
     }
     #[allow(unused)]
     pub fn filter_by_last_updated(last_updated: u64) -> TableIter<Self> {

@@ -54,19 +54,26 @@ impl WidgetsPlugin {
                         .cstr_cs(DARK_WHITE, CstrStyle::Heading2)
                         .label(ui);
                     br(ui);
-                    Button::toggle_child("New Game".into()).ui(ui);
+                    let run = Run::get_current();
+                    if Button::click("Continue".into())
+                        .enabled(run.is_some())
+                        .ui(ui)
+                        .clicked()
+                    {
+                        GameState::Shop.proceed_to_target(world);
+                    }
+                    if Button::click("Start new".into()).ui(ui).clicked() {
+                        run_start();
+                        once_on_run_start(|_, _, status| match status {
+                            StdbStatus::Committed => GameState::Shop.proceed_to_target_op(),
+                            StdbStatus::Failed(e) => e.notify_error(),
+                            _ => panic!(),
+                        });
+                    }
+                    br(ui);
                     Button::toggle_child("Settings".into()).ui(ui);
                 })
                 .child(|ctx, world| {
-                    Tile::right("New Game")
-                        .title()
-                        .close_btn()
-                        .content(|ui, _| {
-                            if ui.button("test").clicked() {
-                                debug!("test");
-                            }
-                        })
-                        .show(ctx, world);
                     Tile::right("Settings")
                         .title()
                         .close_btn()

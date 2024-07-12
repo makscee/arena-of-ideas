@@ -173,7 +173,16 @@ impl ShopPlugin {
                         &run.g.to_string().cstr_cs(YELLOW, CstrStyle::Bold),
                         ui,
                     );
-                    text_dots_text(&"round".cstr(), &run.round.to_string().cstr_c(WHITE), ui);
+                    text_dots_text(
+                        &"round".cstr(),
+                        &run.round.to_string().cstr_c(DARK_WHITE),
+                        ui,
+                    );
+                    text_dots_text(
+                        &"score".cstr(),
+                        &run.score.to_string().cstr_c(DARK_WHITE),
+                        ui,
+                    );
                 }
             })
             .show(ctx, world);
@@ -432,10 +441,16 @@ impl ShopPlugin {
                 }
                 .label(ui);
                 "Run Over".cstr_cs(YELLOW, CstrStyle::Bold).label(ui);
-                format!("Final round: ")
-                    .cstr()
-                    .push(run.round.to_string().cstr_cs(YELLOW, CstrStyle::Bold))
-                    .label(ui);
+                text_dots_text(
+                    &format!("Final round").cstr(),
+                    &run.round.to_string().cstr_cs(YELLOW, CstrStyle::Bold),
+                    ui,
+                );
+                text_dots_text(
+                    &format!("Score").cstr(),
+                    &run.round.to_string().cstr_cs(YELLOW, CstrStyle::Bold),
+                    ui,
+                );
                 if Button::click("Finish".into()).ui(ui).clicked() {
                     run_finish();
                     once_on_run_finish(|_, _, status| match status {

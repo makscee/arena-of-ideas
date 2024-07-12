@@ -66,7 +66,8 @@ impl Effect {
                 let ability = GameAssets::get(world)
                     .abilities
                     .get(name)
-                    .with_context(|| format!("Ability not found {name}"))?;
+                    .with_context(|| format!("Ability not found {name}"))
+                    .unwrap();
                 let charges = context
                     .get_var(VarName::Level, world)
                     .map(|v| v.get_int().unwrap())
@@ -93,7 +94,8 @@ impl Effect {
                 let unit = GameAssets::get(world)
                     .summons
                     .get(name)
-                    .with_context(|| format!("Summon {name} not found"))?
+                    .with_context(|| format!("Summon {name} not found"))
+                    .unwrap()
                     .clone();
                 let faction = context.get_faction(world)?;
                 let unit = unit.unpack(TeamPlugin::entity(faction, world), None, None, world);

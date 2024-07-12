@@ -1,5 +1,3 @@
-use std::ops::RangeInclusive;
-
 use super::*;
 
 pub fn unit_card(t: f32, state: &VarState, ui: &mut Ui, world: &World) -> Result<()> {
@@ -54,10 +52,7 @@ pub fn unit_card(t: f32, state: &VarState, ui: &mut Ui, world: &World) -> Result
                 name.push(n.cstr_c(*c));
             }
         }
-        name.style(CstrStyle::Heading)
-            .as_label(ui)
-            .wrap(true)
-            .ui(ui);
+        name.style(CstrStyle::Heading).label(ui);
 
         const SHOWN_VARS: [(VarName, Color32); 4] = [
             (VarName::Pwr, YELLOW),
@@ -92,12 +87,16 @@ pub fn unit_card(t: f32, state: &VarState, ui: &mut Ui, world: &World) -> Result
     .response
     .rect;
 
-    let len = house_colors.len() as f32;
-    let t = gt().play_head() * 0.1;
-    for (i, color) in house_colors.iter().copied().enumerate() {
-        let from = (i as f32 / len + t).fract();
-        let to = ((i + 1) as f32 / len + t).fract();
-        lines_around_rect((from, to), &rect, color, ui);
+    if house_colors.len() > 1 {
+        let len = house_colors.len() as f32;
+        let t = gt().play_head() * 0.1;
+        for (i, color) in house_colors.iter().copied().enumerate() {
+            let from = (i as f32 / len + t).fract();
+            let to = ((i + 1) as f32 / len + t).fract();
+            lines_around_rect((from, to), &rect, color, ui);
+        }
+    } else {
+        lines_around_rect((0.0, 1.0), &rect, house_colors[0], ui);
     }
 
     ui.add_space(-ui.style().spacing.item_spacing.y + 0.5);
@@ -166,7 +165,7 @@ fn show_trigger_part(title: &str, content: Vec<Cstr>, color: Color32, ui: &mut U
             .show(ui, |ui| {
                 ui.horizontal_wrapped(|ui| {
                     for c in content {
-                        c.label(ui);
+                        c.as_label(ui).wrap(true).ui(ui);
                     }
                 })
             })
