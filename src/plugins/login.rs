@@ -17,14 +17,14 @@ impl Plugin for LoginPlugin {
 struct LoginData {
     name_field: String,
     pass_field: String,
-    identity_user: Option<User>,
+    identity_user: Option<TUser>,
 }
 
 impl LoginPlugin {
     fn login(world: &mut World) {
         let co = ConnectOption::get(world);
         let mut identity_user = None;
-        if let Some(user) = User::iter().find(|u| u.identities.contains(&co.creds.identity)) {
+        if let Some(user) = TUser::iter().find(|u| u.identities.contains(&co.creds.identity)) {
             if matches!(currently_fulfilling(), GameOption::ForceLogin) {
                 Self::complete(user.clone(), world);
             }
@@ -36,7 +36,7 @@ impl LoginPlugin {
             identity_user,
         });
     }
-    fn complete(user: User, world: &mut World) {
+    fn complete(user: TUser, world: &mut World) {
         LoginOption { user }.save(world);
         ServerPlugin::subscribe_game();
         once_on_subscription_applied(|| {
@@ -85,7 +85,7 @@ impl LoginPlugin {
                                 OperationsPlugin::add(|world| {
                                     Notification::new("New player created".to_owned()).push(world);
                                     let identity = ConnectOption::get(world).creds.identity.clone();
-                                    let user = User::find(|u| u.identities.contains(&identity))
+                                    let user = TUser::find(|u| u.identities.contains(&identity))
                                         .expect("Failed to find user after registration");
                                     world.resource_mut::<LoginData>().identity_user = Some(user);
                                 })
@@ -108,7 +108,7 @@ impl LoginPlugin {
                             spacetimedb_sdk::reducer::Status::Committed => {
                                 let name = name.clone();
                                 OperationsPlugin::add(move |world| {
-                                    let user = User::filter_by_name(name).unwrap();
+                                    let user = TUser::filter_by_name(name).unwrap();
                                     Self::complete(user, world);
                                 });
                             }

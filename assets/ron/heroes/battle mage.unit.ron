@@ -11,7 +11,7 @@
         effects: [
             (
                 Repeat(I(3), WithTarget(RandomEnemy, UseAbility("Magic Missile", 0))),
-                "use [Magic Missile] ({Level}) on random enemy 3 times",
+                "use [Magic Missile] ({Lvl}) on random enemy 3 times",
             ),
         ],
     ),

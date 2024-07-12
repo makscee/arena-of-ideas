@@ -71,9 +71,10 @@ impl GameAssets {
         world.resource::<Self>()
     }
     pub fn cache_tables(world: &mut World) {
+        info!("Cache tables start");
         let global_settings = GlobalSettings::iter().exactly_one().ok().unwrap();
         let mut heroes: HashMap<String, PackedUnit> = default();
-        for unit in BaseUnit::iter() {
+        for unit in TBaseUnit::iter() {
             heroes.insert(unit.name.clone(), unit.into());
         }
         let mut houses: HashMap<String, House> = default();
@@ -130,7 +131,7 @@ impl LoadingPlugin {
         vfxs: HashMap<String, Vfx>,
         world: &mut World,
     ) {
-        let mut colors = NAME_COLORS.lock().unwrap();
+        let mut colors = HashMap::default();
         let mut definitions = NAME_DEFINITIONS.lock().unwrap();
         let mut ability_defaults: HashMap<String, HashMap<VarName, VarValue>> = default();
         let mut abilities: HashMap<String, Ability> = default();
@@ -142,19 +143,24 @@ impl LoadingPlugin {
             for status in house.statuses.iter() {
                 statuses.insert(status.name.clone(), status.clone());
                 colors.insert(status.name.clone(), color);
-                definitions.insert(status.name.clone(), Cstr::parse(&status.description));
             }
             ability_defaults.extend(house.defaults.iter().map(|(k, v)| (k.clone(), v.clone())));
             for ability in house.abilities.iter() {
                 abilities.insert(ability.name.clone(), ability.clone());
                 colors.insert(ability.name.clone(), color);
-                definitions.insert(ability.name.clone(), Cstr::parse(&ability.description));
             }
             for unit in house.summons.iter() {
                 let mut unit = unit.clone();
                 unit.rarity = -1;
                 summons.insert(unit.name.clone(), unit.clone());
             }
+        }
+        *NAME_COLORS.lock().unwrap() = colors;
+        for status in statuses.values() {
+            definitions.insert(status.name.clone(), Cstr::parse(&status.description));
+        }
+        for ability in abilities.values() {
+            definitions.insert(ability.name.clone(), Cstr::parse(&ability.description));
         }
         let assets = GameAssets {
             global_settings,

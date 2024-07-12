@@ -38,7 +38,7 @@ impl GameOption {
 
 #[derive(Resource)]
 pub struct LoginOption {
-    pub user: User,
+    pub user: TUser,
 }
 
 #[derive(Resource, Clone)]

@@ -178,11 +178,11 @@ impl ToCstr for &Effect {
                     name.clone()
                 };
                 format!("use ability ")
-                    .cstr_c(DARK_WHITE)
+                    .cstr()
                     .push(format!("{name_base}").cstr_cs(name_color(&name), CstrStyle::Bold))
                     .take()
             }
-            _ => self.as_ref().cstr_c(DARK_WHITE),
+            _ => self.as_ref().cstr(),
         }
     }
 }

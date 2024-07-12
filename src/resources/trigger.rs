@@ -232,21 +232,21 @@ impl Trigger {
             } => {
                 for (trigger, rename) in triggers {
                     if let Some(rename) = rename {
-                        cs.0.push(rename.cstr_c(DARK_WHITE));
+                        cs.0.push(rename.cstr());
                     } else {
                         cs.0.push(trigger.cstr());
                     }
                 }
                 for (target, rename) in targets {
                     if let Some(rename) = rename {
-                        cs.1.push(rename.cstr_c(DARK_WHITE));
+                        cs.1.push(rename.cstr());
                     } else {
                         cs.1.push(target.cstr());
                     }
                 }
                 for (effect, rename) in effects {
                     if let Some(rename) = rename {
-                        cs.2.push(rename.cstr_c(DARK_WHITE));
+                        cs.2.push(Cstr::parse(rename).take());
                     } else {
                         cs.2.push(effect.cstr());
                     }
@@ -261,11 +261,9 @@ impl Trigger {
 impl ToCstr for &FireTrigger {
     fn cstr(self) -> Cstr {
         match self {
-            FireTrigger::List(list) => {
-                Cstr::join_vec(list.iter().map(|t| t.cstr_c(DARK_WHITE)).collect_vec())
-                    .join(&" + ".cstr_c(LIGHT_GRAY))
-                    .take()
-            }
+            FireTrigger::List(list) => Cstr::join_vec(list.iter().map(|t| t.cstr()).collect_vec())
+                .join(&" + ".cstr_c(LIGHT_GRAY))
+                .take(),
             FireTrigger::Period(_, delay, trigger) => {
                 format!("Every {delay} ").cstr().push(trigger.cstr()).take()
             }
@@ -278,7 +276,7 @@ impl ToCstr for &FireTrigger {
             | FireTrigger::EnemyUsedAbility(name) => self
                 .as_ref()
                 .to_case(Case::Lower)
-                .cstr_c(DARK_WHITE)
+                .cstr()
                 .push(format!(" {name}").cstr_cs(name_color(name), CstrStyle::Bold))
                 .take(),
             FireTrigger::Noop
@@ -295,7 +293,7 @@ impl ToCstr for &FireTrigger {
             | FireTrigger::AllySummon
             | FireTrigger::EnemySummon
             | FireTrigger::BeforeDeath
-            | FireTrigger::AfterKill => self.as_ref().to_case(Case::Lower).cstr_c(DARK_WHITE),
+            | FireTrigger::AfterKill => self.as_ref().to_case(Case::Lower).cstr(),
         }
     }
 }

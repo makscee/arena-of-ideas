@@ -19,9 +19,12 @@ pub fn unit_card(t: f32, state: &VarState, ui: &mut Ui, world: &World) -> Result
     let targets = state
         .get_value_at(VarName::TargetsDescription, t)?
         .get_cstr_list()?;
-    let effects = state
+    let mut effects = state
         .get_value_at(VarName::EffectsDescription, t)?
         .get_cstr_list()?;
+    for c in effects.iter_mut() {
+        c.inject_state(state, t);
+    }
     let faction = TeamPlugin::unit_faction(state.entity().unwrap(), world);
 
     let rect = Frame {

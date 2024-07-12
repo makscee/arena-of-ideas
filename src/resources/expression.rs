@@ -327,10 +327,10 @@ impl Expression {
 
 impl ToCstr for &Expression {
     fn cstr(self) -> Cstr {
-        let mut s = self.as_ref().to_case(Case::Lower).cstr_c(DARK_WHITE);
+        let mut s = self.as_ref().to_case(Case::Lower).cstr();
         match self {
             Expression::Value(v) => {
-                s.push(v.cstr_c(DARK_WHITE).wrap(("(".cstr(), ")".cstr())).take());
+                s.push(v.cstr().wrap(("(".cstr(), ")".cstr())).take());
             }
             Expression::OwnerState(v)
             | Expression::TargetState(v)
@@ -339,12 +339,12 @@ impl ToCstr for &Expression {
             | Expression::TargetStateLast(v)
             | Expression::CasterStateLast(v)
             | Expression::Context(v) => {
-                s.push(v.cstr_c(DARK_WHITE).wrap(("(".cstr(), ")".cstr())).take());
+                s.push(v.cstr().wrap(("(".cstr(), ")".cstr())).take());
             }
             Expression::AbilityContext(name, v) | Expression::AbilityState(name, v) => {
                 s.push(
                     name.cstr_cs(name_color(name), CstrStyle::Bold)
-                        .push(format!(", {v}").cstr_c(DARK_WHITE))
+                        .push(format!(", {v}").cstr())
                         .wrap(("(".cstr(), ")".cstr()))
                         .take(),
                 );
@@ -357,43 +357,24 @@ impl ToCstr for &Expression {
                 );
             }
             Expression::HexColor(v) => {
-                s.push(v.cstr_c(DARK_WHITE).wrap(("(".cstr(), ")".cstr())).take());
+                s.push(v.cstr().wrap(("(".cstr(), ")".cstr())).take());
             }
             Expression::F(v) => {
-                s.push(
-                    v.to_string()
-                        .cstr_c(DARK_WHITE)
-                        .wrap(("(".cstr(), ")".cstr()))
-                        .take(),
-                );
+                s.push(v.to_string().cstr().wrap(("(".cstr(), ")".cstr())).take());
             }
             Expression::I(v) => {
-                s.push(
-                    v.to_string()
-                        .cstr_c(DARK_WHITE)
-                        .wrap(("(".cstr(), ")".cstr()))
-                        .take(),
-                );
+                s.push(v.to_string().cstr().wrap(("(".cstr(), ")".cstr())).take());
             }
             Expression::B(v) => {
-                s.push(
-                    v.to_string()
-                        .cstr_c(DARK_WHITE)
-                        .wrap(("(".cstr(), ")".cstr()))
-                        .take(),
-                );
+                s.push(v.to_string().cstr().wrap(("(".cstr(), ")".cstr())).take());
             }
             Expression::S(v) => {
-                s.push(
-                    v.cstr_c(DARK_WHITE)
-                        .wrap(("(\"".cstr(), "\")".cstr()))
-                        .take(),
-                );
+                s.push(v.cstr().wrap(("(\"".cstr(), "\")".cstr())).take());
             }
             Expression::V2(x, y) => {
                 s.push(
                     format!("{x}, {y}")
-                        .cstr_c(DARK_WHITE)
+                        .cstr()
                         .wrap(("(".cstr(), ")".cstr()))
                         .take(),
                 );

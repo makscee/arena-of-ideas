@@ -32,7 +32,7 @@ impl From<THouse> for House {
             summons: value
                 .summons
                 .into_iter()
-                .filter_map(|u| BaseUnit::filter_by_name(u).map(|u| u.into()))
+                .filter_map(|u| TBaseUnit::filter_by_name(u).map(|u| u.into()))
                 .collect_vec(),
             defaults: ron::from_str(&value.defaults).unwrap(),
         }

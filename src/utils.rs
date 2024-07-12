@@ -295,11 +295,11 @@ pub trait TableExt {
     fn get_current() -> Option<Box<Self>>;
 }
 
-impl TableExt for Run {
+impl TableExt for TArenaRun {
     fn current() -> Self {
         *Self::get_current().unwrap()
     }
     fn get_current() -> Option<Box<Self>> {
-        Run::iter().exactly_one().ok().map(|d| Box::new(d))
+        TArenaRun::iter().exactly_one().ok().map(|d| Box::new(d))
     }
 }

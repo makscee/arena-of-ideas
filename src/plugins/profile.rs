@@ -27,7 +27,7 @@ impl ProfilePlugin {
     }
     fn update_user(world: &mut World) {
         LoginOption {
-            user: User::filter_by_id(user_id()).unwrap(),
+            user: TUser::filter_by_id(user_id()).unwrap(),
         }
         .save(world);
     }

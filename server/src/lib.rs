@@ -1,5 +1,6 @@
 mod ability;
 mod arena;
+mod arena_leaderboard;
 mod arena_pool;
 mod base_unit;
 mod battle;
@@ -14,6 +15,7 @@ mod team;
 mod user;
 
 use anyhow::Context;
+pub use arena_leaderboard::*;
 pub use arena_pool::*;
 pub use battle::*;
 pub use fused_unit::*;

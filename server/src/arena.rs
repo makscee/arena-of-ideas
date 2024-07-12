@@ -89,6 +89,11 @@ fn run_start(ctx: ReducerContext) -> Result<(), String> {
 #[spacetimedb(reducer)]
 fn run_finish(ctx: ReducerContext) -> Result<(), String> {
     let run = TArenaRun::current(&ctx)?;
+    if TArenaLeaderboard::filter_by_round(&run.round).count() == 0 {
+        TArenaLeaderboard::insert(TArenaLeaderboard::new(
+            run.round, run.score, run.owner, run.team, run.id,
+        ));
+    }
     TArenaRun::delete_by_id(&run.id);
     TArenaRunArchive::add_from_run(&run);
     Ok(())

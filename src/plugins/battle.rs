@@ -47,7 +47,7 @@ impl BattlePlugin {
         GameState::Battle.set_next(world);
     }
     fn on_enter_shop(world: &mut World) {
-        let run = Run::current();
+        let run = TArenaRun::current();
         let bid = *run.battles.last().unwrap();
         let battle = TBattle::filter_by_id(bid).unwrap();
         let left = PackedTeam::from_id(battle.team_left);

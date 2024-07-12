@@ -28,7 +28,7 @@ impl ServerPlugin {
     pub fn subscribe_connect() {
         Self::subscribe(
             [
-                "select * from User".to_owned(),
+                "select * from TUser".to_owned(),
                 "select * from GlobalData".to_owned(),
             ]
             .into(),
@@ -37,8 +37,8 @@ impl ServerPlugin {
     pub fn subscribe_game() {
         let uid = user_id();
         let q = [
-            format!("select * from Run where owner = {uid}"),
-            "select * from BaseUnit".to_owned(),
+            format!("select * from TArenaRun where owner = {uid}"),
+            "select * from TBaseUnit".to_owned(),
             "select * from TRepresentation".to_owned(),
             "select * from GlobalSettings".to_owned(),
             "select * from THouse".to_owned(),

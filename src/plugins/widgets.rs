@@ -54,7 +54,7 @@ impl WidgetsPlugin {
                         .cstr_cs(DARK_WHITE, CstrStyle::Heading2)
                         .label(ui);
                     br(ui);
-                    let run = Run::get_current();
+                    let run = TArenaRun::get_current();
                     if Button::click("Continue".into())
                         .enabled(run.is_some())
                         .ui(ui)

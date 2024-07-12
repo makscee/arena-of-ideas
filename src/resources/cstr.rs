@@ -1,7 +1,5 @@
 use std::str::FromStr;
 
-use regex::Regex;
-
 use super::*;
 
 #[derive(Default, Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]
@@ -236,39 +234,69 @@ impl Cstr {
         }
         self
     }
-    pub fn parse(mut s: &str) -> Self {
-        let mut cs = Cstr::default();
-        let mut cut = 0;
-        for ele in EXTRACT_BRACKETED.captures_iter(s) {
-            let range = ele.get(0).unwrap().range();
-            let (a, _) = s.split_at(range.start - cut);
-            cs.push(a.cstr());
-            let (a, b) = s.split_at(range.end - cut);
-            s = b;
-            cut += a.len();
-            let var_str = ele.get(1).unwrap().as_str();
-            if let Some((var_str, text)) = var_str.split_once('|') {
-                let var = VarName::from_str(var_str).unwrap();
-                cs.subs.push(CstrSub {
-                    text: SubText::VarText(var, text.into()),
-                    color: Some(WHITE),
-                    style: default(),
-                });
-            } else {
-                match VarName::from_str(var_str) {
-                    Ok(var) => {
-                        let mut var: CstrSub = var.into();
-                        var.color = Some(WHITE);
-                        cs.subs.push(var);
-                    }
-                    Err(_) => {
-                        cs.push(var_str.cstr_c(WHITE));
-                    }
-                };
+    fn parse_var(s: &str) -> CstrSub {
+        if let Some((s, text)) = s.split_once('|') {
+            let var = VarName::from_str(s).unwrap();
+            CstrSub {
+                text: SubText::VarText(var, text.into()),
+                color: Some(WHITE),
+                style: default(),
+            }
+        } else {
+            match VarName::from_str(s) {
+                Ok(var) => {
+                    let mut var: CstrSub = var.into();
+                    var.color = Some(WHITE);
+                    var
+                }
+                Err(_) => s.into(),
             }
         }
-        if !s.is_empty() {
-            cs.push(s.cstr());
+    }
+    fn parse_definition(s: &str) -> CstrSub {
+        let color = name_color(s);
+        CstrSub {
+            text: s.into(),
+            color: Some(color),
+            style: CstrStyle::Bold,
+        }
+    }
+    pub fn parse(s: &str) -> Self {
+        let mut cs = Cstr::default();
+        let mut cur_str = String::new();
+        let mut bracket = None;
+        for ch in s.chars() {
+            if ch == '{' || ch == '[' {
+                if bracket.is_some() {
+                    panic!("Brackets already opened: {s}");
+                }
+                bracket = Some(ch);
+                if !cur_str.is_empty() {
+                    cs.push(cur_str.cstr());
+                    cur_str.clear();
+                }
+            } else if ch == '}' {
+                if bracket.is_some_and(|b| b == '{') {
+                    cs.subs.push(Self::parse_var(&cur_str));
+                    cur_str.clear();
+                } else {
+                    panic!("Wrong closing brackets: {s}");
+                }
+                bracket = None;
+            } else if ch == ']' {
+                if bracket.is_some_and(|b| b == '[') {
+                    cs.subs.push(Self::parse_definition(&cur_str));
+                    cur_str.clear();
+                } else {
+                    panic!("Wrong closing brackets: {s}");
+                }
+                bracket = None;
+            } else {
+                cur_str.push(ch);
+            }
+        }
+        if !cur_str.is_empty() {
+            cs.push(cur_str.cstr());
         }
         cs
     }
@@ -276,10 +304,6 @@ impl Cstr {
     pub fn take(&mut self) -> Self {
         mem::take(self)
     }
-}
-
-lazy_static! {
-    static ref EXTRACT_BRACKETED: Regex = Regex::new(r"\{(.*?)\}").unwrap();
 }
 
 impl ToString for Cstr {

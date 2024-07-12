@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use spacetimedb::Timestamp;
 
 use super::*;
@@ -8,17 +9,20 @@ pub struct GlobalData {
     always_zero: u32,
     next_id: GID,
     pub game_version: String,
+    pub season: u32,
     pub last_sync: Timestamp,
 }
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 impl GlobalData {
     pub fn init() -> Result<(), String> {
+        let season = VERSION.split(".").collect_vec()[1].parse().unwrap();
         GlobalData::insert(GlobalData {
             always_zero: 0,
             next_id: 1,
             game_version: VERSION.to_owned(),
             last_sync: Timestamp::UNIX_EPOCH,
+            season,
         })?;
         Ok(())
     }

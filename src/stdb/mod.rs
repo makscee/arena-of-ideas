@@ -48,6 +48,7 @@ pub mod stack_team_reducer;
 pub mod submit_battle_result_reducer;
 pub mod sync_all_assets_reducer;
 pub mod t_ability;
+pub mod t_arena_leaderboard;
 pub mod t_arena_pool;
 pub mod t_arena_run;
 pub mod t_arena_run_archive;
@@ -89,6 +90,7 @@ pub use stack_team_reducer::*;
 pub use submit_battle_result_reducer::*;
 pub use sync_all_assets_reducer::*;
 pub use t_ability::*;
+pub use t_arena_leaderboard::*;
 pub use t_arena_pool::*;
 pub use t_arena_run::*;
 pub use t_arena_run_archive::*;
@@ -154,6 +156,11 @@ impl SpacetimeModule for Module {
                 callbacks,
                 table_update,
             ),
+            "TArenaLeaderboard" => client_cache
+                .handle_table_update_no_primary_key::<t_arena_leaderboard::TArenaLeaderboard>(
+                    callbacks,
+                    table_update,
+                ),
             "TArenaPool" => client_cache
                 .handle_table_update_with_primary_key::<t_arena_pool::TArenaPool>(
                     callbacks,
@@ -208,6 +215,11 @@ impl SpacetimeModule for Module {
             state,
         );
         reminders.invoke_callbacks::<t_ability::TAbility>(worker, &reducer_event, state);
+        reminders.invoke_callbacks::<t_arena_leaderboard::TArenaLeaderboard>(
+            worker,
+            &reducer_event,
+            state,
+        );
         reminders.invoke_callbacks::<t_arena_pool::TArenaPool>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_arena_run::TArenaRun>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_arena_run_archive::TArenaRunArchive>(
@@ -281,6 +293,10 @@ match &function_call.reducer[..] {
             "TAbility" => {
                 client_cache.handle_resubscribe_for_type::<t_ability::TAbility>(callbacks, new_subs)
             }
+            "TArenaLeaderboard" => client_cache
+                .handle_resubscribe_for_type::<t_arena_leaderboard::TArenaLeaderboard>(
+                    callbacks, new_subs,
+                ),
             "TArenaPool" => client_cache
                 .handle_resubscribe_for_type::<t_arena_pool::TArenaPool>(callbacks, new_subs),
             "TArenaRun" => client_cache

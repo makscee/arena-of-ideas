@@ -25,7 +25,7 @@ impl Plugin for ShopPlugin {
 #[derive(Resource, Clone, Default)]
 pub struct ShopData {
     pub case_height: f32,
-    callback: Option<UpdateCallbackId<Run>>,
+    callback: Option<UpdateCallbackId<TArenaRun>>,
     stack_source: Option<(usize, Faction)>,
     stack_targets: Vec<usize>,
     fuse_source: Option<usize>,
@@ -40,7 +40,7 @@ impl ShopPlugin {
         TeamPlugin::change_ability_var_int("Siphon".into(), VarName::M1, 1, Faction::Team, world);
     }
     fn enter(mut sd: ResMut<ShopData>) {
-        if let Some(run) = Run::get_current() {
+        if let Some(run) = TArenaRun::get_current() {
             if !run.active {
                 GameState::GameOver.set_next_op();
                 return;
@@ -50,17 +50,17 @@ impl ShopPlugin {
             run_start();
             once_on_run_start(|_, _, status| match status {
                 spacetimedb_sdk::reducer::Status::Committed => OperationsPlugin::add(|world| {
-                    Self::sync_run(Run::current(), world);
+                    Self::sync_run(TArenaRun::current(), world);
                 }),
                 spacetimedb_sdk::reducer::Status::Failed(e) => {
-                    Notification::new(format!("Run start error: {e}"))
+                    Notification::new(format!("Arena run start error: {e}"))
                         .error()
                         .push_op()
                 }
                 _ => panic!(),
             });
         }
-        let cb = Run::on_update(|_, run, _| {
+        let cb = TArenaRun::on_update(|_, run, _| {
             let run = run.clone();
             OperationsPlugin::add(|world| Self::sync_run(run, world))
         });
@@ -69,10 +69,10 @@ impl ShopPlugin {
     fn exit(world: &mut World) {
         world.game_clear();
         if let Some(cb) = world.resource_mut::<ShopData>().callback.take() {
-            Run::remove_on_update(cb);
+            TArenaRun::remove_on_update(cb);
         }
     }
-    fn sync_run(run: Run, world: &mut World) {
+    fn sync_run(run: TArenaRun, world: &mut World) {
         debug!("Sync run");
         let mut shop_units: HashMap<u64, Entity> = HashMap::from_iter(
             UnitPlugin::collect_faction(Faction::Shop, world)
@@ -167,7 +167,7 @@ impl ShopPlugin {
             .non_resizable()
             .content(|ui, _| {
                 text_dots_text(&"name".cstr(), &user_name().cstr_c(WHITE), ui);
-                if let Some(run) = Run::get_current() {
+                if let Some(run) = TArenaRun::get_current() {
                     text_dots_text(
                         &"G".cstr(),
                         &run.g.to_string().cstr_cs(YELLOW, CstrStyle::Bold),
@@ -238,7 +238,7 @@ impl ShopPlugin {
         world.resource_mut::<ShopData>().stack_source = None;
     }
     pub fn show_containers(wd: &mut WidgetData, ui: &mut Ui, world: &mut World) {
-        if let Some(run) = Run::get_current() {
+        if let Some(run) = TArenaRun::get_current() {
             if let Some((_, pos)) = ui.ctx().get_dragged() {
                 if let Some(pointer) = ui.ctx().pointer_latest_pos() {
                     ui.painter().arrow(
@@ -272,7 +272,7 @@ impl ShopPlugin {
                 .offset([0.0, -sd.case_height])
                 .slots(run.shop_slots.len())
                 .top_content(move |ui, _| {
-                    if Run::current().fusion.is_some() {
+                    if TArenaRun::current().fusion.is_some() {
                         if Button::click("Cancel".into()).ui(ui).clicked() {
                             fuse_cancel();
                         }
@@ -342,7 +342,7 @@ impl ShopPlugin {
                 .hover_content(Self::container_on_hover)
                 .ui(wd, ui, world);
             let slots = GameAssets::get(world).global_settings.team_slots as usize;
-            let run = Run::current();
+            let run = TArenaRun::current();
             UnitContainer::new(Faction::Team)
                 .direction(Side::Bottom)
                 .offset([0.0, sd.case_height])
@@ -428,7 +428,7 @@ impl ShopPlugin {
         }
     }
     pub fn game_over_ui(ui: &mut Ui) {
-        let Some(run) = Run::get_current() else {
+        let Some(run) = TArenaRun::get_current() else {
             return;
         };
         center_window("game_over", ui, |ui| {
@@ -440,7 +440,7 @@ impl ShopPlugin {
                     "Defeat".cstr_cs(RED, CstrStyle::Heading)
                 }
                 .label(ui);
-                "Run Over".cstr_cs(YELLOW, CstrStyle::Bold).label(ui);
+                "TArenaRun Over".cstr_cs(YELLOW, CstrStyle::Bold).label(ui);
                 text_dots_text(
                     &format!("Final round").cstr(),
                     &run.round.to_string().cstr_cs(YELLOW, CstrStyle::Bold),

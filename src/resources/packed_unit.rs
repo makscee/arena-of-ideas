@@ -143,7 +143,7 @@ impl PackedUnit {
     }
 }
 
-impl From<PackedUnit> for BaseUnit {
+impl From<PackedUnit> for TBaseUnit {
     fn from(value: PackedUnit) -> Self {
         let (triggers, targets, effects) = match value.trigger {
             Trigger::Fire {
@@ -179,8 +179,8 @@ impl From<PackedUnit> for BaseUnit {
     }
 }
 
-impl From<BaseUnit> for PackedUnit {
-    fn from(value: BaseUnit) -> Self {
+impl From<TBaseUnit> for PackedUnit {
+    fn from(value: TBaseUnit) -> Self {
         let triggers = value.triggers();
         let targets = value.targets();
         let effects = value.effects();
@@ -213,12 +213,12 @@ impl From<BaseUnit> for PackedUnit {
 
 impl From<FusedUnit> for PackedUnit {
     fn from(value: FusedUnit) -> Self {
-        let bases: Vec<BaseUnit> = value
+        let bases: Vec<TBaseUnit> = value
             .bases
             .iter()
             .map(|name| {
-                BaseUnit::filter_by_name(name.clone())
-                    .with_context(|| format!("BaseUnit {name} not found"))
+                TBaseUnit::filter_by_name(name.clone())
+                    .with_context(|| format!("TBaseUnit {name} not found"))
                     .unwrap()
             })
             .collect_vec();
@@ -276,7 +276,7 @@ trait BaseUnitExtract {
     fn effects(&self) -> Vec<(Effect, Option<String>)>;
 }
 
-impl BaseUnitExtract for BaseUnit {
+impl BaseUnitExtract for TBaseUnit {
     fn triggers(&self) -> Vec<(FireTrigger, Option<String>)> {
         self.triggers
             .iter()
