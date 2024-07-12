@@ -20,7 +20,6 @@ use spacetimedb_sdk::{
 };
 use std::sync::Arc;
 
-pub mod base_unit;
 pub mod fuse_cancel_reducer;
 pub mod fuse_choose_reducer;
 pub mod fuse_start_reducer;
@@ -33,8 +32,6 @@ pub mod login_reducer;
 pub mod logout_reducer;
 pub mod register_empty_reducer;
 pub mod register_reducer;
-pub mod run;
-pub mod run_archive;
 pub mod run_finish_reducer;
 pub mod run_start_reducer;
 pub mod set_name_reducer;
@@ -52,16 +49,18 @@ pub mod submit_battle_result_reducer;
 pub mod sync_all_assets_reducer;
 pub mod t_ability;
 pub mod t_arena_pool;
+pub mod t_arena_run;
+pub mod t_arena_run_archive;
+pub mod t_base_unit;
 pub mod t_battle;
 pub mod t_battle_result;
 pub mod t_house;
 pub mod t_representation;
 pub mod t_status;
 pub mod t_team;
+pub mod t_user;
 pub mod team_slot;
-pub mod user;
 
-pub use base_unit::*;
 pub use fuse_cancel_reducer::*;
 pub use fuse_choose_reducer::*;
 pub use fuse_start_reducer::*;
@@ -74,8 +73,6 @@ pub use login_reducer::*;
 pub use logout_reducer::*;
 pub use register_empty_reducer::*;
 pub use register_reducer::*;
-pub use run::*;
-pub use run_archive::*;
 pub use run_finish_reducer::*;
 pub use run_start_reducer::*;
 pub use set_name_reducer::*;
@@ -93,14 +90,17 @@ pub use submit_battle_result_reducer::*;
 pub use sync_all_assets_reducer::*;
 pub use t_ability::*;
 pub use t_arena_pool::*;
+pub use t_arena_run::*;
+pub use t_arena_run_archive::*;
+pub use t_base_unit::*;
 pub use t_battle::*;
 pub use t_battle_result::*;
 pub use t_house::*;
 pub use t_representation::*;
 pub use t_status::*;
 pub use t_team::*;
+pub use t_user::*;
 pub use team_slot::*;
-pub use user::*;
 
 #[allow(unused)]
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
@@ -140,10 +140,6 @@ impl SpacetimeModule for Module {
     ) {
         let table_name = &table_update.table_name[..];
         match table_name {
-            "BaseUnit" => client_cache.handle_table_update_with_primary_key::<base_unit::BaseUnit>(
-                callbacks,
-                table_update,
-            ),
             "GlobalData" => client_cache
                 .handle_table_update_no_primary_key::<global_data::GlobalData>(
                     callbacks,
@@ -154,19 +150,27 @@ impl SpacetimeModule for Module {
                     callbacks,
                     table_update,
                 ),
-            "Run" => client_cache
-                .handle_table_update_with_primary_key::<run::Run>(callbacks, table_update),
-            "RunArchive" => client_cache
-                .handle_table_update_with_primary_key::<run_archive::RunArchive>(
-                    callbacks,
-                    table_update,
-                ),
             "TAbility" => client_cache.handle_table_update_with_primary_key::<t_ability::TAbility>(
                 callbacks,
                 table_update,
             ),
             "TArenaPool" => client_cache
                 .handle_table_update_with_primary_key::<t_arena_pool::TArenaPool>(
+                    callbacks,
+                    table_update,
+                ),
+            "TArenaRun" => client_cache
+                .handle_table_update_with_primary_key::<t_arena_run::TArenaRun>(
+                    callbacks,
+                    table_update,
+                ),
+            "TArenaRunArchive" => client_cache
+                .handle_table_update_with_primary_key::<t_arena_run_archive::TArenaRunArchive>(
+                    callbacks,
+                    table_update,
+                ),
+            "TBaseUnit" => client_cache
+                .handle_table_update_with_primary_key::<t_base_unit::TBaseUnit>(
                     callbacks,
                     table_update,
                 ),
@@ -183,8 +187,8 @@ impl SpacetimeModule for Module {
                 .handle_table_update_with_primary_key::<t_status::TStatus>(callbacks, table_update),
             "TTeam" => client_cache
                 .handle_table_update_with_primary_key::<t_team::TTeam>(callbacks, table_update),
-            "User" => client_cache
-                .handle_table_update_with_primary_key::<user::User>(callbacks, table_update),
+            "TUser" => client_cache
+                .handle_table_update_with_primary_key::<t_user::TUser>(callbacks, table_update),
             _ => {
                 spacetimedb_sdk::log::error!("TableRowOperation on unknown table {:?}", table_name)
             }
@@ -197,17 +201,21 @@ impl SpacetimeModule for Module {
         reducer_event: Option<Arc<AnyReducerEvent>>,
         state: &Arc<ClientCache>,
     ) {
-        reminders.invoke_callbacks::<base_unit::BaseUnit>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<global_data::GlobalData>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<global_settings::GlobalSettings>(
             worker,
             &reducer_event,
             state,
         );
-        reminders.invoke_callbacks::<run::Run>(worker, &reducer_event, state);
-        reminders.invoke_callbacks::<run_archive::RunArchive>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_ability::TAbility>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_arena_pool::TArenaPool>(worker, &reducer_event, state);
+        reminders.invoke_callbacks::<t_arena_run::TArenaRun>(worker, &reducer_event, state);
+        reminders.invoke_callbacks::<t_arena_run_archive::TArenaRunArchive>(
+            worker,
+            &reducer_event,
+            state,
+        );
+        reminders.invoke_callbacks::<t_base_unit::TBaseUnit>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_battle::TBattle>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_house::THouse>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_representation::TRepresentation>(
@@ -217,7 +225,7 @@ impl SpacetimeModule for Module {
         );
         reminders.invoke_callbacks::<t_status::TStatus>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_team::TTeam>(worker, &reducer_event, state);
-        reminders.invoke_callbacks::<user::User>(worker, &reducer_event, state);
+        reminders.invoke_callbacks::<t_user::TUser>(worker, &reducer_event, state);
     }
     fn handle_event(
         &self,
@@ -264,23 +272,25 @@ match &function_call.reducer[..] {
     ) {
         let table_name = &new_subs.table_name[..];
         match table_name {
-            "BaseUnit" => {
-                client_cache.handle_resubscribe_for_type::<base_unit::BaseUnit>(callbacks, new_subs)
-            }
             "GlobalData" => client_cache
                 .handle_resubscribe_for_type::<global_data::GlobalData>(callbacks, new_subs),
             "GlobalSettings" => client_cache
                 .handle_resubscribe_for_type::<global_settings::GlobalSettings>(
                     callbacks, new_subs,
                 ),
-            "Run" => client_cache.handle_resubscribe_for_type::<run::Run>(callbacks, new_subs),
-            "RunArchive" => client_cache
-                .handle_resubscribe_for_type::<run_archive::RunArchive>(callbacks, new_subs),
             "TAbility" => {
                 client_cache.handle_resubscribe_for_type::<t_ability::TAbility>(callbacks, new_subs)
             }
             "TArenaPool" => client_cache
                 .handle_resubscribe_for_type::<t_arena_pool::TArenaPool>(callbacks, new_subs),
+            "TArenaRun" => client_cache
+                .handle_resubscribe_for_type::<t_arena_run::TArenaRun>(callbacks, new_subs),
+            "TArenaRunArchive" => client_cache
+                .handle_resubscribe_for_type::<t_arena_run_archive::TArenaRunArchive>(
+                    callbacks, new_subs,
+                ),
+            "TBaseUnit" => client_cache
+                .handle_resubscribe_for_type::<t_base_unit::TBaseUnit>(callbacks, new_subs),
             "TBattle" => {
                 client_cache.handle_resubscribe_for_type::<t_battle::TBattle>(callbacks, new_subs)
             }
@@ -297,7 +307,9 @@ match &function_call.reducer[..] {
             "TTeam" => {
                 client_cache.handle_resubscribe_for_type::<t_team::TTeam>(callbacks, new_subs)
             }
-            "User" => client_cache.handle_resubscribe_for_type::<user::User>(callbacks, new_subs),
+            "TUser" => {
+                client_cache.handle_resubscribe_for_type::<t_user::TUser>(callbacks, new_subs)
+            }
             _ => {
                 spacetimedb_sdk::log::error!("TableRowOperation on unknown table {:?}", table_name)
             }

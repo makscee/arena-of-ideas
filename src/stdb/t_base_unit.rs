@@ -13,7 +13,7 @@ use spacetimedb_sdk::{
 };
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
-pub struct BaseUnit {
+pub struct TBaseUnit {
     pub name: String,
     pub pwr: i32,
     pub hp: i32,
@@ -24,19 +24,19 @@ pub struct BaseUnit {
     pub effects: Vec<String>,
 }
 
-impl TableType for BaseUnit {
-    const TABLE_NAME: &'static str = "BaseUnit";
+impl TableType for TBaseUnit {
+    const TABLE_NAME: &'static str = "TBaseUnit";
     type ReducerEvent = super::ReducerEvent;
 }
 
-impl TableWithPrimaryKey for BaseUnit {
+impl TableWithPrimaryKey for TBaseUnit {
     type PrimaryKey = String;
     fn primary_key(&self) -> &Self::PrimaryKey {
         &self.name
     }
 }
 
-impl BaseUnit {
+impl TBaseUnit {
     #[allow(unused)]
     pub fn filter_by_name(name: String) -> Option<Self> {
         Self::find(|row| row.name == name)

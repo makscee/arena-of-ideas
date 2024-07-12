@@ -1,12 +1,12 @@
 use rand::{seq::IteratorRandom, thread_rng};
 use spacetimedb::Timestamp;
 
-use self::base_unit::BaseUnit;
+use self::base_unit::TBaseUnit;
 
 use super::*;
 
 #[spacetimedb(table)]
-struct Run {
+struct TArenaRun {
     #[primarykey]
     id: GID,
     #[unique]
@@ -30,7 +30,7 @@ struct Run {
 }
 
 #[spacetimedb(table)]
-struct RunArchive {
+struct TArenaRunArchive {
     #[primarykey]
     id: GID,
     owner: GID,
@@ -39,8 +39,8 @@ struct RunArchive {
     round: u32,
 }
 
-impl RunArchive {
-    fn add_from_run(run: &Run) {
+impl TArenaRunArchive {
+    fn add_from_run(run: &TArenaRun) {
         Self::insert(Self {
             id: run.id,
             owner: run.owner,
@@ -78,25 +78,25 @@ struct Fusion {
 
 #[spacetimedb(reducer)]
 fn run_start(ctx: ReducerContext) -> Result<(), String> {
-    let user = User::find_by_identity(&ctx.sender)?;
-    Run::delete_by_owner(&user.id);
-    let mut run = Run::new(user.id);
+    let user = TUser::find_by_identity(&ctx.sender)?;
+    TArenaRun::delete_by_owner(&user.id);
+    let mut run = TArenaRun::new(user.id);
     run.fill_case();
-    Run::insert(run)?;
+    TArenaRun::insert(run)?;
     Ok(())
 }
 
 #[spacetimedb(reducer)]
 fn run_finish(ctx: ReducerContext) -> Result<(), String> {
-    let run = Run::current(&ctx)?;
-    Run::delete_by_id(&run.id);
-    RunArchive::add_from_run(&run);
+    let run = TArenaRun::current(&ctx)?;
+    TArenaRun::delete_by_id(&run.id);
+    TArenaRunArchive::add_from_run(&run);
     Ok(())
 }
 
 #[spacetimedb(reducer)]
 fn shop_finish(ctx: ReducerContext) -> Result<(), String> {
-    let mut run = Run::current(&ctx)?;
+    let mut run = TArenaRun::current(&ctx)?;
     let team = TTeam::get(run.team)?.save_clone();
     let enemy = TArenaPool::get_random(run.round)
         .map(|t| t.team)
@@ -114,7 +114,7 @@ fn shop_finish(ctx: ReducerContext) -> Result<(), String> {
 
 #[spacetimedb(reducer)]
 fn submit_battle_result(ctx: ReducerContext, result: TBattleResult) -> Result<(), String> {
-    let mut run = Run::current(&ctx)?;
+    let mut run = TArenaRun::current(&ctx)?;
     let bid = *run.battles.last().context_str("Last battle not present")?;
     let mut battle = TBattle::get(bid)?;
     let is_no_enemy = battle.team_right == 0;
@@ -137,7 +137,7 @@ fn submit_battle_result(ctx: ReducerContext, result: TBattleResult) -> Result<()
 
 #[spacetimedb(reducer)]
 fn shop_reorder(ctx: ReducerContext, from: u8, to: u8) -> Result<(), String> {
-    let run = Run::current(&ctx)?;
+    let run = TArenaRun::current(&ctx)?;
     let mut team = TTeam::get(run.team)?;
     let from = from as usize;
     let to = to as usize;
@@ -153,7 +153,7 @@ fn shop_reorder(ctx: ReducerContext, from: u8, to: u8) -> Result<(), String> {
 
 #[spacetimedb(reducer)]
 fn shop_reroll(ctx: ReducerContext) -> Result<(), String> {
-    let mut run = Run::current(&ctx)?;
+    let mut run = TArenaRun::current(&ctx)?;
     if run.g < run.price_reroll {
         return Err("Not enough G".into());
     }
@@ -165,7 +165,7 @@ fn shop_reroll(ctx: ReducerContext) -> Result<(), String> {
 
 #[spacetimedb(reducer)]
 fn shop_buy(ctx: ReducerContext, slot: u8) -> Result<(), String> {
-    let mut run = Run::current(&ctx)?;
+    let mut run = TArenaRun::current(&ctx)?;
     let unit = run.buy(slot, 0)?;
     run.add_to_team(FusedUnit::from_base(unit, next_id()))?;
     run.save();
@@ -174,7 +174,7 @@ fn shop_buy(ctx: ReducerContext, slot: u8) -> Result<(), String> {
 
 #[spacetimedb(reducer)]
 fn shop_sell(ctx: ReducerContext, slot: u8) -> Result<(), String> {
-    let mut run = Run::current(&ctx)?;
+    let mut run = TArenaRun::current(&ctx)?;
     run.sell(slot as usize)?;
     run.save();
     Ok(())
@@ -182,7 +182,7 @@ fn shop_sell(ctx: ReducerContext, slot: u8) -> Result<(), String> {
 
 #[spacetimedb(reducer)]
 fn shop_change_g(ctx: ReducerContext, delta: i32) -> Result<(), String> {
-    let mut run = Run::current(&ctx)?;
+    let mut run = TArenaRun::current(&ctx)?;
     run.g += delta;
     run.save();
     Ok(())
@@ -190,7 +190,7 @@ fn shop_change_g(ctx: ReducerContext, delta: i32) -> Result<(), String> {
 
 #[spacetimedb(reducer)]
 fn fuse_start(ctx: ReducerContext, target: u8, source: u8) -> Result<(), String> {
-    let mut run = Run::current(&ctx)?;
+    let mut run = TArenaRun::current(&ctx)?;
     let team = run.team()?;
 
     let mut fusion = Fusion {
@@ -236,7 +236,7 @@ fn fuse_start(ctx: ReducerContext, target: u8, source: u8) -> Result<(), String>
 
 #[spacetimedb(reducer)]
 fn fuse_cancel(ctx: ReducerContext) -> Result<(), String> {
-    let mut run = Run::current(&ctx)?;
+    let mut run = TArenaRun::current(&ctx)?;
     if run.fusion.is_none() {
         return Err("Fusion not started".to_owned());
     }
@@ -247,7 +247,7 @@ fn fuse_cancel(ctx: ReducerContext) -> Result<(), String> {
 
 #[spacetimedb(reducer)]
 fn fuse_choose(ctx: ReducerContext, slot: u8) -> Result<(), String> {
-    let mut run = Run::current(&ctx)?;
+    let mut run = TArenaRun::current(&ctx)?;
     let Fusion {
         options,
         source,
@@ -270,7 +270,7 @@ fn fuse_choose(ctx: ReducerContext, slot: u8) -> Result<(), String> {
 
 #[spacetimedb(reducer)]
 fn stack_shop(ctx: ReducerContext, source: u8, target: u8) -> Result<(), String> {
-    let mut run = Run::current(&ctx)?;
+    let mut run = TArenaRun::current(&ctx)?;
     let unit = run.buy(source, 1)?;
     let mut team = run.team()?;
     let target = team
@@ -291,7 +291,7 @@ fn stack_shop(ctx: ReducerContext, source: u8, target: u8) -> Result<(), String>
 
 #[spacetimedb(reducer)]
 fn stack_team(ctx: ReducerContext, source: u8, target: u8) -> Result<(), String> {
-    let mut run = Run::current(&ctx)?;
+    let mut run = TArenaRun::current(&ctx)?;
     let mut team = run.team()?;
     let source_unit = team.units[source as usize].clone();
     let target_unit = team
@@ -312,7 +312,7 @@ fn stack_team(ctx: ReducerContext, source: u8, target: u8) -> Result<(), String>
     Ok(())
 }
 
-impl Run {
+impl TArenaRun {
     fn new(user_id: u64) -> Self {
         let gs = GlobalSettings::get();
         Self {
@@ -335,7 +335,7 @@ impl Run {
         }
     }
     fn current(ctx: &ReducerContext) -> Result<Self, String> {
-        Self::filter_by_owner(&User::find_by_identity(&ctx.sender)?.id)
+        Self::filter_by_owner(&TUser::find_by_identity(&ctx.sender)?.id)
             .context_str("No arena run in progress")
     }
     fn buy(&mut self, slot: u8, discount: i32) -> Result<String, String> {
@@ -419,7 +419,7 @@ impl Run {
             s.available = true;
             s.price = self.price_unit;
             s.id = id;
-            s.unit = BaseUnit::iter()
+            s.unit = TBaseUnit::iter()
                 .filter(|u| u.rarity >= 0)
                 .choose(&mut thread_rng())
                 .unwrap()

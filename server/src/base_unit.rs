@@ -1,7 +1,7 @@
 use super::*;
 
 #[spacetimedb(table)]
-pub struct BaseUnit {
+pub struct TBaseUnit {
     #[primarykey]
     pub name: String,
     pub pwr: i32,

@@ -1,4 +1,5 @@
 mod ability;
+mod arena;
 mod arena_pool;
 mod base_unit;
 mod battle;
@@ -7,7 +8,6 @@ mod global_data;
 mod global_settings;
 mod house;
 mod representation;
-mod run;
 mod status;
 mod sync;
 mod team;

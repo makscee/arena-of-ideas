@@ -2,9 +2,9 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN RUST INSTEAD.
 
 #![allow(unused_imports)]
-use super::base_unit::BaseUnit;
 use super::global_settings::GlobalSettings;
 use super::t_ability::TAbility;
+use super::t_base_unit::TBaseUnit;
 use super::t_house::THouse;
 use super::t_representation::TRepresentation;
 use super::t_status::TStatus;
@@ -22,7 +22,7 @@ use spacetimedb_sdk::{
 pub struct SyncAllAssetsArgs {
     pub gs: GlobalSettings,
     pub representations: Vec<TRepresentation>,
-    pub units: Vec<BaseUnit>,
+    pub units: Vec<TBaseUnit>,
     pub houses: Vec<THouse>,
     pub abilities: Vec<TAbility>,
     pub statuses: Vec<TStatus>,
@@ -36,7 +36,7 @@ impl Reducer for SyncAllAssetsArgs {
 pub fn sync_all_assets(
     gs: GlobalSettings,
     representations: Vec<TRepresentation>,
-    units: Vec<BaseUnit>,
+    units: Vec<TBaseUnit>,
     houses: Vec<THouse>,
     abilities: Vec<TAbility>,
     statuses: Vec<TStatus>,
@@ -60,7 +60,7 @@ pub fn on_sync_all_assets(
             &Status,
             &GlobalSettings,
             &Vec<TRepresentation>,
-            &Vec<BaseUnit>,
+            &Vec<TBaseUnit>,
             &Vec<THouse>,
             &Vec<TAbility>,
             &Vec<TStatus>,
@@ -98,7 +98,7 @@ pub fn once_on_sync_all_assets(
             &Status,
             &GlobalSettings,
             &Vec<TRepresentation>,
-            &Vec<BaseUnit>,
+            &Vec<TBaseUnit>,
             &Vec<THouse>,
             &Vec<TAbility>,
             &Vec<TStatus>,

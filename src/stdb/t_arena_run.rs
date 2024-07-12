@@ -16,7 +16,7 @@ use spacetimedb_sdk::{
 };
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
-pub struct Run {
+pub struct TArenaRun {
     pub id: u64,
     pub owner: u64,
     pub team: u64,
@@ -35,19 +35,19 @@ pub struct Run {
     pub last_updated: u64,
 }
 
-impl TableType for Run {
-    const TABLE_NAME: &'static str = "Run";
+impl TableType for TArenaRun {
+    const TABLE_NAME: &'static str = "TArenaRun";
     type ReducerEvent = super::ReducerEvent;
 }
 
-impl TableWithPrimaryKey for Run {
+impl TableWithPrimaryKey for TArenaRun {
     type PrimaryKey = u64;
     fn primary_key(&self) -> &Self::PrimaryKey {
         &self.id
     }
 }
 
-impl Run {
+impl TArenaRun {
     #[allow(unused)]
     pub fn filter_by_id(id: u64) -> Option<Self> {
         Self::find(|row| row.id == id)

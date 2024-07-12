@@ -1,6 +1,6 @@
 use itertools::Itertools;
 
-use self::base_unit::BaseUnit;
+use self::base_unit::TBaseUnit;
 
 use super::*;
 
@@ -32,10 +32,10 @@ impl FusedUnit {
             id,
         }
     }
-    pub fn get_bases(&self) -> Vec<BaseUnit> {
+    pub fn get_bases(&self) -> Vec<TBaseUnit> {
         self.bases
             .iter()
-            .map(|b| BaseUnit::filter_by_name(b).unwrap())
+            .map(|b| TBaseUnit::filter_by_name(b).unwrap())
             .collect_vec()
     }
     pub fn get_houses(&self) -> Vec<String> {
@@ -46,7 +46,7 @@ impl FusedUnit {
             return name.eq(&self.bases[0]);
         } else {
             self.get_houses()
-                .contains(&BaseUnit::filter_by_name(name).unwrap().house)
+                .contains(&TBaseUnit::filter_by_name(name).unwrap().house)
         }
     }
     pub fn can_stack_fused(&self, unit: &FusedUnit) -> bool {
