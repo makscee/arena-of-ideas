@@ -7,13 +7,13 @@ pub struct Button {
     variant: ButtonVariant,
     title: Option<String>,
     enabled: bool,
+    style: Option<egui::Style>,
 }
 
 #[derive(Default)]
 enum ButtonVariant {
     #[default]
     Click,
-    ClickGray,
     ToggleChild,
 }
 
@@ -24,6 +24,7 @@ impl Default for Button {
             variant: default(),
             title: default(),
             enabled: true,
+            style: default(),
         }
     }
 }
@@ -39,12 +40,21 @@ impl Button {
             ..default()
         }
     }
-    pub fn gray(name: String) -> Self {
-        Self {
-            name,
-            variant: ButtonVariant::ClickGray,
-            ..default()
-        }
+    pub fn set_style(mut self, style: Style) -> Self {
+        self.style = Some(style);
+        self
+    }
+    pub fn gray(mut self) -> Self {
+        let style = self.style.get_or_insert(default_style());
+        style.visuals.widgets.inactive.fg_stroke.color = LIGHT_GRAY;
+        style.visuals.widgets.hovered.fg_stroke.color = LIGHT_GRAY;
+        self
+    }
+    pub fn bg(mut self) -> Self {
+        let style = self.style.get_or_insert(default_style());
+        style.visuals.widgets.inactive.weak_bg_fill = DARK_GRAY;
+        style.visuals.widgets.hovered.weak_bg_fill = DARK_GRAY;
+        self
     }
     pub fn title(mut self, text: String) -> Self {
         self.title = Some(text);
@@ -54,28 +64,25 @@ impl Button {
         self.enabled = value;
         self
     }
-    pub fn ui(self, ui: &mut Ui) -> Response {
+    pub fn ui(mut self, ui: &mut Ui) -> Response {
         ui.ctx().add_path(&self.name);
         let path = ui.ctx().path();
-        if let Some(title) = self.title {
-            title.cstr().label(ui);
-        }
 
         match self.variant {
             ButtonVariant::Click => {}
-            ButtonVariant::ClickGray => {
-                let style = ui.style_mut();
-                style.visuals.widgets.inactive.fg_stroke.color = LIGHT_GRAY;
-                style.visuals.widgets.hovered.fg_stroke.color = LIGHT_GRAY;
-            }
             ButtonVariant::ToggleChild => {
                 if ui.ctx().is_path_enabled(&path) {
-                    let style = ui.style_mut();
-                    style.visuals.widgets.inactive.weak_bg_fill = DARK_GRAY;
-                    style.visuals.widgets.hovered.weak_bg_fill = DARK_GRAY;
+                    self = self.bg();
                 }
             }
         }
+        if let Some(title) = self.title {
+            title.cstr().label(ui);
+        }
+        if let Some(style) = self.style {
+            *ui.style_mut() = style;
+        }
+
         if !self.enabled {
             let style = ui.style_mut();
             style.visuals.widgets.noninteractive.bg_stroke.color = TRANSPARENT;

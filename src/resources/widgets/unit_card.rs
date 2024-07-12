@@ -163,7 +163,7 @@ fn show_trigger_part(title: &str, content: Vec<Cstr>, color: Color32, ui: &mut U
         let rect = Frame::none()
             .inner_margin(Margin::same(4.0))
             .show(ui, |ui| {
-                ui.horizontal_wrapped(|ui| {
+                ui.vertical(|ui| {
                     for c in content {
                         c.as_label(ui).wrap(true).ui(ui);
                     }

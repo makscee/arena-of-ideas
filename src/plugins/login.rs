@@ -72,7 +72,7 @@ impl LoginPlugin {
                         });
                     }
                     br(ui);
-                    if Button::gray("Logout".into()).ui(ui).clicked() {
+                    if Button::click("Logout".into()).gray().ui(ui).clicked() {
                         ld.identity_user = None;
                     }
                 } else {
