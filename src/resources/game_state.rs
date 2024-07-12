@@ -19,6 +19,7 @@ pub enum GameState {
     TestScenariosRun,
     ServerSync,
     Profile,
+    TableView(&'static str),
 }
 
 static TARGET_STATE: Mutex<GameState> = Mutex::new(GameState::Loaded);
@@ -43,6 +44,10 @@ lazy_static! {
             GameState::TestScenariosRun,
             [GameOption::TestScenariosLoad].into(),
         );
+        m.insert(
+            GameState::TableView(QUERY_LEADERBOARD),
+            [GameOption::Connect, GameOption::Table(QUERY_LEADERBOARD)].into(),
+        );
         m
     };
 }
@@ -55,7 +60,11 @@ impl GameState {
         *TARGET_STATE.lock().unwrap() = self;
     }
     pub fn set_next(self, world: &mut World) {
-        info!("Set next state: {self}");
+        info!(
+            "{} {}",
+            "Set next state:".dimmed(),
+            self.to_string().bold().green()
+        );
         world.resource_mut::<NextState<GameState>>().set(self);
     }
     pub fn set_next_op(self) {
@@ -72,6 +81,9 @@ impl GameState {
             }
         }
         target.set_next(world);
+    }
+    pub fn proceed_op() {
+        OperationsPlugin::add(Self::proceed);
     }
     pub fn proceed_to_target(self, world: &mut World) {
         self.set_target();

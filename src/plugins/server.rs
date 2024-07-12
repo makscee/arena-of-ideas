@@ -17,13 +17,38 @@ struct ServerData {
     subscribed_queries: Vec<String>,
 }
 
+pub const QUERY_LEADERBOARD: &str = "select * from TArenaLeaderboard";
+
 impl ServerPlugin {
-    pub fn subscribe(queries: Vec<String>) {
-        let q = &mut SERVER_DATA.lock().unwrap().subscribed_queries;
-        q.extend(queries.into_iter());
-        if let Err(e) = subscribe_owned(q.clone()) {
+    pub fn subscribe(queries: Vec<String>) -> bool {
+        let subscribed = &mut SERVER_DATA.lock().unwrap().subscribed_queries;
+        let mut added = false;
+        for q in queries {
+            if !subscribed.contains(&q) {
+                added = true;
+                info!(
+                    "{} {}",
+                    "New table subscription:".dimmed(),
+                    q.bold().purple()
+                );
+                subscribed.push(q);
+            }
+        }
+        if !added {
+            return false;
+        }
+        if let Err(e) = subscribe_owned(subscribed.clone()) {
             panic!("Failed to subscribe: {e}");
         }
+        return added;
+    }
+    pub fn is_subscribed(q: &str) -> bool {
+        SERVER_DATA
+            .lock()
+            .unwrap()
+            .subscribed_queries
+            .iter()
+            .any(|d| d.eq(q))
     }
     pub fn subscribe_connect() {
         Self::subscribe(

@@ -12,6 +12,7 @@ impl Default for StateMenu {
                 (user_name(), GameState::Profile),
                 ("SHOP", GameState::Shop),
                 ("GAME", GameState::CustomBattle),
+                ("LEADERBOARD", GameState::TableView(QUERY_LEADERBOARD)),
                 ("TEST", GameState::TestScenariosRun),
             ],
         }

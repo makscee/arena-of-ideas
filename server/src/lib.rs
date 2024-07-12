@@ -21,6 +21,7 @@ pub use battle::*;
 pub use fused_unit::*;
 pub use global_data::*;
 pub use global_settings::*;
+use rand::{thread_rng, RngCore};
 pub use spacetimedb::SpacetimeType;
 pub use spacetimedb::{spacetimedb, Identity, ReducerContext};
 pub use team::*;
@@ -51,6 +52,48 @@ impl<T> StrContext<T> for Option<T> {
 #[spacetimedb(init)]
 fn init() -> Result<(), String> {
     GlobalData::init()?;
+    TArenaLeaderboard::insert(TArenaLeaderboard::new(
+        thread_rng().next_u32(),
+        thread_rng().next_u32(),
+        1,
+        1,
+        1,
+    ));
+    TArenaLeaderboard::insert(TArenaLeaderboard::new(
+        thread_rng().next_u32(),
+        thread_rng().next_u32(),
+        1,
+        1,
+        1,
+    ));
+    TArenaLeaderboard::insert(TArenaLeaderboard::new(
+        thread_rng().next_u32(),
+        thread_rng().next_u32(),
+        1,
+        1,
+        1,
+    ));
+    TArenaLeaderboard::insert(TArenaLeaderboard::new(
+        thread_rng().next_u32(),
+        thread_rng().next_u32(),
+        1,
+        1,
+        1,
+    ));
+    TArenaLeaderboard::insert(TArenaLeaderboard::new(
+        thread_rng().next_u32(),
+        thread_rng().next_u32(),
+        1,
+        1,
+        1,
+    ));
+    TArenaLeaderboard::insert(TArenaLeaderboard::new(
+        thread_rng().next_u32(),
+        thread_rng().next_u32(),
+        1,
+        1,
+        1,
+    ));
     Ok(())
 }
 

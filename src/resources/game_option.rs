@@ -1,4 +1,4 @@
-use spacetimedb_sdk::identity::Credentials;
+use spacetimedb_sdk::{identity::Credentials, once_on_subscription_applied};
 
 use super::*;
 
@@ -8,6 +8,7 @@ pub enum GameOption {
     Login,
     ForceLogin,
     TestScenariosLoad,
+    Table(&'static str),
 }
 
 static CURRENTLY_FULFILLING: Mutex<GameOption> = Mutex::new(GameOption::Connect);
@@ -23,15 +24,27 @@ impl GameOption {
                 world.get_resource::<LoginOption>().is_some()
             }
             GameOption::TestScenariosLoad => world.get_resource::<TestScenarios>().is_some(),
+            GameOption::Table(query) => ServerPlugin::is_subscribed(query),
         }
     }
     pub fn fulfill(self, world: &mut World) {
-        info!("Start fulfill option: {self}");
+        info!(
+            "{} {}",
+            "Start fulfill option:".dimmed(),
+            self.to_string().bold().blue()
+        );
         *CURRENTLY_FULFILLING.lock().unwrap() = self;
         match self {
             GameOption::Connect => ConnectOption::fulfill(world),
             GameOption::Login | GameOption::ForceLogin => LoginOption::fulfill(world),
             GameOption::TestScenariosLoad => GameState::TestScenariosLoad.set_next(world),
+            GameOption::Table(query) => {
+                if ServerPlugin::subscribe([query.to_owned()].into()) {
+                    once_on_subscription_applied(GameState::proceed_op);
+                } else {
+                    GameState::proceed(world);
+                }
+            }
         }
     }
 }

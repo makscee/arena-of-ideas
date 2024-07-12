@@ -123,6 +123,8 @@ impl UiPlugin {
                 ..default()
             };
             style.spacing.slider_rail_height = 2.0;
+            style.visuals.striped = true;
+            style.visuals.faint_bg_color = Color32::from_gray(40);
             style.visuals.slider_trailing_fill = true;
             style.visuals.handle_shape = HandleShape::Rect { aspect_ratio: 0.1 };
             style.visuals.selection.bg_fill = WHITE;
