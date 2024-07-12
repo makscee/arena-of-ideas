@@ -1,3 +1,5 @@
+use std::ops::RangeInclusive;
+
 use super::*;
 
 pub fn unit_card(t: f32, state: &VarState, ui: &mut Ui, world: &World) -> Result<()> {
@@ -46,7 +48,7 @@ pub fn unit_card(t: f32, state: &VarState, ui: &mut Ui, world: &World) -> Result
                     .1;
                 name.push(n.cstr_c(*c));
             } else {
-                let part = (n.len() as f32 * (1.0 - part) * 0.5).ceil() as usize;
+                let part = (n.len() as f32 * (1.0 - part) * 0.5).floor() as usize;
                 let n = n.split_at(part).1;
                 let n = n.split_at(n.len() - part).0;
                 name.push(n.cstr_c(*c));
@@ -90,38 +92,12 @@ pub fn unit_card(t: f32, state: &VarState, ui: &mut Ui, world: &World) -> Result
     .response
     .rect;
 
-    ui.painter().line_segment(
-        [rect.left_bottom(), rect.left_top()],
-        Stroke {
-            width: 1.0,
-            color: house_colors[0],
-        },
-    );
-    ui.painter().line_segment(
-        [rect.right_bottom(), rect.right_top()],
-        Stroke {
-            width: 1.0,
-            color: house_colors[house_colors.len() - 1],
-        },
-    );
-    let from_top = rect.left_top();
-    let from_bottom = rect.left_bottom();
-    let offset = egui::vec2((rect.width() / house_colors.len() as f32).round(), 0.0);
+    let len = house_colors.len() as f32;
+    let t = gt().play_head() * 0.1;
     for (i, color) in house_colors.iter().copied().enumerate() {
-        ui.painter().line_segment(
-            [
-                from_top + offset * i as f32,
-                from_top + offset * (i + 1) as f32,
-            ],
-            Stroke { width: 1.5, color },
-        );
-        ui.painter().line_segment(
-            [
-                from_bottom + offset * i as f32,
-                from_bottom + offset * (i + 1) as f32,
-            ],
-            Stroke { width: 1.0, color },
-        );
+        let from = (i as f32 / len + t).fract();
+        let to = ((i + 1) as f32 / len + t).fract();
+        lines_around_rect((from, to), &rect, color, ui);
     }
 
     ui.add_space(-ui.style().spacing.item_spacing.y + 0.5);
@@ -201,4 +177,58 @@ fn show_trigger_part(title: &str, content: Vec<Cstr>, color: Color32, ui: &mut U
             Stroke { width: 1.0, color },
         );
     });
+}
+
+fn lines_around_rect(range: (f32, f32), rect: &Rect, color: Color32, ui: &mut Ui) {
+    let mut path = vec![point_on_rect(range.0, rect)];
+    let w_part = rect.width() / (rect.width() + rect.height()) * 0.5;
+    let points = [
+        (0.0, rect.left_top()),
+        (w_part, rect.right_top()),
+        (0.5, rect.right_bottom()),
+        (0.5 + w_part, rect.left_bottom()),
+        (1.0, rect.left_top()),
+    ];
+    let mut start = 0;
+    let mut end = 0;
+    for i in 0..(points.len() - 1) {
+        if range.0 >= points[i].0 && range.0 <= points[i + 1].0 {
+            start = i + 1;
+        }
+        if range.1 >= points[i].0 && range.1 <= points[i + 1].0 {
+            end = i + 1;
+        }
+    }
+    if start > end {
+        end += points.len();
+    }
+    for i in start..end {
+        path.push(points[i % points.len()].1);
+    }
+    path.push(point_on_rect(range.1, rect));
+    ui.painter()
+        .add(egui::Shape::line(path, Stroke { width: 1.0, color }));
+}
+
+fn point_on_rect(t: f32, rect: &Rect) -> egui::Pos2 {
+    let w_part = rect.width() / (rect.width() + rect.height());
+    if t < 0.5 {
+        let t = t * 2.0;
+        if t < w_part {
+            let t = t / w_part;
+            rect.left_top() + (rect.right_top() - rect.left_top()) * t
+        } else {
+            let t = (t - w_part) / (1.0 - w_part);
+            rect.right_top() + (rect.right_bottom() - rect.right_top()) * t
+        }
+    } else {
+        let t = (t - 0.5) * 2.0;
+        if t < w_part {
+            let t = t / w_part;
+            rect.right_bottom() + (rect.left_bottom() - rect.right_bottom()) * t
+        } else {
+            let t = (t - w_part) / (1.0 - w_part);
+            rect.left_bottom() + (rect.left_top() - rect.left_bottom()) * t
+        }
+    }
 }
