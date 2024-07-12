@@ -1,5 +1,4 @@
 use egui::{FontId, TextStyle};
-use once_cell::sync::OnceCell;
 
 use super::*;
 
@@ -52,11 +51,6 @@ impl Plugin for UiPlugin {
 pub struct WidgetData {
     pub unit_container: HashMap<Faction, UnitContainerData>,
     pub notifications: NotificationsData,
-}
-
-static DEFAULT_STYLE: OnceCell<Style> = OnceCell::new();
-pub fn default_style() -> Style {
-    DEFAULT_STYLE.get().unwrap().clone()
 }
 
 impl UiPlugin {
@@ -181,7 +175,6 @@ impl UiPlugin {
                     expansion: 0.0,
                 },
             };
-            DEFAULT_STYLE.set(style.clone()).unwrap();
         });
     }
 }

@@ -7,7 +7,6 @@ pub struct Button {
     variant: ButtonVariant,
     title: Option<String>,
     enabled: bool,
-    style: Option<egui::Style>,
 }
 
 #[derive(Default)]
@@ -24,7 +23,6 @@ impl Default for Button {
             variant: default(),
             title: default(),
             enabled: true,
-            style: default(),
         }
     }
 }
@@ -40,18 +38,14 @@ impl Button {
             ..default()
         }
     }
-    pub fn set_style(mut self, style: Style) -> Self {
-        self.style = Some(style);
-        self
-    }
-    pub fn gray(mut self) -> Self {
-        let style = self.style.get_or_insert(default_style());
+    pub fn gray(self, ui: &mut Ui) -> Self {
+        let style = ui.style_mut();
         style.visuals.widgets.inactive.fg_stroke.color = LIGHT_GRAY;
         style.visuals.widgets.hovered.fg_stroke.color = LIGHT_GRAY;
         self
     }
-    pub fn bg(mut self) -> Self {
-        let style = self.style.get_or_insert(default_style());
+    pub fn bg(self, ui: &mut Ui) -> Self {
+        let style = ui.style_mut();
         style.visuals.widgets.inactive.weak_bg_fill = DARK_GRAY;
         style.visuals.widgets.hovered.weak_bg_fill = DARK_GRAY;
         self
@@ -72,15 +66,12 @@ impl Button {
             ButtonVariant::Click => {}
             ButtonVariant::ToggleChild => {
                 if ui.ctx().is_path_enabled(&path) {
-                    self = self.bg();
+                    self = self.bg(ui);
                 }
             }
         }
         if let Some(title) = self.title {
             title.cstr().label(ui);
-        }
-        if let Some(style) = self.style {
-            *ui.style_mut() = style;
         }
 
         if !self.enabled {
