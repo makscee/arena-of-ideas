@@ -138,6 +138,6 @@ const FRAME: Frame = Frame {
     outer_margin: Margin::same(13.0),
     rounding: Rounding::same(13.0),
     shadow: Shadow::NONE,
-    fill: LIGHT_BLACK,
+    fill: BG_LIGHT,
     stroke: Stroke::NONE,
 };

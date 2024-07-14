@@ -109,7 +109,7 @@ impl UnitContainer {
             fill: TRANSPARENT,
             stroke: Stroke {
                 width: 1.0,
-                color: LIGHT_GRAY,
+                color: VISIBLE_LIGHT,
             },
         };
         let mut hovered_rect: Option<(usize, Rect)> = None;
@@ -208,7 +208,7 @@ fn show_frame(
         if overflow {
             RED
         } else {
-            LIGHT_GRAY
+            VISIBLE_LIGHT
         }
     };
     let stroke = Stroke { width: 1.0, color };

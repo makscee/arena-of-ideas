@@ -76,7 +76,7 @@ impl TextColumnPlugin {
                             ui.painter().add(epaint::TextShape::new(
                                 rect.left_top(),
                                 galley,
-                                LIGHT_GRAY,
+                                VISIBLE_LIGHT,
                             ));
                         } else {
                             remove.push(i);

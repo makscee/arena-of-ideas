@@ -54,7 +54,9 @@ impl ConnectPlugin {
     }
     pub fn ui(ui: &mut Ui) {
         center_window("status", ui, |ui| {
-            "Connecting...".cstr_cs(WHITE, CstrStyle::Heading).label(ui);
+            "Connecting..."
+                .cstr_cs(VISIBLE_BRIGHT, CstrStyle::Heading)
+                .label(ui);
         });
     }
 }

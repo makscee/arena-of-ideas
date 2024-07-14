@@ -225,7 +225,7 @@ impl BattlePlugin {
                     world,
                     |ui, _| {
                         format!("{:.2}", gt().play_head())
-                            .cstr_cs(WHITE, CstrStyle::Heading)
+                            .cstr_cs(VISIBLE_BRIGHT, CstrStyle::Heading)
                             .label(ui);
                     },
                     |ui, world| {
@@ -235,7 +235,7 @@ impl BattlePlugin {
                             gt().advance_play(-delta_time(world) * 2.0);
                         }
                         let resp = ImageButton::new(Icon::FFBack.image())
-                            .tint(if pressed { YELLOW } else { WHITE })
+                            .tint(if pressed { YELLOW } else { VISIBLE_BRIGHT })
                             .ui(ui);
                         set_context_bool(
                             world,
@@ -250,7 +250,7 @@ impl BattlePlugin {
                             gt().advance_play(delta_time(world));
                         }
                         let resp = ImageButton::new(Icon::FFForward.image())
-                            .tint(if pressed { YELLOW } else { WHITE })
+                            .tint(if pressed { YELLOW } else { VISIBLE_BRIGHT })
                             .ui(ui);
                         set_context_bool(
                             world,

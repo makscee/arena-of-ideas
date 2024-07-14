@@ -32,11 +32,11 @@ impl StateMenu {
             .show(ctx, |ui| {
                 ui.horizontal(|ui| {
                     let target = GameState::get_target();
-                    ui.visuals_mut().widgets.hovered.fg_stroke.color = WHITE;
+                    ui.visuals_mut().widgets.hovered.fg_stroke.color = VISIBLE_BRIGHT;
                     for (name, state) in self.buttons {
                         let enabled = state.eq(&target);
                         ui.visuals_mut().widgets.inactive.fg_stroke.color =
-                            if enabled { YELLOW } else { GRAY };
+                            if enabled { YELLOW } else { VISIBLE_DARK };
                         let resp = egui::Button::new(name)
                             .min_size(egui::vec2(100.0, 0.0))
                             .ui(ui);

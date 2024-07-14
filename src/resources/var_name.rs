@@ -58,7 +58,7 @@ pub enum VarName {
 }
 
 impl ToCstr for VarName {
-    fn cstr(self) -> Cstr {
+    fn cstr(&self) -> Cstr {
         self.to_string().cstr()
     }
 }

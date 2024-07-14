@@ -40,14 +40,14 @@ impl Button {
     }
     pub fn gray(self, ui: &mut Ui) -> Self {
         let style = ui.style_mut();
-        style.visuals.widgets.inactive.fg_stroke.color = LIGHT_GRAY;
-        style.visuals.widgets.hovered.fg_stroke.color = LIGHT_GRAY;
+        style.visuals.widgets.inactive.fg_stroke.color = VISIBLE_LIGHT;
+        style.visuals.widgets.hovered.fg_stroke.color = VISIBLE_LIGHT;
         self
     }
     pub fn bg(self, ui: &mut Ui) -> Self {
         let style = ui.style_mut();
-        style.visuals.widgets.inactive.weak_bg_fill = DARK_GRAY;
-        style.visuals.widgets.hovered.weak_bg_fill = DARK_GRAY;
+        style.visuals.widgets.inactive.weak_bg_fill = VISIBLE_DARK;
+        style.visuals.widgets.hovered.weak_bg_fill = VISIBLE_DARK;
         self
     }
     pub fn title(mut self, text: String) -> Self {
@@ -77,9 +77,10 @@ impl Button {
         if !self.enabled {
             let style = ui.style_mut();
             style.visuals.widgets.noninteractive.bg_stroke.color = TRANSPARENT;
-            style.visuals.widgets.noninteractive.fg_stroke.color = DARK_GRAY;
+            style.visuals.widgets.noninteractive.fg_stroke.color = VISIBLE_DARK;
         }
         let r = egui::Button::new(self.name)
+            .wrap(false)
             .sense(if self.enabled {
                 Sense::click()
             } else {

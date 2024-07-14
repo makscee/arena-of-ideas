@@ -258,11 +258,11 @@ impl Trigger {
     }
 }
 
-impl ToCstr for &FireTrigger {
-    fn cstr(self) -> Cstr {
+impl ToCstr for FireTrigger {
+    fn cstr(&self) -> Cstr {
         match self {
             FireTrigger::List(list) => Cstr::join_vec(list.iter().map(|t| t.cstr()).collect_vec())
-                .join(&" + ".cstr_c(LIGHT_GRAY))
+                .join(&" + ".cstr_c(VISIBLE_LIGHT))
                 .take(),
             FireTrigger::Period(_, delay, trigger) => {
                 format!("Every {delay} ").cstr().push(trigger.cstr()).take()

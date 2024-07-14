@@ -32,7 +32,7 @@ pub fn unit_card(t: f32, state: &VarState, ui: &mut Ui, world: &World) -> Result
         outer_margin: Margin::ZERO,
         rounding: Rounding::ZERO,
         shadow: Shadow::NONE,
-        fill: DARK_BLACK,
+        fill: BG_DARK,
         stroke: Stroke::NONE,
     }
     .show(ui, |ui| {
@@ -73,7 +73,7 @@ pub fn unit_card(t: f32, state: &VarState, ui: &mut Ui, world: &World) -> Result
                         .unwrap_or_default()
                         .get_string()
                         .unwrap_or_default()
-                        .cstr_c(WHITE),
+                        .cstr_c(VISIBLE_BRIGHT),
                 );
                 vars_str.bold().label(ui);
                 ui.add_space(2.0);
@@ -113,7 +113,7 @@ pub fn unit_card(t: f32, state: &VarState, ui: &mut Ui, world: &World) -> Result
             se: 13.0,
         },
         shadow: Shadow::NONE,
-        fill: LIGHT_BLACK,
+        fill: BG_LIGHT,
         stroke: Stroke::NONE,
     }
     .show(ui, |ui| {
@@ -154,7 +154,7 @@ pub fn unit_card(t: f32, state: &VarState, ui: &mut Ui, world: &World) -> Result
     let from = rect.center_bottom() - (rarities.len() as f32 - 1.0) * 0.5 * OFFSET;
     for (i, color) in rarities.into_iter().enumerate() {
         let pos = from + OFFSET * i as f32;
-        ui.painter().circle_filled(pos, 13.0, LIGHT_BLACK);
+        ui.painter().circle_filled(pos, 13.0, BG_LIGHT);
         ui.painter().circle_filled(pos, 10.0, color.c32());
     }
     Ok(())
@@ -162,7 +162,7 @@ pub fn unit_card(t: f32, state: &VarState, ui: &mut Ui, world: &World) -> Result
 
 fn show_trigger_part(title: &str, content: Vec<Cstr>, color: Color32, ui: &mut Ui) {
     ui.horizontal(|ui| {
-        title.cstr_c(LIGHT_GRAY).label(ui);
+        title.cstr_c(VISIBLE_LIGHT).label(ui);
         let rect = Frame::none()
             .inner_margin(Margin::same(4.0))
             .show(ui, |ui| {

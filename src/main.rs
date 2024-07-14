@@ -47,7 +47,7 @@ fn main() {
         ..default()
     });
     app.init_state::<GameState>()
-        .insert_resource(ClearColor(DARK_BLACK.to_color()))
+        .insert_resource(ClearColor(EMPTINESS.to_color()))
         .add_systems(Startup, setup)
         .add_systems(Update, update)
         .add_plugins((default_plugins, FrameTimeDiagnosticsPlugin))

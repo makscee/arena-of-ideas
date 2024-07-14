@@ -281,19 +281,19 @@ impl VarValue {
     }
 }
 
-impl ToCstr for &VarValue {
-    fn cstr(self) -> Cstr {
+impl ToCstr for VarValue {
+    fn cstr(&self) -> Cstr {
         match self {
             VarValue::None => self.as_ref().cstr(),
-            VarValue::Int(v) => format!("Int({v}").cstr_c(WHITE),
-            VarValue::Float(v) => format!("Float({v}").cstr_c(WHITE),
-            VarValue::Vec2(v) => format!("Vec2({v}").cstr_c(WHITE),
-            VarValue::String(v) => format!("String({v}").cstr_c(WHITE),
+            VarValue::Int(v) => format!("{v}").cstr(),
+            VarValue::Float(v) => format!("{v}").cstr(),
+            VarValue::Vec2(v) => format!("{v}").cstr(),
+            VarValue::String(v) => format!("{v}").cstr(),
             VarValue::Cstr(v) => v.clone(),
-            VarValue::Bool(v) => format!("Bool({v}").cstr_c(WHITE),
-            VarValue::Faction(v) => format!("Faction({v}").cstr_c(WHITE),
-            VarValue::Color(v) => format!("Color({v:?}").cstr_c(WHITE),
-            VarValue::Entity(v) => format!("Entity({v:?}").cstr_c(WHITE),
+            VarValue::Bool(v) => format!("{v}").cstr(),
+            VarValue::Faction(v) => format!("{v}").cstr(),
+            VarValue::Color(v) => format!("{v:?}").cstr(),
+            VarValue::Entity(v) => format!("{v:?}").cstr(),
             VarValue::List(list) => {
                 Cstr::join_vec(list.into_iter().map(|v| v.cstr()).collect_vec())
                     .join(&" + ".cstr())

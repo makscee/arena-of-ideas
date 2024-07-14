@@ -68,7 +68,7 @@ impl Cstr {
                      color,
                      style: _,
                  }| {
-                    let color = color.unwrap_or(LIGHT_GRAY);
+                    let color = color.unwrap_or(VISIBLE_LIGHT);
                     let color = CustomColor {
                         r: color.r(),
                         g: color.g(),
@@ -155,8 +155,11 @@ impl Cstr {
     pub fn widget(&self, alpha: f32, ui: &mut Ui) -> WidgetText {
         let mut job = LayoutJob::default();
         for CstrSub { text, color, style } in self.subs.iter() {
-            let color = color.unwrap_or(LIGHT_GRAY).gamma_multiply(alpha);
-            let font_id = style.get_font(ui.style());
+            let ui_style = ui.style();
+            let color = color
+                .unwrap_or(ui_style.visuals.widgets.noninteractive.fg_stroke.color)
+                .gamma_multiply(alpha);
+            let font_id = style.get_font(ui_style);
             job.append(
                 text.str(),
                 0.0,
@@ -239,14 +242,14 @@ impl Cstr {
             let var = VarName::from_str(s).unwrap();
             CstrSub {
                 text: SubText::VarText(var, text.into()),
-                color: Some(WHITE),
+                color: Some(VISIBLE_BRIGHT),
                 style: default(),
             }
         } else {
             match VarName::from_str(s) {
                 Ok(var) => {
                     let mut var: CstrSub = var.into();
-                    var.color = Some(WHITE);
+                    var.color = Some(VISIBLE_BRIGHT);
                     var
                 }
                 Err(_) => s.into(),
@@ -313,40 +316,52 @@ impl ToString for Cstr {
 }
 
 pub trait ToCstr: Sized {
-    fn cstr(self) -> Cstr;
-    fn cstr_c(self, color: Color32) -> Cstr {
+    fn cstr(&self) -> Cstr;
+    fn cstr_c(&self, color: Color32) -> Cstr {
         self.cstr().color(color).take()
     }
-    fn cstr_cs(self, color: Color32, style: CstrStyle) -> Cstr {
+    fn cstr_cs(&self, color: Color32, style: CstrStyle) -> Cstr {
         self.cstr().color(color).style(style).take()
     }
 }
 
 impl<'a> ToCstr for &'a str {
-    fn cstr(self) -> Cstr {
+    fn cstr(&self) -> Cstr {
         Cstr {
             subs: vec![CstrSub {
-                text: self.into(),
+                text: (*self).into(),
                 color: None,
                 style: default(),
             }],
         }
     }
-    fn cstr_c(self, color: Color32) -> Cstr {
+    fn cstr_c(&self, color: Color32) -> Cstr {
         Cstr {
             subs: vec![CstrSub {
-                text: self.into(),
+                text: (*self).into(),
                 color: Some(color),
                 style: default(),
             }],
         }
     }
-    fn cstr_cs(self, color: Color32, style: CstrStyle) -> Cstr {
+    fn cstr_cs(&self, color: Color32, style: CstrStyle) -> Cstr {
         Cstr {
             subs: vec![CstrSub {
-                text: self.into(),
+                text: (*self).into(),
                 color: Some(color),
                 style,
+            }],
+        }
+    }
+}
+
+impl ToCstr for String {
+    fn cstr(&self) -> Cstr {
+        Cstr {
+            subs: vec![CstrSub {
+                text: self.clone().into(),
+                color: None,
+                style: default(),
             }],
         }
     }

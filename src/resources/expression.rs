@@ -325,8 +325,8 @@ impl Expression {
     }
 }
 
-impl ToCstr for &Expression {
-    fn cstr(self) -> Cstr {
+impl ToCstr for Expression {
+    fn cstr(&self) -> Cstr {
         let mut s = self.as_ref().to_case(Case::Lower).cstr();
         match self {
             Expression::Value(v) => {

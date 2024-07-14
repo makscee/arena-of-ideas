@@ -1,5 +1,3 @@
-use egui_extras::{Column, TableBuilder};
-
 use super::*;
 
 pub struct TableViewPlugin;
@@ -17,36 +15,38 @@ impl TableViewPlugin {
     }
     fn draw_leaderboard(ui: &mut Ui) {
         center_window("Leaderboard", ui, |ui| {
-            TableBuilder::new(ui)
-                .columns(Column::auto(), 3)
-                .header(20.0, |mut h| {
-                    h.col(|ui| {
-                        Button::click("round".into()).gray(ui).ui(ui);
-                    });
-                    h.col(|ui| {
-                        Button::click("score".into()).gray(ui).ui(ui);
-                    });
+            Table::new_cached(
+                "Leaderboard",
+                || TArenaLeaderboard::iter().collect_vec(),
+                ui.ctx(),
+            )
+            .column(
+                "season",
+                TableColumn::new(|v: &TArenaLeaderboard| (v.season as i32).into()),
+            )
+            .column(
+                "round",
+                TableColumn::new(|v: &TArenaLeaderboard| (v.round as i32).into()),
+            )
+            .column(
+                "name",
+                TableColumn::new(|v: &TArenaLeaderboard| {
+                    TUser::filter_by_id(v.user).unwrap().name.into()
                 })
-                .body(|mut body| {
-                    for TArenaLeaderboard {
-                        season,
-                        round,
-                        score,
-                        user,
-                        team,
-                        run,
-                    } in TArenaLeaderboard::iter()
-                    {
-                        body.row(20.0, |mut row| {
-                            row.col(|ui| {
-                                ui.label(round.to_string());
-                            });
-                            row.col(|ui| {
-                                ui.label(score.to_string());
-                            });
-                        });
+                .show(|v: &TArenaLeaderboard, _, ui| {
+                    let name = TUser::filter_by_id(v.user).unwrap().name.clone();
+                    let resp = Button::click(name).ui(ui);
+                    if resp.clicked() {
+                        debug!("click");
                     }
-                });
+                    resp
+                }),
+            )
+            .column(
+                "score",
+                TableColumn::new(|v: &TArenaLeaderboard| (v.score as i32).into()),
+            )
+            .ui(ui);
         });
     }
 }

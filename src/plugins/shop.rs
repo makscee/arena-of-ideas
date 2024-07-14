@@ -166,7 +166,7 @@ impl ShopPlugin {
             .transparent()
             .non_resizable()
             .content(|ui, _| {
-                text_dots_text(&"name".cstr(), &user_name().cstr_c(WHITE), ui);
+                text_dots_text(&"name".cstr(), &user_name().cstr_c(VISIBLE_BRIGHT), ui);
                 if let Some(run) = TArenaRun::get_current() {
                     text_dots_text(
                         &"G".cstr(),
@@ -175,12 +175,12 @@ impl ShopPlugin {
                     );
                     text_dots_text(
                         &"round".cstr(),
-                        &run.round.to_string().cstr_c(DARK_WHITE),
+                        &run.round.to_string().cstr_c(VISIBLE_BRIGHT),
                         ui,
                     );
                     text_dots_text(
                         &"score".cstr(),
-                        &run.score.to_string().cstr_c(DARK_WHITE),
+                        &run.score.to_string().cstr_c(VISIBLE_BRIGHT),
                         ui,
                     );
                 }

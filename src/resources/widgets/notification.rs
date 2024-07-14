@@ -61,7 +61,7 @@ impl Notification {
                 for n in notifications {
                     FRAME.show(ui, |ui| {
                         match n.r#type {
-                            NotificationType::Alert => n.text.cstr_c(WHITE),
+                            NotificationType::Alert => n.text.cstr_c(VISIBLE_BRIGHT),
                             NotificationType::Error => n.text.cstr_c(RED),
                         }
                         .label(ui);
@@ -76,7 +76,7 @@ impl Notification {
 const FRAME: Frame = Frame {
     inner_margin: Margin::same(13.0),
     rounding: Rounding::same(13.0),
-    fill: LIGHT_BLACK,
+    fill: BG_LIGHT,
     outer_margin: Margin::ZERO,
     shadow: SHADOW,
     stroke: Stroke::NONE,

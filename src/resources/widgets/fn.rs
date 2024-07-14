@@ -5,7 +5,7 @@ pub fn br(ui: &mut Ui) {
         let rect = ui.max_rect();
         let line = egui::Shape::dotted_line(
             &[rect.left_center(), rect.right_center()],
-            DARK_GRAY,
+            VISIBLE_DARK,
             8.0,
             1.5,
         );
@@ -35,7 +35,7 @@ pub fn text_dots_text(text1: &Cstr, text2: &Cstr, ui: &mut Ui) {
         let bottom = rect.bottom() - 6.0;
         let line = egui::Shape::dotted_line(
             &[[left, bottom].into(), [right, bottom].into()],
-            LIGHT_GRAY,
+            VISIBLE_LIGHT,
             8.0,
             0.5,
         );

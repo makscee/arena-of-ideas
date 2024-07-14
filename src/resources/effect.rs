@@ -168,8 +168,8 @@ impl Effect {
     }
 }
 
-impl ToCstr for &Effect {
-    fn cstr(self) -> Cstr {
+impl ToCstr for Effect {
+    fn cstr(&self) -> Cstr {
         match self {
             Effect::UseAbility(name, base) => {
                 let name_base = if *base > 1 {

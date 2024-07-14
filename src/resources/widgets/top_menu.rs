@@ -28,12 +28,12 @@ impl TopMenu {
             .show_separator_line(false)
             .show(ctx, |ui| {
                 ui.horizontal(|ui| {
-                    ui.visuals_mut().widgets.hovered.bg_fill = LIGHT_GRAY;
+                    ui.visuals_mut().widgets.hovered.bg_fill = VISIBLE_LIGHT;
                     for TopMenuButton { name } in self.buttons {
                         let path = &format!("/{name}");
                         let enabled = ui.ctx().is_path_enabled(path);
                         ui.visuals_mut().widgets.inactive.fg_stroke.color =
-                            if enabled { LIGHT_GRAY } else { GRAY };
+                            if enabled { VISIBLE_LIGHT } else { VISIBLE_DARK };
                         let resp = egui::Button::new(name)
                             .min_size(egui::vec2(100.0, 0.0))
                             .ui(ui);
