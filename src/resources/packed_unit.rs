@@ -47,7 +47,7 @@ impl PackedUnit {
         mut self,
         parent: Entity,
         slot: Option<i32>,
-        id: Option<u64>,
+        id: Option<GID>,
         world: &mut World,
     ) -> Entity {
         let entity = world

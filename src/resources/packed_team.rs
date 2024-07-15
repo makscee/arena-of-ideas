@@ -11,7 +11,7 @@ pub struct PackedTeam {
 pub struct AbilityStates(pub HashMap<String, VarState>);
 
 impl PackedTeam {
-    pub fn from_id(id: u64) -> Self {
+    pub fn from_id(id: GID) -> Self {
         if id == 0 {
             return default();
         }

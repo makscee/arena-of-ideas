@@ -13,6 +13,7 @@ pub enum VarValue {
     Faction(Faction),
     Color(Color),
     Entity(Entity),
+    GID(GID),
     List(Vec<VarValue>),
 }
 
@@ -197,6 +198,24 @@ impl VarValue {
             _ => {}
         }
         Ok(vec![self.get_faction()?])
+    }
+    pub fn get_gid(&self) -> Result<GID> {
+        match self {
+            VarValue::GID(v) => Ok(*v),
+            _ => Err(anyhow!("Faction not supported by {self:?}")),
+        }
+    }
+    pub fn get_gid_list(&self) -> Result<Vec<GID>> {
+        match self {
+            VarValue::List(list) => {
+                return Ok(list
+                    .into_iter()
+                    .filter_map(|v| v.get_gid().ok())
+                    .collect_vec());
+            }
+            _ => {}
+        }
+        Ok(vec![self.get_gid()?])
     }
 
     pub fn sum(a: &VarValue, b: &VarValue) -> Result<VarValue> {

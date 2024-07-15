@@ -76,8 +76,8 @@ impl OptionResource for ConnectOption {
 }
 
 static USER_NAME: Mutex<&'static str> = Mutex::new("");
-static USER_ID: Mutex<u64> = Mutex::new(0);
-pub fn user_id() -> u64 {
+static USER_ID: Mutex<GID> = Mutex::new(0);
+pub fn user_id() -> GID {
     *USER_ID.lock().unwrap()
 }
 pub fn user_name() -> &'static str {

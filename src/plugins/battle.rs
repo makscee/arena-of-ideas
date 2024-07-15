@@ -307,7 +307,7 @@ impl BattlePlugin {
 #[derive(Asset, TypePath, Resource, Default, Clone, Debug, Deserialize)]
 pub struct BattleData {
     #[serde(default)]
-    id: u64,
+    id: GID,
     left: PackedTeam,
     right: PackedTeam,
     #[serde(default)]

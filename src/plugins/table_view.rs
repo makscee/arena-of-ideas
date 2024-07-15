@@ -10,7 +10,7 @@ impl Plugin for TableViewPlugin {
 
 #[derive(Resource, Default)]
 struct HistoryData {
-    team: Option<(u64, bool)>,
+    team: Option<(GID, bool)>,
 }
 
 impl TableViewPlugin {

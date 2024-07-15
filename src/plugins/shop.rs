@@ -74,7 +74,7 @@ impl ShopPlugin {
     }
     fn sync_run(run: TArenaRun, world: &mut World) {
         debug!("Sync run");
-        let mut shop_units: HashMap<u64, Entity> = HashMap::from_iter(
+        let mut shop_units: HashMap<GID, Entity> = HashMap::from_iter(
             UnitPlugin::collect_faction(Faction::Shop, world)
                 .into_iter()
                 .map(|e| (VarState::get(e, world).id(), e)),
@@ -127,7 +127,7 @@ impl ShopPlugin {
         for entity in shop_units.into_values() {
             UnitPlugin::despawn(entity, world);
         }
-        let mut team_units: HashMap<u64, Entity> = HashMap::from_iter(
+        let mut team_units: HashMap<GID, Entity> = HashMap::from_iter(
             UnitPlugin::collect_faction(Faction::Team, world)
                 .into_iter()
                 .map(|e| (VarState::get(e, world).id(), e)),

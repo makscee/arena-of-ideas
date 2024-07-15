@@ -31,6 +31,8 @@ pub enum RunMode {
     Sync,
 }
 
+pub type GID = u64;
+
 fn main() {
     let mut app = App::new();
     let args = Args::try_parse().unwrap_or_default();

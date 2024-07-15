@@ -55,7 +55,7 @@ impl TArenaRunArchive {
 #[derive(SpacetimeType, Clone, Default)]
 struct ShopSlot {
     unit: String,
-    id: u64,
+    id: GID,
     price: i32,
     freeze: bool,
     discount: bool,
@@ -318,7 +318,7 @@ fn stack_team(ctx: ReducerContext, source: u8, target: u8) -> Result<(), String>
 }
 
 impl TArenaRun {
-    fn new(user_id: u64) -> Self {
+    fn new(user_id: GID) -> Self {
         let gs = GlobalSettings::get();
         Self {
             id: next_id(),
