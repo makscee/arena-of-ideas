@@ -202,10 +202,13 @@ impl ContextLayer {
                 true => Some(value.clone()),
                 false => None,
             },
-            ContextLayer::Status(owner, name) => VarState::get(*owner, world)
-                .get_status(&name)?
-                .get_value_last(var)
-                .ok(),
+            ContextLayer::Status(status, name) => {
+                VarState::try_get(status.get_parent(world).unwrap(), world)
+                    .ok()?
+                    .get_status(&name)?
+                    .get_value_last(var)
+                    .ok()
+            }
             _ => None,
         }
     }

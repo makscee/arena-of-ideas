@@ -92,17 +92,18 @@ impl Status {
             if context.has_status(status) {
                 continue;
             }
-            result |= trigger.fire(event, context.clone().set_status(owner, name), world);
+            let context = context.clone().set_status(status, name).take();
+            result |= trigger.fire(event, &context, world);
             world.get_mut::<Status>(status).unwrap().trigger = trigger;
         }
         result
     }
-    pub fn refresh_mappings(entity: Entity, world: &mut World) {
-        let statuses = Self::collect_statuses(entity, world);
-        for (_, Status { name, trigger }) in statuses {
-            let context = &Context::new(entity).set_status(entity, name.clone()).take();
+    pub fn refresh_mappings(owner: Entity, world: &mut World) {
+        let statuses = Self::collect_statuses(owner, world);
+        for (status, Status { name, trigger }) in statuses {
+            let context = &Context::new(owner).set_status(status, name.clone()).take();
             let mappings = trigger.collect_mappings(context, world);
-            let mut state = VarState::get_mut(entity, world);
+            let mut state = VarState::get_mut(owner, world);
             for (var, value) in mappings {
                 if !state
                     .get_key_value_last(&name, var)
