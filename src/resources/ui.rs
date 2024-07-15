@@ -29,6 +29,19 @@ pub const EFFECT_COLOR: Color32 = hex_color_noa!("#DE1C1C");
 
 pub const TRANSPARENT: Color32 = Color32::TRANSPARENT;
 
+pub const STROKE_LIGHT: Stroke = Stroke {
+    width: 1.0,
+    color: VISIBLE_LIGHT,
+};
+pub const STROKE_DARK: Stroke = Stroke {
+    width: 1.0,
+    color: VISIBLE_DARK,
+};
+pub const STROKE_YELLOW: Stroke = Stroke {
+    width: 1.0,
+    color: YELLOW,
+};
+
 pub const SHADOW: Shadow = Shadow {
     offset: egui::vec2(10.0, 20.0),
     blur: 15.0,

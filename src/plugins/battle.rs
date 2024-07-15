@@ -199,7 +199,7 @@ impl BattlePlugin {
             _ => Err(anyhow!("Non-unique winning faction {result:#?}")),
         }
     }
-    pub fn widgets(ctx: &egui::Context, world: &mut World) {
+    pub fn show_tiles(ctx: &egui::Context, world: &mut World) {
         TopMenu::new(vec!["Playback"]).show(ctx);
         Tile::bottom("Playback")
             .transparent()

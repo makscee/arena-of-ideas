@@ -149,7 +149,7 @@ impl ShopPlugin {
             UnitPlugin::despawn(entity, world);
         }
     }
-    pub fn widgets(ctx: &egui::Context, world: &mut World) {
+    pub fn show_tiles(ctx: &egui::Context, world: &mut World) {
         TopMenu::new(vec!["Container Config"]).show(ctx);
         Tile::left("Container Config")
             .content(|ui, world| {

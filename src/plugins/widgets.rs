@@ -45,6 +45,8 @@ impl WidgetsPlugin {
         StateMenu::default().show(ctx, world);
 
         let state = cur_state(world);
+
+        // Tiles
         match state {
             GameState::Title => Tile::right("Main Menu")
                 .title()
@@ -106,11 +108,15 @@ impl WidgetsPlugin {
                         .show(ctx, world);
                 })
                 .show(ctx, world),
-            GameState::Shop => ShopPlugin::widgets(ctx, world),
-            GameState::Battle => BattlePlugin::widgets(ctx, world),
+            GameState::Shop => ShopPlugin::show_tiles(ctx, world),
+            GameState::Battle => BattlePlugin::show_tiles(ctx, world),
+            GameState::TableView(query) => TableViewPlugin::ui(query, ctx, world),
+
             _ => {}
         }
         let mut wd = world.remove_resource::<WidgetData>().unwrap();
+
+        // Content
         CentralPanel::default()
             .frame(Frame::none())
             .show(ctx, |ui| match state {
@@ -119,11 +125,10 @@ impl WidgetsPlugin {
                 GameState::Login => LoginPlugin::login_ui(ui, world),
                 GameState::Battle => BattlePlugin::ui(ui, world),
                 GameState::GameOver => ShopPlugin::game_over_ui(ui),
-                GameState::TableView(query) => {
-                    TableViewPlugin::ui(query, ui, world);
-                }
                 _ => {}
             });
+
+        // Overlay
         match state {
             GameState::Shop => ShopPlugin::overlay_widgets(ctx, world),
             _ => {}

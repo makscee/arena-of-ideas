@@ -11,6 +11,7 @@ pub struct Table<T> {
     hovered_row: Option<usize>,
     selected_row: Option<usize>,
     cached: bool,
+    sorting: Option<(usize, Sorting)>,
 }
 
 #[derive(Clone)]
@@ -18,6 +19,13 @@ pub struct TableColumn<T> {
     show: fn(&T, &Self, &mut Ui) -> Response,
     value: fn(&T) -> VarValue,
     width: f32,
+    sortable: bool,
+}
+
+#[derive(Clone, PartialEq, Eq, Copy)]
+enum Sorting {
+    Asc,
+    Desc,
 }
 
 impl<T> TableColumn<T> {
@@ -26,10 +34,15 @@ impl<T> TableColumn<T> {
             show: |v, s, ui| (s.value)(v).cstr().label(ui),
             value,
             width: 0.0,
+            sortable: true,
         }
     }
     pub fn show(mut self, f: fn(&T, &Self, &mut Ui) -> Response) -> Self {
         self.show = f;
+        self
+    }
+    pub fn no_sort(mut self) -> Self {
+        self.sortable = false;
         self
     }
 }
@@ -44,6 +57,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
             cached: false,
             hovered_row: None,
             selected_row: None,
+            sorting: None,
         }
     }
     pub fn new_cached(name: &'static str, data: fn() -> Vec<T>, ctx: &egui::Context) -> Self {
@@ -60,12 +74,51 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
         table
     }
     pub fn ui(&mut self, ui: &mut Ui) {
+        let mut need_sort = false;
         ui.horizontal(|ui| {
-            for (name, column) in &mut self.columns {
+            for (i, (name, column)) in self.columns.iter_mut().enumerate() {
                 ui.vertical(|ui| {
-                    column.width = column
-                        .width
-                        .max(name.cstr_c(VISIBLE_DARK).label(ui).rect.width());
+                    ui.set_width(column.width);
+                    ui.vertical_centered_justified(|ui| {
+                        let resp = if column.sortable {
+                            let mut btn = Button::click(name.to_string()).gray(ui);
+                            btn = if self
+                                .sorting
+                                .as_ref()
+                                .is_some_and(|(i_sort, _)| *i_sort == i)
+                            {
+                                btn.bg(ui)
+                            } else {
+                                btn
+                            };
+                            btn.ui(ui)
+                        } else {
+                            Button::click(name.to_string())
+                                .enabled(false)
+                                .gray(ui)
+                                .ui(ui)
+                        };
+                        if resp.clicked() {
+                            if self
+                                .sorting
+                                .is_some_and(|(s_i, s)| s_i == i && s == Sorting::Desc)
+                            {
+                                self.sorting = Some((i, Sorting::Asc));
+                            } else {
+                                self.sorting = Some((i, Sorting::Desc));
+                            }
+                            need_sort = true;
+                        }
+                        let rect = resp.rect;
+                        column.width = column.width.max(rect.width());
+                        ui.painter().line_segment(
+                            [
+                                rect.left_top() + egui::vec2(column.width + 5.0, 0.0),
+                                rect.left_bottom() + egui::vec2(column.width + 5.0, 0.0),
+                            ],
+                            STROKE_DARK,
+                        );
+                    });
                     for (i, data) in self.data.iter().enumerate() {
                         let height = &mut self.heights[i];
                         let hovered = self.hovered_row.is_some_and(|r| i == r);
@@ -102,19 +155,11 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                         });
 
                         if selected {
-                            ui.painter().line_segment(
-                                [cell.left_top(), cell.right_top()],
-                                Stroke {
-                                    width: 1.0,
-                                    color: YELLOW,
-                                },
-                            );
+                            ui.painter()
+                                .line_segment([cell.left_top(), cell.right_top()], STROKE_YELLOW);
                             ui.painter().line_segment(
                                 [cell.left_bottom(), cell.right_bottom()],
-                                Stroke {
-                                    width: 1.0,
-                                    color: YELLOW,
-                                },
+                                STROKE_YELLOW,
                             );
                         }
                         ui.reset_style();
@@ -123,6 +168,22 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
             }
         });
         if self.cached {
+            if need_sort {
+                let Some((i, sort)) = self.sorting else {
+                    panic!("No sorting data")
+                };
+                let asc = sort == Sorting::Asc;
+                let value = self.columns.values().nth(i).unwrap().value;
+                self.data.sort_by(|a, b| {
+                    let a = (value)(a);
+                    let b = (value)(b);
+                    if asc {
+                        VarValue::compare(&a, &b).unwrap()
+                    } else {
+                        VarValue::compare(&b, &a).unwrap()
+                    }
+                });
+            }
             let id = Id::new(self.name);
             ui.ctx().data_mut(|w| w.insert_temp(id, self.clone()));
         }
