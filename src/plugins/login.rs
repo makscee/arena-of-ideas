@@ -38,7 +38,7 @@ impl LoginPlugin {
     }
     fn complete(user: TUser, world: &mut World) {
         LoginOption { user }.save(world);
-        ServerPlugin::subscribe_game();
+        QueryPlugin::subscribe_game();
         once_on_subscription_applied(|| {
             OperationsPlugin::add(|world| {
                 GameAssets::cache_tables(world);

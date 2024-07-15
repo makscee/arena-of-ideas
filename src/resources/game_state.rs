@@ -48,6 +48,15 @@ lazy_static! {
             GameState::TableView(QUERY_LEADERBOARD),
             [GameOption::Connect, GameOption::Table(QUERY_LEADERBOARD)].into(),
         );
+        m.insert(
+            GameState::TableView(QUERY_BATTLE_HISTORY),
+            [
+                GameOption::Connect,
+                GameOption::ForceLogin,
+                GameOption::Table(QUERY_BATTLE_HISTORY),
+            ]
+            .into(),
+        );
         m
     };
 }

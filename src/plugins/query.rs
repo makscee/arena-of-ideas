@@ -2,24 +2,25 @@ use spacetimedb_sdk::subscribe_owned;
 
 use super::*;
 
-pub struct ServerPlugin;
+pub struct QueryPlugin;
 
-impl Plugin for ServerPlugin {
+impl Plugin for QueryPlugin {
     fn build(&self, _: &mut App) {}
 }
 
-static SERVER_DATA: Mutex<ServerData> = Mutex::new(ServerData {
+static SERVER_DATA: Mutex<QueryData> = Mutex::new(QueryData {
     subscribed_queries: Vec::new(),
 });
 
 #[derive(Resource)]
-struct ServerData {
+struct QueryData {
     subscribed_queries: Vec<String>,
 }
 
 pub const QUERY_LEADERBOARD: &str = "select * from TArenaLeaderboard";
+pub const QUERY_BATTLE_HISTORY: &str = "select * from TBattle";
 
-impl ServerPlugin {
+impl QueryPlugin {
     pub fn subscribe(queries: Vec<String>) -> bool {
         let subscribed = &mut SERVER_DATA.lock().unwrap().subscribed_queries;
         let mut added = false;

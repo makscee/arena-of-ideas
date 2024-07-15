@@ -203,6 +203,8 @@ pub trait CtxExt {
     fn is_name_enabled(&self, name: &str) -> bool;
     fn is_path_enabled(&self, path: &str) -> bool;
     fn cur_enabled(&self) -> bool;
+    fn set_name_enabled(&self, name: &str, v: bool);
+    fn set_path_enabled(&self, path: &str, v: bool);
     fn flip_name_enabled(&self, name: &str);
     fn flip_path_enabled(&self, path: &str);
     fn path(&self) -> String;
@@ -227,6 +229,13 @@ impl CtxExt for egui::Context {
     }
     fn cur_enabled(&self) -> bool {
         self.is_path_enabled(&self.path())
+    }
+    fn set_name_enabled(&self, name: &str, v: bool) {
+        let p = self.path_with(name);
+        self.set_path_enabled(&p, v)
+    }
+    fn set_path_enabled(&self, path: &str, v: bool) {
+        self.data_mut(|w| w.insert_temp(Id::new(path), v))
     }
     fn flip_name_enabled(&self, name: &str) {
         let p = self.path_with(name);

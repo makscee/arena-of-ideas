@@ -440,7 +440,7 @@ impl ShopPlugin {
                     "Defeat".cstr_cs(RED, CstrStyle::Heading)
                 }
                 .label(ui);
-                "TArenaRun Over".cstr_cs(YELLOW, CstrStyle::Bold).label(ui);
+                "Run Over".cstr_cs(YELLOW, CstrStyle::Bold).label(ui);
                 text_dots_text(
                     &format!("Final round").cstr(),
                     &run.round.to_string().cstr_cs(YELLOW, CstrStyle::Bold),

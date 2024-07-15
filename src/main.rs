@@ -35,7 +35,7 @@ fn main() {
     let mut app = App::new();
     let args = Args::try_parse().unwrap_or_default();
     let target = match args.mode {
-        RunMode::Regular => GameState::TableView(QUERY_LEADERBOARD),
+        RunMode::Regular => GameState::TableView(QUERY_BATTLE_HISTORY),
         RunMode::Custom => GameState::CustomBattle,
         RunMode::Test => GameState::TestScenariosRun,
         RunMode::Sync => GameState::ServerSync,
@@ -95,7 +95,13 @@ fn main() {
             ShopPlugin,
             UnitPlugin,
         ))
-        .add_plugins((OperationsPlugin, ProfilePlugin, ServerPlugin, ConnectPlugin))
+        .add_plugins((
+            OperationsPlugin,
+            ProfilePlugin,
+            QueryPlugin,
+            ConnectPlugin,
+            TableViewPlugin,
+        ))
         .run();
 }
 

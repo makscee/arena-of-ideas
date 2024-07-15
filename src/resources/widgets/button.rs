@@ -4,6 +4,7 @@ use super::*;
 
 pub struct Button {
     name: String,
+    show_name: Option<Cstr>,
     variant: ButtonVariant,
     title: Option<String>,
     enabled: bool,
@@ -23,6 +24,7 @@ impl Default for Button {
             variant: default(),
             title: default(),
             enabled: true,
+            show_name: None,
         }
     }
 }
@@ -30,6 +32,10 @@ impl Default for Button {
 impl Button {
     pub fn click(name: String) -> Self {
         Self { name, ..default() }
+    }
+    pub fn cstr(mut self, name: Cstr) -> Self {
+        self.show_name = Some(name);
+        self
     }
     pub fn toggle_child(name: String) -> Self {
         Self {
@@ -79,14 +85,18 @@ impl Button {
             style.visuals.widgets.noninteractive.bg_stroke.color = TRANSPARENT;
             style.visuals.widgets.noninteractive.fg_stroke.color = VISIBLE_DARK;
         }
-        let r = egui::Button::new(self.name)
-            .wrap(false)
-            .sense(if self.enabled {
-                Sense::click()
-            } else {
-                Sense::hover()
-            })
-            .ui(ui);
+        let r = if let Some(show) = self.show_name {
+            egui::Button::new(show.widget(1.0, ui))
+        } else {
+            egui::Button::new(self.name)
+        }
+        .wrap(false)
+        .sense(if self.enabled {
+            Sense::click()
+        } else {
+            Sense::hover()
+        })
+        .ui(ui);
         if r.clicked() {
             if matches!(self.variant, ButtonVariant::ToggleChild) {
                 ui.ctx().flip_path_enabled(&path);

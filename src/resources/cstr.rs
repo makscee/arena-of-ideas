@@ -139,6 +139,10 @@ impl Cstr {
         }
     }
 
+    pub fn button(self, ui: &mut Ui) -> Response {
+        Button::click(self.to_string()).cstr(self).ui(ui)
+    }
+
     pub fn label(&self, ui: &mut Ui) -> Response {
         self.as_label(ui).selectable(false).wrap(false).ui(ui)
     }
@@ -398,6 +402,13 @@ impl From<&str> for CstrSub {
             text: value.into(),
             color: default(),
             style: default(),
+        }
+    }
+}
+impl From<Vec<Cstr>> for Cstr {
+    fn from(value: Vec<Cstr>) -> Self {
+        Self {
+            subs: value.into_iter().flat_map(|v| v.subs).collect_vec(),
         }
     }
 }

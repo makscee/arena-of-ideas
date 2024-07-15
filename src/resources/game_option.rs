@@ -24,7 +24,7 @@ impl GameOption {
                 world.get_resource::<LoginOption>().is_some()
             }
             GameOption::TestScenariosLoad => world.get_resource::<TestScenarios>().is_some(),
-            GameOption::Table(query) => ServerPlugin::is_subscribed(query),
+            GameOption::Table(query) => QueryPlugin::is_subscribed(query),
         }
     }
     pub fn fulfill(self, world: &mut World) {
@@ -39,7 +39,7 @@ impl GameOption {
             GameOption::Login | GameOption::ForceLogin => LoginOption::fulfill(world),
             GameOption::TestScenariosLoad => GameState::TestScenariosLoad.set_next(world),
             GameOption::Table(query) => {
-                if ServerPlugin::subscribe([query.to_owned()].into()) {
+                if QueryPlugin::subscribe([query.to_owned()].into()) {
                     once_on_subscription_applied(GameState::proceed_op);
                 } else {
                     GameState::proceed(world);

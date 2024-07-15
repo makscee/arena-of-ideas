@@ -27,7 +27,7 @@ impl ConnectPlugin {
         info!("Connect start");
         once_on_connect(|creds, _| {
             let creds = creds.clone();
-            ServerPlugin::subscribe_connect();
+            QueryPlugin::subscribe_connect();
             once_on_subscription_applied(|| {
                 OperationsPlugin::add(|world| {
                     ConnectOption { creds }.save(world);

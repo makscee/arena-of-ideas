@@ -1,3 +1,4 @@
+use egui_extras::{Column, TableBuilder};
 use ordered_hash_map::OrderedHashMap;
 
 use super::*;
@@ -16,8 +17,8 @@ pub struct Table<T> {
 
 #[derive(Clone)]
 pub struct TableColumn<T> {
-    show: fn(&T, &Self, &mut Ui) -> Response,
-    value: fn(&T) -> VarValue,
+    show: fn(&T, &Self, &mut Ui, &mut World) -> Response,
+    value: Option<fn(&T) -> VarValue>,
     width: f32,
     sortable: bool,
 }
@@ -29,21 +30,37 @@ enum Sorting {
 }
 
 impl<T> TableColumn<T> {
-    pub fn new(value: fn(&T) -> VarValue) -> Self {
-        Self {
-            show: |v, s, ui| (s.value)(v).cstr().label(ui),
-            value,
-            width: 0.0,
-            sortable: true,
-        }
-    }
-    pub fn show(mut self, f: fn(&T, &Self, &mut Ui) -> Response) -> Self {
+    pub fn show_fn(mut self, f: fn(&T, &Self, &mut Ui, &mut World) -> Response) -> Self {
         self.show = f;
+        self
+    }
+    pub fn value_fn(mut self, f: fn(&T) -> VarValue) -> Self {
+        self.value = Some(f);
+        self.sortable = true;
         self
     }
     pub fn no_sort(mut self) -> Self {
         self.sortable = false;
         self
+    }
+}
+
+pub fn column_value<T>(value: fn(&T) -> VarValue) -> TableColumn<T> {
+    TableColumn {
+        show: |v, s, ui, _| (s.value.unwrap())(v).cstr().label(ui),
+        value: Some(value),
+        width: 0.0,
+        sortable: true,
+    }
+}
+pub fn column_show<T>(
+    show: fn(&T, &TableColumn<T>, &mut Ui, world: &mut World) -> Response,
+) -> TableColumn<T> {
+    TableColumn {
+        show,
+        value: None,
+        width: 0.0,
+        sortable: false,
     }
 }
 
@@ -60,9 +77,18 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
             sorting: None,
         }
     }
-    pub fn new_cached(name: &'static str, data: fn() -> Vec<T>, ctx: &egui::Context) -> Self {
+    pub fn new_cached_refreshed(
+        name: &'static str,
+        refresh: bool,
+        data: impl Fn() -> Vec<T>,
+        ctx: &egui::Context,
+    ) -> Self {
         let id = Id::new(name);
-        let cache = ctx.data_mut(|w| w.get_temp::<Table<T>>(id));
+        let cache = if refresh {
+            None
+        } else {
+            ctx.data_mut(|w| w.get_temp::<Table<T>>(id))
+        };
         let table = if let Some(table) = cache {
             table
         } else {
@@ -73,13 +99,18 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
         };
         table
     }
-    pub fn ui(&mut self, ui: &mut Ui) {
+    pub fn new_cached(name: &'static str, data: impl Fn() -> Vec<T>, ctx: &egui::Context) -> Self {
+        Self::new_cached_refreshed(name, false, data, ctx)
+    }
+    pub fn ui(&mut self, ui: &mut Ui, world: &mut World) {
         let mut need_sort = false;
-        ui.horizontal(|ui| {
-            for (i, (name, column)) in self.columns.iter_mut().enumerate() {
-                ui.vertical(|ui| {
-                    ui.set_width(column.width);
-                    ui.vertical_centered_justified(|ui| {
+
+        TableBuilder::new(ui)
+            .striped(true)
+            .columns(Column::auto(), self.columns.len())
+            .header(30.0, |mut row| {
+                for (i, (name, column)) in self.columns.iter().enumerate() {
+                    row.col(|ui| {
                         let resp = if column.sortable {
                             let mut btn = Button::click(name.to_string()).gray(ui);
                             btn = if self
@@ -109,71 +140,28 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                             }
                             need_sort = true;
                         }
-                        let rect = resp.rect;
-                        column.width = column.width.max(rect.width());
-                        ui.painter().line_segment(
-                            [
-                                rect.left_top() + egui::vec2(column.width + 5.0, 0.0),
-                                rect.left_bottom() + egui::vec2(column.width + 5.0, 0.0),
-                            ],
-                            STROKE_DARK,
-                        );
                     });
-                    for (i, data) in self.data.iter().enumerate() {
-                        let height = &mut self.heights[i];
-                        let hovered = self.hovered_row.is_some_and(|r| i == r);
-                        let selected = self.selected_row.is_some_and(|r| i == r);
-                        if hovered {
-                            ui.style_mut()
-                                .visuals
-                                .widgets
-                                .noninteractive
-                                .fg_stroke
-                                .color = VISIBLE_BRIGHT;
-                        } else if selected {
-                            ui.style_mut()
-                                .visuals
-                                .widgets
-                                .noninteractive
-                                .fg_stroke
-                                .color = YELLOW;
-                        }
-                        let cell =
-                            Rect::from_min_size(ui.cursor().min, egui::vec2(column.width, *height))
-                                .expand(3.0);
-                        ui.horizontal(|ui| {
-                            ui.set_min_height(*height);
-                            let r = (column.show)(data, column, ui);
-                            if r.hovered() {
-                                self.hovered_row = Some(i);
-                            }
-                            if r.clicked() {
-                                self.selected_row = Some(i);
-                            }
-                            *height = height.max(r.rect.height());
-                            column.width = column.width.max(r.rect.width());
+                }
+            })
+            .body(|body| {
+                body.rows(30.0, self.data.len(), |mut row| {
+                    let row_i = row.index();
+                    for (_, col) in self.columns.iter() {
+                        row.col(|ui| {
+                            let data = &self.data[row_i];
+                            (col.show)(data, col, ui, world);
                         });
-
-                        if selected {
-                            ui.painter()
-                                .line_segment([cell.left_top(), cell.right_top()], STROKE_YELLOW);
-                            ui.painter().line_segment(
-                                [cell.left_bottom(), cell.right_bottom()],
-                                STROKE_YELLOW,
-                            );
-                        }
-                        ui.reset_style();
                     }
-                });
-            }
-        });
+                })
+            });
+
         if self.cached {
             if need_sort {
                 let Some((i, sort)) = self.sorting else {
                     panic!("No sorting data")
                 };
                 let asc = sort == Sorting::Asc;
-                let value = self.columns.values().nth(i).unwrap().value;
+                let value = self.columns.values().nth(i).unwrap().value.unwrap();
                 self.data.sort_by(|a, b| {
                     let a = (value)(a);
                     let b = (value)(b);

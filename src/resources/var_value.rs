@@ -252,6 +252,7 @@ impl VarValue {
             (VarValue::Float(a), VarValue::Float(b)) => Ok(a.total_cmp(b)),
             (VarValue::Int(a), VarValue::Int(b)) => Ok(a.cmp(b)),
             (VarValue::Bool(a), VarValue::Bool(b)) => Ok(a.cmp(b)),
+            (VarValue::String(a), VarValue::String(b)) => Ok(a.cmp(b)),
             _ => Err(anyhow!("Comparing {a:?} and {b:?} not supported")),
         }
     }

@@ -1,10 +1,10 @@
 use super::*;
 
-pub struct StateMenu {
+pub struct SectionMenu {
     buttons: Vec<(&'static str, GameState)>,
 }
 
-impl Default for StateMenu {
+impl Default for SectionMenu {
     fn default() -> Self {
         Self {
             buttons: vec![
@@ -13,13 +13,14 @@ impl Default for StateMenu {
                 ("SHOP", GameState::Shop),
                 ("GAME", GameState::CustomBattle),
                 ("LEADERBOARD", GameState::TableView(QUERY_LEADERBOARD)),
+                ("HISTORY", GameState::TableView(QUERY_BATTLE_HISTORY)),
                 ("TEST", GameState::TestScenariosRun),
             ],
         }
     }
 }
 
-impl StateMenu {
+impl SectionMenu {
     pub fn show(self, ctx: &egui::Context, world: &mut World) {
         TopBottomPanel::top("State Menu")
             .frame(Frame::none().outer_margin(Margin {

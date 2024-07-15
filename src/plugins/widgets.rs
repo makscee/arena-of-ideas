@@ -42,7 +42,7 @@ impl WidgetsPlugin {
                 })
             });
 
-        StateMenu::default().show(ctx, world);
+        SectionMenu::default().show(ctx, world);
 
         let state = cur_state(world);
 

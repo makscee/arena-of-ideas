@@ -351,7 +351,7 @@ impl TArenaRun {
         if !s.available {
             return Err("Unit already bought".to_owned());
         }
-        if s.price > self.g {
+        if s.price - discount > self.g {
             return Err("Not enough G".to_owned());
         }
         self.g -= s.price - discount;

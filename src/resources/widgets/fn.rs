@@ -22,7 +22,7 @@ pub fn center_window(name: &str, ui: &mut Ui, add_contents: impl FnOnce(&mut Ui)
 }
 pub fn text_dots_text(text1: &Cstr, text2: &Cstr, ui: &mut Ui) {
     ui.horizontal(|ui| {
-        let rect = ui.max_rect();
+        let rect = ui.available_rect_before_wrap();
         let left = rect.left() + text1.label(ui).rect.width() + 3.0;
         let right = rect.right()
             - 3.0
