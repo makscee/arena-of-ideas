@@ -112,6 +112,20 @@ impl PackedUnit {
             .init(VarName::Position, Vec2::ZERO.into())
             .init(VarName::Visible, true.into())
             .init(VarName::RarityColor, rarity_color(self.rarity).into());
+        if !state.has_value(VarName::HouseColors) {
+            state.init(
+                VarName::HouseColors,
+                self.houses
+                    .iter()
+                    .map(|h| name_color(h))
+                    .collect_vec()
+                    .into(),
+            );
+            state.init(
+                VarName::RarityColors,
+                vec![rarity_color(self.rarity)].into(),
+            );
+        }
         let (triggers, targets, effects) = self.trigger.parse_fire_strings();
         let mut used_definitions: HashSet<String> = default();
         let full_description = triggers

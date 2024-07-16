@@ -219,185 +219,178 @@ impl ShopPlugin {
         world.resource_mut::<ShopData>().stack_source = None;
     }
     pub fn show_containers(wd: &mut WidgetData, ui: &mut Ui, world: &mut World) {
-        if let Some(run) = TArenaRun::get_current() {
-            if let Some((_, pos)) = ui.ctx().get_dragged() {
-                if let Some(pointer) = ui.ctx().pointer_latest_pos() {
-                    ui.painter().arrow(
-                        pos,
-                        pointer.to_vec2() - pos.to_vec2(),
-                        Stroke {
-                            width: 3.0,
-                            color: YELLOW,
-                        },
-                    )
-                }
-            }
-            if let Some((from, to)) = ui.ctx().drag_finished() {
-                let from = from.split("/").collect_vec();
-                let from_faction = Faction::from_str(from[from.len() - 2]).unwrap();
-                let from_slot = usize::from_str(from[from.len() - 1]).unwrap();
-                let to = to.split("/").collect_vec();
-                let to_faction = Faction::from_str(to[to.len() - 2]).unwrap();
-                let to_slot = usize::from_str(to[to.len() - 1]).unwrap();
-                if matches!(from_faction, Faction::Team) && from_faction.eq(&to_faction) {
-                    shop_reorder(from_slot as u8, to_slot as u8);
-                }
-            }
+        let Some(run) = TArenaRun::get_current() else {
+            return;
+        };
 
-            let sd = world.resource::<ShopData>().clone();
+        if let Some((_, pos)) = ui.ctx().get_dragged() {
+            if let Some(pointer) = ui.ctx().pointer_latest_pos() {
+                ui.painter().arrow(
+                    pos,
+                    pointer.to_vec2() - pos.to_vec2(),
+                    Stroke {
+                        width: 3.0,
+                        color: YELLOW,
+                    },
+                )
+            }
+        }
+        if let Some((from, to)) = ui.ctx().drag_finished() {
+            let from = from.split("/").collect_vec();
+            let from_faction = Faction::from_str(from[from.len() - 2]).unwrap();
+            let from_slot = usize::from_str(from[from.len() - 1]).unwrap();
+            let to = to.split("/").collect_vec();
+            let to_faction = Faction::from_str(to[to.len() - 2]).unwrap();
+            let to_slot = usize::from_str(to[to.len() - 1]).unwrap();
+            if matches!(from_faction, Faction::Team) && from_faction.eq(&to_faction) {
+                shop_reorder(from_slot as u8, to_slot as u8);
+            }
+        }
 
-            let team = TTeam::filter_by_id(run.team).unwrap();
-            let g = run.g;
-            UnitContainer::new(Faction::Shop)
-                .direction(Side::Top)
-                .offset([0.0, -sd.case_height])
-                .slots(run.shop_slots.len())
-                .top_content(move |ui, _| {
-                    if TArenaRun::current().fusion.is_some() {
-                        if Button::click("Cancel".into()).ui(ui).clicked() {
-                            fuse_cancel();
-                        }
-                    } else {
-                        if Button::click(format!("-1 G"))
-                            .title("Reroll".into())
-                            .enabled(g >= 1)
-                            .ui(ui)
-                            .clicked()
-                        {
-                            shop_reroll();
-                        }
+        let sd = world.resource::<ShopData>().clone();
+
+        let team = TTeam::filter_by_id(run.team).unwrap();
+        let g = run.g;
+        UnitContainer::new(Faction::Shop)
+            .direction(Side::Top)
+            .offset([0.0, -sd.case_height])
+            .slots(run.shop_slots.len())
+            .top_content(move |ui, _| {
+                if TArenaRun::current().fusion.is_some() {
+                    if Button::click("Cancel".into()).ui(ui).clicked() {
+                        fuse_cancel();
                     }
-                })
-                .slot_content(move |slot, _, ui, world| {
-                    if run.fusion.is_some() {
-                        if Button::click("Choose".into()).ui(ui).clicked() {
-                            fuse_choose(slot as u8);
-                            once_on_fuse_choose(|_, _, status, _| match status {
-                                StdbStatus::Committed => {}
-                                StdbStatus::Failed(e) => e.notify_error(),
-                                _ => panic!(),
-                            });
-                        }
-                    } else {
-                        let ss = &run.shop_slots[slot];
-                        if ss.available {
-                            if let Some((stack_source, faction)) = sd.stack_source {
-                                if slot == stack_source && faction.eq(&Faction::Shop) {
-                                    if Button::click("Cancel".into()).ui(ui).clicked() {
-                                        Self::cancel_stack(world);
-                                    }
-                                }
-                            } else {
-                                if Button::click(format!("-{} G", ss.price))
-                                    .title("buy".into())
-                                    .enabled(g >= ss.price)
-                                    .ui(ui)
-                                    .clicked()
-                                {
-                                    shop_buy(slot as u8);
-                                }
-                                if !ss.stack_targets.is_empty() {
-                                    let price = ss.price - 1;
-                                    if Button::click(format!("-{} G", price))
-                                        .title("stack".into())
-                                        .enabled(g >= price)
-                                        .ui(ui)
-                                        .clicked()
-                                    {
-                                        let mut sd = world.resource_mut::<ShopData>();
-                                        sd.stack_source = Some((slot, Faction::Shop));
-                                        sd.stack_targets = ss
-                                            .stack_targets
-                                            .iter()
-                                            .map(|v| *v as usize)
-                                            .collect_vec();
-                                        if ss.stack_targets.len() == 1 {
-                                            Self::do_stack(ss.stack_targets[0], world);
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                } else {
+                    if Button::click(format!("-1 G"))
+                        .title("Reroll".into())
+                        .enabled(g >= 1)
+                        .ui(ui)
+                        .clicked()
+                    {
+                        shop_reroll();
                     }
-                })
-                .hover_content(Self::container_on_hover)
-                .ui(wd, ui, world);
-            let slots = GameAssets::get(world).global_settings.team_slots as usize;
-            let run = TArenaRun::current();
-            UnitContainer::new(Faction::Team)
-                .direction(Side::Bottom)
-                .offset([0.0, sd.case_height])
-                .slots(slots.max(team.units.len()))
-                .max_slots(slots)
-                .slot_content(move |slot, e, ui, world| {
-                    if e.is_some() && run.fusion.is_none() {
+                }
+            })
+            .slot_content(move |slot, _, ui, world| {
+                if run.fusion.is_some() {
+                    if Button::click("Choose".into()).ui(ui).clicked() {
+                        fuse_choose(slot as u8);
+                        once_on_fuse_choose(|_, _, status, _| match status {
+                            StdbStatus::Committed => {}
+                            StdbStatus::Failed(e) => e.notify_error(),
+                            _ => panic!(),
+                        });
+                    }
+                } else {
+                    let ss = &run.shop_slots[slot];
+                    if ss.available {
                         if let Some((stack_source, faction)) = sd.stack_source {
-                            if slot == stack_source && faction.eq(&Faction::Team) {
+                            if slot == stack_source && faction.eq(&Faction::Shop) {
                                 if Button::click("Cancel".into()).ui(ui).clicked() {
                                     Self::cancel_stack(world);
                                 }
-                            } else if sd.stack_targets.contains(&slot) {
-                                if Button::click("Stack".into()).ui(ui).clicked() {
-                                    Self::do_stack(slot as u8, world);
-                                }
-                            }
-                        } else if let Some(fuse_source) = sd.fuse_source {
-                            if slot == fuse_source {
-                                if Button::click("Cancel".into()).ui(ui).clicked() {
-                                    let mut sd = world.resource_mut::<ShopData>();
-                                    sd.fuse_source = None;
-                                    sd.fuse_targets.clear();
-                                }
-                            } else if sd.fuse_targets.contains(&slot) {
-                                if Button::click("Choose".into()).ui(ui).clicked() {
-                                    fuse_start(slot as u8, fuse_source as u8);
-                                    once_on_fuse_start(|_, _, status, _, _| match status {
-                                        StdbStatus::Committed => {}
-                                        StdbStatus::Failed(e) => e.notify_error(),
-                                        _ => panic!(),
-                                    });
-                                }
                             }
                         } else {
-                            if let Some(ts) = run.team_slots.get(slot) {
-                                if Button::click("+1 G".into())
-                                    .title("Sell".into())
+                            if Button::click(format!("-{} G", ss.price))
+                                .title("buy".into())
+                                .enabled(g >= ss.price)
+                                .ui(ui)
+                                .clicked()
+                            {
+                                shop_buy(slot as u8);
+                            }
+                            if !ss.stack_targets.is_empty() {
+                                let price = ss.price - 1;
+                                if Button::click(format!("-{} G", price))
+                                    .title("stack".into())
+                                    .enabled(g >= price)
                                     .ui(ui)
                                     .clicked()
                                 {
-                                    shop_sell(slot as u8);
-                                }
-                                if !ts.stack_targets.is_empty() {
-                                    if Button::click("Stack".into()).ui(ui).clicked() {
-                                        let mut sd = world.resource_mut::<ShopData>();
-                                        sd.stack_source = Some((slot, Faction::Team));
-                                        sd.stack_targets = ts
-                                            .stack_targets
-                                            .iter()
-                                            .map(|v| *v as usize)
-                                            .collect_vec();
-                                    }
-                                }
-                                if !ts.fuse_targets.is_empty() {
-                                    if Button::click("Fuse".into()).ui(ui).clicked() {
-                                        let mut sd = world.resource_mut::<ShopData>();
-                                        sd.fuse_source = Some(slot);
-                                        sd.fuse_targets = ts
-                                            .fuse_targets
-                                            .iter()
-                                            .map(|v| *v as usize)
-                                            .collect_vec();
+                                    let mut sd = world.resource_mut::<ShopData>();
+                                    sd.stack_source = Some((slot, Faction::Shop));
+                                    sd.stack_targets =
+                                        ss.stack_targets.iter().map(|v| *v as usize).collect_vec();
+                                    if ss.stack_targets.len() == 1 {
+                                        Self::do_stack(ss.stack_targets[0], world);
                                     }
                                 }
                             }
                         }
                     }
-                })
-                .hover_content(Self::container_on_hover)
-                .ui(wd, ui, world);
-        }
+                }
+            })
+            .hover_content(Self::container_on_hover)
+            .ui(wd, ui, world);
+        let slots = GameAssets::get(world).global_settings.team_slots as usize;
+        let run = TArenaRun::current();
+        UnitContainer::new(Faction::Team)
+            .direction(Side::Bottom)
+            .offset([0.0, sd.case_height])
+            .slots(slots.max(team.units.len()))
+            .max_slots(slots)
+            .slot_content(move |slot, e, ui, world| {
+                if e.is_some() && run.fusion.is_none() {
+                    if let Some((stack_source, faction)) = sd.stack_source {
+                        if slot == stack_source && faction.eq(&Faction::Team) {
+                            if Button::click("Cancel".into()).ui(ui).clicked() {
+                                Self::cancel_stack(world);
+                            }
+                        } else if sd.stack_targets.contains(&slot) {
+                            if Button::click("Stack".into()).ui(ui).clicked() {
+                                Self::do_stack(slot as u8, world);
+                            }
+                        }
+                    } else if let Some(fuse_source) = sd.fuse_source {
+                        if slot == fuse_source {
+                            if Button::click("Cancel".into()).ui(ui).clicked() {
+                                let mut sd = world.resource_mut::<ShopData>();
+                                sd.fuse_source = None;
+                                sd.fuse_targets.clear();
+                            }
+                        } else if sd.fuse_targets.contains(&slot) {
+                            if Button::click("Choose".into()).ui(ui).clicked() {
+                                fuse_start(slot as u8, fuse_source as u8);
+                                once_on_fuse_start(|_, _, status, _, _| match status {
+                                    StdbStatus::Committed => {}
+                                    StdbStatus::Failed(e) => e.notify_error(),
+                                    _ => panic!(),
+                                });
+                            }
+                        }
+                    } else {
+                        if let Some(ts) = run.team_slots.get(slot) {
+                            if Button::click("+1 G".into())
+                                .title("Sell".into())
+                                .ui(ui)
+                                .clicked()
+                            {
+                                shop_sell(slot as u8);
+                            }
+                            if !ts.stack_targets.is_empty() {
+                                if Button::click("Stack".into()).ui(ui).clicked() {
+                                    let mut sd = world.resource_mut::<ShopData>();
+                                    sd.stack_source = Some((slot, Faction::Team));
+                                    sd.stack_targets =
+                                        ts.stack_targets.iter().map(|v| *v as usize).collect_vec();
+                                }
+                            }
+                            if !ts.fuse_targets.is_empty() {
+                                if Button::click("Fuse".into()).ui(ui).clicked() {
+                                    let mut sd = world.resource_mut::<ShopData>();
+                                    sd.fuse_source = Some(slot);
+                                    sd.fuse_targets =
+                                        ts.fuse_targets.iter().map(|v| *v as usize).collect_vec();
+                                }
+                            }
+                        }
+                    }
+                }
+            })
+            .hover_content(Self::container_on_hover)
+            .ui(wd, ui, world);
     }
-    fn container_on_hover(_: usize, entity: Option<Entity>, ui: &mut Ui, world: &mut World) {
+    pub fn container_on_hover(_: usize, entity: Option<Entity>, ui: &mut Ui, world: &mut World) {
         let Some(entity) = entity else {
             return;
         };

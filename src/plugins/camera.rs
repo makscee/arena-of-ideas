@@ -35,6 +35,10 @@ const SCALE_CHANGE_SPEED: f32 = 3.0;
 pub const SLOT_SPACING: f32 = 3.0;
 
 impl CameraPlugin {
+    pub fn pixel_unit(ctx: &egui::Context, world: &World) -> f32 {
+        let width = ctx.screen_rect().width();
+        width / world.resource::<CameraData>().cur_scale
+    }
     pub fn entity(world: &World) -> Entity {
         world.resource::<CameraData>().entity
     }

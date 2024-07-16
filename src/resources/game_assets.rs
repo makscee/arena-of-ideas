@@ -50,9 +50,8 @@ pub fn name_color(name: &str) -> Color32 {
         .lock()
         .unwrap()
         .get(name)
-        .with_context(|| format!("Failed to find color for {name}"))
-        .unwrap()
-        .clone()
+        .cloned()
+        .unwrap_or(MISSING_COLOR)
 }
 pub fn definition(name: &str) -> Cstr {
     NAME_DEFINITIONS.lock().unwrap().get(name).unwrap().clone()

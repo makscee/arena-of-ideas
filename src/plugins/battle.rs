@@ -10,6 +10,10 @@ impl Plugin for BattlePlugin {
             .add_systems(OnExit(GameState::Battle), Self::on_exit)
             .add_systems(OnEnter(GameState::CustomBattle), Self::on_enter_custom)
             .add_systems(OnEnter(GameState::ShopBattle), Self::on_enter_shop)
+            .add_systems(
+                Update,
+                Self::hover_check.run_if(in_state(GameState::Battle)),
+            )
             .init_resource::<BattleData>();
     }
 }
@@ -300,6 +304,41 @@ impl BattlePlugin {
                 }
             });
         });
+    }
+    pub fn hover_check(world: &mut World) {
+        let t = gt().play_head();
+        let Some(cursor_pos) = cursor_world_pos(world) else {
+            return;
+        };
+        let Some(ctx) = &egui_context(world) else {
+            return;
+        };
+        for unit in UnitPlugin::collect_all(world) {
+            let state = VarState::get(unit, world);
+            if !state.get_bool_at(VarName::Visible, t).unwrap_or(true) {
+                continue;
+            }
+            let pos = state.get_vec2_at(VarName::Position, t).unwrap();
+            if (pos - cursor_pos).length() < 1.0 {
+                Window::new("hover_slot")
+                    .title_bar(false)
+                    .frame(Frame::none())
+                    .max_width(300.0)
+                    .pivot(Align2::LEFT_CENTER)
+                    .fixed_pos(ctx.pointer_latest_pos().unwrap_or_default())
+                    .resizable(false)
+                    .interactable(false)
+                    .show(ctx, |ui| {
+                        ui.vertical_centered_justified(|ui| {
+                            match unit_card(t, state, ui, world) {
+                                Ok(_) => {}
+                                Err(e) => error!("{e}"),
+                            };
+                        });
+                    });
+                return;
+            }
+        }
     }
 }
 

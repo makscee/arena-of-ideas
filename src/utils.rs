@@ -147,6 +147,9 @@ pub fn cursor_pos(world: &mut World) -> Option<Vec2> {
     let window = world.query::<&bevy::window::Window>().single(world);
     window.cursor_position()
 }
+pub fn cursor_world_pos(world: &mut World) -> Option<Vec2> {
+    cursor_pos(world).map(|p| screen_to_world(p, world))
+}
 pub fn get_children(entity: Entity, world: &World) -> Vec<Entity> {
     world
         .get::<Children>(entity)

@@ -203,6 +203,9 @@ impl VarState {
         value
     }
 
+    pub fn get_vec2_at(&self, var: VarName, t: f32) -> Result<Vec2> {
+        self.get_value_at(var, t)?.get_vec2()
+    }
     pub fn get_vec2(&self, var: VarName) -> Result<Vec2> {
         self.get_value_last(var)?.get_vec2()
     }

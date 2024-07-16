@@ -6,7 +6,8 @@ pub struct UnitContainer {
     faction: Faction,
     slots: usize,
     max_slots: usize,
-    left_to_right: bool,
+    right_to_left: bool,
+    hug_unit: bool,
     offset: egui::Vec2,
     top_content: Option<Box<dyn FnOnce(&mut Ui, &mut World) + Send + Sync>>,
     slot_content: Option<Box<dyn Fn(usize, Option<Entity>, &mut Ui, &mut World) + Send + Sync>>,
@@ -36,7 +37,8 @@ impl UnitContainer {
             slots: 5,
             max_slots: 5,
             offset: default(),
-            left_to_right: false,
+            right_to_left: false,
+            hug_unit: false,
             top_content: default(),
             slot_content: default(),
             hover_content: default(),
@@ -52,8 +54,12 @@ impl UnitContainer {
         self.max_slots = value;
         self
     }
-    pub fn left_to_right(mut self) -> Self {
-        self.left_to_right = true;
+    pub fn right_to_left(mut self) -> Self {
+        self.right_to_left = true;
+        self
+    }
+    pub fn hug_unit(mut self) -> Self {
+        self.hug_unit = true;
         self
     }
     pub fn offset(mut self, value: [f32; 2]) -> Self {
@@ -100,7 +106,11 @@ impl UnitContainer {
         };
         const MARGIN: Margin = Margin::same(8.0);
         let available_rect = ui.available_rect_before_wrap();
-        let max_size = available_rect.width() / self.slots as f32 - MARGIN.left - MARGIN.right;
+        let max_size = if self.hug_unit {
+            CameraPlugin::pixel_unit(ui.ctx(), world) * 2.0
+        } else {
+            available_rect.width() / self.slots as f32 - MARGIN.left - MARGIN.right
+        };
         const FRAME: Frame = Frame {
             inner_margin: MARGIN,
             outer_margin: Margin::ZERO,
@@ -125,7 +135,7 @@ impl UnitContainer {
                 }
                 ui.columns(self.slots, |ui| {
                     for i in 0..self.slots {
-                        let col = if self.left_to_right {
+                        let col = if self.right_to_left {
                             i
                         } else {
                             self.slots - i - 1
