@@ -317,3 +317,20 @@ impl StdbStatusExt for spacetimedb_sdk::reducer::Status {
         }
     }
 }
+
+pub trait GIDExt {
+    fn get_team(self) -> TTeam;
+}
+
+impl GIDExt for GID {
+    fn get_team(self) -> TTeam {
+        if self == 0 {
+            return TTeam {
+                id: 0,
+                owner: 0,
+                units: default(),
+            };
+        }
+        TTeam::filter_by_id(self).unwrap()
+    }
+}

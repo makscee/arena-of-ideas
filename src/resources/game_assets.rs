@@ -152,8 +152,12 @@ impl LoadingPlugin {
             for unit in house.summons.iter() {
                 let mut unit = unit.clone();
                 unit.rarity = -1;
+                colors.insert(unit.name.clone(), color);
                 summons.insert(unit.name.clone(), unit.clone());
             }
+        }
+        for (name, hero) in &heroes {
+            colors.insert(name.clone(), *colors.get(&hero.houses[0]).unwrap());
         }
         *NAME_COLORS.lock().unwrap() = colors;
         for status in statuses.values() {

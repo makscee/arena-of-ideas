@@ -68,7 +68,7 @@ impl Cstr {
                      color,
                      style: _,
                  }| {
-                    let color = color.unwrap_or(VISIBLE_LIGHT);
+                    let color = color.unwrap_or(VISIBLE_DARK);
                     let color = CustomColor {
                         r: color.r(),
                         g: color.g(),
@@ -368,6 +368,37 @@ impl ToCstr for String {
                 style: default(),
             }],
         }
+    }
+}
+impl ToCstr for TBaseUnit {
+    fn cstr(&self) -> Cstr {
+        let color = name_color(&self.house);
+        self.name.cstr_c(color)
+    }
+}
+impl ToCstr for FusedUnit {
+    fn cstr(&self) -> Cstr {
+        let mut c: Cstr = self
+            .bases
+            .iter()
+            .map(|s| s.cstr_c(name_color(s)))
+            .collect_vec()
+            .into();
+        c.join(&"+".cstr()).take()
+    }
+}
+impl ToCstr for TTeam {
+    fn cstr(&self) -> Cstr {
+        self.units
+            .iter()
+            .map(|u| u.cstr().push("|".cstr()).take())
+            .collect_vec()
+            .into()
+    }
+}
+impl ToCstr for TUser {
+    fn cstr(&self) -> Cstr {
+        self.name.cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold)
     }
 }
 

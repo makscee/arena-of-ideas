@@ -8,7 +8,6 @@ pub struct Table<T> {
     name: &'static str,
     columns: OrderedHashMap<&'static str, TableColumn<T>>,
     data: Vec<T>,
-    heights: Vec<f32>,
     hovered_row: Option<usize>,
     selected_row: Option<usize>,
     cached: bool,
@@ -19,7 +18,6 @@ pub struct Table<T> {
 pub struct TableColumn<T> {
     show: fn(&T, &Self, &mut Ui, &mut World) -> Response,
     value: Option<fn(&T) -> VarValue>,
-    width: f32,
     sortable: bool,
 }
 
@@ -49,7 +47,6 @@ pub fn column_value<T>(value: fn(&T) -> VarValue) -> TableColumn<T> {
     TableColumn {
         show: |v, s, ui, _| (s.value.unwrap())(v).cstr().label(ui),
         value: Some(value),
-        width: 0.0,
         sortable: true,
     }
 }
@@ -59,7 +56,6 @@ pub fn column_show<T>(
     TableColumn {
         show,
         value: None,
-        width: 0.0,
         sortable: false,
     }
 }
@@ -69,7 +65,6 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
         Self {
             name,
             columns: default(),
-            heights: vec![0.0; data.len()],
             data,
             cached: false,
             hovered_row: None,
@@ -108,6 +103,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
         TableBuilder::new(ui)
             .striped(true)
             .columns(Column::auto(), self.columns.len())
+            .cell_layout(Layout::centered_and_justified(egui::Direction::TopDown))
             .header(30.0, |mut row| {
                 for (i, (name, column)) in self.columns.iter().enumerate() {
                     row.col(|ui| {

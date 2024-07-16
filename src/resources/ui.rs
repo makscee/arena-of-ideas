@@ -152,7 +152,7 @@ impl UiPlugin {
                     weak_bg_fill: Color32::TRANSPARENT,
                     bg_fill: Color32::from_gray(27),
                     bg_stroke: Stroke::new(1.0, VISIBLE_DARK), // separators, indentation lines
-                    fg_stroke: Stroke::new(1.0, VISIBLE_LIGHT), // normal text color
+                    fg_stroke: Stroke::new(1.0, VISIBLE_DARK), // normal text color
                     rounding: Rounding::same(13.0),
                     expansion: 0.0,
                 },

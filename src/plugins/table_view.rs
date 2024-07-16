@@ -58,40 +58,28 @@ impl TableViewPlugin {
                         column_value(|v: &TBattle| {
                             TUser::filter_by_id(v.owner).unwrap().name.into()
                         })
-                        .no_sort()
                         .show_fn(|v: &TBattle, _, ui, _| {
-                            let name = TUser::filter_by_id(v.owner).unwrap().name.clone();
-                            let resp = Button::click(name.clone()).ui(ui);
+                            let user = TUser::filter_by_id(v.owner).unwrap();
+                            let resp = Button::click(user.name.clone()).cstr(user.cstr()).ui(ui);
                             if resp.clicked() {
-                                debug!("user {name}");
+                                debug!("user {}", user.name);
                             }
                             resp
                         }),
                     )
                     .column(
                         "left",
-                        column_show(|v: &TBattle, _, ui, world| {
-                            let team = TTeam::filter_by_id(v.team_left).unwrap();
-                            let mut bases: Cstr = team
-                                .units
-                                .into_iter()
-                                .map(|u| {
-                                    let mut joined = Cstr::default();
-                                    for base in u.bases {
-                                        let color = name_color(
-                                            &TBaseUnit::filter_by_name(base.clone()).unwrap().house,
-                                        );
-                                        joined.push(base.cstr_c(color));
-                                    }
-                                    joined
-                                })
-                                .collect_vec()
-                                .into();
-                            let resp = bases.join(&" ".cstr()).take().button(ui);
-                            if resp.clicked() {
-                                world.resource_mut::<HistoryData>().team = Some((team.id, true));
-                                ui.ctx().set_name_enabled("Team", true);
-                            }
+                        column_show(|v: &TBattle, _, ui, _| {
+                            let resp = v.team_left.get_team().cstr().button(ui);
+                            if resp.clicked() {}
+                            resp
+                        }),
+                    )
+                    .column(
+                        "right",
+                        column_show(|v: &TBattle, _, ui, _| {
+                            let resp = v.team_right.get_team().cstr().button(ui);
+                            if resp.clicked() {}
                             resp
                         }),
                     )
@@ -119,14 +107,14 @@ impl TableViewPlugin {
                     column_value(|v: &TArenaLeaderboard| (v.round as i32).into()),
                 )
                 .column(
-                    "name",
+                    "user",
                     column_value(|v: &TArenaLeaderboard| {
                         TUser::filter_by_id(v.user).unwrap().name.into()
                     })
                     .no_sort()
                     .show_fn(|v: &TArenaLeaderboard, _, ui, _| {
-                        let name = TUser::filter_by_id(v.user).unwrap().name.clone();
-                        let resp = Button::click(name).ui(ui);
+                        let user = TUser::filter_by_id(v.user).unwrap();
+                        let resp = Button::click(user.name.clone()).cstr(user.cstr()).ui(ui);
                         if resp.clicked() {
                             debug!("click");
                         }
