@@ -320,6 +320,7 @@ impl StdbStatusExt for spacetimedb_sdk::reducer::Status {
 
 pub trait GIDExt {
     fn get_team(self) -> TTeam;
+    fn get_user(self) -> TUser;
 }
 
 impl GIDExt for GID {
@@ -332,5 +333,8 @@ impl GIDExt for GID {
             };
         }
         TTeam::filter_by_id(self).unwrap()
+    }
+    fn get_user(self) -> TUser {
+        TUser::filter_by_id(self).unwrap()
     }
 }

@@ -177,6 +177,29 @@ impl UnitPlugin {
     pub fn despawn(entity: Entity, world: &mut World) {
         world.entity_mut(entity).despawn_recursive();
     }
+    pub fn name_from_bases(bases: Vec<&str>) -> Cstr {
+        let mut name = Cstr::default();
+        let part = 1.0 / bases.len() as f32;
+        for (i, n) in bases.iter().enumerate() {
+            let c = name_color(n);
+            let n = bases[i];
+            if i == 0 {
+                let n = n.split_at((n.len() as f32 * part).ceil() as usize).0;
+                name.push(n.cstr_c(c));
+            } else if i == bases.len() - 1 {
+                let n = n
+                    .split_at((n.len() as f32 * (1.0 - part)).floor() as usize)
+                    .1;
+                name.push(n.cstr_c(c));
+            } else {
+                let part = (n.len() as f32 * (1.0 - part) * 0.5).floor() as usize;
+                let n = n.split_at(part).1;
+                let n = n.split_at(n.len() - part).0;
+                name.push(n.cstr_c(c));
+            }
+        }
+        name
+    }
 }
 
 #[derive(

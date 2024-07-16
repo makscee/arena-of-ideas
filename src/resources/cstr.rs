@@ -378,13 +378,7 @@ impl ToCstr for TBaseUnit {
 }
 impl ToCstr for FusedUnit {
     fn cstr(&self) -> Cstr {
-        let mut c: Cstr = self
-            .bases
-            .iter()
-            .map(|s| s.cstr_c(name_color(s)))
-            .collect_vec()
-            .into();
-        c.join(&"+".cstr()).take()
+        UnitPlugin::name_from_bases(self.bases.iter().map(|s| s.as_str()).collect())
     }
 }
 impl ToCstr for TTeam {

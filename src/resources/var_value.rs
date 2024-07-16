@@ -270,8 +270,10 @@ impl VarValue {
         match (a, b) {
             (VarValue::Float(a), VarValue::Float(b)) => Ok(a.total_cmp(b)),
             (VarValue::Int(a), VarValue::Int(b)) => Ok(a.cmp(b)),
+            (VarValue::GID(a), VarValue::GID(b)) => Ok(a.cmp(b)),
             (VarValue::Bool(a), VarValue::Bool(b)) => Ok(a.cmp(b)),
             (VarValue::String(a), VarValue::String(b)) => Ok(a.cmp(b)),
+            (VarValue::Cstr(a), VarValue::Cstr(b)) => Ok(a.to_string().cmp(&b.to_string())),
             _ => Err(anyhow!("Comparing {a:?} and {b:?} not supported")),
         }
     }
@@ -382,6 +384,11 @@ impl From<Faction> for VarValue {
 impl From<Cstr> for VarValue {
     fn from(value: Cstr) -> Self {
         VarValue::Cstr(value)
+    }
+}
+impl From<GID> for VarValue {
+    fn from(value: GID) -> Self {
+        VarValue::GID(value)
     }
 }
 impl<T> From<Vec<T>> for VarValue

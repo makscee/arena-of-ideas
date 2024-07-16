@@ -4,16 +4,30 @@ pub struct TableViewPlugin;
 
 impl Plugin for TableViewPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<HistoryData>();
+        app.init_resource::<HistoryTables>()
+            .init_resource::<HistoryData>()
+            .add_systems(
+                OnEnter(GameState::TableView(QUERY_BATTLE_HISTORY)),
+                Self::on_enter_history,
+            );
     }
 }
 
 #[derive(Resource, Default)]
+struct HistoryTables {
+    battles: Vec<TBattle>,
+}
+
+#[derive(Resource, Default)]
 struct HistoryData {
-    team: Option<(GID, bool)>,
+    team: Option<GID>,
+    user: Option<GID>,
 }
 
 impl TableViewPlugin {
+    fn on_enter_history(mut data: ResMut<HistoryTables>) {
+        data.battles = TBattle::iter().collect_vec();
+    }
     pub fn ui(query: &str, ctx: &egui::Context, world: &mut World) {
         match query {
             QUERY_LEADERBOARD => Self::draw_leaderboard(ctx, world),
@@ -22,110 +36,49 @@ impl TableViewPlugin {
         }
     }
     fn draw_history(ctx: &egui::Context, world: &mut World) {
-        Tile::left("Battle History")
-            .open()
-            .title()
-            // .child(|ctx, world| {
-            //     Tile::left("Team")
-            //         .title()
-            //         .close_btn()
-            //         .content(|ui, world| {
-            //             let (team_id, refresh) = world.resource::<HistoryData>().team.unwrap();
-            //             if refresh {
-            //                 world.resource_mut::<HistoryData>().team = Some((team_id, false));
-            //             }
-            //             let team = TTeam::filter_by_id(team_id).unwrap();
-            //             let owner = TUser::filter_by_id(team.owner).unwrap();
-            //             text_dots_text(&"owner".cstr(), &owner.name.cstr_c(VISIBLE_BRIGHT), ui);
-            //             br(ui);
-            //             Table::new_cached_refreshed(
-            //                 "Team",
-            //                 refresh,
-            //                 move || TTeam::filter_by_id(team_id).unwrap().units,
-            //                 ui.ctx(),
-            //             )
-            //             .column("name", column_value(|u| u.bases.join(" ").into()))
-            //             .ui(ui, world);
-            //         })
-            //         .show(ctx, world);
-            // })
-            .show(ctx, |ui| {
-                br(ui);
-                Table::new_cached("Battle History", || TBattle::iter().collect_vec(), ui.ctx())
-                    .column("GID", column_value(|v| (v.id as i32).into()))
-                    .column(
-                        "owner",
-                        column_value(|v: &TBattle| {
-                            TUser::filter_by_id(v.owner).unwrap().name.into()
-                        })
-                        .show_fn(|v: &TBattle, _, ui, _| {
-                            let user = TUser::filter_by_id(v.owner).unwrap();
-                            let resp = Button::click(user.name.clone()).cstr(user.cstr()).ui(ui);
-                            if resp.clicked() {
-                                debug!("user {}", user.name);
-                            }
-                            resp
-                        }),
-                    )
-                    .column(
-                        "left",
-                        column_show(|v: &TBattle, _, ui, _| {
-                            let resp = v.team_left.get_team().cstr().button(ui);
-                            if resp.clicked() {}
-                            resp
-                        }),
-                    )
-                    .column(
-                        "right",
-                        column_show(|v: &TBattle, _, ui, _| {
-                            let resp = v.team_right.get_team().cstr().button(ui);
-                            if resp.clicked() {}
-                            resp
-                        }),
-                    )
-                    .ui(ui, world);
+        let mut hd = world.remove_resource::<HistoryData>().unwrap();
+        Tile::left("User")
+            .close_btn()
+            .show_data(&mut hd.user, ctx, |gid, ui| gid.get_user().show(ui, world));
+        Tile::left("Team")
+            .close_btn()
+            .show_data(&mut hd.team, ctx, |gid, ui| {
+                TTeam::filter_by_id(*gid).unwrap().show(ui, world);
             });
+        world.insert_resource(hd);
+        let ht = world.remove_resource::<HistoryTables>().unwrap();
+        let show_team = |_: &TBattle, gid: VarValue, ui: &mut Ui, w: &mut World| {
+            let team = gid.get_gid().unwrap().get_team();
+            let r = team.cstr().button(ui);
+            if r.clicked() {
+                w.resource_mut::<HistoryData>().team = Some(team.id);
+            }
+            r
+        };
+        Tile::left("Battle History").show(ctx, |ui| {
+            Table::new("Battle History")
+                .title()
+                .column_gid("id", |d: &TBattle| d.id)
+                .column_user_click(
+                    "owner",
+                    |d| d.owner,
+                    |gid, w| w.resource_mut::<HistoryData>().user = Some(gid),
+                )
+                .column("left", |d| d.team_left.into(), show_team)
+                .column("right", |d| d.team_right.into(), show_team)
+                .column_cstr("result", |d| match d.result {
+                    TBattleResult::Tbd => "tbd".cstr(),
+                    TBattleResult::Left | TBattleResult::Even => "win".cstr_c(GREEN),
+                    TBattleResult::Right => "lose".cstr_c(RED),
+                })
+                .ui(&ht.battles, ui, world);
+        });
+        world.insert_resource(ht);
     }
     fn draw_leaderboard(ctx: &egui::Context, world: &mut World) {
-        Tile::left("Leaderboard")
-            .open()
-            .non_resizable()
-            .title()
-            .show(ctx, |ui| {
-                br(ui);
-                Table::new_cached(
-                    "Leaderboard",
-                    || TArenaLeaderboard::iter().collect_vec(),
-                    ui.ctx(),
-                )
-                .column(
-                    "season",
-                    column_value(|v: &TArenaLeaderboard| (v.season as i32).into()),
-                )
-                .column(
-                    "round",
-                    column_value(|v: &TArenaLeaderboard| (v.round as i32).into()),
-                )
-                .column(
-                    "user",
-                    column_value(|v: &TArenaLeaderboard| {
-                        TUser::filter_by_id(v.user).unwrap().name.into()
-                    })
-                    .no_sort()
-                    .show_fn(|v: &TArenaLeaderboard, _, ui, _| {
-                        let user = TUser::filter_by_id(v.user).unwrap();
-                        let resp = Button::click(user.name.clone()).cstr(user.cstr()).ui(ui);
-                        if resp.clicked() {
-                            debug!("click");
-                        }
-                        resp
-                    }),
-                )
-                .column(
-                    "score",
-                    column_value(|v: &TArenaLeaderboard| (v.score as i32).into()),
-                )
-                .ui(ui, world);
-            });
+        // Tile::left("Leaderboard")
+        //     .open()
+        //     .non_resizable()
+        //     .show(ctx, |ui| Table::new("Leaderboard"));
     }
 }

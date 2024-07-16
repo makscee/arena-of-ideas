@@ -7,7 +7,7 @@ pub fn br(ui: &mut Ui) {
             &[rect.left_center(), rect.right_center()],
             VISIBLE_DARK,
             8.0,
-            1.5,
+            1.0,
         );
         ui.painter().add(line);
     });
@@ -41,4 +41,8 @@ pub fn text_dots_text(text1: &Cstr, text2: &Cstr, ui: &mut Ui) {
         );
         ui.painter().add(line);
     });
+}
+pub fn title(text: &str, ui: &mut Ui) {
+    text.cstr_cs(VISIBLE_DARK, CstrStyle::Heading2).label(ui);
+    br(ui);
 }

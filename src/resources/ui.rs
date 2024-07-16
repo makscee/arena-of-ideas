@@ -18,6 +18,7 @@ pub const VISIBLE_LIGHT: Color32 = hex_color_noa!("#B4B4B4");
 pub const VISIBLE_BRIGHT: Color32 = hex_color_noa!("#FFFFFF");
 
 pub const YELLOW: Color32 = hex_color_noa!("#D98F00");
+pub const YELLOW_DARK: Color32 = hex_color_noa!("#493501");
 pub const RED: Color32 = hex_color_noa!("#DC143C");
 pub const GREEN: Color32 = hex_color_noa!("#64DD17");
 pub const PURPLE: Color32 = hex_color_noa!("#B50DA4");
@@ -138,7 +139,7 @@ impl UiPlugin {
             style.visuals.faint_bg_color = BG_LIGHT;
             style.visuals.slider_trailing_fill = true;
             style.visuals.handle_shape = HandleShape::Rect { aspect_ratio: 0.1 };
-            style.visuals.selection.bg_fill = VISIBLE_BRIGHT;
+            style.visuals.selection.bg_fill = YELLOW_DARK;
             style.visuals.resize_corner_size = 0.0;
             style.visuals.window_stroke = Stroke {
                 width: 1.0,

@@ -36,25 +36,7 @@ pub fn unit_card(t: f32, state: &VarState, ui: &mut Ui, world: &World) -> Result
         stroke: Stroke::NONE,
     }
     .show(ui, |ui| {
-        let mut name = Cstr::default();
-        let part = 1.0 / houses.len() as f32;
-        for (i, c) in house_colors.iter().enumerate() {
-            let n = names[i];
-            if i == 0 {
-                let n = n.split_at((n.len() as f32 * part).ceil() as usize).0;
-                name.push(n.cstr_c(*c));
-            } else if i == houses.len() - 1 {
-                let n = n
-                    .split_at((n.len() as f32 * (1.0 - part)).floor() as usize)
-                    .1;
-                name.push(n.cstr_c(*c));
-            } else {
-                let part = (n.len() as f32 * (1.0 - part) * 0.5).floor() as usize;
-                let n = n.split_at(part).1;
-                let n = n.split_at(n.len() - part).0;
-                name.push(n.cstr_c(*c));
-            }
-        }
+        let mut name = UnitPlugin::name_from_bases(names);
         name.style(CstrStyle::Heading).label(ui);
 
         const SHOWN_VARS: [(VarName, Color32); 4] = [
