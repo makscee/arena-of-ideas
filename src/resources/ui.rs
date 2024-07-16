@@ -10,12 +10,12 @@ macro_rules! hex_color_noa {
     }};
 }
 
-pub const VISIBLE_BRIGHT: Color32 = hex_color_noa!("#FFFFFF");
-pub const VISIBLE_LIGHT: Color32 = hex_color_noa!("#AEAEAE");
-pub const VISIBLE_DARK: Color32 = hex_color_noa!("#4F4F4F");
-pub const BG_LIGHT: Color32 = hex_color_noa!("#1B1B1B");
-pub const BG_DARK: Color32 = hex_color_noa!("#131313");
 pub const EMPTINESS: Color32 = hex_color_noa!("#080808");
+pub const BG_DARK: Color32 = hex_color_noa!("#191919");
+pub const BG_LIGHT: Color32 = hex_color_noa!("#252525");
+pub const VISIBLE_DARK: Color32 = hex_color_noa!("#606060");
+pub const VISIBLE_LIGHT: Color32 = hex_color_noa!("#B4B4B4");
+pub const VISIBLE_BRIGHT: Color32 = hex_color_noa!("#FFFFFF");
 
 pub const YELLOW: Color32 = hex_color_noa!("#D98F00");
 pub const RED: Color32 = hex_color_noa!("#DC143C");
@@ -146,6 +146,7 @@ impl UiPlugin {
             };
             style.spacing.window_margin = Margin::same(13.0);
             style.visuals.window_fill = BG_DARK;
+            style.visuals.extreme_bg_color = EMPTINESS;
             style.visuals.widgets = Widgets {
                 noninteractive: WidgetVisuals {
                     weak_bg_fill: Color32::TRANSPARENT,
@@ -159,7 +160,7 @@ impl UiPlugin {
                     weak_bg_fill: Color32::TRANSPARENT,
                     bg_fill: VISIBLE_LIGHT, // checkbox background
                     bg_stroke: Default::default(),
-                    fg_stroke: Stroke::new(1.0, VISIBLE_BRIGHT), // button text
+                    fg_stroke: Stroke::new(1.0, VISIBLE_LIGHT), // button text
                     rounding: Rounding::same(13.0),
                     expansion: 0.0,
                 },

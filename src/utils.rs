@@ -303,3 +303,17 @@ impl TableExt for TArenaRun {
         TArenaRun::iter().exactly_one().ok().map(|d| Box::new(d))
     }
 }
+
+pub trait StdbStatusExt {
+    fn on_success(&self, f: fn(&mut World));
+}
+
+impl StdbStatusExt for spacetimedb_sdk::reducer::Status {
+    fn on_success(&self, f: fn(&mut World)) {
+        match self {
+            StdbStatus::Committed => OperationsPlugin::add(f),
+            StdbStatus::Failed(e) => e.notify_error(),
+            _ => panic!(),
+        }
+    }
+}

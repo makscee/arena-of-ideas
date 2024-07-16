@@ -112,7 +112,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                 for (i, (name, column)) in self.columns.iter().enumerate() {
                     row.col(|ui| {
                         let resp = if column.sortable {
-                            let mut btn = Button::click(name.to_string()).gray(ui);
+                            let mut btn = Button::click(name.to_string());
                             btn = if self
                                 .sorting
                                 .as_ref()

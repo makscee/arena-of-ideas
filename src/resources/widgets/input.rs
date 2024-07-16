@@ -21,6 +21,7 @@ impl Input {
     pub fn ui(self, value: &mut String, ui: &mut Ui) {
         ui.columns(2, |ui| {
             self.name.cstr().push(":".cstr()).label(&mut ui[0]);
+            ui[1].style_mut().visuals.widgets.inactive.bg_stroke = STROKE_DARK;
             TextEdit::singleline(value)
                 .password(self.password)
                 .ui(&mut ui[1]);

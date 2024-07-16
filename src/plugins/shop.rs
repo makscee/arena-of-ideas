@@ -149,23 +149,12 @@ impl ShopPlugin {
             UnitPlugin::despawn(entity, world);
         }
     }
-    pub fn show_tiles(ctx: &egui::Context, world: &mut World) {
-        TopMenu::new(vec!["Container Config"]).show(ctx);
-        Tile::left("Container Config")
-            .content(|ui, world| {
-                let mut data = world.resource_mut::<ShopData>();
-                Slider::new("offset")
-                    .range(-100.0..=400.0)
-                    .ui(&mut data.case_height, ui);
-            })
-            .show(ctx, world);
-    }
     pub fn overlay_widgets(ctx: &egui::Context, world: &mut World) {
         Tile::left("Stats")
             .open()
             .transparent()
             .non_resizable()
-            .content(|ui, _| {
+            .show(ctx, |ui| {
                 text_dots_text(&"name".cstr(), &user_name().cstr_c(VISIBLE_BRIGHT), ui);
                 if let Some(run) = TArenaRun::get_current() {
                     text_dots_text(
@@ -184,27 +173,19 @@ impl ShopPlugin {
                         ui,
                     );
                 }
-            })
-            .show(ctx, world);
+            });
         Tile::right("To battle")
             .open()
             .transparent()
             .non_resizable()
-            .content(|ui, _| {
+            .show(ctx, |ui| {
                 if Button::click("Start Battle".into()).ui(ui).clicked() {
                     shop_finish();
-                    once_on_shop_finish(|_, _, status| match status {
-                        spacetimedb_sdk::reducer::Status::Committed => {
-                            GameState::ShopBattle.proceed_to_target_op()
-                        }
-                        spacetimedb_sdk::reducer::Status::Failed(e) => {
-                            error!("Failed to finish shop: {e}")
-                        }
-                        _ => panic!(),
+                    once_on_shop_finish(|_, _, status| {
+                        status.on_success(|w| GameState::ShopBattle.proceed_to_target(w))
                     });
                 }
-            })
-            .show(ctx, world);
+            });
     }
     fn do_stack(target: u8, world: &mut World) {
         let mut sd = world.resource_mut::<ShopData>();

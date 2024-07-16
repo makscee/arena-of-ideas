@@ -8,8 +8,8 @@ impl Plugin for ProfilePlugin {
     }
 }
 
-#[derive(Resource)]
-struct ProfileEditData {
+#[derive(Resource, Default)]
+pub struct ProfileEditData {
     name: String,
     old_pass: String,
     pass: String,
@@ -31,10 +31,9 @@ impl ProfilePlugin {
         }
         .save(world);
     }
-    pub fn settings_ui(ui: &mut Ui, world: &mut World) {
+    pub fn settings_ui(ped: &mut ProfileEditData, ui: &mut Ui, world: &mut World) {
         let user = &LoginOption::get(world).user;
         let has_pass = user.pass_hash.is_some();
-        let mut ped = world.resource_mut::<ProfileEditData>();
         Input::new("name").ui(&mut ped.name, ui);
         if Button::click("Submit".into())
             .enabled(!ped.name.eq(user_name()))
@@ -77,23 +76,15 @@ impl ProfilePlugin {
             .clicked()
         {
             set_password(ped.old_pass.clone(), ped.pass.clone());
-            once_on_set_password(|_, _, status, _, _| match status {
-                spacetimedb_sdk::reducer::Status::Committed => {
-                    OperationsPlugin::add(|world| {
-                        Notification::new("Password updated successfully".to_owned()).push(world);
-                        Self::update_user(world);
-                        let mut ped = world.resource_mut::<ProfileEditData>();
-                        ped.pass.clear();
-                        ped.pass_repeat.clear();
-                        ped.old_pass.clear();
-                    });
-                }
-                spacetimedb_sdk::reducer::Status::Failed(e) => {
-                    Notification::new(format!("Password change error: {e}"))
-                        .error()
-                        .push_op()
-                }
-                _ => panic!(),
+            once_on_set_password(|_, _, status, _, _| {
+                status.on_success(|world| {
+                    Notification::new("Password updated successfully".to_owned()).push(world);
+                    Self::update_user(world);
+                    let mut ped = world.resource_mut::<ProfileEditData>();
+                    ped.pass.clear();
+                    ped.pass_repeat.clear();
+                    ped.old_pass.clear();
+                })
             });
         }
         br(ui);

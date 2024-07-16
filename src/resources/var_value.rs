@@ -314,6 +314,7 @@ impl ToCstr for VarValue {
             VarValue::Faction(v) => format!("{v}").cstr(),
             VarValue::Color(v) => format!("{v:?}").cstr(),
             VarValue::Entity(v) => format!("{v:?}").cstr(),
+            VarValue::GID(v) => v.to_string().cstr(),
             VarValue::List(list) => {
                 Cstr::join_vec(list.into_iter().map(|v| v.cstr()).collect_vec())
                     .join(&" + ".cstr())

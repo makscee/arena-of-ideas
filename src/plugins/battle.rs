@@ -204,7 +204,7 @@ impl BattlePlugin {
         Tile::bottom("Playback")
             .transparent()
             .non_resizable()
-            .content(|ui, world| {
+            .show(ctx, |ui| {
                 ui.vertical_centered(|ui| {
                     let mut gt = gt();
                     if ImageButton::new(if gt.paused() {
@@ -280,8 +280,7 @@ impl BattlePlugin {
                         }
                     },
                 );
-            })
-            .show(ctx, world);
+            });
     }
     pub fn ui(ui: &mut Ui, world: &mut World) {
         if !gt().ended() {

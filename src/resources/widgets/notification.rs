@@ -57,7 +57,8 @@ impl Notification {
         Tile::right("Notifications")
             .transparent()
             .non_resizable()
-            .content(move |ui, _| {
+            .open()
+            .show(ctx, |ui| {
                 for n in notifications {
                     FRAME.show(ui, |ui| {
                         match n.r#type {
@@ -67,9 +68,7 @@ impl Notification {
                         .label(ui);
                     });
                 }
-            })
-            .open()
-            .show(ctx, world);
+            });
     }
 }
 

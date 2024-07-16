@@ -25,7 +25,31 @@ impl TableViewPlugin {
         Tile::left("Battle History")
             .open()
             .title()
-            .content(|ui, world| {
+            // .child(|ctx, world| {
+            //     Tile::left("Team")
+            //         .title()
+            //         .close_btn()
+            //         .content(|ui, world| {
+            //             let (team_id, refresh) = world.resource::<HistoryData>().team.unwrap();
+            //             if refresh {
+            //                 world.resource_mut::<HistoryData>().team = Some((team_id, false));
+            //             }
+            //             let team = TTeam::filter_by_id(team_id).unwrap();
+            //             let owner = TUser::filter_by_id(team.owner).unwrap();
+            //             text_dots_text(&"owner".cstr(), &owner.name.cstr_c(VISIBLE_BRIGHT), ui);
+            //             br(ui);
+            //             Table::new_cached_refreshed(
+            //                 "Team",
+            //                 refresh,
+            //                 move || TTeam::filter_by_id(team_id).unwrap().units,
+            //                 ui.ctx(),
+            //             )
+            //             .column("name", column_value(|u| u.bases.join(" ").into()))
+            //             .ui(ui, world);
+            //         })
+            //         .show(ctx, world);
+            // })
+            .show(ctx, |ui| {
                 br(ui);
                 Table::new_cached("Battle History", || TBattle::iter().collect_vec(), ui.ctx())
                     .column("GID", column_value(|v| (v.id as i32).into()))
@@ -72,39 +96,14 @@ impl TableViewPlugin {
                         }),
                     )
                     .ui(ui, world);
-            })
-            .child(|ctx, world| {
-                Tile::left("Team")
-                    .title()
-                    .close_btn()
-                    .content(|ui, world| {
-                        let (team_id, refresh) = world.resource::<HistoryData>().team.unwrap();
-                        if refresh {
-                            world.resource_mut::<HistoryData>().team = Some((team_id, false));
-                        }
-                        let team = TTeam::filter_by_id(team_id).unwrap();
-                        let owner = TUser::filter_by_id(team.owner).unwrap();
-                        text_dots_text(&"owner".cstr(), &owner.name.cstr_c(VISIBLE_BRIGHT), ui);
-                        br(ui);
-                        Table::new_cached_refreshed(
-                            "Team",
-                            refresh,
-                            move || TTeam::filter_by_id(team_id).unwrap().units,
-                            ui.ctx(),
-                        )
-                        .column("name", column_value(|u| u.bases.join(" ").into()))
-                        .ui(ui, world);
-                    })
-                    .show(ctx, world);
-            })
-            .show(ctx, world);
+            });
     }
     fn draw_leaderboard(ctx: &egui::Context, world: &mut World) {
         Tile::left("Leaderboard")
             .open()
             .non_resizable()
             .title()
-            .content(|ui, world| {
+            .show(ctx, |ui| {
                 br(ui);
                 Table::new_cached(
                     "Leaderboard",
@@ -139,7 +138,6 @@ impl TableViewPlugin {
                     column_value(|v: &TArenaLeaderboard| (v.score as i32).into()),
                 )
                 .ui(ui, world);
-            })
-            .show(ctx, world);
+            });
     }
 }

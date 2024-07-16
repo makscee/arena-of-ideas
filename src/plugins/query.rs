@@ -70,7 +70,7 @@ impl QueryPlugin {
             "select * from THouse".to_owned(),
             "select * from TAbility".to_owned(),
             "select * from TStatus".to_owned(),
-            format!("select * from TTeam where owner = {uid}"),
+            "select * from TTeam".to_owned(),
             format!("select * from TBattle where owner = {uid}"),
         ];
         Self::subscribe(q.into());

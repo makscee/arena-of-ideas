@@ -7,24 +7,21 @@ pub struct WidgetsPlugin;
 impl Plugin for WidgetsPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Update, Self::ui)
-            .add_systems(Startup, Self::setup);
+            .init_resource::<WidgetsState>();
     }
 }
 
+#[derive(Default, Resource)]
+struct WidgetsState {
+    settings: Option<()>,
+    profile: Option<ProfileEditData>,
+}
+
 impl WidgetsPlugin {
-    fn setup(world: &mut World) {
-        let Some(ctx) = &egui_context(world) else {
-            return;
-        };
-        ctx.flip_name_enabled("Playback");
-    }
     fn ui(world: &mut World) {
         let Some(ctx) = &egui_context(world) else {
             return;
         };
-        if just_pressed(KeyCode::Escape, world) {
-            ctx.flip_name_enabled("Main Menu");
-        }
         Area::new(Id::new("top_right_info"))
             .anchor(Align2::RIGHT_TOP, [0.0, 0.0])
             .show(ctx, |ui| {
@@ -45,13 +42,32 @@ impl WidgetsPlugin {
         SectionMenu::default().show(ctx, world);
 
         let state = cur_state(world);
+        let mut ws = world.remove_resource::<WidgetsState>().unwrap();
 
         // Tiles
         match state {
-            GameState::Title => Tile::right("Main Menu")
-                .title()
-                .open()
-                .content(|ui, world| {
+            GameState::Title => {
+                Tile::right("Settings").title().close_btn().show_data(
+                    &mut ws.settings,
+                    ctx,
+                    |_, ui| {
+                        if ui.button("setting 1").clicked() {
+                            debug!("Test click");
+                        }
+                        br(ui);
+                        if ui.button("setting 2").clicked() {
+                            debug!("Test click");
+                        }
+                        br(ui);
+                    },
+                );
+                Tile::right("Profile")
+                    .close_btn()
+                    .show_data(&mut ws.profile, ctx, |d, ui| {
+                        ProfilePlugin::settings_ui(d, ui, world);
+                    });
+
+                Tile::right("Main Menu").title().open().show(ctx, |ui| {
                     format!("Welcome, {}!", LoginOption::get(world).user.name)
                         .cstr_cs(VISIBLE_BRIGHT, CstrStyle::Heading2)
                         .label(ui);
@@ -66,49 +82,15 @@ impl WidgetsPlugin {
                     }
                     if Button::click("Start new".into()).ui(ui).clicked() {
                         run_start();
-                        once_on_run_start(|_, _, status| match status {
-                            StdbStatus::Committed => GameState::Shop.proceed_to_target_op(),
-                            StdbStatus::Failed(e) => e.notify_error(),
-                            _ => panic!(),
+                        once_on_run_start(|_, _, status| {
+                            status.on_success(|w| GameState::Shop.proceed_to_target(w))
                         });
                     }
                     br(ui);
-                    Button::toggle_child("Settings".into()).ui(ui);
-                })
-                .child(|ctx, world| {
-                    Tile::right("Settings")
-                        .title()
-                        .close_btn()
-                        .content(|ui, _| {
-                            if ui.button("setting 1").clicked() {
-                                debug!("Test click");
-                            }
-                            br(ui);
-                            if ui.button("setting 2").clicked() {
-                                debug!("Test click");
-                            }
-                            br(ui);
-                        })
-                        .show(ctx, world);
-                })
-                .show(ctx, world),
-            GameState::Profile => Tile::right("Profile")
-                .title()
-                .open()
-                .content(|ui, _| {
-                    Button::toggle_child("Settings".into()).ui(ui);
-                })
-                .child(|ctx, world| {
-                    Tile::right("Settings")
-                        .title()
-                        .close_btn()
-                        .content(|ui, world| {
-                            ProfilePlugin::settings_ui(ui, world);
-                        })
-                        .show(ctx, world);
-                })
-                .show(ctx, world),
-            GameState::Shop => ShopPlugin::show_tiles(ctx, world),
+                    Button::click("Settings".into()).enable_ui(&mut ws.settings, ui);
+                    Button::click("Profile".into()).enable_ui(&mut ws.profile, ui);
+                });
+            }
             GameState::Battle => BattlePlugin::show_tiles(ctx, world),
             GameState::TableView(query) => TableViewPlugin::ui(query, ctx, world),
 
@@ -135,5 +117,6 @@ impl WidgetsPlugin {
         }
         Notification::show_all(&wd, ctx, world);
         world.insert_resource(wd);
+        world.insert_resource(ws);
     }
 }

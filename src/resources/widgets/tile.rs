@@ -9,8 +9,6 @@ pub struct Tile {
     transparent: bool,
     open: bool,
     non_resizable: bool,
-    content: Option<Box<dyn FnOnce(&mut Ui, &mut World) + Send + Sync>>,
-    child: Option<Box<dyn FnOnce(&egui::Context, &mut World) + Send + Sync>>,
 }
 
 impl Tile {
@@ -62,74 +60,64 @@ impl Tile {
         self.non_resizable = true;
         self
     }
-    pub fn content(
-        mut self,
-        content: impl FnOnce(&mut Ui, &mut World) + Send + Sync + 'static,
-    ) -> Self {
-        self.content = Some(Box::new(content));
-        self
+    pub fn show(self, ctx: &egui::Context, content: impl FnOnce(&mut Ui)) {
+        self.show_data(&mut Some(()), ctx, |_, ui| content(ui));
     }
-    pub fn child(
-        mut self,
-        child: impl FnOnce(&egui::Context, &mut World) + Send + Sync + 'static,
-    ) -> Self {
-        self.child = Some(Box::new(child));
-        self
-    }
-    pub fn show(self, ctx: &egui::Context, world: &mut World) {
-        ctx.add_path(&self.name);
-        let content = self.content.unwrap_or(Box::new(|_, _| {}));
-        if let Some(child) = self.child {
-            child(ctx, world);
+    pub fn show_data<T>(
+        self,
+        data: &mut Option<T>,
+        ctx: &egui::Context,
+        content: impl FnOnce(&mut T, &mut Ui),
+    ) {
+        let mut frame = FRAME;
+        if self.transparent {
+            frame = frame.fill(Color32::TRANSPARENT);
         }
-        let path = ctx.path();
+        let open = data.is_some();
+        let id = Id::new(self.name);
         let content = |ui: &mut Ui| {
             if self.title {
                 self.name.cstr().label(ui);
             }
             ui.vertical_centered_justified(|ui| {
-                content(ui, world);
+                if let Some(data) = data {
+                    content(data, ui);
+                }
                 if self.close_btn && Button::click("Close".into()).gray(ui).ui(ui).clicked() {
-                    ui.ctx().flip_path_enabled(&path);
+                    data.take();
                 }
             });
         };
-        let mut frame = FRAME;
-        if self.transparent {
-            frame = frame.fill(Color32::TRANSPARENT);
-        }
-        let open = self.open || ctx.is_path_enabled(&path);
         match self.side {
             Side::Right => {
-                SidePanel::right(Id::new(&path))
+                SidePanel::right(id)
                     .frame(frame)
                     .resizable(!self.non_resizable)
                     .show_separator_line(false)
                     .show_animated(ctx, open, content);
             }
             Side::Left => {
-                SidePanel::left(Id::new(&path))
+                SidePanel::left(id)
                     .frame(frame)
                     .resizable(!self.non_resizable)
                     .show_separator_line(false)
                     .show_animated(ctx, open, content);
             }
             Side::Top => {
-                TopBottomPanel::top(Id::new(&path))
+                TopBottomPanel::top(id)
                     .frame(frame)
                     .resizable(!self.non_resizable)
                     .show_separator_line(false)
                     .show_animated(ctx, open, content);
             }
             Side::Bottom => {
-                TopBottomPanel::bottom(Id::new(&path))
+                TopBottomPanel::bottom(id)
                     .frame(frame)
                     .resizable(!self.non_resizable)
                     .show_separator_line(false)
                     .show_animated(ctx, open, content);
             }
         }
-        ctx.remove_path();
     }
 }
 
