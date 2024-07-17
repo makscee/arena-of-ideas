@@ -2,41 +2,54 @@
 (
     left: (
         units: [
+            (hp: 1, pwr: 1),
+            (hp: 1, pwr: 1),
             (
-                name: "Pleader",
-                hp: 4,
-                pwr: 2,
-                rarity: 0,
-                houses: ["Holy"],
+                name: "Caster",
+                hp: 1,
+                pwr: 1,
+                rarity: 1,
+                houses: ["Mages"],
                 trigger: Fire(
-                    triggers: [(AfterStrike, None)],
-                    targets: [(Owner, None)],
-                    effects: [(UseAbility("Blessing", 0), None)],
+                    triggers: [(AllyDeath, None)],
+                    targets: [(TargetStateLast(LastAttacker), "last attacker")],
+                    effects: [(UseAbility("Magic Missile", 2), None)],
                 ),
                 representation: (
                     material: Shape(
-                        shape: Rectangle(size: V2(0.15, 1.66)),
-                        shape_type: Line(thickness: F(2.0)),
+                        shape: Circle(radius: F(0.15)),
+                        shape_type: Opaque,
                         fill: Solid(color: OwnerState(Color)),
                         fbm: None,
-                        alpha: F(0.7),
+                        alpha: F(1.0),
                         padding: F(0.0),
                     ),
-                    children: [],
+                    children: [
+                        (
+                            material: Shape(
+                                shape: Circle(radius: F(0.32)),
+                                shape_type: Line(thickness: F(1.0)),
+                                fill: Solid(color: OwnerState(Color)),
+                                fbm: None,
+                                alpha: F(1.0),
+                                padding: F(0.0),
+                            ),
+                            children: [],
+                            mapping: {},
+                            count: 0,
+                        ),
+                    ],
                     mapping: {
-                        Rotation: Sum(Mul(Even(Index), F(1.93)), Mul(Sin(Sum(GT, Index)), F(0.18))),
                         Offset: Vec2EE(
-                            Mul(Sin(Sum(Mul(Index, F(0.17)), GT)), F(0.12)),
-                            Mul(Cos(Sum(Mul(Index, F(0.11)), GT)), F(0.07)),
+                            Mul(Sin(Sum(GT, Mul(Index, F(4.0)))), F(0.3)),
+                            Mul(Cos(Sum(Mul(F(3.0), GT), Index)), F(0.1)),
                         ),
                     },
-                    count: 8,
+                    count: 2,
                 ),
             ),
             (hp: 1, pwr: 1),
-            (hp: 1, pwr: 1),
-            (hp: 1, pwr: 1),
         ],
     ),
-    right: (units: [(name: "Right", hp: 9, pwr: 1)]),
+    right: (units: [(name: "Right", hp: 15, pwr: 1)]),
 )

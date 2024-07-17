@@ -194,14 +194,13 @@ impl ToCstr for Effect {
     fn cstr(&self) -> Cstr {
         match self {
             Effect::UseAbility(name, base) => {
-                let name_base = if *base > 0 {
-                    format!("{name} ({})", *base + 1)
-                } else {
-                    name.clone()
-                };
+                let mut name = name.cstr_cs(name_color(name), CstrStyle::Bold);
+                if *base > 0 {
+                    name.push(format!(" +{base}").cstr_cs(VISIBLE_BRIGHT, CstrStyle::Bold));
+                }
                 format!("use ability ")
-                    .cstr()
-                    .push(format!("{name_base}").cstr_cs(name_color(&name), CstrStyle::Bold))
+                    .cstr_c(VISIBLE_BRIGHT)
+                    .push(name)
                     .take()
             }
             _ => self.as_ref().cstr(),

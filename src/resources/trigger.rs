@@ -232,14 +232,14 @@ impl Trigger {
             } => {
                 for (trigger, rename) in triggers {
                     if let Some(rename) = rename {
-                        cs.0.push(rename.cstr());
+                        cs.0.push(rename.cstr_c(VISIBLE_BRIGHT));
                     } else {
                         cs.0.push(trigger.cstr());
                     }
                 }
                 for (target, rename) in targets {
                     if let Some(rename) = rename {
-                        cs.1.push(rename.cstr());
+                        cs.1.push(rename.cstr_c(VISIBLE_BRIGHT));
                     } else {
                         cs.1.push(target.cstr());
                     }
@@ -261,22 +261,27 @@ impl Trigger {
 impl ToCstr for FireTrigger {
     fn cstr(&self) -> Cstr {
         match self {
-            FireTrigger::List(list) => Cstr::join_vec(list.iter().map(|t| t.cstr()).collect_vec())
-                .join(&" + ".cstr_c(VISIBLE_LIGHT))
-                .take(),
-            FireTrigger::Period(_, delay, trigger) => {
-                format!("Every {delay} ").cstr().push(trigger.cstr()).take()
+            FireTrigger::List(list) => {
+                Cstr::join_vec(list.iter().map(|t| t.cstr_c(VISIBLE_BRIGHT)).collect_vec())
+                    .join(&" + ".cstr_c(VISIBLE_DARK))
+                    .take()
             }
+            FireTrigger::Period(_, delay, trigger) => format!("Every {delay} ")
+                .cstr()
+                .push(trigger.cstr())
+                .color(VISIBLE_BRIGHT)
+                .take(),
             FireTrigger::OnceAfter(delay, trigger) => format!("Once in {delay} ")
                 .cstr()
                 .push(trigger.cstr())
+                .color(VISIBLE_BRIGHT)
                 .take(),
             FireTrigger::UnitUsedAbility(name)
             | FireTrigger::AllyUsedAbility(name)
             | FireTrigger::EnemyUsedAbility(name) => self
                 .as_ref()
                 .to_case(Case::Lower)
-                .cstr()
+                .cstr_c(VISIBLE_BRIGHT)
                 .push(format!(" {name}").cstr_cs(name_color(name), CstrStyle::Bold))
                 .take(),
             FireTrigger::Noop
@@ -293,7 +298,7 @@ impl ToCstr for FireTrigger {
             | FireTrigger::AllySummon
             | FireTrigger::EnemySummon
             | FireTrigger::BeforeDeath
-            | FireTrigger::AfterKill => self.as_ref().to_case(Case::Lower).cstr(),
+            | FireTrigger::AfterKill => self.as_ref().to_case(Case::Lower).cstr_c(VISIBLE_BRIGHT),
         }
     }
 }

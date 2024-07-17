@@ -148,7 +148,7 @@ pub fn unit_card(t: f32, state: &VarState, ui: &mut Ui, world: &World) -> Result
 
 fn show_trigger_part(title: &str, content: Vec<Cstr>, color: Color32, ui: &mut Ui) {
     ui.horizontal(|ui| {
-        title.cstr_c(VISIBLE_LIGHT).label(ui);
+        title.cstr_c(VISIBLE_DARK).label(ui);
         let rect = Frame::none()
             .inner_margin(Margin::same(4.0))
             .show(ui, |ui| {

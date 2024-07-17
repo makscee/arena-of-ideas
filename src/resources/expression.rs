@@ -329,10 +329,15 @@ impl Expression {
 
 impl ToCstr for Expression {
     fn cstr(&self) -> Cstr {
-        let mut s = self.as_ref().to_case(Case::Lower).cstr();
+        let mut s = self.as_ref().to_case(Case::Lower).cstr_c(VISIBLE_BRIGHT);
         match self {
             Expression::Value(v) => {
-                s.push(v.cstr().wrap(("(".cstr(), ")".cstr())).take());
+                s.push(
+                    v.cstr()
+                        .wrap(("(".cstr(), ")".cstr()))
+                        .color(VISIBLE_BRIGHT)
+                        .take(),
+                );
             }
             Expression::OwnerState(v)
             | Expression::TargetState(v)
@@ -341,7 +346,12 @@ impl ToCstr for Expression {
             | Expression::TargetStateLast(v)
             | Expression::CasterStateLast(v)
             | Expression::Context(v) => {
-                s.push(v.cstr().wrap(("(".cstr(), ")".cstr())).take());
+                s.push(
+                    v.cstr()
+                        .wrap(("(".cstr(), ")".cstr()))
+                        .color(VISIBLE_BRIGHT)
+                        .take(),
+                );
             }
             Expression::AbilityContext(name, v) | Expression::AbilityState(name, v) => {
                 s.push(
