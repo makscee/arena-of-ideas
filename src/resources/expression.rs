@@ -329,13 +329,13 @@ impl Expression {
 
 impl ToCstr for Expression {
     fn cstr(&self) -> Cstr {
-        let mut s = self.as_ref().to_case(Case::Lower).cstr_c(VISIBLE_BRIGHT);
+        let mut s = self.as_ref().to_case(Case::Lower).cstr_c(VISIBLE_LIGHT);
         match self {
             Expression::Value(v) => {
                 s.push(
                     v.cstr()
                         .wrap(("(".cstr(), ")".cstr()))
-                        .color(VISIBLE_BRIGHT)
+                        .color(VISIBLE_LIGHT)
                         .take(),
                 );
             }
@@ -349,7 +349,7 @@ impl ToCstr for Expression {
                 s.push(
                     v.cstr()
                         .wrap(("(".cstr(), ")".cstr()))
-                        .color(VISIBLE_BRIGHT)
+                        .color(VISIBLE_LIGHT)
                         .take(),
                 );
             }

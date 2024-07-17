@@ -204,10 +204,10 @@ impl ToCstr for Effect {
             Effect::UseAbility(name, base) => {
                 let mut name = name.cstr_cs(name_color(name), CstrStyle::Bold);
                 if *base > 0 {
-                    name.push(format!(" +{base}").cstr_cs(VISIBLE_BRIGHT, CstrStyle::Bold));
+                    name.push(format!(" +{base}").cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold));
                 }
                 format!("use ability ")
-                    .cstr_c(VISIBLE_BRIGHT)
+                    .cstr_c(VISIBLE_LIGHT)
                     .push(name)
                     .take()
             }

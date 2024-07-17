@@ -70,7 +70,7 @@ impl WidgetsPlugin {
 
                 Tile::right("Main Menu").title().open().show(ctx, |ui| {
                     format!("Welcome, {}!", LoginOption::get(world).user.name)
-                        .cstr_cs(VISIBLE_BRIGHT, CstrStyle::Heading2)
+                        .cstr_cs(VISIBLE_LIGHT, CstrStyle::Heading2)
                         .label(ui);
                     br(ui);
                     let run = TArenaRun::get_current();

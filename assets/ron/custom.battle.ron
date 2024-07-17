@@ -3,45 +3,59 @@
     left: (
         units: [
             (hp: 1, pwr: 1),
-            (hp: 1, pwr: 1),
             (
-                name: "Crusader",
-                hp: 1,
+                hp: 2,
                 pwr: 2,
                 rarity: 0,
-                houses: ["Holy"],
+                houses: ["Druids"],
                 trigger: Fire(
                     triggers: [(BattleStart, None)],
-                    targets: [(Owner, None)],
-                    effects: [
-                        (
-                            WithVar(
-                                Lvl,
-                                Mul(Dbg(FactionCount(OppositeFaction)), Context(Lvl)),
-                                UseAbility("Blessing", 0),
-                            ),
-                            "use [Blessing] ({Lvl}) per enemy",
-                        ),
-                    ],
+                    targets: [],
+                    effects: [(UseAbility("Summon Treant", 0), None)],
+                ),
+            ),
+            (
+                name: "Director",
+                hp: 3,
+                pwr: 1,
+                rarity: 1,
+                houses: ["Mages"],
+                trigger: Fire(
+                    triggers: [(AllySummon, None)],
+                    targets: [(RandomEnemy, None)],
+                    effects: [(UseAbility("Magic Missile", 3), None)],
                 ),
                 representation: (
                     material: Shape(
-                        shape: Rectangle(size: V2(0.5, 1.82)),
-                        shape_type: Line(thickness: F(3.0)),
+                        shape: Circle(radius: F(0.15)),
+                        shape_type: Opaque,
                         fill: Solid(color: OwnerState(Color)),
                         fbm: None,
-                        alpha: F(0.3),
+                        alpha: F(1.0),
                         padding: F(0.0),
                     ),
-                    children: [],
+                    children: [
+                        (
+                            material: Shape(
+                                shape: Circle(radius: Sum(Mul(F(0.06), Index), F(0.21))),
+                                shape_type: Line(thickness: F(1.0)),
+                                fill: Solid(color: OwnerState(Color)),
+                                fbm: None,
+                                alpha: F(1.0),
+                                padding: F(0.0),
+                            ),
+                            children: [],
+                            mapping: {},
+                            count: 3,
+                        ),
+                    ],
                     mapping: {
-                        Rotation: Even(Index),
-                        Offset: Vec2EE(
-                            Mul(Sin(Sum(Mul(Index, F(0.3)), GT)), F(0.1)),
-                            Mul(Cos(Sum(Mul(Index, F(0.3)), GT)), F(0.1)),
+                        Offset: Mul(
+                            UnitVec(Sum(Mul(Index, Mul(PI, F(0.666))), GT)),
+                            Sum(F(0.3), Mul(Beat, F(0.1))),
                         ),
                     },
-                    count: 8,
+                    count: 3,
                 ),
             ),
             (hp: 1, pwr: 1),

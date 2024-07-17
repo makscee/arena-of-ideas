@@ -62,7 +62,7 @@ impl Notification {
                 for n in notifications {
                     FRAME.show(ui, |ui| {
                         match n.r#type {
-                            NotificationType::Alert => n.text.cstr_c(VISIBLE_BRIGHT),
+                            NotificationType::Alert => n.text.cstr_c(VISIBLE_LIGHT),
                             NotificationType::Error => n.text.cstr_c(RED),
                         }
                         .label(ui);
