@@ -27,8 +27,17 @@ impl ShowTable for Vec<FusedUnit> {
     fn show_table(&self, name: &'static str, ui: &mut Ui, world: &mut World) -> TableState {
         Table::new(name)
             .title()
-            .selectable()
-            .column_cstr("name", |u: &FusedUnit| u.cstr())
+            .column(
+                "name",
+                |d: &FusedUnit| d.id.into(),
+                |d, _, ui, _| {
+                    let r = d.cstr().button(ui);
+                    if r.clicked() {
+                        Tile::add_fused_unit(d.clone(), ui.ctx());
+                    }
+                    r
+                },
+            )
             .ui(self, ui, world)
     }
 }
@@ -38,7 +47,7 @@ pub trait Show {
 }
 
 impl Show for TUser {
-    fn show(&self, ui: &mut Ui, world: &mut World) {
+    fn show(&self, ui: &mut Ui, _: &mut World) {
         text_dots_text(
             &"name".cstr(),
             &self.name.cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold),
@@ -49,6 +58,12 @@ impl Show for TUser {
 }
 impl Show for FusedUnit {
     fn show(&self, ui: &mut Ui, world: &mut World) {
+        title("Fused Unit", ui);
+        text_dots_text(
+            &"gid".cstr(),
+            &self.id.to_string().cstr_c(VISIBLE_LIGHT),
+            ui,
+        );
         self.bases
             .iter()
             .filter_map(|b| TBaseUnit::filter_by_name(b.clone()))
@@ -60,14 +75,13 @@ impl Show for TTeam {
     fn show(&self, ui: &mut Ui, world: &mut World) {
         title("Team", ui);
         text_dots_text(&"owner".cstr(), &self.owner.get_user().cstr(), ui);
+        text_dots_text(
+            &"gid".cstr(),
+            &self.id.to_string().cstr_c(VISIBLE_LIGHT),
+            ui,
+        );
         ui.push_id(self.id, |ui| {
-            let state = self.units.show_table("Units", ui, world);
-            if let Some(selected) = state.selected_row {
-                let unit = &self.units[selected];
-                ui.push_id("fuse bases", |ui| {
-                    unit.show(ui, world);
-                });
-            }
+            self.units.show_table("Units", ui, world);
         });
     }
 }

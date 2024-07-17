@@ -122,7 +122,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
         mut self,
         name: &'static str,
         gid: fn(&T) -> GID,
-        on_click: fn(GID, &mut World),
+        on_click: fn(GID, &mut Ui, &mut World),
     ) -> Self {
         self.columns.insert(
             name,
@@ -132,7 +132,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                     let gid = v.get_gid().unwrap();
                     let r = gid.get_user().cstr().button(ui);
                     if r.clicked() {
-                        on_click(gid, w);
+                        on_click(gid, ui, w);
                     }
                     r
                 }),

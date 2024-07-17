@@ -3,6 +3,7 @@ use super::*;
 #[derive(Default)]
 pub struct Tile {
     name: &'static str,
+    id: Option<Id>,
     side: Side,
     close_btn: bool,
     title: bool,
@@ -40,6 +41,10 @@ impl Tile {
             ..default()
         }
     }
+    pub fn with_id(mut self, id: Id) -> Self {
+        self.id = Some(id);
+        self
+    }
     pub fn title(mut self) -> Self {
         self.title = true;
         self
@@ -74,7 +79,7 @@ impl Tile {
             frame = frame.fill(Color32::TRANSPARENT);
         }
         let open = data.is_some();
-        let id = Id::new(self.name);
+        let id = Id::new(self.name).with(self.id);
         let content = |ui: &mut Ui| {
             if self.title {
                 self.name.cstr().label(ui);
@@ -89,36 +94,79 @@ impl Tile {
             });
         };
         match self.side {
-            Side::Right => {
-                SidePanel::right(id)
-                    .frame(frame)
-                    .resizable(!self.non_resizable)
-                    .show_separator_line(false)
-                    .show_animated(ctx, open, content);
-            }
-            Side::Left => {
-                SidePanel::left(id)
-                    .frame(frame)
-                    .resizable(!self.non_resizable)
-                    .show_separator_line(false)
-                    .show_animated(ctx, open, content);
-            }
-            Side::Top => {
-                TopBottomPanel::top(id)
-                    .frame(frame)
-                    .resizable(!self.non_resizable)
-                    .show_separator_line(false)
-                    .show_animated(ctx, open, content);
-            }
-            Side::Bottom => {
-                TopBottomPanel::bottom(id)
-                    .frame(frame)
-                    .resizable(!self.non_resizable)
-                    .show_separator_line(false)
-                    .show_animated(ctx, open, content);
-            }
-        }
+            Side::Right => SidePanel::right(id)
+                .frame(frame)
+                .resizable(!self.non_resizable)
+                .show_separator_line(false)
+                .show_animated(ctx, open, content),
+            Side::Left => SidePanel::left(id)
+                .frame(frame)
+                .resizable(!self.non_resizable)
+                .show_separator_line(false)
+                .show_animated(ctx, open, content),
+            Side::Top => TopBottomPanel::top(id)
+                .frame(frame)
+                .resizable(!self.non_resizable)
+                .show_separator_line(false)
+                .show_animated(ctx, open, content),
+            Side::Bottom => TopBottomPanel::bottom(id)
+                .frame(frame)
+                .resizable(!self.non_resizable)
+                .show_separator_line(false)
+                .show_animated(ctx, open, content),
+        };
     }
+
+    pub fn add_team(gid: GID, ctx: &egui::Context) {
+        ctx.data_mut(|w| {
+            let m: &mut TileMap = w.get_temp_mut_or_default(tile_map_id());
+            m.insert(gid, TileContent::Team(TTeam::filter_by_id(gid)));
+        });
+    }
+    pub fn add_user(gid: GID, ctx: &egui::Context) {
+        ctx.data_mut(|w| {
+            let m: &mut TileMap = w.get_temp_mut_or_default(tile_map_id());
+            m.insert(gid, TileContent::User(TUser::filter_by_id(gid)));
+        });
+    }
+    pub fn add_fused_unit(unit: FusedUnit, ctx: &egui::Context) {
+        ctx.data_mut(|w| {
+            let m: &mut TileMap = w.get_temp_mut_or_default(tile_map_id());
+            m.insert(unit.id, TileContent::FusedUnit(Some(unit)));
+        });
+    }
+
+    pub fn show_all_tiles(ctx: &egui::Context, world: &mut World) {
+        let id = tile_map_id();
+        let mut m: TileMap = ctx.data(|r| r.get_temp(id)).unwrap_or_default();
+        for (gid, tile) in &mut m {
+            match tile {
+                TileContent::Team(t) => Tile::left("Team")
+                    .with_id(Id::new(*gid))
+                    .close_btn()
+                    .show_data(t, ctx, |t, ui| t.show(ui, world)),
+                TileContent::FusedUnit(u) => Tile::left("Unit")
+                    .with_id(Id::new(*gid))
+                    .close_btn()
+                    .show_data(u, ctx, |t, ui| t.show(ui, world)),
+                TileContent::User(u) => Tile::left("User")
+                    .with_id(Id::new(*gid))
+                    .close_btn()
+                    .show_data(u, ctx, |t, ui| t.show(ui, world)),
+            };
+        }
+        ctx.data_mut(|w| {
+            let t = w.get_temp_mut_or_default::<TileMap>(id);
+            for (k, v) in m {
+                t.insert(k, v);
+            }
+        });
+    }
+}
+
+fn tile_map_id() -> Id {
+    static TILES_DATA: OnceCell<Id> = OnceCell::new();
+    *TILES_DATA.get_or_init(|| Id::new("tiles_data"))
 }
 
 const FRAME: Frame = Frame {
@@ -129,3 +177,12 @@ const FRAME: Frame = Frame {
     fill: BG_DARK,
     stroke: Stroke::NONE,
 };
+
+type TileMap = OrderedHashMap<GID, TileContent>;
+
+#[derive(Clone, Debug)]
+enum TileContent {
+    Team(Option<TTeam>),
+    FusedUnit(Option<FusedUnit>),
+    User(Option<TUser>),
+}

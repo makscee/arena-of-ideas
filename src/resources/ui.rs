@@ -131,11 +131,13 @@ impl UiPlugin {
                 (TextStyle::Small, FontId::new(10.0, FontFamily::Monospace)),
             ]
             .into();
+            style.animation_time = 0.1;
             style.spacing = Spacing {
                 item_spacing: egui::vec2(13.0, 6.0),
                 button_padding: egui::vec2(5.0, 6.0),
                 ..default()
             };
+            style.spacing.window_margin = Margin::same(13.0);
             style.spacing.slider_rail_height = 2.0;
             style.visuals.striped = true;
             style.visuals.faint_bg_color = BG_LIGHT;
@@ -147,7 +149,6 @@ impl UiPlugin {
                 width: 1.0,
                 color: VISIBLE_DARK,
             };
-            style.spacing.window_margin = Margin::same(13.0);
             style.visuals.window_fill = BG_DARK;
             style.visuals.extreme_bg_color = EMPTINESS;
             style.visuals.widgets = Widgets {

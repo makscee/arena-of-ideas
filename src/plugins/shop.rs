@@ -149,7 +149,7 @@ impl ShopPlugin {
             UnitPlugin::despawn(entity, world);
         }
     }
-    pub fn overlay_widgets(ctx: &egui::Context, world: &mut World) {
+    pub fn overlay_widgets(ctx: &egui::Context, _: &mut World) {
         Tile::left("Stats")
             .open()
             .transparent()

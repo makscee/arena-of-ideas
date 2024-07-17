@@ -45,6 +45,7 @@ impl WidgetsPlugin {
         let mut ws = world.remove_resource::<WidgetsState>().unwrap();
 
         // Tiles
+        Tile::show_all_tiles(ctx, world);
         match state {
             GameState::Title => {
                 Tile::right("Settings").title().close_btn().show_data(
