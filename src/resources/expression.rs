@@ -55,6 +55,7 @@ pub enum Expression {
     Sin(Box<Expression>),
     Cos(Box<Expression>),
     Even(Box<Expression>),
+    Abs(Box<Expression>),
     FactionCount(Box<Expression>),
     SlotUnit(Box<Expression>),
 
@@ -120,6 +121,7 @@ impl Expression {
             Expression::HexColor(s) => Ok(VarValue::Color(Color::hex(s)?)),
             Expression::Sin(v) => Ok(v.get_float(context, world)?.sin().into()),
             Expression::Cos(v) => Ok(v.get_float(context, world)?.cos().into()),
+            Expression::Abs(v) => v.get_value(context, world)?.abs(),
             Expression::Even(v) => Ok((v.get_int(context, world)? % 2 == 0).into()),
             Expression::FactionCount(v) => Ok(UnitPlugin::collect_faction(
                 v.get_faction(context, world)?,
@@ -384,6 +386,7 @@ impl ToCstr for Expression {
             | Expression::UnitVec(v)
             | Expression::Sin(v)
             | Expression::Cos(v)
+            | Expression::Abs(v)
             | Expression::Even(v)
             | Expression::FactionCount(v)
             | Expression::SlotUnit(v) => {

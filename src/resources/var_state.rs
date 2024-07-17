@@ -242,6 +242,10 @@ impl VarState {
         self.get_value_last(var)?.get_faction()
     }
 
+    pub fn get_entity(&self, var: VarName) -> Result<Entity> {
+        self.get_value_last(var)?.get_entity()
+    }
+
     pub fn all_values(&self) -> HashMap<VarName, VarValue> {
         HashMap::from_iter(
             self.vars

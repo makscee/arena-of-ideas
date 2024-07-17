@@ -23,10 +23,20 @@ impl UnitPlugin {
             .iter(world)
             .filter(|e| Self::is_dead(*e, world))
             .collect_vec();
-        // for unit in dead.iter() {
-        //     Self::send_death_events(*unit, world);
-        // }
+        for unit in dead.iter() {
+            Self::send_death_events(*unit, world);
+        }
         dead
+    }
+    fn send_death_events(entity: Entity, world: &mut World) {
+        Event::Death(entity).send(world);
+        if let Ok(killer) = VarState::get(entity, world).get_entity(VarName::LastAttacker) {
+            Event::Kill {
+                owner: killer,
+                target: entity,
+            }
+            .send(world);
+        }
     }
     pub fn is_dead(entity: Entity, world: &World) -> bool {
         let context = Context::new(entity);
