@@ -32,7 +32,7 @@ pub fn unit_card(t: f32, state: &VarState, ui: &mut Ui, world: &World) -> Result
         outer_margin: Margin::ZERO,
         rounding: Rounding::ZERO,
         shadow: Shadow::NONE,
-        fill: BG_DARK,
+        fill: EMPTINESS,
         stroke: Stroke::NONE,
     }
     .show(ui, |ui| {
@@ -95,7 +95,7 @@ pub fn unit_card(t: f32, state: &VarState, ui: &mut Ui, world: &World) -> Result
             se: 13.0,
         },
         shadow: Shadow::NONE,
-        fill: BG_LIGHT,
+        fill: BG_DARK,
         stroke: Stroke::NONE,
     }
     .show(ui, |ui| {
@@ -105,7 +105,11 @@ pub fn unit_card(t: f32, state: &VarState, ui: &mut Ui, world: &World) -> Result
         show_trigger_part("eff:", effects, EFFECT_COLOR, ui);
 
         br(ui);
-        let statuses = state.all_statuses_at(t);
+        let statuses = state
+            .all_statuses_at(t)
+            .into_iter()
+            .filter(|(_, c)| *c > 0)
+            .collect_vec();
         if !statuses.is_empty() {
             ui.horizontal_wrapped(|ui| {
                 for (name, charges) in statuses {

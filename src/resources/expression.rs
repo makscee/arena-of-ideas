@@ -242,11 +242,11 @@ impl Expression {
                     if delta == 0 {
                         continue;
                     }
-                    if left.0 < delta {
+                    if delta < 0 && left.0 < delta {
                         left.0 = delta;
                         left.1 = Some(unit);
                     }
-                    if right.0 > delta {
+                    if delta > 0 && right.0 > delta {
                         right.0 = delta;
                         right.1 = Some(unit);
                     }

@@ -6,6 +6,8 @@ pub enum Effect {
     Noop,
     Damage,
     ChangeStatus(String),
+    StealStatus(String),
+    StealAllStatuses,
     UseAbility(String, i32),
     Summon(String, Option<Box<Effect>>),
     WithTarget(Expression, Box<Effect>),
@@ -56,11 +58,31 @@ impl Effect {
                     .unpack(world)?;
             }
             Effect::ChangeStatus(name) => {
-                let delta = context
-                    .get_var(VarName::Charges, world)
-                    .unwrap_or(VarValue::Int(1))
-                    .get_int()?;
+                let delta = context.get_charges(world).unwrap_or(1);
                 Status::change_charges(&name, context.get_target()?, delta, world);
+            }
+            Effect::StealStatus(name) => {
+                let target = context.get_target()?;
+                let charges = context.get_charges(world).unwrap_or(1);
+                if charges <= 0 {
+                    return Err(anyhow!("Can't steal nonpositive charges amount"));
+                }
+                let c = Status::get_charges(name, target, world)?;
+                let delta = c.min(charges);
+                Status::change_charges(name, target, -delta, world);
+                Status::change_charges(name, owner, delta, world);
+            }
+            Effect::StealAllStatuses => {
+                let target = context.get_target()?;
+                for (s, c) in VarState::get(target, world).all_statuses_at(gt().insert_head()) {
+                    if c > 0 {
+                        ActionPlugin::action_push_front(
+                            Effect::StealStatus(s),
+                            context.clone(),
+                            world,
+                        );
+                    }
+                }
             }
             Effect::UseAbility(name, base) => {
                 let ability = GameAssets::get(world)
@@ -172,8 +194,8 @@ impl ToCstr for Effect {
     fn cstr(&self) -> Cstr {
         match self {
             Effect::UseAbility(name, base) => {
-                let name_base = if *base > 1 {
-                    format!("{name} ({base})")
+                let name_base = if *base > 0 {
+                    format!("{name} ({})", *base + 1)
                 } else {
                     name.clone()
                 };
