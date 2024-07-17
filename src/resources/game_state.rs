@@ -49,6 +49,10 @@ lazy_static! {
             [GameOption::Connect, GameOption::Table(QUERY_LEADERBOARD)].into(),
         );
         m.insert(
+            GameState::TableView(QUERY_BASE_UNITS),
+            [GameOption::Connect, GameOption::Table(QUERY_BASE_UNITS)].into(),
+        );
+        m.insert(
             GameState::TableView(QUERY_BATTLE_HISTORY),
             [
                 GameOption::Connect,

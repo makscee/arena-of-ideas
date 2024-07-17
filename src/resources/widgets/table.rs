@@ -63,6 +63,23 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
         );
         self
     }
+    pub fn column_btn(mut self, name: &'static str, on_click: fn(&T, &mut Ui, &mut World)) -> Self {
+        self.columns.insert(
+            name,
+            TableColumn {
+                value: Box::new(|_| name.to_string().into()),
+                show: Box::new(move |d, _, ui, w| {
+                    let r = Button::click(name.to_string()).ui(ui);
+                    if r.clicked() {
+                        on_click(d, ui, w);
+                    }
+                    r
+                }),
+                sortable: false,
+            },
+        );
+        self
+    }
     pub fn column_cstr(mut self, name: &'static str, value: fn(&T) -> Cstr) -> Self {
         self.columns.insert(
             name,
@@ -141,12 +158,6 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
         );
         self
     }
-    // pub fn column_team(
-    //     mut self,
-    //     name: &'static str,
-    //     value: fn(&T) -> GID,
-
-    // )
     pub fn ui(&mut self, data: &Vec<T>, ui: &mut Ui, world: &mut World) -> TableState {
         let mut need_sort = false;
         let id = Id::new("table_").with(self.name).with(ui.id());
@@ -220,7 +231,9 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                     }
                 })
             });
-
+        ui.horizontal(|ui| {
+            format!("total: {}", data.len()).cstr().label(ui);
+        });
         if need_sort {
             let Some((i, desc)) = state.sorting else {
                 panic!("No sorting data")

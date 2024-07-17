@@ -19,6 +19,7 @@ struct QueryData {
 
 pub const QUERY_LEADERBOARD: &str = "select * from TArenaLeaderboard";
 pub const QUERY_BATTLE_HISTORY: &str = "select * from TBattle";
+pub const QUERY_BASE_UNITS: &str = "select * from TBaseUnit";
 
 impl QueryPlugin {
     pub fn subscribe(queries: Vec<String>) -> bool {

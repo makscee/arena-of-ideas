@@ -1,44 +1,76 @@
 use super::*;
 
-pub trait ShowTable {
-    fn show_table(&self, name: &'static str, ui: &mut Ui, world: &mut World) -> TableState;
+pub trait ShowTable<T> {
+    fn show_table(&self, name: &'static str, ui: &mut Ui, world: &mut World) -> TableState {
+        self.show_modified_table(name, ui, world, |t| t)
+    }
+    fn show_modified_table(
+        &self,
+        name: &'static str,
+        ui: &mut Ui,
+        world: &mut World,
+        m: fn(Table<T>) -> Table<T>,
+    ) -> TableState;
 }
 
-impl ShowTable for Vec<TTeam> {
-    fn show_table(&self, name: &'static str, ui: &mut Ui, world: &mut World) -> TableState {
-        Table::new(name)
+impl ShowTable<TTeam> for Vec<TTeam> {
+    fn show_modified_table(
+        &self,
+        name: &'static str,
+        ui: &mut Ui,
+        world: &mut World,
+        m: fn(Table<TTeam>) -> Table<TTeam>,
+    ) -> TableState {
+        let mut t = Table::new(name)
             .title()
             .selectable()
-            .column_cstr("units", |d: &TTeam| d.cstr())
-            .ui(self, ui, world)
+            .column_cstr("units", |d: &TTeam| d.cstr());
+        t = m(t);
+        t.ui(self, ui, world)
     }
 }
-impl ShowTable for Vec<TBaseUnit> {
-    fn show_table(&self, name: &'static str, ui: &mut Ui, world: &mut World) -> TableState {
-        Table::new(name)
+impl ShowTable<TBaseUnit> for Vec<TBaseUnit> {
+    fn show_modified_table(
+        &self,
+        name: &'static str,
+        ui: &mut Ui,
+        world: &mut World,
+        m: fn(Table<TBaseUnit>) -> Table<TBaseUnit>,
+    ) -> TableState {
+        let mut t = Table::new(name)
             .title()
             .column_cstr("name", |d: &TBaseUnit| d.name.cstr_c(name_color(&d.name)))
+            .column_cstr("house", |d| {
+                let color = name_color(&d.house);
+                d.house.cstr_c(color)
+            })
             .column_int("pwr", |d| d.pwr)
-            .column_int("hp", |d| d.hp)
-            .ui(self, ui, world)
+            .column_int("hp", |d| d.hp);
+        t = m(t);
+        t.ui(self, ui, world)
     }
 }
-impl ShowTable for Vec<FusedUnit> {
-    fn show_table(&self, name: &'static str, ui: &mut Ui, world: &mut World) -> TableState {
-        Table::new(name)
-            .title()
-            .column(
-                "name",
-                |d: &FusedUnit| d.id.into(),
-                |d, _, ui, _| {
-                    let r = d.cstr().button(ui);
-                    if r.clicked() {
-                        Tile::add_fused_unit(d.clone(), ui.ctx());
-                    }
-                    r
-                },
-            )
-            .ui(self, ui, world)
+impl ShowTable<FusedUnit> for Vec<FusedUnit> {
+    fn show_modified_table(
+        &self,
+        name: &'static str,
+        ui: &mut Ui,
+        world: &mut World,
+        m: fn(Table<FusedUnit>) -> Table<FusedUnit>,
+    ) -> TableState {
+        let mut t = Table::new(name).title().column(
+            "name",
+            |d: &FusedUnit| d.id.into(),
+            |d, _, ui, _| {
+                let r = d.cstr().button(ui);
+                if r.clicked() {
+                    Tile::add_fused_unit(d.clone(), ui.ctx());
+                }
+                r
+            },
+        );
+        t = m(t);
+        t.ui(self, ui, world)
     }
 }
 

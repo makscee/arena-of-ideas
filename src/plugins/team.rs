@@ -26,6 +26,13 @@ impl TeamPlugin {
         }
         panic!("No team found for {entity:?}")
     }
+    pub fn despawn(faction: Faction, world: &mut World) {
+        world
+            .entity_mut(Self::entity(faction, world))
+            .despawn_recursive();
+        let entity = Self::spawn(faction, world);
+        world.resource_mut::<Teams>().0.insert(faction, entity);
+    }
     pub fn entity(faction: Faction, world: &World) -> Entity {
         *world
             .resource::<Teams>()

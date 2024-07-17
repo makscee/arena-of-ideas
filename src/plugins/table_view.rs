@@ -4,31 +4,41 @@ pub struct TableViewPlugin;
 
 impl Plugin for TableViewPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<HistoryTables>().add_systems(
-            OnEnter(GameState::TableView(QUERY_BATTLE_HISTORY)),
-            Self::on_enter_history,
-        );
+        app.init_resource::<TablesData>()
+            .add_systems(
+                OnEnter(GameState::TableView(QUERY_BATTLE_HISTORY)),
+                Self::on_enter_history,
+            )
+            .add_systems(
+                OnEnter(GameState::TableView(QUERY_BASE_UNITS)),
+                Self::on_enter_base_units,
+            );
     }
 }
 
 #[derive(Resource, Default)]
-struct HistoryTables {
+struct TablesData {
     battles: Vec<TBattle>,
+    base_units: Vec<TBaseUnit>,
 }
 
 impl TableViewPlugin {
-    fn on_enter_history(mut data: ResMut<HistoryTables>) {
+    fn on_enter_history(mut data: ResMut<TablesData>) {
         data.battles = TBattle::iter().collect_vec();
+    }
+    fn on_enter_base_units(mut data: ResMut<TablesData>) {
+        data.base_units = TBaseUnit::iter().collect_vec();
     }
     pub fn ui(query: &str, ctx: &egui::Context, world: &mut World) {
         match query {
             QUERY_LEADERBOARD => Self::draw_leaderboard(ctx, world),
             QUERY_BATTLE_HISTORY => Self::draw_history(ctx, world),
+            QUERY_BASE_UNITS => Self::draw_base_units(ctx, world),
             _ => panic!("Query not supported {query}"),
         }
     }
     fn draw_history(ctx: &egui::Context, world: &mut World) {
-        let ht = world.remove_resource::<HistoryTables>().unwrap();
+        let td = world.remove_resource::<TablesData>().unwrap();
         let show_team = |_: &TBattle, gid: VarValue, ui: &mut Ui, _: &mut World| {
             let team = gid.get_gid().unwrap().get_team();
             let r = team.cstr().button(ui);
@@ -53,9 +63,23 @@ impl TableViewPlugin {
                     TBattleResult::Left | TBattleResult::Even => "win".cstr_c(GREEN),
                     TBattleResult::Right => "lose".cstr_c(RED),
                 })
-                .ui(&ht.battles, ui, world);
+                .ui(&td.battles, ui, world);
         });
-        world.insert_resource(ht);
+        world.insert_resource(td);
+    }
+    fn draw_base_units(ctx: &egui::Context, world: &mut World) {
+        let td = world.remove_resource::<TablesData>().unwrap();
+        Tile::left("Base Units").show(ctx, |ui| {
+            td.base_units
+                .show_modified_table("Base Units", ui, world, |t| {
+                    t.column_btn("spawn", |u, _, world| {
+                        let unit: PackedUnit = u.clone().into();
+                        TeamPlugin::despawn(Faction::Team, world);
+                        unit.unpack(TeamPlugin::entity(Faction::Team, world), None, None, world);
+                    })
+                });
+        });
+        world.insert_resource(td);
     }
     fn draw_leaderboard(ctx: &egui::Context, world: &mut World) {
         // Tile::left("Leaderboard")
