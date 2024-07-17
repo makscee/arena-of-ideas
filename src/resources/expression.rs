@@ -64,6 +64,8 @@ pub enum Expression {
     Sub(Box<Expression>, Box<Expression>),
     Mul(Box<Expression>, Box<Expression>),
     Div(Box<Expression>, Box<Expression>),
+    Max(Box<Expression>, Box<Expression>),
+    Min(Box<Expression>, Box<Expression>),
     Mod(Box<Expression>, Box<Expression>),
     And(Box<Expression>, Box<Expression>),
     Or(Box<Expression>, Box<Expression>),
@@ -142,6 +144,14 @@ impl Expression {
                 &b.get_value(context, world)?,
             )?),
             Expression::Div(a, b) => Ok(VarValue::div(
+                &a.get_value(context, world)?,
+                &b.get_value(context, world)?,
+            )?),
+            Expression::Max(a, b) => Ok(VarValue::max(
+                &a.get_value(context, world)?,
+                &b.get_value(context, world)?,
+            )?),
+            Expression::Min(a, b) => Ok(VarValue::min(
                 &a.get_value(context, world)?,
                 &b.get_value(context, world)?,
             )?),
@@ -407,6 +417,8 @@ impl ToCstr for Expression {
             | Expression::Sub(a, b)
             | Expression::Mul(a, b)
             | Expression::Div(a, b)
+            | Expression::Min(a, b)
+            | Expression::Max(a, b)
             | Expression::Mod(a, b)
             | Expression::And(a, b)
             | Expression::Or(a, b)

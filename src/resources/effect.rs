@@ -9,6 +9,7 @@ pub enum Effect {
     StealStatus(String),
     StealAllStatuses,
     UseAbility(String, i32),
+    AbilityStateAddVar(String, VarName, Expression),
     Summon(String, Option<Box<Effect>>),
     WithTarget(Expression, Box<Effect>),
     WithVar(VarName, Expression, Box<Effect>),
@@ -116,6 +117,25 @@ impl Effect {
                     "use "
                         .cstr()
                         .push(txt.cstr_cs(name_color(name), CstrStyle::Bold))
+                        .take(),
+                    world,
+                );
+            }
+            Effect::AbilityStateAddVar(name, var, delta) => {
+                let delta = delta.get_int(context, world)?;
+                TeamPlugin::change_ability_var_int(
+                    name.clone(),
+                    *var,
+                    delta,
+                    context.get_faction(world)?,
+                    world,
+                );
+                TextColumnPlugin::add(
+                    owner,
+                    name.cstr_cs(name_color(name), CstrStyle::Bold)
+                        .push(var.cstr_c(VISIBLE_BRIGHT))
+                        .push(format!("+{delta}").cstr_c(VISIBLE_LIGHT))
+                        .join(&" ".cstr())
                         .take(),
                     world,
                 );

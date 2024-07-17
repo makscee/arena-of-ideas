@@ -74,7 +74,7 @@ impl TeamPlugin {
         let d = GameAssets::ability_default(&ability, var, world);
         let entity = Self::entity(faction, world);
         let mut states = world.get_mut::<AbilityStates>(entity).unwrap();
-        let state = states.0.entry(ability.clone()).or_default();
+        let state = states.0.entry(ability).or_default();
         if !state.has_value(var) {
             state.init(var, d);
         }
