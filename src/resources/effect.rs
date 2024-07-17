@@ -17,6 +17,7 @@ pub enum Effect {
     Repeat(Expression, Box<Effect>),
     If(Expression, Box<Effect>, Box<Effect>),
     Vfx(String),
+    StateAddVar(VarName, Expression, Expression),
 }
 
 impl Effect {
@@ -212,6 +213,16 @@ impl Effect {
                 Vfx::get(name, world)
                     .attach_context(context, world)
                     .unpack(world)?;
+            }
+            Effect::StateAddVar(var, target, value) => {
+                let target = target.get_entity(context, world)?;
+                let value = value.get_value(context, world)?;
+                let mut state = VarState::try_get_mut(target, world)?;
+                let value = match state.get_value_last(*var) {
+                    Ok(prev) => VarValue::sum(&value, &prev)?,
+                    Err(_) => value,
+                };
+                state.push_change(*var, default(), VarChange::new(value));
             }
         }
         Ok(())

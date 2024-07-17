@@ -50,6 +50,7 @@ pub enum Expression {
     S(String),
     V2(f32, f32),
 
+    ToI(Box<Expression>),
     Vec2E(Box<Expression>),
     UnitVec(Box<Expression>),
     Sin(Box<Expression>),
@@ -219,6 +220,7 @@ impl Expression {
             )?)),
             Expression::F(v) => Ok((*v).into()),
             Expression::I(v) => Ok((*v).into()),
+            Expression::ToI(v) => Ok(v.get_int(context, world).unwrap_or_default().into()),
             Expression::B(v) => Ok((*v).into()),
             Expression::S(v) => Ok((v.clone()).into()),
             Expression::V2(x, y) => Ok(vec2(*x, *y).into()),
@@ -402,12 +404,13 @@ impl ToCstr for Expression {
                 );
             }
             Expression::Vec2E(v)
-            | Expression::Dbg(v)
+            | Expression::ToI(v)
             | Expression::UnitVec(v)
             | Expression::Sin(v)
             | Expression::Cos(v)
             | Expression::Abs(v)
             | Expression::Even(v)
+            | Expression::Dbg(v)
             | Expression::FactionCount(v)
             | Expression::SlotUnit(v) => {
                 s.push(v.cstr().wrap(("(".cstr(), ")".cstr())).take());
