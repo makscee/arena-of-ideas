@@ -26,29 +26,36 @@ impl Effect {
             Effect::Noop => {}
             Effect::Damage => {
                 let target = context.get_target()?;
-                let value = context
+                let mut value = context
                     .get_var(VarName::Damage, world)
-                    .unwrap_or(context.get_var(VarName::Pwr, world)?)
-                    .get_int()?;
-                if value > 0 {
-                    debug!("deal {value} dmg to {target:?}");
+                    .unwrap_or(context.get_var(VarName::Pwr, world)?);
+                let i_value = value.get_int()?;
+                Event::IncomingDamage {
+                    owner: target,
+                    value: i_value,
+                }
+                .send_with_context(context.clone(), world)
+                .map(&mut value, world);
+                let i_value = value.get_int()?;
+                if i_value > 0 {
+                    debug!("deal {i_value} dmg to {target:?}");
                     let mut state = VarState::get_mut(target, world);
-                    state.change_int(VarName::Dmg, value);
+                    state.change_int(VarName::Dmg, i_value);
                     state.set_value(VarName::LastAttacker, owner.into());
                     Event::DamageTaken {
                         owner: target,
-                        value,
+                        value: i_value,
                     }
                     .send_with_context(context.clone(), world);
                     Event::DamageDealt {
                         owner,
                         target,
-                        value,
+                        value: i_value,
                     }
                     .send_with_context(context.clone(), world);
                     TextColumnPlugin::add(
                         target,
-                        format!("-{value}").cstr_cs(RED, CstrStyle::Bold),
+                        format!("-{i_value}").cstr_cs(RED, CstrStyle::Bold),
                         world,
                     );
                     Vfx::get("pain", world).set_parent(target).unpack(world)?;

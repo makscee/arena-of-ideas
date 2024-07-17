@@ -137,6 +137,15 @@ impl FireTrigger {
     }
 }
 
+impl DeltaTrigger {
+    fn catch(&self, event: &Event) -> bool {
+        match self {
+            DeltaTrigger::IncomingDamage => matches!(event, Event::IncomingDamage { .. }),
+            DeltaTrigger::Var(..) => false,
+        }
+    }
+}
+
 impl Default for Trigger {
     fn default() -> Self {
         Self::Fire {
@@ -198,6 +207,31 @@ impl Trigger {
             }
             Trigger::Change { .. } => false,
         }
+    }
+    pub fn change(
+        &self,
+        event: &Event,
+        context: &Context,
+        value: &mut VarValue,
+        world: &mut World,
+    ) -> Result<()> {
+        match self {
+            Trigger::List(list) => list.iter().for_each(|t| {
+                let _ = t.change(event, context, value, world);
+            }),
+            Trigger::Change { trigger, expr } => {
+                if !trigger.catch(event) {
+                    return Ok(());
+                }
+                let delta = expr.get_value(
+                    context.clone().set_var(VarName::Value, value.clone()),
+                    world,
+                )?;
+                *value = VarValue::sum(value, &delta)?;
+            }
+            Trigger::Fire { .. } => {}
+        };
+        Ok(())
     }
     pub fn collect_mappings(
         &self,

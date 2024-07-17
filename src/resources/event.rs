@@ -36,7 +36,7 @@ pub enum Event {
 }
 
 impl Event {
-    pub fn send_with_context(self, mut context: Context, world: &mut World) {
+    pub fn send_with_context(self, mut context: Context, world: &mut World) -> Self {
         debug!("Send event {self:?}");
         context.set_event(self.clone());
         ActionPlugin::register_event(self.clone(), world);
@@ -92,10 +92,21 @@ impl Event {
                 world,
             );
         }
+        self
     }
 
-    pub fn send(self, world: &mut World) {
+    pub fn send(self, world: &mut World) -> Self {
         self.send_with_context(Context::empty(), world)
+    }
+    pub fn map(self, value: &mut VarValue, world: &mut World) -> Self {
+        let context = match &self {
+            Event::IncomingDamage { owner, value } => Context::new(*owner),
+            _ => {
+                return self;
+            }
+        };
+        Status::map_var(&self, value, &context, world);
+        self
     }
 
     pub fn process(self, context: Context, world: &mut World) -> bool {

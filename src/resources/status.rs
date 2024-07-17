@@ -98,6 +98,16 @@ impl Status {
         }
         result
     }
+    pub fn map_var(event: &Event, value: &mut VarValue, context: &Context, world: &mut World) {
+        let owner = context.owner();
+        for (status, Status { name, trigger }) in Self::collect_active_statuses(owner, world) {
+            if context.has_status(status) {
+                continue;
+            }
+            let context = context.clone().set_status(status, name).take();
+            let _ = trigger.change(event, &context, value, world);
+        }
+    }
     pub fn refresh_mappings(owner: Entity, world: &mut World) {
         let statuses = Self::collect_statuses(owner, world);
         for (status, Status { name, trigger }) in statuses {
