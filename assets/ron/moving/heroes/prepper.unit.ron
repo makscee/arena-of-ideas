@@ -11,17 +11,17 @@
         effects: [
             (
                 WithVar(
-                    Level,
+                    Lvl,
                     Mul(
                         Sum(
                             UnitCount(Bool(true)),
                             WithVar(Faction, OppositeFaction, UnitCount(Bool(true))),
                         ),
-                        Context(Level),
+                        Context(Lvl),
                     ),
                     UseAbility("Vitality", 0),
                 ),
-                "use [Vitality] ({Level}) per unit in battle",
+                "use [Vitality] ({Lvl}) per unit in battle",
             ),
         ],
     ),

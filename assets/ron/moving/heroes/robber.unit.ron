@@ -11,7 +11,7 @@
         effects: [
             (
                 If(Equals(UnitCount(Bool(true)), I(1)), UseAbility("Rob", 1), Noop),
-                "use [Rob] ({Level}+1)",
+                "use [Rob] ({Lvl}+1)",
             ),
         ],
     ),

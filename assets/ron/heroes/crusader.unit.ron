@@ -11,15 +11,11 @@
         effects: [
             (
                 WithVar(
-                    Faction,
-                    OppositeFaction,
-                    WithVar(
-                        Level,
-                        Mul(UnitCount(Bool(true)), Context(Level)),
-                        UseAbility("Blessing", 0),
-                    ),
+                    Lvl,
+                    Mul(Dbg(FactionCount(OppositeFaction)), Context(Lvl)),
+                    UseAbility("Blessing", 0),
                 ),
-                "use [Blessing] ({Level}) per enemy",
+                "use [Blessing] ({Lvl}) per enemy",
             ),
         ],
     ),

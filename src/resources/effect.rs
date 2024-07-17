@@ -91,7 +91,7 @@ impl Effect {
                     .with_context(|| format!("Ability not found {name}"))
                     .unwrap();
                 let charges = context
-                    .get_var(VarName::Level, world)
+                    .get_var(VarName::Lvl, world)
                     .map(|v| v.get_int().unwrap())
                     .unwrap_or(1)
                     + *base;
@@ -103,11 +103,12 @@ impl Effect {
                     .set_caster(caster)
                     .take();
                 ActionPlugin::action_push_front(ability.effect.clone(), context, world);
+                let txt = format!("{name} ({charges})");
                 TextColumnPlugin::add(
                     caster,
                     "use "
                         .cstr()
-                        .push(name.cstr_cs(name_color(name), CstrStyle::Bold))
+                        .push(txt.cstr_cs(name_color(name), CstrStyle::Bold))
                         .take(),
                     world,
                 );

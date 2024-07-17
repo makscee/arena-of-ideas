@@ -41,7 +41,6 @@ pub enum VarName {
     Faction,
     Charges,
     Polarity,
-    Level,
     Direction,
     Alpha,
     T,

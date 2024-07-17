@@ -9,8 +9,8 @@
         triggers: [(BattleStart, None)],
         targets: [],
         effects: [
-            (AbilityStateAddVar("Treant", Pwr, Context(Level)), None),
-            (AbilityStateAddVar("Treant", Hp, Context(Level)), None),
+            (AbilityStateAddVar("Treant", Pwr, Context(Lvl)), None),
+            (AbilityStateAddVar("Treant", Hp, Context(Lvl)), None),
         ],
     ),
     representation: (
