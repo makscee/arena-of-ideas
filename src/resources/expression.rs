@@ -21,6 +21,7 @@ pub enum Expression {
 
     RandomUnit(Box<Expression>),
     RandomUnitSubset(Box<Expression>, Box<Expression>),
+    RandomStatusUnit(String, Box<Expression>),
     MaxUnit(Box<Expression>, Box<Expression>),
 
     AllAllyUnits,
@@ -317,6 +318,15 @@ impl Expression {
                     .choose_multiple(&mut thread_rng(), amount)
                     .into())
             }
+            Expression::RandomStatusUnit(status, units) => {
+                let units = units.get_value(context, world)?.get_entity_list()?;
+                units
+                    .into_iter()
+                    .filter(|u| Status::get_charges(&status, *u, world).unwrap_or_default() > 0)
+                    .choose(&mut thread_rng())
+                    .map(|u| u.into())
+                    .context("Unit not found")
+            }
             Expression::RandomUnit(units) => {
                 let units = units.get_value(context, world)?.get_entity_list()?;
                 units
@@ -493,6 +503,16 @@ impl ToCstr for Expression {
                         .push(val.cstr())
                         .push(e.cstr())
                         .join(&", ".cstr())
+                        .wrap(("(".cstr(), ")".cstr()))
+                        .take(),
+                );
+            }
+            Expression::RandomStatusUnit(status, u) => {
+                s.push(
+                    status
+                        .cstr_c(name_color(status))
+                        .push(", ".cstr())
+                        .push(u.cstr())
                         .wrap(("(".cstr(), ")".cstr()))
                         .take(),
                 );
