@@ -2,36 +2,37 @@
 (
     left: (
         units: [
+            (hp: 1, pwr: 1),
+            (hp: 1, pwr: 1),
+            (hp: 1, pwr: 1),
             (
-                name: "Folla",
+                name: "Gnat",
                 hp: 1,
-                pwr: 0,
+                pwr: 1,
                 rarity: 1,
-                houses: ["Dragons"],
+                houses: ["Vampires"],
                 trigger: Fire(
-                    triggers: [(BeforeStrike, None)],
-                    targets: [(Owner, None)],
-                    effects: [(UseAbility("Grow", 1), None)],
+                    triggers: [(TurnEnd, None)],
+                    targets: [(RandomUnit(AllEnemyUnits), None)],
+                    effects: [(UseAbility("Siphon", 0), None)],
                 ),
                 representation: (
                     material: Shape(
-                        shape: Circle(radius: F(0.5)),
+                        shape: Circle(radius: Sum(Mul(Index, F(-0.14)), Sum(F(0.9), Mul(Beat, F(0.05))))),
                         shape_type: Line(thickness: F(1.0)),
-                        fill: Solid(color: OwnerState(Color)),
+                        fill: GradientLinear(
+                            point1: V2(0.0, -0.5),
+                            point2: V2(0.0, 0.5),
+                            parts: [F(0.0), F(0.8)],
+                            colors: [OwnerState(Color), HexColor("00000000")],
+                        ),
                         fbm: None,
-                        alpha: F(0.3),
-                        padding: F(0.1),
+                        alpha: F(1.0),
+                        padding: F(0.0),
                     ),
                     children: [],
-                    mapping: {
-                        Offset: Mul(
-                            UnitVec(
-                                Sum(GT, Mul(OwnerState(Index), Sum(F(1.04), Mul(Sin(GT), F(0.24))))),
-                            ),
-                            F(0.19),
-                        ),
-                    },
-                    count: 6,
+                    mapping: {Rotation: Sum(Mul(Index, PI), GT)},
+                    count: 4,
                 ),
             ),
             (hp: 1, pwr: 1),
