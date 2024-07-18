@@ -10,7 +10,7 @@
             effect: List(
                 [
                     WithVar(
-                        Damage,
+                        Value,
                         Sum(AbilityContext("Magic Missile", Damage), Sub(Context(Charges), I(1))),
                         Damage,
                     ),

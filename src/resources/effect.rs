@@ -5,6 +5,7 @@ pub enum Effect {
     #[default]
     Noop,
     Damage,
+    Heal,
     ChangeStatus(String),
     StealStatus(String),
     StealAllStatuses,
@@ -29,7 +30,7 @@ impl Effect {
             Effect::Damage => {
                 let target = context.get_target()?;
                 let mut value = context
-                    .get_var(VarName::Damage, world)
+                    .get_var(VarName::Value, world)
                     .unwrap_or(context.get_var(VarName::Pwr, world)?);
                 let i_value = value.get_int()?;
                 Event::IncomingDamage {
@@ -65,6 +66,23 @@ impl Effect {
                 Vfx::get("damage", world)
                     .attach_context(context, world)
                     .unpack(world)?;
+            }
+            Effect::Heal => {
+                let target = context.get_target()?;
+                let value = context
+                    .get_var(VarName::Value, world)
+                    .unwrap_or(context.get_var(VarName::Pwr, world)?);
+                let i_value = value.get_int()?;
+                if i_value > 0 {
+                    let mut state = VarState::get_mut(target, world);
+                    let dmg = (state.get_int(VarName::Dmg)? - i_value).max(0);
+                    state.set_int(VarName::Dmg, dmg);
+                    TextColumnPlugin::add(
+                        target,
+                        format!("+{i_value}").cstr_cs(GREEN, CstrStyle::Bold),
+                        world,
+                    );
+                }
             }
             Effect::ChangeStatus(name) => {
                 let delta = context.get_charges(world).unwrap_or(1);
@@ -112,7 +130,11 @@ impl Effect {
                     .set_caster(caster)
                     .take();
                 ActionPlugin::action_push_front(ability.effect.clone(), context, world);
-                let txt = format!("{name} ({charges})");
+                let txt = if *base > 0 {
+                    format!("{name} +{base}")
+                } else {
+                    name.clone()
+                };
                 TextColumnPlugin::add(
                     caster,
                     "use "
@@ -242,7 +264,7 @@ impl ToCstr for Effect {
                     .push(name)
                     .take()
             }
-            _ => self.as_ref().cstr(),
+            _ => self.as_ref().cstr_c(VISIBLE_LIGHT),
         }
     }
 }

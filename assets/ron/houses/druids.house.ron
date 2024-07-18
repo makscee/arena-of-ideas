@@ -10,7 +10,7 @@
             trigger: Fire(
                 triggers: [(AfterDamageTaken, None)],
                 targets: [(OwnerStateLast(LastAttacker), None)],
-                effects: [(WithVar(Damage, Context(Charges), Damage), None)],
+                effects: [(WithVar(Value, Context(Charges), Damage), None)],
             ),
         ),
     ],
