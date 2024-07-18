@@ -1,8 +1,8 @@
 #![enable(implicit_some)]
 (
     name: "Syren",
-    hp: 3,
-    pwr: 1,
+    hp: 1,
+    pwr: 3,
     rarity: 0,
     houses: ["Witches"],
     trigger: Fire(
