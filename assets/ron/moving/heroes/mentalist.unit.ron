@@ -22,7 +22,7 @@
         children: [],
         mapping: {
             Offset: Mul(Vec2EE(Cos(OwnerState(T)), Sin(OwnerState(T))), F(0.5)),
-            T: Sum(Sin(Sum(GT, Mul(IntF(OwnerState(Index)), F(-0.15)))), Mul(PI, F(1.5))),
+            T: Sum(Sin(Sum(GT, Mul(OwnerState(Index), F(-0.15)))), Mul(PI, F(1.5))),
         },
         count: 8,
     ),

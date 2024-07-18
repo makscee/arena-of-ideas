@@ -20,7 +20,7 @@
             padding: F(0.0),
         ),
         children: [],
-        mapping: {Rotation: Sum(IntF(OwnerState(Index)), Sin(Sum(GT, Mul(RandomF(Owner), F(10.0)))))},
+        mapping: {Rotation: Sum(OwnerState(Index), Sin(Sum(GT, Mul(RandomF(Owner), F(10.0)))))},
         count: 10,
     ),
 )

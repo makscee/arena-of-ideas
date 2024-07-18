@@ -21,10 +21,7 @@
         ),
         children: [],
         mapping: {
-            Offset: Mul(
-                UnitVec(Mul(Sum(GT, Mul(Mul(PI, F(0.5)), IntF(OwnerState(Index)))), F(3.0))),
-                F(0.3),
-            ),
+            Offset: Mul(UnitVec(Mul(Sum(GT, Mul(Mul(PI, F(0.5)), OwnerState(Index))), F(3.0))), F(0.3)),
         },
         count: 4,
     ),

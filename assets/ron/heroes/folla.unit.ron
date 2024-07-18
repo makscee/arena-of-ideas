@@ -22,7 +22,7 @@
         children: [],
         mapping: {
             Offset: Mul(
-                UnitVec(Sum(GT, Mul(IntF(OwnerState(Index)), Sum(F(1.04), Mul(Sin(GT), F(0.24)))))),
+                UnitVec(Sum(GT, Mul(OwnerState(Index), Sum(F(1.04), Mul(Sin(GT), F(0.24)))))),
                 F(0.19),
             ),
         },
