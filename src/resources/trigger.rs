@@ -35,6 +35,7 @@ pub enum FireTrigger {
     UnitUsedAbility(String),
     AllyUsedAbility(String),
     EnemyUsedAbility(String),
+    If(Expression, Box<FireTrigger>),
     AfterIncomingDamage,
     AfterDamageTaken,
     AfterDamageDealt,
@@ -52,7 +53,7 @@ pub enum FireTrigger {
 }
 
 impl FireTrigger {
-    fn catch(&mut self, event: &Event, context: &Context, world: &World) -> bool {
+    fn catch(&mut self, event: &Event, context: &Context, world: &mut World) -> bool {
         match self {
             FireTrigger::List(list) => list.iter_mut().any(|t| t.catch(event, context, world)),
             FireTrigger::AfterIncomingDamage => matches!(event, Event::IncomingDamage { .. }),
@@ -131,6 +132,10 @@ impl FireTrigger {
                 }
                 *counter -= 1;
                 *counter == -1
+            }
+            FireTrigger::If(cond, trigger) => {
+                cond.get_bool(context, world).unwrap_or_default()
+                    && trigger.catch(event, context, world)
             }
             FireTrigger::Noop => false,
         }
@@ -322,6 +327,9 @@ impl ToCstr for FireTrigger {
                 .push(trigger.cstr())
                 .color(VISIBLE_LIGHT)
                 .take(),
+            FireTrigger::If(cond, trigger) => {
+                trigger.cstr().push(" if ".cstr()).push(cond.cstr()).take()
+            }
             FireTrigger::UnitUsedAbility(name)
             | FireTrigger::AllyUsedAbility(name)
             | FireTrigger::EnemyUsedAbility(name) => self
