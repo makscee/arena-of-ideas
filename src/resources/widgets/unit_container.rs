@@ -184,7 +184,7 @@ impl UnitContainer {
                         .fixed_pos(pos)
                         .resizable(false)
                         .interactable(false)
-                        .constrain(false)
+                        .constrain_to(ui.ctx().screen_rect())
                         .show(ui.ctx(), |ui| {
                             ui.vertical_centered_justified(|ui| {
                                 hover_content(i, data.entities[i], ui, world)
