@@ -105,6 +105,14 @@ impl Cstr {
         }
         self
     }
+    pub fn replace_absent_color(&mut self, color: Color32) -> &mut Self {
+        for sub in self.subs.iter_mut() {
+            if sub.color.is_none() {
+                sub.color = Some(color);
+            }
+        }
+        self
+    }
     pub fn style(&mut self, style: CstrStyle) -> &mut Self {
         for sub in self.subs.iter_mut() {
             sub.style = style;

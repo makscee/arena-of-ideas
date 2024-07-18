@@ -266,21 +266,33 @@ impl Trigger {
             } => {
                 for (trigger, rename) in triggers {
                     if let Some(rename) = rename {
-                        cs.0.push(rename.cstr_c(VISIBLE_LIGHT));
+                        cs.0.push(
+                            Cstr::parse(rename)
+                                .replace_absent_color(VISIBLE_LIGHT)
+                                .take(),
+                        );
                     } else {
                         cs.0.push(trigger.cstr());
                     }
                 }
                 for (target, rename) in targets {
                     if let Some(rename) = rename {
-                        cs.1.push(rename.cstr_c(VISIBLE_LIGHT));
+                        cs.1.push(
+                            Cstr::parse(rename)
+                                .replace_absent_color(VISIBLE_LIGHT)
+                                .take(),
+                        );
                     } else {
                         cs.1.push(target.cstr());
                     }
                 }
                 for (effect, rename) in effects {
                     if let Some(rename) = rename {
-                        cs.2.push(Cstr::parse(rename).take());
+                        cs.2.push(
+                            Cstr::parse(rename)
+                                .replace_absent_color(VISIBLE_LIGHT)
+                                .take(),
+                        );
                     } else {
                         cs.2.push(effect.cstr());
                     }
