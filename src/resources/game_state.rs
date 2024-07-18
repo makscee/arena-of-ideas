@@ -50,7 +50,12 @@ lazy_static! {
         );
         m.insert(
             GameState::TableView(QUERY_BASE_UNITS),
-            [GameOption::Connect, GameOption::Table(QUERY_BASE_UNITS)].into(),
+            [
+                GameOption::Connect,
+                GameOption::ForceLogin,
+                GameOption::Table(QUERY_BASE_UNITS),
+            ]
+            .into(),
         );
         m.insert(
             GameState::TableView(QUERY_BATTLE_HISTORY),

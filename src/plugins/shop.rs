@@ -252,8 +252,8 @@ impl ShopPlugin {
         let team = TTeam::filter_by_id(run.team).unwrap();
         let g = run.g;
         UnitContainer::new(Faction::Shop)
-            .direction(Side::Top)
-            .offset([0.0, -sd.case_height])
+            .pivot(Align2::CENTER_TOP)
+            .position(egui::vec2(0.5, 0.0))
             .slots(run.shop_slots.len())
             .top_content(move |ui, _| {
                 if TArenaRun::current().fusion.is_some() {
@@ -325,8 +325,8 @@ impl ShopPlugin {
         let slots = GameAssets::get(world).global_settings.team_slots as usize;
         let run = TArenaRun::current();
         UnitContainer::new(Faction::Team)
-            .direction(Side::Bottom)
-            .offset([0.0, sd.case_height])
+            .pivot(Align2::CENTER_TOP)
+            .position(egui::vec2(0.5, 1.0))
             .slots(slots.max(team.units.len()))
             .max_slots(slots)
             .slot_content(move |slot, e, ui, world| {

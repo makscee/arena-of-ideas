@@ -37,6 +37,18 @@ impl TableViewPlugin {
             _ => panic!("Query not supported {query}"),
         }
     }
+    pub fn ui_content(query: &str, wd: &mut WidgetData, ui: &mut Ui, world: &mut World) {
+        match query {
+            QUERY_BASE_UNITS => {
+                UnitContainer::new(Faction::Team)
+                    .hover_content(ShopPlugin::container_on_hover)
+                    .position(egui::vec2(0.5, 0.5))
+                    .slots(1)
+                    .ui(wd, ui, world);
+            }
+            _ => panic!("Query not supported {query}"),
+        }
+    }
     fn draw_history(ctx: &egui::Context, world: &mut World) {
         let td = world.remove_resource::<TablesData>().unwrap();
         let show_team = |_: &TBattle, gid: VarValue, ui: &mut Ui, _: &mut World| {

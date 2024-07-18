@@ -8,11 +8,11 @@ pub struct UnitContainer {
     max_slots: usize,
     right_to_left: bool,
     hug_unit: bool,
-    offset: egui::Vec2,
     top_content: Option<Box<dyn FnOnce(&mut Ui, &mut World) + Send + Sync>>,
     slot_content: Option<Box<dyn Fn(usize, Option<Entity>, &mut Ui, &mut World) + Send + Sync>>,
     hover_content: Option<Box<dyn Fn(usize, Option<Entity>, &mut Ui, &mut World) + Send + Sync>>,
-    direction: Side,
+    pivot: Align2,
+    position: egui::Vec2,
 }
 
 #[derive(Debug)]
@@ -36,13 +36,13 @@ impl UnitContainer {
             faction,
             slots: 5,
             max_slots: 5,
-            offset: default(),
             right_to_left: false,
             hug_unit: false,
             top_content: default(),
             slot_content: default(),
             hover_content: default(),
-            direction: Side::Top,
+            pivot: Align2::CENTER_CENTER,
+            position: default(),
         }
     }
     pub fn slots(mut self, value: usize) -> Self {
@@ -62,12 +62,12 @@ impl UnitContainer {
         self.hug_unit = true;
         self
     }
-    pub fn offset(mut self, value: [f32; 2]) -> Self {
-        self.offset = value.into();
+    pub fn position(mut self, value: egui::Vec2) -> Self {
+        self.position = value;
         self
     }
-    pub fn direction(mut self, side: Side) -> Self {
-        self.direction = side;
+    pub fn pivot(mut self, value: Align2) -> Self {
+        self.pivot = value;
         self
     }
     pub fn top_content(
@@ -97,15 +97,9 @@ impl UnitContainer {
         data.entities.resize(self.slots + 1, None);
         let name = format!("{}", self.faction);
         ui.ctx().add_path(&name);
-        let center = ui.max_rect().center();
-        let (anchor, offset) = match self.direction {
-            Side::Right => (Align2::LEFT_CENTER, egui::vec2(center.x, 0.0)),
-            Side::Left => (Align2::RIGHT_CENTER, egui::vec2(-center.x, 0.0)),
-            Side::Top => (Align2::CENTER_BOTTOM, egui::vec2(0.0, -center.y)),
-            Side::Bottom => (Align2::CENTER_TOP, egui::vec2(0.0, center.y)),
-        };
         const MARGIN: Margin = Margin::same(8.0);
         let available_rect = ui.available_rect_before_wrap();
+        let pos = available_rect.min + self.position * available_rect.size();
         let max_size = if self.hug_unit {
             CameraPlugin::pixel_unit(ui.ctx(), world) * 2.0
         } else {
@@ -113,7 +107,7 @@ impl UnitContainer {
         };
         const FRAME: Frame = Frame {
             inner_margin: MARGIN,
-            outer_margin: Margin::ZERO,
+            outer_margin: MARGIN,
             rounding: Rounding::same(13.0),
             shadow: Shadow::NONE,
             fill: TRANSPARENT,
@@ -124,7 +118,8 @@ impl UnitContainer {
         };
         let mut hovered_rect: Option<(usize, Rect)> = None;
         let resp = Window::new(&name)
-            .anchor(anchor, self.offset + offset)
+            .fixed_pos(pos)
+            .pivot(self.pivot)
             .constrain_to(ui.available_rect_before_wrap())
             .resizable([true, false])
             .frame(FRAME)
@@ -168,9 +163,9 @@ impl UnitContainer {
         let rect = resp.response.rect;
         {
             let pos = rect.left_top();
-            let rect = Rect::from_two_pos(pos, pos + egui::vec2(30.0, -10.0));
+            let rect = Rect::from_two_pos(pos, pos + egui::vec2(-30.0, 30.0));
             let ui = &mut ui.child_ui(rect, Layout::bottom_up(Align::Min));
-            name.cstr().label(ui);
+            name.cstr_cs(VISIBLE_DARK, CstrStyle::Bold).label(ui);
         }
         if let Some(hover_content) = self.hover_content {
             if let Some((i, rect)) = hovered_rect {
@@ -189,6 +184,7 @@ impl UnitContainer {
                         .fixed_pos(pos)
                         .resizable(false)
                         .interactable(false)
+                        .constrain(false)
                         .show(ui.ctx(), |ui| {
                             ui.vertical_centered_justified(|ui| {
                                 hover_content(i, data.entities[i], ui, world)
