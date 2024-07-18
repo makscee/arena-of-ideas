@@ -1,14 +1,14 @@
 #![enable(implicit_some)]
 (
-    name: "Zombie Bat",
+    name: "Alchemic_Bat",
     hp: 1,
     pwr: 3,
     rarity: 1,
-    houses: ["Death Knights"],
+    houses: ["Alchemists"],
     trigger: Fire(
         triggers: [(AllyDeath, None)],
         targets: [(TargetStateLast(LastAttacker), "last attacker")],
-        effects: [(UseAbility("Plague", 0), None)],
+        effects: [(UseAbility("Petrify", 1), None)],
     ),
     representation: (
         material: Shape(

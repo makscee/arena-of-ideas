@@ -1,6 +1,6 @@
 #![enable(implicit_some)]
 (
-    name: "Rogue Bat",
+    name: "Rogue_Bat",
     hp: 2,
     pwr: 0,
     rarity: 1,

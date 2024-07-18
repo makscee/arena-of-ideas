@@ -1,6 +1,6 @@
 #![enable(implicit_some)]
 (
-    name: "Battle Mage",
+    name: "Battle_Mage",
     hp: 4,
     pwr: 1,
     rarity: 1,
