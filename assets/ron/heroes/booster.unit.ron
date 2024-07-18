@@ -7,7 +7,7 @@
     houses: ["Medics"],
     trigger: Fire(
         triggers: [(TurnEnd, None)],
-        targets: [(FilterMaxAlly(Context(Slot)), "last ally")],
+        targets: [(MaxUnit(Context(Slot), AllAllyUnits), "last ally")],
         effects: [(UseAbility("Vitality", 0), None)],
     ),
     representation: (

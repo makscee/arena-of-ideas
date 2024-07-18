@@ -7,7 +7,7 @@
     houses: ["Meta"],
     trigger: Fire(
         triggers: [(BattleStart, None)],
-        targets: [(RandomEnemy, None)],
+        targets: [(RandomUnit(AllEnemyUnits), None)],
         effects: [(UseAbility("Betray", 0), None)],
     ),
     representation: (

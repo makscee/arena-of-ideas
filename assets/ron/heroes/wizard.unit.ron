@@ -6,7 +6,7 @@
     houses: ["Mages"],
     trigger: Fire(
         triggers: [(TurnEnd, None)],
-        targets: [(RandomEnemy, None)],
+        targets: [(RandomUnit(AllEnemyUnits), None)],
         effects: [(UseAbility("Magic Missile", 0), None)],
     ),
     representation: (

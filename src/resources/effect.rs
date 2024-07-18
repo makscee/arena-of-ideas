@@ -68,7 +68,7 @@ impl Effect {
             }
             Effect::ChangeStatus(name) => {
                 let delta = context.get_charges(world).unwrap_or(1);
-                Status::change_charges(&name, context.get_target()?, delta, world);
+                Status::change_charges_with_text(&name, context.get_target()?, delta, world);
             }
             Effect::StealStatus(name) => {
                 let target = context.get_target()?;
@@ -78,8 +78,8 @@ impl Effect {
                 }
                 let c = Status::get_charges(name, target, world)?;
                 let delta = c.min(charges);
-                Status::change_charges(name, target, -delta, world);
-                Status::change_charges(name, owner, delta, world);
+                Status::change_charges_with_text(name, target, -delta, world);
+                Status::change_charges_with_text(name, owner, delta, world);
             }
             Effect::StealAllStatuses => {
                 let target = context.get_target()?;

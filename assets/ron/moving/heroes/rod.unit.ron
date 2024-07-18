@@ -7,7 +7,7 @@
     houses: ["Robots"],
     trigger: Fire(
         triggers: [(AllyUsedAbility("Charge"), None)],
-        targets: [(RandomEnemy, None)],
+        targets: [(RandomUnit(AllEnemyUnits), None)],
         effects: [(Damage(None), "Damage {Pwr}")],
     ),
     representation: (

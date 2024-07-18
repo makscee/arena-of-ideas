@@ -7,7 +7,7 @@
     houses: ["Death Knights"],
     trigger: Fire(
         triggers: [(AfterStrike, None)],
-        targets: [(RandomEnemy, None)],
+        targets: [(RandomUnit(AllEnemyUnits), None)],
         effects: [(UseAbility("Decay", 1), None)],
     ),
     representation: (

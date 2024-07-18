@@ -50,6 +50,29 @@ impl Status {
             .set_parent(owner)
             .id()
     }
+    pub fn change_charges_with_text(
+        status: &str,
+        entity: Entity,
+        delta: i32,
+        world: &mut World,
+    ) -> i32 {
+        let charges = Self::change_charges(status, entity, delta, world);
+        let delta_str = if delta >= 0 {
+            format!("+{delta}")
+        } else {
+            delta.to_string()
+        };
+        TextColumnPlugin::add(
+            entity,
+            "status "
+                .cstr()
+                .push(status.cstr_cs(name_color(status), CstrStyle::Bold))
+                .push(format!(" {delta_str} ({charges})").cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold))
+                .take(),
+            world,
+        );
+        charges
+    }
     pub fn change_charges(status: &str, entity: Entity, delta: i32, world: &mut World) -> i32 {
         if let Some(state) = VarState::get_mut(entity, world).get_status_mut(status) {
             state.change_int(VarName::Charges, delta)

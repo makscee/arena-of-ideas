@@ -23,9 +23,9 @@ pub enum Expression {
     Caster,
     Target,
 
-    RandomAlly,
-    RandomEnemy,
-    RandomAdjacentUnit,
+    RandomUnit(Box<Expression>),
+    MaxUnit(Box<Expression>, Box<Expression>),
+
     AllAllyUnits,
     AllEnemyUnits,
     AllUnits,
@@ -229,21 +229,6 @@ impl Expression {
 
             Expression::PI => Ok(VarValue::Float(PI)),
             Expression::PI2 => Ok(VarValue::Float(PI * 2.0)),
-            Expression::RandomAlly => {
-                UnitPlugin::collect_faction(context.get_faction(world)?, world)
-                    .into_iter()
-                    .filter(|e| !context.owner().eq(e))
-                    .choose(&mut thread_rng())
-                    .context("No other units found")
-                    .map(|v| v.into())
-            }
-            Expression::RandomEnemy => Self::RandomAlly.get_value(
-                &context.clone().set_var(
-                    VarName::Faction,
-                    context.get_faction(world)?.opposite().into(),
-                ),
-                world,
-            ),
             Expression::AdjacentUnits => {
                 let own_slot = context.get_var(VarName::Slot, world)?.get_int()?;
                 let faction = context.get_var(VarName::Faction, world)?.get_faction()?;
@@ -273,13 +258,6 @@ impl Expression {
                         .collect_vec(),
                 ))
             }
-            Expression::RandomAdjacentUnit => Ok(Self::AdjacentUnits
-                .get_value(context, world)?
-                .get_entity_list()?
-                .into_iter()
-                .choose(&mut thread_rng())
-                .context("No adjacent units")?
-                .into()),
             Expression::AllAllyUnits => Ok(VarValue::List(
                 UnitPlugin::collect_faction(context.get_faction(world)?, world)
                     .into_iter()
@@ -311,6 +289,33 @@ impl Expression {
                 Ok((gt().play_head() - VarState::get(context.owner(), world).birth()).into())
             }
             Expression::Index => Expression::Context(VarName::Index).get_value(context, world),
+            Expression::MaxUnit(value, units) => {
+                let units = units.get_value(context, world)?.get_entity_list()?;
+                if units.is_empty() {
+                    return Err(anyhow!("No units found"));
+                }
+                units
+                    .into_iter()
+                    .max_by(|a, b| {
+                        let a = value
+                            .get_value(&context.clone().set_owner(*a), world)
+                            .unwrap_or_default();
+                        let b = value
+                            .get_value(&context.clone().set_owner(*b), world)
+                            .unwrap_or_default();
+                        VarValue::compare(&a, &b).unwrap()
+                    })
+                    .context("Filed to find max unit")
+                    .map(|u| u.into())
+            }
+            Expression::RandomUnit(units) => {
+                let units = units.get_value(context, world)?.get_entity_list()?;
+                units
+                    .into_iter()
+                    .choose(&mut thread_rng())
+                    .map(|u| u.into())
+                    .context("No units to choose from")
+            }
         }
     }
     pub fn get_float(&self, context: &Context, world: &mut World) -> Result<f32> {
@@ -411,6 +416,7 @@ impl ToCstr for Expression {
             | Expression::Abs(v)
             | Expression::Even(v)
             | Expression::Dbg(v)
+            | Expression::RandomUnit(v)
             | Expression::FactionCount(v)
             | Expression::SlotUnit(v) => {
                 s.push(v.cstr().wrap(("(".cstr(), ")".cstr())).take());
@@ -425,6 +431,7 @@ impl ToCstr for Expression {
             | Expression::Mod(a, b)
             | Expression::And(a, b)
             | Expression::Or(a, b)
+            | Expression::MaxUnit(a, b)
             | Expression::Equals(a, b)
             | Expression::GreaterThen(a, b)
             | Expression::LessThen(a, b) => {
@@ -479,9 +486,6 @@ impl ToCstr for Expression {
             | Expression::Owner
             | Expression::Caster
             | Expression::Target
-            | Expression::RandomAlly
-            | Expression::RandomEnemy
-            | Expression::RandomAdjacentUnit
             | Expression::AllAllyUnits
             | Expression::AllEnemyUnits
             | Expression::AllUnits

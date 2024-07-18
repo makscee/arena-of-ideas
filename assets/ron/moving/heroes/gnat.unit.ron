@@ -7,7 +7,7 @@
     houses: ["Vampires"],
     trigger: Fire(
         triggers: [(TurnEnd, None)],
-        targets: [(RandomEnemy, None)],
+        targets: [(RandomUnit(AllEnemyUnits), None)],
         effects: [(UseAbility("Siphon", 0), None)],
     ),
     representation: (

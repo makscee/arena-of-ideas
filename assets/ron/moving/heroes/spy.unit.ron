@@ -7,7 +7,7 @@
     houses: ["Shifters"],
     trigger: Fire(
         triggers: [(BeforeStrike, None)],
-        targets: [(RandomEnemy, None)],
+        targets: [(RandomUnit(AllEnemyUnits), None)],
         effects: [(UseAbility("Copy", 0), None)],
     ),
     representation: (
