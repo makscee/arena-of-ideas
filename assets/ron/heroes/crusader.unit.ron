@@ -10,11 +10,7 @@
         targets: [(Owner, None)],
         effects: [
             (
-                WithVar(
-                    Lvl,
-                    Mul(Dbg(FactionCount(OppositeFaction)), Context(Lvl)),
-                    UseAbility("Blessing", 0),
-                ),
+                WithVar(Lvl, Mul(ListCount(AllEnemyUnits), Context(Lvl)), UseAbility("Blessing", 0)),
                 "use [Blessing] ({Lvl}) per enemy",
             ),
         ],

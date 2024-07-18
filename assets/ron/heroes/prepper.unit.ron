@@ -10,17 +10,7 @@
         targets: [(SlotUnit(I(1)), "front ally")],
         effects: [
             (
-                WithVar(
-                    Lvl,
-                    Mul(
-                        Sum(
-                            UnitCount(Bool(true)),
-                            WithVar(Faction, OppositeFaction, UnitCount(Bool(true))),
-                        ),
-                        Context(Lvl),
-                    ),
-                    UseAbility("Vitality", 0),
-                ),
+                WithVar(Lvl, Mul(ListCount(AllUnits), Context(Lvl)), UseAbility("Vitality", 0)),
                 "use [Vitality] ({Lvl}) per unit in battle",
             ),
         ],

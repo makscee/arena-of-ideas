@@ -20,6 +20,12 @@ pub enum VarValue {
 }
 
 impl VarValue {
+    pub fn get_list(&self) -> Result<Vec<VarValue>> {
+        match self {
+            VarValue::List(list) => Ok(list.clone()),
+            _ => Err(anyhow!("List not supported by {self:?}")),
+        }
+    }
     pub fn get_int(&self) -> Result<i32> {
         match self {
             VarValue::None => Ok(0),

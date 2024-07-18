@@ -58,9 +58,9 @@ pub enum Expression {
     Floor(Box<Expression>),
     Ceil(Box<Expression>),
     Fract(Box<Expression>),
-    FactionCount(Box<Expression>),
     SlotUnit(Box<Expression>),
     RandomF(Box<Expression>),
+    ListCount(Box<Expression>),
 
     Vec2EE(Box<Expression>, Box<Expression>),
     Sum(Box<Expression>, Box<Expression>),
@@ -128,12 +128,7 @@ impl Expression {
             Expression::Cos(v) => Ok(v.get_float(context, world)?.cos().into()),
             Expression::Abs(v) => v.get_value(context, world)?.abs(),
             Expression::Even(v) => Ok((v.get_int(context, world)? % 2 == 0).into()),
-            Expression::FactionCount(v) => Ok(UnitPlugin::collect_faction(
-                v.get_faction(context, world)?,
-                world,
-            )
-            .len()
-            .into()),
+            Expression::ListCount(v) => Ok(v.get_value(context, world)?.get_list()?.len().into()),
             Expression::Sum(a, b) => Ok(VarValue::sum(
                 &a.get_value(context, world)?,
                 &b.get_value(context, world)?,
@@ -446,7 +441,7 @@ impl ToCstr for Expression {
             | Expression::Even(v)
             | Expression::Dbg(v)
             | Expression::RandomUnit(v)
-            | Expression::FactionCount(v)
+            | Expression::ListCount(v)
             | Expression::RandomF(v)
             | Expression::Floor(v)
             | Expression::Fract(v)

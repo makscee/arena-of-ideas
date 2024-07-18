@@ -6,7 +6,7 @@
     rarity: 2,
     houses: ["Rogues"],
     trigger: Fire(
-        triggers: [(If(Equals(FactionCount(Context(Faction)), I(1)), AllyDeath), Some("last ally died"))],
+        triggers: [(If(Equals(ListCount(AllAllyUnits), I(1)), AllyDeath), Some("last ally died"))],
         targets: [(AllEnemyUnits, None)],
         effects: [(UseAbility("Rob", 1), None)],
     ),
