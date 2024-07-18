@@ -4,58 +4,40 @@
         units: [
             (hp: 1, pwr: 1),
             (
+                name: "Commander",
                 hp: 2,
-                pwr: 2,
-                rarity: 0,
-                houses: ["Druids"],
+                pwr: 3,
+                rarity: 1,
+                houses: ["Warriors"],
                 trigger: Fire(
                     triggers: [(BattleStart, None)],
-                    targets: [],
-                    effects: [(UseAbility("Summon Treant", 0), None)],
-                ),
-            ),
-            (
-                name: "Director",
-                hp: 3,
-                pwr: 1,
-                rarity: 1,
-                houses: ["Mages"],
-                trigger: Fire(
-                    triggers: [(AllySummon, None)],
-                    targets: [(RandomEnemy, None)],
-                    effects: [(UseAbility("Magic Missile", 3), None)],
+                    targets: [(AdjacentUnits, None)],
+                    effects: [(UseAbility("Strength", 1), None)],
                 ),
                 representation: (
                     material: Shape(
-                        shape: Circle(radius: F(0.15)),
-                        shape_type: Opaque,
+                        shape: Rectangle(
+                            size: Vec2E(
+                                Sum(
+                                    Mul(F(0.11), Index),
+                                    Sum(F(0.52), Sub(Zero, Mul(Beat, F(0.05)))),
+                                ),
+                            ),
+                        ),
+                        shape_type: Line(thickness: Sum(F(0.6), Mul(Sin(Sum(GT, Index)), F(0.4)))),
                         fill: Solid(color: OwnerState(Color)),
                         fbm: None,
                         alpha: F(1.0),
                         padding: F(0.0),
                     ),
-                    children: [
-                        (
-                            material: Shape(
-                                shape: Circle(radius: Sum(Mul(F(0.06), Index), F(0.21))),
-                                shape_type: Line(thickness: F(1.0)),
-                                fill: Solid(color: OwnerState(Color)),
-                                fbm: None,
-                                alpha: F(1.0),
-                                padding: F(0.0),
-                            ),
-                            children: [],
-                            mapping: {},
-                            count: 3,
-                        ),
-                    ],
+                    children: [],
                     mapping: {
-                        Offset: Mul(
-                            UnitVec(Sum(Mul(Index, Mul(PI, F(0.666))), GT)),
-                            Sum(F(0.3), Mul(Beat, F(0.1))),
+                        Offset: Sum(
+                            Mul(UnitVec(GT), Mul(Index, F(0.04))),
+                            Vec2EE(Mul(Sin(GT), F(0.1)), Zero),
                         ),
                     },
-                    count: 3,
+                    count: 6,
                 ),
             ),
             (hp: 1, pwr: 1),
