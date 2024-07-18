@@ -1,3 +1,5 @@
+use epaint::util::FloatOrd;
+
 use super::*;
 
 #[derive(Clone, Default, Serialize, Deserialize, Debug, PartialEq, AsRefStr)]
@@ -300,6 +302,36 @@ impl VarValue {
             VarValue::Vec2(x) => Ok(VarValue::Vec2(x.abs())),
             _ => Err(anyhow!("Abs {self:?} not supported")),
         }
+    }
+}
+
+impl std::hash::Hash for VarValue {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        match self {
+            VarValue::None => core::mem::discriminant(self).hash(state),
+            VarValue::Float(v) => (*v).ord().hash(state),
+            VarValue::Int(v) => (*v).hash(state),
+            VarValue::Vec2(Vec2 { x, y }) => {
+                (*x).ord().hash(state);
+                (*y).ord().hash(state);
+            }
+            VarValue::Bool(v) => (*v).hash(state),
+            VarValue::String(v) => (*v).hash(state),
+            VarValue::Faction(v) => (*v).hash(state),
+            VarValue::Entity(v) => (*v).to_bits().hash(state),
+            VarValue::List(v) => {
+                for v in v {
+                    (*v).hash(state)
+                }
+            }
+            VarValue::Color(v) => {
+                v.r().ord().hash(state);
+                v.g().ord().hash(state);
+                v.b().ord().hash(state);
+            }
+            VarValue::Cstr(v) => v.to_string().hash(state),
+            VarValue::GID(v) => (*v).hash(state),
+        };
     }
 }
 

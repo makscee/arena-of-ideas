@@ -1,7 +1,3 @@
-use std::f32::consts::PI;
-
-use rand::{seq::IteratorRandom, thread_rng};
-
 use super::*;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, EnumIter, AsRefStr)]
@@ -24,6 +20,7 @@ pub enum Expression {
     Target,
 
     RandomUnit(Box<Expression>),
+    RandomUnitSubset(Box<Expression>, Box<Expression>),
     MaxUnit(Box<Expression>, Box<Expression>),
 
     AllAllyUnits,
@@ -57,8 +54,12 @@ pub enum Expression {
     Cos(Box<Expression>),
     Even(Box<Expression>),
     Abs(Box<Expression>),
+    Floor(Box<Expression>),
+    Ceil(Box<Expression>),
+    Fract(Box<Expression>),
     FactionCount(Box<Expression>),
     SlotUnit(Box<Expression>),
+    RandomF(Box<Expression>),
 
     Vec2EE(Box<Expression>, Box<Expression>),
     Sum(Box<Expression>, Box<Expression>),
@@ -308,6 +309,14 @@ impl Expression {
                     .context("Filed to find max unit")
                     .map(|u| u.into())
             }
+            Expression::RandomUnitSubset(amount, units) => {
+                let units = units.get_value(context, world)?.get_entity_list()?;
+                let amount = amount.get_int(context, world)? as usize;
+                Ok(units
+                    .into_iter()
+                    .choose_multiple(&mut thread_rng(), amount)
+                    .into())
+            }
             Expression::RandomUnit(units) => {
                 let units = units.get_value(context, world)?.get_entity_list()?;
                 units
@@ -316,6 +325,16 @@ impl Expression {
                     .map(|u| u.into())
                     .context("No units to choose from")
             }
+            Expression::RandomF(x) => {
+                let x = x.get_value(context, world)?;
+                let mut hasher = DefaultHasher::new();
+                x.hash(&mut hasher);
+                let mut rng = ChaCha8Rng::seed_from_u64(hasher.finish());
+                Ok(rng.gen_range(0.0..1.0).into())
+            }
+            Expression::Floor(x) => Ok(x.get_float(context, world)?.floor().into()),
+            Expression::Fract(x) => Ok(x.get_float(context, world)?.fract().into()),
+            Expression::Ceil(x) => Ok(x.get_float(context, world)?.ceil().into()),
         }
     }
     pub fn get_float(&self, context: &Context, world: &mut World) -> Result<f32> {
@@ -418,6 +437,10 @@ impl ToCstr for Expression {
             | Expression::Dbg(v)
             | Expression::RandomUnit(v)
             | Expression::FactionCount(v)
+            | Expression::RandomF(v)
+            | Expression::Floor(v)
+            | Expression::Fract(v)
+            | Expression::Ceil(v)
             | Expression::SlotUnit(v) => {
                 s.push(v.cstr().wrap(("(".cstr(), ")".cstr())).take());
             }
@@ -432,6 +455,7 @@ impl ToCstr for Expression {
             | Expression::And(a, b)
             | Expression::Or(a, b)
             | Expression::MaxUnit(a, b)
+            | Expression::RandomUnitSubset(a, b)
             | Expression::Equals(a, b)
             | Expression::GreaterThen(a, b)
             | Expression::LessThen(a, b) => {

@@ -7,8 +7,8 @@
     houses: ["Witches"],
     trigger: Fire(
         triggers: [(AfterStrike, None)],
-        targets: [(RandomEnemySubset(I(2)), None)],
-        effects: [(UseAbility("Weakness", 2), None)],
+        targets: [(RandomUnitSubset(I(2), AllEnemyUnits), Some("2 random enemies"))],
+        effects: [(UseAbility("Weakness", 1), None)],
     ),
     representation: (
         material: Shape(
