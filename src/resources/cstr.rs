@@ -264,7 +264,11 @@ impl Cstr {
                     var.color = Some(VISIBLE_BRIGHT);
                     var
                 }
-                Err(_) => s.into(),
+                Err(_) => CstrSub {
+                    text: s.into(),
+                    color: Some(VISIBLE_BRIGHT),
+                    style: default(),
+                },
             }
         }
     }

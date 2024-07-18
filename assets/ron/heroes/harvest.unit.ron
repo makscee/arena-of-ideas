@@ -22,10 +22,7 @@
         children: [],
         mapping: {
             Offset: Vec2EE(
-                Mul(
-                    RandomFloatUnit(Owner),
-                    Mul(Sin(Mul(GT, Sum(F(0.4), Mul(Index, F(0.1))))), F(0.73)),
-                ),
+                Mul(RandomF(Owner), Mul(Sin(Mul(GT, Sum(F(0.4), Mul(Index, F(0.1))))), F(0.73))),
                 Mul(Sin(Context(T)), F(1.0)),
             ),
             T: Sum(Mul(GT, F(2.0)), Index),
