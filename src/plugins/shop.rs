@@ -394,9 +394,7 @@ impl ShopPlugin {
         let Some(entity) = entity else {
             return;
         };
-        let state = VarState::get(entity, world);
-        let t = gt().play_head();
-        match unit_card(t, state, ui, world) {
+        match unit_card(&Context::new_play(entity), ui, world) {
             Ok(_) => {}
             Err(e) => error!("Unit card error: {e}"),
         }

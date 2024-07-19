@@ -1,31 +1,33 @@
 use super::*;
 
-pub fn unit_card(t: f32, state: &VarState, ui: &mut Ui, world: &World) -> Result<()> {
-    let houses = state.get_value_at(VarName::Houses, t)?.get_string_list()?;
-    let house_colors = state
-        .get_value_at(VarName::HouseColors, t)?
+pub fn unit_card(context: &Context, ui: &mut Ui, world: &World) -> Result<()> {
+    let houses = context
+        .get_value(VarName::Houses, world)?
+        .get_string_list()?;
+    let house_colors = context
+        .get_value(VarName::HouseColors, world)?
         .get_color_list()?
         .into_iter()
         .map(|c| c.c32())
         .collect_vec();
-    let names = state.get_string_at(VarName::Name, t)?;
+    let names = context.get_string(VarName::Name, world)?;
     let names = names.split("+").collect_vec();
-    let used_definitions = state
-        .get_value_at(VarName::UsedDefinitions, t)?
+    let used_definitions = context
+        .get_value(VarName::UsedDefinitions, world)?
         .get_string_list()?;
-    let triggers = state
-        .get_value_at(VarName::TriggersDescription, t)?
+    let triggers = context
+        .get_value(VarName::TriggersDescription, world)?
         .get_cstr_list()?;
-    let targets = state
-        .get_value_at(VarName::TargetsDescription, t)?
+    let targets = context
+        .get_value(VarName::TargetsDescription, world)?
         .get_cstr_list()?;
-    let mut effects = state
-        .get_value_at(VarName::EffectsDescription, t)?
+    let mut effects = context
+        .get_value(VarName::EffectsDescription, world)?
         .get_cstr_list()?;
     for c in effects.iter_mut() {
-        c.inject_state(state, t);
+        c.inject_context(context, world);
     }
-    let faction = TeamPlugin::unit_faction(state.entity().unwrap(), world);
+    let faction = context.get_faction(world)?;
 
     let rect = Frame {
         inner_margin: Margin::same(8.0),
@@ -50,8 +52,8 @@ pub fn unit_card(t: f32, state: &VarState, ui: &mut Ui, world: &World) -> Result
                 let mut vars_str = var.to_string().cstr_c(color);
                 vars_str.push(": ".cstr_c(color));
                 vars_str.push(
-                    state
-                        .get_value_at(var, t)
+                    context
+                        .get_value(var, world)
                         .unwrap_or_default()
                         .get_string()
                         .unwrap_or_default()
@@ -105,8 +107,8 @@ pub fn unit_card(t: f32, state: &VarState, ui: &mut Ui, world: &World) -> Result
         show_trigger_part("eff:", effects, EFFECT_COLOR, ui);
 
         br(ui);
-        let statuses = state
-            .all_statuses_at(t)
+        let statuses = context
+            .all_active_statuses(world)
             .into_iter()
             .filter(|(_, c)| *c > 0)
             .collect_vec();
@@ -125,7 +127,10 @@ pub fn unit_card(t: f32, state: &VarState, ui: &mut Ui, world: &World) -> Result
                 ui.horizontal_wrapped(|ui| {
                     name.cstr_cs(name_color(&name), CstrStyle::Bold).label(ui);
                     definition(&name)
-                        .inject_ability_state(&name, faction, t, world)
+                        .inject_ability_state(
+                            &name,
+                            context.clone().set_ability_state(&name, world).unwrap(),
+                        )
                         .as_label(ui)
                         .wrap(true)
                         .ui(ui);
@@ -133,8 +138,8 @@ pub fn unit_card(t: f32, state: &VarState, ui: &mut Ui, world: &World) -> Result
             }
         });
     });
-    let rarities = state
-        .get_value_at(VarName::RarityColors, t)?
+    let rarities = context
+        .get_value(VarName::RarityColors, world)?
         .get_color_list()?;
     const OFFSET: egui::Vec2 = egui::vec2(33.0, 0.0);
     let from = rect.center_bottom() - (rarities.len() as f32 - 1.0) * 0.5 * OFFSET;

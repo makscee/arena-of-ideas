@@ -454,7 +454,7 @@ impl RepresentationMaterial {
                 }
 
                 let delta = context
-                    .get_var(VarName::Delta, world)
+                    .get_value(VarName::Delta, world)
                     .and_then(|x| x.get_vec2())
                     .unwrap_or(vec2(0.0, 0.0));
                 let control_delta = vec2(0.0, curvature);

@@ -54,6 +54,7 @@ pub enum VarName {
     EffectsDescription,
     UsedDefinitions,
     LastAttacker,
+    StatusIndex,
 }
 
 impl ToCstr for VarName {

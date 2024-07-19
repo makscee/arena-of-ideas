@@ -31,7 +31,9 @@ impl Representation {
             .entity_mut(entity)
             .insert(TransformBundle::default())
             .insert(VisibilityBundle::default());
-        VarState::default().attach(entity, 0, world);
+        if !self.mapping.is_empty() {
+            VarState::default().attach(entity, 0, world);
+        }
         self.entity = Some(entity);
         for i in 0..self.count.max(1) {
             let entity = world.spawn_empty().set_parent(entity).id();
@@ -42,7 +44,7 @@ impl Representation {
         }
         self.unpack_children(world);
         let entity = *self.material_entities.first().unwrap();
-        debug!("Unpack material {} {entity:?}", self.material);
+        debug!("unpack material {} {entity:?}", self.material);
         entity
     }
     fn unpack_children(&mut self, world: &mut World) {
@@ -60,50 +62,40 @@ impl Representation {
         rep.entity = None;
         rep
     }
-    pub fn update(self, world: &mut World) {
+    pub fn update(self, entity: Entity, context: Context, world: &mut World) {
         let t = gt().play_head();
-        let entity = self.entity.unwrap();
-        let context = Context::new(entity);
         self.apply_mapping(entity, world);
         {
-            let state = VarState::get_mut(entity, world);
-            let visible = state.get_bool_at(VarName::Visible, t).unwrap_or(true);
-            let visible = visible && state.birth() < t;
+            let visible = context.get_bool(VarName::Visible, world).unwrap_or(true);
+            let visible = visible && context.get_birth(world).unwrap_or_default() < t;
             RepresentationMaterial::set_visible(entity, visible, world);
             if !visible {
                 return;
             }
         }
         let vars: Vec<VarName> = [VarName::Position, VarName::Scale].into();
-        VarState::apply_transform(entity, t, vars, world);
+        context.apply_transform(vars, world);
         for (i, entity) in self.material_entities.iter().enumerate() {
             let context = context
                 .clone()
                 .set_owner(*entity)
-                .set_var(VarName::Index, VarValue::Int(i as i32))
+                .set_var(VarName::Index, (i as i32).into())
                 .take();
             self.apply_mapping(*entity, world);
-            VarState::apply_transform(
-                *entity,
-                t,
+            context.apply_transform(
                 [VarName::Rotation, VarName::Scale, VarName::Offset].into(),
                 world,
             );
-            self.material.update(
-                *entity,
-                &context
-                    .clone()
-                    .set_var(VarName::Index, VarValue::Int(i as i32)),
-                world,
-            );
+            self.material.update(*entity, &context, world);
         }
         for child in self.children {
-            child.update(world);
+            let entity = child.entity.unwrap();
+            child.update(entity, Context::new_play(entity), world);
         }
     }
 
     fn apply_mapping(&self, entity: Entity, world: &mut World) {
-        let context = Context::new(entity);
+        let context = Context::new_play(entity);
         let mapping: HashMap<VarName, VarValue> =
             HashMap::from_iter(self.mapping.iter().filter_map(|(var, value)| {
                 match value.get_value(&context, world) {
@@ -114,6 +106,9 @@ impl Representation {
                     }
                 }
             }));
+        if mapping.is_empty() {
+            return;
+        }
         let mut state = VarState::get_mut(entity, world);
         for (var, value) in mapping {
             state.init(var, value);

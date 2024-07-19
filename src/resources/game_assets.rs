@@ -9,6 +9,8 @@ pub struct GameAssetsHandles {
     custom_battle: Handle<BattleData>,
     #[asset(key = "unit.rep")]
     unit_rep: Handle<Representation>,
+    #[asset(key = "status.rep")]
+    status_rep: Handle<Representation>,
     #[asset(key = "animations")]
     animations: Handle<Animations>,
     #[asset(key = "heroes", collection(typed, mapped))]
@@ -24,6 +26,7 @@ pub struct GameAssets {
     pub global_settings: GlobalSettings,
     pub custom_battle: BattleData,
     pub unit_rep: Representation,
+    pub status_rep: Representation,
     pub animations: Animations,
     pub vfxs: HashMap<String, Vfx>,
     pub heroes: HashMap<String, PackedUnit>,
@@ -82,12 +85,14 @@ impl GameAssets {
         }
         let ga = world.remove_resource::<GameAssets>().unwrap();
         let unit_rep = ga.unit_rep;
+        let status_rep = ga.status_rep;
         let animations = ga.animations;
         let vfxs = ga.vfxs;
         LoadingPlugin::save_assets(
             global_settings,
             default(),
             unit_rep,
+            status_rep,
             animations,
             heroes,
             houses,
@@ -124,6 +129,7 @@ impl LoadingPlugin {
         global_settings: GlobalSettings,
         custom_battle: BattleData,
         unit_rep: Representation,
+        status_rep: Representation,
         animations: Animations,
         heroes: HashMap<String, PackedUnit>,
         houses: HashMap<String, House>,
@@ -169,6 +175,7 @@ impl LoadingPlugin {
             global_settings,
             custom_battle,
             unit_rep,
+            status_rep,
             animations,
             heroes,
             houses,
@@ -199,6 +206,11 @@ impl LoadingPlugin {
             .get(&handles.unit_rep)
             .unwrap()
             .clone();
+        let status_rep = world
+            .resource::<Assets<Representation>>()
+            .get(&handles.status_rep)
+            .unwrap()
+            .clone();
         let animations = world
             .resource::<Assets<Animations>>()
             .get(&handles.animations)
@@ -225,6 +237,7 @@ impl LoadingPlugin {
             global_settings,
             custom_battle,
             unit_rep,
+            status_rep,
             animations,
             heroes,
             houses,

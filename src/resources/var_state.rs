@@ -63,6 +63,15 @@ impl VarState {
     pub fn try_get(entity: Entity, world: &World) -> Result<&Self> {
         world
             .get::<Self>(entity)
+            .or_else(|| {
+                world.get::<Status>(entity).and_then(|s| {
+                    entity.get_parent(world).and_then(|p| {
+                        Self::try_get(p, world)
+                            .ok()
+                            .and_then(|state| state.get_status(&s.name))
+                    })
+                })
+            })
             .with_context(|| format!("VarState not found for {entity:?}"))
     }
     pub fn get_mut(entity: Entity, world: &mut World) -> Mut<Self> {
@@ -82,12 +91,23 @@ impl VarState {
     pub fn get_status_mut(&mut self, name: &str) -> Option<&mut VarState> {
         self.statuses.get_mut(name)
     }
+    pub fn reindex_statuses(&mut self) {
+        for (i, state) in self.statuses.values_mut().enumerate() {
+            state.set_int(VarName::StatusIndex, (i as i32).into());
+        }
+    }
     pub fn all_statuses_at(&self, t: f32) -> HashMap<String, i32> {
         HashMap::from_iter(self.statuses.iter().filter_map(|(name, state)| {
             if LOCAL_STATUS.eq(name) {
                 None
             } else {
-                Some((name.into(), state.get_int_at(VarName::Charges, t).unwrap()))
+                Some((
+                    name.into(),
+                    state
+                        .get_value_at(VarName::Charges, t)
+                        .and_then(|v| v.get_int())
+                        .unwrap_or_default(),
+                ))
             }
         }))
     }
@@ -107,16 +127,14 @@ impl VarState {
             .or_insert(default())
             .entry(key)
             .or_insert(default())
-            .0
-            .push(change);
+            .push_change(change);
         self
     }
     pub fn has_value(&self, var: VarName) -> bool {
         self.vars.contains_key(&var)
     }
     pub fn get_value_at(&self, var: VarName, t: f32) -> Result<VarValue> {
-        Ok(self
-            .vars
+        self.vars
             .get(&var)
             .with_context(|| format!("Var {var} not set for {:?}", self.entity))?
             .iter()
@@ -125,26 +143,7 @@ impl VarState {
                 Ok(v) => v,
                 Err(_) => acc,
             })
-            .unwrap_or_default())
-    }
-    pub fn find_value_at(entity: Entity, var: VarName, t: f32, world: &World) -> Result<VarValue> {
-        match Self::try_get(entity, world).and_then(|s| s.get_value_at(var, t)) {
-            Ok(v) => Ok(v),
-            Err(_) => Self::find_value_at(
-                entity.get_parent(world).context("No parent")?,
-                var,
-                t,
-                world,
-            ),
-        }
-    }
-    pub fn find_value_last(entity: Entity, var: VarName, world: &World) -> Result<VarValue> {
-        match Self::try_get(entity, world).and_then(|s| s.get_value_last(var)) {
-            Ok(v) => Ok(v),
-            Err(_) => {
-                Self::find_value_last(entity.get_parent(world).context("No parent")?, var, world)
-            }
-        }
+            .context("Value not found")
     }
     pub fn get_value_last(&self, var: VarName) -> Result<VarValue> {
         Ok(self
@@ -187,63 +186,35 @@ impl VarState {
         self
     }
 
-    pub fn get_int_at(&self, var: VarName, t: f32) -> Result<i32> {
-        self.get_value_at(var, t)?.get_int()
-    }
-    pub fn get_int(&self, var: VarName) -> Result<i32> {
-        self.get_value_last(var)?.get_int()
-    }
     pub fn set_int(&mut self, var: VarName, value: i32) -> &mut Self {
         self.push_change(var, default(), VarChange::new(VarValue::Int(value)));
         self
     }
     pub fn change_int(&mut self, var: VarName, delta: i32) -> i32 {
-        let value = self.get_int(var).unwrap_or_default() + delta;
+        let value = self
+            .get_value_last(var)
+            .and_then(|v| v.get_int())
+            .unwrap_or_default()
+            + delta;
         self.set_int(var, value);
         value
-    }
-
-    pub fn get_vec2_at(&self, var: VarName, t: f32) -> Result<Vec2> {
-        self.get_value_at(var, t)?.get_vec2()
-    }
-    pub fn get_vec2(&self, var: VarName) -> Result<Vec2> {
-        self.get_value_last(var)?.get_vec2()
     }
     pub fn set_vec2(&mut self, var: VarName, value: Vec2) -> &mut Self {
         self.push_change(var, default(), VarChange::new(VarValue::Vec2(value)));
         self
     }
     pub fn change_vec2(&mut self, var: VarName, delta: Vec2) -> Vec2 {
-        let value = self.get_vec2(var).unwrap_or_default() + delta;
+        let value = self
+            .get_value_last(var)
+            .and_then(|v| v.get_vec2())
+            .unwrap_or_default()
+            + delta;
         self.set_vec2(var, value);
         delta
-    }
-
-    pub fn get_bool_at(&self, var: VarName, t: f32) -> Result<bool> {
-        self.get_value_at(var, t)?.get_bool()
-    }
-
-    pub fn get_color(&self, var: VarName) -> Result<Color> {
-        self.get_value_last(var)?.get_color()
     }
     pub fn set_color(&mut self, var: VarName, value: Color) -> &mut Self {
         self.push_change(var, default(), VarChange::new(VarValue::Color(value)));
         self
-    }
-
-    pub fn get_string(&self, var: VarName) -> Result<String> {
-        self.get_value_last(var)?.get_string()
-    }
-    pub fn get_string_at(&self, var: VarName, t: f32) -> Result<String> {
-        self.get_value_at(var, t)?.get_string()
-    }
-
-    pub fn get_faction(&self, var: VarName) -> Result<Faction> {
-        self.get_value_last(var)?.get_faction()
-    }
-
-    pub fn get_entity(&self, var: VarName) -> Result<Entity> {
-        self.get_value_last(var)?.get_entity()
     }
 
     pub fn all_values(&self) -> HashMap<VarName, VarValue> {
@@ -257,57 +228,6 @@ impl VarState {
         )
     }
 
-    pub fn apply_transform(entity: Entity, t: f32, vars: Vec<VarName>, world: &mut World) {
-        let mut e = world.entity_mut(entity);
-        let mut transform = e.get::<Transform>().unwrap().clone();
-        let state = e.get::<VarState>().unwrap();
-        for var in vars {
-            match var {
-                VarName::Position => {
-                    let position = state
-                        .get_value_at(var, t)
-                        .and_then(|x| x.get_vec2())
-                        .unwrap_or_default();
-                    transform.translation.x = position.x;
-                    transform.translation.y = position.y;
-                }
-                VarName::Scale => {
-                    let scale = state
-                        .get_value_at(var, t)
-                        .and_then(|x| x.get_vec2())
-                        .unwrap_or(Vec2::ONE);
-                    transform.scale.x = scale.x;
-                    transform.scale.y = scale.y;
-                }
-                VarName::Rotation => {
-                    let rotation = state
-                        .get_value_at(var, t)
-                        .and_then(|x| x.get_float())
-                        .unwrap_or_default();
-                    transform.rotation = Quat::from_rotation_z(rotation);
-                }
-                VarName::Offset => {
-                    let position = state
-                        .get_value_at(var, t)
-                        .and_then(|x| x.get_vec2())
-                        .unwrap_or_default();
-                    transform.translation.x = position.x;
-                    transform.translation.y = position.y;
-                }
-                _ => {}
-            }
-        }
-        e.insert(transform);
-    }
-
-    pub fn sort_history(mut self) -> Self {
-        self.vars.values_mut().for_each(|v| {
-            v.values_mut().for_each(|h| {
-                h.0.sort_by(|a, b| a.t.total_cmp(&b.t));
-            })
-        });
-        self
-    }
     pub fn take(&mut self) -> Self {
         mem::take(self)
     }
@@ -341,5 +261,11 @@ impl History {
     }
     fn get_value_last(&self) -> Option<VarValue> {
         self.0.last().map(|v| v.value.clone())
+    }
+    fn push_change(&mut self, change: VarChange) {
+        if change.duration == 0.0 && self.0.last().is_some_and(|c| c.t == change.t) {
+            self.0.remove(self.0.len() - 1);
+        }
+        self.0.push(change);
     }
 }

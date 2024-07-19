@@ -18,8 +18,8 @@ impl RepresentationPlugin {
             .iter(world)
             .map(|(e, r)| (e, r.clone()))
             .collect_vec();
-        for (_, rep) in reps {
-            rep.update(world);
+        for (entity, rep) in reps {
+            rep.update(entity, Context::new_play(entity), world);
         }
     }
 }

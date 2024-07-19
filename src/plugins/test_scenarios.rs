@@ -32,6 +32,13 @@ impl TestScenariosPlugin {
     fn run(world: &mut World) {
         let mut scenarios = Self::get_all_scenarios(world);
         scenarios.sort_by_key(|(s, _)| s.clone());
+        if let Some(path) = &ARGS.get().unwrap().path {
+            scenarios = scenarios
+                .into_iter()
+                .find(|(p, _)| path.eq(p))
+                .into_iter()
+                .collect_vec();
+        }
         let mut failure: Vec<ColoredString> = default();
         let mut success: Vec<ColoredString> = default();
         let path_color = colored::Color::TrueColor {

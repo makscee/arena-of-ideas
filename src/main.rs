@@ -13,7 +13,7 @@ use clap::{command, Parser, ValueEnum};
 use noisy_bevy::NoisyShaderPlugin;
 pub use prelude::*;
 
-#[derive(Parser, Debug, Default)]
+#[derive(Parser, Debug, Default, Clone)]
 #[command(author, version, about, long_about = None)]
 pub struct Args {
     #[arg(short, long)]
@@ -21,6 +21,8 @@ pub struct Args {
     #[arg(short, long)]
     path: Option<String>,
 }
+
+pub static ARGS: OnceCell<Args> = OnceCell::new();
 
 #[derive(Debug, Clone, ValueEnum, Default)]
 pub enum RunMode {
@@ -36,6 +38,7 @@ pub type GID = u64;
 fn main() {
     let mut app = App::new();
     let args = Args::try_parse().unwrap_or_default();
+    ARGS.set(args.clone()).unwrap();
     let target = match args.mode {
         RunMode::Regular => GameState::TableView(QUERY_BASE_UNITS),
         RunMode::Custom => GameState::CustomBattle,

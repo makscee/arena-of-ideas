@@ -30,7 +30,7 @@ impl UnitPlugin {
     }
     fn send_death_events(entity: Entity, world: &mut World) {
         Event::Death(entity).send(world);
-        if let Ok(killer) = VarState::get(entity, world).get_entity(VarName::LastAttacker) {
+        if let Ok(killer) = Context::new(entity).get_entity(VarName::LastAttacker, world) {
             Event::Kill {
                 owner: killer,
                 target: entity,
@@ -41,12 +41,12 @@ impl UnitPlugin {
     pub fn is_dead(entity: Entity, world: &World) -> bool {
         let context = Context::new(entity);
         context
-            .get_var(VarName::Hp, world)
+            .get_value(VarName::Hp, world)
             .unwrap()
             .get_int()
             .unwrap()
             <= context
-                .get_var(VarName::Dmg, world)
+                .get_value(VarName::Dmg, world)
                 .map(|v| v.get_int().unwrap_or_default())
                 .unwrap_or_default()
     }
@@ -97,7 +97,7 @@ impl UnitPlugin {
     }
     pub fn find_unit(faction: Faction, slot: i32, world: &mut World) -> Option<Entity> {
         Self::collect_faction(faction, world).into_iter().find(|e| {
-            VarState::get(*e, world).get_int(VarName::Slot).unwrap() == slot
+            Context::new(*e).get_int(VarName::Slot, world).unwrap() == slot
                 && !Self::is_dead(*e, world)
         })
     }
@@ -112,7 +112,7 @@ impl UnitPlugin {
     pub fn make_slot_gap(faction: Faction, slot: i32, world: &mut World) {
         for (unit, ind) in Self::collect_faction(faction, world)
             .into_iter()
-            .sorted_by_key(|x| VarState::get(*x, world).get_int(VarName::Slot).unwrap())
+            .sorted_by_key(|x| Context::new(*x).get_int(VarName::Slot, world).unwrap())
             .zip(1..)
             .collect_vec()
         {
@@ -121,9 +121,7 @@ impl UnitPlugin {
         }
     }
     pub fn get_unit_position(entity: Entity, world: &World) -> Result<Vec2> {
-        VarState::get(entity, world)
-            .get_value_last(VarName::Position)?
-            .get_vec2()
+        Context::new(entity).get_vec2(VarName::Position, world)
     }
     pub fn get_slot_position(faction: Faction, slot: usize) -> Vec2 {
         match faction {
@@ -135,8 +133,8 @@ impl UnitPlugin {
     }
     pub fn get_entity_slot_position(entity: Entity, world: &World) -> Result<Vec2> {
         let context = Context::new(entity);
-        let slot = context.get_var(VarName::Slot, world)?.get_int()? as usize;
-        let faction = context.get_var(VarName::Faction, world)?.get_faction()?;
+        let slot = context.get_value(VarName::Slot, world)?.get_int()? as usize;
+        let faction = context.get_value(VarName::Faction, world)?.get_faction()?;
         Ok(Self::get_slot_position(faction, slot))
     }
     pub fn translate_to_slots(world: &mut World) {
@@ -169,9 +167,9 @@ impl UnitPlugin {
         }
         for (entity, faction) in units {
             if let Some(cd) = data.unit_container.get_mut(&faction) {
-                let mut state = VarState::get_mut(entity, world);
-                let slot = state.get_int(VarName::Slot).unwrap();
-                let position = state.get_vec2(VarName::Position).unwrap();
+                let context = Context::new(entity);
+                let slot = context.get_int(VarName::Slot, world).unwrap();
+                let position = context.get_vec2(VarName::Position, world).unwrap();
                 let slot = slot as usize;
                 let need_pos = cd
                     .positions
@@ -179,6 +177,7 @@ impl UnitPlugin {
                     .map(|p| screen_to_world_cam(p.to_bvec2(), &camera, &transform))
                     .unwrap_or_default();
                 cd.entities[slot] = Some(entity);
+                let mut state = VarState::get_mut(entity, world);
                 state.change_vec2(VarName::Position, (need_pos - position) * delta * 5.0);
             }
         }

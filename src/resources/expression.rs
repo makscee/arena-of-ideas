@@ -5,6 +5,7 @@ pub enum Expression {
     #[default]
     Zero,
     Dbg(Box<Expression>),
+    Ctx(Box<Expression>),
 
     OppositeFaction,
     SlotPosition,
@@ -18,6 +19,7 @@ pub enum Expression {
     Owner,
     Caster,
     Target,
+    Status,
 
     RandomUnit(Box<Expression>),
     RandomUnitSubset(Box<Expression>, Box<Expression>),
@@ -86,25 +88,27 @@ impl Expression {
         match self {
             Expression::Zero => Ok(VarValue::Int(0)),
             Expression::Dbg(e) => dbg!(e.get_value(context, world)),
+            Expression::Ctx(e) => {
+                dbg!(context);
+                dbg!(e.get_value(context, world))
+            }
             Expression::Value(v) => Ok(v.clone()),
-            Expression::Context(var) => context.get_var(*var, world),
+            Expression::Context(var) => context.get_value(*var, world),
             Expression::OwnerState(var) => {
-                VarState::find_value_at(context.owner(), *var, gt().play_head(), world)
+                Context::new_play(context.owner()).get_value(*var, world)
             }
             Expression::TargetState(var) => {
-                VarState::find_value_at(context.get_target()?, *var, gt().play_head(), world)
+                Context::new_play(context.get_target()?).get_value(*var, world)
             }
             Expression::CasterState(var) => {
-                VarState::find_value_at(context.get_caster()?, *var, gt().play_head(), world)
+                Context::new_play(context.get_caster()?).get_value(*var, world)
             }
-            Expression::OwnerStateLast(var) => {
-                VarState::find_value_last(context.owner(), *var, world)
-            }
+            Expression::OwnerStateLast(var) => Context::new(context.owner()).get_value(*var, world),
             Expression::TargetStateLast(var) => {
-                VarState::find_value_last(context.get_target()?, *var, world)
+                Context::new(context.get_target()?).get_value(*var, world)
             }
             Expression::CasterStateLast(var) => {
-                VarState::find_value_last(context.get_caster()?, *var, world)
+                Context::new(context.get_caster()?).get_value(*var, world)
             }
             Expression::AbilityContext(ability, var) => context.get_ability_var(ability, *var),
             Expression::AbilityState(ability, var) => {
@@ -176,16 +180,17 @@ impl Expression {
             ))),
             Expression::OppositeFaction => Ok(VarValue::Faction(
                 context
-                    .get_var(VarName::Faction, world)?
+                    .get_value(VarName::Faction, world)?
                     .get_faction()?
                     .opposite(),
             )),
             Expression::Owner => Ok(VarValue::Entity(context.owner())),
             Expression::Caster => Ok(VarValue::Entity(context.get_caster()?)),
             Expression::Target => Ok(VarValue::Entity(context.get_target()?)),
+            Expression::Status => Ok(VarValue::Entity(context.get_status_entity(world)?)),
             Expression::SlotUnit(index) => Ok(VarValue::Entity(
                 UnitPlugin::find_unit(
-                    context.get_var(VarName::Faction, world)?.get_faction()?,
+                    context.get_value(VarName::Faction, world)?.get_faction()?,
                     index.get_int(context, world)?,
                     world,
                 )
@@ -227,13 +232,12 @@ impl Expression {
             Expression::PI => Ok(VarValue::Float(PI)),
             Expression::PI2 => Ok(VarValue::Float(PI * 2.0)),
             Expression::AdjacentUnits => {
-                let own_slot = context.get_var(VarName::Slot, world)?.get_int()?;
-                let faction = context.get_var(VarName::Faction, world)?.get_faction()?;
+                let own_slot = context.get_value(VarName::Slot, world)?.get_int()?;
+                let faction = context.get_value(VarName::Faction, world)?.get_faction()?;
                 let mut left: (i32, Option<Entity>) = (-i32::MAX, None);
                 let mut right: (i32, Option<Entity>) = (i32::MAX, None);
                 for unit in UnitPlugin::collect_faction(faction, world) {
-                    let state = VarState::get(unit, world);
-                    let slot = state.get_int(VarName::Slot)?;
+                    let slot = Context::new(unit).get_int(VarName::Slot, world)?;
                     let delta = slot - own_slot;
                     if delta == 0 {
                         continue;
@@ -440,6 +444,7 @@ impl ToCstr for Expression {
             | Expression::Abs(v)
             | Expression::Even(v)
             | Expression::Dbg(v)
+            | Expression::Ctx(v)
             | Expression::RandomUnit(v)
             | Expression::ListCount(v)
             | Expression::RandomF(v)
@@ -525,6 +530,7 @@ impl ToCstr for Expression {
             | Expression::Owner
             | Expression::Caster
             | Expression::Target
+            | Expression::Status
             | Expression::AllAllyUnits
             | Expression::AllEnemyUnits
             | Expression::AllUnits

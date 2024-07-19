@@ -1,5 +1,5 @@
 (
-    duration: Some(1.0),
+    duration: Some(0.3),
     anim: Run(
         [
             Change(var: Thickness, value: F(1.0)),

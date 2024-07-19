@@ -1,22 +1,38 @@
+use bevy::math::Quat;
+
 use super::*;
 
 #[derive(Debug, Clone, Default)]
 pub struct Context {
     layers: Vec<ContextLayer>,
+    t: f32,
 }
 
 impl Context {
     pub fn empty() -> Self {
-        Self { ..default() }
+        Self {
+            t: gt().insert_head(),
+            ..default()
+        }
     }
     pub fn new(owner: Entity) -> Self {
         Self {
             layers: [ContextLayer::Owner(owner)].into(),
+            t: gt().insert_head(),
+        }
+    }
+    pub fn new_play(owner: Entity) -> Self {
+        Self {
+            layers: [ContextLayer::Owner(owner)].into(),
+            t: gt().play_head(),
         }
     }
     pub fn set_owner(&mut self, entity: Entity) -> &mut Self {
         self.layers.push(ContextLayer::Owner(entity));
         self
+    }
+    pub fn get_state<'a>(&self, world: &'a World) -> Option<&'a VarState> {
+        self.layers.iter().rev().find_map(|l| l.get_state(world))
     }
     pub fn owner(&self) -> Entity {
         self.layers
@@ -53,15 +69,15 @@ impl Context {
             .find_map(|l| l.get_caster())
             .with_context(|| format!("Failed to get caster"))
     }
-    pub fn get_var(&self, var: VarName, world: &World) -> Result<VarValue> {
+    pub fn get_value(&self, var: VarName, world: &World) -> Result<VarValue> {
         self.layers
             .iter()
             .rev()
-            .find_map(|l| l.get_var(var, world))
-            .with_context(|| format!("Failed to find var {var}"))
+            .find_map(|l| l.get_var(var, self.t, world))
+            .with_context(|| format!("Failed to find var {var} {self:?}"))
     }
     pub fn get_charges(&self, world: &World) -> Result<i32> {
-        self.get_var(VarName::Charges, world)?.get_int()
+        self.get_value(VarName::Charges, world)?.get_int()
     }
     pub fn get_all_vars(&self) -> HashMap<VarName, VarValue> {
         let mut result: HashMap<VarName, VarValue> = default();
@@ -88,8 +104,8 @@ impl Context {
             .push(ContextLayer::AbilityVar(ability, var, value));
         self
     }
-    pub fn set_status(&mut self, owner: Entity, name: String) -> &mut Self {
-        self.layers.push(ContextLayer::Status(owner, name));
+    pub fn set_status(&mut self, name: String) -> &mut Self {
+        self.layers.push(ContextLayer::Status(self.owner(), name));
         self
     }
     pub fn status(&self) -> (Entity, String) {
@@ -102,20 +118,30 @@ impl Context {
             .find_map(|l| l.get_status())
             .with_context(|| format!("Failed to get status"))
     }
-    pub fn has_status(&self, entity: Entity) -> bool {
-        self.layers
-            .iter()
-            .any(|l| matches!(l, ContextLayer::Status(e, ..) if entity.eq(e)))
+    pub fn get_status_entity(&self, world: &World) -> Result<Entity> {
+        let (owner, status) = self.get_status()?;
+        for entity in get_children(owner, world) {
+            if let Some(Status { name, trigger: _ }) = world.get::<Status>(entity) {
+                if status.eq(name) {
+                    return Ok(entity);
+                }
+            }
+        }
+        Err(anyhow!("Status not found"))
+    }
+    pub fn has_status(&self, owner: Entity, name: String) -> bool {
+        let layer = ContextLayer::Status(owner, name);
+        self.layers.iter().any(|l| layer.eq(l))
     }
     pub fn set_event(&mut self, event: Event) -> &mut Self {
         self.layers.push(ContextLayer::Event(event));
         self
     }
     pub fn get_faction(&self, world: &World) -> Result<Faction> {
-        self.get_var(VarName::Faction, world)?.get_faction()
+        self.get_value(VarName::Faction, world)?.get_faction()
     }
 
-    pub fn inject_ability_state(&mut self, ability: &str, world: &World) -> Result<&mut Self> {
+    pub fn set_ability_state(&mut self, ability: &str, world: &World) -> Result<&mut Self> {
         let team = TeamPlugin::entity(self.get_faction(world)?, world);
         let mut values = GameAssets::get(world)
             .ability_defaults
@@ -132,13 +158,76 @@ impl Context {
         }
         Ok(self)
     }
+    pub fn apply_transform(&self, vars: Vec<VarName>, world: &mut World) {
+        let entity = self.owner();
+        let mut transform = world.entity_mut(entity).get::<Transform>().unwrap().clone();
+        for var in vars {
+            match var {
+                VarName::Position => {
+                    let position = VarState::try_get(entity, world)
+                        .and_then(|s| s.get_value_at(var, self.t))
+                        .and_then(|v| v.get_vec2())
+                        .unwrap_or_default();
+                    transform.translation.x = position.x;
+                    transform.translation.y = position.y;
+                }
+                VarName::Scale => {
+                    let scale = self.get_vec2(var, world).unwrap_or(Vec2::ONE);
+                    transform.scale.x = scale.x;
+                    transform.scale.y = scale.y;
+                }
+                VarName::Rotation => {
+                    let rotation = self.get_float(var, world).unwrap_or_default();
+                    transform.rotation = Quat::from_rotation_z(rotation);
+                }
+                VarName::Offset => {
+                    let position = VarState::try_get(entity, world)
+                        .and_then(|s| s.get_value_at(var, self.t))
+                        .and_then(|v| v.get_vec2())
+                        .unwrap_or_default();
+                    transform.translation.x = position.x;
+                    transform.translation.y = position.y;
+                }
+                _ => {}
+            }
+        }
+        world.entity_mut(entity).insert(transform);
+    }
 
     pub fn take(&mut self) -> Self {
         mem::take(self)
     }
+
+    pub fn all_active_statuses(&self, world: &World) -> HashMap<String, i32> {
+        self.get_state(world)
+            .map(|s| s.all_statuses_at(self.t))
+            .unwrap_or_default()
+    }
+
+    pub fn get_birth(&self, world: &World) -> Result<f32> {
+        Ok(self.get_state(world).context("State not found")?.birth())
+    }
+    pub fn get_bool(&self, var: VarName, world: &World) -> Result<bool> {
+        self.get_value(var, world)?.get_bool()
+    }
+    pub fn get_int(&self, var: VarName, world: &World) -> Result<i32> {
+        self.get_value(var, world)?.get_int()
+    }
+    pub fn get_float(&self, var: VarName, world: &World) -> Result<f32> {
+        self.get_value(var, world)?.get_float()
+    }
+    pub fn get_vec2(&self, var: VarName, world: &World) -> Result<Vec2> {
+        self.get_value(var, world)?.get_vec2()
+    }
+    pub fn get_string(&self, var: VarName, world: &World) -> Result<String> {
+        self.get_value(var, world)?.get_string()
+    }
+    pub fn get_entity(&self, var: VarName, world: &World) -> Result<Entity> {
+        self.get_value(var, world)?.get_entity()
+    }
 }
 
-#[derive(Debug, Clone, AsRefStr)]
+#[derive(Debug, Clone, AsRefStr, PartialEq)]
 pub enum ContextLayer {
     Caster(Entity),
     Target(Entity),
@@ -150,6 +239,10 @@ pub enum ContextLayer {
 }
 
 impl ContextLayer {
+    fn get_state<'a>(&self, world: &'a World) -> Option<&'a VarState> {
+        self.get_owner()
+            .and_then(|e| VarState::try_get(e, world).ok())
+    }
     fn get_owner(&self) -> Option<Entity> {
         match self {
             ContextLayer::Owner(entity) => Some(*entity),
@@ -186,16 +279,16 @@ impl ContextLayer {
             _ => None,
         }
     }
-    fn get_var(&self, var: VarName, world: &World) -> Option<VarValue> {
+    fn get_var(&self, var: VarName, t: f32, world: &World) -> Option<VarValue> {
         match self {
             ContextLayer::Owner(entity) => match VarState::try_get(*entity, world)
                 .ok()
-                .and_then(|state| state.get_value_last(var).ok())
+                .and_then(|state| state.get_value_at(var, t).ok())
             {
                 Some(v) => Some(v),
                 None => {
                     if let Some(entity) = entity.get_parent(world) {
-                        ContextLayer::Owner(entity).get_var(var, world)
+                        ContextLayer::Owner(entity).get_var(var, t, world)
                     } else {
                         None
                     }
@@ -205,13 +298,11 @@ impl ContextLayer {
                 true => Some(value.clone()),
                 false => None,
             },
-            ContextLayer::Status(status, name) => {
-                VarState::try_get(status.get_parent(world).unwrap(), world)
-                    .ok()?
-                    .get_status(&name)?
-                    .get_value_last(var)
-                    .ok()
-            }
+            ContextLayer::Status(owner, name) => VarState::try_get(*owner, world)
+                .ok()?
+                .get_status(&name)?
+                .get_value_at(var, t)
+                .ok(),
             _ => None,
         }
     }

@@ -52,7 +52,11 @@ impl Event {
             | Event::Summon(..)
             | Event::UseAbility(..) => {
                 let mut units = UnitPlugin::collect_alive(world);
-                units.sort_by_key(|e| VarState::get(*e, world).get_int(VarName::Slot).unwrap());
+                units.sort_by_key(|e| {
+                    Context::new(*e)
+                        .get_int(VarName::Slot, world)
+                        .unwrap_or_default()
+                });
                 match &self {
                     Event::Death(e) | Event::Summon(e) => {
                         context.set_target(*e);

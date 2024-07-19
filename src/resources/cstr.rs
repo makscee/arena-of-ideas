@@ -185,64 +185,46 @@ impl Cstr {
         WidgetText::LayoutJob(job)
     }
 
-    pub fn inject_state(&mut self, state: &VarState, t: f32) -> &mut Self {
-        for sub in self.subs.iter_mut() {
+    pub fn inject_context(&mut self, context: &Context, world: &World) -> &mut Self {
+        for mut sub in self.subs.drain(..).collect_vec() {
             match &sub.text {
-                SubText::String(_) => continue,
+                SubText::String(_) => self.subs.push(sub),
                 SubText::Var(var) => {
-                    sub.text = match state.get_string_at(*var, t) {
+                    sub.text = match context.get_string(*var, world) {
                         Ok(v) => v,
                         Err(e) => format!("err: {e}"),
                     }
                     .into();
+                    self.subs.push(sub);
                 }
                 SubText::VarText(var, text) => {
-                    sub.text = match state.get_bool_at(*var, t) {
-                        Ok(v) => {
-                            if v {
-                                text.clone()
-                            } else {
-                                default()
-                            }
-                        }
-                        Err(_) => default(),
+                    if context.get_bool(*var, world).unwrap_or_default() {
+                        let cs = Self::parse(text);
+                        self.subs.extend(cs.subs.into_iter());
                     }
-                    .into();
                 }
             };
         }
         self
     }
 
-    pub fn inject_ability_state(
-        &mut self,
-        ability: &str,
-        faction: Faction,
-        t: f32,
-        world: &World,
-    ) -> &mut Self {
-        let Some(m) = GameAssets::get(world).ability_defaults.get(ability) else {
-            return self;
-        };
-        let ability_state = TeamPlugin::get_ability_state(ability, faction, world);
-        let get_value = |var: &VarName| {
-            ability_state
-                .and_then(|s| s.get_value_at(*var, t).ok())
-                .or_else(|| m.get(var).cloned())
-        };
-        for sub in &mut self.subs {
+    pub fn inject_ability_state(&mut self, ability: &str, context: &Context) -> &mut Self {
+        for mut sub in self.subs.drain(..).collect_vec() {
             match &sub.text {
-                SubText::String(_) => {}
+                SubText::String(_) => self.subs.push(sub),
                 SubText::Var(var) => {
-                    if let Some(value) = get_value(var) {
+                    if let Ok(value) = context.get_ability_var(ability, *var) {
                         sub.text = SubText::String(value.get_string().unwrap())
                     }
+                    self.subs.push(sub);
                 }
                 SubText::VarText(var, text) => {
-                    if let Some(value) = get_value(var) {
-                        if value.get_bool().unwrap() {
-                            sub.text = SubText::String(text.clone())
-                        }
+                    if context
+                        .get_ability_var(ability, *var)
+                        .is_ok_and(|v| v.get_bool().unwrap_or_default())
+                    {
+                        let cs = Self::parse(text);
+                        self.subs.extend(cs.subs.into_iter());
                     }
                 }
             };
@@ -282,41 +264,28 @@ impl Cstr {
     }
     pub fn parse(s: &str) -> Self {
         let mut cs = Cstr::default();
-        let mut cur_str = String::new();
-        let mut bracket = None;
-        for ch in s.chars() {
-            if ch == '{' || ch == '[' {
-                if bracket.is_some() {
-                    panic!("Brackets already opened: {s}");
-                }
-                bracket = Some(ch);
-                if !cur_str.is_empty() {
-                    cs.push(cur_str.cstr());
-                    cur_str.clear();
-                }
-            } else if ch == '}' {
-                if bracket.is_some_and(|b| b == '{') {
-                    cs.subs.push(Self::parse_var(&cur_str));
-                    cur_str.clear();
-                } else {
-                    panic!("Wrong closing brackets: {s}");
-                }
-                bracket = None;
-            } else if ch == ']' {
-                if bracket.is_some_and(|b| b == '[') {
-                    cs.subs.push(Self::parse_definition(&cur_str));
-                    cur_str.clear();
-                } else {
-                    panic!("Wrong closing brackets: {s}");
-                }
-                bracket = None;
+        for (s, bracketed) in s.split_by_brackets('{', '}') {
+            if bracketed {
+                cs.subs.push(Self::parse_var(&s));
             } else {
-                cur_str.push(ch);
+                cs.subs.push(s.into());
             }
         }
-        if !cur_str.is_empty() {
-            cs.push(cur_str.cstr());
+        for sub in cs.subs.drain(..).collect_vec() {
+            match &sub.text {
+                SubText::String(text) => {
+                    for (s, bracketed) in text.split_by_brackets('[', ']') {
+                        if bracketed {
+                            cs.subs.push(Self::parse_definition(&s));
+                        } else {
+                            cs.subs.push(s.into());
+                        }
+                    }
+                }
+                _ => cs.subs.push(sub),
+            }
         }
+
         cs
     }
 
@@ -435,6 +404,15 @@ impl From<VarName> for CstrSub {
 }
 impl From<&str> for CstrSub {
     fn from(value: &str) -> Self {
+        Self {
+            text: value.into(),
+            color: default(),
+            style: default(),
+        }
+    }
+}
+impl From<String> for CstrSub {
+    fn from(value: String) -> Self {
         Self {
             text: value.into(),
             color: default(),

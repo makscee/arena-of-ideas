@@ -40,7 +40,6 @@ impl BattlePlugin {
                 _ => panic!(),
             });
         }
-        info!("Battle finished with result: {result:?}");
     }
     fn on_exit(world: &mut World) {
         gt().reset();
@@ -94,7 +93,9 @@ impl BattlePlugin {
             }
             break;
         }
-        Self::get_result(world)
+        let result = Self::get_result(world);
+        info!("Battle finished with result: {result:?}");
+        result
     }
     pub fn clear(world: &mut World) {
         for unit in UnitPlugin::collect_all(world) {
@@ -184,10 +185,7 @@ impl BattlePlugin {
     fn get_result(world: &mut World) -> Result<BattleResult> {
         let mut result: HashMap<Faction, usize> = default();
         for unit in world.query_filtered::<Entity, With<Unit>>().iter(world) {
-            let team = unit.get_parent(world).unwrap();
-            let faction = VarState::get(team, world)
-                .get_faction(VarName::Faction)
-                .unwrap();
+            let faction = Context::new(unit).get_faction(world)?;
             *result.entry(faction).or_default() += 1;
         }
         match result.len() {
@@ -306,7 +304,6 @@ impl BattlePlugin {
         });
     }
     pub fn hover_check(world: &mut World) {
-        let t = gt().play_head();
         let Some(cursor_pos) = cursor_world_pos(world) else {
             return;
         };
@@ -314,11 +311,13 @@ impl BattlePlugin {
             return;
         };
         for unit in UnitPlugin::collect_all(world) {
-            let state = VarState::get(unit, world);
-            if !state.get_bool_at(VarName::Visible, t).unwrap_or(true) {
+            let context = Context::new_play(unit);
+            if !context.get_bool(VarName::Visible, world).unwrap_or(true) {
                 continue;
             }
-            let pos = state.get_vec2_at(VarName::Position, t).unwrap();
+            let pos = context
+                .get_vec2(VarName::Position, world)
+                .unwrap_or_default();
             if (pos - cursor_pos).length() < 1.0 {
                 Window::new("hover_slot")
                     .title_bar(false)
@@ -330,7 +329,7 @@ impl BattlePlugin {
                     .interactable(false)
                     .show(ctx, |ui| {
                         ui.vertical_centered_justified(|ui| {
-                            match unit_card(t, state, ui, world) {
+                            match unit_card(&context, ui, world) {
                                 Ok(_) => {}
                                 Err(e) => error!("{e}"),
                             };

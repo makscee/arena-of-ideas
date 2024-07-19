@@ -13,6 +13,7 @@ pub enum Effect {
     AbilityStateAddVar(String, VarName, Expression),
     Summon(String, Option<Box<Effect>>),
     WithTarget(Expression, Box<Effect>),
+    WithOwner(Expression, Box<Effect>),
     WithVar(VarName, Expression, Box<Effect>),
     List(Vec<Effect>),
     Repeat(Expression, Box<Effect>),
@@ -29,9 +30,10 @@ impl Effect {
             Effect::Noop => {}
             Effect::Damage => {
                 let target = context.get_target()?;
+                dbg!(VarState::get(owner, world).birth());
                 let mut value = context
-                    .get_var(VarName::Value, world)
-                    .unwrap_or(context.get_var(VarName::Pwr, world)?);
+                    .get_value(VarName::Value, world)
+                    .unwrap_or(context.get_value(VarName::Pwr, world)?);
                 let i_value = value.get_int()?;
                 Event::IncomingDamage {
                     owner: target,
@@ -70,13 +72,12 @@ impl Effect {
             Effect::Heal => {
                 let target = context.get_target()?;
                 let value = context
-                    .get_var(VarName::Value, world)
-                    .unwrap_or(context.get_var(VarName::Pwr, world)?);
+                    .get_value(VarName::Value, world)
+                    .unwrap_or(context.get_value(VarName::Pwr, world)?);
                 let i_value = value.get_int()?;
                 if i_value > 0 {
-                    let mut state = VarState::get_mut(target, world);
-                    let dmg = (state.get_int(VarName::Dmg)? - i_value).max(0);
-                    state.set_int(VarName::Dmg, dmg);
+                    let dmg = (Context::new(target).get_int(VarName::Dmg, world)? - i_value).max(0);
+                    VarState::get_mut(target, world).set_int(VarName::Dmg, dmg);
                     TextColumnPlugin::add(
                         target,
                         format!("+{i_value}").cstr_cs(GREEN, CstrStyle::Bold),
@@ -117,15 +118,14 @@ impl Effect {
                     .get(name)
                     .with_context(|| format!("Ability not found {name}"))
                     .unwrap();
-                let charges = context
-                    .get_var(VarName::Lvl, world)
+                let charges = dbg!(context.get_value(VarName::Lvl, world))
                     .map(|v| v.get_int().unwrap())
                     .unwrap_or(1)
                     + *base;
                 let caster = owner;
                 let context = context
                     .clone()
-                    .inject_ability_state(name, world)?
+                    .set_ability_state(name, world)?
                     .set_var(VarName::Charges, VarValue::Int(charges))
                     .set_caster(caster)
                     .take();
@@ -188,24 +188,36 @@ impl Effect {
                 let targets = target
                     .get_entity_list()?
                     .into_iter()
-                    .sorted_by_key(|e| -VarState::get(*e, world).get_int(VarName::Slot).unwrap())
+                    .sorted_by_key(|e| {
+                        -Context::new(*e)
+                            .get_int(VarName::Slot, world)
+                            .unwrap_or_default()
+                    })
                     .collect_vec();
                 let delay = 0.2;
                 for target in targets {
                     let context = context.set_target(target).clone();
                     ActionPlugin::action_push_front_with_delay(
-                        effect.deref().clone(),
+                        *effect.clone(),
                         context,
                         delay,
                         world,
                     );
                 }
             }
+            Effect::WithOwner(owner, effect) => {
+                let owner = owner.get_entity(context, world)?;
+                ActionPlugin::action_push_front(
+                    *effect.clone(),
+                    context.set_owner(owner).take(),
+                    world,
+                );
+            }
             Effect::WithVar(var, value, effect) => {
                 let context = context
                     .set_var(*var, value.get_value(context, world)?)
                     .clone();
-                ActionPlugin::action_push_front(effect.deref().clone(), context, world);
+                ActionPlugin::action_push_front(*effect.clone(), context, world);
             }
             Effect::List(list) => {
                 for effect in list.into_iter().rev() {
@@ -215,7 +227,7 @@ impl Effect {
             Effect::Repeat(count, effect) => {
                 let count = count.get_int(context, world)?;
                 for _ in 0..count {
-                    ActionPlugin::action_push_front(effect.deref().clone(), context.clone(), world);
+                    ActionPlugin::action_push_front(*effect.clone(), context.clone(), world);
                 }
             }
             Effect::If(cond, th, el) => {
