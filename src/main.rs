@@ -39,6 +39,7 @@ fn main() {
     let mut app = App::new();
     let args = Args::try_parse().unwrap_or_default();
     ARGS.set(args.clone()).unwrap();
+    std::env::set_var("RUST_BACKTRACE", "1");
     let target = match args.mode {
         RunMode::Regular => GameState::TableView(QUERY_BASE_UNITS),
         RunMode::Custom => GameState::CustomBattle,
