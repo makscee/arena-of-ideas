@@ -133,7 +133,7 @@ impl Status {
     }
     pub fn map_var(event: &Event, value: &mut VarValue, context: &Context, world: &mut World) {
         let owner = context.owner();
-        for (status, Status { name, trigger }) in Self::collect_active_statuses(owner, world) {
+        for (_, Status { name, trigger }) in Self::collect_active_statuses(owner, world) {
             if context.has_status(owner, name.clone()) {
                 continue;
             }
