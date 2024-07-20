@@ -24,10 +24,10 @@
                             ),
                             (
                                 If(
-                                    AbilityState("Shield", M1),
+                                    AbilityContext("Shield", M1),
                                     WithTarget(
                                         Caster,
-                                        Damage(Mul(AbilityState("Shield", M1), Context(Value))),
+                                        Damage(Mul(AbilityContext("Shield", M1), Context(Value))),
                                     ),
                                     Noop,
                                 ),

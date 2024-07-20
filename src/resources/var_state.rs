@@ -215,11 +215,11 @@ impl VarState {
         self
     }
 
-    pub fn all_values(&self) -> HashMap<VarName, VarValue> {
+    pub fn all_values(&self, t: f32) -> HashMap<VarName, VarValue> {
         HashMap::from_iter(
             self.vars
                 .keys()
-                .filter_map(|k| match self.get_value_last(*k) {
+                .filter_map(|k| match self.get_value_at(*k, t) {
                     Ok(v) => Some((*k, v)),
                     Err(_) => None,
                 }),

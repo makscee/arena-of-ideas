@@ -32,7 +32,7 @@
                     ChangeStatus("Siphoned Out"),
                     WithTarget(Owner, ChangeStatus("Siphon HP")),
                     If(
-                        AbilityState("Siphon", M1),
+                        AbilityContext("Siphon", M1),
                         WithTarget(Owner, ChangeStatus("Siphon PWR")),
                         Noop,
                     ),

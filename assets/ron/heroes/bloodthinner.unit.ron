@@ -8,7 +8,7 @@
     trigger: Fire(
         triggers: [(BattleStart, None)],
         targets: [],
-        effects: [(AbilityStateAddVar("Siphon", M1, Bool(true)), "[Siphon] gives PWR")],
+        effects: [(AbilityStateAddVar("Siphon", M1, B(true)), "[Siphon] gives PWR")],
     ),
     representation: (
         material: Shape(

@@ -149,7 +149,7 @@ impl Context {
             .cloned()
             .unwrap_or_default();
         if let Some(state) = world.get::<AbilityStates>(team).unwrap().0.get(ability) {
-            for (var, value) in state.all_values() {
+            for (var, value) in state.all_values(self.t) {
                 values.insert(var, value);
             }
         }
