@@ -7,7 +7,7 @@
     houses: ["Holy"],
     trigger: Fire(
         triggers: [(TurnEnd, None)],
-        targets: [(RandomStatusAlly("Blessing"), None)],
+        targets: [(RandomStatusUnit("Blessing", AllAllyUnits), None)],
         effects: [(UseAbility("Blessing", 0), None)],
     ),
     representation: (
