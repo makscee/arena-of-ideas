@@ -30,7 +30,6 @@ impl Effect {
             Effect::Noop => {}
             Effect::Damage => {
                 let target = context.get_target()?;
-                dbg!(VarState::get(owner, world).birth());
                 let mut value = context
                     .get_value(VarName::Value, world)
                     .unwrap_or(context.get_value(VarName::Pwr, world)?);
@@ -165,13 +164,24 @@ impl Effect {
                 );
             }
             Effect::Summon(name, then) => {
-                let unit = GameAssets::get(world)
+                let mut unit = GameAssets::get(world)
                     .summons
                     .get(name)
                     .with_context(|| format!("Summon {name} not found"))
                     .unwrap()
                     .clone();
                 let faction = context.get_faction(world)?;
+                context.set_ability_state(name, world)?;
+                let extra_pwr = context
+                    .get_ability_var(name, VarName::Pwr)
+                    .unwrap_or_default()
+                    .get_int()?;
+                let extra_hp = context
+                    .get_ability_var(name, VarName::Hp)
+                    .unwrap_or_default()
+                    .get_int()?;
+                unit.pwr += extra_pwr;
+                unit.hp += extra_hp;
                 let unit = unit.unpack(TeamPlugin::entity(faction, world), None, None, world);
                 UnitPlugin::fill_gaps_and_translate(world);
                 if let Some(then) = then {

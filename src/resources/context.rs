@@ -194,6 +194,10 @@ impl Context {
         world.entity_mut(entity).insert(transform);
     }
 
+    pub fn t_to_insert(&mut self) {
+        self.t = gt().insert_head();
+    }
+
     pub fn take(&mut self) -> Self {
         mem::take(self)
     }

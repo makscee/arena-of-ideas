@@ -48,6 +48,7 @@ impl ActionPlugin {
                 delay,
             }) = Self::pop_action(world)
             {
+                context.t_to_insert();
                 match effect.invoke(&mut context, world) {
                     Ok(_) => {
                         processed = true;
