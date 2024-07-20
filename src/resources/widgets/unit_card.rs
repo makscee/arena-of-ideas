@@ -27,7 +27,6 @@ pub fn unit_card(context: &Context, ui: &mut Ui, world: &World) -> Result<()> {
     for c in effects.iter_mut() {
         c.inject_context(context, world);
     }
-    let faction = context.get_faction(world)?;
 
     let rect = Frame {
         inner_margin: Margin::same(8.0),

@@ -118,7 +118,8 @@ impl Effect {
                     .get(name)
                     .with_context(|| format!("Ability not found {name}"))
                     .unwrap();
-                let charges = dbg!(context.get_value(VarName::Lvl, world))
+                let charges = context
+                    .get_value(VarName::Lvl, world)
                     .map(|v| v.get_int().unwrap())
                     .unwrap_or(1)
                     + *base;

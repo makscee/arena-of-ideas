@@ -104,7 +104,7 @@ impl Event {
     }
     pub fn map(self, value: &mut VarValue, world: &mut World) -> Self {
         let context = match &self {
-            Event::IncomingDamage { owner, value } => Context::new(*owner),
+            Event::IncomingDamage { owner, value: _ } => Context::new(*owner),
             _ => {
                 return self;
             }

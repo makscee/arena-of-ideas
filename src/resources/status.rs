@@ -143,7 +143,7 @@ impl Status {
     }
     pub fn refresh_mappings(owner: Entity, world: &mut World) {
         let statuses = Self::collect_statuses(owner, world);
-        for (status, Status { name, trigger }) in statuses {
+        for (_, Status { name, trigger }) in statuses {
             let context = &Context::new(owner).set_status(name.clone()).take();
             let mappings = trigger.collect_mappings(context, world);
             let mut state = VarState::get_mut(owner, world);

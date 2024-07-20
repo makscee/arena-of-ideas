@@ -1,5 +1,3 @@
-use bevy::math::Quat;
-
 use super::*;
 
 #[derive(Component, Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
