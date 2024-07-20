@@ -17,8 +17,11 @@ pub enum Tween {
 }
 impl Tween {
     pub fn f(&self, a: &VarValue, b: &VarValue, t: f32, over: f32) -> Result<VarValue> {
+        if over == 0.0 {
+            return Ok(b.clone());
+        }
         let t = t / over;
-        if t.is_nan() || t <= 0.0 {
+        if t <= 0.0 {
             return Ok(a.clone());
         }
         if t >= 1.0 {

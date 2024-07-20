@@ -1,7 +1,7 @@
 #![enable(implicit_some)]
 (
     name: "Fighter",
-    hp: 3,
+    hp: 1,
     pwr: 1,
     rarity: 0,
     houses: ["Warriors"],
