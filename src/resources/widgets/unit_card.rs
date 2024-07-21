@@ -44,7 +44,7 @@ pub fn unit_card(context: &Context, ui: &mut Ui, world: &World) -> Result<()> {
             (VarName::Pwr, YELLOW),
             (VarName::Hp, RED),
             (VarName::Lvl, PURPLE),
-            (VarName::Stacks, LIGHT_PURPLE),
+            (VarName::Xp, LIGHT_PURPLE),
         ];
         ui.horizontal_wrapped(|ui| {
             for (var, color) in SHOWN_VARS.iter().copied() {

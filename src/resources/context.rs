@@ -158,31 +158,31 @@ impl Context {
         }
         Ok(self)
     }
-    pub fn apply_transform(&self, vars: Vec<VarName>, world: &mut World) {
+    pub fn apply_transform(&self, vars: &[VarName], world: &mut World) {
         let entity = self.owner();
         let mut transform = world.entity_mut(entity).get::<Transform>().unwrap().clone();
         for var in vars {
             match var {
                 VarName::Position => {
                     let position = VarState::try_get(entity, world)
-                        .and_then(|s| s.get_value_at(var, self.t))
+                        .and_then(|s| s.get_value_at(*var, self.t))
                         .and_then(|v| v.get_vec2())
                         .unwrap_or_default();
                     transform.translation.x = position.x;
                     transform.translation.y = position.y;
                 }
                 VarName::Scale => {
-                    let scale = self.get_vec2(var, world).unwrap_or(Vec2::ONE);
+                    let scale = self.get_vec2(*var, world).unwrap_or(Vec2::ONE);
                     transform.scale.x = scale.x;
                     transform.scale.y = scale.y;
                 }
                 VarName::Rotation => {
-                    let rotation = self.get_float(var, world).unwrap_or_default();
+                    let rotation = self.get_float(*var, world).unwrap_or_default();
                     transform.rotation = Quat::from_rotation_z(rotation);
                 }
                 VarName::Offset => {
                     let position = VarState::try_get(entity, world)
-                        .and_then(|s| s.get_value_at(var, self.t))
+                        .and_then(|s| s.get_value_at(*var, self.t))
                         .and_then(|v| v.get_vec2())
                         .unwrap_or_default();
                     transform.translation.x = position.x;

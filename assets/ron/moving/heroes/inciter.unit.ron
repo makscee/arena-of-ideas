@@ -3,7 +3,7 @@
     name: "Inciter",
     hp: 2,
     pwr: 2,
-    stacks: 1,
+    xp: 1,
     rarity: 2,
     houses: "Meta",
     trigger: Fire(

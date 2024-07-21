@@ -49,7 +49,7 @@
             name: "Doomguard",
             hp: 10,
             pwr: 10,
-            stacks: 1,
+            xp: 1,
             houses: ["Warlocks"],
             representation: (
                 material: Shape(

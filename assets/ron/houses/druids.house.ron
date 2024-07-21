@@ -31,7 +31,7 @@
             name: "Treant",
             hp: 3,
             pwr: 0,
-            stacks: 1,
+            xp: 1,
             houses: ["Druids"],
             representation: (
                 material: Shape(

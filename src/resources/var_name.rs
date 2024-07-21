@@ -27,7 +27,7 @@ pub enum VarName {
     Hp,
     Pwr,
     Lvl,
-    Stacks,
+    Xp,
     Dmg,
     Value,
     Delta,

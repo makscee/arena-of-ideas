@@ -273,8 +273,13 @@ impl History {
         self.0.last().map(|v| v.value.clone())
     }
     fn push_change(&mut self, change: VarChange) {
-        if change.duration == 0.0 && self.0.last().is_some_and(|c| c.t == change.t) {
-            self.0.remove(self.0.len() - 1);
+        if let Some(last) = self.0.last() {
+            if change.value.eq(&last.value) {
+                return;
+            }
+            if change.duration == 0.0 && last.t == change.t {
+                self.0.remove(self.0.len() - 1);
+            }
         }
         self.0.push(change);
     }

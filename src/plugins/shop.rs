@@ -138,7 +138,20 @@ impl ShopPlugin {
             if let Some(entity) = team_units.get(&id) {
                 let mut state = VarState::get_mut(*entity, world);
                 state.set_int(VarName::Slot, slot.into());
-                state.set_int(VarName::Stacks, unit.stacks as i32);
+                let new_xp = unit.xp as i32;
+                let old_xp = state
+                    .get_value_last(VarName::Xp)
+                    .unwrap()
+                    .get_int()
+                    .unwrap();
+                if old_xp != new_xp {
+                    state.set_int(VarName::Xp, new_xp);
+                    TextColumnPlugin::add(
+                        *entity,
+                        format!("+{} Xp", new_xp - old_xp).cstr_cs(LIGHT_PURPLE, CstrStyle::Bold),
+                        world,
+                    );
+                }
                 team_units.remove(&id);
                 continue;
             }

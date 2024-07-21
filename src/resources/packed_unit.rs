@@ -12,7 +12,7 @@ pub struct PackedUnit {
     #[serde(default = "default_one")]
     pub hp: i32,
     #[serde(default = "default_one")]
-    pub stacks: i32,
+    pub xp: i32,
     #[serde(default = "default_zero_i8")]
     pub rarity: i8,
     #[serde(default = "default_house")]
@@ -97,7 +97,7 @@ impl PackedUnit {
             .init(VarName::Hp, self.hp.into())
             .init(VarName::Pwr, self.pwr.into())
             .init(VarName::Lvl, 1.into())
-            .init(VarName::Stacks, self.stacks.into())
+            .init(VarName::Xp, self.xp.into())
             .init(VarName::Name, self.name.clone().into())
             .init(
                 VarName::Houses,
@@ -210,7 +210,7 @@ impl From<TBaseUnit> for PackedUnit {
             name: value.name,
             pwr: value.pwr,
             hp: value.hp,
-            stacks: 1,
+            xp: 1,
             rarity: value.rarity,
             houses: vec![value.house],
             trigger: Trigger::Fire {
@@ -277,7 +277,7 @@ impl From<FusedUnit> for PackedUnit {
         state.init(VarName::RarityColors, rarity_colors.into());
         state.init(VarName::HouseColors, house_colors.into());
         result.name = value.bases.join("+");
-        result.stacks = value.stacks as i32;
+        result.xp = value.xp as i32;
         result.state = state;
 
         result

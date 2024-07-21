@@ -19,5 +19,5 @@ pub struct FusedUnit {
     pub triggers: Vec<u32>,
     pub targets: Vec<u32>,
     pub effects: Vec<u32>,
-    pub stacks: u32,
+    pub xp: u32,
 }

@@ -11,7 +11,7 @@ pub struct FusedUnit {
     pub triggers: Vec<u32>,
     pub targets: Vec<u32>,
     pub effects: Vec<u32>,
-    pub stacks: u32,
+    pub xp: u32,
 }
 
 impl FusedUnit {
@@ -28,7 +28,7 @@ impl FusedUnit {
             triggers: vec![0],
             targets: vec![0],
             effects: vec![0],
-            stacks: 1,
+            xp: 1,
             id,
         }
     }

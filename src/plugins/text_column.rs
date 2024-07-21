@@ -1,3 +1,5 @@
+use bevy::math::Vec2Swizzles;
+
 use super::*;
 
 pub struct TextColumnPlugin;
@@ -26,8 +28,7 @@ impl TextColumnPlugin {
         let mut drawn: Vec<Vec<Rect>> = [default()].into();
         let mut prev_lvl: HashMap<Entity, usize> = default();
         let t = gt().play_head();
-        let start_height = world_to_screen(vec3(0.0, 2.0, 0.0), world).y;
-        const Y_PER_LEVEL: f32 = 22.0;
+        const Y_PER_LEVEL: f32 = -22.0;
         const LIFETIME: f32 = 4.0;
         const EASE_IN: f32 = 0.3;
         const EASE_OUT: f32 = 0.5;
@@ -43,15 +44,15 @@ impl TextColumnPlugin {
                                 .iter()
                                 .filter(|(ts, _)| *ts < t && *ts + LIFETIME > t)
                                 .rev(),
-                            world_to_screen(tr.translation, world).x,
+                            world_to_screen(tr.translation + vec3(0.0, 2.0, 0.0), world).xy(),
                             e,
                         )
                     })
-                    .sorted_by(|(_, x1, _), (_, x2, _)| x1.total_cmp(&x2))
+                    .sorted_by(|(_, p1, _), (_, p2, _)| p1.x.total_cmp(&p2.x))
                     .collect_vec();
                 while !lines.is_empty() {
                     let mut remove: Vec<usize> = default();
-                    for (i, (line, x, entity)) in lines.iter_mut().enumerate() {
+                    for (i, (line, p, entity)) in lines.iter_mut().enumerate() {
                         if let Some((ts, text)) = line.next() {
                             let ts = t - *ts;
                             let a = smoothstep(0.0, EASE_IN, ts)
@@ -59,7 +60,7 @@ impl TextColumnPlugin {
                                 .clamp(0.0, 1.0);
                             let (_, galley, _) = text.as_label_alpha(a, ui).layout_in_ui(ui);
                             let rect = galley.rect;
-                            let rect = rect.translate(egui::vec2(*x - rect.width() * 0.5, 0.0));
+                            let rect = rect.translate(egui::vec2(p.x - rect.width() * 0.5, p.y));
                             let mut cur_lvl = prev_lvl.get(entity).copied().unwrap_or_default();
                             while drawn[cur_lvl].iter().any(|r| r.intersects(rect)) {
                                 cur_lvl += 1;
@@ -69,10 +70,8 @@ impl TextColumnPlugin {
                             }
                             drawn[cur_lvl].push(rect);
                             prev_lvl.insert(*entity, cur_lvl);
-                            let rect = rect.translate(egui::vec2(
-                                0.0,
-                                start_height - cur_lvl as f32 * Y_PER_LEVEL,
-                            ));
+                            let rect =
+                                rect.translate(egui::vec2(0.0, cur_lvl as f32 * Y_PER_LEVEL));
                             ui.painter().add(epaint::TextShape::new(
                                 rect.left_top(),
                                 galley,

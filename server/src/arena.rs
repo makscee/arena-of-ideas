@@ -288,7 +288,7 @@ fn stack_shop(ctx: ReducerContext, source: u8, target: u8) -> Result<(), String>
             target.bases.join("+")
         ));
     }
-    target.stacks += 1;
+    target.xp += 1;
     team.save();
     run.save();
     Ok(())
@@ -310,7 +310,7 @@ fn stack_team(ctx: ReducerContext, source: u8, target: u8) -> Result<(), String>
             target_unit.bases.join("+")
         ));
     }
-    target_unit.stacks += 1;
+    target_unit.xp += 1;
     team.units.remove(source as usize);
     team.save();
     run.save();

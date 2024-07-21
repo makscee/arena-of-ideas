@@ -64,7 +64,6 @@ impl Representation {
     }
     pub fn update(self, entity: Entity, context: Context, world: &mut World) {
         let t = gt().play_head();
-        self.apply_mapping(entity, world);
         {
             let visible = context.get_bool(VarName::Visible, world).unwrap_or(true);
             let visible = visible && context.get_birth(world).unwrap_or_default() < t;
@@ -73,8 +72,7 @@ impl Representation {
                 return;
             }
         }
-        let vars: Vec<VarName> = [VarName::Position, VarName::Scale].into();
-        context.apply_transform(vars, world);
+        context.apply_transform(&[VarName::Position, VarName::Scale], world);
         for (i, entity) in self.material_entities.iter().enumerate() {
             let context = context
                 .clone()
@@ -82,10 +80,7 @@ impl Representation {
                 .set_var(VarName::Index, (i as i32).into())
                 .take();
             self.apply_mapping(*entity, world);
-            context.apply_transform(
-                [VarName::Rotation, VarName::Scale, VarName::Offset].into(),
-                world,
-            );
+            context.apply_transform(&[VarName::Rotation, VarName::Scale, VarName::Offset], world);
             self.material.update(*entity, &context, world);
         }
         for child in self.children {
