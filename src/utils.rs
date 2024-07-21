@@ -235,6 +235,17 @@ impl ToC32 for Color {
     }
 }
 
+pub trait ToCustomColor {
+    fn to_custom_color(&self) -> CustomColor;
+}
+
+impl ToCustomColor for Color32 {
+    fn to_custom_color(&self) -> CustomColor {
+        let a = self.to_array();
+        CustomColor::new(a[0], a[1], a[2])
+    }
+}
+
 pub trait WorldExt {
     fn game_clear(&mut self);
 }

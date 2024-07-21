@@ -7,7 +7,7 @@
     houses: ["Rogues"],
     trigger: Fire(
         triggers: [(TurnEnd, None)],
-        targets: [(RandomStatusUnit("Expose", AllEnemyUnits), None)],
+        targets: [(RandomUnit(FilterStatusUnits("Expose", AllEnemyUnits)), None)],
         effects: [(UseAbility("Expose", 0), None)],
     ),
     representation: (

@@ -40,6 +40,7 @@ fn main() {
     let args = Args::try_parse().unwrap_or_default();
     ARGS.set(args.clone()).unwrap();
     std::env::set_var("RUST_BACKTRACE", "1");
+    std::env::set_var("RUST_LIB_BACKTRACE", "0");
     let target = match args.mode {
         RunMode::Regular => GameState::TableView(QUERY_BASE_UNITS),
         RunMode::Custom => GameState::CustomBattle,
@@ -56,10 +57,12 @@ fn main() {
         .insert_resource(ClearColor(EMPTINESS.to_color()))
         .add_systems(Startup, setup)
         .add_systems(Update, update)
+        .add_systems(OnEnter(GameState::Error), on_error_state)
         .add_plugins((default_plugins, FrameTimeDiagnosticsPlugin))
         .add_loading_state(
             LoadingState::new(GameState::Loading)
                 .continue_to_state(GameState::Loaded)
+                .on_failure_continue_to_state(GameState::Error)
                 .load_collection::<GameAssetsHandles>()
                 .with_dynamic_assets_file::<StandardDynamicAssetCollection>(
                     "ron/_dynamic.assets.ron",
@@ -121,4 +124,8 @@ fn setup(world: &mut World) {
 
 fn update(time: Res<Time>) {
     gt().update(time.delta_seconds())
+}
+
+fn on_error_state(world: &mut World) {
+    app_exit(world)
 }

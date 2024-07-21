@@ -29,6 +29,7 @@
             description: "Drain {1} HP from target{M1|, gain +1 PWR for each}",
             effect: List(
                 [
+                    Vfx("apply_status"),
                     ChangeStatus("Siphoned Out"),
                     WithTarget(Owner, ChangeStatus("Siphon HP")),
                     If(

@@ -7,7 +7,7 @@
     houses: ["Rogues"],
     trigger: Fire(
         triggers: [(AllyUsedAbility("Rob"), None)],
-        targets: [(Target, None)],
+        targets: [(RandomUnit(AllEnemyUnits), None)],
         effects: [(UseAbility("Expose", 2), None)],
     ),
     representation: (

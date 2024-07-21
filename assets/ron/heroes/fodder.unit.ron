@@ -7,7 +7,7 @@
     houses: ["Warriors"],
     trigger: Fire(
         triggers: [(BeforeStrike, None)],
-        targets: [(RandomAlly, None)],
+        targets: [(RandomUnit(AllAllyUnits), None)],
         effects: [(UseAbility("Strength", 1), None)],
     ),
     representation: (

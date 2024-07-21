@@ -7,7 +7,12 @@
     houses: ["Witches"],
     trigger: Fire(
         triggers: [(TurnEnd, None)],
-        targets: [(RandomStatusUnit("Weakness", AllEnemyUnits), Some("random enemy with [Weakness]"))],
+        targets: [
+            (
+                RandomUnit(FilterStatusUnits("Weakness", AllEnemyUnits)),
+                Some("random enemy with [Weakness]"),
+            ),
+        ],
         effects: [(UseAbility("Weakness", 0), None)],
     ),
     representation: (

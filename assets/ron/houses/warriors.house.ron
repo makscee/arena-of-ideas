@@ -10,5 +10,11 @@
             trigger: Change(trigger: Var(Pwr), expr: Context(Charges)),
         ),
     ],
-    abilities: [(name: "Strength", description: "Give +{1} PWR", effect: ChangeStatus("Strength"))],
+    abilities: [
+        (
+            name: "Strength",
+            description: "Give +{1} PWR",
+            effect: List([Vfx("apply_status"), ChangeStatus("Strength")]),
+        ),
+    ],
 )

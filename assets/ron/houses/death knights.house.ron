@@ -32,14 +32,14 @@
         (
             name: "Plague",
             description: "Target takes {1} DMG every turn, [Summon Skeleton] after death",
-            effect: ChangeStatus("Plague"),
+            effect: List([Vfx("apply_status"), ChangeStatus("Plague")]),
         ),
         (
             name: "Summon Skeleton",
             description: "Summon unfriendly 1/4 unit{M1| that applies [Plague] on damage dealt}",
             effect: WithVar(Faction, OppositeFaction, Summon("Skeleton", None)),
         ),
-        (name: "Decay", description: "Give -{1} HP", effect: ChangeStatus("Decay")),
+        (name: "Decay", description: "Give -{1} HP", effect: List([Vfx("apply_status"), ChangeStatus("Decay")])),
     ],
     summons: [
         (

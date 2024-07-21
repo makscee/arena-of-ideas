@@ -56,12 +56,12 @@ impl Status {
             .id()
     }
     pub fn change_charges_with_text(
-        status: &str,
+        name: &str,
         entity: Entity,
         delta: i32,
         world: &mut World,
     ) -> i32 {
-        let charges = Self::change_charges(status, entity, delta, world);
+        let charges = Self::change_charges(name, entity, delta, world);
         let delta_str = if delta >= 0 {
             format!("+{delta}")
         } else {
@@ -71,30 +71,39 @@ impl Status {
             entity,
             "status "
                 .cstr()
-                .push(status.cstr_cs(name_color(status), CstrStyle::Bold))
+                .push(name.cstr_cs(name_color(name), CstrStyle::Bold))
                 .push(format!(" {delta_str} ({charges})").cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold))
                 .take(),
             world,
         );
         charges
     }
-    pub fn change_charges(status: &str, entity: Entity, delta: i32, world: &mut World) -> i32 {
-        if let Some(state) = VarState::get_mut(entity, world).get_status_mut(status) {
-            state.change_int(VarName::Charges, delta)
+    pub fn change_charges(name: &str, entity: Entity, delta: i32, world: &mut World) -> i32 {
+        if let Some(state) = VarState::get_mut(entity, world).get_status_mut(name) {
+            let visible = state
+                .get_value_last(VarName::Visible)
+                .and_then(|v| v.get_bool())
+                .unwrap_or(true);
+            let charges = state.change_int(VarName::Charges, delta);
+            if visible != (charges > 0) {
+                state.set_value(VarName::Visible, (charges > 0).into());
+                VarState::get_mut(entity, world).reindex_statuses();
+            }
+            charges
         } else {
             GameAssets::get(world)
                 .statuses
-                .get(status)
+                .get(name)
                 .unwrap()
                 .clone()
                 .unpack(entity, world);
             VarState::get_mut(entity, world).reindex_statuses();
-            Self::change_charges(status, entity, delta, world)
+            Self::change_charges(name, entity, delta, world)
         }
     }
-    pub fn get_charges(status: &str, entity: Entity, world: &World) -> Result<i32> {
+    pub fn get_charges(name: &str, entity: Entity, world: &World) -> Result<i32> {
         Context::new(entity)
-            .set_status(status.into())
+            .set_status(name.into())
             .get_int(VarName::Charges, world)
     }
     pub fn collect_statuses(entity: Entity, world: &World) -> Vec<(Entity, Status)> {

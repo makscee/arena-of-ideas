@@ -7,8 +7,8 @@
     houses: ["Medics"],
     trigger: Fire(
         triggers: [(TurnEnd, None)],
-        targets: [(AllStatusAllies("Vitality"), None)],
-        effects: [(Heal(None), None)],
+        targets: [(FilterStatusUnits("Vitality", AllAllyUnits), Some("all allies with [Vitality]"))],
+        effects: [(UseAbility("Mend", 0), None)],
     ),
     representation: (
         material: Shape(

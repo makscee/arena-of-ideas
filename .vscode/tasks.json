@@ -2,21 +2,23 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
+			"type": "cargo",
+			"command": "run",
+			"problemMatcher": [
+				"$rustc"
+			],
 			"label": "Regular",
-			"type": "shell",
+			"args": [
+				"--features",
+				"bevy/dynamic_linking",
+				"--",
+				"--mode",
+				"regular"
+			],
 			"group": {
 				"kind": "build",
 				"isDefault": true
 			},
-			"command": "cargo run --features bevy/dynamic_linking -- --mode regular"
-		},
-		{
-			"label": "Custom",
-			"type": "shell",
-			"group": {
-				"kind": "build"
-			},
-			"command": "cargo run --features bevy/dynamic_linking -- --mode custom"
 		},
 		{
 			"type": "cargo",
@@ -24,7 +26,7 @@
 			"problemMatcher": [
 				"$rustc"
 			],
-			"label": "Custom slow",
+			"label": "Custom",
 			"args": [
 				"--features",
 				"bevy/dynamic_linking",
@@ -35,41 +37,78 @@
 			"group": {
 				"kind": "build"
 			},
-			"env": {
-				"RUST_BACKTRACE": "1"
-			}
 		},
 		{
+			"type": "cargo",
+			"command": "run",
+			"problemMatcher": [
+				"$rustc"
+			],
 			"label": "Test Scenarios",
-			"type": "shell",
+			"args": [
+				"--features",
+				"bevy/dynamic_linking",
+				"--",
+				"--mode",
+				"test"
+			],
 			"group": {
 				"kind": "build"
 			},
-			"command": "cargo run --features bevy/dynamic_linking -- --mode test"
 		},
 		{
+			"type": "cargo",
+			"command": "run",
+			"problemMatcher": [
+				"$rustc"
+			],
 			"label": "Single Test Scenario",
-			"type": "shell",
+			"args": [
+				"--",
+				"--mode",
+				"test",
+				"--path",
+				"ron/scenarios/bstrike_hit_back.scenario.ron"
+			],
 			"group": {
 				"kind": "build"
 			},
-			"command": "cargo run --features bevy/dynamic_linking -- --mode test --path ron/scenarios/bstrike_hit_back.scenario.ron"
 		},
 		{
+			"type": "cargo",
+			"command": "run",
+			"problemMatcher": [
+				"$rustc"
+			],
 			"label": "Sync Assets",
-			"type": "shell",
+			"args": [
+				"--features",
+				"bevy/dynamic_linking",
+				"--",
+				"--mode",
+				"sync"
+			],
 			"group": {
 				"kind": "build"
 			},
-			"command": "cargo run --features bevy/dynamic_linking -- --mode sync"
 		},
 		{
+			"type": "cargo",
+			"command": "run",
+			"problemMatcher": [
+				"$rustc"
+			],
 			"label": "Offline",
-			"type": "shell",
+			"args": [
+				"--features",
+				"bevy/dynamic_linking",
+				"--",
+				"--mode",
+				"offline"
+			],
 			"group": {
 				"kind": "build"
 			},
-			"command": "cargo run --features bevy/dynamic_linking -- --mode offline"
 		},
 		{
 			"label": "Format Ron",
@@ -164,10 +203,6 @@
 			"group": {
 				"kind": "build"
 			},
-			"env": {
-				"LOG": "warn",
-				"CARGO_MANIFEST_DIR": "."
-			}
 		},
 		{
 			"type": "cargo",
@@ -184,10 +219,6 @@
 			"group": {
 				"kind": "build"
 			},
-			"env": {
-				"LOG": "warn",
-				"CARGO_MANIFEST_DIR": "."
-			}
 		}
 	]
 }

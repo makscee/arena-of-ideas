@@ -14,12 +14,12 @@
         (
             name: "Expose",
             description: "Increase taken damage by {1}",
-            effect: ChangeStatus("Expose"),
+            effect: List([Vfx("apply_status"), ChangeStatus("Expose")]),
         ),
         (
             name: "Rob",
             description: "Steal all positive statuses, limit max {Charges}",
-            effect: WithVar(Polarity, I(1), StealAllStatuses),
+            effect: List([WithVar(Polarity, I(1), StealAllStatuses), Vfx("apply_status")]),
         ),
     ],
 )

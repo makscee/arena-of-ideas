@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Debug, Display, PartialEq, Eq, Serialize, Deserialize, Default, Clone)]
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, Default, Clone, AsRefStr)]
 pub enum Event {
     #[default]
     BattleStart,
@@ -37,7 +37,7 @@ pub enum Event {
 
 impl Event {
     pub fn send_with_context(self, mut context: Context, world: &mut World) -> Self {
-        debug!("Send event {self:?}");
+        debug!("{} {}", "Send event".dimmed(), self);
         context.set_event(self.clone());
         ActionPlugin::register_event(self.clone(), world);
         let units = match &self {
@@ -115,5 +115,40 @@ impl Event {
 
     pub fn process(self, context: Context, world: &mut World) -> bool {
         Status::notify(&self, &context, world)
+    }
+}
+
+impl std::fmt::Display for Event {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let name = self.as_ref().cyan();
+        match self {
+            Event::BattleStart | Event::TurnStart | Event::TurnEnd => write!(f, "{}", name),
+            Event::BeforeStrike(a, b) | Event::AfterStrike(a, b) => {
+                write!(f, "{} {a:?} {b:?}", name,)
+            }
+
+            Event::Summon(a) | Event::Death(a) => write!(f, "{name} {a:?}"),
+            Event::Kill { owner, target } => write!(f, "{name} {owner:?} -> {target:?}"),
+            Event::IncomingDamage { owner, value } | Event::DamageTaken { owner, value } => {
+                write!(f, "{name} {owner:?} {value}")
+            }
+            Event::OutgoingDamage {
+                owner,
+                target,
+                value,
+            }
+            | Event::DamageDealt {
+                owner,
+                target,
+                value,
+            } => write!(f, "{name} {owner:?} -> {target:?} {value}"),
+            Event::UseAbility(ability) => {
+                write!(
+                    f,
+                    "{name} -> {}",
+                    ability.custom_color(name_color(ability).to_custom_color())
+                )
+            }
+        }
     }
 }

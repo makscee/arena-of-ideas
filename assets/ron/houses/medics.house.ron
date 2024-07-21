@@ -11,7 +11,11 @@
         ),
     ],
     abilities: [
-        (name: "Vitality", description: "Give +{1} HP", effect: ChangeStatus("Vitality")),
+        (
+            name: "Vitality",
+            description: "Give +{1} HP",
+            effect: List([Vfx("apply_status"), ChangeStatus("Vitality")]),
+        ),
         (
             name: "Mend",
             description: "Heal {Pwr} amount of damage",

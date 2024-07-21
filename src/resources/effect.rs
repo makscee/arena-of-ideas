@@ -7,6 +7,7 @@ pub enum Effect {
     Damage,
     Heal,
     ChangeStatus(String),
+    ClearStatus(String),
     StealStatus(String),
     StealAllStatuses,
     UseAbility(String, i32),
@@ -43,7 +44,7 @@ impl Effect {
                 let i_value = value.get_int()?;
                 if i_value > 0 {
                     debug!("deal {i_value} dmg to {target:?}");
-                    let mut state = VarState::get_mut(target, world);
+                    let mut state = VarState::try_get_mut(target, world)?;
                     state.change_int(VarName::Dmg, i_value);
                     state.set_value(VarName::LastAttacker, owner.into());
                     Event::DamageTaken {
@@ -75,7 +76,13 @@ impl Effect {
                     .unwrap_or(context.get_value(VarName::Pwr, world)?);
                 let i_value = value.get_int()?;
                 if i_value > 0 {
-                    let dmg = (Context::new(target).get_int(VarName::Dmg, world)? - i_value).max(0);
+                    let dmg = Context::new(target).get_int(VarName::Dmg, world)?;
+                    if dmg > 0 {
+                        Vfx::get("pleasure", world)
+                            .set_parent(target)
+                            .unpack(world)?;
+                    }
+                    let dmg = (dmg - i_value).max(0);
                     VarState::get_mut(target, world).set_int(VarName::Dmg, dmg);
                     TextColumnPlugin::add(
                         target,
@@ -86,7 +93,15 @@ impl Effect {
             }
             Effect::ChangeStatus(name) => {
                 let delta = context.get_charges(world).unwrap_or(1);
-                Status::change_charges_with_text(&name, context.get_target()?, delta, world);
+                Status::change_charges_with_text(name, context.get_target()?, delta, world);
+            }
+            Effect::ClearStatus(name) => {
+                let target = context.get_target()?;
+                let charges = Status::get_charges(name, target, world)?;
+                if charges <= 0 {
+                    return Err(anyhow!("Status {name} is absent (c: {charges})"));
+                }
+                Status::change_charges_with_text(name, target, -charges, world);
             }
             Effect::StealStatus(name) => {
                 let target = context.get_target()?;
@@ -128,8 +143,9 @@ impl Effect {
                     .set_ability_state(name, world)?
                     .set_var(VarName::Charges, VarValue::Int(charges))
                     .set_caster(caster)
+                    .set_var(VarName::Color, name_color(name).into())
                     .take();
-                ActionPlugin::action_push_front(ability.effect.clone(), context, world);
+                ActionPlugin::action_push_front(ability.effect.clone(), context.clone(), world);
                 let txt = if *base > 0 {
                     format!("{name} +{base}")
                 } else {

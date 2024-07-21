@@ -20,7 +20,7 @@
         (
             name: "Petrify",
             description: "Next damage taken will deal\nhalf of remaining HP as damage,\nthen consume 1 charge",
-            effect: ChangeStatus("Petrify"),
+            effect: List([Vfx("apply_status"), ChangeStatus("Petrify")]),
         ),
     ],
 )

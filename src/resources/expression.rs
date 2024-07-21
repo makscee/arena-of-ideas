@@ -23,7 +23,6 @@ pub enum Expression {
 
     RandomUnit(Box<Expression>),
     RandomUnitSubset(Box<Expression>, Box<Expression>),
-    RandomStatusUnit(String, Box<Expression>),
     MaxUnit(Box<Expression>, Box<Expression>),
 
     AllAllyUnits,
@@ -31,6 +30,8 @@ pub enum Expression {
     AllUnits,
     AllOtherUnits,
     AdjacentUnits,
+
+    FilterStatusUnits(String, Box<Expression>),
 
     Value(VarValue),
     Context(VarName),
@@ -286,6 +287,14 @@ impl Expression {
                     })
                     .collect_vec(),
             )),
+            Expression::FilterStatusUnits(status, units) => {
+                let units = units.get_value(context, world)?.get_entity_list()?;
+                Ok(units
+                    .into_iter()
+                    .filter(|u| Status::get_charges(&status, *u, world).unwrap_or_default() > 0)
+                    .collect_vec()
+                    .into())
+            }
             Expression::Age => {
                 Ok((gt().play_head() - VarState::get(context.owner(), world).birth()).into())
             }
@@ -316,15 +325,6 @@ impl Expression {
                     .into_iter()
                     .choose_multiple(&mut thread_rng(), amount)
                     .into())
-            }
-            Expression::RandomStatusUnit(status, units) => {
-                let units = units.get_value(context, world)?.get_entity_list()?;
-                units
-                    .into_iter()
-                    .filter(|u| Status::get_charges(&status, *u, world).unwrap_or_default() > 0)
-                    .choose(&mut thread_rng())
-                    .map(|u| u.into())
-                    .context("Unit not found")
             }
             Expression::RandomUnit(units) => {
                 let units = units.get_value(context, world)?.get_entity_list()?;
@@ -507,7 +507,7 @@ impl ToCstr for Expression {
                         .take(),
                 );
             }
-            Expression::RandomStatusUnit(status, u) => {
+            Expression::FilterStatusUnits(status, u) => {
                 s.push(
                     status
                         .cstr_c(name_color(status))

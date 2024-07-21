@@ -43,7 +43,7 @@
         (
             name: "Shield",
             description: "Block next incoming damage{M1|, reflect any blocked damage back to attacker}",
-            effect: ChangeStatus("Shield"),
+            effect: List([Vfx("apply_status"), ChangeStatus("Shield")]),
         ),
         (
             name: "Summon Guardian Angel",

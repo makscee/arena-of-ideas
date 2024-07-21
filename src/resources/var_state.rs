@@ -90,8 +90,20 @@ impl VarState {
         self.statuses.get_mut(name)
     }
     pub fn reindex_statuses(&mut self) {
-        for (i, state) in self.statuses.values_mut().enumerate() {
-            state.set_int(VarName::StatusIndex, (i as i32).into());
+        let mut i = 0;
+        for state in self
+            .statuses
+            .values_mut()
+            .sorted_by(|a, b| a.birth.total_cmp(&b.birth))
+        {
+            if state
+                .get_value_last(VarName::Visible)
+                .and_then(|v| v.get_bool())
+                .unwrap_or(true)
+            {
+                state.set_int(VarName::StatusIndex, i.into());
+                i += 1;
+            }
         }
     }
     pub fn all_statuses_at(&self, t: f32) -> HashMap<String, i32> {

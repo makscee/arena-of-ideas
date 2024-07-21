@@ -15,7 +15,11 @@
         ),
     ],
     abilities: [
-        (name: "Thorns", description: "Deal {1} DMG to attacker", effect: ChangeStatus("Thorns")),
+        (
+            name: "Thorns",
+            description: "Deal {1} DMG to attacker",
+            effect: List([Vfx("apply_status"), ChangeStatus("Thorns")]),
+        ),
         (
             name: "Summon Treant",
             description: "Summon 0/3 unit with [Thorns] ({3})",

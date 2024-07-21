@@ -1,14 +1,14 @@
 #![enable(implicit_some)]
 (
     name: "Pathologist",
-    hp: 3,
+    hp: 10,
     pwr: 3,
     rarity: 3,
     houses: ["Medics"],
     trigger: Fire(
         triggers: [(AllyDeath, None)],
         targets: [(AllAllyUnits, None)],
-        effects: [(Heal(None), None)],
+        effects: [(UseAbility("Mend", 0), None)],
     ),
     representation: (
         material: Shape(

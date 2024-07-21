@@ -20,6 +20,7 @@ pub enum GameState {
     ServerSync,
     Profile,
     TableView(&'static str),
+    Error,
 }
 
 static TARGET_STATE: Mutex<GameState> = Mutex::new(GameState::Loaded);

@@ -28,7 +28,7 @@ pub enum DeltaTrigger {
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq, EnumIter, Default, AsRefStr)]
 pub enum FireTrigger {
     #[default]
-    Noop,
+    None,
     List(Vec<Box<FireTrigger>>),
     Period(usize, usize, Box<FireTrigger>),
     OnceAfter(i32, Box<FireTrigger>),
@@ -137,7 +137,7 @@ impl FireTrigger {
                 cond.get_bool(context, world).unwrap_or_default()
                     && trigger.catch(event, context, world)
             }
-            FireTrigger::Noop => false,
+            FireTrigger::None => false,
         }
     }
 }
@@ -338,7 +338,7 @@ impl ToCstr for FireTrigger {
                 .cstr_c(VISIBLE_LIGHT)
                 .push(format!(" {name}").cstr_cs(name_color(name), CstrStyle::Bold))
                 .take(),
-            FireTrigger::Noop
+            FireTrigger::None
             | FireTrigger::AfterIncomingDamage
             | FireTrigger::AfterDamageTaken
             | FireTrigger::AfterDamageDealt

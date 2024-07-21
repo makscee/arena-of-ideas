@@ -1,14 +1,14 @@
 #![enable(implicit_some)]
 (
-    name: "Plague Doctor",
+    name: "Plague_Doctor",
     hp: 5,
     pwr: 1,
     rarity: 0,
     houses: ["Death Knights"],
     trigger: Fire(
-        triggers: [(Period(0, 1, TurnEnd), "every 2 turns")],
-        targets: [(FindUnit(StatusCharges(String("Plague"))), "ally")],
-        effects: [(List([ClearStatus("Plague"), Vfx("ron/vfx/apply_status.vfx.ron")]), "clear [Plague]")],
+        triggers: [(TurnEnd, None)],
+        targets: [(RandomUnit(FilterStatusUnits("Plague", AllAllyUnits)), "random ally with [Plague]")],
+        effects: [(List([ClearStatus("Plague"), Vfx("apply_status")]), "clear [Plague]")],
     ),
     representation: (
         material: Shape(
@@ -18,7 +18,7 @@
                 center: V2(0.0, 0.0),
                 radius: F(0.65),
                 parts: [F(0.55), F(-0.09)],
-                colors: [HexColor("00000000"), OwnerState(Color)],
+                colors: [HexColor("#00000000"), OwnerState(Color)],
             ),
             fbm: None,
             alpha: F(1.0),
