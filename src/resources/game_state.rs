@@ -126,7 +126,6 @@ fn on_change(world: &mut World) {
     if let Some(ctx) = egui_context(world) {
         ctx.data_mut(|w| w.clear());
     }
-    ENTITY_NAMES.lock().unwrap().clear();
 }
 
 lazy_static! {
@@ -148,4 +147,7 @@ pub fn entity_name_with_id(entity: Entity) -> Cstr {
     entity_name(entity)
         .push(format!("#{entity:?}").cstr())
         .take()
+}
+pub fn clear_entity_names() {
+    ENTITY_NAMES.lock().unwrap().clear();
 }
