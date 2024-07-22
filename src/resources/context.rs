@@ -137,6 +137,10 @@ impl Context {
         self.layers.push(ContextLayer::Event(event));
         self
     }
+    pub fn set_effect(&mut self, effect: Cstr) -> &mut Self {
+        self.layers.push(ContextLayer::Effect(effect));
+        self
+    }
     pub fn get_faction(&self, world: &World) -> Result<Faction> {
         self.get_value(VarName::Faction, world)?.get_faction()
     }
@@ -229,6 +233,17 @@ impl Context {
     pub fn get_entity(&self, var: VarName, world: &World) -> Result<Entity> {
         self.get_value(var, world)?.get_entity()
     }
+
+    pub fn log(&self, main: Option<Cstr>) {
+        let mut s = main.unwrap_or_default();
+        for (i, layer) in self.layers.iter().enumerate() {
+            s.push(layer.cstr());
+            if i != self.layers.len() - 1 {
+                s.push(" -> ".cstr());
+            }
+        }
+        s.info()
+    }
 }
 
 #[derive(Debug, Clone, AsRefStr, PartialEq)]
@@ -240,6 +255,7 @@ pub enum ContextLayer {
     Var(VarName, VarValue),
     AbilityVar(String, VarName, VarValue),
     Event(Event),
+    Effect(Cstr),
 }
 
 impl ContextLayer {
@@ -309,5 +325,33 @@ impl ContextLayer {
                 .ok(),
             _ => None,
         }
+    }
+}
+
+impl ToCstr for ContextLayer {
+    fn cstr(&self) -> Cstr {
+        self.as_ref()
+            .cstr()
+            .push_wrapped_curly(match self {
+                ContextLayer::Caster(e) | ContextLayer::Target(e) | ContextLayer::Owner(e) => {
+                    entity_name_with_id(*e)
+                }
+                ContextLayer::Status(e, name) => entity_name_with_id(*e)
+                    .push(" ".cstr())
+                    .push(name.cstr_c(name_color(name)))
+                    .take(),
+                ContextLayer::Var(var, value) => {
+                    var.cstr().push(value.cstr()).join_char(' ').take()
+                }
+                ContextLayer::AbilityVar(name, var, value) => name
+                    .cstr_c(name_color(name))
+                    .push(var.cstr())
+                    .push(value.cstr())
+                    .join_char(' ')
+                    .take(),
+                ContextLayer::Event(e) => e.cstr(),
+                ContextLayer::Effect(e) => e.clone(),
+            })
+            .take()
     }
 }

@@ -186,10 +186,9 @@ impl UnitPlugin {
     pub fn despawn(entity: Entity, world: &mut World) {
         world.entity_mut(entity).despawn_recursive();
     }
-    pub fn get_name(context: &Context, world: &World) -> Result<Cstr> {
-        let names = context.get_string(VarName::Name, world)?;
-        let bases = names.split("+").collect_vec();
-        Ok(Self::name_from_bases(bases))
+    pub fn name_cstr(name: &str) -> Cstr {
+        let bases = name.split("+").collect_vec();
+        Self::name_from_bases(bases)
     }
     pub fn name_from_bases(bases: Vec<&str>) -> Cstr {
         let mut name = Cstr::default();

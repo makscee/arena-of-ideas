@@ -352,7 +352,10 @@ impl ToCstr for VarValue {
             VarValue::Cstr(v) => v.clone(),
             VarValue::Bool(v) => v.to_string().cstr(),
             VarValue::Faction(v) => v.to_string().cstr(),
-            VarValue::Color(v) => format!("{v:?}").cstr(),
+            VarValue::Color(v) => {
+                let h = hex::encode(v.as_rgba_u8());
+                format!("#{h}").cstr_c(v.c32())
+            }
             VarValue::Entity(v) => format!("{v:?}").cstr(),
             VarValue::GID(v) => v.to_string().cstr(),
             VarValue::List(list) => {

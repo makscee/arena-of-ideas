@@ -25,7 +25,37 @@ pub enum Effect {
 
 impl Effect {
     pub fn invoke(&self, context: &mut Context, world: &mut World) -> Result<()> {
-        debug!("Processing {:?}\n{:?}", self, context);
+        match self {
+            Effect::Noop
+            | Effect::Damage
+            | Effect::Heal
+            | Effect::ChangeStatus(_)
+            | Effect::ClearStatus(_)
+            | Effect::StealStatus(_)
+            | Effect::StealAllStatuses
+            | Effect::UseAbility(_, _)
+            | Effect::AbilityStateAddVar(_, _, _)
+            | Effect::Summon(_, _)
+            | Effect::StateAddVar(_, _, _)
+            | Effect::Vfx(_) => context.log(Some(
+                "Invoke: "
+                    .cstr_c(YELLOW)
+                    .push(
+                        self.cstr()
+                            .inject_context(context, world)
+                            .push("\n".cstr())
+                            .take(),
+                    )
+                    .take(),
+            )),
+            Effect::WithTarget(_, _)
+            | Effect::WithOwner(_, _)
+            | Effect::WithVar(_, _, _)
+            | Effect::List(_)
+            | Effect::Repeat(_, _)
+            | Effect::If(_, _, _) => {}
+        };
+        context.set_effect(self.cstr());
         let owner = context.owner();
         match self {
             Effect::Noop => {}
@@ -312,6 +342,7 @@ impl ToCstr for Effect {
                 .join_char(' ')
                 .push(value.cstr_cs(VISIBLE_BRIGHT, CstrStyle::Bold))
                 .take(),
+            Effect::Vfx(name) => format!("Vfx({name})").cstr_c(VISIBLE_LIGHT),
             _ => self.as_ref().cstr_c(VISIBLE_LIGHT),
         }
     }

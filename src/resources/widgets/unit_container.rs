@@ -140,7 +140,7 @@ impl UnitContainer {
                         let entity = data.entities[i];
                         ui.vertical_centered(|ui| {
                             let name = if let Some(entity) = entity {
-                                UnitPlugin::get_name(&Context::new_play(entity), world).ok()
+                                Some(entity_name(entity))
                             } else {
                                 None
                             };

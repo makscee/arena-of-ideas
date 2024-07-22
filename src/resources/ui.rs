@@ -23,6 +23,7 @@ pub const RED: Color32 = hex_color_noa!("#DC143C");
 pub const GREEN: Color32 = hex_color_noa!("#64DD17");
 pub const PURPLE: Color32 = hex_color_noa!("#B50DA4");
 pub const LIGHT_PURPLE: Color32 = hex_color_noa!("#95408D");
+pub const CYAN: Color32 = hex_color_noa!("#00B8D4");
 
 pub const EVENT_COLOR: Color32 = hex_color_noa!("#F7CA55");
 pub const TARGET_COLOR: Color32 = hex_color_noa!("#DC6814");

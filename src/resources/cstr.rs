@@ -59,6 +59,15 @@ impl Cstr {
         self.subs.extend(cstr.subs.into_iter());
         self
     }
+    pub fn push_wrapped(&mut self, mut cstr: Cstr, brackets: (char, char)) -> &mut Self {
+        self.push(
+            cstr.wrap((brackets.0.to_string().cstr(), brackets.1.to_string().cstr()))
+                .take(),
+        )
+    }
+    pub fn push_wrapped_curly(&mut self, mut cstr: Cstr) -> &mut Self {
+        self.push(cstr.wrap(("(".cstr(), ")".cstr())).take())
+    }
     fn to_colored(&self) -> String {
         self.subs
             .iter()
@@ -301,9 +310,9 @@ impl Cstr {
     }
 }
 
-impl ToString for Cstr {
-    fn to_string(&self) -> String {
-        self.subs.iter().map(|s| s.text.str()).join(" ")
+impl std::fmt::Display for Cstr {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.to_colored())
     }
 }
 

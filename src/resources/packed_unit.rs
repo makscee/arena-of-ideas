@@ -66,6 +66,7 @@ impl PackedUnit {
             ))
             .id();
         debug!("unpack unit: #{id:?} {entity:?} {self:?}");
+        save_entity_name(entity, UnitPlugin::name_cstr(&self.name));
         self.state = self.generate_state();
         {
             self.representation.unpack(entity, world);

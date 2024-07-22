@@ -37,7 +37,7 @@ pub enum Event {
 
 impl Event {
     pub fn send_with_context(self, mut context: Context, world: &mut World) -> Self {
-        debug!("{} {}", "Send event".dimmed(), self);
+        debug!("{} {}", "Send event".dimmed(), self.cstr());
         context.set_event(self.clone());
         ActionPlugin::register_event(self.clone(), world);
         let units = match &self {
@@ -118,19 +118,36 @@ impl Event {
     }
 }
 
-impl std::fmt::Display for Event {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let name = self.as_ref().cyan();
+impl ToCstr for Event {
+    fn cstr(&self) -> Cstr {
+        let mut s = self.as_ref().cstr_c(CYAN);
         match self {
-            Event::BattleStart | Event::TurnStart | Event::TurnEnd => write!(f, "{}", name),
+            Event::BattleStart | Event::TurnStart | Event::TurnEnd => {}
             Event::BeforeStrike(a, b) | Event::AfterStrike(a, b) => {
-                write!(f, "{} {a:?} {b:?}", name,)
+                s.push_wrapped_curly(
+                    entity_name_with_id(*a)
+                        .push(", ".cstr())
+                        .push(entity_name_with_id(*b))
+                        .take(),
+                );
             }
-
-            Event::Summon(a) | Event::Death(a) => write!(f, "{name} {a:?}"),
-            Event::Kill { owner, target } => write!(f, "{name} {owner:?} -> {target:?}"),
+            Event::Summon(a) | Event::Death(a) => {
+                s.push_wrapped_curly(entity_name_with_id(*a));
+            }
+            Event::Kill { owner, target } => {
+                s.push_wrapped_curly(
+                    entity_name_with_id(*owner)
+                        .push(" -> ".cstr())
+                        .push(entity_name_with_id(*target))
+                        .take(),
+                );
+            }
             Event::IncomingDamage { owner, value } | Event::DamageTaken { owner, value } => {
-                write!(f, "{name} {owner:?} {value}")
+                s.push_wrapped_curly(
+                    entity_name_with_id(*owner)
+                        .push(format!(" {value}").cstr_c(VISIBLE_LIGHT))
+                        .take(),
+                );
             }
             Event::OutgoingDamage {
                 owner,
@@ -141,14 +158,19 @@ impl std::fmt::Display for Event {
                 owner,
                 target,
                 value,
-            } => write!(f, "{name} {owner:?} -> {target:?} {value}"),
+            } => {
+                s.push_wrapped_curly(
+                    entity_name_with_id(*owner)
+                        .push(" -> ".cstr())
+                        .push(entity_name_with_id(*target))
+                        .push(format!(" {value}").cstr_c(VISIBLE_LIGHT))
+                        .take(),
+                );
+            }
             Event::UseAbility(ability) => {
-                write!(
-                    f,
-                    "{name} -> {}",
-                    ability.custom_color(name_color(ability).to_custom_color())
-                )
+                s.push_wrapped_curly(ability.cstr_c(name_color(ability)));
             }
         }
+        s
     }
 }

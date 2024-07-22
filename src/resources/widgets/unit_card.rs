@@ -1,6 +1,7 @@
 use super::*;
 
 pub fn unit_card(context: &Context, ui: &mut Ui, world: &World) -> Result<()> {
+    let owner = context.owner();
     let houses = context
         .get_value(VarName::Houses, world)?
         .get_string_list()?;
@@ -10,9 +11,7 @@ pub fn unit_card(context: &Context, ui: &mut Ui, world: &World) -> Result<()> {
         .into_iter()
         .map(|c| c.c32())
         .collect_vec();
-    let name = UnitPlugin::get_name(context, world)?
-        .style(CstrStyle::Heading)
-        .take();
+    let name = entity_name(owner);
     let fusible_lvl = houses.len() as i32 + 1;
     let fusible_str = if fusible_lvl > context.get_int(VarName::Lvl, world).unwrap_or_default() {
         "Fusible from lvl "

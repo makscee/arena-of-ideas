@@ -124,6 +124,28 @@ impl Plugin for GameStatePlugin {
 
 fn on_change(world: &mut World) {
     if let Some(ctx) = egui_context(world) {
-        ctx.data_mut(|w| w.clear())
+        ctx.data_mut(|w| w.clear());
     }
+    ENTITY_NAMES.lock().unwrap().clear();
+}
+
+lazy_static! {
+    static ref ENTITY_NAMES: Mutex<HashMap<Entity, Cstr>> = Mutex::new(HashMap::new());
+}
+
+pub fn save_entity_name(entity: Entity, name: Cstr) {
+    ENTITY_NAMES.lock().unwrap().insert(entity, name);
+}
+pub fn entity_name(entity: Entity) -> Cstr {
+    ENTITY_NAMES
+        .lock()
+        .unwrap()
+        .get(&entity)
+        .cloned()
+        .unwrap_or_default()
+}
+pub fn entity_name_with_id(entity: Entity) -> Cstr {
+    entity_name(entity)
+        .push(format!("#{entity:?}").cstr())
+        .take()
 }
