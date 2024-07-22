@@ -218,6 +218,7 @@ fn fuse_start(ctx: ReducerContext, target: u8, source: u8) -> Result<(), String>
     }
     let mut option = target.clone();
     option.bases.push(source.bases[0].clone());
+    option.add_fuse_xp(source);
     let i = option.bases.len() as u32 - 1;
     if !source.triggers.is_empty() {
         let mut option = option.clone().new_id();

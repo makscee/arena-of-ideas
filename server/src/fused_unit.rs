@@ -55,7 +55,11 @@ impl FusedUnit {
         unit.bases.len() == 1 && self.can_stack(&unit.bases[0])
     }
     pub fn can_fuse_source(&self, source: &FusedUnit) -> bool {
-        source.bases.len() == 1 && !self.get_houses().contains(&source.get_houses()[0])
+        let houses = self.get_houses();
+        source.bases.len() == 1
+            && source.lvl > 1
+            && !houses.contains(&source.get_houses()[0])
+            && houses.len() < self.lvl as usize
     }
     pub fn add_xp(&mut self, xp: u32) {
         self.xp += xp;
@@ -63,5 +67,11 @@ impl FusedUnit {
             self.xp -= self.lvl;
             self.lvl += 1;
         }
+    }
+    pub fn total_xp(&self) -> u32 {
+        (self.lvl - 1) * self.lvl / 2 + self.xp
+    }
+    pub fn add_fuse_xp(&mut self, source: &FusedUnit) {
+        self.add_xp(source.total_xp() - 1);
     }
 }

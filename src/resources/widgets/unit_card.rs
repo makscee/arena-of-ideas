@@ -13,6 +13,15 @@ pub fn unit_card(context: &Context, ui: &mut Ui, world: &World) -> Result<()> {
     let name = UnitPlugin::get_name(context, world)?
         .style(CstrStyle::Heading)
         .take();
+    let fusible_lvl = houses.len() as i32 + 1;
+    let fusible_str = if fusible_lvl > context.get_int(VarName::Lvl, world).unwrap_or_default() {
+        "Fusible from lvl "
+            .cstr()
+            .push(fusible_lvl.to_string().cstr_cs(PURPLE, CstrStyle::Bold))
+            .take()
+    } else {
+        "Fusible".cstr_cs(YELLOW, CstrStyle::Bold)
+    };
     let used_definitions = context
         .get_value(VarName::UsedDefinitions, world)?
         .get_string_list()?;
@@ -70,6 +79,7 @@ pub fn unit_card(context: &Context, ui: &mut Ui, world: &World) -> Result<()> {
                 ui.add_space(2.0);
             }
         });
+        fusible_str.label(ui);
 
         let mut houses_cstr = Cstr::default();
         for (i, house) in houses.into_iter().enumerate() {
