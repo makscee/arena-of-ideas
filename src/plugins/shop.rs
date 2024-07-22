@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use bevy::input::common_conditions::input_just_pressed;
 use spacetimedb_sdk::table::{TableWithPrimaryKey, UpdateCallbackId};
 
@@ -262,30 +260,6 @@ impl ShopPlugin {
             return;
         };
 
-        if let Some((_, pos)) = ui.ctx().get_dragged() {
-            if let Some(pointer) = ui.ctx().pointer_latest_pos() {
-                ui.painter().arrow(
-                    pos,
-                    pointer.to_vec2() - pos.to_vec2(),
-                    Stroke {
-                        width: 3.0,
-                        color: YELLOW,
-                    },
-                )
-            }
-        }
-        if let Some((from, to)) = ui.ctx().drag_finished() {
-            let from = from.split("/").collect_vec();
-            let from_faction = Faction::from_str(from[from.len() - 2]).unwrap();
-            let from_slot = usize::from_str(from[from.len() - 1]).unwrap();
-            let to = to.split("/").collect_vec();
-            let to_faction = Faction::from_str(to[to.len() - 2]).unwrap();
-            let to_slot = usize::from_str(to[to.len() - 1]).unwrap();
-            if matches!(from_faction, Faction::Team) && from_faction.eq(&to_faction) {
-                shop_reorder(from_slot as u8, to_slot as u8);
-            }
-        }
-
         let sd = world.resource::<ShopData>().clone();
 
         let team = TTeam::filter_by_id(run.team).unwrap();
@@ -430,6 +404,9 @@ impl ShopPlugin {
                 }
             })
             .hover_content(Self::container_on_hover)
+            .on_swap(|a, b, _| {
+                shop_reorder(a as u8, b as u8);
+            })
             .ui(wd, ui, world);
     }
     pub fn container_on_hover(_: usize, entity: Option<Entity>, ui: &mut Ui, world: &mut World) {

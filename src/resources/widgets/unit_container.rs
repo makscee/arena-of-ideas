@@ -8,6 +8,7 @@ pub struct UnitContainer {
     max_slots: usize,
     right_to_left: bool,
     hug_unit: bool,
+    on_swap: Option<Box<dyn Fn(usize, usize, &mut World) + Send + Sync>>,
     top_content: Option<Box<dyn FnOnce(&mut Ui, &mut World) + Send + Sync>>,
     slot_content: Option<Box<dyn Fn(usize, Option<Entity>, &mut Ui, &mut World) + Send + Sync>>,
     hover_content: Option<Box<dyn Fn(usize, Option<Entity>, &mut Ui, &mut World) + Send + Sync>>,
@@ -39,9 +40,10 @@ impl UnitContainer {
             max_slots: 5,
             right_to_left: false,
             hug_unit: false,
-            top_content: default(),
-            slot_content: default(),
-            hover_content: default(),
+            top_content: None,
+            slot_content: None,
+            hover_content: None,
+            on_swap: None,
             pivot: Align2::CENTER_CENTER,
             position: default(),
             slot_name: default(),
@@ -91,6 +93,13 @@ impl UnitContainer {
         content: impl Fn(usize, Option<Entity>, &mut Ui, &mut World) + Send + Sync + 'static,
     ) -> Self {
         self.hover_content = Some(Box::new(content));
+        self
+    }
+    pub fn on_swap(
+        mut self,
+        action: impl Fn(usize, usize, &mut World) + Send + Sync + 'static,
+    ) -> Self {
+        self.on_swap = Some(Box::new(action));
         self
     }
     pub fn slot_name(mut self, i: usize, name: String) -> Self {
@@ -152,6 +161,28 @@ impl UnitContainer {
                             };
                             let response =
                                 show_frame(i, max_size, i >= self.max_slots, name, data, ui);
+                            if let Some(action) = &self.on_swap {
+                                if response.dragged() {
+                                    if let Some(pointer) = ui.ctx().pointer_latest_pos() {
+                                        let origin = response.rect.center();
+                                        ui.set_clip_rect(ui.ctx().screen_rect());
+                                        ui.painter().arrow(
+                                            origin,
+                                            pointer.to_vec2() - origin.to_vec2(),
+                                            Stroke {
+                                                width: 3.0,
+                                                color: YELLOW,
+                                            },
+                                        )
+                                    }
+                                }
+                                response.dnd_set_drag_payload(i);
+                                if let Some(drop_i) = response.dnd_release_payload::<usize>() {
+                                    if i != *drop_i {
+                                        action(i, *drop_i, world);
+                                    }
+                                }
+                            }
                             if let Some(name) = self.slot_name.get(&i) {
                                 let ui = &mut ui.child_ui(
                                     Rect::from_two_pos(
@@ -164,13 +195,6 @@ impl UnitContainer {
                             }
                             if response.hovered() && ui.ctx().dragged_id().is_none() {
                                 hovered_rect = Some((i, response.rect));
-                            }
-                            if response.drag_started() {
-                                ui.ctx()
-                                    .drag_start(response.interact_pointer_pos().unwrap());
-                            }
-                            if response.drag_stopped() {
-                                ui.ctx().drag_end();
                             }
                         });
                         if let Some(content) = &self.slot_content {
