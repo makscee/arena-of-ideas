@@ -355,7 +355,7 @@ impl ShopPlugin {
             })
             .hover_content(Self::container_on_hover)
             .ui(wd, ui, world);
-        let slots = GameAssets::get(world).global_settings.team_slots as usize;
+        let slots = GameAssets::get(world).global_settings.arena.team_slots as usize;
         let run = TArenaRun::current();
         UnitContainer::new(Faction::Team)
             .pivot(Align2::CENTER_TOP)

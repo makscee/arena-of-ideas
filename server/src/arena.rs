@@ -5,6 +5,25 @@ use self::base_unit::TBaseUnit;
 
 use super::*;
 
+#[derive(SpacetimeType)]
+pub struct ArenaSettings {
+    slots_min: u32,
+    slots_max: u32,
+    slots_per_round: f32,
+    g_start: i32,
+    g_income_min: i32,
+    g_income_max: i32,
+    g_income_per_round: i32,
+    price_reroll: i32,
+    price_unit: i32,
+    price_sell: i32,
+    team_slots: u32,
+}
+
+fn settings() -> ArenaSettings {
+    GlobalSettings::get().arena
+}
+
 #[spacetimedb(table)]
 struct TArenaRun {
     #[primarykey]
@@ -320,7 +339,7 @@ fn stack_team(ctx: ReducerContext, source: u8, target: u8) -> Result<(), String>
 
 impl TArenaRun {
     fn new(user_id: GID) -> Self {
-        let gs = GlobalSettings::get();
+        let ars = settings();
         Self {
             id: next_id(),
             owner: user_id,
@@ -331,10 +350,10 @@ impl TArenaRun {
             round: 0,
             score: 0,
             last_updated: Timestamp::now(),
-            g: gs.shop_g_start,
-            price_reroll: gs.shop_price_reroll,
-            price_unit: gs.shop_price_unit,
-            price_sell: gs.shop_price_sell,
+            g: ars.g_start,
+            price_reroll: ars.price_reroll,
+            price_unit: ars.price_unit,
+            price_sell: ars.price_sell,
             battles: Vec::new(),
             lives: 1,
             active: true,
@@ -415,9 +434,9 @@ impl TArenaRun {
         Self::update_by_owner(&self.owner.clone(), self);
     }
     fn fill_case(&mut self) {
-        let gs = GlobalSettings::get();
-        let slots = (gs.shop_slots_min + (gs.shop_slots_per_round * self.round as f32) as u32)
-            .min(gs.shop_slots_max) as usize;
+        let ars = settings();
+        let slots = (ars.slots_min + (ars.slots_per_round * self.round as f32) as u32)
+            .min(ars.slots_max) as usize;
         self.shop_slots = vec![ShopSlot::default(); slots];
         for i in 0..slots {
             let id = next_id();

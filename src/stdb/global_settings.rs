@@ -2,6 +2,7 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN RUST INSTEAD.
 
 #![allow(unused_imports)]
+use super::arena_settings::ArenaSettings;
 use spacetimedb_sdk::{
     anyhow::{anyhow, Result},
     identity::Identity,
@@ -15,17 +16,7 @@ use spacetimedb_sdk::{
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct GlobalSettings {
     pub always_zero: u32,
-    pub shop_slots_min: u32,
-    pub shop_slots_max: u32,
-    pub shop_slots_per_round: f32,
-    pub shop_g_start: i32,
-    pub shop_g_income_min: i32,
-    pub shop_g_income_max: i32,
-    pub shop_g_income_per_round: i32,
-    pub shop_price_reroll: i32,
-    pub shop_price_unit: i32,
-    pub shop_price_sell: i32,
-    pub team_slots: u32,
+    pub arena: ArenaSettings,
 }
 
 impl TableType for GlobalSettings {
@@ -39,47 +30,7 @@ impl GlobalSettings {
         Self::find(|row| row.always_zero == always_zero)
     }
     #[allow(unused)]
-    pub fn filter_by_shop_slots_min(shop_slots_min: u32) -> TableIter<Self> {
-        Self::filter(|row| row.shop_slots_min == shop_slots_min)
-    }
-    #[allow(unused)]
-    pub fn filter_by_shop_slots_max(shop_slots_max: u32) -> TableIter<Self> {
-        Self::filter(|row| row.shop_slots_max == shop_slots_max)
-    }
-    #[allow(unused)]
-    pub fn filter_by_shop_slots_per_round(shop_slots_per_round: f32) -> TableIter<Self> {
-        Self::filter(|row| row.shop_slots_per_round == shop_slots_per_round)
-    }
-    #[allow(unused)]
-    pub fn filter_by_shop_g_start(shop_g_start: i32) -> TableIter<Self> {
-        Self::filter(|row| row.shop_g_start == shop_g_start)
-    }
-    #[allow(unused)]
-    pub fn filter_by_shop_g_income_min(shop_g_income_min: i32) -> TableIter<Self> {
-        Self::filter(|row| row.shop_g_income_min == shop_g_income_min)
-    }
-    #[allow(unused)]
-    pub fn filter_by_shop_g_income_max(shop_g_income_max: i32) -> TableIter<Self> {
-        Self::filter(|row| row.shop_g_income_max == shop_g_income_max)
-    }
-    #[allow(unused)]
-    pub fn filter_by_shop_g_income_per_round(shop_g_income_per_round: i32) -> TableIter<Self> {
-        Self::filter(|row| row.shop_g_income_per_round == shop_g_income_per_round)
-    }
-    #[allow(unused)]
-    pub fn filter_by_shop_price_reroll(shop_price_reroll: i32) -> TableIter<Self> {
-        Self::filter(|row| row.shop_price_reroll == shop_price_reroll)
-    }
-    #[allow(unused)]
-    pub fn filter_by_shop_price_unit(shop_price_unit: i32) -> TableIter<Self> {
-        Self::filter(|row| row.shop_price_unit == shop_price_unit)
-    }
-    #[allow(unused)]
-    pub fn filter_by_shop_price_sell(shop_price_sell: i32) -> TableIter<Self> {
-        Self::filter(|row| row.shop_price_sell == shop_price_sell)
-    }
-    #[allow(unused)]
-    pub fn filter_by_team_slots(team_slots: u32) -> TableIter<Self> {
-        Self::filter(|row| row.team_slots == team_slots)
+    pub fn filter_by_arena(arena: ArenaSettings) -> TableIter<Self> {
+        Self::filter(|row| row.arena == arena)
     }
 }

@@ -20,6 +20,7 @@ use spacetimedb_sdk::{
 };
 use std::sync::Arc;
 
+pub mod arena_settings;
 pub mod fuse_cancel_reducer;
 pub mod fuse_choose_reducer;
 pub mod fuse_start_reducer;
@@ -62,6 +63,7 @@ pub mod t_team;
 pub mod t_user;
 pub mod team_slot;
 
+pub use arena_settings::*;
 pub use fuse_cancel_reducer::*;
 pub use fuse_choose_reducer::*;
 pub use fuse_start_reducer::*;
