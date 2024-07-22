@@ -144,8 +144,28 @@ impl ShopPlugin {
                     .unwrap()
                     .get_int()
                     .unwrap();
-                if old_xp != new_xp {
+                let new_lvl = unit.lvl as i32;
+                let old_lvl = state
+                    .get_value_last(VarName::Lvl)
+                    .unwrap()
+                    .get_int()
+                    .unwrap();
+                let level_changed = old_lvl != new_lvl;
+                let xp_changed = old_xp != new_xp;
+
+                if level_changed {
+                    state.set_int(VarName::Lvl, new_lvl);
+                }
+                if xp_changed {
                     state.set_int(VarName::Xp, new_xp);
+                }
+                if level_changed {
+                    TextColumnPlugin::add(
+                        *entity,
+                        format!("+{} Lvl", new_lvl - old_lvl).cstr_cs(PURPLE, CstrStyle::Bold),
+                        world,
+                    );
+                } else if xp_changed {
                     TextColumnPlugin::add(
                         *entity,
                         format!("+{} Xp", new_xp - old_xp).cstr_cs(LIGHT_PURPLE, CstrStyle::Bold),

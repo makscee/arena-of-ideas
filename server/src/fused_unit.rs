@@ -11,7 +11,8 @@ pub struct FusedUnit {
     pub triggers: Vec<u32>,
     pub targets: Vec<u32>,
     pub effects: Vec<u32>,
-    pub xp: u32,
+    pub lvl: u32,
+    xp: u32,
 }
 
 impl FusedUnit {
@@ -28,7 +29,8 @@ impl FusedUnit {
             triggers: vec![0],
             targets: vec![0],
             effects: vec![0],
-            xp: 1,
+            lvl: 1,
+            xp: 0,
             id,
         }
     }
@@ -54,5 +56,12 @@ impl FusedUnit {
     }
     pub fn can_fuse_source(&self, source: &FusedUnit) -> bool {
         source.bases.len() == 1 && !self.get_houses().contains(&source.get_houses()[0])
+    }
+    pub fn add_xp(&mut self, xp: u32) {
+        self.xp += xp;
+        while self.xp >= self.lvl {
+            self.xp -= self.lvl;
+            self.lvl += 1;
+        }
     }
 }

@@ -51,12 +51,21 @@ pub fn unit_card(context: &Context, ui: &mut Ui, world: &World) -> Result<()> {
                 vars_str.push(": ".cstr_c(color));
                 vars_str.push(
                     context
-                        .get_value(var, world)
-                        .unwrap_or_default()
-                        .get_string()
+                        .get_string(var, world)
                         .unwrap_or_default()
                         .cstr_c(VISIBLE_BRIGHT),
                 );
+                match var {
+                    VarName::Xp => {
+                        vars_str.push("/".cstr()).push(
+                            context
+                                .get_string(VarName::Lvl, world)
+                                .unwrap_or_default()
+                                .cstr_c(VISIBLE_BRIGHT),
+                        );
+                    }
+                    _ => {}
+                }
                 vars_str.bold().label(ui);
                 ui.add_space(2.0);
             }
