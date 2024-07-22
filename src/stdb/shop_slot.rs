@@ -21,4 +21,5 @@ pub struct ShopSlot {
     pub discount: bool,
     pub available: bool,
     pub stack_targets: Vec<u8>,
+    pub house_filter: Vec<String>,
 }

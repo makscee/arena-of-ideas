@@ -30,6 +30,7 @@ pub struct ShopData {
     stack_targets: Vec<usize>,
     fuse_source: Option<usize>,
     fuse_targets: Vec<usize>,
+    family_slot: Option<usize>,
 }
 
 impl ShopPlugin {
@@ -99,6 +100,7 @@ impl ShopPlugin {
             let mut sd = world.resource_mut::<ShopData>();
             sd.fuse_source = None;
             sd.fuse_targets.clear();
+            sd.family_slot = None;
 
             for (
                 slot,
@@ -106,10 +108,14 @@ impl ShopPlugin {
                     unit,
                     available,
                     id,
+                    house_filter,
                     ..
                 },
             ) in (0..).zip(run.shop_slots.into_iter())
             {
+                if !house_filter.is_empty() {
+                    world.resource_mut::<ShopData>().family_slot = Some(slot as usize);
+                }
                 if available {
                     if shop_units.contains_key(&id) {
                         shop_units.remove(&id);
@@ -284,7 +290,7 @@ impl ShopPlugin {
 
         let team = TTeam::filter_by_id(run.team).unwrap();
         let g = run.g;
-        UnitContainer::new(Faction::Shop)
+        let mut shop_container = UnitContainer::new(Faction::Shop)
             .pivot(Align2::CENTER_TOP)
             .position(egui::vec2(0.5, 0.0))
             .slots(run.shop_slots.len())
@@ -353,8 +359,11 @@ impl ShopPlugin {
                     }
                 }
             })
-            .hover_content(Self::container_on_hover)
-            .ui(wd, ui, world);
+            .hover_content(Self::container_on_hover);
+        if let Some(slot) = sd.family_slot {
+            shop_container = shop_container.slot_name(slot, "Family Slot".into());
+        }
+        shop_container.ui(wd, ui, world);
         let slots = GameAssets::get(world).global_settings.arena.team_slots as usize;
         let run = TArenaRun::current();
         UnitContainer::new(Faction::Team)

@@ -11,6 +11,7 @@ pub struct UnitContainer {
     top_content: Option<Box<dyn FnOnce(&mut Ui, &mut World) + Send + Sync>>,
     slot_content: Option<Box<dyn Fn(usize, Option<Entity>, &mut Ui, &mut World) + Send + Sync>>,
     hover_content: Option<Box<dyn Fn(usize, Option<Entity>, &mut Ui, &mut World) + Send + Sync>>,
+    slot_name: HashMap<usize, String>,
     pivot: Align2,
     position: egui::Vec2,
 }
@@ -43,6 +44,7 @@ impl UnitContainer {
             hover_content: default(),
             pivot: Align2::CENTER_CENTER,
             position: default(),
+            slot_name: default(),
         }
     }
     pub fn slots(mut self, value: usize) -> Self {
@@ -89,6 +91,10 @@ impl UnitContainer {
         content: impl Fn(usize, Option<Entity>, &mut Ui, &mut World) + Send + Sync + 'static,
     ) -> Self {
         self.hover_content = Some(Box::new(content));
+        self
+    }
+    pub fn slot_name(mut self, i: usize, name: String) -> Self {
+        self.slot_name.insert(i, name);
         self
     }
     pub fn ui(self, data: &mut WidgetData, ui: &mut Ui, world: &mut World) {
@@ -146,6 +152,16 @@ impl UnitContainer {
                             };
                             let response =
                                 show_frame(i, max_size, i >= self.max_slots, name, data, ui);
+                            if let Some(name) = self.slot_name.get(&i) {
+                                let ui = &mut ui.child_ui(
+                                    Rect::from_two_pos(
+                                        response.rect.left_top(),
+                                        response.rect.right_top() + egui::vec2(0.0, -20.0),
+                                    ),
+                                    Layout::left_to_right(Align::Center),
+                                );
+                                name.cstr().label(ui);
+                            }
                             if response.hovered() && ui.ctx().dragged_id().is_none() {
                                 hovered_rect = Some((i, response.rect));
                             }

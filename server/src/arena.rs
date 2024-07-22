@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use rand::{seq::IteratorRandom, thread_rng};
 use spacetimedb::Timestamp;
 
@@ -80,6 +81,7 @@ struct ShopSlot {
     discount: bool,
     available: bool,
     stack_targets: Vec<u8>,
+    house_filter: Vec<String>,
 }
 
 #[derive(SpacetimeType, Clone, Default)]
@@ -100,7 +102,7 @@ fn run_start(ctx: ReducerContext) -> Result<(), String> {
     let user = TUser::find_by_identity(&ctx.sender)?;
     TArenaRun::delete_by_owner(&user.id);
     let mut run = TArenaRun::new(user.id);
-    run.fill_case();
+    run.fill_case()?;
     TArenaRun::insert(run)?;
     Ok(())
 }
@@ -130,7 +132,7 @@ fn shop_finish(ctx: ReducerContext) -> Result<(), String> {
         TArenaPool::add(team.id, run.round);
     }
     run.round += 1;
-    run.fill_case();
+    run.fill_case()?;
     run.g += 4;
     run.save();
     Ok(())
@@ -182,7 +184,7 @@ fn shop_reroll(ctx: ReducerContext) -> Result<(), String> {
         return Err("Not enough G".into());
     }
     run.g -= run.price_reroll;
-    run.fill_case();
+    run.fill_case()?;
     run.save();
     Ok(())
 }
@@ -433,11 +435,20 @@ impl TArenaRun {
         }
         Self::update_by_owner(&self.owner.clone(), self);
     }
-    fn fill_case(&mut self) {
+    fn fill_case(&mut self) -> Result<(), String> {
         let ars = settings();
         let slots = (ars.slots_min + (ars.slots_per_round * self.round as f32) as u32)
             .min(ars.slots_max) as usize;
         self.shop_slots = vec![ShopSlot::default(); slots];
+        let team = self.team()?;
+        if !team.units.is_empty() {
+            self.shop_slots[0].house_filter = team
+                .units
+                .iter()
+                .flat_map(|u| u.get_houses())
+                .unique()
+                .collect();
+        }
         for i in 0..slots {
             let id = next_id();
             let s = &mut self.shop_slots[i];
@@ -445,10 +456,14 @@ impl TArenaRun {
             s.price = self.price_unit;
             s.id = id;
             s.unit = TBaseUnit::iter()
-                .filter(|u| u.rarity >= 0)
+                .filter(|u| {
+                    u.rarity >= 0
+                        && (s.house_filter.is_empty() || s.house_filter.contains(&u.house))
+                })
                 .choose(&mut thread_rng())
                 .unwrap()
                 .name;
         }
+        Ok(())
     }
 }
