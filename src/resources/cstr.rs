@@ -127,7 +127,7 @@ impl Cstr {
         self
     }
 
-    pub fn join(&mut self, char: &Cstr) -> &mut Self {
+    pub fn join(&mut self, s: &Cstr) -> &mut Self {
         let subs = mem::take(&mut self.subs);
         let len = subs.len();
         for (i, sub) in subs.into_iter().enumerate() {
@@ -135,11 +135,14 @@ impl Cstr {
             if i == len - 1 {
                 break;
             }
-            for sub in &char.subs {
+            for sub in &s.subs {
                 self.subs.push(sub.clone());
             }
         }
         self
+    }
+    pub fn join_char(&mut self, c: char) -> &mut Self {
+        self.join(&c.to_string().cstr())
     }
     pub fn join_vec(v: Vec<Self>) -> Self {
         Self {
@@ -345,6 +348,17 @@ impl ToCstr for String {
         Cstr {
             subs: vec![CstrSub {
                 text: self.clone().into(),
+                color: None,
+                style: default(),
+            }],
+        }
+    }
+}
+impl ToCstr for VarName {
+    fn cstr(&self) -> Cstr {
+        Cstr {
+            subs: vec![CstrSub {
+                text: (*self).into(),
                 color: None,
                 style: default(),
             }],

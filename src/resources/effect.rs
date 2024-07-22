@@ -294,15 +294,24 @@ impl ToCstr for Effect {
     fn cstr(&self) -> Cstr {
         match self {
             Effect::UseAbility(name, base) => {
-                let mut name = name.cstr_cs(name_color(name), CstrStyle::Bold);
-                if *base > 0 {
-                    name.push(format!(" +{base}").cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold));
-                }
-                format!("use ability ")
+                let mut c = format!("use ")
                     .cstr_c(VISIBLE_LIGHT)
-                    .push(name)
-                    .take()
+                    .push(name.cstr_cs(name_color(name), CstrStyle::Bold))
+                    .push(" lvl.".cstr_cs(VISIBLE_DARK, CstrStyle::Small))
+                    .push(VarName::Lvl.cstr_cs(VISIBLE_BRIGHT, CstrStyle::Bold))
+                    .take();
+                if *base > 0 {
+                    c.push(format!(" +{base}").cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold));
+                }
+                c
             }
+            Effect::AbilityStateAddVar(ability, var, value) => ability
+                .cstr_cs(name_color(ability), CstrStyle::Bold)
+                .push(var.to_string().cstr_c(VISIBLE_BRIGHT))
+                .push("add ".cstr_c(VISIBLE_LIGHT))
+                .join_char(' ')
+                .push(value.cstr_cs(VISIBLE_BRIGHT, CstrStyle::Bold))
+                .take(),
             _ => self.as_ref().cstr_c(VISIBLE_LIGHT),
         }
     }

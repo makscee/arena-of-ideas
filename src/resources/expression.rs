@@ -389,8 +389,7 @@ impl ToCstr for Expression {
             | Expression::CasterState(v)
             | Expression::OwnerStateLast(v)
             | Expression::TargetStateLast(v)
-            | Expression::CasterStateLast(v)
-            | Expression::Context(v) => {
+            | Expression::CasterStateLast(v) => {
                 s.push(
                     v.cstr()
                         .wrap(("(".cstr(), ")".cstr()))
@@ -398,6 +397,7 @@ impl ToCstr for Expression {
                         .take(),
                 );
             }
+            Expression::Context(v) => s = (*v).cstr_cs(VISIBLE_BRIGHT, CstrStyle::Bold),
             Expression::AbilityContext(name, v) | Expression::AbilityState(name, v) => {
                 s.push(
                     name.cstr_cs(name_color(name), CstrStyle::Bold)

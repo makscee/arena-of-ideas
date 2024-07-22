@@ -56,9 +56,3 @@ pub enum VarName {
     LastAttacker,
     StatusIndex,
 }
-
-impl ToCstr for VarName {
-    fn cstr(&self) -> Cstr {
-        self.to_string().cstr()
-    }
-}
