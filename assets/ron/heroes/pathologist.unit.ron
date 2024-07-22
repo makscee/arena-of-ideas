@@ -1,8 +1,8 @@
 #![enable(implicit_some)]
 (
     name: "Pathologist",
-    hp: 10,
-    pwr: 3,
+    hp: 4,
+    pwr: 2,
     rarity: 3,
     houses: ["Medics"],
     trigger: Fire(

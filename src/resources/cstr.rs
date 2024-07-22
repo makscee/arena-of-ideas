@@ -252,7 +252,7 @@ impl Cstr {
                 Err(_) => CstrSub {
                     text: s.into(),
                     color: Some(VISIBLE_BRIGHT),
-                    style: default(),
+                    style: CstrStyle::Bold,
                 },
             }
         }
@@ -275,13 +275,17 @@ impl Cstr {
             }
         }
         for sub in cs.subs.drain(..).collect_vec() {
-            match &sub.text {
+            match sub.text {
                 SubText::String(text) => {
                     for (s, bracketed) in text.split_by_brackets('[', ']') {
                         if bracketed {
                             cs.subs.push(Self::parse_definition(&s));
                         } else {
-                            cs.subs.push(s.into());
+                            cs.subs.push(CstrSub {
+                                text: s.into(),
+                                color: sub.color,
+                                style: sub.style,
+                            });
                         }
                     }
                 }

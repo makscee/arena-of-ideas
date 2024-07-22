@@ -5,7 +5,7 @@
     statuses: [
         (
             name: "Strength",
-            description: "+{Charges} PWR",
+            description: "+{Charges} Pwr",
             polarity: 1,
             trigger: Change(trigger: Var(Pwr), expr: Context(Charges)),
         ),
@@ -13,7 +13,7 @@
     abilities: [
         (
             name: "Strength",
-            description: "Give +{1} PWR",
+            description: "Give +{1} Pwr",
             effect: List([Vfx("apply_status"), ChangeStatus("Strength")]),
         ),
     ],

@@ -137,8 +137,15 @@ impl UnitContainer {
                         };
                         let ui = &mut ui[col];
                         ui.ctx().add_path(&i.to_string());
+                        let entity = data.entities[i];
                         ui.vertical_centered(|ui| {
-                            let response = show_frame(i, max_size, i >= self.max_slots, data, ui);
+                            let name = if let Some(entity) = entity {
+                                UnitPlugin::get_name(&Context::new_play(entity), world).ok()
+                            } else {
+                                None
+                            };
+                            let response =
+                                show_frame(i, max_size, i >= self.max_slots, name, data, ui);
                             if response.hovered() && ui.ctx().dragged_id().is_none() {
                                 hovered_rect = Some((i, response.rect));
                             }
@@ -152,7 +159,7 @@ impl UnitContainer {
                         });
                         if let Some(content) = &self.slot_content {
                             ui.vertical_centered_justified(|ui| {
-                                content(i, data.entities[i], ui, world);
+                                content(i, entity, ui, world);
                             });
                         }
                         ui.ctx().remove_path();
@@ -201,6 +208,7 @@ fn show_frame(
     ind: usize,
     max_size: f32,
     overflow: bool,
+    name: Option<Cstr>,
     data: &mut UnitContainerData,
     ui: &mut Ui,
 ) -> Response {
@@ -216,6 +224,12 @@ fn show_frame(
         } else {
             VISIBLE_DARK
         }
+    };
+    if let Some(name) = name {
+        ui.allocate_ui_at_rect(
+            Rect::from_min_size(rect.left_bottom(), egui::vec2(rect.width(), 20.0)),
+            |ui| name.label(ui),
+        );
     };
     let stroke = Stroke { width: 1.0, color };
     const DASH: f32 = 10.0;

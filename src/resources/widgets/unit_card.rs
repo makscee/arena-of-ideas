@@ -10,8 +10,9 @@ pub fn unit_card(context: &Context, ui: &mut Ui, world: &World) -> Result<()> {
         .into_iter()
         .map(|c| c.c32())
         .collect_vec();
-    let names = context.get_string(VarName::Name, world)?;
-    let names = names.split("+").collect_vec();
+    let name = UnitPlugin::get_name(context, world)?
+        .style(CstrStyle::Heading)
+        .take();
     let used_definitions = context
         .get_value(VarName::UsedDefinitions, world)?
         .get_string_list()?;
@@ -37,9 +38,7 @@ pub fn unit_card(context: &Context, ui: &mut Ui, world: &World) -> Result<()> {
         stroke: Stroke::NONE,
     }
     .show(ui, |ui| {
-        let mut name = UnitPlugin::name_from_bases(names);
-        name.style(CstrStyle::Heading).label(ui);
-
+        name.label(ui);
         const SHOWN_VARS: [(VarName, Color32); 4] = [
             (VarName::Pwr, YELLOW),
             (VarName::Hp, RED),

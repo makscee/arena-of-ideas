@@ -117,6 +117,13 @@ pub struct GameStatePlugin;
 
 impl Plugin for GameStatePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::Loaded), GameState::proceed);
+        app.add_systems(OnEnter(GameState::Loaded), GameState::proceed)
+            .add_systems(Update, on_change.run_if(state_changed::<GameState>));
+    }
+}
+
+fn on_change(world: &mut World) {
+    if let Some(ctx) = egui_context(world) {
+        ctx.data_mut(|w| w.clear())
     }
 }
