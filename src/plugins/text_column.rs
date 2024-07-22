@@ -36,9 +36,9 @@ impl TextColumnPlugin {
             .frame(Frame::none())
             .show(ctx, |ui| {
                 let mut lines = world
-                    .query::<(&TextColumn, &Transform, Entity)>()
+                    .query::<(&TextColumn, &Transform, Entity, &Visibility)>()
                     .iter(world)
-                    .map(|(tc, tr, e)| {
+                    .map(|(tc, tr, e, v)| {
                         (
                             tc.lines
                                 .iter()
@@ -46,18 +46,22 @@ impl TextColumnPlugin {
                                 .rev(),
                             world_to_screen(tr.translation + vec3(0.0, 2.0, 0.0), world).xy(),
                             e,
+                            v.eq(&Visibility::Inherited),
                         )
                     })
-                    .sorted_by(|(_, p1, _), (_, p2, _)| p1.x.total_cmp(&p2.x))
+                    .sorted_by(|(_, p1, _, _), (_, p2, _, _)| p1.x.total_cmp(&p2.x))
                     .collect_vec();
                 while !lines.is_empty() {
                     let mut remove: Vec<usize> = default();
-                    for (i, (line, p, entity)) in lines.iter_mut().enumerate() {
+                    for (i, (line, p, entity, visible)) in lines.iter_mut().enumerate() {
                         if let Some((ts, text)) = line.next() {
                             let ts = t - *ts;
-                            let a = smoothstep(0.0, EASE_IN, ts)
+                            let mut a = smoothstep(0.0, EASE_IN, ts)
                                 .min(1.0 - smoothstep(LIFETIME - EASE_OUT, LIFETIME, ts))
                                 .clamp(0.0, 1.0);
+                            if !*visible {
+                                a *= 0.5;
+                            }
                             let (_, galley, _) = text.as_label_alpha(a, ui).layout_in_ui(ui);
                             let rect = galley.rect;
                             let rect = rect.translate(egui::vec2(p.x - rect.width() * 0.5, p.y));
