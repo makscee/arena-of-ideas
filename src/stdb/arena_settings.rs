@@ -27,4 +27,6 @@ pub struct ArenaSettings {
     pub team_slots: u32,
     pub lives_initial: u32,
     pub lives_per_wins: u32,
+    pub free_rerolls_initial: u32,
+    pub free_rerolls_income: u32,
 }

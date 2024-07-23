@@ -16,6 +16,8 @@
             team_slots: 5,
             lives_initial: 3,
             lives_per_wins: 4,
+            free_rerolls_initial: 2,
+            free_rerolls_income: 1,
         ),
         rarities: (prices: [4, 5, 6, 7], weights_initial: [100, 5, -10, -20], weights_per_round: [0, 5, 5, 5]),
     ),

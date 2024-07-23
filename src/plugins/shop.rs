@@ -274,12 +274,18 @@ impl ShopPlugin {
             .position(egui::vec2(0.5, 0.0))
             .slots(run.shop_slots.len())
             .top_content(move |ui, _| {
-                if TArenaRun::current().fusion.is_some() {
+                let run = TArenaRun::current();
+                if run.fusion.is_some() {
                     if Button::click("Cancel".into()).ui(ui).clicked() {
                         fuse_cancel();
                     }
                 } else {
-                    if Button::click(format!("-1 G"))
+                    let text = if run.free_rerolls > 0 {
+                        format!("-0 G ({})", run.free_rerolls)
+                    } else {
+                        format!("-{} G", run.price_reroll)
+                    };
+                    if Button::click(text)
                         .title("Reroll".into())
                         .enabled(g >= 1)
                         .ui(ui)

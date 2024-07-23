@@ -20,6 +20,8 @@ pub struct ArenaSettings {
     team_slots: u32,
     lives_initial: u32,
     lives_per_wins: u32,
+    free_rerolls_initial: u32,
+    free_rerolls_income: u32,
 }
 
 #[derive(SpacetimeType)]
@@ -46,6 +48,7 @@ struct TArenaRun {
     fusion: Option<Fusion>,
     g: i32,
     price_reroll: i32,
+    free_rerolls: u32,
     lives: u32,
     active: bool,
 
@@ -148,6 +151,7 @@ fn shop_finish(ctx: ReducerContext) -> Result<(), String> {
     run.fill_case()?;
     let ars = &settings().arena;
     run.g += (ars.g_income_min + ars.g_income_per_round * run.round as i32).max(ars.g_income_max);
+    run.free_rerolls += ars.free_rerolls_income;
     run.save();
     Ok(())
 }
@@ -199,10 +203,14 @@ fn shop_reorder(ctx: ReducerContext, from: u8, to: u8) -> Result<(), String> {
 #[spacetimedb(reducer)]
 fn shop_reroll(ctx: ReducerContext) -> Result<(), String> {
     let mut run = TArenaRun::current(&ctx)?;
-    if run.g < run.price_reroll {
-        return Err("Not enough G".into());
+    if run.free_rerolls > 0 {
+        run.free_rerolls -= 1;
+    } else {
+        if run.g < run.price_reroll {
+            return Err("Not enough G".into());
+        }
+        run.g -= run.price_reroll;
     }
-    run.g -= run.price_reroll;
     run.fill_case()?;
     run.save();
     Ok(())
@@ -377,6 +385,7 @@ impl TArenaRun {
             price_reroll: ars.price_reroll,
             battles: Vec::new(),
             lives: ars.lives_initial,
+            free_rerolls: ars.free_rerolls_initial,
             active: true,
         }
     }
