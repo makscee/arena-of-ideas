@@ -31,7 +31,6 @@ impl TableViewPlugin {
     }
     pub fn ui(query: &str, ctx: &egui::Context, world: &mut World) {
         match query {
-            QUERY_LEADERBOARD => Self::draw_leaderboard(ctx, world),
             QUERY_BATTLE_HISTORY => Self::draw_history(ctx, world),
             QUERY_BASE_UNITS => Self::draw_base_units(ctx, world),
             _ => panic!("Query not supported {query}"),
@@ -92,11 +91,5 @@ impl TableViewPlugin {
                 });
         });
         world.insert_resource(td);
-    }
-    fn draw_leaderboard(ctx: &egui::Context, world: &mut World) {
-        // Tile::left("Leaderboard")
-        //     .open()
-        //     .non_resizable()
-        //     .show(ctx, |ui| Table::new("Leaderboard"));
     }
 }

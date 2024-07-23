@@ -45,7 +45,12 @@ impl ShowTable<TBaseUnit> for Vec<TBaseUnit> {
                 d.house.cstr_c(color)
             })
             .column_int("pwr", |d| d.pwr)
-            .column_int("hp", |d| d.hp);
+            .column_int("hp", |d| d.hp)
+            .column(
+                "rarity",
+                |u| (u.rarity as i32).into(),
+                |u, _, ui, _| Rarity::from_int(u.rarity).cstr().label(ui),
+            );
         t = m(t);
         t.ui(self, ui, world)
     }

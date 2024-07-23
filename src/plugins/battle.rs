@@ -284,6 +284,39 @@ impl BattlePlugin {
                 );
             });
     }
+    pub fn overlay_widgets(ctx: &egui::Context, world: &mut World) {
+        let bd = world.resource::<BattleData>();
+        if bd.id == 0 {
+            return;
+        }
+        if let Some(battle) = TBattle::filter_by_id(bd.id) {
+            let team = battle.team_left.get_team();
+            let show_team = |team: TTeam, ui: &mut Ui| {
+                if team.id == 0 {
+                    return;
+                }
+                text_dots_text(&"owner".cstr(), &team.owner.get_user().cstr(), ui);
+                text_dots_text(
+                    &"team id".cstr(),
+                    &team.id.to_string().cstr_c(VISIBLE_LIGHT),
+                    ui,
+                );
+            };
+            Tile::left("Left")
+                .transparent()
+                .non_resizable()
+                .show(ctx, |ui| {
+                    show_team(team, ui);
+                });
+            let team = battle.team_right.get_team();
+            Tile::right("Right")
+                .transparent()
+                .non_resizable()
+                .show(ctx, |ui| {
+                    show_team(team, ui);
+                });
+        }
+    }
     pub fn ui(ui: &mut Ui, world: &mut World) {
         if !gt().ended() {
             return;

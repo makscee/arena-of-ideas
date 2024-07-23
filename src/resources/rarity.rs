@@ -1,8 +1,9 @@
 use super::*;
 
-#[derive(FromRepr, AsRefStr, EnumIter, PartialEq, Clone, Copy)]
-#[repr(i32)]
+#[derive(FromRepr, AsRefStr, EnumIter, PartialEq, Clone, Copy, Display, Default)]
+#[repr(i8)]
 pub enum Rarity {
+    #[default]
     Common,
     Rare,
     Epic,
@@ -25,5 +26,14 @@ pub fn rarity_color(i: i8) -> Color32 {
 impl Rarity {
     pub fn color(self) -> Color32 {
         RARITY_COLORS[self as usize + 1]
+    }
+    pub fn from_int(v: i8) -> Self {
+        Self::from_repr(v).unwrap_or_default()
+    }
+}
+
+impl ToCstr for Rarity {
+    fn cstr(&self) -> Cstr {
+        self.to_string().cstr_c(self.color())
     }
 }

@@ -138,6 +138,7 @@ impl WidgetsPlugin {
         // Overlay
         match state {
             GameState::Shop => ShopPlugin::overlay_widgets(ctx, world),
+            GameState::Battle => BattlePlugin::overlay_widgets(ctx, world),
             _ => {}
         }
         Notification::show_all(&wd, ctx, world);

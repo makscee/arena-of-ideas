@@ -22,4 +22,7 @@ impl TArenaLeaderboard {
             run,
         }
     }
+    pub fn current_champion() -> Option<Self> {
+        TArenaLeaderboard::iter().max_by_key(|d| d.round)
+    }
 }

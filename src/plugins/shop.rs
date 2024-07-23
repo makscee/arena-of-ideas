@@ -200,6 +200,11 @@ impl ShopPlugin {
                         ui,
                     );
                     text_dots_text(
+                        &"lives".cstr(),
+                        &run.lives.to_string().cstr_cs(GREEN, CstrStyle::Bold),
+                        ui,
+                    );
+                    text_dots_text(
                         &"round".cstr(),
                         &run.round.to_string().cstr_c(VISIBLE_BRIGHT),
                         ui,

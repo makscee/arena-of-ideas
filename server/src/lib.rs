@@ -21,7 +21,7 @@ pub use battle::*;
 pub use fused_unit::*;
 pub use global_data::*;
 pub use global_settings::*;
-use rand::{thread_rng, RngCore};
+use rand::thread_rng;
 pub use spacetimedb::SpacetimeType;
 pub use spacetimedb::{spacetimedb, Identity, ReducerContext};
 pub use team::*;

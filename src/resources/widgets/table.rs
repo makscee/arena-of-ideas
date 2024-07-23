@@ -198,10 +198,10 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                                 .ui(ui)
                         };
                         if resp.clicked() {
-                            if state.sorting.is_some_and(|(s_i, s)| s_i == i && s) {
-                                state.sorting = Some((i, false));
-                            } else {
+                            if state.sorting.is_some_and(|(s_i, s)| s_i == i && !s) {
                                 state.sorting = Some((i, true));
+                            } else {
+                                state.sorting = Some((i, false));
                             }
                             need_sort = true;
                         }

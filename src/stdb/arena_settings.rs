@@ -25,4 +25,6 @@ pub struct ArenaSettings {
     pub sell_discount: i32,
     pub stack_discount: i32,
     pub team_slots: u32,
+    pub lives_initial: u32,
+    pub lives_per_wins: u32,
 }

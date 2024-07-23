@@ -18,6 +18,8 @@ pub struct ArenaSettings {
     sell_discount: i32,
     stack_discount: i32,
     team_slots: u32,
+    lives_initial: u32,
+    lives_per_wins: u32,
 }
 
 #[derive(SpacetimeType)]
@@ -131,9 +133,7 @@ fn shop_finish(ctx: ReducerContext) -> Result<(), String> {
     let mut run = TArenaRun::current(&ctx)?;
     run.round += 1;
     let team = TTeam::get(run.team)?.save_clone();
-    let champion = TArenaLeaderboard::iter()
-        .max_by_key(|d| d.round)
-        .unwrap_or_default();
+    let champion = TArenaLeaderboard::current_champion().unwrap_or_default();
     let enemy = if run.round == champion.round {
         champion.team
     } else {
@@ -146,7 +146,8 @@ fn shop_finish(ctx: ReducerContext) -> Result<(), String> {
         TArenaPool::add(team.id, run.round);
     }
     run.fill_case()?;
-    run.g += 4;
+    let ars = &settings().arena;
+    run.g += (ars.g_income_min + ars.g_income_per_round * run.round as i32).max(ars.g_income_max);
     run.save();
     Ok(())
 }
@@ -156,14 +157,19 @@ fn submit_battle_result(ctx: ReducerContext, result: TBattleResult) -> Result<()
     let mut run = TArenaRun::current(&ctx)?;
     let bid = *run.battles.last().context_str("Last battle not present")?;
     let mut battle = TBattle::get(bid)?;
-    let is_no_enemy = battle.team_right == 0;
+    let enemy = battle.team_right;
+    let is_no_enemy = enemy == 0;
     if !matches!(battle.result, TBattleResult::Tbd) {
         return Err("Result already submitted".to_owned());
     }
     battle.result = result;
     battle.save();
     if matches!(result, TBattleResult::Right) {
-        run.lives -= 1;
+        if TArenaLeaderboard::current_champion().is_some_and(|t| t.team == enemy) {
+            run.lives = 0;
+        } else {
+            run.lives -= 1;
+        }
     } else {
         run.score += run.round;
     }
@@ -370,7 +376,7 @@ impl TArenaRun {
             g: ars.g_start,
             price_reroll: ars.price_reroll,
             battles: Vec::new(),
-            lives: 1,
+            lives: ars.lives_initial,
             active: true,
         }
     }
