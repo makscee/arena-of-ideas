@@ -16,7 +16,8 @@ use spacetimedb_sdk::{
 pub struct ShopSlot {
     pub unit: String,
     pub id: u64,
-    pub price: i32,
+    pub buy_price: i32,
+    pub stack_price: i32,
     pub freeze: bool,
     pub discount: bool,
     pub available: bool,

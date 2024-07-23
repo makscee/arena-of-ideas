@@ -1,4 +1,5 @@
-use rand::seq::IteratorRandom;
+use itertools::Itertools;
+use rand::distributions::{Distribution, WeightedIndex};
 
 use super::*;
 
@@ -16,10 +17,11 @@ pub struct TBaseUnit {
 }
 
 impl TBaseUnit {
-    pub fn get_random(houses: &Vec<String>) -> Self {
-        Self::iter()
+    pub fn get_random(houses: &Vec<String>, weights: &Vec<i32>) -> Self {
+        let mut units = Self::iter()
             .filter(|u| u.rarity >= 0 && (houses.is_empty() || houses.contains(&u.house)))
-            .choose(&mut thread_rng())
-            .unwrap()
+            .collect_vec();
+        let dist = WeightedIndex::new(units.iter().map(|u| weights[u.rarity as usize])).unwrap();
+        units.remove(dist.sample(&mut thread_rng()))
     }
 }

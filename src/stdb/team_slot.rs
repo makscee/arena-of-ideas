@@ -16,4 +16,5 @@ use spacetimedb_sdk::{
 pub struct TeamSlot {
     pub stack_targets: Vec<u8>,
     pub fuse_targets: Vec<u8>,
+    pub sell_price: i32,
 }

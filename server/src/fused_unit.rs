@@ -74,4 +74,11 @@ impl FusedUnit {
     pub fn add_fuse_xp(&mut self, source: &FusedUnit) {
         self.add_xp(source.total_xp() - 1);
     }
+    pub fn rarity(&self) -> i8 {
+        self.get_bases()
+            .into_iter()
+            .map(|u| u.rarity)
+            .max()
+            .unwrap_or_default()
+    }
 }

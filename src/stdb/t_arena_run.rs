@@ -26,8 +26,6 @@ pub struct TArenaRun {
     pub fusion: Option<Fusion>,
     pub g: i32,
     pub price_reroll: i32,
-    pub price_unit: i32,
-    pub price_sell: i32,
     pub lives: u32,
     pub active: bool,
     pub round: u32,
@@ -83,14 +81,6 @@ impl TArenaRun {
     #[allow(unused)]
     pub fn filter_by_price_reroll(price_reroll: i32) -> TableIter<Self> {
         Self::filter(|row| row.price_reroll == price_reroll)
-    }
-    #[allow(unused)]
-    pub fn filter_by_price_unit(price_unit: i32) -> TableIter<Self> {
-        Self::filter(|row| row.price_unit == price_unit)
-    }
-    #[allow(unused)]
-    pub fn filter_by_price_sell(price_sell: i32) -> TableIter<Self> {
-        Self::filter(|row| row.price_sell == price_sell)
     }
     #[allow(unused)]
     pub fn filter_by_lives(lives: u32) -> TableIter<Self> {

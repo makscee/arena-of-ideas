@@ -1,5 +1,4 @@
 use itertools::Itertools;
-use rand::{seq::IteratorRandom, thread_rng};
 use spacetimedb::Timestamp;
 
 use self::base_unit::TBaseUnit;
@@ -16,8 +15,8 @@ pub struct ArenaSettings {
     g_income_max: i32,
     g_income_per_round: i32,
     price_reroll: i32,
-    price_unit: i32,
-    price_sell: i32,
+    sell_discount: i32,
+    stack_discount: i32,
     team_slots: u32,
 }
 
@@ -45,8 +44,6 @@ struct TArenaRun {
     fusion: Option<Fusion>,
     g: i32,
     price_reroll: i32,
-    price_unit: i32,
-    price_sell: i32,
     lives: u32,
     active: bool,
 
@@ -83,7 +80,8 @@ impl TArenaRunArchive {
 struct ShopSlot {
     unit: String,
     id: GID,
-    price: i32,
+    buy_price: i32,
+    stack_price: i32,
     freeze: bool,
     discount: bool,
     available: bool,
@@ -95,6 +93,7 @@ struct ShopSlot {
 struct TeamSlot {
     stack_targets: Vec<u8>,
     fuse_targets: Vec<u8>,
+    sell_price: i32,
 }
 
 #[derive(SpacetimeType)]
@@ -206,7 +205,8 @@ fn shop_reroll(ctx: ReducerContext) -> Result<(), String> {
 #[spacetimedb(reducer)]
 fn shop_buy(ctx: ReducerContext, slot: u8) -> Result<(), String> {
     let mut run = TArenaRun::current(&ctx)?;
-    let unit = run.buy(slot, 0)?;
+    let price = run.shop_slots[slot as usize].buy_price;
+    let unit = run.buy(slot, price)?;
     run.add_to_team(FusedUnit::from_base(unit, next_id()))?;
     run.save();
     Ok(())
@@ -312,7 +312,8 @@ fn fuse_choose(ctx: ReducerContext, slot: u8) -> Result<(), String> {
 #[spacetimedb(reducer)]
 fn stack_shop(ctx: ReducerContext, source: u8, target: u8) -> Result<(), String> {
     let mut run = TArenaRun::current(&ctx)?;
-    let unit = run.buy(source, 1)?;
+    let price = run.shop_slots[source as usize].stack_price;
+    let unit = run.buy(source, price)?;
     let mut team = run.team()?;
     let target = team
         .units
@@ -368,8 +369,6 @@ impl TArenaRun {
             last_updated: Timestamp::now(),
             g: ars.g_start,
             price_reroll: ars.price_reroll,
-            price_unit: ars.price_unit,
-            price_sell: ars.price_sell,
             battles: Vec::new(),
             lives: 1,
             active: true,
@@ -379,7 +378,7 @@ impl TArenaRun {
         Self::filter_by_owner(&TUser::find_by_identity(&ctx.sender)?.id)
             .context_str("No arena run in progress")
     }
-    fn buy(&mut self, slot: u8, discount: i32) -> Result<String, String> {
+    fn buy(&mut self, slot: u8, price: i32) -> Result<String, String> {
         let s = self
             .shop_slots
             .get_mut(slot as usize)
@@ -387,10 +386,10 @@ impl TArenaRun {
         if !s.available {
             return Err("Unit already bought".to_owned());
         }
-        if s.price - discount > self.g {
+        if price > self.g {
             return Err("Not enough G".to_owned());
         }
-        self.g -= s.price - discount;
+        self.g -= price;
         s.available = false;
         Ok(s.unit.clone())
     }
@@ -402,7 +401,7 @@ impl TArenaRun {
     }
     fn sell(&mut self, slot: usize) -> Result<(), String> {
         self.remove_team(slot)?;
-        self.g += self.price_sell;
+        self.g += self.team_slots[slot].sell_price;
         Ok(())
     }
     fn team(&mut self) -> Result<TTeam, String> {
@@ -432,9 +431,18 @@ impl TArenaRun {
                 }
             }
         }
+        let GlobalSettings {
+            arena: ars,
+            rarities: rs,
+            ..
+        } = &settings();
         self.team_slots = vec![TeamSlot::default(); team.units.len()];
         for (slot_i, slot) in self.team_slots.iter_mut().enumerate() {
             slot.stack_targets.clear();
+            if let Some(unit) = team.units.get(slot_i) {
+                let rarity = unit.rarity() as usize;
+                slot.sell_price = rs.prices[rarity] - ars.sell_discount;
+            }
             for (i, unit) in team.units.iter().enumerate() {
                 if i == slot_i {
                     continue;
@@ -467,13 +475,22 @@ impl TArenaRun {
                 .unique()
                 .collect();
         }
+        let round = self.round as i32;
+        let weights = rarities
+            .weights_initial
+            .iter()
+            .enumerate()
+            .map(|(i, w)| (*w + rarities.weights_per_round[i] * round).max(0))
+            .collect_vec();
         for i in 0..slots {
             let id = next_id();
             let s = &mut self.shop_slots[i];
             s.available = true;
-            s.price = self.price_unit;
             s.id = id;
-            s.unit = TBaseUnit::get_random(&s.house_filter).name;
+            let unit = TBaseUnit::get_random(&s.house_filter, &weights);
+            s.unit = unit.name.clone();
+            s.buy_price = rarities.prices[unit.rarity as usize];
+            s.stack_price = s.buy_price - ars.stack_discount;
         }
         Ok(())
     }

@@ -304,16 +304,16 @@ impl ShopPlugin {
                                 }
                             }
                         } else {
-                            if Button::click(format!("-{} G", ss.price))
+                            if Button::click(format!("-{} G", ss.buy_price))
                                 .title("buy".into())
-                                .enabled(g >= ss.price)
+                                .enabled(g >= ss.buy_price)
                                 .ui(ui)
                                 .clicked()
                             {
                                 shop_buy(slot as u8);
                             }
                             if !ss.stack_targets.is_empty() {
-                                let price = ss.price - 1;
+                                let price = ss.stack_price;
                                 if Button::click(format!("-{} G", price))
                                     .title("stack".into())
                                     .enabled(g >= price)
@@ -376,7 +376,7 @@ impl ShopPlugin {
                         }
                     } else {
                         if let Some(ts) = run.team_slots.get(slot) {
-                            if Button::click("+1 G".into())
+                            if Button::click(format!("+{} G", ts.sell_price))
                                 .title("Sell".into())
                                 .ui(ui)
                                 .clicked()
