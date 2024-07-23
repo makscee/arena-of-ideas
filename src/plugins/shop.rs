@@ -221,7 +221,21 @@ impl ShopPlugin {
             .transparent()
             .non_resizable()
             .show(ctx, |ui| {
-                if Button::click("Start Battle".into()).ui(ui).clicked() {
+                let champion_round = TArenaLeaderboard::iter()
+                    .map(|d| d.round)
+                    .max()
+                    .unwrap_or_default();
+                let own_round = TArenaRun::current().round;
+                let mut btn_text = "Start Battle".to_string();
+                if own_round == champion_round - 1 {
+                    "Champion Battle".cstr_cs(YELLOW, CstrStyle::Bold).label(ui);
+                } else if own_round == champion_round {
+                    "Champion Defeated"
+                        .cstr_cs(GREEN, CstrStyle::Bold)
+                        .label(ui);
+                    btn_text = "Empty Battle".to_string();
+                }
+                if Button::click(btn_text).ui(ui).clicked() {
                     shop_finish();
                     once_on_shop_finish(|_, _, status| {
                         status.on_success(|w| GameState::ShopBattle.proceed_to_target(w))
