@@ -39,7 +39,7 @@ impl TableViewPlugin {
     }
     pub fn ui_content(query: &str, wd: &mut WidgetData, ui: &mut Ui, world: &mut World) {
         match query {
-            QUERY_BASE_UNITS => {
+            QUERY_BASE_UNITS | QUERY_BATTLE_HISTORY => {
                 UnitContainer::new(Faction::Team)
                     .hover_content(ShopPlugin::container_on_hover)
                     .position(egui::vec2(0.5, 0.5))

@@ -72,6 +72,7 @@ impl QueryPlugin {
             "select * from TAbility".to_owned(),
             "select * from TStatus".to_owned(),
             "select * from TTeam".to_owned(),
+            "select * from TArenaLeaderboard".to_owned(),
             format!("select * from TBattle where owner = {uid}"),
         ];
         Self::subscribe(q.into());

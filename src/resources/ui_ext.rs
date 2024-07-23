@@ -73,6 +73,28 @@ impl ShowTable<FusedUnit> for Vec<FusedUnit> {
         t.ui(self, ui, world)
     }
 }
+impl ShowTable<TArenaLeaderboard> for Vec<TArenaLeaderboard> {
+    fn show_modified_table(
+        &self,
+        name: &'static str,
+        ui: &mut Ui,
+        world: &mut World,
+        m: fn(Table<TArenaLeaderboard>) -> Table<TArenaLeaderboard>,
+    ) -> TableState {
+        let mut t = Table::new(name)
+            .title()
+            .column_int("round", |d: &TArenaLeaderboard| d.round as i32)
+            .column_int("score", |d| d.score as i32)
+            .column_cstr("team", |d| d.team.get_team().cstr())
+            .column_user_click(
+                "owner",
+                |d| d.user,
+                |gid, ui, _| Tile::add_user(gid, ui.ctx()),
+            );
+        t = m(t);
+        t.ui(self, ui, world)
+    }
+}
 
 pub trait Show {
     fn show(&self, ui: &mut Ui, world: &mut World);

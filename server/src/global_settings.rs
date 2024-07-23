@@ -1,4 +1,4 @@
-use arena::ArenaSettings;
+use arena::{ArenaSettings, RaritySettings};
 
 use super::*;
 
@@ -7,6 +7,7 @@ pub struct GlobalSettings {
     #[unique]
     always_zero: u32,
     pub arena: ArenaSettings,
+    pub rarities: RaritySettings,
 }
 
 impl GlobalSettings {

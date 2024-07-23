@@ -29,6 +29,7 @@ pub enum RunMode {
     #[default]
     Regular,
     Custom,
+    Shop,
     Test,
     Sync,
 }
@@ -42,8 +43,9 @@ fn main() {
     std::env::set_var("RUST_BACKTRACE", "1");
     std::env::set_var("RUST_LIB_BACKTRACE", "0");
     let target = match args.mode {
-        RunMode::Regular => GameState::Shop,
+        RunMode::Regular => GameState::Title,
         RunMode::Custom => GameState::CustomBattle,
+        RunMode::Shop => GameState::Shop,
         RunMode::Test => GameState::TestScenariosRun,
         RunMode::Sync => GameState::ServerSync,
     };

@@ -299,7 +299,9 @@ impl GIDExt for GID {
                 units: default(),
             };
         }
-        TTeam::filter_by_id(self).unwrap()
+        TTeam::filter_by_id(self)
+            .with_context(|| format!("Failed to find team#{self}"))
+            .unwrap()
     }
     fn get_user(self) -> TUser {
         TUser::filter_by_id(self).unwrap()

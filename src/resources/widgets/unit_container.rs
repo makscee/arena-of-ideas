@@ -179,7 +179,7 @@ impl UnitContainer {
                                 response.dnd_set_drag_payload(i);
                                 if let Some(drop_i) = response.dnd_release_payload::<usize>() {
                                     if i != *drop_i {
-                                        action(i, *drop_i, world);
+                                        action(*drop_i, i, world);
                                     }
                                 }
                             }

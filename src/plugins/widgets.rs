@@ -13,11 +13,16 @@ impl Plugin for WidgetsPlugin {
 
 #[derive(Default, Resource)]
 struct WidgetsState {
+    arena_normal: Option<()>,
+    arena_leaderboard: Vec<TArenaLeaderboard>,
     settings: Option<()>,
     profile: Option<ProfileEditData>,
 }
 
 impl WidgetsPlugin {
+    pub fn reset_state(world: &mut World) {
+        *world.resource_mut::<WidgetsState>() = default();
+    }
     fn ui(world: &mut World) {
         let Some(ctx) = &egui_context(world) else {
             return;
@@ -48,6 +53,35 @@ impl WidgetsPlugin {
         Tile::show_all_tiles(ctx, world);
         match state {
             GameState::Title => {
+                Tile::right("Normal Arena").title().close_btn().show_data(
+                    &mut ws.arena_normal,
+                    ctx,
+                    |_, ui| {
+                        let run = TArenaRun::get_current();
+                        if Button::click("Continue".into())
+                            .enabled(run.is_some())
+                            .ui(ui)
+                            .clicked()
+                        {
+                            GameState::Shop.proceed_to_target(world);
+                        }
+                        if Button::click("Start new".into()).ui(ui).clicked() {
+                            run_start();
+                            once_on_run_start(|_, _, status| {
+                                status.on_success(|w| GameState::Shop.proceed_to_target(w))
+                            });
+                        }
+                    },
+                );
+                Tile::left("Arena Leaderboard").show_data(&mut ws.arena_normal, ctx, |_, ui| {
+                    if ws.arena_leaderboard.is_empty() {
+                        ws.arena_leaderboard = TArenaLeaderboard::iter()
+                            .sorted_by_key(|d| -(d.round as i32))
+                            .collect_vec();
+                    }
+                    ws.arena_leaderboard
+                        .show_table("Arena Leaderboard", ui, world);
+                });
                 Tile::right("Settings").title().close_btn().show_data(
                     &mut ws.settings,
                     ctx,
@@ -73,20 +107,7 @@ impl WidgetsPlugin {
                         .cstr_cs(VISIBLE_LIGHT, CstrStyle::Heading2)
                         .label(ui);
                     br(ui);
-                    let run = TArenaRun::get_current();
-                    if Button::click("Continue".into())
-                        .enabled(run.is_some())
-                        .ui(ui)
-                        .clicked()
-                    {
-                        GameState::Shop.proceed_to_target(world);
-                    }
-                    if Button::click("Start new".into()).ui(ui).clicked() {
-                        run_start();
-                        once_on_run_start(|_, _, status| {
-                            status.on_success(|w| GameState::Shop.proceed_to_target(w))
-                        });
-                    }
+                    Button::click("Arena".into()).enable_ui(&mut ws.arena_normal, ui);
                     br(ui);
                     Button::click("Settings".into()).enable_ui(&mut ws.settings, ui);
                     Button::click("Profile".into()).enable_ui(&mut ws.profile, ui);

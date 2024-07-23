@@ -1,6 +1,7 @@
 use super::*;
 
 #[spacetimedb(table)]
+#[derive(Default)]
 pub struct TArenaLeaderboard {
     pub season: u32,
     pub round: u32,

@@ -61,7 +61,7 @@ impl ShopPlugin {
         }
         let cb = TArenaRun::on_update(|_, run, _| {
             let run = run.clone();
-            OperationsPlugin::add(|world| Self::sync_run(run, world))
+            OperationsPlugin::add(|w| Self::sync_run(run, w))
         });
         sd.callback = Some(cb);
     }
@@ -284,9 +284,9 @@ impl ShopPlugin {
                     }
                 }
             })
-            .slot_content(move |slot, _, ui, world| {
+            .slot_content(move |slot, e, ui, world| {
                 if run.fusion.is_some() {
-                    if Button::click("Choose".into()).ui(ui).clicked() {
+                    if e.is_some() && Button::click("Choose".into()).ui(ui).clicked() {
                         fuse_choose(slot as u8);
                         once_on_fuse_choose(|_, _, status, _| match status {
                             StdbStatus::Committed => {}
@@ -445,7 +445,10 @@ impl ShopPlugin {
                 if Button::click("Finish".into()).ui(ui).clicked() {
                     run_finish();
                     once_on_run_finish(|_, _, status| match status {
-                        StdbStatus::Committed => GameState::Title.proceed_to_target_op(),
+                        StdbStatus::Committed => OperationsPlugin::add(|w| {
+                            WidgetsPlugin::reset_state(w);
+                            GameState::Title.proceed_to_target(w);
+                        }),
                         StdbStatus::Failed(e) => error!("Failed to finish run: {e}"),
                         _ => panic!(),
                     });

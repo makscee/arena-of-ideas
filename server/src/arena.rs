@@ -21,8 +21,15 @@ pub struct ArenaSettings {
     team_slots: u32,
 }
 
-fn settings() -> ArenaSettings {
-    GlobalSettings::get().arena
+#[derive(SpacetimeType)]
+pub struct RaritySettings {
+    pub prices: Vec<i32>,
+    pub weights_initial: Vec<i32>,
+    pub weights_per_round: Vec<i32>,
+}
+
+fn settings() -> GlobalSettings {
+    GlobalSettings::get()
 }
 
 #[spacetimedb(table)]
@@ -123,15 +130,22 @@ fn run_finish(ctx: ReducerContext) -> Result<(), String> {
 #[spacetimedb(reducer)]
 fn shop_finish(ctx: ReducerContext) -> Result<(), String> {
     let mut run = TArenaRun::current(&ctx)?;
+    run.round += 1;
     let team = TTeam::get(run.team)?.save_clone();
-    let enemy = TArenaPool::get_random(run.round)
-        .map(|t| t.team)
+    let champion = TArenaLeaderboard::iter()
+        .max_by_key(|d| d.round)
         .unwrap_or_default();
+    let enemy = if run.round == champion.round {
+        champion.team
+    } else {
+        TArenaPool::get_random(run.round)
+            .map(|t| t.team)
+            .unwrap_or_default()
+    };
     run.battles.push(TBattle::new(run.owner, team.id, enemy));
     if !team.units.is_empty() {
         TArenaPool::add(team.id, run.round);
     }
-    run.round += 1;
     run.fill_case()?;
     run.g += 4;
     run.save();
@@ -341,7 +355,7 @@ fn stack_team(ctx: ReducerContext, source: u8, target: u8) -> Result<(), String>
 
 impl TArenaRun {
     fn new(user_id: GID) -> Self {
-        let ars = settings();
+        let ars = settings().arena;
         Self {
             id: next_id(),
             owner: user_id,
@@ -436,7 +450,11 @@ impl TArenaRun {
         Self::update_by_owner(&self.owner.clone(), self);
     }
     fn fill_case(&mut self) -> Result<(), String> {
-        let ars = settings();
+        let GlobalSettings {
+            arena: ars,
+            rarities,
+            ..
+        } = settings();
         let slots = (ars.slots_min + (ars.slots_per_round * self.round as f32) as u32)
             .min(ars.slots_max) as usize;
         self.shop_slots = vec![ShopSlot::default(); slots];
@@ -455,14 +473,7 @@ impl TArenaRun {
             s.available = true;
             s.price = self.price_unit;
             s.id = id;
-            s.unit = TBaseUnit::iter()
-                .filter(|u| {
-                    u.rarity >= 0
-                        && (s.house_filter.is_empty() || s.house_filter.contains(&u.house))
-                })
-                .choose(&mut thread_rng())
-                .unwrap()
-                .name;
+            s.unit = TBaseUnit::get_random(&s.house_filter).name;
         }
         Ok(())
     }

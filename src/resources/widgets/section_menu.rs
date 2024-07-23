@@ -15,7 +15,6 @@ impl Default for SectionMenu {
                 ("LEADERBOARD", GameState::TableView(QUERY_LEADERBOARD)),
                 ("HISTORY", GameState::TableView(QUERY_BATTLE_HISTORY)),
                 ("GALLERY", GameState::TableView(QUERY_BASE_UNITS)),
-                ("TEST", GameState::TestScenariosRun),
             ],
         }
     }

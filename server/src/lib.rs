@@ -52,48 +52,6 @@ impl<T> StrContext<T> for Option<T> {
 #[spacetimedb(init)]
 fn init() -> Result<(), String> {
     GlobalData::init()?;
-    TArenaLeaderboard::insert(TArenaLeaderboard::new(
-        thread_rng().next_u32(),
-        thread_rng().next_u32(),
-        1,
-        1,
-        1,
-    ));
-    TArenaLeaderboard::insert(TArenaLeaderboard::new(
-        thread_rng().next_u32(),
-        thread_rng().next_u32(),
-        1,
-        1,
-        1,
-    ));
-    TArenaLeaderboard::insert(TArenaLeaderboard::new(
-        thread_rng().next_u32(),
-        thread_rng().next_u32(),
-        1,
-        1,
-        1,
-    ));
-    TArenaLeaderboard::insert(TArenaLeaderboard::new(
-        thread_rng().next_u32(),
-        thread_rng().next_u32(),
-        1,
-        1,
-        1,
-    ));
-    TArenaLeaderboard::insert(TArenaLeaderboard::new(
-        thread_rng().next_u32(),
-        thread_rng().next_u32(),
-        1,
-        1,
-        1,
-    ));
-    TArenaLeaderboard::insert(TArenaLeaderboard::new(
-        thread_rng().next_u32(),
-        thread_rng().next_u32(),
-        1,
-        1,
-        1,
-    ));
     Ok(())
 }
 
