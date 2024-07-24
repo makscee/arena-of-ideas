@@ -167,6 +167,9 @@ pub fn app_exit(world: &mut World) {
         .unwrap()
         .send(bevy::app::AppExit);
 }
+pub fn app_exit_op() {
+    OperationsPlugin::add(app_exit)
+}
 pub fn cur_state(world: &World) -> GameState {
     *world.resource::<State<GameState>>().get()
 }

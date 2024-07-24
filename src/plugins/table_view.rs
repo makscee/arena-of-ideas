@@ -6,11 +6,11 @@ impl Plugin for TableViewPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<TablesData>()
             .add_systems(
-                OnEnter(GameState::TableView(QUERY_BATTLE_HISTORY)),
+                OnEnter(GameState::TableView(StdbQuery::BattleHistory)),
                 Self::on_enter_history,
             )
             .add_systems(
-                OnEnter(GameState::TableView(QUERY_BASE_UNITS)),
+                OnEnter(GameState::TableView(StdbQuery::BaseUnits)),
                 Self::on_enter_base_units,
             );
     }
@@ -29,16 +29,16 @@ impl TableViewPlugin {
     fn on_enter_base_units(mut data: ResMut<TablesData>) {
         data.base_units = TBaseUnit::iter().collect_vec();
     }
-    pub fn ui(query: &str, ctx: &egui::Context, world: &mut World) {
+    pub fn ui(query: StdbQuery, ctx: &egui::Context, world: &mut World) {
         match query {
-            QUERY_BATTLE_HISTORY => Self::draw_history(ctx, world),
-            QUERY_BASE_UNITS => Self::draw_base_units(ctx, world),
+            StdbQuery::BattleHistory => Self::draw_history(ctx, world),
+            StdbQuery::BaseUnits => Self::draw_base_units(ctx, world),
             _ => panic!("Query not supported {query}"),
         }
     }
-    pub fn ui_content(query: &str, wd: &mut WidgetData, ui: &mut Ui, world: &mut World) {
+    pub fn ui_content(query: StdbQuery, wd: &mut WidgetData, ui: &mut Ui, world: &mut World) {
         match query {
-            QUERY_BASE_UNITS | QUERY_BATTLE_HISTORY => {
+            StdbQuery::BaseUnits | StdbQuery::BattleHistory => {
                 UnitContainer::new(Faction::Team)
                     .hover_content(ShopPlugin::container_on_hover)
                     .position(egui::vec2(0.5, 0.5))

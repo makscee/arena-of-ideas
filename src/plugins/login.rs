@@ -3,6 +3,12 @@ use spacetimedb_sdk::{once_on_subscription_applied, table::TableType};
 use super::*;
 
 pub const HOME_DIR: &str = ".aoi";
+pub fn home_dir_path() -> PathBuf {
+    let mut path = home::home_dir().unwrap();
+    path.push(HOME_DIR);
+    std::fs::create_dir_all(&path).unwrap();
+    path
+}
 
 pub struct LoginPlugin;
 
@@ -37,8 +43,8 @@ impl LoginPlugin {
         });
     }
     fn complete(user: TUser, world: &mut World) {
+        StdbQuery::Game(user.id).subscribe();
         LoginOption { user }.save(world);
-        QueryPlugin::subscribe_game();
         once_on_subscription_applied(|| {
             OperationsPlugin::add(|world| {
                 GameAssets::cache_tables(world);

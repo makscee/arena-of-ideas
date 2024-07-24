@@ -15,6 +15,7 @@ mod team;
 mod user;
 
 use anyhow::Context;
+pub use arena::*;
 pub use arena_leaderboard::*;
 pub use arena_pool::*;
 pub use battle::*;

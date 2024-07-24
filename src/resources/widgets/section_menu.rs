@@ -12,9 +12,8 @@ impl Default for SectionMenu {
                 (user_name(), GameState::Profile),
                 ("SHOP", GameState::Shop),
                 ("GAME", GameState::CustomBattle),
-                ("LEADERBOARD", GameState::TableView(QUERY_LEADERBOARD)),
-                ("HISTORY", GameState::TableView(QUERY_BATTLE_HISTORY)),
-                ("GALLERY", GameState::TableView(QUERY_BASE_UNITS)),
+                ("HISTORY", GameState::TableView(StdbQuery::BattleHistory)),
+                ("GALLERY", GameState::TableView(StdbQuery::BaseUnits)),
             ],
         }
     }

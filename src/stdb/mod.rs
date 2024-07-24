@@ -48,7 +48,6 @@ pub mod shop_slot;
 pub mod stack_shop_reducer;
 pub mod stack_team_reducer;
 pub mod submit_battle_result_reducer;
-pub mod sync_all_assets_reducer;
 pub mod t_ability;
 pub mod t_arena_leaderboard;
 pub mod t_arena_pool;
@@ -63,6 +62,8 @@ pub mod t_status;
 pub mod t_team;
 pub mod t_user;
 pub mod team_slot;
+pub mod upload_assets_reducer;
+pub mod upload_game_archive_reducer;
 
 pub use arena_settings::*;
 pub use fuse_cancel_reducer::*;
@@ -92,7 +93,6 @@ pub use shop_slot::*;
 pub use stack_shop_reducer::*;
 pub use stack_team_reducer::*;
 pub use submit_battle_result_reducer::*;
-pub use sync_all_assets_reducer::*;
 pub use t_ability::*;
 pub use t_arena_leaderboard::*;
 pub use t_arena_pool::*;
@@ -107,6 +107,8 @@ pub use t_status::*;
 pub use t_team::*;
 pub use t_user::*;
 pub use team_slot::*;
+pub use upload_assets_reducer::*;
+pub use upload_game_archive_reducer::*;
 
 #[allow(unused)]
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
@@ -132,7 +134,8 @@ pub enum ReducerEvent {
     StackShop(stack_shop_reducer::StackShopArgs),
     StackTeam(stack_team_reducer::StackTeamArgs),
     SubmitBattleResult(submit_battle_result_reducer::SubmitBattleResultArgs),
-    SyncAllAssets(sync_all_assets_reducer::SyncAllAssetsArgs),
+    UploadAssets(upload_assets_reducer::UploadAssetsArgs),
+    UploadGameArchive(upload_game_archive_reducer::UploadGameArchiveArgs),
 }
 
 #[allow(unused)]
@@ -276,7 +279,8 @@ match &function_call.reducer[..] {
 			"stack_shop" => _reducer_callbacks.handle_event_of_type::<stack_shop_reducer::StackShopArgs, ReducerEvent>(event, _state, ReducerEvent::StackShop),
 			"stack_team" => _reducer_callbacks.handle_event_of_type::<stack_team_reducer::StackTeamArgs, ReducerEvent>(event, _state, ReducerEvent::StackTeam),
 			"submit_battle_result" => _reducer_callbacks.handle_event_of_type::<submit_battle_result_reducer::SubmitBattleResultArgs, ReducerEvent>(event, _state, ReducerEvent::SubmitBattleResult),
-			"sync_all_assets" => _reducer_callbacks.handle_event_of_type::<sync_all_assets_reducer::SyncAllAssetsArgs, ReducerEvent>(event, _state, ReducerEvent::SyncAllAssets),
+			"upload_assets" => _reducer_callbacks.handle_event_of_type::<upload_assets_reducer::UploadAssetsArgs, ReducerEvent>(event, _state, ReducerEvent::UploadAssets),
+			"upload_game_archive" => _reducer_callbacks.handle_event_of_type::<upload_game_archive_reducer::UploadGameArchiveArgs, ReducerEvent>(event, _state, ReducerEvent::UploadGameArchive),
 			unknown => { spacetimedb_sdk::log::error!("Event on an unknown reducer: {:?}", unknown); None }
 }
     }

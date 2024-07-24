@@ -27,7 +27,8 @@ impl ConnectPlugin {
         info!("Connect start");
         once_on_connect(|creds, _| {
             let creds = creds.clone();
-            QueryPlugin::subscribe_connect();
+            info!("Connected {:?}", creds.identity);
+            StdbQuery::Connect.subscribe();
             once_on_subscription_applied(|| {
                 OperationsPlugin::add(|world| {
                     ConnectOption { creds }.save(world);
@@ -48,7 +49,6 @@ impl ConnectPlugin {
                         return;
                     }
                 }
-                info!("Connected");
             })
             .detach();
     }

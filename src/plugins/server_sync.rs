@@ -43,8 +43,8 @@ impl ServerSyncPlugin {
         let abilities = ga.abilities.into_values().map(|a| a.into()).collect_vec();
         let statuses = ga.statuses.into_values().map(|s| s.into()).collect_vec();
         let representations = representations.into_values().collect_vec();
-        sync_all_assets(gs, representations, units, houses, abilities, statuses);
-        once_on_sync_all_assets(|_, _, status, _, _, _, _, _, _| {
+        upload_assets(gs, representations, units, houses, abilities, statuses);
+        once_on_upload_assets(|_, _, status, _, _, _, _, _, _| {
             match status {
                 spacetimedb_sdk::reducer::Status::Committed => {
                     info!("Sync successful")

@@ -36,7 +36,7 @@ fn settings() -> GlobalSettings {
 }
 
 #[spacetimedb(table)]
-struct TArenaRun {
+pub struct TArenaRun {
     #[primarykey]
     id: GID,
     #[unique]
@@ -59,7 +59,7 @@ struct TArenaRun {
 }
 
 #[spacetimedb(table)]
-struct TArenaRunArchive {
+pub struct TArenaRunArchive {
     #[primarykey]
     id: GID,
     owner: GID,
@@ -82,7 +82,7 @@ impl TArenaRunArchive {
 }
 
 #[derive(SpacetimeType, Clone, Default)]
-struct ShopSlot {
+pub struct ShopSlot {
     unit: String,
     id: GID,
     buy_price: i32,
@@ -95,14 +95,14 @@ struct ShopSlot {
 }
 
 #[derive(SpacetimeType, Clone, Default)]
-struct TeamSlot {
+pub struct TeamSlot {
     stack_targets: Vec<u8>,
     fuse_targets: Vec<u8>,
     sell_price: i32,
 }
 
 #[derive(SpacetimeType)]
-struct Fusion {
+pub struct Fusion {
     options: Vec<FusedUnit>,
     source: u8,
     target: u8,

@@ -1,8 +1,6 @@
 use super::*;
 
-#[derive(
-    Serialize, Deserialize, Clone, Copy, Eq, PartialEq, Debug, Hash, Default, States, Display,
-)]
+#[derive(Clone, Copy, Eq, PartialEq, Debug, Hash, Default, States, Display)]
 pub enum GameState {
     #[default]
     Loading,
@@ -18,8 +16,10 @@ pub enum GameState {
     TestScenariosLoad,
     TestScenariosRun,
     ServerSync,
+    GameArchiveDownload,
+    GameArchiveUpload,
     Profile,
-    TableView(&'static str),
+    TableView(StdbQuery),
     Error,
 }
 
@@ -46,26 +46,21 @@ lazy_static! {
             [GameOption::TestScenariosLoad].into(),
         );
         m.insert(
-            GameState::TableView(QUERY_LEADERBOARD),
-            [GameOption::Connect, GameOption::Table(QUERY_LEADERBOARD)].into(),
+            GameState::TableView(StdbQuery::BaseUnits),
+            [GameOption::Connect, GameOption::Table(StdbQuery::BaseUnits)].into(),
         );
         m.insert(
-            GameState::TableView(QUERY_BASE_UNITS),
+            GameState::TableView(StdbQuery::BattleHistory),
             [
                 GameOption::Connect,
-                GameOption::ForceLogin,
-                GameOption::Table(QUERY_BASE_UNITS),
+                GameOption::Table(StdbQuery::BattleHistory),
             ]
             .into(),
         );
+        m.insert(GameState::GameArchiveUpload, [GameOption::Connect].into());
         m.insert(
-            GameState::TableView(QUERY_BATTLE_HISTORY),
-            [
-                GameOption::Connect,
-                GameOption::ForceLogin,
-                GameOption::Table(QUERY_BATTLE_HISTORY),
-            ]
-            .into(),
+            GameState::GameArchiveDownload,
+            [GameOption::Connect, GameOption::Table(StdbQuery::GameFull)].into(),
         );
         m
     };

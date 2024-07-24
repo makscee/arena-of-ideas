@@ -62,6 +62,42 @@
 			"problemMatcher": [
 				"$rustc"
 			],
+			"label": "Archive Download",
+			"args": [
+				"--features",
+				"bevy/dynamic_linking",
+				"--",
+				"--mode",
+				"archive-download"
+			],
+			"group": {
+				"kind": "build"
+			},
+		},
+		{
+			"type": "cargo",
+			"command": "run",
+			"problemMatcher": [
+				"$rustc"
+			],
+			"label": "Archive Upload",
+			"args": [
+				"--features",
+				"bevy/dynamic_linking",
+				"--",
+				"--mode",
+				"archive-upload"
+			],
+			"group": {
+				"kind": "build"
+			},
+		},
+		{
+			"type": "cargo",
+			"command": "run",
+			"problemMatcher": [
+				"$rustc"
+			],
 			"label": "Test Scenarios",
 			"args": [
 				"--features",

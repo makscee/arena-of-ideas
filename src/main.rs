@@ -32,13 +32,15 @@ pub enum RunMode {
     Shop,
     Test,
     Sync,
+    ArchiveDownload,
+    ArchiveUpload,
 }
 
 pub type GID = u64;
 
 fn main() {
     let mut app = App::new();
-    let args = Args::try_parse().unwrap_or_default();
+    let args = Args::try_parse().unwrap();
     ARGS.set(args.clone()).unwrap();
     std::env::set_var("RUST_BACKTRACE", "1");
     std::env::set_var("RUST_LIB_BACKTRACE", "0");
@@ -48,6 +50,8 @@ fn main() {
         RunMode::Shop => GameState::Shop,
         RunMode::Test => GameState::TestScenariosRun,
         RunMode::Sync => GameState::ServerSync,
+        RunMode::ArchiveDownload => GameState::GameArchiveDownload,
+        RunMode::ArchiveUpload => GameState::GameArchiveUpload,
     };
     GameState::set_target(target);
     let default_plugins = DefaultPlugins.set(LogPlugin {
@@ -109,9 +113,10 @@ fn main() {
         .add_plugins((
             OperationsPlugin,
             ProfilePlugin,
-            QueryPlugin,
+            StdbQueryPlugin,
             ConnectPlugin,
             TableViewPlugin,
+            GameArchivePlugin,
         ))
         .run();
 }

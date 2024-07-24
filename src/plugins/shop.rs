@@ -227,7 +227,7 @@ impl ShopPlugin {
                     .unwrap_or_default();
                 let own_round = TArenaRun::current().round;
                 let mut btn_text = "Start Battle".to_string();
-                if own_round == champion_round - 1 {
+                if own_round + 1 == champion_round {
                     "Champion Battle".cstr_cs(YELLOW, CstrStyle::Bold).label(ui);
                 } else if own_round == champion_round {
                     "Champion Defeated"

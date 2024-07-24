@@ -8,7 +8,7 @@ pub enum GameOption {
     Login,
     ForceLogin,
     TestScenariosLoad,
-    Table(&'static str),
+    Table(StdbQuery),
 }
 
 static CURRENTLY_FULFILLING: Mutex<GameOption> = Mutex::new(GameOption::Connect);
@@ -24,7 +24,7 @@ impl GameOption {
                 world.get_resource::<LoginOption>().is_some()
             }
             GameOption::TestScenariosLoad => world.get_resource::<TestScenarios>().is_some(),
-            GameOption::Table(query) => QueryPlugin::is_subscribed(query),
+            GameOption::Table(query) => StdbQueryPlugin::is_subscribed(query),
         }
     }
     pub fn fulfill(self, world: &mut World) {
@@ -39,7 +39,7 @@ impl GameOption {
             GameOption::Login | GameOption::ForceLogin => LoginOption::fulfill(world),
             GameOption::TestScenariosLoad => GameState::TestScenariosLoad.set_next(world),
             GameOption::Table(query) => {
-                if QueryPlugin::subscribe([query.to_owned()].into()) {
+                if query.subscribe() {
                     once_on_subscription_applied(GameState::proceed_op);
                 } else {
                     GameState::proceed(world);

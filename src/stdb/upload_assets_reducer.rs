@@ -19,32 +19,32 @@ use spacetimedb_sdk::{
 };
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
-pub struct SyncAllAssetsArgs {
-    pub gs: GlobalSettings,
+pub struct UploadAssetsArgs {
+    pub global_settings: GlobalSettings,
     pub representations: Vec<TRepresentation>,
-    pub units: Vec<TBaseUnit>,
+    pub base_units: Vec<TBaseUnit>,
     pub houses: Vec<THouse>,
     pub abilities: Vec<TAbility>,
     pub statuses: Vec<TStatus>,
 }
 
-impl Reducer for SyncAllAssetsArgs {
-    const REDUCER_NAME: &'static str = "sync_all_assets";
+impl Reducer for UploadAssetsArgs {
+    const REDUCER_NAME: &'static str = "upload_assets";
 }
 
 #[allow(unused)]
-pub fn sync_all_assets(
-    gs: GlobalSettings,
+pub fn upload_assets(
+    global_settings: GlobalSettings,
     representations: Vec<TRepresentation>,
-    units: Vec<TBaseUnit>,
+    base_units: Vec<TBaseUnit>,
     houses: Vec<THouse>,
     abilities: Vec<TAbility>,
     statuses: Vec<TStatus>,
 ) {
-    SyncAllAssetsArgs {
-        gs,
+    UploadAssetsArgs {
+        global_settings,
         representations,
-        units,
+        base_units,
         houses,
         abilities,
         statuses,
@@ -53,7 +53,7 @@ pub fn sync_all_assets(
 }
 
 #[allow(unused)]
-pub fn on_sync_all_assets(
+pub fn on_upload_assets(
     mut __callback: impl FnMut(
             &Identity,
             Option<Address>,
@@ -66,12 +66,12 @@ pub fn on_sync_all_assets(
             &Vec<TStatus>,
         ) + Send
         + 'static,
-) -> ReducerCallbackId<SyncAllAssetsArgs> {
-    SyncAllAssetsArgs::on_reducer(move |__identity, __addr, __status, __args| {
-        let SyncAllAssetsArgs {
-            gs,
+) -> ReducerCallbackId<UploadAssetsArgs> {
+    UploadAssetsArgs::on_reducer(move |__identity, __addr, __status, __args| {
+        let UploadAssetsArgs {
+            global_settings,
             representations,
-            units,
+            base_units,
             houses,
             abilities,
             statuses,
@@ -80,9 +80,9 @@ pub fn on_sync_all_assets(
             __identity,
             __addr,
             __status,
-            gs,
+            global_settings,
             representations,
-            units,
+            base_units,
             houses,
             abilities,
             statuses,
@@ -91,7 +91,7 @@ pub fn on_sync_all_assets(
 }
 
 #[allow(unused)]
-pub fn once_on_sync_all_assets(
+pub fn once_on_upload_assets(
     __callback: impl FnOnce(
             &Identity,
             Option<Address>,
@@ -104,12 +104,12 @@ pub fn once_on_sync_all_assets(
             &Vec<TStatus>,
         ) + Send
         + 'static,
-) -> ReducerCallbackId<SyncAllAssetsArgs> {
-    SyncAllAssetsArgs::once_on_reducer(move |__identity, __addr, __status, __args| {
-        let SyncAllAssetsArgs {
-            gs,
+) -> ReducerCallbackId<UploadAssetsArgs> {
+    UploadAssetsArgs::once_on_reducer(move |__identity, __addr, __status, __args| {
+        let UploadAssetsArgs {
+            global_settings,
             representations,
-            units,
+            base_units,
             houses,
             abilities,
             statuses,
@@ -118,9 +118,9 @@ pub fn once_on_sync_all_assets(
             __identity,
             __addr,
             __status,
-            gs,
+            global_settings,
             representations,
-            units,
+            base_units,
             houses,
             abilities,
             statuses,
@@ -129,6 +129,6 @@ pub fn once_on_sync_all_assets(
 }
 
 #[allow(unused)]
-pub fn remove_on_sync_all_assets(id: ReducerCallbackId<SyncAllAssetsArgs>) {
-    SyncAllAssetsArgs::remove_on_reducer(id);
+pub fn remove_on_upload_assets(id: ReducerCallbackId<UploadAssetsArgs>) {
+    UploadAssetsArgs::remove_on_reducer(id);
 }

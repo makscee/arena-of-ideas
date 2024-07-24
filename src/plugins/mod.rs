@@ -1,4 +1,5 @@
 mod action;
+mod game_archive;
 mod battle;
 mod camera;
 mod connect;
@@ -18,6 +19,7 @@ mod widgets;
 
 use super::*;
 pub use action::*;
+pub use game_archive::*;
 pub use battle::*;
 pub use camera::*;
 pub use connect::*;
