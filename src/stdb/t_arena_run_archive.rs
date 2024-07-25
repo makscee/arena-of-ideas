@@ -2,6 +2,7 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN RUST INSTEAD.
 
 #![allow(unused_imports)]
+use super::game_mode::GameMode;
 use spacetimedb_sdk::{
     anyhow::{anyhow, Result},
     identity::Identity,
@@ -14,6 +15,7 @@ use spacetimedb_sdk::{
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct TArenaRunArchive {
+    pub mode: GameMode,
     pub id: u64,
     pub owner: u64,
     pub team: u64,
@@ -34,6 +36,10 @@ impl TableWithPrimaryKey for TArenaRunArchive {
 }
 
 impl TArenaRunArchive {
+    #[allow(unused)]
+    pub fn filter_by_mode(mode: GameMode) -> TableIter<Self> {
+        Self::filter(|row| row.mode == mode)
+    }
     #[allow(unused)]
     pub fn filter_by_id(id: u64) -> Option<Self> {
         Self::find(|row| row.id == id)

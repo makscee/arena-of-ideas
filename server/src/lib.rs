@@ -59,3 +59,9 @@ fn init() -> Result<(), String> {
 pub fn next_id() -> GID {
     GlobalData::next_id()
 }
+
+#[derive(SpacetimeType, Clone, PartialEq, Eq)]
+pub enum GameMode {
+    ArenaNormal,
+    ArenaDaily(String),
+}

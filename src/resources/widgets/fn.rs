@@ -26,7 +26,7 @@ pub fn text_dots_text(text1: &Cstr, text2: &Cstr, ui: &mut Ui) {
         let left = rect.left() + text1.label(ui).rect.width() + 3.0;
         let right = rect.right()
             - 3.0
-            - ui.with_layout(Layout::right_to_left(egui::Align::Min), |ui| {
+            - ui.with_layout(Layout::right_to_left(egui::Align::Center), |ui| {
                 text2.label(ui);
             })
             .response

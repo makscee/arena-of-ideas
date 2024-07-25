@@ -4,16 +4,19 @@ use super::*;
 
 #[spacetimedb(table)]
 pub struct TArenaPool {
+    pub mode: GameMode,
     #[primarykey]
     pub team: GID,
     pub round: u32,
 }
 
 impl TArenaPool {
-    pub fn add(team: GID, round: u32) {
-        TArenaPool::insert(TArenaPool { team, round }).expect("Failed to add to TArenaPool");
+    pub fn add(mode: GameMode, team: GID, round: u32) {
+        TArenaPool::insert(TArenaPool { mode, team, round }).expect("Failed to add to TArenaPool");
     }
-    pub fn get_random(round: u32) -> Option<Self> {
-        Self::filter_by_round(&round).choose(&mut thread_rng())
+    pub fn get_random(mode: &GameMode, round: u32) -> Option<Self> {
+        Self::filter_by_round(&round)
+            .filter(|d| d.mode.eq(mode))
+            .choose(&mut thread_rng())
     }
 }

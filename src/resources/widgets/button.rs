@@ -55,14 +55,22 @@ impl Button {
         self.enabled = value;
         self
     }
-    pub fn enable_ui<T: Default>(mut self, data: &mut Option<T>, ui: &mut Ui) -> Response {
+    pub fn enable_ui<T: Default>(self, data: &mut Option<T>, ui: &mut Ui) -> Response {
+        self.enable_ui_with(data, default, ui)
+    }
+    pub fn enable_ui_with<T>(
+        mut self,
+        data: &mut Option<T>,
+        init: impl FnOnce() -> T,
+        ui: &mut Ui,
+    ) -> Response {
         self = self.set_bg(data.is_some(), ui);
         let r = self.ui(ui);
         if r.clicked() {
             if data.is_some() {
                 *data = None;
             } else {
-                *data = Some(default());
+                *data = Some(init());
             }
         }
         r

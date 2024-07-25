@@ -46,18 +46,9 @@ impl ShopPlugin {
             }
             OperationsPlugin::add(|world| Self::sync_run(*run, world));
         } else {
-            run_start();
-            once_on_run_start(|_, _, status| match status {
-                spacetimedb_sdk::reducer::Status::Committed => OperationsPlugin::add(|world| {
-                    Self::sync_run(TArenaRun::current(), world);
-                }),
-                spacetimedb_sdk::reducer::Status::Failed(e) => {
-                    Notification::new(format!("Arena run start error: {e}"))
-                        .error()
-                        .push_op()
-                }
-                _ => panic!(),
-            });
+            "No active run found".notify_error();
+            GameState::Title.proceed_to_target_op();
+            return;
         }
         let cb = TArenaRun::on_update(|_, run, _| {
             let run = run.clone();
@@ -214,6 +205,15 @@ impl ShopPlugin {
                         &run.score.to_string().cstr_c(VISIBLE_BRIGHT),
                         ui,
                     );
+                    text_dots_text(
+                        &"mode".cstr(),
+                        &match run.mode {
+                            GameMode::ArenaNormal => "normal".into(),
+                            GameMode::ArenaDaily(seed) => format!("daily {seed}"),
+                        }
+                        .cstr_cs(VISIBLE_BRIGHT, CstrStyle::Small),
+                        ui,
+                    );
                 }
             });
         Tile::right("To battle")
@@ -221,11 +221,13 @@ impl ShopPlugin {
             .transparent()
             .non_resizable()
             .show(ctx, |ui| {
+                let run = TArenaRun::current();
                 let champion_round = TArenaLeaderboard::iter()
+                    .filter(|d| d.mode.eq(&run.mode))
                     .map(|d| d.round)
                     .max()
                     .unwrap_or_default();
-                let own_round = TArenaRun::current().round;
+                let own_round = run.round;
                 let mut btn_text = "Start Battle".to_string();
                 if own_round + 1 == champion_round {
                     "Champion Battle".cstr_cs(YELLOW, CstrStyle::Bold).label(ui);

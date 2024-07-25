@@ -91,3 +91,4 @@ pub trait NotificationPusher: ToString {
 }
 
 impl NotificationPusher for String {}
+impl NotificationPusher for str {}

@@ -1,4 +1,7 @@
+use chrono::{TimeZone, Utc};
 use itertools::Itertools;
+use rand_pcg::Pcg64;
+use rand_seeder::Seeder;
 use spacetimedb::Timestamp;
 
 use self::base_unit::TBaseUnit;
@@ -37,6 +40,7 @@ fn settings() -> GlobalSettings {
 
 #[spacetimedb(table)]
 pub struct TArenaRun {
+    mode: GameMode,
     #[primarykey]
     id: GID,
     #[unique]
@@ -53,6 +57,7 @@ pub struct TArenaRun {
     active: bool,
 
     round: u32,
+    rerolls: u32,
     score: u32,
 
     last_updated: Timestamp,
@@ -60,6 +65,7 @@ pub struct TArenaRun {
 
 #[spacetimedb(table)]
 pub struct TArenaRunArchive {
+    mode: GameMode,
     #[primarykey]
     id: GID,
     owner: GID,
@@ -69,12 +75,13 @@ pub struct TArenaRunArchive {
 }
 
 impl TArenaRunArchive {
-    fn add_from_run(run: &TArenaRun) {
+    fn add_from_run(run: TArenaRun) {
         Self::insert(Self {
+            mode: run.mode,
             id: run.id,
             owner: run.owner,
             team: run.team,
-            battles: run.battles.clone(),
+            battles: run.battles,
             round: run.round,
         })
         .expect("Failed to archive a run");
@@ -109,25 +116,36 @@ pub struct Fusion {
 }
 
 #[spacetimedb(reducer)]
-fn run_start(ctx: ReducerContext) -> Result<(), String> {
+fn run_start_normal(ctx: ReducerContext) -> Result<(), String> {
     let user = TUser::find_by_identity(&ctx.sender)?;
-    TArenaRun::delete_by_owner(&user.id);
-    let mut run = TArenaRun::new(user.id);
-    run.fill_case()?;
-    TArenaRun::insert(run)?;
-    Ok(())
+    TArenaRun::start(user, GameMode::ArenaNormal)
+}
+
+#[spacetimedb(reducer)]
+fn run_start_daily(ctx: ReducerContext) -> Result<(), String> {
+    let user = TUser::find_by_identity(&ctx.sender)?;
+    TArenaRun::start(user, GameMode::ArenaDaily(TArenaRun::daily_seed()))
 }
 
 #[spacetimedb(reducer)]
 fn run_finish(ctx: ReducerContext) -> Result<(), String> {
     let run = TArenaRun::current(&ctx)?;
-    if TArenaLeaderboard::filter_by_round(&run.round).count() == 0 {
+    if TArenaLeaderboard::filter_by_round(&run.round)
+        .filter(|d| d.mode.eq(&run.mode))
+        .count()
+        == 0
+    {
         TArenaLeaderboard::insert(TArenaLeaderboard::new(
-            run.round, run.score, run.owner, run.team, run.id,
+            run.mode.clone(),
+            run.round,
+            run.score,
+            run.owner,
+            run.team,
+            run.id,
         ));
     }
     TArenaRun::delete_by_id(&run.id);
-    TArenaRunArchive::add_from_run(&run);
+    TArenaRunArchive::add_from_run(run);
     Ok(())
 }
 
@@ -136,18 +154,19 @@ fn shop_finish(ctx: ReducerContext) -> Result<(), String> {
     let mut run = TArenaRun::current(&ctx)?;
     run.round += 1;
     let team = TTeam::get(run.team)?.save_clone();
-    let champion = TArenaLeaderboard::current_champion().unwrap_or_default();
-    let enemy = if run.round == champion.round {
-        champion.team
+    let champion = TArenaLeaderboard::current_champion(&run.mode);
+    let enemy = if champion.as_ref().is_some_and(|c| run.round == c.round) {
+        champion.unwrap().team
     } else {
-        TArenaPool::get_random(run.round)
+        TArenaPool::get_random(&run.mode, run.round)
             .map(|t| t.team)
             .unwrap_or_default()
     };
     run.battles.push(TBattle::new(run.owner, team.id, enemy));
     if !team.units.is_empty() {
-        TArenaPool::add(team.id, run.round);
+        TArenaPool::add(run.mode.clone(), team.id, run.round);
     }
+    run.rerolls = 0;
     run.fill_case()?;
     let ars = &settings().arena;
     run.g += (ars.g_income_min + ars.g_income_per_round * run.round as i32).max(ars.g_income_max);
@@ -169,7 +188,7 @@ fn submit_battle_result(ctx: ReducerContext, result: TBattleResult) -> Result<()
     battle.result = result;
     battle.save();
     if matches!(result, TBattleResult::Right) {
-        if TArenaLeaderboard::current_champion().is_some_and(|t| t.team == enemy) {
+        if TArenaLeaderboard::current_champion(&run.mode).is_some_and(|t| t.team == enemy) {
             run.lives = 0;
         } else {
             run.lives -= 1;
@@ -211,6 +230,7 @@ fn shop_reroll(ctx: ReducerContext) -> Result<(), String> {
         }
         run.g -= run.price_reroll;
     }
+    run.rerolls += 1;
     run.fill_case()?;
     run.save();
     Ok(())
@@ -369,7 +389,7 @@ fn stack_team(ctx: ReducerContext, source: u8, target: u8) -> Result<(), String>
 }
 
 impl TArenaRun {
-    fn new(user_id: GID) -> Self {
+    fn new(user_id: GID, mode: GameMode) -> Self {
         let ars = settings().arena;
         Self {
             id: next_id(),
@@ -379,6 +399,7 @@ impl TArenaRun {
             team_slots: Vec::new(),
             fusion: None,
             round: 0,
+            rerolls: 0,
             score: 0,
             last_updated: Timestamp::now(),
             g: ars.g_start,
@@ -387,7 +408,15 @@ impl TArenaRun {
             lives: ars.lives_initial,
             free_rerolls: ars.free_rerolls_initial,
             active: true,
+            mode,
         }
+    }
+    fn start(user: TUser, mode: GameMode) -> Result<(), String> {
+        TArenaRun::delete_by_owner(&user.id);
+        let mut run = TArenaRun::new(user.id, mode);
+        run.fill_case()?;
+        TArenaRun::insert(run)?;
+        Ok(())
     }
     fn current(ctx: &ReducerContext) -> Result<Self, String> {
         Self::filter_by_owner(&TUser::find_by_identity(&ctx.sender)?.id)
@@ -497,16 +526,35 @@ impl TArenaRun {
             .enumerate()
             .map(|(i, w)| (*w + rarities.weights_per_round[i] * round).max(0))
             .collect_vec();
+        let mut rng = self.get_rng();
         for i in 0..slots {
             let id = next_id();
             let s = &mut self.shop_slots[i];
             s.available = true;
             s.id = id;
-            let unit = TBaseUnit::get_random(&s.house_filter, &weights);
+            let unit = TBaseUnit::get_random(&s.house_filter, &weights, &mut rng);
             s.unit = unit.name.clone();
             s.buy_price = rarities.prices[unit.rarity as usize];
             s.stack_price = s.buy_price - ars.stack_discount;
         }
         Ok(())
+    }
+    fn get_seed(&self) -> String {
+        let Self {
+            id, round, rerolls, ..
+        } = self;
+        match &self.mode {
+            GameMode::ArenaNormal => format!("{id}_{round}_{rerolls}"),
+            GameMode::ArenaDaily(seed) => format!("{seed}_{round}_{rerolls}"),
+        }
+    }
+    fn get_rng(&self) -> Pcg64 {
+        Seeder::from(self.get_seed()).make_rng()
+    }
+    fn daily_seed() -> String {
+        Utc.timestamp_micros(Timestamp::now().into_micros_since_epoch() as i64)
+            .unwrap()
+            .date_naive()
+            .to_string()
     }
 }

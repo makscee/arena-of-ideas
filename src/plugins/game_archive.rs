@@ -5,7 +5,7 @@ use spacetimedb_lib::{
 
 use super::*;
 
-const ARCHIVE_FILE: &str = "game_archive.ron";
+const ARCHIVE_FILE: &str = "game_archive.json";
 pub struct GameArchivePlugin;
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -54,8 +54,8 @@ impl GameArchivePlugin {
             teams: TTeam::iter().collect_vec(),
             battles: TBattle::iter().collect_vec(),
         };
-        let data =
-            ron::to_string(&SerializeWrapper::new(ga)).expect("Failed to serialize game data");
+        let data = serde_json::to_string(&SerializeWrapper::new(ga))
+            .expect("Failed to serialize game data");
 
         match std::fs::write(Self::path(), data) {
             Ok(_) => {
@@ -83,7 +83,7 @@ impl GameArchivePlugin {
             arena_leaderboard,
             teams,
             battles,
-        } = ron::from_str::<DeserializeWrapper<GameArchive>>(data)
+        } = serde_json::from_str::<DeserializeWrapper<GameArchive>>(data)
             .expect("Failed to deserialize game data")
             .0;
         upload_game_archive(

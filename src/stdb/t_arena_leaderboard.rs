@@ -2,6 +2,7 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN RUST INSTEAD.
 
 #![allow(unused_imports)]
+use super::game_mode::GameMode;
 use spacetimedb_sdk::{
     anyhow::{anyhow, Result},
     identity::Identity,
@@ -14,6 +15,7 @@ use spacetimedb_sdk::{
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct TArenaLeaderboard {
+    pub mode: GameMode,
     pub season: u32,
     pub round: u32,
     pub score: u32,
@@ -28,6 +30,10 @@ impl TableType for TArenaLeaderboard {
 }
 
 impl TArenaLeaderboard {
+    #[allow(unused)]
+    pub fn filter_by_mode(mode: GameMode) -> TableIter<Self> {
+        Self::filter(|row| row.mode == mode)
+    }
     #[allow(unused)]
     pub fn filter_by_season(season: u32) -> TableIter<Self> {
         Self::filter(|row| row.season == season)

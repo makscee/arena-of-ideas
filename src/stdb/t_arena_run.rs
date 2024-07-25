@@ -3,6 +3,7 @@
 
 #![allow(unused_imports)]
 use super::fusion::Fusion;
+use super::game_mode::GameMode;
 use super::shop_slot::ShopSlot;
 use super::team_slot::TeamSlot;
 use spacetimedb_sdk::{
@@ -17,6 +18,7 @@ use spacetimedb_sdk::{
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct TArenaRun {
+    pub mode: GameMode,
     pub id: u64,
     pub owner: u64,
     pub team: u64,
@@ -30,6 +32,7 @@ pub struct TArenaRun {
     pub lives: u32,
     pub active: bool,
     pub round: u32,
+    pub rerolls: u32,
     pub score: u32,
     pub last_updated: u64,
 }
@@ -47,6 +50,10 @@ impl TableWithPrimaryKey for TArenaRun {
 }
 
 impl TArenaRun {
+    #[allow(unused)]
+    pub fn filter_by_mode(mode: GameMode) -> TableIter<Self> {
+        Self::filter(|row| row.mode == mode)
+    }
     #[allow(unused)]
     pub fn filter_by_id(id: u64) -> Option<Self> {
         Self::find(|row| row.id == id)
@@ -98,6 +105,10 @@ impl TArenaRun {
     #[allow(unused)]
     pub fn filter_by_round(round: u32) -> TableIter<Self> {
         Self::filter(|row| row.round == round)
+    }
+    #[allow(unused)]
+    pub fn filter_by_rerolls(rerolls: u32) -> TableIter<Self> {
+        Self::filter(|row| row.rerolls == rerolls)
     }
     #[allow(unused)]
     pub fn filter_by_score(score: u32) -> TableIter<Self> {

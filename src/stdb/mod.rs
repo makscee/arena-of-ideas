@@ -26,6 +26,7 @@ pub mod fuse_choose_reducer;
 pub mod fuse_start_reducer;
 pub mod fused_unit;
 pub mod fusion;
+pub mod game_mode;
 pub mod global_data;
 pub mod global_settings;
 pub mod login_by_identity_reducer;
@@ -35,7 +36,8 @@ pub mod rarity_settings;
 pub mod register_empty_reducer;
 pub mod register_reducer;
 pub mod run_finish_reducer;
-pub mod run_start_reducer;
+pub mod run_start_daily_reducer;
+pub mod run_start_normal_reducer;
 pub mod set_name_reducer;
 pub mod set_password_reducer;
 pub mod shop_buy_reducer;
@@ -71,6 +73,7 @@ pub use fuse_choose_reducer::*;
 pub use fuse_start_reducer::*;
 pub use fused_unit::*;
 pub use fusion::*;
+pub use game_mode::*;
 pub use global_data::*;
 pub use global_settings::*;
 pub use login_by_identity_reducer::*;
@@ -80,7 +83,8 @@ pub use rarity_settings::*;
 pub use register_empty_reducer::*;
 pub use register_reducer::*;
 pub use run_finish_reducer::*;
-pub use run_start_reducer::*;
+pub use run_start_daily_reducer::*;
+pub use run_start_normal_reducer::*;
 pub use set_name_reducer::*;
 pub use set_password_reducer::*;
 pub use shop_buy_reducer::*;
@@ -122,7 +126,8 @@ pub enum ReducerEvent {
     Register(register_reducer::RegisterArgs),
     RegisterEmpty(register_empty_reducer::RegisterEmptyArgs),
     RunFinish(run_finish_reducer::RunFinishArgs),
-    RunStart(run_start_reducer::RunStartArgs),
+    RunStartDaily(run_start_daily_reducer::RunStartDailyArgs),
+    RunStartNormal(run_start_normal_reducer::RunStartNormalArgs),
     SetName(set_name_reducer::SetNameArgs),
     SetPassword(set_password_reducer::SetPasswordArgs),
     ShopBuy(shop_buy_reducer::ShopBuyArgs),
@@ -267,7 +272,8 @@ match &function_call.reducer[..] {
 			"register" => _reducer_callbacks.handle_event_of_type::<register_reducer::RegisterArgs, ReducerEvent>(event, _state, ReducerEvent::Register),
 			"register_empty" => _reducer_callbacks.handle_event_of_type::<register_empty_reducer::RegisterEmptyArgs, ReducerEvent>(event, _state, ReducerEvent::RegisterEmpty),
 			"run_finish" => _reducer_callbacks.handle_event_of_type::<run_finish_reducer::RunFinishArgs, ReducerEvent>(event, _state, ReducerEvent::RunFinish),
-			"run_start" => _reducer_callbacks.handle_event_of_type::<run_start_reducer::RunStartArgs, ReducerEvent>(event, _state, ReducerEvent::RunStart),
+			"run_start_daily" => _reducer_callbacks.handle_event_of_type::<run_start_daily_reducer::RunStartDailyArgs, ReducerEvent>(event, _state, ReducerEvent::RunStartDaily),
+			"run_start_normal" => _reducer_callbacks.handle_event_of_type::<run_start_normal_reducer::RunStartNormalArgs, ReducerEvent>(event, _state, ReducerEvent::RunStartNormal),
 			"set_name" => _reducer_callbacks.handle_event_of_type::<set_name_reducer::SetNameArgs, ReducerEvent>(event, _state, ReducerEvent::SetName),
 			"set_password" => _reducer_callbacks.handle_event_of_type::<set_password_reducer::SetPasswordArgs, ReducerEvent>(event, _state, ReducerEvent::SetPassword),
 			"shop_buy" => _reducer_callbacks.handle_event_of_type::<shop_buy_reducer::ShopBuyArgs, ReducerEvent>(event, _state, ReducerEvent::ShopBuy),

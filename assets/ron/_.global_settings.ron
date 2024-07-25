@@ -6,7 +6,7 @@
             slots_min: 3,
             slots_max: 6,
             slots_per_round: 0.34,
-            g_start: 4,
+            g_start: 5,
             g_income_min: 3,
             g_income_max: 6,
             g_income_per_round: 1,
