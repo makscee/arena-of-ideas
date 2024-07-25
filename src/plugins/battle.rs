@@ -205,15 +205,16 @@ impl BattlePlugin {
     }
     fn fatigue(turn: usize, world: &mut World) -> Result<()> {
         let fatigue = GameAssets::get(world).global_settings.battle.fatigue_start as usize;
-        if turn < fatigue {
+        if turn <= fatigue {
             return Ok(());
         }
         let fatigue = turn - fatigue;
         info!("Fatigue {fatigue}");
+        let dmg = fatigue * fatigue;
         for unit in UnitPlugin::collect_alive(world) {
             let context = Context::new(unit)
                 .set_target(unit)
-                .set_var(VarName::Value, fatigue.into())
+                .set_var(VarName::Value, dmg.into())
                 .take();
             ActionPlugin::action_push_back(Effect::Damage, context, world);
             ActionPlugin::spin(world)?;
