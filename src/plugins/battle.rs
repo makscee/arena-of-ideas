@@ -71,6 +71,7 @@ impl BattlePlugin {
         });
     }
     pub fn run(world: &mut World) -> Result<BattleResult> {
+        ActionPlugin::reset(world);
         let bd = world.resource::<BattleData>();
         let left = bd.left.clone();
         let right = bd.right.clone();
@@ -127,7 +128,8 @@ impl BattlePlugin {
         Event::TurnEnd.send(world);
         ActionPlugin::spin(world)?;
         ActionPlugin::spin(world)?;
-        Ok(())
+        let (turn, _) = ActionPlugin::get_turn(gt().insert_head(), world);
+        Self::fatigue(turn, world)
     }
     fn before_strike(left: Entity, right: Entity, world: &mut World) -> Result<()> {
         debug!("before strike {left:?} {right:?}");
@@ -201,6 +203,24 @@ impl BattlePlugin {
             _ => Err(anyhow!("Non-unique winning faction {result:#?}")),
         }
     }
+    fn fatigue(turn: usize, world: &mut World) -> Result<()> {
+        let fatigue = GameAssets::get(world).global_settings.battle.fatigue_start as usize;
+        if turn < fatigue {
+            return Ok(());
+        }
+        let fatigue = turn - fatigue;
+        info!("Fatigue {fatigue}");
+        for unit in UnitPlugin::collect_alive(world) {
+            let context = Context::new(unit)
+                .set_target(unit)
+                .set_var(VarName::Value, fatigue.into())
+                .take();
+            ActionPlugin::action_push_back(Effect::Damage, context, world);
+            ActionPlugin::spin(world)?;
+        }
+        Ok(())
+    }
+
     pub fn show_tiles(ctx: &egui::Context, world: &mut World) {
         TopMenu::new(vec!["Playback"]).show(ctx);
         Tile::bottom("Playback")

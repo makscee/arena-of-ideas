@@ -122,7 +122,7 @@
 				"--mode",
 				"test",
 				"--path",
-				"ron/scenarios/bstrike_hit_back.scenario.ron"
+				"ron/scenarios/lose.scenario.ron"
 			],
 			"group": {
 				"kind": "build"

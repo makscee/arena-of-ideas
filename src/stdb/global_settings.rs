@@ -3,6 +3,7 @@
 
 #![allow(unused_imports)]
 use super::arena_settings::ArenaSettings;
+use super::battle_settings::BattleSettings;
 use super::rarity_settings::RaritySettings;
 use spacetimedb_sdk::{
     anyhow::{anyhow, Result},
@@ -19,6 +20,7 @@ pub struct GlobalSettings {
     pub always_zero: u32,
     pub arena: ArenaSettings,
     pub rarities: RaritySettings,
+    pub battle: BattleSettings,
 }
 
 impl TableType for GlobalSettings {
@@ -38,5 +40,9 @@ impl GlobalSettings {
     #[allow(unused)]
     pub fn filter_by_rarities(rarities: RaritySettings) -> TableIter<Self> {
         Self::filter(|row| row.rarities == rarities)
+    }
+    #[allow(unused)]
+    pub fn filter_by_battle(battle: BattleSettings) -> TableIter<Self> {
+        Self::filter(|row| row.battle == battle)
     }
 }

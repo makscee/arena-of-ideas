@@ -157,4 +157,19 @@ impl ActionPlugin {
         data.turns.push((gt().insert_head(), next));
         data.chain = 0;
     }
+    pub fn get_turn(t: f32, world: &World) -> (usize, f32) {
+        world
+            .get_resource::<ActionsData>()
+            .and_then(|d| {
+                d.turns.iter().rev().find_map(|(ts, e)| match t >= *ts {
+                    true => Some((*e, t - *ts)),
+                    false => None,
+                })
+            })
+            .unwrap_or_default()
+    }
+
+    pub fn reset(world: &mut World) {
+        *world.resource_mut::<ActionsData>() = default();
+    }
 }

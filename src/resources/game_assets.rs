@@ -74,7 +74,10 @@ impl GameAssets {
     }
     pub fn cache_tables(world: &mut World) {
         info!("Cache tables start");
-        let global_settings = GlobalSettings::iter().exactly_one().ok().unwrap();
+        let global_settings = GlobalSettings::iter()
+            .exactly_one()
+            .ok()
+            .expect("Assets not synced");
         let mut heroes: HashMap<String, PackedUnit> = default();
         for unit in TBaseUnit::iter() {
             heroes.insert(unit.name.clone(), unit.into());

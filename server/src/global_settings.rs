@@ -8,6 +8,7 @@ pub struct GlobalSettings {
     always_zero: u32,
     pub arena: ArenaSettings,
     pub rarities: RaritySettings,
+    pub battle: BattleSettings,
 }
 
 impl GlobalSettings {
@@ -18,4 +19,11 @@ impl GlobalSettings {
         GlobalSettings::delete_by_always_zero(&0);
         let _ = GlobalSettings::insert(self);
     }
+}
+
+#[derive(SpacetimeType)]
+pub struct BattleSettings {
+    pub fatigue_start: u32,
+    pub deafness_start: u32,
+    pub deafness_per_turn: f32,
 }
