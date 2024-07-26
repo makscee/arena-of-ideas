@@ -289,6 +289,7 @@ impl ShopPlugin {
             .pivot(Align2::CENTER_TOP)
             .position(egui::vec2(0.5, 0.0))
             .slots(run.shop_slots.len())
+            .hug_unit()
             .top_content(move |ui, _| {
                 let run = TArenaRun::current();
                 if run.fusion.is_some() {
@@ -372,6 +373,7 @@ impl ShopPlugin {
             .position(egui::vec2(0.5, 1.0))
             .slots(slots.max(team.units.len()))
             .max_slots(slots)
+            .hug_unit()
             .slot_content(move |slot, e, ui, world| {
                 if e.is_some() && run.fusion.is_none() {
                     if let Some((stack_source, faction)) = sd.stack_source {

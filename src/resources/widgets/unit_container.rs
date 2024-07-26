@@ -118,7 +118,7 @@ impl UnitContainer {
         let max_size = if self.hug_unit {
             CameraPlugin::pixel_unit(ui.ctx(), world) * 2.0
         } else {
-            available_rect.width() / self.slots as f32 - MARGIN.left - MARGIN.right
+            (available_rect.width() / self.slots as f32 - MARGIN.left - MARGIN.right).min(130.0)
         };
         const FRAME: Frame = Frame {
             inner_margin: MARGIN,
@@ -246,13 +246,12 @@ impl UnitContainer {
 
 fn show_frame(
     ind: usize,
-    max_size: f32,
+    size: f32,
     overflow: bool,
     name: Option<Cstr>,
     data: &mut UnitContainerData,
     ui: &mut Ui,
 ) -> Response {
-    let size = max_size.min(130.0);
     let (rect, response) = ui.allocate_exact_size(egui::vec2(size, size), Sense::drag());
     data.positions[ind] = rect.center();
     let color = if response.contains_pointer() {

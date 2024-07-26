@@ -34,6 +34,12 @@ pub struct CameraData {
 const SCALE_CHANGE_SPEED: f32 = 3.0;
 pub const SLOT_SPACING: f32 = 3.0;
 
+impl CameraData {
+    fn apply(&self, projection: &mut OrthographicProjection) {
+        projection.scaling_mode = ScalingMode::FixedHorizontal(self.cur_scale);
+    }
+}
+
 impl CameraPlugin {
     pub fn pixel_unit(ctx: &egui::Context, world: &World) -> f32 {
         let width = ctx.screen_rect().width();
@@ -52,20 +58,21 @@ impl CameraPlugin {
             None
         }
     }
-    fn respawn_camera(mut commands: Commands, data: Option<ResMut<CameraData>>) {
+    fn respawn_camera(world: &mut World) {
         let mut camera = Camera2dBundle::default();
-        camera.projection.scaling_mode = ScalingMode::FixedVertical(15.0);
-        let entity = commands.spawn(camera).id();
-        if let Some(data) = data {
-            commands.entity(data.entity).despawn_recursive();
-        }
+        let entity = world.spawn_empty().id();
         let data = CameraData {
             entity,
-            cur_scale: 100.0,
+            cur_scale: 30.0,
             slot_pixel_spacing: 150.0,
             need_scale: default(),
         };
-        commands.insert_resource(data);
+        data.apply(&mut camera.projection);
+        if let Some(data) = world.get_resource::<CameraData>() {
+            world.entity_mut(data.entity).despawn_recursive();
+        }
+        world.entity_mut(entity).insert(camera);
+        world.insert_resource(data);
     }
     fn adjust_to_fit_units(
         visible: Query<(&Transform, &InheritedVisibility)>,
@@ -92,7 +99,6 @@ impl CameraPlugin {
             (data.need_scale - data.cur_scale) * time.delta_seconds() * SCALE_CHANGE_SPEED;
         let window_width = window.single().resolution.width();
         data.slot_pixel_spacing = SLOT_SPACING / data.cur_scale * window_width;
-
-        projection.scaling_mode = ScalingMode::FixedHorizontal(data.cur_scale);
+        data.apply(&mut projection);
     }
 }
