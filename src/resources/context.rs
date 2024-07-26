@@ -235,6 +235,9 @@ impl Context {
     }
 
     pub fn log(&self, main: Option<Cstr>) {
+        if !is_dev_mode() {
+            return;
+        }
         let mut s = main.unwrap_or_default();
         for (i, layer) in self.layers.iter().enumerate() {
             s.push(layer.cstr());
@@ -242,7 +245,7 @@ impl Context {
                 s.push(" -> ".cstr());
             }
         }
-        s.info()
+        s.debug()
     }
 }
 

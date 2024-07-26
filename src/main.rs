@@ -53,6 +53,7 @@ fn main() {
         RunMode::ArchiveDownload => GameState::GameArchiveDownload,
         RunMode::ArchiveUpload => GameState::GameArchiveUpload,
     };
+    load_client_settings();
     GameState::set_target(target);
     let default_plugins = DefaultPlugins.set(LogPlugin {
         level: bevy::log::Level::DEBUG,
@@ -127,7 +128,6 @@ fn setup(world: &mut World) {
     if let Some(ctx) = egui_context(world) {
         egui_extras::install_image_loaders(&ctx);
     }
-    load_client_settings();
 }
 
 fn update(time: Res<Time>) {

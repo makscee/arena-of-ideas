@@ -37,7 +37,9 @@ pub enum Event {
 
 impl Event {
     pub fn send_with_context(self, mut context: Context, world: &mut World) -> Self {
-        debug!("{} {}", "Send event".dimmed(), self.cstr());
+        if client_settings().dev_mode {
+            debug!("{} {}", "Send event".dimmed(), self.cstr());
+        }
         context.set_event(self.clone());
         ActionPlugin::register_event(self.clone(), world);
         let units = match &self {

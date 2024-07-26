@@ -45,6 +45,9 @@ pub fn load_client_settings() {
 pub fn client_settings() -> &'static ClientSettings {
     CLIENT_SETTINGS.get().unwrap()
 }
+pub fn is_dev_mode() -> bool {
+    client_settings().dev_mode
+}
 
 impl Default for ClientSettings {
     fn default() -> Self {
