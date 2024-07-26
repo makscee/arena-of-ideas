@@ -7,9 +7,6 @@ use spacetimedb_sdk::{
 
 use super::*;
 
-const URI: &str = "http://161.35.88.206:3000";
-const MODULE: &str = "aoi_dev";
-
 pub struct ConnectPlugin;
 
 impl Plugin for ConnectPlugin {
@@ -27,7 +24,7 @@ impl ConnectPlugin {
         info!("Connect start");
         once_on_connect(|creds, _| {
             let creds = creds.clone();
-            info!("Connected {:?}", creds.identity);
+            info!("Connected {}", hex::encode(creds.identity.bytes()));
             StdbQuery::Connect.subscribe();
             once_on_subscription_applied(|| {
                 OperationsPlugin::add(|world| {
@@ -41,7 +38,12 @@ impl ConnectPlugin {
                 info!("Connect task start");
                 let creds: Option<Credentials> = Self::load_credentials();
                 let mut tries = 5;
-                while let Err(e) = connect(URI, MODULE, creds.clone()) {
+                let server = if cfg!(debug_assertions) {
+                    client_settings().dev_server.clone()
+                } else {
+                    client_settings().prod_server.clone()
+                };
+                while let Err(e) = connect(&server.0, &server.1, creds.clone()) {
                     error!("Connection error: {e}");
                     sleep(Duration::from_secs(1));
                     tries -= 1;

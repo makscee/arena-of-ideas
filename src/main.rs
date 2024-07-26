@@ -127,6 +127,7 @@ fn setup(world: &mut World) {
     if let Some(ctx) = egui_context(world) {
         egui_extras::install_image_loaders(&ctx);
     }
+    load_client_settings();
 }
 
 fn update(time: Res<Time>) {
