@@ -97,7 +97,14 @@ impl ShowTable<TArenaLeaderboard> for Vec<TArenaLeaderboard> {
                 "owner",
                 |d| d.user,
                 |gid, ui, _| Tile::add_user(gid, ui.ctx()),
-            );
+            )
+            .column_cstr("mode", |d| {
+                match &d.mode {
+                    GameMode::ArenaNormal => "normal".into(),
+                    GameMode::ArenaDaily(seed) => format!("daily {seed}"),
+                }
+                .cstr_cs(VISIBLE_DARK, CstrStyle::Small)
+            });
         t = m(t);
         t.ui(self, ui, world)
     }

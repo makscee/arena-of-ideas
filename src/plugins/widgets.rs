@@ -139,7 +139,11 @@ impl WidgetsPlugin {
                             &mut ws.arena_daily,
                             || {
                                 TArenaLeaderboard::iter()
-                                    .filter(|d| matches!(d.mode, GameMode::ArenaDaily(..)))
+                                    .filter(|d| {
+                                        d.mode.eq(&GameMode::ArenaDaily(
+                                            chrono::Utc::now().date_naive().to_string(),
+                                        ))
+                                    })
                                     .sorted_by_key(|d| -(d.round as i32))
                                     .collect_vec()
                             },
