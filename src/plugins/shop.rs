@@ -340,6 +340,19 @@ impl ShopPlugin {
                             {
                                 shop_buy(slot as u8);
                             }
+                            if ss.freeze {
+                                if Button::click("Unfreeze".into())
+                                    .set_bg(true, ui)
+                                    .ui(ui)
+                                    .clicked()
+                                {
+                                    shop_set_freeze(slot as u8, false);
+                                }
+                            } else {
+                                if Button::click("Freeze".into()).gray(ui).ui(ui).clicked() {
+                                    shop_set_freeze(slot as u8, true);
+                                }
+                            }
                             if !ss.stack_targets.is_empty() {
                                 let price = ss.stack_price;
                                 if Button::click(format!("-{} G", price))

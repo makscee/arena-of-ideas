@@ -1,3 +1,5 @@
+use std::mem;
+
 use chrono::{TimeZone, Utc};
 use itertools::Itertools;
 use rand_pcg::Pcg64;
@@ -215,6 +217,25 @@ fn shop_reorder(ctx: ReducerContext, from: u8, to: u8) -> Result<(), String> {
     let unit = team.units.remove(from);
     team.units.insert(to, unit);
     team.save();
+    run.save();
+    Ok(())
+}
+
+#[spacetimedb(reducer)]
+fn shop_set_freeze(ctx: ReducerContext, slot: u8, value: bool) -> Result<(), String> {
+    let mut run = TArenaRun::current(&ctx)?;
+    let slot = run
+        .shop_slots
+        .get_mut(slot as usize)
+        .context_str("Wrong slot index")?;
+    if slot.freeze == value {
+        if value {
+            return Err("Slot already frozen".into());
+        } else {
+            return Err("Slot already unfrozen".into());
+        }
+    }
+    slot.freeze = value;
     run.save();
     Ok(())
 }
@@ -509,7 +530,17 @@ impl TArenaRun {
         } = settings();
         let slots = (ars.slots_min + (ars.slots_per_round * self.round as f32) as u32)
             .min(ars.slots_max) as usize;
-        self.shop_slots = vec![ShopSlot::default(); slots];
+        let mut old_slots = Vec::default();
+        mem::swap(&mut self.shop_slots, &mut old_slots);
+        for i in 0..slots {
+            if let Some(slot) = old_slots.get(i) {
+                if slot.available && slot.freeze {
+                    self.shop_slots.push(slot.clone());
+                    continue;
+                }
+            }
+            self.shop_slots.push(ShopSlot::default());
+        }
         let team = self.team()?;
         if !team.units.is_empty() {
             self.shop_slots[0].house_filter = team
@@ -530,6 +561,9 @@ impl TArenaRun {
         for i in 0..slots {
             let id = next_id();
             let s = &mut self.shop_slots[i];
+            if s.freeze {
+                continue;
+            }
             s.available = true;
             s.id = id;
             let unit = TBaseUnit::get_random(&s.house_filter, &weights, &mut rng);
