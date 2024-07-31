@@ -181,14 +181,13 @@ fn shop_finish(ctx: ReducerContext) -> Result<(), String> {
 fn submit_battle_result(ctx: ReducerContext, result: TBattleResult) -> Result<(), String> {
     let mut run = TArenaRun::current(&ctx)?;
     let bid = *run.battles.last().context_str("Last battle not present")?;
-    let mut battle = TBattle::get(bid)?;
+    let battle = TBattle::get(bid)?;
     let enemy = battle.team_right;
     let is_no_enemy = enemy == 0;
-    if !matches!(battle.result, TBattleResult::Tbd) {
+    if !battle.is_tbd() {
         return Err("Result already submitted".to_owned());
     }
-    battle.result = result;
-    battle.save();
+    battle.set_result(result).save();
     if matches!(result, TBattleResult::Right) {
         if TArenaLeaderboard::current_champion(&run.mode).is_some_and(|t| t.team == enemy) {
             run.lives = 0;

@@ -20,6 +20,7 @@ pub struct TBattle {
     pub team_left: u64,
     pub team_right: u64,
     pub result: TBattleResult,
+    pub ts: u64,
 }
 
 impl TableType for TBattle {
@@ -54,5 +55,9 @@ impl TBattle {
     #[allow(unused)]
     pub fn filter_by_result(result: TBattleResult) -> TableIter<Self> {
         Self::filter(|row| row.result == result)
+    }
+    #[allow(unused)]
+    pub fn filter_by_ts(ts: u64) -> TableIter<Self> {
+        Self::filter(|row| row.ts == ts)
     }
 }

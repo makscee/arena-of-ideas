@@ -1,3 +1,5 @@
+use spacetimedb::Timestamp;
+
 use super::*;
 
 #[spacetimedb(table)]
@@ -9,6 +11,7 @@ pub struct TArenaLeaderboard {
     pub user: GID,
     pub team: GID,
     pub run: GID,
+    ts: Timestamp,
 }
 
 impl TArenaLeaderboard {
@@ -21,6 +24,7 @@ impl TArenaLeaderboard {
             user,
             team,
             run,
+            ts: Timestamp::now(),
         }
     }
     pub fn current_champion(mode: &GameMode) -> Option<Self> {

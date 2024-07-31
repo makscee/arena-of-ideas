@@ -1,3 +1,5 @@
+use spacetimedb::Timestamp;
+
 use super::*;
 
 #[spacetimedb(table)]
@@ -7,7 +9,8 @@ pub struct TBattle {
     pub owner: GID,
     pub team_left: GID,
     pub team_right: GID,
-    pub result: TBattleResult,
+    result: TBattleResult,
+    ts: Timestamp,
 }
 
 #[derive(SpacetimeType, Default, Copy, Clone)]
@@ -27,10 +30,19 @@ impl TBattle {
             owner,
             team_left,
             team_right,
+            ts: Timestamp::now(),
             result: TBattleResult::default(),
         })
         .expect("Failed to insert TBattle");
         id
+    }
+    pub fn set_result(mut self, result: TBattleResult) -> Self {
+        self.result = result;
+        self.ts = Timestamp::now();
+        self
+    }
+    pub fn is_tbd(&self) -> bool {
+        matches!(self.result, TBattleResult::Tbd)
     }
     pub fn get(id: GID) -> Result<Self, String> {
         Self::filter_by_id(&id).context_str("TBattle not found")

@@ -135,6 +135,21 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
         );
         self
     }
+    pub fn column_ts(mut self, name: &'static str, value: fn(&T) -> u64) -> Self {
+        self.columns.insert(
+            name,
+            TableColumn {
+                value: Box::new(move |d| value(d).into()),
+                show: Box::new(|_, v, ui, _| {
+                    format_timestamp(v.get_gid().unwrap())
+                        .cstr_cs(VISIBLE_DARK, CstrStyle::Small)
+                        .label(ui)
+                }),
+                sortable: true,
+            },
+        );
+        self
+    }
     pub fn column_user_click(
         mut self,
         name: &'static str,

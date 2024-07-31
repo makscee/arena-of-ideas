@@ -24,7 +24,9 @@ struct TablesData {
 
 impl TableViewPlugin {
     fn on_enter_history(mut data: ResMut<TablesData>) {
-        data.battles = TBattle::iter().collect_vec();
+        data.battles = TBattle::iter()
+            .sorted_by(|a, b| b.id.cmp(&a.id))
+            .collect_vec();
     }
     fn on_enter_base_units(mut data: ResMut<TablesData>) {
         data.base_units = TBaseUnit::iter().collect_vec();
@@ -62,6 +64,7 @@ impl TableViewPlugin {
             Table::new("Battle History")
                 .title()
                 .column_gid("id", |d: &TBattle| d.id)
+                .column_ts("time", |d| d.ts)
                 .column_user_click(
                     "owner",
                     |d| d.owner,

@@ -22,6 +22,7 @@ pub struct TArenaLeaderboard {
     pub user: u64,
     pub team: u64,
     pub run: u64,
+    pub ts: u64,
 }
 
 impl TableType for TArenaLeaderboard {
@@ -57,5 +58,9 @@ impl TArenaLeaderboard {
     #[allow(unused)]
     pub fn filter_by_run(run: u64) -> TableIter<Self> {
         Self::filter(|row| row.run == run)
+    }
+    #[allow(unused)]
+    pub fn filter_by_ts(ts: u64) -> TableIter<Self> {
+        Self::filter(|row| row.ts == ts)
     }
 }

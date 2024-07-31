@@ -90,6 +90,7 @@ impl ShowTable<TArenaLeaderboard> for Vec<TArenaLeaderboard> {
             .title()
             .column_int("round", |d: &TArenaLeaderboard| d.round as i32)
             .column_int("score", |d| d.score as i32)
+            .column_ts("time", |d| d.ts)
             .column_cstr("team", |d| {
                 d.team.get_team().cstr().style(CstrStyle::Small).take()
             })
