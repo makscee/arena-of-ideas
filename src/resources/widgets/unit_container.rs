@@ -116,7 +116,7 @@ impl UnitContainer {
         let available_rect = ui.available_rect_before_wrap();
         let pos = available_rect.min + self.position * available_rect.size();
         let max_size = if self.hug_unit {
-            CameraPlugin::pixel_unit(ui.ctx(), world) * 2.0
+            CameraPlugin::pixel_unit(ui.ctx(), world) * 2.5
         } else {
             (available_rect.width() / self.slots as f32 - MARGIN.left - MARGIN.right).min(130.0)
         };
