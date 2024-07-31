@@ -89,14 +89,20 @@ impl WidgetsPlugin {
                     &mut ws.settings,
                     ctx,
                     |_, ui| {
-                        if ui.button("setting 1").clicked() {
-                            debug!("Test click");
+                        let mut cs = client_settings().clone();
+                        let vsync = if cs.vsync { "Enabled" } else { "Disabled" }.to_owned();
+                        if Button::click(vsync)
+                            .title("Vsync".into())
+                            .set_bg(cs.vsync, ui)
+                            .ui(ui)
+                            .clicked()
+                        {
+                            cs.vsync = !cs.vsync;
                         }
-                        br(ui);
-                        if ui.button("setting 2").clicked() {
-                            debug!("Test click");
+
+                        if !cs.eq(&client_settings()) {
+                            cs.save_to_file().apply(world);
                         }
-                        br(ui);
                     },
                 );
                 Tile::right("Profile")

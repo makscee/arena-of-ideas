@@ -118,6 +118,7 @@ fn main() {
             ConnectPlugin,
             TableViewPlugin,
             GameArchivePlugin,
+            ClientSettingsPlugin,
         ))
         .run();
 }
