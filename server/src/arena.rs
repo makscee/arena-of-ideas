@@ -208,7 +208,7 @@ fn shop_reorder(ctx: ReducerContext, from: u8, to: u8) -> Result<(), String> {
     let run = TArenaRun::current(&ctx)?;
     let mut team = TTeam::get(run.team)?;
     let from = from as usize;
-    let to = to as usize;
+    let to = (to as usize).min(team.units.len() - 1);
     if team.units.len() < from {
         return Err("Wrong from index".into());
     }
