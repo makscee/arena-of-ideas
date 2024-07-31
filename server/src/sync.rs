@@ -95,6 +95,7 @@ fn upload_game_archive(
         abilities,
         statuses,
     )?;
+    GlobalData::delete_by_always_zero(&0);
     GlobalData::insert(global_data)?;
     for d in TUser::iter() {
         d.delete();

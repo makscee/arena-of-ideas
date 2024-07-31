@@ -83,10 +83,14 @@ const FRAME: Frame = Frame {
 
 pub trait NotificationPusher: ToString {
     fn notify(&self) {
-        Notification::new(self.to_string()).push_op()
+        let s = self.to_string();
+        info!("{} {}", "Notify: ".dimmed(), s);
+        Notification::new(s).push_op()
     }
     fn notify_error(&self) {
-        Notification::new(self.to_string()).error().push_op()
+        let s = self.to_string();
+        error!("{}{s}", "Notify error: ".dimmed());
+        Notification::new(s).error().push_op()
     }
 }
 

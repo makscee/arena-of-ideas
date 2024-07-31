@@ -86,6 +86,7 @@ impl GameArchivePlugin {
         } = serde_json::from_str::<DeserializeWrapper<GameArchive>>(data)
             .expect("Failed to deserialize game data")
             .0;
+        info!("Start upload...");
         upload_game_archive(
             global_settings,
             global_data,
@@ -103,7 +104,7 @@ impl GameArchivePlugin {
         );
         once_on_upload_game_archive(|_, _, status, _, _, _, _, _, _, _, _, _, _, _, _, _| {
             match status {
-                StdbStatus::Committed => {}
+                StdbStatus::Committed => info!("{}", "Upload successful".green()),
                 StdbStatus::Failed(e) => e.notify_error(),
                 _ => panic!(),
             };

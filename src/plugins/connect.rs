@@ -35,7 +35,6 @@ impl ConnectPlugin {
         });
         thread_pool
             .spawn(async {
-                info!("Connect task start");
                 let creds: Option<Credentials> = Self::load_credentials();
                 let mut tries = 5;
                 let server = if cfg!(debug_assertions) {
@@ -43,6 +42,7 @@ impl ConnectPlugin {
                 } else {
                     client_settings().prod_server.clone()
                 };
+                info!("Connect start {} {}", server.0, server.1);
                 while let Err(e) = connect(&server.0, &server.1, creds.clone()) {
                     error!("Connection error: {e}");
                     sleep(Duration::from_secs(1));

@@ -6,7 +6,7 @@ use super::*;
 #[spacetimedb(table)]
 pub struct GlobalData {
     #[unique]
-    always_zero: u32,
+    pub always_zero: u32,
     next_id: GID,
     pub game_version: String,
     pub season: u32,
