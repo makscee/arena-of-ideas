@@ -60,6 +60,7 @@ fn upload_assets(
     abilities: Vec<TAbility>,
     statuses: Vec<TStatus>,
 ) -> Result<(), String> {
+    ctx.is_admin()?;
     replace_assets(
         global_settings,
         representations,
@@ -73,8 +74,8 @@ fn upload_assets(
 #[spacetimedb(reducer)]
 fn upload_game_archive(
     ctx: ReducerContext,
-    global_settings: GlobalSettings,
-    global_data: GlobalData,
+    global_settings: Option<GlobalSettings>,
+    global_data: Option<GlobalData>,
     users: Vec<TUser>,
     base_units: Vec<TBaseUnit>,
     houses: Vec<THouse>,
@@ -87,51 +88,68 @@ fn upload_game_archive(
     teams: Vec<TTeam>,
     battles: Vec<TBattle>,
 ) -> Result<(), String> {
-    replace_assets(
-        global_settings,
-        representations,
-        base_units,
-        houses,
-        abilities,
-        statuses,
-    )?;
-    GlobalData::delete_by_always_zero(&0);
-    GlobalData::insert(global_data)?;
-    for d in TUser::iter() {
-        d.delete();
+    ctx.is_admin()?;
+    if let Some(global_settings) = global_settings {
+        replace_assets(
+            global_settings,
+            representations,
+            base_units,
+            houses,
+            abilities,
+            statuses,
+        )?;
     }
-    for d in users {
-        TUser::insert(d)?;
+    if let Some(data) = global_data {
+        GlobalData::delete_by_always_zero(&0);
+        GlobalData::insert(data)?;
     }
-    for d in TArenaRun::iter() {
-        d.delete();
+    if !users.is_empty() {
+        for d in TUser::iter() {
+            d.delete();
+        }
+        for d in users {
+            TUser::insert(d)?;
+        }
     }
-    for d in arena_runs {
-        TArenaRun::insert(d)?;
+    if !arena_runs.is_empty() {
+        for d in TArenaRun::iter() {
+            d.delete();
+        }
+        for d in arena_runs {
+            TArenaRun::insert(d)?;
+        }
     }
-    for d in TArenaRunArchive::iter() {
-        d.delete();
+    if !arena_runs_archive.is_empty() {
+        for d in TArenaRunArchive::iter() {
+            d.delete();
+        }
+        for d in arena_runs_archive {
+            TArenaRunArchive::insert(d)?;
+        }
     }
-    for d in arena_runs_archive {
-        TArenaRunArchive::insert(d)?;
+    if !arena_leaderboard.is_empty() {
+        for d in TArenaLeaderboard::iter() {
+            d.delete();
+        }
+        for d in arena_leaderboard {
+            TArenaLeaderboard::insert(d);
+        }
     }
-    for d in TArenaLeaderboard::iter() {
-        d.delete();
+    if !teams.is_empty() {
+        for d in TTeam::iter() {
+            d.delete();
+        }
+        for d in teams {
+            TTeam::insert(d)?;
+        }
     }
-    for d in arena_leaderboard {
-        TArenaLeaderboard::insert(d);
-    }
-    for d in TTeam::iter() {
-        d.delete();
-    }
-    for d in teams {
-        TTeam::insert(d)?;
-    }
-    for d in TBattle::iter() {
-        d.delete();
-    }
-    for d in battles {
-        TBattle::insert(d)?;
+    if !battles.is_empty() {
+        for d in TBattle::iter() {
+            d.delete();
+        }
+        for d in battles {
+            TBattle::insert(d)?;
+        }
     }
 
     Ok(())

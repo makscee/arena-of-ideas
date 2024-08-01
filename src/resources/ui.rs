@@ -20,6 +20,7 @@ pub const VISIBLE_BRIGHT: Color32 = hex_color_noa!("#FFFFFF");
 pub const YELLOW: Color32 = hex_color_noa!("#D98F00");
 pub const YELLOW_DARK: Color32 = hex_color_noa!("#493501");
 pub const RED: Color32 = hex_color_noa!("#DC143C");
+pub const DARK_RED: Color32 = hex_color_noa!("#9D0E2B");
 pub const GREEN: Color32 = hex_color_noa!("#64DD17");
 pub const PURPLE: Color32 = hex_color_noa!("#B50DA4");
 pub const LIGHT_PURPLE: Color32 = hex_color_noa!("#95408D");
@@ -134,15 +135,15 @@ impl UiPlugin {
             .into();
             style.animation_time = 0.1;
             style.spacing = Spacing {
-                item_spacing: egui::vec2(13.0, 6.0),
-                button_padding: egui::vec2(5.0, 6.0),
+                item_spacing: egui::vec2(8.0, 6.0),
+                button_padding: egui::vec2(3.0, 3.0),
                 ..default()
             };
             style.spacing.window_margin = Margin::same(13.0);
             style.spacing.slider_rail_height = 2.0;
-            style.visuals.striped = true;
-            style.visuals.faint_bg_color = BG_LIGHT;
+            style.visuals.striped = false;
             style.visuals.slider_trailing_fill = true;
+            style.visuals.faint_bg_color = BG_LIGHT;
             style.visuals.handle_shape = HandleShape::Rect { aspect_ratio: 0.1 };
             style.visuals.selection.bg_fill = YELLOW_DARK;
             style.visuals.resize_corner_size = 0.0;

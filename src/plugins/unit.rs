@@ -188,28 +188,31 @@ impl UnitPlugin {
     }
     pub fn name_cstr(name: &str) -> Cstr {
         let bases = name.split("+").collect_vec();
-        Self::name_from_bases(bases)
+        Self::name_from_bases(bases, 3)
     }
-    pub fn name_from_bases(bases: Vec<&str>) -> Cstr {
+    pub fn name_from_bases(bases: Vec<&str>, max_chars: usize) -> Cstr {
+        if bases.len() == 1 && max_chars != 1 {
+            let name = bases[0];
+            return name.cstr_c(name_color(name));
+        }
         let mut name = Cstr::default();
-        let part = 1.0 / bases.len() as f32;
+        let max_chars = if max_chars == 0 {
+            usize::MAX
+        } else {
+            max_chars
+        };
         for (i, n) in bases.iter().enumerate() {
             let c = name_color(n);
             let n = bases[i];
-            if i == 0 {
-                let n = n.split_at((n.len() as f32 * part).ceil() as usize).0;
-                name.push(n.cstr_c(c));
+            let n = if i == 0 {
+                n.split_at(n.len() / 2).0
             } else if i == bases.len() - 1 {
-                let n = n
-                    .split_at((n.len() as f32 * (1.0 - part)).floor() as usize)
-                    .1;
-                name.push(n.cstr_c(c));
+                n.split_at(n.len() / 2).1
             } else {
-                let part = (n.len() as f32 * (1.0 - part) * 0.5).floor() as usize;
-                let n = n.split_at(part).1;
-                let n = n.split_at(n.len() - part).0;
-                name.push(n.cstr_c(c));
-            }
+                n.split_at(n.len() / 2).1
+            };
+            let n = n.split_at(n.len().min(max_chars)).0;
+            name.push(n.cstr_c(c));
         }
         name
     }

@@ -386,14 +386,14 @@ impl ToCstr for TBaseUnit {
 }
 impl ToCstr for FusedUnit {
     fn cstr(&self) -> Cstr {
-        UnitPlugin::name_from_bases(self.bases.iter().map(|s| s.as_str()).collect())
+        self.cstr_limit(3)
     }
 }
 impl ToCstr for TTeam {
     fn cstr(&self) -> Cstr {
         self.units
             .iter()
-            .map(|u| u.cstr().push("|".cstr()).take())
+            .map(|u| u.cstr_limit(1).push(" ".cstr()).take())
             .collect_vec()
             .into()
     }
@@ -452,5 +452,11 @@ impl From<Vec<Cstr>> for Cstr {
         Self {
             subs: value.into_iter().flat_map(|v| v.subs).collect_vec(),
         }
+    }
+}
+
+impl FusedUnit {
+    pub fn cstr_limit(&self, max_chars: usize) -> Cstr {
+        UnitPlugin::name_from_bases(self.bases.iter().map(|s| s.as_str()).collect(), max_chars)
     }
 }

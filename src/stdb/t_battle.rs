@@ -2,6 +2,7 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN RUST INSTEAD.
 
 #![allow(unused_imports)]
+use super::game_mode::GameMode;
 use super::t_battle_result::TBattleResult;
 use spacetimedb_sdk::{
     anyhow::{anyhow, Result},
@@ -16,6 +17,7 @@ use spacetimedb_sdk::{
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct TBattle {
     pub id: u64,
+    pub mode: GameMode,
     pub owner: u64,
     pub team_left: u64,
     pub team_right: u64,
@@ -39,6 +41,10 @@ impl TBattle {
     #[allow(unused)]
     pub fn filter_by_id(id: u64) -> Option<Self> {
         Self::find(|row| row.id == id)
+    }
+    #[allow(unused)]
+    pub fn filter_by_mode(mode: GameMode) -> TableIter<Self> {
+        Self::filter(|row| row.mode == mode)
     }
     #[allow(unused)]
     pub fn filter_by_owner(owner: u64) -> TableIter<Self> {

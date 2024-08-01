@@ -67,7 +67,7 @@ impl ShowTable<FusedUnit> for Vec<FusedUnit> {
             "name",
             |d: &FusedUnit| d.id.into(),
             |d, _, ui, _| {
-                let r = d.cstr().button(ui);
+                let r = d.cstr_limit(0).button(ui);
                 if r.clicked() {
                     Tile::add_fused_unit(d.clone(), ui.ctx());
                 }
@@ -102,7 +102,7 @@ impl ShowTable<TArenaLeaderboard> for Vec<TArenaLeaderboard> {
             .column_cstr("mode", |d| {
                 match &d.mode {
                     GameMode::ArenaNormal => "normal".into(),
-                    GameMode::ArenaDaily(seed) => format!("daily {seed}"),
+                    GameMode::ArenaConst(seed) => format!("daily {seed}"),
                 }
                 .cstr_cs(VISIBLE_DARK, CstrStyle::Small)
             });

@@ -71,7 +71,9 @@ impl StdbQuery {
             ]
             .into(),
             StdbQuery::BaseUnits => ["select * from TBaseUnit".into()].into(),
-            StdbQuery::BattleHistory => ["select * from TBattle".into()].into(),
+            StdbQuery::BattleHistory => {
+                ["select * from TBattle".into(), "select * from TTeam".into()].into()
+            }
         }
     }
 }

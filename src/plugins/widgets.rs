@@ -53,7 +53,7 @@ impl WidgetsPlugin {
         Tile::show_all_tiles(ctx, world);
         match state {
             GameState::Title => {
-                Tile::right("Arena Normal").title().close_btn().show_data(
+                Tile::left("Arena Normal").title().close_btn().show_data(
                     &mut ws.arena_normal,
                     ctx,
                     |_, ui| {
@@ -66,7 +66,7 @@ impl WidgetsPlugin {
                         }
                     },
                 );
-                Tile::right("Arena Daily").title().close_btn().show_data(
+                Tile::left("Arena Daily").title().close_btn().show_data(
                     &mut ws.arena_daily,
                     ctx,
                     |_, ui| {
@@ -79,13 +79,13 @@ impl WidgetsPlugin {
                         }
                     },
                 );
-                Tile::left("Normal Leaderboard").show_data(&mut ws.arena_normal, ctx, |d, ui| {
+                Tile::right("Normal Leaderboard").show_data(&mut ws.arena_normal, ctx, |d, ui| {
                     d.show_table("Normal Leaderboard", ui, world);
                 });
-                Tile::left("Daily Leaderboard").show_data(&mut ws.arena_daily, ctx, |d, ui| {
+                Tile::right("Daily Leaderboard").show_data(&mut ws.arena_daily, ctx, |d, ui| {
                     d.show_table("Daily Leaderboard", ui, world);
                 });
-                Tile::right("Settings").title().close_btn().show_data(
+                Tile::left("Settings").title().close_btn().show_data(
                     &mut ws.settings,
                     ctx,
                     |_, ui| {
@@ -105,26 +105,37 @@ impl WidgetsPlugin {
                         }
                     },
                 );
-                Tile::right("Profile")
+                Tile::left("Profile")
                     .close_btn()
                     .show_data(&mut ws.profile, ctx, |d, ui| {
                         ProfilePlugin::settings_ui(d, ui, world);
                     });
 
-                Tile::right("Main Menu").title().open().show(ctx, |ui| {
+                Tile::left("Main Menu").title().open().show(ctx, |ui| {
                     format!("Welcome, {}!", LoginOption::get(world).user.name)
                         .cstr_cs(VISIBLE_LIGHT, CstrStyle::Heading2)
                         .label(ui);
                     br(ui);
                     let run = TArenaRun::get_current();
-                    if Button::click("Continue".into())
-                        .enabled(run.is_some())
-                        .ui(ui)
-                        .clicked()
-                    {
-                        GameState::Shop.proceed_to_target(world);
+                    if let Some(run) = run.as_ref() {
+                        let round = run.round;
+                        let mode = match &run.mode {
+                            GameMode::ArenaNormal => "Normal".to_owned(),
+                            GameMode::ArenaConst(seed) => format!("Const ({seed})"),
+                        };
+
+                        if Button::click("Continue".into())
+                            .title(format!("{mode} round {round}"))
+                            .ui(ui)
+                            .clicked()
+                        {
+                            GameState::Shop.proceed_to_target(world);
+                        }
+                        if Button::click("Abandon run".into()).red(ui).ui(ui).clicked() {
+                            run_finish();
+                        }
+                        br(ui);
                     }
-                    br(ui);
                     if Button::click("Arena Normal".into())
                         .enable_ui_with(
                             &mut ws.arena_normal,
@@ -140,13 +151,13 @@ impl WidgetsPlugin {
                     {
                         ws.arena_daily = None;
                     }
-                    if Button::click("Arena Daily".into())
+                    if Button::click("Arena Constant".into())
                         .enable_ui_with(
                             &mut ws.arena_daily,
                             || {
                                 TArenaLeaderboard::iter()
                                     .filter(|d| {
-                                        d.mode.eq(&GameMode::ArenaDaily(
+                                        d.mode.eq(&GameMode::ArenaConst(
                                             chrono::Utc::now().date_naive().to_string(),
                                         ))
                                     })

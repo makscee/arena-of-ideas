@@ -303,11 +303,23 @@ impl GIDExt for GID {
             };
         }
         TTeam::filter_by_id(self)
-            .with_context(|| format!("Failed to find team#{self}"))
+            .with_context(|| format!("Failed to find Team#{self}"))
             .unwrap()
     }
     fn get_user(self) -> TUser {
-        TUser::filter_by_id(self).unwrap()
+        if self == 0 {
+            return TUser {
+                id: 0,
+                name: "...".into(),
+                identities: default(),
+                pass_hash: default(),
+                online: default(),
+                last_login: default(),
+            };
+        }
+        TUser::filter_by_id(self)
+            .with_context(|| format!("Failed to find User#{self}"))
+            .unwrap()
     }
 }
 

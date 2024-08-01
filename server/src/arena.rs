@@ -126,16 +126,17 @@ fn run_start_normal(ctx: ReducerContext) -> Result<(), String> {
 #[spacetimedb(reducer)]
 fn run_start_daily(ctx: ReducerContext) -> Result<(), String> {
     let user = TUser::find_by_identity(&ctx.sender)?;
-    TArenaRun::start(user, GameMode::ArenaDaily(TArenaRun::daily_seed()))
+    TArenaRun::start(user, GameMode::ArenaConst(TArenaRun::daily_seed()))
 }
 
 #[spacetimedb(reducer)]
 fn run_finish(ctx: ReducerContext) -> Result<(), String> {
     let run = TArenaRun::current(&ctx)?;
-    if TArenaLeaderboard::filter_by_round(&run.round)
-        .filter(|d| d.mode.eq(&run.mode))
-        .count()
-        == 0
+    if run.round > 0
+        && TArenaLeaderboard::filter_by_round(&run.round)
+            .filter(|d| d.mode.eq(&run.mode))
+            .count()
+            == 0
     {
         TArenaLeaderboard::insert(TArenaLeaderboard::new(
             run.mode.clone(),
@@ -164,7 +165,8 @@ fn shop_finish(ctx: ReducerContext) -> Result<(), String> {
             .map(|t| t.team)
             .unwrap_or_default()
     };
-    run.battles.push(TBattle::new(run.owner, team.id, enemy));
+    run.battles
+        .push(TBattle::new(run.mode.clone(), run.owner, team.id, enemy));
     if !team.units.is_empty() {
         TArenaPool::add(run.mode.clone(), team.id, run.round);
     }
@@ -578,7 +580,7 @@ impl TArenaRun {
         } = self;
         match &self.mode {
             GameMode::ArenaNormal => format!("{id}_{round}_{rerolls}"),
-            GameMode::ArenaDaily(seed) => format!("{seed}_{round}_{rerolls}"),
+            GameMode::ArenaConst(seed) => format!("{seed}_{round}_{rerolls}"),
         }
     }
     fn get_rng(&self) -> Pcg64 {

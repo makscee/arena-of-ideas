@@ -8,6 +8,7 @@ pub struct UnitContainer {
     max_slots: usize,
     right_to_left: bool,
     hug_unit: bool,
+    show_name: bool,
     on_swap: Option<Box<dyn Fn(usize, usize, &mut World) + Send + Sync>>,
     top_content: Option<Box<dyn FnOnce(&mut Ui, &mut World) + Send + Sync>>,
     slot_content: Option<Box<dyn Fn(usize, Option<Entity>, &mut Ui, &mut World) + Send + Sync>>,
@@ -40,6 +41,7 @@ impl UnitContainer {
             max_slots: 5,
             right_to_left: false,
             hug_unit: false,
+            show_name: false,
             top_content: None,
             slot_content: None,
             hover_content: None,
@@ -64,6 +66,10 @@ impl UnitContainer {
     }
     pub fn hug_unit(mut self) -> Self {
         self.hug_unit = true;
+        self
+    }
+    pub fn name(mut self) -> Self {
+        self.show_name = true;
         self
     }
     pub fn position(mut self, value: egui::Vec2) -> Self {
@@ -208,7 +214,7 @@ impl UnitContainer {
             })
             .unwrap();
         let rect = resp.response.rect;
-        {
+        if self.show_name {
             let pos = rect.left_top();
             let rect = Rect::from_two_pos(pos, pos + egui::vec2(-30.0, 30.0));
             let ui = &mut ui.child_ui(rect, Layout::bottom_up(Align::Min));

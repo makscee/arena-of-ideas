@@ -27,8 +27,8 @@ use spacetimedb_sdk::{
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct UploadGameArchiveArgs {
-    pub global_settings: GlobalSettings,
-    pub global_data: GlobalData,
+    pub global_settings: Option<GlobalSettings>,
+    pub global_data: Option<GlobalData>,
     pub users: Vec<TUser>,
     pub base_units: Vec<TBaseUnit>,
     pub houses: Vec<THouse>,
@@ -48,8 +48,8 @@ impl Reducer for UploadGameArchiveArgs {
 
 #[allow(unused)]
 pub fn upload_game_archive(
-    global_settings: GlobalSettings,
-    global_data: GlobalData,
+    global_settings: Option<GlobalSettings>,
+    global_data: Option<GlobalData>,
     users: Vec<TUser>,
     base_units: Vec<TBaseUnit>,
     houses: Vec<THouse>,
@@ -86,8 +86,8 @@ pub fn on_upload_game_archive(
             &Identity,
             Option<Address>,
             &Status,
-            &GlobalSettings,
-            &GlobalData,
+            &Option<GlobalSettings>,
+            &Option<GlobalData>,
             &Vec<TUser>,
             &Vec<TBaseUnit>,
             &Vec<THouse>,
@@ -145,8 +145,8 @@ pub fn once_on_upload_game_archive(
             &Identity,
             Option<Address>,
             &Status,
-            &GlobalSettings,
-            &GlobalData,
+            &Option<GlobalSettings>,
+            &Option<GlobalData>,
             &Vec<TUser>,
             &Vec<TBaseUnit>,
             &Vec<THouse>,

@@ -6,6 +6,7 @@ use super::*;
 pub struct TBattle {
     #[primarykey]
     pub id: GID,
+    pub mode: GameMode,
     pub owner: GID,
     pub team_left: GID,
     pub team_right: GID,
@@ -23,10 +24,11 @@ pub enum TBattleResult {
 }
 
 impl TBattle {
-    pub fn new(owner: GID, team_left: GID, team_right: GID) -> GID {
+    pub fn new(mode: GameMode, owner: GID, team_left: GID, team_right: GID) -> GID {
         let id = next_id();
         TBattle::insert(TBattle {
             id,
+            mode,
             owner,
             team_left,
             team_right,

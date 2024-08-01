@@ -209,7 +209,7 @@ impl ShopPlugin {
                         &"mode".cstr(),
                         &match run.mode {
                             GameMode::ArenaNormal => "normal".into(),
-                            GameMode::ArenaDaily(seed) => format!("daily {seed}"),
+                            GameMode::ArenaConst(seed) => format!("daily {seed}"),
                         }
                         .cstr_cs(VISIBLE_BRIGHT, CstrStyle::Small),
                         ui,
@@ -290,6 +290,7 @@ impl ShopPlugin {
             .position(egui::vec2(0.5, 0.0))
             .slots(run.shop_slots.len())
             .hug_unit()
+            .name()
             .top_content(move |ui, _| {
                 let run = TArenaRun::current();
                 if run.fusion.is_some() {
@@ -387,6 +388,7 @@ impl ShopPlugin {
             .slots(slots.max(team.units.len()))
             .max_slots(slots)
             .hug_unit()
+            .name()
             .slot_content(move |slot, e, ui, world| {
                 if e.is_some() && run.fusion.is_none() {
                     if let Some((stack_source, faction)) = sd.stack_source {

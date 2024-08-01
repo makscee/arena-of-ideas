@@ -16,5 +16,5 @@ use spacetimedb_sdk::{
 pub enum GameMode {
     ArenaNormal,
 
-    ArenaDaily(String),
+    ArenaConst(String),
 }

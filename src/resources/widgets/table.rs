@@ -162,11 +162,15 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                 value: Box::new(move |d| gid(d).into()),
                 show: Box::new(move |_, v, ui, w| {
                     let gid = v.get_gid().unwrap();
-                    let r = gid.get_user().cstr().button(ui);
-                    if r.clicked() {
-                        on_click(gid, ui, w);
+                    if gid == 0 {
+                        return "...".cstr().label(ui);
+                    } else {
+                        let r = gid.get_user().cstr().button(ui);
+                        if r.clicked() {
+                            on_click(gid, ui, w);
+                        }
+                        r
                     }
-                    r
                 }),
                 sortable: true,
             },
@@ -185,9 +189,8 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
             title(self.name, ui);
         }
         TableBuilder::new(ui)
-            .striped(true)
             .columns(
-                Column::auto(),
+                Column::initial(5.0),
                 self.columns.len() + self.selectable as usize,
             )
             .cell_layout(Layout::centered_and_justified(egui::Direction::TopDown))
@@ -224,7 +227,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                 }
             })
             .body(|body| {
-                body.rows(30.0, data.len(), |mut row| {
+                body.rows(22.0, data.len(), |mut row| {
                     let mut row_i = row.index();
                     if let Some(i) = state.sorted_indices.get(row_i) {
                         row_i = *i;

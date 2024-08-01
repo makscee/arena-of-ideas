@@ -53,30 +53,44 @@ impl TableViewPlugin {
     fn draw_history(ctx: &egui::Context, world: &mut World) {
         let td = world.remove_resource::<TablesData>().unwrap();
         let show_team = |_: &TBattle, gid: VarValue, ui: &mut Ui, _: &mut World| {
-            let team = gid.get_gid().unwrap().get_team();
-            let r = team.cstr().button(ui);
-            if r.clicked() {
-                Tile::add_team(team.id, ui.ctx());
+            let gid = gid.get_gid().unwrap();
+            if gid == 0 {
+                "...".cstr().label(ui)
+            } else {
+                let team = gid.get_team();
+                let r = team.cstr().button(ui);
+                if r.clicked() {
+                    Tile::add_team(team.id, ui.ctx());
+                }
+                r
             }
-            r
         };
         Tile::left("Battle History").show(ctx, |ui| {
             Table::new("Battle History")
                 .title()
                 .column_gid("id", |d: &TBattle| d.id)
-                .column_ts("time", |d| d.ts)
+                .column_cstr("mode", |d| match &d.mode {
+                    GameMode::ArenaNormal => "norm".cstr_cs(VISIBLE_DARK, CstrStyle::Small),
+                    GameMode::ArenaConst(seed) => seed.cstr_cs(CYAN, CstrStyle::Small),
+                })
                 .column_user_click(
-                    "owner",
+                    "player",
                     |d| d.owner,
                     |gid, ui, _| Tile::add_user(gid, ui.ctx()),
                 )
-                .column("left", |d| d.team_left.into(), show_team)
-                .column("right", |d| d.team_right.into(), show_team)
+                .column("player team >", |d| d.team_left.into(), show_team)
+                .column("< enemy team", |d| d.team_right.into(), show_team)
+                .column_user_click(
+                    "enemy",
+                    |d| d.team_right.get_team().owner,
+                    |gid, ui, _| Tile::add_user(gid, ui.ctx()),
+                )
                 .column_cstr("result", |d| match d.result {
-                    TBattleResult::Tbd => "tbd".cstr(),
-                    TBattleResult::Left | TBattleResult::Even => "win".cstr_c(GREEN),
-                    TBattleResult::Right => "lose".cstr_c(RED),
+                    TBattleResult::Tbd => "-".cstr(),
+                    TBattleResult::Left | TBattleResult::Even => "W".cstr_c(GREEN),
+                    TBattleResult::Right => "L".cstr_c(RED),
                 })
+                .column_ts("time", |d| d.ts)
                 .ui(&td.battles, ui, world);
         });
         world.insert_resource(td);

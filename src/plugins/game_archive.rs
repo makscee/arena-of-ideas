@@ -54,7 +54,7 @@ impl GameArchivePlugin {
             teams: TTeam::iter().collect_vec(),
             battles: TBattle::iter().collect_vec(),
         };
-        let data = serde_json::to_string(&SerializeWrapper::new(ga))
+        let data = serde_json::to_string_pretty(&SerializeWrapper::new(ga))
             .expect("Failed to serialize game data");
 
         match std::fs::write(Self::path(), data) {
@@ -88,17 +88,17 @@ impl GameArchivePlugin {
             .0;
         info!("Start upload...");
         upload_game_archive(
-            global_settings,
-            global_data,
+            None,
+            None,
             users,
             base_units,
             houses,
             abilities,
             statuses,
             representations,
-            arena_runs,
-            arena_runs_archive,
-            arena_leaderboard,
+            default(),
+            default(),
+            default(),
             teams,
             battles,
         );
