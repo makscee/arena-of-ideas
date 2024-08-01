@@ -1,6 +1,5 @@
 use std::mem;
 
-use chrono::{TimeZone, Utc};
 use itertools::Itertools;
 use rand_pcg::Pcg64;
 use rand_seeder::Seeder;
@@ -124,9 +123,12 @@ fn run_start_normal(ctx: ReducerContext) -> Result<(), String> {
 }
 
 #[spacetimedb(reducer)]
-fn run_start_daily(ctx: ReducerContext) -> Result<(), String> {
+fn run_start_const(ctx: ReducerContext) -> Result<(), String> {
     let user = TUser::find_by_identity(&ctx.sender)?;
-    TArenaRun::start(user, GameMode::ArenaConst(TArenaRun::daily_seed()))
+    TArenaRun::start(
+        user,
+        GameMode::ArenaConst(GlobalData::get().constant_seed.clone()),
+    )
 }
 
 #[spacetimedb(reducer)]
@@ -585,11 +587,5 @@ impl TArenaRun {
     }
     fn get_rng(&self) -> Pcg64 {
         Seeder::from(self.get_seed()).make_rng()
-    }
-    fn daily_seed() -> String {
-        Utc.timestamp_micros(Timestamp::now().into_micros_since_epoch() as i64)
-            .unwrap()
-            .date_naive()
-            .to_string()
     }
 }

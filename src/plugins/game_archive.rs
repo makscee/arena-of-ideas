@@ -1,9 +1,10 @@
+#![allow(unused)]
+
+use super::*;
 use spacetimedb_lib::{
     de::{serde::DeserializeWrapper, Deserialize},
     ser::{serde::SerializeWrapper, Serialize},
 };
-
-use super::*;
 
 const ARCHIVE_FILE: &str = "game_archive.json";
 pub struct GameArchivePlugin;
@@ -31,7 +32,6 @@ impl Plugin for GameArchivePlugin {
             .add_systems(OnEnter(GameState::GameArchiveUpload), Self::upload);
     }
 }
-
 impl GameArchivePlugin {
     fn path() -> PathBuf {
         let mut path = home_dir_path();

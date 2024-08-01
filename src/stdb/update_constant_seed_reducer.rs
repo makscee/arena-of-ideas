@@ -13,38 +13,38 @@ use spacetimedb_sdk::{
 };
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
-pub struct RunStartDailyArgs {}
+pub struct UpdateConstantSeedArgs {}
 
-impl Reducer for RunStartDailyArgs {
-    const REDUCER_NAME: &'static str = "run_start_daily";
+impl Reducer for UpdateConstantSeedArgs {
+    const REDUCER_NAME: &'static str = "update_constant_seed";
 }
 
 #[allow(unused)]
-pub fn run_start_daily() {
-    RunStartDailyArgs {}.invoke();
+pub fn update_constant_seed() {
+    UpdateConstantSeedArgs {}.invoke();
 }
 
 #[allow(unused)]
-pub fn on_run_start_daily(
+pub fn on_update_constant_seed(
     mut __callback: impl FnMut(&Identity, Option<Address>, &Status) + Send + 'static,
-) -> ReducerCallbackId<RunStartDailyArgs> {
-    RunStartDailyArgs::on_reducer(move |__identity, __addr, __status, __args| {
-        let RunStartDailyArgs {} = __args;
+) -> ReducerCallbackId<UpdateConstantSeedArgs> {
+    UpdateConstantSeedArgs::on_reducer(move |__identity, __addr, __status, __args| {
+        let UpdateConstantSeedArgs {} = __args;
         __callback(__identity, __addr, __status);
     })
 }
 
 #[allow(unused)]
-pub fn once_on_run_start_daily(
+pub fn once_on_update_constant_seed(
     __callback: impl FnOnce(&Identity, Option<Address>, &Status) + Send + 'static,
-) -> ReducerCallbackId<RunStartDailyArgs> {
-    RunStartDailyArgs::once_on_reducer(move |__identity, __addr, __status, __args| {
-        let RunStartDailyArgs {} = __args;
+) -> ReducerCallbackId<UpdateConstantSeedArgs> {
+    UpdateConstantSeedArgs::once_on_reducer(move |__identity, __addr, __status, __args| {
+        let UpdateConstantSeedArgs {} = __args;
         __callback(__identity, __addr, __status);
     })
 }
 
 #[allow(unused)]
-pub fn remove_on_run_start_daily(id: ReducerCallbackId<RunStartDailyArgs>) {
-    RunStartDailyArgs::remove_on_reducer(id);
+pub fn remove_on_update_constant_seed(id: ReducerCallbackId<UpdateConstantSeedArgs>) {
+    UpdateConstantSeedArgs::remove_on_reducer(id);
 }

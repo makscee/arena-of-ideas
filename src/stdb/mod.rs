@@ -37,7 +37,7 @@ pub mod rarity_settings;
 pub mod register_empty_reducer;
 pub mod register_reducer;
 pub mod run_finish_reducer;
-pub mod run_start_daily_reducer;
+pub mod run_start_const_reducer;
 pub mod run_start_normal_reducer;
 pub mod set_name_reducer;
 pub mod set_password_reducer;
@@ -66,6 +66,7 @@ pub mod t_status;
 pub mod t_team;
 pub mod t_user;
 pub mod team_slot;
+pub mod update_constant_seed_reducer;
 pub mod upload_assets_reducer;
 pub mod upload_game_archive_reducer;
 
@@ -86,7 +87,7 @@ pub use rarity_settings::*;
 pub use register_empty_reducer::*;
 pub use register_reducer::*;
 pub use run_finish_reducer::*;
-pub use run_start_daily_reducer::*;
+pub use run_start_const_reducer::*;
 pub use run_start_normal_reducer::*;
 pub use set_name_reducer::*;
 pub use set_password_reducer::*;
@@ -115,6 +116,7 @@ pub use t_status::*;
 pub use t_team::*;
 pub use t_user::*;
 pub use team_slot::*;
+pub use update_constant_seed_reducer::*;
 pub use upload_assets_reducer::*;
 pub use upload_game_archive_reducer::*;
 
@@ -130,7 +132,7 @@ pub enum ReducerEvent {
     Register(register_reducer::RegisterArgs),
     RegisterEmpty(register_empty_reducer::RegisterEmptyArgs),
     RunFinish(run_finish_reducer::RunFinishArgs),
-    RunStartDaily(run_start_daily_reducer::RunStartDailyArgs),
+    RunStartConst(run_start_const_reducer::RunStartConstArgs),
     RunStartNormal(run_start_normal_reducer::RunStartNormalArgs),
     SetName(set_name_reducer::SetNameArgs),
     SetPassword(set_password_reducer::SetPasswordArgs),
@@ -144,6 +146,7 @@ pub enum ReducerEvent {
     StackShop(stack_shop_reducer::StackShopArgs),
     StackTeam(stack_team_reducer::StackTeamArgs),
     SubmitBattleResult(submit_battle_result_reducer::SubmitBattleResultArgs),
+    UpdateConstantSeed(update_constant_seed_reducer::UpdateConstantSeedArgs),
     UploadAssets(upload_assets_reducer::UploadAssetsArgs),
     UploadGameArchive(upload_game_archive_reducer::UploadGameArchiveArgs),
 }
@@ -277,7 +280,7 @@ match &function_call.reducer[..] {
 			"register" => _reducer_callbacks.handle_event_of_type::<register_reducer::RegisterArgs, ReducerEvent>(event, _state, ReducerEvent::Register),
 			"register_empty" => _reducer_callbacks.handle_event_of_type::<register_empty_reducer::RegisterEmptyArgs, ReducerEvent>(event, _state, ReducerEvent::RegisterEmpty),
 			"run_finish" => _reducer_callbacks.handle_event_of_type::<run_finish_reducer::RunFinishArgs, ReducerEvent>(event, _state, ReducerEvent::RunFinish),
-			"run_start_daily" => _reducer_callbacks.handle_event_of_type::<run_start_daily_reducer::RunStartDailyArgs, ReducerEvent>(event, _state, ReducerEvent::RunStartDaily),
+			"run_start_const" => _reducer_callbacks.handle_event_of_type::<run_start_const_reducer::RunStartConstArgs, ReducerEvent>(event, _state, ReducerEvent::RunStartConst),
 			"run_start_normal" => _reducer_callbacks.handle_event_of_type::<run_start_normal_reducer::RunStartNormalArgs, ReducerEvent>(event, _state, ReducerEvent::RunStartNormal),
 			"set_name" => _reducer_callbacks.handle_event_of_type::<set_name_reducer::SetNameArgs, ReducerEvent>(event, _state, ReducerEvent::SetName),
 			"set_password" => _reducer_callbacks.handle_event_of_type::<set_password_reducer::SetPasswordArgs, ReducerEvent>(event, _state, ReducerEvent::SetPassword),
@@ -291,6 +294,7 @@ match &function_call.reducer[..] {
 			"stack_shop" => _reducer_callbacks.handle_event_of_type::<stack_shop_reducer::StackShopArgs, ReducerEvent>(event, _state, ReducerEvent::StackShop),
 			"stack_team" => _reducer_callbacks.handle_event_of_type::<stack_team_reducer::StackTeamArgs, ReducerEvent>(event, _state, ReducerEvent::StackTeam),
 			"submit_battle_result" => _reducer_callbacks.handle_event_of_type::<submit_battle_result_reducer::SubmitBattleResultArgs, ReducerEvent>(event, _state, ReducerEvent::SubmitBattleResult),
+			"update_constant_seed" => _reducer_callbacks.handle_event_of_type::<update_constant_seed_reducer::UpdateConstantSeedArgs, ReducerEvent>(event, _state, ReducerEvent::UpdateConstantSeed),
 			"upload_assets" => _reducer_callbacks.handle_event_of_type::<upload_assets_reducer::UploadAssetsArgs, ReducerEvent>(event, _state, ReducerEvent::UploadAssets),
 			"upload_game_archive" => _reducer_callbacks.handle_event_of_type::<upload_game_archive_reducer::UploadGameArchiveArgs, ReducerEvent>(event, _state, ReducerEvent::UploadGameArchive),
 			unknown => { spacetimedb_sdk::log::error!("Event on an unknown reducer: {:?}", unknown); None }

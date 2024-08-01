@@ -102,7 +102,7 @@ impl ShowTable<TArenaLeaderboard> for Vec<TArenaLeaderboard> {
             .column_cstr("mode", |d| {
                 match &d.mode {
                     GameMode::ArenaNormal => "normal".into(),
-                    GameMode::ArenaConst(seed) => format!("daily {seed}"),
+                    GameMode::ArenaConst(seed) => format!("const {seed}"),
                 }
                 .cstr_cs(VISIBLE_DARK, CstrStyle::Small)
             });

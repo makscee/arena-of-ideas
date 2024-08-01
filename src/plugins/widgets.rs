@@ -14,7 +14,7 @@ impl Plugin for WidgetsPlugin {
 #[derive(Default, Resource)]
 struct WidgetsState {
     arena_normal: Option<Vec<TArenaLeaderboard>>,
-    arena_daily: Option<Vec<TArenaLeaderboard>>,
+    arena_const: Option<Vec<TArenaLeaderboard>>,
     settings: Option<()>,
     profile: Option<ProfileEditData>,
 }
@@ -66,14 +66,14 @@ impl WidgetsPlugin {
                         }
                     },
                 );
-                Tile::left("Arena Daily").title().close_btn().show_data(
-                    &mut ws.arena_daily,
+                Tile::left("Arena Const").title().close_btn().show_data(
+                    &mut ws.arena_const,
                     ctx,
                     |_, ui| {
                         br(ui);
                         if Button::click("Start new".into()).ui(ui).clicked() {
-                            run_start_daily();
-                            once_on_run_start_daily(|_, _, status| {
+                            run_start_const();
+                            once_on_run_start_const(|_, _, status| {
                                 status.on_success(|w| GameState::Shop.proceed_to_target(w))
                             });
                         }
@@ -82,8 +82,8 @@ impl WidgetsPlugin {
                 Tile::right("Normal Leaderboard").show_data(&mut ws.arena_normal, ctx, |d, ui| {
                     d.show_table("Normal Leaderboard", ui, world);
                 });
-                Tile::right("Daily Leaderboard").show_data(&mut ws.arena_daily, ctx, |d, ui| {
-                    d.show_table("Daily Leaderboard", ui, world);
+                Tile::right("Const Leaderboard").show_data(&mut ws.arena_const, ctx, |d, ui| {
+                    d.show_table("Const Leaderboard", ui, world);
                 });
                 Tile::left("Settings").title().close_btn().show_data(
                     &mut ws.settings,
@@ -92,7 +92,7 @@ impl WidgetsPlugin {
                         let mut cs = client_settings().clone();
                         let vsync = if cs.vsync { "Enabled" } else { "Disabled" }.to_owned();
                         if Button::click(vsync)
-                            .title("Vsync".into())
+                            .title("Vsync".cstr())
                             .set_bg(cs.vsync, ui)
                             .ui(ui)
                             .clicked()
@@ -119,16 +119,18 @@ impl WidgetsPlugin {
                     let run = TArenaRun::get_current();
                     if let Some(run) = run.as_ref() {
                         let round = run.round;
-                        let mode = match &run.mode {
-                            GameMode::ArenaNormal => "Normal".to_owned(),
-                            GameMode::ArenaConst(seed) => format!("Const ({seed})"),
-                        };
+                        let txt = match &run.mode {
+                            GameMode::ArenaNormal => "Normal".cstr_c(VISIBLE_DARK),
+                            GameMode::ArenaConst(seed) => {
+                                "Const ".cstr_c(VISIBLE_DARK).push(seed.cstr_c(CYAN)).take()
+                            }
+                        }
+                        .push(" round ".cstr())
+                        .push(round.to_string().cstr_c(VISIBLE_BRIGHT))
+                        .style(CstrStyle::Small)
+                        .take();
 
-                        if Button::click("Continue".into())
-                            .title(format!("{mode} round {round}"))
-                            .ui(ui)
-                            .clicked()
-                        {
+                        if Button::click("Continue".into()).title(txt).ui(ui).clicked() {
                             GameState::Shop.proceed_to_target(world);
                         }
                         if Button::click("Abandon run".into()).red(ui).ui(ui).clicked() {
@@ -149,16 +151,16 @@ impl WidgetsPlugin {
                         )
                         .clicked()
                     {
-                        ws.arena_daily = None;
+                        ws.arena_const = None;
                     }
                     if Button::click("Arena Constant".into())
                         .enable_ui_with(
-                            &mut ws.arena_daily,
+                            &mut ws.arena_const,
                             || {
                                 TArenaLeaderboard::iter()
                                     .filter(|d| {
                                         d.mode.eq(&GameMode::ArenaConst(
-                                            chrono::Utc::now().date_naive().to_string(),
+                                            GlobalData::current().constant_seed,
                                         ))
                                     })
                                     .sorted_by_key(|d| -(d.round as i32))

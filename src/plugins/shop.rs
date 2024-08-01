@@ -208,10 +208,13 @@ impl ShopPlugin {
                     text_dots_text(
                         &"mode".cstr(),
                         &match run.mode {
-                            GameMode::ArenaNormal => "normal".into(),
-                            GameMode::ArenaConst(seed) => format!("daily {seed}"),
-                        }
-                        .cstr_cs(VISIBLE_BRIGHT, CstrStyle::Small),
+                            GameMode::ArenaNormal => {
+                                "normal".cstr_cs(VISIBLE_BRIGHT, CstrStyle::Small)
+                            }
+                            GameMode::ArenaConst(seed) => {
+                                format!("const {seed}").cstr_cs(CYAN, CstrStyle::Small)
+                            }
+                        },
                         ui,
                     );
                 }
@@ -304,7 +307,7 @@ impl ShopPlugin {
                         format!("-{} G", run.price_reroll)
                     };
                     if Button::click(text)
-                        .title("Reroll".into())
+                        .title("Reroll".cstr())
                         .enabled(g >= 1)
                         .ui(ui)
                         .clicked()
@@ -334,7 +337,7 @@ impl ShopPlugin {
                             }
                         } else {
                             if Button::click(format!("-{} G", ss.buy_price))
-                                .title("buy".into())
+                                .title("buy".cstr())
                                 .enabled(g >= ss.buy_price)
                                 .ui(ui)
                                 .clicked()
@@ -357,7 +360,7 @@ impl ShopPlugin {
                             if !ss.stack_targets.is_empty() {
                                 let price = ss.stack_price;
                                 if Button::click(format!("-{} G", price))
-                                    .title("stack".into())
+                                    .title("stack".cstr())
                                     .enabled(g >= price)
                                     .ui(ui)
                                     .clicked()
@@ -421,7 +424,7 @@ impl ShopPlugin {
                     } else {
                         if let Some(ts) = run.team_slots.get(slot) {
                             if Button::click(format!("+{} G", ts.sell_price))
-                                .title("Sell".into())
+                                .title("Sell".cstr())
                                 .ui(ui)
                                 .clicked()
                             {

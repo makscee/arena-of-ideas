@@ -260,17 +260,25 @@ impl WorldExt for World {
     }
 }
 
-pub trait TableExt {
+pub trait TableSingletonExt {
     fn current() -> Self;
     fn get_current() -> Option<Box<Self>>;
 }
 
-impl TableExt for TArenaRun {
+impl TableSingletonExt for TArenaRun {
     fn current() -> Self {
         *Self::get_current().unwrap()
     }
     fn get_current() -> Option<Box<Self>> {
-        TArenaRun::iter().exactly_one().ok().map(|d| Box::new(d))
+        Self::iter().exactly_one().ok().map(|d| Box::new(d))
+    }
+}
+impl TableSingletonExt for GlobalData {
+    fn current() -> Self {
+        *Self::get_current().unwrap()
+    }
+    fn get_current() -> Option<Box<Self>> {
+        Self::iter().exactly_one().ok().map(|d| Box::new(d))
     }
 }
 

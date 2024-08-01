@@ -5,7 +5,7 @@ use super::*;
 pub struct Button {
     name: String,
     show_name: Option<Cstr>,
-    title: Option<String>,
+    title: Option<Cstr>,
     enabled: bool,
 }
 
@@ -53,7 +53,7 @@ impl Button {
             self
         }
     }
-    pub fn title(mut self, text: String) -> Self {
+    pub fn title(mut self, text: Cstr) -> Self {
         self.title = Some(text);
         self
     }
@@ -83,7 +83,7 @@ impl Button {
     }
     pub fn ui(self, ui: &mut Ui) -> Response {
         if let Some(title) = self.title {
-            title.cstr().label(ui);
+            title.label(ui);
         }
         if !self.enabled {
             let style = ui.style_mut();
