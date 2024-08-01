@@ -14,10 +14,12 @@ pub fn br(ui: &mut Ui) {
 }
 pub fn center_window(name: &str, ui: &mut Ui, add_contents: impl FnOnce(&mut Ui)) {
     Window::new(name)
-        .anchor(Align2::CENTER_CENTER, [0.0, 0.0])
+        .pivot(Align2::CENTER_CENTER)
+        .fixed_pos(ui.clip_rect().center())
+        .constrain(false)
         .title_bar(false)
         .default_width(300.0)
-        .resizable([true, false])
+        .resizable([false, false])
         .show(ui.ctx(), add_contents);
 }
 pub fn text_dots_text(text1: &Cstr, text2: &Cstr, ui: &mut Ui) {

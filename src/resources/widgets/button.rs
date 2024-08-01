@@ -31,7 +31,6 @@ impl Button {
     pub fn gray(self, ui: &mut Ui) -> Self {
         let style = ui.style_mut();
         style.visuals.widgets.inactive.fg_stroke.color = VISIBLE_DARK;
-        style.visuals.widgets.hovered.fg_stroke.color = VISIBLE_DARK;
         self
     }
     pub fn red(self, ui: &mut Ui) -> Self {

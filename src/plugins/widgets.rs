@@ -134,7 +134,13 @@ impl WidgetsPlugin {
                             GameState::Shop.proceed_to_target(world);
                         }
                         if Button::click("Abandon run".into()).red(ui).ui(ui).clicked() {
-                            run_finish();
+                            Confirmation::new(
+                                "Abandon current run?".cstr_c(VISIBLE_BRIGHT),
+                                |_| {
+                                    run_finish();
+                                },
+                            )
+                            .add(ui.ctx());
                         }
                         br(ui);
                     }
@@ -175,6 +181,11 @@ impl WidgetsPlugin {
                     br(ui);
                     Button::click("Settings".into()).enable_ui(&mut ws.settings, ui);
                     Button::click("Profile".into()).enable_ui(&mut ws.profile, ui);
+                    br(ui);
+                    if Button::click("Exit".into()).gray(ui).ui(ui).clicked() {
+                        Confirmation::new("Exit the game?".cstr_c(VISIBLE_BRIGHT), app_exit)
+                            .add(ctx);
+                    }
                 });
             }
             GameState::Battle => BattlePlugin::show_tiles(ctx, world),
@@ -205,7 +216,9 @@ impl WidgetsPlugin {
             GameState::Battle => BattlePlugin::overlay_widgets(ctx, world),
             _ => {}
         }
+
         Notification::show_all(&wd, ctx, world);
+        Confirmation::show_current(ctx, world);
         world.insert_resource(wd);
         world.insert_resource(ws);
     }
