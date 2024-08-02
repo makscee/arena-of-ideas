@@ -28,6 +28,7 @@ pub mod fuse_start_reducer;
 pub mod fused_unit;
 pub mod fusion;
 pub mod game_mode;
+pub mod give_credits_reducer;
 pub mod global_data;
 pub mod global_settings;
 pub mod login_by_identity_reducer;
@@ -39,6 +40,7 @@ pub mod register_reducer;
 pub mod run_finish_reducer;
 pub mod run_start_const_reducer;
 pub mod run_start_normal_reducer;
+pub mod run_start_ranked_reducer;
 pub mod set_name_reducer;
 pub mod set_password_reducer;
 pub mod shop_buy_reducer;
@@ -79,6 +81,7 @@ pub use fuse_start_reducer::*;
 pub use fused_unit::*;
 pub use fusion::*;
 pub use game_mode::*;
+pub use give_credits_reducer::*;
 pub use global_data::*;
 pub use global_settings::*;
 pub use login_by_identity_reducer::*;
@@ -90,6 +93,7 @@ pub use register_reducer::*;
 pub use run_finish_reducer::*;
 pub use run_start_const_reducer::*;
 pub use run_start_normal_reducer::*;
+pub use run_start_ranked_reducer::*;
 pub use set_name_reducer::*;
 pub use set_password_reducer::*;
 pub use shop_buy_reducer::*;
@@ -128,6 +132,7 @@ pub enum ReducerEvent {
     FuseCancel(fuse_cancel_reducer::FuseCancelArgs),
     FuseChoose(fuse_choose_reducer::FuseChooseArgs),
     FuseStart(fuse_start_reducer::FuseStartArgs),
+    GiveCredits(give_credits_reducer::GiveCreditsArgs),
     Login(login_reducer::LoginArgs),
     LoginByIdentity(login_by_identity_reducer::LoginByIdentityArgs),
     Logout(logout_reducer::LogoutArgs),
@@ -136,6 +141,7 @@ pub enum ReducerEvent {
     RunFinish(run_finish_reducer::RunFinishArgs),
     RunStartConst(run_start_const_reducer::RunStartConstArgs),
     RunStartNormal(run_start_normal_reducer::RunStartNormalArgs),
+    RunStartRanked(run_start_ranked_reducer::RunStartRankedArgs),
     SetName(set_name_reducer::SetNameArgs),
     SetPassword(set_password_reducer::SetPasswordArgs),
     ShopBuy(shop_buy_reducer::ShopBuyArgs),
@@ -279,6 +285,7 @@ match &function_call.reducer[..] {
 						"fuse_cancel" => _reducer_callbacks.handle_event_of_type::<fuse_cancel_reducer::FuseCancelArgs, ReducerEvent>(event, _state, ReducerEvent::FuseCancel),
 			"fuse_choose" => _reducer_callbacks.handle_event_of_type::<fuse_choose_reducer::FuseChooseArgs, ReducerEvent>(event, _state, ReducerEvent::FuseChoose),
 			"fuse_start" => _reducer_callbacks.handle_event_of_type::<fuse_start_reducer::FuseStartArgs, ReducerEvent>(event, _state, ReducerEvent::FuseStart),
+			"give_credits" => _reducer_callbacks.handle_event_of_type::<give_credits_reducer::GiveCreditsArgs, ReducerEvent>(event, _state, ReducerEvent::GiveCredits),
 			"login" => _reducer_callbacks.handle_event_of_type::<login_reducer::LoginArgs, ReducerEvent>(event, _state, ReducerEvent::Login),
 			"login_by_identity" => _reducer_callbacks.handle_event_of_type::<login_by_identity_reducer::LoginByIdentityArgs, ReducerEvent>(event, _state, ReducerEvent::LoginByIdentity),
 			"logout" => _reducer_callbacks.handle_event_of_type::<logout_reducer::LogoutArgs, ReducerEvent>(event, _state, ReducerEvent::Logout),
@@ -287,6 +294,7 @@ match &function_call.reducer[..] {
 			"run_finish" => _reducer_callbacks.handle_event_of_type::<run_finish_reducer::RunFinishArgs, ReducerEvent>(event, _state, ReducerEvent::RunFinish),
 			"run_start_const" => _reducer_callbacks.handle_event_of_type::<run_start_const_reducer::RunStartConstArgs, ReducerEvent>(event, _state, ReducerEvent::RunStartConst),
 			"run_start_normal" => _reducer_callbacks.handle_event_of_type::<run_start_normal_reducer::RunStartNormalArgs, ReducerEvent>(event, _state, ReducerEvent::RunStartNormal),
+			"run_start_ranked" => _reducer_callbacks.handle_event_of_type::<run_start_ranked_reducer::RunStartRankedArgs, ReducerEvent>(event, _state, ReducerEvent::RunStartRanked),
 			"set_name" => _reducer_callbacks.handle_event_of_type::<set_name_reducer::SetNameArgs, ReducerEvent>(event, _state, ReducerEvent::SetName),
 			"set_password" => _reducer_callbacks.handle_event_of_type::<set_password_reducer::SetPasswordArgs, ReducerEvent>(event, _state, ReducerEvent::SetPassword),
 			"shop_buy" => _reducer_callbacks.handle_event_of_type::<shop_buy_reducer::ShopBuyArgs, ReducerEvent>(event, _state, ReducerEvent::ShopBuy),

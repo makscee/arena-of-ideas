@@ -16,6 +16,9 @@ impl TWallet {
     pub fn change(owner: GID, delta: i64) -> Result<(), String> {
         let mut w = Self::get(owner)?;
         w.amount += delta;
+        if w.amount < 0 {
+            return Err("Insufficient funds".into());
+        }
         w.save();
         Ok(())
     }
@@ -25,4 +28,12 @@ impl TWallet {
     pub fn save(self) {
         Self::update_by_owner(&self.owner.clone(), self);
     }
+}
+
+#[spacetimedb(reducer)]
+fn give_credits(ctx: ReducerContext) -> Result<(), String> {
+    ctx.is_admin()?;
+    let user = TUser::find_by_identity(&ctx.sender)?;
+    TWallet::change(user.id, 10)?;
+    Ok(())
 }

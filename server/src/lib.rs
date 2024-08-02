@@ -66,6 +66,7 @@ pub fn next_id() -> GID {
 #[derive(SpacetimeType, Clone, PartialEq, Eq)]
 pub enum GameMode {
     ArenaNormal,
+    ArenaRanked,
     ArenaConst(String),
 }
 

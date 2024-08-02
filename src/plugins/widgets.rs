@@ -1,3 +1,4 @@
+use bevy::{ecs::schedule::Condition, input::common_conditions::input_just_pressed};
 use egui::Area;
 
 use super::*;
@@ -8,12 +9,25 @@ impl Plugin for WidgetsPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Update, Self::ui)
             .init_resource::<WidgetsState>();
+
+        if cfg!(debug_assertions) {
+            app.add_systems(
+                Update,
+                give_c
+                    .run_if(input_just_pressed(KeyCode::KeyG).and_then(in_state(GameState::Title))),
+            );
+        }
     }
+}
+
+fn give_c() {
+    give_credits();
 }
 
 #[derive(Default, Resource)]
 struct WidgetsState {
     arena_normal: Option<Vec<TArenaLeaderboard>>,
+    arena_ranked: Option<Vec<TArenaLeaderboard>>,
     arena_const: Option<Vec<TArenaLeaderboard>>,
     settings: Option<()>,
     profile: Option<ProfileEditData>,
@@ -64,16 +78,13 @@ impl WidgetsPlugin {
                     let run = TArenaRun::get_current();
                     if let Some(run) = run.as_ref() {
                         let round = run.round;
-                        let txt = match &run.mode {
-                            GameMode::ArenaNormal => "Normal".cstr_c(VISIBLE_DARK),
-                            GameMode::ArenaConst(seed) => {
-                                "Const ".cstr_c(VISIBLE_DARK).push(seed.cstr_c(CYAN)).take()
-                            }
-                        }
-                        .push(" round ".cstr())
-                        .push(round.to_string().cstr_c(VISIBLE_BRIGHT))
-                        .style(CstrStyle::Small)
-                        .take();
+                        let txt = run
+                            .mode
+                            .cstr()
+                            .push(" round ".cstr())
+                            .push(round.to_string().cstr_c(VISIBLE_BRIGHT))
+                            .style(CstrStyle::Small)
+                            .take();
 
                         if Button::click("Continue".into()).title(txt).ui(ui).clicked() {
                             GameState::Shop.proceed_to_target(world);
@@ -103,8 +114,27 @@ impl WidgetsPlugin {
                         .clicked()
                     {
                         ws.arena_const = None;
+                        ws.arena_ranked = None;
+                    }
+                    if Button::click("Arena Ranked".into())
+                        .color(YELLOW, ui)
+                        .enable_ui_with(
+                            &mut ws.arena_ranked,
+                            || {
+                                TArenaLeaderboard::iter()
+                                    .filter(|d| d.mode.eq(&GameMode::ArenaRanked))
+                                    .sorted_by_key(|d| -(d.round as i32))
+                                    .collect_vec()
+                            },
+                            ui,
+                        )
+                        .clicked()
+                    {
+                        ws.arena_const = None;
+                        ws.arena_normal = None;
                     }
                     if Button::click("Arena Constant".into())
+                        .color(CYAN, ui)
                         .enable_ui_with(
                             &mut ws.arena_const,
                             || {
@@ -122,6 +152,7 @@ impl WidgetsPlugin {
                         .clicked()
                     {
                         ws.arena_normal = None;
+                        ws.arena_ranked = None;
                     }
                     br(ui);
                     Button::click("Settings".into()).enable_ui(&mut ws.settings, ui);
@@ -145,6 +176,26 @@ impl WidgetsPlugin {
                         }
                     },
                 );
+                Tile::left("Arena Ranked").title().close_btn().show_data(
+                    &mut ws.arena_ranked,
+                    ctx,
+                    |_, ui| {
+                        let cost = GameAssets::get(world).global_settings.arena.ranked_cost;
+                        let can_afford = TWallet::current().amount >= cost;
+                        if Button::click(format!("-{cost} C"))
+                            .color(YELLOW, ui)
+                            .title("Start new".cstr())
+                            .enabled(can_afford)
+                            .ui(ui)
+                            .clicked()
+                        {
+                            run_start_ranked();
+                            once_on_run_start_ranked(|_, _, status| {
+                                status.on_success(|w| GameState::Shop.proceed_to_target(w))
+                            });
+                        }
+                    },
+                );
                 Tile::left("Arena Const").title().close_btn().show_data(
                     &mut ws.arena_const,
                     ctx,
@@ -159,6 +210,9 @@ impl WidgetsPlugin {
                 );
                 Tile::right("Normal Leaderboard").show_data(&mut ws.arena_normal, ctx, |d, ui| {
                     d.show_table("Normal Leaderboard", ui, world);
+                });
+                Tile::right("Ranked Leaderboard").show_data(&mut ws.arena_ranked, ctx, |d, ui| {
+                    d.show_table("Ranked Leaderboard", ui, world);
                 });
                 Tile::right("Const Leaderboard").show_data(&mut ws.arena_const, ctx, |d, ui| {
                     d.show_table("Const Leaderboard", ui, world);

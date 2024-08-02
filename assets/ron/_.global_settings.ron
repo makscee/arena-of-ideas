@@ -3,6 +3,7 @@
     settings: (
         always_zero: 0,
         arena: (
+            ranked_cost: 15,
             slots_min: 3,
             slots_max: 6,
             slots_per_round: 0.34,

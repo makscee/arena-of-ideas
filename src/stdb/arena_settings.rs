@@ -14,6 +14,7 @@ use spacetimedb_sdk::{
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct ArenaSettings {
+    pub ranked_cost: i64,
     pub slots_min: u32,
     pub slots_max: u32,
     pub slots_per_round: f32,

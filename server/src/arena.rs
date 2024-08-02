@@ -11,6 +11,8 @@ use super::*;
 
 #[derive(SpacetimeType)]
 pub struct ArenaSettings {
+    ranked_cost: i64,
+
     slots_min: u32,
     slots_max: u32,
     slots_per_round: f32,
@@ -123,6 +125,13 @@ fn run_start_normal(ctx: ReducerContext) -> Result<(), String> {
 }
 
 #[spacetimedb(reducer)]
+fn run_start_ranked(ctx: ReducerContext) -> Result<(), String> {
+    let user = TUser::find_by_identity(&ctx.sender)?;
+    TWallet::change(user.id, -settings().arena.ranked_cost)?;
+    TArenaRun::start(user, GameMode::ArenaRanked)
+}
+
+#[spacetimedb(reducer)]
 fn run_start_const(ctx: ReducerContext) -> Result<(), String> {
     let user = TUser::find_by_identity(&ctx.sender)?;
     TArenaRun::start(
@@ -133,13 +142,14 @@ fn run_start_const(ctx: ReducerContext) -> Result<(), String> {
 
 #[spacetimedb(reducer)]
 fn run_finish(ctx: ReducerContext) -> Result<(), String> {
-    let run = TArenaRun::current(&ctx)?;
+    let mut run = TArenaRun::current(&ctx)?;
     if run.round > 0
         && TArenaLeaderboard::filter_by_round(&run.round)
             .filter(|d| d.mode.eq(&run.mode))
             .count()
             == 0
     {
+        run.score += 10;
         TArenaLeaderboard::insert(TArenaLeaderboard::new(
             run.mode.clone(),
             run.round,
@@ -149,7 +159,11 @@ fn run_finish(ctx: ReducerContext) -> Result<(), String> {
             run.id,
         ));
     }
-    TWallet::change(run.owner, run.score as i64)?;
+    let mut reward = run.score as i64;
+    if GameMode::ArenaRanked.eq(&run.mode) {
+        reward *= 2;
+    }
+    TWallet::change(run.owner, reward)?;
     TArenaRun::delete_by_id(&run.id);
     TArenaRunArchive::add_from_run(run);
     Ok(())
@@ -582,7 +596,7 @@ impl TArenaRun {
             id, round, rerolls, ..
         } = self;
         match &self.mode {
-            GameMode::ArenaNormal => format!("{id}_{round}_{rerolls}"),
+            GameMode::ArenaNormal | GameMode::ArenaRanked => format!("{id}_{round}_{rerolls}"),
             GameMode::ArenaConst(seed) => format!("{seed}_{round}_{rerolls}"),
         }
     }

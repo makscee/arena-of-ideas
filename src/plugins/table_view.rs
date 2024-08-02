@@ -69,10 +69,7 @@ impl TableViewPlugin {
             Table::new("Battle History")
                 .title()
                 .column_gid("id", |d: &TBattle| d.id)
-                .column_cstr("mode", |d| match &d.mode {
-                    GameMode::ArenaNormal => "norm".cstr_cs(VISIBLE_DARK, CstrStyle::Small),
-                    GameMode::ArenaConst(seed) => seed.cstr_cs(CYAN, CstrStyle::Small),
-                })
+                .column_cstr("mode", |d| d.mode.cstr())
                 .column_user_click(
                     "player",
                     |d| d.owner,

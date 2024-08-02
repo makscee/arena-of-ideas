@@ -205,18 +205,7 @@ impl ShopPlugin {
                         &run.score.to_string().cstr_c(VISIBLE_BRIGHT),
                         ui,
                     );
-                    text_dots_text(
-                        &"mode".cstr(),
-                        &match run.mode {
-                            GameMode::ArenaNormal => {
-                                "normal".cstr_cs(VISIBLE_BRIGHT, CstrStyle::Small)
-                            }
-                            GameMode::ArenaConst(seed) => {
-                                format!("const {seed}").cstr_cs(CYAN, CstrStyle::Small)
-                            }
-                        },
-                        ui,
-                    );
+                    text_dots_text(&"mode".cstr(), &run.mode.cstr(), ui);
                 }
             });
         Tile::right("To battle")

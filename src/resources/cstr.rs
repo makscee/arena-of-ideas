@@ -407,6 +407,15 @@ impl ToCstr for TUser {
         self.name.cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold)
     }
 }
+impl ToCstr for GameMode {
+    fn cstr(&self) -> Cstr {
+        match self {
+            GameMode::ArenaNormal => "normal".cstr_cs(VISIBLE_DARK, CstrStyle::Small),
+            GameMode::ArenaRanked => "ranked".cstr_cs(YELLOW, CstrStyle::Small),
+            GameMode::ArenaConst(seed) => format!("const {seed}").cstr_cs(CYAN, CstrStyle::Small),
+        }
+    }
+}
 
 impl From<&str> for SubText {
     fn from(value: &str) -> Self {

@@ -1,4 +1,7 @@
-use spacetimedb_sdk::{once_on_subscription_applied, table::TableType};
+use spacetimedb_sdk::{
+    once_on_subscription_applied,
+    table::{TableType, TableWithPrimaryKey},
+};
 
 use super::*;
 
@@ -50,6 +53,15 @@ impl LoginPlugin {
                 GameAssets::cache_tables(world);
                 GameState::proceed(world);
             });
+        });
+        TWallet::on_update(|before, after, _| {
+            let delta = after.amount - before.amount;
+            let delta_txt = if delta > 0 {
+                format!("+{delta}")
+            } else {
+                delta.to_string()
+            };
+            Notification::new(format!("Wallet updated: {delta_txt} C")).push_op();
         });
     }
     pub fn login_ui(ui: &mut Ui, world: &mut World) {

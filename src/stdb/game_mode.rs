@@ -16,5 +16,7 @@ use spacetimedb_sdk::{
 pub enum GameMode {
     ArenaNormal,
 
+    ArenaRanked,
+
     ArenaConst(String),
 }
