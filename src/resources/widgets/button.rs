@@ -8,6 +8,7 @@ pub struct Button {
     title: Option<Cstr>,
     min_width: f32,
     enabled: bool,
+    active: bool,
 }
 
 impl Default for Button {
@@ -16,6 +17,7 @@ impl Default for Button {
             name: default(),
             title: default(),
             enabled: true,
+            active: false,
             show_name: None,
             min_width: 0.0,
         }
@@ -69,6 +71,10 @@ impl Button {
         self.enabled = value;
         self
     }
+    pub fn active(mut self, value: bool) -> Self {
+        self.active = value;
+        self
+    }
     pub fn enable_ui<T: Default>(self, data: &mut Option<T>, ui: &mut Ui) -> Response {
         self.enable_ui_with(data, default, ui)
     }
@@ -93,11 +99,16 @@ impl Button {
         if let Some(title) = self.title {
             title.label(ui);
         }
+
+        let style = ui.style_mut();
         if !self.enabled {
-            let style = ui.style_mut();
             style.visuals.widgets.noninteractive.bg_stroke.color = TRANSPARENT;
             style.visuals.widgets.noninteractive.fg_stroke.color = VISIBLE_DARK;
+        } else if self.active {
+            style.visuals.widgets.inactive.fg_stroke.color = YELLOW;
+            style.visuals.widgets.hovered.fg_stroke.color = YELLOW;
         }
+
         let r = if let Some(show) = self.show_name {
             egui::Button::new(show.widget(1.0, ui))
         } else {

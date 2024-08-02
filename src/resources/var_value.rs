@@ -2,7 +2,7 @@ use epaint::util::FloatOrd;
 
 use super::*;
 
-#[derive(Clone, Default, Serialize, Deserialize, Debug, PartialEq, AsRefStr)]
+#[derive(Clone, Default, Serialize, Deserialize, Debug, AsRefStr)]
 pub enum VarValue {
     #[default]
     None,
@@ -392,6 +392,11 @@ impl From<String> for VarValue {
         VarValue::String(value)
     }
 }
+impl From<&str> for VarValue {
+    fn from(value: &str) -> Self {
+        VarValue::String(value.to_string())
+    }
+}
 impl From<Vec2> for VarValue {
     fn from(value: Vec2) -> Self {
         VarValue::Vec2(value)
@@ -438,5 +443,27 @@ where
 {
     fn from(value: Vec<T>) -> Self {
         VarValue::List(value.into_iter().map(|v| v.into()).collect_vec())
+    }
+}
+
+impl PartialEq for VarValue {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Int(l0), Self::Int(r0)) => l0 == r0,
+            (Self::Float(l0), Self::Float(r0)) => l0 == r0,
+            (Self::Vec2(l0), Self::Vec2(r0)) => l0 == r0,
+            (Self::String(l0), Self::String(r0)) => l0 == r0,
+            (Self::Cstr(l0), Self::Cstr(r0)) => l0 == r0,
+            (Self::Bool(l0), Self::Bool(r0)) => l0 == r0,
+            (Self::Faction(l0), Self::Faction(r0)) => l0 == r0,
+            (Self::Color(l0), Self::Color(r0)) => l0 == r0,
+            (Self::Entity(l0), Self::Entity(r0)) => l0 == r0,
+            (Self::GID(l0), Self::GID(r0)) => l0 == r0,
+            (Self::List(l0), Self::List(r0)) => l0 == r0,
+            (Self::Cstr(a), Self::String(b)) | (Self::String(b), Self::Cstr(a)) => {
+                a.get_text().eq(b)
+            }
+            _ => core::mem::discriminant(self) == core::mem::discriminant(other),
+        }
     }
 }

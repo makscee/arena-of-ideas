@@ -30,14 +30,14 @@ impl Confirmation {
             });
             ui.columns(2, |ui| {
                 ui[0].vertical_centered_justified(|ui| {
-                    if Button::click("Accept".into()).ui(ui).clicked() {
-                        (self.accept)(world);
+                    if Button::click("Decline".into()).red(ui).ui(ui).clicked() {
+                        (self.decline)(world);
                         Self::clear(ui.ctx());
                     }
                 });
                 ui[1].vertical_centered_justified(|ui| {
-                    if Button::click("Decline".into()).red(ui).ui(ui).clicked() {
-                        (self.decline)(world);
+                    if Button::click("Accept".into()).ui(ui).clicked() {
+                        (self.accept)(world);
                         Self::clear(ui.ctx());
                     }
                 });

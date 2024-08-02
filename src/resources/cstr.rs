@@ -305,6 +305,10 @@ impl Cstr {
         cs
     }
 
+    pub fn get_text(&self) -> String {
+        self.subs.iter().map(|s| s.text.str()).join("")
+    }
+
     pub fn take(&mut self) -> Self {
         mem::take(self)
     }

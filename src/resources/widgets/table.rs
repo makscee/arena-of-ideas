@@ -8,12 +8,14 @@ pub struct Table<T> {
     columns: OrderedHashMap<&'static str, TableColumn<T>>,
     title: bool,
     selectable: bool,
+    filters: Vec<(&'static str, &'static str, VarValue)>,
 }
 
 #[derive(Default, Clone, Debug)]
 pub struct TableState {
+    filter: Option<usize>,
     sorting: Option<(usize, bool)>,
-    sorted_indices: Vec<usize>,
+    indices: Vec<usize>,
     pub selected_row: Option<usize>,
 }
 
@@ -37,6 +39,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
             columns: default(),
             title: default(),
             selectable: default(),
+            filters: default(),
         }
     }
     pub fn title(mut self) -> Self {
@@ -45,6 +48,10 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
     }
     pub fn selectable(mut self) -> Self {
         self.selectable = true;
+        self
+    }
+    pub fn filter(mut self, name: &'static str, column: &'static str, value: VarValue) -> Self {
+        self.filters.push((name, column, value));
         self
     }
     pub fn column(
@@ -179,14 +186,38 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
     }
     pub fn ui(&mut self, data: &Vec<T>, ui: &mut Ui, world: &mut World) -> TableState {
         let mut need_sort = false;
+        let mut need_filter = false;
         let id = Id::new("table_").with(self.name).with(ui.id());
         let mut state = ui
             .ctx()
             .data_mut(|w| w.get_temp::<TableState>(id))
             .unwrap_or_default();
+        if state.indices.is_empty() && state.filter.is_none() {
+            state.indices = (0..data.len()).collect_vec();
+        }
 
         if self.title {
             title(self.name, ui);
+        }
+        if !self.filters.is_empty() {
+            ui.horizontal(|ui| {
+                for (i, (name, _, _)) in self.filters.iter().enumerate() {
+                    let active = state.filter.is_some_and(|f| f == i);
+                    if Button::click(name.to_string())
+                        .min_width(100.0)
+                        .active(active)
+                        .ui(ui)
+                        .clicked()
+                    {
+                        need_filter = true;
+                        if active {
+                            state.filter = None;
+                        } else {
+                            state.filter = Some(i);
+                        }
+                    }
+                }
+            });
         }
         TableBuilder::new(ui)
             .columns(
@@ -227,9 +258,9 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                 }
             })
             .body(|body| {
-                body.rows(22.0, data.len(), |mut row| {
+                body.rows(22.0, state.indices.len(), |mut row| {
                     let mut row_i = row.index();
-                    if let Some(i) = state.sorted_indices.get(row_i) {
+                    if let Some(i) = state.indices.get(row_i) {
                         row_i = *i;
                     }
                     row.set_selected(state.selected_row.is_some_and(|i| i == row_i));
@@ -252,15 +283,24 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
         ui.horizontal(|ui| {
             format!("total: {}", data.len()).cstr().label(ui);
         });
+        if need_filter {
+            state.indices = (0..data.len()).collect_vec();
+            state.sorting = None;
+            if let Some(filter) = state.filter {
+                let (_, col, filter) = &self.filters[filter];
+                let col = self.columns.get(col).unwrap();
+                state.indices.retain(|v| (col.value)(&data[*v]).eq(filter));
+            }
+        }
         if need_sort {
             let Some((i, desc)) = state.sorting else {
                 panic!("No sorting data")
             };
             let value = &self.columns.values().nth(i).unwrap().value;
-            if state.sorted_indices.is_empty() {
-                state.sorted_indices = (0..data.len()).collect_vec();
+            if state.indices.is_empty() {
+                state.indices = (0..data.len()).collect_vec();
             }
-            state.sorted_indices.sort_by(|a, b| {
+            state.indices.sort_by(|a, b| {
                 let a = (value)(&data[*a]);
                 let b = (value)(&data[*b]);
                 if desc {
