@@ -9,6 +9,7 @@ pub enum GameOption {
     ForceLogin,
     TestScenariosLoad,
     Table(StdbQuery),
+    ActiveRun,
 }
 
 static CURRENTLY_FULFILLING: Mutex<GameOption> = Mutex::new(GameOption::Connect);
@@ -25,6 +26,7 @@ impl GameOption {
             }
             GameOption::TestScenariosLoad => world.get_resource::<TestScenarios>().is_some(),
             GameOption::Table(query) => StdbQueryPlugin::is_subscribed(query),
+            GameOption::ActiveRun => TArenaRun::get_current().is_some(),
         }
     }
     pub fn fulfill(self, world: &mut World) {
@@ -45,6 +47,7 @@ impl GameOption {
                     GameState::proceed(world);
                 }
             }
+            GameOption::ActiveRun => {}
         }
     }
 }

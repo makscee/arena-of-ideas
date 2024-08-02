@@ -6,6 +6,7 @@ pub struct Button {
     name: String,
     show_name: Option<Cstr>,
     title: Option<Cstr>,
+    min_width: f32,
     enabled: bool,
 }
 
@@ -16,6 +17,7 @@ impl Default for Button {
             title: default(),
             enabled: true,
             show_name: None,
+            min_width: 0.0,
         }
     }
 }
@@ -28,10 +30,13 @@ impl Button {
         self.show_name = Some(name);
         self
     }
-    pub fn gray(self, ui: &mut Ui) -> Self {
+    pub fn color(self, color: Color32, ui: &mut Ui) -> Self {
         let style = ui.style_mut();
-        style.visuals.widgets.inactive.fg_stroke.color = VISIBLE_DARK;
+        style.visuals.widgets.inactive.fg_stroke.color = color;
         self
+    }
+    pub fn gray(self, ui: &mut Ui) -> Self {
+        self.color(VISIBLE_DARK, ui)
     }
     pub fn red(self, ui: &mut Ui) -> Self {
         let style = ui.style_mut();
@@ -54,6 +59,10 @@ impl Button {
     }
     pub fn title(mut self, text: Cstr) -> Self {
         self.title = Some(text);
+        self
+    }
+    pub fn min_width(mut self, width: f32) -> Self {
+        self.min_width = width;
         self
     }
     pub fn enabled(mut self, value: bool) -> Self {
@@ -100,6 +109,7 @@ impl Button {
         } else {
             Sense::hover()
         })
+        .min_size(egui::vec2(self.min_width, 0.0))
         .ui(ui);
         ui.reset_style();
         r

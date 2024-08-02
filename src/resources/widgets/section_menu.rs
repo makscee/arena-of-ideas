@@ -1,20 +1,40 @@
 use super::*;
 
 pub struct SectionMenu {
-    buttons: Vec<(&'static str, GameState)>,
+    sections: Vec<GameSection>,
+}
+
+struct GameSection {
+    name: String,
+    target_state: GameState,
+    inner_states: Vec<GameState>,
+    options: Vec<GameOption>,
 }
 
 impl Default for SectionMenu {
     fn default() -> Self {
         Self {
-            buttons: vec![
-                ("TITLE", GameState::Title),
-                (user_name(), GameState::Profile),
-                ("SHOP", GameState::Shop),
-                ("GAME", GameState::CustomBattle),
-                ("HISTORY", GameState::TableView(StdbQuery::BattleHistory)),
-                ("GALLERY", GameState::TableView(StdbQuery::BaseUnits)),
-            ],
+            sections: [
+                GameSection {
+                    name: "TITLE".to_owned(),
+                    target_state: GameState::Title,
+                    inner_states: default(),
+                    options: default(),
+                },
+                GameSection {
+                    name: "GAME".to_owned(),
+                    target_state: GameState::Shop,
+                    inner_states: [GameState::Battle].into(),
+                    options: [GameOption::ActiveRun].into(),
+                },
+                GameSection {
+                    name: "HISTORY".to_owned(),
+                    target_state: GameState::TableView(StdbQuery::BattleHistory),
+                    inner_states: default(),
+                    options: default(),
+                },
+            ]
+            .into(),
         }
     }
 }
@@ -32,23 +52,38 @@ impl SectionMenu {
             .show(ctx, |ui| {
                 ui.horizontal(|ui| {
                     let target = GameState::get_target();
+                    let current = cur_state(world);
                     ui.visuals_mut().widgets.hovered.fg_stroke.color = VISIBLE_BRIGHT;
-                    for (name, state) in self.buttons {
-                        let enabled = state.eq(&target);
-                        ui.visuals_mut().widgets.inactive.fg_stroke.color =
-                            if enabled { YELLOW } else { VISIBLE_DARK };
-                        let resp = egui::Button::new(name)
-                            .min_size(egui::vec2(100.0, 0.0))
+                    for GameSection {
+                        name,
+                        target_state,
+                        inner_states,
+                        options,
+                    } in self.sections
+                    {
+                        let active = target.eq(&target_state) || inner_states.contains(&current);
+                        let enabled = active || options.iter().all(|o| o.is_fulfilled(world));
+                        let color = if active {
+                            YELLOW
+                        } else if enabled {
+                            VISIBLE_LIGHT
+                        } else {
+                            VISIBLE_DARK
+                        };
+                        let resp = Button::click(name)
+                            .enabled(enabled)
+                            .color(color, ui)
+                            .min_width(100.0)
                             .ui(ui);
                         if resp.clicked() {
-                            state.proceed_to_target(world);
+                            target_state.proceed_to_target(world);
                         }
                         ui.painter().line_segment(
                             [
                                 resp.rect.right_top() + egui::vec2(5.0, -2.0),
                                 resp.rect.right_bottom() + egui::vec2(5.0, 2.0),
                             ],
-                            ui.visuals().widgets.inactive.fg_stroke,
+                            Stroke { width: 1.0, color },
                         );
                     }
                 });
