@@ -28,6 +28,7 @@ fn register_empty(ctx: ReducerContext) -> Result<(), String> {
         last_login: Timestamp::UNIX_EPOCH,
     };
     TUser::insert(user)?;
+    TWallet::new(id)?;
     Ok(())
 }
 

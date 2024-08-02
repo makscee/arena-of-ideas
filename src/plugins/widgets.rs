@@ -53,69 +53,14 @@ impl WidgetsPlugin {
         Tile::show_all_tiles(ctx, world);
         match state {
             GameState::Title => {
-                Tile::left("Arena Normal").title().close_btn().show_data(
-                    &mut ws.arena_normal,
-                    ctx,
-                    |_, ui| {
-                        br(ui);
-                        if Button::click("Start new".into()).ui(ui).clicked() {
-                            run_start_normal();
-                            once_on_run_start_normal(|_, _, status| {
-                                status.on_success(|w| GameState::Shop.proceed_to_target(w))
-                            });
-                        }
-                    },
-                );
-                Tile::left("Arena Const").title().close_btn().show_data(
-                    &mut ws.arena_const,
-                    ctx,
-                    |_, ui| {
-                        br(ui);
-                        if Button::click("Start new".into()).ui(ui).clicked() {
-                            run_start_const();
-                            once_on_run_start_const(|_, _, status| {
-                                status.on_success(|w| GameState::Shop.proceed_to_target(w))
-                            });
-                        }
-                    },
-                );
-                Tile::right("Normal Leaderboard").show_data(&mut ws.arena_normal, ctx, |d, ui| {
-                    d.show_table("Normal Leaderboard", ui, world);
-                });
-                Tile::right("Const Leaderboard").show_data(&mut ws.arena_const, ctx, |d, ui| {
-                    d.show_table("Const Leaderboard", ui, world);
-                });
-                Tile::left("Settings").title().close_btn().show_data(
-                    &mut ws.settings,
-                    ctx,
-                    |_, ui| {
-                        let mut cs = client_settings().clone();
-                        let vsync = if cs.vsync { "Enabled" } else { "Disabled" }.to_owned();
-                        if Button::click(vsync)
-                            .title("Vsync".cstr())
-                            .set_bg(cs.vsync, ui)
-                            .ui(ui)
-                            .clicked()
-                        {
-                            cs.vsync = !cs.vsync;
-                        }
-
-                        if !cs.eq(&client_settings()) {
-                            cs.save_to_file().apply(world);
-                        }
-                    },
-                );
-                Tile::left("Profile")
-                    .close_btn()
-                    .show_data(&mut ws.profile, ctx, |d, ui| {
-                        ProfilePlugin::settings_ui(d, ui, world);
-                    });
-
                 Tile::left("Main Menu").title().open().show(ctx, |ui| {
-                    format!("Welcome, {}!", LoginOption::get(world).user.name)
-                        .cstr_cs(VISIBLE_LIGHT, CstrStyle::Heading2)
-                        .label(ui);
-                    br(ui);
+                    text_dots_text(&"name".cstr(), &user_name().cstr_c(VISIBLE_LIGHT), ui);
+                    text_dots_text(
+                        &"credits".cstr(),
+                        &TWallet::current().amount.to_string().cstr_c(VISIBLE_LIGHT),
+                        ui,
+                    );
+                    space(ui);
                     let run = TArenaRun::get_current();
                     if let Some(run) = run.as_ref() {
                         let round = run.round;
@@ -187,6 +132,62 @@ impl WidgetsPlugin {
                             .add(ctx);
                     }
                 });
+
+                Tile::left("Arena Normal").title().close_btn().show_data(
+                    &mut ws.arena_normal,
+                    ctx,
+                    |_, ui| {
+                        if Button::click("Start new".into()).ui(ui).clicked() {
+                            run_start_normal();
+                            once_on_run_start_normal(|_, _, status| {
+                                status.on_success(|w| GameState::Shop.proceed_to_target(w))
+                            });
+                        }
+                    },
+                );
+                Tile::left("Arena Const").title().close_btn().show_data(
+                    &mut ws.arena_const,
+                    ctx,
+                    |_, ui| {
+                        if Button::click("Start new".into()).ui(ui).clicked() {
+                            run_start_const();
+                            once_on_run_start_const(|_, _, status| {
+                                status.on_success(|w| GameState::Shop.proceed_to_target(w))
+                            });
+                        }
+                    },
+                );
+                Tile::right("Normal Leaderboard").show_data(&mut ws.arena_normal, ctx, |d, ui| {
+                    d.show_table("Normal Leaderboard", ui, world);
+                });
+                Tile::right("Const Leaderboard").show_data(&mut ws.arena_const, ctx, |d, ui| {
+                    d.show_table("Const Leaderboard", ui, world);
+                });
+                Tile::left("Settings").title().close_btn().show_data(
+                    &mut ws.settings,
+                    ctx,
+                    |_, ui| {
+                        let mut cs = client_settings().clone();
+                        let vsync = if cs.vsync { "Enabled" } else { "Disabled" }.to_owned();
+                        if Button::click(vsync)
+                            .title("Vsync".cstr())
+                            .set_bg(cs.vsync, ui)
+                            .ui(ui)
+                            .clicked()
+                        {
+                            cs.vsync = !cs.vsync;
+                        }
+
+                        if !cs.eq(&client_settings()) {
+                            cs.save_to_file().apply(world);
+                        }
+                    },
+                );
+                Tile::left("Profile")
+                    .close_btn()
+                    .show_data(&mut ws.profile, ctx, |d, ui| {
+                        ProfilePlugin::settings_ui(d, ui, world);
+                    });
             }
             GameState::Battle => BattlePlugin::show_tiles(ctx, world),
             GameState::TableView(query) => TableViewPlugin::ui(query, ctx, world),

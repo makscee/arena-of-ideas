@@ -65,6 +65,7 @@ pub mod t_representation;
 pub mod t_status;
 pub mod t_team;
 pub mod t_user;
+pub mod t_wallet;
 pub mod team_slot;
 pub mod update_constant_seed_reducer;
 pub mod upload_assets_reducer;
@@ -115,6 +116,7 @@ pub use t_representation::*;
 pub use t_status::*;
 pub use t_team::*;
 pub use t_user::*;
+pub use t_wallet::*;
 pub use team_slot::*;
 pub use update_constant_seed_reducer::*;
 pub use upload_assets_reducer::*;
@@ -216,6 +218,8 @@ impl SpacetimeModule for Module {
                 .handle_table_update_with_primary_key::<t_team::TTeam>(callbacks, table_update),
             "TUser" => client_cache
                 .handle_table_update_with_primary_key::<t_user::TUser>(callbacks, table_update),
+            "TWallet" => client_cache
+                .handle_table_update_with_primary_key::<t_wallet::TWallet>(callbacks, table_update),
             _ => {
                 spacetimedb_sdk::log::error!("TableRowOperation on unknown table {:?}", table_name)
             }
@@ -258,6 +262,7 @@ impl SpacetimeModule for Module {
         reminders.invoke_callbacks::<t_status::TStatus>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_team::TTeam>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_user::TUser>(worker, &reducer_event, state);
+        reminders.invoke_callbacks::<t_wallet::TWallet>(worker, &reducer_event, state);
     }
     fn handle_event(
         &self,
@@ -349,6 +354,9 @@ match &function_call.reducer[..] {
             }
             "TUser" => {
                 client_cache.handle_resubscribe_for_type::<t_user::TUser>(callbacks, new_subs)
+            }
+            "TWallet" => {
+                client_cache.handle_resubscribe_for_type::<t_wallet::TWallet>(callbacks, new_subs)
             }
             _ => {
                 spacetimedb_sdk::log::error!("TableRowOperation on unknown table {:?}", table_name)

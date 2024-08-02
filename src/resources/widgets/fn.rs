@@ -6,11 +6,14 @@ pub fn br(ui: &mut Ui) {
         let line = egui::Shape::dotted_line(
             &[rect.left_center(), rect.right_center()],
             VISIBLE_DARK,
-            8.0,
+            20.0,
             1.0,
         );
         ui.painter().add(line);
     });
+}
+pub fn space(ui: &mut Ui) {
+    ui.add_space(8.0);
 }
 pub fn center_window(name: &str, ui: &mut Ui, add_contents: impl FnOnce(&mut Ui)) {
     Window::new(name)
@@ -38,7 +41,7 @@ pub fn text_dots_text(text1: &Cstr, text2: &Cstr, ui: &mut Ui) {
         let line = egui::Shape::dotted_line(
             &[[left, bottom].into(), [right, bottom].into()],
             VISIBLE_LIGHT,
-            8.0,
+            12.0,
             0.5,
         );
         ui.painter().add(line);

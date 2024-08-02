@@ -1,6 +1,5 @@
 use super::*;
 
-#[derive(Default)]
 pub struct Tile {
     name: &'static str,
     id: Option<Id>,
@@ -10,6 +9,23 @@ pub struct Tile {
     transparent: bool,
     open: bool,
     non_resizable: bool,
+    default_size: f32,
+}
+
+impl Default for Tile {
+    fn default() -> Self {
+        Self {
+            name: default(),
+            id: default(),
+            side: default(),
+            close_btn: default(),
+            title: default(),
+            transparent: default(),
+            open: default(),
+            non_resizable: default(),
+            default_size: 300.0,
+        }
+    }
 }
 
 impl Tile {
@@ -65,6 +81,10 @@ impl Tile {
         self.non_resizable = true;
         self
     }
+    pub fn default_size(mut self, value: f32) -> Self {
+        self.default_size = value;
+        self
+    }
     pub fn show(self, ctx: &egui::Context, content: impl FnOnce(&mut Ui)) {
         self.show_data(&mut Some(()), ctx, |_, ui| content(ui));
     }
@@ -96,21 +116,25 @@ impl Tile {
         match self.side {
             Side::Right => SidePanel::right(id)
                 .frame(frame)
+                .default_width(self.default_size)
                 .resizable(!self.non_resizable)
                 .show_separator_line(false)
                 .show_animated(ctx, open, content),
             Side::Left => SidePanel::left(id)
                 .frame(frame)
+                .default_width(self.default_size)
                 .resizable(!self.non_resizable)
                 .show_separator_line(false)
                 .show_animated(ctx, open, content),
             Side::Top => TopBottomPanel::top(id)
                 .frame(frame)
+                .default_height(self.default_size)
                 .resizable(!self.non_resizable)
                 .show_separator_line(false)
                 .show_animated(ctx, open, content),
             Side::Bottom => TopBottomPanel::bottom(id)
                 .frame(frame)
+                .default_height(self.default_size)
                 .resizable(!self.non_resizable)
                 .show_separator_line(false)
                 .show_animated(ctx, open, content),

@@ -149,6 +149,7 @@ fn run_finish(ctx: ReducerContext) -> Result<(), String> {
             run.id,
         ));
     }
+    TWallet::change(run.owner, run.score as i64)?;
     TArenaRun::delete_by_id(&run.id);
     TArenaRunArchive::add_from_run(run);
     Ok(())

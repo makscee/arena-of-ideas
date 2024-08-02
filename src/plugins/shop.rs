@@ -486,7 +486,7 @@ impl ShopPlugin {
                 );
                 text_dots_text(
                     &format!("Score").cstr(),
-                    &run.round.to_string().cstr_cs(YELLOW, CstrStyle::Bold),
+                    &run.score.to_string().cstr_cs(YELLOW, CstrStyle::Bold),
                     ui,
                 );
                 if Button::click("Finish".into()).ui(ui).clicked() {

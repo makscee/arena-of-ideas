@@ -273,6 +273,14 @@ impl TableSingletonExt for TArenaRun {
         Self::iter().exactly_one().ok().map(|d| Box::new(d))
     }
 }
+impl TableSingletonExt for TWallet {
+    fn current() -> Self {
+        *Self::get_current().unwrap()
+    }
+    fn get_current() -> Option<Box<Self>> {
+        Self::iter().exactly_one().ok().map(|d| Box::new(d))
+    }
+}
 impl TableSingletonExt for GlobalData {
     fn current() -> Self {
         *Self::get_current().unwrap()

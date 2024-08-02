@@ -142,6 +142,7 @@ impl UnitContainer {
             .fixed_pos(pos)
             .pivot(self.pivot)
             .constrain_to(ui.available_rect_before_wrap())
+            .default_width(1.0)
             .resizable([true, false])
             .frame(FRAME)
             .title_bar(false)

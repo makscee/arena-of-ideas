@@ -13,6 +13,7 @@ mod status;
 mod sync;
 mod team;
 mod user;
+mod wallet;
 
 use std::str::FromStr;
 
@@ -28,6 +29,7 @@ pub use spacetimedb::SpacetimeType;
 pub use spacetimedb::{spacetimedb, Identity, ReducerContext};
 pub use team::*;
 pub use user::*;
+pub use wallet::*;
 
 pub type GID = u64;
 
