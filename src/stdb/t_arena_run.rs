@@ -4,6 +4,7 @@
 #![allow(unused_imports)]
 use super::fusion::Fusion;
 use super::game_mode::GameMode;
+use super::reward::Reward;
 use super::shop_slot::ShopSlot;
 use super::team_slot::TeamSlot;
 use spacetimedb_sdk::{
@@ -34,6 +35,8 @@ pub struct TArenaRun {
     pub round: u32,
     pub rerolls: u32,
     pub score: u32,
+    pub rewards: Vec<Reward>,
+    pub reward_limit: i64,
     pub last_updated: u64,
 }
 
@@ -113,6 +116,14 @@ impl TArenaRun {
     #[allow(unused)]
     pub fn filter_by_score(score: u32) -> TableIter<Self> {
         Self::filter(|row| row.score == score)
+    }
+    #[allow(unused)]
+    pub fn filter_by_rewards(rewards: Vec<Reward>) -> TableIter<Self> {
+        Self::filter(|row| row.rewards == rewards)
+    }
+    #[allow(unused)]
+    pub fn filter_by_reward_limit(reward_limit: i64) -> TableIter<Self> {
+        Self::filter(|row| row.reward_limit == reward_limit)
     }
     #[allow(unused)]
     pub fn filter_by_last_updated(last_updated: u64) -> TableIter<Self> {

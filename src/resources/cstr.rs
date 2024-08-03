@@ -321,10 +321,13 @@ impl std::fmt::Display for Cstr {
 }
 
 pub trait ToCstr: Sized {
+    #[must_use]
     fn cstr(&self) -> Cstr;
+    #[must_use]
     fn cstr_c(&self, color: Color32) -> Cstr {
         self.cstr().color(color).take()
     }
+    #[must_use]
     fn cstr_cs(&self, color: Color32, style: CstrStyle) -> Cstr {
         self.cstr().color(color).style(style).take()
     }

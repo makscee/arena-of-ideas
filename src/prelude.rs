@@ -61,6 +61,7 @@ pub use chrono::DateTime;
 pub use colored::{Colorize, CustomColor};
 pub use convert_case::{Case, Casing};
 pub use ecolor::{hex_color, Color32};
+pub use egui::Sense;
 pub use egui::{
     epaint::{self, Shadow},
     include_image,

@@ -342,22 +342,35 @@ impl BattlePlugin {
         if !gt().ended() {
             return;
         }
-        center_window("end_panel", ui, |ui| {
-            ui.vertical_centered(|ui| {
+        popup("end_panel", ui.ctx(), |ui| {
+            ui.vertical_centered_justified(|ui| {
                 let bd = world.resource::<BattleData>();
                 if bd.result.is_win().unwrap_or_default() {
-                    "Victory".cstr_cs(GREEN, CstrStyle::Bold)
+                    "Victory".cstr_cs(GREEN, CstrStyle::Heading2)
                 } else {
-                    "Defeat".cstr_cs(RED, CstrStyle::Bold)
+                    "Defeat".cstr_cs(RED, CstrStyle::Heading2)
                 }
                 .label(ui);
-                if Button::click("Finish".into()).ui(ui).clicked() {
-                    GameState::Shop.proceed_to_target(world);
-                }
             });
+            space(ui);
+            ui.columns(2, |ui| {
+                ui[0].vertical_centered_justified(|ui| {
+                    if Button::click("Replay".into()).gray(ui).ui(ui).clicked() {
+                        gt().play_head_to(0.0);
+                    }
+                });
+                ui[1].vertical_centered_justified(|ui| {
+                    if Button::click("Finish".into()).ui(ui).clicked() {
+                        GameState::Shop.proceed_to_target(world);
+                    }
+                });
+            })
         });
     }
     pub fn hover_check(world: &mut World) {
+        if gt().ended() {
+            return;
+        }
         let Some(cursor_pos) = cursor_world_pos(world) else {
             return;
         };

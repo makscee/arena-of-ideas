@@ -468,6 +468,7 @@ impl ShopPlugin {
                 }
                 .label(ui);
                 "Run Over".cstr_cs(YELLOW, CstrStyle::Bold).label(ui);
+                run.mode.cstr().label(ui);
                 text_dots_text(
                     &format!("Final round").cstr(),
                     &run.round.to_string().cstr_cs(YELLOW, CstrStyle::Bold),
@@ -476,6 +477,27 @@ impl ShopPlugin {
                 text_dots_text(
                     &format!("Score").cstr(),
                     &run.score.to_string().cstr_cs(YELLOW, CstrStyle::Bold),
+                    ui,
+                );
+                br(ui);
+                "Rewards".cstr_cs(YELLOW, CstrStyle::Heading2).label(ui);
+                let mut total = 0;
+                for Reward { name, amount } in run.rewards {
+                    text_dots_text(
+                        &name.cstr_c(VISIBLE_DARK),
+                        &amount.to_string().cstr_c(YELLOW),
+                        ui,
+                    );
+                    total += amount;
+                }
+                let total_txt = if run.reward_limit > 0 {
+                    format!("Total (max {})", run.reward_limit)
+                } else {
+                    "Total".to_owned()
+                };
+                text_dots_text(
+                    &total_txt.cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold),
+                    &total.to_string().cstr_cs(YELLOW, CstrStyle::Bold),
                     ui,
                 );
                 if Button::click("Finish".into()).ui(ui).clicked() {

@@ -23,8 +23,8 @@ impl Confirmation {
             decline: |_| {},
         }
     }
-    pub fn ui(self, ui: &mut Ui, world: &mut World) {
-        center_window("Confirmation window", ui, |ui| {
+    pub fn ui(self, ctx: &egui::Context, world: &mut World) {
+        popup("Confirmation window", ctx, |ui| {
             ui.vertical_centered_justified(|ui| {
                 self.text.as_label(ui).wrap(true).ui(ui);
             });
@@ -55,18 +55,6 @@ impl Confirmation {
         let Some(c) = ctx.data(|r| r.get_temp::<Confirmation>(current_id())) else {
             return;
         };
-
-        let rect = ctx.screen_rect();
-        CentralPanel::default()
-            .frame(Frame::none())
-            .show(ctx, |ui| {
-                ui.allocate_rect(rect, Sense::click_and_drag());
-                ui.painter_at(rect).rect_filled(
-                    rect,
-                    Rounding::ZERO,
-                    Color32::from_black_alpha(180),
-                );
-                c.ui(ui, world);
-            });
+        c.ui(ctx, world);
     }
 }

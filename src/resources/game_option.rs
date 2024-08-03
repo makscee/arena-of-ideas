@@ -47,7 +47,9 @@ impl GameOption {
                     GameState::proceed(world);
                 }
             }
-            GameOption::ActiveRun => {}
+            GameOption::ActiveRun => {
+                GameState::Title.proceed_to_target(world);
+            }
         }
     }
 }

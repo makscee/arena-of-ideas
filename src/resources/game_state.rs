@@ -38,7 +38,12 @@ lazy_static! {
         );
         m.insert(
             GameState::Shop,
-            [GameOption::Connect, GameOption::ForceLogin].into(),
+            [
+                GameOption::Connect,
+                GameOption::ForceLogin,
+                GameOption::ActiveRun,
+            ]
+            .into(),
         );
         m.insert(GameState::ServerSync, [GameOption::Connect].into());
         m.insert(

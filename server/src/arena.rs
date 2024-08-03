@@ -62,6 +62,8 @@ pub struct TArenaRun {
     round: u32,
     rerolls: u32,
     score: u32,
+    rewards: Vec<Reward>,
+    reward_limit: i64,
 
     last_updated: Timestamp,
 }
@@ -118,6 +120,18 @@ pub struct Fusion {
     target: u8,
 }
 
+#[derive(SpacetimeType)]
+pub struct Reward {
+    name: String,
+    amount: i64,
+}
+
+impl Reward {
+    fn new(name: String, amount: i64) -> Self {
+        Self { name, amount }
+    }
+}
+
 #[spacetimedb(reducer)]
 fn run_start_normal(ctx: ReducerContext) -> Result<(), String> {
     let user = TUser::find_by_identity(&ctx.sender)?;
@@ -142,26 +156,10 @@ fn run_start_const(ctx: ReducerContext) -> Result<(), String> {
 
 #[spacetimedb(reducer)]
 fn run_finish(ctx: ReducerContext) -> Result<(), String> {
-    let mut run = TArenaRun::current(&ctx)?;
-    if run.round > 0
-        && TArenaLeaderboard::filter_by_round(&run.round)
-            .filter(|d| d.mode.eq(&run.mode))
-            .count()
-            == 0
-    {
-        run.score += 10;
-        TArenaLeaderboard::insert(TArenaLeaderboard::new(
-            run.mode.clone(),
-            run.round,
-            run.score,
-            run.owner,
-            run.team,
-            run.id,
-        ));
-    }
-    let mut reward = run.score as i64;
-    if GameMode::ArenaRanked.eq(&run.mode) {
-        reward *= 2;
+    let run = TArenaRun::current(&ctx)?;
+    let mut reward: i64 = run.rewards.iter().map(|r| r.amount).sum();
+    if run.reward_limit > 0 {
+        reward = reward.min(run.reward_limit);
     }
     TWallet::change(run.owner, reward)?;
     TArenaRun::delete_by_id(&run.id);
@@ -217,7 +215,7 @@ fn submit_battle_result(ctx: ReducerContext, result: TBattleResult) -> Result<()
         run.score += run.round;
     }
     if run.lives == 0 || is_no_enemy {
-        run.active = false;
+        run.finish();
     }
     run.save();
     Ok(())
@@ -448,12 +446,19 @@ impl TArenaRun {
             free_rerolls: ars.free_rerolls_initial,
             active: true,
             mode,
+            rewards: Vec::new(),
+            reward_limit: 0,
         }
     }
     fn start(user: TUser, mode: GameMode) -> Result<(), String> {
         TArenaRun::delete_by_owner(&user.id);
+        let reward_limit = match mode {
+            GameMode::ArenaNormal | GameMode::ArenaConst(_) => settings().arena.ranked_cost,
+            GameMode::ArenaRanked => 0,
+        };
         let mut run = TArenaRun::new(user.id, mode);
         run.fill_case()?;
+        run.reward_limit = reward_limit;
         TArenaRun::insert(run)?;
         Ok(())
     }
@@ -602,5 +607,34 @@ impl TArenaRun {
     }
     fn get_rng(&self) -> Pcg64 {
         Seeder::from(self.get_seed()).make_rng()
+    }
+    fn finish(&mut self) {
+        self.active = false;
+        if GameMode::ArenaRanked.eq(&self.mode) {
+            self.rewards.push(Reward::new(
+                "Ranked score * 2".into(),
+                self.score as i64 * 2,
+            ));
+        } else {
+            self.rewards
+                .push(Reward::new("Score".into(), self.score as i64));
+        }
+        if self.round > 0
+            && TArenaLeaderboard::filter_by_round(&self.round)
+                .filter(|d| d.mode.eq(&self.mode))
+                .count()
+                == 0
+        {
+            self.rewards
+                .push(Reward::new("Champion defeated".into(), 10));
+            TArenaLeaderboard::insert(TArenaLeaderboard::new(
+                self.mode.clone(),
+                self.round,
+                self.score,
+                self.owner,
+                self.team,
+                self.id,
+            ));
+        }
     }
 }

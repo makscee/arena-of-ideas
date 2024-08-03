@@ -61,7 +61,7 @@ impl LoginPlugin {
             } else {
                 delta.to_string()
             };
-            Notification::new(format!("Wallet updated: {delta_txt} C")).push_op();
+            Notification::new(format!("Credits {delta_txt}")).push_op();
         });
     }
     pub fn login_ui(ui: &mut Ui, world: &mut World) {
@@ -75,7 +75,6 @@ impl LoginPlugin {
                     if Button::click("Login".into()).ui(ui).clicked() {
                         login_by_identity();
                         once_on_login_by_identity(|_, _, status| {
-                            debug!("login reducer {status:?}");
                             match status {
                                 spacetimedb_sdk::reducer::Status::Committed => {
                                     OperationsPlugin::add(|world| {

@@ -3,17 +3,17 @@ use super::*;
 pub fn br(ui: &mut Ui) {
     ui.horizontal(|ui| {
         let rect = ui.max_rect();
-        let line = egui::Shape::dotted_line(
-            &[rect.left_center(), rect.right_center()],
-            VISIBLE_DARK,
-            20.0,
-            1.0,
+        ui.painter().line_segment(
+            [rect.left_top(), rect.right_top()],
+            Stroke {
+                width: 1.0,
+                color: VISIBLE_DARK,
+            },
         );
-        ui.painter().add(line);
     });
 }
 pub fn space(ui: &mut Ui) {
-    ui.add_space(8.0);
+    ui.add_space(13.0);
 }
 pub fn center_window(name: &str, ui: &mut Ui, add_contents: impl FnOnce(&mut Ui)) {
     Window::new(name)
@@ -24,6 +24,17 @@ pub fn center_window(name: &str, ui: &mut Ui, add_contents: impl FnOnce(&mut Ui)
         .default_width(300.0)
         .resizable([false, false])
         .show(ui.ctx(), add_contents);
+}
+pub fn popup(name: &str, ctx: &egui::Context, add_contents: impl FnOnce(&mut Ui)) {
+    let rect = ctx.screen_rect();
+    CentralPanel::default()
+        .frame(Frame::none())
+        .show(ctx, |ui| {
+            ui.allocate_rect(rect, Sense::click_and_drag());
+            ui.painter_at(rect)
+                .rect_filled(rect, Rounding::ZERO, Color32::from_black_alpha(180));
+            center_window(name, ui, add_contents);
+        });
 }
 pub fn text_dots_text(text1: &Cstr, text2: &Cstr, ui: &mut Ui) {
     ui.horizontal(|ui| {

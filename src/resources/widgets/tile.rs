@@ -23,7 +23,7 @@ impl Default for Tile {
             transparent: default(),
             open: default(),
             non_resizable: default(),
-            default_size: 300.0,
+            default_size: 200.0,
         }
     }
 }
@@ -165,15 +165,15 @@ impl Tile {
         let mut m: TileMap = ctx.data(|r| r.get_temp(id)).unwrap_or_default();
         for (gid, tile) in &mut m {
             match tile {
-                TileContent::Team(t) => Tile::left("Team")
+                TileContent::Team(t) => Tile::right("Team")
                     .with_id(Id::new(*gid))
                     .close_btn()
                     .show_data(t, ctx, |t, ui| t.show(ui, world)),
-                TileContent::FusedUnit(u) => Tile::left("Unit")
+                TileContent::FusedUnit(u) => Tile::right("Unit")
                     .with_id(Id::new(*gid))
                     .close_btn()
                     .show_data(u, ctx, |t, ui| t.show(ui, world)),
-                TileContent::User(u) => Tile::left("User")
+                TileContent::User(u) => Tile::right("User")
                     .with_id(Id::new(*gid))
                     .close_btn()
                     .show_data(u, ctx, |t, ui| t.show(ui, world)),
