@@ -103,11 +103,13 @@ impl Tile {
         let content = |ui: &mut Ui| {
             if self.title {
                 self.name.cstr().label(ui);
+                space(ui);
             }
             ui.vertical_centered_justified(|ui| {
                 if let Some(data) = data {
                     content(data, ui);
                 }
+                space(ui);
                 if self.close_btn && Button::click("Close".into()).gray(ui).ui(ui).clicked() {
                     data.take();
                 }

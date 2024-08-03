@@ -27,10 +27,38 @@ impl ConnectPlugin {
             info!("Connected {}", hex::encode(creds.identity.bytes()));
             StdbQuery::Connect.subscribe();
             once_on_subscription_applied(|| {
-                OperationsPlugin::add(|world| {
-                    ConnectOption { creds }.save(world);
-                    GameState::proceed(world);
-                });
+                let server_version = GlobalData::current().game_version;
+                if server_version == VERSION {
+                    OperationsPlugin::add(|world| {
+                        ConnectOption { creds }.save(world);
+                        GameState::proceed(world);
+                    });
+                } else {
+                    OperationsPlugin::add(move |w| {
+                        let ctx = &egui_context(w).unwrap();
+                        Confirmation::new(
+                            "Wrong game version: "
+                                .cstr_c(VISIBLE_LIGHT)
+                                .push(
+                                    format!("{} != {}", VERSION, server_version)
+                                        .cstr_cs(VISIBLE_BRIGHT, CstrStyle::Bold),
+                                )
+                                .take(),
+                            |w| {
+                                egui_context(w).unwrap().open_url(egui::OpenUrl {
+                                    url: "https://github.com/makscee/arena-of-ideas/releases"
+                                        .to_owned(),
+                                    new_tab: true,
+                                });
+                                app_exit(w);
+                            },
+                        )
+                        .decline(|w| app_exit(w))
+                        .accept_name("Update".into())
+                        .decline_name("Exit".into())
+                        .add(ctx);
+                    });
+                }
             });
         });
         thread_pool

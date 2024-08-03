@@ -67,102 +67,106 @@ impl WidgetsPlugin {
         Tile::show_all_tiles(ctx, world);
         match state {
             GameState::Title => {
-                Tile::left("Main Menu").title().open().show(ctx, |ui| {
-                    text_dots_text(&"name".cstr(), &user_name().cstr_c(VISIBLE_LIGHT), ui);
-                    text_dots_text(
-                        &"credits".cstr(),
-                        &TWallet::current().amount.to_string().cstr_c(VISIBLE_LIGHT),
-                        ui,
-                    );
-                    space(ui);
-                    let run = TArenaRun::get_current();
-                    if let Some(run) = run.as_ref() {
-                        let round = run.round;
-                        let txt = run
-                            .mode
-                            .cstr()
-                            .push(" round ".cstr())
-                            .push(round.to_string().cstr_c(VISIBLE_BRIGHT))
-                            .style(CstrStyle::Small)
-                            .take();
+                Tile::left("Main Menu")
+                    .title()
+                    .default_size(300.0)
+                    .open()
+                    .show(ctx, |ui| {
+                        text_dots_text(&"name".cstr(), &user_name().cstr_c(VISIBLE_LIGHT), ui);
+                        text_dots_text(
+                            &"credits".cstr(),
+                            &TWallet::current().amount.to_string().cstr_c(VISIBLE_LIGHT),
+                            ui,
+                        );
+                        space(ui);
+                        let run = TArenaRun::get_current();
+                        if let Some(run) = run.as_ref() {
+                            let round = run.round;
+                            let txt = run
+                                .mode
+                                .cstr()
+                                .push(" round ".cstr())
+                                .push(round.to_string().cstr_c(VISIBLE_BRIGHT))
+                                .style(CstrStyle::Small)
+                                .take();
 
-                        if Button::click("Continue".into()).title(txt).ui(ui).clicked() {
-                            GameState::Shop.proceed_to_target(world);
+                            if Button::click("Continue".into()).title(txt).ui(ui).clicked() {
+                                GameState::Shop.proceed_to_target(world);
+                            }
+                            if Button::click("Abandon run".into()).red(ui).ui(ui).clicked() {
+                                Confirmation::new(
+                                    "Abandon current run?".cstr_c(VISIBLE_BRIGHT),
+                                    |_| {
+                                        run_finish();
+                                    },
+                                )
+                                .add(ui.ctx());
+                            }
+                            br(ui);
                         }
-                        if Button::click("Abandon run".into()).red(ui).ui(ui).clicked() {
-                            Confirmation::new(
-                                "Abandon current run?".cstr_c(VISIBLE_BRIGHT),
-                                |_| {
-                                    run_finish();
+                        if Button::click("Arena Normal".into())
+                            .enable_ui_with(
+                                &mut ws.arena_normal,
+                                || {
+                                    TArenaLeaderboard::iter()
+                                        .filter(|d| d.mode.eq(&GameMode::ArenaNormal))
+                                        .sorted_by_key(|d| -(d.round as i32))
+                                        .collect_vec()
                                 },
+                                ui,
                             )
-                            .add(ui.ctx());
+                            .clicked()
+                        {
+                            ws.arena_const = None;
+                            ws.arena_ranked = None;
+                        }
+                        if Button::click("Arena Ranked".into())
+                            .color(YELLOW, ui)
+                            .enable_ui_with(
+                                &mut ws.arena_ranked,
+                                || {
+                                    TArenaLeaderboard::iter()
+                                        .filter(|d| d.mode.eq(&GameMode::ArenaRanked))
+                                        .sorted_by_key(|d| -(d.round as i32))
+                                        .collect_vec()
+                                },
+                                ui,
+                            )
+                            .clicked()
+                        {
+                            ws.arena_const = None;
+                            ws.arena_normal = None;
+                        }
+                        if Button::click("Arena Constant".into())
+                            .color(CYAN, ui)
+                            .enable_ui_with(
+                                &mut ws.arena_const,
+                                || {
+                                    TArenaLeaderboard::iter()
+                                        .filter(|d| {
+                                            d.mode.eq(&GameMode::ArenaConst(
+                                                GlobalData::current().constant_seed,
+                                            ))
+                                        })
+                                        .sorted_by_key(|d| -(d.round as i32))
+                                        .collect_vec()
+                                },
+                                ui,
+                            )
+                            .clicked()
+                        {
+                            ws.arena_normal = None;
+                            ws.arena_ranked = None;
                         }
                         br(ui);
-                    }
-                    if Button::click("Arena Normal".into())
-                        .enable_ui_with(
-                            &mut ws.arena_normal,
-                            || {
-                                TArenaLeaderboard::iter()
-                                    .filter(|d| d.mode.eq(&GameMode::ArenaNormal))
-                                    .sorted_by_key(|d| -(d.round as i32))
-                                    .collect_vec()
-                            },
-                            ui,
-                        )
-                        .clicked()
-                    {
-                        ws.arena_const = None;
-                        ws.arena_ranked = None;
-                    }
-                    if Button::click("Arena Ranked".into())
-                        .color(YELLOW, ui)
-                        .enable_ui_with(
-                            &mut ws.arena_ranked,
-                            || {
-                                TArenaLeaderboard::iter()
-                                    .filter(|d| d.mode.eq(&GameMode::ArenaRanked))
-                                    .sorted_by_key(|d| -(d.round as i32))
-                                    .collect_vec()
-                            },
-                            ui,
-                        )
-                        .clicked()
-                    {
-                        ws.arena_const = None;
-                        ws.arena_normal = None;
-                    }
-                    if Button::click("Arena Constant".into())
-                        .color(CYAN, ui)
-                        .enable_ui_with(
-                            &mut ws.arena_const,
-                            || {
-                                TArenaLeaderboard::iter()
-                                    .filter(|d| {
-                                        d.mode.eq(&GameMode::ArenaConst(
-                                            GlobalData::current().constant_seed,
-                                        ))
-                                    })
-                                    .sorted_by_key(|d| -(d.round as i32))
-                                    .collect_vec()
-                            },
-                            ui,
-                        )
-                        .clicked()
-                    {
-                        ws.arena_normal = None;
-                        ws.arena_ranked = None;
-                    }
-                    br(ui);
-                    Button::click("Settings".into()).enable_ui(&mut ws.settings, ui);
-                    Button::click("Profile".into()).enable_ui(&mut ws.profile, ui);
-                    br(ui);
-                    if Button::click("Exit".into()).gray(ui).ui(ui).clicked() {
-                        Confirmation::new("Exit the game?".cstr_c(VISIBLE_BRIGHT), app_exit)
-                            .add(ctx);
-                    }
-                });
+                        Button::click("Settings".into()).enable_ui(&mut ws.settings, ui);
+                        Button::click("Profile".into()).enable_ui(&mut ws.profile, ui);
+                        br(ui);
+                        if Button::click("Exit".into()).gray(ui).ui(ui).clicked() {
+                            Confirmation::new("Exit the game?".cstr_c(VISIBLE_BRIGHT), app_exit)
+                                .add(ctx);
+                        }
+                    });
 
                 Tile::left("Arena Normal").title().close_btn().show_data(
                     &mut ws.arena_normal,
