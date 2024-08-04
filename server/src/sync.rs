@@ -47,6 +47,7 @@ fn replace_assets(
         TAbility::insert(ability)?;
     }
     GlobalData::register_sync();
+    TMetaShop::init()?;
     Ok(())
 }
 

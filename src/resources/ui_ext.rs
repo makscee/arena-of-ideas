@@ -104,6 +104,72 @@ impl ShowTable<TArenaLeaderboard> for Vec<TArenaLeaderboard> {
         t.ui(self, ui, world)
     }
 }
+impl ShowTable<TMetaShop> for Vec<TMetaShop> {
+    fn show_modified_table(
+        &self,
+        name: &'static str,
+        ui: &mut Ui,
+        world: &mut World,
+        m: fn(Table<TMetaShop>) -> Table<TMetaShop>,
+    ) -> TableState {
+        let mut t = Table::new(name)
+            .title()
+            .column_cstr("name", |d: &TMetaShop| match &d.item {
+                Item::HeroShard(name) => name.cstr_c(name_color(&name)),
+                Item::Hero(unit) => unit.cstr(),
+            })
+            .column_cstr("type", |d| match &d.item {
+                Item::HeroShard(_) => "shard".cstr(),
+                Item::Hero(_) => "hero".cstr(),
+            })
+            .column_cstr("price", |d| d.price.to_string().cstr_c(YELLOW))
+            .column_btn("buy", |d, _, _| meta_buy(d.id));
+        t = m(t);
+        t.ui(self, ui, world)
+    }
+}
+impl ShowTable<TItem> for Vec<TItem> {
+    fn show_modified_table(
+        &self,
+        name: &'static str,
+        ui: &mut Ui,
+        world: &mut World,
+        m: fn(Table<TItem>) -> Table<TItem>,
+    ) -> TableState {
+        let mut t = Table::new(name)
+            .title()
+            .column_cstr("name", |d: &TItem| match &d.item {
+                Item::HeroShard(name) => name.cstr_c(name_color(&name)),
+                Item::Hero(unit) => unit.cstr(),
+            })
+            .column_cstr("type", |d| match &d.item {
+                Item::HeroShard(_) => "shard".cstr(),
+                Item::Hero(_) => "hero".cstr(),
+            })
+            .column_int("count", |d| d.count as i32)
+            .column(
+                "action",
+                |_| default(),
+                |d, _, ui, world| {
+                    let craft_cost = GameAssets::get(world).global_settings.craft_shards_cost;
+                    match &d.item {
+                        Item::HeroShard(base) => {
+                            let r = Button::click("craft".into())
+                                .enabled(d.count >= craft_cost)
+                                .ui(ui);
+                            if r.clicked() {
+                                craft_hero(base.clone());
+                            }
+                            r
+                        }
+                        _ => "-".cstr().label(ui),
+                    }
+                },
+            );
+        t = m(t);
+        t.ui(self, ui, world)
+    }
+}
 
 pub trait Show {
     fn show(&self, ui: &mut Ui, world: &mut World);

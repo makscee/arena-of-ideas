@@ -72,8 +72,8 @@ impl ShopPlugin {
         let team = TeamPlugin::entity(Faction::Shop, world);
         if let Some(Fusion {
             options,
-            source: _,
-            target: _,
+            a: _,
+            b: _,
         }) = run.fusion
         {
             for (slot, unit) in (0..).zip(options.into_iter()) {
@@ -133,6 +133,8 @@ impl ShopPlugin {
             if let Some(entity) = team_units.get(&id) {
                 let mut state = VarState::get_mut(*entity, world);
                 state.set_int(VarName::Slot, slot.into());
+                state.set_int(VarName::Hp, unit.hp);
+                state.set_int(VarName::Pwr, unit.pwr);
                 let new_xp = unit.xp as i32;
                 let old_xp = state
                     .get_value_last(VarName::Xp)
@@ -286,7 +288,7 @@ impl ShopPlugin {
             .top_content(move |ui, _| {
                 let run = TArenaRun::current();
                 if run.fusion.is_some() {
-                    if Button::click("Cancel".into()).ui(ui).clicked() {
+                    if Button::click("Cancel".into()).red(ui).ui(ui).clicked() {
                         fuse_cancel();
                     }
                 } else {
@@ -320,7 +322,7 @@ impl ShopPlugin {
                     if ss.available {
                         if let Some((stack_source, faction)) = sd.stack_source {
                             if slot == stack_source && faction.eq(&Faction::Shop) {
-                                if Button::click("Cancel".into()).ui(ui).clicked() {
+                                if Button::click("Cancel".into()).red(ui).ui(ui).clicked() {
                                     Self::cancel_stack(world);
                                 }
                             }
@@ -385,7 +387,7 @@ impl ShopPlugin {
                 if e.is_some() && run.fusion.is_none() {
                     if let Some((stack_source, faction)) = sd.stack_source {
                         if slot == stack_source && faction.eq(&Faction::Team) {
-                            if Button::click("Cancel".into()).ui(ui).clicked() {
+                            if Button::click("Cancel".into()).red(ui).ui(ui).clicked() {
                                 Self::cancel_stack(world);
                             }
                         } else if sd.stack_targets.contains(&slot) {
@@ -395,14 +397,14 @@ impl ShopPlugin {
                         }
                     } else if let Some(fuse_source) = sd.fuse_source {
                         if slot == fuse_source {
-                            if Button::click("Cancel".into()).ui(ui).clicked() {
+                            if Button::click("Cancel".into()).red(ui).ui(ui).clicked() {
                                 let mut sd = world.resource_mut::<ShopData>();
                                 sd.fuse_source = None;
                                 sd.fuse_targets.clear();
                             }
                         } else if sd.fuse_targets.contains(&slot) {
                             if Button::click("Choose".into()).ui(ui).clicked() {
-                                fuse_start(slot as u8, fuse_source as u8);
+                                fuse_start(fuse_source as u8, slot as u8);
                                 once_on_fuse_start(|_, _, status, _, _| match status {
                                     StdbStatus::Committed => {}
                                     StdbStatus::Failed(e) => e.notify_error(),

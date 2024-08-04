@@ -6,6 +6,7 @@ pub enum GameState {
     Loading,
     Loaded,
     Title,
+    Meta,
     Connect,
     Login,
     CustomBattle,

@@ -119,6 +119,7 @@ fn main() {
             TableViewPlugin,
             GameArchivePlugin,
             ClientSettingsPlugin,
+            MetaPlugin,
         ))
         .run();
 }

@@ -9,6 +9,7 @@ pub struct GlobalSettings {
     pub arena: ArenaSettings,
     pub rarities: RaritySettings,
     pub battle: BattleSettings,
+    pub craft_shards_cost: u32,
 }
 
 impl GlobalSettings {

@@ -44,6 +44,7 @@ impl StdbQuery {
                 format!("select * from TArenaRun where owner = {uid}"),
                 format!("select * from TBattle where owner = {uid}"),
                 format!("select * from TWallet where owner = {uid}"),
+                format!("select * from TItem where owner = {uid}"),
                 "select * from TBaseUnit".into(),
                 "select * from TRepresentation".into(),
                 "select * from GlobalSettings".into(),
@@ -52,6 +53,7 @@ impl StdbQuery {
                 "select * from TStatus".into(),
                 "select * from TTeam".into(),
                 "select * from TArenaLeaderboard".into(),
+                "select * from TMetaShop".into(),
             ]
             .into(),
             StdbQuery::GameFull => [

@@ -116,8 +116,8 @@ pub struct TeamSlot {
 #[derive(SpacetimeType)]
 pub struct Fusion {
     options: Vec<FusedUnit>,
-    source: u8,
-    target: u8,
+    a: u8,
+    b: u8,
 }
 
 #[derive(SpacetimeType)]
@@ -134,20 +134,20 @@ impl Reward {
 
 #[spacetimedb(reducer)]
 fn run_start_normal(ctx: ReducerContext) -> Result<(), String> {
-    let user = TUser::find_by_identity(&ctx.sender)?;
+    let user = ctx.user()?;
     TArenaRun::start(user, GameMode::ArenaNormal)
 }
 
 #[spacetimedb(reducer)]
 fn run_start_ranked(ctx: ReducerContext) -> Result<(), String> {
-    let user = TUser::find_by_identity(&ctx.sender)?;
+    let user = ctx.user()?;
     TWallet::change(user.id, -settings().arena.ranked_cost)?;
     TArenaRun::start(user, GameMode::ArenaRanked)
 }
 
 #[spacetimedb(reducer)]
 fn run_start_const(ctx: ReducerContext) -> Result<(), String> {
-    let user = TUser::find_by_identity(&ctx.sender)?;
+    let user = ctx.user()?;
     TArenaRun::start(
         user,
         GameMode::ArenaConst(GlobalData::get().constant_seed.clone()),
@@ -278,7 +278,7 @@ fn shop_buy(ctx: ReducerContext, slot: u8) -> Result<(), String> {
     let mut run = TArenaRun::current(&ctx)?;
     let price = run.shop_slots[slot as usize].buy_price;
     let unit = run.buy(slot, price)?;
-    run.add_to_team(FusedUnit::from_base(unit, next_id()))?;
+    run.add_to_team(FusedUnit::from_base(unit, next_id())?)?;
     run.save();
     Ok(())
 }
@@ -300,47 +300,14 @@ fn shop_change_g(ctx: ReducerContext, delta: i32) -> Result<(), String> {
 }
 
 #[spacetimedb(reducer)]
-fn fuse_start(ctx: ReducerContext, target: u8, source: u8) -> Result<(), String> {
+fn fuse_start(ctx: ReducerContext, a: u8, b: u8) -> Result<(), String> {
     let mut run = TArenaRun::current(&ctx)?;
     let team = run.team()?;
-
-    let mut fusion = Fusion {
-        options: Vec::default(),
-        source,
-        target,
+    let fusion = Fusion {
+        options: FusedUnit::fuse(team.get_unit(a)?, team.get_unit(b)?)?,
+        a,
+        b,
     };
-    let options = &mut fusion.options;
-    let source = team.get_unit(source)?;
-    let target = team.get_unit(target)?;
-    if !target.can_fuse_source(source) {
-        return Err(format!(
-            "Can't fuse {} with {}",
-            source.name(),
-            target.name()
-        ));
-    }
-    if source.bases.len() != 1 {
-        return Err("Source can only be non-fused unit".to_owned());
-    }
-    let mut option = target.clone();
-    option.bases.push(source.bases[0].clone());
-    option.add_fuse_xp(source);
-    let i = option.bases.len() as u32 - 1;
-    if !source.triggers.is_empty() {
-        let mut option = option.clone().new_id();
-        option.triggers.push(i);
-        options.push(option);
-    }
-    if !source.targets.is_empty() {
-        let mut option = option.clone().new_id();
-        option.targets.push(i);
-        options.push(option);
-    }
-    if !source.effects.is_empty() {
-        let mut option = option.clone().new_id();
-        option.effects.push(i);
-        options.push(option);
-    }
     run.fusion = Some(fusion);
     run.save();
     Ok(())
@@ -360,21 +327,17 @@ fn fuse_cancel(ctx: ReducerContext) -> Result<(), String> {
 #[spacetimedb(reducer)]
 fn fuse_choose(ctx: ReducerContext, slot: u8) -> Result<(), String> {
     let mut run = TArenaRun::current(&ctx)?;
-    let Fusion {
-        options,
-        source,
-        target,
-    } = run.fusion.take().context_str("Fusion not started")?;
+    let Fusion { options, a, b } = run.fusion.take().context_str("Fusion not started")?;
     let slot = slot as usize;
-    let target = target as usize;
-    let source = source as usize;
+    let a = a as usize;
+    let b = b as usize;
     if slot >= options.len() {
         return Err("Wrong fusion index".to_owned());
     }
     let mut team = run.team()?;
-    team.units.remove(target);
-    team.units.insert(target, options[slot].clone());
-    team.units.remove(source);
+    team.units.remove(a);
+    team.units.insert(a, options[slot].clone());
+    team.units.remove(b);
     team.save();
     run.save();
     Ok(())
@@ -463,8 +426,7 @@ impl TArenaRun {
         Ok(())
     }
     fn current(ctx: &ReducerContext) -> Result<Self, String> {
-        Self::filter_by_owner(&TUser::find_by_identity(&ctx.sender)?.id)
-            .context_str("No arena run in progress")
+        Self::filter_by_owner(&ctx.user()?.id).context_str("No arena run in progress")
     }
     fn buy(&mut self, slot: u8, price: i32) -> Result<String, String> {
         let s = self
@@ -538,7 +500,7 @@ impl TArenaRun {
                 if unit.can_stack_fused(&team.units[slot_i]) {
                     slot.stack_targets.push(i as u8);
                 }
-                if unit.can_fuse_source(&team.units[slot_i]) {
+                if FusedUnit::can_fuse(unit, &team.units[slot_i]) {
                     slot.fuse_targets.push(i as u8);
                 }
             }

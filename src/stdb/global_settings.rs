@@ -21,6 +21,7 @@ pub struct GlobalSettings {
     pub arena: ArenaSettings,
     pub rarities: RaritySettings,
     pub battle: BattleSettings,
+    pub craft_shards_cost: u32,
 }
 
 impl TableType for GlobalSettings {
@@ -44,5 +45,9 @@ impl GlobalSettings {
     #[allow(unused)]
     pub fn filter_by_battle(battle: BattleSettings) -> TableIter<Self> {
         Self::filter(|row| row.battle == battle)
+    }
+    #[allow(unused)]
+    pub fn filter_by_craft_shards_cost(craft_shards_cost: u32) -> TableIter<Self> {
+        Self::filter(|row| row.craft_shards_cost == craft_shards_cost)
     }
 }

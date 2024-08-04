@@ -223,7 +223,6 @@ impl BattlePlugin {
     }
 
     pub fn show_tiles(ctx: &egui::Context, world: &mut World) {
-        TopMenu::new(vec!["Playback"]).show(ctx);
         Tile::bottom("Playback")
             .transparent()
             .non_resizable()

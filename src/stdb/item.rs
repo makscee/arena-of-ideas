@@ -2,6 +2,7 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN RUST INSTEAD.
 
 #![allow(unused_imports)]
+use super::fused_unit::FusedUnit;
 use spacetimedb_sdk::{
     anyhow::{anyhow, Result},
     identity::Identity,
@@ -13,14 +14,7 @@ use spacetimedb_sdk::{
 };
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
-pub struct FusedUnit {
-    pub id: u64,
-    pub bases: Vec<String>,
-    pub triggers: Vec<u32>,
-    pub targets: Vec<u32>,
-    pub effects: Vec<u32>,
-    pub hp: i32,
-    pub pwr: i32,
-    pub lvl: u32,
-    pub xp: u32,
+pub enum Item {
+    HeroShard(String),
+    Hero(FusedUnit),
 }

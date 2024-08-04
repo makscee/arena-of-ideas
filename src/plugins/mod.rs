@@ -1,9 +1,10 @@
 mod action;
-mod game_archive;
 mod battle;
 mod camera;
 mod connect;
+mod game_archive;
 mod login;
+mod meta;
 mod operations;
 mod profile;
 mod query;
@@ -19,11 +20,12 @@ mod widgets;
 
 use super::*;
 pub use action::*;
-pub use game_archive::*;
 pub use battle::*;
 pub use camera::*;
 pub use connect::*;
+pub use game_archive::*;
 pub use login::*;
+pub use meta::*;
 pub use operations::*;
 pub use profile::*;
 pub use query::*;

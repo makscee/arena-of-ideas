@@ -249,6 +249,7 @@ impl WidgetsPlugin {
             }
             GameState::Battle => BattlePlugin::show_tiles(ctx, world),
             GameState::TableView(query) => TableViewPlugin::ui(query, ctx, world),
+            GameState::Meta => MetaPlugin::ui_tiles(ctx, world),
 
             _ => {}
         }

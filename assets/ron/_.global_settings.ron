@@ -2,6 +2,7 @@
 (
     settings: (
         always_zero: 0,
+        craft_shards_cost: 10,
         arena: (
             ranked_cost: 15,
             slots_min: 3,

@@ -16,6 +16,6 @@ use spacetimedb_sdk::{
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct Fusion {
     pub options: Vec<FusedUnit>,
-    pub source: u8,
-    pub target: u8,
+    pub a: u8,
+    pub b: u8,
 }

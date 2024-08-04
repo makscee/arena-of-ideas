@@ -57,7 +57,7 @@ fn login(ctx: ReducerContext, name: String, pass: String) -> Result<(), String> 
     if !user.check_pass(pass) {
         Err("Wrong name or password".to_owned())
     } else {
-        if let Ok(mut user) = TUser::find_by_identity(&ctx.sender) {
+        if let Ok(mut user) = ctx.user() {
             user.online = false;
             user.remove_identity(&ctx.sender);
             TUser::update_by_id(&user.id.clone(), user);
@@ -73,14 +73,14 @@ fn login(ctx: ReducerContext, name: String, pass: String) -> Result<(), String> 
 
 #[spacetimedb(reducer)]
 fn login_by_identity(ctx: ReducerContext) -> Result<(), String> {
-    let user = TUser::find_by_identity(&ctx.sender)?;
+    let user = ctx.user()?;
     user.login();
     Ok(())
 }
 
 #[spacetimedb(reducer)]
 fn logout(ctx: ReducerContext) -> Result<(), String> {
-    let mut user = TUser::find_by_identity(&ctx.sender)?;
+    let mut user = ctx.user()?;
     user.online = false;
     user.remove_identity(&ctx.sender);
     TUser::update_by_id(&user.id.clone(), user);
@@ -90,7 +90,7 @@ fn logout(ctx: ReducerContext) -> Result<(), String> {
 #[spacetimedb(reducer)]
 fn set_name(ctx: ReducerContext, name: String) -> Result<(), String> {
     let name = TUser::validate_name(name)?;
-    if let Ok(user) = TUser::find_by_identity(&ctx.sender) {
+    if let Ok(user) = ctx.user() {
         TUser::update_by_id(&user.id, TUser { name, ..user });
         Ok(())
     } else {
@@ -100,7 +100,7 @@ fn set_name(ctx: ReducerContext, name: String) -> Result<(), String> {
 
 #[spacetimedb(reducer)]
 fn set_password(ctx: ReducerContext, old_pass: String, new_pass: String) -> Result<(), String> {
-    if let Ok(user) = TUser::find_by_identity(&ctx.sender) {
+    if let Ok(user) = ctx.user() {
         if !user.check_pass(old_pass) {
             return Err("Old password did not match".to_owned());
         }
@@ -114,7 +114,7 @@ fn set_password(ctx: ReducerContext, old_pass: String, new_pass: String) -> Resu
 
 #[spacetimedb(disconnect)]
 fn identity_disconnected(ctx: ReducerContext) {
-    if let Ok(mut user) = TUser::find_by_identity(&ctx.sender) {
+    if let Ok(mut user) = ctx.user() {
         user.online = false;
         TUser::update_by_id(&user.id.clone(), user);
     }
@@ -164,5 +164,15 @@ impl TUser {
 
     fn remove_identity(&mut self, identity: &Identity) {
         self.identities.retain(|i| !i.eq(identity));
+    }
+}
+
+pub trait GetUser {
+    fn user(&self) -> Result<TUser, String>;
+}
+
+impl GetUser for ReducerContext {
+    fn user(&self) -> Result<TUser, String> {
+        TUser::find_by_identity(&self.sender)
     }
 }

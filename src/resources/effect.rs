@@ -166,6 +166,7 @@ impl Effect {
                     .get_value(VarName::Lvl, world)
                     .map(|v| v.get_int().unwrap())
                     .unwrap_or(1)
+                    .max(1)
                     + *base;
                 let caster = owner;
                 let context = context

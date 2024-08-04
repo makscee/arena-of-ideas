@@ -22,6 +22,7 @@ use std::sync::Arc;
 
 pub mod arena_settings;
 pub mod battle_settings;
+pub mod craft_hero_reducer;
 pub mod fuse_cancel_reducer;
 pub mod fuse_choose_reducer;
 pub mod fuse_start_reducer;
@@ -31,9 +32,11 @@ pub mod game_mode;
 pub mod give_credits_reducer;
 pub mod global_data;
 pub mod global_settings;
+pub mod item;
 pub mod login_by_identity_reducer;
 pub mod login_reducer;
 pub mod logout_reducer;
+pub mod meta_buy_reducer;
 pub mod rarity_settings;
 pub mod register_empty_reducer;
 pub mod register_reducer;
@@ -64,6 +67,8 @@ pub mod t_base_unit;
 pub mod t_battle;
 pub mod t_battle_result;
 pub mod t_house;
+pub mod t_item;
+pub mod t_meta_shop;
 pub mod t_representation;
 pub mod t_status;
 pub mod t_team;
@@ -76,6 +81,7 @@ pub mod upload_game_archive_reducer;
 
 pub use arena_settings::*;
 pub use battle_settings::*;
+pub use craft_hero_reducer::*;
 pub use fuse_cancel_reducer::*;
 pub use fuse_choose_reducer::*;
 pub use fuse_start_reducer::*;
@@ -85,9 +91,11 @@ pub use game_mode::*;
 pub use give_credits_reducer::*;
 pub use global_data::*;
 pub use global_settings::*;
+pub use item::*;
 pub use login_by_identity_reducer::*;
 pub use login_reducer::*;
 pub use logout_reducer::*;
+pub use meta_buy_reducer::*;
 pub use rarity_settings::*;
 pub use register_empty_reducer::*;
 pub use register_reducer::*;
@@ -118,6 +126,8 @@ pub use t_base_unit::*;
 pub use t_battle::*;
 pub use t_battle_result::*;
 pub use t_house::*;
+pub use t_item::*;
+pub use t_meta_shop::*;
 pub use t_representation::*;
 pub use t_status::*;
 pub use t_team::*;
@@ -131,6 +141,7 @@ pub use upload_game_archive_reducer::*;
 #[allow(unused)]
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub enum ReducerEvent {
+    CraftHero(craft_hero_reducer::CraftHeroArgs),
     FuseCancel(fuse_cancel_reducer::FuseCancelArgs),
     FuseChoose(fuse_choose_reducer::FuseChooseArgs),
     FuseStart(fuse_start_reducer::FuseStartArgs),
@@ -138,6 +149,7 @@ pub enum ReducerEvent {
     Login(login_reducer::LoginArgs),
     LoginByIdentity(login_by_identity_reducer::LoginByIdentityArgs),
     Logout(logout_reducer::LogoutArgs),
+    MetaBuy(meta_buy_reducer::MetaBuyArgs),
     Register(register_reducer::RegisterArgs),
     RegisterEmpty(register_empty_reducer::RegisterEmptyArgs),
     RunFinish(run_finish_reducer::RunFinishArgs),
@@ -215,6 +227,13 @@ impl SpacetimeModule for Module {
                 .handle_table_update_with_primary_key::<t_battle::TBattle>(callbacks, table_update),
             "THouse" => client_cache
                 .handle_table_update_with_primary_key::<t_house::THouse>(callbacks, table_update),
+            "TItem" => client_cache
+                .handle_table_update_with_primary_key::<t_item::TItem>(callbacks, table_update),
+            "TMetaShop" => client_cache
+                .handle_table_update_with_primary_key::<t_meta_shop::TMetaShop>(
+                    callbacks,
+                    table_update,
+                ),
             "TRepresentation" => client_cache
                 .handle_table_update_no_primary_key::<t_representation::TRepresentation>(
                     callbacks,
@@ -262,6 +281,8 @@ impl SpacetimeModule for Module {
         reminders.invoke_callbacks::<t_base_unit::TBaseUnit>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_battle::TBattle>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_house::THouse>(worker, &reducer_event, state);
+        reminders.invoke_callbacks::<t_item::TItem>(worker, &reducer_event, state);
+        reminders.invoke_callbacks::<t_meta_shop::TMetaShop>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_representation::TRepresentation>(
             worker,
             &reducer_event,
@@ -284,13 +305,15 @@ impl SpacetimeModule for Module {
         };
         #[allow(clippy::match_single_binding)]
 match &function_call.reducer[..] {
-						"fuse_cancel" => _reducer_callbacks.handle_event_of_type::<fuse_cancel_reducer::FuseCancelArgs, ReducerEvent>(event, _state, ReducerEvent::FuseCancel),
+						"craft_hero" => _reducer_callbacks.handle_event_of_type::<craft_hero_reducer::CraftHeroArgs, ReducerEvent>(event, _state, ReducerEvent::CraftHero),
+			"fuse_cancel" => _reducer_callbacks.handle_event_of_type::<fuse_cancel_reducer::FuseCancelArgs, ReducerEvent>(event, _state, ReducerEvent::FuseCancel),
 			"fuse_choose" => _reducer_callbacks.handle_event_of_type::<fuse_choose_reducer::FuseChooseArgs, ReducerEvent>(event, _state, ReducerEvent::FuseChoose),
 			"fuse_start" => _reducer_callbacks.handle_event_of_type::<fuse_start_reducer::FuseStartArgs, ReducerEvent>(event, _state, ReducerEvent::FuseStart),
 			"give_credits" => _reducer_callbacks.handle_event_of_type::<give_credits_reducer::GiveCreditsArgs, ReducerEvent>(event, _state, ReducerEvent::GiveCredits),
 			"login" => _reducer_callbacks.handle_event_of_type::<login_reducer::LoginArgs, ReducerEvent>(event, _state, ReducerEvent::Login),
 			"login_by_identity" => _reducer_callbacks.handle_event_of_type::<login_by_identity_reducer::LoginByIdentityArgs, ReducerEvent>(event, _state, ReducerEvent::LoginByIdentity),
 			"logout" => _reducer_callbacks.handle_event_of_type::<logout_reducer::LogoutArgs, ReducerEvent>(event, _state, ReducerEvent::Logout),
+			"meta_buy" => _reducer_callbacks.handle_event_of_type::<meta_buy_reducer::MetaBuyArgs, ReducerEvent>(event, _state, ReducerEvent::MetaBuy),
 			"register" => _reducer_callbacks.handle_event_of_type::<register_reducer::RegisterArgs, ReducerEvent>(event, _state, ReducerEvent::Register),
 			"register_empty" => _reducer_callbacks.handle_event_of_type::<register_empty_reducer::RegisterEmptyArgs, ReducerEvent>(event, _state, ReducerEvent::RegisterEmpty),
 			"run_finish" => _reducer_callbacks.handle_event_of_type::<run_finish_reducer::RunFinishArgs, ReducerEvent>(event, _state, ReducerEvent::RunFinish),
@@ -352,6 +375,11 @@ match &function_call.reducer[..] {
             "THouse" => {
                 client_cache.handle_resubscribe_for_type::<t_house::THouse>(callbacks, new_subs)
             }
+            "TItem" => {
+                client_cache.handle_resubscribe_for_type::<t_item::TItem>(callbacks, new_subs)
+            }
+            "TMetaShop" => client_cache
+                .handle_resubscribe_for_type::<t_meta_shop::TMetaShop>(callbacks, new_subs),
             "TRepresentation" => client_cache
                 .handle_resubscribe_for_type::<t_representation::TRepresentation>(
                     callbacks, new_subs,

@@ -8,6 +8,8 @@ mod fused_unit;
 mod global_data;
 mod global_settings;
 mod house;
+mod item;
+mod meta_shop;
 mod representation;
 mod status;
 mod sync;
@@ -25,6 +27,8 @@ pub use battle::*;
 pub use fused_unit::*;
 pub use global_data::*;
 pub use global_settings::*;
+pub use item::*;
+pub use meta_shop::*;
 pub use spacetimedb::SpacetimeType;
 pub use spacetimedb::{spacetimedb, Identity, ReducerContext};
 pub use team::*;
@@ -51,12 +55,6 @@ impl<T> StrContext<T> for Option<T> {
     {
         self.with_context(f).map_err(|e| e.to_string())
     }
-}
-
-#[spacetimedb(init)]
-fn init() -> Result<(), String> {
-    GlobalData::init()?;
-    Ok(())
 }
 
 pub fn next_id() -> GID {
@@ -89,4 +87,10 @@ impl AdminCheck for &ReducerContext {
             Err("Need admin access".to_owned())
         }
     }
+}
+
+#[spacetimedb(init)]
+fn init() -> Result<(), String> {
+    GlobalData::init()?;
+    Ok(())
 }

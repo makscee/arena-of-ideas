@@ -14,8 +14,8 @@ use spacetimedb_sdk::{
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct FuseStartArgs {
-    pub target: u8,
-    pub source: u8,
+    pub a: u8,
+    pub b: u8,
 }
 
 impl Reducer for FuseStartArgs {
@@ -23,8 +23,8 @@ impl Reducer for FuseStartArgs {
 }
 
 #[allow(unused)]
-pub fn fuse_start(target: u8, source: u8) {
-    FuseStartArgs { target, source }.invoke();
+pub fn fuse_start(a: u8, b: u8) {
+    FuseStartArgs { a, b }.invoke();
 }
 
 #[allow(unused)]
@@ -32,8 +32,8 @@ pub fn on_fuse_start(
     mut __callback: impl FnMut(&Identity, Option<Address>, &Status, &u8, &u8) + Send + 'static,
 ) -> ReducerCallbackId<FuseStartArgs> {
     FuseStartArgs::on_reducer(move |__identity, __addr, __status, __args| {
-        let FuseStartArgs { target, source } = __args;
-        __callback(__identity, __addr, __status, target, source);
+        let FuseStartArgs { a, b } = __args;
+        __callback(__identity, __addr, __status, a, b);
     })
 }
 
@@ -42,8 +42,8 @@ pub fn once_on_fuse_start(
     __callback: impl FnOnce(&Identity, Option<Address>, &Status, &u8, &u8) + Send + 'static,
 ) -> ReducerCallbackId<FuseStartArgs> {
     FuseStartArgs::once_on_reducer(move |__identity, __addr, __status, __args| {
-        let FuseStartArgs { target, source } = __args;
-        __callback(__identity, __addr, __status, target, source);
+        let FuseStartArgs { a, b } = __args;
+        __callback(__identity, __addr, __status, a, b);
     })
 }
 

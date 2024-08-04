@@ -12,7 +12,7 @@ pub fn unit_card(context: &Context, ui: &mut Ui, world: &World) -> Result<()> {
         .map(|c| c.c32())
         .collect_vec();
     let name = entity_name(owner).style(CstrStyle::Heading).take();
-    let fusible_lvl = houses.len() as i32 + 1;
+    let fusible_lvl = houses.len() as i32;
     let fusible_str = if fusible_lvl > context.get_int(VarName::Lvl, world).unwrap_or_default() {
         "Fusible from lvl "
             .cstr()
@@ -66,9 +66,8 @@ pub fn unit_card(context: &Context, ui: &mut Ui, world: &World) -> Result<()> {
                 match var {
                     VarName::Xp => {
                         vars_str.push("/".cstr()).push(
-                            context
-                                .get_string(VarName::Lvl, world)
-                                .unwrap_or_default()
+                            (context.get_int(VarName::Lvl, world).unwrap_or_default() + 1)
+                                .to_string()
                                 .cstr_c(VISIBLE_BRIGHT),
                         );
                     }
@@ -84,7 +83,11 @@ pub fn unit_card(context: &Context, ui: &mut Ui, world: &World) -> Result<()> {
         for (i, house) in houses.into_iter().enumerate() {
             houses_cstr.push(house.cstr_c(house_colors[i]));
         }
-        houses_cstr.join(&" + ".cstr()).label(ui);
+        houses_cstr
+            .join(&" + ".cstr())
+            .as_label(ui)
+            .wrap(true)
+            .ui(ui);
         ui.add_space(2.0);
     })
     .response
@@ -113,7 +116,7 @@ pub fn unit_card(context: &Context, ui: &mut Ui, world: &World) -> Result<()> {
             se: 13.0,
         },
         shadow: Shadow::NONE,
-        fill: BG_DARK,
+        fill: Color32::from_black_alpha(235),
         stroke: Stroke::NONE,
     }
     .show(ui, |ui| {

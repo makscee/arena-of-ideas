@@ -11,7 +11,7 @@ pub struct PackedUnit {
     pub pwr: i32,
     #[serde(default = "default_one")]
     pub hp: i32,
-    #[serde(default = "default_one")]
+    #[serde(default = "default_zero")]
     pub lvl: i32,
     #[serde(default = "default_zero")]
     pub xp: i32,
