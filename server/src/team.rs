@@ -4,19 +4,19 @@ use super::*;
 #[derive(Clone)]
 pub struct TTeam {
     #[primarykey]
-    pub id: GID,
-    pub owner: GID,
+    pub id: u64,
+    pub owner: u64,
     pub units: Vec<FusedUnit>,
 }
 
 impl TTeam {
-    pub fn get(id: GID) -> Result<Self, String> {
+    pub fn get(id: u64) -> Result<Self, String> {
         TTeam::filter_by_id(&id).context_str("Team not found")
     }
     pub fn save(self) {
         TTeam::update_by_id(&self.id.clone(), self);
     }
-    pub fn new(owner: GID) -> GID {
+    pub fn new(owner: u64) -> u64 {
         let team = TTeam::insert(TTeam {
             id: next_id(),
             owner,

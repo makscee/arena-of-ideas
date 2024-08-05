@@ -15,7 +15,7 @@ pub enum VarValue {
     Faction(Faction),
     Color(Color),
     Entity(Entity),
-    GID(GID),
+    u64(u64),
     List(Vec<VarValue>),
 }
 
@@ -207,13 +207,13 @@ impl VarValue {
         }
         Ok(vec![self.get_faction()?])
     }
-    pub fn get_gid(&self) -> Result<GID> {
+    pub fn get_gid(&self) -> Result<u64> {
         match self {
-            VarValue::GID(v) => Ok(*v),
+            VarValue::u64(v) => Ok(*v),
             _ => Err(anyhow!("Faction not supported by {self:?}")),
         }
     }
-    pub fn get_gid_list(&self) -> Result<Vec<GID>> {
+    pub fn get_gid_list(&self) -> Result<Vec<u64>> {
         match self {
             VarValue::List(list) => {
                 return Ok(list
@@ -278,7 +278,7 @@ impl VarValue {
         match (a, b) {
             (VarValue::Float(a), VarValue::Float(b)) => Ok(a.total_cmp(b)),
             (VarValue::Int(a), VarValue::Int(b)) => Ok(a.cmp(b)),
-            (VarValue::GID(a), VarValue::GID(b)) => Ok(a.cmp(b)),
+            (VarValue::u64(a), VarValue::u64(b)) => Ok(a.cmp(b)),
             (VarValue::Bool(a), VarValue::Bool(b)) => Ok(a.cmp(b)),
             (VarValue::String(a), VarValue::String(b)) => Ok(a.cmp(b)),
             (VarValue::Cstr(a), VarValue::Cstr(b)) => Ok(a.to_string().cmp(&b.to_string())),
@@ -336,7 +336,7 @@ impl std::hash::Hash for VarValue {
                 v.b().ord().hash(state);
             }
             VarValue::Cstr(v) => v.to_string().hash(state),
-            VarValue::GID(v) => (*v).hash(state),
+            VarValue::u64(v) => (*v).hash(state),
         };
     }
 }
@@ -357,7 +357,7 @@ impl ToCstr for VarValue {
                 format!("#{h}").cstr_c(v.c32())
             }
             VarValue::Entity(v) => format!("{v:?}").cstr(),
-            VarValue::GID(v) => v.to_string().cstr(),
+            VarValue::u64(v) => v.to_string().cstr(),
             VarValue::List(list) => {
                 Cstr::join_vec(list.into_iter().map(|v| v.cstr()).collect_vec())
                     .join(&" + ".cstr())
@@ -432,9 +432,9 @@ impl From<Cstr> for VarValue {
         VarValue::Cstr(value)
     }
 }
-impl From<GID> for VarValue {
-    fn from(value: GID) -> Self {
-        VarValue::GID(value)
+impl From<u64> for VarValue {
+    fn from(value: u64) -> Self {
+        VarValue::u64(value)
     }
 }
 impl<T> From<Vec<T>> for VarValue
@@ -458,7 +458,7 @@ impl PartialEq for VarValue {
             (Self::Faction(l0), Self::Faction(r0)) => l0 == r0,
             (Self::Color(l0), Self::Color(r0)) => l0 == r0,
             (Self::Entity(l0), Self::Entity(r0)) => l0 == r0,
-            (Self::GID(l0), Self::GID(r0)) => l0 == r0,
+            (Self::u64(l0), Self::u64(r0)) => l0 == r0,
             (Self::List(l0), Self::List(r0)) => l0 == r0,
             (Self::Cstr(a), Self::String(b)) | (Self::String(b), Self::Cstr(a)) => {
                 a.get_text().eq(b)

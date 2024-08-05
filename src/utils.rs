@@ -309,7 +309,7 @@ pub trait GIDExt {
     fn get_user(self) -> TUser;
 }
 
-impl GIDExt for GID {
+impl GIDExt for u64 {
     fn get_team(self) -> TTeam {
         if self == 0 {
             return TTeam {

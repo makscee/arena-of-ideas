@@ -10,7 +10,7 @@ use super::*;
 
 #[derive(SpacetimeType, Clone)]
 pub struct FusedUnit {
-    pub id: GID,
+    pub id: u64,
     pub bases: Vec<String>,
     pub triggers: Vec<u32>,
     pub targets: Vec<u32>,
@@ -35,7 +35,7 @@ impl FusedUnit {
         self.id = next_id();
         self
     }
-    pub fn from_base(name: String, id: GID) -> Result<Self, String> {
+    pub fn from_base(name: String, id: u64) -> Result<Self, String> {
         let base = TBaseUnit::filter_by_name(&name)
             .with_context_str(|| format!("Base unit not found {name}"))?;
         Ok(Self {

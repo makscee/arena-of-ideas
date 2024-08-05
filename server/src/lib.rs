@@ -35,8 +35,6 @@ pub use team::*;
 pub use user::*;
 pub use wallet::*;
 
-pub type GID = u64;
-
 trait StrContext<T> {
     fn context_str(self, str: &'static str) -> Result<T, String>;
     fn with_context_str<F>(self, f: F) -> Result<T, String>
@@ -57,7 +55,7 @@ impl<T> StrContext<T> for Option<T> {
     }
 }
 
-pub fn next_id() -> GID {
+pub fn next_id() -> u64 {
     GlobalData::next_id()
 }
 

@@ -8,14 +8,14 @@ pub struct TArenaLeaderboard {
     pub season: u32,
     pub round: u32,
     pub score: u32,
-    pub user: GID,
-    pub team: GID,
-    pub run: GID,
+    pub user: u64,
+    pub team: u64,
+    pub run: u64,
     ts: Timestamp,
 }
 
 impl TArenaLeaderboard {
-    pub fn new(mode: GameMode, round: u32, score: u32, user: GID, team: GID, run: GID) -> Self {
+    pub fn new(mode: GameMode, round: u32, score: u32, user: u64, team: u64, run: u64) -> Self {
         Self {
             mode,
             season: GlobalData::get().season,

@@ -6,12 +6,12 @@ use super::*;
 pub struct TArenaPool {
     pub mode: GameMode,
     #[primarykey]
-    pub team: GID,
+    pub team: u64,
     pub round: u32,
 }
 
 impl TArenaPool {
-    pub fn add(mode: GameMode, team: GID, round: u32) {
+    pub fn add(mode: GameMode, team: u64, round: u32) {
         TArenaPool::insert(TArenaPool { mode, team, round }).expect("Failed to add to TArenaPool");
     }
     pub fn get_random(mode: &GameMode, round: u32) -> Option<Self> {

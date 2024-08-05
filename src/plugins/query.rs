@@ -20,7 +20,7 @@ struct QueryData {
 #[derive(PartialEq, Eq, Hash, Clone, Copy, Display, Debug, Serialize)]
 pub enum StdbQuery {
     Connect,
-    Game(GID),
+    Game(u64),
     GameFull,
     BaseUnits,
     BattleHistory,

@@ -6,7 +6,7 @@ use super::*;
 #[spacetimedb(table)]
 pub struct TMetaShop {
     #[primarykey]
-    id: GID,
+    id: u64,
     item: Item,
     price: i64,
 }
@@ -33,7 +33,7 @@ impl TMetaShop {
 }
 
 #[spacetimedb(reducer)]
-fn meta_buy(ctx: ReducerContext, id: GID) -> Result<(), String> {
+fn meta_buy(ctx: ReducerContext, id: u64) -> Result<(), String> {
     let user = ctx.user()?;
     let item = TMetaShop::filter_by_id(&id).context_str("Item not found")?;
     TWallet::change(user.id, -item.price)?;

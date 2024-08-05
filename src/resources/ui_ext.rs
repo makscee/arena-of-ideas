@@ -159,10 +159,21 @@ impl ShowTable<TItem> for Vec<TItem> {
                                 .ui(ui);
                             if r.clicked() {
                                 craft_hero(base.clone());
+                                once_on_craft_hero(|_, _, status, hero| match status {
+                                    StdbStatus::Committed => {
+                                        Notification::new(format!("{hero} crafted")).push_op()
+                                    }
+                                    StdbStatus::Failed(e) => e.notify_error(),
+                                    _ => panic!(),
+                                });
                             }
                             r
                         }
-                        _ => "-".cstr().label(ui),
+                        Item::Hero(_) => {
+                            let r = Button::click("select".into()).ui(ui);
+                            if r.clicked() {}
+                            r
+                        }
                     }
                 },
             );

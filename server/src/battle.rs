@@ -5,11 +5,11 @@ use super::*;
 #[spacetimedb(table)]
 pub struct TBattle {
     #[primarykey]
-    pub id: GID,
+    pub id: u64,
     pub mode: GameMode,
-    pub owner: GID,
-    pub team_left: GID,
-    pub team_right: GID,
+    pub owner: u64,
+    pub team_left: u64,
+    pub team_right: u64,
     result: TBattleResult,
     ts: Timestamp,
 }
@@ -24,7 +24,7 @@ pub enum TBattleResult {
 }
 
 impl TBattle {
-    pub fn new(mode: GameMode, owner: GID, team_left: GID, team_right: GID) -> GID {
+    pub fn new(mode: GameMode, owner: u64, team_left: u64, team_right: u64) -> u64 {
         let id = next_id();
         TBattle::insert(TBattle {
             id,
@@ -46,7 +46,7 @@ impl TBattle {
     pub fn is_tbd(&self) -> bool {
         matches!(self.result, TBattleResult::Tbd)
     }
-    pub fn get(id: GID) -> Result<Self, String> {
+    pub fn get(id: u64) -> Result<Self, String> {
         Self::filter_by_id(&id).context_str("TBattle not found")
     }
     pub fn save(self) {

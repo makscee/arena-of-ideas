@@ -45,11 +45,11 @@ fn settings() -> GlobalSettings {
 pub struct TArenaRun {
     mode: GameMode,
     #[primarykey]
-    id: GID,
+    id: u64,
     #[unique]
-    owner: GID,
-    team: GID,
-    battles: Vec<GID>,
+    owner: u64,
+    team: u64,
+    battles: Vec<u64>,
     shop_slots: Vec<ShopSlot>,
     team_slots: Vec<TeamSlot>,
     fusion: Option<Fusion>,
@@ -72,10 +72,10 @@ pub struct TArenaRun {
 pub struct TArenaRunArchive {
     mode: GameMode,
     #[primarykey]
-    id: GID,
-    owner: GID,
-    team: GID,
-    battles: Vec<GID>,
+    id: u64,
+    owner: u64,
+    team: u64,
+    battles: Vec<u64>,
     round: u32,
 }
 
@@ -96,7 +96,7 @@ impl TArenaRunArchive {
 #[derive(SpacetimeType, Clone, Default)]
 pub struct ShopSlot {
     unit: String,
-    id: GID,
+    id: u64,
     buy_price: i32,
     stack_price: i32,
     freeze: bool,
@@ -389,7 +389,7 @@ fn stack_team(ctx: ReducerContext, source: u8, target: u8) -> Result<(), String>
 }
 
 impl TArenaRun {
-    fn new(user_id: GID, mode: GameMode) -> Self {
+    fn new(user_id: u64, mode: GameMode) -> Self {
         let ars = settings().arena;
         Self {
             id: next_id(),

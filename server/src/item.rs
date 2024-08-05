@@ -17,7 +17,7 @@ pub enum Item {
 }
 
 impl Item {
-    pub fn take(self, owner: GID) -> Result<(), String> {
+    pub fn take(self, owner: u64) -> Result<(), String> {
         match &self {
             Item::HeroShard(base) => {
                 TItem::change_shards(owner, base.clone(), 1)?;
@@ -37,7 +37,7 @@ impl Item {
 }
 
 impl TItem {
-    fn change_shards(owner: GID, base: String, delta: i32) -> Result<(), String> {
+    fn change_shards(owner: u64, base: String, delta: i32) -> Result<(), String> {
         let shard_item = Item::HeroShard(base.clone());
         let mut item = if let Some(item) = Self::filter_by_owner(&owner)
             .filter(|d| shard_item.eq(&d.item))
@@ -64,7 +64,7 @@ impl TItem {
         }
         Ok(())
     }
-    pub fn craft_hero(owner: GID, base: String) -> Result<(), String> {
+    pub fn craft_hero(owner: u64, base: String) -> Result<(), String> {
         Self::change_shards(
             owner,
             base.clone(),

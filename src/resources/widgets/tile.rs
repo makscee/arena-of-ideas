@@ -143,13 +143,13 @@ impl Tile {
         };
     }
 
-    pub fn add_team(gid: GID, ctx: &egui::Context) {
+    pub fn add_team(gid: u64, ctx: &egui::Context) {
         ctx.data_mut(|w| {
             let m: &mut TileMap = w.get_temp_mut_or_default(tile_map_id());
             m.insert(gid, TileContent::Team(TTeam::filter_by_id(gid)));
         });
     }
-    pub fn add_user(gid: GID, ctx: &egui::Context) {
+    pub fn add_user(gid: u64, ctx: &egui::Context) {
         ctx.data_mut(|w| {
             let m: &mut TileMap = w.get_temp_mut_or_default(tile_map_id());
             m.insert(gid, TileContent::User(TUser::filter_by_id(gid)));
@@ -204,7 +204,7 @@ const FRAME: Frame = Frame {
     stroke: Stroke::NONE,
 };
 
-type TileMap = OrderedHashMap<GID, TileContent>;
+type TileMap = OrderedHashMap<u64, TileContent>;
 
 #[derive(Clone, Debug)]
 enum TileContent {

@@ -131,7 +131,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
         );
         self
     }
-    pub fn column_gid(mut self, name: &'static str, value: fn(&T) -> GID) -> Self {
+    pub fn column_gid(mut self, name: &'static str, value: fn(&T) -> u64) -> Self {
         self.columns.insert(
             name,
             TableColumn {
@@ -160,8 +160,8 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
     pub fn column_user_click(
         mut self,
         name: &'static str,
-        gid: fn(&T) -> GID,
-        on_click: fn(GID, &mut Ui, &mut World),
+        gid: fn(&T) -> u64,
+        on_click: fn(u64, &mut Ui, &mut World),
     ) -> Self {
         self.columns.insert(
             name,

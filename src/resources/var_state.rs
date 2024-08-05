@@ -5,7 +5,7 @@ pub struct VarState {
     vars: HashMap<VarName, HashMap<String, History>>,
     statuses: HashMap<String, VarState>,
     birth: f32,
-    id: GID,
+    id: u64,
     entity: Option<Entity>,
 }
 
@@ -46,10 +46,10 @@ impl VarState {
     pub fn new_with(var: VarName, value: VarValue) -> Self {
         Self::default().init(var, value).take()
     }
-    pub fn id(&self) -> GID {
+    pub fn id(&self) -> u64 {
         self.id
     }
-    pub fn attach(mut self, entity: Entity, id: GID, world: &mut World) {
+    pub fn attach(mut self, entity: Entity, id: u64, world: &mut World) {
         self.birth = gt().insert_head();
         self.id = id;
         self.entity = Some(entity);
