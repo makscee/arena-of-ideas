@@ -17,4 +17,5 @@ use spacetimedb_sdk::{
 pub enum Item {
     HeroShard(String),
     Hero(FusedUnit),
+    Lootbox,
 }

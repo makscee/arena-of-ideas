@@ -44,7 +44,7 @@ impl StdbQuery {
                 format!("select * from TArenaRun where owner = {uid}"),
                 format!("select * from TBattle where owner = {uid}"),
                 format!("select * from TWallet where owner = {uid}"),
-                format!("select * from TItem where owner = {uid}"),
+                format!("select * from TItem where owner = {uid} and count > 0"),
                 format!("select * from TStartingHero where owner = {uid}"),
                 "select * from TBaseUnit".into(),
                 "select * from TRepresentation".into(),

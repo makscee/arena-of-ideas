@@ -37,6 +37,7 @@ pub mod login_by_identity_reducer;
 pub mod login_reducer;
 pub mod logout_reducer;
 pub mod meta_buy_reducer;
+pub mod open_lootbox_reducer;
 pub mod rarity_settings;
 pub mod register_empty_reducer;
 pub mod register_reducer;
@@ -98,6 +99,7 @@ pub use login_by_identity_reducer::*;
 pub use login_reducer::*;
 pub use logout_reducer::*;
 pub use meta_buy_reducer::*;
+pub use open_lootbox_reducer::*;
 pub use rarity_settings::*;
 pub use register_empty_reducer::*;
 pub use register_reducer::*;
@@ -154,6 +156,7 @@ pub enum ReducerEvent {
     LoginByIdentity(login_by_identity_reducer::LoginByIdentityArgs),
     Logout(logout_reducer::LogoutArgs),
     MetaBuy(meta_buy_reducer::MetaBuyArgs),
+    OpenLootbox(open_lootbox_reducer::OpenLootboxArgs),
     Register(register_reducer::RegisterArgs),
     RegisterEmpty(register_empty_reducer::RegisterEmptyArgs),
     RunFinish(run_finish_reducer::RunFinishArgs),
@@ -325,6 +328,7 @@ match &function_call.reducer[..] {
 			"login_by_identity" => _reducer_callbacks.handle_event_of_type::<login_by_identity_reducer::LoginByIdentityArgs, ReducerEvent>(event, _state, ReducerEvent::LoginByIdentity),
 			"logout" => _reducer_callbacks.handle_event_of_type::<logout_reducer::LogoutArgs, ReducerEvent>(event, _state, ReducerEvent::Logout),
 			"meta_buy" => _reducer_callbacks.handle_event_of_type::<meta_buy_reducer::MetaBuyArgs, ReducerEvent>(event, _state, ReducerEvent::MetaBuy),
+			"open_lootbox" => _reducer_callbacks.handle_event_of_type::<open_lootbox_reducer::OpenLootboxArgs, ReducerEvent>(event, _state, ReducerEvent::OpenLootbox),
 			"register" => _reducer_callbacks.handle_event_of_type::<register_reducer::RegisterArgs, ReducerEvent>(event, _state, ReducerEvent::Register),
 			"register_empty" => _reducer_callbacks.handle_event_of_type::<register_empty_reducer::RegisterEmptyArgs, ReducerEvent>(event, _state, ReducerEvent::RegisterEmpty),
 			"run_finish" => _reducer_callbacks.handle_event_of_type::<run_finish_reducer::RunFinishArgs, ReducerEvent>(event, _state, ReducerEvent::RunFinish),

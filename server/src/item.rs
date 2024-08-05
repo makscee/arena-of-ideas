@@ -1,5 +1,7 @@
 use super::*;
+use base_unit::TBaseUnit;
 use itertools::Itertools;
+use rand::{seq::IteratorRandom, thread_rng, Rng};
 
 #[spacetimedb(table)]
 pub struct TItem {
@@ -10,10 +12,11 @@ pub struct TItem {
     pub count: u32,
 }
 
-#[derive(SpacetimeType, PartialEq)]
+#[derive(SpacetimeType, PartialEq, Clone)]
 pub enum Item {
     HeroShard(String),
     Hero(FusedUnit),
+    Lootbox,
 }
 
 impl Item {
@@ -30,6 +33,24 @@ impl Item {
                     count: 1,
                 };
                 TItem::insert(item)?;
+            }
+            Item::Lootbox => {
+                let mut item = if let Some(item) = TItem::filter_by_owner(&owner)
+                    .filter(|d| d.item.eq(&self))
+                    .at_most_one()
+                    .map_err(|e| e.to_string())?
+                {
+                    item
+                } else {
+                    TItem::insert(TItem {
+                        id: next_id(),
+                        owner,
+                        item: self.clone(),
+                        count: 0,
+                    })?
+                };
+                item.count += 1;
+                TItem::update_by_id(&item.id.clone(), item);
             }
         };
         Ok(())
@@ -86,4 +107,24 @@ impl TItem {
 fn craft_hero(ctx: ReducerContext, base: String) -> Result<(), String> {
     let user = ctx.user()?;
     TItem::craft_hero(user.id, base)
+}
+
+#[spacetimedb(reducer)]
+fn open_lootbox(ctx: ReducerContext, id: u64) -> Result<(), String> {
+    let user = ctx.user()?;
+    let mut item = TItem::filter_by_id(&id).with_context_str(|| format!("Item not found #{id}"))?;
+    if item.owner != user.id {
+        return Err(format!("Item #{id} not owned by {}", user.id));
+    }
+    if item.count == 0 {
+        return Err("Lootbox count is 0".into());
+    }
+    item.count -= 1;
+    let amount = thread_rng().gen_range(3..7);
+    for _ in 0..amount {
+        let name = TBaseUnit::iter().choose(&mut thread_rng()).unwrap().name;
+        Item::HeroShard(name).take(user.id)?;
+    }
+    TItem::update_by_id(&id, item);
+    Ok(())
 }

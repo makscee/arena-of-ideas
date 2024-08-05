@@ -117,13 +117,22 @@ impl ShowTable<TMetaShop> for Vec<TMetaShop> {
             .column_cstr("name", |d: &TMetaShop| match &d.item {
                 Item::HeroShard(name) => name.cstr_c(name_color(&name)),
                 Item::Hero(unit) => unit.cstr(),
+                Item::Lootbox => "normal".cstr(),
             })
             .column_cstr("type", |d| match &d.item {
                 Item::HeroShard(_) => "shard".cstr(),
                 Item::Hero(_) => "hero".cstr(),
+                Item::Lootbox => "lootbox".cstr_c(CYAN),
             })
             .column_cstr("price", |d| d.price.to_string().cstr_c(YELLOW))
-            .column_btn("buy", |d, _, _| meta_buy(d.id));
+            .column_btn("buy", |d, _, _| {
+                meta_buy(d.id);
+                once_on_meta_buy(|_, _, status, _| match status {
+                    StdbStatus::Committed => {}
+                    StdbStatus::Failed(e) => e.notify_error(),
+                    _ => panic!(),
+                });
+            });
         t = m(t);
         t.ui(self, ui, world)
     }
@@ -141,10 +150,12 @@ impl ShowTable<TItem> for Vec<TItem> {
             .column_cstr("name", |d: &TItem| match &d.item {
                 Item::HeroShard(name) => name.cstr_c(name_color(&name)),
                 Item::Hero(unit) => unit.cstr(),
+                Item::Lootbox => "normal".cstr(),
             })
             .column_cstr("type", |d| match &d.item {
                 Item::HeroShard(_) => "shard".cstr(),
                 Item::Hero(_) => "hero".cstr(),
+                Item::Lootbox => "lootbox".cstr_c(CYAN),
             })
             .column_int("count", |d| d.count as i32)
             .column(
@@ -182,6 +193,20 @@ impl ShowTable<TItem> for Vec<TItem> {
                                     StdbStatus::Committed => {
                                         Notification::new(format!("{id:?} set as starting hero"))
                                             .push_op()
+                                    }
+                                    StdbStatus::Failed(e) => e.notify_error(),
+                                    _ => panic!(),
+                                });
+                            }
+                            r
+                        }
+                        Item::Lootbox => {
+                            let r = Button::click("open".into()).ui(ui);
+                            if r.clicked() {
+                                open_lootbox(d.id);
+                                once_on_open_lootbox(move |_, _, status, _| match status {
+                                    StdbStatus::Committed => {
+                                        Notification::new("Lootbox opened".into()).push_op()
                                     }
                                     StdbStatus::Failed(e) => e.notify_error(),
                                     _ => panic!(),

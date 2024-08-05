@@ -53,15 +53,47 @@ impl LoginPlugin {
                 GameAssets::cache_tables(world);
                 GameState::proceed(world);
             });
-        });
-        TWallet::on_update(|before, after, _| {
-            let delta = after.amount - before.amount;
-            let delta_txt = if delta > 0 {
-                format!("+{delta}")
-            } else {
-                delta.to_string()
-            };
-            Notification::new(format!("Credits {delta_txt}")).push_op();
+            TWallet::on_update(|before, after, _| {
+                let delta = after.amount - before.amount;
+                let delta_txt = if delta > 0 {
+                    format!("+{delta}")
+                } else {
+                    delta.to_string()
+                };
+                Notification::new(format!("Credits {delta_txt}")).push_op();
+            });
+            TItem::on_update(|before, after, _| {
+                let delta = after.count as i64 - before.count as i64;
+                let delta_txt = if delta > 0 {
+                    format!("+{delta}")
+                } else {
+                    delta.to_string()
+                };
+                let txt = match &before.item {
+                    Item::HeroShard(name) => format!("{name} shard {delta_txt}"),
+                    Item::Hero(unit) => format!("{} hero {delta_txt}", unit.bases.join("+")),
+                    Item::Lootbox => format!("Lootbox {delta_txt}"),
+                };
+                Notification::new(txt).push_op();
+            });
+            TItem::on_insert(|item, _| {
+                let txt = match &item.item {
+                    Item::HeroShard(name) => format!("{name} shard"),
+                    Item::Hero(unit) => format!("{} hero", unit.bases.join("+")),
+                    Item::Lootbox => format!("Lootbox"),
+                };
+                Notification::new(format!("New item: {txt}")).push_op();
+                TableState::reset_cache_op();
+            });
+            TItem::on_delete(|item, _| {
+                let txt = match &item.item {
+                    Item::HeroShard(name) => format!("{name} shard"),
+                    Item::Hero(unit) => format!("{} hero", unit.bases.join("+")),
+                    Item::Lootbox => format!("Lootbox"),
+                };
+                Notification::new(format!("Item removed: {txt}")).push_op();
+                TableState::reset_cache_op();
+            });
         });
     }
     pub fn login_ui(ui: &mut Ui, world: &mut World) {

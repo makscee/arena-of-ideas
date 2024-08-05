@@ -16,18 +16,22 @@ impl TMetaShop {
         for Self { id, .. } in Self::iter() {
             Self::delete_by_id(&id);
         }
-        for _ in 0..3 {
-            Self::insert(Self {
+        for i in TBaseUnit::iter()
+            .choose_multiple(&mut thread_rng(), 3)
+            .into_iter()
+            .map(|u| Self {
                 id: next_id(),
-                item: Item::HeroShard(
-                    TBaseUnit::iter()
-                        .choose(&mut thread_rng())
-                        .context_str("Failed to choose BaseUnit")?
-                        .name,
-                ),
+                item: Item::HeroShard(u.name),
                 price: 5,
-            })?;
+            })
+        {
+            Self::insert(i)?;
         }
+        Self::insert(Self {
+            id: next_id(),
+            item: Item::Lootbox,
+            price: 15,
+        })?;
         Ok(())
     }
 }

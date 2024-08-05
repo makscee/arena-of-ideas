@@ -33,6 +33,7 @@ impl MetaPlugin {
             }
             SubState::Shop => {
                 TMetaShop::iter()
+                    .sorted_by_key(|d| d.id)
                     .collect_vec()
                     .show_table("Meta Shop", ui, world);
             }

@@ -32,6 +32,15 @@ impl<T> TableColumn<T> {
     }
 }
 
+impl TableState {
+    pub fn reset_cache(ctx: &egui::Context) {
+        ctx.data_mut(|w| w.remove_by_type::<Self>());
+    }
+    pub fn reset_cache_op() {
+        OperationsPlugin::add(|w| Self::reset_cache(&egui_context(w).unwrap()));
+    }
+}
+
 impl<T: 'static + Clone + Send + Sync> Table<T> {
     pub fn new(name: &'static str) -> Self {
         Self {
