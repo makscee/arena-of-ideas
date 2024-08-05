@@ -60,38 +60,37 @@ impl LoginPlugin {
                 } else {
                     delta.to_string()
                 };
-                Notification::new(format!("Credits {delta_txt}")).push_op();
+                Notification::new(
+                    "Credits "
+                        .cstr_c(YELLOW)
+                        .push(delta_txt.cstr_c(VISIBLE_LIGHT))
+                        .take(),
+                )
+                .push_op();
             });
             TItem::on_update(|before, after, _| {
                 let delta = after.count as i64 - before.count as i64;
                 let delta_txt = if delta > 0 {
-                    format!("+{delta}")
+                    format!(" +{delta}")
                 } else {
                     delta.to_string()
                 };
-                let txt = match &before.item {
-                    Item::HeroShard(name) => format!("{name} shard {delta_txt}"),
-                    Item::Hero(unit) => format!("{} hero {delta_txt}", unit.bases.join("+")),
-                    Item::Lootbox => format!("Lootbox {delta_txt}"),
-                };
+                let txt = before
+                    .item
+                    .cstr()
+                    .push(delta_txt.cstr_c(VISIBLE_LIGHT))
+                    .take();
                 Notification::new(txt).push_op();
             });
             TItem::on_insert(|item, _| {
-                let txt = match &item.item {
-                    Item::HeroShard(name) => format!("{name} shard"),
-                    Item::Hero(unit) => format!("{} hero", unit.bases.join("+")),
-                    Item::Lootbox => format!("Lootbox"),
-                };
-                Notification::new(format!("New item: {txt}")).push_op();
+                let txt = item.item.cstr();
+                Notification::new("New item: ".cstr().push(txt).take()).push_op();
                 TableState::reset_cache_op();
             });
             TItem::on_delete(|item, _| {
-                let txt = match &item.item {
-                    Item::HeroShard(name) => format!("{name} shard"),
-                    Item::Hero(unit) => format!("{} hero", unit.bases.join("+")),
-                    Item::Lootbox => format!("Lootbox"),
-                };
-                Notification::new(format!("Item removed: {txt}")).push_op();
+                let txt = item.item.cstr();
+                Notification::new("Item removed: ".cstr_c(VISIBLE_LIGHT).push(txt).take())
+                    .push_op();
                 TableState::reset_cache_op();
             });
         });
@@ -114,7 +113,7 @@ impl LoginPlugin {
                                     });
                                 }
                                 spacetimedb_sdk::reducer::Status::Failed(e) => {
-                                    Notification::new(format!("Login failed: {e}")).push_op()
+                                    Notification::new_string(format!("Login failed: {e}")).push_op()
                                 }
                                 _ => panic!(),
                             };
@@ -134,7 +133,8 @@ impl LoginPlugin {
                         once_on_register_empty(|_, _, status| match status {
                             spacetimedb_sdk::reducer::Status::Committed => {
                                 OperationsPlugin::add(|world| {
-                                    Notification::new("New player created".to_owned()).push(world);
+                                    Notification::new_string("New player created".to_owned())
+                                        .push(world);
                                     let identity = ConnectOption::get(world).creds.identity.clone();
                                     let user = TUser::find(|u| u.identities.contains(&identity))
                                         .expect("Failed to find user after registration");
@@ -142,7 +142,7 @@ impl LoginPlugin {
                                 })
                             }
                             spacetimedb_sdk::reducer::Status::Failed(e) => {
-                                Notification::new(format!("Registration failed: {e}"))
+                                Notification::new_string(format!("Registration failed: {e}"))
                                     .error()
                                     .push_op()
                             }
@@ -166,7 +166,7 @@ impl LoginPlugin {
                             spacetimedb_sdk::reducer::Status::Failed(e) => {
                                 let text = format!("Login failed: {e}");
                                 error!("{text}");
-                                Notification::new(text).error().push_op();
+                                Notification::new_string(text).error().push_op();
                             }
                             _ => panic!(),
                         });

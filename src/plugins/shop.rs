@@ -247,7 +247,7 @@ impl ShopPlugin {
                 stack_team(source as u8, target);
                 once_on_stack_team(|_, _, status, _, _| match status {
                     StdbStatus::Committed => {}
-                    StdbStatus::Failed(e) => Notification::new(format!("Stack failed: {e}"))
+                    StdbStatus::Failed(e) => Notification::new_string(format!("Stack failed: {e}"))
                         .error()
                         .push_op(),
                     _ => panic!(),
@@ -257,7 +257,7 @@ impl ShopPlugin {
                 stack_shop(source as u8, target);
                 once_on_stack_shop(|_, _, status, _, _| match status {
                     StdbStatus::Committed => {}
-                    StdbStatus::Failed(e) => Notification::new(format!("Stack failed: {e}"))
+                    StdbStatus::Failed(e) => Notification::new_string(format!("Stack failed: {e}"))
                         .error()
                         .push_op(),
                     _ => panic!(),

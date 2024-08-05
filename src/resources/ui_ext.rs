@@ -172,7 +172,8 @@ impl ShowTable<TItem> for Vec<TItem> {
                                 craft_hero(base.clone());
                                 once_on_craft_hero(|_, _, status, hero| match status {
                                     StdbStatus::Committed => {
-                                        Notification::new(format!("{hero} crafted")).push_op()
+                                        Notification::new_string(format!("{hero} crafted"))
+                                            .push_op()
                                     }
                                     StdbStatus::Failed(e) => e.notify_error(),
                                     _ => panic!(),
@@ -190,10 +191,10 @@ impl ShowTable<TItem> for Vec<TItem> {
                                 let id = if active { None } else { Some(d.id) };
                                 set_starting_hero(id);
                                 once_on_set_starting_hero(move |_, _, status, id| match status {
-                                    StdbStatus::Committed => {
-                                        Notification::new(format!("{id:?} set as starting hero"))
-                                            .push_op()
-                                    }
+                                    StdbStatus::Committed => Notification::new_string(format!(
+                                        "{id:?} set as starting hero"
+                                    ))
+                                    .push_op(),
                                     StdbStatus::Failed(e) => e.notify_error(),
                                     _ => panic!(),
                                 });
@@ -206,7 +207,7 @@ impl ShowTable<TItem> for Vec<TItem> {
                                 open_lootbox(d.id);
                                 once_on_open_lootbox(move |_, _, status, _| match status {
                                     StdbStatus::Committed => {
-                                        Notification::new("Lootbox opened".into()).push_op()
+                                        Notification::new_string("Lootbox opened".into()).push_op()
                                     }
                                     StdbStatus::Failed(e) => e.notify_error(),
                                     _ => panic!(),

@@ -4,7 +4,7 @@ use super::*;
 
 #[derive(Clone, Debug)]
 pub struct Notification {
-    text: String,
+    text: Cstr,
     r#type: NotificationType,
 }
 
@@ -21,7 +21,10 @@ pub struct NotificationsData {
 }
 
 impl Notification {
-    pub fn new(text: String) -> Self {
+    pub fn new_string(text: String) -> Self {
+        Self::new(text.cstr_c(VISIBLE_LIGHT))
+    }
+    pub fn new(text: Cstr) -> Self {
         Self {
             text,
             r#type: default(),
@@ -29,6 +32,7 @@ impl Notification {
     }
     pub fn error(mut self) -> Self {
         self.r#type = NotificationType::Error;
+        self.text = "Error: ".cstr_c(RED).push(self.text).take();
         self
     }
     pub fn push_op(self) {
@@ -61,11 +65,7 @@ impl Notification {
             .show(ctx, |ui| {
                 for n in notifications {
                     FRAME.show(ui, |ui| {
-                        match n.r#type {
-                            NotificationType::Alert => n.text.cstr_c(VISIBLE_LIGHT),
-                            NotificationType::Error => n.text.cstr_c(RED),
-                        }
-                        .label(ui);
+                        n.text.label(ui);
                     });
                 }
             });
@@ -85,12 +85,12 @@ pub trait NotificationPusher: ToString {
     fn notify(&self) {
         let s = self.to_string();
         info!("{} {}", "Notify: ".dimmed(), s);
-        Notification::new(s).push_op()
+        Notification::new_string(s).push_op()
     }
     fn notify_error(&self) {
         let s = self.to_string();
         error!("{}{s}", "Notify error: ".dimmed());
-        Notification::new(s).error().push_op()
+        Notification::new_string(s).error().push_op()
     }
 }
 

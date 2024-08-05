@@ -419,6 +419,15 @@ impl ToCstr for GameMode {
         }
     }
 }
+impl ToCstr for Item {
+    fn cstr(&self) -> Cstr {
+        match self {
+            Item::HeroShard(name) => name.cstr_c(name_color(name)).push(" shard".cstr()).take(),
+            Item::Hero(unit) => unit.cstr().push(" hero".cstr()).take(),
+            Item::Lootbox => "Lootbox".cstr_c(CYAN),
+        }
+    }
+}
 
 impl From<&str> for SubText {
     fn from(value: &str) -> Self {

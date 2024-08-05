@@ -46,13 +46,13 @@ impl ProfilePlugin {
                 match status {
                     spacetimedb_sdk::reducer::Status::Committed => {
                         OperationsPlugin::add(move |world| {
-                            Notification::new(format!("Name successfully changed to {name}"))
+                            Notification::new_string(format!("Name successfully changed to {name}"))
                                 .push(world);
                             Self::update_user(world);
                         })
                     }
                     spacetimedb_sdk::reducer::Status::Failed(e) => {
-                        Notification::new(format!("Name change error: {e}"))
+                        Notification::new_string(format!("Name change error: {e}"))
                             .error()
                             .push_op()
                     }
@@ -78,7 +78,7 @@ impl ProfilePlugin {
             set_password(ped.old_pass.clone(), ped.pass.clone());
             once_on_set_password(|_, _, status, _, _| {
                 status.on_success(|world| {
-                    Notification::new("Password updated successfully".to_owned()).push(world);
+                    Notification::new_string("Password updated successfully".to_owned()).push(world);
                     Self::update_user(world);
                     let mut ped = world.resource_mut::<ProfileEditData>();
                     ped.pass.clear();
