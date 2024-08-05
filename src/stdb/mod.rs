@@ -47,6 +47,7 @@ pub mod run_start_normal_reducer;
 pub mod run_start_ranked_reducer;
 pub mod set_name_reducer;
 pub mod set_password_reducer;
+pub mod set_starting_hero_reducer;
 pub mod shop_buy_reducer;
 pub mod shop_change_g_reducer;
 pub mod shop_finish_reducer;
@@ -70,6 +71,7 @@ pub mod t_house;
 pub mod t_item;
 pub mod t_meta_shop;
 pub mod t_representation;
+pub mod t_starting_hero;
 pub mod t_status;
 pub mod t_team;
 pub mod t_user;
@@ -106,6 +108,7 @@ pub use run_start_normal_reducer::*;
 pub use run_start_ranked_reducer::*;
 pub use set_name_reducer::*;
 pub use set_password_reducer::*;
+pub use set_starting_hero_reducer::*;
 pub use shop_buy_reducer::*;
 pub use shop_change_g_reducer::*;
 pub use shop_finish_reducer::*;
@@ -129,6 +132,7 @@ pub use t_house::*;
 pub use t_item::*;
 pub use t_meta_shop::*;
 pub use t_representation::*;
+pub use t_starting_hero::*;
 pub use t_status::*;
 pub use t_team::*;
 pub use t_user::*;
@@ -158,6 +162,7 @@ pub enum ReducerEvent {
     RunStartRanked(run_start_ranked_reducer::RunStartRankedArgs),
     SetName(set_name_reducer::SetNameArgs),
     SetPassword(set_password_reducer::SetPasswordArgs),
+    SetStartingHero(set_starting_hero_reducer::SetStartingHeroArgs),
     ShopBuy(shop_buy_reducer::ShopBuyArgs),
     ShopChangeG(shop_change_g_reducer::ShopChangeGArgs),
     ShopFinish(shop_finish_reducer::ShopFinishArgs),
@@ -239,6 +244,11 @@ impl SpacetimeModule for Module {
                     callbacks,
                     table_update,
                 ),
+            "TStartingHero" => client_cache
+                .handle_table_update_with_primary_key::<t_starting_hero::TStartingHero>(
+                    callbacks,
+                    table_update,
+                ),
             "TStatus" => client_cache
                 .handle_table_update_with_primary_key::<t_status::TStatus>(callbacks, table_update),
             "TTeam" => client_cache
@@ -288,6 +298,7 @@ impl SpacetimeModule for Module {
             &reducer_event,
             state,
         );
+        reminders.invoke_callbacks::<t_starting_hero::TStartingHero>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_status::TStatus>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_team::TTeam>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_user::TUser>(worker, &reducer_event, state);
@@ -322,6 +333,7 @@ match &function_call.reducer[..] {
 			"run_start_ranked" => _reducer_callbacks.handle_event_of_type::<run_start_ranked_reducer::RunStartRankedArgs, ReducerEvent>(event, _state, ReducerEvent::RunStartRanked),
 			"set_name" => _reducer_callbacks.handle_event_of_type::<set_name_reducer::SetNameArgs, ReducerEvent>(event, _state, ReducerEvent::SetName),
 			"set_password" => _reducer_callbacks.handle_event_of_type::<set_password_reducer::SetPasswordArgs, ReducerEvent>(event, _state, ReducerEvent::SetPassword),
+			"set_starting_hero" => _reducer_callbacks.handle_event_of_type::<set_starting_hero_reducer::SetStartingHeroArgs, ReducerEvent>(event, _state, ReducerEvent::SetStartingHero),
 			"shop_buy" => _reducer_callbacks.handle_event_of_type::<shop_buy_reducer::ShopBuyArgs, ReducerEvent>(event, _state, ReducerEvent::ShopBuy),
 			"shop_change_g" => _reducer_callbacks.handle_event_of_type::<shop_change_g_reducer::ShopChangeGArgs, ReducerEvent>(event, _state, ReducerEvent::ShopChangeG),
 			"shop_finish" => _reducer_callbacks.handle_event_of_type::<shop_finish_reducer::ShopFinishArgs, ReducerEvent>(event, _state, ReducerEvent::ShopFinish),
@@ -384,6 +396,8 @@ match &function_call.reducer[..] {
                 .handle_resubscribe_for_type::<t_representation::TRepresentation>(
                     callbacks, new_subs,
                 ),
+            "TStartingHero" => client_cache
+                .handle_resubscribe_for_type::<t_starting_hero::TStartingHero>(callbacks, new_subs),
             "TStatus" => {
                 client_cache.handle_resubscribe_for_type::<t_status::TStatus>(callbacks, new_subs)
             }

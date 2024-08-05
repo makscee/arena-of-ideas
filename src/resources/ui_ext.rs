@@ -170,8 +170,23 @@ impl ShowTable<TItem> for Vec<TItem> {
                             r
                         }
                         Item::Hero(_) => {
-                            let r = Button::click("select".into()).ui(ui);
-                            if r.clicked() {}
+                            let active = TStartingHero::get_current()
+                                .map(|d| d.item_id)
+                                .unwrap_or_default()
+                                == d.id;
+                            let r = Button::click("select".into()).active(active).ui(ui);
+                            if r.clicked() {
+                                let id = if active { None } else { Some(d.id) };
+                                set_starting_hero(id);
+                                once_on_set_starting_hero(move |_, _, status, id| match status {
+                                    StdbStatus::Committed => {
+                                        Notification::new(format!("{id:?} set as starting hero"))
+                                            .push_op()
+                                    }
+                                    StdbStatus::Failed(e) => e.notify_error(),
+                                    _ => panic!(),
+                                });
+                            }
                             r
                         }
                     }

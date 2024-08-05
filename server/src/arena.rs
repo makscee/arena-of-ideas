@@ -422,6 +422,7 @@ impl TArenaRun {
         let mut run = TArenaRun::new(user.id, mode);
         run.fill_case()?;
         run.reward_limit = reward_limit;
+        let _ = run.set_starting_hero();
         TArenaRun::insert(run)?;
         Ok(())
     }
@@ -598,5 +599,16 @@ impl TArenaRun {
                 self.id,
             ));
         }
+    }
+    fn set_starting_hero(&mut self) -> Result<(), String> {
+        if matches!(self.mode, GameMode::ArenaConst(..)) {
+            return Err("Mode not supported".into());
+        }
+        if let Ok(unit) = TStartingHero::get(self.owner) {
+            let rarity = unit.rarity();
+            self.add_to_team(unit)?;
+            self.g -= settings().rarities.prices[rarity as usize];
+        }
+        Ok(())
     }
 }

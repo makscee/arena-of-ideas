@@ -265,6 +265,14 @@ pub trait TableSingletonExt {
     fn get_current() -> Option<Box<Self>>;
 }
 
+impl TableSingletonExt for GlobalData {
+    fn current() -> Self {
+        *Self::get_current().unwrap()
+    }
+    fn get_current() -> Option<Box<Self>> {
+        Self::iter().exactly_one().ok().map(|d| Box::new(d))
+    }
+}
 impl TableSingletonExt for TArenaRun {
     fn current() -> Self {
         *Self::get_current().unwrap()
@@ -281,7 +289,7 @@ impl TableSingletonExt for TWallet {
         Self::iter().exactly_one().ok().map(|d| Box::new(d))
     }
 }
-impl TableSingletonExt for GlobalData {
+impl TableSingletonExt for TStartingHero {
     fn current() -> Self {
         *Self::get_current().unwrap()
     }
