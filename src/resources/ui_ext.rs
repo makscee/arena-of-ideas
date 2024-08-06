@@ -114,12 +114,12 @@ impl ShowTable<TMetaShop> for Vec<TMetaShop> {
     ) -> TableState {
         let mut t = Table::new(name)
             .title()
-            .column_cstr("name", |d: &TMetaShop| match &d.item {
+            .column_cstr("name", |d: &TMetaShop| match &d.stack.item {
                 Item::HeroShard(name) => name.cstr_c(name_color(&name)),
                 Item::Hero(unit) => unit.cstr(),
                 Item::Lootbox => "lootbox".cstr_c(CYAN),
             })
-            .column_cstr("type", |d| match &d.item {
+            .column_cstr("type", |d| match &d.stack.item {
                 Item::HeroShard(_) => "shard".cstr(),
                 Item::Hero(_) => "hero".cstr(),
                 Item::Lootbox => "normal".cstr(),
@@ -157,26 +157,26 @@ impl ShowTable<TItem> for Vec<TItem> {
     ) -> TableState {
         let mut t = Table::new(name)
             .title()
-            .column_cstr("name", |d: &TItem| match &d.item {
+            .column_cstr("name", |d: &TItem| match &d.stack.item {
                 Item::HeroShard(name) => name.cstr_c(name_color(&name)),
                 Item::Hero(unit) => unit.cstr(),
                 Item::Lootbox => "normal".cstr(),
             })
-            .column_cstr("type", |d| match &d.item {
+            .column_cstr("type", |d| match &d.stack.item {
                 Item::HeroShard(_) => "shard".cstr(),
                 Item::Hero(_) => "hero".cstr_c(YELLOW),
                 Item::Lootbox => "lootbox".cstr_c(CYAN),
             })
-            .column_int("count", |d| d.count as i32)
+            .column_int("count", |d| d.stack.count as i32)
             .column(
                 "action",
                 |_| default(),
                 |d, _, ui, world| {
                     let craft_cost = GameAssets::get(world).global_settings.craft_shards_cost;
-                    match &d.item {
+                    match &d.stack.item {
                         Item::HeroShard(base) => {
                             let r = Button::click("craft".into())
-                                .enabled(d.count >= craft_cost)
+                                .enabled(d.stack.count >= craft_cost)
                                 .ui(ui);
                             if r.clicked() {
                                 craft_hero(base.clone());
@@ -215,9 +215,14 @@ impl ShowTable<TItem> for Vec<TItem> {
                             let r = Button::click("open".into()).ui(ui);
                             if r.clicked() {
                                 open_lootbox(d.id);
-                                once_on_open_lootbox(move |_, _, status, _| match status {
+                                once_on_open_lootbox(move |_, _, status, id| match status {
                                     StdbStatus::Committed => {
-                                        Notification::new_string("Lootbox opened".into()).push_op()
+                                        let id = *id;
+                                        OperationsPlugin::add(move |world| {
+                                            Notification::new_string("Lootbox opened".into())
+                                                .push(world);
+                                            Trade::open(id, &egui_context(world).unwrap());
+                                        });
                                     }
                                     StdbStatus::Failed(e) => e.notify_error(),
                                     _ => panic!(),

@@ -8,6 +8,11 @@ pub struct TItem {
     #[primarykey]
     pub id: u64,
     pub owner: u64,
+    pub stack: ItemStack,
+}
+
+#[derive(SpacetimeType, Clone)]
+pub struct ItemStack {
     pub item: Item,
     pub count: u32,
 }
@@ -20,8 +25,14 @@ pub enum Item {
 }
 
 impl Item {
+    pub fn to_stack(self, count: u32) -> ItemStack {
+        ItemStack { item: self, count }
+    }
+}
+
+impl ItemStack {
     pub fn take(self, owner: u64) -> Result<(), String> {
-        match &self {
+        match &self.item {
             Item::HeroShard(base) => {
                 TItem::change_shards(owner, base.clone(), 1)?;
             }
@@ -29,28 +40,25 @@ impl Item {
                 let item = TItem {
                     id: next_id(),
                     owner,
-                    item: self,
-                    count: 1,
+                    stack: self,
                 };
                 TItem::insert(item)?;
             }
             Item::Lootbox => {
-                let mut item = if let Some(item) = TItem::filter_by_owner(&owner)
-                    .filter(|d| d.item.eq(&self))
+                if let Some(mut item) = TItem::filter_by_owner(&owner)
+                    .filter(|d| d.stack.item.eq(&self.item))
                     .at_most_one()
                     .map_err(|e| e.to_string())?
                 {
-                    item
+                    item.stack.count += self.count;
+                    TItem::update_by_id(&item.id.clone(), item);
                 } else {
                     TItem::insert(TItem {
                         id: next_id(),
                         owner,
-                        item: self.clone(),
-                        count: 0,
-                    })?
+                        stack: self.clone(),
+                    })?;
                 };
-                item.count += 1;
-                TItem::update_by_id(&item.id.clone(), item);
             }
         };
         Ok(())
@@ -61,7 +69,7 @@ impl TItem {
     fn change_shards(owner: u64, base: String, delta: i32) -> Result<(), String> {
         let shard_item = Item::HeroShard(base.clone());
         let mut item = if let Some(item) = Self::filter_by_owner(&owner)
-            .filter(|d| shard_item.eq(&d.item))
+            .filter(|d| shard_item.eq(&d.stack.item))
             .at_most_one()
             .map_err(|e| e.to_string())?
         {
@@ -70,15 +78,17 @@ impl TItem {
             Self::insert(Self {
                 id: next_id(),
                 owner,
-                item: shard_item,
-                count: 0,
+                stack: ItemStack {
+                    item: shard_item,
+                    count: 0,
+                },
             })?
         };
-        if item.count as i32 + delta < 0 {
+        if item.stack.count as i32 + delta < 0 {
             return Err("Not enough shards".into());
         }
-        item.count = (item.count as i32 + delta) as u32;
-        if item.count == 0 {
+        item.stack.count = (item.stack.count as i32 + delta) as u32;
+        if item.stack.count == 0 {
             Self::delete_by_id(&item.id);
         } else {
             Self::update_by_id(&item.id.clone(), item);
@@ -91,13 +101,11 @@ impl TItem {
             base.clone(),
             -(GlobalSettings::get().craft_shards_cost as i32),
         )?;
-        let id = next_id();
-        let hero = FusedUnit::from_base(base, id)?.mutate();
+        let hero = FusedUnit::from_base(base, next_id())?.mutate();
         Self::insert(Self {
             id: next_id(),
             owner,
-            item: Item::Hero(hero),
-            count: 1,
+            stack: Item::Hero(hero).to_stack(1),
         })?;
         Ok(())
     }
@@ -116,15 +124,21 @@ fn open_lootbox(ctx: ReducerContext, id: u64) -> Result<(), String> {
     if item.owner != user.id {
         return Err(format!("Item #{id} not owned by {}", user.id));
     }
-    if item.count == 0 {
+    if item.stack.count == 0 {
         return Err("Lootbox count is 0".into());
     }
-    item.count -= 1;
+    item.stack.count -= 1;
     let amount = thread_rng().gen_range(3..7);
-    for _ in 0..amount {
-        let name = TBaseUnit::iter().choose(&mut thread_rng()).unwrap().name;
-        Item::HeroShard(name).take(user.id)?;
+    let items = (0..amount)
+        .map(|_| {
+            Item::HeroShard(TBaseUnit::iter().choose(&mut thread_rng()).unwrap().name).to_stack(1)
+        })
+        .collect_vec();
+    TTrade::open_lootbox(user.id, id, items)?;
+    if item.stack.count == 0 {
+        TItem::delete_by_id(&id);
+    } else {
+        TItem::update_by_id(&id, item);
     }
-    TItem::update_by_id(&id, item);
     Ok(())
 }

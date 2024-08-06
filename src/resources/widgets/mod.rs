@@ -9,6 +9,7 @@ mod slider;
 mod subsection_menu;
 mod table;
 mod tile;
+mod trade;
 mod unit_card;
 mod unit_container;
 
@@ -24,5 +25,6 @@ pub use slider::*;
 pub use subsection_menu::*;
 pub use table::*;
 pub use tile::*;
+pub use trade::*;
 pub use unit_card::*;
 pub use unit_container::*;

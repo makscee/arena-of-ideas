@@ -2,7 +2,7 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN RUST INSTEAD.
 
 #![allow(unused_imports)]
-use super::item::Item;
+use super::item_stack::ItemStack;
 use spacetimedb_sdk::{
     anyhow::{anyhow, Result},
     identity::Identity,
@@ -17,8 +17,7 @@ use spacetimedb_sdk::{
 pub struct TItem {
     pub id: u64,
     pub owner: u64,
-    pub item: Item,
-    pub count: u32,
+    pub stack: ItemStack,
 }
 
 impl TableType for TItem {
@@ -43,11 +42,7 @@ impl TItem {
         Self::filter(|row| row.owner == owner)
     }
     #[allow(unused)]
-    pub fn filter_by_item(item: Item) -> TableIter<Self> {
-        Self::filter(|row| row.item == item)
-    }
-    #[allow(unused)]
-    pub fn filter_by_count(count: u32) -> TableIter<Self> {
-        Self::filter(|row| row.count == count)
+    pub fn filter_by_stack(stack: ItemStack) -> TableIter<Self> {
+        Self::filter(|row| row.stack == stack)
     }
 }

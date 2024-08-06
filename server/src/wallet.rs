@@ -34,6 +34,6 @@ impl TWallet {
 fn give_credits(ctx: ReducerContext) -> Result<(), String> {
     ctx.is_admin()?;
     let user = TUser::find_by_identity(&ctx.sender)?;
-    TWallet::change(user.id, 10)?;
+    TWallet::change(user.id, 100)?;
     Ok(())
 }

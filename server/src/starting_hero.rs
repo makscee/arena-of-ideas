@@ -14,7 +14,7 @@ impl TStartingHero {
         if item.owner != owner {
             return Err(format!("Item not owned by #{owner}"));
         }
-        match item.item {
+        match item.stack.item {
             Item::Hero(unit) => Ok(unit),
             _ => {
                 return Err(format!("Wrong item type for #{}", item.id));

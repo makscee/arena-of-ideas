@@ -15,6 +15,7 @@ mod starting_hero;
 mod status;
 mod sync;
 mod team;
+mod trade;
 mod user;
 mod wallet;
 
@@ -38,6 +39,7 @@ pub use spacetimedb::{
 };
 pub use starting_hero::*;
 pub use team::*;
+pub use trade::*;
 pub use user::*;
 pub use wallet::*;
 

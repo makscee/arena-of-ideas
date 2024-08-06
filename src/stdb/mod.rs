@@ -20,6 +20,7 @@ use spacetimedb_sdk::{
 };
 use std::sync::Arc;
 
+pub mod accept_trade_reducer;
 pub mod arena_settings;
 pub mod battle_settings;
 pub mod craft_hero_reducer;
@@ -33,6 +34,7 @@ pub mod give_credits_reducer;
 pub mod global_data;
 pub mod global_settings;
 pub mod item;
+pub mod item_stack;
 pub mod login_by_identity_reducer;
 pub mod login_reducer;
 pub mod logout_reducer;
@@ -77,6 +79,7 @@ pub mod t_representation;
 pub mod t_starting_hero;
 pub mod t_status;
 pub mod t_team;
+pub mod t_trade;
 pub mod t_user;
 pub mod t_wallet;
 pub mod team_slot;
@@ -84,6 +87,7 @@ pub mod update_constant_seed_reducer;
 pub mod upload_assets_reducer;
 pub mod upload_game_archive_reducer;
 
+pub use accept_trade_reducer::*;
 pub use arena_settings::*;
 pub use battle_settings::*;
 pub use craft_hero_reducer::*;
@@ -97,6 +101,7 @@ pub use give_credits_reducer::*;
 pub use global_data::*;
 pub use global_settings::*;
 pub use item::*;
+pub use item_stack::*;
 pub use login_by_identity_reducer::*;
 pub use login_reducer::*;
 pub use logout_reducer::*;
@@ -141,6 +146,7 @@ pub use t_representation::*;
 pub use t_starting_hero::*;
 pub use t_status::*;
 pub use t_team::*;
+pub use t_trade::*;
 pub use t_user::*;
 pub use t_wallet::*;
 pub use team_slot::*;
@@ -151,6 +157,7 @@ pub use upload_game_archive_reducer::*;
 #[allow(unused)]
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub enum ReducerEvent {
+    AcceptTrade(accept_trade_reducer::AcceptTradeArgs),
     CraftHero(craft_hero_reducer::CraftHeroArgs),
     FuseCancel(fuse_cancel_reducer::FuseCancelArgs),
     FuseChoose(fuse_choose_reducer::FuseChooseArgs),
@@ -261,6 +268,8 @@ impl SpacetimeModule for Module {
                 .handle_table_update_with_primary_key::<t_status::TStatus>(callbacks, table_update),
             "TTeam" => client_cache
                 .handle_table_update_with_primary_key::<t_team::TTeam>(callbacks, table_update),
+            "TTrade" => client_cache
+                .handle_table_update_with_primary_key::<t_trade::TTrade>(callbacks, table_update),
             "TUser" => client_cache
                 .handle_table_update_with_primary_key::<t_user::TUser>(callbacks, table_update),
             "TWallet" => client_cache
@@ -309,6 +318,7 @@ impl SpacetimeModule for Module {
         reminders.invoke_callbacks::<t_starting_hero::TStartingHero>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_status::TStatus>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_team::TTeam>(worker, &reducer_event, state);
+        reminders.invoke_callbacks::<t_trade::TTrade>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_user::TUser>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_wallet::TWallet>(worker, &reducer_event, state);
     }
@@ -324,7 +334,8 @@ impl SpacetimeModule for Module {
         };
         #[allow(clippy::match_single_binding)]
 match &function_call.reducer[..] {
-						"craft_hero" => _reducer_callbacks.handle_event_of_type::<craft_hero_reducer::CraftHeroArgs, ReducerEvent>(event, _state, ReducerEvent::CraftHero),
+						"accept_trade" => _reducer_callbacks.handle_event_of_type::<accept_trade_reducer::AcceptTradeArgs, ReducerEvent>(event, _state, ReducerEvent::AcceptTrade),
+			"craft_hero" => _reducer_callbacks.handle_event_of_type::<craft_hero_reducer::CraftHeroArgs, ReducerEvent>(event, _state, ReducerEvent::CraftHero),
 			"fuse_cancel" => _reducer_callbacks.handle_event_of_type::<fuse_cancel_reducer::FuseCancelArgs, ReducerEvent>(event, _state, ReducerEvent::FuseCancel),
 			"fuse_choose" => _reducer_callbacks.handle_event_of_type::<fuse_choose_reducer::FuseChooseArgs, ReducerEvent>(event, _state, ReducerEvent::FuseChoose),
 			"fuse_start" => _reducer_callbacks.handle_event_of_type::<fuse_start_reducer::FuseStartArgs, ReducerEvent>(event, _state, ReducerEvent::FuseStart),
@@ -413,6 +424,9 @@ match &function_call.reducer[..] {
             }
             "TTeam" => {
                 client_cache.handle_resubscribe_for_type::<t_team::TTeam>(callbacks, new_subs)
+            }
+            "TTrade" => {
+                client_cache.handle_resubscribe_for_type::<t_trade::TTrade>(callbacks, new_subs)
             }
             "TUser" => {
                 client_cache.handle_resubscribe_for_type::<t_user::TUser>(callbacks, new_subs)

@@ -201,7 +201,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
             .ctx()
             .data_mut(|w| w.get_temp::<TableState>(id))
             .unwrap_or_default();
-        if state.indices.is_empty() && state.filter.is_none() {
+        if state.indices.is_empty() && state.filter.is_none() || state.indices.len() > data.len() {
             state.indices = (0..data.len()).collect_vec();
         }
 

@@ -2,7 +2,7 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN RUST INSTEAD.
 
 #![allow(unused_imports)]
-use super::item::Item;
+use super::item_stack::ItemStack;
 use spacetimedb_sdk::{
     anyhow::{anyhow, Result},
     identity::Identity,
@@ -16,7 +16,7 @@ use spacetimedb_sdk::{
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct TMetaShop {
     pub id: u64,
-    pub item: Item,
+    pub stack: ItemStack,
     pub price: i64,
 }
 
@@ -38,8 +38,8 @@ impl TMetaShop {
         Self::find(|row| row.id == id)
     }
     #[allow(unused)]
-    pub fn filter_by_item(item: Item) -> TableIter<Self> {
-        Self::filter(|row| row.item == item)
+    pub fn filter_by_stack(stack: ItemStack) -> TableIter<Self> {
+        Self::filter(|row| row.stack == stack)
     }
     #[allow(unused)]
     pub fn filter_by_price(price: i64) -> TableIter<Self> {

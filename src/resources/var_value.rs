@@ -276,6 +276,7 @@ impl VarValue {
     }
     pub fn compare(a: &VarValue, b: &VarValue) -> Result<Ordering> {
         match (a, b) {
+            (VarValue::None, VarValue::None) => Ok(Ordering::Equal),
             (VarValue::Float(a), VarValue::Float(b)) => Ok(a.total_cmp(b)),
             (VarValue::Int(a), VarValue::Int(b)) => Ok(a.cmp(b)),
             (VarValue::U64(a), VarValue::U64(b)) => Ok(a.cmp(b)),

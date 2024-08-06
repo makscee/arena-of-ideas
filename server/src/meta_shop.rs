@@ -16,7 +16,7 @@ pub struct MetaSettings {
 pub struct TMetaShop {
     #[primarykey]
     id: u64,
-    item: Item,
+    stack: ItemStack,
     price: i64,
 }
 
@@ -28,7 +28,7 @@ impl TMetaShop {
         let ms = GlobalSettings::get().meta;
         Self::insert(Self {
             id: next_id(),
-            item: Item::Lootbox,
+            stack: Item::Lootbox.to_stack(1),
             price: ms.price_lootbox,
         })?;
         for i in TBaseUnit::iter()
@@ -36,7 +36,7 @@ impl TMetaShop {
             .into_iter()
             .map(|u| Self {
                 id: next_id(),
-                item: Item::HeroShard(u.name),
+                stack: Item::HeroShard(u.name).to_stack(1),
                 price: ms.price_shard,
             })
         {
@@ -77,5 +77,5 @@ fn meta_buy(ctx: ReducerContext, id: u64) -> Result<(), String> {
     let user = ctx.user()?;
     let item = TMetaShop::filter_by_id(&id).context_str("Item not found")?;
     TWallet::change(user.id, -item.price)?;
-    item.item.take(user.id)
+    item.stack.take(user.id)
 }

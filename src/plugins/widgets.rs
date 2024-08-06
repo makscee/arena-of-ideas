@@ -281,6 +281,7 @@ impl WidgetsPlugin {
         }
 
         Notification::show_recent(&wd, ctx, world);
+        Trade::show_active(ctx, world);
         Confirmation::show_current(ctx, world);
         world.insert_resource(wd);
         world.insert_resource(ws);
