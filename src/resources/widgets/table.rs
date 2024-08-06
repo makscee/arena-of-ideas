@@ -157,7 +157,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
             TableColumn {
                 value: Box::new(move |d| value(d).into()),
                 show: Box::new(|_, v, ui, _| {
-                    format_timestamp(v.get_gid().unwrap())
+                    format_timestamp(v.get_u64().unwrap())
                         .cstr_cs(VISIBLE_DARK, CstrStyle::Small)
                         .label(ui)
                 }),
@@ -177,7 +177,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
             TableColumn {
                 value: Box::new(move |d| gid(d).into()),
                 show: Box::new(move |_, v, ui, w| {
-                    let gid = v.get_gid().unwrap();
+                    let gid = v.get_u64().unwrap();
                     if gid == 0 {
                         return "...".cstr().label(ui);
                     } else {
@@ -193,7 +193,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
         );
         self
     }
-    pub fn ui(&mut self, data: &Vec<T>, ui: &mut Ui, world: &mut World) -> TableState {
+    pub fn ui(&mut self, data: &[T], ui: &mut Ui, world: &mut World) -> TableState {
         let mut need_sort = false;
         let mut need_filter = false;
         let id = Id::new("table_").with(self.name).with(ui.id());

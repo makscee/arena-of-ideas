@@ -62,6 +62,7 @@ impl WidgetsPlugin {
 
         let state = cur_state(world);
         let mut ws = world.remove_resource::<WidgetsState>().unwrap();
+        let mut wd = world.remove_resource::<WidgetData>().unwrap();
 
         // Tiles
         Tile::show_all_tiles(ctx, world);
@@ -75,7 +76,10 @@ impl WidgetsPlugin {
                         text_dots_text(&"name".cstr(), &user_name().cstr_c(VISIBLE_LIGHT), ui);
                         text_dots_text(
                             &"credits".cstr(),
-                            &TWallet::current().amount.to_string().cstr_c(VISIBLE_LIGHT),
+                            &TWallet::current()
+                                .amount
+                                .to_string()
+                                .cstr_cs(YELLOW, CstrStyle::Bold),
                             ui,
                         );
                         space(ui);
@@ -250,10 +254,9 @@ impl WidgetsPlugin {
             GameState::Battle => BattlePlugin::show_tiles(ctx, world),
             GameState::TableView(query) => TableViewPlugin::ui(query, ctx, world),
             GameState::Meta => MetaPlugin::ui_tiles(ctx, world),
-
+            GameState::Inbox => InboxPlugin::ui_tiles(&wd, ctx, world),
             _ => {}
         }
-        let mut wd = world.remove_resource::<WidgetData>().unwrap();
 
         // Content
         CentralPanel::default()
@@ -277,7 +280,7 @@ impl WidgetsPlugin {
             _ => {}
         }
 
-        Notification::show_all(&wd, ctx, world);
+        Notification::show_recent(&wd, ctx, world);
         Confirmation::show_current(ctx, world);
         world.insert_resource(wd);
         world.insert_resource(ws);

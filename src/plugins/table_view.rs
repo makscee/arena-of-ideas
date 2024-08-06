@@ -53,7 +53,7 @@ impl TableViewPlugin {
     fn draw_history(ctx: &egui::Context, world: &mut World) {
         let td = world.remove_resource::<TablesData>().unwrap();
         let show_team = |_: &TBattle, gid: VarValue, ui: &mut Ui, _: &mut World| {
-            let gid = gid.get_gid().unwrap();
+            let gid = gid.get_u64().unwrap();
             if gid == 0 {
                 "...".cstr().label(ui)
             } else {

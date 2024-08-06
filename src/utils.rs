@@ -1,4 +1,5 @@
 use bevy::input::mouse::MouseButton;
+use chrono::Utc;
 use spacetimedb_sdk::table::TableType;
 
 use super::*;
@@ -21,8 +22,11 @@ pub fn egui_context(world: &mut World) -> Option<egui::Context> {
 pub fn delta_time(world: &World) -> f32 {
     world.resource::<Time>().delta_seconds()
 }
-pub fn elapsed_time(world: &World) -> f32 {
+pub fn elapsed_seconds(world: &World) -> f32 {
     world.resource::<Time>().elapsed_seconds()
+}
+pub fn now_micros() -> i64 {
+    Utc::now().timestamp_micros()
 }
 pub fn get_context_bool(world: &mut World, key: &str) -> bool {
     let id = Id::new(key);

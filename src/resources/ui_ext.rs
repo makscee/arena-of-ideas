@@ -125,14 +125,24 @@ impl ShowTable<TMetaShop> for Vec<TMetaShop> {
                 Item::Lootbox => "normal".cstr(),
             })
             .column_cstr("price", |d| d.price.to_string().cstr_c(YELLOW))
-            .column_btn("buy", |d, _, _| {
-                meta_buy(d.id);
-                once_on_meta_buy(|_, _, status, _| match status {
-                    StdbStatus::Committed => {}
-                    StdbStatus::Failed(e) => e.notify_error(),
-                    _ => panic!(),
-                });
-            });
+            .column(
+                "buy",
+                |_| default(),
+                |d, _, ui, _| {
+                    let c = TWallet::current().amount;
+                    let can_afford = c >= d.price;
+                    let r = Button::click("buy".into()).enabled(can_afford).ui(ui);
+                    if r.clicked() {
+                        meta_buy(d.id);
+                        once_on_meta_buy(|_, _, status, _| match status {
+                            StdbStatus::Committed => {}
+                            StdbStatus::Failed(e) => e.notify_error(),
+                            _ => panic!(),
+                        });
+                    }
+                    r
+                },
+            );
         t = m(t);
         t.ui(self, ui, world)
     }
@@ -154,7 +164,7 @@ impl ShowTable<TItem> for Vec<TItem> {
             })
             .column_cstr("type", |d| match &d.item {
                 Item::HeroShard(_) => "shard".cstr(),
-                Item::Hero(_) => "hero".cstr(),
+                Item::Hero(_) => "hero".cstr_c(YELLOW),
                 Item::Lootbox => "lootbox".cstr_c(CYAN),
             })
             .column_int("count", |d| d.count as i32)

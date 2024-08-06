@@ -17,7 +17,7 @@ enum NotificationType {
 
 #[derive(Default, Debug)]
 pub struct NotificationsData {
-    shown: VecDeque<(f32, Notification)>,
+    shown: VecDeque<(i64, Notification)>,
 }
 
 impl Notification {
@@ -39,21 +39,20 @@ impl Notification {
         OperationsPlugin::add(|w| self.push(w));
     }
     pub fn push(self, world: &mut World) {
-        let t = elapsed_time(world);
-        world
-            .resource_mut::<WidgetData>()
-            .notifications
-            .shown
-            .push_back((t, self));
+        let t = now_micros();
+        let d = &mut world.resource_mut::<WidgetData>().notifications.shown;
+        d.push_front((t, self));
+        d.make_contiguous();
     }
-    pub fn show_all(wd: &WidgetData, ctx: &egui::Context, world: &mut World) {
-        let elapsed = elapsed_time(world);
+    pub fn show_recent(wd: &WidgetData, ctx: &egui::Context, _: &mut World) {
+        let now = now_micros();
         let notifications = wd
             .notifications
             .shown
             .iter()
-            .filter(|(t, _)| elapsed - *t < 5.0)
+            .filter(|(t, _)| now - *t < 5000000)
             .map(|(_, n)| n.clone())
+            .rev()
             .collect_vec();
         if notifications.is_empty() {
             return;
@@ -69,6 +68,12 @@ impl Notification {
                     });
                 }
             });
+    }
+    pub fn show_all_table(wd: &WidgetData, ui: &mut Ui, world: &mut World) {
+        Table::new("Notifications")
+            .column_cstr("text", |(_, n): &(i64, Notification)| n.text.clone())
+            .column_ts("time", |(t, _)| *t as u64)
+            .ui(&wd.notifications.shown.as_slices().0, ui, world);
     }
 }
 

@@ -34,6 +34,12 @@ impl Default for SectionMenu {
                     options: [GameOption::ActiveRun].into(),
                 },
                 GameSection {
+                    name: "INBOX".to_owned(),
+                    target_state: GameState::Inbox,
+                    inner_states: default(),
+                    options: [GameOption::Login].into(),
+                },
+                GameSection {
                     name: "HISTORY".to_owned(),
                     target_state: GameState::TableView(StdbQuery::BattleHistory),
                     inner_states: default(),

@@ -207,7 +207,7 @@ impl VarValue {
         }
         Ok(vec![self.get_faction()?])
     }
-    pub fn get_gid(&self) -> Result<u64> {
+    pub fn get_u64(&self) -> Result<u64> {
         match self {
             VarValue::U64(v) => Ok(*v),
             _ => Err(anyhow!("Faction not supported by {self:?}")),
@@ -218,12 +218,12 @@ impl VarValue {
             VarValue::List(list) => {
                 return Ok(list
                     .into_iter()
-                    .filter_map(|v| v.get_gid().ok())
+                    .filter_map(|v| v.get_u64().ok())
                     .collect_vec());
             }
             _ => {}
         }
-        Ok(vec![self.get_gid()?])
+        Ok(vec![self.get_u64()?])
     }
 
     pub fn sum(a: &VarValue, b: &VarValue) -> Result<VarValue> {
