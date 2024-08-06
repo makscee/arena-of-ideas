@@ -1,6 +1,3 @@
-use base_unit::TBaseUnit;
-use rand::{seq::IteratorRandom, thread_rng};
-
 use super::*;
 
 #[spacetimedb(table)]
@@ -12,7 +9,7 @@ pub struct TMetaShop {
 }
 
 impl TMetaShop {
-    pub fn init() -> Result<(), String> {
+    pub fn refresh() -> Result<(), String> {
         for Self { id, .. } in Self::iter() {
             Self::delete_by_id(&id);
         }
@@ -34,6 +31,21 @@ impl TMetaShop {
         })?;
         Ok(())
     }
+}
+
+#[spacetimedb(reducer)]
+pub fn meta_shop_refresh() -> Result<(), String> {
+    schedule!("30s", meta_shop_refresh());
+    let last_refresh = GlobalData::get().last_shop_refresh;
+    let since = Timestamp::now()
+        .duration_since(last_refresh)
+        .map_err(|_| "Elapsed duration get error".to_owned())?;
+    if since.as_secs() < 25 {
+        return Err("Not enough time passed".to_owned());
+    }
+    TMetaShop::refresh()?;
+    GlobalData::register_shop_refresh();
+    Ok(())
 }
 
 #[spacetimedb(reducer)]

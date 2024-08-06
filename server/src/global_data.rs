@@ -1,8 +1,5 @@
-use itertools::Itertools;
-use rand::{distributions::Alphanumeric, thread_rng, Rng};
-use spacetimedb::{println, schedule, Timestamp};
-
 use super::*;
+use spacetimedb::println;
 
 #[spacetimedb(table)]
 pub struct GlobalData {
@@ -12,6 +9,7 @@ pub struct GlobalData {
     pub game_version: String,
     pub season: u32,
     pub last_sync: Timestamp,
+    pub last_shop_refresh: Timestamp,
     pub constant_seed: String,
 }
 
@@ -24,6 +22,7 @@ impl GlobalData {
             next_id: 1,
             game_version: VERSION.to_owned(),
             last_sync: Timestamp::UNIX_EPOCH,
+            last_shop_refresh: Timestamp::UNIX_EPOCH,
             season,
             constant_seed: String::new(),
         })?;
@@ -45,6 +44,11 @@ impl GlobalData {
     pub fn register_sync() {
         let mut gd = Self::get();
         gd.last_sync = Timestamp::now();
+        Self::update_by_always_zero(&0, gd);
+    }
+    pub fn register_shop_refresh() {
+        let mut gd = Self::get();
+        gd.last_shop_refresh = Timestamp::now();
         Self::update_by_always_zero(&0, gd);
     }
 }

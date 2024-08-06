@@ -2,7 +2,7 @@ use ability::TAbility;
 use base_unit::TBaseUnit;
 use house::THouse;
 use representation::TRepresentation;
-use spacetimedb::TableType;
+
 use status::TStatus;
 
 use super::*;
@@ -47,7 +47,7 @@ fn replace_assets(
         TAbility::insert(ability)?;
     }
     GlobalData::register_sync();
-    TMetaShop::init()?;
+    schedule!("1ms", meta_shop_refresh());
     Ok(())
 }
 

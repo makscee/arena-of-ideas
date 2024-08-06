@@ -19,6 +19,7 @@ pub struct GlobalData {
     pub game_version: String,
     pub season: u32,
     pub last_sync: u64,
+    pub last_shop_refresh: u64,
     pub constant_seed: String,
 }
 
@@ -47,6 +48,10 @@ impl GlobalData {
     #[allow(unused)]
     pub fn filter_by_last_sync(last_sync: u64) -> TableIter<Self> {
         Self::filter(|row| row.last_sync == last_sync)
+    }
+    #[allow(unused)]
+    pub fn filter_by_last_shop_refresh(last_shop_refresh: u64) -> TableIter<Self> {
+        Self::filter(|row| row.last_shop_refresh == last_shop_refresh)
     }
     #[allow(unused)]
     pub fn filter_by_constant_seed(constant_seed: String) -> TableIter<Self> {
