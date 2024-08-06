@@ -117,12 +117,12 @@ impl ShowTable<TMetaShop> for Vec<TMetaShop> {
             .column_cstr("name", |d: &TMetaShop| match &d.item {
                 Item::HeroShard(name) => name.cstr_c(name_color(&name)),
                 Item::Hero(unit) => unit.cstr(),
-                Item::Lootbox => "normal".cstr(),
+                Item::Lootbox => "lootbox".cstr_c(CYAN),
             })
             .column_cstr("type", |d| match &d.item {
                 Item::HeroShard(_) => "shard".cstr(),
                 Item::Hero(_) => "hero".cstr(),
-                Item::Lootbox => "lootbox".cstr_c(CYAN),
+                Item::Lootbox => "normal".cstr(),
             })
             .column_cstr("price", |d| d.price.to_string().cstr_c(YELLOW))
             .column_btn("buy", |d, _, _| {

@@ -46,8 +46,10 @@ fn replace_assets(
     for ability in abilities {
         TAbility::insert(ability)?;
     }
+    if GlobalData::get().last_sync.eq(&Timestamp::UNIX_EPOCH) {
+        schedule!("1ms", meta_shop_refresh());
+    }
     GlobalData::register_sync();
-    schedule!("1ms", meta_shop_refresh());
     Ok(())
 }
 

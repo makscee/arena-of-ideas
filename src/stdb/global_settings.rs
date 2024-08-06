@@ -4,6 +4,7 @@
 #![allow(unused_imports)]
 use super::arena_settings::ArenaSettings;
 use super::battle_settings::BattleSettings;
+use super::meta_settings::MetaSettings;
 use super::rarity_settings::RaritySettings;
 use spacetimedb_sdk::{
     anyhow::{anyhow, Result},
@@ -22,6 +23,7 @@ pub struct GlobalSettings {
     pub rarities: RaritySettings,
     pub battle: BattleSettings,
     pub craft_shards_cost: u32,
+    pub meta: MetaSettings,
 }
 
 impl TableType for GlobalSettings {
@@ -49,5 +51,9 @@ impl GlobalSettings {
     #[allow(unused)]
     pub fn filter_by_craft_shards_cost(craft_shards_cost: u32) -> TableIter<Self> {
         Self::filter(|row| row.craft_shards_cost == craft_shards_cost)
+    }
+    #[allow(unused)]
+    pub fn filter_by_meta(meta: MetaSettings) -> TableIter<Self> {
+        Self::filter(|row| row.meta == meta)
     }
 }

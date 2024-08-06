@@ -25,7 +25,7 @@ impl Default for SectionMenu {
                     name: "META".to_owned(),
                     target_state: GameState::Meta,
                     inner_states: default(),
-                    options: default(),
+                    options: [GameOption::Login].into(),
                 },
                 GameSection {
                     name: "GAME".to_owned(),
