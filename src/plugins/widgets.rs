@@ -65,7 +65,7 @@ impl WidgetsPlugin {
         let mut wd = world.remove_resource::<WidgetData>().unwrap();
 
         // Tiles
-        Tile::show_all_tiles(ctx, world);
+        Tile::show_tile_stack(ctx, world);
         match state {
             GameState::Title => {
                 Tile::left("Main Menu")

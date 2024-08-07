@@ -145,54 +145,43 @@ impl Tile {
 
     pub fn add_team(gid: u64, ctx: &egui::Context) {
         ctx.data_mut(|w| {
-            let m: &mut TileMap = w.get_temp_mut_or_default(tile_map_id());
-            m.insert(gid, TileContent::Team(TTeam::filter_by_id(gid)));
+            w.insert_temp(
+                context_tile_id(),
+                TileContent::Team(TTeam::filter_by_id(gid)),
+            );
         });
     }
     pub fn add_user(gid: u64, ctx: &egui::Context) {
         ctx.data_mut(|w| {
-            let m: &mut TileMap = w.get_temp_mut_or_default(tile_map_id());
-            m.insert(gid, TileContent::User(TUser::filter_by_id(gid)));
+            w.insert_temp(
+                context_tile_id(),
+                TileContent::User(TUser::filter_by_id(gid)),
+            );
         });
     }
     pub fn add_fused_unit(unit: FusedUnit, ctx: &egui::Context) {
         ctx.data_mut(|w| {
-            let m: &mut TileMap = w.get_temp_mut_or_default(tile_map_id());
-            m.insert(unit.id, TileContent::FusedUnit(Some(unit)));
+            w.insert_temp(context_tile_id(), TileContent::FusedUnit(Some(unit)));
         });
     }
 
-    pub fn show_all_tiles(ctx: &egui::Context, world: &mut World) {
-        let id = tile_map_id();
-        let mut m: TileMap = ctx.data(|r| r.get_temp(id)).unwrap_or_default();
-        for (gid, tile) in &mut m {
-            match tile {
-                TileContent::Team(t) => Tile::right("Team")
-                    .with_id(Id::new(*gid))
-                    .close_btn()
-                    .show_data(t, ctx, |t, ui| t.show(ui, world)),
-                TileContent::FusedUnit(u) => Tile::right("Unit")
-                    .with_id(Id::new(*gid))
-                    .close_btn()
-                    .show_data(u, ctx, |t, ui| t.show(ui, world)),
-                TileContent::User(u) => Tile::right("User")
-                    .with_id(Id::new(*gid))
-                    .close_btn()
-                    .show_data(u, ctx, |t, ui| t.show(ui, world)),
-            };
-        }
+    pub fn show_tile_stack(ctx: &egui::Context, world: &mut World) {
+        let id = context_tile_id();
+        let mut d = ctx
+            .data_mut(|w| w.remove_temp::<TileContent>(id))
+            .unwrap_or_default();
+        d.show(ctx, world);
         ctx.data_mut(|w| {
-            let t = w.get_temp_mut_or_default::<TileMap>(id);
-            for (k, v) in m {
-                t.insert(k, v);
+            if w.get_temp::<TileContent>(id).is_none() {
+                w.insert_temp(id, d);
             }
         });
     }
 }
 
-fn tile_map_id() -> Id {
-    static TILES_DATA: OnceCell<Id> = OnceCell::new();
-    *TILES_DATA.get_or_init(|| Id::new("tiles_data"))
+fn context_tile_id() -> Id {
+    static TILE_DATA: OnceCell<Id> = OnceCell::new();
+    *TILE_DATA.get_or_init(|| Id::new("tiles_data"))
 }
 
 const FRAME: Frame = Frame {
@@ -204,11 +193,35 @@ const FRAME: Frame = Frame {
     stroke: Stroke::NONE,
 };
 
-type TileMap = OrderedHashMap<u64, TileContent>;
-
 #[derive(Clone, Debug)]
 enum TileContent {
     Team(Option<TTeam>),
     FusedUnit(Option<FusedUnit>),
     User(Option<TUser>),
+}
+
+impl Default for TileContent {
+    fn default() -> Self {
+        Self::Team(None)
+    }
+}
+
+impl TileContent {
+    fn show(&mut self, ctx: &egui::Context, world: &mut World) {
+        let id = context_tile_id();
+        match self {
+            TileContent::Team(t) => Tile::right("Team")
+                .with_id(Id::new(id))
+                .close_btn()
+                .show_data(t, ctx, |t, ui| t.show(ui, world)),
+            TileContent::FusedUnit(u) => Tile::right("Unit")
+                .with_id(Id::new(id))
+                .close_btn()
+                .show_data(u, ctx, |t, ui| t.show(ui, world)),
+            TileContent::User(u) => Tile::right("User")
+                .with_id(Id::new(id))
+                .close_btn()
+                .show_data(u, ctx, |t, ui| t.show(ui, world)),
+        };
+    }
 }
