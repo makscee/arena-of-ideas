@@ -101,9 +101,10 @@ impl TItem {
             base.clone(),
             -(GlobalSettings::get().craft_shards_cost as i32),
         )?;
-        let hero = FusedUnit::from_base(base, next_id())?.mutate();
+        let id = next_id();
+        let hero = FusedUnit::from_base(base, id)?.mutate();
         Self::insert(Self {
-            id: next_id(),
+            id,
             owner,
             stack: Item::Hero(hero).to_stack(1),
         })?;

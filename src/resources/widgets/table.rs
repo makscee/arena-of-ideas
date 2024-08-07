@@ -20,7 +20,7 @@ pub struct TableState {
 }
 
 pub struct TableColumn<T> {
-    value: Box<dyn Fn(&T) -> VarValue>,
+    value: Box<dyn Fn(&T, &World) -> VarValue>,
     show: Box<dyn Fn(&T, VarValue, &mut Ui, &mut World) -> Response>,
     sortable: bool,
 }
@@ -66,14 +66,14 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
     pub fn column(
         mut self,
         name: &'static str,
-        value: fn(&T) -> VarValue,
+        value: fn(&T, &World) -> VarValue,
         show: fn(&T, VarValue, &mut Ui, &mut World) -> Response,
     ) -> Self {
         self.columns.insert(
             name,
             TableColumn {
-                show: Box::new(show),
                 value: Box::new(value),
+                show: Box::new(show),
                 sortable: true,
             },
         );
@@ -83,7 +83,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
         self.columns.insert(
             name,
             TableColumn {
-                value: Box::new(|_| name.to_string().into()),
+                value: Box::new(|_, _| name.to_string().into()),
                 show: Box::new(move |d, _, ui, w| {
                     let r = Button::click(name.to_string()).ui(ui);
                     if r.clicked() {
@@ -96,11 +96,11 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
         );
         self
     }
-    pub fn column_cstr(mut self, name: &'static str, value: fn(&T) -> Cstr) -> Self {
+    pub fn column_cstr(mut self, name: &'static str, value: fn(&T, &World) -> Cstr) -> Self {
         self.columns.insert(
             name,
             TableColumn {
-                value: Box::new(move |d| value(d).into()),
+                value: Box::new(move |d, w| value(d, w).into()),
                 show: Box::new(|_, v, ui, _| v.get_cstr().unwrap().label(ui)),
                 sortable: true,
             },
@@ -110,13 +110,13 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
     pub fn column_cstr_click(
         mut self,
         name: &'static str,
-        value: fn(&T) -> Cstr,
+        value: fn(&T, &World) -> Cstr,
         on_click: fn(Cstr, &mut World),
     ) -> Self {
         self.columns.insert(
             name,
             TableColumn {
-                value: Box::new(move |d| value(d).into()),
+                value: Box::new(move |d, w| value(d, w).into()),
                 show: Box::new(move |_, v, ui, w| {
                     let r = v.get_cstr().unwrap().button(ui);
                     if r.clicked() {
@@ -133,7 +133,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
         self.columns.insert(
             name,
             TableColumn {
-                value: Box::new(move |d| value(d).into()),
+                value: Box::new(move |d, _| value(d).into()),
                 show: Box::new(|_, v, ui, _| v.cstr().label(ui)),
                 sortable: true,
             },
@@ -144,7 +144,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
         self.columns.insert(
             name,
             TableColumn {
-                value: Box::new(move |d| value(d).into()),
+                value: Box::new(move |d, _| value(d).into()),
                 show: Box::new(|_, v, ui, _| v.cstr().label(ui)),
                 sortable: true,
             },
@@ -155,7 +155,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
         self.columns.insert(
             name,
             TableColumn {
-                value: Box::new(move |d| value(d).into()),
+                value: Box::new(move |d, _| value(d).into()),
                 show: Box::new(|_, v, ui, _| {
                     format_timestamp(v.get_u64().unwrap())
                         .cstr_cs(VISIBLE_DARK, CstrStyle::Small)
@@ -175,7 +175,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
         self.columns.insert(
             name,
             TableColumn {
-                value: Box::new(move |d| gid(d).into()),
+                value: Box::new(move |d, _| gid(d).into()),
                 show: Box::new(move |_, v, ui, w| {
                     let gid = v.get_u64().unwrap();
                     if gid == 0 {
@@ -184,6 +184,29 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                         let r = gid.get_user().cstr().button(ui);
                         if r.clicked() {
                             on_click(gid, ui, w);
+                        }
+                        r
+                    }
+                }),
+                sortable: true,
+            },
+        );
+        self
+    }
+    pub fn column_team(mut self, name: &'static str, gid: fn(&T) -> u64) -> Self {
+        self.columns.insert(
+            name,
+            TableColumn {
+                value: Box::new(move |d, _| gid(d).into()),
+                show: Box::new(|_, gid: VarValue, ui: &mut Ui, _: &mut World| {
+                    let gid = gid.get_u64().unwrap();
+                    if gid == 0 {
+                        "...".cstr().label(ui)
+                    } else {
+                        let team = gid.get_team();
+                        let r = team.cstr().button(ui);
+                        if r.clicked() {
+                            Tile::add_team(team.id, ui.ctx());
                         }
                         r
                     }
@@ -276,7 +299,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                     for (_, col) in self.columns.iter() {
                         row.col(|ui| {
                             let d = &data[row_i];
-                            let v = (col.value)(d);
+                            let v = (col.value)(d, world);
                             (col.show)(d, v, ui, world);
                         });
                     }
@@ -298,7 +321,9 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
             if let Some(filter) = state.filter {
                 let (_, col, filter) = &self.filters[filter];
                 let col = self.columns.get(col).unwrap();
-                state.indices.retain(|v| (col.value)(&data[*v]).eq(filter));
+                state
+                    .indices
+                    .retain(|v| (col.value)(&data[*v], world).eq(filter));
             }
         }
         if need_sort {
@@ -310,8 +335,8 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                 state.indices = (0..data.len()).collect_vec();
             }
             state.indices.sort_by(|a, b| {
-                let a = (value)(&data[*a]);
-                let b = (value)(&data[*b]);
+                let a = (value)(&data[*a], world);
+                let b = (value)(&data[*b], world);
                 if desc {
                     VarValue::compare(&b, &a).unwrap()
                 } else {

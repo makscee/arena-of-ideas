@@ -30,16 +30,8 @@ impl Trade {
             };
 
             Table::new("Items")
-                .column_cstr("name", |d: &ItemStack| match &d.item {
-                    Item::HeroShard(name) => name.cstr_c(name_color(&name)),
-                    Item::Hero(unit) => unit.cstr(),
-                    Item::Lootbox => "normal".cstr(),
-                })
-                .column_cstr("type", |d| match &d.item {
-                    Item::HeroShard(_) => "shard".cstr(),
-                    Item::Hero(_) => "hero".cstr_c(YELLOW),
-                    Item::Lootbox => "lootbox".cstr_c(CYAN),
-                })
+                .column_cstr("name", |d: &ItemStack, _| d.item.name_cstr())
+                .column_cstr("type", |d, w| d.item.type_cstr(w))
                 .column_int("count", |d| d.count as i32)
                 .ui(&items, ui, world);
             ui.vertical_centered_justified(|ui| {

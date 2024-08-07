@@ -30,6 +30,14 @@ impl Rarity {
     pub fn from_int(v: i8) -> Self {
         Self::from_repr(v).unwrap_or_default()
     }
+    pub fn from_base(name: &str, world: &World) -> Self {
+        let v = GameAssets::get(world)
+            .heroes
+            .get(name)
+            .map(|h| h.rarity)
+            .unwrap_or_default();
+        Self::from_int(v)
+    }
 }
 
 impl ToCstr for Rarity {

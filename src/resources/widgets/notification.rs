@@ -71,7 +71,7 @@ impl Notification {
     }
     pub fn show_all_table(wd: &WidgetData, ui: &mut Ui, world: &mut World) {
         Table::new("Notifications")
-            .column_cstr("text", |(_, n): &(i64, Notification)| n.text.clone())
+            .column_cstr("text", |(_, n): &(i64, Notification), _| n.text.clone())
             .column_ts("time", |(t, _)| *t as u64)
             .ui(&wd.notifications.shown.as_slices().0, ui, world);
     }

@@ -52,37 +52,24 @@ impl TableViewPlugin {
     }
     fn draw_history(ctx: &egui::Context, world: &mut World) {
         let td = world.remove_resource::<TablesData>().unwrap();
-        let show_team = |_: &TBattle, gid: VarValue, ui: &mut Ui, _: &mut World| {
-            let gid = gid.get_u64().unwrap();
-            if gid == 0 {
-                "...".cstr().label(ui)
-            } else {
-                let team = gid.get_team();
-                let r = team.cstr().button(ui);
-                if r.clicked() {
-                    Tile::add_team(team.id, ui.ctx());
-                }
-                r
-            }
-        };
         Tile::left("Battle History").show(ctx, |ui| {
             Table::new("Battle History")
                 .title()
                 .column_gid("id", |d: &TBattle| d.id)
-                .column_cstr("mode", |d| d.mode.cstr())
+                .column_cstr("mode", |d, _| d.mode.cstr())
                 .column_user_click(
                     "player",
                     |d| d.owner,
                     |gid, ui, _| Tile::add_user(gid, ui.ctx()),
                 )
-                .column("player team >", |d| d.team_left.into(), show_team)
-                .column("< enemy team", |d| d.team_right.into(), show_team)
+                .column_team("player team >", |d| d.team_left)
+                .column_team("< enemy team", |d| d.team_right)
                 .column_user_click(
                     "enemy",
                     |d| d.team_right.get_team().owner,
                     |gid, ui, _| Tile::add_user(gid, ui.ctx()),
                 )
-                .column_cstr("result", |d| match d.result {
+                .column_cstr("result", |d, _| match d.result {
                     TBattleResult::Tbd => "-".cstr(),
                     TBattleResult::Left | TBattleResult::Even => "W".cstr_c(GREEN),
                     TBattleResult::Right => "L".cstr_c(RED),

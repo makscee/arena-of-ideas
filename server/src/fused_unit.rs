@@ -59,7 +59,9 @@ impl FusedUnit {
     }
     pub fn mutate(mut self) -> Self {
         self.hp += Self::roll_stat_mutation();
+        self.hp = self.hp.max(1);
         self.pwr += Self::roll_stat_mutation();
+        self.pwr = self.pwr.max(0);
         self
     }
     pub fn fuse(a: &FusedUnit, b: &FusedUnit) -> Result<Vec<FusedUnit>, String> {

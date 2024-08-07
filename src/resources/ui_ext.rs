@@ -24,7 +24,7 @@ impl ShowTable<TTeam> for Vec<TTeam> {
         let mut t = Table::new(name)
             .title()
             .selectable()
-            .column_cstr("units", |d: &TTeam| d.cstr());
+            .column_cstr("units", |d: &TTeam, _| d.cstr());
         t = m(t);
         t.ui(self, ui, world)
     }
@@ -39,16 +39,19 @@ impl ShowTable<TBaseUnit> for Vec<TBaseUnit> {
     ) -> TableState {
         let mut t = Table::new(name)
             .title()
-            .column_cstr("name", |d: &TBaseUnit| d.name.cstr_c(name_color(&d.name)))
-            .column_cstr("house", |d| {
+            .column_cstr("name", |d: &TBaseUnit, _| {
+                d.name.cstr_c(name_color(&d.name))
+            })
+            .column_cstr("house", |d, _| {
                 let color = name_color(&d.house);
                 d.house.cstr_c(color)
             })
+            .column_cstr("rarity", |d, _| Rarity::from_int(d.rarity).cstr())
             .column_int("pwr", |d| d.pwr)
             .column_int("hp", |d| d.hp)
             .column(
                 "rarity",
-                |u| (u.rarity as i32).into(),
+                |u, _| (u.rarity as i32).into(),
                 |u, _, ui, _| Rarity::from_int(u.rarity).cstr().label(ui),
             );
         t = m(t);
@@ -63,17 +66,31 @@ impl ShowTable<FusedUnit> for Vec<FusedUnit> {
         world: &mut World,
         m: fn(Table<FusedUnit>) -> Table<FusedUnit>,
     ) -> TableState {
-        let mut t = Table::new(name).title().column(
-            "name",
-            |d: &FusedUnit| d.id.into(),
-            |d, _, ui, _| {
-                let r = d.cstr_limit(0).button(ui);
-                if r.clicked() {
-                    Tile::add_fused_unit(d.clone(), ui.ctx());
-                }
-                r
-            },
-        );
+        let mut t = Table::new(name)
+            .title()
+            .column(
+                "name",
+                |d: &FusedUnit, _| d.id.into(),
+                |d, _, ui, _| {
+                    let r = d.cstr_limit(0).button(ui);
+                    if r.clicked() {
+                        Tile::add_fused_unit(d.clone(), ui.ctx());
+                    }
+                    r
+                },
+            )
+            .column(
+                "rarity",
+                |d, _| d.bases[0].clone().into(),
+                |_, v, ui, world| {
+                    Rarity::from_base(&v.get_string().unwrap(), world)
+                        .cstr()
+                        .label(ui)
+                },
+            )
+            .column_int("lvl", |d| d.lvl as i32)
+            .column_int("pwr", |d| d.pwr)
+            .column_int("hp", |d| d.hp);
         t = m(t);
         t.ui(self, ui, world)
     }
@@ -91,15 +108,13 @@ impl ShowTable<TArenaLeaderboard> for Vec<TArenaLeaderboard> {
             .column_int("round", |d: &TArenaLeaderboard| d.round as i32)
             .column_int("score", |d| d.score as i32)
             .column_ts("time", |d| d.ts)
-            .column_cstr("team", |d| {
-                d.team.get_team().cstr().style(CstrStyle::Small).take()
-            })
+            .column_team("team", |d| d.team)
             .column_user_click(
                 "owner",
                 |d| d.user,
                 |gid, ui, _| Tile::add_user(gid, ui.ctx()),
             )
-            .column_cstr("mode", |d| d.mode.cstr());
+            .column_cstr("mode", |d, _| d.mode.cstr());
         t = m(t);
         t.ui(self, ui, world)
     }
@@ -114,20 +129,12 @@ impl ShowTable<TMetaShop> for Vec<TMetaShop> {
     ) -> TableState {
         let mut t = Table::new(name)
             .title()
-            .column_cstr("name", |d: &TMetaShop| match &d.stack.item {
-                Item::HeroShard(name) => name.cstr_c(name_color(&name)),
-                Item::Hero(unit) => unit.cstr(),
-                Item::Lootbox => "lootbox".cstr_c(CYAN),
-            })
-            .column_cstr("type", |d| match &d.stack.item {
-                Item::HeroShard(_) => "shard".cstr(),
-                Item::Hero(_) => "hero".cstr(),
-                Item::Lootbox => "normal".cstr(),
-            })
-            .column_cstr("price", |d| d.price.to_string().cstr_c(YELLOW))
+            .column_cstr("name", |d: &TMetaShop, _| d.stack.item.name_cstr())
+            .column_cstr("type", |d, w| d.stack.item.type_cstr(w))
+            .column_cstr("price", |d, _| d.price.to_string().cstr_c(YELLOW))
             .column(
                 "buy",
-                |_| default(),
+                |_, _| default(),
                 |d, _, ui, _| {
                     let c = TWallet::current().amount;
                     let can_afford = c >= d.price;
@@ -157,81 +164,13 @@ impl ShowTable<TItem> for Vec<TItem> {
     ) -> TableState {
         let mut t = Table::new(name)
             .title()
-            .column_cstr("name", |d: &TItem| match &d.stack.item {
-                Item::HeroShard(name) => name.cstr_c(name_color(&name)),
-                Item::Hero(unit) => unit.cstr(),
-                Item::Lootbox => "normal".cstr(),
-            })
-            .column_cstr("type", |d| match &d.stack.item {
-                Item::HeroShard(_) => "shard".cstr(),
-                Item::Hero(_) => "hero".cstr_c(YELLOW),
-                Item::Lootbox => "lootbox".cstr_c(CYAN),
-            })
+            .column_cstr("name", |d: &TItem, _| d.stack.item.name_cstr())
+            .column_cstr("type", |d, w| d.stack.item.type_cstr(w))
             .column_int("count", |d| d.stack.count as i32)
             .column(
                 "action",
-                |_| default(),
-                |d, _, ui, world| {
-                    let craft_cost = GameAssets::get(world).global_settings.craft_shards_cost;
-                    match &d.stack.item {
-                        Item::HeroShard(base) => {
-                            let r = Button::click("craft".into())
-                                .enabled(d.stack.count >= craft_cost)
-                                .ui(ui);
-                            if r.clicked() {
-                                craft_hero(base.clone());
-                                once_on_craft_hero(|_, _, status, hero| match status {
-                                    StdbStatus::Committed => {
-                                        Notification::new_string(format!("{hero} crafted"))
-                                            .push_op()
-                                    }
-                                    StdbStatus::Failed(e) => e.notify_error(),
-                                    _ => panic!(),
-                                });
-                            }
-                            r
-                        }
-                        Item::Hero(_) => {
-                            let active = TStartingHero::get_current()
-                                .map(|d| d.item_id)
-                                .unwrap_or_default()
-                                == d.id;
-                            let r = Button::click("select".into()).active(active).ui(ui);
-                            if r.clicked() {
-                                let id = if active { None } else { Some(d.id) };
-                                set_starting_hero(id);
-                                once_on_set_starting_hero(move |_, _, status, id| match status {
-                                    StdbStatus::Committed => Notification::new_string(format!(
-                                        "{id:?} set as starting hero"
-                                    ))
-                                    .push_op(),
-                                    StdbStatus::Failed(e) => e.notify_error(),
-                                    _ => panic!(),
-                                });
-                            }
-                            r
-                        }
-                        Item::Lootbox => {
-                            let r = Button::click("open".into()).ui(ui);
-                            if r.clicked() {
-                                open_lootbox(d.id);
-                                once_on_open_lootbox(move |_, _, status, id| match status {
-                                    StdbStatus::Committed => {
-                                        let id = *id;
-                                        OperationsPlugin::add(move |world| {
-                                            Notification::new_string("Lootbox opened".into())
-                                                .push(world);
-                                            Trade::open(id, &egui_context(world).unwrap());
-                                        });
-                                    }
-                                    StdbStatus::Failed(e) => e.notify_error(),
-                                    _ => panic!(),
-                                });
-                            }
-                            r
-                        }
-                    }
-                },
+                |_, _| default(),
+                |d, _, ui, world| d.action(ui, world),
             );
         t = m(t);
         t.ui(self, ui, world)
