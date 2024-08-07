@@ -205,14 +205,14 @@ fn submit_battle_result(ctx: ReducerContext, result: TBattleResult) -> Result<()
         return Err("Result already submitted".to_owned());
     }
     battle.set_result(result).save();
-    if matches!(result, TBattleResult::Right) {
+    if matches!(result, TBattleResult::Left) {
+        run.score += run.round;
+    } else {
         if TArenaLeaderboard::current_champion(&run.mode).is_some_and(|t| t.team == enemy) {
             run.lives = 0;
         } else {
             run.lives -= 1;
         }
-    } else {
-        run.score += run.round;
     }
     if run.lives == 0 || is_no_enemy {
         run.finish();

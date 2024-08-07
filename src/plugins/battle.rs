@@ -430,8 +430,8 @@ impl BattleResult {
     pub fn is_win(&self) -> Option<bool> {
         match self {
             BattleResult::Tbd => None,
-            BattleResult::Left(..) | BattleResult::Even => Some(true),
-            BattleResult::Right(..) => Some(false),
+            BattleResult::Left(..) => Some(true),
+            BattleResult::Right(..) | BattleResult::Even => Some(false),
         }
     }
 }
