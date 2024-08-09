@@ -271,8 +271,6 @@ impl From<FusedUnit> for PackedUnit {
             let house_color = name_color(&base.house).to_color();
             rarity_colors.push(rarity_color(base.rarity).to_color());
             house_colors.push(house_color);
-            result.pwr = result.pwr.max(base.pwr);
-            result.hp = result.hp.max(base.hp);
             result.rarity = result.rarity.max(base.rarity);
             result.houses.push(base.house);
             if let Some(mut repr) = RepresentationPlugin::get_by_id(base.name.clone()) {
@@ -281,6 +279,8 @@ impl From<FusedUnit> for PackedUnit {
                 result.representation.children.push(Box::new(repr));
             }
         }
+        result.pwr = value.pwr;
+        result.hp = value.hp;
         state.init(VarName::RarityColors, rarity_colors.into());
         state.init(VarName::HouseColors, house_colors.into());
         result.name = value.bases.join("+");

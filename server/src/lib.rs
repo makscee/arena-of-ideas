@@ -74,7 +74,7 @@ pub enum GameMode {
     ArenaConst(String),
 }
 
-const ADMIN_IDENTITY_HEX: &str = "6617138da5d77d4289f74b2fff59e9aa1a7b87292f23908eccaa3510b606729e";
+const ADMIN_IDENTITY_HEX: &str = "ad22b9dc867768c48531281bab2d5e0be1f915c4e46d107547bf624fb6dbf26c";
 pub fn is_admin(identity: &Identity) -> Result<bool, String> {
     Ok(Identity::from_str(ADMIN_IDENTITY_HEX)
         .map_err(|e| e.to_string())?

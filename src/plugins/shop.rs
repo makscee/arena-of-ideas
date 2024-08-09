@@ -225,7 +225,7 @@ impl ShopPlugin {
                 let btn_text = "Start Battle".to_string();
                 if own_round + 1 == champion_round {
                     "Champion Battle".cstr_cs(YELLOW, CstrStyle::Bold).label(ui);
-                } else if own_round == champion_round {
+                } else if own_round == champion_round && champion_round > 0 {
                     "Shadow Battle"
                         .cstr_cs(LIGHT_PURPLE, CstrStyle::Bold)
                         .label(ui);
