@@ -1,7 +1,7 @@
 use std::thread::sleep;
 
 use spacetimedb_sdk::{
-    identity::{load_credentials, once_on_connect},
+    identity::{load_credentials, once_on_connect, save_credentials},
     once_on_subscription_applied,
 };
 
@@ -20,12 +20,12 @@ impl ConnectPlugin {
         load_credentials(HOME_DIR).expect("Failed to load credentials")
     }
     fn connect() {
-        let thread_pool = IoTaskPool::get();
         info!("Connect start");
         once_on_connect(|creds, _| {
             let creds = creds.clone();
             info!("Connected {}", hex::encode(creds.identity.bytes()));
             StdbQuery::Connect.subscribe();
+            save_credentials(HOME_DIR, &creds).expect("Failed to save credentials");
             once_on_subscription_applied(|| {
                 let server_version = GlobalData::current().game_version;
                 if server_version == VERSION {
@@ -61,10 +61,11 @@ impl ConnectPlugin {
                 }
             });
         });
+        let thread_pool = IoTaskPool::get();
         thread_pool
             .spawn(async {
                 let creds: Option<Credentials> = Self::load_credentials();
-                let mut tries = 5;
+                let mut tries = 3;
                 let server = if cfg!(debug_assertions) {
                     client_settings().dev_server.clone()
                 } else {

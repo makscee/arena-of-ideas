@@ -10,17 +10,23 @@ pub struct TBattle {
     pub owner: u64,
     pub team_left: u64,
     pub team_right: u64,
-    result: TBattleResult,
+    pub result: TBattleResult,
     ts: Timestamp,
 }
 
-#[derive(SpacetimeType, Default, Copy, Clone)]
+#[derive(SpacetimeType, Default, Copy, Clone, PartialEq, Eq)]
 pub enum TBattleResult {
     #[default]
     Tbd,
     Left,
     Right,
     Even,
+}
+
+impl TBattleResult {
+    pub fn is_win(self) -> bool {
+        self == Self::Left
+    }
 }
 
 impl TBattle {

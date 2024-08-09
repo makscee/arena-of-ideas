@@ -313,7 +313,7 @@ impl Expression {
                         let b = value
                             .get_value(&context.clone().set_owner(*b), world)
                             .unwrap_or_default();
-                        VarValue::compare(&a, &b).unwrap()
+                        VarValue::compare(&a, &b).unwrap_or(Ordering::Equal)
                     })
                     .context("Filed to find max unit")
                     .map(|u| u.into())

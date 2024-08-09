@@ -29,7 +29,10 @@ impl MetaPlugin {
     pub fn ui_tiles(ctx: &egui::Context, world: &mut World) {
         let mut r = world.resource_mut::<MetaResource>();
         let state = SubsectionMenu::new(r.state).show(ctx);
-        r.state = state;
+        if r.state != state {
+            r.state = state;
+            TeamPlugin::despawn(Faction::Team, world);
+        }
         Tile::left("Meta").open().show(ctx, |ui| match state {
             SubState::Shop => {
                 text_dots_text(
@@ -121,6 +124,11 @@ impl MetaPlugin {
                         |_, _| default(),
                         |d: &FusedUnit, _, ui, _| set_starting_hero_button(d.id, ui),
                     )
+                    .column_btn("spawn", |u, _, world| {
+                        let unit: PackedUnit = u.clone().into();
+                        TeamPlugin::despawn(Faction::Team, world);
+                        unit.unpack(TeamPlugin::entity(Faction::Team, world), None, None, world);
+                    })
                 });
             }
             SubState::Lootboxes => {
@@ -130,6 +138,19 @@ impl MetaPlugin {
                     .show_table("Lootboxes", ui, world);
             }
         });
+    }
+    pub fn ui_content(wd: &mut WidgetData, ui: &mut Ui, world: &mut World) {
+        let r = world.resource::<MetaResource>();
+        match r.state {
+            SubState::Heroes => {
+                UnitContainer::new(Faction::Team)
+                    .hover_content(ShopPlugin::container_on_hover)
+                    .position(egui::vec2(0.5, 0.5))
+                    .slots(1)
+                    .ui(wd, ui, world);
+            }
+            _ => {}
+        }
     }
 }
 fn set_starting_hero_button(id: u64, ui: &mut Ui) -> Response {

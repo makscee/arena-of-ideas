@@ -50,6 +50,7 @@ pub struct TArenaRun {
     owner: u64,
     team: u64,
     battles: Vec<u64>,
+    enemies: Vec<u64>,
     shop_slots: Vec<ShopSlot>,
     team_slots: Vec<TeamSlot>,
     fusion: Option<Fusion>,
@@ -58,6 +59,7 @@ pub struct TArenaRun {
     free_rerolls: u32,
     lives: u32,
     active: bool,
+    finale: bool,
 
     round: u32,
     rerolls: u32,
@@ -172,14 +174,25 @@ fn shop_finish(ctx: ReducerContext) -> Result<(), String> {
     let mut run = TArenaRun::current(&ctx)?;
     run.round += 1;
     let team = TTeam::get(run.team)?.save_clone();
-    let champion = TArenaLeaderboard::current_champion(&run.mode);
-    let enemy = if champion.as_ref().is_some_and(|c| run.round == c.round) {
-        champion.unwrap().team
+    let enemy = if let Some(enemy) = run.enemies.first().copied() {
+        run.enemies.remove(0);
+        enemy
     } else {
-        TArenaPool::get_random(&run.mode, run.round)
-            .map(|t| t.team)
-            .unwrap_or_default()
+        let c = TArenaLeaderboard::current_champion(&run.mode);
+        if c.as_ref().is_some_and(|c| c.round == run.round) {
+            run.enemies.push(team.id);
+            run.finale = true;
+            c.unwrap().team
+        } else {
+            TArenaPool::get_random(&run.mode, run.round)
+                .map(|d| d.team)
+                .unwrap_or_default()
+        }
     };
+    if enemy == 0 {
+        run.finale = true;
+    }
+
     run.battles
         .push(TBattle::new(run.mode.clone(), run.owner, team.id, enemy));
     if !team.units.is_empty() {
@@ -199,8 +212,6 @@ fn submit_battle_result(ctx: ReducerContext, result: TBattleResult) -> Result<()
     let mut run = TArenaRun::current(&ctx)?;
     let bid = *run.battles.last().context_str("Last battle not present")?;
     let battle = TBattle::get(bid)?;
-    let enemy = battle.team_right;
-    let is_no_enemy = enemy == 0;
     if !battle.is_tbd() {
         return Err("Result already submitted".to_owned());
     }
@@ -208,13 +219,13 @@ fn submit_battle_result(ctx: ReducerContext, result: TBattleResult) -> Result<()
     if matches!(result, TBattleResult::Left) {
         run.score += run.round;
     } else {
-        if TArenaLeaderboard::current_champion(&run.mode).is_some_and(|t| t.team == enemy) {
+        if run.finale {
             run.lives = 0;
         } else {
             run.lives -= 1;
         }
     }
-    if run.lives == 0 || is_no_enemy {
+    if run.lives == 0 || (run.finale && run.enemies.is_empty()) {
         run.finish();
     }
     run.save();
@@ -408,9 +419,11 @@ impl TArenaRun {
             lives: ars.lives_initial,
             free_rerolls: ars.free_rerolls_initial,
             active: true,
+            finale: false,
             mode,
             rewards: Vec::new(),
             reward_limit: 0,
+            enemies: Vec::new(),
         }
     }
     fn start(user: TUser, mode: GameMode) -> Result<(), String> {
@@ -582,22 +595,25 @@ impl TArenaRun {
             self.rewards
                 .push(Reward::new("Score".into(), self.score as i64));
         }
-        if self.round > 0
-            && TArenaLeaderboard::filter_by_round(&self.round)
-                .filter(|d| d.mode.eq(&self.mode))
-                .count()
-                == 0
-        {
-            self.rewards
-                .push(Reward::new("Champion defeated".into(), 10));
-            TArenaLeaderboard::insert(TArenaLeaderboard::new(
-                self.mode.clone(),
-                self.round,
-                self.score,
-                self.owner,
-                self.team,
-                self.id,
-            ));
+        if self.finale {
+            if self
+                .battles
+                .last()
+                .and_then(|id| TBattle::filter_by_id(id))
+                .map(|b| b.result.is_win())
+                .unwrap_or_default()
+            {
+                self.rewards
+                    .push(Reward::new("Champion defeated".into(), 10));
+                TArenaLeaderboard::insert(TArenaLeaderboard::new(
+                    self.mode.clone(),
+                    self.round,
+                    self.score,
+                    self.owner,
+                    self.team,
+                    self.id,
+                ));
+            }
         }
     }
     fn set_starting_hero(&mut self) -> Result<(), String> {

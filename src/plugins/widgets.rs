@@ -270,6 +270,7 @@ impl WidgetsPlugin {
                 GameState::TableView(query) => {
                     TableViewPlugin::ui_content(query, &mut wd, ui, world)
                 }
+                GameState::Meta => MetaPlugin::ui_content(&mut wd, ui, world),
                 _ => {}
             });
 
