@@ -9,6 +9,8 @@ pub struct GameAssetsHandles {
     custom_battle: Handle<BattleData>,
     #[asset(key = "unit.rep")]
     unit_rep: Handle<Representation>,
+    #[asset(key = "ghost.unit")]
+    ghost: Handle<PackedUnit>,
     #[asset(key = "status.rep")]
     status_rep: Handle<Representation>,
     #[asset(key = "animations")]
@@ -28,6 +30,7 @@ pub struct GameAssets {
     pub unit_rep: Representation,
     pub status_rep: Representation,
     pub animations: Animations,
+    pub ghost: PackedUnit,
     pub vfxs: HashMap<String, Vfx>,
     pub heroes: HashMap<String, PackedUnit>,
     pub houses: HashMap<String, House>,
@@ -88,6 +91,7 @@ impl GameAssets {
         }
         let ga = world.remove_resource::<GameAssets>().unwrap();
         let unit_rep = ga.unit_rep;
+        let ghost = ga.ghost;
         let status_rep = ga.status_rep;
         let animations = ga.animations;
         let vfxs = ga.vfxs;
@@ -95,6 +99,7 @@ impl GameAssets {
             global_settings,
             default(),
             unit_rep,
+            ghost,
             status_rep,
             animations,
             heroes,
@@ -132,6 +137,7 @@ impl LoadingPlugin {
         global_settings: GlobalSettings,
         custom_battle: BattleData,
         unit_rep: Representation,
+        ghost: PackedUnit,
         status_rep: Representation,
         animations: Animations,
         heroes: HashMap<String, PackedUnit>,
@@ -178,6 +184,7 @@ impl LoadingPlugin {
             global_settings,
             custom_battle,
             unit_rep,
+            ghost,
             status_rep,
             animations,
             heroes,
@@ -207,6 +214,11 @@ impl LoadingPlugin {
         let unit_rep = world
             .resource::<Assets<Representation>>()
             .get(&handles.unit_rep)
+            .unwrap()
+            .clone();
+        let ghost = world
+            .resource::<Assets<PackedUnit>>()
+            .get(&handles.ghost)
             .unwrap()
             .clone();
         let status_rep = world
@@ -240,6 +252,7 @@ impl LoadingPlugin {
             global_settings,
             custom_battle,
             unit_rep,
+            ghost,
             status_rep,
             animations,
             heroes,

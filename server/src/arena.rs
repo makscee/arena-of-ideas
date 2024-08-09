@@ -423,7 +423,7 @@ impl TArenaRun {
             mode,
             rewards: Vec::new(),
             reward_limit: 0,
-            enemies: Vec::new(),
+            enemies: GlobalData::get().initial_enemies,
         }
     }
     fn start(user: TUser, mode: GameMode) -> Result<(), String> {

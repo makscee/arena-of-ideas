@@ -24,6 +24,7 @@ pub struct GlobalSettings {
     pub battle: BattleSettings,
     pub craft_shards_cost: u32,
     pub meta: MetaSettings,
+    pub ghost_unit: String,
 }
 
 impl TableType for GlobalSettings {
@@ -55,5 +56,9 @@ impl GlobalSettings {
     #[allow(unused)]
     pub fn filter_by_meta(meta: MetaSettings) -> TableIter<Self> {
         Self::filter(|row| row.meta == meta)
+    }
+    #[allow(unused)]
+    pub fn filter_by_ghost_unit(ghost_unit: String) -> TableIter<Self> {
+        Self::filter(|row| row.ghost_unit == ghost_unit)
     }
 }

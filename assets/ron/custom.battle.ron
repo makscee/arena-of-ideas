@@ -1,5 +1,54 @@
 #![enable(implicit_some)]
 (
     left: (units: [(hp: 10, pwr: 0), (hp: 10, pwr: 0)]),
-    right: (units: [(hp: 10, pwr: 0), (hp: 10, pwr: 0)]),
+    right: (
+        units: [
+            (
+                name: "Ghost",
+                hp: 1,
+                pwr: 0,
+                rarity: -1,
+                houses: ["Default"],
+                trigger: Fire(
+                    triggers: [(TurnEnd, None)],
+                    targets: [(Owner, None)],
+                    effects: [
+                        (
+                            List(
+                                [
+                                    StateAddVar(Hp, Owner, I(1)),
+                                    StateAddVar(Pwr, Owner, I(1)),
+                                    Text(S("+1/+1")),
+                                ],
+                            ),
+                            Some("Gain +1/+1"),
+                        ),
+                    ],
+                ),
+            ),
+            (
+                name: "Ghost",
+                hp: 1,
+                pwr: 0,
+                rarity: -1,
+                houses: ["Default"],
+                trigger: Fire(
+                    triggers: [(TurnEnd, None)],
+                    targets: [(Owner, None)],
+                    effects: [
+                        (
+                            List(
+                                [
+                                    StateAddVar(Hp, Owner, I(1)),
+                                    StateAddVar(Pwr, Owner, I(1)),
+                                    Text(S("+1/+1")),
+                                ],
+                            ),
+                            Some("Gain +1/+1"),
+                        ),
+                    ],
+                ),
+            ),
+        ],
+    ),
 )

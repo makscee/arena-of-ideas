@@ -222,14 +222,13 @@ impl ShopPlugin {
                     .max()
                     .unwrap_or_default();
                 let own_round = run.round;
-                let mut btn_text = "Start Battle".to_string();
+                let btn_text = "Start Battle".to_string();
                 if own_round + 1 == champion_round {
                     "Champion Battle".cstr_cs(YELLOW, CstrStyle::Bold).label(ui);
                 } else if own_round == champion_round {
-                    "Champion Defeated"
-                        .cstr_cs(GREEN, CstrStyle::Bold)
+                    "Shadow Battle"
+                        .cstr_cs(LIGHT_PURPLE, CstrStyle::Bold)
                         .label(ui);
-                    btn_text = "Empty Battle".to_string();
                 }
                 if Button::click(btn_text).ui(ui).clicked() {
                     shop_finish();

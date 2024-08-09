@@ -3,6 +3,7 @@
         "global_settings": File(path: "ron/_.global_settings.ron"),
         "custom_battle": File(path: "ron/custom.battle.ron"),
         "unit.rep": File(path: "ron/unit.rep.ron"),
+        "ghost.unit": File(path: "ron/ghost.unit.ron"),
         "status.rep": File(path: "ron/status.rep.ron"),
         "animations": File(path: "ron/all.anim.ron"),
         "heroes": Folder(path: "ron/heroes"),

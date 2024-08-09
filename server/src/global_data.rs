@@ -11,6 +11,7 @@ pub struct GlobalData {
     pub last_sync: Timestamp,
     pub last_shop_refresh: Timestamp,
     pub constant_seed: String,
+    pub initial_enemies: Vec<u64>,
 }
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -25,6 +26,7 @@ impl GlobalData {
             last_shop_refresh: Timestamp::UNIX_EPOCH,
             season,
             constant_seed: String::new(),
+            initial_enemies: Vec::new(),
         })?;
         schedule!("1ms", update_constant_seed());
         Ok(())
@@ -49,6 +51,11 @@ impl GlobalData {
     pub fn register_shop_refresh() {
         let mut gd = Self::get();
         gd.last_shop_refresh = Timestamp::now();
+        Self::update_by_always_zero(&0, gd);
+    }
+    pub fn set_initial_enemies(teams: Vec<u64>) {
+        let mut gd = Self::get();
+        gd.initial_enemies = teams;
         Self::update_by_always_zero(&0, gd);
     }
 }

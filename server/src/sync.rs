@@ -46,6 +46,14 @@ fn replace_assets(
     for ability in abilities {
         TAbility::insert(ability)?;
     }
+    let ghost = || FusedUnit::from_base(GlobalSettings::get().ghost_unit, next_id()).unwrap();
+    let enemies = [
+        TTeam::new_with(0, vec![ghost()]),
+        TTeam::new_with(0, vec![ghost(), ghost()]),
+        TTeam::new_with(0, vec![ghost(), ghost(), ghost()]),
+    ]
+    .into();
+    GlobalData::set_initial_enemies(enemies);
     if GlobalData::get().last_sync.eq(&Timestamp::UNIX_EPOCH) {
         schedule!("1ms", meta_shop_refresh());
     }

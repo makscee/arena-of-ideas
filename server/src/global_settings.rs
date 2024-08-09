@@ -11,6 +11,7 @@ pub struct GlobalSettings {
     pub battle: BattleSettings,
     pub craft_shards_cost: u32,
     pub meta: MetaSettings,
+    pub ghost_unit: String,
 }
 
 impl GlobalSettings {

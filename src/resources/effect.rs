@@ -21,6 +21,7 @@ pub enum Effect {
     If(Expression, Box<Effect>, Box<Effect>),
     Vfx(String),
     StateAddVar(VarName, Expression, Expression),
+    Text(Expression),
 }
 
 impl Effect {
@@ -29,15 +30,16 @@ impl Effect {
             Effect::Noop
             | Effect::Damage
             | Effect::Heal
-            | Effect::ChangeStatus(_)
-            | Effect::ClearStatus(_)
-            | Effect::StealStatus(_)
+            | Effect::ChangeStatus(..)
+            | Effect::ClearStatus(..)
+            | Effect::StealStatus(..)
             | Effect::StealAllStatuses
-            | Effect::UseAbility(_, _)
-            | Effect::AbilityStateAddVar(_, _, _)
-            | Effect::Summon(_, _)
-            | Effect::StateAddVar(_, _, _)
-            | Effect::Vfx(_) => context.log(Some(
+            | Effect::UseAbility(..)
+            | Effect::AbilityStateAddVar(..)
+            | Effect::Summon(..)
+            | Effect::Text(..)
+            | Effect::StateAddVar(..)
+            | Effect::Vfx(..) => context.log(Some(
                 "Invoke: "
                     .cstr_c(YELLOW)
                     .push(
@@ -48,12 +50,12 @@ impl Effect {
                     )
                     .take(),
             )),
-            Effect::WithTarget(_, _)
-            | Effect::WithOwner(_, _)
-            | Effect::WithVar(_, _, _)
-            | Effect::List(_)
-            | Effect::Repeat(_, _)
-            | Effect::If(_, _, _) => {}
+            Effect::WithTarget(..)
+            | Effect::WithOwner(..)
+            | Effect::WithVar(..)
+            | Effect::List(..)
+            | Effect::Repeat(..)
+            | Effect::If(..) => {}
         };
         context.set_effect(self.cstr());
         let owner = context.owner();
@@ -310,11 +312,20 @@ impl Effect {
                 let target = target.get_entity(context, world)?;
                 let value = value.get_value(context, world)?;
                 let mut state = VarState::try_get_mut(target, world)?;
-                let value = match state.get_value_last(*var) {
+                let value = match state.get_key_value_last(default(), *var) {
                     Ok(prev) => VarValue::sum(&value, &prev)?,
                     Err(_) => value,
                 };
                 state.push_change(*var, default(), VarChange::new(value));
+            }
+            Effect::Text(text) => {
+                let text = text.get_string(context, world)?;
+                let color = context
+                    .get_value(VarName::Color, world)
+                    .and_then(|c| c.get_color())
+                    .map(|c| c.c32())
+                    .unwrap_or(VISIBLE_BRIGHT);
+                TextColumnPlugin::add(owner, text.cstr_cs(color, CstrStyle::Bold), world);
             }
         }
         Ok(())
