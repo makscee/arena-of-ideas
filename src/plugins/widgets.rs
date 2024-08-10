@@ -8,20 +8,36 @@ pub struct WidgetsPlugin;
 impl Plugin for WidgetsPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Update, Self::ui)
-            .init_resource::<WidgetsState>();
+            .init_resource::<WidgetsState>()
+            .init_resource::<TileResource>();
 
         if cfg!(debug_assertions) {
             app.add_systems(
                 Update,
                 give_c
                     .run_if(input_just_pressed(KeyCode::KeyG).and_then(in_state(GameState::Title))),
-            );
+            )
+            .add_systems(Update, add_tile.run_if(input_just_pressed(KeyCode::KeyT)));
         }
     }
 }
 
 fn give_c() {
     give_credits();
+}
+fn add_tile(world: &mut World) {
+    TileWidget::new(|ui, w| {
+        "12345678910 11 12 13 14 15 16 17 18 19 20".cstr().label(ui);
+        br(ui);
+        "test test test test test test test test test"
+            .cstr()
+            .label(ui);
+        space(ui);
+        "test test test test test test test test test"
+            .cstr()
+            .label(ui);
+    })
+    .push(world);
 }
 
 #[derive(Default, Resource)]
@@ -257,6 +273,7 @@ impl WidgetsPlugin {
             GameState::Inbox => InboxPlugin::ui_tiles(&wd, ctx, world),
             _ => {}
         }
+        TileWidget::show_all(ctx, world);
 
         // Content
         CentralPanel::default()
