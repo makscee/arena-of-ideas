@@ -17,7 +17,19 @@ impl Plugin for WidgetsPlugin {
                 give_c
                     .run_if(input_just_pressed(KeyCode::KeyG).and_then(in_state(GameState::Title))),
             )
-            .add_systems(Update, add_tile.run_if(input_just_pressed(KeyCode::KeyT)));
+            .add_systems(Update, add_tile.run_if(input_just_pressed(KeyCode::KeyT)))
+            .add_systems(
+                Update,
+                move_focus_left.run_if(input_just_pressed(KeyCode::ArrowLeft)),
+            )
+            .add_systems(
+                Update,
+                move_focus_right.run_if(input_just_pressed(KeyCode::ArrowRight)),
+            )
+            .add_systems(
+                Update,
+                remove_tile.run_if(input_just_pressed(KeyCode::KeyY)),
+            );
         }
     }
 }
@@ -26,7 +38,7 @@ fn give_c() {
     give_credits();
 }
 fn add_tile(world: &mut World) {
-    TileWidget::new(|ui, w| {
+    TileWidget::new(|ui, _| {
         "12345678910 11 12 13 14 15 16 17 18 19 20".cstr().label(ui);
         br(ui);
         "test test test test test test test test test"
@@ -38,6 +50,15 @@ fn add_tile(world: &mut World) {
             .label(ui);
     })
     .push(world);
+}
+fn remove_tile(world: &mut World) {
+    TileWidget::remove(world)
+}
+fn move_focus_left(world: &mut World) {
+    TileWidget::move_focus(-1, world);
+}
+fn move_focus_right(world: &mut World) {
+    TileWidget::move_focus(1, world);
 }
 
 #[derive(Default, Resource)]
