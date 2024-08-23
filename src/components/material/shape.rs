@@ -4,7 +4,7 @@ use super::*;
 #[bind_group_data(ShapeMaterialKey)]
 pub struct ShapeMaterial {
     #[uniform(0)]
-    pub colors: [Color; 11],
+    pub colors: [LinearRgba; 11],
     #[uniform(0)]
     pub data: [Vec4; 11],
     pub shape: ShaderShape,
@@ -74,7 +74,7 @@ impl Material2d for ShapeMaterial {
 
     fn specialize(
         descriptor: &mut RenderPipelineDescriptor,
-        _: &MeshVertexBufferLayout,
+        _: &MeshVertexBufferLayoutRef,
         key: bevy::sprite::Material2dKey<Self>,
     ) -> serde::__private::Result<(), bevy::render::render_resource::SpecializedMeshPipelineError>
     {

@@ -114,7 +114,7 @@ impl Button {
         } else {
             egui::Button::new(self.name)
         }
-        .wrap(false)
+        .wrap()
         .sense(if self.enabled {
             Sense::click()
         } else {

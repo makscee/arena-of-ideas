@@ -1,5 +1,3 @@
-use epaint::util::FloatOrd;
-
 use super::*;
 
 #[derive(Clone, Default, Serialize, Deserialize, Debug, AsRefStr)]
@@ -113,7 +111,7 @@ impl VarValue {
     }
     pub fn get_color(&self) -> Result<Color> {
         match self {
-            VarValue::None => Ok(Color::FUCHSIA),
+            VarValue::None => Ok(BEVY_MISSING_COLOR.into()),
             VarValue::Color(v) => Ok(*v),
             _ => Err(anyhow!("Color not supported by {self:?}")),
         }
@@ -332,9 +330,10 @@ impl std::hash::Hash for VarValue {
                 }
             }
             VarValue::Color(v) => {
-                v.r().ord().hash(state);
-                v.g().ord().hash(state);
-                v.b().ord().hash(state);
+                let c = v.c32();
+                c.r().hash(state);
+                c.g().hash(state);
+                c.b().hash(state);
             }
             VarValue::Cstr(v) => v.to_string().hash(state),
             VarValue::U64(v) => (*v).hash(state),
@@ -354,7 +353,7 @@ impl ToCstr for VarValue {
             VarValue::Bool(v) => v.to_string().cstr(),
             VarValue::Faction(v) => v.to_string().cstr(),
             VarValue::Color(v) => {
-                let h = hex::encode(v.as_rgba_u8());
+                let h = v.to_srgba().to_hex();
                 format!("#{h}").cstr_c(v.c32())
             }
             VarValue::Entity(v) => format!("{v:?}").cstr(),

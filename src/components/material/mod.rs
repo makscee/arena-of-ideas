@@ -3,6 +3,7 @@ pub use super::*;
 mod curve;
 mod shape;
 
+use bevy::color::Alpha;
 pub use curve::*;
 pub use shape::*;
 
@@ -235,7 +236,7 @@ impl RepresentationMaterial {
                         "".to_owned(),
                         bevy::text::TextStyle {
                             font_size: *font_size,
-                            color: Color::PINK,
+                            color: BEVY_MISSING_COLOR.into(),
                             ..default()
                         },
                     ),
@@ -245,7 +246,7 @@ impl RepresentationMaterial {
             RepresentationMaterial::Curve { .. } => {
                 let mut materials = world.resource_mut::<Assets<CurveMaterial>>();
                 let material = CurveMaterial {
-                    color: Color::PINK,
+                    color: BEVY_MISSING_COLOR,
                     ..default()
                 };
                 let material = materials.add(material);
@@ -316,8 +317,10 @@ impl RepresentationMaterial {
                     }
                     match fill {
                         RepFill::Solid { color } => {
-                            material.colors[0] =
-                                color.get_color(context, world).unwrap_or(Color::FUCHSIA)
+                            material.colors[0] = color
+                                .get_color(context, world)
+                                .map(|c| c.to_linear())
+                                .unwrap_or(BEVY_MISSING_COLOR)
                         }
                         RepFill::GradientLinear {
                             point1,
@@ -349,8 +352,10 @@ impl RepresentationMaterial {
                         RepFill::GradientLinear { parts, colors, .. }
                         | RepFill::GradientRadial { parts, colors, .. } => {
                             for (i, color) in colors.into_iter().enumerate() {
-                                let color =
-                                    color.get_color(context, world).unwrap_or(Color::FUCHSIA);
+                                let color = color
+                                    .get_color(context, world)
+                                    .map(|c| c.to_linear())
+                                    .unwrap_or(BEVY_MISSING_COLOR);
                                 let part = parts[i].get_float(context, world).unwrap_or(0.5);
                                 material.colors[i] = color;
                                 material.data[i].w = part;
@@ -396,7 +401,7 @@ impl RepresentationMaterial {
                     let _ = world
                         .get_resource_mut::<Assets<ShapeMaterial>>()
                         .unwrap()
-                        .insert(handle, material);
+                        .insert(handle.id(), material);
                 }
             }
             RepresentationMaterial::Text {
@@ -406,17 +411,17 @@ impl RepresentationMaterial {
                 alpha,
                 font_size,
             } => {
-                let color = color
+                let mut color = color
                     .get_color(context, world)
                     .unwrap_or_default()
-                    .set_a(alpha.get_float(context, world).unwrap_or(1.0))
-                    .to_owned();
+                    .to_linear();
+                color.set_alpha(alpha.get_float(context, world).unwrap_or(1.0));
                 let text = text.get_string(context, world).unwrap_or_default();
                 let text_comp = &mut world.get_mut::<Text>(entity).unwrap().sections[0];
                 text_comp.value = text;
                 text_comp.style = bevy::text::TextStyle {
                     font_size: *font_size,
-                    color,
+                    color: color.into(),
                     ..default()
                 };
                 world.get_mut::<Transform>(entity).unwrap().scale =
@@ -495,7 +500,7 @@ impl RepresentationMaterial {
                 let handle = world.get::<Handle<CurveMaterial>>(entity).unwrap().clone();
                 let mut materials = world.get_resource_mut::<Assets<CurveMaterial>>().unwrap();
                 if let Some(mat) = materials.get_mut(&handle) {
-                    mat.color = color;
+                    mat.color = color.to_linear();
                     mat.aa = aa;
                     mat.alpha = alpha;
                     let mesh = world.entity(entity).get::<Mesh2dHandle>().unwrap().clone();

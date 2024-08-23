@@ -1,3 +1,7 @@
+
+
+use ecolor::HexColor;
+
 use super::*;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, EnumIter, AsRefStr)]
@@ -128,7 +132,9 @@ impl Expression {
             Expression::StatusCharges(name) => {
                 Ok(Status::get_charges(name, context.owner(), world)?.into())
             }
-            Expression::HexColor(s) => Ok(VarValue::Color(Color::hex(s)?)),
+            Expression::HexColor(s) => Ok(VarValue::Color(
+                HexColor::from_str(s).unwrap().color().to_color(),
+            )),
             Expression::Sin(v) => Ok(v.get_float(context, world)?.sin().into()),
             Expression::Cos(v) => Ok(v.get_float(context, world)?.cos().into()),
             Expression::Abs(v) => v.get_value(context, world)?.abs(),

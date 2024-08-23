@@ -1,4 +1,4 @@
-use bevy::input::mouse::MouseButton;
+use bevy::{color::ColorToPacked, input::mouse::MouseButton};
 use chrono::Utc;
 use spacetimedb_sdk::table::TableType;
 
@@ -6,6 +6,9 @@ use super::*;
 
 pub fn just_pressed(key: KeyCode, world: &World) -> bool {
     world.resource::<ButtonInput<KeyCode>>().just_pressed(key)
+}
+pub fn just_pressed_key(world: &World) -> impl ExactSizeIterator<Item = &KeyCode> {
+    world.resource::<ButtonInput<KeyCode>>().get_just_pressed()
 }
 pub fn left_mouse_pressed(world: &World) -> bool {
     world
@@ -169,7 +172,7 @@ pub fn app_exit(world: &mut World) {
     world
         .get_resource_mut::<bevy::prelude::Events<bevy::app::AppExit>>()
         .unwrap()
-        .send(bevy::app::AppExit);
+        .send(bevy::app::AppExit::Success);
 }
 pub fn app_exit_op() {
     OperationsPlugin::add(app_exit)
@@ -227,7 +230,7 @@ pub trait ToColor {
 impl ToColor for Color32 {
     fn to_color(&self) -> Color {
         let a = self.to_array();
-        Color::rgba_u8(a[0], a[1], a[2], a[3])
+        Color::srgba_u8(a[0], a[1], a[2], a[3])
     }
 }
 
@@ -237,7 +240,7 @@ pub trait ToC32 {
 
 impl ToC32 for Color {
     fn c32(&self) -> Color32 {
-        let c = self.as_rgba_u8();
+        let c = self.to_srgba().to_u8_array();
         Color32::from_rgba_unmultiplied(c[0], c[1], c[2], c[3])
     }
 }

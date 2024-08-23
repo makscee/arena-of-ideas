@@ -83,11 +83,7 @@ pub fn unit_card(context: &Context, ui: &mut Ui, world: &World) -> Result<()> {
         for (i, house) in houses.into_iter().enumerate() {
             houses_cstr.push(house.cstr_c(house_colors[i]));
         }
-        houses_cstr
-            .join(&" + ".cstr())
-            .as_label(ui)
-            .wrap(true)
-            .ui(ui);
+        houses_cstr.join(&" + ".cstr()).as_label(ui).wrap().ui(ui);
         ui.add_space(2.0);
     })
     .response
@@ -151,7 +147,7 @@ pub fn unit_card(context: &Context, ui: &mut Ui, world: &World) -> Result<()> {
                             context.clone().set_ability_state(&name, world).unwrap(),
                         )
                         .as_label(ui)
-                        .wrap(true)
+                        .wrap()
                         .ui(ui);
                 });
             }
@@ -178,7 +174,7 @@ fn show_trigger_part(title: &str, content: Vec<Cstr>, color: Color32, ui: &mut U
             .show(ui, |ui| {
                 ui.vertical(|ui| {
                     for c in content {
-                        c.as_label(ui).wrap(true).ui(ui);
+                        c.as_label(ui).wrap().ui(ui);
                     }
                 })
             })

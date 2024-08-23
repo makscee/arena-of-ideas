@@ -41,7 +41,7 @@ impl Confirmation {
         popup("Confirmation window", ctx, |ui| {
             space(ui);
             ui.vertical_centered_justified(|ui| {
-                self.text.as_label(ui).wrap(true).ui(ui);
+                self.text.as_label(ui).wrap().ui(ui);
             });
             space(ui);
             ui.columns(2, |ui| {

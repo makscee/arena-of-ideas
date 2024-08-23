@@ -7,7 +7,7 @@ mod utils;
 
 use bevy::{
     diagnostic::FrameTimeDiagnosticsPlugin, log::LogPlugin, render::camera::ClearColor,
-    sprite::Material2dPlugin,
+    sprite::Material2dPlugin, state::app::AppExtStates,
 };
 use clap::{command, Parser, ValueEnum};
 use noisy_bevy::NoisyShaderPlugin;
@@ -40,8 +40,10 @@ fn main() {
     let mut app = App::new();
     let args = Args::try_parse().unwrap_or_default();
     ARGS.set(args.clone()).unwrap();
-    std::env::set_var("RUST_BACKTRACE", "1");
-    std::env::set_var("RUST_LIB_BACKTRACE", "0");
+    unsafe {
+        std::env::set_var("RUST_BACKTRACE", "1");
+        std::env::set_var("RUST_LIB_BACKTRACE", "0");
+    }
     let target = match args.mode {
         RunMode::Regular => GameState::Title,
         RunMode::Custom => GameState::CustomBattle,
@@ -58,8 +60,7 @@ fn main() {
         filter: "info,debug,wgpu_core=warn,wgpu_hal=warn,naga=warn".into(),
         ..default()
     });
-    app.init_state::<GameState>()
-        .insert_resource(ClearColor(EMPTINESS.to_color()))
+    app.insert_resource(ClearColor(EMPTINESS.to_color()))
         .add_systems(Startup, setup)
         .add_systems(Update, update)
         .add_systems(OnEnter(GameState::Error), on_error_state)
@@ -119,6 +120,7 @@ fn main() {
             ClientSettingsPlugin,
             MetaPlugin,
         ))
+        .init_state::<GameState>()
         .run();
 }
 

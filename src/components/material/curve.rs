@@ -3,7 +3,7 @@ use super::*;
 #[derive(Asset, AsBindGroup, TypePath, Debug, Clone)]
 pub struct CurveMaterial {
     #[uniform(0)]
-    pub color: Color,
+    pub color: LinearRgba,
     #[uniform(0)]
     pub aa: f32,
     #[uniform(0)]
@@ -17,7 +17,7 @@ impl Material2d for CurveMaterial {
 
     fn specialize(
         descriptor: &mut RenderPipelineDescriptor,
-        _: &MeshVertexBufferLayout,
+        _: &MeshVertexBufferLayoutRef,
         _: bevy::sprite::Material2dKey<Self>,
     ) -> serde::__private::Result<(), bevy::render::render_resource::SpecializedMeshPipelineError>
     {
@@ -29,7 +29,7 @@ impl Material2d for CurveMaterial {
 impl Default for CurveMaterial {
     fn default() -> Self {
         Self {
-            color: Color::PINK,
+            color: BEVY_MISSING_COLOR,
             aa: 0.0,
             alpha: 1.0,
         }

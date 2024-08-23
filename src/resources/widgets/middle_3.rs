@@ -39,6 +39,7 @@ impl Middle3 {
         let ui_center = &mut ui.child_ui(
             rect_center.shrink(8.0),
             Layout::top_down_justified(Align::Center),
+            None,
         );
         center(ui_center, world);
         let height = ui_center.cursor().top() - ui.cursor().top();
@@ -47,11 +48,11 @@ impl Middle3 {
         let rect_right =
             Rect::from_min_size(rect_center.right_top(), egui::vec2(side_width, height));
         left(
-            &mut ui.child_ui(rect_left, Layout::right_to_left(Align::Center)),
+            &mut ui.child_ui(rect_left, Layout::right_to_left(Align::Center), None),
             world,
         );
         right(
-            &mut ui.child_ui(rect_right, Layout::left_to_right(Align::Center)),
+            &mut ui.child_ui(rect_right, Layout::left_to_right(Align::Center), None),
             world,
         );
         full_rect.set_height(full_rect.height().max(height));
@@ -81,6 +82,7 @@ impl Middle3 {
         let ui_center = &mut ui.child_ui(
             rect_center.shrink(8.0),
             Layout::top_down_justified(Align::Center),
+            None,
         );
         center(ui_center, world);
         let height = ui_center.cursor().top() - ui.cursor().top();
@@ -89,11 +91,11 @@ impl Middle3 {
         let rect_right =
             Rect::from_min_size(rect_center.right_top(), egui::vec2(side_width, height));
         left(
-            &mut ui.child_ui(rect_left, Layout::right_to_left(Align::Center)),
+            &mut ui.child_ui(rect_left, Layout::right_to_left(Align::Center), None),
             world,
         );
         right(
-            &mut ui.child_ui(rect_right, Layout::left_to_right(Align::Center)),
+            &mut ui.child_ui(rect_right, Layout::left_to_right(Align::Center), None),
             world,
         );
         full_rect.set_height(full_rect.height().max(height));

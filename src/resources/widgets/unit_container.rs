@@ -197,6 +197,7 @@ impl UnitContainer {
                                         response.rect.right_top() + egui::vec2(0.0, -20.0),
                                     ),
                                     Layout::left_to_right(Align::Center),
+                                    None,
                                 );
                                 name.cstr().label(ui);
                             }
@@ -218,7 +219,7 @@ impl UnitContainer {
         if self.show_name {
             let pos = rect.left_top();
             let rect = Rect::from_two_pos(pos, pos + egui::vec2(-30.0, 30.0));
-            let ui = &mut ui.child_ui(rect, Layout::bottom_up(Align::Min));
+            let ui = &mut ui.child_ui(rect, Layout::bottom_up(Align::Min), None);
             name.cstr_cs(VISIBLE_DARK, CstrStyle::Bold).label(ui);
         }
         if let Some(hover_content) = self.hover_content {
@@ -285,7 +286,7 @@ fn show_frame(
         rect.right_top() + egui::vec2(-5.0, 0.0),
     );
     {
-        let ui = &mut ui.child_ui(ind_rect, Layout::top_down(Align::Max));
+        let ui = &mut ui.child_ui(ind_rect, Layout::top_down(Align::Max), None);
         ind.to_string().cstr_cs(color, CstrStyle::Bold).label(ui);
     }
     ui.painter().add(egui::Shape::dashed_line(

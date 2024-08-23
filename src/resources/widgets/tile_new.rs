@@ -4,9 +4,10 @@ use super::*;
 
 pub struct TileWidget {
     content: Box<dyn Fn(&mut Ui, &mut World) + Send + Sync>,
+    side: Side,
     size: f32,
-    need_size: f32,
-    max_size: f32,
+    need_size: egui::Vec2,
+    max_size: egui::Vec2,
 }
 
 #[derive(Resource, Default)]
@@ -26,12 +27,13 @@ const FRAME: Frame = Frame {
 };
 
 impl TileWidget {
-    pub fn new(content: impl Fn(&mut Ui, &mut World) + Send + Sync + 'static) -> Self {
+    pub fn new(side: Side, content: impl Fn(&mut Ui, &mut World) + Send + Sync + 'static) -> Self {
         Self {
             content: Box::new(content),
-            size: 0.0,
-            need_size: 20.0,
-            max_size: f32::MAX,
+            side,
+            size: default(),
+            need_size: default(),
+            max_size: default(),
         }
     }
     pub fn push(self, world: &mut World) {
@@ -50,9 +52,25 @@ impl TileWidget {
         let mut tr = world.resource_mut::<TileResource>();
         tr.focused = (tr.focused as i32 + delta).clamp(0, tr.data.len() as i32 - 1) as usize;
     }
+    fn take_space(&mut self, full: bool, space: &mut egui::Vec2) {
+        if full || self.side.is_x() {
+            self.max_size.x = self.need_size.x.at_most(space.x);
+            space.x -= self.max_size.x;
+        }
+        if full || self.side.is_y() {
+            self.max_size.y = self.need_size.y.at_most(space.y);
+            space.y -= self.max_size.y;
+        }
+    }
     fn show(&mut self, id: Id, focused: bool, ctx: &egui::Context, world: &mut World) {
         let need_size = self.need_size.at_most(self.max_size);
-        self.size += (need_size - self.size) * delta_time(world) * 5.0;
+        self.size += (if self.side.is_x() {
+            need_size.x
+        } else {
+            need_size.y
+        } - self.size)
+            * delta_time(world)
+            * 5.0;
         let frame = if focused {
             FRAME.stroke(Stroke {
                 width: 1.0,
@@ -61,33 +79,65 @@ impl TileWidget {
         } else {
             FRAME
         };
-        SidePanel::left(id)
-            .show_separator_line(false)
-            .frame(frame)
-            .exact_width(self.size)
-            .resizable(false)
-            .show(ctx, |ui| {
-                let all_rect = ui.available_rect_before_wrap();
-                ui.set_clip_rect(all_rect);
-                let ui = &mut ui.child_ui(all_rect, Layout::top_down(Align::Min));
-                let before = ui.min_rect().width();
-                (self.content)(ui, world);
-                self.need_size = ui.min_rect().width() - before;
-            });
+        let content = |ui: &mut Ui| {
+            let all_rect = ui.available_rect_before_wrap();
+            ui.set_clip_rect(all_rect);
+            let ui = &mut ui.child_ui(all_rect, Layout::top_down(Align::Min), None);
+            let before = ui.min_rect().max;
+            (self.content)(ui, world);
+            self.need_size = ui.min_rect().max - before;
+        };
+        match self.side {
+            Side::Right => SidePanel::right(id)
+                .frame(frame)
+                .exact_width(self.size)
+                .resizable(false)
+                .show_separator_line(false)
+                .show(ctx, content),
+            Side::Left => SidePanel::left(id)
+                .frame(frame)
+                .exact_width(self.size)
+                .resizable(false)
+                .show_separator_line(false)
+                .show(ctx, content),
+            Side::Top => TopBottomPanel::top(id)
+                .frame(frame)
+                .exact_height(self.size)
+                .resizable(false)
+                .show_separator_line(false)
+                .show(ctx, content),
+            Side::Bottom => TopBottomPanel::bottom(id)
+                .frame(frame)
+                .exact_height(self.size)
+                .resizable(false)
+                .show_separator_line(false)
+                .show(ctx, content),
+        };
     }
 
     pub fn show_all(ctx: &egui::Context, world: &mut World) {
+        // SidePanel::right("qwe")
+        //     .frame(FRAME)
+        //     .show(ctx, |ui| "qwetqwe qwe qwe".cstr().label(ui));
+        // SidePanel::right("asd")
+        //     .frame(FRAME)
+        //     .exact_width(400.0)
+        //     .show(ctx, |ui| {
+        //         "asdasdasdasd sda sd asd asd as das d asd asd"
+        //             .cstr()
+        //             .label(ui)
+        //     });
         let mut tr = world.resource_mut::<TileResource>();
         if tr.data.is_empty() {
             return;
         }
         let mut tiles = mem::take(&mut tr.data);
         let focused = tr.focused;
-        let mut available_size = ctx.available_rect().width();
-        available_size -= tiles.len() as f32 * MARGIN * 4.0;
-        let max_size_focused = tiles[focused].need_size.at_most(available_size);
-        tiles[focused].max_size = max_size_focused;
-        available_size -= max_size_focused;
+        let mut available_space = ctx.available_rect().size();
+        let margin = tiles.len() as f32 * MARGIN * 4.0;
+        available_space.x -= margin;
+        available_space.y -= margin;
+        tiles[focused].take_space(true, &mut available_space);
         let (left, right) = tiles.split_at_mut(focused);
         let mut left_i = left.len() as i32 - 1;
         let mut right_i = 1;
@@ -95,16 +145,12 @@ impl TileWidget {
         for _ in 0..=l {
             if left_i >= 0 {
                 if let Some(tile) = left.get_mut(left_i as usize) {
-                    let max_size = tile.need_size.at_most(available_size);
-                    tile.max_size = max_size;
-                    available_size -= max_size;
+                    tile.take_space(false, &mut available_space);
                     left_i -= 1;
                 }
             }
             if let Some(tile) = right.get_mut(right_i) {
-                let max_size = tile.need_size.at_most(available_size);
-                tile.max_size = max_size;
-                available_size -= max_size;
+                tile.take_space(false, &mut available_space);
                 right_i += 1;
             }
         }

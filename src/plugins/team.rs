@@ -11,7 +11,7 @@ pub struct Team;
 impl Plugin for TeamPlugin {
     fn build(&self, app: &mut App) {
         let teams =
-            HashMap::from_iter(Faction::iter().map(|f| (f, Self::spawn(f, &mut app.world))));
+            HashMap::from_iter(Faction::iter().map(|f| (f, Self::spawn(f, &mut app.world_mut()))));
         app.insert_resource(Teams(teams));
     }
 }

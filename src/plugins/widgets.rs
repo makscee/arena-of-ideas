@@ -17,7 +17,7 @@ impl Plugin for WidgetsPlugin {
                 give_c
                     .run_if(input_just_pressed(KeyCode::KeyG).and_then(in_state(GameState::Title))),
             )
-            .add_systems(Update, add_tile.run_if(input_just_pressed(KeyCode::KeyT)))
+            .add_systems(Update, add_tile)
             .add_systems(
                 Update,
                 move_focus_left.run_if(input_just_pressed(KeyCode::ArrowLeft)),
@@ -38,9 +38,9 @@ fn give_c() {
     give_credits();
 }
 fn add_tile(world: &mut World) {
-    TileWidget::new(|ui, _| {
+    let content = |ui: &mut Ui, _: &mut World| {
         "12345678910 11 12 13 14 15 16 17 18 19 20".cstr().label(ui);
-        br(ui);
+        // br(ui);
         "test test test test test test test test test"
             .cstr()
             .label(ui);
@@ -48,8 +48,19 @@ fn add_tile(world: &mut World) {
         "test test test test test test test test test"
             .cstr()
             .label(ui);
-    })
-    .push(world);
+    };
+    if just_pressed(KeyCode::KeyA, world) {
+        TileWidget::new(Side::Left, content).push(world);
+    }
+    if just_pressed(KeyCode::KeyD, world) {
+        TileWidget::new(Side::Right, content).push(world);
+    }
+    if just_pressed(KeyCode::KeyW, world) {
+        TileWidget::new(Side::Top, content).push(world);
+    }
+    if just_pressed(KeyCode::KeyS, world) {
+        TileWidget::new(Side::Bottom, content).push(world);
+    }
 }
 fn remove_tile(world: &mut World) {
     TileWidget::remove(world)
