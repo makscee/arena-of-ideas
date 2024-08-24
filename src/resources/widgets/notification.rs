@@ -15,8 +15,8 @@ enum NotificationType {
     Error,
 }
 
-#[derive(Default, Debug)]
-pub struct NotificationsData {
+#[derive(Resource, Default, Debug)]
+pub struct NotificationsResource {
     shown: VecDeque<(i64, Notification)>,
 }
 
@@ -40,14 +40,14 @@ impl Notification {
     }
     pub fn push(self, world: &mut World) {
         let t = now_micros();
-        let d = &mut world.resource_mut::<WidgetData>().notifications.shown;
+        let d = &mut world.resource_mut::<NotificationsResource>().shown;
         d.push_front((t, self));
         d.make_contiguous();
     }
-    pub fn show_recent(wd: &WidgetData, ctx: &egui::Context, _: &mut World) {
+    pub fn show_recent(ctx: &egui::Context, world: &mut World) {
         let now = now_micros();
-        let notifications = wd
-            .notifications
+        let notifications = world
+            .resource::<NotificationsResource>()
             .shown
             .iter()
             .filter(|(t, _)| now - *t < 5000000)
@@ -57,10 +57,9 @@ impl Notification {
         if notifications.is_empty() {
             return;
         }
-        Tile::right("Notifications")
-            .transparent()
-            .non_resizable()
-            .open()
+
+        SidePanel::right("Notifications")
+            .frame(Frame::none())
             .show(ctx, |ui| {
                 for n in notifications {
                     FRAME.show(ui, |ui| {
@@ -69,11 +68,13 @@ impl Notification {
                 }
             });
     }
-    pub fn show_all_table(wd: &WidgetData, ui: &mut Ui, world: &mut World) {
-        Table::new("Notifications")
-            .column_cstr("text", |(_, n): &(i64, Notification), _| n.text.clone())
-            .column_ts("time", |(t, _)| *t as u64)
-            .ui(&wd.notifications.shown.as_slices().0, ui, world);
+    pub fn show_all_table(ui: &mut Ui, world: &mut World) {
+        world.resource_scope(|world, nr: Mut<NotificationsResource>| {
+            Table::new("Notifications")
+                .column_cstr("text", |(_, n): &(i64, Notification), _| n.text.clone())
+                .column_ts("time", |(t, _)| *t as u64)
+                .ui(&nr.shown.as_slices().0, ui, world);
+        })
     }
 }
 

@@ -179,64 +179,60 @@ impl ShopPlugin {
             UnitPlugin::despawn(entity, world);
         }
     }
-    pub fn overlay_widgets(ctx: &egui::Context, _: &mut World) {
-        Tile::left("Stats")
-            .open()
-            .transparent()
-            .non_resizable()
-            .show(ctx, |ui| {
-                text_dots_text(&"name".cstr(), &user_name().cstr_c(VISIBLE_BRIGHT), ui);
-                if let Some(run) = TArenaRun::get_current() {
-                    text_dots_text(
-                        &"G".cstr(),
-                        &run.g.to_string().cstr_cs(YELLOW, CstrStyle::Bold),
-                        ui,
-                    );
-                    text_dots_text(
-                        &"lives".cstr(),
-                        &run.lives.to_string().cstr_cs(GREEN, CstrStyle::Bold),
-                        ui,
-                    );
-                    text_dots_text(
-                        &"round".cstr(),
-                        &run.round.to_string().cstr_c(VISIBLE_BRIGHT),
-                        ui,
-                    );
-                    text_dots_text(
-                        &"score".cstr(),
-                        &run.score.to_string().cstr_c(VISIBLE_BRIGHT),
-                        ui,
-                    );
-                    text_dots_text(&"mode".cstr(), &run.mode.cstr(), ui);
-                }
-            });
-        Tile::right("To battle")
-            .open()
-            .transparent()
-            .non_resizable()
-            .show(ctx, |ui| {
-                let run = TArenaRun::current();
-                let champion_round = TArenaLeaderboard::iter()
-                    .filter(|d| d.mode.eq(&run.mode))
-                    .map(|d| d.round)
-                    .max()
-                    .unwrap_or_default();
-                let own_round = run.round;
-                let btn_text = "Start Battle".to_string();
-                if own_round + 1 == champion_round {
-                    "Champion Battle".cstr_cs(YELLOW, CstrStyle::Bold).label(ui);
-                } else if own_round == champion_round && champion_round > 0 {
-                    "Shadow Battle"
-                        .cstr_cs(LIGHT_PURPLE, CstrStyle::Bold)
-                        .label(ui);
-                }
-                if Button::click(btn_text).ui(ui).clicked() {
-                    shop_finish();
-                    once_on_shop_finish(|_, _, status| {
-                        status.on_success(|w| GameState::ShopBattle.proceed_to_target(w))
-                    });
-                }
-            });
+    pub fn add_tiles(world: &mut World) {
+        Tile::new(Side::Left, |ui, _| {
+            text_dots_text(&"name".cstr(), &user_name().cstr_c(VISIBLE_BRIGHT), ui);
+            if let Some(run) = TArenaRun::get_current() {
+                text_dots_text(
+                    &"G".cstr(),
+                    &run.g.to_string().cstr_cs(YELLOW, CstrStyle::Bold),
+                    ui,
+                );
+                text_dots_text(
+                    &"lives".cstr(),
+                    &run.lives.to_string().cstr_cs(GREEN, CstrStyle::Bold),
+                    ui,
+                );
+                text_dots_text(
+                    &"round".cstr(),
+                    &run.round.to_string().cstr_c(VISIBLE_BRIGHT),
+                    ui,
+                );
+                text_dots_text(
+                    &"score".cstr(),
+                    &run.score.to_string().cstr_c(VISIBLE_BRIGHT),
+                    ui,
+                );
+                text_dots_text(&"mode".cstr(), &run.mode.cstr(), ui);
+            }
+        })
+        .transparent()
+        .push(world);
+        Tile::new(Side::Right, |ui, _| {
+            let run = TArenaRun::current();
+            let champion_round = TArenaLeaderboard::iter()
+                .filter(|d| d.mode.eq(&run.mode))
+                .map(|d| d.round)
+                .max()
+                .unwrap_or_default();
+            let own_round = run.round;
+            let btn_text = "Start Battle".to_string();
+            if own_round + 1 == champion_round {
+                "Champion Battle".cstr_cs(YELLOW, CstrStyle::Bold).label(ui);
+            } else if own_round == champion_round && champion_round > 0 {
+                "Shadow Battle"
+                    .cstr_cs(LIGHT_PURPLE, CstrStyle::Bold)
+                    .label(ui);
+            }
+            if Button::click(btn_text).ui(ui).clicked() {
+                shop_finish();
+                once_on_shop_finish(|_, _, status| {
+                    status.on_success(|w| GameState::ShopBattle.proceed_to_target(w))
+                });
+            }
+        })
+        .transparent()
+        .push(world);
     }
     fn do_stack(target: u8, world: &mut World) {
         let mut sd = world.resource_mut::<ShopData>();

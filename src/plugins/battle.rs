@@ -221,96 +221,92 @@ impl BattlePlugin {
         }
         Ok(())
     }
-
-    pub fn show_tiles(ctx: &egui::Context, world: &mut World) {
-        Tile::bottom("Playback")
-            .transparent()
-            .non_resizable()
-            .show(ctx, |ui| {
-                ui.vertical_centered(|ui| {
-                    let mut gt = gt();
-                    if ImageButton::new(if gt.paused() {
-                        Icon::Pause.image()
-                    } else {
-                        Icon::Play.image()
-                    })
-                    .ui(ui)
-                    .clicked()
-                    {
-                        let paused = gt.paused();
-                        gt.pause(!paused);
-                    }
-                });
-
-                Middle3::default().ui_mut(
-                    ui,
-                    world,
-                    |ui, _| {
-                        format!("{:.2}", gt().play_head())
-                            .cstr_cs(VISIBLE_BRIGHT, CstrStyle::Heading)
-                            .label(ui);
-                    },
-                    |ui, world| {
-                        const FF_LEFT_KEY: &str = "ff_back_btn";
-                        let pressed = get_context_bool(world, FF_LEFT_KEY);
-                        if pressed {
-                            gt().advance_play(-delta_time(world) * 2.0);
-                        }
-                        let resp = ImageButton::new(Icon::FFBack.image())
-                            .tint(if pressed { YELLOW } else { VISIBLE_BRIGHT })
-                            .ui(ui);
-                        set_context_bool(
-                            world,
-                            FF_LEFT_KEY,
-                            resp.contains_pointer() && left_mouse_pressed(world),
-                        );
-                    },
-                    |ui, world| {
-                        const FF_RIGHT_KEY: &str = "ff_forward_btn";
-                        let pressed = get_context_bool(world, FF_RIGHT_KEY);
-                        if pressed {
-                            gt().advance_play(delta_time(world));
-                        }
-                        let resp = ImageButton::new(Icon::FFForward.image())
-                            .tint(if pressed { YELLOW } else { VISIBLE_BRIGHT })
-                            .ui(ui);
-                        set_context_bool(
-                            world,
-                            FF_RIGHT_KEY,
-                            resp.contains_pointer() && left_mouse_pressed(world),
-                        );
-                    },
-                );
-                Middle3::default().width(400.0).ui_mut(
-                    ui,
-                    world,
-                    |ui, _| {
-                        Slider::new("Playback Speed")
-                            .log()
-                            .name(false)
-                            .range(-20.0..=20.0)
-                            .ui(&mut gt().playback_speed, ui);
-                    },
-                    |ui, _| {
-                        if ImageButton::new(Icon::SkipBack.image()).ui(ui).clicked() {
-                            gt().play_head_to(0.0);
-                        }
-                    },
-                    |ui, _| {
-                        if ImageButton::new(Icon::SkipForward.image()).ui(ui).clicked() {
-                            gt().skip_to_end();
-                        }
-                    },
-                );
+    pub fn add_tiles(world: &mut World) {
+        Tile::new(Side::Bottom, |ui, world| {
+            ui.vertical_centered(|ui| {
+                let mut gt = gt();
+                if ImageButton::new(if gt.paused() {
+                    Icon::Pause.image()
+                } else {
+                    Icon::Play.image()
+                })
+                .ui(ui)
+                .clicked()
+                {
+                    let paused = gt.paused();
+                    gt.pause(!paused);
+                }
             });
-    }
-    pub fn overlay_widgets(ctx: &egui::Context, world: &mut World) {
+
+            Middle3::default().ui_mut(
+                ui,
+                world,
+                |ui, _| {
+                    format!("{:.2}", gt().play_head())
+                        .cstr_cs(VISIBLE_BRIGHT, CstrStyle::Heading)
+                        .label(ui);
+                },
+                |ui, world| {
+                    const FF_LEFT_KEY: &str = "ff_back_btn";
+                    let pressed = get_context_bool(world, FF_LEFT_KEY);
+                    if pressed {
+                        gt().advance_play(-delta_time(world) * 2.0);
+                    }
+                    let resp = ImageButton::new(Icon::FFBack.image())
+                        .tint(if pressed { YELLOW } else { VISIBLE_BRIGHT })
+                        .ui(ui);
+                    set_context_bool(
+                        world,
+                        FF_LEFT_KEY,
+                        resp.contains_pointer() && left_mouse_pressed(world),
+                    );
+                },
+                |ui, world| {
+                    const FF_RIGHT_KEY: &str = "ff_forward_btn";
+                    let pressed = get_context_bool(world, FF_RIGHT_KEY);
+                    if pressed {
+                        gt().advance_play(delta_time(world));
+                    }
+                    let resp = ImageButton::new(Icon::FFForward.image())
+                        .tint(if pressed { YELLOW } else { VISIBLE_BRIGHT })
+                        .ui(ui);
+                    set_context_bool(
+                        world,
+                        FF_RIGHT_KEY,
+                        resp.contains_pointer() && left_mouse_pressed(world),
+                    );
+                },
+            );
+            Middle3::default().width(400.0).ui_mut(
+                ui,
+                world,
+                |ui, _| {
+                    Slider::new("Playback Speed")
+                        .log()
+                        .name(false)
+                        .range(-20.0..=20.0)
+                        .ui(&mut gt().playback_speed, ui);
+                },
+                |ui, _| {
+                    if ImageButton::new(Icon::SkipBack.image()).ui(ui).clicked() {
+                        gt().play_head_to(0.0);
+                    }
+                },
+                |ui, _| {
+                    if ImageButton::new(Icon::SkipForward.image()).ui(ui).clicked() {
+                        gt().skip_to_end();
+                    }
+                },
+            );
+        })
+        .transparent()
+        .push(world);
+
         let bd = world.resource::<BattleData>();
         if bd.id == 0 {
             return;
         }
         if let Some(battle) = TBattle::filter_by_id(bd.id) {
-            let team = battle.team_left.get_team();
             let show_team = |team: TTeam, ui: &mut Ui| {
                 if team.id == 0 {
                     return;
@@ -322,19 +318,16 @@ impl BattlePlugin {
                     ui,
                 );
             };
-            Tile::left("Left")
-                .transparent()
-                .non_resizable()
-                .show(ctx, |ui| {
-                    show_team(team, ui);
-                });
-            let team = battle.team_right.get_team();
-            Tile::right("Right")
-                .transparent()
-                .non_resizable()
-                .show(ctx, |ui| {
-                    show_team(team, ui);
-                });
+            Tile::new(Side::Left, move |ui, _| {
+                show_team(battle.team_left.get_team(), ui);
+            })
+            .transparent()
+            .push(world);
+            Tile::new(Side::Right, move |ui, _| {
+                show_team(battle.team_right.get_team(), ui);
+            })
+            .transparent()
+            .push(world);
         }
     }
     pub fn ui(ui: &mut Ui, world: &mut World) {

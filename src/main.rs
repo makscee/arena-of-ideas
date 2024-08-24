@@ -121,6 +121,8 @@ fn main() {
             MetaPlugin,
         ))
         .init_state::<GameState>()
+        .init_resource::<NotificationsResource>()
+        .init_resource::<TileResource>()
         .run();
 }
 

@@ -67,7 +67,6 @@ impl Plugin for UiPlugin {
 #[derive(Resource, Default, Debug)]
 pub struct WidgetData {
     pub unit_container: HashMap<Faction, UnitContainerData>,
-    pub notifications: NotificationsData,
 }
 
 impl UiPlugin {

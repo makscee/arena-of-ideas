@@ -198,7 +198,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
             name,
             TableColumn {
                 value: Box::new(move |d, _| gid(d).into()),
-                show: Box::new(|_, gid: VarValue, ui: &mut Ui, _: &mut World| {
+                show: Box::new(|_, gid: VarValue, ui: &mut Ui, w: &mut World| {
                     let gid = gid.get_u64().unwrap();
                     if gid == 0 {
                         "...".cstr().label(ui)
@@ -206,7 +206,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                         let team = gid.get_team();
                         let r = team.cstr().button(ui);
                         if r.clicked() {
-                            Tile::add_team(team.id, ui.ctx());
+                            Tile::add_team(team.id, w);
                         }
                         r
                     }
@@ -253,7 +253,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
         }
         TableBuilder::new(ui)
             .columns(
-                Column::initial(5.0),
+                Column::auto(),
                 self.columns.len() + self.selectable as usize,
             )
             .cell_layout(Layout::centered_and_justified(egui::Direction::TopDown))

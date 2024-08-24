@@ -57,6 +57,7 @@ impl SectionMenu {
             .frame(Frame::none().outer_margin(Margin {
                 left: 13.0,
                 top: 3.0,
+                bottom: 3.0,
                 ..default()
             }))
             .resizable(false)

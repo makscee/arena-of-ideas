@@ -31,10 +31,10 @@ impl TableViewPlugin {
     fn on_enter_base_units(mut data: ResMut<TablesData>) {
         data.base_units = TBaseUnit::iter().collect_vec();
     }
-    pub fn ui(query: StdbQuery, ctx: &egui::Context, world: &mut World) {
+    pub fn add_tiles(query: StdbQuery, world: &mut World) {
         match query {
-            StdbQuery::BattleHistory => Self::draw_history(ctx, world),
-            StdbQuery::BaseUnits => Self::draw_base_units(ctx, world),
+            StdbQuery::BattleHistory => Self::add_battle_history_tile(world),
+            StdbQuery::BaseUnits => Self::add_base_units_tile(world),
             _ => panic!("Query not supported {query}"),
         }
     }
@@ -50,9 +50,9 @@ impl TableViewPlugin {
             _ => panic!("Query not supported {query}"),
         }
     }
-    fn draw_history(ctx: &egui::Context, world: &mut World) {
-        let td = world.remove_resource::<TablesData>().unwrap();
-        Tile::left("Battle History").show(ctx, |ui| {
+    fn add_battle_history_tile(world: &mut World) {
+        Tile::new(Side::Left, |ui, world| {
+            let td = world.remove_resource::<TablesData>().unwrap();
             Table::new("Battle History")
                 .title()
                 .column_gid("id", |d: &TBattle| d.id)
@@ -60,14 +60,14 @@ impl TableViewPlugin {
                 .column_user_click(
                     "player",
                     |d| d.owner,
-                    |gid, ui, _| Tile::add_user(gid, ui.ctx()),
+                    |gid, _, world| Tile::add_user(gid, world),
                 )
                 .column_team("player team >", |d| d.team_left)
                 .column_team("< enemy team", |d| d.team_right)
                 .column_user_click(
                     "enemy",
                     |d| d.team_right.get_team().owner,
-                    |gid, ui, _| Tile::add_user(gid, ui.ctx()),
+                    |gid, _, world| Tile::add_user(gid, world),
                 )
                 .column_cstr("result", |d, _| match d.result {
                     TBattleResult::Tbd => "-".cstr(),
@@ -79,12 +79,14 @@ impl TableViewPlugin {
                 .filter("Win", "result", "W".into())
                 .filter("Lose", "result", "L".into())
                 .ui(&td.battles, ui, world);
-        });
-        world.insert_resource(td);
+            world.insert_resource(td);
+        })
+        .push(world);
     }
-    fn draw_base_units(ctx: &egui::Context, world: &mut World) {
-        let td = world.remove_resource::<TablesData>().unwrap();
-        Tile::left("Base Units").show(ctx, |ui| {
+    fn add_base_units_tile(world: &mut World) {
+        Tile::new(Side::Left, |ui, world| {
+            let td = world.remove_resource::<TablesData>().unwrap();
+
             td.base_units
                 .show_modified_table("Base Units", ui, world, |t| {
                     t.column_btn("spawn", |u, _, world| {
@@ -93,7 +95,9 @@ impl TableViewPlugin {
                         unit.unpack(TeamPlugin::entity(Faction::Team, world), None, None, world);
                     })
                 });
-        });
-        world.insert_resource(td);
+
+            world.insert_resource(td);
+        })
+        .push(world);
     }
 }

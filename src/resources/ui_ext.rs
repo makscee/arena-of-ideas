@@ -71,10 +71,10 @@ impl ShowTable<FusedUnit> for Vec<FusedUnit> {
             .column(
                 "name",
                 |d: &FusedUnit, _| d.id.into(),
-                |d, _, ui, _| {
+                |d, _, ui, world| {
                     let r = d.cstr_limit(0).button(ui);
                     if r.clicked() {
-                        Tile::add_fused_unit(d.clone(), ui.ctx());
+                        Tile::add_fused_unit(d.clone(), world);
                     }
                     r
                 },
@@ -112,7 +112,7 @@ impl ShowTable<TArenaLeaderboard> for Vec<TArenaLeaderboard> {
             .column_user_click(
                 "owner",
                 |d| d.user,
-                |gid, ui, _| Tile::add_user(gid, ui.ctx()),
+                |gid, _, world| Tile::add_user(gid, world),
             )
             .column_cstr("mode", |d, _| d.mode.cstr());
         t = m(t);
