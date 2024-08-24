@@ -301,7 +301,7 @@ impl CtxExt for egui::Context {
     }
 }
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, PartialEq, Eq)]
 pub enum Side {
     #[default]
     Right,

@@ -1,4 +1,4 @@
-use egui::NumExt;
+use egui::{Area, NumExt};
 
 use super::*;
 
@@ -54,13 +54,20 @@ impl TileWidget {
     }
     fn take_space(&mut self, full: bool, space: &mut egui::Vec2) {
         if full || self.side.is_x() {
-            self.max_size.x = self.need_size.x.at_most(space.x);
+            self.max_size.x = (self.need_size.x - MARGIN * 2.0).clamp(0.0, space.x);
             space.x -= self.max_size.x;
         }
         if full || self.side.is_y() {
-            self.max_size.y = self.need_size.y.at_most(space.y);
+            self.max_size.y = (self.need_size.y - MARGIN * 2.0).clamp(0.0, space.y);
             space.y -= self.max_size.y;
         }
+        self.max_size += egui::Vec2::splat(MARGIN * 2.0);
+    }
+    fn get_screen_rect(ctx: &egui::Context) -> Rect {
+        ctx.data(|r| r.get_temp::<Rect>(screen_rect_id())).unwrap()
+    }
+    fn set_screen_rect(rect: Rect, ctx: &egui::Context) {
+        ctx.data_mut(|w| w.insert_temp(screen_rect_id(), rect));
     }
     fn show(&mut self, id: Id, focused: bool, ctx: &egui::Context, world: &mut World) {
         let need_size = self.need_size.at_most(self.max_size);
@@ -70,7 +77,7 @@ impl TileWidget {
             need_size.y
         } - self.size)
             * delta_time(world)
-            * 5.0;
+            * 8.0;
         let frame = if focused {
             FRAME.stroke(Stroke {
                 width: 1.0,
@@ -79,64 +86,76 @@ impl TileWidget {
         } else {
             FRAME
         };
-        let content = |ui: &mut Ui| {
-            let all_rect = ui.available_rect_before_wrap();
-            ui.set_clip_rect(all_rect);
-            let ui = &mut ui.child_ui(all_rect, Layout::top_down(Align::Min), None);
-            let before = ui.min_rect().max;
-            (self.content)(ui, world);
-            self.need_size = ui.min_rect().max - before;
+        let screen_rect = Self::get_screen_rect(ctx);
+        let (area, rect) = match self.side {
+            Side::Right => (
+                Area::new(id)
+                    .pivot(Align2::RIGHT_TOP)
+                    .fixed_pos(screen_rect.right_top()),
+                screen_rect.with_min_x(screen_rect.max.x - self.size),
+            ),
+            Side::Left => (
+                Area::new(id)
+                    .pivot(Align2::LEFT_TOP)
+                    .fixed_pos(screen_rect.left_top()),
+                screen_rect.with_max_x(screen_rect.min.x + self.size),
+            ),
+            Side::Top => (
+                Area::new(id)
+                    .pivot(Align2::LEFT_TOP)
+                    .fixed_pos(screen_rect.left_top()),
+                screen_rect.with_max_y(screen_rect.min.y + self.size),
+            ),
+            Side::Bottom => (
+                Area::new(id)
+                    .pivot(Align2::LEFT_BOTTOM)
+                    .fixed_pos(screen_rect.left_bottom()),
+                screen_rect.with_min_y(screen_rect.max.y - self.size),
+            ),
         };
-        match self.side {
-            Side::Right => SidePanel::right(id)
-                .frame(frame)
-                .exact_width(self.size)
-                .resizable(false)
-                .show_separator_line(false)
-                .show(ctx, content),
-            Side::Left => SidePanel::left(id)
-                .frame(frame)
-                .exact_width(self.size)
-                .resizable(false)
-                .show_separator_line(false)
-                .show(ctx, content),
-            Side::Top => TopBottomPanel::top(id)
-                .frame(frame)
-                .exact_height(self.size)
-                .resizable(false)
-                .show_separator_line(false)
-                .show(ctx, content),
-            Side::Bottom => TopBottomPanel::bottom(id)
-                .frame(frame)
-                .exact_height(self.size)
-                .resizable(false)
-                .show_separator_line(false)
-                .show(ctx, content),
+        area.constrain_to(rect).show(ctx, |ui| {
+            frame.show(ui, |ui| {
+                let rect = rect.shrink(MARGIN * 2.0);
+                ui.expand_to_include_rect(rect);
+                ui.set_clip_rect(rect);
+                let ui = &mut ui.child_ui(rect, Layout::top_down(Align::Min), None);
+                "test test".cstr().label(ui);
+                "test test test test test test test test test test"
+                    .cstr()
+                    .label(ui);
+                // "test test".cstr().label(ui);
+
+                self.need_size = ui.min_size()
+                    + egui::Vec2::splat(MARGIN * 4.0) * (if focused { 2.0 } else { 1.0 });
+            });
+        });
+        let screen_rect = match self.side {
+            Side::Right => screen_rect.with_max_x(screen_rect.max.x - self.size),
+            Side::Left => screen_rect.with_min_x(screen_rect.min.x + self.size),
+            Side::Top => screen_rect.with_min_y(screen_rect.min.y + self.size),
+            Side::Bottom => screen_rect.with_max_y(screen_rect.max.y - self.size),
         };
+        Self::set_screen_rect(screen_rect, ctx);
     }
 
     pub fn show_all(ctx: &egui::Context, world: &mut World) {
-        // SidePanel::right("qwe")
-        //     .frame(FRAME)
-        //     .show(ctx, |ui| "qwetqwe qwe qwe".cstr().label(ui));
-        // SidePanel::right("asd")
-        //     .frame(FRAME)
-        //     .exact_width(400.0)
-        //     .show(ctx, |ui| {
-        //         "asdasdasdasd sda sd asd asd as das d asd asd"
-        //             .cstr()
-        //             .label(ui)
-        //     });
         let mut tr = world.resource_mut::<TileResource>();
         if tr.data.is_empty() {
             return;
         }
         let mut tiles = mem::take(&mut tr.data);
         let focused = tr.focused;
+        Self::set_screen_rect(ctx.available_rect(), ctx);
         let mut available_space = ctx.available_rect().size();
-        let margin = tiles.len() as f32 * MARGIN * 4.0;
-        available_space.x -= margin;
-        available_space.y -= margin;
+        let margin = MARGIN * 2.0;
+        available_space -= egui::Vec2::splat(MARGIN * 4.0);
+        for tile in &tiles {
+            if tile.side.is_x() {
+                available_space.x -= margin;
+            } else {
+                available_space.y -= margin;
+            }
+        }
         tiles[focused].take_space(true, &mut available_space);
         let (left, right) = tiles.split_at_mut(focused);
         let mut left_i = left.len() as i32 - 1;
@@ -162,4 +181,9 @@ impl TileWidget {
         tiles.extend(world.resource_mut::<TileResource>().data.drain(..));
         world.resource_mut::<TileResource>().data = tiles;
     }
+}
+
+fn screen_rect_id() -> Id {
+    static ID: OnceCell<Id> = OnceCell::new();
+    *ID.get_or_init(|| Id::new("available_screen_rect"))
 }

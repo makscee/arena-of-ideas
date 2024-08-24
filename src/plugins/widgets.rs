@@ -29,7 +29,21 @@ impl Plugin for WidgetsPlugin {
             .add_systems(
                 Update,
                 remove_tile.run_if(input_just_pressed(KeyCode::KeyY)),
-            );
+            )
+            .add_systems(Startup, |world: &mut World| {
+                let content = |ui: &mut Ui, _: &mut World| {
+                    "12345678910 11 12 13 14 15 16 17 18 19 20".cstr().label(ui);
+                    br(ui);
+                    "test test test test test test test test test test test test test test test"
+                        .cstr()
+                        .label(ui);
+                    space(ui);
+                    "test test test test test test test test test"
+                        .cstr()
+                        .label(ui);
+                };
+                TileWidget::new(Side::Left, content).push(world);
+            });
         }
     }
 }
