@@ -4,6 +4,7 @@ use egui::{Area, NumExt};
 use super::*;
 
 pub struct Tile {
+    id: u64,
     content: Box<dyn Fn(&mut Ui, &mut World) + Send + Sync>,
     side: Side,
     size: f32,
@@ -11,12 +12,19 @@ pub struct Tile {
     content_size: egui::Vec2,
     margin_size: egui::Vec2,
     transparent: bool,
+    close_btn: bool,
 }
 
 #[derive(Resource)]
 pub struct TileResource {
     tiles: Vec<Tile>,
-    focused: usize,
+    focused: u64,
+}
+
+#[derive(Clone, Copy, Default)]
+struct TileResponse {
+    want_focus: bool,
+    want_close: bool,
 }
 
 const MARGIN: f32 = 7.0;
@@ -38,9 +46,17 @@ impl Default for TileResource {
     }
 }
 
+static NEXT_ID: Mutex<u64> = Mutex::new(0);
+fn next_id() -> u64 {
+    let mut id = NEXT_ID.lock().unwrap();
+    *id += 1;
+    *id
+}
+
 impl Tile {
     pub fn new(side: Side, content: impl Fn(&mut Ui, &mut World) + Send + Sync + 'static) -> Self {
         Self {
+            id: next_id(),
             content: Box::new(content),
             side,
             size: 0.0,
@@ -48,26 +64,20 @@ impl Tile {
             content_size: default(),
             margin_size: FRAME.total_margin().sum(),
             transparent: false,
+            close_btn: false,
         }
     }
     pub fn push(self, world: &mut World) {
         let mut tr = world.resource_mut::<TileResource>();
+        tr.focused = self.id;
         tr.tiles.push(self);
-        tr.focused = tr.tiles.len() - 1;
-    }
-    pub fn remove(world: &mut World) {
-        let mut tr = world.resource_mut::<TileResource>();
-        tr.tiles.pop();
-        if !tr.tiles.is_empty() {
-            tr.focused = tr.tiles.len() - 1;
-        }
-    }
-    pub fn move_focus(delta: i32, world: &mut World) {
-        let mut tr = world.resource_mut::<TileResource>();
-        tr.focused = (tr.focused as i32 + delta).clamp(0, tr.tiles.len() as i32 - 1) as usize;
     }
     pub fn transparent(mut self) -> Self {
         self.transparent = true;
+        self
+    }
+    pub fn close_btn(mut self) -> Self {
+        self.close_btn = true;
         self
     }
     pub fn set_size(mut self, value: f32) -> Self {
@@ -97,13 +107,22 @@ impl Tile {
     fn set_screen_rect(rect: Rect, ctx: &egui::Context) {
         ctx.data_mut(|w| w.insert_temp(screen_rect_id(), rect));
     }
-    pub fn show_immediate(
+    fn show(
         &mut self,
         id: Id,
         focused: bool,
         ctx: &egui::Context,
         world: &mut World,
-    ) {
+    ) -> TileResponse {
+        let mut response = TileResponse::default();
+        let need_size = if self.side.is_x() {
+            self.content_size.x
+        } else {
+            self.content_size.y
+        }
+        .at_most(self.max_size);
+        self.size = self.size.lerp(need_size, delta_time(world) * 8.0);
+
         let mut frame = if focused {
             FRAME.stroke(Stroke {
                 width: 1.0,
@@ -142,13 +161,40 @@ impl Tile {
                 screen_rect.with_min_y(screen_rect.max.y - self.size - self.margin_size.y),
             ),
         };
+        if left_mouse_just_released(world) {
+            if ctx
+                .pointer_interact_pos()
+                .is_some_and(|pos| rect.contains(pos))
+            {
+                response.want_focus = true;
+            }
+        }
 
         area.constrain_to(rect).show(ctx, |ui| {
             frame.show(ui, |ui| {
                 let rect = rect.shrink2(self.margin_size * 0.5);
+                ui.set_clip_rect(rect.expand2(self.margin_size * 0.25));
                 ui.expand_to_include_rect(rect);
-                ui.set_clip_rect(rect);
                 let ui = &mut ui.child_ui(rect, Layout::top_down(Align::Min), None);
+                if self.close_btn {
+                    const CROSS_SIZE: f32 = 13.0;
+                    let cross_rect = Rect::from_two_pos(
+                        rect.right_top(),
+                        rect.right_top() + egui::vec2(-CROSS_SIZE, CROSS_SIZE),
+                    );
+                    let resp = ui.allocate_rect(cross_rect, Sense::click());
+                    if resp.clicked() {
+                        response.want_close = true;
+                    }
+                    let stroke = Stroke {
+                        width: 2.0,
+                        color: if resp.hovered() { YELLOW } else { VISIBLE_DARK },
+                    };
+                    ui.painter()
+                        .line_segment([cross_rect.left_top(), cross_rect.right_bottom()], stroke);
+                    ui.painter()
+                        .line_segment([cross_rect.right_top(), cross_rect.left_bottom()], stroke);
+                }
                 (self.content)(ui, world);
 
                 self.content_size = ui.min_size();
@@ -167,16 +213,7 @@ impl Tile {
             }
         };
         Self::set_screen_rect(screen_rect, ctx);
-    }
-    fn show(&mut self, id: Id, focused: bool, ctx: &egui::Context, world: &mut World) {
-        let need_size = if self.side.is_x() {
-            self.content_size.x
-        } else {
-            self.content_size.y
-        }
-        .at_most(self.max_size);
-        self.size = self.size.lerp(need_size, delta_time(world) * 8.0);
-        self.show_immediate(id, focused, ctx, world);
+        response
     }
 
     pub fn show_all(ctx: &egui::Context, world: &mut World) {
@@ -195,8 +232,13 @@ impl Tile {
                 available_space.y -= tile.margin_size.y;
             }
         }
-        tiles[focused].take_space(true, &mut available_space);
-        let (left, right) = tiles.split_at_mut(focused);
+        let focused_ind = tiles.iter_mut().position(|t| t.id == focused);
+        if let Some(focused) = focused_ind {
+            tiles[focused].take_space(true, &mut available_space);
+        }
+
+        let focused_ind = focused_ind.unwrap_or(tiles.len() - 1);
+        let (left, right) = tiles.split_at_mut(focused_ind);
         let mut left_i = left.len() as i32 - 1;
         let mut right_i = 1;
         let l = left.len().max(right.len());
@@ -213,12 +255,25 @@ impl Tile {
             }
         }
 
+        let mut close = None;
+        let mut focus = None;
         for (i, tile) in tiles.iter_mut().enumerate() {
-            let focused = focused == i;
-            tile.show(Id::new("tile").with(i), focused, ctx, world);
+            let focused = focused == tile.id;
+            let resp = tile.show(Id::new("tile").with(i), focused, ctx, world);
+            if resp.want_close {
+                close = Some(i);
+            } else if resp.want_focus {
+                focus = Some(tile.id);
+            }
+        }
+        if let Some(close) = close {
+            tiles.remove(close);
         }
         tiles.extend(world.resource_mut::<TileResource>().tiles.drain(..));
         let mut tr = world.resource_mut::<TileResource>();
+        if let Some(focus) = focus {
+            tr.focused = focus;
+        }
         tr.tiles = tiles;
     }
 
@@ -226,18 +281,21 @@ impl Tile {
         Self::new(Side::Right, move |ui, world| {
             gid.get_team().show(ui, world);
         })
+        .close_btn()
         .push(world)
     }
     pub fn add_user(gid: u64, world: &mut World) {
         Self::new(Side::Right, move |ui, world| {
             gid.get_user().show(ui, world);
         })
+        .close_btn()
         .push(world)
     }
     pub fn add_fused_unit(unit: FusedUnit, world: &mut World) {
         Self::new(Side::Right, move |ui, world| {
             unit.show(ui, world);
         })
+        .close_btn()
         .push(world)
     }
 

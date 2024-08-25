@@ -39,15 +39,16 @@ pub fn popup(name: &str, ctx: &egui::Context, add_contents: impl FnOnce(&mut Ui)
 pub fn text_dots_text(text1: &Cstr, text2: &Cstr, ui: &mut Ui) {
     ui.horizontal(|ui| {
         let rect = ui.available_rect_before_wrap();
-        let left = rect.left() + text1.label(ui).rect.width() + 3.0;
-        let right = rect.right()
-            - 3.0
-            - ui.with_layout(Layout::right_to_left(egui::Align::Center), |ui| {
+        let left_width = text1.label(ui).rect.width();
+        let left = rect.left() + left_width + 3.0;
+        let right_width = ui
+            .with_layout(Layout::right_to_left(egui::Align::Center), |ui| {
                 text2.label(ui);
             })
             .response
             .rect
             .width();
+        let right = rect.right() - 3.0 - right_width;
         let bottom = rect.bottom() - 6.0;
         let line = egui::Shape::dotted_line(
             &[[left, bottom].into(), [right, bottom].into()],
@@ -55,6 +56,7 @@ pub fn text_dots_text(text1: &Cstr, text2: &Cstr, ui: &mut Ui) {
             12.0,
             0.5,
         );
+        ui.expand_to_include_x(rect.left() + left_width + right_width + 30.0);
         ui.painter().add(line);
     });
 }

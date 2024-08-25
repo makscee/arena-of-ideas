@@ -16,19 +16,7 @@ impl Plugin for WidgetsPlugin {
                 give_c
                     .run_if(input_just_pressed(KeyCode::KeyG).and_then(in_state(GameState::Title))),
             )
-            .add_systems(Update, add_tile)
-            .add_systems(
-                Update,
-                move_focus_left.run_if(input_just_pressed(KeyCode::ArrowLeft)),
-            )
-            .add_systems(
-                Update,
-                move_focus_right.run_if(input_just_pressed(KeyCode::ArrowRight)),
-            )
-            .add_systems(
-                Update,
-                remove_tile.run_if(input_just_pressed(KeyCode::KeyY)),
-            );
+            .add_systems(Update, add_tile);
         }
     }
 }
@@ -60,15 +48,6 @@ fn add_tile(world: &mut World) {
     if just_pressed(KeyCode::KeyS, world) {
         Tile::new(Side::Bottom, content).push(world);
     }
-}
-fn remove_tile(world: &mut World) {
-    Tile::remove(world)
-}
-fn move_focus_left(world: &mut World) {
-    Tile::move_focus(-1, world);
-}
-fn move_focus_right(world: &mut World) {
-    Tile::move_focus(1, world);
 }
 
 #[derive(Default, Resource)]
