@@ -1,5 +1,3 @@
-
-
 use ecolor::HexColor;
 
 use super::*;
@@ -132,9 +130,13 @@ impl Expression {
             Expression::StatusCharges(name) => {
                 Ok(Status::get_charges(name, context.owner(), world)?.into())
             }
-            Expression::HexColor(s) => Ok(VarValue::Color(
-                HexColor::from_str(s).unwrap().color().to_color(),
-            )),
+            Expression::HexColor(s) => Ok(VarValue::Color({
+                let s = s.strip_prefix('#').unwrap_or(s);
+                HexColor::from_str_without_hash(s)
+                    .unwrap()
+                    .color()
+                    .to_color()
+            })),
             Expression::Sin(v) => Ok(v.get_float(context, world)?.sin().into()),
             Expression::Cos(v) => Ok(v.get_float(context, world)?.cos().into()),
             Expression::Abs(v) => v.get_value(context, world)?.abs(),

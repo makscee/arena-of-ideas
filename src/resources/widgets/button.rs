@@ -4,8 +4,9 @@ use super::*;
 
 pub struct Button {
     name: String,
-    show_name: Option<Cstr>,
+    name_cstr: Option<Cstr>,
     title: Option<Cstr>,
+    icon: Option<Icon>,
     min_width: f32,
     enabled: bool,
     active: bool,
@@ -18,7 +19,8 @@ impl Default for Button {
             title: default(),
             enabled: true,
             active: false,
-            show_name: None,
+            name_cstr: None,
+            icon: None,
             min_width: 0.0,
         }
     }
@@ -29,7 +31,7 @@ impl Button {
         Self { name, ..default() }
     }
     pub fn cstr(mut self, name: Cstr) -> Self {
-        self.show_name = Some(name);
+        self.name_cstr = Some(name);
         self
     }
     pub fn color(self, color: Color32, ui: &mut Ui) -> Self {
@@ -61,6 +63,10 @@ impl Button {
     }
     pub fn title(mut self, text: Cstr) -> Self {
         self.title = Some(text);
+        self
+    }
+    pub fn icon(mut self, icon: Icon) -> Self {
+        self.icon = Some(icon);
         self
     }
     pub fn min_width(mut self, width: f32) -> Self {
@@ -108,20 +114,26 @@ impl Button {
             style.visuals.widgets.inactive.fg_stroke.color = YELLOW;
             style.visuals.widgets.hovered.fg_stroke.color = YELLOW;
         }
-
-        let r = if let Some(show) = self.show_name {
-            egui::Button::new(show.widget(1.0, ui))
-        } else {
-            egui::Button::new(self.name)
-        }
-        .wrap_mode(egui::TextWrapMode::Extend)
-        .sense(if self.enabled {
+        let sense = if self.enabled {
             Sense::click()
         } else {
             Sense::hover()
-        })
-        .min_size(egui::vec2(self.min_width, 0.0))
-        .ui(ui);
+        };
+        let r = if let Some(icon) = self.icon {
+            egui::ImageButton::new(icon.image())
+                .sense(sense)
+                .ui(ui)
+        } else {
+            if let Some(name) = self.name_cstr {
+                egui::Button::new(name.widget(1.0, ui))
+            } else {
+                egui::Button::new(self.name)
+            }
+            .wrap_mode(egui::TextWrapMode::Extend)
+            .sense(sense)
+            .min_size(egui::vec2(self.min_width, 0.0))
+            .ui(ui)
+        };
         ui.reset_style();
         r
     }

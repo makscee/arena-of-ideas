@@ -226,9 +226,9 @@ impl BattlePlugin {
             ui.vertical_centered(|ui| {
                 let mut gt = gt();
                 if ImageButton::new(if gt.paused() {
-                    Icon::Pause.image()
-                } else {
                     Icon::Play.image()
+                } else {
+                    Icon::Pause.image()
                 })
                 .ui(ui)
                 .clicked()

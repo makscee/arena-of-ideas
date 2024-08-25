@@ -42,11 +42,8 @@ impl MetaPlugin {
             match state {
                 SubState::Shop => {
                     text_dots_text(
-                        &"credits".cstr(),
-                        &TWallet::current()
-                            .amount
-                            .to_string()
-                            .cstr_cs(YELLOW, CstrStyle::Bold),
+                        &"wallet".cstr(),
+                        &format!("{}¤", TWallet::current().amount).cstr_cs(YELLOW, CstrStyle::Bold),
                         ui,
                     );
                     br(ui);

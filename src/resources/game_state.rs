@@ -14,6 +14,7 @@ pub enum GameState {
     ShopBattle,
     Battle,
     Shop,
+    GameStart,
     GameOver,
     TestScenariosLoad,
     TestScenariosRun,

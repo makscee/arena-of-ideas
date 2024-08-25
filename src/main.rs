@@ -119,6 +119,7 @@ fn main() {
             GameArchivePlugin,
             ClientSettingsPlugin,
             MetaPlugin,
+            GameStartPlugin,
         ))
         .init_state::<GameState>()
         .init_resource::<NotificationsResource>()

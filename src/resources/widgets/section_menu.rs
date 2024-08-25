@@ -29,9 +29,9 @@ impl Default for SectionMenu {
                 },
                 GameSection {
                     name: "GAME".to_owned(),
-                    target_state: GameState::Shop,
-                    inner_states: [GameState::Battle].into(),
-                    options: [GameOption::ActiveRun].into(),
+                    target_state: GameState::GameStart,
+                    inner_states: [GameState::Battle, GameState::Shop].into(),
+                    options: [GameOption::Login].into(),
                 },
                 GameSection {
                     name: "INBOX".to_owned(),

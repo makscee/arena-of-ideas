@@ -2,17 +2,25 @@ use super::*;
 
 pub struct Middle3 {
     width: f32,
+    side_align: Align,
 }
 
 impl Default for Middle3 {
     fn default() -> Self {
-        Self { width: 150.0 }
+        Self {
+            width: 150.0,
+            side_align: Align::Center,
+        }
     }
 }
 
 impl Middle3 {
     pub fn width(mut self, value: f32) -> Self {
         self.width = value;
+        self
+    }
+    pub fn side_align(mut self, align: Align) -> Self {
+        self.side_align = align;
         self
     }
     pub fn ui_mut(
@@ -48,11 +56,11 @@ impl Middle3 {
         let rect_right =
             Rect::from_min_size(rect_center.right_top(), egui::vec2(side_width, height));
         left(
-            &mut ui.child_ui(rect_left, Layout::right_to_left(Align::Center), None),
+            &mut ui.child_ui(rect_left, Layout::right_to_left(self.side_align), None),
             world,
         );
         right(
-            &mut ui.child_ui(rect_right, Layout::left_to_right(Align::Center), None),
+            &mut ui.child_ui(rect_right, Layout::left_to_right(self.side_align), None),
             world,
         );
         full_rect.set_height(full_rect.height().max(height));

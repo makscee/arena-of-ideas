@@ -37,16 +37,16 @@ fn add_tile(world: &mut World) {
             .label(ui);
     };
     if just_pressed(KeyCode::KeyA, world) {
-        Tile::new(Side::Left, content).push(world);
+        Tile::new(Side::Left, content).close_btn().push(world);
     }
     if just_pressed(KeyCode::KeyD, world) {
-        Tile::new(Side::Right, content).push(world);
+        Tile::new(Side::Right, content).close_btn().push(world);
     }
     if just_pressed(KeyCode::KeyW, world) {
-        Tile::new(Side::Top, content).push(world);
+        Tile::new(Side::Top, content).close_btn().push(world);
     }
     if just_pressed(KeyCode::KeyS, world) {
-        Tile::new(Side::Bottom, content).push(world);
+        Tile::new(Side::Bottom, content).close_btn().push(world);
     }
 }
 
@@ -203,10 +203,10 @@ impl WidgetsPlugin {
             //         ctx,
             //         |_, ui| {
             //             if Button::click("Start new".into()).ui(ui).clicked() {
-            //                 run_start_normal();
-            //                 once_on_run_start_normal(|_, _, status| {
-            //                     status.on_success(|w| GameState::Shop.proceed_to_target(w))
-            //                 });
+            // run_start_normal();
+            // once_on_run_start_normal(|_, _, status| {
+            //     status.on_success(|w| GameState::Shop.proceed_to_target(w))
+            // });
             //             }
             //         },
             //     );

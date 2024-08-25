@@ -19,7 +19,7 @@ pub enum Icon {
 
 impl Icon {
     pub fn show(self, ui: &mut Ui) {
-        self.image().fit_to_original_size(1.0).ui(ui);
+        self.image().ui(ui);
     }
 
     pub fn image(self) -> Image<'static> {

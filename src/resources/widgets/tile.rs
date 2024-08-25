@@ -9,6 +9,7 @@ pub struct Tile {
     side: Side,
     size: f32,
     max_size: f32,
+    min_size: f32,
     content_size: egui::Vec2,
     margin_size: egui::Vec2,
     transparent: bool,
@@ -61,6 +62,7 @@ impl Tile {
             side,
             size: 0.0,
             max_size: 0.0,
+            min_size: 0.0,
             content_size: default(),
             margin_size: FRAME.total_margin().sum(),
             transparent: false,
@@ -80,9 +82,8 @@ impl Tile {
         self.close_btn = true;
         self
     }
-    pub fn set_size(mut self, value: f32) -> Self {
-        self.size = value;
-        self.max_size = value;
+    pub fn min_size(mut self, value: f32) -> Self {
+        self.min_size = value;
         self
     }
     fn take_space(&mut self, full: bool, space: &mut egui::Vec2) {
@@ -91,15 +92,15 @@ impl Tile {
         } else {
             self.max_size = self.content_size.y.at_most(space.y);
         }
-        if full {
-            *space -= self.content_size + egui::Vec2::splat(MARGIN * 4.0);
+        // if full {
+        //     *space -= self.content_size + egui::Vec2::splat(MARGIN * 4.0);
+        // } else {
+        if self.side.is_x() {
+            space.x -= self.max_size;
         } else {
-            if self.side.is_x() {
-                space.x -= self.max_size;
-            } else {
-                space.y -= self.max_size;
-            }
+            space.y -= self.max_size;
         }
+        // }
     }
     fn get_screen_rect(ctx: &egui::Context) -> Rect {
         ctx.data(|r| r.get_temp::<Rect>(screen_rect_id())).unwrap()
@@ -120,8 +121,9 @@ impl Tile {
         } else {
             self.content_size.y
         }
-        .at_most(self.max_size);
-        self.size = self.size.lerp(need_size, delta_time(world) * 8.0);
+        .at_most(self.max_size)
+        .at_least(self.min_size);
+        self.size = self.size.lerp(need_size, delta_time(world) * 13.0);
 
         let mut frame = if focused {
             FRAME.stroke(Stroke {
@@ -170,36 +172,41 @@ impl Tile {
             }
         }
 
-        area.constrain_to(rect).show(ctx, |ui| {
-            frame.show(ui, |ui| {
-                let rect = rect.shrink2(self.margin_size * 0.5);
-                ui.set_clip_rect(rect.expand2(self.margin_size * 0.25));
-                ui.expand_to_include_rect(rect);
-                let ui = &mut ui.child_ui(rect, Layout::top_down(Align::Min), None);
-                if self.close_btn {
-                    const CROSS_SIZE: f32 = 13.0;
-                    let cross_rect = Rect::from_two_pos(
-                        rect.right_top(),
-                        rect.right_top() + egui::vec2(-CROSS_SIZE, CROSS_SIZE),
-                    );
-                    let resp = ui.allocate_rect(cross_rect, Sense::click());
-                    if resp.clicked() {
-                        response.want_close = true;
+        area.constrain_to(rect.expand2(self.margin_size * 0.5))
+            .show(ctx, |ui| {
+                frame.show(ui, |ui| {
+                    let rect = rect.shrink2(self.margin_size * 0.5);
+                    ui.set_clip_rect(rect.expand2(self.margin_size * 0.25));
+                    ui.expand_to_include_rect(rect);
+                    let ui = &mut ui.child_ui(rect, Layout::top_down(Align::Min), None);
+                    if self.close_btn {
+                        const CROSS_SIZE: f32 = 13.0;
+                        let cross_rect = Rect::from_two_pos(
+                            rect.right_top(),
+                            rect.right_top() + egui::vec2(-CROSS_SIZE, CROSS_SIZE),
+                        );
+                        let resp = ui.allocate_rect(cross_rect, Sense::click());
+                        if resp.clicked() {
+                            response.want_close = true;
+                        }
+                        let stroke = Stroke {
+                            width: 2.0,
+                            color: if resp.hovered() { YELLOW } else { VISIBLE_DARK },
+                        };
+                        ui.painter().line_segment(
+                            [cross_rect.left_top(), cross_rect.right_bottom()],
+                            stroke,
+                        );
+                        ui.painter().line_segment(
+                            [cross_rect.right_top(), cross_rect.left_bottom()],
+                            stroke,
+                        );
                     }
-                    let stroke = Stroke {
-                        width: 2.0,
-                        color: if resp.hovered() { YELLOW } else { VISIBLE_DARK },
-                    };
-                    ui.painter()
-                        .line_segment([cross_rect.left_top(), cross_rect.right_bottom()], stroke);
-                    ui.painter()
-                        .line_segment([cross_rect.right_top(), cross_rect.left_bottom()], stroke);
-                }
-                (self.content)(ui, world);
+                    (self.content)(ui, world);
 
-                self.content_size = ui.min_size();
+                    self.content_size = ui.min_size();
+                });
             });
-        });
         let screen_rect = match self.side {
             Side::Right => {
                 screen_rect.with_max_x(screen_rect.max.x - self.size - self.margin_size.x)
@@ -310,6 +317,7 @@ impl Tile {
             GameState::Shop => ShopPlugin::add_tiles(world),
             GameState::Battle => BattlePlugin::add_tiles(world),
             GameState::TableView(query) => TableViewPlugin::add_tiles(query, world),
+            GameState::GameStart => GameStartPlugin::add_tiles(world),
             _ => {}
         }
     }
