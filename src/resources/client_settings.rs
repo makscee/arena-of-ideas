@@ -9,8 +9,8 @@ use super::*;
 
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
 pub struct ClientSettings {
-    pub dev_server: (String, String),
-    pub prod_server: (String, String),
+    pub servers: HashMap<&'static str, (&'static str, &'static str)>,
+    pub active_server: &'static str,
     pub dev_mode: bool,
 
     pub window_mode: WindowMode,
@@ -28,14 +28,7 @@ pub enum WindowMode {
     BorderlessFullScreen,
 }
 
-static CLIENT_SETTINGS: RwLock<ClientSettings> = RwLock::new(ClientSettings {
-    dev_server: (String::new(), String::new()),
-    prod_server: (String::new(), String::new()),
-    dev_mode: false,
-    window_mode: WindowMode::Windowed,
-    resolution: vec2(100.0, 100.0),
-    vsync: false,
-});
+static CLIENT_SETTINGS: OnceCell<RwLock<ClientSettings>> = OnceCell::new();
 const CLIENT_SETTINGS_FILE: &str = "client_settings.ron";
 
 fn path() -> PathBuf {
@@ -44,18 +37,29 @@ fn path() -> PathBuf {
     path
 }
 pub fn load_client_settings() {
-    let cs = if let Some(cs) = std::fs::read_to_string(&path())
+    let mut cs = if let Some(cs) = std::fs::read_to_string(&path())
         .ok()
-        .and_then(|d| ron::from_str::<ClientSettings>(&d).ok())
+        .and_then(|d| ron::from_str::<ClientSettings>(d.leak()).ok())
     {
         cs
     } else {
         ClientSettings::default().save_to_file()
     };
+    if cs.active_server.is_empty() {
+        if cfg!(debug_assertions) {
+            cs.active_server = "dev";
+        } else {
+            cs.active_server = "prod";
+        }
+    }
     cs.save_to_cache();
 }
 pub fn client_settings() -> std::sync::RwLockReadGuard<'static, ClientSettings> {
-    CLIENT_SETTINGS.read().unwrap()
+    CLIENT_SETTINGS.get_or_init(|| default()).read().unwrap()
+}
+pub fn current_server() -> (&'static str, &'static str) {
+    let cs = client_settings();
+    cs.servers[cs.active_server]
 }
 pub fn is_dev_mode() -> bool {
     client_settings().dev_mode
@@ -64,8 +68,11 @@ pub fn is_dev_mode() -> bool {
 impl Default for ClientSettings {
     fn default() -> Self {
         Self {
-            dev_server: ("http://161.35.88.206:3000".into(), "aoi_dev".into()),
-            prod_server: ("http://161.35.88.206:3000".into(), "aoi_prod".into()),
+            servers: HashMap::from([
+                ("prod", ("http://161.35.88.206:3000", "aoi_prod")),
+                ("dev", ("http://161.35.88.206:3000", "aoi_dev")),
+            ]),
+            active_server: "",
             dev_mode: false,
             window_mode: default(),
             vsync: false,
@@ -76,7 +83,7 @@ impl Default for ClientSettings {
 
 impl ClientSettings {
     pub fn save_to_cache(self) {
-        *CLIENT_SETTINGS.write().unwrap() = self;
+        *CLIENT_SETTINGS.get_or_init(|| default()).write().unwrap() = self;
     }
     pub fn save_to_file(self) -> Self {
         match std::fs::write(

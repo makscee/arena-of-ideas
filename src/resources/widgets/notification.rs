@@ -70,10 +70,14 @@ impl Notification {
     }
     pub fn show_all_table(ui: &mut Ui, world: &mut World) {
         world.resource_scope(|world, nr: Mut<NotificationsResource>| {
-            Table::new("Notifications")
-                .column_cstr("text", |(_, n): &(i64, Notification), _| n.text.clone())
-                .column_ts("time", |(t, _)| *t as u64)
-                .ui(&nr.shown.as_slices().0, ui, world);
+            Frame::none()
+                .inner_margin(Margin::same(13.0))
+                .show(ui, |ui| {
+                    Table::new("Notifications")
+                        .column_cstr("text", |(_, n): &(i64, Notification), _| n.text.clone())
+                        .column_ts("time", |(t, _)| *t as u64)
+                        .ui(&nr.shown.as_slices().0, ui, world);
+                });
         })
     }
 }

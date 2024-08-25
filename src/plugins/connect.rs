@@ -66,13 +66,9 @@ impl ConnectPlugin {
             .spawn(async {
                 let creds: Option<Credentials> = Self::load_credentials();
                 let mut tries = 3;
-                let server = if cfg!(debug_assertions) {
-                    client_settings().dev_server.clone()
-                } else {
-                    client_settings().prod_server.clone()
-                };
+                let server = current_server();
                 info!("Connect start {} {}", server.0, server.1);
-                while let Err(e) = connect(&server.0, &server.1, creds.clone()) {
+                while let Err(e) = connect(server.0, server.1, creds.clone()) {
                     error!("Connection error: {e}");
                     sleep(Duration::from_secs(1));
                     tries -= 1;
