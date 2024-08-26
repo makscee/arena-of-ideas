@@ -36,7 +36,7 @@ pub fn popup(name: &str, ctx: &egui::Context, add_contents: impl FnOnce(&mut Ui)
             center_window(name, ui, add_contents);
         });
 }
-pub fn text_dots_text(text1: &Cstr, text2: &Cstr, ui: &mut Ui) {
+pub fn text_dots_text(text1: Cstr, text2: Cstr, ui: &mut Ui) {
     ui.horizontal(|ui| {
         let rect = ui.available_rect_before_wrap();
         let left_width = text1.label(ui).rect.width();

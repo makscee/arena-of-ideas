@@ -81,6 +81,7 @@ impl TableViewPlugin {
                 .ui(&td.battles, ui, world);
             world.insert_resource(td);
         })
+        .sticky()
         .push(world);
     }
     fn add_base_units_tile(world: &mut World) {
@@ -98,6 +99,7 @@ impl TableViewPlugin {
 
             world.insert_resource(td);
         })
+        .sticky()
         .push(world);
     }
 }

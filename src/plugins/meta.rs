@@ -35,6 +35,7 @@ impl MetaPlugin {
                 TeamPlugin::despawn(Faction::Team, world);
             }
         })
+        .sticky()
         .push(world);
 
         Tile::new(Side::Left, |ui, world| {
@@ -42,8 +43,8 @@ impl MetaPlugin {
             match state {
                 SubState::Shop => {
                     text_dots_text(
-                        &"wallet".cstr(),
-                        &format!("{}¤", TWallet::current().amount).cstr_cs(YELLOW, CstrStyle::Bold),
+                        "wallet".cstr(),
+                        format!("{}¤", TWallet::current().amount).cstr_cs(YELLOW, CstrStyle::Bold),
                         ui,
                     );
                     br(ui);
@@ -148,6 +149,7 @@ impl MetaPlugin {
                 }
             }
         })
+        .sticky()
         .push(world);
     }
     pub fn ui_content(wd: &mut WidgetData, ui: &mut Ui, world: &mut World) {

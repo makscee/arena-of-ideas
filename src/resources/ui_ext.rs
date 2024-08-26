@@ -184,21 +184,17 @@ pub trait Show {
 impl Show for TUser {
     fn show(&self, ui: &mut Ui, _: &mut World) {
         text_dots_text(
-            &"name".cstr(),
-            &self.name.cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold),
+            "name".cstr(),
+            self.name.cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold),
             ui,
         );
-        text_dots_text(&"id".cstr(), &self.id.to_string().cstr_c(VISIBLE_LIGHT), ui);
+        text_dots_text("id".cstr(), self.id.to_string().cstr_c(VISIBLE_LIGHT), ui);
     }
 }
 impl Show for FusedUnit {
     fn show(&self, ui: &mut Ui, world: &mut World) {
         title("Fused Unit", ui);
-        text_dots_text(
-            &"gid".cstr(),
-            &self.id.to_string().cstr_c(VISIBLE_LIGHT),
-            ui,
-        );
+        text_dots_text("gid".cstr(), self.id.to_string().cstr_c(VISIBLE_LIGHT), ui);
         self.bases
             .iter()
             .filter_map(|b| TBaseUnit::filter_by_name(b.clone()))
@@ -209,12 +205,8 @@ impl Show for FusedUnit {
 impl Show for TTeam {
     fn show(&self, ui: &mut Ui, world: &mut World) {
         title("Team", ui);
-        text_dots_text(&"owner".cstr(), &self.owner.get_user().cstr(), ui);
-        text_dots_text(
-            &"gid".cstr(),
-            &self.id.to_string().cstr_c(VISIBLE_LIGHT),
-            ui,
-        );
+        text_dots_text("owner".cstr(), self.owner.get_user().cstr(), ui);
+        text_dots_text("gid".cstr(), self.id.to_string().cstr_c(VISIBLE_LIGHT), ui);
         ui.push_id(self.id, |ui| {
             self.units.show_table("Units", ui, world);
         });

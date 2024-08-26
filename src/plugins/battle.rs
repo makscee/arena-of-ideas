@@ -299,7 +299,9 @@ impl BattlePlugin {
                 },
             );
         })
+        .non_focusable()
         .transparent()
+        .sticky()
         .push(world);
 
         let bd = world.resource::<BattleData>();
@@ -311,10 +313,10 @@ impl BattlePlugin {
                 if team.id == 0 {
                     return;
                 }
-                text_dots_text(&"owner".cstr(), &team.owner.get_user().cstr(), ui);
+                text_dots_text("owner".cstr(), team.owner.get_user().cstr(), ui);
                 text_dots_text(
-                    &"team id".cstr(),
-                    &team.id.to_string().cstr_c(VISIBLE_LIGHT),
+                    "team id".cstr(),
+                    team.id.to_string().cstr_c(VISIBLE_LIGHT),
                     ui,
                 );
             };
@@ -322,11 +324,15 @@ impl BattlePlugin {
                 show_team(battle.team_left.get_team(), ui);
             })
             .transparent()
+            .sticky()
+            .non_focusable()
             .push(world);
             Tile::new(Side::Right, move |ui, _| {
                 show_team(battle.team_right.get_team(), ui);
             })
             .transparent()
+            .sticky()
+            .non_focusable()
             .push(world);
         }
     }

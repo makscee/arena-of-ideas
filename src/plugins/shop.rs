@@ -181,32 +181,34 @@ impl ShopPlugin {
     }
     pub fn add_tiles(world: &mut World) {
         Tile::new(Side::Left, |ui, _| {
-            text_dots_text(&"name".cstr(), &user_name().cstr_c(VISIBLE_BRIGHT), ui);
+            text_dots_text("name".cstr(), user_name().cstr_c(VISIBLE_BRIGHT), ui);
             if let Some(run) = TArenaRun::get_current() {
                 text_dots_text(
-                    &"G".cstr(),
-                    &run.g.to_string().cstr_cs(YELLOW, CstrStyle::Bold),
+                    "G".cstr(),
+                    run.g.to_string().cstr_cs(YELLOW, CstrStyle::Bold),
                     ui,
                 );
                 text_dots_text(
-                    &"lives".cstr(),
-                    &run.lives.to_string().cstr_cs(GREEN, CstrStyle::Bold),
+                    "lives".cstr(),
+                    run.lives.to_string().cstr_cs(GREEN, CstrStyle::Bold),
                     ui,
                 );
                 text_dots_text(
-                    &"round".cstr(),
-                    &run.round.to_string().cstr_c(VISIBLE_BRIGHT),
+                    "round".cstr(),
+                    run.round.to_string().cstr_c(VISIBLE_BRIGHT),
                     ui,
                 );
                 text_dots_text(
-                    &"score".cstr(),
-                    &run.score.to_string().cstr_c(VISIBLE_BRIGHT),
+                    "score".cstr(),
+                    run.score.to_string().cstr_c(VISIBLE_BRIGHT),
                     ui,
                 );
-                text_dots_text(&"mode".cstr(), &run.mode.cstr(), ui);
+                text_dots_text("mode".cstr(), run.mode.cstr(), ui);
             }
         })
         .transparent()
+        .sticky()
+        .non_focusable()
         .push(world);
         Tile::new(Side::Right, |ui, _| {
             let run = TArenaRun::current();
@@ -232,6 +234,8 @@ impl ShopPlugin {
             }
         })
         .transparent()
+        .non_focusable()
+        .sticky()
         .push(world);
     }
     fn do_stack(target: u8, world: &mut World) {
@@ -467,13 +471,13 @@ impl ShopPlugin {
                 "Run Over".cstr_cs(YELLOW, CstrStyle::Bold).label(ui);
                 run.mode.cstr().label(ui);
                 text_dots_text(
-                    &format!("Final round").cstr(),
-                    &run.round.to_string().cstr_cs(YELLOW, CstrStyle::Bold),
+                    format!("Final round").cstr(),
+                    run.round.to_string().cstr_cs(YELLOW, CstrStyle::Bold),
                     ui,
                 );
                 text_dots_text(
-                    &format!("Score").cstr(),
-                    &run.score.to_string().cstr_cs(YELLOW, CstrStyle::Bold),
+                    format!("Score").cstr(),
+                    run.score.to_string().cstr_cs(YELLOW, CstrStyle::Bold),
                     ui,
                 );
                 br(ui);
@@ -481,8 +485,8 @@ impl ShopPlugin {
                 let mut total = 0;
                 for Reward { name, amount } in run.rewards {
                     text_dots_text(
-                        &name.cstr_c(VISIBLE_DARK),
-                        &amount.to_string().cstr_c(YELLOW),
+                        name.cstr_c(VISIBLE_DARK),
+                        amount.to_string().cstr_c(YELLOW),
                         ui,
                     );
                     total += amount;
@@ -493,8 +497,8 @@ impl ShopPlugin {
                     "Total".to_owned()
                 };
                 text_dots_text(
-                    &total_txt.cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold),
-                    &total.to_string().cstr_cs(YELLOW, CstrStyle::Bold),
+                    total_txt.cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold),
+                    total.to_string().cstr_cs(YELLOW, CstrStyle::Bold),
                     ui,
                 );
                 if Button::click("Finish".into()).ui(ui).clicked() {

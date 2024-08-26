@@ -13,7 +13,8 @@ pub struct Tile {
     content_size: egui::Vec2,
     margin_size: egui::Vec2,
     transparent: bool,
-    close_btn: bool,
+    sticky: bool,
+    focusable: bool,
 }
 
 #[derive(Resource)]
@@ -66,7 +67,8 @@ impl Tile {
             content_size: default(),
             margin_size: FRAME.total_margin().sum(),
             transparent: false,
-            close_btn: false,
+            sticky: false,
+            focusable: true,
         }
     }
     pub fn push(self, world: &mut World) {
@@ -78,8 +80,12 @@ impl Tile {
         self.transparent = true;
         self
     }
-    pub fn close_btn(mut self) -> Self {
-        self.close_btn = true;
+    pub fn sticky(mut self) -> Self {
+        self.sticky = true;
+        self
+    }
+    pub fn non_focusable(mut self) -> Self {
+        self.focusable = false;
         self
     }
     pub fn min_size(mut self, value: f32) -> Self {
@@ -163,7 +169,7 @@ impl Tile {
                 screen_rect.with_min_y(screen_rect.max.y - self.size - self.margin_size.y),
             ),
         };
-        if left_mouse_just_released(world) {
+        if self.focusable && left_mouse_just_released(world) {
             if ctx
                 .pointer_interact_pos()
                 .is_some_and(|pos| rect.contains(pos))
@@ -179,7 +185,7 @@ impl Tile {
                     ui.set_clip_rect(rect.expand2(self.margin_size * 0.25));
                     ui.expand_to_include_rect(rect);
                     let ui = &mut ui.child_ui(rect, Layout::top_down(Align::Min), None);
-                    if self.close_btn {
+                    if !self.sticky {
                         const CROSS_SIZE: f32 = 13.0;
                         let cross_rect = Rect::from_two_pos(
                             rect.right_top(),
@@ -265,9 +271,10 @@ impl Tile {
         let mut close = None;
         let mut focus = None;
         for (i, tile) in tiles.iter_mut().enumerate() {
-            let focused = focused == tile.id;
+            let focused = tile.focusable && focused == tile.id;
             let resp = tile.show(Id::new("tile").with(i), focused, ctx, world);
-            if resp.want_close {
+            if resp.want_close || (focused && !tile.sticky && just_pressed(KeyCode::Escape, world))
+            {
                 close = Some(i);
             } else if resp.want_focus {
                 focus = Some(tile.id);
@@ -275,10 +282,18 @@ impl Tile {
         }
         if let Some(close) = close {
             tiles.remove(close);
+            if close == focused_ind {
+                if let Some(last) = tiles.last() {
+                    focus = Some(last.id);
+                }
+            }
         }
-        tiles.extend(world.resource_mut::<TileResource>().tiles.drain(..));
         let mut tr = world.resource_mut::<TileResource>();
-        if let Some(focus) = focus {
+        let new_tiles = mem::take(&mut tr.tiles);
+        if !new_tiles.is_empty() {
+            tr.focused = new_tiles.last().unwrap().id;
+            tiles.extend(new_tiles);
+        } else if let Some(focus) = focus {
             tr.focused = focus;
         }
         tr.tiles = tiles;
@@ -288,21 +303,18 @@ impl Tile {
         Self::new(Side::Right, move |ui, world| {
             gid.get_team().show(ui, world);
         })
-        .close_btn()
         .push(world)
     }
     pub fn add_user(gid: u64, world: &mut World) {
         Self::new(Side::Right, move |ui, world| {
             gid.get_user().show(ui, world);
         })
-        .close_btn()
         .push(world)
     }
     pub fn add_fused_unit(unit: FusedUnit, world: &mut World) {
         Self::new(Side::Right, move |ui, world| {
             unit.show(ui, world);
         })
-        .close_btn()
         .push(world)
     }
 
@@ -312,6 +324,7 @@ impl Tile {
             GameState::Inbox => Tile::new(Side::Left, |ui, world| {
                 Notification::show_all_table(ui, world)
             })
+            .sticky()
             .push(world),
             GameState::Meta => MetaPlugin::add_tiles(world),
             GameState::Shop => ShopPlugin::add_tiles(world),
