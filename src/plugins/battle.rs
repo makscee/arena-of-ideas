@@ -384,22 +384,12 @@ impl BattlePlugin {
                 .get_vec2(VarName::Position, world)
                 .unwrap_or_default();
             if (pos - cursor_pos).length() < 1.0 {
-                Window::new("hover_slot")
-                    .title_bar(false)
-                    .frame(Frame::none())
-                    .max_width(300.0)
-                    .pivot(Align2::LEFT_CENTER)
-                    .fixed_pos(ctx.pointer_latest_pos().unwrap_or_default())
-                    .resizable(false)
-                    .interactable(false)
-                    .show(ctx, |ui| {
-                        ui.vertical_centered_justified(|ui| {
-                            match unit_card(&context, ui, world) {
-                                Ok(_) => {}
-                                Err(e) => error!("{e}"),
-                            };
-                        });
-                    });
+                cursor_card_window(ctx, |ui| {
+                    match unit_card(&context, ui, world) {
+                        Ok(_) => {}
+                        Err(e) => error!("{e}"),
+                    };
+                });
                 return;
             }
         }

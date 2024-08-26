@@ -43,6 +43,11 @@ impl VarState {
     pub fn entity(&self) -> Option<Entity> {
         self.entity
     }
+    pub fn parent_state<'a>(&self, world: &'a World) -> Option<&'a VarState> {
+        self.entity
+            .and_then(|e| e.get_parent(world))
+            .and_then(|e| Self::try_get(e, world).ok())
+    }
     pub fn new_with(var: VarName, value: VarValue) -> Self {
         Self::default().init(var, value).take()
     }
@@ -227,15 +232,21 @@ impl VarState {
         self
     }
 
-    pub fn all_values(&self, t: f32) -> HashMap<VarName, VarValue> {
-        HashMap::from_iter(
+    pub fn all_values(&self, t: f32, world: &World) -> HashMap<VarName, VarValue> {
+        let mut result = if let Some(parent) = self.parent_state(world) {
+            parent.all_values(t, world)
+        } else {
+            default()
+        };
+        result.extend(
             self.vars
                 .keys()
                 .filter_map(|k| match self.get_value_at(*k, t) {
                     Ok(v) => Some((*k, v)),
                     Err(_) => None,
                 }),
-        )
+        );
+        result
     }
 
     pub fn take(&mut self) -> Self {

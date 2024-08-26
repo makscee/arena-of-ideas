@@ -240,3 +240,69 @@ fn point_on_rect(t: f32, rect: &Rect) -> egui::Pos2 {
         }
     }
 }
+
+static FUSED_CONTEXT_CACHE: OnceCell<Mutex<HashMap<u64, Context>>> = OnceCell::new();
+pub fn cached_fused_card(unit: &FusedUnit, ui: &mut Ui, world: &mut World) -> Result<()> {
+    let mut cache = FUSED_CONTEXT_CACHE
+        .get_or_init(|| default())
+        .lock()
+        .unwrap();
+    let id = unit.id;
+    if !cache.contains_key(&id) {
+        let unit: PackedUnit = unit.clone().into();
+        let unit = unit.unpack(
+            TeamPlugin::entity(Faction::Team, world),
+            None,
+            Some(id),
+            world,
+        );
+        let context = Context::new(unit).detach(world).take();
+        UnitPlugin::despawn(unit, world);
+        cache.insert(id, context);
+    }
+    cache
+        .get(&id)
+        .context("Failed to get cached card context")
+        .and_then(|context| unit_card(context, ui, world))
+}
+
+static BASE_CONTEXT_CACHE: OnceCell<Mutex<HashMap<String, Context>>> = OnceCell::new();
+pub fn cached_base_card(unit: &TBaseUnit, ui: &mut Ui, world: &mut World) -> Result<()> {
+    let mut cache = BASE_CONTEXT_CACHE.get_or_init(|| default()).lock().unwrap();
+    let id = unit.name.clone();
+    if !cache.contains_key(&id) {
+        let unit: PackedUnit = unit.clone().into();
+        let unit = unit.unpack(TeamPlugin::entity(Faction::Team, world), None, None, world);
+        let context = Context::new(unit).detach(world).take();
+        UnitPlugin::despawn(unit, world);
+        cache.insert(id.clone(), context);
+    }
+    cache
+        .get(&id)
+        .context("Failed to get cached card context")
+        .and_then(|context| unit_card(context, ui, world))
+}
+
+pub fn cursor_card_window(ctx: &egui::Context, content: impl FnOnce(&mut Ui)) {
+    let mut pos = ctx.pointer_latest_pos().unwrap_or_default();
+    let pivot = if pos.x > ctx.screen_rect().center().x {
+        pos.x -= 10.0;
+        Align2::RIGHT_CENTER
+    } else {
+        pos.x += 10.0;
+        Align2::LEFT_CENTER
+    };
+    Window::new("hover_slot")
+        .title_bar(false)
+        .frame(Frame::none())
+        .max_width(300.0)
+        .pivot(pivot)
+        .fixed_pos(pos)
+        .resizable(false)
+        .interactable(false)
+        .show(ctx, |ui| {
+            ui.vertical_centered_justified(|ui| {
+                content(ui);
+            });
+        });
+}

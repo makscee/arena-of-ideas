@@ -39,9 +39,20 @@ impl ShowTable<TBaseUnit> for Vec<TBaseUnit> {
     ) -> TableState {
         let mut t = Table::new(name)
             .title()
-            .column_cstr("name", |d: &TBaseUnit, _| {
-                d.name.cstr_c(name_color(&d.name))
-            })
+            .column(
+                "name",
+                |d: &TBaseUnit, _| d.cstr().into(),
+                |d, name, ui, world| {
+                    let r = name.get_cstr().unwrap().button(ui);
+                    if r.hovered() {
+                        cursor_card_window(ui.ctx(), |ui| match cached_base_card(d, ui, world) {
+                            Ok(_) => {}
+                            Err(e) => error!("{e}"),
+                        });
+                    }
+                    r
+                },
+            )
             .column_cstr("house", |d, _| {
                 let color = name_color(&d.house);
                 d.house.cstr_c(color)
@@ -75,6 +86,12 @@ impl ShowTable<FusedUnit> for Vec<FusedUnit> {
                     let r = d.cstr_limit(0).button(ui);
                     if r.clicked() {
                         Tile::add_fused_unit(d.clone(), world);
+                    }
+                    if r.hovered() {
+                        cursor_card_window(ui.ctx(), |ui| match cached_fused_card(d, ui, world) {
+                            Ok(_) => {}
+                            Err(e) => error!("{e}"),
+                        });
                     }
                     r
                 },

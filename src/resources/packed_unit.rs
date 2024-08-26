@@ -216,7 +216,7 @@ impl From<TBaseUnit> for PackedUnit {
             name: value.name,
             pwr: value.pwr,
             hp: value.hp,
-            lvl: 1,
+            lvl: 0,
             xp: 0,
             rarity: value.rarity,
             houses: vec![value.house],

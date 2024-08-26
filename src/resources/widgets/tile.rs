@@ -256,15 +256,15 @@ impl Tile {
         let mut right_i = 1;
         let l = left.len().max(right.len());
         for _ in 0..=l {
+            if let Some(tile) = right.get_mut(right_i) {
+                tile.take_space(false, &mut available_space);
+                right_i += 1;
+            }
             if left_i >= 0 {
                 if let Some(tile) = left.get_mut(left_i as usize) {
                     tile.take_space(false, &mut available_space);
                     left_i -= 1;
                 }
-            }
-            if let Some(tile) = right.get_mut(right_i) {
-                tile.take_space(false, &mut available_space);
-                right_i += 1;
             }
         }
 

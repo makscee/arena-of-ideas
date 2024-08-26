@@ -153,7 +153,7 @@ impl Context {
             .cloned()
             .unwrap_or_default();
         if let Some(state) = world.get::<AbilityStates>(team).unwrap().0.get(ability) {
-            for (var, value) in state.all_values(self.t) {
+            for (var, value) in state.all_values(self.t, world) {
                 values.insert(var, value);
             }
         }
@@ -234,6 +234,24 @@ impl Context {
         self.get_value(var, world)?.get_entity()
     }
 
+    pub fn detach(&mut self, world: &World) -> &mut Self {
+        self.layers = mem::take(&mut self.layers)
+            .into_iter()
+            .flat_map(|l| match l {
+                ContextLayer::Owner(entity) => [ContextLayer::Owner(entity)]
+                    .into_iter()
+                    .chain(
+                        VarState::get(entity, world)
+                            .all_values(self.t, world)
+                            .into_iter()
+                            .map(|(var, value)| ContextLayer::Var(var, value)),
+                    )
+                    .collect_vec(),
+                _ => [l].into(),
+            })
+            .collect_vec();
+        self
+    }
     pub fn log(&self, main: Option<Cstr>) {
         if !is_dev_mode() {
             return;
