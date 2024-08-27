@@ -82,6 +82,7 @@ impl TableViewPlugin {
                 .filter("My", "player", user_id().into())
                 .filter("Win", "result", "W".into())
                 .filter("Lose", "result", "L".into())
+                .filter("TBD", "result", "-".into())
                 .ui(&td.battles, ui, world);
             world.insert_resource(td);
         })

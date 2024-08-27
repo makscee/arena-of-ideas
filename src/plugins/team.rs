@@ -24,7 +24,7 @@ impl TeamPlugin {
                 return *faction;
             }
         }
-        panic!("No team found for {entity:?}")
+        panic!("No team found for {entity}")
     }
     pub fn despawn(faction: Faction, world: &mut World) {
         world

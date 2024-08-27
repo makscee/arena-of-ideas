@@ -45,7 +45,7 @@ impl Representation {
         self.unpack_children(world);
         let entity = *self.material_entities.first().unwrap();
         if is_dev_mode() {
-            debug!("unpack material {} {entity:?}", self.material);
+            debug!("unpack material {} {entity}", self.material);
         }
         entity
     }

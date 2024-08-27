@@ -51,7 +51,7 @@ impl UnitPlugin {
                 .unwrap_or_default()
     }
     pub fn turn_into_corpse(entity: Entity, world: &mut World) {
-        debug!("Turn {entity:?} into corpse");
+        debug!("Turn {entity} into corpse");
         let mut unit = world.entity_mut(entity);
         unit.remove::<Unit>();
         unit.insert(Corpse);

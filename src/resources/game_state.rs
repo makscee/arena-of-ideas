@@ -149,9 +149,7 @@ pub fn entity_name(entity: Entity) -> Cstr {
         .unwrap_or_default()
 }
 pub fn entity_name_with_id(entity: Entity) -> Cstr {
-    entity_name(entity)
-        .push(format!("#{entity:?}").cstr())
-        .take()
+    entity_name(entity).push(format!("#{entity}").cstr()).take()
 }
 pub fn clear_entity_names() {
     ENTITY_NAMES.lock().unwrap().clear();

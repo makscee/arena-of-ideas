@@ -75,7 +75,7 @@ impl VarState {
                     })
                 })
             })
-            .with_context(|| format!("VarState not found for {entity:?}"))
+            .with_context(|| format!("VarState not found for {entity}"))
     }
     pub fn get_mut(entity: Entity, world: &mut World) -> Mut<Self> {
         Self::try_get_mut(entity, world).unwrap()
@@ -83,7 +83,7 @@ impl VarState {
     pub fn try_get_mut(entity: Entity, world: &mut World) -> Result<Mut<Self>> {
         world
             .get_mut::<Self>(entity)
-            .with_context(|| format!("VarState not found for {entity:?}"))
+            .with_context(|| format!("VarState not found for {entity}"))
     }
     pub fn add_status(&mut self, name: String, state: VarState) {
         self.statuses.insert(name, state);

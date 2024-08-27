@@ -39,7 +39,7 @@ impl PackedStatus {
             trigger: self.trigger.clone(),
         }
         .spawn(owner, world);
-        debug!("unpack status {} {entity:?}", self.name);
+        debug!("unpack status {} {entity}", self.name);
         RepresentationPlugin::get_by_id(self.name.clone())
             .unwrap_or(GameAssets::get(world).status_rep.clone())
             .unpack(entity, world);
@@ -79,26 +79,30 @@ impl Status {
         charges
     }
     pub fn change_charges(name: &str, entity: Entity, delta: i32, world: &mut World) -> i32 {
-        if let Some(state) = VarState::get_mut(entity, world).get_status_mut(name) {
-            let visible = state
-                .get_value_last(VarName::Visible)
-                .and_then(|v| v.get_bool())
-                .unwrap_or(true);
-            let charges = state.change_int(VarName::Charges, delta);
-            if visible != (charges > 0) {
-                state.set_value(VarName::Visible, (charges > 0).into());
+        if let Ok(mut state) = VarState::try_get_mut(entity, world) {
+            if let Some(state) = state.get_status_mut(name) {
+                let visible = state
+                    .get_value_last(VarName::Visible)
+                    .and_then(|v| v.get_bool())
+                    .unwrap_or(true);
+                let charges = state.change_int(VarName::Charges, delta);
+                if visible != (charges > 0) {
+                    state.set_value(VarName::Visible, (charges > 0).into());
+                    VarState::get_mut(entity, world).reindex_statuses();
+                }
+                charges
+            } else {
+                GameAssets::get(world)
+                    .statuses
+                    .get(name)
+                    .unwrap()
+                    .clone()
+                    .unpack(entity, world);
                 VarState::get_mut(entity, world).reindex_statuses();
+                Self::change_charges(name, entity, delta, world)
             }
-            charges
         } else {
-            GameAssets::get(world)
-                .statuses
-                .get(name)
-                .unwrap()
-                .clone()
-                .unpack(entity, world);
-            VarState::get_mut(entity, world).reindex_statuses();
-            Self::change_charges(name, entity, delta, world)
+            0
         }
     }
     pub fn get_charges(name: &str, entity: Entity, world: &World) -> Result<i32> {
