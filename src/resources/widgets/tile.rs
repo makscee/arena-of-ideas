@@ -21,6 +21,7 @@ pub struct Tile {
 pub struct TileResource {
     tiles: Vec<Tile>,
     focused: u64,
+    persistent_tiles: Vec<Tile>,
 }
 
 #[derive(Clone, Copy, Default)]
@@ -44,6 +45,7 @@ impl Default for TileResource {
         Self {
             tiles: default(),
             focused: default(),
+            persistent_tiles: default(),
         }
     }
 }
@@ -92,6 +94,10 @@ impl Tile {
         self.min_size = value;
         self
     }
+    pub fn max_size(mut self, value: f32) -> Self {
+        self.max_size = value;
+        self
+    }
     fn take_space(&mut self, full: bool, space: &mut egui::Vec2) {
         if self.side.is_x() {
             self.max_size = self.content_size.x.at_most(space.x);
@@ -114,13 +120,7 @@ impl Tile {
     fn set_screen_rect(rect: Rect, ctx: &egui::Context) {
         ctx.data_mut(|w| w.insert_temp(screen_rect_id(), rect));
     }
-    fn show(
-        &mut self,
-        id: Id,
-        focused: bool,
-        ctx: &egui::Context,
-        world: &mut World,
-    ) -> TileResponse {
+    fn show(&mut self, focused: bool, ctx: &egui::Context, world: &mut World) -> TileResponse {
         let mut response = TileResponse::default();
         let need_size = if self.side.is_x() {
             self.content_size.x
@@ -143,6 +143,7 @@ impl Tile {
             frame = frame.fill(Color32::TRANSPARENT);
         }
         let screen_rect = Self::get_screen_rect(ctx);
+        let id = Id::new(self.id);
         let (area, rect) = match self.side {
             Side::Right => (
                 Area::new(id)
@@ -234,6 +235,7 @@ impl Tile {
         if tr.tiles.is_empty() {
             return;
         }
+        let mut persistent_tiles = mem::take(&mut tr.persistent_tiles);
         let mut tiles = mem::take(&mut tr.tiles);
         let focused = tr.focused;
         Self::set_screen_rect(ctx.available_rect(), ctx);
@@ -272,7 +274,7 @@ impl Tile {
         let mut focus = None;
         for (i, tile) in tiles.iter_mut().enumerate() {
             let focused = tile.focusable && focused == tile.id;
-            let resp = tile.show(Id::new("tile").with(i), focused, ctx, world);
+            let resp = tile.show(focused, ctx, world);
             if resp.want_close || (focused && !tile.sticky && just_pressed(KeyCode::Escape, world))
             {
                 close = Some(i);
@@ -288,6 +290,9 @@ impl Tile {
                 }
             }
         }
+        for tile in persistent_tiles.iter_mut() {
+            tile.show(false, ctx, world);
+        }
         let mut tr = world.resource_mut::<TileResource>();
         let new_tiles = mem::take(&mut tr.tiles);
         if !new_tiles.is_empty() {
@@ -297,6 +302,7 @@ impl Tile {
             tr.focused = focus;
         }
         tr.tiles = tiles;
+        tr.persistent_tiles = persistent_tiles;
     }
 
     pub fn add_team(gid: u64, world: &mut World) {
@@ -333,6 +339,16 @@ impl Tile {
             GameState::GameStart => GameStartPlugin::add_tiles(world),
             _ => {}
         }
+    }
+    pub fn setup(world: &mut World) {
+        world.resource_mut::<TileResource>().persistent_tiles.push(
+            Tile::new(Side::Right, |ui, world| {
+                Notification::show_recent(ui, world);
+            })
+            .max_size(500.0)
+            .transparent()
+            .sticky(),
+        )
     }
 }
 

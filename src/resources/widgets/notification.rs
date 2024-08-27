@@ -44,7 +44,7 @@ impl Notification {
         d.push_front((t, self));
         d.make_contiguous();
     }
-    pub fn show_recent(ctx: &egui::Context, world: &mut World) {
+    pub fn show_recent(ui: &mut Ui, world: &mut World) {
         let now = now_micros();
         let notifications = world
             .resource::<NotificationsResource>()
@@ -58,17 +58,11 @@ impl Notification {
             return;
         }
 
-        SidePanel::right("Notifications")
-            .frame(Frame::none())
-            .resizable(false)
-            .show_separator_line(false)
-            .show(ctx, |ui| {
-                for n in notifications {
-                    FRAME.show(ui, |ui| {
-                        n.text.label(ui);
-                    });
-                }
+        for n in notifications {
+            FRAME.show(ui, |ui| {
+                n.text.label(ui);
             });
+        }
     }
     pub fn show_all_table(ui: &mut Ui, world: &mut World) {
         world.resource_scope(|world, nr: Mut<NotificationsResource>| {

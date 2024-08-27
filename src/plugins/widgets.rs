@@ -8,6 +8,7 @@ pub struct WidgetsPlugin;
 impl Plugin for WidgetsPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Update, Self::ui)
+            .add_systems(Startup, Tile::setup)
             .init_resource::<WidgetsState>();
 
         if cfg!(debug_assertions) {
@@ -298,7 +299,6 @@ impl WidgetsPlugin {
             });
 
         // Overlay
-        Notification::show_recent(ctx, world);
         Trade::show_active(ctx, world);
         Confirmation::show_current(ctx, world);
         world.insert_resource(wd);
