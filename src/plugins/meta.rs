@@ -44,7 +44,7 @@ impl MetaPlugin {
                 SubState::Shop => {
                     text_dots_text(
                         "wallet".cstr(),
-                        format!("{}¤", TWallet::current().amount).cstr_cs(YELLOW, CstrStyle::Bold),
+                        format!("{} ¤", TWallet::current().amount).cstr_cs(YELLOW, CstrStyle::Bold),
                         ui,
                     );
                     br(ui);

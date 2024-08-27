@@ -307,6 +307,27 @@ impl Cstr {
 
         cs
     }
+    pub fn inject_color(&mut self, color: Color32) -> &mut Self {
+        self.subs = mem::take(&mut self.subs)
+            .into_iter()
+            .flat_map(|s| match &s.text {
+                SubText::String(text) => {
+                    let mut result: Vec<CstrSub> = default();
+                    for (text, bracketed) in text.split_by_brackets('<', '>') {
+                        let mut s = s.clone();
+                        s.text = SubText::String(text);
+                        if bracketed {
+                            s.color = Some(color);
+                        }
+                        result.push(s);
+                    }
+                    result
+                }
+                _ => [s].into(),
+            })
+            .collect_vec();
+        self
+    }
 
     pub fn get_text(&self) -> String {
         self.subs.iter().map(|s| s.text.str()).join("")

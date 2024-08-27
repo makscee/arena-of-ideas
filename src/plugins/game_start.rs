@@ -75,7 +75,7 @@ impl GameStartPlugin {
                                         .cstr_c(YELLOW)
                                         .style(CstrStyle::Heading2)
                                         .label(ui);
-                                    if Button::click(format!("-{}¤", cost))
+                                    if Button::click(format!("-{} ¤", cost))
                                         .title("Play".cstr())
                                         .enabled(can_start && TWallet::current().amount >= cost)
                                         .ui(ui)
@@ -91,7 +91,7 @@ impl GameStartPlugin {
                                     "Wallet: "
                                         .cstr()
                                         .push(
-                                            format!("{}¤", TWallet::current().amount)
+                                            format!("{} ¤", TWallet::current().amount)
                                                 .cstr_cs(YELLOW, CstrStyle::Bold),
                                         )
                                         .label(ui);
@@ -103,7 +103,7 @@ impl GameStartPlugin {
                                         .style(CstrStyle::Heading2)
                                         .label(ui);
                                     seed.cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold).label(ui);
-                                    if Button::click(format!("-{}¤", cost))
+                                    if Button::click(format!("-{} ¤", cost))
                                         .title("Play".cstr())
                                         .enabled(can_start && TWallet::current().amount >= cost)
                                         .ui(ui)
@@ -119,7 +119,7 @@ impl GameStartPlugin {
                                     "Wallet: "
                                         .cstr()
                                         .push(
-                                            format!("{}¤", TWallet::current().amount)
+                                            format!("{} ¤", TWallet::current().amount)
                                                 .cstr_cs(YELLOW, CstrStyle::Bold),
                                         )
                                         .label(ui);
@@ -166,37 +166,81 @@ impl GameStartPlugin {
         .sticky()
         .push(world);
         if GameOption::ActiveRun.is_fulfilled(world) {
-            Tile::new(Side::Right, move |ui, world| {
-                ui.vertical_centered(|ui| {
-                    let run = TArenaRun::current();
-                    text_dots_text("run".cstr(), run.mode.cstr(), ui);
-                    text_dots_text(
-                        "round".cstr(),
-                        run.round.to_string().cstr_c(VISIBLE_LIGHT),
-                        ui,
-                    );
-                    text_dots_text("lives".cstr(), run.lives.to_string().cstr_c(GREEN), ui);
-                    text_dots_text(
-                        "score".cstr(),
-                        run.score.to_string().cstr_c(VISIBLE_BRIGHT),
-                        ui,
-                    );
-                    ui.add_space(20.0);
-                    if Button::click("Continue".into()).ui(ui).clicked() {
-                        GameState::Shop.proceed_to_target(world);
-                    }
-                    if Button::click("Abandon run".into()).red(ui).ui(ui).clicked() {
-                        Confirmation::new("Abandon current run?".cstr_c(VISIBLE_BRIGHT), |_| {
-                            run_finish();
-                        })
-                        .add(ui.ctx());
-                    }
-                });
+            Tile::new(Side::Top, move |ui, world| {
+                if let Some(run) = TArenaRun::get_current() {
+                    ui.vertical_centered(|ui| {
+                        text_dots_text("run".cstr(), run.mode.cstr(), ui);
+                        text_dots_text(
+                            "round".cstr(),
+                            run.round.to_string().cstr_c(VISIBLE_LIGHT),
+                            ui,
+                        );
+                        text_dots_text("lives".cstr(), run.lives.to_string().cstr_c(GREEN), ui);
+                        text_dots_text(
+                            "score".cstr(),
+                            run.score.to_string().cstr_c(VISIBLE_BRIGHT),
+                            ui,
+                        );
+                        ui.add_space(20.0);
+                        if Button::click("Continue".into()).ui(ui).clicked() {
+                            GameState::Shop.proceed_to_target(world);
+                        }
+                        if Button::click("Abandon run".into()).red(ui).ui(ui).clicked() {
+                            Confirmation::new(
+                                "Abandon current run?".cstr_c(VISIBLE_BRIGHT),
+                                |_| {
+                                    run_finish();
+                                },
+                            )
+                            .add(ui.ctx());
+                        }
+                    });
+                }
             })
-            .min_size(250.0)
+            .transparent()
+            .non_focusable()
             .sticky()
             .push(world);
         }
+        Tile::new(Side::Bottom, |ui, world| {
+            let gsr = world.resource_mut::<GameStartResource>();
+            let game_mode = gsr.game_modes[gsr.selected].clone();
+            match game_mode {
+                GameMode::ArenaNormal => {
+                    "1. Defeat as many enemies as possible\n\
+                    2. 3 lives, replenish every 5 floors\n\
+                    3. Defeat current champion for big reward\n\
+                    4. Credits reward on reaching floor 10"
+                        .cstr_c(VISIBLE_LIGHT)
+                        .label(ui);
+                }
+                GameMode::ArenaRanked => {
+                    "1. Defeat as many enemies as possible\n\
+                    2. Entry fee growing every time, reset on day start\n\
+                    3. Get <¤> for each floor beaten\n\
+                    4. 3 lives, replenish every 5 floors\n\
+                    5. Defeat current champion for big reward"
+                        .cstr_c(VISIBLE_LIGHT)
+                        .inject_color(YELLOW)
+                        .label(ui);
+                }
+                GameMode::ArenaConst(_) => {
+                    "1. Defeat as many enemies as possible\n\
+                    2. Entry fee growing every time, reset on day start\n\
+                    3. Get <¤> for each floor beaten\n\
+                    4. Fixed seed, new seed after reaching 10 floors\n\
+                    5. 3 lives, replenish every 5 floors\n\
+                    6. Defeat current champion for big reward"
+                        .cstr_c(VISIBLE_LIGHT)
+                        .inject_color(YELLOW)
+                        .label(ui);
+                }
+            }
+        })
+        .transparent()
+        .sticky()
+        .non_focusable()
+        .push(world);
     }
 
     fn load_leaderboard(game_mode: GameMode, world: &mut World) {

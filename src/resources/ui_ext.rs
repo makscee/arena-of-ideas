@@ -148,7 +148,7 @@ impl ShowTable<TMetaShop> for Vec<TMetaShop> {
             .title()
             .column_cstr("name", |d: &TMetaShop, _| d.stack.item.name_cstr())
             .column_cstr("type", |d, w| d.stack.item.type_cstr(w))
-            .column_cstr("price", |d, _| d.price.to_string().cstr_c(YELLOW))
+            .column_cstr("price", |d, _| format!("{} ¤", d.price).cstr_c(YELLOW))
             .column(
                 "buy",
                 |_, _| default(),
