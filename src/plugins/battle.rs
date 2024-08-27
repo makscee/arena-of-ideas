@@ -384,11 +384,9 @@ impl BattlePlugin {
                 .get_vec2(VarName::Position, world)
                 .unwrap_or_default();
             if (pos - cursor_pos).length() < 1.0 {
-                cursor_card_window(ctx, |ui| {
-                    match unit_card(&context, ui, world) {
-                        Ok(_) => {}
-                        Err(e) => error!("{e}"),
-                    };
+                cursor_card_window(ctx, |ui| match UnitCard::new(&context, world) {
+                    Ok(c) => c.ui(ui),
+                    Err(e) => error!("{e}"),
                 });
                 return;
             }

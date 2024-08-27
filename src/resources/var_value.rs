@@ -116,6 +116,13 @@ impl VarValue {
             _ => Err(anyhow!("Color not supported by {self:?}")),
         }
     }
+    pub fn get_color32(&self) -> Result<Color32> {
+        match self {
+            VarValue::None => Ok(Color::from(BEVY_MISSING_COLOR).c32()),
+            VarValue::Color(v) => Ok(v.c32()),
+            _ => Err(anyhow!("Color not supported by {self:?}")),
+        }
+    }
     pub fn get_color_list(&self) -> Result<Vec<Color>> {
         match self {
             VarValue::List(list) => {
@@ -127,6 +134,18 @@ impl VarValue {
             _ => {}
         }
         Ok(vec![self.get_color()?])
+    }
+    pub fn get_color32_list(&self) -> Result<Vec<Color32>> {
+        match self {
+            VarValue::List(list) => {
+                return Ok(list
+                    .into_iter()
+                    .filter_map(|v| v.get_color32().ok())
+                    .collect_vec());
+            }
+            _ => {}
+        }
+        Ok(vec![self.get_color32()?])
     }
     pub fn get_entity(&self) -> Result<Entity> {
         match self {

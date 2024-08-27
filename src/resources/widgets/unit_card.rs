@@ -1,172 +1,206 @@
 use super::*;
 
-pub fn unit_card(context: &Context, ui: &mut Ui, world: &World) -> Result<()> {
-    let owner = context.owner();
-    let houses = context
-        .get_value(VarName::Houses, world)?
-        .get_string_list()?;
-    let house_colors = context
-        .get_value(VarName::HouseColors, world)?
-        .get_color_list()?
-        .into_iter()
-        .map(|c| c.c32())
-        .collect_vec();
-    let name = entity_name(owner).style(CstrStyle::Heading).take();
-    let fusible_lvl = houses.len() as i32;
-    let fusible_str = if fusible_lvl > context.get_int(VarName::Lvl, world).unwrap_or_default() {
-        "Fusible from lvl "
-            .cstr()
-            .push(fusible_lvl.to_string().cstr_cs(PURPLE, CstrStyle::Bold))
-            .take()
-    } else {
-        "Fusible".cstr_cs(YELLOW, CstrStyle::Bold)
-    };
-    let used_definitions = context
-        .get_value(VarName::UsedDefinitions, world)?
-        .get_string_list()?;
-    let triggers = context
-        .get_value(VarName::TriggersDescription, world)?
-        .get_cstr_list()?;
-    let targets = context
-        .get_value(VarName::TargetsDescription, world)?
-        .get_cstr_list()?;
-    let mut effects = context
-        .get_value(VarName::EffectsDescription, world)?
-        .get_cstr_list()?;
-    for c in effects.iter_mut() {
-        c.inject_context(context, world);
-    }
-
-    let rect = Frame {
-        inner_margin: Margin::same(8.0),
-        outer_margin: Margin::ZERO,
-        rounding: Rounding::ZERO,
-        shadow: Shadow::NONE,
-        fill: EMPTINESS,
-        stroke: Stroke::NONE,
-    }
-    .show(ui, |ui| {
-        name.label(ui);
-        const SHOWN_VARS: [(VarName, Color32); 4] = [
-            (VarName::Pwr, YELLOW),
-            (VarName::Hp, RED),
-            (VarName::Lvl, PURPLE),
-            (VarName::Xp, LIGHT_PURPLE),
-        ];
-        ui.horizontal_wrapped(|ui| {
-            for (var, color) in SHOWN_VARS.iter().copied() {
-                let mut vars_str = var.to_string().cstr_c(color);
-                vars_str.push(": ".cstr_c(color));
-                vars_str.push(
-                    context
-                        .get_string(var, world)
-                        .unwrap_or_default()
-                        .cstr_c(VISIBLE_BRIGHT),
-                );
-                match var {
-                    VarName::Xp => {
-                        vars_str.push("/".cstr()).push(
-                            (context.get_int(VarName::Lvl, world).unwrap_or_default() + 1)
-                                .to_string()
-                                .cstr_c(VISIBLE_BRIGHT),
-                        );
-                    }
-                    _ => {}
-                }
-                vars_str.bold().label(ui);
-                ui.add_space(2.0);
-            }
-        });
-        fusible_str.label(ui);
-
-        let mut houses_cstr = Cstr::default();
-        for (i, house) in houses.into_iter().enumerate() {
-            houses_cstr.push(house.cstr_c(house_colors[i]));
-        }
-        houses_cstr.join(&" + ".cstr()).as_label(ui).wrap().ui(ui);
-        ui.add_space(2.0);
-    })
-    .response
-    .rect;
-
-    if house_colors.len() > 1 {
-        let len = house_colors.len() as f32;
-        let t = gt().play_head() * 0.1;
-        for (i, color) in house_colors.iter().copied().enumerate() {
-            let from = (i as f32 / len + t).fract();
-            let to = ((i + 1) as f32 / len + t).fract();
-            lines_around_rect((from, to), &rect, color, ui);
-        }
-    } else {
-        lines_around_rect((0.0, 1.0), &rect, house_colors[0], ui);
-    }
-
-    ui.add_space(-ui.style().spacing.item_spacing.y + 0.5);
-    Frame {
-        inner_margin: Margin::same(8.0),
-        outer_margin: Margin::ZERO,
-        rounding: Rounding {
-            nw: 0.0,
-            ne: 0.0,
-            sw: 13.0,
-            se: 13.0,
-        },
-        shadow: Shadow::NONE,
-        fill: Color32::from_black_alpha(235),
-        stroke: Stroke::NONE,
-    }
-    .show(ui, |ui| {
-        ui.set_min_width(ui.available_width());
-        show_trigger_part("trg:", triggers, EVENT_COLOR, ui);
-        show_trigger_part("tar:", targets, TARGET_COLOR, ui);
-        show_trigger_part("eff:", effects, EFFECT_COLOR, ui);
-
-        br(ui);
-        let statuses = context
-            .all_active_statuses(world)
-            .into_iter()
-            .filter(|(_, c)| *c > 0)
-            .collect_vec();
-        if !statuses.is_empty() {
-            ui.horizontal_wrapped(|ui| {
-                for (name, charges) in statuses {
-                    format!("{name} ({charges})")
-                        .cstr_c(name_color(&name))
-                        .label(ui);
-                }
-            });
-            br(ui);
-        }
-        ui.vertical_centered_justified(|ui| {
-            for name in used_definitions {
-                ui.horizontal_wrapped(|ui| {
-                    name.cstr_cs(name_color(&name), CstrStyle::Bold).label(ui);
-                    definition(&name)
-                        .inject_ability_state(
-                            &name,
-                            context.clone().set_ability_state(&name, world).unwrap(),
-                        )
-                        .as_label(ui)
-                        .wrap()
-                        .ui(ui);
-                });
-            }
-        });
-    });
-    let rarities = context
-        .get_value(VarName::RarityColors, world)?
-        .get_color_list()?;
-    const OFFSET: egui::Vec2 = egui::vec2(33.0, 0.0);
-    let from = rect.center_bottom() - (rarities.len() as f32 - 1.0) * 0.5 * OFFSET;
-    for (i, color) in rarities.into_iter().enumerate() {
-        let pos = from + OFFSET * i as f32;
-        ui.painter().circle_filled(pos, 13.0, BG_LIGHT);
-        ui.painter().circle_filled(pos, 10.0, color.c32());
-    }
-    Ok(())
+pub struct UnitCard {
+    name: Cstr,
+    houses: Vec<String>,
+    house_colors: Vec<Color32>,
+    rarity_colors: Vec<Color32>,
+    lvl: i32,
+    xp: i32,
+    hp: i32,
+    pwr: i32,
+    triggers: Vec<Cstr>,
+    targets: Vec<Cstr>,
+    effects: Vec<Cstr>,
+    active_statuses: HashMap<String, i32>,
+    used_definitions: HashMap<String, Cstr>,
 }
 
-fn show_trigger_part(title: &str, content: Vec<Cstr>, color: Color32, ui: &mut Ui) {
+impl UnitCard {
+    pub fn new(context: &Context, world: &World) -> Result<Self> {
+        let mut effects = context
+            .get_value(VarName::EffectsDescription, world)?
+            .get_cstr_list()?;
+        for c in effects.iter_mut() {
+            c.inject_context(context, world);
+        }
+        Ok(Self {
+            name: entity_name(context.owner())
+                .style(CstrStyle::Heading)
+                .take(),
+            houses: context
+                .get_value(VarName::Houses, world)?
+                .get_string_list()?,
+            house_colors: context
+                .get_value(VarName::HouseColors, world)?
+                .get_color32_list()?,
+            rarity_colors: context
+                .get_value(VarName::RarityColors, world)?
+                .get_color32_list()?,
+            lvl: context.get_int(VarName::Lvl, world)?,
+            xp: context.get_int(VarName::Xp, world)?,
+            hp: context.get_int(VarName::Hp, world)?,
+            pwr: context.get_int(VarName::Pwr, world)?,
+            triggers: context
+                .get_value(VarName::TriggersDescription, world)?
+                .get_cstr_list()?,
+            targets: context
+                .get_value(VarName::TargetsDescription, world)?
+                .get_cstr_list()?,
+            effects,
+            active_statuses: context.all_active_statuses(world),
+            used_definitions: HashMap::from_iter(
+                context
+                    .get_value(VarName::UsedDefinitions, world)?
+                    .get_string_list()?
+                    .into_iter()
+                    .map(|name| {
+                        (
+                            name.clone(),
+                            definition(&name)
+                                .inject_ability_state(
+                                    &name,
+                                    context.clone().set_ability_state(&name, world).unwrap(),
+                                )
+                                .take(),
+                        )
+                    }),
+            ),
+        })
+    }
+    pub fn ui(&self, ui: &mut Ui) {
+        let fusible_lvl = self.houses.len() as i32;
+        let fusible_str = if fusible_lvl > self.lvl {
+            "Fusible from lvl "
+                .cstr()
+                .push(fusible_lvl.to_string().cstr_cs(PURPLE, CstrStyle::Bold))
+                .take()
+        } else {
+            "Fusible".cstr_cs(YELLOW, CstrStyle::Bold)
+        };
+
+        let rect = Frame {
+            inner_margin: Margin::same(8.0),
+            outer_margin: Margin::ZERO,
+            rounding: Rounding::ZERO,
+            shadow: Shadow::NONE,
+            fill: EMPTINESS,
+            stroke: Stroke::NONE,
+        }
+        .show(ui, |ui| {
+            self.name.label(ui);
+            ui.horizontal_wrapped(|ui| {
+                let var = VarName::Pwr;
+                let color = YELLOW;
+                var.cstr_c(color)
+                    .push(": ".cstr_c(color))
+                    .push(self.pwr.to_string().cstr_c(VISIBLE_BRIGHT))
+                    .style(CstrStyle::Bold)
+                    .label(ui);
+                ui.add_space(2.0);
+                let var = VarName::Hp;
+                let color = RED;
+                var.cstr_c(color)
+                    .push(": ".cstr_c(color))
+                    .push(self.hp.to_string().cstr_c(VISIBLE_BRIGHT))
+                    .style(CstrStyle::Bold)
+                    .label(ui);
+                ui.add_space(2.0);
+                let var = VarName::Lvl;
+                let color = PURPLE;
+                var.cstr_c(color)
+                    .push(": ".cstr_c(color))
+                    .push(self.lvl.to_string().cstr_c(VISIBLE_BRIGHT))
+                    .style(CstrStyle::Bold)
+                    .label(ui);
+                ui.add_space(2.0);
+                let var = VarName::Xp;
+                let color = LIGHT_PURPLE;
+                var.cstr_c(color)
+                    .push(": ".cstr_c(color))
+                    .push(self.xp.to_string().cstr_c(VISIBLE_BRIGHT))
+                    .push("/".cstr())
+                    .push((self.lvl + 1).to_string().cstr_c(VISIBLE_BRIGHT))
+                    .style(CstrStyle::Bold)
+                    .label(ui);
+                ui.add_space(2.0);
+            });
+
+            fusible_str.label(ui);
+
+            let mut houses_cstr = Cstr::default();
+            for (i, house) in self.houses.iter().enumerate() {
+                houses_cstr.push(house.cstr_c(self.house_colors[i]));
+            }
+            houses_cstr.join(&" + ".cstr()).as_label(ui).wrap().ui(ui);
+            ui.add_space(2.0);
+        })
+        .response
+        .rect;
+
+        if self.house_colors.len() > 1 {
+            let len = self.house_colors.len() as f32;
+            let t = gt().play_head() * 0.1;
+            for (i, color) in self.house_colors.iter().copied().enumerate() {
+                let from = (i as f32 / len + t).fract();
+                let to = ((i + 1) as f32 / len + t).fract();
+                lines_around_rect((from, to), &rect, color, ui);
+            }
+        } else {
+            lines_around_rect((0.0, 1.0), &rect, self.house_colors[0], ui);
+        }
+
+        ui.add_space(-ui.style().spacing.item_spacing.y + 0.5);
+        Frame {
+            inner_margin: Margin::same(8.0),
+            outer_margin: Margin::ZERO,
+            rounding: Rounding {
+                nw: 0.0,
+                ne: 0.0,
+                sw: 13.0,
+                se: 13.0,
+            },
+            shadow: Shadow::NONE,
+            fill: Color32::from_black_alpha(235),
+            stroke: Stroke::NONE,
+        }
+        .show(ui, |ui| {
+            ui.set_min_width(ui.available_width());
+            show_trigger_part("trg:", &self.triggers, EVENT_COLOR, ui);
+            show_trigger_part("tar:", &self.targets, TARGET_COLOR, ui);
+            show_trigger_part("eff:", &self.effects, EFFECT_COLOR, ui);
+
+            br(ui);
+            if !self.active_statuses.is_empty() {
+                ui.horizontal_wrapped(|ui| {
+                    for (name, charges) in &self.active_statuses {
+                        format!("{name} ({charges})")
+                            .cstr_c(name_color(&name))
+                            .label(ui);
+                    }
+                });
+                br(ui);
+            }
+            ui.vertical_centered_justified(|ui| {
+                for (name, text) in &self.used_definitions {
+                    ui.horizontal_wrapped(|ui| {
+                        name.cstr_cs(name_color(&name), CstrStyle::Bold).label(ui);
+                        text.as_label(ui).wrap().ui(ui);
+                    });
+                }
+            });
+        });
+        const OFFSET: egui::Vec2 = egui::vec2(33.0, 0.0);
+        let from = rect.center_bottom() - (self.rarity_colors.len() as f32 - 1.0) * 0.5 * OFFSET;
+        for (i, color) in self.rarity_colors.iter().enumerate() {
+            let pos = from + OFFSET * i as f32;
+            ui.painter().circle_filled(pos, 13.0, BG_LIGHT);
+            ui.painter().circle_filled(pos, 10.0, *color);
+        }
+    }
+}
+
+fn show_trigger_part(title: &str, content: &Vec<Cstr>, color: Color32, ui: &mut Ui) {
     ui.horizontal(|ui| {
         title.cstr_c(VISIBLE_DARK).label(ui);
         let rect = Frame::none()
@@ -241,46 +275,45 @@ fn point_on_rect(t: f32, rect: &Rect) -> egui::Pos2 {
     }
 }
 
-static FUSED_CONTEXT_CACHE: OnceCell<Mutex<HashMap<u64, Context>>> = OnceCell::new();
+static UNIT_CARD_CACHE: OnceCell<Mutex<HashMap<String, UnitCard>>> = OnceCell::new();
+fn cache_packed_unit(
+    id: String,
+    unit: PackedUnit,
+    cache: &mut MutexGuard<HashMap<String, UnitCard>>,
+    world: &mut World,
+) -> Result<()> {
+    let unit = unit.unpack(TeamPlugin::entity(Faction::Team, world), None, None, world);
+    let context = Context::new(unit).detach(world).take();
+    UnitPlugin::despawn(unit, world);
+    cache.insert(id, UnitCard::new(&context, world)?);
+    Ok(())
+}
 pub fn cached_fused_card(unit: &FusedUnit, ui: &mut Ui, world: &mut World) -> Result<()> {
-    let mut cache = FUSED_CONTEXT_CACHE
-        .get_or_init(|| default())
-        .lock()
-        .unwrap();
-    let id = unit.id;
+    let id = unit.id.to_string();
+    let mut cache = UNIT_CARD_CACHE.get_or_init(|| default()).lock().unwrap();
     if !cache.contains_key(&id) {
         let unit: PackedUnit = unit.clone().into();
-        let unit = unit.unpack(
-            TeamPlugin::entity(Faction::Team, world),
-            None,
-            Some(id),
-            world,
-        );
-        let context = Context::new(unit).detach(world).take();
-        UnitPlugin::despawn(unit, world);
-        cache.insert(id, context);
+        cache_packed_unit(id.clone(), unit, &mut cache, world)?;
     }
     cache
         .get(&id)
-        .context("Failed to get cached card context")
-        .and_then(|context| unit_card(context, ui, world))
+        .context("Failed to get cached card context")?
+        .ui(ui);
+    Ok(())
 }
 
-static BASE_CONTEXT_CACHE: OnceCell<Mutex<HashMap<String, Context>>> = OnceCell::new();
 pub fn cached_base_card(unit: &TBaseUnit, ui: &mut Ui, world: &mut World) -> Result<()> {
-    let mut cache = BASE_CONTEXT_CACHE.get_or_init(|| default()).lock().unwrap();
-    let id = unit.name.clone();
+    let id = unit.name.to_string();
+    let mut cache = UNIT_CARD_CACHE.get_or_init(|| default()).lock().unwrap();
     if !cache.contains_key(&id) {
         let unit: PackedUnit = unit.clone().into();
-        let unit = unit.unpack(TeamPlugin::entity(Faction::Team, world), None, None, world);
-        let context = Context::new(unit).detach(world).take();
-        UnitPlugin::despawn(unit, world);
-        cache.insert(id.clone(), context);
+        cache_packed_unit(id.clone(), unit, &mut cache, world)?;
     }
     cache
         .get(&id)
-        .context("Failed to get cached card context")
-        .and_then(|context| unit_card(context, ui, world))
+        .context("Failed to get cached card context")?
+        .ui(ui);
+    Ok(())
 }
 
 pub fn cursor_card_window(ctx: &egui::Context, content: impl FnOnce(&mut Ui)) {

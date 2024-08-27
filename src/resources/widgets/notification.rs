@@ -60,6 +60,8 @@ impl Notification {
 
         SidePanel::right("Notifications")
             .frame(Frame::none())
+            .resizable(false)
+            .show_separator_line(false)
             .show(ctx, |ui| {
                 for n in notifications {
                     FRAME.show(ui, |ui| {

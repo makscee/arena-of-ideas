@@ -450,8 +450,8 @@ impl ShopPlugin {
         let Some(entity) = entity else {
             return;
         };
-        match unit_card(&Context::new_play(entity), ui, world) {
-            Ok(_) => {}
+        match UnitCard::new(&Context::new_play(entity), world) {
+            Ok(c) => c.ui(ui),
             Err(e) => error!("Unit card error: {e}"),
         }
     }
