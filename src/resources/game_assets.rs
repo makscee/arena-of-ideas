@@ -75,6 +75,9 @@ impl GameAssets {
     pub fn get(world: &World) -> &Self {
         world.resource::<Self>()
     }
+    pub fn get_mut(world: &mut World) -> Mut<Self> {
+        world.resource_mut::<Self>()
+    }
     pub fn cache_tables(world: &mut World) {
         info!("Cache tables start");
         let global_settings = GlobalSettings::iter()

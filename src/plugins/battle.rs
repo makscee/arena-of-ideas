@@ -25,7 +25,7 @@ impl BattlePlugin {
         let result = Self::run(world).unwrap();
         let mut bd = world.resource_mut::<BattleData>();
         bd.result = result;
-        if bd.id > 0 {
+        if bd.id > 0 && bd.from_run {
             submit_battle_result(match result {
                 BattleResult::Tbd => TBattleResult::Tbd,
                 BattleResult::Left(_) => TBattleResult::Left,
@@ -53,14 +53,9 @@ impl BattlePlugin {
         let run = TArenaRun::current();
         let bid = *run.battles.last().unwrap();
         let battle = TBattle::filter_by_id(bid).unwrap();
-        let left = PackedTeam::from_id(battle.team_left);
-        let right = PackedTeam::from_id(battle.team_right);
-        world.insert_resource(BattleData {
-            left,
-            right,
-            id: bid,
-            ..default()
-        });
+        let mut bd = BattleData::from(battle);
+        bd.from_run = true;
+        world.insert_resource(bd);
         GameState::Battle.set_next(world);
     }
     pub fn load_teams(left: PackedTeam, right: PackedTeam, world: &mut World) {
@@ -402,6 +397,20 @@ pub struct BattleData {
     right: PackedTeam,
     #[serde(default)]
     result: BattleResult,
+    #[serde(default)]
+    from_run: bool,
+}
+
+impl From<TBattle> for BattleData {
+    fn from(value: TBattle) -> Self {
+        Self {
+            id: value.id,
+            left: PackedTeam::from_id(value.team_left),
+            right: PackedTeam::from_id(value.team_right),
+            result: BattleResult::Tbd,
+            from_run: false,
+        }
+    }
 }
 
 #[derive(Debug, Default, Clone, Copy, Serialize, Deserialize, PartialEq, Display)]

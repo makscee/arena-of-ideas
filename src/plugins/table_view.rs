@@ -75,6 +75,10 @@ impl TableViewPlugin {
                     TBattleResult::Right => "L".cstr_c(RED),
                 })
                 .column_ts("time", |d| d.ts)
+                .column_btn("run", |d, _, world| {
+                    world.insert_resource(BattleData::from(d.clone()));
+                    GameState::Battle.set_next(world);
+                })
                 .filter("My", "player", user_id().into())
                 .filter("Win", "result", "W".into())
                 .filter("Lose", "result", "L".into())
