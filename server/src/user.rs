@@ -1,9 +1,10 @@
-use pwhash::bcrypt;
+use bcrypt_no_getrandom::{bcrypt, verify};
+use rand::RngCore;
 use spacetimedb::Timestamp;
 
 use super::*;
 
-#[spacetimedb(table)]
+#[spacetimedb(table(public))]
 pub struct TUser {
     #[primarykey]
     pub id: u64,
@@ -133,14 +134,22 @@ impl TUser {
 
     fn check_pass(&self, pass: String) -> bool {
         if let Some(hash) = &self.pass_hash {
-            bcrypt::verify(pass, hash)
+            match verify(pass, hash) {
+                Ok(v) => v,
+                Err(e) => {
+                    self::eprintln!("Password verify error: {e}");
+                    false
+                }
+            }
         } else {
             true
         }
     }
 
     fn hash_pass(pass: String) -> Result<String, String> {
-        bcrypt::hash(pass).map_err(|e| e.to_string())
+        let mut salt = [0u8; 16];
+        rng().fill_bytes(&mut salt);
+        String::from_utf8(bcrypt(13, salt, pass.as_bytes()).to_vec()).map_err(|e| e.to_string())
     }
 
     pub fn find_by_identity(identity: &Identity) -> Result<TUser, String> {

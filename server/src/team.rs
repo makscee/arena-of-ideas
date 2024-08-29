@@ -1,6 +1,6 @@
 use super::*;
 
-#[spacetimedb(table)]
+#[spacetimedb(table(public))]
 #[derive(Clone)]
 pub struct TTeam {
     #[primarykey]

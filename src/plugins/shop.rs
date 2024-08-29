@@ -128,7 +128,7 @@ impl ShopPlugin {
                 .map(|e| (VarState::get(e, world).id(), e)),
         );
         let team = TeamPlugin::entity(Faction::Team, world);
-        for (slot, unit) in (0..).zip(TTeam::filter_by_id(run.team).unwrap().units.into_iter()) {
+        for (slot, unit) in (0..).zip(TTeam::find_by_id(run.team).unwrap().units.into_iter()) {
             let id = unit.id;
             if let Some(entity) = team_units.get(&id) {
                 let mut state = VarState::get_mut(*entity, world);
@@ -276,7 +276,7 @@ impl ShopPlugin {
 
         let sd = world.resource::<ShopData>().clone();
 
-        let team = TTeam::filter_by_id(run.team).unwrap();
+        let team = TTeam::find_by_id(run.team).unwrap();
         let g = run.g;
         let mut shop_container = UnitContainer::new(Faction::Shop)
             .pivot(Align2::CENTER_TOP)

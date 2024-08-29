@@ -9,7 +9,7 @@ use spacetimedb_sdk::{
     sats::{de::Deserialize, ser::Serialize},
     spacetimedb_lib,
     table::{TableIter, TableType, TableWithPrimaryKey},
-    Address,
+    Address, ScheduleAt,
 };
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
@@ -36,24 +36,16 @@ impl TableWithPrimaryKey for THouse {
 
 impl THouse {
     #[allow(unused)]
-    pub fn filter_by_name(name: String) -> Option<Self> {
+    pub fn filter_by_name(name: String) -> TableIter<Self> {
+        Self::filter(|row| row.name == name)
+    }
+    #[allow(unused)]
+    pub fn find_by_name(name: String) -> Option<Self> {
         Self::find(|row| row.name == name)
     }
     #[allow(unused)]
     pub fn filter_by_color(color: String) -> TableIter<Self> {
         Self::filter(|row| row.color == color)
-    }
-    #[allow(unused)]
-    pub fn filter_by_abilities(abilities: Vec<String>) -> TableIter<Self> {
-        Self::filter(|row| row.abilities == abilities)
-    }
-    #[allow(unused)]
-    pub fn filter_by_statuses(statuses: Vec<String>) -> TableIter<Self> {
-        Self::filter(|row| row.statuses == statuses)
-    }
-    #[allow(unused)]
-    pub fn filter_by_summons(summons: Vec<String>) -> TableIter<Self> {
-        Self::filter(|row| row.summons == summons)
     }
     #[allow(unused)]
     pub fn filter_by_defaults(defaults: String) -> TableIter<Self> {

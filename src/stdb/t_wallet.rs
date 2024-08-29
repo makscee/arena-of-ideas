@@ -9,7 +9,7 @@ use spacetimedb_sdk::{
     sats::{de::Deserialize, ser::Serialize},
     spacetimedb_lib,
     table::{TableIter, TableType, TableWithPrimaryKey},
-    Address,
+    Address, ScheduleAt,
 };
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
@@ -32,7 +32,11 @@ impl TableWithPrimaryKey for TWallet {
 
 impl TWallet {
     #[allow(unused)]
-    pub fn filter_by_owner(owner: u64) -> Option<Self> {
+    pub fn filter_by_owner(owner: u64) -> TableIter<Self> {
+        Self::filter(|row| row.owner == owner)
+    }
+    #[allow(unused)]
+    pub fn find_by_owner(owner: u64) -> Option<Self> {
         Self::find(|row| row.owner == owner)
     }
     #[allow(unused)]

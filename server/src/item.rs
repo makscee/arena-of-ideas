@@ -1,9 +1,9 @@
 use super::*;
 use base_unit::TBaseUnit;
 use itertools::Itertools;
-use rand::{seq::IteratorRandom, thread_rng, Rng};
+use rand::{seq::IteratorRandom, Rng};
 
-#[spacetimedb(table)]
+#[spacetimedb(table(public))]
 pub struct TItem {
     #[primarykey]
     pub id: u64,
@@ -129,11 +129,9 @@ fn open_lootbox(ctx: ReducerContext, id: u64) -> Result<(), String> {
         return Err("Lootbox count is 0".into());
     }
     item.stack.count -= 1;
-    let amount = thread_rng().gen_range(3..7);
+    let amount = rng().gen_range(3..7);
     let items = (0..amount)
-        .map(|_| {
-            Item::HeroShard(TBaseUnit::iter().choose(&mut thread_rng()).unwrap().name).to_stack(1)
-        })
+        .map(|_| Item::HeroShard(TBaseUnit::iter().choose(&mut rng()).unwrap().name).to_stack(1))
         .collect_vec();
     TTrade::open_lootbox(user.id, id, items)?;
     if item.stack.count == 0 {

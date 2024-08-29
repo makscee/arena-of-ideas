@@ -238,7 +238,7 @@ impl From<FusedUnit> for PackedUnit {
             .bases
             .iter()
             .map(|name| {
-                TBaseUnit::filter_by_name(name.clone())
+                TBaseUnit::find_by_name(name.clone())
                     .with_context(|| format!("TBaseUnit {name} not found"))
                     .unwrap()
             })

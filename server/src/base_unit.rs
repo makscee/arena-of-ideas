@@ -6,7 +6,7 @@ use rand::{
 
 use super::*;
 
-#[spacetimedb(table)]
+#[spacetimedb(table(public))]
 pub struct TBaseUnit {
     #[primarykey]
     pub name: String,

@@ -9,7 +9,7 @@ use spacetimedb_sdk::{
     sats::{de::Deserialize, ser::Serialize},
     spacetimedb_lib,
     table::{TableIter, TableType, TableWithPrimaryKey},
-    Address,
+    Address, ScheduleAt,
 };
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
@@ -33,7 +33,11 @@ impl TableWithPrimaryKey for TAbility {
 
 impl TAbility {
     #[allow(unused)]
-    pub fn filter_by_name(name: String) -> Option<Self> {
+    pub fn filter_by_name(name: String) -> TableIter<Self> {
+        Self::filter(|row| row.name == name)
+    }
+    #[allow(unused)]
+    pub fn find_by_name(name: String) -> Option<Self> {
         Self::find(|row| row.name == name)
     }
     #[allow(unused)]

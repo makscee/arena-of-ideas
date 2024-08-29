@@ -9,39 +9,11 @@ use self::base_unit::TBaseUnit;
 
 use super::*;
 
-#[derive(SpacetimeType)]
-pub struct ArenaSettings {
-    ranked_cost: i64,
-
-    slots_min: u32,
-    slots_max: u32,
-    slots_per_round: f32,
-    g_start: i32,
-    g_income_min: i32,
-    g_income_max: i32,
-    g_income_per_round: i32,
-    price_reroll: i32,
-    sell_discount: i32,
-    stack_discount: i32,
-    team_slots: u32,
-    lives_initial: u32,
-    lives_per_wins: u32,
-    free_rerolls_initial: u32,
-    free_rerolls_income: u32,
-}
-
-#[derive(SpacetimeType)]
-pub struct RaritySettings {
-    pub prices: Vec<i32>,
-    pub weights_initial: Vec<i32>,
-    pub weights_per_round: Vec<i32>,
-}
-
 fn settings() -> GlobalSettings {
     GlobalSettings::get()
 }
 
-#[spacetimedb(table)]
+#[spacetimedb(table(public))]
 pub struct TArenaRun {
     mode: GameMode,
     #[primarykey]
@@ -70,7 +42,7 @@ pub struct TArenaRun {
     last_updated: Timestamp,
 }
 
-#[spacetimedb(table)]
+#[spacetimedb(table(public))]
 pub struct TArenaRunArchive {
     mode: GameMode,
     #[primarykey]
@@ -143,7 +115,7 @@ fn run_start_normal(ctx: ReducerContext) -> Result<(), String> {
 #[spacetimedb(reducer)]
 fn run_start_ranked(ctx: ReducerContext) -> Result<(), String> {
     let user = ctx.user()?;
-    TWallet::change(user.id, -settings().arena.ranked_cost)?;
+    TWallet::change(user.id, -settings().arena.ranked_cost_min)?;
     TArenaRun::start(user, GameMode::ArenaRanked)
 }
 
@@ -429,7 +401,7 @@ impl TArenaRun {
     fn start(user: TUser, mode: GameMode) -> Result<(), String> {
         TArenaRun::delete_by_owner(&user.id);
         let reward_limit = match mode {
-            GameMode::ArenaNormal | GameMode::ArenaConst(_) => settings().arena.ranked_cost,
+            GameMode::ArenaNormal | GameMode::ArenaConst(_) => settings().arena.ranked_cost_min,
             GameMode::ArenaRanked => 0,
         };
         let mut run = TArenaRun::new(user.id, mode);

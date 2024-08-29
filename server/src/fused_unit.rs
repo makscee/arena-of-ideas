@@ -1,8 +1,5 @@
 use itertools::Itertools;
-use rand::{
-    distributions::{Distribution, WeightedIndex},
-    thread_rng,
-};
+use rand::distributions::{Distribution, WeightedIndex};
 
 use self::base_unit::TBaseUnit;
 
@@ -54,7 +51,7 @@ impl FusedUnit {
         let weights = [1, 10, 50, 10, 1];
         let stats = [-2, -1, 0, 1, 2];
         let index = WeightedIndex::new(&weights).unwrap();
-        let index = index.sample(&mut thread_rng());
+        let index = index.sample(&mut spacetimedb::rng());
         stats[index]
     }
     pub fn mutate(mut self) -> Self {

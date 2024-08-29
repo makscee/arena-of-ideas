@@ -13,7 +13,7 @@ use spacetimedb_sdk::{
     sats::{de::Deserialize, ser::Serialize},
     spacetimedb_lib,
     table::{TableIter, TableType, TableWithPrimaryKey},
-    Address,
+    Address, ScheduleAt,
 };
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
@@ -34,28 +34,16 @@ impl TableType for GlobalSettings {
 
 impl GlobalSettings {
     #[allow(unused)]
-    pub fn filter_by_always_zero(always_zero: u32) -> Option<Self> {
+    pub fn filter_by_always_zero(always_zero: u32) -> TableIter<Self> {
+        Self::filter(|row| row.always_zero == always_zero)
+    }
+    #[allow(unused)]
+    pub fn find_by_always_zero(always_zero: u32) -> Option<Self> {
         Self::find(|row| row.always_zero == always_zero)
-    }
-    #[allow(unused)]
-    pub fn filter_by_arena(arena: ArenaSettings) -> TableIter<Self> {
-        Self::filter(|row| row.arena == arena)
-    }
-    #[allow(unused)]
-    pub fn filter_by_rarities(rarities: RaritySettings) -> TableIter<Self> {
-        Self::filter(|row| row.rarities == rarities)
-    }
-    #[allow(unused)]
-    pub fn filter_by_battle(battle: BattleSettings) -> TableIter<Self> {
-        Self::filter(|row| row.battle == battle)
     }
     #[allow(unused)]
     pub fn filter_by_craft_shards_cost(craft_shards_cost: u32) -> TableIter<Self> {
         Self::filter(|row| row.craft_shards_cost == craft_shards_cost)
-    }
-    #[allow(unused)]
-    pub fn filter_by_meta(meta: MetaSettings) -> TableIter<Self> {
-        Self::filter(|row| row.meta == meta)
     }
     #[allow(unused)]
     pub fn filter_by_ghost_unit(ghost_unit: String) -> TableIter<Self> {

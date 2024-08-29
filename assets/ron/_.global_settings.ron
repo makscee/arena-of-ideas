@@ -5,7 +5,12 @@
         craft_shards_cost: 10,
         ghost_unit: "Ghost",
         arena: (
-            ranked_cost: 15,
+            ranked_cost_min: 0,
+            ranked_cost_max: 200,
+            ranked_cost_increase: 25,
+            const_cost_min: 0,
+            const_cost_max: 200,
+            const_cost_increase: 50,
             slots_min: 3,
             slots_max: 6,
             slots_per_round: 0.34,

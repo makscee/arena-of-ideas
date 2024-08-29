@@ -15,7 +15,7 @@ impl PackedTeam {
         if id == 0 {
             return default();
         }
-        let team = TTeam::filter_by_id(id).unwrap();
+        let team = TTeam::find_by_id(id).unwrap();
         Self {
             units: team.units.into_iter().map(|u| u.into()).collect_vec(),
             ..default()

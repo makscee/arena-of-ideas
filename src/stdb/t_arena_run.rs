@@ -14,7 +14,7 @@ use spacetimedb_sdk::{
     sats::{de::Deserialize, ser::Serialize},
     spacetimedb_lib,
     table::{TableIter, TableType, TableWithPrimaryKey},
-    Address,
+    Address, ScheduleAt,
 };
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
@@ -56,40 +56,24 @@ impl TableWithPrimaryKey for TArenaRun {
 
 impl TArenaRun {
     #[allow(unused)]
-    pub fn filter_by_mode(mode: GameMode) -> TableIter<Self> {
-        Self::filter(|row| row.mode == mode)
+    pub fn filter_by_id(id: u64) -> TableIter<Self> {
+        Self::filter(|row| row.id == id)
     }
     #[allow(unused)]
-    pub fn filter_by_id(id: u64) -> Option<Self> {
+    pub fn find_by_id(id: u64) -> Option<Self> {
         Self::find(|row| row.id == id)
     }
     #[allow(unused)]
-    pub fn filter_by_owner(owner: u64) -> Option<Self> {
+    pub fn filter_by_owner(owner: u64) -> TableIter<Self> {
+        Self::filter(|row| row.owner == owner)
+    }
+    #[allow(unused)]
+    pub fn find_by_owner(owner: u64) -> Option<Self> {
         Self::find(|row| row.owner == owner)
     }
     #[allow(unused)]
     pub fn filter_by_team(team: u64) -> TableIter<Self> {
         Self::filter(|row| row.team == team)
-    }
-    #[allow(unused)]
-    pub fn filter_by_battles(battles: Vec<u64>) -> TableIter<Self> {
-        Self::filter(|row| row.battles == battles)
-    }
-    #[allow(unused)]
-    pub fn filter_by_enemies(enemies: Vec<u64>) -> TableIter<Self> {
-        Self::filter(|row| row.enemies == enemies)
-    }
-    #[allow(unused)]
-    pub fn filter_by_shop_slots(shop_slots: Vec<ShopSlot>) -> TableIter<Self> {
-        Self::filter(|row| row.shop_slots == shop_slots)
-    }
-    #[allow(unused)]
-    pub fn filter_by_team_slots(team_slots: Vec<TeamSlot>) -> TableIter<Self> {
-        Self::filter(|row| row.team_slots == team_slots)
-    }
-    #[allow(unused)]
-    pub fn filter_by_fusion(fusion: Option<Fusion>) -> TableIter<Self> {
-        Self::filter(|row| row.fusion == fusion)
     }
     #[allow(unused)]
     pub fn filter_by_g(g: i32) -> TableIter<Self> {
@@ -126,10 +110,6 @@ impl TArenaRun {
     #[allow(unused)]
     pub fn filter_by_score(score: u32) -> TableIter<Self> {
         Self::filter(|row| row.score == score)
-    }
-    #[allow(unused)]
-    pub fn filter_by_rewards(rewards: Vec<Reward>) -> TableIter<Self> {
-        Self::filter(|row| row.rewards == rewards)
     }
     #[allow(unused)]
     pub fn filter_by_reward_limit(reward_limit: i64) -> TableIter<Self> {

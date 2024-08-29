@@ -40,8 +40,8 @@ impl GameArchivePlugin {
     }
     fn download() {
         let ga = GameArchive {
-            global_settings: GlobalSettings::filter_by_always_zero(0).unwrap(),
-            global_data: GlobalData::filter_by_always_zero(0).unwrap(),
+            global_settings: GlobalSettings::find_by_always_zero(0).unwrap(),
+            global_data: GlobalData::find_by_always_zero(0).unwrap(),
             users: TUser::iter().collect_vec(),
             base_units: TBaseUnit::iter().collect_vec(),
             houses: THouse::iter().collect_vec(),

@@ -52,7 +52,7 @@ impl BattlePlugin {
     fn on_enter_shop(world: &mut World) {
         let run = TArenaRun::current();
         let bid = *run.battles.last().unwrap();
-        let battle = TBattle::filter_by_id(bid).unwrap();
+        let battle = TBattle::find_by_id(bid).unwrap();
         let mut bd = BattleData::from(battle);
         bd.from_run = true;
         world.insert_resource(bd);
@@ -303,7 +303,7 @@ impl BattlePlugin {
         if bd.id == 0 {
             return;
         }
-        if let Some(battle) = TBattle::filter_by_id(bd.id) {
+        if let Some(battle) = TBattle::find_by_id(bd.id) {
             let show_team = |team: TTeam, ui: &mut Ui| {
                 if team.id == 0 {
                     return;

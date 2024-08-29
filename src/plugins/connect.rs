@@ -23,7 +23,7 @@ impl ConnectPlugin {
         info!("Connect start");
         once_on_connect(|creds, _| {
             let creds = creds.clone();
-            info!("Connected {}", hex::encode(creds.identity.bytes()));
+            info!("Connected {}", hex::encode(creds.identity.as_bytes()));
             StdbQuery::Connect.subscribe();
             save_credentials(HOME_DIR, &creds).expect("Failed to save credentials");
             once_on_subscription_applied(|| {

@@ -3,12 +3,12 @@
 
 #![allow(unused_imports)]
 use spacetimedb_sdk::callbacks::{DbCallbacks, ReducerCallbacks};
-use spacetimedb_sdk::client_api_messages::{Event, TableUpdate};
 use spacetimedb_sdk::client_cache::{ClientCache, RowCallbackReminders};
 use spacetimedb_sdk::global_connection::with_connection_mut;
 use spacetimedb_sdk::identity::Credentials;
 use spacetimedb_sdk::reducer::AnyReducerEvent;
 use spacetimedb_sdk::spacetime_module::SpacetimeModule;
+use spacetimedb_sdk::ws_messages::{TableUpdate, TransactionUpdate};
 use spacetimedb_sdk::{
     anyhow::{anyhow, Result},
     identity::Identity,
@@ -16,7 +16,7 @@ use spacetimedb_sdk::{
     sats::{de::Deserialize, ser::Serialize},
     spacetimedb_lib,
     table::{TableIter, TableType, TableWithPrimaryKey},
-    Address,
+    Address, ScheduleAt,
 };
 use std::sync::Arc;
 
@@ -24,6 +24,8 @@ pub mod accept_trade_reducer;
 pub mod arena_settings;
 pub mod battle_settings;
 pub mod craft_hero_reducer;
+pub mod daily_update_reducer;
+pub mod daily_update_timer;
 pub mod fuse_cancel_reducer;
 pub mod fuse_choose_reducer;
 pub mod fuse_start_reducer;
@@ -40,7 +42,6 @@ pub mod login_reducer;
 pub mod logout_reducer;
 pub mod meta_buy_reducer;
 pub mod meta_settings;
-pub mod meta_shop_refresh_reducer;
 pub mod open_lootbox_reducer;
 pub mod rarity_settings;
 pub mod register_empty_reducer;
@@ -83,7 +84,6 @@ pub mod t_trade;
 pub mod t_user;
 pub mod t_wallet;
 pub mod team_slot;
-pub mod update_constant_seed_reducer;
 pub mod upload_assets_reducer;
 pub mod upload_game_archive_reducer;
 
@@ -91,6 +91,8 @@ pub use accept_trade_reducer::*;
 pub use arena_settings::*;
 pub use battle_settings::*;
 pub use craft_hero_reducer::*;
+pub use daily_update_reducer::*;
+pub use daily_update_timer::*;
 pub use fuse_cancel_reducer::*;
 pub use fuse_choose_reducer::*;
 pub use fuse_start_reducer::*;
@@ -107,7 +109,6 @@ pub use login_reducer::*;
 pub use logout_reducer::*;
 pub use meta_buy_reducer::*;
 pub use meta_settings::*;
-pub use meta_shop_refresh_reducer::*;
 pub use open_lootbox_reducer::*;
 pub use rarity_settings::*;
 pub use register_empty_reducer::*;
@@ -150,7 +151,6 @@ pub use t_trade::*;
 pub use t_user::*;
 pub use t_wallet::*;
 pub use team_slot::*;
-pub use update_constant_seed_reducer::*;
 pub use upload_assets_reducer::*;
 pub use upload_game_archive_reducer::*;
 
@@ -159,6 +159,7 @@ pub use upload_game_archive_reducer::*;
 pub enum ReducerEvent {
     AcceptTrade(accept_trade_reducer::AcceptTradeArgs),
     CraftHero(craft_hero_reducer::CraftHeroArgs),
+    DailyUpdate(daily_update_reducer::DailyUpdateArgs),
     FuseCancel(fuse_cancel_reducer::FuseCancelArgs),
     FuseChoose(fuse_choose_reducer::FuseChooseArgs),
     FuseStart(fuse_start_reducer::FuseStartArgs),
@@ -167,7 +168,6 @@ pub enum ReducerEvent {
     LoginByIdentity(login_by_identity_reducer::LoginByIdentityArgs),
     Logout(logout_reducer::LogoutArgs),
     MetaBuy(meta_buy_reducer::MetaBuyArgs),
-    MetaShopRefresh(meta_shop_refresh_reducer::MetaShopRefreshArgs),
     OpenLootbox(open_lootbox_reducer::OpenLootboxArgs),
     Register(register_reducer::RegisterArgs),
     RegisterEmpty(register_empty_reducer::RegisterEmptyArgs),
@@ -188,7 +188,6 @@ pub enum ReducerEvent {
     StackShop(stack_shop_reducer::StackShopArgs),
     StackTeam(stack_team_reducer::StackTeamArgs),
     SubmitBattleResult(submit_battle_result_reducer::SubmitBattleResultArgs),
-    UpdateConstantSeed(update_constant_seed_reducer::UpdateConstantSeedArgs),
     UploadAssets(upload_assets_reducer::UploadAssetsArgs),
     UploadGameArchive(upload_game_archive_reducer::UploadGameArchiveArgs),
 }
@@ -204,6 +203,11 @@ impl SpacetimeModule for Module {
     ) {
         let table_name = &table_update.table_name[..];
         match table_name {
+            "DailyUpdateTimer" => client_cache
+                .handle_table_update_with_primary_key::<daily_update_timer::DailyUpdateTimer>(
+                    callbacks,
+                    table_update,
+                ),
             "GlobalData" => client_cache
                 .handle_table_update_no_primary_key::<global_data::GlobalData>(
                     callbacks,
@@ -286,6 +290,11 @@ impl SpacetimeModule for Module {
         reducer_event: Option<Arc<AnyReducerEvent>>,
         state: &Arc<ClientCache>,
     ) {
+        reminders.invoke_callbacks::<daily_update_timer::DailyUpdateTimer>(
+            worker,
+            &reducer_event,
+            state,
+        );
         reminders.invoke_callbacks::<global_data::GlobalData>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<global_settings::GlobalSettings>(
             worker,
@@ -324,18 +333,16 @@ impl SpacetimeModule for Module {
     }
     fn handle_event(
         &self,
-        event: Event,
+        event: TransactionUpdate,
         _reducer_callbacks: &mut ReducerCallbacks,
         _state: Arc<ClientCache>,
     ) -> Option<Arc<AnyReducerEvent>> {
-        let Some(function_call) = &event.function_call else {
-            spacetimedb_sdk::log::warn!("Received Event with None function_call");
-            return None;
-        };
+        let reducer_call = &event.reducer_call;
         #[allow(clippy::match_single_binding)]
-match &function_call.reducer[..] {
+match &reducer_call.reducer_name[..] {
 						"accept_trade" => _reducer_callbacks.handle_event_of_type::<accept_trade_reducer::AcceptTradeArgs, ReducerEvent>(event, _state, ReducerEvent::AcceptTrade),
 			"craft_hero" => _reducer_callbacks.handle_event_of_type::<craft_hero_reducer::CraftHeroArgs, ReducerEvent>(event, _state, ReducerEvent::CraftHero),
+			"daily_update" => _reducer_callbacks.handle_event_of_type::<daily_update_reducer::DailyUpdateArgs, ReducerEvent>(event, _state, ReducerEvent::DailyUpdate),
 			"fuse_cancel" => _reducer_callbacks.handle_event_of_type::<fuse_cancel_reducer::FuseCancelArgs, ReducerEvent>(event, _state, ReducerEvent::FuseCancel),
 			"fuse_choose" => _reducer_callbacks.handle_event_of_type::<fuse_choose_reducer::FuseChooseArgs, ReducerEvent>(event, _state, ReducerEvent::FuseChoose),
 			"fuse_start" => _reducer_callbacks.handle_event_of_type::<fuse_start_reducer::FuseStartArgs, ReducerEvent>(event, _state, ReducerEvent::FuseStart),
@@ -344,7 +351,6 @@ match &function_call.reducer[..] {
 			"login_by_identity" => _reducer_callbacks.handle_event_of_type::<login_by_identity_reducer::LoginByIdentityArgs, ReducerEvent>(event, _state, ReducerEvent::LoginByIdentity),
 			"logout" => _reducer_callbacks.handle_event_of_type::<logout_reducer::LogoutArgs, ReducerEvent>(event, _state, ReducerEvent::Logout),
 			"meta_buy" => _reducer_callbacks.handle_event_of_type::<meta_buy_reducer::MetaBuyArgs, ReducerEvent>(event, _state, ReducerEvent::MetaBuy),
-			"meta_shop_refresh" => _reducer_callbacks.handle_event_of_type::<meta_shop_refresh_reducer::MetaShopRefreshArgs, ReducerEvent>(event, _state, ReducerEvent::MetaShopRefresh),
 			"open_lootbox" => _reducer_callbacks.handle_event_of_type::<open_lootbox_reducer::OpenLootboxArgs, ReducerEvent>(event, _state, ReducerEvent::OpenLootbox),
 			"register" => _reducer_callbacks.handle_event_of_type::<register_reducer::RegisterArgs, ReducerEvent>(event, _state, ReducerEvent::Register),
 			"register_empty" => _reducer_callbacks.handle_event_of_type::<register_empty_reducer::RegisterEmptyArgs, ReducerEvent>(event, _state, ReducerEvent::RegisterEmpty),
@@ -365,7 +371,6 @@ match &function_call.reducer[..] {
 			"stack_shop" => _reducer_callbacks.handle_event_of_type::<stack_shop_reducer::StackShopArgs, ReducerEvent>(event, _state, ReducerEvent::StackShop),
 			"stack_team" => _reducer_callbacks.handle_event_of_type::<stack_team_reducer::StackTeamArgs, ReducerEvent>(event, _state, ReducerEvent::StackTeam),
 			"submit_battle_result" => _reducer_callbacks.handle_event_of_type::<submit_battle_result_reducer::SubmitBattleResultArgs, ReducerEvent>(event, _state, ReducerEvent::SubmitBattleResult),
-			"update_constant_seed" => _reducer_callbacks.handle_event_of_type::<update_constant_seed_reducer::UpdateConstantSeedArgs, ReducerEvent>(event, _state, ReducerEvent::UpdateConstantSeed),
 			"upload_assets" => _reducer_callbacks.handle_event_of_type::<upload_assets_reducer::UploadAssetsArgs, ReducerEvent>(event, _state, ReducerEvent::UploadAssets),
 			"upload_game_archive" => _reducer_callbacks.handle_event_of_type::<upload_game_archive_reducer::UploadGameArchiveArgs, ReducerEvent>(event, _state, ReducerEvent::UploadGameArchive),
 			unknown => { spacetimedb_sdk::log::error!("Event on an unknown reducer: {:?}", unknown); None }
@@ -379,6 +384,10 @@ match &function_call.reducer[..] {
     ) {
         let table_name = &new_subs.table_name[..];
         match table_name {
+            "DailyUpdateTimer" => client_cache
+                .handle_resubscribe_for_type::<daily_update_timer::DailyUpdateTimer>(
+                    callbacks, new_subs,
+                ),
             "GlobalData" => client_cache
                 .handle_resubscribe_for_type::<global_data::GlobalData>(callbacks, new_subs),
             "GlobalSettings" => client_cache

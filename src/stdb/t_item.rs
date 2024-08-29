@@ -10,7 +10,7 @@ use spacetimedb_sdk::{
     sats::{de::Deserialize, ser::Serialize},
     spacetimedb_lib,
     table::{TableIter, TableType, TableWithPrimaryKey},
-    Address,
+    Address, ScheduleAt,
 };
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
@@ -34,15 +34,15 @@ impl TableWithPrimaryKey for TItem {
 
 impl TItem {
     #[allow(unused)]
-    pub fn filter_by_id(id: u64) -> Option<Self> {
+    pub fn filter_by_id(id: u64) -> TableIter<Self> {
+        Self::filter(|row| row.id == id)
+    }
+    #[allow(unused)]
+    pub fn find_by_id(id: u64) -> Option<Self> {
         Self::find(|row| row.id == id)
     }
     #[allow(unused)]
     pub fn filter_by_owner(owner: u64) -> TableIter<Self> {
         Self::filter(|row| row.owner == owner)
-    }
-    #[allow(unused)]
-    pub fn filter_by_stack(stack: ItemStack) -> TableIter<Self> {
-        Self::filter(|row| row.stack == stack)
     }
 }

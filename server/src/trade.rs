@@ -1,6 +1,6 @@
 use super::*;
 
-#[spacetimedb(table)]
+#[spacetimedb(table(public))]
 pub struct TTrade {
     #[primarykey]
     id: u64,

@@ -22,17 +22,17 @@ impl From<THouse> for House {
             abilities: value
                 .abilities
                 .into_iter()
-                .filter_map(|a| TAbility::filter_by_name(a).map(|a| a.into()))
+                .filter_map(|a| TAbility::find_by_name(a).map(|a| a.into()))
                 .collect_vec(),
             statuses: value
                 .statuses
                 .into_iter()
-                .filter_map(|s| TStatus::filter_by_name(s).map(|s| s.into()))
+                .filter_map(|s| TStatus::find_by_name(s).map(|s| s.into()))
                 .collect_vec(),
             summons: value
                 .summons
                 .into_iter()
-                .filter_map(|u| TBaseUnit::filter_by_name(u).map(|u| u.into()))
+                .filter_map(|u| TBaseUnit::find_by_name(u).map(|u| u.into()))
                 .collect_vec(),
             defaults: ron::from_str(&value.defaults).unwrap(),
         }

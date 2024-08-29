@@ -176,7 +176,7 @@ pub fn format_timestamp(ts: u64) -> String {
         .to_string()
 }
 pub fn global_settings() -> GlobalSettings {
-    GlobalSettings::filter_by_always_zero(0).unwrap()
+    GlobalSettings::find_by_always_zero(0).unwrap()
 }
 pub fn app_exit(world: &mut World) {
     world
@@ -351,7 +351,7 @@ impl GIDExt for u64 {
                 units: default(),
             };
         }
-        TTeam::filter_by_id(self)
+        TTeam::find_by_id(self)
             .with_context(|| format!("Failed to find Team#{self}"))
             .unwrap()
     }
@@ -366,7 +366,7 @@ impl GIDExt for u64 {
                 last_login: default(),
             };
         }
-        TUser::filter_by_id(self)
+        TUser::find_by_id(self)
             .with_context(|| format!("Failed to find User#{self}"))
             .unwrap()
     }

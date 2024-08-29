@@ -19,7 +19,7 @@ impl Trade {
             return;
         };
 
-        let trade = TTrade::filter_by_id(id)
+        let trade = TTrade::find_by_id(id)
             .with_context(|| format!("Tried to open absent trade #{id}"))
             .unwrap();
         popup("Trade", ctx, |ui| {

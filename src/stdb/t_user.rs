@@ -9,7 +9,7 @@ use spacetimedb_sdk::{
     sats::{de::Deserialize, ser::Serialize},
     spacetimedb_lib,
     table::{TableIter, TableType, TableWithPrimaryKey},
-    Address,
+    Address, ScheduleAt,
 };
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
@@ -36,20 +36,20 @@ impl TableWithPrimaryKey for TUser {
 
 impl TUser {
     #[allow(unused)]
-    pub fn filter_by_id(id: u64) -> Option<Self> {
+    pub fn filter_by_id(id: u64) -> TableIter<Self> {
+        Self::filter(|row| row.id == id)
+    }
+    #[allow(unused)]
+    pub fn find_by_id(id: u64) -> Option<Self> {
         Self::find(|row| row.id == id)
     }
     #[allow(unused)]
-    pub fn filter_by_name(name: String) -> Option<Self> {
+    pub fn filter_by_name(name: String) -> TableIter<Self> {
+        Self::filter(|row| row.name == name)
+    }
+    #[allow(unused)]
+    pub fn find_by_name(name: String) -> Option<Self> {
         Self::find(|row| row.name == name)
-    }
-    #[allow(unused)]
-    pub fn filter_by_identities(identities: Vec<Identity>) -> TableIter<Self> {
-        Self::filter(|row| row.identities == identities)
-    }
-    #[allow(unused)]
-    pub fn filter_by_pass_hash(pass_hash: Option<String>) -> TableIter<Self> {
-        Self::filter(|row| row.pass_hash == pass_hash)
     }
     #[allow(unused)]
     pub fn filter_by_online(online: bool) -> TableIter<Self> {

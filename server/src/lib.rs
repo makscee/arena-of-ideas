@@ -4,6 +4,7 @@ mod arena_leaderboard;
 mod arena_pool;
 mod base_unit;
 mod battle;
+mod daily_updater;
 mod fused_unit;
 mod global_data;
 mod global_settings;
@@ -27,16 +28,17 @@ pub use arena_leaderboard::*;
 pub use arena_pool::*;
 pub use base_unit::*;
 pub use battle::*;
+use daily_updater::daily_timer_init;
 pub use fused_unit::*;
 pub use global_data::*;
 pub use global_settings::*;
 pub use item::*;
 pub use itertools::Itertools;
 pub use meta_shop::*;
-pub use rand::{distributions::Alphanumeric, seq::IteratorRandom, thread_rng, Rng};
-pub use spacetimedb::{
-    schedule, spacetimedb, Identity, ReducerContext, SpacetimeType, TableType, Timestamp,
-};
+pub use rand::{distributions::Alphanumeric, seq::IteratorRandom, Rng};
+pub use spacetimedb::rng;
+pub use spacetimedb::{eprintln, println};
+pub use spacetimedb::{spacetimedb, Identity, ReducerContext, SpacetimeType, TableType, Timestamp};
 pub use starting_hero::*;
 pub use team::*;
 pub use trade::*;
@@ -98,5 +100,6 @@ impl AdminCheck for &ReducerContext {
 #[spacetimedb(init)]
 fn init() -> Result<(), String> {
     GlobalData::init()?;
+    daily_timer_init();
     Ok(())
 }

@@ -70,7 +70,7 @@ impl GameStartPlugin {
                                     }
                                 }
                                 GameMode::ArenaRanked => {
-                                    let cost = GlobalSettings::current().arena.ranked_cost;
+                                    let cost = GlobalSettings::current().arena.ranked_cost_min;
                                     "Arena Ranked"
                                         .cstr_c(YELLOW)
                                         .style(CstrStyle::Heading2)
@@ -97,7 +97,7 @@ impl GameStartPlugin {
                                         .label(ui);
                                 }
                                 GameMode::ArenaConst(seed) => {
-                                    let cost = GlobalSettings::current().arena.ranked_cost;
+                                    let cost = GlobalSettings::current().arena.ranked_cost_min;
                                     "Arena Constant"
                                         .cstr_c(CYAN)
                                         .style(CstrStyle::Heading2)

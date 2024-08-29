@@ -214,7 +214,7 @@ impl Show for FusedUnit {
         text_dots_text("gid".cstr(), self.id.to_string().cstr_c(VISIBLE_LIGHT), ui);
         self.bases
             .iter()
-            .filter_map(|b| TBaseUnit::filter_by_name(b.clone()))
+            .filter_map(|b| TBaseUnit::find_by_name(b.clone()))
             .collect_vec()
             .show_table("Bases", ui, world);
     }

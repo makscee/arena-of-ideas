@@ -160,7 +160,7 @@ impl LoginPlugin {
                             spacetimedb_sdk::reducer::Status::Committed => {
                                 let name = name.clone();
                                 OperationsPlugin::add(move |world| {
-                                    let user = TUser::filter_by_name(name).unwrap();
+                                    let user = TUser::find_by_name(name).unwrap();
                                     Self::complete(user, world);
                                 });
                             }

@@ -13,34 +13,30 @@ use spacetimedb_sdk::{
 };
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
-pub struct TStartingHero {
-    pub owner: u64,
-    pub item_id: u64,
+pub struct DailyUpdateTimer {
+    pub scheduled_id: u64,
+    pub scheduled_at: ScheduleAt,
 }
 
-impl TableType for TStartingHero {
-    const TABLE_NAME: &'static str = "TStartingHero";
+impl TableType for DailyUpdateTimer {
+    const TABLE_NAME: &'static str = "DailyUpdateTimer";
     type ReducerEvent = super::ReducerEvent;
 }
 
-impl TableWithPrimaryKey for TStartingHero {
+impl TableWithPrimaryKey for DailyUpdateTimer {
     type PrimaryKey = u64;
     fn primary_key(&self) -> &Self::PrimaryKey {
-        &self.owner
+        &self.scheduled_id
     }
 }
 
-impl TStartingHero {
+impl DailyUpdateTimer {
     #[allow(unused)]
-    pub fn filter_by_owner(owner: u64) -> TableIter<Self> {
-        Self::filter(|row| row.owner == owner)
+    pub fn filter_by_scheduled_id(scheduled_id: u64) -> TableIter<Self> {
+        Self::filter(|row| row.scheduled_id == scheduled_id)
     }
     #[allow(unused)]
-    pub fn find_by_owner(owner: u64) -> Option<Self> {
-        Self::find(|row| row.owner == owner)
-    }
-    #[allow(unused)]
-    pub fn filter_by_item_id(item_id: u64) -> TableIter<Self> {
-        Self::filter(|row| row.item_id == item_id)
+    pub fn find_by_scheduled_id(scheduled_id: u64) -> Option<Self> {
+        Self::find(|row| row.scheduled_id == scheduled_id)
     }
 }

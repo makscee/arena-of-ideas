@@ -2,7 +2,7 @@ use spacetimedb::Timestamp;
 
 use super::*;
 
-#[spacetimedb(table)]
+#[spacetimedb(table(public))]
 pub struct TArenaLeaderboard {
     pub mode: GameMode,
     pub season: u32,

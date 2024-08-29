@@ -9,7 +9,7 @@ use spacetimedb_sdk::{
     sats::{de::Deserialize, ser::Serialize},
     spacetimedb_lib,
     table::{TableIter, TableType, TableWithPrimaryKey},
-    Address,
+    Address, ScheduleAt,
 };
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
@@ -25,7 +25,11 @@ impl TableType for TRepresentation {
 
 impl TRepresentation {
     #[allow(unused)]
-    pub fn filter_by_id(id: String) -> Option<Self> {
+    pub fn filter_by_id(id: String) -> TableIter<Self> {
+        Self::filter(|row| row.id == id)
+    }
+    #[allow(unused)]
+    pub fn find_by_id(id: String) -> Option<Self> {
         Self::find(|row| row.id == id)
     }
     #[allow(unused)]

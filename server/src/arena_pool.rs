@@ -1,8 +1,8 @@
-use rand::{seq::IteratorRandom, thread_rng};
+use rand::seq::IteratorRandom;
 
 use super::*;
 
-#[spacetimedb(table)]
+#[spacetimedb(table(public))]
 pub struct TArenaPool {
     pub mode: GameMode,
     #[primarykey]
@@ -17,6 +17,6 @@ impl TArenaPool {
     pub fn get_random(mode: &GameMode, round: u32) -> Option<Self> {
         Self::filter_by_round(&round)
             .filter(|d| d.mode.eq(mode))
-            .choose(&mut thread_rng())
+            .choose(&mut spacetimedb::rng())
     }
 }

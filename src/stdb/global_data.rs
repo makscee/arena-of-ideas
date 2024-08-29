@@ -9,7 +9,7 @@ use spacetimedb_sdk::{
     sats::{de::Deserialize, ser::Serialize},
     spacetimedb_lib,
     table::{TableIter, TableType, TableWithPrimaryKey},
-    Address,
+    Address, ScheduleAt,
 };
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
@@ -21,6 +21,7 @@ pub struct GlobalData {
     pub last_sync: u64,
     pub last_shop_refresh: u64,
     pub constant_seed: String,
+    pub initial_enemies: Vec<u64>,
 }
 
 impl TableType for GlobalData {
@@ -30,7 +31,11 @@ impl TableType for GlobalData {
 
 impl GlobalData {
     #[allow(unused)]
-    pub fn filter_by_always_zero(always_zero: u32) -> Option<Self> {
+    pub fn filter_by_always_zero(always_zero: u32) -> TableIter<Self> {
+        Self::filter(|row| row.always_zero == always_zero)
+    }
+    #[allow(unused)]
+    pub fn find_by_always_zero(always_zero: u32) -> Option<Self> {
         Self::find(|row| row.always_zero == always_zero)
     }
     #[allow(unused)]

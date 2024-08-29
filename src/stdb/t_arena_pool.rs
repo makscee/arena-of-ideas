@@ -10,7 +10,7 @@ use spacetimedb_sdk::{
     sats::{de::Deserialize, ser::Serialize},
     spacetimedb_lib,
     table::{TableIter, TableType, TableWithPrimaryKey},
-    Address,
+    Address, ScheduleAt,
 };
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
@@ -34,11 +34,11 @@ impl TableWithPrimaryKey for TArenaPool {
 
 impl TArenaPool {
     #[allow(unused)]
-    pub fn filter_by_mode(mode: GameMode) -> TableIter<Self> {
-        Self::filter(|row| row.mode == mode)
+    pub fn filter_by_team(team: u64) -> TableIter<Self> {
+        Self::filter(|row| row.team == team)
     }
     #[allow(unused)]
-    pub fn filter_by_team(team: u64) -> Option<Self> {
+    pub fn find_by_team(team: u64) -> Option<Self> {
         Self::find(|row| row.team == team)
     }
     #[allow(unused)]

@@ -2,7 +2,7 @@ use spacetimedb::Timestamp;
 
 use super::*;
 
-#[spacetimedb(table)]
+#[spacetimedb(table(public))]
 pub struct TBattle {
     #[primarykey]
     pub id: u64,

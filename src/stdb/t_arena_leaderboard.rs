@@ -10,7 +10,7 @@ use spacetimedb_sdk::{
     sats::{de::Deserialize, ser::Serialize},
     spacetimedb_lib,
     table::{TableIter, TableType, TableWithPrimaryKey},
-    Address,
+    Address, ScheduleAt,
 };
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
@@ -31,10 +31,6 @@ impl TableType for TArenaLeaderboard {
 }
 
 impl TArenaLeaderboard {
-    #[allow(unused)]
-    pub fn filter_by_mode(mode: GameMode) -> TableIter<Self> {
-        Self::filter(|row| row.mode == mode)
-    }
     #[allow(unused)]
     pub fn filter_by_season(season: u32) -> TableIter<Self> {
         Self::filter(|row| row.season == season)

@@ -9,12 +9,17 @@ use spacetimedb_sdk::{
     sats::{de::Deserialize, ser::Serialize},
     spacetimedb_lib,
     table::{TableIter, TableType, TableWithPrimaryKey},
-    Address,
+    Address, ScheduleAt,
 };
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct ArenaSettings {
-    pub ranked_cost: i64,
+    pub ranked_cost_min: i64,
+    pub ranked_cost_max: i64,
+    pub ranked_cost_increase: i64,
+    pub const_cost_min: i64,
+    pub const_cost_max: i64,
+    pub const_cost_increase: i64,
     pub slots_min: u32,
     pub slots_max: u32,
     pub slots_per_round: f32,
