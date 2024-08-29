@@ -4,7 +4,7 @@ use egui::{Area, NumExt};
 use super::*;
 
 pub struct Tile {
-    id: u64,
+    id: String,
     content: Box<dyn Fn(&mut Ui, &mut World) + Send + Sync>,
     side: Side,
     size: f32,
@@ -19,8 +19,8 @@ pub struct Tile {
 
 #[derive(Resource)]
 pub struct TileResource {
-    tiles: Vec<Tile>,
-    focused: u64,
+    tiles: OrderedHashMap<String, Tile>,
+    focused: String,
     persistent_tiles: Vec<Tile>,
 }
 
@@ -60,12 +60,12 @@ fn next_id() -> u64 {
 impl Tile {
     pub fn new(side: Side, content: impl Fn(&mut Ui, &mut World) + Send + Sync + 'static) -> Self {
         Self {
-            id: next_id(),
+            id: next_id().to_string(),
             content: Box::new(content),
             side,
             size: 0.0,
             max_size: 0.0,
-            min_size: 0.0,
+            min_size: 100.0,
             content_size: default(),
             margin_size: FRAME.total_margin().sum(),
             transparent: false,
@@ -73,10 +73,14 @@ impl Tile {
             focusable: true,
         }
     }
+    pub fn set_id(mut self, id: String) -> Self {
+        self.id = id;
+        self
+    }
     pub fn push(self, world: &mut World) {
         let mut tr = world.resource_mut::<TileResource>();
-        tr.focused = self.id;
-        tr.tiles.push(self);
+        tr.focused = self.id.clone();
+        tr.tiles.insert(self.id.clone(), self);
     }
     pub fn transparent(mut self) -> Self {
         self.transparent = true;
@@ -143,7 +147,7 @@ impl Tile {
             frame = frame.fill(Color32::TRANSPARENT);
         }
         let screen_rect = Self::get_screen_rect(ctx);
-        let id = Id::new(self.id);
+        let id = Id::new(&self.id);
         let (area, rect) = match self.side {
             Side::Right => (
                 Area::new(id)
@@ -235,36 +239,43 @@ impl Tile {
         if tr.tiles.is_empty() {
             return;
         }
+        let focused = tr.focused.clone();
         let mut persistent_tiles = mem::take(&mut tr.persistent_tiles);
         let mut tiles = mem::take(&mut tr.tiles);
-        let focused = tr.focused;
         Self::set_screen_rect(ctx.available_rect(), ctx);
         let mut available_space = ctx.available_rect().size();
-        for tile in &tiles {
+        for (_, tile) in &tiles {
             if tile.side.is_x() {
                 available_space.x -= tile.margin_size.x;
             } else {
                 available_space.y -= tile.margin_size.y;
             }
         }
-        let focused_ind = tiles.iter_mut().position(|t| t.id == focused);
-        if let Some(focused) = focused_ind {
-            tiles[focused].take_space(true, &mut available_space);
+        if let Some(focused) = tiles.get_mut(&focused) {
+            focused.take_space(true, &mut available_space);
         }
 
-        let focused_ind = focused_ind.unwrap_or(tiles.len() - 1);
-        let (left, right) = tiles.split_at_mut(focused_ind);
+        let mut inds = tiles.keys().cloned().collect_vec();
+        let focused_ind = inds
+            .iter()
+            .position(|k| focused.eq(k))
+            .unwrap_or(inds.len() - 1);
+        let (left, right) = inds.split_at_mut(focused_ind);
         let mut left_i = left.len() as i32 - 1;
         let mut right_i = 1;
         let l = left.len().max(right.len());
         for _ in 0..=l {
-            if let Some(tile) = right.get_mut(right_i) {
-                tile.take_space(false, &mut available_space);
+            if let Some(key) = right.get(right_i) {
+                if let Some(tile) = tiles.get_mut(key) {
+                    tile.take_space(false, &mut available_space);
+                }
                 right_i += 1;
             }
             if left_i >= 0 {
-                if let Some(tile) = left.get_mut(left_i as usize) {
-                    tile.take_space(false, &mut available_space);
+                if let Some(key) = left.get(left_i as usize) {
+                    if let Some(tile) = tiles.get_mut(key) {
+                        tile.take_space(false, &mut available_space);
+                    }
                     left_i -= 1;
                 }
             }
@@ -272,21 +283,21 @@ impl Tile {
 
         let mut close = None;
         let mut focus = None;
-        for (i, tile) in tiles.iter_mut().enumerate() {
-            let focused = tile.focusable && focused == tile.id;
+        for (_, tile) in tiles.iter_mut() {
+            let focused = tile.focusable && focused.eq(&tile.id);
             let resp = tile.show(focused, ctx, world);
             if resp.want_close || (focused && !tile.sticky && just_pressed(KeyCode::Escape, world))
             {
-                close = Some(i);
+                close = Some(tile.id.clone());
             } else if resp.want_focus {
-                focus = Some(tile.id);
+                focus = Some(tile.id.clone());
             }
         }
         if let Some(close) = close {
-            tiles.remove(close);
-            if close == focused_ind {
-                if let Some(last) = tiles.last() {
-                    focus = Some(last.id);
+            tiles.remove(&close);
+            if close.eq(&focused) {
+                if let Some(last) = tiles.values().last() {
+                    focus = Some(last.id.clone());
                 }
             }
         }
@@ -296,7 +307,7 @@ impl Tile {
         let mut tr = world.resource_mut::<TileResource>();
         let new_tiles = mem::take(&mut tr.tiles);
         if !new_tiles.is_empty() {
-            tr.focused = new_tiles.last().unwrap().id;
+            tr.focused = new_tiles.values().last().unwrap().id.clone();
             tiles.extend(new_tiles);
         } else if let Some(focus) = focus {
             tr.focused = focus;
@@ -337,6 +348,7 @@ impl Tile {
             GameState::Battle => BattlePlugin::add_tiles(world),
             GameState::TableView(query) => TableViewPlugin::add_tiles(query, world),
             GameState::GameStart => GameStartPlugin::add_tiles(world),
+            GameState::Title => TitlePlugin::add_tiles(world),
             _ => {}
         }
     }

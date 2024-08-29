@@ -35,6 +35,7 @@ impl MetaPlugin {
                 TeamPlugin::despawn(Faction::Team, world);
             }
         })
+        .min_size(0.0)
         .sticky()
         .push(world);
 

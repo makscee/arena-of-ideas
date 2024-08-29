@@ -31,7 +31,22 @@ impl ProfilePlugin {
         }
         .save(world);
     }
-    pub fn settings_ui(ped: &mut ProfileEditData, ui: &mut Ui, world: &mut World) {
+    pub fn add_tile_settings(world: &mut World) {
+        world.insert_resource(ProfileEditData {
+            name: user_name().into(),
+            old_pass: default(),
+            pass: default(),
+            pass_repeat: default(),
+        });
+        Tile::new(Side::Left, |ui, world| {
+            world.resource_scope(|world, mut ped: Mut<ProfileEditData>| {
+                Self::settings_ui(&mut ped, ui, world);
+            })
+        })
+        .set_id("Profile Settings".into())
+        .push(world);
+    }
+    fn settings_ui(ped: &mut ProfileEditData, ui: &mut Ui, world: &mut World) {
         let user = &LoginOption::get(world).user;
         let has_pass = user.pass_hash.is_some();
         Input::new("name").ui(&mut ped.name, ui);

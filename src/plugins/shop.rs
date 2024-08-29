@@ -505,8 +505,7 @@ impl ShopPlugin {
                     run_finish();
                     once_on_run_finish(|_, _, status| match status {
                         StdbStatus::Committed => OperationsPlugin::add(|w| {
-                            WidgetsPlugin::reset_state(w);
-                            GameState::Title.proceed_to_target(w);
+                            GameState::GameStart.proceed_to_target(w);
                         }),
                         StdbStatus::Failed(e) => error!("Failed to finish run: {e}"),
                         _ => panic!(),

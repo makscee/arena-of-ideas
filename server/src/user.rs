@@ -1,4 +1,4 @@
-use bcrypt_no_getrandom::{bcrypt, verify};
+use bcrypt_no_getrandom::{hash_with_salt, verify};
 use rand::RngCore;
 use spacetimedb::Timestamp;
 
@@ -149,7 +149,10 @@ impl TUser {
     fn hash_pass(pass: String) -> Result<String, String> {
         let mut salt = [0u8; 16];
         rng().fill_bytes(&mut salt);
-        String::from_utf8(bcrypt(13, salt, pass.as_bytes()).to_vec()).map_err(|e| e.to_string())
+        match hash_with_salt(pass, 13, salt) {
+            Ok(hash) => Ok(hash.to_string()),
+            Err(e) => Err(e.to_string()),
+        }
     }
 
     pub fn find_by_identity(identity: &Identity) -> Result<TUser, String> {
