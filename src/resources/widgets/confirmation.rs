@@ -7,6 +7,7 @@ pub struct Confirmation {
     accept_name: Option<String>,
     decline: fn(&mut World),
     decline_name: Option<String>,
+    content: Option<fn(&mut Ui, &mut World)>,
 }
 
 fn current_id() -> Id {
@@ -23,10 +24,15 @@ impl Confirmation {
             decline: |_| {},
             accept_name: None,
             decline_name: None,
+            content: None,
         }
     }
     pub fn decline(mut self, action: fn(&mut World)) -> Self {
         self.decline = action;
+        self
+    }
+    pub fn content(mut self, content: fn(&mut Ui, &mut World)) -> Self {
+        self.content = Some(content);
         self
     }
     pub fn accept_name(mut self, name: String) -> Self {
@@ -39,9 +45,12 @@ impl Confirmation {
     }
     pub fn ui(self, ctx: &egui::Context, world: &mut World) {
         popup("Confirmation window", ctx, |ui| {
-            space(ui);
             ui.vertical_centered_justified(|ui| {
                 self.text.as_label(ui).wrap().ui(ui);
+                if let Some(content) = self.content {
+                    br(ui);
+                    (content)(ui, world);
+                }
             });
             space(ui);
             ui.columns(2, |ui| {
@@ -51,8 +60,8 @@ impl Confirmation {
                         .ui(ui)
                         .clicked()
                     {
-                        (self.decline)(world);
                         Self::clear(ui.ctx());
+                        (self.decline)(world);
                     }
                 });
                 ui[1].vertical_centered_justified(|ui| {
@@ -60,8 +69,8 @@ impl Confirmation {
                         .ui(ui)
                         .clicked()
                     {
-                        (self.accept)(world);
                         Self::clear(ui.ctx());
+                        (self.accept)(world);
                     }
                 });
             })

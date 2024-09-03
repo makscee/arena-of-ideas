@@ -5,7 +5,7 @@ pub struct SectionMenu {
 }
 
 struct GameSection {
-    name: String,
+    name: &'static str,
     target_state: GameState,
     inner_states: Vec<GameState>,
     options: Vec<GameOption>,
@@ -16,31 +16,37 @@ impl Default for SectionMenu {
         Self {
             sections: [
                 GameSection {
-                    name: "TITLE".to_owned(),
+                    name: "TITLE",
                     target_state: GameState::Title,
                     inner_states: default(),
                     options: default(),
                 },
                 GameSection {
-                    name: "META".to_owned(),
+                    name: "META",
                     target_state: GameState::Meta,
                     inner_states: default(),
                     options: [GameOption::Login].into(),
                 },
                 GameSection {
-                    name: "GAME".to_owned(),
+                    name: "TEAMS",
+                    target_state: GameState::Teams,
+                    inner_states: default(),
+                    options: [GameOption::Login].into(),
+                },
+                GameSection {
+                    name: "GAME",
                     target_state: GameState::GameStart,
                     inner_states: [GameState::Battle, GameState::Shop].into(),
                     options: [GameOption::Login].into(),
                 },
                 GameSection {
-                    name: "INBOX".to_owned(),
+                    name: "INBOX",
                     target_state: GameState::Inbox,
                     inner_states: default(),
                     options: [GameOption::Login].into(),
                 },
                 GameSection {
-                    name: "HISTORY".to_owned(),
+                    name: "HISTORY",
                     target_state: GameState::TableView(StdbQuery::BattleHistory),
                     inner_states: default(),
                     options: default(),
@@ -83,7 +89,7 @@ impl SectionMenu {
                         } else {
                             VISIBLE_DARK
                         };
-                        let resp = Button::click(name)
+                        let resp = Button::click(name.to_owned())
                             .enabled(enabled)
                             .color(color, ui)
                             .min_width(100.0)

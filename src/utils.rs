@@ -349,6 +349,8 @@ impl GIDExt for u64 {
                 id: 0,
                 owner: 0,
                 units: default(),
+                name: default(),
+                pool: TeamPool::Owned,
             };
         }
         TTeam::find_by_id(self)

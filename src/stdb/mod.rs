@@ -42,6 +42,7 @@ pub mod login_reducer;
 pub mod logout_reducer;
 pub mod meta_buy_reducer;
 pub mod meta_settings;
+pub mod new_team_reducer;
 pub mod open_lootbox_reducer;
 pub mod rarity_settings;
 pub mod register_empty_reducer;
@@ -83,6 +84,7 @@ pub mod t_team;
 pub mod t_trade;
 pub mod t_user;
 pub mod t_wallet;
+pub mod team_pool;
 pub mod team_slot;
 pub mod upload_assets_reducer;
 pub mod upload_game_archive_reducer;
@@ -109,6 +111,7 @@ pub use login_reducer::*;
 pub use logout_reducer::*;
 pub use meta_buy_reducer::*;
 pub use meta_settings::*;
+pub use new_team_reducer::*;
 pub use open_lootbox_reducer::*;
 pub use rarity_settings::*;
 pub use register_empty_reducer::*;
@@ -150,6 +153,7 @@ pub use t_team::*;
 pub use t_trade::*;
 pub use t_user::*;
 pub use t_wallet::*;
+pub use team_pool::*;
 pub use team_slot::*;
 pub use upload_assets_reducer::*;
 pub use upload_game_archive_reducer::*;
@@ -168,6 +172,7 @@ pub enum ReducerEvent {
     LoginByIdentity(login_by_identity_reducer::LoginByIdentityArgs),
     Logout(logout_reducer::LogoutArgs),
     MetaBuy(meta_buy_reducer::MetaBuyArgs),
+    NewTeam(new_team_reducer::NewTeamArgs),
     OpenLootbox(open_lootbox_reducer::OpenLootboxArgs),
     Register(register_reducer::RegisterArgs),
     RegisterEmpty(register_empty_reducer::RegisterEmptyArgs),
@@ -351,6 +356,7 @@ match &reducer_call.reducer_name[..] {
 			"login_by_identity" => _reducer_callbacks.handle_event_of_type::<login_by_identity_reducer::LoginByIdentityArgs, ReducerEvent>(event, _state, ReducerEvent::LoginByIdentity),
 			"logout" => _reducer_callbacks.handle_event_of_type::<logout_reducer::LogoutArgs, ReducerEvent>(event, _state, ReducerEvent::Logout),
 			"meta_buy" => _reducer_callbacks.handle_event_of_type::<meta_buy_reducer::MetaBuyArgs, ReducerEvent>(event, _state, ReducerEvent::MetaBuy),
+			"new_team" => _reducer_callbacks.handle_event_of_type::<new_team_reducer::NewTeamArgs, ReducerEvent>(event, _state, ReducerEvent::NewTeam),
 			"open_lootbox" => _reducer_callbacks.handle_event_of_type::<open_lootbox_reducer::OpenLootboxArgs, ReducerEvent>(event, _state, ReducerEvent::OpenLootbox),
 			"register" => _reducer_callbacks.handle_event_of_type::<register_reducer::RegisterArgs, ReducerEvent>(event, _state, ReducerEvent::Register),
 			"register_empty" => _reducer_callbacks.handle_event_of_type::<register_empty_reducer::RegisterEmptyArgs, ReducerEvent>(event, _state, ReducerEvent::RegisterEmpty),

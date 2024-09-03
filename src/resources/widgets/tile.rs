@@ -349,6 +349,7 @@ impl Tile {
             GameState::TableView(query) => TableViewPlugin::add_tiles(query, world),
             GameState::GameStart => GameStartPlugin::add_tiles(world),
             GameState::Title => TitlePlugin::add_tiles(world),
+            GameState::Teams => TeamPlugin::add_tiles(world),
             _ => {}
         }
     }

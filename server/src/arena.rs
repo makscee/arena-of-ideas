@@ -377,7 +377,7 @@ impl TArenaRun {
         Self {
             id: next_id(),
             owner: user_id,
-            team: TTeam::new(user_id),
+            team: TTeam::new(user_id, TeamPool::Arena).save(),
             shop_slots: Vec::new(),
             team_slots: Vec::new(),
             fusion: None,

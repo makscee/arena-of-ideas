@@ -48,9 +48,13 @@ fn replace_assets(
     }
     let ghost = || FusedUnit::from_base(GlobalSettings::get().ghost_unit, next_id()).unwrap();
     let enemies = [
-        TTeam::new_with(0, vec![ghost()]),
-        TTeam::new_with(0, vec![ghost(), ghost()]),
-        TTeam::new_with(0, vec![ghost(), ghost(), ghost()]),
+        TTeam::new(0, TeamPool::Enemy).units(vec![ghost()]).save(),
+        TTeam::new(0, TeamPool::Enemy)
+            .units(vec![ghost(), ghost()])
+            .save(),
+        TTeam::new(0, TeamPool::Enemy)
+            .units(vec![ghost(), ghost(), ghost()])
+            .save(),
     ]
     .into();
     GlobalData::set_initial_enemies(enemies);

@@ -5,33 +5,46 @@ use super::*;
 pub struct TTeam {
     #[primarykey]
     pub id: u64,
+    pub name: String,
     pub owner: u64,
     pub units: Vec<FusedUnit>,
+    pub pool: TeamPool,
+}
+
+#[derive(SpacetimeType, Clone, Copy)]
+pub enum TeamPool {
+    Owned,
+    Arena,
+    Enemy,
 }
 
 impl TTeam {
     pub fn get(id: u64) -> Result<Self, String> {
         Self::filter_by_id(&id).context_str("Team not found")
     }
-    pub fn save(self) {
-        Self::update_by_id(&self.id.clone(), self);
-    }
-    pub fn new(owner: u64) -> u64 {
-        let team = Self::insert(Self {
+    #[must_use]
+    pub fn new(owner: u64, pool: TeamPool) -> Self {
+        Self {
             id: next_id(),
+            name: String::new(),
             owner,
             units: Vec::new(),
-        })
-        .unwrap();
-        team.id
+            pool,
+        }
     }
-    pub fn new_with(owner: u64, units: Vec<FusedUnit>) -> u64 {
-        let team = Self {
-            id: next_id(),
-            owner,
-            units,
-        };
-        Self::insert(team).unwrap().id
+    #[must_use]
+    pub fn name(mut self, name: String) -> Self {
+        self.name = name;
+        self
+    }
+    #[must_use]
+    pub fn units(mut self, units: Vec<FusedUnit>) -> Self {
+        self.units = units;
+        self
+    }
+    pub fn save(self) -> u64 {
+        Self::delete_by_id(&self.id);
+        Self::insert(self).unwrap().id
     }
     pub fn save_clone(&self) -> Self {
         let mut c = self.clone();
@@ -43,4 +56,11 @@ impl TTeam {
             .get(i as usize)
             .with_context_str(|| format!("Failed to find unit team#{} slot {i}", self.id))
     }
+}
+
+#[spacetimedb(reducer)]
+fn new_team(ctx: ReducerContext, name: String) -> Result<(), String> {
+    let user = ctx.user()?;
+    TTeam::new(user.id, TeamPool::Owned).name(name).save();
+    Ok(())
 }

@@ -23,8 +23,8 @@ impl ShowTable<TTeam> for Vec<TTeam> {
     ) -> TableState {
         let mut t = Table::new(name)
             .title()
-            .selectable()
-            .column_cstr("units", |d: &TTeam, _| d.cstr());
+            .column_cstr("name", |d: &TTeam, _| d.name.cstr_c(VISIBLE_LIGHT))
+            .column_cstr("units", |d, _| d.cstr());
         t = m(t);
         t.ui(self, ui, world)
     }

@@ -1,9 +1,15 @@
+use egui::TextBuffer;
+
 use super::*;
 
 pub struct TeamPlugin;
 
 #[derive(Resource)]
-struct Teams(HashMap<Faction, Entity>);
+struct TeamResource {
+    entities: HashMap<Faction, Entity>,
+    table: Vec<TTeam>,
+    new_team_name: String,
+}
 
 #[derive(Component)]
 pub struct Team;
@@ -12,14 +18,18 @@ impl Plugin for TeamPlugin {
     fn build(&self, app: &mut App) {
         let teams =
             HashMap::from_iter(Faction::iter().map(|f| (f, Self::spawn(f, &mut app.world_mut()))));
-        app.insert_resource(Teams(teams));
+        app.insert_resource(TeamResource {
+            entities: teams,
+            table: default(),
+            new_team_name: default(),
+        });
     }
 }
 
 impl TeamPlugin {
     pub fn unit_faction(entity: Entity, world: &World) -> Faction {
         let team = entity.get_parent(world).unwrap();
-        for (faction, entity) in world.resource::<Teams>().0.iter() {
+        for (faction, entity) in world.resource::<TeamResource>().entities.iter() {
             if team.eq(entity) {
                 return *faction;
             }
@@ -31,12 +41,15 @@ impl TeamPlugin {
             .entity_mut(Self::entity(faction, world))
             .despawn_recursive();
         let entity = Self::spawn(faction, world);
-        world.resource_mut::<Teams>().0.insert(faction, entity);
+        world
+            .resource_mut::<TeamResource>()
+            .entities
+            .insert(faction, entity);
     }
     pub fn entity(faction: Faction, world: &World) -> Entity {
         *world
-            .resource::<Teams>()
-            .0
+            .resource::<TeamResource>()
+            .entities
             .get(&faction)
             .with_context(|| format!("Team not spawned {faction}"))
             .unwrap()
@@ -79,5 +92,51 @@ impl TeamPlugin {
             state.init(var, d);
         }
         state.change_int(var, delta);
+    }
+
+    fn load_teams(world: &mut World) {
+        world.resource_mut::<TeamResource>().table =
+            TTeam::filter_by_owner(user_id()).collect_vec();
+    }
+    fn open_new_team_popup(world: &mut World) {
+        let ctx = egui_context(world).unwrap();
+        Confirmation::new(
+            "New Team".cstr_cs(VISIBLE_LIGHT, CstrStyle::Heading2),
+            |world| {
+                let name = world.resource_mut::<TeamResource>().new_team_name.take();
+                if name.is_empty() {
+                    Notification::new("Empty name".cstr()).error().push(world);
+                    Self::open_new_team_popup(world);
+                } else {
+                    new_team(name);
+                    once_on_new_team(|_, _, status, _| {
+                        status.on_success(|world| Self::load_teams(world));
+                    });
+                }
+            },
+        )
+        .content(|ui, world| {
+            Input::new("name").ui(&mut world.resource_mut::<TeamResource>().new_team_name, ui);
+        })
+        .add(&ctx);
+    }
+
+    pub fn add_tiles(world: &mut World) {
+        Self::load_teams(world);
+        Tile::new(Side::Left, |ui, world| {
+            title("Team Manager", ui);
+            if Button::click("New Team".into()).ui(ui).clicked() {
+                Self::open_new_team_popup(world);
+            }
+        })
+        .sticky()
+        .push(world);
+        Tile::new(Side::Right, |ui, world| {
+            world.resource_scope(|world, data: Mut<TeamResource>| {
+                data.table.show_table("Teams", ui, world);
+            });
+        })
+        .sticky()
+        .push(world);
     }
 }
