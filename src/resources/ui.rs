@@ -59,14 +59,8 @@ pub struct UiPlugin;
 
 impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, Self::setup)
-            .init_resource::<WidgetData>();
+        app.add_systems(Startup, Self::setup);
     }
-}
-
-#[derive(Resource, Default, Debug)]
-pub struct WidgetData {
-    pub unit_container: HashMap<Faction, UnitContainerData>,
 }
 
 impl UiPlugin {

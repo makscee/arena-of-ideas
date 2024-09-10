@@ -151,11 +151,21 @@ impl TeamPlugin {
 
     fn editor_tiles(world: &mut World) {
         Tile::new(Side::Top, |ui, world| {
-            ui.horizontal_centered(|ui| {
-                "Test test test".cstr_c(VISIBLE_BRIGHT).label(ui);
-            });
+            UnitContainer::new(Faction::Team)
+                .slot_content(|i, e, ui, world| {
+                    if e.is_none() {
+                        ui.vertical_centered_justified(|ui| {
+                            if Button::click("Add".into()).ui(ui).clicked() {
+                                debug!("Add");
+                            }
+                        });
+                    }
+                })
+                .ui(ui, world);
         })
         .sticky()
+        .min_size(300.0)
+        .transparent()
         .push_as_content(world);
     }
 
@@ -177,7 +187,6 @@ impl TeamPlugin {
         .non_focusable()
         .push(world);
         Self::load_teams(world);
-        Self::editor_tiles(world);
         match state {
             GameState::Teams => Self::teams_tiles(world),
             GameState::TeamEditor => Self::editor_tiles(world),

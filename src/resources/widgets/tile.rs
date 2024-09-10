@@ -115,9 +115,10 @@ impl Tile {
     }
     fn take_full_space(&mut self, space: &mut egui::Vec2) {
         self.take_space(&mut space.clone());
-        *space -= (self.content_size + self.margin_size).at_most(*space);
+        *space -= (self.content_size.at_least(egui::Vec2::splat(self.min_size)) + self.margin_size)
+            .at_most(*space);
     }
-    fn get_screen_rect(ctx: &egui::Context) -> Rect {
+    pub fn get_screen_rect(ctx: &egui::Context) -> Rect {
         ctx.data(|r| r.get_temp::<Rect>(screen_rect_id())).unwrap()
     }
     fn set_screen_rect(rect: Rect, ctx: &egui::Context) {
@@ -260,7 +261,7 @@ impl Tile {
             focused.take_space(&mut available_space);
         }
         if let Some(content) = &mut content_tile {
-            content.take_full_space(&mut available_space);
+            // content.take_full_space(&mut available_space);
         }
 
         let mut inds = tiles.keys().cloned().collect_vec();

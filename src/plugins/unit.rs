@@ -6,7 +6,7 @@ pub struct UnitPlugin;
 
 impl Plugin for UnitPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(PreUpdate, Self::place_into_slots);
+        app.add_systems(PreUpdate, UnitContainer::place_into_slots);
     }
 }
 
@@ -150,38 +150,6 @@ impl UnitPlugin {
             );
         }
         gt().advance_insert(shift);
-    }
-    fn place_into_slots(world: &mut World) {
-        let Some(cam_entity) = CameraPlugin::get_entity(world) else {
-            return;
-        };
-        let delta = delta_time(world);
-        let units = Self::collect_factions([Faction::Shop, Faction::Team].into(), world);
-        let mut data = world.remove_resource::<WidgetData>().unwrap();
-        let camera = world.get::<Camera>(cam_entity).unwrap().clone();
-        let transform = world.get::<GlobalTransform>(cam_entity).unwrap().clone();
-        for cd in data.unit_container.values_mut() {
-            for e in cd.entities.iter_mut() {
-                *e = None;
-            }
-        }
-        for (entity, faction) in units {
-            if let Some(cd) = data.unit_container.get_mut(&faction) {
-                let context = Context::new(entity);
-                let slot = context.get_int(VarName::Slot, world).unwrap();
-                let position = context.get_vec2(VarName::Position, world).unwrap();
-                let slot = slot as usize;
-                let need_pos = cd
-                    .positions
-                    .get(slot)
-                    .map(|p| screen_to_world_cam(p.to_bvec2(), &camera, &transform))
-                    .unwrap_or_default();
-                cd.entities[slot] = Some(entity);
-                let mut state = VarState::get_mut(entity, world);
-                state.change_vec2(VarName::Position, (need_pos - position) * delta * 5.0);
-            }
-        }
-        world.insert_resource(data);
     }
     pub fn despawn(entity: Entity, world: &mut World) {
         world.entity_mut(entity).despawn_recursive();

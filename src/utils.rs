@@ -190,6 +190,17 @@ pub fn app_exit_op() {
 pub fn cur_state(world: &World) -> GameState {
     *world.resource::<State<GameState>>().get()
 }
+pub fn debug_rect(rect: Rect, ctx: &egui::Context) {
+    ctx.debug_painter().rect(
+        rect,
+        Rounding::ZERO,
+        YELLOW_DARK,
+        Stroke {
+            width: 1.0,
+            color: YELLOW,
+        },
+    );
+}
 
 pub trait ToBVec2 {
     fn to_bvec2(&self) -> Vec2;

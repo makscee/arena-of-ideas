@@ -1,4 +1,4 @@
-use egui::{Sense, Window};
+use egui::{NumExt, Sense, Window};
 
 use super::*;
 
@@ -16,12 +16,18 @@ pub struct UnitContainer {
     slot_name: HashMap<usize, String>,
     pivot: Align2,
     position: egui::Vec2,
+    min_size: f32,
+}
+
+#[derive(Resource, Default)]
+pub struct UnitContainerResource {
+    containers: HashMap<Faction, UnitContainerData>,
 }
 
 #[derive(Debug)]
-pub struct UnitContainerData {
-    pub positions: Vec<Pos2>,
-    pub entities: Vec<Option<Entity>>,
+struct UnitContainerData {
+    positions: Vec<Pos2>,
+    entities: Vec<Option<Entity>>,
 }
 
 impl Default for UnitContainerData {
@@ -49,6 +55,7 @@ impl UnitContainer {
             pivot: Align2::CENTER_CENTER,
             position: default(),
             slot_name: default(),
+            min_size: 10.0,
         }
     }
     pub fn slots(mut self, value: usize) -> Self {
@@ -58,6 +65,10 @@ impl UnitContainer {
     }
     pub fn max_slots(mut self, value: usize) -> Self {
         self.max_slots = value;
+        self
+    }
+    pub fn min_size(mut self, value: f32) -> Self {
+        self.min_size = value;
         self
     }
     pub fn right_to_left(mut self) -> Self {
@@ -112,8 +123,75 @@ impl UnitContainer {
         self.slot_name.insert(i, name);
         self
     }
-    pub fn ui(self, data: &mut WidgetData, ui: &mut Ui, world: &mut World) {
-        let data = data.unit_container.entry(self.faction).or_insert(default());
+    pub fn ui(self, ui: &mut Ui, world: &mut World) {
+        let mut data = world
+            .resource_mut::<UnitContainerResource>()
+            .containers
+            .remove(&self.faction)
+            .unwrap_or_default();
+        data.positions.resize(self.slots, default());
+        data.entities.resize(self.slots, None);
+        if ui.available_width() > ui.style().spacing.item_spacing.x * self.max_slots as f32 {
+            ui.columns(self.max_slots, |ui| {
+                for (ind, ui) in ui.iter_mut().enumerate() {
+                    Self::show_unit_frame(ind, ui);
+                    if let Some(content) = &self.slot_content {
+                        (content)(ind, None, ui, world);
+                    }
+                }
+            });
+        }
+    }
+    fn show_unit_frame(ind: usize, ui: &mut Ui) -> Response {
+        let rect = ui.available_rect_before_wrap();
+        let size = rect.size().x.min(rect.size().y);
+        let rect = Rect::from_center_size(rect.center(), egui::Vec2::splat(size));
+        let resp = ui.allocate_rect(rect, Sense::hover());
+        let color = if resp.hovered() { YELLOW } else { VISIBLE_DARK };
+        let stroke = Stroke { width: 1.0, color };
+        let ind_rect = Rect::from_min_max(
+            rect.right_top() + egui::vec2(-10.0, 5.0),
+            rect.right_top() + egui::vec2(-5.0, 0.0),
+        );
+        {
+            let ui = &mut ui.child_ui(ind_rect, Layout::top_down(Align::Max), None);
+            ind.to_string().cstr_cs(color, CstrStyle::Bold).label(ui);
+        }
+        const DASH_COUNT: f32 = 5.0;
+        let dash_size = size / (DASH_COUNT + (DASH_COUNT - 1.0) * 0.5);
+        let gap_size = dash_size * 0.5;
+        ui.painter().add(egui::Shape::dashed_line(
+            &[rect.left_top(), rect.right_top()],
+            stroke,
+            dash_size,
+            gap_size,
+        ));
+        ui.painter().add(egui::Shape::dashed_line(
+            &[rect.right_top(), rect.right_bottom()],
+            stroke,
+            dash_size,
+            gap_size,
+        ));
+        ui.painter().add(egui::Shape::dashed_line(
+            &[rect.right_bottom(), rect.left_bottom()],
+            stroke,
+            dash_size,
+            gap_size,
+        ));
+        ui.painter().add(egui::Shape::dashed_line(
+            &[rect.left_bottom(), rect.left_top()],
+            stroke,
+            dash_size,
+            gap_size,
+        ));
+        resp
+    }
+    pub fn ui_old(self, ui: &mut Ui, world: &mut World) {
+        let mut data = world
+            .resource_mut::<UnitContainerResource>()
+            .containers
+            .remove(&self.faction)
+            .unwrap_or_default();
         data.positions.resize(self.slots + 1, default());
         data.entities.resize(self.slots + 1, None);
         let name = format!("{}", self.faction);
@@ -166,8 +244,14 @@ impl UnitContainer {
                             } else {
                                 None
                             };
-                            let response =
-                                show_frame(i, max_size, i >= self.max_slots, name, data, ui);
+                            let response = show_frame(
+                                i,
+                                max_size.at_least(self.min_size),
+                                i >= self.max_slots,
+                                name,
+                                &mut data,
+                                ui,
+                            );
                             if let Some(action) = &self.on_swap {
                                 if response.dragged() {
                                     if let Some(pointer) = ui.ctx().pointer_latest_pos() {
@@ -248,7 +332,43 @@ impl UnitContainer {
                 }
             }
         }
-        ui.ctx().remove_path();
+        world
+            .resource_mut::<UnitContainerResource>()
+            .containers
+            .insert(self.faction, data);
+    }
+
+    pub fn place_into_slots(world: &mut World) {
+        let Some(cam_entity) = CameraPlugin::get_entity(world) else {
+            return;
+        };
+        let delta = delta_time(world);
+        let units = UnitPlugin::collect_factions([Faction::Shop, Faction::Team].into(), world);
+        let mut data = world.remove_resource::<UnitContainerResource>().unwrap();
+        let camera = world.get::<Camera>(cam_entity).unwrap().clone();
+        let transform = world.get::<GlobalTransform>(cam_entity).unwrap().clone();
+        for cd in data.containers.values_mut() {
+            for e in cd.entities.iter_mut() {
+                *e = None;
+            }
+        }
+        for (entity, faction) in units {
+            if let Some(cd) = data.containers.get_mut(&faction) {
+                let context = Context::new(entity);
+                let slot = context.get_int(VarName::Slot, world).unwrap();
+                let position = context.get_vec2(VarName::Position, world).unwrap();
+                let slot = slot as usize;
+                let need_pos = cd
+                    .positions
+                    .get(slot)
+                    .map(|p| screen_to_world_cam(p.to_bvec2(), &camera, &transform))
+                    .unwrap_or_default();
+                cd.entities[slot] = Some(entity);
+                let mut state = VarState::get_mut(entity, world);
+                state.change_vec2(VarName::Position, (need_pos - position) * delta * 5.0);
+            }
+        }
+        world.insert_resource(data);
     }
 }
 

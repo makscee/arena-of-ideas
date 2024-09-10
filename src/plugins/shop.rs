@@ -269,7 +269,7 @@ impl ShopPlugin {
     fn cancel_stack(world: &mut World) {
         world.resource_mut::<ShopData>().stack_source = None;
     }
-    pub fn show_containers(wd: &mut WidgetData, ui: &mut Ui, world: &mut World) {
+    pub fn show_containers(ui: &mut Ui, world: &mut World) {
         let Some(run) = TArenaRun::get_current() else {
             return;
         };
@@ -372,7 +372,7 @@ impl ShopPlugin {
         if let Some(slot) = sd.family_slot {
             shop_container = shop_container.slot_name(slot, "Family Slot".into());
         }
-        shop_container.ui(wd, ui, world);
+        shop_container.ui(ui, world);
         let slots = GameAssets::get(world).global_settings.arena.team_slots as usize;
         let run = TArenaRun::current();
         UnitContainer::new(Faction::Team)
@@ -444,7 +444,7 @@ impl ShopPlugin {
             .on_swap(|a, b, _| {
                 shop_reorder(a as u8, b as u8);
             })
-            .ui(wd, ui, world);
+            .ui(ui, world);
     }
     pub fn container_on_hover(_: usize, entity: Option<Entity>, ui: &mut Ui, world: &mut World) {
         let Some(entity) = entity else {

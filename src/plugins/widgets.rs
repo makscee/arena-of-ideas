@@ -79,7 +79,6 @@ impl WidgetsPlugin {
         SectionMenu::default().show(ctx, world);
 
         let state = cur_state(world);
-        let mut wd = world.remove_resource::<WidgetData>().unwrap();
 
         Tile::show_all(ctx, world);
 
@@ -87,21 +86,17 @@ impl WidgetsPlugin {
         CentralPanel::default()
             .frame(Frame::none())
             .show(ctx, |ui| match state {
-                GameState::Shop => ShopPlugin::show_containers(&mut wd, ui, world),
+                GameState::Shop => ShopPlugin::show_containers(ui, world),
                 GameState::Connect => ConnectPlugin::ui(ui),
                 GameState::Login => LoginPlugin::login_ui(ui, world),
                 GameState::Battle => BattlePlugin::ui(ui, world),
                 GameState::GameOver => ShopPlugin::game_over_ui(ui),
-                GameState::TableView(query) => {
-                    TableViewPlugin::ui_content(query, &mut wd, ui, world)
-                }
-                GameState::Meta => MetaPlugin::ui_content(&mut wd, ui, world),
+                GameState::TableView(query) => TableViewPlugin::ui_content(query, ui, world),
                 _ => {}
             });
 
         // Overlay
         Trade::show_active(ctx, world);
         Confirmation::show_current(ctx, world);
-        world.insert_resource(wd);
     }
 }

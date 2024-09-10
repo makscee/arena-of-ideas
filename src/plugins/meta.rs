@@ -153,19 +153,6 @@ impl MetaPlugin {
         .sticky()
         .push(world);
     }
-    pub fn ui_content(wd: &mut WidgetData, ui: &mut Ui, world: &mut World) {
-        let r = world.resource::<MetaResource>();
-        match r.state {
-            SubState::Heroes => {
-                UnitContainer::new(Faction::Team)
-                    .hover_content(ShopPlugin::container_on_hover)
-                    .position(egui::vec2(0.5, 0.5))
-                    .slots(1)
-                    .ui(wd, ui, world);
-            }
-            _ => {}
-        }
-    }
 }
 fn set_starting_hero_button(id: u64, ui: &mut Ui) -> Response {
     let active = TStartingHero::get_current()

@@ -38,14 +38,14 @@ impl TableViewPlugin {
             _ => panic!("Query not supported {query}"),
         }
     }
-    pub fn ui_content(query: StdbQuery, wd: &mut WidgetData, ui: &mut Ui, world: &mut World) {
+    pub fn ui_content(query: StdbQuery, ui: &mut Ui, world: &mut World) {
         match query {
             StdbQuery::BaseUnits | StdbQuery::BattleHistory => {
                 UnitContainer::new(Faction::Team)
                     .hover_content(ShopPlugin::container_on_hover)
                     .position(egui::vec2(0.5, 0.5))
                     .slots(1)
-                    .ui(wd, ui, world);
+                    .ui(ui, world);
             }
             _ => panic!("Query not supported {query}"),
         }
