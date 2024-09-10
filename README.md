@@ -15,3 +15,6 @@ Innovative minimalistic pvp focused auto battler made using
 [![After 2 years people finally play my game](https://ytcards.demolab.com/?id=pCu7TMp60Fo&title=After+2+years+people+finally+play+my+game&lang=en&timestamp=1715806241&background_color=%230d1117&title_color=%23ffffff&stats_color=%23dedede&max_title_lines=1&width=250&border_radius=5 "After 2 years people finally play my game")](https://www.youtube.com/watch?v=pCu7TMp60Fo)
 [![I've added a 100 heroes to my game and now have some cool plans](https://ytcards.demolab.com/?id=TST5eaDk4Bs&title=I%27ve+added+a+100+heroes+to+my+game+and+now+have+some+cool+plans&lang=en&timestamp=1714156917&background_color=%230d1117&title_color=%23ffffff&stats_color=%23dedede&max_title_lines=1&width=250&border_radius=5 "I've added a 100 heroes to my game and now have some cool plans")](https://www.youtube.com/watch?v=TST5eaDk4Bs)
 <!-- END YOUTUBE-CARDS -->
+
+# Play
+Latest release: [Download](https://github.com/makscee/arena-of-ideas/releases)
