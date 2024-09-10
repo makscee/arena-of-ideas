@@ -25,6 +25,7 @@ pub enum GameState {
     TableView(StdbQuery),
     Error,
     Teams,
+    TeamEditor,
 }
 
 static TARGET_STATE: Mutex<GameState> = Mutex::new(GameState::Loaded);

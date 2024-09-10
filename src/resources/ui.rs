@@ -318,8 +318,8 @@ impl Side {
     }
     pub fn is_y(&self) -> bool {
         match self {
-            Side::Right | Side::Left => false,
             Side::Top | Side::Bottom => true,
+            Side::Right | Side::Left => false,
         }
     }
 }

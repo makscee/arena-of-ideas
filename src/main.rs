@@ -120,6 +120,7 @@ fn main() {
             ClientSettingsPlugin,
             MetaPlugin,
             GameStartPlugin,
+            TeamEditorPlugin,
         ))
         .init_state::<GameState>()
         .init_resource::<NotificationsResource>()

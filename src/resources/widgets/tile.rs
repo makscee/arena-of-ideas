@@ -17,11 +17,19 @@ pub struct Tile {
     focusable: bool,
 }
 
-#[derive(Resource)]
+#[derive(Resource, Default)]
 pub struct TileResource {
     tiles: OrderedHashMap<String, Tile>,
     focused: String,
     persistent_tiles: Vec<Tile>,
+    content_tile: Option<Tile>,
+}
+
+impl TileResource {
+    fn clear(&mut self) {
+        self.tiles.clear();
+        self.content_tile.take();
+    }
 }
 
 #[derive(Clone, Copy, Default)]
@@ -40,16 +48,6 @@ const FRAME: Frame = Frame {
     stroke: Stroke::NONE,
 };
 
-impl Default for TileResource {
-    fn default() -> Self {
-        Self {
-            tiles: default(),
-            focused: default(),
-            persistent_tiles: default(),
-        }
-    }
-}
-
 static NEXT_ID: Mutex<u64> = Mutex::new(0);
 fn next_id() -> u64 {
     let mut id = NEXT_ID.lock().unwrap();
@@ -64,8 +62,8 @@ impl Tile {
             content: Box::new(content),
             side,
             size: 0.0,
-            max_size: 0.0,
-            min_size: 100.0,
+            max_size: default(),
+            min_size: default(),
             content_size: default(),
             margin_size: FRAME.total_margin().sum(),
             transparent: false,
@@ -81,6 +79,10 @@ impl Tile {
         let mut tr = world.resource_mut::<TileResource>();
         tr.focused = self.id.clone();
         tr.tiles.insert(self.id.clone(), self);
+    }
+    pub fn push_as_content(self, world: &mut World) {
+        let mut tr = world.resource_mut::<TileResource>();
+        tr.content_tile = Some(self);
     }
     pub fn transparent(mut self) -> Self {
         self.transparent = true;
@@ -102,21 +104,18 @@ impl Tile {
         self.max_size = value;
         self
     }
-    fn take_space(&mut self, full: bool, space: &mut egui::Vec2) {
+    fn take_space(&mut self, space: &mut egui::Vec2) {
         if self.side.is_x() {
             self.max_size = self.content_size.x.at_most(space.x);
-        } else {
-            self.max_size = self.content_size.y.at_most(space.y);
-        }
-        // if full {
-        //     *space -= self.content_size + egui::Vec2::splat(MARGIN * 4.0);
-        // } else {
-        if self.side.is_x() {
             space.x -= self.max_size;
         } else {
+            self.max_size = self.content_size.y.at_most(space.y);
             space.y -= self.max_size;
         }
-        // }
+    }
+    fn take_full_space(&mut self, space: &mut egui::Vec2) {
+        self.take_space(&mut space.clone());
+        *space -= (self.content_size + self.margin_size).at_most(*space);
     }
     fn get_screen_rect(ctx: &egui::Context) -> Rect {
         ctx.data(|r| r.get_temp::<Rect>(screen_rect_id())).unwrap()
@@ -218,19 +217,23 @@ impl Tile {
                     self.content_size = ui.min_size();
                 });
             });
-        let screen_rect = match self.side {
-            Side::Right => {
-                screen_rect.with_max_x(screen_rect.max.x - self.size - self.margin_size.x)
-            }
-            Side::Left => {
-                screen_rect.with_min_x(screen_rect.min.x + self.size + self.margin_size.x)
-            }
-            Side::Top => screen_rect.with_min_y(screen_rect.min.y + self.size + self.margin_size.y),
-            Side::Bottom => {
-                screen_rect.with_max_y(screen_rect.max.y - self.size - self.margin_size.y)
-            }
-        };
-        Self::set_screen_rect(screen_rect, ctx);
+        if self.size > 0.0 {
+            let screen_rect = match self.side {
+                Side::Right => {
+                    screen_rect.with_max_x(screen_rect.max.x - self.size - self.margin_size.x)
+                }
+                Side::Left => {
+                    screen_rect.with_min_x(screen_rect.min.x + self.size + self.margin_size.x)
+                }
+                Side::Top => {
+                    screen_rect.with_min_y(screen_rect.min.y + self.size + self.margin_size.y)
+                }
+                Side::Bottom => {
+                    screen_rect.with_max_y(screen_rect.max.y - self.size - self.margin_size.y)
+                }
+            };
+            Self::set_screen_rect(screen_rect, ctx);
+        }
         response
     }
 
@@ -241,18 +244,23 @@ impl Tile {
         }
         let focused = tr.focused.clone();
         let mut persistent_tiles = mem::take(&mut tr.persistent_tiles);
+        let mut content_tile = tr.content_tile.take();
         let mut tiles = mem::take(&mut tr.tiles);
         Self::set_screen_rect(ctx.available_rect(), ctx);
         let mut available_space = ctx.available_rect().size();
-        for (_, tile) in &tiles {
+        for tile in tiles.values().chain(tr.persistent_tiles.iter()) {
             if tile.side.is_x() {
                 available_space.x -= tile.margin_size.x;
-            } else {
+            }
+            if tile.side.is_y() {
                 available_space.y -= tile.margin_size.y;
             }
         }
         if let Some(focused) = tiles.get_mut(&focused) {
-            focused.take_space(true, &mut available_space);
+            focused.take_space(&mut available_space);
+        }
+        if let Some(content) = &mut content_tile {
+            content.take_full_space(&mut available_space);
         }
 
         let mut inds = tiles.keys().cloned().collect_vec();
@@ -267,14 +275,14 @@ impl Tile {
         for _ in 0..=l {
             if let Some(key) = right.get(right_i) {
                 if let Some(tile) = tiles.get_mut(key) {
-                    tile.take_space(false, &mut available_space);
+                    tile.take_space(&mut available_space);
                 }
                 right_i += 1;
             }
             if left_i >= 0 {
                 if let Some(key) = left.get(left_i as usize) {
                     if let Some(tile) = tiles.get_mut(key) {
-                        tile.take_space(false, &mut available_space);
+                        tile.take_space(&mut available_space);
                     }
                     left_i -= 1;
                 }
@@ -304,6 +312,10 @@ impl Tile {
         for tile in persistent_tiles.iter_mut() {
             tile.show(false, ctx, world);
         }
+        if let Some(content) = &mut content_tile {
+            content.show(false, ctx, world);
+        }
+
         let mut tr = world.resource_mut::<TileResource>();
         let new_tiles = mem::take(&mut tr.tiles);
         if !new_tiles.is_empty() {
@@ -314,6 +326,9 @@ impl Tile {
         }
         tr.tiles = tiles;
         tr.persistent_tiles = persistent_tiles;
+        if tr.content_tile.is_none() {
+            tr.content_tile = content_tile;
+        }
     }
 
     pub fn add_team(gid: u64, world: &mut World) {
@@ -336,7 +351,7 @@ impl Tile {
     }
 
     pub fn on_state_changed(to: GameState, world: &mut World) {
-        world.resource_mut::<TileResource>().tiles.clear();
+        world.resource_mut::<TileResource>().clear();
         match to {
             GameState::Inbox => Tile::new(Side::Left, |ui, world| {
                 Notification::show_all_table(ui, world)
@@ -349,7 +364,7 @@ impl Tile {
             GameState::TableView(query) => TableViewPlugin::add_tiles(query, world),
             GameState::GameStart => GameStartPlugin::add_tiles(world),
             GameState::Title => TitlePlugin::add_tiles(world),
-            GameState::Teams => TeamPlugin::add_tiles(world),
+            GameState::Teams | GameState::TeamEditor => TeamPlugin::add_tiles(to, world),
             _ => {}
         }
     }

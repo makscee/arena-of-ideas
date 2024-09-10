@@ -9,10 +9,18 @@ struct TeamResource {
     entities: HashMap<Faction, Entity>,
     table: Vec<TTeam>,
     new_team_name: String,
+    substate: SubState,
 }
 
 #[derive(Component)]
 pub struct Team;
+
+#[derive(PartialEq, Copy, Clone, EnumIter, Display, Default)]
+enum SubState {
+    #[default]
+    Teams,
+    TeamEditor,
+}
 
 impl Plugin for TeamPlugin {
     fn build(&self, app: &mut App) {
@@ -22,6 +30,7 @@ impl Plugin for TeamPlugin {
             entities: teams,
             table: default(),
             new_team_name: default(),
+            substate: default(),
         });
     }
 }
@@ -97,6 +106,7 @@ impl TeamPlugin {
     fn load_teams(world: &mut World) {
         world.resource_mut::<TeamResource>().table =
             TTeam::filter_by_owner(user_id()).collect_vec();
+        TableState::reset_cache(&egui_context(world).unwrap());
     }
     fn open_new_team_popup(world: &mut World) {
         let ctx = egui_context(world).unwrap();
@@ -121,8 +131,7 @@ impl TeamPlugin {
         .add(&ctx);
     }
 
-    pub fn add_tiles(world: &mut World) {
-        Self::load_teams(world);
+    fn teams_tiles(world: &mut World) {
         Tile::new(Side::Left, |ui, world| {
             title("Team Manager", ui);
             if Button::click("New Team".into()).ui(ui).clicked() {
@@ -138,5 +147,41 @@ impl TeamPlugin {
         })
         .sticky()
         .push(world);
+    }
+
+    fn editor_tiles(world: &mut World) {
+        Tile::new(Side::Top, |ui, world| {
+            ui.horizontal_centered(|ui| {
+                "Test test test".cstr_c(VISIBLE_BRIGHT).label(ui);
+            });
+        })
+        .sticky()
+        .push_as_content(world);
+    }
+
+    pub fn add_tiles(state: GameState, world: &mut World) {
+        Tile::new(Side::Top, |ui, world| {
+            let mut r = world.resource_mut::<TeamResource>();
+            let state = SubsectionMenu::new(r.substate).show(ui);
+            if r.substate != state {
+                r.substate = state;
+                match state {
+                    SubState::Teams => GameState::Teams.proceed_to_target(world),
+                    SubState::TeamEditor => GameState::TeamEditor.proceed_to_target(world),
+                }
+            }
+        })
+        .min_size(0.0)
+        .sticky()
+        .transparent()
+        .non_focusable()
+        .push(world);
+        Self::load_teams(world);
+        Self::editor_tiles(world);
+        match state {
+            GameState::Teams => Self::teams_tiles(world),
+            GameState::TeamEditor => Self::editor_tiles(world),
+            _ => panic!("Unsupported state"),
+        }
     }
 }

@@ -30,7 +30,7 @@ impl Default for SectionMenu {
                 GameSection {
                     name: "TEAMS",
                     target_state: GameState::Teams,
-                    inner_states: default(),
+                    inner_states: [GameState::TeamEditor].into(),
                     options: [GameOption::Login].into(),
                 },
                 GameSection {
