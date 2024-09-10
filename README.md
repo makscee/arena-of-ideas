@@ -1,64 +1,16 @@
-Arena of Ideas is an innovative auto battler that aims to be created by its community as much as possible
-# Goal
-General aim is to create a game that is developed by collective intelligence of players that are invested in the game and really want to make & keep it fun. It shouldn't require any special skills, like coding. For a player it should be enough to have a general idea for what a hero should do. General inspiration and direction will be enough to contribute.
 
-*The game has to become a machine that absorbs ideas, filters out best and integrates them*
+# Arena of Ideas
 
-With time, game will constantly evolve and thus never stagnate. Everything that is not fun is experienced by players and can be changed by them. If there is something you don't like, you could come back in a month and see it changed. 
+Innovative minimalistic pvp focused auto battler made with 
 
-# Competition
-Global competition is on of the design pillars of the game. It should manifest in the gameplay as well as in content creation. We should always put spotlight on the best players and best idea contributors. This will depend a lot on the gameplay as well as on instruments for content creation.
 
-# Gameplay
-Currently, gameplay is a minimalistic auto battler, where core loop has 2 phases:
-- **Shop** – you improve and manage your team of units
-- **Battle** – you watch your team fight other team
-Every unit in the game has 2 main stats: *HP* and *PWR*. Units can attack simultaneously each other, decreasing own *HP* value by *PWR* value of the attacker. When *HP* reaches zero, unit dies. If 2 units have same stats, on hit they will simply kill each other.
+[![Discord](https://img.shields.io/discord/1034174161679044660.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC1)](https://discord.gg/AdjyRQKP)
 
-In battle, team units that are in front hit each other until on of the teams dies completely.
-
-## Units
-Game units are split in two categories: **Heroes** and **Enemies**. Player build a team out of heroes, and fights other player team or a team of enemies.
-
-Unit is described by following things
-### State
-A state is simply a set of variables. Every unit has *HP* and *PWR* variables, for example. They also might have a *Name*, *Description*, or some values that are necessary to implement specific mechanics for their ability.
-
-### House
-Every unit belongs to at least one House.
-House is a thematic container for game mechanics. It has a:
-- name
-- color
-- abilities *(optional)*
-- statuses *(optional)*
-
-### Ability
-Ability is a stored effect.
-
-*e.g.* one of the simplest abilities is in the house of **Wizards** which is **Magic Missile**. It deals 1 damage to a random unit.
-
-For a unit to use this ability, it has to be attached to a *Trigger*
-
-### Trigger
-Trigger is something that can use an ability (or custom effect) when some event happens.
-
-*e.g.* on **Battle Start**: use **Magic Missile**
-
-### Status
-Status is a trigger that can be attached to any unit. It has a *state* which mainly contains *Charges* variable, that allows status stacking.
-
-*e.g.* **Paladins** house has a **Shield** status, that negates next damage taken
-
-Statuses can also modify state of a unit when active
-
-*e.g.* **Holy** house has a **Blessing** status, that increases *PWR* and *HP* by 1 per *Charge*
-
-### Innate Ability
-Every unit can have an innate ability, which is a trigger that is a part of units' initial state. It is like a status for the most part, except it doesn't have charges and cannot be removed. This ability is what is described in units' description.
-
-## Game Modes
-### Global Tower
-TBD
-
-# Creation Instruments
-TBD
+<!-- BEGIN YOUTUBE-CARDS -->
+[![I'm rewriting my game from scratch for the 4th time](https://ytcards.demolab.com/?id=1CDrhwIvrmM&title=I%27m+rewriting+my+game+from+scratch+for+the+4th+time&lang=en&timestamp=1717189721&background_color=%230d1117&title_color=%23ffffff&stats_color=%23dedede&max_title_lines=1&width=250&border_radius=5 "I'm rewriting my game from scratch for the 4th time")](https://www.youtube.com/watch?v=1CDrhwIvrmM)
+[![After 2 years people finally play my game](https://ytcards.demolab.com/?id=pCu7TMp60Fo&title=After+2+years+people+finally+play+my+game&lang=en&timestamp=1715806241&background_color=%230d1117&title_color=%23ffffff&stats_color=%23dedede&max_title_lines=1&width=250&border_radius=5 "After 2 years people finally play my game")](https://www.youtube.com/watch?v=pCu7TMp60Fo)
+[![I've added a 100 heroes to my game and now have some cool plans](https://ytcards.demolab.com/?id=TST5eaDk4Bs&title=I%27ve+added+a+100+heroes+to+my+game+and+now+have+some+cool+plans&lang=en&timestamp=1714156917&background_color=%230d1117&title_color=%23ffffff&stats_color=%23dedede&max_title_lines=1&width=250&border_radius=5 "I've added a 100 heroes to my game and now have some cool plans")](https://www.youtube.com/watch?v=TST5eaDk4Bs)
+[![I did a month of work in a day (kinda)](https://ytcards.demolab.com/?id=_aBGy4pqYcs&title=I+did+a+month+of+work+in+a+day+%28kinda%29&lang=en&timestamp=1712694612&background_color=%230d1117&title_color=%23ffffff&stats_color=%23dedede&max_title_lines=1&width=250&border_radius=5 "I did a month of work in a day (kinda)")](https://www.youtube.com/watch?v=_aBGy4pqYcs)
+[![You Can Combine Any Heroes in my Bevy Auto Battler](https://ytcards.demolab.com/?id=CPlKAYGcU74&title=You+Can+Combine+Any+Heroes+in+my+Bevy+Auto+Battler&lang=en&timestamp=1711147727&background_color=%230d1117&title_color=%23ffffff&stats_color=%23dedede&max_title_lines=1&width=250&border_radius=5 "You Can Combine Any Heroes in my Bevy Auto Battler")](https://www.youtube.com/watch?v=CPlKAYGcU74)
+[![why it's so hard to work on a big project alone](https://ytcards.demolab.com/?id=Vi5mvZ1Cz7k&title=why+it%27s+so+hard+to+work+on+a+big+project+alone&lang=en&timestamp=1704992583&background_color=%230d1117&title_color=%23ffffff&stats_color=%23dedede&max_title_lines=1&width=250&border_radius=5 "why it's so hard to work on a big project alone")](https://www.youtube.com/watch?v=Vi5mvZ1Cz7k)
+<!-- END YOUTUBE-CARDS -->
