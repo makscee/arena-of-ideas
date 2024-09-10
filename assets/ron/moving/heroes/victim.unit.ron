@@ -1,0 +1,31 @@
+#![enable(implicit_some)]
+(
+    name: "Victim",
+    hp: 1,
+    pwr: 1,
+    rarity: 0,
+    houses: ["Paladins"],
+    trigger: Fire(
+        triggers: [(BeforeDeath, None)],
+        targets: [(Owner, None)],
+        effects: [(UseAbility("Summon Guardian Angel", 0), None)],
+    ),
+    representation: (
+        material: Shape(
+            shape: Circle(radius: Sum(F(0.2), Sub(Zero, Mul(Index, F(0.03))))),
+            shape_type: Line(thickness: F(1.0)),
+            fill: Solid(color: OwnerState(Color)),
+            fbm: None,
+            alpha: F(1.0),
+            padding: F(0.0),
+        ),
+        children: [],
+        mapping: {
+            Offset: Vec2EE(
+                Mul(Sin(Sum(GT, Index)), F(0.1)),
+                Sum(Sum(F(0.77), Mul(Index, F(-0.25))), Mul(Sub(Zero, Beat), F(0.1))),
+            ),
+        },
+        count: 7,
+    ),
+)

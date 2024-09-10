@@ -3,9 +3,8 @@
     name: "Bolla",
     hp: 1,
     pwr: 1,
-    stacks: 1,
     rarity: 2,
-    houses: "Dragons",
+    houses: ["Dragons"],
     trigger: Fire(
         triggers: [(TurnEnd, None)],
         targets: [(Owner, None)],
@@ -13,30 +12,20 @@
     ),
     representation: (
         material: Shape(
-            shape: Circle(radius: Float(0.5)),
+            shape: Circle(radius: F(0.5)),
             shape_type: Opaque,
             fill: Solid(color: OwnerState(Color)),
             fbm: None,
-            alpha: Float(0.2),
-            padding: Float(0.0),
+            alpha: F(0.2),
+            padding: F(0.0),
         ),
         children: [],
         mapping: {
             Offset: Mul(
-                UnitVec(
-                    Sum(
-                        GameTime,
-                        Mul(
-                            IntFloat(OwnerState(Index)),
-                            Sum(Float(1.04), Mul(Sin(GameTime), Float(0.24))),
-                        ),
-                    ),
-                ),
-                Float(0.19),
+                UnitVec(Sum(GT, Mul(OwnerState(Index), Sum(F(1.04), Mul(Sin(GT), F(0.24)))))),
+                F(0.19),
             ),
         },
         count: 6,
     ),
-    state: (history: {}, birth: 0.0),
-    statuses: [],
 )

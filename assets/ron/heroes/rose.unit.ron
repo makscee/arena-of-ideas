@@ -3,9 +3,8 @@
     name: "Rose",
     hp: 3,
     pwr: 1,
-    stacks: 1,
     rarity: 0,
-    houses: "Druids",
+    houses: ["Druids"],
     trigger: Fire(
         triggers: [(BeforeStrike, None)],
         targets: [(Owner, None)],
@@ -13,17 +12,15 @@
     ),
     representation: (
         material: Shape(
-            shape: Rectangle(size: Vec2E(Float(1.13))),
-            shape_type: Line(thickness: Float(1.0)),
+            shape: Rectangle(size: Vec2E(F(1.13))),
+            shape_type: Line(thickness: F(1.0)),
             fill: Solid(color: OwnerState(Color)),
             fbm: None,
-            alpha: Float(1.0),
-            padding: Float(0.0),
+            alpha: F(1.0),
+            padding: F(0.0),
         ),
         children: [],
-        mapping: {Rotation: Mul(Mul(Index, Float(0.1)), Sin(GameTime))},
+        mapping: {Rotation: Mul(Mul(Index, F(0.1)), Sin(GT))},
         count: 7,
     ),
-    state: (history: {}, birth: 0.0),
-    statuses: [],
 )

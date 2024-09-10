@@ -8,7 +8,7 @@
             name: "Siphoned Out",
             description: "-{Charges} HP",
             polarity: -1,
-            trigger: Change(trigger: Var(Hp), expr: Sub(Int(0), Context(Charges))),
+            trigger: Change(trigger: Var(Hp), expr: Sub(I(0), Context(Charges))),
         ),
         (
             name: "Siphon HP",
@@ -29,9 +29,14 @@
             description: "Drain {1} HP from target{M1|, gain +1 PWR for each}",
             effect: List(
                 [
-                    AddStatus("Siphoned Out"),
-                    WithTarget(Owner, AddStatus("Siphon HP")),
-                    If(AbilityState("Siphon", M1), WithTarget(Owner, AddStatus("Siphon PWR")), Noop),
+                    Vfx("apply_status"),
+                    ChangeStatus("Siphoned Out"),
+                    WithTarget(Owner, ChangeStatus("Siphon HP")),
+                    If(
+                        AbilityContext("Siphon", M1),
+                        WithTarget(Owner, ChangeStatus("Siphon PWR")),
+                        Noop,
+                    ),
                 ],
             ),
         ),

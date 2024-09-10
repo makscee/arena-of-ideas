@@ -1,7 +1,18 @@
 use super::*;
 
-#[derive(Debug, Display, PartialEq, Eq, Serialize, Deserialize, Default, Clone)]
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, Default, Clone, AsRefStr)]
 pub enum Event {
+    #[default]
+    BattleStart,
+    TurnStart,
+    TurnEnd,
+    BeforeStrike(Entity, Entity),
+    AfterStrike(Entity, Entity),
+    Death(Entity),
+    Kill {
+        owner: Entity,
+        target: Entity,
+    },
     IncomingDamage {
         owner: Entity,
         value: i32,
@@ -20,24 +31,15 @@ pub enum Event {
         target: Entity,
         value: i32,
     },
-    #[default]
-    BattleStart,
-    TurnStart,
-    TurnEnd,
-    BeforeStrike(Entity, Entity),
-    AfterStrike(Entity, Entity),
-    Death(Entity),
-    Kill {
-        owner: Entity,
-        target: Entity,
-    },
     Summon(Entity),
     UseAbility(String),
 }
 
 impl Event {
-    pub fn send_with_context(self, mut context: Context, world: &mut World) {
-        debug!("Send event {self:?}");
+    pub fn send_with_context(self, mut context: Context, world: &mut World) -> Self {
+        if client_settings().dev_mode {
+            debug!("{} {}", "Send event".dimmed(), self.cstr());
+        }
         context.set_event(self.clone());
         ActionPlugin::register_event(self.clone(), world);
         let units = match &self {
@@ -51,22 +53,26 @@ impl Event {
             | Event::Death(..)
             | Event::Summon(..)
             | Event::UseAbility(..) => {
-                let mut units = UnitPlugin::collect_all(world);
-                units.sort_by_key(|e| VarState::get(*e, world).get_int(VarName::Slot).unwrap());
+                let mut units = UnitPlugin::collect_alive(world);
+                units.sort_by_key(|e| {
+                    Context::new(*e)
+                        .get_int(VarName::Slot, world)
+                        .unwrap_or_default()
+                });
                 match &self {
                     Event::Death(e) | Event::Summon(e) => {
-                        context.set_target(*e, world);
+                        context.set_target(*e);
                     }
                     _ => {}
                 };
                 units
             }
             Event::BeforeStrike(owner, target) | Event::AfterStrike(owner, target) => {
-                context.set_target(*target, world);
+                context.set_target(*target);
                 [*owner].into()
             }
             Event::Kill { owner, target } => {
-                context.set_target(*target, world);
+                context.set_target(*target);
                 [*owner].into()
             }
             Event::OutgoingDamage {
@@ -80,7 +86,7 @@ impl Event {
                 value,
             } => {
                 context
-                    .set_target(*target, world)
+                    .set_target(*target)
                     .set_var(VarName::Value, VarValue::Int(*value));
                 [*owner].into()
             }
@@ -88,43 +94,85 @@ impl Event {
         for unit in units {
             ActionPlugin::event_push_back(
                 self.clone(),
-                context.clone().set_owner(unit, world).take(),
-                world,
-            );
-        }
-    }
-
-    pub fn send(self, world: &mut World) {
-        self.send_with_context(Context::new_empty(), world)
-    }
-
-    pub fn process(self, context: Context, world: &mut World) -> bool {
-        let statuses = Status::collect_unit_statuses(context.owner(), world);
-        let statuses = Status::filter_active_statuses(statuses, f32::MAX, world);
-        Status::notify(statuses, &self, &context, world)
-    }
-
-    pub fn map(self, value: &mut VarValue, world: &mut World) -> Self {
-        let (mut context, statuses) = match &self {
-            Event::IncomingDamage { owner, .. } => (
-                Context::new_named(self.to_string())
-                    .set_owner(*owner, world)
-                    .take(),
-                Status::collect_unit_statuses(*owner, world),
-            ),
-            _ => panic!("Can't map {self}"),
-        };
-        let statuses =
-            Status::filter_active_statuses(statuses, GameTimer::get().insert_head(), world);
-        for status in statuses {
-            Status::map_var(
-                status,
-                &self,
-                value,
-                &context.set_status(status, world),
+                context.clone().set_owner(unit).take(),
                 world,
             );
         }
         self
+    }
+
+    pub fn send(self, world: &mut World) -> Self {
+        self.send_with_context(Context::empty(), world)
+    }
+    pub fn map(self, value: &mut VarValue, world: &mut World) -> Self {
+        let context = match &self {
+            Event::IncomingDamage { owner, value: _ } => Context::new(*owner),
+            _ => {
+                return self;
+            }
+        };
+        Status::map_var(&self, value, &context, world);
+        self
+    }
+
+    pub fn process(self, context: Context, world: &mut World) -> bool {
+        Status::notify(&self, &context, world)
+    }
+}
+
+impl ToCstr for Event {
+    fn cstr(&self) -> Cstr {
+        let mut s = self.as_ref().cstr_c(CYAN);
+        match self {
+            Event::BattleStart | Event::TurnStart | Event::TurnEnd => {}
+            Event::BeforeStrike(a, b) | Event::AfterStrike(a, b) => {
+                s.push_wrapped_curly(
+                    entity_name_with_id(*a)
+                        .push(", ".cstr())
+                        .push(entity_name_with_id(*b))
+                        .take(),
+                );
+            }
+            Event::Summon(a) | Event::Death(a) => {
+                s.push_wrapped_curly(entity_name_with_id(*a));
+            }
+            Event::Kill { owner, target } => {
+                s.push_wrapped_curly(
+                    entity_name_with_id(*owner)
+                        .push(" -> ".cstr())
+                        .push(entity_name_with_id(*target))
+                        .take(),
+                );
+            }
+            Event::IncomingDamage { owner, value } | Event::DamageTaken { owner, value } => {
+                s.push_wrapped_curly(
+                    entity_name_with_id(*owner)
+                        .push(format!(" {value}").cstr_c(VISIBLE_LIGHT))
+                        .take(),
+                );
+            }
+            Event::OutgoingDamage {
+                owner,
+                target,
+                value,
+            }
+            | Event::DamageDealt {
+                owner,
+                target,
+                value,
+            } => {
+                s.push_wrapped_curly(
+                    entity_name_with_id(*owner)
+                        .push(" -> ".cstr())
+                        .push(entity_name_with_id(*target))
+                        .push(format!(" {value}").cstr_c(VISIBLE_LIGHT))
+                        .take(),
+                );
+            }
+            Event::UseAbility(ability) => {
+                s.push_wrapped_curly(ability.cstr_c(name_color(ability)));
+            }
+        }
+        s
     }
 }

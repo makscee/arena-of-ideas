@@ -11,11 +11,15 @@
         ),
     ],
     abilities: [
-        (name: "Expose", description: "Increase taken damage by {1}", effect: AddStatus("Expose")),
+        (
+            name: "Expose",
+            description: "Increase taken damage by {1}",
+            effect: List([Vfx("apply_status"), ChangeStatus("Expose")]),
+        ),
         (
             name: "Rob",
-            description: "Steal all statuses, limit max {Charges}",
-            effect: WithVar(Polarity, Int(1), StealAllStatuses),
+            description: "Steal all positive statuses, limit max {Charges}",
+            effect: List([WithVar(Polarity, I(1), StealAllStatuses), Vfx("apply_status")]),
         ),
     ],
 )

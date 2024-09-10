@@ -3,35 +3,27 @@
     name: "Master",
     hp: 3,
     pwr: 2,
-    stacks: 1,
     rarity: 0,
-    houses: "Death Knights",
+    houses: ["Death Knights"],
     trigger: Fire(
         triggers: [(BattleStart, None)],
         targets: [],
         effects: [
-            (AbilityStateAddVar("Skeleton", Pwr, Sum(Context(Level), Int(1))), None),
-            (AbilityStateAddVar("Skeleton", Hp, Sum(Context(Level), Int(1))), None),
+            (AbilityStateAddVar("Skeleton", Pwr, Sum(Context(Lvl), I(1))), None),
+            (AbilityStateAddVar("Skeleton", Hp, Sum(Context(Lvl), I(1))), None),
         ],
     ),
     representation: (
         material: Shape(
-            shape: Circle(
-                radius: Max(Sin(Sum(Sum(GameTime, Mul(PI, Float(1.5))), Sum(Index, Int(3)))), Float(0.11)),
-            ),
-            shape_type: Line(thickness: Float(1.0)),
+            shape: Circle(radius: Max(Sin(Sum(Sum(GT, Mul(PI, F(1.5))), Sum(Index, I(3)))), F(0.11))),
+            shape_type: Line(thickness: F(1.0)),
             fill: Solid(color: OwnerState(Color)),
             fbm: None,
             alpha: Context(T),
-            padding: Float(0.0),
+            padding: F(0.0),
         ),
         children: [],
-        mapping: {
-            T: Sin(Sum(GameTime, Index)),
-            Offset: Mul(UnitVec(Mul(RandomFloat(Owner), PI2)), Float(0.2)),
-        },
+        mapping: {T: Sin(Sum(GT, Index)), Offset: Mul(UnitVec(Mul(RandomF(Owner), PI2)), F(0.2))},
         count: 4,
     ),
-    state: (history: {}, birth: 0.0),
-    statuses: [],
 )

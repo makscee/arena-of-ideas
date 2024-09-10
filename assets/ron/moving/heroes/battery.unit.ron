@@ -1,0 +1,32 @@
+#![enable(implicit_some)]
+(
+    name: "Battery",
+    hp: 1,
+    pwr: 2,
+    rarity: 1,
+    houses: ["Robots"],
+    trigger: Fire(
+        triggers: [(BattleStart, None)],
+        targets: [(AdjacentUnits, None)],
+        effects: [(UseAbility("Charge", 0), None)],
+    ),
+    representation: (
+        material: Shape(
+            shape: Rectangle(size: V2(1.0, 1.0)),
+            shape_type: Line(thickness: F(1.0)),
+            fill: Solid(color: OwnerState(Color)),
+            fbm: (
+                octaves: I(1),
+                lacunarity: F(1.0),
+                gain: F(1.0),
+                strength: Mul(Beat, F(0.3)),
+                offset: Index,
+            ),
+            alpha: F(0.5),
+            padding: F(0.2),
+        ),
+        children: [],
+        mapping: {Offset: Mul(UnitVec(Mul(Index, PI)), F(0.5)), Rotation: Mul(PI, F(0.25))},
+        count: 4,
+    ),
+)

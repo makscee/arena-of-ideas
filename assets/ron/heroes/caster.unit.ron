@@ -3,9 +3,8 @@
     name: "Caster",
     hp: 1,
     pwr: 1,
-    stacks: 1,
     rarity: 1,
-    houses: "Mages",
+    houses: ["Mages"],
     trigger: Fire(
         triggers: [(AllyDeath, None)],
         targets: [(TargetStateLast(LastAttacker), "last attacker")],
@@ -13,22 +12,22 @@
     ),
     representation: (
         material: Shape(
-            shape: Circle(radius: Float(0.15)),
+            shape: Circle(radius: F(0.15)),
             shape_type: Opaque,
             fill: Solid(color: OwnerState(Color)),
             fbm: None,
-            alpha: Float(1.0),
-            padding: Float(0.0),
+            alpha: F(1.0),
+            padding: F(0.0),
         ),
         children: [
             (
                 material: Shape(
-                    shape: Circle(radius: Float(0.32)),
-                    shape_type: Line(thickness: Float(1.0)),
+                    shape: Circle(radius: F(0.32)),
+                    shape_type: Line(thickness: F(1.0)),
                     fill: Solid(color: OwnerState(Color)),
                     fbm: None,
-                    alpha: Float(1.0),
-                    padding: Float(0.0),
+                    alpha: F(1.0),
+                    padding: F(0.0),
                 ),
                 children: [],
                 mapping: {},
@@ -37,12 +36,10 @@
         ],
         mapping: {
             Offset: Vec2EE(
-                Mul(Sin(Sum(GameTime, Mul(Index, Float(4.0)))), Float(0.3)),
-                Mul(Cos(Sum(Mul(Float(3.0), GameTime), Index)), Float(0.1)),
+                Mul(Sin(Sum(GT, Mul(Index, F(4.0)))), F(0.3)),
+                Mul(Cos(Sum(Mul(F(3.0), GT), Index)), F(0.1)),
             ),
         },
         count: 2,
     ),
-    state: (history: {}, birth: 0.0),
-    statuses: [],
 )

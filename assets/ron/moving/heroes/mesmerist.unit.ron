@@ -1,0 +1,26 @@
+#![enable(implicit_some)]
+(
+    name: "Mesmerist",
+    hp: 1,
+    pwr: 3,
+    rarity: 0,
+    houses: ["Meta"],
+    trigger: Fire(
+        triggers: [(BattleStart, None)],
+        targets: [(RandomUnit(AllEnemyUnits), None)],
+        effects: [(UseAbility("Betray", 0), None)],
+    ),
+    representation: (
+        material: Shape(
+            shape: Circle(radius: Mul(Index, Mul(F(0.1), Abs(Sin(Sum(GT, Index)))))),
+            shape_type: Line(thickness: F(1.0)),
+            fill: Solid(color: OwnerState(Color)),
+            fbm: None,
+            alpha: F(1.0),
+            padding: F(0.0),
+        ),
+        children: [],
+        mapping: {},
+        count: 10,
+    ),
+)

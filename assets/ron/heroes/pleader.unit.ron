@@ -3,9 +3,8 @@
     name: "Pleader",
     hp: 4,
     pwr: 2,
-    stacks: 1,
     rarity: 0,
-    houses: "Holy",
+    houses: ["Holy"],
     trigger: Fire(
         triggers: [(AfterStrike, None)],
         targets: [(Owner, None)],
@@ -13,23 +12,21 @@
     ),
     representation: (
         material: Shape(
-            shape: Rectangle(size: Vec2(0.15, 1.66)),
-            shape_type: Line(thickness: Float(2.0)),
+            shape: Rectangle(size: V2(0.15, 1.66)),
+            shape_type: Line(thickness: F(2.0)),
             fill: Solid(color: OwnerState(Color)),
             fbm: None,
-            alpha: Float(0.7),
-            padding: Float(0.0),
+            alpha: F(0.7),
+            padding: F(0.0),
         ),
         children: [],
         mapping: {
-            Rotation: Sum(Mul(ToInt(Even(Index)), Float(1.93)), Mul(Sin(Sum(GameTime, Index)), Float(0.18))),
+            Rotation: Sum(Mul(Even(Index), F(1.93)), Mul(Sin(Sum(GT, Index)), F(0.18))),
             Offset: Vec2EE(
-                Mul(Sin(Sum(Mul(Index, Float(0.17)), GameTime)), Float(0.12)),
-                Mul(Cos(Sum(Mul(Index, Float(0.11)), GameTime)), Float(0.07)),
+                Mul(Sin(Sum(Mul(Index, F(0.17)), GT)), F(0.12)),
+                Mul(Cos(Sum(Mul(Index, F(0.11)), GT)), F(0.07)),
             ),
         },
         count: 8,
     ),
-    state: (history: {}, birth: 0.0),
-    statuses: [],
 )

@@ -3,46 +3,35 @@
     name: "Crusader",
     hp: 1,
     pwr: 2,
-    stacks: 1,
     rarity: 0,
-    houses: "Holy",
+    houses: ["Holy"],
     trigger: Fire(
         triggers: [(BattleStart, None)],
         targets: [(Owner, None)],
         effects: [
             (
-                WithVar(
-                    Faction,
-                    OppositeFaction,
-                    WithVar(
-                        Level,
-                        Mul(UnitCount(Bool(true)), Context(Level)),
-                        UseAbility("Blessing", 0),
-                    ),
-                ),
-                "use [Blessing] ({Level}) per enemy",
+                WithVar(Lvl, Mul(ListCount(AllEnemyUnits), Context(Lvl)), UseAbility("Blessing", 0)),
+                "use [Blessing] ({Lvl}) per enemy",
             ),
         ],
     ),
     representation: (
         material: Shape(
-            shape: Rectangle(size: Vec2(0.5, 1.82)),
-            shape_type: Line(thickness: Float(3.0)),
+            shape: Rectangle(size: V2(0.5, 1.82)),
+            shape_type: Line(thickness: F(3.0)),
             fill: Solid(color: OwnerState(Color)),
             fbm: None,
-            alpha: Float(0.3),
-            padding: Float(0.0),
+            alpha: F(0.3),
+            padding: F(0.0),
         ),
         children: [],
         mapping: {
             Rotation: Even(Index),
             Offset: Vec2EE(
-                Mul(Sin(Sum(Mul(Index, Float(0.3)), GameTime)), Float(0.1)),
-                Mul(Cos(Sum(Mul(Index, Float(0.3)), GameTime)), Float(0.1)),
+                Mul(Sin(Sum(Mul(Index, F(0.3)), GT)), F(0.1)),
+                Mul(Cos(Sum(Mul(Index, F(0.3)), GT)), F(0.1)),
             ),
         },
         count: 8,
     ),
-    state: (history: {}, birth: 0.0),
-    statuses: [],
 )

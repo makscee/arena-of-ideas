@@ -1,49 +1,105 @@
 mod ability;
-mod arena_archive;
+mod arena;
+mod arena_leaderboard;
 mod arena_pool;
-mod arena_run;
+mod base_unit;
+mod battle;
+mod daily_updater;
+mod fused_unit;
 mod global_data;
 mod global_settings;
 mod house;
+mod item;
+mod meta_shop;
+mod representation;
+mod starting_hero;
 mod status;
-mod summon;
-mod unit;
+mod sync;
+mod team;
+mod trade;
 mod user;
-mod user_access;
-mod vfx;
+mod wallet;
 
-pub use ability::*;
-pub use anyhow::Context;
-pub use arena_archive::*;
+use std::str::FromStr;
+
+use anyhow::Context;
+pub use arena::*;
+pub use arena_leaderboard::*;
 pub use arena_pool::*;
-pub use arena_run::*;
-pub use global_data::GlobalData;
+pub use base_unit::*;
+pub use battle::*;
+use daily_updater::daily_timer_init;
+pub use fused_unit::*;
+pub use global_data::*;
 pub use global_settings::*;
-pub use house::*;
-pub use spacetimedb::SpacetimeType;
-pub use spacetimedb::{spacetimedb, Identity, ReducerContext};
-pub use status::*;
-pub use std::str::FromStr;
-pub use summon::*;
-pub use unit::*;
+pub use item::*;
+pub use itertools::Itertools;
+pub use meta_shop::*;
+pub use rand::{distributions::Alphanumeric, seq::IteratorRandom, Rng};
+pub use spacetimedb::rng;
+pub use spacetimedb::{eprintln, println};
+pub use spacetimedb::{spacetimedb, Identity, ReducerContext, SpacetimeType, TableType, Timestamp};
+pub use starting_hero::*;
+pub use team::*;
+pub use trade::*;
 pub use user::*;
-pub use user_access::*;
-pub use vfx::*;
-
-#[spacetimedb(init)]
-fn init_user_access() -> Result<(), String> {
-    UserAccess::init()?;
-    GlobalData::init()?;
-    GlobalSettings::init()?;
-    Ok(())
-}
+pub use wallet::*;
 
 trait StrContext<T> {
     fn context_str(self, str: &'static str) -> Result<T, String>;
+    fn with_context_str<F>(self, f: F) -> Result<T, String>
+    where
+        F: FnOnce() -> String;
 }
 
 impl<T> StrContext<T> for Option<T> {
     fn context_str(self, str: &'static str) -> Result<T, String> {
         self.context(str).map_err(|e| e.to_string())
     }
+
+    fn with_context_str<F>(self, f: F) -> Result<T, String>
+    where
+        F: FnOnce() -> String,
+    {
+        self.with_context(f).map_err(|e| e.to_string())
+    }
+}
+
+pub fn next_id() -> u64 {
+    GlobalData::next_id()
+}
+
+#[derive(SpacetimeType, Clone, PartialEq, Eq)]
+pub enum GameMode {
+    ArenaNormal,
+    ArenaRanked,
+    ArenaConst(String),
+}
+
+const ADMIN_IDENTITY_HEX: &str = "ad22b9dc867768c48531281bab2d5e0be1f915c4e46d107547bf624fb6dbf26c";
+pub fn is_admin(identity: &Identity) -> Result<bool, String> {
+    Ok(Identity::from_str(ADMIN_IDENTITY_HEX)
+        .map_err(|e| e.to_string())?
+        .eq(identity))
+}
+
+pub trait AdminCheck {
+    fn is_admin(self) -> Result<(), String>;
+}
+
+impl AdminCheck for &ReducerContext {
+    fn is_admin(self) -> Result<(), String> {
+        if is_admin(&self.sender)? {
+            Ok(())
+        } else {
+            Err("Need admin access".to_owned())
+        }
+    }
+}
+
+#[spacetimedb(init)]
+fn init() -> Result<(), String> {
+    GlobalData::init()?;
+    daily_timer_init();
+    Ok(())
 }

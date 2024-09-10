@@ -1,0 +1,26 @@
+#![enable(implicit_some)]
+(
+    name: "Custodian",
+    hp: 2,
+    pwr: 2,
+    rarity: 0,
+    houses: ["Paladins"],
+    trigger: Fire(
+        triggers: [(AllySummon, None)],
+        targets: [(Target, None)],
+        effects: [(UseAbility("Shield", 0), None)],
+    ),
+    representation: (
+        material: Shape(
+            shape: Circle(radius: Sum(Mul(F(0.05), Index), Sum(F(0.52), Sub(Zero, Mul(Beat, F(0.02)))))),
+            shape_type: Line(thickness: Sum(F(0.6), Mul(Sin(Sum(GT, Index)), F(0.4)))),
+            fill: Solid(color: OwnerState(Color)),
+            fbm: None,
+            alpha: F(1.0),
+            padding: F(0.0),
+        ),
+        children: [],
+        mapping: {},
+        count: 8,
+    ),
+)

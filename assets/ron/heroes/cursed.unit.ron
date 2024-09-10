@@ -3,9 +3,8 @@
     name: "Cursed",
     hp: 3,
     pwr: 1,
-    stacks: 1,
     rarity: 0,
-    houses: "Witches",
+    houses: ["Witches"],
     trigger: Fire(
         triggers: [(BeforeDeath, None)],
         targets: [(OwnerStateLast(LastAttacker), "last attacker")],
@@ -13,20 +12,15 @@
     ),
     representation: (
         material: Curve(
-            thickness: Float(0.5),
+            thickness: F(0.5),
             dilations: [],
-            curvature: Mul(
-                Sum(Float(0.5), Mul(Index, Float(0.1))),
-                Abs(Sin(Sum(GameTime, Mul(Index, Float(0.2))))),
-            ),
-            aa: Float(1.0),
-            alpha: Float(1.0),
+            curvature: Mul(Sum(F(0.5), Mul(Index, F(0.1))), Abs(Sin(Sum(GT, Mul(Index, F(0.2)))))),
+            aa: F(1.0),
+            alpha: F(1.0),
             color: OwnerState(Color),
         ),
         children: [],
-        mapping: {Offset: Vec2EE(Float(-1.0), Float(0.0)), Delta: Vec2EE(Float(2.0), Float(0.0))},
+        mapping: {Offset: Vec2EE(F(-1.0), F(0.0)), Delta: Vec2EE(F(2.0), F(0.0))},
         count: 9,
     ),
-    state: (history: {}, birth: 0.0),
-    statuses: [],
 )

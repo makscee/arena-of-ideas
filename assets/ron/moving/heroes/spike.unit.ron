@@ -1,0 +1,26 @@
+#![enable(implicit_some)]
+(
+    name: "Spike",
+    hp: 2,
+    pwr: 1,
+    rarity: 0,
+    houses: ["Paladins"],
+    trigger: Fire(
+        triggers: [(BattleStart, None)],
+        targets: [],
+        effects: [(AbilityStateAddVar("Shield", M1, I(1)), "[Shield] reflects damage x{Lvl}")],
+    ),
+    representation: (
+        material: Shape(
+            shape: Rectangle(size: Mul(Vec2EE(F(2.0), F(0.03)), Sum(Mul(Beat, F(0.3)), F(1.0)))),
+            shape_type: Line(thickness: F(1.0)),
+            fill: Solid(color: OwnerState(Color)),
+            fbm: None,
+            alpha: F(1.0),
+            padding: F(0.0),
+        ),
+        children: [],
+        mapping: {Rotation: Sum(Mul(Index, Mul(PI, F(0.125))), Mul(Sin(GT), F(0.1)))},
+        count: 9,
+    ),
+)

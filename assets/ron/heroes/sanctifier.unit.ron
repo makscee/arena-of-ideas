@@ -3,9 +3,8 @@
     name: "Sanctifier",
     hp: 4,
     pwr: 1,
-    stacks: 1,
     rarity: 1,
-    houses: "Holy",
+    houses: ["Holy"],
     trigger: Fire(
         triggers: [(AllyDeath, None)],
         targets: [(AdjacentUnits, None)],
@@ -13,17 +12,15 @@
     ),
     representation: (
         material: Shape(
-            shape: Circle(radius: Sum(Float(0.59), Mul(Beat, Float(0.05)))),
-            shape_type: Line(thickness: Float(2.0)),
+            shape: Circle(radius: Sum(F(0.59), Mul(Beat, F(0.05)))),
+            shape_type: Line(thickness: F(2.0)),
             fill: Solid(color: OwnerState(Color)),
             fbm: None,
-            alpha: Float(1.0),
-            padding: Float(0.0),
+            alpha: F(1.0),
+            padding: F(0.0),
         ),
         children: [],
-        mapping: {Offset: Mul(UnitVec(Mul(Index, PI)), Mul(Sin(Mul(GameTime, Float(0.3))), Float(0.3)))},
+        mapping: {Offset: Mul(UnitVec(Mul(Index, PI)), Mul(Sin(Mul(GT, F(0.3))), F(0.3)))},
         count: 2,
     ),
-    state: (history: {}, birth: 0.0),
-    statuses: [],
 )

@@ -3,9 +3,8 @@
     name: "Morbid",
     hp: 2,
     pwr: 1,
-    stacks: 1,
     rarity: 2,
-    houses: "Death Knights",
+    houses: ["Death Knights"],
     trigger: Fire(
         triggers: [(AllyDeath, None)],
         targets: [(TargetStateLast(LastAttacker), "last attacker")],
@@ -13,17 +12,15 @@
     ),
     representation: (
         material: Shape(
-            shape: Rectangle(size: Vec2E(Float(0.35))),
-            shape_type: Line(thickness: Float(0.5)),
+            shape: Rectangle(size: Vec2E(F(0.35))),
+            shape_type: Line(thickness: F(0.5)),
             fill: Solid(color: OwnerState(Color)),
             fbm: None,
-            alpha: Sin(Sum(Mul(GameTime, Float(1.0)), Mul(Index, Float(1000.0)))),
-            padding: Float(0.0),
+            alpha: Sin(Sum(Mul(GT, F(1.0)), Mul(Index, F(1000.0)))),
+            padding: F(0.0),
         ),
         children: [],
-        mapping: {Offset: Mul(UnitVec(Mul(RandomFloat(Owner), PI)), Float(0.67))},
+        mapping: {Offset: Mul(UnitVec(Mul(RandomF(Owner), PI)), F(0.67))},
         count: 12,
     ),
-    state: (history: {}, birth: 0.0),
-    statuses: [],
 )

@@ -1,11 +1,10 @@
 #![enable(implicit_some)]
 (
     name: "Syren",
-    hp: 3,
-    pwr: 1,
-    stacks: 1,
+    hp: 1,
+    pwr: 3,
     rarity: 0,
-    houses: "Witches",
+    houses: ["Witches"],
     trigger: Fire(
         triggers: [(BeforeStrike, None)],
         targets: [(Target, None)],
@@ -13,24 +12,19 @@
     ),
     representation: (
         material: Curve(
-            thickness: Float(0.3),
+            thickness: F(0.3),
             dilations: [],
-            curvature: Mul(
-                Sub(Float(0.5), Mul(Index, Float(0.22))),
-                Sin(Sum(GameTime, Mul(Index, Float(0.1)))),
-            ),
-            aa: Float(0.5),
-            alpha: Float(1.0),
+            curvature: Mul(Sub(F(0.5), Mul(Index, F(0.22))), Sin(Sum(GT, Mul(Index, F(0.1))))),
+            aa: F(0.5),
+            alpha: F(1.0),
             color: OwnerState(Color),
         ),
         children: [],
         mapping: {
-            Offset: Vec2EE(Mul(Beat, Float(0.05)), Float(-1.0)),
-            Delta: Vec2EE(Float(2.0), Float(0.0)),
-            Rotation: Mul(PI, Float(0.5)),
+            Offset: Vec2EE(Mul(Beat, F(0.05)), F(-1.0)),
+            Delta: Vec2EE(F(2.0), F(0.0)),
+            Rotation: Mul(PI, F(0.5)),
         },
         count: 9,
     ),
-    state: (history: {}, birth: 0.0),
-    statuses: [],
 )

@@ -3,48 +3,35 @@
     name: "Prepper",
     hp: 1,
     pwr: 1,
-    stacks: 1,
     rarity: 0,
-    houses: "Medics",
+    houses: ["Medics"],
     trigger: Fire(
         triggers: [(BattleStart, None)],
-        targets: [(SlotUnit(Int(1)), "front ally")],
+        targets: [(SlotUnit(I(1)), "front ally")],
         effects: [
             (
-                WithVar(
-                    Level,
-                    Mul(
-                        Sum(
-                            UnitCount(Bool(true)),
-                            WithVar(Faction, OppositeFaction, UnitCount(Bool(true))),
-                        ),
-                        Context(Level),
-                    ),
-                    UseAbility("Vitality", 0),
-                ),
-                "use [Vitality] ({Level}) per unit in battle",
+                WithVar(Lvl, Mul(ListCount(AllUnits), Context(Lvl)), UseAbility("Vitality", 0)),
+                "use [Vitality] ({Lvl}) per unit in battle",
             ),
         ],
     ),
     representation: (
         material: Shape(
-            shape: Rectangle(size: Vec2(1.5, 0.38)),
-            shape_type: Line(thickness: Float(3.0)),
+            shape: Rectangle(size: V2(1.5, 0.38)),
+            shape_type: Line(thickness: F(3.0)),
             fill: Solid(color: OwnerState(Color)),
             fbm: None,
-            alpha: Float(0.3),
-            padding: Float(0.0),
+            alpha: F(0.3),
+            padding: F(0.0),
         ),
         children: [],
         mapping: {
             Rotation: Even(Index),
             Offset: Vec2EE(
-                Mul(Sin(Sum(Mul(Index, Float(0.3)), GameTime)), Float(0.1)),
-                Mul(Cos(Sum(Mul(Index, Float(0.3)), GameTime)), Float(0.1)),
+                Mul(Sin(Sum(Mul(Index, F(0.3)), GT)), F(0.1)),
+                Mul(Cos(Sum(Mul(Index, F(0.3)), GT)), F(0.1)),
             ),
         },
         count: 8,
     ),
-    state: (history: {}, birth: 0.0),
-    statuses: [],
 )

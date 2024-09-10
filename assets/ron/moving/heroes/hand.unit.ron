@@ -1,0 +1,29 @@
+#![enable(implicit_some)]
+(
+    name: "Hand",
+    hp: 3,
+    pwr: 1,
+    rarity: 0,
+    houses: ["Alchemists"],
+    trigger: Fire(
+        triggers: [(AfterStrike, None)],
+        targets: [(Target, None)],
+        effects: [(UseAbility("Petrify", 0), None)],
+    ),
+    representation: (
+        material: Shape(
+            shape: Rectangle(size: V2(1.0, 0.3)),
+            shape_type: Line(thickness: F(1.0)),
+            fill: Solid(color: OwnerState(Color)),
+            fbm: None,
+            alpha: F(1.0),
+            padding: F(0.0),
+        ),
+        children: [],
+        mapping: {
+            Rotation: Sum(Mul(Mul(PI, F(0.23)), Index), Mul(Sin(Sum(GT, Index)), F(1.5))),
+            Offset: Vec2EE(Mul(Sin(Sum(GT, Index)), F(0.3)), Zero),
+        },
+        count: 4,
+    ),
+)

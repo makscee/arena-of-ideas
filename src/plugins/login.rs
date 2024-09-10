@@ -1,313 +1,179 @@
-use std::{sync::Mutex, thread::sleep};
-
 use spacetimedb_sdk::{
-    identity::{load_credentials, save_credentials},
     once_on_subscription_applied,
-    reducer::Status,
-    subscribe,
-};
-
-use crate::module_bindings::{
-    login, login_by_identity, once_on_login, once_on_login_by_identity, once_on_register,
-    once_on_register_empty, register, register_empty, GlobalData, User,
+    table::{TableType, TableWithPrimaryKey},
 };
 
 use super::*;
 
-pub struct LoginPlugin;
-
-// const SPACETIMEDB_URI: &str = "http://localhost:3001";
-// // const SPACETIMEDB_URI: &str = "http://16.170.211.203:3000";
-// #[cfg(debug_assertions)]
-// const DB_NAME: &str = "aoi_dev2";
-// #[cfg(not(debug_assertions))]
-// const DB_NAME: &str = "aoi";
 pub const HOME_DIR: &str = ".aoi";
-
-static IS_CONNECTED: Mutex<bool> = Mutex::new(false);
-pub static CURRENT_USER: Mutex<Option<UserData>> = Mutex::new(None);
-static OFFLINE: Mutex<bool> = Mutex::new(false);
-static AFTER_LOGIN_STATE: Mutex<Option<GameState>> = Mutex::new(None);
-
-#[derive(Clone)]
-pub struct UserData {
-    pub name: String,
-    pub id: u64,
-    pub identity: Identity,
+pub fn home_dir_path() -> PathBuf {
+    let mut path = home::home_dir().unwrap();
+    path.push(HOME_DIR);
+    std::fs::create_dir_all(&path).unwrap();
+    path
 }
 
-pub fn set_offline(value: bool) {
-    *OFFLINE.lock().unwrap() = value;
-}
-pub fn is_offline() -> bool {
-    *OFFLINE.lock().unwrap()
-}
-pub fn set_after_login_state(state: GameState) {
-    *AFTER_LOGIN_STATE.lock().unwrap() = Some(state);
-}
-
-fn on_connected(creds: &Credentials, _client_address: Address) {
-    *IS_CONNECTED.lock().unwrap() = true;
-    debug!("Current identity: {}", hex::encode(creds.identity.bytes()));
-    if let Err(e) = save_credentials(HOME_DIR, creds) {
-        eprintln!("Failed to save credentials: {:?}", e);
-    }
-    debug!("Subscribe start");
-    subscribe(&["select * from User", "select * from GlobalData"]).unwrap();
-    debug!("Subscribed");
-    let creds = creds.clone();
-    once_on_subscription_applied(move || {
-        let server_version = GlobalData::filter_by_always_zero(0).unwrap().game_version;
-        if !VERSION.eq(&server_version) {
-            AlertPlugin::add_error(
-                Some("GAME VERSION ERROR".to_owned()),
-                format!("Game version is too old: {VERSION} < {server_version}"),
-                Some(Box::new(|w| {
-                    let ctx = &if let Some(context) = egui_context(w) {
-                        context
-                    } else {
-                        return;
-                    };
-                    ctx.open_url(egui::OpenUrl {
-                        url: "https://github.com/makscee/arena-of-ideas/releases".to_owned(),
-                        new_tab: true,
-                    });
-                    w.send_event(AppExit);
-                })),
-            );
-            return;
-        }
-
-        if User::find(|u| u.identities.contains(&creds.identity)).is_some() {
-            LoginPlugin::login_by_identity();
-        } else {
-            register_empty();
-            once_on_register_empty(|_, _, status| {
-                debug!("Register empty: {status:?}");
-                match status {
-                    Status::Committed => LoginPlugin::login_by_identity(),
-                    Status::Failed(e) => AlertPlugin::add_error(
-                        Some("REGISTER ERROR".to_owned()),
-                        e.to_owned(),
-                        None,
-                    ),
-                    _ => panic!(),
-                }
-            });
-        }
-    });
-}
-
-#[derive(Resource, Default)]
-pub struct LoginData {
-    pub name: String,
-    pub pass: String,
-    pub login_sent: bool,
-}
-#[derive(Resource, Default)]
-pub struct RegisterData {
-    pub name: String,
-    pub pass: String,
-    pub pass_repeat: String,
-}
+pub struct LoginPlugin;
 
 impl Plugin for LoginPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<LoginData>()
-            .init_resource::<RegisterData>();
+        app.add_systems(OnEnter(GameState::Login), Self::login)
+            .init_resource::<LoginData>();
     }
+}
+
+#[derive(Resource, Default)]
+struct LoginData {
+    name_field: String,
+    pass_field: String,
+    identity_user: Option<TUser>,
 }
 
 impl LoginPlugin {
-    fn load_credentials() -> Option<Credentials> {
-        load_credentials(HOME_DIR).expect("Failed to load credentials")
-    }
-
-    pub fn is_connected() -> bool {
-        *IS_CONNECTED.lock().unwrap()
-    }
-    pub fn get_user_data() -> Option<UserData> {
-        CURRENT_USER.lock().unwrap().clone()
-    }
-
-    pub fn setup(world: &World) {
-        once_on_connect(on_connected);
-        Self::connect(world);
-    }
-
-    pub fn connect(world: &World) {
-        if Self::is_connected() || is_offline() {
-            return;
+    fn login(world: &mut World) {
+        let co = ConnectOption::get(world);
+        let mut identity_user = None;
+        if let Some(user) = TUser::iter().find(|u| u.identities.contains(&co.creds.identity)) {
+            if matches!(currently_fulfilling(), GameOption::ForceLogin) {
+                Self::complete(user.clone(), world);
+            }
+            identity_user = Some(user);
         }
-        debug!("Connect start");
-        let creds: Option<Credentials> = Self::load_credentials();
-        let mut tries = 5;
-        let OptionsData { address, server } = Options::get_data(world);
-        while let Err(e) = connect(address, server, creds.clone()) {
-            error!("Connection error: {e}");
-            sleep(Duration::from_secs(1));
-            tries -= 1;
-            if tries <= 0 {
-                return;
-            }
-        }
-    }
-
-    pub fn clear_saved_credentials() {
-        let mut path = home::home_dir().expect("Failed to get home dir");
-        path.push(HOME_DIR);
-        std::fs::remove_dir_all(path).expect("Failed to clear credentials dir");
-    }
-
-    pub fn save_current_user(name: String, id: u64, identity: Identity) {
-        *CURRENT_USER.lock().unwrap() = Some(UserData { name, id, identity });
-        subscribe_to_tables(id);
-    }
-
-    fn on_login(status: &Status, identity: &Identity) {
-        debug!("Login: {status:?} {identity:?}");
-        match status {
-            Status::Committed => {
-                let user = User::find(|u| u.identities.contains(identity)).unwrap();
-                Self::save_current_user(user.name, user.id, identity.clone());
-            }
-            Status::Failed(e) => {
-                AlertPlugin::add_error(
-                    Some("LOGIN ERROR".to_owned()),
-                    format!("Failed to login {e}"),
-                    None,
-                );
-            }
-            _ => panic!(),
-        }
-    }
-
-    fn login_by_password(name: String, pass: String) {
-        login(name, pass);
-        once_on_login(|identity, _, status, _, _| Self::on_login(status, identity));
-    }
-
-    fn login_by_identity() {
-        debug!("Login by identity");
-        login_by_identity();
-        once_on_login_by_identity(|identity, _, status| Self::on_login(status, identity));
-    }
-
-    pub fn login(ui: &mut Ui, world: &mut World) {
-        let mut login_data = world.resource_mut::<LoginData>();
-
-        frame(ui, |ui| {
-            ui.horizontal(|ui| {
-                ui.vertical(|ui| {
-                    ui.label("name:");
-                    ui.label("password:");
-                });
-                ui.vertical(|ui| {
-                    TextEdit::singleline(&mut login_data.name)
-                        .desired_width(ui.available_width())
-                        .margin(egui::Vec2::ZERO)
-                        .ui(ui);
-                    TextEdit::singleline(&mut login_data.pass)
-                        .password(true)
-                        .desired_width(ui.available_width())
-                        .margin(egui::Vec2::ZERO)
-                        .ui(ui);
-                });
-            });
-            ui.set_enabled(!login_data.name.is_empty() && !login_data.pass.is_empty());
-            if ui.button("LOGIN").clicked() {
-                Self::login_by_password(login_data.name.clone(), login_data.pass.clone());
-            }
+        world.insert_resource(LoginData {
+            name_field: default(),
+            pass_field: default(),
+            identity_user,
         });
     }
-
-    pub fn register(ui: &mut Ui, world: &mut World) {
-        frame(ui, |ui| {
-            ui.set_width(ui.available_width());
+    fn complete(user: TUser, world: &mut World) {
+        StdbQuery::Game(user.id).subscribe();
+        LoginOption { user }.save(world);
+        once_on_subscription_applied(|| {
+            OperationsPlugin::add(|world| {
+                GameAssets::cache_tables(world);
+                GameState::proceed(world);
+            });
+            TWallet::on_update(|before, after, _| {
+                let delta = after.amount - before.amount;
+                let delta_txt = if delta > 0 {
+                    format!("+{delta}")
+                } else {
+                    delta.to_string()
+                };
+                Notification::new(
+                    "Credits "
+                        .cstr_c(YELLOW)
+                        .push(delta_txt.cstr_c(VISIBLE_LIGHT))
+                        .take(),
+                )
+                .push_op();
+            });
+            TItem::on_update(|before, after, _| {
+                let delta = after.stack.count as i64 - before.stack.count as i64;
+                let delta_txt = if delta > 0 {
+                    format!(" +{delta}")
+                } else {
+                    format!(" {delta}")
+                };
+                let txt = before
+                    .stack
+                    .item
+                    .cstr()
+                    .push(delta_txt.cstr_c(VISIBLE_LIGHT))
+                    .take();
+                Notification::new(txt).push_op();
+            });
+            TItem::on_insert(|item, _| {
+                let txt = item.stack.item.cstr();
+                Notification::new("New item: ".cstr().push(txt).take()).push_op();
+                TableState::reset_cache_op();
+            });
+            TItem::on_delete(|item, _| {
+                let txt = item.stack.item.cstr();
+                Notification::new("Item removed: ".cstr_c(VISIBLE_LIGHT).push(txt).take())
+                    .push_op();
+                TableState::reset_cache_op();
+            });
+        });
+    }
+    pub fn login_ui(ui: &mut Ui, world: &mut World) {
+        center_window("login", ui, |ui| {
             ui.vertical_centered_justified(|ui| {
-                let mut register_data = world.resource_mut::<RegisterData>();
-                ui.horizontal(|ui| {
-                    ui.vertical(|ui| {
-                        ui.label("name:");
-                        ui.label("password:");
-                        ui.label("repeat:");
-                    });
-                    ui.vertical(|ui| {
-                        TextEdit::singleline(&mut register_data.name)
-                            .desired_width(ui.available_width())
-                            .margin(egui::Vec2::ZERO)
-                            .ui(ui);
-                        TextEdit::singleline(&mut register_data.pass)
-                            .password(true)
-                            .desired_width(ui.available_width())
-                            .margin(egui::Vec2::ZERO)
-                            .ui(ui);
-                        TextEdit::singleline(&mut register_data.pass_repeat)
-                            .password(true)
-                            .desired_width(ui.available_width())
-                            .margin(egui::Vec2::ZERO)
-                            .ui(ui);
-                    });
-                });
-                ui.set_enabled(
-                    !register_data.name.is_empty()
-                        && !register_data.pass.is_empty()
-                        && register_data.pass.eq(&register_data.pass_repeat),
-                );
-                if ui.button("REGISTER").clicked() {
-                    debug!(
-                        "Register start: {} {}",
-                        register_data.name, register_data.pass
-                    );
-                    register(register_data.name.clone(), register_data.pass.clone());
-                    once_on_register(|_, _, status, name, pass| {
-                        debug!("Register: {status:?} {name}");
-                        match status {
-                            Status::Committed => {
-                                Self::login_by_password(name.to_owned(), pass.to_owned())
-                            }
-                            Status::Failed(e) => AlertPlugin::add_error(
-                                Some("REGISTER ERROR".to_owned()),
-                                e.to_owned(),
-                                None,
-                            ),
-                            _ => panic!(),
-                        }
-                    });
-                    set_context_bool(world, "register", false);
-                }
-            })
-        });
-    }
-}
-
-fn subscribe_to_tables(user_id: u64) {
-    debug!("Subscribe to tables, user_id = {user_id}");
-    match subscribe(&[
-        "select * from User",
-        "select * from GlobalData",
-        "select * from GlobalSettings",
-        "select * from TableUnit",
-        "select * from House",
-        "select * from Statuses",
-        "select * from Ability",
-        "select * from Summon",
-        "select * from Vfx",
-        &format!("select * from ArenaRun where user_id = {user_id}"),
-        "select * from ArenaPool",
-        "select * from ArenaArchive",
-    ]) {
-        Ok(_) => {
-            debug!("Subscribe successful");
-            once_on_subscription_applied(|| {
-                OperationsPlugin::add(|world| {
-                    PoolsPlugin::cache_server_pools(world);
-                    if let Some(state) = (*AFTER_LOGIN_STATE.lock().unwrap()).clone() {
-                        state.change(world);
+                let mut ld = world.resource_mut::<LoginData>();
+                if let Some(user) = ld.identity_user.clone() {
+                    format!("Login as {}", user.name)
+                        .cstr_cs(VISIBLE_LIGHT, CstrStyle::Heading2)
+                        .label(ui);
+                    if Button::click("Login".into()).ui(ui).clicked() {
+                        login_by_identity();
+                        once_on_login_by_identity(|_, _, status| {
+                            match status {
+                                spacetimedb_sdk::reducer::Status::Committed => {
+                                    OperationsPlugin::add(|world| {
+                                        Self::complete(user, world);
+                                    });
+                                }
+                                spacetimedb_sdk::reducer::Status::Failed(e) => {
+                                    Notification::new_string(format!("Login failed: {e}")).push_op()
+                                }
+                                _ => panic!(),
+                            };
+                        });
                     }
-                })
+                    br(ui);
+                    if Button::click("Logout".into()).gray(ui).ui(ui).clicked() {
+                        ld.identity_user = None;
+                    }
+                } else {
+                    let mut ld = world.resource_mut::<LoginData>();
+                    "Register"
+                        .cstr_cs(VISIBLE_LIGHT, CstrStyle::Heading)
+                        .label(ui);
+                    if Button::click("New Player".into()).ui(ui).clicked() {
+                        register_empty();
+                        once_on_register_empty(|_, _, status| match status {
+                            spacetimedb_sdk::reducer::Status::Committed => {
+                                OperationsPlugin::add(|world| {
+                                    Notification::new_string("New player created".to_owned())
+                                        .push(world);
+                                    let identity = ConnectOption::get(world).creds.identity.clone();
+                                    let user = TUser::find(|u| u.identities.contains(&identity))
+                                        .expect("Failed to find user after registration");
+                                    world.resource_mut::<LoginData>().identity_user = Some(user);
+                                })
+                            }
+                            spacetimedb_sdk::reducer::Status::Failed(e) => {
+                                Notification::new_string(format!("Registration failed: {e}"))
+                                    .error()
+                                    .push_op()
+                            }
+                            _ => panic!(),
+                        });
+                    }
+                    br(ui);
+                    "Login".cstr_cs(VISIBLE_LIGHT, CstrStyle::Heading).label(ui);
+                    Input::new("name").ui(&mut ld.name_field, ui);
+                    Input::new("password").password().ui(&mut ld.pass_field, ui);
+                    if Button::click("Submit".into()).ui(ui).clicked() {
+                        login(ld.name_field.clone(), ld.pass_field.clone());
+                        once_on_login(|_, _, status, name, _| match status {
+                            spacetimedb_sdk::reducer::Status::Committed => {
+                                let name = name.clone();
+                                OperationsPlugin::add(move |world| {
+                                    let user = TUser::find_by_name(name).unwrap();
+                                    Self::complete(user, world);
+                                });
+                            }
+                            spacetimedb_sdk::reducer::Status::Failed(e) => {
+                                let text = format!("Login failed: {e}");
+                                error!("{text}");
+                                Notification::new_string(text).error().push_op();
+                            }
+                            _ => panic!(),
+                        });
+                    }
+                }
             });
-        }
-        Err(e) => error!("Subscription error: {e}"),
+        });
     }
 }

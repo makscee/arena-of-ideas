@@ -3,34 +3,26 @@
     name: "Fodder",
     hp: 4,
     pwr: 2,
-    stacks: 1,
     rarity: 0,
-    houses: "Warriors",
+    houses: ["Warriors"],
     trigger: Fire(
         triggers: [(BeforeStrike, None)],
-        targets: [(RandomAlly, None)],
+        targets: [(RandomUnit(AllAllyUnits), None)],
         effects: [(UseAbility("Strength", 1), None)],
     ),
     representation: (
         material: Shape(
             shape: Rectangle(
-                size: Vec2E(
-                    Sum(
-                        Mul(Float(0.26), Index),
-                        Sum(Float(0.27), Sub(Zero, Mul(Beat, Float(0.05)))),
-                    ),
-                ),
+                size: Vec2E(Sum(Mul(F(0.26), Index), Sum(F(0.27), Sub(Zero, Mul(Beat, F(0.05)))))),
             ),
-            shape_type: Line(thickness: Sum(Float(1.0), Mul(Sin(Sum(GameTime, Index)), Float(6.0)))),
+            shape_type: Line(thickness: Sum(F(1.0), Mul(Sin(Sum(GT, Index)), F(6.0)))),
             fill: Solid(color: OwnerState(Color)),
             fbm: None,
-            alpha: Float(0.5),
-            padding: Float(0.0),
+            alpha: F(0.5),
+            padding: F(0.0),
         ),
         children: [],
-        mapping: {Offset: Vec2EE(Sum(Mul(Float(0.2), Index), Float(-0.8)), Zero)},
+        mapping: {Offset: Vec2EE(Sum(Mul(F(0.2), Index), F(-0.8)), Zero)},
         count: 5,
     ),
-    state: (history: {}, birth: 0.0),
-    statuses: [],
 )

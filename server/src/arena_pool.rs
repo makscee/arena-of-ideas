@@ -1,22 +1,22 @@
-use crate::unit::TableUnit;
+use rand::seq::IteratorRandom;
 
 use super::*;
 
-#[spacetimedb(table)]
-pub struct ArenaPool {
+#[spacetimedb(table(public))]
+pub struct TArenaPool {
+    pub mode: GameMode,
     #[primarykey]
-    pub id: u64,
-    pub owner: u64,
+    pub team: u64,
     pub round: u32,
-    pub team: Vec<TableUnit>,
 }
 
-#[spacetimedb(reducer)]
-fn upload_pool(ctx: ReducerContext, pool: Vec<ArenaPool>) -> Result<(), String> {
-    UserRight::UnitSync.check(&ctx.sender)?;
-    for team in pool {
-        ArenaPool::delete_by_id(&team.id);
-        ArenaPool::insert(team)?;
+impl TArenaPool {
+    pub fn add(mode: GameMode, team: u64, round: u32) {
+        TArenaPool::insert(TArenaPool { mode, team, round }).expect("Failed to add to TArenaPool");
     }
-    Ok(())
+    pub fn get_random(mode: &GameMode, round: u32) -> Option<Self> {
+        Self::filter_by_round(&round)
+            .filter(|d| d.mode.eq(mode))
+            .choose(&mut spacetimedb::rng())
+    }
 }

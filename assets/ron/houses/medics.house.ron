@@ -10,5 +10,16 @@
             trigger: Change(trigger: Var(Hp), expr: Context(Charges)),
         ),
     ],
-    abilities: [(name: "Vitality", description: "Give +{1} HP", effect: AddStatus("Vitality"))],
+    abilities: [
+        (
+            name: "Vitality",
+            description: "Give +{1} HP",
+            effect: List([Vfx("apply_status"), ChangeStatus("Vitality")]),
+        ),
+        (
+            name: "Mend",
+            description: "Heal {Pwr} amount of damage",
+            effect: WithVar(Value, Sum(Context(Pwr), Sub(Context(Charges), I(1))), Heal),
+        ),
+    ],
 )

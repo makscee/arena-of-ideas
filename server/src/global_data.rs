@@ -1,24 +1,31 @@
-use spacetimedb::Timestamp;
-
 use super::*;
 
-#[spacetimedb(table)]
+#[spacetimedb(table(public))]
 pub struct GlobalData {
     #[unique]
-    always_zero: u32,
+    pub always_zero: u32,
     next_id: u64,
     pub game_version: String,
+    pub season: u32,
     pub last_sync: Timestamp,
+    pub last_shop_refresh: Timestamp,
+    pub constant_seed: String,
+    pub initial_enemies: Vec<u64>,
 }
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 impl GlobalData {
     pub fn init() -> Result<(), String> {
+        let season = VERSION.split(".").collect_vec()[1].parse().unwrap();
         GlobalData::insert(GlobalData {
             always_zero: 0,
             next_id: 1,
             game_version: VERSION.to_owned(),
             last_sync: Timestamp::UNIX_EPOCH,
+            last_shop_refresh: Timestamp::UNIX_EPOCH,
+            season,
+            constant_seed: String::new(),
+            initial_enemies: Vec::new(),
         })?;
         Ok(())
     }
@@ -34,100 +41,40 @@ impl GlobalData {
     pub fn get() -> Self {
         GlobalData::filter_by_always_zero(&0).unwrap()
     }
+    pub fn register_sync() {
+        let mut gd = Self::get();
+        gd.last_sync = Timestamp::now();
+        Self::update_by_always_zero(&0, gd);
+    }
+    pub fn register_shop_refresh() {
+        let mut gd = Self::get();
+        gd.last_shop_refresh = Timestamp::now();
+        Self::update_by_always_zero(&0, gd);
+    }
+    pub fn set_initial_enemies(teams: Vec<u64>) {
+        let mut gd = Self::get();
+        gd.initial_enemies = teams;
+        Self::update_by_always_zero(&0, gd);
+    }
 }
 
-#[spacetimedb(reducer)]
-fn upload_units(ctx: ReducerContext, units: Vec<TableUnit>) -> Result<(), String> {
-    UserRight::UnitSync.check(&ctx.sender)?;
-    for unit in units {
-        TableUnit::delete_by_name(&unit.name);
-        TableUnit::insert(unit)?;
-    }
-    let mut gd = GlobalData::filter_by_always_zero(&0).unwrap();
-    gd.last_sync = Timestamp::now();
-    GlobalData::update_by_always_zero(&0, gd);
-    Ok(())
+fn generate_str_seed(count: usize) -> String {
+    rng()
+        .sample_iter(&Alphanumeric)
+        .take(count)
+        .map(char::from)
+        .collect()
 }
 
-#[spacetimedb(reducer)]
-fn sync_data(
-    ctx: ReducerContext,
-    houses: Vec<House>,
-    abilities: Vec<Ability>,
-    statuses: Vec<Statuses>,
-    summons: Vec<Summon>,
-    units: Vec<TableUnit>,
-    vfxs: Vec<Vfx>,
-) -> Result<(), String> {
-    UserRight::UnitSync.check(&ctx.sender)?;
-    for house in House::iter() {
-        House::delete_by_name(&house.name);
-    }
-    for house in houses {
-        House::insert(house)?;
-    }
-    for ability in Ability::iter() {
-        Ability::delete_by_name(&ability.name);
-    }
-    for ability in abilities {
-        Ability::insert(ability)?;
-    }
-    for status in Statuses::iter() {
-        Statuses::delete_by_name(&status.name);
-    }
-    for status in statuses {
-        Statuses::insert(status)?;
-    }
-    for summon in Summon::iter() {
-        Summon::delete_by_name(&summon.name);
-    }
-    for summon in summons {
-        Summon::insert(summon)?;
-    }
-    for unit in TableUnit::iter() {
-        TableUnit::delete_by_name(&unit.name);
-    }
-    for unit in units {
-        TableUnit::insert(unit)?;
-    }
-    for vfx in Vfx::iter() {
-        Vfx::delete_by_name(&vfx.name);
-    }
-    for vfx in vfxs {
-        Vfx::insert(vfx)?;
-    }
-    let mut gd = GlobalData::filter_by_always_zero(&0).unwrap();
-    gd.last_sync = Timestamp::now();
-    GlobalData::update_by_always_zero(&0, gd);
-    Ok(())
-}
-
-#[spacetimedb(reducer)]
-fn migrate_data(
-    ctx: ReducerContext,
-    arena_archive: Vec<ArenaArchive>,
-    arena_pool: Vec<ArenaPool>,
-    users: Vec<User>,
-) -> Result<(), String> {
-    UserRight::UnitSync.check(&ctx.sender)?;
-    let mut max_id = 0;
-    for v in arena_archive {
-        max_id = max_id.max(v.id);
-        ArenaArchive::insert(v)?;
-    }
-    for v in arena_pool {
-        max_id = max_id.max(v.id);
-        ArenaPool::insert(v)?;
-    }
-    for v in User::iter() {
-        User::delete_by_id(&v.id);
-    }
-    for v in users {
-        max_id = max_id.max(v.id);
-        User::insert(v)?;
-    }
+pub fn update_constant_seed() {
     let mut gd = GlobalData::get();
-    gd.next_id = max_id + 1;
-    GlobalData::update_by_always_zero(&0, gd);
-    Ok(())
+    if gd.constant_seed.is_empty()
+        || TArenaLeaderboard::current_champion(&GameMode::ArenaConst(gd.constant_seed.into()))
+            .is_some_and(|d| d.round >= 10)
+    {
+        let seed = generate_str_seed(10);
+        self::println!("Constant seed updated to {seed}");
+        gd.constant_seed = seed;
+        GlobalData::update_by_always_zero(&0, gd);
+    }
 }

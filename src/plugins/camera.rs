@@ -1,4 +1,11 @@
-use bevy::window::PrimaryWindow;
+use bevy::{
+    core_pipeline::core_2d::Camera2dBundle,
+    render::{
+        camera::{OrthographicProjection, ScalingMode},
+        view::InheritedVisibility,
+    },
+    window::PrimaryWindow,
+};
 
 use super::*;
 
@@ -6,15 +13,11 @@ pub struct CameraPlugin;
 
 impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::MainMenu), Self::respawn_camera)
+        app.add_systems(OnEnter(GameState::Title), Self::respawn_camera)
             .add_systems(OnEnter(GameState::Loading), Self::respawn_camera)
             .add_systems(
                 Update,
-                Self::adjust_to_fit_units.run_if(
-                    in_state(GameState::Battle)
-                        .or_else(in_state(GameState::Shop))
-                        .or_else(in_state(GameState::HeroGallery)),
-                ),
+                Self::adjust_to_fit_units.run_if(in_state(GameState::Battle)),
             );
     }
 }
@@ -28,37 +31,48 @@ pub struct CameraData {
 }
 
 const SCALE_CHANGE_SPEED: f32 = 3.0;
+pub const SLOT_SPACING: f32 = 3.0;
+
+impl CameraData {
+    fn apply(&self, projection: &mut OrthographicProjection) {
+        projection.scaling_mode = ScalingMode::FixedHorizontal(self.cur_scale);
+    }
+}
 
 impl CameraPlugin {
+    pub fn pixel_unit(ctx: &egui::Context, world: &World) -> f32 {
+        let width = ctx.screen_rect().width();
+        width / world.resource::<CameraData>().cur_scale
+    }
+    pub fn entity(world: &World) -> Entity {
+        world.resource::<CameraData>().entity
+    }
+    pub fn get_entity(world: &World) -> Option<Entity> {
+        world.get_resource::<CameraData>().map(|cd| cd.entity)
+    }
     pub fn cursor_world_pos(world: &mut World) -> Option<Vec2> {
         if let Some(cursor_pos) = cursor_pos(world) {
-            let cam = world.resource::<CameraData>().entity;
-            Some(screen_to_world(
-                cursor_pos,
-                world.get::<Camera>(cam).unwrap(),
-                world.get::<GlobalTransform>(cam).unwrap(),
-            ))
+            Some(screen_to_world(cursor_pos, world))
         } else {
             None
         }
     }
-
-    fn respawn_camera(mut commands: Commands, data: Option<ResMut<CameraData>>) {
+    fn respawn_camera(world: &mut World) {
         let mut camera = Camera2dBundle::default();
-        camera.projection.scaling_mode = ScalingMode::FixedVertical(15.0);
-        let entity = commands.spawn(camera).id();
-        if let Some(data) = data {
-            commands.entity(data.entity).despawn_recursive();
-        }
+        let entity = world.spawn_empty().id();
         let data = CameraData {
             entity,
-            cur_scale: 100.0,
+            cur_scale: 30.0,
             slot_pixel_spacing: 150.0,
             need_scale: default(),
         };
-        commands.insert_resource(data);
+        data.apply(&mut camera.projection);
+        if let Some(data) = world.get_resource::<CameraData>() {
+            world.entity_mut(data.entity).despawn_recursive();
+        }
+        world.entity_mut(entity).insert(camera);
+        world.insert_resource(data);
     }
-
     fn adjust_to_fit_units(
         visible: Query<(&Transform, &InheritedVisibility)>,
         mut projection: Query<(&mut OrthographicProjection, &Camera)>,
@@ -84,7 +98,6 @@ impl CameraPlugin {
             (data.need_scale - data.cur_scale) * time.delta_seconds() * SCALE_CHANGE_SPEED;
         let window_width = window.single().resolution.width();
         data.slot_pixel_spacing = SLOT_SPACING / data.cur_scale * window_width;
-
-        projection.scaling_mode = ScalingMode::FixedHorizontal(data.cur_scale);
+        data.apply(&mut projection);
     }
 }

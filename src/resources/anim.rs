@@ -19,22 +19,21 @@ pub enum Anim {
 }
 
 fn default_zero_f32_e() -> Expression {
-    Expression::Float(0.0)
+    Expression::Value(VarValue::Float(0.0))
 }
 
 impl Anim {
-    pub fn apply(self, context: Context, world: &mut World) -> Result<()> {
+    pub fn apply(self, context: Context, world: &mut World) -> Result<f32> {
+        let mut head_shift = 0.0;
         match self {
             Anim::Sequence(list) => {
                 for anim in list {
-                    anim.apply(context.clone(), world)?;
+                    head_shift += anim.apply(context.clone(), world)?;
                 }
             }
             Anim::Run(list) => {
                 for anim in list {
-                    GameTimer::get().start_batch();
-                    anim.apply(context.clone(), world)?;
-                    GameTimer::get().to_batch_start().end_batch();
+                    head_shift = anim.apply(context.clone(), world)?.max(head_shift);
                 }
             }
             Anim::Change {
@@ -46,19 +45,18 @@ impl Anim {
                 tween,
             } => {
                 let duration = duration.get_float(&context, world)?;
-                let timeframe = timeframe.get_float(&context, world)?;
+                head_shift = timeframe.get_float(&context, world)?;
                 let value = value.get_value(&context, world)?;
                 let change = VarChange {
                     t,
                     duration,
-                    timeframe,
+                    timeframe: head_shift,
                     tween,
                     value,
                 };
-                VarState::get_mut(context.owner(), world).push_back(var, change);
-                GameTimer::get().advance_insert(timeframe);
+                VarState::get_mut(context.owner(), world).push_change(var, default(), change);
             }
         }
-        Ok(())
+        Ok(head_shift)
     }
 }

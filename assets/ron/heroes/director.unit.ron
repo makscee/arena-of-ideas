@@ -3,32 +3,31 @@
     name: "Director",
     hp: 3,
     pwr: 1,
-    stacks: 1,
     rarity: 1,
-    houses: "Mages",
+    houses: ["Mages"],
     trigger: Fire(
         triggers: [(AllySummon, None)],
-        targets: [(RandomEnemy, None)],
+        targets: [(RandomUnit(AllEnemyUnits), None)],
         effects: [(UseAbility("Magic Missile", 3), None)],
     ),
     representation: (
         material: Shape(
-            shape: Circle(radius: Float(0.15)),
+            shape: Circle(radius: F(0.15)),
             shape_type: Opaque,
             fill: Solid(color: OwnerState(Color)),
             fbm: None,
-            alpha: Float(1.0),
-            padding: Float(0.0),
+            alpha: F(1.0),
+            padding: F(0.0),
         ),
         children: [
             (
                 material: Shape(
-                    shape: Circle(radius: Sum(Mul(Float(0.06), Index), Float(0.21))),
-                    shape_type: Line(thickness: Float(1.0)),
+                    shape: Circle(radius: Sum(Mul(F(0.06), Index), F(0.21))),
+                    shape_type: Line(thickness: F(1.0)),
                     fill: Solid(color: OwnerState(Color)),
                     fbm: None,
-                    alpha: Float(1.0),
-                    padding: Float(0.0),
+                    alpha: F(1.0),
+                    padding: F(0.0),
                 ),
                 children: [],
                 mapping: {},
@@ -36,13 +35,8 @@
             ),
         ],
         mapping: {
-            Offset: Mul(
-                UnitVec(Sum(Mul(Index, Mul(PI, Float(0.666))), GameTime)),
-                Sum(Float(0.3), Mul(Beat, Float(0.1))),
-            ),
+            Offset: Mul(UnitVec(Sum(Mul(Index, Mul(PI, F(0.666))), GT)), Sum(F(0.3), Mul(Beat, F(0.1)))),
         },
         count: 3,
     ),
-    state: (history: {}, birth: 0.0),
-    statuses: [],
 )

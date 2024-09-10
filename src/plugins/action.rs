@@ -1,9 +1,25 @@
-use crate::event::Event;
 use std::collections::VecDeque;
 
 use super::*;
 
 pub struct ActionPlugin;
+
+#[derive(Resource, Default)]
+struct ActionQueue(VecDeque<Action>);
+#[derive(Resource, Default)]
+struct EventQueue(VecDeque<(Event, Context)>);
+
+struct Action {
+    effect: Effect,
+    context: Context,
+    delay: f32,
+}
+#[derive(Resource, Default)]
+struct ActionsData {
+    events: Vec<(f32, Event)>,
+    turns: Vec<(f32, usize)>,
+    chain: usize,
+}
 
 impl Plugin for ActionPlugin {
     fn build(&self, app: &mut App) {
@@ -14,29 +30,10 @@ impl Plugin for ActionPlugin {
     }
 }
 
-#[derive(Resource, Default)]
-struct EventQueue(VecDeque<(Event, Context)>);
-#[derive(Resource, Default)]
-struct ActionQueue(VecDeque<Action>);
-
-#[derive(Resource, Default)]
-struct ActionsData {
-    events: Vec<(f32, Event)>,
-    turns: Vec<(f32, usize)>,
-    chain: usize,
-}
-
-struct Action {
-    effect: Effect,
-    context: Context,
-    delay: f32,
-}
-
 impl ActionPlugin {
     fn update(world: &mut World) {
         Self::spin(world).expect("Spin failed");
     }
-
     pub fn spin(world: &mut World) -> Result<bool> {
         let mut processed = false;
         let mut limit = 100000;
@@ -51,18 +48,15 @@ impl ActionPlugin {
                 delay,
             }) = Self::pop_action(world)
             {
+                context.t_to_insert();
                 match effect.invoke(&mut context, world) {
                     Ok(_) => {
-                        world.resource_mut::<ActionsData>().chain += 1;
                         processed = true;
-                        for status in world
-                            .query_filtered::<Entity, (With<Status>, With<VarStateDelta>, With<Parent>)>()
-                            .iter(world)
-                            .collect_vec()
-                        {
-                            Status::refresh_status_mapping(status, world);
+                        world.resource_mut::<ActionsData>().chain += 1;
+                        gt().advance_insert(delay);
+                        for unit in UnitPlugin::collect_alive(world) {
+                            Status::refresh_mappings(unit, world);
                         }
-                        GameTimer::get().advance_insert(delay);
                     }
                     Err(e) => error!("Effect process error: {e}"),
                 }
@@ -71,7 +65,7 @@ impl ActionPlugin {
             let mut actions_added = false;
             while let Some((event, context)) = Self::pop_event(world) {
                 if event.process(context, world) {
-                    GameTimer::get().advance_insert(0.2);
+                    gt().advance_insert(0.2);
                     actions_added = true;
                     break;
                 }
@@ -79,13 +73,13 @@ impl ActionPlugin {
             if !actions_added {
                 break;
             }
+            break;
         }
         if processed {
             Self::clear_dead(world);
         }
         Ok(processed)
     }
-
     pub fn clear_dead(world: &mut World) -> bool {
         let dead = UnitPlugin::run_death_check(world);
         let died = !dead.is_empty();
@@ -93,66 +87,13 @@ impl ActionPlugin {
             UnitPlugin::turn_into_corpse(unit, world);
         }
         if died {
-            GameTimer::get().advance_insert(0.5);
-            UnitPlugin::fill_slot_gaps(Faction::Left, world);
-            UnitPlugin::fill_slot_gaps(Faction::Right, world);
-            UnitPlugin::translate_to_slots(world);
-            GameTimer::get().insert_to_end();
+            gt().advance_insert(0.5);
+            UnitPlugin::fill_gaps_and_translate(world);
+            gt().insert_to_end();
         } else {
-            GameTimer::get().advance_insert(0.3);
+            gt().advance_insert(0.3);
         }
         died
-    }
-
-    pub fn get_event(world: &World) -> Option<(Event, f32)> {
-        let t = GameTimer::get().play_head();
-        world.get_resource::<ActionsData>().and_then(|d| {
-            d.events.iter().rev().find_map(|(ts, e)| match t >= *ts {
-                true => Some((e.clone(), t - *ts)),
-                false => None,
-            })
-        })
-    }
-    pub fn register_event(event: Event, world: &mut World) {
-        world
-            .resource_mut::<ActionsData>()
-            .events
-            .push((GameTimer::get().insert_head(), event));
-    }
-
-    pub fn get_chain_len(world: &World) -> usize {
-        world.resource::<ActionsData>().chain
-    }
-
-    pub fn get_turn(t: f32, world: &World) -> (usize, f32) {
-        world
-            .get_resource::<ActionsData>()
-            .and_then(|d| {
-                d.turns.iter().rev().find_map(|(ts, e)| match t >= *ts {
-                    true => Some((*e, t - *ts)),
-                    false => None,
-                })
-            })
-            .unwrap_or_default()
-    }
-    pub fn register_next_turn(world: &mut World) {
-        let mut data = world.resource_mut::<ActionsData>();
-        let next = data.turns.last().map(|(_, r)| *r).unwrap_or_default() + 1;
-        data.turns.push((GameTimer::get().insert_head(), next));
-        data.chain = 0;
-    }
-
-    pub fn event_push_back(event: Event, context: Context, world: &mut World) {
-        world
-            .resource_mut::<EventQueue>()
-            .0
-            .push_back((event, context));
-    }
-    pub fn event_push_front(event: Event, context: Context, world: &mut World) {
-        world
-            .resource_mut::<EventQueue>()
-            .0
-            .push_front((event, context));
     }
     pub fn action_push_back(effect: Effect, context: Context, world: &mut World) {
         world.resource_mut::<ActionQueue>().0.push_back(Action {
@@ -192,15 +133,43 @@ impl ActionPlugin {
             delay,
         });
     }
-
-    pub fn new_battle(world: &mut World) {
-        *world.resource_mut::<ActionsData>() = default();
+    pub fn event_push_back(event: Event, context: Context, world: &mut World) {
+        world
+            .resource_mut::<EventQueue>()
+            .0
+            .push_back((event, context));
     }
-
     fn pop_action(world: &mut World) -> Option<Action> {
         world.resource_mut::<ActionQueue>().0.pop_front()
     }
     fn pop_event(world: &mut World) -> Option<(Event, Context)> {
         world.resource_mut::<EventQueue>().0.pop_front()
+    }
+    pub fn register_event(event: Event, world: &mut World) {
+        world
+            .resource_mut::<ActionsData>()
+            .events
+            .push((gt().insert_head(), event));
+    }
+    pub fn register_next_turn(world: &mut World) {
+        let mut data = world.resource_mut::<ActionsData>();
+        let next = data.turns.last().map(|(_, r)| *r).unwrap_or_default() + 1;
+        data.turns.push((gt().insert_head(), next));
+        data.chain = 0;
+    }
+    pub fn get_turn(t: f32, world: &World) -> (usize, f32) {
+        world
+            .get_resource::<ActionsData>()
+            .and_then(|d| {
+                d.turns.iter().rev().find_map(|(ts, e)| match t >= *ts {
+                    true => Some((*e, t - *ts)),
+                    false => None,
+                })
+            })
+            .unwrap_or_default()
+    }
+
+    pub fn reset(world: &mut World) {
+        *world.resource_mut::<ActionsData>() = default();
     }
 }

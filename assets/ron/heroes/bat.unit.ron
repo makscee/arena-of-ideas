@@ -3,9 +3,8 @@
     name: "Bat",
     hp: 1,
     pwr: 3,
-    stacks: 1,
     rarity: 1,
-    houses: "Vampires",
+    houses: ["Vampires"],
     trigger: Fire(
         triggers: [(AllyDeath, None)],
         targets: [(TargetStateLast(LastAttacker), "last attacker")],
@@ -13,27 +12,22 @@
     ),
     representation: (
         material: Shape(
-            shape: Circle(radius: Sum(Sum(Float(0.81), Mul(Index, Float(-0.17))), Mul(Beat, Float(0.05)))),
-            shape_type: Line(thickness: Float(2.27)),
+            shape: Circle(radius: Sum(Sum(F(0.81), Mul(Index, F(-0.17))), Mul(Beat, F(0.05)))),
+            shape_type: Line(thickness: F(2.27)),
             fill: GradientLinear(
-                point1: Vec2(0.0, -0.5),
-                point2: Vec2(0.0, 0.5),
-                parts: [Float(0.0), Sum(Float(0.99), Mul(Index, Float(0.0)))],
-                colors: [OwnerState(Color), Hex("00000000")],
+                point1: V2(0.0, -0.5),
+                point2: V2(0.0, 0.5),
+                parts: [F(0.0), Sum(F(0.99), Mul(Index, F(0.0)))],
+                colors: [OwnerState(Color), HexColor("00000000")],
             ),
             fbm: None,
-            alpha: Float(1.0),
-            padding: Float(0.0),
+            alpha: F(1.0),
+            padding: F(0.0),
         ),
         children: [],
         mapping: {
-            Offset: Vec2EE(
-                Zero,
-                Sum(Mul(Index, Float(-0.04)), Mul(Sub(Zero, Abs(Beat)), Mul(Float(0.1), Index))),
-            ),
+            Offset: Vec2EE(Zero, Sum(Mul(Index, F(-0.04)), Mul(Sub(Zero, Abs(Beat)), Mul(F(0.1), Index)))),
         },
         count: 3,
     ),
-    state: (history: {}, birth: 0.0),
-    statuses: [],
 )

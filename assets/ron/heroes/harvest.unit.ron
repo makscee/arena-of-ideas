@@ -3,9 +3,8 @@
     name: "Harvest",
     hp: 4,
     pwr: 1,
-    stacks: 1,
     rarity: 1,
-    houses: "Druids",
+    houses: ["Druids"],
     trigger: Fire(
         triggers: [(OnceAfter(4, TurnEnd), "in 5 turns")],
         targets: [],
@@ -13,26 +12,21 @@
     ),
     representation: (
         material: Shape(
-            shape: Circle(radius: Float(0.12)),
-            shape_type: Line(thickness: Float(1.0)),
+            shape: Circle(radius: F(0.12)),
+            shape_type: Line(thickness: F(1.0)),
             fill: Solid(color: OwnerState(Color)),
             fbm: None,
             alpha: Sin(Context(T)),
-            padding: Float(0.0),
+            padding: F(0.0),
         ),
         children: [],
         mapping: {
             Offset: Vec2EE(
-                Mul(
-                    RandomFloatUnit(Owner),
-                    Mul(Sin(Mul(GameTime, Sum(Float(0.4), Mul(Index, Float(0.1))))), Float(0.73)),
-                ),
-                Mul(Sin(Context(T)), Float(1.0)),
+                Mul(RandomF(Owner), Mul(Sin(Mul(GT, Sum(F(0.4), Mul(Index, F(0.1))))), F(0.73))),
+                Mul(Sin(Context(T)), F(1.0)),
             ),
-            T: Sum(Mul(GameTime, Float(2.0)), Index),
+            T: Sum(Mul(GT, F(2.0)), Index),
         },
         count: 16,
     ),
-    state: (history: {}, birth: 0.0),
-    statuses: [],
 )

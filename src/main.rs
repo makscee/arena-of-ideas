@@ -1,16 +1,19 @@
 mod components;
-mod materials;
-mod module_bindings;
 mod plugins;
-mod prelude;
-pub mod resources;
+pub mod prelude;
+mod resources;
+mod stdb;
 mod utils;
 
-use bevy::render::camera::ClearColor;
+use bevy::{
+    diagnostic::FrameTimeDiagnosticsPlugin, log::LogPlugin, render::camera::ClearColor,
+    sprite::Material2dPlugin, state::app::AppExtStates,
+};
+use clap::{command, Parser, ValueEnum};
 use noisy_bevy::NoisyShaderPlugin;
 pub use prelude::*;
 
-#[derive(Parser, Debug, Default)]
+#[derive(Parser, Debug, Default, Clone)]
 #[command(author, version, about, long_about = None)]
 pub struct Args {
     #[arg(short, long)]
@@ -19,166 +22,114 @@ pub struct Args {
     path: Option<String>,
 }
 
+pub static ARGS: OnceCell<Args> = OnceCell::new();
+
 #[derive(Debug, Clone, ValueEnum, Default)]
 pub enum RunMode {
     #[default]
     Regular,
-    Offline,
-    Test,
     Custom,
-    Last,
-    Clipboard,
-    Continue,
+    Shop,
+    Test,
     Sync,
-    Archive,
-    Upload,
-    Editor,
-    Table,
-    Gallery,
+    ArchiveDownload,
+    ArchiveUpload,
 }
 
 fn main() {
+    let mut app = App::new();
     let args = Args::try_parse().unwrap_or_default();
-    let next_state = match args.mode {
-        RunMode::Regular
-        | RunMode::Offline
-        | RunMode::Archive
-        | RunMode::Upload
-        | RunMode::Sync => GameState::MainMenu,
-        RunMode::Custom => GameState::CustomBattle,
-        RunMode::Gallery => GameState::HeroGallery,
-        RunMode::Last => GameState::LastBattle,
-        RunMode::Clipboard => GameState::ClipboardBattle,
-        RunMode::Editor => GameState::HeroEditor,
-        RunMode::Table => GameState::HeroTable,
-        RunMode::Continue => GameState::Shop,
-        RunMode::Test => GameState::TestsLoading,
-    };
-    match args.mode {
-        RunMode::Sync => set_after_login_state(GameState::AssetSync),
-        RunMode::Archive => set_after_login_state(GameState::MigrationSave),
-        RunMode::Upload => set_after_login_state(GameState::MigrationUpload),
-        _ => {}
+    ARGS.set(args.clone()).unwrap();
+    unsafe {
+        std::env::set_var("RUST_BACKTRACE", "1");
+        std::env::set_var("RUST_LIB_BACKTRACE", "0");
     }
-    let mut default_plugins = DefaultPlugins.set(LogPlugin {
+    let target = match args.mode {
+        RunMode::Regular => GameState::Title,
+        RunMode::Custom => GameState::CustomBattle,
+        RunMode::Shop => GameState::Shop,
+        RunMode::Test => GameState::TestScenariosRun,
+        RunMode::Sync => GameState::ServerSync,
+        RunMode::ArchiveDownload => GameState::GameArchiveDownload,
+        RunMode::ArchiveUpload => GameState::GameArchiveUpload,
+    };
+    load_client_settings();
+    GameState::set_target(target);
+    let default_plugins = DefaultPlugins.set(LogPlugin {
         level: bevy::log::Level::DEBUG,
         filter: "info,debug,wgpu_core=warn,wgpu_hal=warn,naga=warn".into(),
         ..default()
     });
-    match args.mode {
-        RunMode::Regular
-        | RunMode::Offline
-        | RunMode::Custom
-        | RunMode::Gallery
-        | RunMode::Last
-        | RunMode::Clipboard
-        | RunMode::Continue
-        | RunMode::Editor
-        | RunMode::Table => {
-            default_plugins = default_plugins.set(bevy::window::WindowPlugin {
-                primary_window: Some(bevy::prelude::Window {
-                    title: "Arena of Ideas".into(),
-                    ..default()
-                }),
-                ..default()
-            })
-        }
-        RunMode::Test | RunMode::Sync | RunMode::Archive | RunMode::Upload => {
-            default_plugins = default_plugins.set(bevy::window::WindowPlugin {
-                primary_window: None,
-                exit_condition: bevy::window::ExitCondition::DontExit,
-                ..default()
-            })
-        }
-    };
-    if matches!(args.mode, RunMode::Offline) {
-        set_offline(true);
-    }
-    let mut app = App::new();
-    app.init_state::<GameState>()
-        .insert_resource(ClearColor(Color::rgb(0.1, 0.1, 0.1)))
-        .insert_resource(PkvStore::new("makscee", "arena_of_ideas"))
+    app.insert_resource(ClearColor(EMPTINESS.to_color()))
+        .add_systems(Startup, setup)
+        .add_systems(Update, update)
+        .add_systems(OnEnter(GameState::Error), on_error_state)
         .add_plugins((default_plugins, FrameTimeDiagnosticsPlugin))
         .add_loading_state(
             LoadingState::new(GameState::Loading)
-                .continue_to_state(next_state)
-                .load_collection::<Options>()
-                .load_collection::<Pools>()
+                .continue_to_state(GameState::Loaded)
+                .on_failure_continue_to_state(GameState::Error)
+                .load_collection::<GameAssetsHandles>()
                 .with_dynamic_assets_file::<StandardDynamicAssetCollection>(
                     "ron/_dynamic.assets.ron",
                 ),
         )
         .add_loading_state(
-            LoadingState::new(GameState::TestsLoading)
-                .continue_to_state(GameState::BattleTest)
+            LoadingState::new(GameState::TestScenariosLoad)
+                .continue_to_state(GameState::TestScenariosRun)
                 .load_collection::<TestScenarios>(),
         )
-        .add_systems(PreUpdate, update)
-        .add_systems(PostUpdate, detect_changes)
-        .add_plugins(bevy_egui::EguiPlugin)
-        .add_plugins(DefaultPickingPlugins)
-        .add_plugins(bevy_kira_audio::AudioPlugin)
-        .add_plugins(NoisyShaderPlugin)
+        .add_plugins(RonAssetPlugin::<GlobalSettingsAsset>::new(&[
+            "global_settings.ron",
+        ]))
         .add_plugins(Material2dPlugin::<ShapeMaterial>::default())
         .add_plugins(Material2dPlugin::<CurveMaterial>::default())
+        .add_plugins(RonAssetPlugin::<BattleData>::new(&["battle.ron"]))
         .add_plugins(RonAssetPlugin::<PackedUnit>::new(&["unit.ron"]))
         .add_plugins(RonAssetPlugin::<House>::new(&["house.ron"]))
-        .add_plugins(RonAssetPlugin::<BattleData>::new(&["battle.ron"]))
-        .add_plugins(RonAssetPlugin::<Representation>::new(&["rep.ron"]))
-        .add_plugins(RonAssetPlugin::<OptionsData>::new(&["options.ron"]))
-        .add_plugins(RonAssetPlugin::<Animations>::new(&["anim.ron"]))
         .add_plugins(RonAssetPlugin::<TestScenario>::new(&["scenario.ron"]))
+        .add_plugins(RonAssetPlugin::<Representation>::new(&["rep.ron"]))
+        .add_plugins(RonAssetPlugin::<Animations>::new(&["anim.ron"]))
         .add_plugins(RonAssetPlugin::<Vfx>::new(&["vfx.ron"]))
+        .add_plugins(bevy_egui::EguiPlugin)
+        .add_plugins(NoisyShaderPlugin)
         .add_plugins((
-            MainMenuPlugin,
-            RestartPlugin,
-            CustomBattlePlugin,
-            PoolsPlugin,
-            ActionPlugin,
-            UnitPlugin,
-            RepresentationPlugin,
-            ShopPlugin,
-            BattlePlugin,
-            TestPlugin,
-            SettingsPlugin,
-            AudioPlugin,
-            HeroEditorPlugin,
-            HeroGallery,
-            CameraPlugin,
-        ))
-        .add_plugins((
-            LoginPlugin,
-            ProfilePlugin,
-            PanelsPlugin,
+            LoadingPlugin,
             UiPlugin,
-            AlertPlugin,
-            AssetsUploadPlugin,
-            OperationsPlugin,
+            LoginPlugin,
+            ActionPlugin,
+            BattlePlugin,
             TeamPlugin,
-            MigrationPlugin,
-            HeroTablePlugin,
-            LeaderboardPlugin,
-            HelpPlugin,
-            PlayerTablePlugin,
+            GameStatePlugin,
+            TestScenariosPlugin,
+            ServerSyncPlugin,
+            WidgetsPlugin,
+            RepresentationPlugin,
+            CameraPlugin,
+            TextColumnPlugin,
+            ShopPlugin,
+            UnitPlugin,
         ))
-        .add_systems(Update, input_world);
-    app.add_systems(Startup, setup);
-    match args.mode {
-        RunMode::Regular
-        | RunMode::Offline
-        | RunMode::Continue
-        | RunMode::Last
-        | RunMode::Clipboard
-        | RunMode::Sync
-        | RunMode::Archive
-        | RunMode::Upload => {
-            app.add_systems(OnExit(GameState::Loading), LoginPlugin::setup);
-        }
-        RunMode::Test | RunMode::Custom | RunMode::Gallery | RunMode::Editor | RunMode::Table => {}
-    }
-
-    app.run();
+        .add_plugins((
+            OperationsPlugin,
+            ProfilePlugin,
+            StdbQueryPlugin,
+            ConnectPlugin,
+            TableViewPlugin,
+            GameArchivePlugin,
+            ClientSettingsPlugin,
+            MetaPlugin,
+            GameStartPlugin,
+            TeamEditorPlugin,
+        ))
+        .init_state::<GameState>()
+        .init_resource::<NotificationsResource>()
+        .init_resource::<TileResource>()
+        .init_resource::<UnitContainerResource>()
+        .run();
 }
+
+pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 fn setup(world: &mut World) {
     if let Some(ctx) = egui_context(world) {
@@ -186,39 +137,10 @@ fn setup(world: &mut World) {
     }
 }
 
-fn update(time: Res<Time>, audio: Res<AudioData>) {
-    let mut timer = GameTimer::get();
-    timer.advance_play(time.delta_seconds() * audio.cur_rate);
+fn update(time: Res<Time>) {
+    gt().update(time.delta_seconds())
 }
 
-fn input_world(world: &mut World) {
-    let input = world.get_resource::<ButtonInput<KeyCode>>().unwrap();
-    if !input.pressed(KeyCode::ControlLeft) {
-        return;
-    }
-    if input.just_pressed(KeyCode::KeyR) {
-        GameState::change(GameState::Restart, world);
-    }
+fn on_error_state(world: &mut World) {
+    app_exit(world)
 }
-
-fn detect_changes(
-    mut unit_events: EventReader<AssetEvent<PackedUnit>>,
-    mut rep_events: EventReader<AssetEvent<Representation>>,
-    mut vfx_events: EventReader<AssetEvent<Vfx>>,
-    mut state: ResMut<NextState<GameState>>,
-) {
-    if unit_events
-        .read()
-        .any(|x| matches!(x, AssetEvent::Modified { .. }))
-        || rep_events
-            .read()
-            .any(|x| matches!(x, AssetEvent::Modified { .. }))
-        || vfx_events
-            .read()
-            .any(|x| matches!(x, AssetEvent::Modified { .. }))
-    {
-        state.set(GameState::Loading)
-    }
-}
-
-pub const VERSION: &str = env!("CARGO_PKG_VERSION");

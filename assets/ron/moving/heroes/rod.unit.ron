@@ -1,0 +1,37 @@
+#![enable(implicit_some)]
+(
+    name: "Rod",
+    hp: 2,
+    pwr: 2,
+    rarity: 2,
+    houses: ["Robots"],
+    trigger: Fire(
+        triggers: [(AllyUsedAbility("Charge"), None)],
+        targets: [(RandomUnit(AllEnemyUnits), None)],
+        effects: [(Damage(None), "Damage {Pwr}")],
+    ),
+    representation: (
+        material: Shape(
+            shape: Rectangle(size: Vec2EE(Sum(F(0.1), Mul(Index, F(0.12))), F(1.8))),
+            shape_type: Opaque,
+            fill: GradientLinear(
+                point1: V2(0.0, -0.56),
+                point2: V2(0.0, 1.2),
+                parts: [F(0.0), Sum(Mul(Index, F(0.73)), F(0.39))],
+                colors: [OwnerState(Color), HexColor("#ffffff")],
+            ),
+            fbm: (
+                octaves: I(1),
+                lacunarity: F(1.0),
+                gain: F(1.0),
+                strength: Mul(Beat, F(0.1)),
+                offset: Index,
+            ),
+            alpha: F(0.3),
+            padding: F(0.3),
+        ),
+        children: [],
+        mapping: {},
+        count: 4,
+    ),
+)

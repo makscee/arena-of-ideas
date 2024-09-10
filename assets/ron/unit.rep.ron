@@ -1,40 +1,44 @@
 (
     material: Shape(
-        shape: Circle(radius: Sum(Mul(Beat, Float(0.1)), Float(1.0))),
-        shape_type: Line(thickness: Float(0.7)),
+        shape: Circle(radius: Value(Float(1.0))),
+        shape_type: Line(thickness: Value(Float(0.7))),
         fill: Solid(color: OwnerState(RarityColor)),
-        padding: Float(0.2),
+        padding: Value(Float(0.2)),
     ),
     children: [
         (
             material: Shape(
-                shape: Circle(radius: Float(0.3)),
-                fill: Solid(color: Hex("#FF3D00")),
-                shape_type: Line(thickness: Float(0.7)),
-                padding: Float(0.2),
+                shape: Circle(radius: Value(Float(0.3))),
+                fill: Solid(color: HexColor("#FF3D00")),
+                shape_type: Line(thickness: Value(Float(0.7))),
+                padding: Value(Float(0.2)),
             ),
-            mapping: {Offset: Vec2(0.9, -0.9)},
+            mapping: {Offset: Value(Vec2((0.9, -0.9)))},
             children: [
                 (
                     material: Text(
-                        text: StringInt(Sub(OwnerState(Hp), OwnerState(Dmg))),
-                        size: Float(0.6),
-                        color: If(GreaterThen(OwnerState(Dmg), Int(0)), Hex("#FF3D00"), Hex("#FFFFFF")),
+                        text: Sub(OwnerState(Hp), OwnerState(Dmg)),
+                        size: Value(Float(0.6)),
+                        color: If(
+                            GreaterThen(OwnerState(Dmg), Zero),
+                            HexColor("#FF3D00"),
+                            HexColor("#FFFFFF"),
+                        ),
                     ),
                 ),
             ],
         ),
         (
             material: Shape(
-                shape: Circle(radius: Float(0.3)),
-                fill: Solid(color: Hex("#FBC02D")),
-                shape_type: Line(thickness: Float(0.7)),
-                padding: Float(0.2),
+                shape: Circle(radius: Value(Float(0.3))),
+                fill: Solid(color: HexColor("#FBC02D")),
+                shape_type: Line(thickness: Value(Float(0.7))),
+                padding: Value(Float(0.2)),
             ),
-            mapping: {Offset: Vec2(-0.9, -0.9)},
+            mapping: {Offset: Value(Vec2((-0.9, -0.9)))},
             children: [
                 (
-                    material: Text(text: StringInt(OwnerState(Pwr)), size: Float(0.6), color: Hex("#FBC02D")),
+                    material: Text(text: OwnerState(Pwr), size: Value(Float(0.6)), color: HexColor("#FBC02D")),
                 ),
             ],
         ),

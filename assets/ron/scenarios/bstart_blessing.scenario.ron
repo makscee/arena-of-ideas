@@ -1,0 +1,17 @@
+#![enable(implicit_some)]
+(
+    left: (
+        units: [
+            (
+                hp: 1,
+                pwr: 1,
+                trigger: Fire(
+                    triggers: [(BattleStart, None)],
+                    targets: [(Owner, None)],
+                    effects: [(UseAbility("Blessing", 0), None)],
+                ),
+            ),
+        ],
+    ),
+    right: (units: [(hp: 1, pwr: 1), (hp: 1, pwr: 1)]),
+)

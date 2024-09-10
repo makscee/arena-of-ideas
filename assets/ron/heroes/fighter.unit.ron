@@ -1,11 +1,10 @@
 #![enable(implicit_some)]
 (
     name: "Fighter",
-    hp: 3,
+    hp: 1,
     pwr: 1,
-    stacks: 1,
     rarity: 0,
-    houses: "Warriors",
+    houses: ["Warriors"],
     trigger: Fire(
         triggers: [(BeforeStrike, None)],
         targets: [(Owner, None)],
@@ -13,17 +12,15 @@
     ),
     representation: (
         material: Shape(
-            shape: Rectangle(size: Vec2E(Float(1.13))),
-            shape_type: Line(thickness: Float(1.0)),
+            shape: Rectangle(size: Vec2E(F(1.13))),
+            shape_type: Line(thickness: F(1.0)),
             fill: Solid(color: OwnerState(Color)),
             fbm: None,
-            alpha: Float(1.0),
-            padding: Float(0.0),
+            alpha: F(1.0),
+            padding: F(0.0),
         ),
         children: [],
-        mapping: {Offset: Mul(Mul(Mul(Index, Float(0.04)), Sin(GameTime)), UnitVec(Mul(Index, Float(1.0))))},
+        mapping: {Offset: Mul(Mul(Mul(Index, F(0.04)), Sin(GT)), UnitVec(Mul(Index, F(1.0))))},
         count: 7,
     ),
-    state: (history: {}, birth: 0.0),
-    statuses: [],
 )

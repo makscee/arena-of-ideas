@@ -1,10 +1,5 @@
 use super::*;
 
-use bevy_egui::egui::ComboBox;
-use convert_case::Casing;
-use event::Event;
-use strum_macros::Display;
-
 #[derive(Deserialize, Serialize, Clone, Debug, Display, PartialEq, EnumIter)]
 #[serde(deny_unknown_fields)]
 pub enum Trigger {
@@ -33,13 +28,14 @@ pub enum DeltaTrigger {
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq, EnumIter, Default, AsRefStr)]
 pub enum FireTrigger {
     #[default]
-    Noop,
+    None,
     List(Vec<Box<FireTrigger>>),
     Period(usize, usize, Box<FireTrigger>),
     OnceAfter(i32, Box<FireTrigger>),
     UnitUsedAbility(String),
     AllyUsedAbility(String),
     EnemyUsedAbility(String),
+    If(Expression, Box<FireTrigger>),
     AfterIncomingDamage,
     AfterDamageTaken,
     AfterDamageDealt,
@@ -57,7 +53,7 @@ pub enum FireTrigger {
 }
 
 impl FireTrigger {
-    fn catch(&mut self, event: &Event, context: &Context, world: &World) -> bool {
+    fn catch(&mut self, event: &Event, context: &Context, world: &mut World) -> bool {
         match self {
             FireTrigger::List(list) => list.iter_mut().any(|t| t.catch(event, context, world)),
             FireTrigger::AfterIncomingDamage => matches!(event, Event::IncomingDamage { .. }),
@@ -75,19 +71,18 @@ impl FireTrigger {
             FireTrigger::AllyDeath => match event {
                 Event::Death(dead) => {
                     !context.owner().eq(dead)
-                        && UnitPlugin::get_faction(*dead, world)
-                            .eq(&UnitPlugin::get_faction(context.owner(), world))
+                        && dead.faction(world).eq(&context.owner().faction(world))
                 }
                 _ => false,
             },
             FireTrigger::AllySummon => match event {
-                Event::Summon(e) => UnitPlugin::get_faction(*e, world)
-                    .eq(&UnitPlugin::get_faction(context.owner(), world)),
+                Event::Summon(e) => e.faction(world).eq(&context.owner().faction(world)),
                 _ => false,
             },
             FireTrigger::EnemySummon => match event {
-                Event::Summon(e) => UnitPlugin::get_faction(*e, world)
-                    .eq(&UnitPlugin::get_faction(context.owner(), world).opposite()),
+                Event::Summon(e) => e
+                    .faction(world)
+                    .eq(&context.owner().faction(world).opposite()),
                 _ => false,
             },
             FireTrigger::UnitUsedAbility(name) => match event {
@@ -97,17 +92,21 @@ impl FireTrigger {
             FireTrigger::AllyUsedAbility(name) => match event {
                 Event::UseAbility(e) => {
                     e.eq(name)
-                        && UnitPlugin::get_faction(context.owner(), world)
-                            .eq(&UnitPlugin::get_faction(context.caster(), world))
+                        && context
+                            .owner()
+                            .faction(world)
+                            .eq(&context.caster().faction(world))
                 }
                 _ => false,
             },
             FireTrigger::EnemyUsedAbility(name) => match event {
                 Event::UseAbility(e) => {
                     e.eq(name)
-                        && UnitPlugin::get_faction(context.owner(), world)
+                        && context
+                            .owner()
+                            .faction(world)
                             .opposite()
-                            .eq(&UnitPlugin::get_faction(context.target(), world))
+                            .eq(&context.target().faction(world))
                 }
                 _ => false,
             },
@@ -134,173 +133,13 @@ impl FireTrigger {
                 *counter -= 1;
                 *counter == -1
             }
-            FireTrigger::Noop => false,
+            FireTrigger::If(cond, trigger) => {
+                cond.get_bool(context, world).unwrap_or_default()
+                    && trigger.catch(event, context, world)
+            }
+            FireTrigger::None => false,
         }
     }
-
-    pub fn show_editor(&mut self, name: impl std::hash::Hash, ui: &mut Ui) {
-        ui.horizontal(|ui| {
-            ComboBox::from_id_source(name)
-                .selected_text(self.to_string())
-                .width(150.0)
-                .show_ui(ui, |ui| {
-                    for option in FireTrigger::iter() {
-                        let text = option.to_string();
-                        ui.selectable_value(self, option, text);
-                    }
-                });
-        });
-    }
-}
-
-impl EditorNodeGenerator for FireTrigger {
-    fn node_color(&self) -> Color32 {
-        match self {
-            FireTrigger::Noop
-            | FireTrigger::AfterIncomingDamage
-            | FireTrigger::AfterDamageTaken
-            | FireTrigger::AfterDamageDealt
-            | FireTrigger::BattleStart
-            | FireTrigger::TurnStart
-            | FireTrigger::TurnEnd
-            | FireTrigger::BeforeStrike
-            | FireTrigger::AfterStrike
-            | FireTrigger::AllyDeath
-            | FireTrigger::AnyDeath
-            | FireTrigger::AllySummon
-            | FireTrigger::EnemySummon
-            | FireTrigger::BeforeDeath
-            | FireTrigger::AfterKill
-            | FireTrigger::AllyUsedAbility(..)
-            | FireTrigger::EnemyUsedAbility(..)
-            | FireTrigger::UnitUsedAbility(..) => hex_color!("#80D8FF"),
-            FireTrigger::Period(..) | FireTrigger::OnceAfter(..) => hex_color!("#18FFFF"),
-            FireTrigger::List(_) => hex_color!("#FFEB3B"),
-        }
-    }
-
-    fn show_children(
-        &mut self,
-        path: &str,
-        connect_pos: Option<Pos2>,
-        context: &Context,
-        ui: &mut Ui,
-        world: &mut World,
-    ) {
-        match self {
-            FireTrigger::List(list) => {
-                ui.vertical(|ui| {
-                    for (i, eff) in list.iter_mut().enumerate() {
-                        ui.horizontal(|ui| {
-                            show_node(
-                                eff.as_mut(),
-                                format!("{path}:t{i}"),
-                                connect_pos,
-                                context,
-                                ui,
-                                world,
-                            );
-                        });
-                    }
-                    if ui.button("+").clicked() {
-                        list.push(default());
-                    }
-                });
-            }
-            FireTrigger::Period(_, _, t) | FireTrigger::OnceAfter(_, t) => show_node(
-                t.as_mut(),
-                format!("{path}/t"),
-                connect_pos,
-                context,
-                ui,
-                world,
-            ),
-            FireTrigger::Noop
-            | FireTrigger::AfterIncomingDamage
-            | FireTrigger::AfterDamageTaken
-            | FireTrigger::AfterDamageDealt
-            | FireTrigger::BattleStart
-            | FireTrigger::TurnStart
-            | FireTrigger::TurnEnd
-            | FireTrigger::BeforeStrike
-            | FireTrigger::AfterStrike
-            | FireTrigger::AllyDeath
-            | FireTrigger::AnyDeath
-            | FireTrigger::AllySummon
-            | FireTrigger::EnemySummon
-            | FireTrigger::BeforeDeath
-            | FireTrigger::AfterKill
-            | FireTrigger::AllyUsedAbility(..)
-            | FireTrigger::EnemyUsedAbility(..)
-            | FireTrigger::UnitUsedAbility(..) => default(),
-        }
-    }
-
-    fn show_extra(&mut self, path: &str, _: &Context, world: &mut World, ui: &mut Ui) {
-        match self {
-            FireTrigger::List(list) => {
-                if ui.button("CLEAR").clicked() {
-                    list.clear()
-                }
-            }
-            FireTrigger::Period(_, delay, _) => {
-                DragValue::new(delay).ui(ui);
-            }
-            FireTrigger::OnceAfter(delay, _) => {
-                DragValue::new(delay).ui(ui);
-            }
-            FireTrigger::AllyUsedAbility(name)
-            | FireTrigger::EnemyUsedAbility(name)
-            | FireTrigger::UnitUsedAbility(name) => {
-                ComboBox::from_id_source(&path)
-                    .selected_text(name.to_owned())
-                    .show_ui(ui, |ui| {
-                        for option in Pools::get(world).abilities.keys().sorted() {
-                            let text = option.to_string();
-                            ui.selectable_value(name, option.to_owned(), text);
-                        }
-                    });
-            }
-            FireTrigger::Noop
-            | FireTrigger::AfterIncomingDamage
-            | FireTrigger::AfterDamageTaken
-            | FireTrigger::AfterDamageDealt
-            | FireTrigger::BattleStart
-            | FireTrigger::TurnStart
-            | FireTrigger::TurnEnd
-            | FireTrigger::BeforeStrike
-            | FireTrigger::AfterStrike
-            | FireTrigger::AllyDeath
-            | FireTrigger::AnyDeath
-            | FireTrigger::AllySummon
-            | FireTrigger::EnemySummon
-            | FireTrigger::BeforeDeath
-            | FireTrigger::AfterKill => {}
-        }
-    }
-
-    fn show_replace_buttons(&mut self, lookup: &str, submit: bool, ui: &mut Ui) -> bool {
-        for e in FireTrigger::iter() {
-            if e.as_ref().to_lowercase().contains(lookup) {
-                let btn = e.as_ref().add_color(e.node_color()).rich_text(ui);
-                let btn = ui.button(btn);
-                if btn.clicked() || submit {
-                    btn.request_focus();
-                }
-                if btn.gained_focus() {
-                    *self = e;
-                    return true;
-                }
-            }
-        }
-        false
-    }
-
-    fn wrap(&mut self) {
-        *self = FireTrigger::List([Box::new(self.clone())].into());
-    }
-
-    fn show_context_menu(&mut self, _: &mut Ui) {}
 }
 
 impl DeltaTrigger {
@@ -345,7 +184,7 @@ impl Trigger {
                             match effect {
                                 Effect::UseAbility(name, _) => {
                                     Event::UseAbility(name.clone()).send_with_context(
-                                        context.clone().set_caster(context.owner(), world).take(),
+                                        context.clone().set_caster(context.owner()).take(),
                                         world,
                                     );
                                 }
@@ -374,7 +213,6 @@ impl Trigger {
             Trigger::Change { .. } => false,
         }
     }
-
     pub fn change(
         &self,
         event: &Event,
@@ -400,7 +238,6 @@ impl Trigger {
         };
         Ok(())
     }
-
     pub fn collect_mappings(
         &self,
         context: &Context,
@@ -415,55 +252,93 @@ impl Trigger {
                 DeltaTrigger::IncomingDamage => default(),
                 DeltaTrigger::Var(var) => match expr.get_value(context, world) {
                     Ok(value) => [(*var, value)].into(),
-                    Err(_) => default(),
+                    Err(e) => {
+                        debug!("{} {e}", "Mapping error:".red());
+                        default()
+                    }
                 },
             },
             Trigger::Fire { .. } => default(),
         }
     }
-
-    pub fn has_stat_change(&self) -> bool {
-        match self {
-            Trigger::List(list) => list.iter().any(|t| t.has_stat_change()),
-            Trigger::Change { .. } => true,
-            Trigger::Fire { .. } => false,
-        }
-    }
-
-    pub fn inject_description(&self, state: &mut VarState) {
+    pub fn parse_fire_strings(&self) -> (Vec<Cstr>, Vec<Cstr>, Vec<Cstr>) {
+        let mut cs = (Vec::new(), Vec::new(), Vec::new());
         match self {
             Trigger::Fire {
                 triggers,
                 targets,
                 effects,
             } => {
-                let trigger = triggers
-                    .into_iter()
-                    .map(|(t, s)| s.clone().unwrap_or_else(|| t.to_string()))
-                    .join(" & ");
-                let effect = effects
-                    .into_iter()
-                    .map(|(e, s)| s.clone().unwrap_or_else(|| e.to_string()))
-                    .join(" & ");
-                let target = targets
-                    .into_iter()
-                    .map(|(t, s)| s.clone().unwrap_or_else(|| t.to_string()))
-                    .join(" & ");
-                state
-                    .init(VarName::TriggerDescription, VarValue::String(trigger))
-                    .init(VarName::EffectDescription, VarValue::String(effect))
-                    .init(VarName::TargetDescription, VarValue::String(target));
+                for (trigger, rename) in triggers {
+                    if let Some(rename) = rename {
+                        cs.0.push(
+                            Cstr::parse(rename)
+                                .replace_absent_color(VISIBLE_LIGHT)
+                                .take(),
+                        );
+                    } else {
+                        cs.0.push(trigger.cstr());
+                    }
+                }
+                for (target, rename) in targets {
+                    if let Some(rename) = rename {
+                        cs.1.push(
+                            Cstr::parse(rename)
+                                .replace_absent_color(VISIBLE_LIGHT)
+                                .take(),
+                        );
+                    } else {
+                        cs.1.push(target.cstr());
+                    }
+                }
+                for (effect, rename) in effects {
+                    if let Some(rename) = rename {
+                        cs.2.push(
+                            Cstr::parse(rename)
+                                .replace_absent_color(VISIBLE_LIGHT)
+                                .take(),
+                        );
+                    } else {
+                        cs.2.push(effect.cstr());
+                    }
+                }
             }
-            Trigger::Change { .. } => {}
-            Trigger::List(list) => list.iter().for_each(|t| t.inject_description(state)),
+            _ => panic!("Has to be Trigger::Fire"),
         }
+        cs
     }
 }
 
-impl std::fmt::Display for FireTrigger {
-    fn fmt(&self, f: &mut __private::Formatter<'_>) -> std::fmt::Result {
+impl ToCstr for FireTrigger {
+    fn cstr(&self) -> Cstr {
         match self {
-            FireTrigger::Noop
+            FireTrigger::List(list) => {
+                Cstr::join_vec(list.iter().map(|t| t.cstr_c(VISIBLE_LIGHT)).collect_vec())
+                    .join(&" + ".cstr_c(VISIBLE_DARK))
+                    .take()
+            }
+            FireTrigger::Period(_, delay, trigger) => format!("Every {delay} ")
+                .cstr()
+                .push(trigger.cstr())
+                .color(VISIBLE_LIGHT)
+                .take(),
+            FireTrigger::OnceAfter(delay, trigger) => format!("Once in {delay} ")
+                .cstr()
+                .push(trigger.cstr())
+                .color(VISIBLE_LIGHT)
+                .take(),
+            FireTrigger::If(cond, trigger) => {
+                trigger.cstr().push(" if ".cstr()).push(cond.cstr()).take()
+            }
+            FireTrigger::UnitUsedAbility(name)
+            | FireTrigger::AllyUsedAbility(name)
+            | FireTrigger::EnemyUsedAbility(name) => self
+                .as_ref()
+                .to_case(Case::Lower)
+                .cstr_c(VISIBLE_LIGHT)
+                .push(format!(" {name}").cstr_cs(name_color(name), CstrStyle::Bold))
+                .take(),
+            FireTrigger::None
             | FireTrigger::AfterIncomingDamage
             | FireTrigger::AfterDamageTaken
             | FireTrigger::AfterDamageDealt
@@ -477,28 +352,7 @@ impl std::fmt::Display for FireTrigger {
             | FireTrigger::AllySummon
             | FireTrigger::EnemySummon
             | FireTrigger::BeforeDeath
-            | FireTrigger::AfterKill => {
-                write!(f, "{}", self.as_ref().to_case(convert_case::Case::Lower))
-            }
-            FireTrigger::List(list) => write!(
-                f,
-                "({})",
-                list.into_iter().map(|t| t.to_string()).join(" + ")
-            ),
-            FireTrigger::Period(_, delay, trigger) => {
-                write!(f, "Every {} {}", *delay + 1, trigger)
-            }
-            FireTrigger::OnceAfter(delay, trigger) => {
-                write!(f, "Once in {delay} {trigger}")
-            }
-            FireTrigger::AllyUsedAbility(name)
-            | FireTrigger::EnemyUsedAbility(name)
-            | FireTrigger::UnitUsedAbility(name) => write!(
-                f,
-                "{} [{}]",
-                self.as_ref().to_case(convert_case::Case::Lower),
-                name
-            ),
+            | FireTrigger::AfterKill => self.as_ref().to_case(Case::Lower).cstr_c(VISIBLE_LIGHT),
         }
     }
 }

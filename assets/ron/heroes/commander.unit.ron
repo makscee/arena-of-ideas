@@ -3,9 +3,8 @@
     name: "Commander",
     hp: 2,
     pwr: 3,
-    stacks: 1,
     rarity: 1,
-    houses: "Warriors",
+    houses: ["Warriors"],
     trigger: Fire(
         triggers: [(BattleStart, None)],
         targets: [(AdjacentUnits, None)],
@@ -14,28 +13,16 @@
     representation: (
         material: Shape(
             shape: Rectangle(
-                size: Vec2E(
-                    Sum(
-                        Mul(Float(0.11), Index),
-                        Sum(Float(0.52), Sub(Zero, Mul(Beat, Float(0.05)))),
-                    ),
-                ),
+                size: Vec2E(Sum(Mul(F(0.11), Index), Sum(F(0.52), Sub(Zero, Mul(Beat, F(0.05)))))),
             ),
-            shape_type: Line(thickness: Sum(Float(0.6), Mul(Sin(Sum(GameTime, Index)), Float(0.4)))),
+            shape_type: Line(thickness: Sum(F(0.6), Mul(Sin(Sum(GT, Index)), F(0.4)))),
             fill: Solid(color: OwnerState(Color)),
             fbm: None,
-            alpha: Float(1.0),
-            padding: Float(0.0),
+            alpha: F(1.0),
+            padding: F(0.0),
         ),
         children: [],
-        mapping: {
-            Offset: Sum(
-                Mul(UnitVec(GameTime), Mul(Index, Float(0.04))),
-                Vec2EE(Mul(Sin(GameTime), Float(0.1)), Zero),
-            ),
-        },
+        mapping: {Offset: Sum(Mul(UnitVec(GT), Mul(Index, F(0.04))), Vec2EE(Mul(Sin(GT), F(0.1)), Zero))},
         count: 6,
     ),
-    state: (history: {}, birth: 0.0),
-    statuses: [],
 )

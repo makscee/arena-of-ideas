@@ -12,7 +12,15 @@
                 [
                     Fire(
                         triggers: [(TurnEnd, None)],
-                        effects: [(WithTarget(Owner, WithOwner(Status, Damage(Context(Charges)))), None)],
+                        effects: [
+                            (
+                                WithTarget(
+                                    Owner,
+                                    WithOwner(Status, WithVar(Value, Context(Charges), Damage)),
+                                ),
+                                None,
+                            ),
+                        ],
                     ),
                     Fire(
                         triggers: [(BeforeDeath, None)],
@@ -32,62 +40,58 @@
         (
             name: "Plague",
             description: "Target takes {1} DMG every turn, [Summon Skeleton] after death",
-            effect: AddStatus("Plague"),
+            effect: List([Vfx("apply_status"), ChangeStatus("Plague")]),
         ),
         (
             name: "Summon Skeleton",
-            description: "Summon unfriendly 1/4 unit{M1|, applies [Plague] on damage dealt}",
+            description: "Summon unfriendly 1/4 unit{M1| that applies [Plague] on damage dealt}",
             effect: WithVar(Faction, OppositeFaction, Summon("Skeleton", None)),
         ),
-        (name: "Decay", description: "Give -{1} HP", effect: AddStatus("Decay")),
+        (
+            name: "Decay",
+            description: "Give -{1} HP",
+            effect: List([Vfx("apply_status"), ChangeStatus("Decay")]),
+        ),
     ],
     summons: [
         (
             name: "Skeleton",
             hp: 4,
             pwr: 1,
-            stacks: 1,
-            houses: "Death Knights",
-            state: (history: {StatusImmunity: ([(t: 0, value: String("Plague"))])}),
+            xp: 1,
+            houses: ["Death Knights"],
             trigger: Fire(
                 triggers: [(AfterDamageDealt, None)],
                 targets: [(Target, None)],
-                effects: [(If(AbilityState("Summon Skeleton", M1), UseAbility("Plague", 0), Noop), None)],
+                effects: [(If(AbilityContext("Summon Skeleton", M1), UseAbility("Plague", 0), Noop), None)],
             ),
             representation: (
                 material: Shape(
-                    shape: Rectangle(size: Vec2(0.05, 1.0)),
+                    shape: Rectangle(size: V2(0.05, 1.0)),
                     shape_type: Opaque,
                     fill: Solid(color: OwnerState(Color)),
-                    alpha: Float(1.0),
+                    alpha: F(1.0),
                 ),
                 children: [],
                 mapping: {
                     Offset: Mul(
                         UnitVec(
                             Mul(
-                                Sub(
-                                    RandomFloat(Sum(Index, Sum(Int(200), ToInt(GameTime)))),
-                                    Float(0.5),
-                                ),
-                                Mul(PI, Float(2.0)),
+                                Sub(RandomF(Sum(Index, Sum(I(200), ToI(GT)))), F(0.5)),
+                                Mul(PI, F(2.0)),
                             ),
                         ),
-                        Float(0.5),
+                        F(0.5),
                     ),
                     Rotation: Mul(
-                        RandomFloat(
-                            Sum(
-                                Mul(Index, Int(10)),
-                                Sum(Int(29), ToInt(Sum(GameTime, Mul(Index, Float(0.1))))),
-                            ),
+                        RandomF(
+                            Sum(Mul(Index, I(10)), Sum(I(29), ToI(Sum(GT, Mul(Index, F(0.1)))))),
                         ),
-                        Mul(PI, Float(2.0)),
+                        Mul(PI, F(2.0)),
                     ),
                 },
                 count: 12,
             ),
-            statuses: [],
         ),
     ],
 )

@@ -1,456 +1,278 @@
 {
-	"version": "2.0.0",
-	"tasks": [
-		{
-			"type": "cargo",
-			"command": "run",
-			"problemMatcher": [
-				"$rustc"
-			],
-			"label": "Clean",
-			"args": [
-				"--features",
-				"bevy/dynamic_linking",
-				"--",
-				"--mode",
-				"clean",
-			],
-			"group": {
-				"kind": "build"
-			},
-			"env": {
-				"RUST_BACKTRACE": "1"
-			}
-		},
-		{
-			"type": "cargo",
-			"command": "run",
-			"problemMatcher": [
-				"$rustc"
-			],
-			"label": "Regular",
-			"args": [
-				"--features",
-				"bevy/dynamic_linking",
-				"--",
-				"--mode",
-				"regular"
-			],
-			"group": {
-				"kind": "build",
-				"isDefault": true
-			},
-			"env": {
-				"RUST_BACKTRACE": "1"
-			}
-		},
-		{
-			"type": "cargo",
-			"command": "run",
-			"problemMatcher": [
-				"$rustc"
-			],
-			"label": "Offline",
-			"args": [
-				"--features",
-				"bevy/dynamic_linking",
-				"--",
-				"--mode",
-				"offline"
-			],
-			"group": {
-				"kind": "build"
-			},
-			"env": {
-				"RUST_BACKTRACE": "1"
-			}
-		},
-		{
-			"type": "cargo",
-			"command": "run",
-			"problemMatcher": [
-				"$rustc"
-			],
-			"label": "Custom",
-			"args": [
-				"--features",
-				"bevy/dynamic_linking",
-				"--",
-				"--mode",
-				"custom"
-			],
-			"group": {
-				"kind": "build"
-			},
-			"env": {
-				"RUST_BACKTRACE": "1"
-			}
-		},
-		{
-			"type": "cargo",
-			"command": "run",
-			"problemMatcher": [
-				"$rustc"
-			],
-			"label": "Gallery",
-			"args": [
-				"--features",
-				"bevy/dynamic_linking",
-				"--",
-				"--mode",
-				"gallery"
-			],
-			"group": {
-				"kind": "build"
-			},
-			"env": {
-				"RUST_BACKTRACE": "1"
-			}
-		},
-		{
-			"type": "cargo",
-			"command": "run",
-			"problemMatcher": [
-				"$rustc"
-			],
-			"label": "Last",
-			"args": [
-				"--features",
-				"bevy/dynamic_linking",
-				"--",
-				"--mode",
-				"last"
-			],
-			"group": {
-				"kind": "build"
-			},
-			"env": {
-				"RUST_BACKTRACE": "1"
-			}
-		},
-		{
-			"type": "cargo",
-			"command": "run",
-			"problemMatcher": [
-				"$rustc"
-			],
-			"label": "Clipboard",
-			"args": [
-				"--features",
-				"bevy/dynamic_linking",
-				"--",
-				"--mode",
-				"clipboard"
-			],
-			"group": {
-				"kind": "build"
-			},
-			"env": {
-				"RUST_BACKTRACE": "1"
-			}
-		},
-		{
-			"type": "cargo",
-			"command": "run",
-			"problemMatcher": [
-				"$rustc"
-			],
-			"label": "Editor",
-			"args": [
-				"--features",
-				"bevy/dynamic_linking",
-				"--",
-				"--mode",
-				"editor"
-			],
-			"group": {
-				"kind": "build"
-			},
-			"env": {
-				"RUST_BACKTRACE": "1"
-			}
-		},
-		{
-			"type": "cargo",
-			"command": "run",
-			"problemMatcher": [
-				"$rustc"
-			],
-			"label": "Table",
-			"args": [
-				"--features",
-				"bevy/dynamic_linking",
-				"--",
-				"--mode",
-				"table"
-			],
-			"group": {
-				"kind": "build"
-			},
-			"env": {
-				"RUST_BACKTRACE": "1"
-			}
-		},
-		{
-			"type": "cargo",
-			"command": "run",
-			"problemMatcher": [
-				"$rustc"
-			],
-			"label": "Continue",
-			"args": [
-				"--features",
-				"bevy/dynamic_linking",
-				"--",
-				"--mode",
-				"continue"
-			],
-			"group": {
-				"kind": "build"
-			},
-			"env": {
-				"RUST_BACKTRACE": "1"
-			}
-		},
-		{
-			"type": "cargo",
-			"command": "run",
-			"problemMatcher": [
-				"$rustc"
-			],
-			"label": "Test Scenarios",
-			"args": [
-				"--",
-				"--mode",
-				"test"
-			],
-			"group": {
-				"kind": "build"
-			},
-			"env": {
-				"RUST_BACKTRACE": "1"
-			}
-		},
-		{
-			"type": "cargo",
-			"command": "run",
-			"problemMatcher": [
-				"$rustc"
-			],
-			"label": "Single Test Scenario",
-			"args": [
-				"--",
-				"--mode",
-				"test",
-				"--path",
-				"ron/scenarios/amnesia_stop_other_battle_start.scenario.ron"
-			],
-			"group": {
-				"kind": "build"
-			},
-			"env": {
-				"RUST_BACKTRACE": "1"
-			}
-		},
-		{
-			"type": "cargo",
-			"command": "run",
-			"problemMatcher": [
-				"$rustc"
-			],
-			"label": "Sync Assets",
-			"args": [
-				"--features",
-				"bevy/dynamic_linking",
-				"--",
-				"--mode",
-				"sync"
-			],
-			"group": {
-				"kind": "build"
-			},
-			"env": {
-				"RUST_BACKTRACE": "1"
-			}
-		},
-		{
-			"type": "cargo",
-			"command": "run",
-			"problemMatcher": [
-				"$rustc"
-			],
-			"label": "Stash Store",
-			"args": [
-				"--features",
-				"bevy/dynamic_linking",
-				"--",
-				"--mode",
-				"archive"
-			],
-			"group": {
-				"kind": "build"
-			},
-			"env": {
-				"RUST_BACKTRACE": "1"
-			}
-		},
-		{
-			"type": "cargo",
-			"command": "run",
-			"problemMatcher": [
-				"$rustc"
-			],
-			"label": "Stash Upload",
-			"args": [
-				"--features",
-				"bevy/dynamic_linking",
-				"--",
-				"--mode",
-				"upload"
-			],
-			"group": {
-				"kind": "build"
-			},
-			"env": {
-				"RUST_BACKTRACE": "1"
-			}
-		},
-		{
-			"label": "Format Ron",
-			"type": "shell",
-			"group": {
-				"kind": "build"
-			},
-			"command": "find ./assets/ron/. -iname '*.ron' -exec ronfmt -w 100 \"{}\" \\;; rm ./assets/ron/**/*.bak;"
-		},
-		{
-			"label": "STDB: Publish",
-			"type": "shell",
-			"group": {
-				"kind": "build"
-			},
-			"command": "spacetime publish aoi_dev2 -p server"
-		},
-		{
-			"label": "STDB: Publish & Clear",
-			"type": "shell",
-			"group": {
-				"kind": "build"
-			},
-			"command": "spacetime publish -c aoi_dev2 -p server"
-		},
-		{
-			"label": "STDB: Start",
-			"type": "shell",
-			"group": {
-				"kind": "build"
-			},
-			"command": "spacetime start --listen-addr 127.0.0.1:3001"
-		},
-		{
-			"label": "STDB: Generate Bindings",
-			"type": "shell",
-			"group": {
-				"kind": "build"
-			},
-			"command": "spacetime generate --lang rust --out-dir src/module_bindings --project-path server"
-		},
-		{
-			"label": "STDB: Run SQL",
-			"type": "shell",
-			"group": {
-				"kind": "build"
-			},
-			"command": "spacetime sql aoi_dev2 --interactive"
-		},
-		{
-			"label": "Flamegraph: Run Debug",
-			"type": "shell",
-			"group": {
-				"kind": "build"
-			},
-			"command": "sudo cargo flamegraph --dev -- --mode custom"
-		},
-		{
-			"label": "Flamegraph: Run Release",
-			"type": "shell",
-			"group": {
-				"kind": "build"
-			},
-			"command": "sudo cargo flamegraph"
-		},
-		{
-			"label": "Mac lipo",
-			"type": "shell",
-			"group": {
-				"kind": "build"
-			},
-			"command": "mkdir -p target/ArenaOfIdeas.app/Contents/MacOS/; lipo \"target/x86_64-apple-darwin/release/arena-of-ideas\" \"target/aarch64-apple-darwin/release/arena-of-ideas\" -create -output \"target/ArenaOfIdeas.app/Contents/MacOS/ArenaOfIdeas\""
-		},
-		{
-			"label": "Mac Build & lipo",
-			"type": "shell",
-			"group": {
-				"kind": "build"
-			},
-			"command": "cargo build --release --target x86_64-apple-darwin; cargo build --release --target aarch64-apple-darwin; mkdir -p target/ArenaOfIdeas.app/Contents/MacOS/; lipo \"target/x86_64-apple-darwin/release/arena-of-ideas\" \"target/aarch64-apple-darwin/release/arena-of-ideas\" -create -output \"target/ArenaOfIdeas.app/Contents/MacOS/ArenaOfIdeas\""
-		},
-		{
-			"type": "cargo",
-			"command": "test",
-			"args": [
-				"--",
-				"--show-output"
-			],
-			"problemMatcher": [
-				"$rustc"
-			],
-			"label": "Test",
-			"group": {
-				"kind": "build"
-			},
-			"env": {
-				"LOG": "debug",
-				"RUST_BACKTRACE": "1"
-			}
-		},
-		{
-			"type": "cargo",
-			"command": "build",
-			"args": [
-				"--release"
-			],
-			"problemMatcher": [
-				"$rustc"
-			],
-			"label": "Build Mac",
-			"group": {
-				"kind": "build"
-			},
-			"env": {
-				"LOG": "warn",
-				"CARGO_MANIFEST_DIR": "."
-			}
-		},
-		{
-			"type": "cargo",
-			"command": "build",
-			"args": [
-				"--release",
-				"--target",
-				"x86_64-pc-windows-msvc"
-			],
-			"problemMatcher": [
-				"$rustc"
-			],
-			"label": "Build Win",
-			"group": {
-				"kind": "build"
-			},
-			"env": {
-				"LOG": "warn",
-				"CARGO_MANIFEST_DIR": "."
-			}
-		}
-	]
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "type": "cargo",
+      "command": "run",
+      "problemMatcher": [
+        "$rustc"
+      ],
+      "label": "Regular",
+      "args": [
+        "--features",
+        "bevy/dynamic_linking",
+        "--",
+        "--mode",
+        "regular"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "type": "cargo",
+      "command": "run",
+      "problemMatcher": [
+        "$rustc"
+      ],
+      "label": "Custom",
+      "args": [
+        "--features",
+        "bevy/dynamic_linking",
+        "--",
+        "--mode",
+        "custom"
+      ],
+      "group": {
+        "kind": "build"
+      }
+    },
+    {
+      "type": "cargo",
+      "command": "run",
+      "problemMatcher": [
+        "$rustc"
+      ],
+      "label": "Shop",
+      "args": [
+        "--features",
+        "bevy/dynamic_linking",
+        "--",
+        "--mode",
+        "shop"
+      ],
+      "group": {
+        "kind": "build"
+      }
+    },
+    {
+      "type": "cargo",
+      "command": "run",
+      "problemMatcher": [
+        "$rustc"
+      ],
+      "label": "Archive Download",
+      "args": [
+        "--features",
+        "bevy/dynamic_linking",
+        "--",
+        "--mode",
+        "archive-download"
+      ],
+      "group": {
+        "kind": "build"
+      }
+    },
+    {
+      "type": "cargo",
+      "command": "run",
+      "problemMatcher": [
+        "$rustc"
+      ],
+      "label": "Archive Upload",
+      "args": [
+        "--features",
+        "bevy/dynamic_linking",
+        "--",
+        "--mode",
+        "archive-upload"
+      ],
+      "group": {
+        "kind": "build"
+      }
+    },
+    {
+      "type": "cargo",
+      "command": "run",
+      "problemMatcher": [
+        "$rustc"
+      ],
+      "label": "Test Scenarios",
+      "args": [
+        "--features",
+        "bevy/dynamic_linking",
+        "--",
+        "--mode",
+        "test"
+      ],
+      "group": {
+        "kind": "build"
+      }
+    },
+    {
+      "type": "cargo",
+      "command": "run",
+      "problemMatcher": [
+        "$rustc"
+      ],
+      "label": "Single Test Scenario",
+      "args": [
+        "--",
+        "--mode",
+        "test",
+        "--path",
+        "ron/scenarios/lose.scenario.ron"
+      ],
+      "group": {
+        "kind": "build"
+      }
+    },
+    {
+      "type": "cargo",
+      "command": "run",
+      "problemMatcher": [
+        "$rustc"
+      ],
+      "label": "Sync Assets",
+      "args": [
+        "--features",
+        "bevy/dynamic_linking",
+        "--",
+        "--mode",
+        "sync"
+      ],
+      "group": {
+        "kind": "build"
+      }
+    },
+    {
+      "type": "cargo",
+      "command": "run",
+      "problemMatcher": [
+        "$rustc"
+      ],
+      "label": "Offline",
+      "args": [
+        "--features",
+        "bevy/dynamic_linking",
+        "--",
+        "--mode",
+        "offline"
+      ],
+      "group": {
+        "kind": "build"
+      }
+    },
+    {
+      "label": "Format Ron",
+      "type": "shell",
+      "group": {
+        "kind": "build"
+      },
+      "command": "find ./assets/ron/. -iname '*.ron' -exec ronfmt -w 100 \"{}\" \\;; rm ./assets/ron/**/*.bak;"
+    },
+    {
+      "label": "STDB: Publish",
+      "type": "shell",
+      "group": {
+        "kind": "build"
+      },
+      "command": "spacetime publish aoi_dev -p server"
+    },
+    {
+      "label": "STDB: Publish & Clear",
+      "type": "shell",
+      "group": {
+        "kind": "build"
+      },
+      "command": "spacetime publish -c aoi_dev -p server"
+    },
+    {
+      "label": "STDB: Start",
+      "type": "shell",
+      "group": {
+        "kind": "build"
+      },
+      "command": "spacetime start --listen-addr 127.0.0.1:3001"
+    },
+    {
+      "label": "STDB: Generate Bindings",
+      "type": "shell",
+      "group": {
+        "kind": "build"
+      },
+      "command": "spacetime generate --lang rust --out-dir src/stdb --project-path server"
+    },
+    {
+      "label": "STDB: Run SQL",
+      "type": "shell",
+      "group": {
+        "kind": "build"
+      },
+      "command": "spacetime sql aoi_dev2 --interactive"
+    },
+    {
+      "label": "Flamegraph: Run Debug",
+      "type": "shell",
+      "group": {
+        "kind": "build"
+      },
+      "command": "sudo cargo flamegraph --dev -- --mode custom"
+    },
+    {
+      "label": "Flamegraph: Run Release",
+      "type": "shell",
+      "group": {
+        "kind": "build"
+      },
+      "command": "sudo cargo flamegraph"
+    },
+    {
+      "label": "Mac lipo",
+      "type": "shell",
+      "group": {
+        "kind": "build"
+      },
+      "command": "mkdir -p target/ArenaOfIdeas.app/Contents/MacOS/; lipo \"target/x86_64-apple-darwin/release/arena-of-ideas\" \"target/aarch64-apple-darwin/release/arena-of-ideas\" -create -output \"target/ArenaOfIdeas.app/Contents/MacOS/ArenaOfIdeas\""
+    },
+    {
+      "label": "Mac Build & lipo",
+      "type": "shell",
+      "group": {
+        "kind": "build"
+      },
+      "command": "cargo build --release --target x86_64-apple-darwin; cargo build --release --target aarch64-apple-darwin; mkdir -p target/ArenaOfIdeas.app/Contents/MacOS/; lipo \"target/x86_64-apple-darwin/release/arena-of-ideas\" \"target/aarch64-apple-darwin/release/arena-of-ideas\" -create -output \"target/ArenaOfIdeas.app/Contents/MacOS/ArenaOfIdeas\""
+    },
+    {
+      "type": "cargo",
+      "command": "build",
+      "args": [
+        "--release"
+      ],
+      "problemMatcher": [
+        "$rustc"
+      ],
+      "label": "Build Mac",
+      "group": {
+        "kind": "build"
+      }
+    },
+    {
+      "type": "cargo",
+      "command": "build",
+      "args": [
+        "--release",
+        "--target",
+        "x86_64-pc-windows-msvc"
+      ],
+      "problemMatcher": [
+        "$rustc"
+      ],
+      "label": "Build Win",
+      "group": {
+        "kind": "build"
+      }
+    }
+  ]
 }
