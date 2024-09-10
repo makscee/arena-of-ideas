@@ -6,6 +6,8 @@ Innovative minimalistic pvp focused auto battler made using
 - [Bevy](https://bevyengine.org/)
 - [SpacetimeDB](https://spacetimedb.com/)
 - [egui](https://www.egui.rs/)
+
+
 [![Discord](https://img.shields.io/discord/1034174161679044660.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC1)](https://discord.gg/AdjyRQKP)
 # Youtube
 <!-- BEGIN YOUTUBE-CARDS -->
