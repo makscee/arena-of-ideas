@@ -21,13 +21,11 @@ impl TitlePlugin {
                             }
                         });
                     })
-                    .min_size(150.0)
                     .set_id("Settings".into())
                     .push(world);
                 }
             });
         })
-        .min_size(250.0)
         .sticky()
         .push(world);
     }

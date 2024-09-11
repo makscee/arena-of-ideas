@@ -10,8 +10,7 @@ pub struct WidgetsPlugin;
 
 impl Plugin for WidgetsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, Self::ui)
-            .add_systems(Startup, Tile::setup);
+        app.add_systems(Update, Self::ui);
 
         if cfg!(debug_assertions) {
             app.add_systems(
@@ -80,7 +79,7 @@ impl WidgetsPlugin {
 
         let state = cur_state(world);
 
-        Tile::show_all(ctx, world);
+        TilePlugin::show_all(ctx, world);
 
         // Content
         CentralPanel::default()

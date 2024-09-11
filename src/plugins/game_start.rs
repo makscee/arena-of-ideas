@@ -156,7 +156,6 @@ impl GameStartPlugin {
             });
         })
         .sticky()
-        .min_size(200.0)
         .push(world);
         Tile::new(Side::Left, |ui, world| {
             world.resource_scope(|world, gsr: Mut<GameStartResource>| {

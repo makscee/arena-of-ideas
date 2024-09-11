@@ -206,7 +206,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                         let team = gid.get_team();
                         let r = team.cstr().button(ui);
                         if r.clicked() {
-                            Tile::add_team(team.id, w);
+                            TilePlugin::add_team(team.id, w);
                         }
                         r
                     }

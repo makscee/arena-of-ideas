@@ -1,41 +1,38 @@
-use bevy::math::FloatExt;
 use egui::{Area, NumExt};
 
 use super::*;
 
+pub struct TilePlugin;
+impl Plugin for TilePlugin {
+    fn build(&self, app: &mut App) {
+        app.init_resource::<TileResource>()
+            .init_resource::<ScreenResource>();
+    }
+}
 pub struct Tile {
     id: String,
-    content: Box<dyn Fn(&mut Ui, &mut World) + Send + Sync>,
     side: Side,
-    size: f32,
-    max_size: f32,
-    min_size: f32,
-    content_size: egui::Vec2,
-    margin_size: egui::Vec2,
-    transparent: bool,
+    content: Box<dyn Fn(&mut Ui, &mut World) + Send + Sync>,
+    actual_space: egui::Vec2,
+    allocated_space: egui::Vec2,
+    content_space: egui::Vec2,
+    margin_space: egui::Vec2,
     sticky: bool,
     focusable: bool,
+    transparent: bool,
+    open: bool,
 }
 
 #[derive(Resource, Default)]
-pub struct TileResource {
+struct TileResource {
     tiles: OrderedHashMap<String, Tile>,
     focused: String,
-    persistent_tiles: Vec<Tile>,
-    content_tile: Option<Tile>,
 }
 
-impl TileResource {
-    fn clear(&mut self) {
-        self.tiles.clear();
-        self.content_tile.take();
-    }
-}
-
-#[derive(Clone, Copy, Default)]
-struct TileResponse {
-    want_focus: bool,
-    want_close: bool,
+#[derive(Resource)]
+struct ScreenResource {
+    screen_rect: Rect,
+    screen_space: egui::Vec2,
 }
 
 const MARGIN: f32 = 7.0;
@@ -45,7 +42,10 @@ const FRAME: Frame = Frame {
     rounding: Rounding::same(13.0),
     shadow: Shadow::NONE,
     fill: BG_DARK,
-    stroke: Stroke::NONE,
+    stroke: Stroke {
+        width: 1.0,
+        color: BG_LIGHT,
+    },
 };
 
 static NEXT_ID: Mutex<u64> = Mutex::new(0);
@@ -55,304 +55,93 @@ fn next_id() -> u64 {
     *id
 }
 
-impl Tile {
-    pub fn new(side: Side, content: impl Fn(&mut Ui, &mut World) + Send + Sync + 'static) -> Self {
+impl Default for ScreenResource {
+    fn default() -> Self {
         Self {
-            id: next_id().to_string(),
-            content: Box::new(content),
-            side,
-            size: 0.0,
-            max_size: default(),
-            min_size: default(),
-            content_size: default(),
-            margin_size: FRAME.total_margin().sum(),
-            transparent: false,
-            sticky: false,
-            focusable: true,
+            screen_space: default(),
+            screen_rect: Rect::NOTHING,
         }
     }
-    pub fn set_id(mut self, id: String) -> Self {
-        self.id = id;
-        self
-    }
-    pub fn push(self, world: &mut World) {
-        let mut tr = world.resource_mut::<TileResource>();
-        tr.focused = self.id.clone();
-        tr.tiles.insert(self.id.clone(), self);
-    }
-    pub fn push_as_content(self, world: &mut World) {
-        let mut tr = world.resource_mut::<TileResource>();
-        tr.content_tile = Some(self);
-    }
-    pub fn transparent(mut self) -> Self {
-        self.transparent = true;
-        self
-    }
-    pub fn sticky(mut self) -> Self {
-        self.sticky = true;
-        self
-    }
-    pub fn non_focusable(mut self) -> Self {
-        self.focusable = false;
-        self
-    }
-    pub fn min_size(mut self, value: f32) -> Self {
-        self.min_size = value;
-        self
-    }
-    pub fn max_size(mut self, value: f32) -> Self {
-        self.max_size = value;
-        self
-    }
-    fn take_space(&mut self, space: &mut egui::Vec2) {
-        if self.side.is_x() {
-            self.max_size = self.content_size.x.at_most(space.x);
-            space.x -= self.max_size;
-        } else {
-            self.max_size = self.content_size.y.at_most(space.y);
-            space.y -= self.max_size;
-        }
-    }
-    fn take_full_space(&mut self, space: &mut egui::Vec2) {
-        self.take_space(&mut space.clone());
-        *space -= (self.content_size.at_least(egui::Vec2::splat(self.min_size)) + self.margin_size)
-            .at_most(*space);
-    }
-    pub fn get_screen_rect(ctx: &egui::Context) -> Rect {
-        ctx.data(|r| r.get_temp::<Rect>(screen_rect_id())).unwrap()
-    }
-    fn set_screen_rect(rect: Rect, ctx: &egui::Context) {
-        ctx.data_mut(|w| w.insert_temp(screen_rect_id(), rect));
-    }
-    fn show(&mut self, focused: bool, ctx: &egui::Context, world: &mut World) -> TileResponse {
-        let mut response = TileResponse::default();
-        let need_size = if self.side.is_x() {
-            self.content_size.x
-        } else {
-            self.content_size.y
-        }
-        .at_most(self.max_size)
-        .at_least(self.min_size);
-        self.size = self.size.lerp(need_size, delta_time(world) * 13.0);
+}
 
-        let mut frame = if focused {
-            FRAME.stroke(Stroke {
-                width: 1.0,
-                color: VISIBLE_DARK,
-            })
-        } else {
-            FRAME
-        };
-        if self.transparent {
-            frame = frame.fill(Color32::TRANSPARENT);
-        }
-        let screen_rect = Self::get_screen_rect(ctx);
-        let id = Id::new(&self.id);
-        let (area, rect) = match self.side {
-            Side::Right => (
-                Area::new(id)
-                    .pivot(Align2::RIGHT_TOP)
-                    .fixed_pos(screen_rect.right_top()),
-                screen_rect.with_min_x(screen_rect.max.x - self.size - self.margin_size.x),
-            ),
-            Side::Left => (
-                Area::new(id)
-                    .pivot(Align2::LEFT_TOP)
-                    .fixed_pos(screen_rect.left_top()),
-                screen_rect.with_max_x(screen_rect.min.x + self.size + self.margin_size.x),
-            ),
-            Side::Top => (
-                Area::new(id)
-                    .pivot(Align2::LEFT_TOP)
-                    .fixed_pos(screen_rect.left_top()),
-                screen_rect.with_max_y(screen_rect.min.y + self.size + self.margin_size.y),
-            ),
-            Side::Bottom => (
-                Area::new(id)
-                    .pivot(Align2::LEFT_BOTTOM)
-                    .fixed_pos(screen_rect.left_bottom()),
-                screen_rect.with_min_y(screen_rect.max.y - self.size - self.margin_size.y),
-            ),
-        };
-        if self.focusable && left_mouse_just_released(world) {
-            if ctx
-                .pointer_interact_pos()
-                .is_some_and(|pos| rect.contains(pos))
-            {
-                response.want_focus = true;
-            }
-        }
-
-        area.constrain_to(rect.expand2(self.margin_size * 0.5))
-            .show(ctx, |ui| {
-                frame.show(ui, |ui| {
-                    let rect = rect.shrink2(self.margin_size * 0.5);
-                    ui.set_clip_rect(rect.expand2(self.margin_size * 0.25));
-                    ui.expand_to_include_rect(rect);
-                    let ui = &mut ui.child_ui(rect, Layout::top_down(Align::Min), None);
-                    if !self.sticky {
-                        const CROSS_SIZE: f32 = 13.0;
-                        let cross_rect = Rect::from_two_pos(
-                            rect.right_top(),
-                            rect.right_top() + egui::vec2(-CROSS_SIZE, CROSS_SIZE),
-                        );
-                        let resp = ui.allocate_rect(cross_rect, Sense::click());
-                        if resp.clicked() {
-                            response.want_close = true;
-                        }
-                        let stroke = Stroke {
-                            width: 2.0,
-                            color: if resp.hovered() { YELLOW } else { VISIBLE_DARK },
-                        };
-                        ui.painter().line_segment(
-                            [cross_rect.left_top(), cross_rect.right_bottom()],
-                            stroke,
-                        );
-                        ui.painter().line_segment(
-                            [cross_rect.right_top(), cross_rect.left_bottom()],
-                            stroke,
-                        );
-                    }
-                    (self.content)(ui, world);
-
-                    self.content_size = ui.min_size();
-                });
-            });
-        if self.size > 0.0 {
-            let screen_rect = match self.side {
-                Side::Right => {
-                    screen_rect.with_max_x(screen_rect.max.x - self.size - self.margin_size.x)
-                }
-                Side::Left => {
-                    screen_rect.with_min_x(screen_rect.min.x + self.size + self.margin_size.x)
-                }
-                Side::Top => {
-                    screen_rect.with_min_y(screen_rect.min.y + self.size + self.margin_size.y)
-                }
-                Side::Bottom => {
-                    screen_rect.with_max_y(screen_rect.max.y - self.size - self.margin_size.y)
-                }
-            };
-            Self::set_screen_rect(screen_rect, ctx);
-        }
-        response
-    }
-
+impl TilePlugin {
     pub fn show_all(ctx: &egui::Context, world: &mut World) {
-        let mut tr = world.resource_mut::<TileResource>();
-        if tr.tiles.is_empty() {
-            return;
-        }
+        Self::reset(world);
+        let mut tr = mem::take(world.resource_mut::<TileResource>().as_mut());
+
+        let tr = &mut tr;
+        let mut sr = world.remove_resource::<ScreenResource>().unwrap();
         let focused = tr.focused.clone();
-        let mut persistent_tiles = mem::take(&mut tr.persistent_tiles);
-        let mut content_tile = tr.content_tile.take();
-        let mut tiles = mem::take(&mut tr.tiles);
-        Self::set_screen_rect(ctx.available_rect(), ctx);
-        let mut available_space = ctx.available_rect().size();
-        for tile in tiles.values().chain(tr.persistent_tiles.iter()) {
-            if tile.side.is_x() {
-                available_space.x -= tile.margin_size.x;
-            }
-            if tile.side.is_y() {
-                available_space.y -= tile.margin_size.y;
-            }
+        for tile in tr.tiles.values_mut() {
+            tile.allocate_margin_space(false, &mut sr);
         }
-        if let Some(focused) = tiles.get_mut(&focused) {
-            focused.take_space(&mut available_space);
+        if let Some(focused) = tr.tiles.get_mut(&focused) {
+            focused.allocate_content_space(false, &mut sr);
         }
-        if let Some(content) = &mut content_tile {
-            // content.take_full_space(&mut available_space);
-        }
-
-        let mut inds = tiles.keys().cloned().collect_vec();
-        let focused_ind = inds
-            .iter()
-            .position(|k| focused.eq(k))
-            .unwrap_or(inds.len() - 1);
-        let (left, right) = inds.split_at_mut(focused_ind);
-        let mut left_i = left.len() as i32 - 1;
-        let mut right_i = 1;
-        let l = left.len().max(right.len());
-        for _ in 0..=l {
-            if let Some(key) = right.get(right_i) {
-                if let Some(tile) = tiles.get_mut(key) {
-                    tile.take_space(&mut available_space);
-                }
-                right_i += 1;
+        for tile in tr.tiles.values_mut().rev() {
+            if focused.eq(&tile.id) {
+                continue;
             }
-            if left_i >= 0 {
-                if let Some(key) = left.get(left_i as usize) {
-                    if let Some(tile) = tiles.get_mut(key) {
-                        tile.take_space(&mut available_space);
-                    }
-                    left_i -= 1;
-                }
+            tile.allocate_content_space(false, &mut sr);
+        }
+        let mut remove = None;
+        let mut new_focus = None;
+        for tile in tr.tiles.values_mut() {
+            let focused = focused.eq(&tile.id);
+            if tile.show(focused, &mut sr, ctx, world) {
+                new_focus = Some(tile.id.clone());
+            }
+            if !tile.open && tile.actual_space.length() < 1.0 {
+                remove = Some(tile.id.clone());
             }
         }
-
-        let mut close = None;
-        let mut focus = None;
-        for (_, tile) in tiles.iter_mut() {
-            let focused = tile.focusable && focused.eq(&tile.id);
-            let resp = tile.show(focused, ctx, world);
-            if resp.want_close || (focused && !tile.sticky && just_pressed(KeyCode::Escape, world))
-            {
-                close = Some(tile.id.clone());
-            } else if resp.want_focus {
-                focus = Some(tile.id.clone());
-            }
+        if let Some(remove) = remove {
+            tr.tiles.remove(&remove);
         }
-        if let Some(close) = close {
-            tiles.remove(&close);
-            if close.eq(&focused) {
-                if let Some(last) = tiles.values().last() {
-                    focus = Some(last.id.clone());
-                }
-            }
-        }
-        for tile in persistent_tiles.iter_mut() {
-            tile.show(false, ctx, world);
-        }
-        if let Some(content) = &mut content_tile {
-            content.show(false, ctx, world);
-        }
-
-        let mut tr = world.resource_mut::<TileResource>();
-        let new_tiles = mem::take(&mut tr.tiles);
-        if !new_tiles.is_empty() {
-            tr.focused = new_tiles.values().last().unwrap().id.clone();
-            tiles.extend(new_tiles);
-        } else if let Some(focus) = focus {
+        if let Some(focus) = new_focus {
             tr.focused = focus;
         }
-        tr.tiles = tiles;
-        tr.persistent_tiles = persistent_tiles;
-        if tr.content_tile.is_none() {
-            tr.content_tile = content_tile;
+        let mut new_tr = world.resource_mut::<TileResource>();
+        tr.tiles.extend(new_tr.tiles.drain());
+        new_tr.focused = tr.focused.clone();
+        new_tr.tiles = mem::take(&mut tr.tiles);
+
+        world.insert_resource(sr);
+    }
+    fn reset(world: &mut World) {
+        let ctx = &egui_context(world).unwrap();
+        let mut sr = world.resource_mut::<ScreenResource>();
+        sr.screen_rect = ctx.available_rect();
+        sr.screen_space = sr.screen_rect.size();
+        for tile in world.resource_mut::<TileResource>().tiles.values_mut() {
+            tile.allocated_space = default();
         }
+    }
+    fn clear(world: &mut World) {
+        let mut tr = world.resource_mut::<TileResource>();
+        tr.tiles.clear();
     }
 
     pub fn add_team(gid: u64, world: &mut World) {
-        Self::new(Side::Right, move |ui, world| {
+        Tile::new(Side::Right, move |ui, world| {
             gid.get_team().show(ui, world);
         })
         .push(world)
     }
     pub fn add_user(gid: u64, world: &mut World) {
-        Self::new(Side::Right, move |ui, world| {
+        Tile::new(Side::Right, move |ui, world| {
             gid.get_user().show(ui, world);
         })
         .push(world)
     }
     pub fn add_fused_unit(unit: FusedUnit, world: &mut World) {
-        Self::new(Side::Right, move |ui, world| {
+        Tile::new(Side::Right, move |ui, world| {
             unit.show(ui, world);
         })
         .push(world)
     }
-
     pub fn on_state_changed(to: GameState, world: &mut World) {
-        world.resource_mut::<TileResource>().clear();
+        Self::clear(world);
         match to {
             GameState::Inbox => Tile::new(Side::Left, |ui, world| {
                 Notification::show_all_table(ui, world)
@@ -369,19 +158,161 @@ impl Tile {
             _ => {}
         }
     }
-    pub fn setup(world: &mut World) {
-        world.resource_mut::<TileResource>().persistent_tiles.push(
-            Tile::new(Side::Right, |ui, world| {
-                Notification::show_recent(ui, world);
-            })
-            .max_size(500.0)
-            .transparent()
-            .sticky(),
-        )
-    }
 }
 
-fn screen_rect_id() -> Id {
-    static ID: OnceCell<Id> = OnceCell::new();
-    *ID.get_or_init(|| Id::new("available_screen_rect"))
+impl Tile {
+    pub fn new(side: Side, content: impl Fn(&mut Ui, &mut World) + Send + Sync + 'static) -> Self {
+        Self {
+            id: next_id().to_string(),
+            content: Box::new(content),
+            side,
+            actual_space: default(),
+            allocated_space: default(),
+            content_space: default(),
+            margin_space: FRAME.total_margin().sum(),
+            open: true,
+            sticky: false,
+            focusable: true,
+            transparent: false,
+        }
+    }
+    pub fn non_focusable(mut self) -> Self {
+        self.focusable = false;
+        self
+    }
+    pub fn sticky(mut self) -> Self {
+        self.sticky = true;
+        self
+    }
+    pub fn transparent(mut self) -> Self {
+        self.transparent = true;
+        self
+    }
+    pub fn set_id(mut self, id: String) -> Self {
+        self.id = id;
+        self
+    }
+    pub fn push(self, world: &mut World) {
+        let mut tr = world.resource_mut::<TileResource>();
+        tr.focused = self.id.clone();
+        tr.tiles.insert(self.id.clone(), self);
+    }
+
+    fn allocate_space(&mut self, mut space: egui::Vec2, full: bool, sr: &mut ScreenResource) {
+        if !self.open {
+            return;
+        }
+        if self.side.is_x() && !full {
+            space.y = 0.0;
+        }
+        if self.side.is_y() && !full {
+            space.x = 0.0;
+        }
+        self.allocated_space += space;
+        sr.screen_space -= space;
+    }
+    fn allocate_margin_space(&mut self, full: bool, sr: &mut ScreenResource) {
+        let space = self.margin_space.at_most(sr.screen_space);
+        self.allocate_space(space, full, sr);
+    }
+    fn allocate_content_space(&mut self, full: bool, sr: &mut ScreenResource) {
+        let space = self.content_space.at_most(sr.screen_space);
+        self.allocate_space(space, full, sr);
+    }
+    fn show(
+        &mut self,
+        focused: bool,
+        sr: &mut ScreenResource,
+        ctx: &egui::Context,
+        world: &mut World,
+    ) -> bool {
+        let mut response = false;
+        self.actual_space += (self.allocated_space - self.actual_space) * delta_time(world) * 13.0;
+        let id = Id::new(&self.id);
+        let (area, rect) = match self.side {
+            Side::Right => (
+                Area::new(id)
+                    .pivot(Align2::RIGHT_TOP)
+                    .fixed_pos(sr.screen_rect.right_top()),
+                sr.screen_rect
+                    .with_min_x(sr.screen_rect.max.x - self.actual_space.x),
+            ),
+            Side::Left => (
+                Area::new(id)
+                    .pivot(Align2::LEFT_TOP)
+                    .fixed_pos(sr.screen_rect.left_top()),
+                sr.screen_rect
+                    .with_max_x(sr.screen_rect.min.x + self.actual_space.x),
+            ),
+            Side::Top => (
+                Area::new(id)
+                    .pivot(Align2::LEFT_TOP)
+                    .fixed_pos(sr.screen_rect.left_top()),
+                sr.screen_rect
+                    .with_max_y(sr.screen_rect.min.y + self.actual_space.y),
+            ),
+            Side::Bottom => (
+                Area::new(id)
+                    .pivot(Align2::LEFT_BOTTOM)
+                    .fixed_pos(sr.screen_rect.left_bottom()),
+                sr.screen_rect
+                    .with_min_y(sr.screen_rect.max.y - self.actual_space.y),
+            ),
+        };
+        match self.side {
+            Side::Right => sr.screen_rect.max.x -= self.actual_space.x,
+            Side::Left => sr.screen_rect.min.x += self.actual_space.x,
+            Side::Top => sr.screen_rect.min.y += self.actual_space.y,
+            Side::Bottom => sr.screen_rect.max.y -= self.actual_space.y,
+        }
+        if self.focusable && left_mouse_just_released(world) {
+            if ctx
+                .pointer_interact_pos()
+                .is_some_and(|pos| rect.contains(pos))
+            {
+                response = true;
+            }
+        }
+        let mut frame = if focused {
+            FRAME.stroke(Stroke {
+                width: 1.0,
+                color: VISIBLE_DARK,
+            })
+        } else {
+            FRAME
+        };
+        if self.transparent {
+            frame = frame.fill(Color32::TRANSPARENT);
+        }
+
+        area.constrain_to(rect).show(ctx, |ui| {
+            ui.painter()
+                .add(frame.paint(rect.shrink2(frame.outer_margin.sum() * 0.5)));
+            let content_rect = rect.shrink2(self.margin_space * 0.5);
+            ui.set_clip_rect(content_rect.expand2(self.margin_space * 0.25));
+            let ui = &mut ui.child_ui(content_rect, Layout::top_down(Align::Min), None);
+            if !self.sticky {
+                const CROSS_SIZE: f32 = 13.0;
+                let cross_rect = Rect::from_two_pos(
+                    content_rect.right_top(),
+                    content_rect.right_top() + egui::vec2(-CROSS_SIZE, CROSS_SIZE),
+                );
+                let resp = ui.allocate_rect(cross_rect, Sense::click());
+                if resp.clicked() {
+                    self.open = false;
+                }
+                let stroke = Stroke {
+                    width: 2.0,
+                    color: if resp.hovered() { YELLOW } else { VISIBLE_DARK },
+                };
+                ui.painter()
+                    .line_segment([cross_rect.left_top(), cross_rect.right_bottom()], stroke);
+                ui.painter()
+                    .line_segment([cross_rect.right_top(), cross_rect.left_bottom()], stroke);
+            }
+            (self.content)(ui, world);
+            self.content_space = ui.min_size();
+        });
+        response
+    }
 }

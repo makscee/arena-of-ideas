@@ -132,7 +132,7 @@ fn on_change(world: &mut World) {
         ctx.data_mut(|w| w.clear());
     }
     let to = cur_state(world);
-    Tile::on_state_changed(to, world);
+    TilePlugin::on_state_changed(to, world);
 }
 
 lazy_static! {

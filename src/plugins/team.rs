@@ -164,9 +164,9 @@ impl TeamPlugin {
                 .ui(ui, world);
         })
         .sticky()
-        .min_size(300.0)
-        .transparent()
-        .push_as_content(world);
+        .transparent();
+        todo!();
+        // .push_as_content(world);
     }
 
     pub fn add_tiles(state: GameState, world: &mut World) {
@@ -181,7 +181,6 @@ impl TeamPlugin {
                 }
             }
         })
-        .min_size(0.0)
         .sticky()
         .transparent()
         .non_focusable()

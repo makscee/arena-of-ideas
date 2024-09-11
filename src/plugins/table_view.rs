@@ -60,14 +60,14 @@ impl TableViewPlugin {
                 .column_user_click(
                     "player",
                     |d| d.owner,
-                    |gid, _, world| Tile::add_user(gid, world),
+                    |gid, _, world| TilePlugin::add_user(gid, world),
                 )
                 .column_team("player team >", |d| d.team_left)
                 .column_team("< enemy team", |d| d.team_right)
                 .column_user_click(
                     "enemy",
                     |d| d.team_right.get_team().owner,
-                    |gid, _, world| Tile::add_user(gid, world),
+                    |gid, _, world| TilePlugin::add_user(gid, world),
                 )
                 .column_cstr("result", |d, _| match d.result {
                     TBattleResult::Tbd => "-".cstr(),

@@ -121,10 +121,10 @@ fn main() {
             MetaPlugin,
             GameStartPlugin,
             TeamEditorPlugin,
+            TilePlugin,
         ))
         .init_state::<GameState>()
         .init_resource::<NotificationsResource>()
-        .init_resource::<TileResource>()
         .init_resource::<UnitContainerResource>()
         .run();
 }

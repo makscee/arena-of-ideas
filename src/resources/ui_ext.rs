@@ -85,7 +85,7 @@ impl ShowTable<FusedUnit> for Vec<FusedUnit> {
                 |d, _, ui, world| {
                     let r = d.cstr_limit(0).button(ui);
                     if r.clicked() {
-                        Tile::add_fused_unit(d.clone(), world);
+                        TilePlugin::add_fused_unit(d.clone(), world);
                     }
                     if r.hovered() {
                         cursor_card_window(ui.ctx(), |ui| match cached_fused_card(d, ui, world) {
@@ -129,7 +129,7 @@ impl ShowTable<TArenaLeaderboard> for Vec<TArenaLeaderboard> {
             .column_user_click(
                 "owner",
                 |d| d.user,
-                |gid, _, world| Tile::add_user(gid, world),
+                |gid, _, world| TilePlugin::add_user(gid, world),
             )
             .column_cstr("mode", |d, _| d.mode.cstr());
         t = m(t);
