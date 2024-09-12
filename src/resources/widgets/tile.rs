@@ -1,18 +1,32 @@
-use egui::{Area, NumExt};
+use egui::{Area, NumExt, Order};
 
 use super::*;
 
 pub struct TilePlugin;
 impl Plugin for TilePlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<TileResource>()
+        app.add_systems(Startup, setup)
+            .init_resource::<TileResource>()
             .init_resource::<ScreenResource>();
     }
 }
+
+fn setup(world: &mut World) {
+    Tile::new(Side::Right, |ui, world| {
+        Notification::show_recent(ui, world);
+    })
+    .sticky()
+    .transparent()
+    .no_frame()
+    .order(Order::Foreground)
+    .push_persistent(world);
+}
+
 pub struct Tile {
     id: String,
     side: Side,
     content: Box<dyn Fn(&mut Ui, &mut World) + Send + Sync>,
+    order: Order,
     actual_space: egui::Vec2,
     allocated_space: egui::Vec2,
     content_space: egui::Vec2,
@@ -21,6 +35,7 @@ pub struct Tile {
     sticky: bool,
     focusable: bool,
     transparent: bool,
+    framed: bool,
     open: bool,
 }
 
@@ -28,6 +43,7 @@ pub struct Tile {
 struct TileResource {
     tiles: OrderedHashMap<String, Tile>,
     focused: String,
+    persistent_overlay: Vec<Tile>,
     content: Option<Tile>,
 }
 
@@ -100,8 +116,16 @@ impl TilePlugin {
                 remove = Some(tile.id.clone());
             }
         }
+        let content_space = sr.screen_rect;
         if let Some(content) = &mut tr.content {
             content.show(false, &mut sr, ctx, world);
+        }
+        sr.screen_rect = content_space;
+        sr.screen_space = content_space.size();
+        for tile in &mut tr.persistent_overlay {
+            tile.allocate_margin_space(false, &mut sr);
+            tile.allocate_content_space(false, &mut sr);
+            tile.show(false, &mut sr, ctx, world);
         }
         if let Some(remove) = remove {
             tr.tiles.remove(&remove);
@@ -111,9 +135,7 @@ impl TilePlugin {
         }
         let mut new_tr = world.resource_mut::<TileResource>();
         tr.tiles.extend(new_tr.tiles.drain());
-        new_tr.focused = tr.focused.clone();
-        new_tr.tiles = tr.tiles;
-        new_tr.content = tr.content;
+        *new_tr = tr;
 
         world.insert_resource(sr);
     }
@@ -124,6 +146,9 @@ impl TilePlugin {
         sr.screen_space = sr.screen_rect.size();
         let mut tr = world.resource_mut::<TileResource>();
         for tile in tr.tiles.values_mut() {
+            tile.allocated_space = default();
+        }
+        for tile in &mut tr.persistent_overlay {
             tile.allocated_space = default();
         }
         if let Some(content) = &mut tr.content {
@@ -174,11 +199,13 @@ impl TilePlugin {
 }
 
 impl Tile {
+    #[must_use]
     pub fn new(side: Side, content: impl Fn(&mut Ui, &mut World) + Send + Sync + 'static) -> Self {
         Self {
             id: next_id().to_string(),
             content: Box::new(content),
             side,
+            order: Order::Middle,
             actual_space: default(),
             allocated_space: default(),
             content_space: default(),
@@ -187,33 +214,53 @@ impl Tile {
             sticky: false,
             focusable: true,
             transparent: false,
+            framed: true,
             min_space: default(),
         }
     }
+    #[must_use]
     pub fn non_focusable(mut self) -> Self {
         self.focusable = false;
         self
     }
+    #[must_use]
     pub fn sticky(mut self) -> Self {
         self.sticky = true;
         self
     }
+    #[must_use]
     pub fn transparent(mut self) -> Self {
         self.transparent = true;
         self
     }
+    #[must_use]
+    pub fn no_frame(mut self) -> Self {
+        self.framed = false;
+        self
+    }
+    #[must_use]
     pub fn set_id(mut self, id: String) -> Self {
         self.id = id;
         self
     }
+    #[must_use]
     pub fn min_space(mut self, value: egui::Vec2) -> Self {
         self.min_space = value;
+        self
+    }
+    #[must_use]
+    pub fn order(mut self, value: Order) -> Self {
+        self.order = value;
         self
     }
     pub fn push(self, world: &mut World) {
         let mut tr = world.resource_mut::<TileResource>();
         tr.focused = self.id.clone();
         tr.tiles.insert(self.id.clone(), self);
+    }
+    pub fn push_persistent(self, world: &mut World) {
+        let mut tr = world.resource_mut::<TileResource>();
+        tr.persistent_overlay.push(self);
     }
     pub fn push_as_content(self, world: &mut World) {
         let mut tr = world.resource_mut::<TileResource>();
@@ -251,7 +298,7 @@ impl Tile {
         let mut response = false;
         self.actual_space += (self.allocated_space - self.actual_space) * delta_time(world) * 13.0;
         let id = Id::new(&self.id);
-        let (area, rect) = match self.side {
+        let (mut area, rect) = match self.side {
             Side::Right => (
                 Area::new(id)
                     .pivot(Align2::RIGHT_TOP)
@@ -281,6 +328,7 @@ impl Tile {
                     .with_min_y(sr.screen_rect.max.y - self.actual_space.y),
             ),
         };
+        area = area.order(self.order);
         match self.side {
             Side::Right => sr.screen_rect.max.x -= self.actual_space.x,
             Side::Left => sr.screen_rect.min.x += self.actual_space.x,
@@ -300,6 +348,8 @@ impl Tile {
                 width: 1.0,
                 color: VISIBLE_DARK,
             })
+        } else if !self.framed {
+            FRAME.stroke(Stroke::NONE)
         } else {
             FRAME
         };
