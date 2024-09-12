@@ -35,11 +35,11 @@ pub mod game_mode;
 pub mod give_credits_reducer;
 pub mod global_data;
 pub mod global_settings;
-pub mod item;
-pub mod item_stack;
+pub mod item_bundle;
 pub mod login_by_identity_reducer;
 pub mod login_reducer;
 pub mod logout_reducer;
+pub mod lootbox_kind;
 pub mod meta_buy_reducer;
 pub mod meta_settings;
 pub mod new_team_reducer;
@@ -54,7 +54,6 @@ pub mod run_start_normal_reducer;
 pub mod run_start_ranked_reducer;
 pub mod set_name_reducer;
 pub mod set_password_reducer;
-pub mod set_starting_hero_reducer;
 pub mod shop_buy_reducer;
 pub mod shop_change_g_reducer;
 pub mod shop_finish_reducer;
@@ -75,13 +74,14 @@ pub mod t_base_unit;
 pub mod t_battle;
 pub mod t_battle_result;
 pub mod t_house;
-pub mod t_item;
+pub mod t_lootbox_item;
 pub mod t_meta_shop;
 pub mod t_representation;
-pub mod t_starting_hero;
 pub mod t_status;
 pub mod t_team;
 pub mod t_trade;
+pub mod t_unit_item;
+pub mod t_unit_shard_item;
 pub mod t_user;
 pub mod t_wallet;
 pub mod team_pool;
@@ -104,11 +104,11 @@ pub use game_mode::*;
 pub use give_credits_reducer::*;
 pub use global_data::*;
 pub use global_settings::*;
-pub use item::*;
-pub use item_stack::*;
+pub use item_bundle::*;
 pub use login_by_identity_reducer::*;
 pub use login_reducer::*;
 pub use logout_reducer::*;
+pub use lootbox_kind::*;
 pub use meta_buy_reducer::*;
 pub use meta_settings::*;
 pub use new_team_reducer::*;
@@ -123,7 +123,6 @@ pub use run_start_normal_reducer::*;
 pub use run_start_ranked_reducer::*;
 pub use set_name_reducer::*;
 pub use set_password_reducer::*;
-pub use set_starting_hero_reducer::*;
 pub use shop_buy_reducer::*;
 pub use shop_change_g_reducer::*;
 pub use shop_finish_reducer::*;
@@ -144,13 +143,14 @@ pub use t_base_unit::*;
 pub use t_battle::*;
 pub use t_battle_result::*;
 pub use t_house::*;
-pub use t_item::*;
+pub use t_lootbox_item::*;
 pub use t_meta_shop::*;
 pub use t_representation::*;
-pub use t_starting_hero::*;
 pub use t_status::*;
 pub use t_team::*;
 pub use t_trade::*;
+pub use t_unit_item::*;
+pub use t_unit_shard_item::*;
 pub use t_user::*;
 pub use t_wallet::*;
 pub use team_pool::*;
@@ -182,7 +182,6 @@ pub enum ReducerEvent {
     RunStartRanked(run_start_ranked_reducer::RunStartRankedArgs),
     SetName(set_name_reducer::SetNameArgs),
     SetPassword(set_password_reducer::SetPasswordArgs),
-    SetStartingHero(set_starting_hero_reducer::SetStartingHeroArgs),
     ShopBuy(shop_buy_reducer::ShopBuyArgs),
     ShopChangeG(shop_change_g_reducer::ShopChangeGArgs),
     ShopFinish(shop_finish_reducer::ShopFinishArgs),
@@ -256,8 +255,11 @@ impl SpacetimeModule for Module {
                 .handle_table_update_with_primary_key::<t_battle::TBattle>(callbacks, table_update),
             "THouse" => client_cache
                 .handle_table_update_with_primary_key::<t_house::THouse>(callbacks, table_update),
-            "TItem" => client_cache
-                .handle_table_update_with_primary_key::<t_item::TItem>(callbacks, table_update),
+            "TLootboxItem" => client_cache
+                .handle_table_update_with_primary_key::<t_lootbox_item::TLootboxItem>(
+                    callbacks,
+                    table_update,
+                ),
             "TMetaShop" => client_cache
                 .handle_table_update_with_primary_key::<t_meta_shop::TMetaShop>(
                     callbacks,
@@ -268,17 +270,22 @@ impl SpacetimeModule for Module {
                     callbacks,
                     table_update,
                 ),
-            "TStartingHero" => client_cache
-                .handle_table_update_with_primary_key::<t_starting_hero::TStartingHero>(
-                    callbacks,
-                    table_update,
-                ),
             "TStatus" => client_cache
                 .handle_table_update_with_primary_key::<t_status::TStatus>(callbacks, table_update),
             "TTeam" => client_cache
                 .handle_table_update_with_primary_key::<t_team::TTeam>(callbacks, table_update),
             "TTrade" => client_cache
                 .handle_table_update_with_primary_key::<t_trade::TTrade>(callbacks, table_update),
+            "TUnitItem" => client_cache
+                .handle_table_update_with_primary_key::<t_unit_item::TUnitItem>(
+                    callbacks,
+                    table_update,
+                ),
+            "TUnitShardItem" => client_cache
+                .handle_table_update_with_primary_key::<t_unit_shard_item::TUnitShardItem>(
+                    callbacks,
+                    table_update,
+                ),
             "TUser" => client_cache
                 .handle_table_update_with_primary_key::<t_user::TUser>(callbacks, table_update),
             "TWallet" => client_cache
@@ -322,17 +329,22 @@ impl SpacetimeModule for Module {
         reminders.invoke_callbacks::<t_base_unit::TBaseUnit>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_battle::TBattle>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_house::THouse>(worker, &reducer_event, state);
-        reminders.invoke_callbacks::<t_item::TItem>(worker, &reducer_event, state);
+        reminders.invoke_callbacks::<t_lootbox_item::TLootboxItem>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_meta_shop::TMetaShop>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_representation::TRepresentation>(
             worker,
             &reducer_event,
             state,
         );
-        reminders.invoke_callbacks::<t_starting_hero::TStartingHero>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_status::TStatus>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_team::TTeam>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_trade::TTrade>(worker, &reducer_event, state);
+        reminders.invoke_callbacks::<t_unit_item::TUnitItem>(worker, &reducer_event, state);
+        reminders.invoke_callbacks::<t_unit_shard_item::TUnitShardItem>(
+            worker,
+            &reducer_event,
+            state,
+        );
         reminders.invoke_callbacks::<t_user::TUser>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_wallet::TWallet>(worker, &reducer_event, state);
     }
@@ -366,7 +378,6 @@ match &reducer_call.reducer_name[..] {
 			"run_start_ranked" => _reducer_callbacks.handle_event_of_type::<run_start_ranked_reducer::RunStartRankedArgs, ReducerEvent>(event, _state, ReducerEvent::RunStartRanked),
 			"set_name" => _reducer_callbacks.handle_event_of_type::<set_name_reducer::SetNameArgs, ReducerEvent>(event, _state, ReducerEvent::SetName),
 			"set_password" => _reducer_callbacks.handle_event_of_type::<set_password_reducer::SetPasswordArgs, ReducerEvent>(event, _state, ReducerEvent::SetPassword),
-			"set_starting_hero" => _reducer_callbacks.handle_event_of_type::<set_starting_hero_reducer::SetStartingHeroArgs, ReducerEvent>(event, _state, ReducerEvent::SetStartingHero),
 			"shop_buy" => _reducer_callbacks.handle_event_of_type::<shop_buy_reducer::ShopBuyArgs, ReducerEvent>(event, _state, ReducerEvent::ShopBuy),
 			"shop_change_g" => _reducer_callbacks.handle_event_of_type::<shop_change_g_reducer::ShopChangeGArgs, ReducerEvent>(event, _state, ReducerEvent::ShopChangeG),
 			"shop_finish" => _reducer_callbacks.handle_event_of_type::<shop_finish_reducer::ShopFinishArgs, ReducerEvent>(event, _state, ReducerEvent::ShopFinish),
@@ -423,17 +434,14 @@ match &reducer_call.reducer_name[..] {
             "THouse" => {
                 client_cache.handle_resubscribe_for_type::<t_house::THouse>(callbacks, new_subs)
             }
-            "TItem" => {
-                client_cache.handle_resubscribe_for_type::<t_item::TItem>(callbacks, new_subs)
-            }
+            "TLootboxItem" => client_cache
+                .handle_resubscribe_for_type::<t_lootbox_item::TLootboxItem>(callbacks, new_subs),
             "TMetaShop" => client_cache
                 .handle_resubscribe_for_type::<t_meta_shop::TMetaShop>(callbacks, new_subs),
             "TRepresentation" => client_cache
                 .handle_resubscribe_for_type::<t_representation::TRepresentation>(
                     callbacks, new_subs,
                 ),
-            "TStartingHero" => client_cache
-                .handle_resubscribe_for_type::<t_starting_hero::TStartingHero>(callbacks, new_subs),
             "TStatus" => {
                 client_cache.handle_resubscribe_for_type::<t_status::TStatus>(callbacks, new_subs)
             }
@@ -443,6 +451,12 @@ match &reducer_call.reducer_name[..] {
             "TTrade" => {
                 client_cache.handle_resubscribe_for_type::<t_trade::TTrade>(callbacks, new_subs)
             }
+            "TUnitItem" => client_cache
+                .handle_resubscribe_for_type::<t_unit_item::TUnitItem>(callbacks, new_subs),
+            "TUnitShardItem" => client_cache
+                .handle_resubscribe_for_type::<t_unit_shard_item::TUnitShardItem>(
+                    callbacks, new_subs,
+                ),
             "TUser" => {
                 client_cache.handle_resubscribe_for_type::<t_user::TUser>(callbacks, new_subs)
             }

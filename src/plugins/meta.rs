@@ -19,7 +19,6 @@ struct MetaResource {
 enum SubState {
     #[default]
     Shop,
-    Inventory,
     HeroShards,
     Heroes,
     Lootboxes,
@@ -71,58 +70,43 @@ impl MetaPlugin {
                         .collect_vec()
                         .show_table("Meta Shop", ui, world);
                 }
-                SubState::Inventory => {
-                    TItem::iter()
-                        .collect_vec()
-                        .show_table("Inventory", ui, world);
-                }
                 SubState::HeroShards => {
-                    let d = TItem::iter()
-                        .filter(|d| matches!(d.stack.item, Item::HeroShard(..)))
-                        .sorted_by_key(|d| -(d.stack.count as i32))
+                    let d = TUnitShardItem::iter()
+                        .sorted_by_key(|d| -(d.count as i32))
                         .collect_vec();
                     Table::new("Hero Shards")
                         .title()
-                        .column_cstr("name", |d: &TItem, _| d.stack.item.name_cstr())
-                        .column_cstr("type", |d, world| d.stack.item.type_cstr(world))
-                        .column_int("count", |d| d.stack.count as i32)
+                        .column_cstr("name", |d: &TUnitShardItem, _| {
+                            d.unit.cstr_c(name_color(&d.unit))
+                        })
+                        .column_int("count", |d| d.count as i32)
                         .column(
                             "action",
                             |_, _| default(),
                             |d, _, ui, world| {
                                 let craft_cost =
                                     GameAssets::get(world).global_settings.craft_shards_cost;
-                                match &d.stack.item {
-                                    Item::HeroShard(base) => {
-                                        let r = Button::click("craft".into())
-                                            .enabled(d.stack.count >= craft_cost)
-                                            .ui(ui);
-                                        if r.clicked() {
-                                            craft_hero(base.clone());
-                                            once_on_craft_hero(|_, _, status, hero| match status {
-                                                StdbStatus::Committed => Notification::new_string(
-                                                    format!("{hero} crafted"),
-                                                )
-                                                .push_op(),
-                                                StdbStatus::Failed(e) => e.notify_error(),
-                                                _ => panic!(),
-                                            });
+                                let r = Button::click("craft".into())
+                                    .enabled(d.count >= craft_cost)
+                                    .ui(ui);
+                                if r.clicked() {
+                                    craft_hero(d.unit.clone());
+                                    once_on_craft_hero(|_, _, status, unit| match status {
+                                        StdbStatus::Committed => {
+                                            Notification::new_string(format!("{unit} crafted"))
+                                                .push_op()
                                         }
-                                        r
-                                    }
-                                    _ => panic!(),
+                                        StdbStatus::Failed(e) => e.notify_error(),
+                                        _ => panic!(),
+                                    });
                                 }
+                                r
                             },
                         )
                         .ui(&d, ui, world);
                 }
                 SubState::Heroes => {
-                    let d = TItem::iter()
-                        .filter_map(|d| match d.stack.item {
-                            Item::Hero(u) => Some(u),
-                            _ => None,
-                        })
-                        .collect_vec();
+                    let d = TUnitItem::iter().collect_vec();
                     d.show_modified_table("Heroes", ui, world, |t| {
                         t.column(
                             "select",

@@ -60,6 +60,7 @@ pub struct RaritySettings {
     pub prices: Vec<i32>,
     pub weights_initial: Vec<i32>,
     pub weights_per_round: Vec<i32>,
+    pub lootbox_weights: Vec<i32>,
 }
 
 #[derive(SpacetimeType)]

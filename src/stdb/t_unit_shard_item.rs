@@ -2,7 +2,6 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN RUST INSTEAD.
 
 #![allow(unused_imports)]
-use super::item_bundle::ItemBundle;
 use spacetimedb_sdk::{
     anyhow::{anyhow, Result},
     identity::Identity,
@@ -14,29 +13,26 @@ use spacetimedb_sdk::{
 };
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
-pub struct TTrade {
+pub struct TUnitShardItem {
     pub id: u64,
-    pub a_user: u64,
-    pub b_user: u64,
-    pub a_offer: ItemBundle,
-    pub b_offer: ItemBundle,
-    pub a_accepted: bool,
-    pub b_accepted: bool,
+    pub owner: u64,
+    pub unit: String,
+    pub count: u32,
 }
 
-impl TableType for TTrade {
-    const TABLE_NAME: &'static str = "TTrade";
+impl TableType for TUnitShardItem {
+    const TABLE_NAME: &'static str = "TUnitShardItem";
     type ReducerEvent = super::ReducerEvent;
 }
 
-impl TableWithPrimaryKey for TTrade {
+impl TableWithPrimaryKey for TUnitShardItem {
     type PrimaryKey = u64;
     fn primary_key(&self) -> &Self::PrimaryKey {
         &self.id
     }
 }
 
-impl TTrade {
+impl TUnitShardItem {
     #[allow(unused)]
     pub fn filter_by_id(id: u64) -> TableIter<Self> {
         Self::filter(|row| row.id == id)
@@ -46,19 +42,15 @@ impl TTrade {
         Self::find(|row| row.id == id)
     }
     #[allow(unused)]
-    pub fn filter_by_a_user(a_user: u64) -> TableIter<Self> {
-        Self::filter(|row| row.a_user == a_user)
+    pub fn filter_by_owner(owner: u64) -> TableIter<Self> {
+        Self::filter(|row| row.owner == owner)
     }
     #[allow(unused)]
-    pub fn filter_by_b_user(b_user: u64) -> TableIter<Self> {
-        Self::filter(|row| row.b_user == b_user)
+    pub fn filter_by_unit(unit: String) -> TableIter<Self> {
+        Self::filter(|row| row.unit == unit)
     }
     #[allow(unused)]
-    pub fn filter_by_a_accepted(a_accepted: bool) -> TableIter<Self> {
-        Self::filter(|row| row.a_accepted == a_accepted)
-    }
-    #[allow(unused)]
-    pub fn filter_by_b_accepted(b_accepted: bool) -> TableIter<Self> {
-        Self::filter(|row| row.b_accepted == b_accepted)
+    pub fn filter_by_count(count: u32) -> TableIter<Self> {
+        Self::filter(|row| row.count == count)
     }
 }

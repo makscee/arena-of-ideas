@@ -68,32 +68,6 @@ impl LoginPlugin {
                 )
                 .push_op();
             });
-            TItem::on_update(|before, after, _| {
-                let delta = after.stack.count as i64 - before.stack.count as i64;
-                let delta_txt = if delta > 0 {
-                    format!(" +{delta}")
-                } else {
-                    format!(" {delta}")
-                };
-                let txt = before
-                    .stack
-                    .item
-                    .cstr()
-                    .push(delta_txt.cstr_c(VISIBLE_LIGHT))
-                    .take();
-                Notification::new(txt).push_op();
-            });
-            TItem::on_insert(|item, _| {
-                let txt = item.stack.item.cstr();
-                Notification::new("New item: ".cstr().push(txt).take()).push_op();
-                TableState::reset_cache_op();
-            });
-            TItem::on_delete(|item, _| {
-                let txt = item.stack.item.cstr();
-                Notification::new("Item removed: ".cstr_c(VISIBLE_LIGHT).push(txt).take())
-                    .push_op();
-                TableState::reset_cache_op();
-            });
         });
     }
     pub fn login_ui(ui: &mut Ui, world: &mut World) {

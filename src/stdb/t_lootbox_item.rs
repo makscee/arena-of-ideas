@@ -2,6 +2,7 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN RUST INSTEAD.
 
 #![allow(unused_imports)]
+use super::lootbox_kind::LootboxKind;
 use spacetimedb_sdk::{
     anyhow::{anyhow, Result},
     identity::Identity,
@@ -13,34 +14,40 @@ use spacetimedb_sdk::{
 };
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
-pub struct TStartingHero {
+pub struct TLootboxItem {
+    pub id: u64,
     pub owner: u64,
-    pub item_id: u64,
+    pub kind: LootboxKind,
+    pub count: u32,
 }
 
-impl TableType for TStartingHero {
-    const TABLE_NAME: &'static str = "TStartingHero";
+impl TableType for TLootboxItem {
+    const TABLE_NAME: &'static str = "TLootboxItem";
     type ReducerEvent = super::ReducerEvent;
 }
 
-impl TableWithPrimaryKey for TStartingHero {
+impl TableWithPrimaryKey for TLootboxItem {
     type PrimaryKey = u64;
     fn primary_key(&self) -> &Self::PrimaryKey {
-        &self.owner
+        &self.id
     }
 }
 
-impl TStartingHero {
+impl TLootboxItem {
+    #[allow(unused)]
+    pub fn filter_by_id(id: u64) -> TableIter<Self> {
+        Self::filter(|row| row.id == id)
+    }
+    #[allow(unused)]
+    pub fn find_by_id(id: u64) -> Option<Self> {
+        Self::find(|row| row.id == id)
+    }
     #[allow(unused)]
     pub fn filter_by_owner(owner: u64) -> TableIter<Self> {
         Self::filter(|row| row.owner == owner)
     }
     #[allow(unused)]
-    pub fn find_by_owner(owner: u64) -> Option<Self> {
-        Self::find(|row| row.owner == owner)
-    }
-    #[allow(unused)]
-    pub fn filter_by_item_id(item_id: u64) -> TableIter<Self> {
-        Self::filter(|row| row.item_id == item_id)
+    pub fn filter_by_count(count: u32) -> TableIter<Self> {
+        Self::filter(|row| row.count == count)
     }
 }

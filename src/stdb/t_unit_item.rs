@@ -2,7 +2,7 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN RUST INSTEAD.
 
 #![allow(unused_imports)]
-use super::item_stack::ItemStack;
+use super::fused_unit::FusedUnit;
 use spacetimedb_sdk::{
     anyhow::{anyhow, Result},
     identity::Identity,
@@ -14,25 +14,25 @@ use spacetimedb_sdk::{
 };
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
-pub struct TItem {
+pub struct TUnitItem {
     pub id: u64,
     pub owner: u64,
-    pub stack: ItemStack,
+    pub unit: FusedUnit,
 }
 
-impl TableType for TItem {
-    const TABLE_NAME: &'static str = "TItem";
+impl TableType for TUnitItem {
+    const TABLE_NAME: &'static str = "TUnitItem";
     type ReducerEvent = super::ReducerEvent;
 }
 
-impl TableWithPrimaryKey for TItem {
+impl TableWithPrimaryKey for TUnitItem {
     type PrimaryKey = u64;
     fn primary_key(&self) -> &Self::PrimaryKey {
         &self.id
     }
 }
 
-impl TItem {
+impl TUnitItem {
     #[allow(unused)]
     pub fn filter_by_id(id: u64) -> TableIter<Self> {
         Self::filter(|row| row.id == id)

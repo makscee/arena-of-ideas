@@ -261,7 +261,7 @@ fn shop_buy(ctx: ReducerContext, slot: u8) -> Result<(), String> {
     let mut run = TArenaRun::current(&ctx)?;
     let price = run.shop_slots[slot as usize].buy_price;
     let unit = run.buy(slot, price)?;
-    run.add_to_team(FusedUnit::from_base(unit, next_id())?)?;
+    run.add_to_team(FusedUnit::from_base_name(unit, next_id())?)?;
     run.save();
     Ok(())
 }
@@ -407,7 +407,6 @@ impl TArenaRun {
         let mut run = TArenaRun::new(user.id, mode);
         run.fill_case()?;
         run.reward_limit = reward_limit;
-        let _ = run.set_starting_hero();
         TArenaRun::insert(run)?;
         Ok(())
     }
@@ -587,16 +586,5 @@ impl TArenaRun {
                 ));
             }
         }
-    }
-    fn set_starting_hero(&mut self) -> Result<(), String> {
-        if matches!(self.mode, GameMode::ArenaConst(..)) {
-            return Err("Mode not supported".into());
-        }
-        if let Ok(unit) = TStartingHero::get(self.owner) {
-            let rarity = unit.rarity();
-            self.add_to_team(unit)?;
-            self.g -= settings().rarities.prices[rarity as usize];
-        }
-        Ok(())
     }
 }

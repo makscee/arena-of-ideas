@@ -2,7 +2,6 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN RUST INSTEAD.
 
 #![allow(unused_imports)]
-use super::item::Item;
 use spacetimedb_sdk::{
     anyhow::{anyhow, Result},
     identity::Identity,
@@ -14,7 +13,8 @@ use spacetimedb_sdk::{
 };
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
-pub struct ItemStack {
-    pub item: Item,
-    pub count: u32,
+pub struct ItemBundle {
+    pub units: Vec<u64>,
+    pub unit_shards: Vec<u64>,
+    pub lootboxes: Vec<u64>,
 }

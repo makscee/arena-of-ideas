@@ -9,10 +9,9 @@ mod fused_unit;
 mod global_data;
 mod global_settings;
 mod house;
-mod item;
+mod items;
 mod meta_shop;
 mod representation;
-mod starting_hero;
 mod status;
 mod sync;
 mod team;
@@ -32,14 +31,13 @@ use daily_updater::daily_timer_init;
 pub use fused_unit::*;
 pub use global_data::*;
 pub use global_settings::*;
-pub use item::*;
+pub use items::*;
 pub use itertools::Itertools;
 pub use meta_shop::*;
 pub use rand::{distributions::Alphanumeric, seq::IteratorRandom, Rng};
 pub use spacetimedb::rng;
 pub use spacetimedb::{eprintln, println};
 pub use spacetimedb::{spacetimedb, Identity, ReducerContext, SpacetimeType, TableType, Timestamp};
-pub use starting_hero::*;
 pub use team::*;
 pub use trade::*;
 pub use user::*;
@@ -102,4 +100,9 @@ fn init() -> Result<(), String> {
     GlobalData::init()?;
     daily_timer_init();
     Ok(())
+}
+
+#[inline]
+pub fn default<T: Default>() -> T {
+    Default::default()
 }

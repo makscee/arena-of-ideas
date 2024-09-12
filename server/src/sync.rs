@@ -46,7 +46,7 @@ fn replace_assets(
     for ability in abilities {
         TAbility::insert(ability)?;
     }
-    let ghost = || FusedUnit::from_base(GlobalSettings::get().ghost_unit, next_id()).unwrap();
+    let ghost = || FusedUnit::from_base_name(GlobalSettings::get().ghost_unit, next_id()).unwrap();
     let enemies = [
         TTeam::new(0, TeamPool::Enemy).units(vec![ghost()]).save(),
         TTeam::new(0, TeamPool::Enemy)

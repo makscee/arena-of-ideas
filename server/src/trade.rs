@@ -6,20 +6,20 @@ pub struct TTrade {
     id: u64,
     a_user: u64,
     b_user: u64,
-    a_offers_items: Vec<ItemStack>,
-    b_offers_items: Vec<ItemStack>,
+    a_offer: ItemBundle,
+    b_offer: ItemBundle,
     a_accepted: bool,
     b_accepted: bool,
 }
 
 impl TTrade {
-    pub fn open_lootbox(owner: u64, id: u64, items: Vec<ItemStack>) -> Result<Self, String> {
+    pub fn open_lootbox(owner: u64, bundle: ItemBundle) -> Result<Self, String> {
         let trade = TTrade {
-            id,
+            id: next_id(),
             a_user: 0,
             b_user: owner,
-            a_offers_items: items,
-            b_offers_items: Vec::new(),
+            a_offer: bundle,
+            b_offer: default(),
             a_accepted: true,
             b_accepted: false,
         };
@@ -40,12 +40,8 @@ fn accept_trade(ctx: ReducerContext, id: u64) -> Result<(), String> {
         return Err(format!("User#{} not part of the Trade#{}", user.id, id));
     }
     if trade.a_accepted && trade.b_accepted {
-        for item in trade.a_offers_items {
-            item.take(trade.b_user)?;
-        }
-        for item in trade.b_offers_items {
-            item.take(trade.a_user)?;
-        }
+        trade.a_offer.take(trade.b_user);
+        trade.b_offer.take(trade.a_user);
         TTrade::delete_by_id(&id);
     } else {
         TTrade::update_by_id(&id, trade);

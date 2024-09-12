@@ -32,11 +32,9 @@ impl FusedUnit {
         self.id = next_id();
         self
     }
-    pub fn from_base(name: String, id: u64) -> Result<Self, String> {
-        let base = TBaseUnit::filter_by_name(&name)
-            .with_context_str(|| format!("Base unit not found {name}"))?;
-        Ok(Self {
-            bases: vec![name],
+    pub fn from_base(base: TBaseUnit, id: u64) -> Self {
+        Self {
+            bases: vec![base.name],
             triggers: vec![0],
             targets: vec![0],
             effects: vec![0],
@@ -45,7 +43,12 @@ impl FusedUnit {
             lvl: 0,
             xp: 0,
             id,
-        })
+        }
+    }
+    pub fn from_base_name(name: String, id: u64) -> Result<Self, String> {
+        let base = TBaseUnit::filter_by_name(&name)
+            .with_context_str(|| format!("Base unit not found {name}"))?;
+        Ok(Self::from_base(base, id))
     }
     fn roll_stat_mutation() -> i32 {
         let weights = [1, 10, 50, 10, 1];
@@ -145,5 +148,11 @@ impl FusedUnit {
             .map(|u| u.rarity)
             .max()
             .unwrap_or_default()
+    }
+}
+
+impl From<TBaseUnit> for FusedUnit {
+    fn from(value: TBaseUnit) -> Self {
+        Self::from_base(value, next_id())
     }
 }
