@@ -164,9 +164,9 @@ impl TeamPlugin {
                 .ui(ui, world);
         })
         .sticky()
-        .transparent();
-        todo!();
-        // .push_as_content(world);
+        .transparent()
+        .min_space(egui::vec2(200.0, 100.0))
+        .push_as_content(world);
     }
 
     pub fn add_tiles(state: GameState, world: &mut World) {

@@ -17,6 +17,7 @@ pub struct Tile {
     allocated_space: egui::Vec2,
     content_space: egui::Vec2,
     margin_space: egui::Vec2,
+    min_space: egui::Vec2,
     sticky: bool,
     focusable: bool,
     transparent: bool,
@@ -27,6 +28,7 @@ pub struct Tile {
 struct TileResource {
     tiles: OrderedHashMap<String, Tile>,
     focused: String,
+    content: Option<Tile>,
 }
 
 #[derive(Resource)]
@@ -69,7 +71,6 @@ impl TilePlugin {
         Self::reset(world);
         let mut tr = mem::take(world.resource_mut::<TileResource>().as_mut());
 
-        let tr = &mut tr;
         let mut sr = world.remove_resource::<ScreenResource>().unwrap();
         let focused = tr.focused.clone();
         for tile in tr.tiles.values_mut() {
@@ -77,6 +78,10 @@ impl TilePlugin {
         }
         if let Some(focused) = tr.tiles.get_mut(&focused) {
             focused.allocate_content_space(false, &mut sr);
+        }
+        if let Some(content) = &mut tr.content {
+            content.allocate_margin_space(true, &mut sr);
+            content.allocate_content_space(true, &mut sr);
         }
         for tile in tr.tiles.values_mut().rev() {
             if focused.eq(&tile.id) {
@@ -95,6 +100,9 @@ impl TilePlugin {
                 remove = Some(tile.id.clone());
             }
         }
+        if let Some(content) = &mut tr.content {
+            content.show(false, &mut sr, ctx, world);
+        }
         if let Some(remove) = remove {
             tr.tiles.remove(&remove);
         }
@@ -104,7 +112,8 @@ impl TilePlugin {
         let mut new_tr = world.resource_mut::<TileResource>();
         tr.tiles.extend(new_tr.tiles.drain());
         new_tr.focused = tr.focused.clone();
-        new_tr.tiles = mem::take(&mut tr.tiles);
+        new_tr.tiles = tr.tiles;
+        new_tr.content = tr.content;
 
         world.insert_resource(sr);
     }
@@ -113,8 +122,12 @@ impl TilePlugin {
         let mut sr = world.resource_mut::<ScreenResource>();
         sr.screen_rect = ctx.available_rect();
         sr.screen_space = sr.screen_rect.size();
-        for tile in world.resource_mut::<TileResource>().tiles.values_mut() {
+        let mut tr = world.resource_mut::<TileResource>();
+        for tile in tr.tiles.values_mut() {
             tile.allocated_space = default();
+        }
+        if let Some(content) = &mut tr.content {
+            content.allocated_space = default();
         }
     }
     fn clear(world: &mut World) {
@@ -174,6 +187,7 @@ impl Tile {
             sticky: false,
             focusable: true,
             transparent: false,
+            min_space: default(),
         }
     }
     pub fn non_focusable(mut self) -> Self {
@@ -192,10 +206,18 @@ impl Tile {
         self.id = id;
         self
     }
+    pub fn min_space(mut self, value: egui::Vec2) -> Self {
+        self.min_space = value;
+        self
+    }
     pub fn push(self, world: &mut World) {
         let mut tr = world.resource_mut::<TileResource>();
         tr.focused = self.id.clone();
         tr.tiles.insert(self.id.clone(), self);
+    }
+    pub fn push_as_content(self, world: &mut World) {
+        let mut tr = world.resource_mut::<TileResource>();
+        tr.content = Some(self);
     }
 
     fn allocate_space(&mut self, mut space: egui::Vec2, full: bool, sr: &mut ScreenResource) {
@@ -311,7 +333,7 @@ impl Tile {
                     .line_segment([cross_rect.right_top(), cross_rect.left_bottom()], stroke);
             }
             (self.content)(ui, world);
-            self.content_space = ui.min_size();
+            self.content_space = ui.min_size().at_least(self.min_space);
         });
         response
     }

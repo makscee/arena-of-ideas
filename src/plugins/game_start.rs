@@ -156,6 +156,7 @@ impl GameStartPlugin {
             });
         })
         .sticky()
+        .min_space(egui::vec2(0.0, 200.0))
         .push(world);
         Tile::new(Side::Left, |ui, world| {
             world.resource_scope(|world, gsr: Mut<GameStartResource>| {
