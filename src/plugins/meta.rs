@@ -31,7 +31,7 @@ impl MetaPlugin {
             let state = SubsectionMenu::new(r.state).show(ui);
             if r.state != state {
                 r.state = state;
-                TeamPlugin::despawn(Faction::Team, world);
+                TableState::reset_cache(ui.ctx());
             }
         })
         .sticky()
@@ -71,16 +71,11 @@ impl MetaPlugin {
                         .show_table("Meta Shop", ui, world);
                 }
                 SubState::HeroShards => {
-                    let d = TUnitShardItem::iter()
+                    let d = TUnitShardItem::filter_by_owner(user_id())
                         .sorted_by_key(|d| -(d.count as i32))
                         .collect_vec();
-                    Table::new("Hero Shards")
-                        .title()
-                        .column_cstr("name", |d: &TUnitShardItem, _| {
-                            d.unit.cstr_c(name_color(&d.unit))
-                        })
-                        .column_int("count", |d| d.count as i32)
-                        .column(
+                    d.show_modified_table("Hero Shards", ui, world, |t| {
+                        t.column(
                             "action",
                             |_, _| default(),
                             |d, _, ui, world| {
@@ -96,138 +91,47 @@ impl MetaPlugin {
                                             Notification::new_string(format!("{unit} crafted"))
                                                 .push_op()
                                         }
-                                        StdbStatus::Failed(e) => e.notify_error(),
+                                        StdbStatus::Failed(e) => e.notify_error_op(),
                                         _ => panic!(),
                                     });
                                 }
                                 r
                             },
                         )
-                        .ui(&d, ui, world);
-                }
-                SubState::Heroes => {
-                    let d = TUnitItem::iter().collect_vec();
-                    d.show_modified_table("Heroes", ui, world, |t| {
-                        t.column(
-                            "select",
-                            |_, _| default(),
-                            |d: &FusedUnit, _, ui, _| set_starting_hero_button(d.id, ui),
-                        )
-                        .column_btn("spawn", |u, _, world| {
-                            let unit: PackedUnit = u.clone().into();
-                            TeamPlugin::despawn(Faction::Team, world);
-                            unit.unpack(
-                                TeamPlugin::entity(Faction::Team, world),
-                                None,
-                                None,
-                                world,
-                            );
-                        })
                     });
                 }
-                SubState::Lootboxes => {
-                    TItem::iter()
-                        .filter(|d| matches!(d.stack.item, Item::Lootbox))
+                SubState::Heroes => {
+                    TUnitItem::filter_by_owner(user_id())
+                        .map(|u| u.unit)
                         .collect_vec()
-                        .show_table("Lootboxes", ui, world);
+                        .show_table("Units", ui, world);
+                }
+                SubState::Lootboxes => {
+                    let d = TLootboxItem::filter_by_owner(user_id())
+                        .sorted_by_key(|d| -(d.count as i32))
+                        .collect_vec();
+                    d.show_modified_table("Lootboxes", ui, world, |t| {
+                        t.column_btn("open", |d, _, _| {
+                            open_lootbox(d.id);
+                            TTrade::on_insert(|trade, e| {
+                                let id = trade.id;
+                                if e.is_some_and(|e| matches!(e, ReducerEvent::OpenLootbox(..))) {
+                                    OperationsPlugin::add(move |world| {
+                                        Trade::open(id, &egui_context(world).unwrap());
+                                    });
+                                }
+                            });
+                            once_on_open_lootbox(|_, _, status, _| {
+                                status.on_success(|world| {
+                                    "Lootbox opened".notify(world);
+                                })
+                            });
+                        })
+                    });
                 }
             }
         })
         .sticky()
         .push(world);
-    }
-}
-fn set_starting_hero_button(id: u64, ui: &mut Ui) -> Response {
-    let active = TStartingHero::get_current()
-        .map(|d| d.item_id)
-        .unwrap_or_default()
-        == id;
-    let r = Button::click("select".into()).active(active).ui(ui);
-    if r.clicked() {
-        let id = if active { None } else { Some(id) };
-        set_starting_hero(id);
-        once_on_set_starting_hero(move |_, _, status, id| match status {
-            StdbStatus::Committed => {
-                Notification::new_string(format!("{id:?} set as starting hero")).push_op()
-            }
-            StdbStatus::Failed(e) => e.notify_error(),
-            _ => panic!(),
-        });
-    }
-    r
-}
-
-pub trait ItemExt {
-    fn name_cstr(&self) -> Cstr;
-    fn type_cstr(&self, world: &World) -> Cstr;
-}
-
-impl ItemExt for Item {
-    fn name_cstr(&self) -> Cstr {
-        match &self {
-            Item::HeroShard(name) => name.cstr_c(name_color(&name)),
-            Item::Hero(unit) => unit.cstr(),
-            Item::Lootbox => "normal".cstr(),
-        }
-    }
-    fn type_cstr(&self, world: &World) -> Cstr {
-        match self {
-            Item::HeroShard(n) => "shard "
-                .cstr()
-                .push(Rarity::from_base(n, world).cstr())
-                .take(),
-            Item::Hero(h) => "hero "
-                .cstr_c(YELLOW)
-                .push(Rarity::from_base(&h.bases[0], world).cstr())
-                .take(),
-            Item::Lootbox => "lootbox".cstr_c(CYAN),
-        }
-    }
-}
-
-pub trait TItemExt {
-    fn action(&self, ui: &mut Ui, world: &mut World) -> Response;
-}
-
-impl TItemExt for TItem {
-    fn action(&self, ui: &mut Ui, world: &mut World) -> Response {
-        match &self.stack.item {
-            Item::HeroShard(base) => {
-                let craft_cost = GameAssets::get(world).global_settings.craft_shards_cost;
-                let r = Button::click("craft".into())
-                    .enabled(self.stack.count >= craft_cost)
-                    .ui(ui);
-                if r.clicked() {
-                    craft_hero(base.clone());
-                    once_on_craft_hero(|_, _, status, hero| match status {
-                        StdbStatus::Committed => {
-                            Notification::new_string(format!("{hero} crafted")).push_op()
-                        }
-                        StdbStatus::Failed(e) => e.notify_error(),
-                        _ => panic!(),
-                    });
-                }
-                r
-            }
-            Item::Hero(_) => set_starting_hero_button(self.id, ui),
-            Item::Lootbox => {
-                let r = Button::click("open".into()).ui(ui);
-                if r.clicked() {
-                    open_lootbox(self.id);
-                    once_on_open_lootbox(move |_, _, status, id| match status {
-                        StdbStatus::Committed => {
-                            let id = *id;
-                            OperationsPlugin::add(move |world| {
-                                Notification::new_string("Lootbox opened".into()).push(world);
-                                Trade::open(id, &egui_context(world).unwrap());
-                            });
-                        }
-                        StdbStatus::Failed(e) => e.notify_error(),
-                        _ => panic!(),
-                    });
-                }
-                r
-            }
-        }
     }
 }

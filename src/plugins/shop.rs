@@ -46,7 +46,7 @@ impl ShopPlugin {
             }
             OperationsPlugin::add(|world| Self::sync_run(*run, world));
         } else {
-            "No active run found".notify_error();
+            "No active run found".notify_error_op();
             GameState::Title.proceed_to_target_op();
             return;
         }
@@ -312,7 +312,7 @@ impl ShopPlugin {
                         fuse_choose(slot as u8);
                         once_on_fuse_choose(|_, _, status, _| match status {
                             StdbStatus::Committed => {}
-                            StdbStatus::Failed(e) => e.notify_error(),
+                            StdbStatus::Failed(e) => e.notify_error_op(),
                             _ => panic!(),
                         });
                     }
@@ -406,7 +406,7 @@ impl ShopPlugin {
                                 fuse_start(fuse_source as u8, slot as u8);
                                 once_on_fuse_start(|_, _, status, _, _| match status {
                                     StdbStatus::Committed => {}
-                                    StdbStatus::Failed(e) => e.notify_error(),
+                                    StdbStatus::Failed(e) => e.notify_error_op(),
                                     _ => panic!(),
                                 });
                             }

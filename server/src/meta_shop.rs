@@ -6,7 +6,7 @@ use super::*;
 pub struct TMetaShop {
     #[primarykey]
     id: u64,
-    bundle: ItemBundle,
+    item_kind: ItemKind,
     price: i64,
 }
 
@@ -17,22 +17,25 @@ impl TMetaShop {
         }
         let ms = GlobalSettings::get().meta;
         Self::insert(Self {
-            id: next_id(),
-            bundle: TLootboxItem::new(0, LootboxKind::Regular).into(),
+            id: TLootboxItem::new(0, LootboxKind::Regular).id,
+            item_kind: ItemKind::Lootbox,
             price: ms.price_lootbox,
         })?;
         for i in TBaseUnit::iter()
             .choose_multiple(&mut rng(), ms.shop_shard_slots as usize)
             .into_iter()
             .map(|u| Self {
-                id: next_id(),
-                bundle: TUnitShardItem::new(0, u.name).into(),
+                id: TUnitShardItem::new(0, u.name).id,
+                item_kind: ItemKind::UnitShard,
                 price: ms.price_shard,
             })
         {
             Self::insert(i)?;
         }
         Ok(())
+    }
+    fn take(self, owner: u64) -> Result<(), String> {
+        self.item_kind.clone_to(self.id, owner)
     }
 }
 
@@ -60,5 +63,5 @@ fn meta_buy(ctx: ReducerContext, id: u64) -> Result<(), String> {
     let user = ctx.user()?;
     let item = TMetaShop::filter_by_id(&id).context_str("Item not found")?;
     TWallet::change(user.id, -item.price)?;
-    item.bundle.take(user.id)
+    item.take(user.id)
 }

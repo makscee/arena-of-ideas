@@ -325,14 +325,6 @@ impl TableSingletonExt for TWallet {
         Self::iter().exactly_one().ok().map(|d| Box::new(d))
     }
 }
-impl TableSingletonExt for TStartingHero {
-    fn current() -> Self {
-        *Self::get_current().unwrap()
-    }
-    fn get_current() -> Option<Box<Self>> {
-        Self::iter().exactly_one().ok().map(|d| Box::new(d))
-    }
-}
 
 pub trait StdbStatusExt {
     fn on_success(&self, f: fn(&mut World));
@@ -342,7 +334,7 @@ impl StdbStatusExt for spacetimedb_sdk::reducer::Status {
     fn on_success(&self, f: fn(&mut World)) {
         match self {
             StdbStatus::Committed => OperationsPlugin::add(f),
-            StdbStatus::Failed(e) => e.notify_error(),
+            StdbStatus::Failed(e) => e.notify_error_op(),
             _ => panic!(),
         }
     }
@@ -351,6 +343,9 @@ impl StdbStatusExt for spacetimedb_sdk::reducer::Status {
 pub trait GIDExt {
     fn get_team(self) -> TTeam;
     fn get_user(self) -> TUser;
+    fn get_unit_item(self) -> TUnitItem;
+    fn get_unit_shard_item(self) -> TUnitShardItem;
+    fn get_lootbox_item(self) -> TLootboxItem;
 }
 
 impl GIDExt for u64 {
@@ -381,6 +376,21 @@ impl GIDExt for u64 {
         }
         TUser::find_by_id(self)
             .with_context(|| format!("Failed to find User#{self}"))
+            .unwrap()
+    }
+    fn get_unit_item(self) -> TUnitItem {
+        TUnitItem::find_by_id(self)
+            .with_context(|| format!("Failed to find UnitItem#{self}"))
+            .unwrap()
+    }
+    fn get_unit_shard_item(self) -> TUnitShardItem {
+        TUnitShardItem::find_by_id(self)
+            .with_context(|| format!("Failed to find UnitShardItem#{self}"))
+            .unwrap()
+    }
+    fn get_lootbox_item(self) -> TLootboxItem {
+        TLootboxItem::find_by_id(self)
+            .with_context(|| format!("Failed to find LootboxItem#{self}"))
             .unwrap()
     }
 }

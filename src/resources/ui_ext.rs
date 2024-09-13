@@ -146,8 +146,26 @@ impl ShowTable<TMetaShop> for Vec<TMetaShop> {
     ) -> TableState {
         let mut t = Table::new(name)
             .title()
-            .column_cstr("name", |d: &TMetaShop, _| d.stack.item.name_cstr())
-            .column_cstr("type", |d, w| d.stack.item.type_cstr(w))
+            .column_cstr("type", |d: &TMetaShop, w| match d.item_kind {
+                ItemKind::Unit => panic!("unsupported"),
+                ItemKind::UnitShard => "unit shard".cstr_c(rarity_color(
+                    TBaseUnit::find_by_name(d.id.get_unit_shard_item().unit)
+                        .unwrap()
+                        .rarity,
+                )),
+                ItemKind::Lootbox => "lootbox".cstr_c(CYAN),
+            })
+            .column_cstr("name", |d, _| match d.item_kind {
+                ItemKind::Unit => panic!("unsupported"),
+                ItemKind::UnitShard => TUnitShardItem::find_by_id(d.id)
+                    .map(|u| u.unit.cstr_c(name_color(&u.unit)))
+                    .unwrap_or_else(|| "error".cstr_c(RED)),
+                ItemKind::Lootbox => TLootboxItem::find_by_id(d.id)
+                    .map(|u| match u.kind {
+                        LootboxKind::Regular => "Regular".cstr_c(VISIBLE_LIGHT),
+                    })
+                    .unwrap_or_else(|| "error".cstr_c(RED)),
+            })
             .column_cstr("price", |d, _| format!("{} ¤", d.price).cstr_c(YELLOW))
             .column(
                 "buy",
@@ -160,7 +178,7 @@ impl ShowTable<TMetaShop> for Vec<TMetaShop> {
                         meta_buy(d.id);
                         once_on_meta_buy(|_, _, status, _| match status {
                             StdbStatus::Committed => {}
-                            StdbStatus::Failed(e) => e.notify_error(),
+                            StdbStatus::Failed(e) => e.notify_error_op(),
                             _ => panic!(),
                         });
                     }
@@ -171,24 +189,55 @@ impl ShowTable<TMetaShop> for Vec<TMetaShop> {
         t.ui(self, ui, world)
     }
 }
-impl ShowTable<TItem> for Vec<TItem> {
+impl ShowTable<TUnitShardItem> for Vec<TUnitShardItem> {
     fn show_modified_table(
         &self,
         name: &'static str,
         ui: &mut Ui,
         world: &mut World,
-        m: fn(Table<TItem>) -> Table<TItem>,
+        m: fn(Table<TUnitShardItem>) -> Table<TUnitShardItem>,
     ) -> TableState {
         let mut t = Table::new(name)
             .title()
-            .column_cstr("name", |d: &TItem, _| d.stack.item.name_cstr())
-            .column_cstr("type", |d, w| d.stack.item.type_cstr(w))
-            .column_int("count", |d| d.stack.count as i32)
             .column(
-                "action",
-                |_, _| default(),
-                |d, _, ui, world| d.action(ui, world),
-            );
+                "name",
+                |d: &TUnitShardItem, _| d.unit.cstr_c(name_color(&d.unit)).into(),
+                |d, name, ui, world| {
+                    let r = name.get_cstr().unwrap().button(ui);
+                    if r.hovered() {
+                        cursor_card_window(ui.ctx(), |ui| {
+                            match cached_base_card(
+                                &TBaseUnit::find_by_name(d.unit.clone()).unwrap(),
+                                ui,
+                                world,
+                            ) {
+                                Ok(_) => {}
+                                Err(e) => error!("{e}"),
+                            }
+                        });
+                    }
+                    r
+                },
+            )
+            .column_int("count", |d| d.count as i32);
+        t = m(t);
+        t.ui(self, ui, world)
+    }
+}
+impl ShowTable<TLootboxItem> for Vec<TLootboxItem> {
+    fn show_modified_table(
+        &self,
+        name: &'static str,
+        ui: &mut Ui,
+        world: &mut World,
+        m: fn(Table<TLootboxItem>) -> Table<TLootboxItem>,
+    ) -> TableState {
+        let mut t = Table::new(name)
+            .title()
+            .column_cstr("kind", |d: &TLootboxItem, _| match d.kind {
+                LootboxKind::Regular => "Regular".cstr_c(VISIBLE_LIGHT),
+            })
+            .column_int("count", |d| d.count as i32);
         t = m(t);
         t.ui(self, ui, world)
     }

@@ -84,15 +84,23 @@ const FRAME: Frame = Frame {
 };
 
 pub trait NotificationPusher: ToString {
-    fn notify(&self) {
+    fn notify(&self, world: &mut World) {
         let s = self.to_string();
         info!("{} {}", "Notify: ".dimmed(), s);
-        Notification::new_string(s).push_op()
+        Notification::new_string(s).push(world)
     }
-    fn notify_error(&self) {
+    fn notify_op(&self) {
+        let s = self.to_string();
+        OperationsPlugin::add(move |world| s.notify(world))
+    }
+    fn notify_error(&self, world: &mut World) {
         let s = self.to_string();
         error!("{}{s}", "Notify error: ".dimmed());
-        Notification::new_string(s).error().push_op()
+        Notification::new_string(s).error().push(world)
+    }
+    fn notify_error_op(&self) {
+        let s = self.to_string();
+        OperationsPlugin::add(move |world| s.notify_error(world))
     }
 }
 

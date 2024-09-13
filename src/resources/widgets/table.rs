@@ -255,71 +255,73 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
         Frame::none()
             .inner_margin(Margin::same(13.0))
             .show(ui, |ui| {
-                TableBuilder::new(ui)
-                    .columns(
-                        Column::auto(),
-                        self.columns.len() + self.selectable as usize,
-                    )
-                    .cell_layout(Layout::centered_and_justified(egui::Direction::TopDown))
-                    .header(30.0, |mut row| {
-                        for (i, (name, column)) in self.columns.iter().enumerate() {
-                            row.col(|ui| {
-                                let resp = if column.sortable {
-                                    let mut btn = Button::click(name.to_string());
-                                    btn = if state
-                                        .sorting
-                                        .as_ref()
-                                        .is_some_and(|(i_sort, _)| *i_sort == i)
-                                    {
-                                        btn.bg(ui)
+                ui.push_id(Id::new(self.name), |ui| {
+                    ui.horizontal(|ui| {
+                        format!("total: {}", data.len()).cstr().label(ui);
+                    });
+                    TableBuilder::new(ui)
+                        .columns(
+                            Column::auto(),
+                            self.columns.len() + self.selectable as usize,
+                        )
+                        .cell_layout(Layout::centered_and_justified(egui::Direction::TopDown))
+                        .header(30.0, |mut row| {
+                            for (i, (name, column)) in self.columns.iter().enumerate() {
+                                row.col(|ui| {
+                                    let resp = if column.sortable {
+                                        let mut btn = Button::click(name.to_string());
+                                        btn = if state
+                                            .sorting
+                                            .as_ref()
+                                            .is_some_and(|(i_sort, _)| *i_sort == i)
+                                        {
+                                            btn.bg(ui)
+                                        } else {
+                                            btn
+                                        };
+                                        btn.ui(ui)
                                     } else {
-                                        btn
+                                        Button::click(name.to_string())
+                                            .enabled(false)
+                                            .gray(ui)
+                                            .ui(ui)
                                     };
-                                    btn.ui(ui)
-                                } else {
-                                    Button::click(name.to_string())
-                                        .enabled(false)
-                                        .gray(ui)
-                                        .ui(ui)
-                                };
-                                if resp.clicked() {
-                                    if state.sorting.is_some_and(|(s_i, s)| s_i == i && !s) {
-                                        state.sorting = Some((i, true));
-                                    } else {
-                                        state.sorting = Some((i, false));
-                                    }
-                                    need_sort = true;
-                                }
-                            });
-                        }
-                    })
-                    .body(|body| {
-                        body.rows(22.0, state.indices.len(), |mut row| {
-                            let mut row_i = row.index();
-                            if let Some(i) = state.indices.get(row_i) {
-                                row_i = *i;
-                            }
-                            row.set_selected(state.selected_row.is_some_and(|i| i == row_i));
-                            for (_, col) in self.columns.iter() {
-                                row.col(|ui| {
-                                    let d = &data[row_i];
-                                    let v = (col.value)(d, world);
-                                    (col.show)(d, v, ui, world);
-                                });
-                            }
-                            if self.selectable {
-                                row.col(|ui| {
-                                    if "select".cstr().button(ui).clicked() {
-                                        state.selected_row = Some(row_i);
+                                    if resp.clicked() {
+                                        if state.sorting.is_some_and(|(s_i, s)| s_i == i && !s) {
+                                            state.sorting = Some((i, true));
+                                        } else {
+                                            state.sorting = Some((i, false));
+                                        }
+                                        need_sort = true;
                                     }
                                 });
                             }
                         })
-                    });
+                        .body(|body| {
+                            body.rows(22.0, state.indices.len(), |mut row| {
+                                let mut row_i = row.index();
+                                if let Some(i) = state.indices.get(row_i) {
+                                    row_i = *i;
+                                }
+                                row.set_selected(state.selected_row.is_some_and(|i| i == row_i));
+                                for (_, col) in self.columns.iter() {
+                                    row.col(|ui| {
+                                        let d = &data[row_i];
+                                        let v = (col.value)(d, world);
+                                        (col.show)(d, v, ui, world);
+                                    });
+                                }
+                                if self.selectable {
+                                    row.col(|ui| {
+                                        if "select".cstr().button(ui).clicked() {
+                                            state.selected_row = Some(row_i);
+                                        }
+                                    });
+                                }
+                            })
+                        });
+                });
             });
-        ui.horizontal(|ui| {
-            format!("total: {}", data.len()).cstr().label(ui);
-        });
         if need_filter {
             state.indices = (0..data.len()).collect_vec();
             state.sorting = None;

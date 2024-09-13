@@ -40,8 +40,8 @@ fn accept_trade(ctx: ReducerContext, id: u64) -> Result<(), String> {
         return Err(format!("User#{} not part of the Trade#{}", user.id, id));
     }
     if trade.a_accepted && trade.b_accepted {
-        trade.a_offer.take(trade.b_user);
-        trade.b_offer.take(trade.a_user);
+        trade.a_offer.take(trade.b_user)?;
+        trade.b_offer.take(trade.a_user)?;
         TTrade::delete_by_id(&id);
     } else {
         TTrade::update_by_id(&id, trade);

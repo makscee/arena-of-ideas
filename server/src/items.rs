@@ -1,5 +1,12 @@
 use super::*;
 
+#[derive(SpacetimeType)]
+pub enum ItemKind {
+    Unit,
+    UnitShard,
+    Lootbox,
+}
+
 #[derive(SpacetimeType, Default)]
 pub struct ItemBundle {
     pub units: Vec<u64>,
@@ -8,6 +15,7 @@ pub struct ItemBundle {
 }
 
 #[spacetimedb(table(public))]
+#[derive(Clone)]
 pub struct TUnitItem {
     #[primarykey]
     pub id: u64,
@@ -16,6 +24,7 @@ pub struct TUnitItem {
 }
 
 #[spacetimedb(table(public))]
+#[derive(Clone)]
 pub struct TUnitShardItem {
     #[primarykey]
     pub id: u64,
@@ -25,6 +34,7 @@ pub struct TUnitShardItem {
 }
 
 #[spacetimedb(table(public))]
+#[derive(Clone)]
 pub struct TLootboxItem {
     #[primarykey]
     pub id: u64,
@@ -33,9 +43,37 @@ pub struct TLootboxItem {
     pub count: u32,
 }
 
-#[derive(SpacetimeType, Copy, Clone)]
+#[derive(SpacetimeType, Copy, Clone, Eq, PartialEq)]
 pub enum LootboxKind {
     Regular,
+}
+
+impl ItemKind {
+    pub fn clone_to(self, id: u64, owner: u64) -> Result<(), String> {
+        match self {
+            ItemKind::Unit => {
+                let mut item = TUnitItem::filter_by_id(&id).context_str("UnitItem not found")?;
+                item.id = next_id();
+                item.owner = owner;
+                TUnitItem::insert(item)?;
+            }
+            ItemKind::UnitShard => {
+                let item =
+                    TUnitShardItem::filter_by_id(&id).context_str("UnitShardItem not found")?;
+                let mut owner_item = TUnitShardItem::get_or_init(owner, &item.unit);
+                owner_item.count += item.count;
+                TUnitShardItem::update_by_id(&owner_item.id.clone(), owner_item);
+            }
+            ItemKind::Lootbox => {
+                let item =
+                    TLootboxItem::filter_by_id(&id).context_str("UnitShardItem not found")?;
+                let mut owner_item = TLootboxItem::get_or_init(owner, item.kind);
+                owner_item.count += item.count;
+                TLootboxItem::update_by_id(&owner_item.id.clone(), owner_item);
+            }
+        }
+        Ok(())
+    }
 }
 
 impl TUnitShardItem {
@@ -63,16 +101,6 @@ impl TUnitShardItem {
     }
 }
 
-impl TUnitItem {
-    fn from_fused_unit(owner: u64, unit: FusedUnit) -> Self {
-        Self {
-            id: next_id(),
-            owner,
-            unit,
-        }
-    }
-}
-
 impl TLootboxItem {
     pub fn new(owner: u64, kind: LootboxKind) -> Self {
         Self::insert(Self {
@@ -82,6 +110,19 @@ impl TLootboxItem {
             count: 1,
         })
         .unwrap()
+    }
+    fn get_or_init(owner: u64, kind: LootboxKind) -> Self {
+        Self::filter_by_owner(&owner)
+            .find(|i| i.kind == kind)
+            .unwrap_or_else(|| {
+                Self::insert(Self {
+                    id: next_id(),
+                    owner,
+                    count: 0,
+                    kind,
+                })
+                .unwrap()
+            })
     }
 }
 
@@ -118,7 +159,7 @@ fn craft_hero(ctx: ReducerContext, base: String) -> Result<(), String> {
         return Err(format!("Not enough shards: {} < {cost}", item.count));
     }
     item.count -= cost;
-    TUnitShardItem::insert(item)?;
+    TUnitShardItem::update_by_id(&item.id.clone(), item);
     TUnitItem::insert(TUnitItem {
         id: next_id(),
         owner: user.id,
@@ -157,7 +198,7 @@ fn open_lootbox(ctx: ReducerContext, id: u64) -> Result<(), String> {
                 })
                 .map(|s| {
                     let id = s.id;
-                    TUnitShardItem::insert(s);
+                    TUnitShardItem::insert(s).unwrap();
                     id
                 })
                 .collect_vec();
@@ -169,6 +210,7 @@ fn open_lootbox(ctx: ReducerContext, id: u64) -> Result<(), String> {
             TTrade::open_lootbox(user.id, bundle)?;
         }
     }
+    TLootboxItem::update_by_id(&lootbox.id.clone(), lootbox);
     Ok(())
 }
 

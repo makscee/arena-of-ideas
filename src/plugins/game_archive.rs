@@ -105,7 +105,7 @@ impl GameArchivePlugin {
         once_on_upload_game_archive(|_, _, status, _, _, _, _, _, _, _, _, _, _, _, _, _| {
             match status {
                 StdbStatus::Committed => info!("{}", "Upload successful".green()),
-                StdbStatus::Failed(e) => e.notify_error(),
+                StdbStatus::Failed(e) => e.notify_error_op(),
                 _ => panic!(),
             };
             app_exit_op();

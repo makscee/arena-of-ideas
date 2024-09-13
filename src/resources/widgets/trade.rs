@@ -24,23 +24,41 @@ impl Trade {
             .unwrap();
         popup("Trade", ctx, |ui| {
             let items = if trade.a_user == user_id() {
-                trade.b_offers_items
+                trade.a_offer
             } else {
-                trade.a_offers_items
+                trade.a_offer
             };
-
-            Table::new("Items")
-                .column_cstr("name", |d: &ItemStack, _| d.item.name_cstr())
-                .column_cstr("type", |d, w| d.item.type_cstr(w))
-                .column_int("count", |d| d.count as i32)
-                .ui(&items, ui, world);
+            let units = items
+                .units
+                .into_iter()
+                .map(|id| id.get_unit_item().unit)
+                .collect_vec();
+            if !units.is_empty() {
+                units.show_table("Units", ui, world);
+            }
+            let unit_shards = items
+                .unit_shards
+                .into_iter()
+                .map(|id| id.get_unit_shard_item())
+                .collect_vec();
+            if !unit_shards.is_empty() {
+                unit_shards.show_table("Unit Shards", ui, world);
+            }
+            let lootboxes = items
+                .lootboxes
+                .into_iter()
+                .map(|id| id.get_lootbox_item())
+                .collect_vec();
+            if !lootboxes.is_empty() {
+                lootboxes.show_table("Lootboxes", ui, world);
+            }
             ui.vertical_centered_justified(|ui| {
                 if Button::click("Accept".into()).ui(ui).clicked() {
                     accept_trade(id);
                     once_on_accept_trade(|_, _, status, id| match status {
                         StdbStatus::Committed => {}
                         StdbStatus::Failed(e) => {
-                            format!("Failed to accept trade #{id}: {e}").notify_error()
+                            format!("Failed to accept trade #{id}: {e}").notify_error_op()
                         }
                         _ => panic!(),
                     });
