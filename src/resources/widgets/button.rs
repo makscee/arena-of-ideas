@@ -120,9 +120,7 @@ impl Button {
             Sense::hover()
         };
         let r = if let Some(icon) = self.icon {
-            egui::ImageButton::new(icon.image())
-                .sense(sense)
-                .ui(ui)
+            egui::ImageButton::new(icon.image()).sense(sense).ui(ui)
         } else {
             if let Some(name) = self.name_cstr {
                 egui::Button::new(name.widget(1.0, ui))

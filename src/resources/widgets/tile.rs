@@ -156,6 +156,7 @@ impl TilePlugin {
     fn clear(world: &mut World) {
         let mut tr = world.resource_mut::<TileResource>();
         tr.tiles.clear();
+        tr.content = None;
     }
 
     pub fn add_team(gid: u64, world: &mut World) {
@@ -176,7 +177,7 @@ impl TilePlugin {
         })
         .push(world)
     }
-    pub fn on_state_changed(to: GameState, world: &mut World) {
+    pub fn change_state(to: GameState, world: &mut World) {
         Self::clear(world);
         match to {
             GameState::Inbox => Tile::new(Side::Left, |ui, world| {

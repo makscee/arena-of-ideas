@@ -64,3 +64,57 @@ fn new_team(ctx: ReducerContext, name: String) -> Result<(), String> {
     TTeam::new(user.id, TeamPool::Owned).name(name).save();
     Ok(())
 }
+
+#[spacetimedb(reducer)]
+fn add_unit_to_team(ctx: ReducerContext, team: u64, unit: u64) -> Result<(), String> {
+    let user = ctx.user()?;
+    let mut team = TTeam::filter_by_id(&team).context_str("Team not found")?;
+    if team.owner != user.id {
+        return Err(format!("Team#{} not owned by user#{}", team.id, user.id));
+    }
+    let unit = TUnitItem::filter_by_owner(&user.id)
+        .find(|u| u.unit.id == unit)
+        .context_str("Unit not found")?;
+    TUnitItem::delete_by_id(&unit.id);
+    team.units.push(unit.unit);
+    team.save();
+    Ok(())
+}
+
+#[spacetimedb(reducer)]
+fn remove_unit_from_team(ctx: ReducerContext, team: u64, unit: u64) -> Result<(), String> {
+    let user = ctx.user()?;
+    let mut team = TTeam::filter_by_id(&team).context_str("Team not found")?;
+    if team.owner != user.id {
+        return Err(format!("Team#{} not owned by user#{}", team.id, user.id));
+    }
+    if let Some(pos) = team.units.iter().position(|u| u.id == unit) {
+        let unit = team.units.remove(pos);
+        TUnitItem::insert(TUnitItem {
+            id: next_id(),
+            owner: user.id,
+            unit,
+        })?;
+        team.save();
+    } else {
+        return Err(format!("Unit#{} not found", unit));
+    }
+    Ok(())
+}
+#[spacetimedb(reducer)]
+fn swap_team_units(ctx: ReducerContext, team: u64, from: u8, to: u8) -> Result<(), String> {
+    let user = ctx.user()?;
+    let mut team = TTeam::filter_by_id(&team).context_str("Team not found")?;
+    if team.owner != user.id {
+        return Err(format!("Team#{} not owned by user#{}", team.id, user.id));
+    }
+    let from = from as usize;
+    let to = (to as usize).min(team.units.len() - 1);
+    if team.units.len() < from {
+        return Err("Wrong from index".into());
+    }
+    let unit = team.units.remove(from);
+    team.units.insert(to, unit);
+    team.save();
+    Ok(())
+}

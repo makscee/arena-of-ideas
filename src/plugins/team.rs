@@ -10,6 +10,8 @@ struct TeamResource {
     table: Vec<TTeam>,
     new_team_name: String,
     substate: SubState,
+    team: u64,
+    unit_to_add: u64,
 }
 
 #[derive(Component)]
@@ -31,6 +33,8 @@ impl Plugin for TeamPlugin {
             table: default(),
             new_team_name: default(),
             substate: default(),
+            team: 0,
+            unit_to_add: 0,
         });
     }
 }
@@ -108,6 +112,15 @@ impl TeamPlugin {
             TTeam::filter_by_owner(user_id()).collect_vec();
         TableState::reset_cache(&egui_context(world).unwrap());
     }
+    fn load_editor_team(world: &mut World) {
+        Self::despawn(Faction::Team, world);
+        let team = world.resource::<TeamResource>().team;
+        if team == 0 {
+            return;
+        }
+        let team = PackedTeam::from_id(team);
+        team.unpack(Faction::Team, world);
+    }
     fn open_new_team_popup(world: &mut World) {
         let ctx = egui_context(world).unwrap();
         Confirmation::new(
@@ -137,39 +150,94 @@ impl TeamPlugin {
             if Button::click("New Team".into()).ui(ui).clicked() {
                 Self::open_new_team_popup(world);
             }
-        })
-        .sticky()
-        .push(world);
-        Tile::new(Side::Right, |ui, world| {
-            world.resource_scope(|world, data: Mut<TeamResource>| {
-                data.table.show_table("Teams", ui, world);
+            let data = mem::take(&mut world.resource_mut::<TeamResource>().table);
+            data.show_modified_table("Teams", ui, world, |t| {
+                t.column_btn("edit", |d, _, world| {
+                    let mut tr = world.resource_mut::<TeamResource>();
+                    tr.team = d.id;
+                    tr.substate = SubState::TeamEditor;
+                    GameState::TeamEditor.proceed_to_target(world);
+                })
             });
+            world.resource_mut::<TeamResource>().table = data;
         })
         .sticky()
         .push(world);
     }
 
     fn editor_tiles(world: &mut World) {
+        Self::load_editor_team(world);
         Tile::new(Side::Top, |ui, world| {
+            let team = world.resource::<TeamResource>().team;
+            if team == 0 {
+                return;
+            }
+            let team = team.get_team();
+            title(&team.name, ui);
             UnitContainer::new(Faction::Team)
-                .slot_content(|i, e, ui, world| {
-                    if e.is_none() {
-                        ui.vertical_centered_justified(|ui| {
-                            if Button::click("Add".into()).ui(ui).clicked() {
-                                debug!("Add");
+                .top_content(|ui, _| {
+                    if Button::click("Add".into()).ui(ui).clicked() {
+                        Confirmation::new("Add unit to team".cstr(), |world| {
+                            let mut tr = world.resource_mut::<TeamResource>();
+                            let id = tr.unit_to_add;
+                            if id != 0 {
+                                tr.unit_to_add = 0;
+                                add_unit_to_team(tr.team, id);
+                                once_on_add_unit_to_team(|_, _, status, _, _| {
+                                    status.on_success(|world| {
+                                        Self::load_editor_team(world);
+                                        TableState::reset_cache(&egui_context(world).unwrap());
+                                    })
+                                });
                             }
-                        });
+                        })
+                        .content(|ui, world| {
+                            let units = TUnitItem::filter_by_owner(user_id())
+                                .map(|u| u.unit)
+                                .collect_vec();
+                            let selected = units
+                                .show_modified_table("Units", ui, world, |t| t.selectable())
+                                .selected_row;
+                            if let Some(selected) = selected {
+                                world.resource_mut::<TeamResource>().unit_to_add =
+                                    units[selected].id;
+                            }
+                        })
+                        .add(ui.ctx());
                     }
+                })
+                .slot_content(|slot, entity, ui, world| {
+                    if entity.is_none() {
+                        return;
+                    }
+                    ui.vertical_centered_justified(|ui| {
+                        if Button::click("Remove".into()).ui(ui).clicked() {
+                            let tr = world.resource::<TeamResource>();
+                            remove_unit_from_team(tr.team, tr.team.get_team().units[slot].id);
+                            once_on_remove_unit_from_team(|_, _, status, _, _| {
+                                TableState::reset_cache_op();
+                                status.on_success(|world| Self::load_editor_team(world))
+                            });
+                        }
+                    });
+                })
+                .on_swap(|from, to, world| {
+                    let team = world.resource::<TeamResource>().team;
+                    swap_team_units(team, from as u8, to as u8);
+                    once_on_swap_team_units(|_, _, status, _, _, _| {
+                        status.on_success(|world| Self::load_editor_team(world));
+                    });
                 })
                 .ui(ui, world);
         })
         .sticky()
         .transparent()
-        .min_space(egui::vec2(200.0, 100.0))
+        .min_space(egui::vec2(200.0, 200.0))
         .push_as_content(world);
     }
 
     pub fn add_tiles(state: GameState, world: &mut World) {
+        Self::despawn(Faction::Team, world);
         Tile::new(Side::Top, |ui, world| {
             let mut r = world.resource_mut::<TeamResource>();
             let state = SubsectionMenu::new(r.substate).show(ui);

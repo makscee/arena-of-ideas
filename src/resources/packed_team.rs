@@ -25,7 +25,7 @@ impl PackedTeam {
         debug!("unpack team: {self:?}");
         let entity = TeamPlugin::entity(faction, world);
         for (slot, unit) in self.units.into_iter().enumerate() {
-            unit.unpack(entity, Some(slot as i32 + 1), None, world);
+            unit.unpack(entity, Some(slot as i32), None, world);
         }
         world.entity_mut(entity).insert(self.ability_states);
     }

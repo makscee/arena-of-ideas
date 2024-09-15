@@ -21,6 +21,7 @@ use spacetimedb_sdk::{
 use std::sync::Arc;
 
 pub mod accept_trade_reducer;
+pub mod add_unit_to_team_reducer;
 pub mod arena_settings;
 pub mod battle_settings;
 pub mod craft_hero_reducer;
@@ -48,6 +49,7 @@ pub mod open_lootbox_reducer;
 pub mod rarity_settings;
 pub mod register_empty_reducer;
 pub mod register_reducer;
+pub mod remove_unit_from_team_reducer;
 pub mod reward;
 pub mod run_finish_reducer;
 pub mod run_start_const_reducer;
@@ -66,6 +68,7 @@ pub mod shop_slot;
 pub mod stack_shop_reducer;
 pub mod stack_team_reducer;
 pub mod submit_battle_result_reducer;
+pub mod swap_team_units_reducer;
 pub mod t_ability;
 pub mod t_arena_leaderboard;
 pub mod t_arena_pool;
@@ -91,6 +94,7 @@ pub mod upload_assets_reducer;
 pub mod upload_game_archive_reducer;
 
 pub use accept_trade_reducer::*;
+pub use add_unit_to_team_reducer::*;
 pub use arena_settings::*;
 pub use battle_settings::*;
 pub use craft_hero_reducer::*;
@@ -118,6 +122,7 @@ pub use open_lootbox_reducer::*;
 pub use rarity_settings::*;
 pub use register_empty_reducer::*;
 pub use register_reducer::*;
+pub use remove_unit_from_team_reducer::*;
 pub use reward::*;
 pub use run_finish_reducer::*;
 pub use run_start_const_reducer::*;
@@ -136,6 +141,7 @@ pub use shop_slot::*;
 pub use stack_shop_reducer::*;
 pub use stack_team_reducer::*;
 pub use submit_battle_result_reducer::*;
+pub use swap_team_units_reducer::*;
 pub use t_ability::*;
 pub use t_arena_leaderboard::*;
 pub use t_arena_pool::*;
@@ -164,6 +170,7 @@ pub use upload_game_archive_reducer::*;
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub enum ReducerEvent {
     AcceptTrade(accept_trade_reducer::AcceptTradeArgs),
+    AddUnitToTeam(add_unit_to_team_reducer::AddUnitToTeamArgs),
     CraftHero(craft_hero_reducer::CraftHeroArgs),
     DailyUpdate(daily_update_reducer::DailyUpdateArgs),
     FuseCancel(fuse_cancel_reducer::FuseCancelArgs),
@@ -178,6 +185,7 @@ pub enum ReducerEvent {
     OpenLootbox(open_lootbox_reducer::OpenLootboxArgs),
     Register(register_reducer::RegisterArgs),
     RegisterEmpty(register_empty_reducer::RegisterEmptyArgs),
+    RemoveUnitFromTeam(remove_unit_from_team_reducer::RemoveUnitFromTeamArgs),
     RunFinish(run_finish_reducer::RunFinishArgs),
     RunStartConst(run_start_const_reducer::RunStartConstArgs),
     RunStartNormal(run_start_normal_reducer::RunStartNormalArgs),
@@ -194,6 +202,7 @@ pub enum ReducerEvent {
     StackShop(stack_shop_reducer::StackShopArgs),
     StackTeam(stack_team_reducer::StackTeamArgs),
     SubmitBattleResult(submit_battle_result_reducer::SubmitBattleResultArgs),
+    SwapTeamUnits(swap_team_units_reducer::SwapTeamUnitsArgs),
     UploadAssets(upload_assets_reducer::UploadAssetsArgs),
     UploadGameArchive(upload_game_archive_reducer::UploadGameArchiveArgs),
 }
@@ -360,6 +369,7 @@ impl SpacetimeModule for Module {
         #[allow(clippy::match_single_binding)]
 match &reducer_call.reducer_name[..] {
 						"accept_trade" => _reducer_callbacks.handle_event_of_type::<accept_trade_reducer::AcceptTradeArgs, ReducerEvent>(event, _state, ReducerEvent::AcceptTrade),
+			"add_unit_to_team" => _reducer_callbacks.handle_event_of_type::<add_unit_to_team_reducer::AddUnitToTeamArgs, ReducerEvent>(event, _state, ReducerEvent::AddUnitToTeam),
 			"craft_hero" => _reducer_callbacks.handle_event_of_type::<craft_hero_reducer::CraftHeroArgs, ReducerEvent>(event, _state, ReducerEvent::CraftHero),
 			"daily_update" => _reducer_callbacks.handle_event_of_type::<daily_update_reducer::DailyUpdateArgs, ReducerEvent>(event, _state, ReducerEvent::DailyUpdate),
 			"fuse_cancel" => _reducer_callbacks.handle_event_of_type::<fuse_cancel_reducer::FuseCancelArgs, ReducerEvent>(event, _state, ReducerEvent::FuseCancel),
@@ -374,6 +384,7 @@ match &reducer_call.reducer_name[..] {
 			"open_lootbox" => _reducer_callbacks.handle_event_of_type::<open_lootbox_reducer::OpenLootboxArgs, ReducerEvent>(event, _state, ReducerEvent::OpenLootbox),
 			"register" => _reducer_callbacks.handle_event_of_type::<register_reducer::RegisterArgs, ReducerEvent>(event, _state, ReducerEvent::Register),
 			"register_empty" => _reducer_callbacks.handle_event_of_type::<register_empty_reducer::RegisterEmptyArgs, ReducerEvent>(event, _state, ReducerEvent::RegisterEmpty),
+			"remove_unit_from_team" => _reducer_callbacks.handle_event_of_type::<remove_unit_from_team_reducer::RemoveUnitFromTeamArgs, ReducerEvent>(event, _state, ReducerEvent::RemoveUnitFromTeam),
 			"run_finish" => _reducer_callbacks.handle_event_of_type::<run_finish_reducer::RunFinishArgs, ReducerEvent>(event, _state, ReducerEvent::RunFinish),
 			"run_start_const" => _reducer_callbacks.handle_event_of_type::<run_start_const_reducer::RunStartConstArgs, ReducerEvent>(event, _state, ReducerEvent::RunStartConst),
 			"run_start_normal" => _reducer_callbacks.handle_event_of_type::<run_start_normal_reducer::RunStartNormalArgs, ReducerEvent>(event, _state, ReducerEvent::RunStartNormal),
@@ -390,6 +401,7 @@ match &reducer_call.reducer_name[..] {
 			"stack_shop" => _reducer_callbacks.handle_event_of_type::<stack_shop_reducer::StackShopArgs, ReducerEvent>(event, _state, ReducerEvent::StackShop),
 			"stack_team" => _reducer_callbacks.handle_event_of_type::<stack_team_reducer::StackTeamArgs, ReducerEvent>(event, _state, ReducerEvent::StackTeam),
 			"submit_battle_result" => _reducer_callbacks.handle_event_of_type::<submit_battle_result_reducer::SubmitBattleResultArgs, ReducerEvent>(event, _state, ReducerEvent::SubmitBattleResult),
+			"swap_team_units" => _reducer_callbacks.handle_event_of_type::<swap_team_units_reducer::SwapTeamUnitsArgs, ReducerEvent>(event, _state, ReducerEvent::SwapTeamUnits),
 			"upload_assets" => _reducer_callbacks.handle_event_of_type::<upload_assets_reducer::UploadAssetsArgs, ReducerEvent>(event, _state, ReducerEvent::UploadAssets),
 			"upload_game_archive" => _reducer_callbacks.handle_event_of_type::<upload_game_archive_reducer::UploadGameArchiveArgs, ReducerEvent>(event, _state, ReducerEvent::UploadGameArchive),
 			unknown => { spacetimedb_sdk::log::error!("Event on an unknown reducer: {:?}", unknown); None }

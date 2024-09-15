@@ -1,5 +1,3 @@
-use egui::{NumExt, Sense, Window};
-
 use super::*;
 
 pub struct UnitContainer {
@@ -131,22 +129,62 @@ impl UnitContainer {
             .unwrap_or_default();
         data.positions.resize(self.slots, default());
         data.entities.resize(self.slots, None);
+        if let Some(content) = self.top_content {
+            (content)(ui, world);
+        }
         if ui.available_width() > ui.style().spacing.item_spacing.x * self.max_slots as f32 {
             ui.columns(self.max_slots, |ui| {
-                for (ind, ui) in ui.iter_mut().enumerate() {
-                    Self::show_unit_frame(ind, ui);
+                for (i, ui) in ui.iter_mut().rev().enumerate() {
+                    let resp = Self::show_unit_frame(i, ui);
+                    data.positions[i] = resp.rect.center();
+                    if let Some(entity) = data.entities[i] {
+                        if let Some(action) = &self.on_swap {
+                            if resp.dragged() {
+                                if let Some(pointer) = ui.ctx().pointer_latest_pos() {
+                                    let origin = resp.rect.center();
+                                    ui.set_clip_rect(ui.ctx().screen_rect());
+                                    ui.painter().arrow(
+                                        origin,
+                                        pointer.to_vec2() - origin.to_vec2(),
+                                        Stroke {
+                                            width: 3.0,
+                                            color: YELLOW,
+                                        },
+                                    )
+                                }
+                            }
+                            resp.dnd_set_drag_payload(i);
+                            if let Some(drop_i) = resp.dnd_release_payload::<usize>() {
+                                if i != *drop_i {
+                                    action(*drop_i, i, world);
+                                }
+                            }
+                        }
+                        if resp.hovered() && ui.ctx().dragged_id().is_none() {
+                            cursor_card_window(ui.ctx(), |ui| {
+                                match UnitCard::new(&Context::new(entity), world) {
+                                    Ok(c) => c.ui(ui),
+                                    Err(e) => error!("{e}"),
+                                }
+                            });
+                        }
+                    }
                     if let Some(content) = &self.slot_content {
-                        (content)(ind, None, ui, world);
+                        (content)(i, data.entities[i], ui, world);
                     }
                 }
             });
         }
+        world
+            .resource_mut::<UnitContainerResource>()
+            .containers
+            .insert(self.faction, data);
     }
     fn show_unit_frame(ind: usize, ui: &mut Ui) -> Response {
         let rect = ui.available_rect_before_wrap();
         let size = rect.size().x.min(rect.size().y);
         let rect = Rect::from_center_size(rect.center(), egui::Vec2::splat(size));
-        let resp = ui.allocate_rect(rect, Sense::hover());
+        let resp = ui.allocate_rect(rect, Sense::drag());
         let color = if resp.hovered() { YELLOW } else { VISIBLE_DARK };
         let stroke = Stroke { width: 1.0, color };
         let ind_rect = Rect::from_min_max(
@@ -185,157 +223,6 @@ impl UnitContainer {
             gap_size,
         ));
         resp
-    }
-    pub fn ui_old(self, ui: &mut Ui, world: &mut World) {
-        let mut data = world
-            .resource_mut::<UnitContainerResource>()
-            .containers
-            .remove(&self.faction)
-            .unwrap_or_default();
-        data.positions.resize(self.slots + 1, default());
-        data.entities.resize(self.slots + 1, None);
-        let name = format!("{}", self.faction);
-        ui.ctx().add_path(&name);
-        const MARGIN: Margin = Margin::same(8.0);
-        let available_rect = ui.available_rect_before_wrap();
-        let pos = available_rect.min + self.position * available_rect.size();
-        let max_size = if self.hug_unit {
-            CameraPlugin::pixel_unit(ui.ctx(), world) * 2.5
-        } else {
-            (available_rect.width() / self.slots as f32 - MARGIN.left - MARGIN.right).min(130.0)
-        };
-        const FRAME: Frame = Frame {
-            inner_margin: MARGIN,
-            outer_margin: MARGIN,
-            rounding: Rounding::same(13.0),
-            shadow: Shadow::NONE,
-            fill: TRANSPARENT,
-            stroke: Stroke {
-                width: 1.0,
-                color: VISIBLE_DARK,
-            },
-        };
-        let mut hovered_rect: Option<(usize, Rect)> = None;
-        let resp = Window::new(&name)
-            .fixed_pos(pos)
-            .pivot(self.pivot)
-            .constrain_to(ui.available_rect_before_wrap())
-            .default_width(1.0)
-            .resizable([true, false])
-            .frame(FRAME)
-            .title_bar(false)
-            .show(ui.ctx(), |ui| {
-                if let Some(content) = self.top_content {
-                    content(ui, world);
-                }
-                ui.columns(self.slots, |ui| {
-                    for i in 0..self.slots {
-                        let col = if self.right_to_left {
-                            i
-                        } else {
-                            self.slots - i - 1
-                        };
-                        let ui = &mut ui[col];
-                        ui.ctx().add_path(&i.to_string());
-                        let entity = data.entities[i];
-                        ui.vertical_centered(|ui| {
-                            let name = if let Some(entity) = entity {
-                                Some(entity_name(entity))
-                            } else {
-                                None
-                            };
-                            let response = show_frame(
-                                i,
-                                max_size.at_least(self.min_size),
-                                i >= self.max_slots,
-                                name,
-                                &mut data,
-                                ui,
-                            );
-                            if let Some(action) = &self.on_swap {
-                                if response.dragged() {
-                                    if let Some(pointer) = ui.ctx().pointer_latest_pos() {
-                                        let origin = response.rect.center();
-                                        ui.set_clip_rect(ui.ctx().screen_rect());
-                                        ui.painter().arrow(
-                                            origin,
-                                            pointer.to_vec2() - origin.to_vec2(),
-                                            Stroke {
-                                                width: 3.0,
-                                                color: YELLOW,
-                                            },
-                                        )
-                                    }
-                                }
-                                response.dnd_set_drag_payload(i);
-                                if let Some(drop_i) = response.dnd_release_payload::<usize>() {
-                                    if i != *drop_i {
-                                        action(*drop_i, i, world);
-                                    }
-                                }
-                            }
-                            if let Some(name) = self.slot_name.get(&i) {
-                                let ui = &mut ui.child_ui(
-                                    Rect::from_two_pos(
-                                        response.rect.left_top(),
-                                        response.rect.right_top() + egui::vec2(0.0, -20.0),
-                                    ),
-                                    Layout::left_to_right(Align::Center),
-                                    None,
-                                );
-                                name.cstr().label(ui);
-                            }
-                            if response.hovered() && ui.ctx().dragged_id().is_none() {
-                                hovered_rect = Some((i, response.rect));
-                            }
-                        });
-                        if let Some(content) = &self.slot_content {
-                            ui.vertical_centered_justified(|ui| {
-                                content(i, entity, ui, world);
-                            });
-                        }
-                        ui.ctx().remove_path();
-                    }
-                });
-            })
-            .unwrap();
-        let rect = resp.response.rect;
-        if self.show_name {
-            let pos = rect.left_top();
-            let rect = Rect::from_two_pos(pos, pos + egui::vec2(-30.0, 30.0));
-            let ui = &mut ui.child_ui(rect, Layout::bottom_up(Align::Min), None);
-            name.cstr_cs(VISIBLE_DARK, CstrStyle::Bold).label(ui);
-        }
-        if let Some(hover_content) = self.hover_content {
-            if let Some((i, rect)) = hovered_rect {
-                if data.entities[i].is_some() {
-                    const WIDTH: f32 = 300.0;
-                    let (pos, pivot) = if available_rect.right() - rect.right() < WIDTH {
-                        (rect.left_center(), Align2::RIGHT_CENTER)
-                    } else {
-                        (rect.right_center(), Align2::LEFT_CENTER)
-                    };
-                    Window::new("hover_slot")
-                        .title_bar(false)
-                        .frame(Frame::none())
-                        .max_width(WIDTH)
-                        .pivot(pivot)
-                        .fixed_pos(pos)
-                        .resizable(false)
-                        .interactable(false)
-                        .constrain_to(ui.ctx().screen_rect())
-                        .show(ui.ctx(), |ui| {
-                            ui.vertical_centered_justified(|ui| {
-                                hover_content(i, data.entities[i], ui, world)
-                            })
-                        });
-                }
-            }
-        }
-        world
-            .resource_mut::<UnitContainerResource>()
-            .containers
-            .insert(self.faction, data);
     }
 
     pub fn place_into_slots(world: &mut World) {
