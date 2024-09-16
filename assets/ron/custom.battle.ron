@@ -3,15 +3,51 @@
     left: (
         units: [
             (
-                hp: 10,
+                hp: 1,
                 pwr: 1,
                 trigger: Fire(
                     triggers: [(BattleStart, None)],
                     targets: [(Owner, None)],
-                    effects: [(UseAbility("Shield", 5), None)],
+                    effects: [(UseAbility("Shield", 0), None)],
                 ),
             ),
-            (hp: 10, pwr: 0),
+            (hp: 1, pwr: 1),
+            (
+                name: "Apostate",
+                hp: 2,
+                pwr: 1,
+                lvl: 1,
+                rarity: 1,
+                houses: ["Paladins"],
+                trigger: Fire(
+                    triggers: [(AllyDeath, None)],
+                    targets: [(SlotUnit(I(1)), "front ally")],
+                    effects: [(UseAbility("Shield", 0), None)],
+                ),
+                representation: (
+                    material: Shape(
+                        shape: Circle(radius: F(0.5)),
+                        shape_type: Line(thickness: F(2.19)),
+                        fill: GradientLinear(
+                            point1: V2(0.0, 0.0),
+                            point2: V2(1.0, 1.0),
+                            parts: [F(0.0), F(0.35)],
+                            colors: [OwnerState(Color), HexColor("00000000")],
+                        ),
+                        fbm: None,
+                        alpha: F(0.5),
+                        padding: F(0.0),
+                    ),
+                    children: [],
+                    mapping: {
+                        Offset: Mul(
+                            UnitVec(Sum(Mul(Index, Mul(PI, F(0.66))), Mul(GT, F(0.2)))),
+                            Mul(Sin(GT), F(0.3)),
+                        ),
+                    },
+                    count: 2,
+                ),
+            ),
         ],
     ),
     right: (

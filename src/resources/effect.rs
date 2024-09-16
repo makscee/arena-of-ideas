@@ -148,14 +148,10 @@ impl Effect {
             }
             Effect::StealAllStatuses => {
                 let target = context.get_target()?;
-                for (s, c) in VarState::get(target, world).all_statuses_at(gt().insert_head()) {
-                    if c > 0 {
-                        ActionPlugin::action_push_front(
-                            Effect::StealStatus(s),
-                            context.clone(),
-                            world,
-                        );
-                    }
+                for (s, _) in
+                    VarState::get(target, world).all_active_statuses_at(gt().insert_head())
+                {
+                    ActionPlugin::action_push_front(Effect::StealStatus(s), context.clone(), world);
                 }
             }
             Effect::UseAbility(name, base) => {

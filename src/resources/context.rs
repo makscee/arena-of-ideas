@@ -208,7 +208,7 @@ impl Context {
 
     pub fn all_active_statuses(&self, world: &World) -> HashMap<String, i32> {
         self.get_state(world)
-            .map(|s| s.all_statuses_at(self.t))
+            .map(|s| s.all_active_statuses_at(self.t))
             .unwrap_or_default()
     }
 

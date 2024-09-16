@@ -111,20 +111,25 @@ impl VarState {
             }
         }
     }
-    pub fn all_statuses_at(&self, t: f32) -> HashMap<String, i32> {
-        HashMap::from_iter(self.statuses.iter().filter_map(|(name, state)| {
-            if LOCAL_STATUS.eq(name) {
-                None
-            } else {
-                Some((
-                    name.into(),
-                    state
-                        .get_value_at(VarName::Charges, t)
-                        .and_then(|v| v.get_int())
-                        .unwrap_or_default(),
-                ))
-            }
-        }))
+    pub fn all_active_statuses_at(&self, t: f32) -> HashMap<String, i32> {
+        HashMap::from_iter(
+            self.statuses
+                .iter()
+                .filter_map(|(name, state)| {
+                    if LOCAL_STATUS.eq(name) {
+                        None
+                    } else {
+                        Some((
+                            name.into(),
+                            state
+                                .get_value_at(VarName::Charges, t)
+                                .and_then(|v| v.get_int())
+                                .unwrap_or_default(),
+                        ))
+                    }
+                })
+                .filter(|(_, c)| *c > 0),
+        )
     }
     pub fn init(&mut self, var: VarName, value: VarValue) -> &mut Self {
         self.vars.insert(
