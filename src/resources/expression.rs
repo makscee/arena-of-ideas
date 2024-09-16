@@ -34,6 +34,7 @@ pub enum Expression {
     AdjacentUnits,
 
     FilterStatusUnits(String, Box<Expression>),
+    FilterNoStatusUnits(String, Box<Expression>),
 
     Value(VarValue),
     Context(VarName),
@@ -303,6 +304,14 @@ impl Expression {
                     .collect_vec()
                     .into())
             }
+            Expression::FilterNoStatusUnits(status, units) => {
+                let units = units.get_value(context, world)?.get_entity_list()?;
+                Ok(units
+                    .into_iter()
+                    .filter(|u| Status::get_charges(&status, *u, world).unwrap_or_default() == 0)
+                    .collect_vec()
+                    .into())
+            }
             Expression::Age => {
                 Ok((gt().play_head() - VarState::get(context.owner(), world).birth()).into())
             }
@@ -515,7 +524,8 @@ impl ToCstr for Expression {
                         .take(),
                 );
             }
-            Expression::FilterStatusUnits(status, u) => {
+            Expression::FilterStatusUnits(status, u)
+            | Expression::FilterNoStatusUnits(status, u) => {
                 s.push(
                     status
                         .cstr_c(name_color(status))

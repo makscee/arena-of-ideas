@@ -7,7 +7,7 @@
     houses: ["Paladins"],
     trigger: Fire(
         triggers: [(Period(0, 1, TurnEnd), "every 2 turns")],
-        targets: [(FindUnit(Equals(StatusCharges(String("Shield")), Zero)), "ally with no [Shield]")],
+        targets: [(RandomUnit(FilterNoStatusUnits("Shield", AllAllyUnits)), "ally with no [Shield]")],
         effects: [(UseAbility("Shield", 0), None)],
     ),
     representation: (
