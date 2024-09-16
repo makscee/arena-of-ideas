@@ -14,6 +14,7 @@ impl Plugin for BattlePlugin {
                 Update,
                 Self::hover_check.run_if(in_state(GameState::Battle)),
             )
+            .add_systems(Update, Self::input.run_if(in_state(GameState::Battle)))
             .init_resource::<BattleData>();
     }
 }
@@ -215,6 +216,18 @@ impl BattlePlugin {
             ActionPlugin::spin(world)?;
         }
         Ok(())
+    }
+    fn input(input: Res<ButtonInput<KeyCode>>, time: Res<Time>) {
+        if input.just_pressed(KeyCode::Space) {
+            let paused = gt().paused();
+            gt().pause(!paused);
+        }
+        if input.pressed(KeyCode::ArrowLeft) {
+            gt().advance_play(-time.delta_seconds() * 2.0);
+        }
+        if input.pressed(KeyCode::ArrowRight) {
+            gt().advance_play(time.delta_seconds() * 2.0);
+        }
     }
     pub fn add_tiles(world: &mut World) {
         Tile::new(Side::Bottom, |ui, world| {

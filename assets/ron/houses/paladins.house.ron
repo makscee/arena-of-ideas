@@ -2,32 +2,27 @@
 (
     name: "Paladins",
     color: ("#F06292"),
-    defaults: {"Shield": {M1: I(0)}},
     statuses: [
         (
             name: "Shield",
-            description: "Block next incoming damage {Charges} times",
+            description: "Block {Charges} amount of damage",
             polarity: 1,
             trigger: List(
                 [
-                    Change(trigger: IncomingDamage, expr: I(-9999999)),
+                    Change(
+                        trigger: IncomingDamage,
+                        expr: Sub(I(0), Min(Context(Charges), Context(Value))),
+                    ),
                     Fire(
                         triggers: [(AfterIncomingDamage, None)],
                         effects: [
                             (
                                 If(
                                     GreaterThen(Context(Value), I(0)),
-                                    WithVar(Charges, I(-1), ChangeStatus("Shield")),
-                                    Noop,
-                                ),
-                                None,
-                            ),
-                            (
-                                If(
-                                    AbilityContext("Shield", M1),
-                                    WithTarget(
-                                        Caster,
-                                        Damage(Mul(AbilityContext("Shield", M1), Context(Value))),
+                                    WithVar(
+                                        Charges,
+                                        Sub(I(0), Min(Context(Value), Context(Charges))),
+                                        ChangeStatus("Shield"),
                                     ),
                                     Noop,
                                 ),
@@ -42,7 +37,7 @@
     abilities: [
         (
             name: "Shield",
-            description: "Block next incoming damage{M1|, reflect any blocked damage back to attacker}",
+            description: "Absorb {Charges} DMG",
             effect: List([Vfx("apply_status"), ChangeStatus("Shield")]),
         ),
         (

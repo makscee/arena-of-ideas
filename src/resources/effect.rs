@@ -167,8 +167,7 @@ impl Effect {
                 let charges = context
                     .get_value(VarName::Lvl, world)
                     .map(|v| v.get_int().unwrap())
-                    .unwrap_or(1)
-                    .max(1)
+                    .unwrap_or(0)
                     + *base;
                 let caster = owner;
                 let context = context
