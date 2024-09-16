@@ -7,7 +7,7 @@
     houses: ["Paladins"],
     trigger: Fire(
         triggers: [(BattleStart, None)],
-        targets: [(AllStatusAllies("Shield"), None), (AllStatusEnemies("Shield"), None)],
+        targets: [(FilterStatusUnits("Shield", AllUnits), Some("All units with [Shield]"))],
         effects: [(WithVar(Charges, Context(Lvl), StealStatus("Shield")), "steal [Shield] ({Lvl})")],
     ),
     representation: (
