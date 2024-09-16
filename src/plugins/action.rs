@@ -73,7 +73,6 @@ impl ActionPlugin {
             if !actions_added {
                 break;
             }
-            break;
         }
         if processed {
             Self::clear_dead(world);

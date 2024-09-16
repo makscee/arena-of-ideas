@@ -128,7 +128,7 @@ impl BattlePlugin {
         Self::fatigue(turn, world)
     }
     fn before_strike(left: Entity, right: Entity, world: &mut World) -> Result<()> {
-        debug!("before strike {left:?} {right:?}");
+        debug!("before strike {left} {right}");
         Event::BeforeStrike(left, right).send(world);
         ActionPlugin::spin(world)?;
         Event::BeforeStrike(right, left).send(world);
@@ -158,7 +158,7 @@ impl BattlePlugin {
         Ok(())
     }
     fn strike(left: Entity, right: Entity, world: &mut World) -> Result<()> {
-        debug!("strike {left:?} {right:?}");
+        debug!("strike {left} {right}");
         let units = vec![(left, right), (right, left)];
         for (caster, target) in units {
             let context = Context::new(caster)
@@ -172,7 +172,7 @@ impl BattlePlugin {
         Ok(())
     }
     fn after_strike(left: Entity, right: Entity, world: &mut World) -> Result<()> {
-        debug!("after strike {left:?} {right:?}");
+        debug!("after strike {left} {right}");
         UnitPlugin::translate_to_slots(world);
         Event::AfterStrike(left, right).send(world);
         ActionPlugin::spin(world)?;
