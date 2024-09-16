@@ -135,6 +135,7 @@ impl UiPlugin {
             };
             style.spacing.window_margin = Margin::same(13.0);
             style.spacing.slider_rail_height = 2.0;
+            style.spacing.button_padding = egui::vec2(8.0, 2.0);
             style.visuals.striped = false;
             style.visuals.slider_trailing_fill = true;
             style.visuals.faint_bg_color = BG_LIGHT;

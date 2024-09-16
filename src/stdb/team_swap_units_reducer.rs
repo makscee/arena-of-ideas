@@ -13,42 +13,42 @@ use spacetimedb_sdk::{
 };
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
-pub struct SwapTeamUnitsArgs {
+pub struct TeamSwapUnitsArgs {
     pub team: u64,
     pub from: u8,
     pub to: u8,
 }
 
-impl Reducer for SwapTeamUnitsArgs {
-    const REDUCER_NAME: &'static str = "swap_team_units";
+impl Reducer for TeamSwapUnitsArgs {
+    const REDUCER_NAME: &'static str = "team_swap_units";
 }
 
 #[allow(unused)]
-pub fn swap_team_units(team: u64, from: u8, to: u8) {
-    SwapTeamUnitsArgs { team, from, to }.invoke();
+pub fn team_swap_units(team: u64, from: u8, to: u8) {
+    TeamSwapUnitsArgs { team, from, to }.invoke();
 }
 
 #[allow(unused)]
-pub fn on_swap_team_units(
+pub fn on_team_swap_units(
     mut __callback: impl FnMut(&Identity, Option<Address>, &Status, &u64, &u8, &u8) + Send + 'static,
-) -> ReducerCallbackId<SwapTeamUnitsArgs> {
-    SwapTeamUnitsArgs::on_reducer(move |__identity, __addr, __status, __args| {
-        let SwapTeamUnitsArgs { team, from, to } = __args;
+) -> ReducerCallbackId<TeamSwapUnitsArgs> {
+    TeamSwapUnitsArgs::on_reducer(move |__identity, __addr, __status, __args| {
+        let TeamSwapUnitsArgs { team, from, to } = __args;
         __callback(__identity, __addr, __status, team, from, to);
     })
 }
 
 #[allow(unused)]
-pub fn once_on_swap_team_units(
+pub fn once_on_team_swap_units(
     __callback: impl FnOnce(&Identity, Option<Address>, &Status, &u64, &u8, &u8) + Send + 'static,
-) -> ReducerCallbackId<SwapTeamUnitsArgs> {
-    SwapTeamUnitsArgs::once_on_reducer(move |__identity, __addr, __status, __args| {
-        let SwapTeamUnitsArgs { team, from, to } = __args;
+) -> ReducerCallbackId<TeamSwapUnitsArgs> {
+    TeamSwapUnitsArgs::once_on_reducer(move |__identity, __addr, __status, __args| {
+        let TeamSwapUnitsArgs { team, from, to } = __args;
         __callback(__identity, __addr, __status, team, from, to);
     })
 }
 
 #[allow(unused)]
-pub fn remove_on_swap_team_units(id: ReducerCallbackId<SwapTeamUnitsArgs>) {
-    SwapTeamUnitsArgs::remove_on_reducer(id);
+pub fn remove_on_team_swap_units(id: ReducerCallbackId<TeamSwapUnitsArgs>) {
+    TeamSwapUnitsArgs::remove_on_reducer(id);
 }

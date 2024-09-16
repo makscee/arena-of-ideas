@@ -13,40 +13,40 @@ use spacetimedb_sdk::{
 };
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
-pub struct NewTeamArgs {
+pub struct TeamCreateArgs {
     pub name: String,
 }
 
-impl Reducer for NewTeamArgs {
-    const REDUCER_NAME: &'static str = "new_team";
+impl Reducer for TeamCreateArgs {
+    const REDUCER_NAME: &'static str = "team_create";
 }
 
 #[allow(unused)]
-pub fn new_team(name: String) {
-    NewTeamArgs { name }.invoke();
+pub fn team_create(name: String) {
+    TeamCreateArgs { name }.invoke();
 }
 
 #[allow(unused)]
-pub fn on_new_team(
+pub fn on_team_create(
     mut __callback: impl FnMut(&Identity, Option<Address>, &Status, &String) + Send + 'static,
-) -> ReducerCallbackId<NewTeamArgs> {
-    NewTeamArgs::on_reducer(move |__identity, __addr, __status, __args| {
-        let NewTeamArgs { name } = __args;
+) -> ReducerCallbackId<TeamCreateArgs> {
+    TeamCreateArgs::on_reducer(move |__identity, __addr, __status, __args| {
+        let TeamCreateArgs { name } = __args;
         __callback(__identity, __addr, __status, name);
     })
 }
 
 #[allow(unused)]
-pub fn once_on_new_team(
+pub fn once_on_team_create(
     __callback: impl FnOnce(&Identity, Option<Address>, &Status, &String) + Send + 'static,
-) -> ReducerCallbackId<NewTeamArgs> {
-    NewTeamArgs::once_on_reducer(move |__identity, __addr, __status, __args| {
-        let NewTeamArgs { name } = __args;
+) -> ReducerCallbackId<TeamCreateArgs> {
+    TeamCreateArgs::once_on_reducer(move |__identity, __addr, __status, __args| {
+        let TeamCreateArgs { name } = __args;
         __callback(__identity, __addr, __status, name);
     })
 }
 
 #[allow(unused)]
-pub fn remove_on_new_team(id: ReducerCallbackId<NewTeamArgs>) {
-    NewTeamArgs::remove_on_reducer(id);
+pub fn remove_on_team_create(id: ReducerCallbackId<TeamCreateArgs>) {
+    TeamCreateArgs::remove_on_reducer(id);
 }

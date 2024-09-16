@@ -131,8 +131,8 @@ impl TeamPlugin {
                     Notification::new("Empty name".cstr()).error().push(world);
                     Self::open_new_team_popup(world);
                 } else {
-                    new_team(name);
-                    once_on_new_team(|_, _, status, _| {
+                    team_create(name);
+                    once_on_team_create(|_, _, status, _| {
                         status.on_success(|world| Self::load_teams_table(world));
                     });
                 }
@@ -172,38 +172,56 @@ impl TeamPlugin {
             if team == 0 {
                 return;
             }
-            let team = team.get_team();
+            let Some(team) = TTeam::find_by_id(team) else {
+                return;
+            };
             title(&team.name, ui);
             TeamContainer::new(Faction::Team)
-                .top_content(|ui, _| {
-                    if Button::click("Add".into()).ui(ui).clicked() {
-                        Confirmation::new("Add unit to team".cstr(), |world| {
-                            let mut tr = world.resource_mut::<TeamResource>();
-                            let id = tr.unit_to_add;
-                            if id != 0 {
-                                tr.unit_to_add = 0;
-                                add_unit_to_team(tr.team, id);
-                                once_on_add_unit_to_team(|_, _, status, _, _| {
-                                    status.on_success(|world| {
-                                        TableState::reset_cache(&egui_context(world).unwrap());
+                .top_content(|ui, world| {
+                    ui.horizontal(|ui| {
+                        if Button::click("Add Unit".into()).ui(ui).clicked() {
+                            Confirmation::new("Add unit to team".cstr(), |world| {
+                                let mut tr = world.resource_mut::<TeamResource>();
+                                let id = tr.unit_to_add;
+                                if id != 0 {
+                                    tr.unit_to_add = 0;
+                                    team_add_unit(tr.team, id);
+                                    once_on_team_add_unit(|_, _, status, _, _| {
+                                        status.on_success(|world| {
+                                            TableState::reset_cache(&egui_context(world).unwrap());
+                                        })
+                                    });
+                                }
+                            })
+                            .content(|ui, world| {
+                                let units = TUnitItem::filter_by_owner(user_id())
+                                    .map(|u| u.unit)
+                                    .collect_vec();
+                                let selected = units
+                                    .show_modified_table("Units", ui, world, |t| t.selectable())
+                                    .selected_row;
+                                if let Some(selected) = selected {
+                                    world.resource_mut::<TeamResource>().unit_to_add =
+                                        units[selected].id;
+                                }
+                            })
+                            .add(ui.ctx());
+                        }
+                        if Button::click("Disband".into()).red(ui).ui(ui).clicked() {
+                            Confirmation::new("Disband team?".cstr_c(VISIBLE_LIGHT), |world| {
+                                let tr = world.resource_mut::<TeamResource>();
+                                team_disband(tr.team);
+                                once_on_team_disband(|_, _, status, id| {
+                                    let id = *id;
+                                    status.on_success(move |w| {
+                                        format!("Team#{id} disbanded").notify(w);
+                                        GameState::Teams.proceed_to_target(w);
                                     })
                                 });
-                            }
-                        })
-                        .content(|ui, world| {
-                            let units = TUnitItem::filter_by_owner(user_id())
-                                .map(|u| u.unit)
-                                .collect_vec();
-                            let selected = units
-                                .show_modified_table("Units", ui, world, |t| t.selectable())
-                                .selected_row;
-                            if let Some(selected) = selected {
-                                world.resource_mut::<TeamResource>().unit_to_add =
-                                    units[selected].id;
-                            }
-                        })
-                        .add(ui.ctx());
-                    }
+                            })
+                            .add(ui.ctx());
+                        }
+                    });
                 })
                 .slot_content(|slot, entity, ui, world| {
                     if entity.is_none() {
@@ -212,8 +230,8 @@ impl TeamPlugin {
                     ui.vertical_centered_justified(|ui| {
                         if Button::click("Remove".into()).ui(ui).clicked() {
                             let tr = world.resource::<TeamResource>();
-                            remove_unit_from_team(tr.team, tr.team.get_team().units[slot].id);
-                            once_on_remove_unit_from_team(|_, _, status, _, _| {
+                            team_remove_unit(tr.team, tr.team.get_team().units[slot].id);
+                            once_on_team_remove_unit(|_, _, status, _, _| {
                                 TableState::reset_cache_op();
                                 status.on_success(|w| "Unit removed".notify(w));
                             });
@@ -222,8 +240,8 @@ impl TeamPlugin {
                 })
                 .on_swap(|from, to, world| {
                     let team = world.resource::<TeamResource>().team;
-                    swap_team_units(team, from as u8, to as u8);
-                    once_on_swap_team_units(|_, _, status, _, _, _| status.notify_error());
+                    team_swap_units(team, from as u8, to as u8);
+                    once_on_team_swap_units(|_, _, status, _, _, _| status.notify_error());
                 })
                 .ui(ui, world);
         })

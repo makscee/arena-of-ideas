@@ -13,41 +13,41 @@ use spacetimedb_sdk::{
 };
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
-pub struct RemoveUnitFromTeamArgs {
+pub struct TeamAddUnitArgs {
     pub team: u64,
     pub unit: u64,
 }
 
-impl Reducer for RemoveUnitFromTeamArgs {
-    const REDUCER_NAME: &'static str = "remove_unit_from_team";
+impl Reducer for TeamAddUnitArgs {
+    const REDUCER_NAME: &'static str = "team_add_unit";
 }
 
 #[allow(unused)]
-pub fn remove_unit_from_team(team: u64, unit: u64) {
-    RemoveUnitFromTeamArgs { team, unit }.invoke();
+pub fn team_add_unit(team: u64, unit: u64) {
+    TeamAddUnitArgs { team, unit }.invoke();
 }
 
 #[allow(unused)]
-pub fn on_remove_unit_from_team(
+pub fn on_team_add_unit(
     mut __callback: impl FnMut(&Identity, Option<Address>, &Status, &u64, &u64) + Send + 'static,
-) -> ReducerCallbackId<RemoveUnitFromTeamArgs> {
-    RemoveUnitFromTeamArgs::on_reducer(move |__identity, __addr, __status, __args| {
-        let RemoveUnitFromTeamArgs { team, unit } = __args;
+) -> ReducerCallbackId<TeamAddUnitArgs> {
+    TeamAddUnitArgs::on_reducer(move |__identity, __addr, __status, __args| {
+        let TeamAddUnitArgs { team, unit } = __args;
         __callback(__identity, __addr, __status, team, unit);
     })
 }
 
 #[allow(unused)]
-pub fn once_on_remove_unit_from_team(
+pub fn once_on_team_add_unit(
     __callback: impl FnOnce(&Identity, Option<Address>, &Status, &u64, &u64) + Send + 'static,
-) -> ReducerCallbackId<RemoveUnitFromTeamArgs> {
-    RemoveUnitFromTeamArgs::once_on_reducer(move |__identity, __addr, __status, __args| {
-        let RemoveUnitFromTeamArgs { team, unit } = __args;
+) -> ReducerCallbackId<TeamAddUnitArgs> {
+    TeamAddUnitArgs::once_on_reducer(move |__identity, __addr, __status, __args| {
+        let TeamAddUnitArgs { team, unit } = __args;
         __callback(__identity, __addr, __status, team, unit);
     })
 }
 
 #[allow(unused)]
-pub fn remove_on_remove_unit_from_team(id: ReducerCallbackId<RemoveUnitFromTeamArgs>) {
-    RemoveUnitFromTeamArgs::remove_on_reducer(id);
+pub fn remove_on_team_add_unit(id: ReducerCallbackId<TeamAddUnitArgs>) {
+    TeamAddUnitArgs::remove_on_reducer(id);
 }

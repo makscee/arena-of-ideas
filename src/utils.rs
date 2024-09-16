@@ -327,12 +327,12 @@ impl TableSingletonExt for TWallet {
 }
 
 pub trait StdbStatusExt {
-    fn on_success(&self, f: fn(&mut World));
+    fn on_success(&self, f: impl FnOnce(&mut World) + Send + Sync + 'static);
     fn notify_error(&self);
 }
 
 impl StdbStatusExt for spacetimedb_sdk::reducer::Status {
-    fn on_success(&self, f: fn(&mut World)) {
+    fn on_success(&self, f: impl FnOnce(&mut World) + Send + Sync + 'static) {
         match self {
             StdbStatus::Committed => OperationsPlugin::add(f),
             StdbStatus::Failed(e) => e.notify_error_op(),
