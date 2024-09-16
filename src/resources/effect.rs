@@ -90,13 +90,13 @@ impl Effect {
                         value: i_value,
                     }
                     .send_with_context(context.clone(), world);
-                    TextColumnPlugin::add(
-                        target,
-                        format!("-{i_value}").cstr_cs(RED, CstrStyle::Bold),
-                        world,
-                    );
                     Vfx::get("pain", world).set_parent(target).unpack(world)?;
                 }
+                TextColumnPlugin::add(
+                    target,
+                    format!("-{i_value}").cstr_cs(RED, CstrStyle::Bold),
+                    world,
+                );
                 Vfx::get("damage", world)
                     .attach_context(context, world)
                     .unpack(world)?;
