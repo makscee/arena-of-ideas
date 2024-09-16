@@ -106,3 +106,8 @@ pub trait NotificationPusher: ToString {
 
 impl NotificationPusher for String {}
 impl NotificationPusher for str {}
+
+pub trait NotifyStatus {
+    fn notify(&self, world: &mut World);
+    fn notify_op(&self);
+}

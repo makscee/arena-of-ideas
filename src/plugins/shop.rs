@@ -278,7 +278,7 @@ impl ShopPlugin {
 
         let team = TTeam::find_by_id(run.team).unwrap();
         let g = run.g;
-        let mut shop_container = UnitContainer::new(Faction::Shop)
+        let mut shop_container = TeamContainer::new(Faction::Shop)
             .pivot(Align2::CENTER_TOP)
             .position(egui::vec2(0.5, 0.0))
             .slots(run.shop_slots.len())
@@ -375,7 +375,7 @@ impl ShopPlugin {
         shop_container.ui(ui, world);
         let slots = GameAssets::get(world).global_settings.arena.team_slots as usize;
         let run = TArenaRun::current();
-        UnitContainer::new(Faction::Team)
+        TeamContainer::new(Faction::Team)
             .pivot(Align2::CENTER_TOP)
             .position(egui::vec2(0.5, 1.0))
             .slots(slots.max(team.units.len()))

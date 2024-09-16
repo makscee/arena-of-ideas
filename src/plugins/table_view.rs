@@ -41,7 +41,7 @@ impl TableViewPlugin {
     pub fn ui_content(query: StdbQuery, ui: &mut Ui, world: &mut World) {
         match query {
             StdbQuery::BaseUnits | StdbQuery::BattleHistory => {
-                UnitContainer::new(Faction::Team)
+                TeamContainer::new(Faction::Team)
                     .hover_content(ShopPlugin::container_on_hover)
                     .position(egui::vec2(0.5, 0.5))
                     .slots(1)

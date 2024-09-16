@@ -6,7 +6,7 @@ pub struct UnitPlugin;
 
 impl Plugin for UnitPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(PreUpdate, UnitContainer::place_into_slots);
+        app.add_systems(PreUpdate, TeamContainer::place_into_slots);
     }
 }
 

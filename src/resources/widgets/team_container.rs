@@ -1,6 +1,6 @@
 use super::*;
 
-pub struct UnitContainer {
+pub struct TeamContainer {
     faction: Faction,
     slots: usize,
     max_slots: usize,
@@ -18,17 +18,17 @@ pub struct UnitContainer {
 }
 
 #[derive(Resource, Default)]
-pub struct UnitContainerResource {
-    containers: HashMap<Faction, UnitContainerData>,
+pub struct TeamContainerResource {
+    containers: HashMap<Faction, TeamContainerData>,
 }
 
 #[derive(Debug)]
-struct UnitContainerData {
+struct TeamContainerData {
     positions: Vec<Pos2>,
     entities: Vec<Option<Entity>>,
 }
 
-impl Default for UnitContainerData {
+impl Default for TeamContainerData {
     fn default() -> Self {
         Self {
             positions: vec![pos2(0.0, 0.0)],
@@ -37,7 +37,7 @@ impl Default for UnitContainerData {
     }
 }
 
-impl UnitContainer {
+impl TeamContainer {
     pub fn new(faction: Faction) -> Self {
         Self {
             faction,
@@ -123,7 +123,7 @@ impl UnitContainer {
     }
     pub fn ui(self, ui: &mut Ui, world: &mut World) {
         let mut data = world
-            .resource_mut::<UnitContainerResource>()
+            .resource_mut::<TeamContainerResource>()
             .containers
             .remove(&self.faction)
             .unwrap_or_default();
@@ -156,6 +156,7 @@ impl UnitContainer {
                             resp.dnd_set_drag_payload(i);
                             if let Some(drop_i) = resp.dnd_release_payload::<usize>() {
                                 if i != *drop_i {
+                                    debug!("swap {drop_i} {i}");
                                     action(*drop_i, i, world);
                                 }
                             }
@@ -176,7 +177,7 @@ impl UnitContainer {
             });
         }
         world
-            .resource_mut::<UnitContainerResource>()
+            .resource_mut::<TeamContainerResource>()
             .containers
             .insert(self.faction, data);
     }
@@ -231,7 +232,7 @@ impl UnitContainer {
         };
         let delta = delta_time(world);
         let units = UnitPlugin::collect_factions([Faction::Shop, Faction::Team].into(), world);
-        let mut data = world.remove_resource::<UnitContainerResource>().unwrap();
+        let mut data = world.remove_resource::<TeamContainerResource>().unwrap();
         let camera = world.get::<Camera>(cam_entity).unwrap().clone();
         let transform = world.get::<GlobalTransform>(cam_entity).unwrap().clone();
         for cd in data.containers.values_mut() {
@@ -257,68 +258,4 @@ impl UnitContainer {
         }
         world.insert_resource(data);
     }
-}
-
-fn show_frame(
-    ind: usize,
-    size: f32,
-    overflow: bool,
-    name: Option<Cstr>,
-    data: &mut UnitContainerData,
-    ui: &mut Ui,
-) -> Response {
-    let (rect, response) = ui.allocate_exact_size(egui::vec2(size, size), Sense::drag());
-    data.positions[ind] = rect.center();
-    let color = if response.contains_pointer() {
-        ui.ctx().set_hovered(rect);
-        YELLOW
-    } else {
-        if overflow {
-            RED
-        } else {
-            VISIBLE_DARK
-        }
-    };
-    if let Some(name) = name {
-        ui.allocate_ui_at_rect(
-            Rect::from_min_size(rect.left_bottom(), egui::vec2(rect.width(), 20.0)),
-            |ui| name.label(ui),
-        );
-    };
-    let stroke = Stroke { width: 1.0, color };
-    const DASH: f32 = 10.0;
-    const GAP: f32 = 20.0;
-    let ind_rect = Rect::from_min_max(
-        rect.right_top() + egui::vec2(-10.0, 5.0),
-        rect.right_top() + egui::vec2(-5.0, 0.0),
-    );
-    {
-        let ui = &mut ui.child_ui(ind_rect, Layout::top_down(Align::Max), None);
-        ind.to_string().cstr_cs(color, CstrStyle::Bold).label(ui);
-    }
-    ui.painter().add(egui::Shape::dashed_line(
-        &[rect.left_top(), rect.right_top()],
-        stroke,
-        DASH,
-        GAP,
-    ));
-    ui.painter().add(egui::Shape::dashed_line(
-        &[rect.right_top(), rect.right_bottom()],
-        stroke,
-        DASH,
-        GAP,
-    ));
-    ui.painter().add(egui::Shape::dashed_line(
-        &[rect.right_bottom(), rect.left_bottom()],
-        stroke,
-        DASH,
-        GAP,
-    ));
-    ui.painter().add(egui::Shape::dashed_line(
-        &[rect.left_bottom(), rect.left_top()],
-        stroke,
-        DASH,
-        GAP,
-    ));
-    response
 }

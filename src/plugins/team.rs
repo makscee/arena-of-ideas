@@ -50,6 +50,7 @@ impl TeamPlugin {
         panic!("No team found for {entity}")
     }
     pub fn despawn(faction: Faction, world: &mut World) {
+        debug!("Despawn team {faction}");
         world
             .entity_mut(Self::entity(faction, world))
             .despawn_recursive();
@@ -107,7 +108,7 @@ impl TeamPlugin {
         state.change_int(var, delta);
     }
 
-    fn load_teams(world: &mut World) {
+    fn load_teams_table(world: &mut World) {
         world.resource_mut::<TeamResource>().table =
             TTeam::filter_by_owner(user_id()).collect_vec();
         TableState::reset_cache(&egui_context(world).unwrap());
@@ -118,8 +119,7 @@ impl TeamPlugin {
         if team == 0 {
             return;
         }
-        let team = PackedTeam::from_id(team);
-        team.unpack(Faction::Team, world);
+        TeamSyncPlugin::subscribe(team, Faction::Team, world);
     }
     fn open_new_team_popup(world: &mut World) {
         let ctx = egui_context(world).unwrap();
@@ -133,7 +133,7 @@ impl TeamPlugin {
                 } else {
                     new_team(name);
                     once_on_new_team(|_, _, status, _| {
-                        status.on_success(|world| Self::load_teams(world));
+                        status.on_success(|world| Self::load_teams_table(world));
                     });
                 }
             },
@@ -174,7 +174,7 @@ impl TeamPlugin {
             }
             let team = team.get_team();
             title(&team.name, ui);
-            UnitContainer::new(Faction::Team)
+            TeamContainer::new(Faction::Team)
                 .top_content(|ui, _| {
                     if Button::click("Add".into()).ui(ui).clicked() {
                         Confirmation::new("Add unit to team".cstr(), |world| {
@@ -185,7 +185,6 @@ impl TeamPlugin {
                                 add_unit_to_team(tr.team, id);
                                 once_on_add_unit_to_team(|_, _, status, _, _| {
                                     status.on_success(|world| {
-                                        Self::load_editor_team(world);
                                         TableState::reset_cache(&egui_context(world).unwrap());
                                     })
                                 });
@@ -216,7 +215,7 @@ impl TeamPlugin {
                             remove_unit_from_team(tr.team, tr.team.get_team().units[slot].id);
                             once_on_remove_unit_from_team(|_, _, status, _, _| {
                                 TableState::reset_cache_op();
-                                status.on_success(|world| Self::load_editor_team(world))
+                                status.on_success(|w| "Unit removed".notify(w));
                             });
                         }
                     });
@@ -224,9 +223,7 @@ impl TeamPlugin {
                 .on_swap(|from, to, world| {
                     let team = world.resource::<TeamResource>().team;
                     swap_team_units(team, from as u8, to as u8);
-                    once_on_swap_team_units(|_, _, status, _, _, _| {
-                        status.on_success(|world| Self::load_editor_team(world));
-                    });
+                    once_on_swap_team_units(|_, _, status, _, _, _| status.notify_error());
                 })
                 .ui(ui, world);
         })
@@ -237,7 +234,7 @@ impl TeamPlugin {
     }
 
     pub fn add_tiles(state: GameState, world: &mut World) {
-        Self::despawn(Faction::Team, world);
+        TeamSyncPlugin::unsubscribe_all(world);
         Tile::new(Side::Top, |ui, world| {
             let mut r = world.resource_mut::<TeamResource>();
             let state = SubsectionMenu::new(r.substate).show(ui);
@@ -253,7 +250,7 @@ impl TeamPlugin {
         .transparent()
         .non_focusable()
         .push(world);
-        Self::load_teams(world);
+        Self::load_teams_table(world);
         match state {
             GameState::Teams => Self::teams_tiles(world),
             GameState::TeamEditor => Self::editor_tiles(world),

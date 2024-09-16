@@ -122,10 +122,11 @@ fn main() {
             GameStartPlugin,
             TeamEditorPlugin,
             TilePlugin,
+            TeamSyncPlugin,
         ))
         .init_state::<GameState>()
         .init_resource::<NotificationsResource>()
-        .init_resource::<UnitContainerResource>()
+        .init_resource::<TeamContainerResource>()
         .run();
 }
 
