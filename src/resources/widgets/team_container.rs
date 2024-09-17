@@ -5,16 +5,13 @@ pub struct TeamContainer {
     slots: usize,
     max_slots: usize,
     right_to_left: bool,
-    hug_unit: bool,
     show_name: bool,
     on_swap: Option<Box<dyn Fn(usize, usize, &mut World) + Send + Sync>>,
     top_content: Option<Box<dyn FnOnce(&mut Ui, &mut World) + Send + Sync>>,
     slot_content: Option<Box<dyn Fn(usize, Option<Entity>, &mut Ui, &mut World) + Send + Sync>>,
     hover_content: Option<Box<dyn Fn(usize, Option<Entity>, &mut Ui, &mut World) + Send + Sync>>,
     slot_name: HashMap<usize, String>,
-    pivot: Align2,
     position: egui::Vec2,
-    min_size: f32,
 }
 
 #[derive(Resource, Default)]
@@ -44,16 +41,13 @@ impl TeamContainer {
             slots: 5,
             max_slots: 5,
             right_to_left: false,
-            hug_unit: false,
             show_name: false,
             top_content: None,
             slot_content: None,
             hover_content: None,
             on_swap: None,
-            pivot: Align2::CENTER_CENTER,
             position: default(),
             slot_name: default(),
-            min_size: 10.0,
         }
     }
     pub fn slots(mut self, value: usize) -> Self {
@@ -65,16 +59,8 @@ impl TeamContainer {
         self.max_slots = value;
         self
     }
-    pub fn min_size(mut self, value: f32) -> Self {
-        self.min_size = value;
-        self
-    }
     pub fn right_to_left(mut self) -> Self {
         self.right_to_left = true;
-        self
-    }
-    pub fn hug_unit(mut self) -> Self {
-        self.hug_unit = true;
         self
     }
     pub fn name(mut self) -> Self {
@@ -83,10 +69,6 @@ impl TeamContainer {
     }
     pub fn position(mut self, value: egui::Vec2) -> Self {
         self.position = value;
-        self
-    }
-    pub fn pivot(mut self, value: Align2) -> Self {
-        self.pivot = value;
         self
     }
     pub fn top_content(
@@ -133,9 +115,22 @@ impl TeamContainer {
             (content)(ui, world);
         }
         if ui.available_width() > ui.style().spacing.item_spacing.x * self.max_slots as f32 {
+            let size = CameraPlugin::pixel_unit(ui.ctx(), world) * 1.3;
             ui.columns(self.max_slots, |ui| {
                 for (i, ui) in ui.iter_mut().rev().enumerate() {
-                    let resp = Self::show_unit_frame(i, ui);
+                    let resp = Self::show_unit_frame(i, size, ui);
+                    if let Some(name) = self.slot_name.get(&i) {
+                        let ui = &mut ui.child_ui(
+                            Rect::from_center_size(
+                                resp.rect.center_top(),
+                                egui::vec2(resp.rect.width(), 0.0),
+                            )
+                            .translate(egui::vec2(0.0, -20.0)),
+                            Layout::left_to_right(Align::Max),
+                            None,
+                        );
+                        name.cstr_cs(VISIBLE_DARK, CstrStyle::Bold).label(ui);
+                    }
                     data.positions[i] = resp.rect.center();
                     if let Some(entity) = data.entities[i] {
                         if let Some(action) = &self.on_swap {
@@ -171,7 +166,9 @@ impl TeamContainer {
                         }
                     }
                     if let Some(content) = &self.slot_content {
-                        (content)(i, data.entities[i], ui, world);
+                        ui.vertical_centered_justified(|ui| {
+                            (content)(i, data.entities[i], ui, world);
+                        });
                     }
                 }
             });
@@ -181,10 +178,11 @@ impl TeamContainer {
             .containers
             .insert(self.faction, data);
     }
-    fn show_unit_frame(ind: usize, ui: &mut Ui) -> Response {
+    fn show_unit_frame(ind: usize, size: f32, ui: &mut Ui) -> Response {
         let rect = ui.available_rect_before_wrap();
-        let size = rect.size().x.min(rect.size().y);
-        let rect = Rect::from_center_size(rect.center(), egui::Vec2::splat(size));
+        let rect = Rect::from_center_size(rect.center_top(), egui::Vec2::ZERO)
+            .expand2(egui::vec2(size, 0.0))
+            .with_max_y(rect.center_top().y + size * 2.0);
         let resp = ui.allocate_rect(rect, Sense::drag());
         let color = if resp.hovered() { YELLOW } else { VISIBLE_DARK };
         let stroke = Stroke { width: 1.0, color };

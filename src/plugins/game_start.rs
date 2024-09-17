@@ -155,7 +155,7 @@ impl GameStartPlugin {
                 ui.add_space(30.0);
             });
         })
-        .sticky()
+        .pinned()
         .min_space(egui::vec2(0.0, 200.0))
         .push(world);
         Tile::new(Side::Left, |ui, world| {
@@ -163,10 +163,10 @@ impl GameStartPlugin {
                 gsr.leaderboard.show_table("Leaderboard", ui, world);
             });
         })
-        .sticky()
+        .pinned()
         .push(world);
         if GameOption::ActiveRun.is_fulfilled(world) {
-            Tile::new(Side::Top, move |ui, world| {
+            Tile::new(Side::Right, move |ui, world| {
                 if let Some(run) = TArenaRun::get_current() {
                     ui.vertical_centered(|ui| {
                         text_dots_text("run".cstr(), run.mode.cstr(), ui);
@@ -199,7 +199,7 @@ impl GameStartPlugin {
             })
             .transparent()
             .non_focusable()
-            .sticky()
+            .pinned()
             .push(world);
         }
         Tile::new(Side::Bottom, |ui, world| {
@@ -238,7 +238,7 @@ impl GameStartPlugin {
             }
         })
         .transparent()
-        .sticky()
+        .pinned()
         .non_focusable()
         .push(world);
     }

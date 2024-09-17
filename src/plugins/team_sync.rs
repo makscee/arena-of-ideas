@@ -61,7 +61,6 @@ impl TeamSyncPlugin {
     fn setup() {
         TTeam::on_update(|_, new, _| {
             let id = new.id;
-            debug!("Team#{id} updated");
             OperationsPlugin::add(move |world| {
                 Self::sync_team(id, world);
             });
@@ -74,7 +73,6 @@ impl TeamSyncPlugin {
             .get(&team_id)
             .copied()
         else {
-            error!("Team#{team_id} not subscribed");
             return;
         };
         let Some(team) = TTeam::find_by_id(team_id) else {

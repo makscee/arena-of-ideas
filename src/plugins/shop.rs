@@ -207,7 +207,7 @@ impl ShopPlugin {
             }
         })
         .transparent()
-        .sticky()
+        .pinned()
         .non_focusable()
         .push(world);
         Tile::new(Side::Right, |ui, _| {
@@ -235,7 +235,19 @@ impl ShopPlugin {
         })
         .transparent()
         .non_focusable()
-        .sticky()
+        .pinned()
+        .push(world);
+        Tile::new(Side::Top, |ui, world| {
+            Self::show_shop_container(ui, world);
+        })
+        .pinned()
+        .transparent()
+        .push(world);
+        Tile::new(Side::Bottom, |ui, world| {
+            Self::show_team_container(ui, world);
+        })
+        .pinned()
+        .transparent()
         .push(world);
     }
     fn do_stack(target: u8, world: &mut World) {
@@ -269,20 +281,15 @@ impl ShopPlugin {
     fn cancel_stack(world: &mut World) {
         world.resource_mut::<ShopData>().stack_source = None;
     }
-    pub fn show_containers(ui: &mut Ui, world: &mut World) {
+    fn show_shop_container(ui: &mut Ui, world: &mut World) {
         let Some(run) = TArenaRun::get_current() else {
             return;
         };
 
         let sd = world.resource::<ShopData>().clone();
-
-        let team = TTeam::find_by_id(run.team).unwrap();
         let g = run.g;
         let mut shop_container = TeamContainer::new(Faction::Shop)
-            .pivot(Align2::CENTER_TOP)
-            .position(egui::vec2(0.5, 0.0))
             .slots(run.shop_slots.len())
-            .hug_unit()
             .name()
             .top_content(move |ui, _| {
                 let run = TArenaRun::current();
@@ -373,14 +380,17 @@ impl ShopPlugin {
             shop_container = shop_container.slot_name(slot, "Family Slot".into());
         }
         shop_container.ui(ui, world);
+    }
+    fn show_team_container(ui: &mut Ui, world: &mut World) {
+        let Some(run) = TArenaRun::get_current() else {
+            return;
+        };
+        let team = run.team.get_team();
         let slots = GameAssets::get(world).global_settings.arena.team_slots as usize;
-        let run = TArenaRun::current();
+        let sd = world.resource::<ShopData>().clone();
         TeamContainer::new(Faction::Team)
-            .pivot(Align2::CENTER_TOP)
-            .position(egui::vec2(0.5, 1.0))
             .slots(slots.max(team.units.len()))
             .max_slots(slots)
-            .hug_unit()
             .name()
             .slot_content(move |slot, e, ui, world| {
                 if e.is_some() && run.fusion.is_none() {

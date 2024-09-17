@@ -23,8 +23,13 @@ impl Default for SectionMenu {
                 },
                 GameSection {
                     name: "META",
-                    target_state: GameState::Meta,
-                    inner_states: default(),
+                    target_state: GameState::MetaShop,
+                    inner_states: [
+                        GameState::MetaHeroes,
+                        GameState::MetaHeroShards,
+                        GameState::MetaLootboxes,
+                    ]
+                    .into(),
                     options: [GameOption::Login].into(),
                 },
                 GameSection {

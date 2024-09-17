@@ -85,7 +85,6 @@ impl WidgetsPlugin {
         CentralPanel::default()
             .frame(Frame::none())
             .show(ctx, |ui| match state {
-                GameState::Shop => ShopPlugin::show_containers(ui, world),
                 GameState::Connect => ConnectPlugin::ui(ui),
                 GameState::Login => LoginPlugin::login_ui(ui, world),
                 GameState::Battle => BattlePlugin::ui(ui, world),

@@ -118,7 +118,6 @@ fn main() {
             TableViewPlugin,
             GameArchivePlugin,
             ClientSettingsPlugin,
-            MetaPlugin,
             GameStartPlugin,
             TeamEditorPlugin,
             TilePlugin,

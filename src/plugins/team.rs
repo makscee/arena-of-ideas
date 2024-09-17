@@ -9,20 +9,12 @@ struct TeamResource {
     entities: HashMap<Faction, Entity>,
     table: Vec<TTeam>,
     new_team_name: String,
-    substate: SubState,
     team: u64,
     unit_to_add: u64,
 }
 
 #[derive(Component)]
 pub struct Team;
-
-#[derive(PartialEq, Copy, Clone, EnumIter, Display, Default)]
-enum SubState {
-    #[default]
-    Teams,
-    TeamEditor,
-}
 
 impl Plugin for TeamPlugin {
     fn build(&self, app: &mut App) {
@@ -32,7 +24,6 @@ impl Plugin for TeamPlugin {
             entities: teams,
             table: default(),
             new_team_name: default(),
-            substate: default(),
             team: 0,
             unit_to_add: 0,
         });
@@ -109,8 +100,9 @@ impl TeamPlugin {
     }
 
     fn load_teams_table(world: &mut World) {
-        world.resource_mut::<TeamResource>().table =
-            TTeam::filter_by_owner(user_id()).collect_vec();
+        world.resource_mut::<TeamResource>().table = TTeam::filter_by_owner(user_id())
+            .filter(|t| t.pool.eq(&TeamPool::Owned))
+            .collect_vec();
         TableState::reset_cache(&egui_context(world).unwrap());
     }
     fn load_editor_team(world: &mut World) {
@@ -155,13 +147,12 @@ impl TeamPlugin {
                 t.column_btn("edit", |d, _, world| {
                     let mut tr = world.resource_mut::<TeamResource>();
                     tr.team = d.id;
-                    tr.substate = SubState::TeamEditor;
                     GameState::TeamEditor.proceed_to_target(world);
                 })
             });
             world.resource_mut::<TeamResource>().table = data;
         })
-        .sticky()
+        .pinned()
         .push(world);
     }
 
@@ -245,7 +236,7 @@ impl TeamPlugin {
                 })
                 .ui(ui, world);
         })
-        .sticky()
+        .pinned()
         .transparent()
         .min_space(egui::vec2(200.0, 200.0))
         .push_as_content(world);
@@ -255,16 +246,9 @@ impl TeamPlugin {
         TeamSyncPlugin::unsubscribe_all(world);
         Tile::new(Side::Top, |ui, world| {
             let mut r = world.resource_mut::<TeamResource>();
-            let state = SubsectionMenu::new(r.substate).show(ui);
-            if r.substate != state {
-                r.substate = state;
-                match state {
-                    SubState::Teams => GameState::Teams.proceed_to_target(world),
-                    SubState::TeamEditor => GameState::TeamEditor.proceed_to_target(world),
-                }
-            }
+            SubstateMenu::show(&[GameState::Teams, GameState::TeamEditor], ui, world);
         })
-        .sticky()
+        .pinned()
         .transparent()
         .non_focusable()
         .push(world);

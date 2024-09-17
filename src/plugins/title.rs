@@ -27,7 +27,7 @@ impl TitlePlugin {
             });
         })
         .min_space(egui::vec2(200.0, 0.0))
-        .sticky()
+        .pinned()
         .push(world);
     }
 }

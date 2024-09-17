@@ -13,7 +13,7 @@ fn setup(world: &mut World) {
     Tile::new(Side::Right, |ui, world| {
         Notification::show_recent(ui, world);
     })
-    .sticky()
+    .pinned()
     .transparent()
     .no_frame()
     .order(Order::Foreground)
@@ -30,7 +30,7 @@ pub struct Tile {
     content_space: egui::Vec2,
     margin_space: egui::Vec2,
     min_space: egui::Vec2,
-    sticky: bool,
+    pinned: bool,
     focusable: bool,
     transparent: bool,
     framed: bool,
@@ -183,9 +183,12 @@ impl TilePlugin {
             GameState::Inbox => Tile::new(Side::Left, |ui, world| {
                 Notification::show_all_table(ui, world)
             })
-            .sticky()
+            .pinned()
             .push(world),
-            GameState::Meta => MetaPlugin::add_tiles(world),
+            GameState::MetaShop
+            | GameState::MetaHeroes
+            | GameState::MetaHeroShards
+            | GameState::MetaLootboxes => MetaPlugin::add_tiles(world),
             GameState::Shop => ShopPlugin::add_tiles(world),
             GameState::Battle => BattlePlugin::add_tiles(world),
             GameState::TableView(query) => TableViewPlugin::add_tiles(query, world),
@@ -210,7 +213,7 @@ impl Tile {
             content_space: default(),
             margin_space: FRAME.total_margin().sum(),
             open: true,
-            sticky: false,
+            pinned: false,
             focusable: true,
             transparent: false,
             framed: true,
@@ -223,8 +226,8 @@ impl Tile {
         self
     }
     #[must_use]
-    pub fn sticky(mut self) -> Self {
-        self.sticky = true;
+    pub fn pinned(mut self) -> Self {
+        self.pinned = true;
         self
     }
     #[must_use]
@@ -362,7 +365,7 @@ impl Tile {
             let content_rect = rect.shrink2(self.margin_space * 0.5);
             ui.set_clip_rect(content_rect.expand2(self.margin_space * 0.25));
             let ui = &mut ui.child_ui(content_rect, Layout::top_down(Align::Min), None);
-            if !self.sticky {
+            if !self.pinned {
                 const CROSS_SIZE: f32 = 13.0;
                 let cross_rect = Rect::from_two_pos(
                     content_rect.right_top(),

@@ -6,7 +6,10 @@ pub enum GameState {
     Loading,
     Loaded,
     Title,
-    Meta,
+    MetaShop,
+    MetaHeroes,
+    MetaHeroShards,
+    MetaLootboxes,
     Inbox,
     Connect,
     Login,
@@ -132,6 +135,7 @@ fn on_change(world: &mut World) {
         ctx.data_mut(|w| w.clear());
     }
     let to = cur_state(world);
+    TeamSyncPlugin::unsubscribe_all(world);
     TilePlugin::change_state(to, world);
 }
 
