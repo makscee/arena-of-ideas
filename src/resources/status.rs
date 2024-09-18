@@ -116,6 +116,12 @@ impl Status {
             .filter_map(|e| world.get::<Status>(e).cloned().map(|s| (e, s)))
             .collect_vec()
     }
+    pub fn find_status_entity(owner: Entity, status: &str, world: &World) -> Result<Entity> {
+        Self::collect_active_statuses(owner, world)
+            .into_iter()
+            .find_map(|(e, s)| if s.name.eq(status) { Some(e) } else { None })
+            .context("Status not found")
+    }
     pub fn collect_active_statuses(entity: Entity, world: &World) -> Vec<(Entity, Status)> {
         Self::collect_statuses(entity, world)
             .into_iter()

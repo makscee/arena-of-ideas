@@ -35,15 +35,18 @@ pub enum Expression {
 
     FilterStatusUnits(String, Box<Expression>),
     FilterNoStatusUnits(String, Box<Expression>),
+    StatusEntity(String, Box<Expression>),
 
     Value(VarValue),
     Context(VarName),
     OwnerState(VarName),
     TargetState(VarName),
     CasterState(VarName),
+    StatusState(String, VarName),
     OwnerStateLast(VarName),
     TargetStateLast(VarName),
     CasterStateLast(VarName),
+    StatusStateLast(String, VarName),
     AbilityContext(String, VarName),
     AbilityState(String, VarName),
     StatusCharges(String),
@@ -107,6 +110,9 @@ impl Expression {
             Expression::CasterState(var) => {
                 Context::new_play(context.get_caster()?).get_value(*var, world)
             }
+            Expression::StatusState(status, var) => Context::new_play(context.owner())
+                .set_status(status.clone())
+                .get_value(*var, world),
             Expression::OwnerStateLast(var) => Context::new(context.owner()).get_value(*var, world),
             Expression::TargetStateLast(var) => {
                 Context::new(context.get_target()?).get_value(*var, world)
@@ -114,6 +120,9 @@ impl Expression {
             Expression::CasterStateLast(var) => {
                 Context::new(context.get_caster()?).get_value(*var, world)
             }
+            Expression::StatusStateLast(status, var) => Context::new(context.owner())
+                .set_status(status.clone())
+                .get_value(*var, world),
             Expression::AbilityContext(ability, var) => context.get_ability_var(ability, *var),
             Expression::AbilityState(ability, var) => {
                 Ok(
@@ -312,6 +321,10 @@ impl Expression {
                     .collect_vec()
                     .into())
             }
+            Expression::StatusEntity(status, owner) => {
+                Status::find_status_entity(owner.get_entity(context, world)?, status, world)
+                    .map(|e| e.into())
+            }
             Expression::Age => {
                 Ok((gt().play_head() - VarState::get(context.owner(), world).birth()).into())
             }
@@ -415,7 +428,10 @@ impl ToCstr for Expression {
                 );
             }
             Expression::Context(v) => s = (*v).cstr_cs(VISIBLE_BRIGHT, CstrStyle::Bold),
-            Expression::AbilityContext(name, v) | Expression::AbilityState(name, v) => {
+            Expression::AbilityContext(name, v)
+            | Expression::AbilityState(name, v)
+            | Expression::StatusState(name, v)
+            | Expression::StatusStateLast(name, v) => {
                 s.push(
                     name.cstr_cs(name_color(name), CstrStyle::Bold)
                         .push(format!(", {v}").cstr())
@@ -525,7 +541,8 @@ impl ToCstr for Expression {
                 );
             }
             Expression::FilterStatusUnits(status, u)
-            | Expression::FilterNoStatusUnits(status, u) => {
+            | Expression::FilterNoStatusUnits(status, u)
+            | Expression::StatusEntity(status, u) => {
                 s.push(
                     status
                         .cstr_c(name_color(status))

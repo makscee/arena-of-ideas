@@ -120,14 +120,7 @@ impl Context {
     }
     pub fn get_status_entity(&self, world: &World) -> Result<Entity> {
         let (owner, status) = self.get_status()?;
-        for entity in get_children(owner, world) {
-            if let Some(Status { name, trigger: _ }) = world.get::<Status>(entity) {
-                if status.eq(name) {
-                    return Ok(entity);
-                }
-            }
-        }
-        Err(anyhow!("Status not found"))
+        Status::find_status_entity(owner, &status, world)
     }
     pub fn has_status(&self, owner: Entity, name: String) -> bool {
         let layer = ContextLayer::Status(owner, name);

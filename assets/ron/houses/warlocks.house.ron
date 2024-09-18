@@ -12,13 +12,13 @@
                 effects: [
                     (
                         If(
-                            Equals(StatusCharges(String("Doom")), I(1)),
+                            Equals(StatusCharges("Doom"), I(1)),
                             List(
                                 [
                                     WithTarget(Owner, Kill),
                                     WithVar(
                                         Faction,
-                                        StateLast(Faction, Parent(Context(Caster))),
+                                        StatusStateLast("Doom", Faction),
                                         Summon("Doomguard", None),
                                     ),
                                 ],
@@ -39,7 +39,7 @@
             effect: List(
                 [
                     WithVar(Charges, I(5), List([Vfx("apply_status"), ChangeStatus("Doom")])),
-                    StateSetVar(Caster, StatusEntity("Doom", Target), Owner),
+                    StatusSetVar(Target, "Doom", Faction, Context(Faction)),
                 ],
             ),
         ),

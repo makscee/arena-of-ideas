@@ -5,6 +5,7 @@ pub enum Effect {
     #[default]
     Noop,
     Damage,
+    Kill,
     Heal,
     ChangeStatus(String),
     ClearStatus(String),
@@ -21,6 +22,7 @@ pub enum Effect {
     If(Expression, Box<Effect>, Box<Effect>),
     Vfx(String),
     StateAddVar(VarName, Expression, Expression),
+    StatusSetVar(Expression, String, VarName, Box<Expression>),
     Text(Expression),
 }
 
@@ -29,6 +31,7 @@ impl Effect {
         match self {
             Effect::Noop
             | Effect::Damage
+            | Effect::Kill
             | Effect::Heal
             | Effect::ChangeStatus(..)
             | Effect::ClearStatus(..)
@@ -39,6 +42,7 @@ impl Effect {
             | Effect::Summon(..)
             | Effect::Text(..)
             | Effect::StateAddVar(..)
+            | Effect::StatusSetVar(..)
             | Effect::Vfx(..) => context.log(Some(
                 "Invoke: "
                     .cstr_c(YELLOW)
@@ -97,6 +101,15 @@ impl Effect {
                     format!("-{i_value}").cstr_cs(RED, CstrStyle::Bold),
                     world,
                 );
+                Vfx::get("damage", world)
+                    .attach_context(context, world)
+                    .unpack(world)?;
+            }
+            Effect::Kill => {
+                let target = context.get_target()?;
+                let mut state = VarState::try_get_mut(target, world)?;
+                state.set_int(VarName::Dmg, i32::MAX / 2);
+                Vfx::get("pain", world).set_parent(target).unpack(world)?;
                 Vfx::get("damage", world)
                     .attach_context(context, world)
                     .unpack(world)?;
@@ -312,6 +325,14 @@ impl Effect {
                     Err(_) => value,
                 };
                 state.push_change(*var, default(), VarChange::new(value));
+            }
+            Effect::StatusSetVar(target, status, var, value) => {
+                let target = target.get_entity(context, world)?;
+                let value = value.get_value(context, world)?;
+                VarState::try_get_mut(target, world)?
+                    .get_status_mut(status)
+                    .context("Status not found")?
+                    .push_change(*var, default(), VarChange::new(value));
             }
             Effect::Text(text) => {
                 let text = text.get_string(context, world)?;
