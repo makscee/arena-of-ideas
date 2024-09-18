@@ -7,7 +7,7 @@
     houses: ["Warlocks"],
     trigger: Fire(
         triggers: [(OnceAfter(0, AfterStrike), "after strike once")],
-        targets: [(FilterMaxEnemy(Context(Slot)), "last enemy")],
+        targets: [(MaxUnit(Context(Slot), AllEnemyUnits), "last enemy")],
         effects: [(UseAbility("Doom", 0), None)],
     ),
     representation: (
