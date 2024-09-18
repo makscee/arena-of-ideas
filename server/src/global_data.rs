@@ -8,7 +8,6 @@ pub struct GlobalData {
     pub game_version: String,
     pub season: u32,
     pub last_sync: Timestamp,
-    pub last_shop_refresh: Timestamp,
     pub constant_seed: String,
     pub initial_enemies: Vec<u64>,
 }
@@ -22,7 +21,6 @@ impl GlobalData {
             next_id: 1,
             game_version: VERSION.to_owned(),
             last_sync: Timestamp::UNIX_EPOCH,
-            last_shop_refresh: Timestamp::UNIX_EPOCH,
             season,
             constant_seed: String::new(),
             initial_enemies: Vec::new(),
@@ -44,11 +42,6 @@ impl GlobalData {
     pub fn register_sync() {
         let mut gd = Self::get();
         gd.last_sync = Timestamp::now();
-        Self::update_by_always_zero(&0, gd);
-    }
-    pub fn register_shop_refresh() {
-        let mut gd = Self::get();
-        gd.last_shop_refresh = Timestamp::now();
         Self::update_by_always_zero(&0, gd);
     }
     pub fn set_initial_enemies(teams: Vec<u64>) {

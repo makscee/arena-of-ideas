@@ -299,7 +299,7 @@ impl VarValue {
             (VarValue::U64(a), VarValue::U64(b)) => Ok(a.cmp(b)),
             (VarValue::Bool(a), VarValue::Bool(b)) => Ok(a.cmp(b)),
             (VarValue::String(a), VarValue::String(b)) => Ok(a.cmp(b)),
-            (VarValue::Cstr(a), VarValue::Cstr(b)) => Ok(a.to_string().cmp(&b.to_string())),
+            (VarValue::Cstr(a), VarValue::Cstr(b)) => Ok(a.get_text().cmp(&b.get_text())),
             _ => Err(anyhow!("Comparing {a:?} and {b:?} not supported")),
         }
     }

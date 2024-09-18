@@ -216,6 +216,21 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
         );
         self
     }
+    pub fn column_rarity(mut self, value: fn(&T, world: &World) -> i32) -> Self {
+        self.columns.insert(
+            "rarity",
+            TableColumn {
+                value: Box::new(move |d, world| value(d, world).into()),
+                show: Box::new(|_, v, ui, _| {
+                    Rarity::from_int(v.get_int().unwrap() as i8)
+                        .cstr()
+                        .label(ui)
+                }),
+                sortable: true,
+            },
+        );
+        self
+    }
     pub fn ui(&mut self, data: &[T], ui: &mut Ui, world: &mut World) -> TableState {
         let mut need_sort = false;
         let mut need_filter = false;

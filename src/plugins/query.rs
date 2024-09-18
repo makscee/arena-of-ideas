@@ -45,8 +45,12 @@ impl StdbQuery {
                 format!("select * from TBattle where owner = {uid}"),
                 format!("select * from TWallet where owner = {uid}"),
                 format!("select * from TUnitItem where owner = {uid} or owner = 0"),
-                format!("select * from TUnitShardItem where owner = {uid} or owner = 0"),
-                format!("select * from TLootboxItem where owner = {uid} or owner = 0"),
+                format!(
+                    "select * from TUnitShardItem where (owner = {uid} or owner = 0) and count > 0"
+                ),
+                format!(
+                    "select * from TLootboxItem where (owner = {uid} or owner = 0) and count > 0"
+                ),
                 format!("select * from TTrade where a_user = {uid} or b_user = {uid}"),
                 "select * from TBaseUnit".into(),
                 "select * from TRepresentation".into(),

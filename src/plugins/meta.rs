@@ -31,10 +31,7 @@ impl MetaPlugin {
                 );
                 br(ui);
                 let now = Utc::now().timestamp();
-                let last_refresh =
-                    Duration::from_micros(GlobalData::current().last_shop_refresh).as_secs() as i64;
-                let period = GlobalSettings::current().meta.shop_refresh_period_secs as i64;
-                let til_refresh = period - now + last_refresh;
+                let til_refresh = (now / 86400 + 1) * 86400 - now;
                 "Refresh in "
                     .cstr()
                     .push(

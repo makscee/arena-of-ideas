@@ -1,5 +1,3 @@
-use core::time::Duration;
-
 use super::*;
 
 #[spacetimedb(table(public))]
@@ -37,25 +35,6 @@ impl TMetaShop {
     fn take(self, owner: u64) -> Result<(), String> {
         self.item_kind.clone_to(self.id, owner)
     }
-}
-
-pub fn meta_shop_refresh() -> Result<(), String> {
-    spacetimedb::println!("Refresh start");
-    let last_refresh = GlobalData::get().last_shop_refresh;
-    let since = Timestamp::now()
-        .duration_since(last_refresh)
-        .map(|d| d.as_secs())
-        .unwrap_or(u64::MAX);
-    let period = GlobalSettings::get().meta.shop_refresh_period_secs;
-    if since < period {
-        let time = last_refresh + Duration::from_secs(period);
-        spacetimedb::println!("Refresh reschedule {time:?}");
-        return Ok(());
-    }
-    TMetaShop::refresh()?;
-    GlobalData::register_shop_refresh();
-    spacetimedb::println!("Refresh success");
-    Ok(())
 }
 
 #[spacetimedb(reducer)]

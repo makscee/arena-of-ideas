@@ -57,14 +57,9 @@ impl ShowTable<TBaseUnit> for Vec<TBaseUnit> {
                 let color = name_color(&d.house);
                 d.house.cstr_c(color)
             })
-            .column_cstr("rarity", |d, _| Rarity::from_int(d.rarity).cstr())
+            .column_rarity(|d, _| (d.rarity as i32).into())
             .column_int("pwr", |d| d.pwr)
-            .column_int("hp", |d| d.hp)
-            .column(
-                "rarity",
-                |u, _| (u.rarity as i32).into(),
-                |u, _, ui, _| Rarity::from_int(u.rarity).cstr().label(ui),
-            );
+            .column_int("hp", |d| d.hp);
         t = m(t);
         t.ui(self, ui, world)
     }
@@ -81,7 +76,7 @@ impl ShowTable<FusedUnit> for Vec<FusedUnit> {
             .title()
             .column(
                 "name",
-                |d: &FusedUnit, _| d.id.into(),
+                |d: &FusedUnit, _| d.cstr().into(),
                 |d, _, ui, world| {
                     let r = d.cstr_limit(0).button(ui);
                     if r.clicked() {
@@ -96,15 +91,7 @@ impl ShowTable<FusedUnit> for Vec<FusedUnit> {
                     r
                 },
             )
-            .column(
-                "rarity",
-                |d, _| d.bases[0].clone().into(),
-                |_, v, ui, world| {
-                    Rarity::from_base(&v.get_string().unwrap(), world)
-                        .cstr()
-                        .label(ui)
-                },
-            )
+            .column_rarity(|d, world| (Rarity::from_base(&d.bases[0], world) as i32).into())
             .column_int("lvl", |d| d.lvl as i32)
             .column_int("pwr", |d| d.pwr)
             .column_int("hp", |d| d.hp);
@@ -219,6 +206,7 @@ impl ShowTable<TUnitShardItem> for Vec<TUnitShardItem> {
                     r
                 },
             )
+            .column_rarity(|d, world| (Rarity::from_base(&d.unit, world) as i32).into())
             .column_int("count", |d| d.count as i32);
         t = m(t);
         t.ui(self, ui, world)
