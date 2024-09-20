@@ -161,7 +161,7 @@ impl UnitCard {
                 se: 13.0,
             },
             shadow: Shadow::NONE,
-            fill: Color32::from_black_alpha(235),
+            fill: BG_TRANSPARENT,
             stroke: Stroke::NONE,
         }
         .show(ui, |ui| {
@@ -314,28 +314,4 @@ pub fn cached_base_card(unit: &TBaseUnit, ui: &mut Ui, world: &mut World) -> Res
         .context("Failed to get cached card context")?
         .ui(ui);
     Ok(())
-}
-
-pub fn cursor_card_window(ctx: &egui::Context, content: impl FnOnce(&mut Ui)) {
-    let mut pos = ctx.pointer_latest_pos().unwrap_or_default();
-    let pivot = if pos.x > ctx.screen_rect().center().x {
-        pos.x -= 10.0;
-        Align2::RIGHT_CENTER
-    } else {
-        pos.x += 10.0;
-        Align2::LEFT_CENTER
-    };
-    Window::new("hover_slot")
-        .title_bar(false)
-        .frame(Frame::none())
-        .max_width(300.0)
-        .pivot(pivot)
-        .fixed_pos(pos)
-        .resizable(false)
-        .interactable(false)
-        .show(ctx, |ui| {
-            ui.vertical_centered_justified(|ui| {
-                content(ui);
-            });
-        });
 }

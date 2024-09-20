@@ -24,7 +24,11 @@ impl ShowTable<TTeam> for Vec<TTeam> {
         let mut t = Table::new(name)
             .title()
             .column_cstr("name", |d: &TTeam, _| d.name.cstr_c(VISIBLE_LIGHT))
-            .column_cstr("units", |d, _| d.cstr());
+            .column_cstr("units", |d, _| {
+                Cstr::from(d.units.iter().map(|u| u.cstr_limit(1)).collect_vec())
+                    .join_char(' ')
+                    .take()
+            });
         t = m(t);
         t.ui(self, ui, world)
     }
@@ -45,7 +49,7 @@ impl ShowTable<TBaseUnit> for Vec<TBaseUnit> {
                 |d, name, ui, world| {
                     let r = name.get_cstr().unwrap().button(ui);
                     if r.hovered() {
-                        cursor_card_window(ui.ctx(), |ui| match cached_base_card(d, ui, world) {
+                        cursor_window(ui.ctx(), |ui| match cached_base_card(d, ui, world) {
                             Ok(_) => {}
                             Err(e) => error!("{e}"),
                         });
@@ -83,7 +87,7 @@ impl ShowTable<FusedUnit> for Vec<FusedUnit> {
                         TilePlugin::add_fused_unit(d.clone(), world);
                     }
                     if r.hovered() {
-                        cursor_card_window(ui.ctx(), |ui| match cached_fused_card(d, ui, world) {
+                        cursor_window(ui.ctx(), |ui| match cached_fused_card(d, ui, world) {
                             Ok(_) => {}
                             Err(e) => error!("{e}"),
                         });
@@ -194,7 +198,7 @@ impl ShowTable<TUnitShardItem> for Vec<TUnitShardItem> {
                 |d, name, ui, world| {
                     let r = name.get_cstr().unwrap().button(ui);
                     if r.hovered() {
-                        cursor_card_window(ui.ctx(), |ui| {
+                        cursor_window(ui.ctx(), |ui| {
                             match cached_base_card(
                                 &TBaseUnit::find_by_name(d.unit.clone()).unwrap(),
                                 ui,

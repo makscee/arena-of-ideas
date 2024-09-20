@@ -64,3 +64,28 @@ pub fn title(text: &str, ui: &mut Ui) {
     text.cstr_cs(VISIBLE_DARK, CstrStyle::Heading2).label(ui);
     br(ui);
 }
+
+pub fn cursor_window(ctx: &egui::Context, content: impl FnOnce(&mut Ui)) {
+    let mut pos = ctx.pointer_latest_pos().unwrap_or_default();
+    const WIDTH: f32 = 350.0;
+    let pivot = if pos.x > ctx.screen_rect().right() - WIDTH {
+        pos.x -= 10.0;
+        Align2::RIGHT_CENTER
+    } else {
+        pos.x += 10.0;
+        Align2::LEFT_CENTER
+    };
+    Window::new("cursor_window")
+        .title_bar(false)
+        .frame(Frame::none())
+        .max_width(WIDTH)
+        .pivot(pivot)
+        .fixed_pos(pos)
+        .resizable(false)
+        .interactable(false)
+        .show(ctx, |ui| {
+            ui.vertical_centered_justified(|ui| {
+                content(ui);
+            });
+        });
+}

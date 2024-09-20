@@ -157,7 +157,7 @@ impl TeamContainer {
                             }
                         }
                         if resp.hovered() && ui.ctx().dragged_id().is_none() {
-                            cursor_card_window(ui.ctx(), |ui| {
+                            cursor_window(ui.ctx(), |ui| {
                                 match UnitCard::new(&Context::new(entity), world) {
                                     Ok(c) => c.ui(ui),
                                     Err(e) => error!("{e}"),

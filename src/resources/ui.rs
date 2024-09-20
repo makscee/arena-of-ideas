@@ -13,6 +13,7 @@ macro_rules! hex_color_noa {
 pub const EMPTINESS: Color32 = hex_color_noa!("#080808");
 pub const BG_DARK: Color32 = hex_color_noa!("#191919");
 pub const BG_LIGHT: Color32 = hex_color_noa!("#252525");
+pub const BG_TRANSPARENT: Color32 = Color32::from_black_alpha(235);
 pub const VISIBLE_DARK: Color32 = hex_color_noa!("#606060");
 pub const VISIBLE_LIGHT: Color32 = hex_color_noa!("#B4B4B4");
 pub const VISIBLE_BRIGHT: Color32 = hex_color_noa!("#FFFFFF");

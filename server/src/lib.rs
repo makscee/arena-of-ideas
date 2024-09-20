@@ -98,7 +98,6 @@ impl AdminCheck for &ReducerContext {
 #[spacetimedb(init)]
 fn init() -> Result<(), String> {
     GlobalData::init()?;
-    daily_timer_init();
     Ok(())
 }
 

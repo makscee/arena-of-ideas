@@ -59,7 +59,7 @@ fn replace_assets(
     .into();
     GlobalData::set_initial_enemies(enemies);
     if GlobalData::get().last_sync.eq(&Timestamp::UNIX_EPOCH) {
-        TMetaShop::refresh()?;
+        daily_timer_init();
     }
     GlobalData::register_sync();
     Ok(())

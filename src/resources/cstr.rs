@@ -422,11 +422,15 @@ impl ToCstr for FusedUnit {
 }
 impl ToCstr for TTeam {
     fn cstr(&self) -> Cstr {
-        self.units
+        let mut name = self.name.cstr_c(VISIBLE_LIGHT);
+        let mut units: Cstr = self
+            .units
             .iter()
-            .map(|u| u.cstr_limit(1).push(" ".cstr()).take())
+            .map(|u| u.cstr_limit(1))
             .collect_vec()
-            .into()
+            .into();
+        let units = units.join(&" ".cstr()).take();
+        name.push_wrapped(units, ('(', ')')).take()
     }
 }
 impl ToCstr for TUser {
