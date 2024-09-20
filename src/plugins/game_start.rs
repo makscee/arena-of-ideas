@@ -178,8 +178,10 @@ impl GameStartPlugin {
                                 .ui(ui)
                                 .clicked()
                             {
-                                run_start_ranked();
-                                once_on_run_start_ranked(|_, _, status| {
+                                let gsr = world.resource::<GameStartResource>();
+                                let team = gsr.teams[gsr.selected_team].id;
+                                run_start_ranked(team);
+                                once_on_run_start_ranked(|_, _, status, _| {
                                     status.on_success(|w| GameState::Shop.proceed_to_target(w))
                                 });
                             }

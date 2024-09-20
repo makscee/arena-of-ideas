@@ -13,15 +13,17 @@ use spacetimedb_sdk::{
 };
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
-pub struct RunStartRankedArgs {}
+pub struct RunStartRankedArgs {
+    pub team_id: u64,
+}
 
 impl Reducer for RunStartRankedArgs {
     const REDUCER_NAME: &'static str = "run_start_ranked";
 }
 
 #[allow(unused)]
-pub fn run_start_ranked() {
-    RunStartRankedArgs {}.invoke();
+pub fn run_start_ranked(team_id: u64) {
+    RunStartRankedArgs { team_id }.invoke();
 }
 
 #[allow(unused)]
@@ -29,18 +31,18 @@ pub fn on_run_start_ranked(
     mut __callback: impl FnMut(&Identity, Option<Address>, &Status) + Send + 'static,
 ) -> ReducerCallbackId<RunStartRankedArgs> {
     RunStartRankedArgs::on_reducer(move |__identity, __addr, __status, __args| {
-        let RunStartRankedArgs {} = __args;
+        let RunStartRankedArgs { team_id } = __args;
         __callback(__identity, __addr, __status);
     })
 }
 
 #[allow(unused)]
 pub fn once_on_run_start_ranked(
-    __callback: impl FnOnce(&Identity, Option<Address>, &Status) + Send + 'static,
+    __callback: impl FnOnce(&Identity, Option<Address>, &Status, &u64) + Send + 'static,
 ) -> ReducerCallbackId<RunStartRankedArgs> {
     RunStartRankedArgs::once_on_reducer(move |__identity, __addr, __status, __args| {
-        let RunStartRankedArgs {} = __args;
-        __callback(__identity, __addr, __status);
+        let RunStartRankedArgs { team_id } = __args;
+        __callback(__identity, __addr, __status, team_id);
     })
 }
 

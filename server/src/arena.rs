@@ -113,10 +113,15 @@ fn run_start_normal(ctx: ReducerContext) -> Result<(), String> {
 }
 
 #[spacetimedb(reducer)]
-fn run_start_ranked(ctx: ReducerContext) -> Result<(), String> {
+fn run_start_ranked(ctx: ReducerContext, team_id: u64) -> Result<(), String> {
     let user = ctx.user()?;
     TWallet::change(user.id, -settings().arena.ranked_cost_min)?;
-    TArenaRun::start(user, GameMode::ArenaRanked)
+    let team = TTeam::get_owned(team_id, user.id)?;
+    TArenaRun::start(user, GameMode::ArenaRanked)?;
+    let mut run = TArenaRun::current(&ctx)?;
+    run.team = team.id;
+    run.save();
+    Ok(())
 }
 
 #[spacetimedb(reducer)]
