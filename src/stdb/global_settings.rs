@@ -23,6 +23,7 @@ pub struct GlobalSettings {
     pub rarities: RaritySettings,
     pub battle: BattleSettings,
     pub craft_shards_cost: u32,
+    pub create_team_cost: i64,
     pub meta: MetaSettings,
     pub ghost_unit: String,
 }
@@ -44,6 +45,10 @@ impl GlobalSettings {
     #[allow(unused)]
     pub fn filter_by_craft_shards_cost(craft_shards_cost: u32) -> TableIter<Self> {
         Self::filter(|row| row.craft_shards_cost == craft_shards_cost)
+    }
+    #[allow(unused)]
+    pub fn filter_by_create_team_cost(create_team_cost: i64) -> TableIter<Self> {
+        Self::filter(|row| row.create_team_cost == create_team_cost)
     }
     #[allow(unused)]
     pub fn filter_by_ghost_unit(ghost_unit: String) -> TableIter<Self> {

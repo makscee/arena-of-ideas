@@ -201,6 +201,9 @@ pub fn debug_rect(rect: Rect, ctx: &egui::Context) {
         },
     );
 }
+pub fn can_afford(cost: i64) -> bool {
+    TWallet::current().amount >= cost
+}
 
 pub trait ToBVec2 {
     fn to_bvec2(&self) -> Vec2;

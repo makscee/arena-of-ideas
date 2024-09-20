@@ -139,9 +139,16 @@ impl TeamPlugin {
     fn teams_tiles(world: &mut World) {
         Tile::new(Side::Left, |ui, world| {
             title("Team Manager", ui);
-            if Button::click("New Team".into()).ui(ui).clicked() {
-                Self::open_new_team_popup(world);
-            }
+            let cost = GlobalSettings::current().create_team_cost;
+            ui.vertical_centered_justified(|ui| {
+                if Button::click("New Team".into())
+                    .credits_cost(cost)
+                    .ui(ui)
+                    .clicked()
+                {
+                    Self::open_new_team_popup(world);
+                }
+            });
             let data = mem::take(&mut world.resource_mut::<TeamResource>().table);
             data.show_modified_table("Teams", ui, world, |t| {
                 t.column_btn("edit", |d, _, world| {

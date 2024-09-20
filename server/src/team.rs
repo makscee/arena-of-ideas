@@ -68,6 +68,7 @@ impl TTeam {
 #[spacetimedb(reducer)]
 fn team_create(ctx: ReducerContext, name: String) -> Result<(), String> {
     let user = ctx.user()?;
+    TWallet::change(user.id, -GlobalSettings::get().create_team_cost)?;
     TTeam::new(user.id, TeamPool::Owned).name(name).save();
     Ok(())
 }

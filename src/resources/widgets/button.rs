@@ -65,6 +65,26 @@ impl Button {
         self.title = Some(text);
         self
     }
+    pub fn credits_cost(mut self, cost: i64) -> Self {
+        self.enabled = can_afford(cost);
+        if let Some(name) = self.name_cstr.take() {
+            self.title = Some(name);
+        } else {
+            self.title = Some(self.name.clone().cstr());
+        }
+        self.name_cstr = Some({
+            let mut c = cost
+                .to_string()
+                .cstr_c(VISIBLE_LIGHT)
+                .push(format!(" {CREDITS_SYM}").cstr_cs(YELLOW, CstrStyle::Bold))
+                .take();
+            if !self.enabled {
+                c = c.color(VISIBLE_DARK).take();
+            }
+            c
+        });
+        self
+    }
     pub fn icon(mut self, icon: Icon) -> Self {
         self.icon = Some(icon);
         self
@@ -80,26 +100,6 @@ impl Button {
     pub fn active(mut self, value: bool) -> Self {
         self.active = value;
         self
-    }
-    pub fn enable_ui<T: Default>(self, data: &mut Option<T>, ui: &mut Ui) -> Response {
-        self.enable_ui_with(data, default, ui)
-    }
-    pub fn enable_ui_with<T>(
-        mut self,
-        data: &mut Option<T>,
-        init: impl FnOnce() -> T,
-        ui: &mut Ui,
-    ) -> Response {
-        self = self.set_bg(data.is_some(), ui);
-        let r = self.ui(ui);
-        if r.clicked() {
-            if data.is_some() {
-                *data = None;
-            } else {
-                *data = Some(init());
-            }
-        }
-        r
     }
     pub fn ui(self, ui: &mut Ui) -> Response {
         if let Some(title) = self.title {

@@ -75,7 +75,7 @@ impl GameStartPlugin {
                                         .cstr_c(YELLOW)
                                         .style(CstrStyle::Heading2)
                                         .label(ui);
-                                    if Button::click(format!("-{} ¤", cost))
+                                    if Button::click(format!("-{} {CREDITS_SYM}", cost))
                                         .title("Play".cstr())
                                         .enabled(can_start && TWallet::current().amount >= cost)
                                         .ui(ui)
@@ -91,7 +91,7 @@ impl GameStartPlugin {
                                     "Wallet: "
                                         .cstr()
                                         .push(
-                                            format!("{} ¤", TWallet::current().amount)
+                                            format!("{} {CREDITS_SYM}", TWallet::current().amount)
                                                 .cstr_cs(YELLOW, CstrStyle::Bold),
                                         )
                                         .label(ui);
@@ -103,7 +103,7 @@ impl GameStartPlugin {
                                         .style(CstrStyle::Heading2)
                                         .label(ui);
                                     seed.cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold).label(ui);
-                                    if Button::click(format!("-{} ¤", cost))
+                                    if Button::click(format!("-{} {CREDITS_SYM}", cost))
                                         .title("Play".cstr())
                                         .enabled(can_start && TWallet::current().amount >= cost)
                                         .ui(ui)
@@ -119,7 +119,7 @@ impl GameStartPlugin {
                                     "Wallet: "
                                         .cstr()
                                         .push(
-                                            format!("{} ¤", TWallet::current().amount)
+                                            format!("{} {CREDITS_SYM}", TWallet::current().amount)
                                                 .cstr_cs(YELLOW, CstrStyle::Bold),
                                         )
                                         .label(ui);

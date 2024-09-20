@@ -153,14 +153,16 @@ impl ShowTable<TMetaShop> for Vec<TMetaShop> {
                     })
                     .unwrap_or_else(|| "error".cstr_c(RED)),
             })
-            .column_cstr("price", |d, _| format!("{} ¤", d.price).cstr_c(YELLOW))
+            .column_cstr("price", |d, _| {
+                format!("{} {CREDITS_SYM}", d.price).cstr_c(YELLOW)
+            })
             .column(
                 "buy",
                 |_, _| default(),
                 |d, _, ui, _| {
-                    let c = TWallet::current().amount;
-                    let can_afford = c >= d.price;
-                    let r = Button::click("buy".into()).enabled(can_afford).ui(ui);
+                    let r = Button::click("buy".into())
+                        .enabled(can_afford(d.price))
+                        .ui(ui);
                     if r.clicked() {
                         meta_buy(d.id);
                         once_on_meta_buy(|_, _, status, _| match status {

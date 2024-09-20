@@ -35,6 +35,8 @@ pub const BEVY_MISSING_COLOR: LinearRgba = LinearRgba::new(1.0, 0.0, 1.0, 1.0);
 
 pub const TRANSPARENT: Color32 = Color32::TRANSPARENT;
 
+pub const CREDITS_SYM: char = '¤';
+
 pub const STROKE_LIGHT: Stroke = Stroke {
     width: 1.0,
     color: VISIBLE_LIGHT,

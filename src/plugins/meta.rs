@@ -26,7 +26,8 @@ impl MetaPlugin {
             GameState::MetaShop => Tile::new(Side::Left, |ui, world| {
                 text_dots_text(
                     "wallet".cstr(),
-                    format!("{} ¤", TWallet::current().amount).cstr_cs(YELLOW, CstrStyle::Bold),
+                    format!("{} {CREDITS_SYM}", TWallet::current().amount)
+                        .cstr_cs(YELLOW, CstrStyle::Bold),
                     ui,
                 );
                 br(ui);

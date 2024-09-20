@@ -3,6 +3,8 @@
     settings: (
         always_zero: 0,
         craft_shards_cost: 10,
+        create_team_cost: 100,
+        meta: (price_lootbox: 150, price_shard: 10, shop_refresh_period_secs: 10800, shop_shard_slots: 4),
         ghost_unit: "Ghost",
         arena: (
             ranked_cost_min: 0,
@@ -34,6 +36,5 @@
             lootbox_weights: [100, 15, 5, 1],
         ),
         battle: (fatigue_start: 20, deafness_start: 100, deafness_per_turn: 0.01),
-        meta: (price_lootbox: 100, price_shard: 10, shop_refresh_period_secs: 10800, shop_shard_slots: 4),
     ),
 )

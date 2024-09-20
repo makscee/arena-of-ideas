@@ -8,6 +8,7 @@ pub struct GlobalSettings {
     pub rarities: RaritySettings,
     pub battle: BattleSettings,
     pub craft_shards_cost: u32,
+    pub create_team_cost: i64,
     pub meta: MetaSettings,
     pub ghost_unit: String,
 }
