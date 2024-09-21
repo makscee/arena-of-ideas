@@ -323,6 +323,11 @@ impl BattlePlugin {
                 }
                 text_dots_text("owner".cstr(), team.owner.get_user().cstr(), ui);
                 text_dots_text(
+                    "team name".cstr(),
+                    team.name.cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold),
+                    ui,
+                );
+                text_dots_text(
                     "team id".cstr(),
                     team.id.to_string().cstr_c(VISIBLE_LIGHT),
                     ui,
