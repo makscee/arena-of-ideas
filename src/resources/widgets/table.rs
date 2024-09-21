@@ -68,13 +68,14 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
         name: &'static str,
         value: fn(&T, &World) -> VarValue,
         show: fn(&T, VarValue, &mut Ui, &mut World) -> Response,
+        sortable: bool,
     ) -> Self {
         self.columns.insert(
             name,
             TableColumn {
                 value: Box::new(value),
                 show: Box::new(show),
-                sortable: true,
+                sortable,
             },
         );
         self
@@ -225,6 +226,39 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                     Rarity::from_int(v.get_int().unwrap() as i8)
                         .cstr()
                         .label(ui)
+                }),
+                sortable: true,
+            },
+        );
+        self
+    }
+    pub fn column_base_unit(mut self, name: &'static str, unit: fn(&T) -> String) -> Self {
+        self.columns.insert(
+            name,
+            TableColumn {
+                value: Box::new(move |d, _| unit(d).into()),
+                show: Box::new(|_, v, ui, world| {
+                    let name = v.get_string().unwrap();
+                    let r = match try_name_color(&name) {
+                        Some(color) => {
+                            let r = name.cstr_c(color).label(ui);
+                            if r.hovered() {
+                                cursor_window(ui.ctx(), |ui| {
+                                    match cached_base_card(
+                                        &TBaseUnit::find_by_name(name).unwrap(),
+                                        ui,
+                                        world,
+                                    ) {
+                                        Ok(_) => {}
+                                        Err(e) => error!("{e}"),
+                                    }
+                                });
+                            }
+                            r
+                        }
+                        None => name.cstr_c(VISIBLE_LIGHT).label(ui),
+                    };
+                    r
                 }),
                 sortable: true,
             },

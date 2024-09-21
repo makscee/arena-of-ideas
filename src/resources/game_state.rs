@@ -119,6 +119,15 @@ impl GameState {
     pub fn proceed_to_target_op(self) {
         OperationsPlugin::add(move |world| self.proceed_to_target(world))
     }
+    pub fn get_name(self) -> &'static str {
+        match self {
+            GameState::MetaShop => "Shop",
+            GameState::MetaHeroes => "Heroes",
+            GameState::MetaHeroShards => "Hero Shards",
+            GameState::MetaLootboxes => "Lootboxes",
+            _ => self.to_string().to_case(Case::Title).leak(),
+        }
+    }
 }
 
 pub struct GameStatePlugin;

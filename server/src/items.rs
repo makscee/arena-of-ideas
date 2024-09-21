@@ -135,16 +135,20 @@ impl ItemBundle {
             TUnitItem::update_by_id(&unit.id.clone(), unit);
         }
         for id in self.unit_shards {
-            let mut shard = TUnitShardItem::filter_by_id(&id)
+            let shard = TUnitShardItem::filter_by_id(&id)
                 .with_context_str(|| format!("UnitShard {id} not found"))?;
-            shard.owner = owner;
-            TUnitShardItem::update_by_id(&shard.id.clone(), shard);
+            TUnitShardItem::delete_by_id(&id);
+            let mut owner_shard = TUnitShardItem::get_or_init(owner, &shard.unit);
+            owner_shard.count += shard.count;
+            TUnitShardItem::update_by_id(&owner_shard.id.clone(), owner_shard);
         }
         for id in self.lootboxes {
-            let mut lootbox = TLootboxItem::filter_by_id(&id)
+            let lootbox = TLootboxItem::filter_by_id(&id)
                 .with_context_str(|| format!("UnitShard {id} not found"))?;
-            lootbox.owner = owner;
-            TLootboxItem::update_by_id(&lootbox.id.clone(), lootbox);
+            TLootboxItem::delete_by_id(&lootbox.id);
+            let mut owner_lootbox = TLootboxItem::get_or_init(owner, lootbox.kind);
+            owner_lootbox.count += lootbox.count;
+            TLootboxItem::update_by_id(&owner_lootbox.id.clone(), owner_lootbox);
         }
         Ok(())
     }

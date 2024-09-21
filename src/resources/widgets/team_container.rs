@@ -255,7 +255,9 @@ impl TeamContainer {
                     .get(slot)
                     .map(|p| screen_to_world_cam(p.to_bvec2(), &camera, &transform))
                     .unwrap_or_default();
-                cd.entities[slot] = Some(entity);
+                if cd.entities.len() > slot {
+                    cd.entities[slot] = Some(entity);
+                }
                 let mut state = VarState::get_mut(entity, world);
                 state.change_vec2(VarName::Position, (need_pos - position) * delta * 5.0);
             }

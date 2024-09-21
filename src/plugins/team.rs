@@ -252,7 +252,6 @@ impl TeamPlugin {
     pub fn add_tiles(state: GameState, world: &mut World) {
         TeamSyncPlugin::unsubscribe_all(world);
         Tile::new(Side::Top, |ui, world| {
-            let mut r = world.resource_mut::<TeamResource>();
             SubstateMenu::show(&[GameState::Teams, GameState::TeamEditor], ui, world);
         })
         .pinned()

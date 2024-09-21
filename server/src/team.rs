@@ -51,10 +51,11 @@ impl TTeam {
     }
     #[must_use]
     pub fn apply_limit(mut self) -> Self {
-        self.units = self
-            .units
-            .drain(..GlobalSettings::get().arena.team_slots as usize)
-            .collect_vec();
+        let max_len = GlobalSettings::get().arena.team_slots as usize;
+        if self.units.len() <= max_len {
+            return self;
+        }
+        let _ = self.units.split_off(max_len);
         self
     }
     pub fn save(self) -> u64 {

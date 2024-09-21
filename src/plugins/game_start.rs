@@ -5,7 +5,7 @@ pub struct GameStartPlugin;
 impl Plugin for GameStartPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(GameState::GameStart), |world: &mut World| {
-            world.init_resource::<GameStartResource>();
+            world.insert_resource(GameStartResource::default());
         });
     }
 }

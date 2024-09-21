@@ -56,6 +56,7 @@ impl ShowTable<TBaseUnit> for Vec<TBaseUnit> {
                     }
                     r
                 },
+                true,
             )
             .column_cstr("house", |d, _| {
                 let color = name_color(&d.house);
@@ -94,6 +95,7 @@ impl ShowTable<FusedUnit> for Vec<FusedUnit> {
                     }
                     r
                 },
+                true,
             )
             .column_rarity(|d, world| (Rarity::from_base(&d.bases[0], world) as i32).into())
             .column_int("lvl", |d| d.lvl as i32)
@@ -146,16 +148,16 @@ impl ShowTable<TMetaShop> for Vec<TMetaShop> {
                 )),
                 ItemKind::Lootbox => "lootbox".cstr_c(CYAN),
             })
-            .column_cstr("name", |d, _| match d.item_kind {
+            .column_base_unit("name", |d| match d.item_kind {
                 ItemKind::Unit => panic!("unsupported"),
                 ItemKind::UnitShard => TUnitShardItem::find_by_id(d.id)
-                    .map(|u| u.unit.cstr_c(name_color(&u.unit)))
-                    .unwrap_or_else(|| "error".cstr_c(RED)),
+                    .map(|u| u.unit)
+                    .unwrap_or_else(|| "error".into()),
                 ItemKind::Lootbox => TLootboxItem::find_by_id(d.id)
                     .map(|u| match u.kind {
-                        LootboxKind::Regular => "Regular".cstr_c(VISIBLE_LIGHT),
+                        LootboxKind::Regular => "Regular".into(),
                     })
-                    .unwrap_or_else(|| "error".cstr_c(RED)),
+                    .unwrap_or_else(|| "error".into()),
             })
             .column_cstr("price", |d, _| {
                 format!("{} {CREDITS_SYM}", d.price).cstr_c(YELLOW)
@@ -177,6 +179,7 @@ impl ShowTable<TMetaShop> for Vec<TMetaShop> {
                     }
                     r
                 },
+                false,
             );
         t = m(t);
         t.ui(self, ui, world)
@@ -192,26 +195,7 @@ impl ShowTable<TUnitShardItem> for Vec<TUnitShardItem> {
     ) -> TableState {
         let mut t = Table::new(name)
             .title()
-            .column(
-                "name",
-                |d: &TUnitShardItem, _| d.unit.cstr_c(name_color(&d.unit)).into(),
-                |d, name, ui, world| {
-                    let r = name.get_cstr().unwrap().button(ui);
-                    if r.hovered() {
-                        cursor_window(ui.ctx(), |ui| {
-                            match cached_base_card(
-                                &TBaseUnit::find_by_name(d.unit.clone()).unwrap(),
-                                ui,
-                                world,
-                            ) {
-                                Ok(_) => {}
-                                Err(e) => error!("{e}"),
-                            }
-                        });
-                    }
-                    r
-                },
-            )
+            .column_base_unit("unit", |d: &TUnitShardItem| d.unit.clone())
             .column_rarity(|d, world| (Rarity::from_base(&d.unit, world) as i32).into())
             .column_int("count", |d| d.count as i32);
         t = m(t);

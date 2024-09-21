@@ -257,7 +257,9 @@ impl Tile {
     }
     pub fn push(self, world: &mut World) {
         let mut tr = world.resource_mut::<TileResource>();
-        tr.focused = self.id.clone();
+        if self.focusable {
+            tr.focused = self.id.clone();
+        }
         tr.tiles.insert(self.id.clone(), self);
     }
     pub fn push_persistent(self, world: &mut World) {
@@ -298,7 +300,9 @@ impl Tile {
         world: &mut World,
     ) -> bool {
         let mut response = false;
-        self.actual_space += (self.allocated_space - self.actual_space) * delta_time(world) * 13.0;
+        self.actual_space += (self.allocated_space - self.actual_space)
+            * delta_time(world).at_most(1.0 / 60.0)
+            * 13.0;
         let id = Id::new(&self.id);
         let (mut area, rect) = match self.side {
             Side::Right => (

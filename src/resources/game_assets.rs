@@ -51,13 +51,11 @@ pub struct GlobalSettingsAsset {
     settings: DeserializeWrapper<GlobalSettings>,
 }
 
+pub fn try_name_color(name: &str) -> Option<Color32> {
+    NAME_COLORS.lock().unwrap().get(name).cloned()
+}
 pub fn name_color(name: &str) -> Color32 {
-    NAME_COLORS
-        .lock()
-        .unwrap()
-        .get(name)
-        .cloned()
-        .unwrap_or(MISSING_COLOR)
+    try_name_color(name).unwrap_or(VISIBLE_LIGHT)
 }
 pub fn definition(name: &str) -> Cstr {
     NAME_DEFINITIONS.lock().unwrap().get(name).unwrap().clone()

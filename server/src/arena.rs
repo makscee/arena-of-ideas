@@ -116,7 +116,9 @@ fn run_start_normal(ctx: ReducerContext) -> Result<(), String> {
 fn run_start_ranked(ctx: ReducerContext, team_id: u64) -> Result<(), String> {
     let user = ctx.user()?;
     TWallet::change(user.id, -settings().arena.ranked_cost_min)?;
-    let team = TTeam::get_owned(team_id, user.id)?;
+    let mut team = TTeam::get_owned(team_id, user.id)?;
+    team.pool = TeamPool::Arena;
+    let team = team.apply_limit().save_clone();
     TArenaRun::start(user, GameMode::ArenaRanked)?;
     let mut run = TArenaRun::current(&ctx)?;
     run.team = team.id;
@@ -397,10 +399,15 @@ impl TArenaRun {
             free_rerolls: ars.free_rerolls_initial,
             active: true,
             finale: false,
+            enemies: match mode {
+                GameMode::ArenaNormal | GameMode::ArenaConst(_) => {
+                    GlobalData::get().initial_enemies
+                }
+                GameMode::ArenaRanked => default(),
+            },
             mode,
             rewards: Vec::new(),
             reward_limit: 0,
-            enemies: GlobalData::get().initial_enemies,
         }
     }
     fn start(user: TUser, mode: GameMode) -> Result<(), String> {
