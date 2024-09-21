@@ -28,11 +28,11 @@ pub fn run_start_ranked(team_id: u64) {
 
 #[allow(unused)]
 pub fn on_run_start_ranked(
-    mut __callback: impl FnMut(&Identity, Option<Address>, &Status) + Send + 'static,
+    mut __callback: impl FnMut(&Identity, Option<Address>, &Status, &u64) + Send + 'static,
 ) -> ReducerCallbackId<RunStartRankedArgs> {
     RunStartRankedArgs::on_reducer(move |__identity, __addr, __status, __args| {
         let RunStartRankedArgs { team_id } = __args;
-        __callback(__identity, __addr, __status);
+        __callback(__identity, __addr, __status, team_id);
     })
 }
 

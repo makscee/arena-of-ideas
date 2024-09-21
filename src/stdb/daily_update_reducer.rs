@@ -15,7 +15,7 @@ use spacetimedb_sdk::{
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct DailyUpdateArgs {
-    pub arg: DailyUpdateTimer,
+    pub timer: DailyUpdateTimer,
 }
 
 impl Reducer for DailyUpdateArgs {
@@ -23,8 +23,8 @@ impl Reducer for DailyUpdateArgs {
 }
 
 #[allow(unused)]
-pub fn daily_update(arg: DailyUpdateTimer) {
-    DailyUpdateArgs { arg }.invoke();
+pub fn daily_update(timer: DailyUpdateTimer) {
+    DailyUpdateArgs { timer }.invoke();
 }
 
 #[allow(unused)]
@@ -32,8 +32,8 @@ pub fn on_daily_update(
     mut __callback: impl FnMut(&Identity, Option<Address>, &Status, &DailyUpdateTimer) + Send + 'static,
 ) -> ReducerCallbackId<DailyUpdateArgs> {
     DailyUpdateArgs::on_reducer(move |__identity, __addr, __status, __args| {
-        let DailyUpdateArgs { arg } = __args;
-        __callback(__identity, __addr, __status, arg);
+        let DailyUpdateArgs { timer } = __args;
+        __callback(__identity, __addr, __status, timer);
     })
 }
 
@@ -42,8 +42,8 @@ pub fn once_on_daily_update(
     __callback: impl FnOnce(&Identity, Option<Address>, &Status, &DailyUpdateTimer) + Send + 'static,
 ) -> ReducerCallbackId<DailyUpdateArgs> {
     DailyUpdateArgs::once_on_reducer(move |__identity, __addr, __status, __args| {
-        let DailyUpdateArgs { arg } = __args;
-        __callback(__identity, __addr, __status, arg);
+        let DailyUpdateArgs { timer } = __args;
+        __callback(__identity, __addr, __status, timer);
     })
 }
 

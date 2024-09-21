@@ -150,7 +150,7 @@ fn run_finish(ctx: ReducerContext) -> Result<(), String> {
 fn shop_finish(ctx: ReducerContext) -> Result<(), String> {
     let mut run = TArenaRun::current(&ctx)?;
     run.round += 1;
-    let team = TTeam::get(run.team)?.save_clone();
+    let team = TTeam::get(run.team)?.apply_limit().save_clone();
     let enemy = if let Some(enemy) = run.enemies.first().copied() {
         run.enemies.remove(0);
         enemy

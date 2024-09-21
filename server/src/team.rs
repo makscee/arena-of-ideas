@@ -49,6 +49,14 @@ impl TTeam {
         self.units = units;
         self
     }
+    #[must_use]
+    pub fn apply_limit(mut self) -> Self {
+        self.units = self
+            .units
+            .drain(..GlobalSettings::get().arena.team_slots as usize)
+            .collect_vec();
+        self
+    }
     pub fn save(self) -> u64 {
         Self::delete_by_id(&self.id);
         Self::insert(self).unwrap().id

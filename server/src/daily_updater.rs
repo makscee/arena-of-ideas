@@ -4,7 +4,7 @@ use super::*;
 struct DailyUpdateTimer {}
 
 #[spacetimedb(reducer)]
-fn daily_update(_: ReducerContext, _: DailyUpdateTimer) -> Result<(), String> {
+fn daily_update(_ctx: ReducerContext, _timer: DailyUpdateTimer) -> Result<(), String> {
     self::println!("Daily update called");
     update()?;
     let next_day = (Timestamp::now()
