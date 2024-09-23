@@ -61,6 +61,7 @@ impl StdbQuery {
                 "select * from TTeam".into(),
                 "select * from TArenaLeaderboard".into(),
                 "select * from TMetaShop".into(),
+                "select * from TAuction".into(),
             ]
             .into(),
             StdbQuery::GameFull => [

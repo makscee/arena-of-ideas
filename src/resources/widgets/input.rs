@@ -18,7 +18,7 @@ impl Input {
         self.password = true;
         self
     }
-    pub fn ui(self, value: &mut String, ui: &mut Ui) {
+    pub fn ui_string(self, value: &mut String, ui: &mut Ui) {
         ui.columns(2, |ui| {
             self.name.cstr().push(":".cstr()).label(&mut ui[0]);
             ui[1].style_mut().visuals.widgets.inactive.bg_stroke = STROKE_DARK;

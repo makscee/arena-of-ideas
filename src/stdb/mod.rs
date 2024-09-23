@@ -22,6 +22,9 @@ use std::sync::Arc;
 
 pub mod accept_trade_reducer;
 pub mod arena_settings;
+pub mod auction_buy_reducer;
+pub mod auction_cancel_reducer;
+pub mod auction_create_reducer;
 pub mod battle_settings;
 pub mod craft_hero_reducer;
 pub mod daily_update_reducer;
@@ -70,6 +73,7 @@ pub mod t_arena_leaderboard;
 pub mod t_arena_pool;
 pub mod t_arena_run;
 pub mod t_arena_run_archive;
+pub mod t_auction;
 pub mod t_base_unit;
 pub mod t_battle;
 pub mod t_battle_result;
@@ -96,6 +100,9 @@ pub mod upload_game_archive_reducer;
 
 pub use accept_trade_reducer::*;
 pub use arena_settings::*;
+pub use auction_buy_reducer::*;
+pub use auction_cancel_reducer::*;
+pub use auction_create_reducer::*;
 pub use battle_settings::*;
 pub use craft_hero_reducer::*;
 pub use daily_update_reducer::*;
@@ -144,6 +151,7 @@ pub use t_arena_leaderboard::*;
 pub use t_arena_pool::*;
 pub use t_arena_run::*;
 pub use t_arena_run_archive::*;
+pub use t_auction::*;
 pub use t_base_unit::*;
 pub use t_battle::*;
 pub use t_battle_result::*;
@@ -172,6 +180,9 @@ pub use upload_game_archive_reducer::*;
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub enum ReducerEvent {
     AcceptTrade(accept_trade_reducer::AcceptTradeArgs),
+    AuctionBuy(auction_buy_reducer::AuctionBuyArgs),
+    AuctionCancel(auction_cancel_reducer::AuctionCancelArgs),
+    AuctionCreate(auction_create_reducer::AuctionCreateArgs),
     CraftHero(craft_hero_reducer::CraftHeroArgs),
     DailyUpdate(daily_update_reducer::DailyUpdateArgs),
     FuseCancel(fuse_cancel_reducer::FuseCancelArgs),
@@ -260,6 +271,10 @@ impl SpacetimeModule for Module {
                     callbacks,
                     table_update,
                 ),
+            "TAuction" => client_cache.handle_table_update_with_primary_key::<t_auction::TAuction>(
+                callbacks,
+                table_update,
+            ),
             "TBaseUnit" => client_cache
                 .handle_table_update_with_primary_key::<t_base_unit::TBaseUnit>(
                     callbacks,
@@ -340,6 +355,7 @@ impl SpacetimeModule for Module {
             &reducer_event,
             state,
         );
+        reminders.invoke_callbacks::<t_auction::TAuction>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_base_unit::TBaseUnit>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_battle::TBattle>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_house::THouse>(worker, &reducer_event, state);
@@ -372,6 +388,9 @@ impl SpacetimeModule for Module {
         #[allow(clippy::match_single_binding)]
 match &reducer_call.reducer_name[..] {
 						"accept_trade" => _reducer_callbacks.handle_event_of_type::<accept_trade_reducer::AcceptTradeArgs, ReducerEvent>(event, _state, ReducerEvent::AcceptTrade),
+			"auction_buy" => _reducer_callbacks.handle_event_of_type::<auction_buy_reducer::AuctionBuyArgs, ReducerEvent>(event, _state, ReducerEvent::AuctionBuy),
+			"auction_cancel" => _reducer_callbacks.handle_event_of_type::<auction_cancel_reducer::AuctionCancelArgs, ReducerEvent>(event, _state, ReducerEvent::AuctionCancel),
+			"auction_create" => _reducer_callbacks.handle_event_of_type::<auction_create_reducer::AuctionCreateArgs, ReducerEvent>(event, _state, ReducerEvent::AuctionCreate),
 			"craft_hero" => _reducer_callbacks.handle_event_of_type::<craft_hero_reducer::CraftHeroArgs, ReducerEvent>(event, _state, ReducerEvent::CraftHero),
 			"daily_update" => _reducer_callbacks.handle_event_of_type::<daily_update_reducer::DailyUpdateArgs, ReducerEvent>(event, _state, ReducerEvent::DailyUpdate),
 			"fuse_cancel" => _reducer_callbacks.handle_event_of_type::<fuse_cancel_reducer::FuseCancelArgs, ReducerEvent>(event, _state, ReducerEvent::FuseCancel),
@@ -444,6 +463,9 @@ match &reducer_call.reducer_name[..] {
                 .handle_resubscribe_for_type::<t_arena_run_archive::TArenaRunArchive>(
                     callbacks, new_subs,
                 ),
+            "TAuction" => {
+                client_cache.handle_resubscribe_for_type::<t_auction::TAuction>(callbacks, new_subs)
+            }
             "TBaseUnit" => client_cache
                 .handle_resubscribe_for_type::<t_base_unit::TBaseUnit>(callbacks, new_subs),
             "TBattle" => {

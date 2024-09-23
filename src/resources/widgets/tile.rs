@@ -186,6 +186,7 @@ impl TilePlugin {
             .pinned()
             .push(world),
             GameState::MetaShop
+            | GameState::MetaAuction
             | GameState::MetaHeroes
             | GameState::MetaHeroShards
             | GameState::MetaLootboxes => MetaPlugin::add_tiles(world),

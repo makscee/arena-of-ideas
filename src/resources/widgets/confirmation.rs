@@ -27,23 +27,27 @@ impl Confirmation {
             content: None,
         }
     }
+    #[must_use]
     pub fn decline(mut self, action: fn(&mut World)) -> Self {
         self.decline = action;
         self
     }
+    #[must_use]
     pub fn content(mut self, content: fn(&mut Ui, &mut World)) -> Self {
         self.content = Some(content);
         self
     }
+    #[must_use]
     pub fn accept_name(mut self, name: String) -> Self {
         self.accept_name = Some(name);
         self
     }
+    #[must_use]
     pub fn decline_name(mut self, name: String) -> Self {
         self.decline_name = Some(name);
         self
     }
-    pub fn ui(self, ctx: &egui::Context, world: &mut World) {
+    fn ui(self, ctx: &egui::Context, world: &mut World) {
         popup("Confirmation window", ctx, |ui| {
             ui.vertical_centered_justified(|ui| {
                 self.text.as_label(ui).wrap().ui(ui);
@@ -77,7 +81,7 @@ impl Confirmation {
         })
     }
 
-    pub fn add(self, ctx: &egui::Context) {
+    pub fn push(self, ctx: &egui::Context) {
         ctx.data_mut(|w| w.insert_temp(current_id(), self));
     }
     pub fn clear(ctx: &egui::Context) {

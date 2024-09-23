@@ -4,12 +4,32 @@ use super::*;
 
 pub struct MetaPlugin;
 
+#[derive(Resource)]
+struct AuctionResource {
+    item_id: u64,
+    count: u32,
+    max_count: u32,
+    price: i64,
+}
+
+impl AuctionResource {
+    fn post(world: &mut World) {
+        if let Some(ar) = world.remove_resource::<AuctionResource>() {
+            auction_create(ar.item_id, ar.count, ar.price);
+            once_on_auction_create(|_, _, status, _, _, _| {
+                status.on_success(|w| "Auction created".notify(w));
+            });
+        }
+    }
+}
+
 impl MetaPlugin {
     pub fn add_tiles(world: &mut World) {
         Tile::new(Side::Top, |ui, world| {
             if SubstateMenu::show(
                 &[
                     GameState::MetaShop,
+                    GameState::MetaAuction,
                     GameState::MetaHeroes,
                     GameState::MetaHeroShards,
                     GameState::MetaLootboxes,
@@ -52,11 +72,51 @@ impl MetaPlugin {
             })
             .pinned()
             .push(world),
+            GameState::MetaAuction => {
+                Tile::new(Side::Left, |ui, world| {
+                    text_dots_text(
+                        "wallet".cstr(),
+                        format!("{} {CREDITS_SYM}", TWallet::current().amount)
+                            .cstr_cs(YELLOW, CstrStyle::Bold),
+                        ui,
+                    );
+                    br(ui);
+                    TAuction::iter()
+                        .collect_vec()
+                        .show_table("Auction", ui, world);
+                })
+                .push(world);
+            }
             GameState::MetaHeroes => Tile::new(Side::Left, |ui, world| {
                 TUnitItem::filter_by_owner(user_id())
                     .map(|u| u.unit)
                     .collect_vec()
-                    .show_table("Units", ui, world);
+                    .show_modified_table("Units", ui, world, |t| {
+                        t.column_cstr_click(
+                            "sell",
+                            |_, _| "sell".cstr_c(VISIBLE_LIGHT),
+                            |unit, world| {
+                                let item_id = TUnitItem::filter_by_owner(user_id())
+                                    .find(|i| i.unit.id == unit.id)
+                                    .unwrap()
+                                    .id;
+                                world.insert_resource(AuctionResource {
+                                    item_id,
+                                    count: 1,
+                                    max_count: 1,
+                                    price: 1,
+                                });
+                                Confirmation::new("Create Auction".cstr(), |world| {
+                                    AuctionResource::post(world);
+                                })
+                                .content(|ui, world| {
+                                    let mut ar = world.resource_mut::<AuctionResource>();
+                                    Slider::new("price").ui(&mut ar.price, 1..=1000, ui);
+                                })
+                                .push(&egui_context(world).unwrap());
+                            },
+                        )
+                    });
             })
             .pinned()
             .push(world),
@@ -65,8 +125,36 @@ impl MetaPlugin {
                     .sorted_by_key(|d| -(d.count as i32))
                     .collect_vec();
                 d.show_modified_table("Hero Shards", ui, world, |t| {
-                    t.column(
-                        "action",
+                    t.column_cstr_click(
+                        "sell",
+                        |_, _| "sell".cstr_c(VISIBLE_LIGHT),
+                        |unit, world| {
+                            let item = TUnitShardItem::filter_by_owner(user_id())
+                                .find(|i| i.id == unit.id)
+                                .unwrap();
+                            let item_id = item.id;
+                            world.insert_resource(AuctionResource {
+                                item_id,
+                                count: 1,
+                                max_count: item.count,
+                                price: 1,
+                            });
+                            Confirmation::new("Create Auction".cstr(), |world| {
+                                AuctionResource::post(world);
+                            })
+                            .content(|ui, world| {
+                                let mut ar = world.resource_mut::<AuctionResource>();
+                                let max = ar.max_count;
+                                if max > 1 {
+                                    Slider::new("count").ui(&mut ar.count, 1..=max, ui);
+                                }
+                                Slider::new("price").ui(&mut ar.price, 1..=1000, ui);
+                            })
+                            .push(&egui_context(world).unwrap());
+                        },
+                    )
+                    .column(
+                        "craft",
                         |_, _| default(),
                         |d, _, ui, world| {
                             let craft_cost =
@@ -98,7 +186,35 @@ impl MetaPlugin {
                     .sorted_by_key(|d| -(d.count as i32))
                     .collect_vec();
                 d.show_modified_table("Lootboxes", ui, world, |t| {
-                    t.column_btn("open", |d, _, _| {
+                    t.column_cstr_click(
+                        "sell",
+                        |_, _| "sell".cstr_c(VISIBLE_LIGHT),
+                        |unit, world| {
+                            let item = TLootboxItem::filter_by_owner(user_id())
+                                .find(|i| i.id == unit.id)
+                                .unwrap();
+                            let item_id = item.id;
+                            world.insert_resource(AuctionResource {
+                                item_id,
+                                count: 1,
+                                max_count: item.count,
+                                price: 1,
+                            });
+                            Confirmation::new("Create Auction".cstr(), |world| {
+                                AuctionResource::post(world);
+                            })
+                            .content(|ui, world| {
+                                let mut ar = world.resource_mut::<AuctionResource>();
+                                let max = ar.max_count;
+                                if max > 1 {
+                                    Slider::new("count").ui(&mut ar.count, 1..=max, ui);
+                                }
+                                Slider::new("price").ui(&mut ar.price, 1..=1000, ui);
+                            })
+                            .push(&egui_context(world).unwrap());
+                        },
+                    )
+                    .column_btn("open", |d, _, _| {
                         open_lootbox(d.id);
                         TTrade::on_insert(|trade, e| {
                             let id = trade.id;

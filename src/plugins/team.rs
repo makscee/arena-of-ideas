@@ -131,9 +131,10 @@ impl TeamPlugin {
             },
         )
         .content(|ui, world| {
-            Input::new("name").ui(&mut world.resource_mut::<TeamResource>().new_team_name, ui);
+            Input::new("name")
+                .ui_string(&mut world.resource_mut::<TeamResource>().new_team_name, ui);
         })
-        .add(&ctx);
+        .push(&ctx);
     }
 
     fn teams_tiles(world: &mut World) {
@@ -175,7 +176,7 @@ impl TeamPlugin {
             };
             title(&team.name, ui);
             TeamContainer::new(Faction::Team)
-                .top_content(|ui, world| {
+                .top_content(|ui, _| {
                     ui.horizontal(|ui| {
                         if Button::click("Add Unit".into()).ui(ui).clicked() {
                             Confirmation::new("Add unit to team".cstr(), |world| {
@@ -203,7 +204,7 @@ impl TeamPlugin {
                                         units[selected].id;
                                 }
                             })
-                            .add(ui.ctx());
+                            .push(ui.ctx());
                         }
                         if Button::click("Disband".into()).red(ui).ui(ui).clicked() {
                             Confirmation::new("Disband team?".cstr_c(VISIBLE_LIGHT), |world| {
@@ -217,7 +218,7 @@ impl TeamPlugin {
                                     })
                                 });
                             })
-                            .add(ui.ctx());
+                            .push(ui.ctx());
                         }
                     });
                 })

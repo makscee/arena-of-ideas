@@ -20,6 +20,7 @@ impl TMetaShop {
             price: ms.price_lootbox,
         })?;
         for i in TBaseUnit::iter()
+            .filter(|u| u.rarity >= 0)
             .choose_multiple(&mut rng(), ms.shop_shard_slots as usize)
             .into_iter()
             .map(|u| Self {

@@ -62,7 +62,7 @@ impl ShowTable<TBaseUnit> for Vec<TBaseUnit> {
                 let color = name_color(&d.house);
                 d.house.cstr_c(color)
             })
-            .column_rarity(|d, _| (d.rarity as i32).into())
+            .column_rarity(|d| (d.rarity as i32).into())
             .column_int("pwr", |d| d.pwr)
             .column_int("hp", |d| d.hp);
         t = m(t);
@@ -97,7 +97,7 @@ impl ShowTable<FusedUnit> for Vec<FusedUnit> {
                 },
                 true,
             )
-            .column_rarity(|d, world| (Rarity::from_base(&d.bases[0], world) as i32).into())
+            .column_rarity(|d| (Rarity::from_base(&d.bases[0]) as i32).into())
             .column_int("lvl", |d| d.lvl as i32)
             .column_int("pwr", |d| d.pwr)
             .column_int("hp", |d| d.hp);
@@ -139,26 +139,7 @@ impl ShowTable<TMetaShop> for Vec<TMetaShop> {
     ) -> TableState {
         let mut t = Table::new(name)
             .title()
-            .column_cstr("type", |d: &TMetaShop, w| match d.item_kind {
-                ItemKind::Unit => panic!("unsupported"),
-                ItemKind::UnitShard => "unit shard".cstr_c(rarity_color(
-                    TBaseUnit::find_by_name(d.id.get_unit_shard_item().unit)
-                        .unwrap()
-                        .rarity,
-                )),
-                ItemKind::Lootbox => "lootbox".cstr_c(CYAN),
-            })
-            .column_base_unit("name", |d| match d.item_kind {
-                ItemKind::Unit => panic!("unsupported"),
-                ItemKind::UnitShard => TUnitShardItem::find_by_id(d.id)
-                    .map(|u| u.unit)
-                    .unwrap_or_else(|| "error".into()),
-                ItemKind::Lootbox => TLootboxItem::find_by_id(d.id)
-                    .map(|u| match u.kind {
-                        LootboxKind::Regular => "Regular".into(),
-                    })
-                    .unwrap_or_else(|| "error".into()),
-            })
+            .columns_item_kind(|d: &TMetaShop| (d.item_kind.clone(), d.id))
             .column_cstr("price", |d, _| {
                 format!("{} {CREDITS_SYM}", d.price).cstr_c(YELLOW)
             })
@@ -196,7 +177,7 @@ impl ShowTable<TUnitShardItem> for Vec<TUnitShardItem> {
         let mut t = Table::new(name)
             .title()
             .column_base_unit("unit", |d: &TUnitShardItem| d.unit.clone())
-            .column_rarity(|d, world| (Rarity::from_base(&d.unit, world) as i32).into())
+            .column_rarity(|d| (Rarity::from_base(&d.unit) as i32).into())
             .column_int("count", |d| d.count as i32);
         t = m(t);
         t.ui(self, ui, world)
@@ -216,6 +197,57 @@ impl ShowTable<TLootboxItem> for Vec<TLootboxItem> {
                 LootboxKind::Regular => "Regular".cstr_c(VISIBLE_LIGHT),
             })
             .column_int("count", |d| d.count as i32);
+        t = m(t);
+        t.ui(self, ui, world)
+    }
+}
+impl ShowTable<TAuction> for Vec<TAuction> {
+    fn show_modified_table(
+        &self,
+        name: &'static str,
+        ui: &mut Ui,
+        world: &mut World,
+        m: fn(Table<TAuction>) -> Table<TAuction>,
+    ) -> TableState {
+        let mut t = Table::new(name)
+            .title()
+            .columns_item_kind(|d: &TAuction| (d.item_kind.clone(), d.item_id))
+            .column_int("count", |d| match d.item_kind {
+                ItemKind::Unit => 1,
+                ItemKind::UnitShard => TUnitShardItem::find_by_id(d.item_id).unwrap().count as i32,
+                ItemKind::Lootbox => TLootboxItem::find_by_id(d.item_id).unwrap().count as i32,
+            })
+            .column_cstr("price", |d, _| {
+                format!("{} {CREDITS_SYM}", d.price).cstr_c(YELLOW)
+            })
+            .column_user_click(
+                "seller",
+                |d| d.owner,
+                |gid, _, world| TilePlugin::add_user(gid, world),
+            )
+            .column(
+                "buy",
+                |_, _| default(),
+                |d, _, ui, _| {
+                    let own = user_id() == d.owner;
+                    let r = Button::click(if own { "cancel" } else { "buy" }.into())
+                        .enabled(own || can_afford(d.price))
+                        .ui(ui);
+                    if r.clicked() {
+                        auction_buy(d.item_id);
+                        once_on_auction_buy(|_, _, status, id| match status {
+                            StdbStatus::Committed => format!("Auction#{id} bought").notify_op(),
+                            StdbStatus::Failed(e) => e.notify_error_op(),
+                            _ => panic!(),
+                        });
+                    }
+                    r
+                },
+                false,
+            )
+            .filter("Units", "type", "unit".into())
+            .filter("Unit Shards", "type", "unit shard".into())
+            .filter("Lootboxes", "type", "lootbox".into());
         t = m(t);
         t.ui(self, ui, world)
     }

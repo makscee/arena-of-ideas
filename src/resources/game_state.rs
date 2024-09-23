@@ -7,6 +7,7 @@ pub enum GameState {
     Loaded,
     Title,
     MetaShop,
+    MetaAuction,
     MetaHeroes,
     MetaHeroShards,
     MetaLootboxes,
@@ -122,6 +123,7 @@ impl GameState {
     pub fn get_name(self) -> &'static str {
         match self {
             GameState::MetaShop => "Shop",
+            GameState::MetaAuction => "Auction",
             GameState::MetaHeroes => "Heroes",
             GameState::MetaHeroShards => "Hero Shards",
             GameState::MetaLootboxes => "Lootboxes",

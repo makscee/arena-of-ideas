@@ -191,7 +191,7 @@ impl VarValue {
         match self {
             VarValue::None => Ok(default()),
             VarValue::Cstr(v) => Ok(v.clone()),
-            _ => Err(anyhow!("String not supported by {self:?}")),
+            _ => Err(anyhow!("Cstr not supported by {self:?}")),
         }
     }
     pub fn get_cstr_list(&self) -> Result<Vec<Cstr>> {

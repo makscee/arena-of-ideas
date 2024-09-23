@@ -30,13 +30,8 @@ impl Rarity {
     pub fn from_int(v: i8) -> Self {
         Self::from_repr(v).unwrap_or_default()
     }
-    pub fn from_base(name: &str, world: &World) -> Self {
-        let v = GameAssets::get(world)
-            .heroes
-            .get(name)
-            .map(|h| h.rarity)
-            .unwrap_or_default();
-        Self::from_int(v)
+    pub fn from_base(name: &str) -> Self {
+        Self::from_int(TBaseUnit::find_by_name(name.into()).unwrap().rarity)
     }
 }
 

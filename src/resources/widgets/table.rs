@@ -112,20 +112,20 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
         mut self,
         name: &'static str,
         value: fn(&T, &World) -> Cstr,
-        on_click: fn(Cstr, &mut World),
+        on_click: fn(&T, &mut World),
     ) -> Self {
         self.columns.insert(
             name,
             TableColumn {
                 value: Box::new(move |d, w| value(d, w).into()),
-                show: Box::new(move |_, v, ui, w| {
-                    let r = v.get_cstr().unwrap().button(ui);
+                show: Box::new(move |d, v, ui, w| {
+                    let r = v.get_cstr().unwrap().clone().button(ui);
                     if r.clicked() {
-                        on_click(v.get_cstr().unwrap(), w);
+                        on_click(d, w);
                     }
                     r
                 }),
-                sortable: true,
+                sortable: false,
             },
         );
         self
@@ -217,11 +217,11 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
         );
         self
     }
-    pub fn column_rarity(mut self, value: fn(&T, world: &World) -> i32) -> Self {
+    pub fn column_rarity(mut self, value: fn(&T) -> i32) -> Self {
         self.columns.insert(
             "rarity",
             TableColumn {
-                value: Box::new(move |d, world| value(d, world).into()),
+                value: Box::new(move |d, _| value(d).into()),
                 show: Box::new(|_, v, ui, _| {
                     Rarity::from_int(v.get_int().unwrap() as i8)
                         .cstr()
@@ -232,7 +232,11 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
         );
         self
     }
-    pub fn column_base_unit(mut self, name: &'static str, unit: fn(&T) -> String) -> Self {
+    pub fn column_base_unit_box(
+        mut self,
+        name: &'static str,
+        unit: Box<dyn Fn(&T) -> String>,
+    ) -> Self {
         self.columns.insert(
             name,
             TableColumn {
@@ -264,6 +268,52 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
             },
         );
         self
+    }
+    pub fn column_base_unit(self, name: &'static str, unit: fn(&T) -> String) -> Self {
+        self.column_base_unit_box(name, Box::new(unit))
+    }
+    pub fn columns_item_kind(mut self, data: fn(&T) -> (ItemKind, u64)) -> Self {
+        self.columns.insert(
+            "type",
+            TableColumn {
+                value: Box::new(move |d, _| {
+                    let (kind, id) = data(d);
+                    match kind {
+                        ItemKind::Unit => "unit".cstr_c(
+                            Rarity::from_base(&TUnitItem::find_by_id(id).unwrap().unit.bases[0])
+                                .color(),
+                        ),
+                        ItemKind::UnitShard => "unit shard".cstr_c(rarity_color(
+                            TBaseUnit::find_by_name(id.get_unit_shard_item().unit)
+                                .unwrap()
+                                .rarity,
+                        )),
+                        ItemKind::Lootbox => "lootbox".cstr_c(CYAN),
+                    }
+                    .into()
+                }),
+                show: Box::new(|_, v, ui, _| v.get_cstr().unwrap().label(ui)),
+                sortable: true,
+            },
+        );
+        self.column_base_unit_box(
+            "name",
+            Box::new(move |d| {
+                let (kind, id) = data(d);
+                match kind {
+                    ItemKind::Unit => TUnitItem::find_by_id(id).unwrap().unit.bases[0].clone(),
+                    ItemKind::UnitShard => TUnitShardItem::find_by_id(id)
+                        .map(|u| u.unit)
+                        .unwrap_or_else(|| "error".into()),
+                    ItemKind::Lootbox => TLootboxItem::find_by_id(id)
+                        .map(|u| match u.kind {
+                            LootboxKind::Regular => "Regular".into(),
+                        })
+                        .unwrap_or_else(|| "error".into()),
+                }
+                .into()
+            }),
+        )
     }
     pub fn ui(&mut self, data: &[T], ui: &mut Ui, world: &mut World) -> TableState {
         let mut need_sort = false;

@@ -49,7 +49,7 @@ impl ProfilePlugin {
     fn settings_ui(ped: &mut ProfileEditData, ui: &mut Ui, world: &mut World) {
         let user = &LoginOption::get(world).user;
         let has_pass = user.pass_hash.is_some();
-        Input::new("name").ui(&mut ped.name, ui);
+        Input::new("name").ui_string(&mut ped.name, ui);
         if Button::click("Submit".into())
             .enabled(!ped.name.eq(user_name()))
             .ui(ui)
@@ -81,12 +81,12 @@ impl ProfilePlugin {
         if has_pass {
             Input::new("old password")
                 .password()
-                .ui(&mut ped.old_pass, ui);
+                .ui_string(&mut ped.old_pass, ui);
         }
-        Input::new("new password").password().ui(&mut ped.pass, ui);
+        Input::new("new password").password().ui_string(&mut ped.pass, ui);
         Input::new("new password repeat")
             .password()
-            .ui(&mut ped.pass_repeat, ui);
+            .ui_string(&mut ped.pass_repeat, ui);
         if Button::click("Submit".into())
             .enabled(!ped.pass.is_empty() && ped.pass.eq(&ped.pass_repeat))
             .ui(ui)

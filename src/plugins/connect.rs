@@ -56,7 +56,7 @@ impl ConnectPlugin {
                         .decline(|w| app_exit(w))
                         .accept_name("Update".into())
                         .decline_name("Exit".into())
-                        .add(ctx);
+                        .push(ctx);
                     });
                 }
             });

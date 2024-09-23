@@ -289,11 +289,11 @@ impl BattlePlugin {
                 ui,
                 world,
                 |ui, _| {
-                    Slider::new("Playback Speed")
-                        .log()
-                        .name(false)
-                        .range(-20.0..=20.0)
-                        .ui(&mut gt().playback_speed, ui);
+                    Slider::new("Playback Speed").log().name(false).ui(
+                        &mut gt().playback_speed,
+                        -20.0..=20.0,
+                        ui,
+                    );
                 },
                 |ui, _| {
                     if ImageButton::new(Icon::SkipBack.image()).ui(ui).clicked() {

@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(SpacetimeType)]
+#[derive(SpacetimeType, Clone, Copy)]
 pub enum ItemKind {
     Unit,
     UnitShard,
@@ -49,30 +49,112 @@ pub enum LootboxKind {
 }
 
 impl ItemKind {
-    pub fn clone_to(self, id: u64, owner: u64) -> Result<(), String> {
+    pub fn from_id(id: u64) -> Result<Self, String> {
+        if TUnitItem::filter_by_id(&id).is_some() {
+            Ok(Self::Unit)
+        } else if TUnitShardItem::filter_by_id(&id).is_some() {
+            Ok(Self::UnitShard)
+        } else if TLootboxItem::filter_by_id(&id).is_some() {
+            Ok(Self::Lootbox)
+        } else {
+            Err(format!("Item#{id} not found"))
+        }
+    }
+    pub fn clone_to(self, item_id: u64, owner: u64) -> Result<(), String> {
         match self {
             ItemKind::Unit => {
-                let mut item = TUnitItem::filter_by_id(&id).context_str("UnitItem not found")?;
+                let mut item =
+                    TUnitItem::filter_by_id(&item_id).context_str("UnitItem not found")?;
                 item.id = next_id();
                 item.owner = owner;
                 TUnitItem::insert(item)?;
             }
             ItemKind::UnitShard => {
-                let item =
-                    TUnitShardItem::filter_by_id(&id).context_str("UnitShardItem not found")?;
+                let item = TUnitShardItem::filter_by_id(&item_id)
+                    .context_str("UnitShardItem not found")?;
                 let mut owner_item = TUnitShardItem::get_or_init(owner, &item.unit);
                 owner_item.count += item.count;
                 TUnitShardItem::update_by_id(&owner_item.id.clone(), owner_item);
             }
             ItemKind::Lootbox => {
                 let item =
-                    TLootboxItem::filter_by_id(&id).context_str("UnitShardItem not found")?;
+                    TLootboxItem::filter_by_id(&item_id).context_str("UnitShardItem not found")?;
                 let mut owner_item = TLootboxItem::get_or_init(owner, item.kind);
                 owner_item.count += item.count;
                 TLootboxItem::update_by_id(&owner_item.id.clone(), owner_item);
             }
         }
         Ok(())
+    }
+    pub fn take(self, item_id: u64, new_owner: u64) -> Result<(), String> {
+        match self {
+            ItemKind::Unit => {
+                let mut item =
+                    TUnitItem::filter_by_id(&item_id).context_str("UnitItem not found")?;
+                item.owner = new_owner;
+                TUnitItem::update_by_id(&item_id, item);
+            }
+            ItemKind::UnitShard => {
+                let mut item = TUnitShardItem::filter_by_id(&item_id)
+                    .context_str("UnitShardItem not found")?;
+                item.owner = new_owner;
+                TUnitShardItem::update_by_id(&item.id.clone(), item);
+            }
+            ItemKind::Lootbox => {
+                let mut item =
+                    TLootboxItem::filter_by_id(&item_id).context_str("TLootboxItem not found")?;
+                item.owner = new_owner;
+                TLootboxItem::update_by_id(&item.id.clone(), item);
+            }
+        }
+        Ok(())
+    }
+    pub fn split(self, item_id: u64, count: u32, new_owner: u64) -> Result<u64, String> {
+        match self {
+            ItemKind::Unit => {
+                if count == 1 {
+                    let mut item =
+                        TUnitItem::filter_by_id(&item_id).context_str("UnitItem not found")?;
+                    item.owner = new_owner;
+                    TUnitItem::update_by_id(&item_id, item);
+                    Ok(item_id)
+                } else {
+                    Err("Can't split UnitItem".into())
+                }
+            }
+            ItemKind::UnitShard => {
+                let mut item = TUnitShardItem::filter_by_id(&item_id)
+                    .context_str("UnitShardItem not found")?;
+                if item.count < count {
+                    return Err("Insufficient item count".into());
+                }
+                let mut new_item = item.clone();
+                new_item.id = next_id();
+                new_item.count = count;
+                new_item.owner = new_owner;
+                item.count -= count;
+                let id = new_item.id;
+                TUnitShardItem::insert(new_item).unwrap();
+                TUnitShardItem::update_by_id(&item.id.clone(), item);
+                Ok(id)
+            }
+            ItemKind::Lootbox => {
+                let mut item =
+                    TLootboxItem::filter_by_id(&item_id).context_str("TLootboxItem not found")?;
+                if item.count < count {
+                    return Err("Insufficient item count".into());
+                }
+                let mut new_item = item.clone();
+                new_item.id = next_id();
+                new_item.count = count;
+                new_item.owner = new_owner;
+                item.count -= count;
+                let id = new_item.id;
+                TLootboxItem::insert(new_item).unwrap();
+                TLootboxItem::update_by_id(&item.id.clone(), item);
+                Ok(id)
+            }
+        }
     }
 }
 

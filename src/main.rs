@@ -119,7 +119,6 @@ fn main() {
             GameArchivePlugin,
             ClientSettingsPlugin,
             GameStartPlugin,
-            TeamEditorPlugin,
             TilePlugin,
             TeamSyncPlugin,
         ))

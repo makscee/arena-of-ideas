@@ -2,6 +2,7 @@ mod ability;
 mod arena;
 mod arena_leaderboard;
 mod arena_pool;
+mod auction;
 mod base_unit;
 mod battle;
 mod daily_updater;
