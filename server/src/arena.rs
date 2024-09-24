@@ -118,7 +118,7 @@ fn run_start_ranked(ctx: ReducerContext, team_id: u64) -> Result<(), String> {
     TWallet::change(user.id, -settings().arena.ranked_cost_min)?;
     let mut team = TTeam::get_owned(team_id, user.id)?;
     team.pool = TeamPool::Arena;
-    let team = team.apply_limit().save_clone();
+    let team = team.apply_limit().apply_empty_stat_bonus().save_clone();
     TArenaRun::start(user, GameMode::ArenaRanked)?;
     let mut run = TArenaRun::current(&ctx)?;
     run.team = team.id;

@@ -58,6 +58,16 @@ impl TTeam {
         let _ = self.units.split_off(max_len);
         self
     }
+    pub fn apply_empty_stat_bonus(mut self) -> Self {
+        let bonus = GlobalSettings::get().arena.team_slots as i32 - self.units.len() as i32;
+        for unit in self.units.iter_mut() {
+            unit.pwr += bonus;
+            unit.hp += bonus;
+            unit.pwr_mutation += bonus;
+            unit.hp_mutation += bonus;
+        }
+        self
+    }
     pub fn save(self) -> u64 {
         Self::delete_by_id(&self.id);
         Self::insert(self).unwrap().id

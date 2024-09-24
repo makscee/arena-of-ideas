@@ -176,6 +176,7 @@ impl TeamPlugin {
             };
             title(&team.name, ui);
             TeamContainer::new(Faction::Team)
+                .empty_slot_text("+1/+1\nto all".cstr_cs(VISIBLE_DARK, CstrStyle::Bold))
                 .top_content(|ui, _| {
                     ui.horizontal(|ui| {
                         if Button::click("Add Unit".into()).ui(ui).clicked() {

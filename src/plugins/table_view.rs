@@ -43,7 +43,6 @@ impl TableViewPlugin {
             StdbQuery::BaseUnits | StdbQuery::BattleHistory => {
                 TeamContainer::new(Faction::Team)
                     .hover_content(ShopPlugin::container_on_hover)
-                    .position(egui::vec2(0.5, 0.5))
                     .slots(1)
                     .ui(ui, world);
             }

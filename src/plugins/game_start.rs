@@ -31,7 +31,7 @@ impl Default for GameStartResource {
             selected: 0,
             leaderboard: default(),
             teams: TTeam::filter_by_owner(user_id())
-                .filter(|t| t.pool == TeamPool::Owned)
+                .filter(|t| t.pool == TeamPool::Owned && !t.units.is_empty())
                 .collect_vec(),
             selected_team: 0,
         }
@@ -120,7 +120,7 @@ impl GameStartPlugin {
                         let cost = GlobalSettings::current().arena.ranked_cost_min;
                         let gsr = world.resource::<GameStartResource>();
                         if gsr.teams.is_empty() {
-                            "Need at least one team to play this mode"
+                            "Need at least one non-empty team to play this mode"
                                 .cstr_cs(RED, CstrStyle::Bold)
                                 .label(ui);
                         } else {

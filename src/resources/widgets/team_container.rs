@@ -11,7 +11,7 @@ pub struct TeamContainer {
     slot_content: Option<Box<dyn Fn(usize, Option<Entity>, &mut Ui, &mut World) + Send + Sync>>,
     hover_content: Option<Box<dyn Fn(usize, Option<Entity>, &mut Ui, &mut World) + Send + Sync>>,
     slot_name: HashMap<usize, String>,
-    position: egui::Vec2,
+    empty_slot_text: Option<Cstr>,
 }
 
 #[derive(Resource, Default)]
@@ -46,8 +46,8 @@ impl TeamContainer {
             slot_content: None,
             hover_content: None,
             on_swap: None,
-            position: default(),
             slot_name: default(),
+            empty_slot_text: None,
         }
     }
     pub fn slots(mut self, value: usize) -> Self {
@@ -65,10 +65,6 @@ impl TeamContainer {
     }
     pub fn name(mut self) -> Self {
         self.show_name = true;
-        self
-    }
-    pub fn position(mut self, value: egui::Vec2) -> Self {
-        self.position = value;
         self
     }
     pub fn top_content(
@@ -101,6 +97,10 @@ impl TeamContainer {
     }
     pub fn slot_name(mut self, i: usize, name: String) -> Self {
         self.slot_name.insert(i, name);
+        self
+    }
+    pub fn empty_slot_text(mut self, text: Cstr) -> Self {
+        self.empty_slot_text = Some(text);
         self
     }
     pub fn ui(self, ui: &mut Ui, world: &mut World) {
@@ -165,6 +165,13 @@ impl TeamContainer {
                             }
                         });
                     }
+                } else if let Some(text) = self.empty_slot_text.as_ref() {
+                    let ui = &mut ui.child_ui(
+                        resp.rect,
+                        Layout::centered_and_justified(egui::Direction::TopDown),
+                        None,
+                    );
+                    text.label(ui);
                 }
                 if let Some(content) = &self.slot_content {
                     ui.vertical_centered_justified(|ui| {

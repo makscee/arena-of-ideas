@@ -26,6 +26,8 @@ pub enum VarName {
     Rotation,
     Hp,
     Pwr,
+    HpMutation,
+    PwrMutation,
     Lvl,
     Xp,
     Dmg,

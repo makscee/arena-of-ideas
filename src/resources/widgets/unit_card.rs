@@ -9,6 +9,8 @@ pub struct UnitCard {
     xp: i32,
     hp: i32,
     pwr: i32,
+    hp_mutation: i32,
+    pwr_mutation: i32,
     triggers: Vec<Cstr>,
     targets: Vec<Cstr>,
     effects: Vec<Cstr>,
@@ -41,6 +43,8 @@ impl UnitCard {
             xp: context.get_int(VarName::Xp, world)?,
             hp: context.get_int(VarName::Hp, world)?,
             pwr: context.get_int(VarName::Pwr, world)?,
+            hp_mutation: context.get_int(VarName::HpMutation, world)?,
+            pwr_mutation: context.get_int(VarName::PwrMutation, world)?,
             triggers: context
                 .get_value(VarName::TriggersDescription, world)?
                 .get_cstr_list()?,
@@ -89,6 +93,13 @@ impl UnitCard {
         }
         .show(ui, |ui| {
             self.name.label(ui);
+            fn mutation_cstr(value: i32) -> Cstr {
+                match value.signum() {
+                    1 => format!(" (+{value})").cstr_c(GREEN),
+                    -1 => format!(" ({value})").to_string().cstr_c(RED),
+                    _ => format!(" (+{value})").cstr(),
+                }
+            }
             ui.horizontal_wrapped(|ui| {
                 let var = VarName::Pwr;
                 let color = YELLOW;
@@ -96,6 +107,7 @@ impl UnitCard {
                     .push(": ".cstr_c(color))
                     .push(self.pwr.to_string().cstr_c(VISIBLE_BRIGHT))
                     .style(CstrStyle::Bold)
+                    .push(mutation_cstr(self.pwr_mutation))
                     .label(ui);
                 ui.add_space(2.0);
                 let var = VarName::Hp;
@@ -104,6 +116,7 @@ impl UnitCard {
                     .push(": ".cstr_c(color))
                     .push(self.hp.to_string().cstr_c(VISIBLE_BRIGHT))
                     .style(CstrStyle::Bold)
+                    .push(mutation_cstr(self.hp_mutation))
                     .label(ui);
                 ui.add_space(2.0);
                 let var = VarName::Lvl;

@@ -12,6 +12,10 @@ pub struct PackedUnit {
     #[serde(default = "default_one")]
     pub hp: i32,
     #[serde(default = "default_zero")]
+    pub pwr_mutation: i32,
+    #[serde(default = "default_zero")]
+    pub hp_mutation: i32,
+    #[serde(default = "default_zero")]
     pub lvl: i32,
     #[serde(default = "default_zero")]
     pub xp: i32,
@@ -102,6 +106,8 @@ impl PackedUnit {
         state
             .init(VarName::Hp, self.hp.into())
             .init(VarName::Pwr, self.pwr.into())
+            .init(VarName::HpMutation, self.hp_mutation.into())
+            .init(VarName::PwrMutation, self.pwr_mutation.into())
             .init(VarName::Lvl, self.lvl.into())
             .init(VarName::Xp, self.xp.into())
             .init(VarName::Name, self.name.clone().into())
@@ -216,6 +222,8 @@ impl From<TBaseUnit> for PackedUnit {
             name: value.name,
             pwr: value.pwr,
             hp: value.hp,
+            pwr_mutation: 0,
+            hp_mutation: 0,
             lvl: 0,
             xp: 0,
             rarity: value.rarity,
@@ -281,6 +289,8 @@ impl From<FusedUnit> for PackedUnit {
         }
         result.pwr = value.pwr;
         result.hp = value.hp;
+        result.pwr_mutation = value.pwr_mutation;
+        result.hp_mutation = value.hp_mutation;
         state.init(VarName::RarityColors, rarity_colors.into());
         state.init(VarName::HouseColors, house_colors.into());
         result.name = value.bases.join("+");

@@ -434,7 +434,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                                 }
                                 if self.selectable {
                                     row.col(|ui| {
-                                        if "select".cstr().button(ui).clicked() {
+                                        if "select".cstr_c(VISIBLE_BRIGHT).button(ui).clicked() {
                                             state.selected_row = Some(row_i);
                                         }
                                     });
