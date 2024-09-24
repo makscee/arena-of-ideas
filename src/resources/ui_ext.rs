@@ -25,7 +25,7 @@ impl ShowTable<TTeam> for Vec<TTeam> {
             .title()
             .column_cstr("name", |d: &TTeam, _| d.name.cstr_c(VISIBLE_LIGHT))
             .column_cstr("units", |d, _| {
-                Cstr::from(d.units.iter().map(|u| u.cstr_limit(1)).collect_vec())
+                Cstr::from(d.units.iter().map(|u| u.cstr_limit(1, false)).collect_vec())
                     .join_char(' ')
                     .take()
             });
@@ -97,7 +97,7 @@ impl ShowTable<FusedUnit> for Vec<FusedUnit> {
                 "name",
                 |d: &FusedUnit, _| d.cstr().into(),
                 |d, _, ui, world| {
-                    let r = d.cstr_limit(0).button(ui);
+                    let r = d.cstr_limit(0, true).button(ui);
                     if r.clicked() {
                         TilePlugin::add_fused_unit(d.clone(), world);
                     }

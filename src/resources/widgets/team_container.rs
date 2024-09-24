@@ -134,6 +134,9 @@ impl TeamContainer {
                 }
                 data.positions[i] = resp.rect.center();
                 if let Some(entity) = data.entities[i] {
+                    ui.vertical_centered_justified(|ui| {
+                        entity_name(entity).label(ui);
+                    });
                     if let Some(action) = &self.on_swap {
                         if resp.dragged() {
                             if let Some(pointer) = ui.ctx().pointer_latest_pos() {

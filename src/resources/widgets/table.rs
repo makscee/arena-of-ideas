@@ -313,24 +313,65 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                 sortable: true,
             },
         );
-        self.column_base_unit_box(
+        self.columns.insert(
             "name",
-            Box::new(move |d| {
-                let (kind, id) = data(d);
-                match kind {
-                    ItemKind::Unit => TUnitItem::find_by_id(id).unwrap().unit.bases[0].clone(),
-                    ItemKind::UnitShard => TUnitShardItem::find_by_id(id)
-                        .map(|u| u.unit)
-                        .unwrap_or_else(|| "error".into()),
-                    ItemKind::Lootbox => TLootboxItem::find_by_id(id)
-                        .map(|u| match u.kind {
-                            LootboxKind::Regular => "Regular".into(),
-                        })
-                        .unwrap_or_else(|| "error".into()),
-                }
-                .into()
-            }),
-        )
+            TableColumn {
+                value: Box::new(move |d, _| {
+                    let (kind, _) = data(d);
+                    match kind {
+                        ItemKind::Unit => "unit",
+                        ItemKind::UnitShard => "shard",
+                        ItemKind::Lootbox => "lootbox",
+                    }
+                    .into()
+                }),
+                show: Box::new(move |d, _, ui, world| {
+                    let (kind, id) = data(d);
+                    match kind {
+                        ItemKind::Unit => {
+                            let unit = TUnitItem::find_by_id(id).unwrap().unit;
+                            let r = unit.cstr_limit(0, true).button(ui);
+                            if r.hovered() {
+                                cursor_window(ui.ctx(), |ui| {
+                                    match cached_fused_card(&unit, ui, world) {
+                                        Ok(_) => {}
+                                        Err(e) => error!("{e}"),
+                                    }
+                                });
+                            }
+                            if r.clicked() {
+                                TilePlugin::add_fused_unit(unit, world);
+                            }
+                            r
+                        }
+                        ItemKind::UnitShard => {
+                            let item = TUnitShardItem::find_by_id(id).unwrap();
+                            let r = item.unit.cstr_c(name_color(&item.unit)).label(ui);
+                            if r.hovered() {
+                                cursor_window(ui.ctx(), |ui| {
+                                    match cached_base_card(
+                                        &TBaseUnit::find_by_name(item.unit).unwrap(),
+                                        ui,
+                                        world,
+                                    ) {
+                                        Ok(_) => {}
+                                        Err(e) => error!("{e}"),
+                                    }
+                                });
+                            }
+                            r
+                        }
+                        ItemKind::Lootbox => match TLootboxItem::find_by_id(id).unwrap().kind {
+                            LootboxKind::Regular => "Regular",
+                        }
+                        .cstr_c(VISIBLE_LIGHT)
+                        .label(ui),
+                    }
+                }),
+                sortable: true,
+            },
+        );
+        self
     }
     pub fn ui(&mut self, data: &[T], ui: &mut Ui, world: &mut World) -> TableState {
         let mut need_sort = false;

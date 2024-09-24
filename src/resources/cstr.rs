@@ -417,7 +417,7 @@ impl ToCstr for TBaseUnit {
 }
 impl ToCstr for FusedUnit {
     fn cstr(&self) -> Cstr {
-        self.cstr_limit(3)
+        self.cstr_limit(3, false)
     }
 }
 impl ToCstr for TTeam {
@@ -426,7 +426,7 @@ impl ToCstr for TTeam {
         let mut units: Cstr = self
             .units
             .iter()
-            .map(|u| u.cstr_limit(1))
+            .map(|u| u.cstr_limit(1, false))
             .collect_vec()
             .into();
         let units = units.join(&" ".cstr()).take();
@@ -500,7 +500,24 @@ impl From<Vec<Cstr>> for Cstr {
 }
 
 impl FusedUnit {
-    pub fn cstr_limit(&self, max_chars: usize) -> Cstr {
-        UnitPlugin::name_from_bases(self.bases.iter().map(|s| s.as_str()).collect(), max_chars)
+    pub fn cstr_limit(&self, max_chars: usize, show_mutation: bool) -> Cstr {
+        fn mutation(value: i32) -> Cstr {
+            match value.signum() {
+                1 => format!("+{value}").cstr_c(GREEN),
+                -1 => format!("{value}").cstr_c(RED),
+                _ => format!("{value}").cstr(),
+            }
+        }
+        let mutation_str = mutation(self.pwr_mutation)
+            .push("/".cstr())
+            .push(mutation(self.hp_mutation))
+            .style(CstrStyle::Small)
+            .take();
+        let mut result =
+            UnitPlugin::name_from_bases(self.bases.iter().map(|s| s.as_str()).collect(), max_chars);
+        if show_mutation {
+            result.push(" ".cstr()).push(mutation_str);
+        }
+        result
     }
 }
