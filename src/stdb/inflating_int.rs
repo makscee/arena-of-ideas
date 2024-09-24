@@ -2,7 +2,6 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN RUST INSTEAD.
 
 #![allow(unused_imports)]
-use super::inflating_int::InflatingInt;
 use spacetimedb_sdk::{
     anyhow::{anyhow, Result},
     identity::Identity,
@@ -14,17 +13,8 @@ use spacetimedb_sdk::{
 };
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
-pub struct ArenaSettings {
-    pub shop_slots: InflatingInt,
-    pub g_income: InflatingInt,
-    pub ranked_cost: i64,
-    pub const_cost: i64,
-    pub price_reroll: i32,
-    pub sell_discount: i32,
-    pub stack_discount: i32,
-    pub team_slots: u32,
-    pub lives_initial: u32,
-    pub lives_per_wins: u32,
-    pub free_rerolls_initial: u32,
-    pub free_rerolls_income: u32,
+pub struct InflatingInt {
+    pub start: i64,
+    pub max: i64,
+    pub inflation: f64,
 }

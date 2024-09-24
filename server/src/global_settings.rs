@@ -32,20 +32,11 @@ pub struct BattleSettings {
 
 #[derive(SpacetimeType)]
 pub struct ArenaSettings {
-    pub ranked_cost_min: i64,
-    pub ranked_cost_max: i64,
-    pub ranked_cost_increase: i64,
-    pub const_cost_min: i64,
-    pub const_cost_max: i64,
-    pub const_cost_increase: i64,
+    pub shop_slots: InflatingInt,
+    pub g_income: InflatingInt,
 
-    pub slots_min: u32,
-    pub slots_max: u32,
-    pub slots_per_round: f32,
-    pub g_start: i32,
-    pub g_income_min: i32,
-    pub g_income_max: i32,
-    pub g_income_per_round: i32,
+    pub ranked_cost: i64,
+    pub const_cost: i64,
     pub price_reroll: i32,
     pub sell_discount: i32,
     pub stack_discount: i32,

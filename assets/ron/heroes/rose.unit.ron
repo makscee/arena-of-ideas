@@ -2,13 +2,13 @@
 (
     name: "Rose",
     hp: 3,
-    pwr: 1,
+    pwr: 0,
     rarity: 0,
     houses: ["Druids"],
     trigger: Fire(
-        triggers: [(BeforeStrike, None)],
+        triggers: [(AfterStrike, None)],
         targets: [(Owner, None)],
-        effects: [(UseAbility("Thorns", 3), None)],
+        effects: [(UseAbility("Thorns", 2), None)],
     ),
     representation: (
         material: Shape(

@@ -117,7 +117,7 @@ impl GameStartPlugin {
                         }
                     }
                     GameMode::ArenaRanked => {
-                        let cost = GlobalSettings::current().arena.ranked_cost_min;
+                        let cost = GlobalSettings::current().arena.ranked_cost;
                         let gsr = world.resource::<GameStartResource>();
                         if gsr.teams.is_empty() {
                             "Need at least one non-empty team to play this mode"
@@ -195,7 +195,7 @@ impl GameStartPlugin {
                         }
                     }
                     GameMode::ArenaConst(seed) => {
-                        let cost = GlobalSettings::current().arena.ranked_cost_min;
+                        let cost = GlobalSettings::current().arena.ranked_cost;
                         seed.cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold).label(ui);
                         if Button::click(format!("-{} {CREDITS_SYM}", cost))
                             .title("Play".cstr())

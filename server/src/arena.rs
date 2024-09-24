@@ -115,7 +115,7 @@ fn run_start_normal(ctx: ReducerContext) -> Result<(), String> {
 #[spacetimedb(reducer)]
 fn run_start_ranked(ctx: ReducerContext, team_id: u64) -> Result<(), String> {
     let user = ctx.user()?;
-    TWallet::change(user.id, -settings().arena.ranked_cost_min)?;
+    TWallet::change(user.id, -settings().arena.ranked_cost)?;
     let mut team = TTeam::get_owned(team_id, user.id)?;
     team.pool = TeamPool::Arena;
     let team = team.apply_limit().apply_empty_stat_bonus().save_clone();
@@ -180,7 +180,7 @@ fn shop_finish(ctx: ReducerContext) -> Result<(), String> {
     run.rerolls = 0;
     run.fill_case()?;
     let ars = &settings().arena;
-    run.g += (ars.g_income_min + ars.g_income_per_round * run.round as i32).max(ars.g_income_max);
+    run.g += ars.g_income.value(run.round as i64) as i32;
     run.free_rerolls += ars.free_rerolls_income;
     run.save();
     Ok(())
@@ -392,7 +392,7 @@ impl TArenaRun {
             rerolls: 0,
             score: 0,
             last_updated: Timestamp::now(),
-            g: ars.g_start,
+            g: ars.g_income.value(0) as i32,
             price_reroll: ars.price_reroll,
             battles: Vec::new(),
             lives: ars.lives_initial,
@@ -413,7 +413,7 @@ impl TArenaRun {
     fn start(user: TUser, mode: GameMode) -> Result<(), String> {
         TArenaRun::delete_by_owner(&user.id);
         let reward_limit = match mode {
-            GameMode::ArenaNormal | GameMode::ArenaConst(_) => settings().arena.ranked_cost_min,
+            GameMode::ArenaNormal | GameMode::ArenaConst(_) => 0,
             GameMode::ArenaRanked => 0,
         };
         let mut run = TArenaRun::new(user.id, mode);
@@ -510,8 +510,7 @@ impl TArenaRun {
             rarities,
             ..
         } = settings();
-        let slots = (ars.slots_min + (ars.slots_per_round * self.round as f32) as u32)
-            .min(ars.slots_max) as usize;
+        let slots = ars.shop_slots.value(self.round as i64) as usize;
         let mut old_slots = Vec::default();
         mem::swap(&mut self.shop_slots, &mut old_slots);
         for i in 0..slots {
