@@ -14,6 +14,8 @@ pub struct FusedUnit {
     pub effects: Vec<u32>,
     pub hp: i32,
     pub pwr: i32,
+    pub hp_mutation: i32,
+    pub pwr_mutation: i32,
     pub lvl: u32,
     xp: u32,
 }
@@ -40,6 +42,8 @@ impl FusedUnit {
             effects: vec![0],
             hp: base.hp,
             pwr: base.pwr,
+            hp_mutation: 0,
+            pwr_mutation: 0,
             lvl: 0,
             xp: 0,
             id,
@@ -58,10 +62,10 @@ impl FusedUnit {
         stats[index]
     }
     pub fn mutate(mut self) -> Self {
-        self.hp += Self::roll_stat_mutation();
-        self.hp = self.hp.max(1);
-        self.pwr += Self::roll_stat_mutation();
-        self.pwr = self.pwr.max(0);
+        self.hp_mutation = Self::roll_stat_mutation();
+        self.hp = (self.hp + self.hp_mutation).max(1);
+        self.pwr_mutation = Self::roll_stat_mutation();
+        self.pwr = (self.pwr + self.pwr_mutation).max(0);
         self
     }
     pub fn fuse(a: &FusedUnit, b: &FusedUnit) -> Result<Vec<FusedUnit>, String> {

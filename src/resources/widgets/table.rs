@@ -97,12 +97,28 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
         );
         self
     }
-    pub fn column_cstr(mut self, name: &'static str, value: fn(&T, &World) -> Cstr) -> Self {
+    pub fn column_cstr(mut self, name: &'static str, s: fn(&T, &World) -> Cstr) -> Self {
         self.columns.insert(
             name,
             TableColumn {
-                value: Box::new(move |d, w| value(d, w).into()),
+                value: Box::new(move |d, w| s(d, w).into()),
                 show: Box::new(|_, v, ui, _| v.get_cstr().unwrap().label(ui)),
+                sortable: true,
+            },
+        );
+        self
+    }
+    pub fn column_cstr_value(
+        mut self,
+        name: &'static str,
+        v: fn(&T) -> VarValue,
+        s: fn(&T) -> Cstr,
+    ) -> Self {
+        self.columns.insert(
+            name,
+            TableColumn {
+                value: Box::new(move |d, _| v(d).into()),
+                show: Box::new(move |d, _, ui, _| s(d).label(ui)),
                 sortable: true,
             },
         );
@@ -111,13 +127,13 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
     pub fn column_cstr_click(
         mut self,
         name: &'static str,
-        value: fn(&T, &World) -> Cstr,
+        v: fn(&T, &World) -> Cstr,
         on_click: fn(&T, &mut World),
     ) -> Self {
         self.columns.insert(
             name,
             TableColumn {
-                value: Box::new(move |d, w| value(d, w).into()),
+                value: Box::new(move |d, w| v(d, w).into()),
                 show: Box::new(move |d, v, ui, w| {
                     let r = v.get_cstr().unwrap().clone().button(ui);
                     if r.clicked() {

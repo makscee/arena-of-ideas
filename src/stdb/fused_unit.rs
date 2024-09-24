@@ -21,6 +21,8 @@ pub struct FusedUnit {
     pub effects: Vec<u32>,
     pub hp: i32,
     pub pwr: i32,
+    pub hp_mutation: i32,
+    pub pwr_mutation: i32,
     pub lvl: u32,
     pub xp: u32,
 }

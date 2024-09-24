@@ -77,6 +77,20 @@ impl ShowTable<FusedUnit> for Vec<FusedUnit> {
         world: &mut World,
         m: fn(Table<FusedUnit>) -> Table<FusedUnit>,
     ) -> TableState {
+        fn format_stat(value: i32, mutation: i32) -> Cstr {
+            match mutation.signum() {
+                -1 => mutation
+                    .to_string()
+                    .cstr_c(RED)
+                    .push(format!(" ({value})").cstr())
+                    .take(),
+                1 => format!("+{mutation}")
+                    .cstr_c(GREEN)
+                    .push(format!(" ({value})").cstr())
+                    .take(),
+                _ => format!("{mutation} ({value})").cstr(),
+            }
+        }
         let mut t = Table::new(name)
             .title()
             .column(
@@ -99,8 +113,16 @@ impl ShowTable<FusedUnit> for Vec<FusedUnit> {
             )
             .column_rarity(|d| (Rarity::from_base(&d.bases[0]) as i32).into())
             .column_int("lvl", |d| d.lvl as i32)
-            .column_int("pwr", |d| d.pwr)
-            .column_int("hp", |d| d.hp);
+            .column_cstr_value(
+                "pwr",
+                |u| u.pwr_mutation.into(),
+                |u| format_stat(u.pwr, u.pwr_mutation),
+            )
+            .column_cstr_value(
+                "hp",
+                |u| u.hp_mutation.into(),
+                |u| format_stat(u.hp, u.hp_mutation),
+            );
         t = m(t);
         t.ui(self, ui, world)
     }
