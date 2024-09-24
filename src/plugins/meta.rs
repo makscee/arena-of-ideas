@@ -83,7 +83,38 @@ impl MetaPlugin {
                     br(ui);
                     TAuction::iter()
                         .collect_vec()
-                        .show_table("Auction", ui, world);
+                        .show_modified_table("Auction", ui, world, |t| {
+                            t.column(
+                                "buy",
+                                |_, _| default(),
+                                |d, _, ui, _| {
+                                    let own = user_id() == d.owner;
+                                    let r =
+                                        Button::click(if own { "cancel" } else { "buy" }.into())
+                                            .enabled(own || can_afford(d.price))
+                                            .ui(ui);
+                                    if r.clicked() {
+                                        auction_buy(d.item_id);
+                                        once_on_auction_buy(|_, _, status, id| match status {
+                                            StdbStatus::Committed => {
+                                                format!("Auction#{id} bought").notify_op()
+                                            }
+                                            StdbStatus::Failed(e) => e.notify_error_op(),
+                                            _ => panic!(),
+                                        });
+                                    }
+                                    r
+                                },
+                                false,
+                            )
+                            .filter("Units", "type", "unit".into())
+                            .filter("Unit Shards", "type", "unit shard".into())
+                            .filter(
+                                "Lootboxes",
+                                "type",
+                                "lootbox".into(),
+                            )
+                        });
                 })
                 .push(world);
             }
@@ -96,10 +127,10 @@ impl MetaPlugin {
                             "sell",
                             |_, _| "sell".cstr_c(VISIBLE_LIGHT),
                             |unit, world| {
-                                let item_id = TUnitItem::filter_by_owner(user_id())
+                                let item = TUnitItem::filter_by_owner(user_id())
                                     .find(|i| i.unit.id == unit.id)
-                                    .unwrap()
-                                    .id;
+                                    .unwrap();
+                                let item_id = item.id;
                                 world.insert_resource(AuctionResource {
                                     item_id,
                                     count: 1,

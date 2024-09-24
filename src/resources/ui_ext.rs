@@ -116,12 +116,12 @@ impl ShowTable<FusedUnit> for Vec<FusedUnit> {
             .column_cstr_value(
                 "pwr",
                 |u| u.pwr_mutation.into(),
-                |u| format_stat(u.pwr, u.pwr_mutation),
+                |u, _| format_stat(u.pwr, u.pwr_mutation),
             )
             .column_cstr_value(
                 "hp",
                 |u| u.hp_mutation.into(),
-                |u| format_stat(u.hp, u.hp_mutation),
+                |u, _| format_stat(u.hp, u.hp_mutation),
             );
         t = m(t);
         t.ui(self, ui, world)
@@ -231,45 +231,35 @@ impl ShowTable<TAuction> for Vec<TAuction> {
         world: &mut World,
         m: fn(Table<TAuction>) -> Table<TAuction>,
     ) -> TableState {
-        let mut t = Table::new(name)
-            .title()
-            .columns_item_kind(|d: &TAuction| (d.item_kind.clone(), d.item_id))
-            .column_int("count", |d| match d.item_kind {
+        fn count(d: &TAuction) -> i32 {
+            match d.item_kind {
                 ItemKind::Unit => 1,
                 ItemKind::UnitShard => TUnitShardItem::find_by_id(d.item_id).unwrap().count as i32,
                 ItemKind::Lootbox => TLootboxItem::find_by_id(d.item_id).unwrap().count as i32,
-            })
+            }
+        }
+        let mut t = Table::new(name)
+            .title()
+            .columns_item_kind(|d: &TAuction| (d.item_kind.clone(), d.item_id))
+            .column_int("count", |d| count(d))
             .column_cstr("price", |d, _| {
                 format!("{} {CREDITS_SYM}", d.price).cstr_c(YELLOW)
             })
+            .column_cstr_value(
+                "price",
+                |d| (d.price as i32).into(),
+                |_, v| format!("{} {CREDITS_SYM}", v.get_int().unwrap()).cstr_c(YELLOW),
+            )
+            .column_cstr_value(
+                "unit price",
+                |d| (d.price as f32 / count(d) as f32).into(),
+                |_, v| format!("{} {CREDITS_SYM}", v.get_float().unwrap()).cstr_c(YELLOW),
+            )
             .column_user_click(
                 "seller",
                 |d| d.owner,
                 |gid, _, world| TilePlugin::add_user(gid, world),
-            )
-            .column(
-                "buy",
-                |_, _| default(),
-                |d, _, ui, _| {
-                    let own = user_id() == d.owner;
-                    let r = Button::click(if own { "cancel" } else { "buy" }.into())
-                        .enabled(own || can_afford(d.price))
-                        .ui(ui);
-                    if r.clicked() {
-                        auction_buy(d.item_id);
-                        once_on_auction_buy(|_, _, status, id| match status {
-                            StdbStatus::Committed => format!("Auction#{id} bought").notify_op(),
-                            StdbStatus::Failed(e) => e.notify_error_op(),
-                            _ => panic!(),
-                        });
-                    }
-                    r
-                },
-                false,
-            )
-            .filter("Units", "type", "unit".into())
-            .filter("Unit Shards", "type", "unit shard".into())
-            .filter("Lootboxes", "type", "lootbox".into());
+            );
         t = m(t);
         t.ui(self, ui, world)
     }

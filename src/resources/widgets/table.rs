@@ -16,6 +16,7 @@ pub struct TableState {
     filter: Option<usize>,
     sorting: Option<(usize, bool)>,
     indices: Vec<usize>,
+    frame_nr: u64,
     pub selected_row: Option<usize>,
 }
 
@@ -112,13 +113,13 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
         mut self,
         name: &'static str,
         v: fn(&T) -> VarValue,
-        s: fn(&T) -> Cstr,
+        s: fn(&T, VarValue) -> Cstr,
     ) -> Self {
         self.columns.insert(
             name,
             TableColumn {
                 value: Box::new(move |d, _| v(d).into()),
-                show: Box::new(move |d, _, ui, _| s(d).label(ui)),
+                show: Box::new(move |d, v, ui, _| s(d, v).label(ui)),
                 sortable: true,
             },
         );
@@ -339,10 +340,15 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
             .ctx()
             .data_mut(|w| w.get_temp::<TableState>(id))
             .unwrap_or_default();
+        let frame_nr = ui.ctx().frame_nr();
+        if state.frame_nr + 1 != frame_nr {
+            state = default();
+        }
+        state.frame_nr = frame_nr;
+
         if state.indices.is_empty() && state.filter.is_none() || state.indices.len() > data.len() {
             state.indices = (0..data.len()).collect_vec();
         }
-
         if self.title {
             title(self.name, ui);
         }
