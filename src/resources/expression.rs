@@ -62,6 +62,7 @@ pub enum Expression {
     UnitVec(Box<Expression>),
     Sin(Box<Expression>),
     Cos(Box<Expression>),
+    Sqr(Box<Expression>),
     Even(Box<Expression>),
     Abs(Box<Expression>),
     Floor(Box<Expression>),
@@ -149,6 +150,10 @@ impl Expression {
             })),
             Expression::Sin(v) => Ok(v.get_float(context, world)?.sin().into()),
             Expression::Cos(v) => Ok(v.get_float(context, world)?.cos().into()),
+            Expression::Sqr(v) => Ok({
+                let x = v.get_float(context, world)?;
+                (x * x).into()
+            }),
             Expression::Abs(v) => v.get_value(context, world)?.abs(),
             Expression::Even(v) => Ok((v.get_int(context, world)? % 2 == 0).into()),
             Expression::ListCount(v) => Ok(v.get_value(context, world)?.get_list()?.len().into()),
@@ -474,6 +479,7 @@ impl ToCstr for Expression {
             | Expression::UnitVec(v)
             | Expression::Sin(v)
             | Expression::Cos(v)
+            | Expression::Sqr(v)
             | Expression::Abs(v)
             | Expression::Even(v)
             | Expression::Dbg(v)

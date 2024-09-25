@@ -57,4 +57,5 @@ pub enum VarName {
     UsedDefinitions,
     LastAttacker,
     StatusIndex,
+    Pain,
 }

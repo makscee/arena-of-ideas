@@ -2,9 +2,10 @@
     material: Shape(
         shape: Circle(radius: Value(Float(1.0))),
         shape_type: Line(thickness: Value(Float(0.7))),
-        fill: Solid(color: OwnerState(RarityColor)),
+        fill: Solid(color: Context(RarityColor)),
         padding: Value(Float(0.2)),
     ),
+    mapping: {Scale: Vec2E(Sum(Mul(Sqr(Context(Pain)), F(0.2)), F(1.0)))},
     children: [
         (
             material: Shape(
@@ -17,10 +18,10 @@
             children: [
                 (
                     material: Text(
-                        text: Sub(OwnerState(Hp), OwnerState(Dmg)),
+                        text: Sub(Context(Hp), Context(Dmg)),
                         size: Value(Float(0.6)),
                         color: If(
-                            GreaterThen(OwnerState(Dmg), Zero),
+                            GreaterThen(Context(Dmg), Zero),
                             HexColor("#FF3D00"),
                             HexColor("#FFFFFF"),
                         ),
@@ -38,7 +39,7 @@
             mapping: {Offset: Value(Vec2((-0.9, -0.9)))},
             children: [
                 (
-                    material: Text(text: OwnerState(Pwr), size: Value(Float(0.6)), color: HexColor("#FBC02D")),
+                    material: Text(text: Context(Pwr), size: Value(Float(0.6)), color: HexColor("#FBC02D")),
                 ),
             ],
         ),

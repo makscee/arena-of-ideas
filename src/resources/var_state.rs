@@ -9,8 +9,14 @@ pub struct VarState {
     entity: Option<Entity>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 struct History(Vec<VarChange>);
+
+impl Default for History {
+    fn default() -> Self {
+        Self([VarChange::new(default())].into())
+    }
+}
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Default)]
 pub struct VarChange {
@@ -150,6 +156,17 @@ impl VarState {
             .push_change(change);
         self
     }
+    pub fn animate_float(&mut self, var: VarName, from: f32, to: f32, over: f32) -> &mut Self {
+        self.set_float(var, from);
+        let change = VarChange {
+            t: 0.0,
+            duration: over,
+            timeframe: over,
+            tween: Tween::Linear,
+            value: to.into(),
+        };
+        self.push_change(var, default(), change)
+    }
     pub fn has_value(&self, var: VarName) -> bool {
         self.vars.contains_key(&var)
     }
@@ -207,7 +224,11 @@ impl VarState {
     }
 
     pub fn set_int(&mut self, var: VarName, value: i32) -> &mut Self {
-        self.push_change(var, default(), VarChange::new(VarValue::Int(value)));
+        self.push_change(var, default(), VarChange::new(value.into()));
+        self
+    }
+    pub fn set_float(&mut self, var: VarName, value: f32) -> &mut Self {
+        self.push_change(var, default(), VarChange::new(value.into()));
         self
     }
     pub fn change_int(&mut self, var: VarName, delta: i32) -> i32 {
@@ -271,12 +292,16 @@ impl History {
             return Err(anyhow!("History is empty"));
         }
 
-        let i = self.0.partition_point(|x| x.t <= t);
-        if i == 0 {
-            return Err(anyhow!("First change not reached {t}"));
+        let mut i = 0;
+        for (n, h) in self.0.iter().enumerate() {
+            if h.t < t {
+                i = n;
+            } else {
+                break;
+            }
         }
-        let cur_change = &self.0[i - 1];
-        let prev_change = if i > 1 { &self.0[i - 2] } else { cur_change };
+        let cur_change = &self.0[i];
+        let prev_change = if i > 0 { &self.0[i - 1] } else { cur_change };
         let t = t - cur_change.t;
         cur_change.tween.f(
             &prev_change.value,

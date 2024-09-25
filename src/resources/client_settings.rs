@@ -16,6 +16,25 @@ pub struct ClientSettings {
     pub window_mode: WindowMode,
     pub resolution: Vec2,
     pub vsync: bool,
+
+    pub animation_time: f32,
+}
+
+impl Default for ClientSettings {
+    fn default() -> Self {
+        Self {
+            servers: HashMap::from([
+                ("prod", ("http://161.35.88.206:3000", "aoi_prod")),
+                ("dev", ("http://161.35.88.206:3000", "aoi_dev")),
+            ]),
+            active_server: "",
+            dev_mode: false,
+            window_mode: default(),
+            vsync: false,
+            resolution: vec2(1280.0, 720.0),
+            animation_time: 0.3,
+        }
+    }
 }
 
 #[derive(
@@ -63,22 +82,6 @@ pub fn current_server() -> (&'static str, &'static str) {
 }
 pub fn is_dev_mode() -> bool {
     client_settings().dev_mode
-}
-
-impl Default for ClientSettings {
-    fn default() -> Self {
-        Self {
-            servers: HashMap::from([
-                ("prod", ("http://161.35.88.206:3000", "aoi_prod")),
-                ("dev", ("http://161.35.88.206:3000", "aoi_dev")),
-            ]),
-            active_server: "",
-            dev_mode: false,
-            window_mode: default(),
-            vsync: false,
-            resolution: vec2(1280.0, 720.0),
-        }
-    }
 }
 
 impl ClientSettings {

@@ -83,6 +83,7 @@ impl Effect {
                     let mut state = VarState::try_get_mut(target, world)?;
                     state.change_int(VarName::Dmg, i_value);
                     state.set_value(VarName::LastAttacker, owner.into());
+                    state.animate_float(VarName::Pain, 1.0, 0.0, client_settings().animation_time);
                     Event::DamageTaken {
                         owner: target,
                         value: i_value,
