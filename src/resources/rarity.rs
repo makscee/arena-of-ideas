@@ -31,7 +31,7 @@ impl Rarity {
         Self::from_repr(v).unwrap_or_default()
     }
     pub fn from_base(name: &str) -> Self {
-        Self::from_int(TBaseUnit::find_by_name(name.into()).unwrap().rarity)
+        Self::from_int(name.to_owned().base_unit().rarity)
     }
 }
 

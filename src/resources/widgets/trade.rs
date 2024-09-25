@@ -31,7 +31,7 @@ impl Trade {
             let units = items
                 .units
                 .into_iter()
-                .map(|id| id.get_unit_item().unit)
+                .map(|id| id.unit_item().unit)
                 .collect_vec();
             if !units.is_empty() {
                 units.show_table("Units", ui, world);
@@ -39,7 +39,7 @@ impl Trade {
             let unit_shards = items
                 .unit_shards
                 .into_iter()
-                .map(|id| id.get_unit_shard_item())
+                .map(|id| id.unit_shard_item())
                 .collect_vec();
             if !unit_shards.is_empty() {
                 unit_shards.show_table("Unit Shards", ui, world);
@@ -47,7 +47,7 @@ impl Trade {
             let lootboxes = items
                 .lootboxes
                 .into_iter()
-                .map(|id| id.get_lootbox_item())
+                .map(|id| id.lootbox_item())
                 .collect_vec();
             if !lootboxes.is_empty() {
                 lootboxes.show_table("Lootboxes", ui, world);

@@ -234,8 +234,8 @@ impl ShowTable<TAuction> for Vec<TAuction> {
         fn count(d: &TAuction) -> i32 {
             match d.item_kind {
                 ItemKind::Unit => 1,
-                ItemKind::UnitShard => TUnitShardItem::find_by_id(d.item_id).unwrap().count as i32,
-                ItemKind::Lootbox => TLootboxItem::find_by_id(d.item_id).unwrap().count as i32,
+                ItemKind::UnitShard => d.item_id.unit_shard_item().count as i32,
+                ItemKind::Lootbox => d.item_id.lootbox_item().count as i32,
             }
         }
         let mut t = Table::new(name)
@@ -285,7 +285,7 @@ impl Show for FusedUnit {
         text_dots_text("gid".cstr(), self.id.to_string().cstr_c(VISIBLE_LIGHT), ui);
         self.bases
             .iter()
-            .filter_map(|b| TBaseUnit::find_by_name(b.clone()))
+            .map(|u| u.base_unit())
             .collect_vec()
             .show_table("Bases", ui, world);
     }

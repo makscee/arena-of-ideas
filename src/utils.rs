@@ -354,9 +354,9 @@ impl StdbStatusExt for spacetimedb_sdk::reducer::Status {
 pub trait GIDExt {
     fn get_team(self) -> TTeam;
     fn get_user(self) -> TUser;
-    fn get_unit_item(self) -> TUnitItem;
-    fn get_unit_shard_item(self) -> TUnitShardItem;
-    fn get_lootbox_item(self) -> TLootboxItem;
+    fn unit_item(self) -> TUnitItem;
+    fn unit_shard_item(self) -> TUnitShardItem;
+    fn lootbox_item(self) -> TLootboxItem;
 }
 
 impl GIDExt for u64 {
@@ -389,17 +389,17 @@ impl GIDExt for u64 {
             .with_context(|| format!("Failed to find User#{self}"))
             .unwrap()
     }
-    fn get_unit_item(self) -> TUnitItem {
+    fn unit_item(self) -> TUnitItem {
         TUnitItem::find_by_id(self)
             .with_context(|| format!("Failed to find UnitItem#{self}"))
             .unwrap()
     }
-    fn get_unit_shard_item(self) -> TUnitShardItem {
+    fn unit_shard_item(self) -> TUnitShardItem {
         TUnitShardItem::find_by_id(self)
             .with_context(|| format!("Failed to find UnitShardItem#{self}"))
             .unwrap()
     }
-    fn get_lootbox_item(self) -> TLootboxItem {
+    fn lootbox_item(self) -> TLootboxItem {
         TLootboxItem::find_by_id(self)
             .with_context(|| format!("Failed to find LootboxItem#{self}"))
             .unwrap()
@@ -437,5 +437,23 @@ impl<'a> StrExtensions for &'a str {
                 false => None,
             })
             .collect_vec()
+    }
+}
+
+pub trait BaseUnitExt {
+    fn base(&self) -> &str;
+    fn base_unit(&self) -> TBaseUnit {
+        TBaseUnit::find_by_name(self.base().into()).unwrap()
+    }
+}
+
+impl BaseUnitExt for FusedUnit {
+    fn base(&self) -> &str {
+        &self.bases[0]
+    }
+}
+impl BaseUnitExt for String {
+    fn base(&self) -> &str {
+        self
     }
 }

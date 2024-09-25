@@ -245,11 +245,7 @@ impl From<FusedUnit> for PackedUnit {
         let bases: Vec<TBaseUnit> = value
             .bases
             .iter()
-            .map(|name| {
-                TBaseUnit::find_by_name(name.clone())
-                    .with_context(|| format!("TBaseUnit {name} not found"))
-                    .unwrap()
-            })
+            .map(|name| name.base_unit())
             .collect_vec();
         let mut result = Self::default();
         let triggers = value

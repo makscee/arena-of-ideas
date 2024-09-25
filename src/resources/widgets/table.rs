@@ -265,11 +265,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                             let r = name.cstr_c(color).label(ui);
                             if r.hovered() {
                                 cursor_window(ui.ctx(), |ui| {
-                                    match cached_base_card(
-                                        &TBaseUnit::find_by_name(name).unwrap(),
-                                        ui,
-                                        world,
-                                    ) {
+                                    match cached_base_card(&name.base_unit(), ui, world) {
                                         Ok(_) => {}
                                         Err(e) => error!("{e}"),
                                     }
@@ -296,15 +292,11 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                 value: Box::new(move |d, _| {
                     let (kind, id) = data(d);
                     match kind {
-                        ItemKind::Unit => "unit".cstr_c(
-                            Rarity::from_base(&TUnitItem::find_by_id(id).unwrap().unit.bases[0])
-                                .color(),
-                        ),
-                        ItemKind::UnitShard => "unit shard".cstr_c(rarity_color(
-                            TBaseUnit::find_by_name(id.get_unit_shard_item().unit)
-                                .unwrap()
-                                .rarity,
-                        )),
+                        ItemKind::Unit => {
+                            "unit".cstr_c(rarity_color(id.unit_item().unit.base_unit().rarity))
+                        }
+                        ItemKind::UnitShard => "unit shard"
+                            .cstr_c(rarity_color(id.unit_shard_item().unit.base_unit().rarity)),
                         ItemKind::Lootbox => "lootbox".cstr_c(CYAN),
                     }
                     .into()
@@ -329,7 +321,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                     let (kind, id) = data(d);
                     match kind {
                         ItemKind::Unit => {
-                            let unit = TUnitItem::find_by_id(id).unwrap().unit;
+                            let unit = id.unit_item().unit;
                             let r = unit.cstr_limit(0, true).button(ui);
                             if r.hovered() {
                                 cursor_window(ui.ctx(), |ui| {
@@ -345,15 +337,11 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                             r
                         }
                         ItemKind::UnitShard => {
-                            let item = TUnitShardItem::find_by_id(id).unwrap();
+                            let item = id.unit_shard_item();
                             let r = item.unit.cstr_c(name_color(&item.unit)).label(ui);
                             if r.hovered() {
                                 cursor_window(ui.ctx(), |ui| {
-                                    match cached_base_card(
-                                        &TBaseUnit::find_by_name(item.unit).unwrap(),
-                                        ui,
-                                        world,
-                                    ) {
+                                    match cached_base_card(&item.unit.base_unit(), ui, world) {
                                         Ok(_) => {}
                                         Err(e) => error!("{e}"),
                                     }
@@ -361,7 +349,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                             }
                             r
                         }
-                        ItemKind::Lootbox => match TLootboxItem::find_by_id(id).unwrap().kind {
+                        ItemKind::Lootbox => match id.lootbox_item().kind {
                             LootboxKind::Regular => "Regular",
                         }
                         .cstr_c(VISIBLE_LIGHT)
