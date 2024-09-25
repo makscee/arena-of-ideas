@@ -6,8 +6,8 @@ mod stdb;
 mod utils;
 
 use bevy::{
-    asset::AssetApp, audio::AudioLoader, diagnostic::FrameTimeDiagnosticsPlugin, log::LogPlugin,
-    render::camera::ClearColor, sprite::Material2dPlugin, state::app::AppExtStates,
+    diagnostic::FrameTimeDiagnosticsPlugin, log::LogPlugin, render::camera::ClearColor,
+    sprite::Material2dPlugin, state::app::AppExtStates,
 };
 use clap::{command, Parser, ValueEnum};
 use noisy_bevy::NoisyShaderPlugin;
