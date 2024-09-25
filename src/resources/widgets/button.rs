@@ -132,6 +132,9 @@ impl Button {
             .min_size(egui::vec2(self.min_width, 0.0))
             .ui(ui)
         };
+        if r.clicked() {
+            AudioPlugin::queue_sound(SoundEffect::Click);
+        }
         ui.reset_style();
         r
     }

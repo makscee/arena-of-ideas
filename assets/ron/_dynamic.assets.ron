@@ -9,6 +9,10 @@
         "heroes": Folder(path: "ron/heroes"),
         "houses": Folder(path: "ron/houses"),
         "vfxs": Folder(path: "ron/vfxs"),
+        "audio_bg": Folder(path: "audio/bg"),
+        "audio_click": File(path: "audio/fx/click.ogg"),
+        "audio_coin": File(path: "audio/fx/coin.ogg"),
+        "audio_start_game": File(path: "audio/fx/start_game.ogg"),
         "test_scenarios": Folder(path: "ron/scenarios"),
     },
 )

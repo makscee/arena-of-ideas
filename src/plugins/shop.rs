@@ -50,6 +50,7 @@ impl ShopPlugin {
             GameState::Title.proceed_to_target_op();
             return;
         }
+        AudioPlugin::queue_sound(SoundEffect::StartGame);
         let cb = TArenaRun::on_update(|_, run, _| {
             let run = run.clone();
             OperationsPlugin::add(|w| Self::sync_run(run, w))

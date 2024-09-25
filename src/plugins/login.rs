@@ -60,6 +60,7 @@ impl LoginPlugin {
                 } else {
                     delta.to_string()
                 };
+                AudioPlugin::queue_sound(SoundEffect::Coin);
                 Notification::new(
                     "Credits "
                         .cstr_c(YELLOW)
@@ -127,7 +128,9 @@ impl LoginPlugin {
                     br(ui);
                     "Login".cstr_cs(VISIBLE_LIGHT, CstrStyle::Heading).label(ui);
                     Input::new("name").ui_string(&mut ld.name_field, ui);
-                    Input::new("password").password().ui_string(&mut ld.pass_field, ui);
+                    Input::new("password")
+                        .password()
+                        .ui_string(&mut ld.pass_field, ui);
                     if Button::click("Submit".into()).ui(ui).clicked() {
                         login(ld.name_field.clone(), ld.pass_field.clone());
                         once_on_login(|_, _, status, name, _| match status {

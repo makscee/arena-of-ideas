@@ -6,8 +6,8 @@ mod stdb;
 mod utils;
 
 use bevy::{
-    diagnostic::FrameTimeDiagnosticsPlugin, log::LogPlugin, render::camera::ClearColor,
-    sprite::Material2dPlugin, state::app::AppExtStates,
+    asset::AssetApp, audio::AudioLoader, diagnostic::FrameTimeDiagnosticsPlugin, log::LogPlugin,
+    render::camera::ClearColor, sprite::Material2dPlugin, state::app::AppExtStates,
 };
 use clap::{command, Parser, ValueEnum};
 use noisy_bevy::NoisyShaderPlugin;
@@ -70,6 +70,7 @@ fn main() {
                 .continue_to_state(GameState::Loaded)
                 .on_failure_continue_to_state(GameState::Error)
                 .load_collection::<GameAssetsHandles>()
+                .load_collection::<AudioAssets>()
                 .with_dynamic_assets_file::<StandardDynamicAssetCollection>(
                     "ron/_dynamic.assets.ron",
                 ),
@@ -121,6 +122,7 @@ fn main() {
             GameStartPlugin,
             TilePlugin,
             TeamSyncPlugin,
+            AudioPlugin,
         ))
         .init_state::<GameState>()
         .init_resource::<NotificationsResource>()

@@ -1,4 +1,5 @@
 mod action;
+mod audio;
 mod battle;
 mod camera;
 mod connect;
@@ -24,6 +25,7 @@ mod widgets;
 
 use super::*;
 pub use action::*;
+pub use audio::*;
 pub use battle::*;
 pub use camera::*;
 pub use connect::*;

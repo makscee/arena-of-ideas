@@ -4,6 +4,7 @@ pub use crate::{components::*, plugins::*, resources::*, utils::*};
 pub use anyhow::{anyhow, Context as _, Result};
 
 pub use crate::stdb::*;
+pub use bevy::audio::{AudioBundle, AudioSource, PlaybackSettings};
 pub use bevy::{
     app::{prelude::PluginGroup, App, Plugin, Startup, Update},
     asset::{Asset, Assets, Handle},
