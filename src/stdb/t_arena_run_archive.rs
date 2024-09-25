@@ -3,6 +3,7 @@
 
 #![allow(unused_imports)]
 use super::game_mode::GameMode;
+use super::reward::Reward;
 use spacetimedb_sdk::{
     anyhow::{anyhow, Result},
     identity::Identity,
@@ -20,7 +21,8 @@ pub struct TArenaRunArchive {
     pub owner: u64,
     pub team: u64,
     pub battles: Vec<u64>,
-    pub round: u32,
+    pub floor: u32,
+    pub rewards: Vec<Reward>,
 }
 
 impl TableType for TArenaRunArchive {
@@ -53,7 +55,7 @@ impl TArenaRunArchive {
         Self::filter(|row| row.team == team)
     }
     #[allow(unused)]
-    pub fn filter_by_round(round: u32) -> TableIter<Self> {
-        Self::filter(|row| row.round == round)
+    pub fn filter_by_floor(floor: u32) -> TableIter<Self> {
+        Self::filter(|row| row.floor == floor)
     }
 }

@@ -137,8 +137,7 @@ impl ShowTable<TArenaLeaderboard> for Vec<TArenaLeaderboard> {
     ) -> TableState {
         let mut t = Table::new(name)
             .title()
-            .column_int("round", |d: &TArenaLeaderboard| d.round as i32)
-            .column_int("score", |d| d.score as i32)
+            .column_int("floor", |d: &TArenaLeaderboard| d.floor as i32)
             .column_ts("time", |d| d.ts)
             .column_team("team", |d| d.team)
             .column_user_click(

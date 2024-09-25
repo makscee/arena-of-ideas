@@ -245,10 +245,10 @@ impl VarValue {
 
     pub fn sum(a: &VarValue, b: &VarValue) -> Result<VarValue> {
         match (a, b) {
-            (VarValue::Float(a), VarValue::Float(b)) => Ok(VarValue::Float(a + b)),
-            (VarValue::Int(a), VarValue::Int(b)) => Ok(VarValue::Int(a + b)),
-            (VarValue::Float(a), VarValue::Int(b)) => Ok(VarValue::Float(a + *b as f32)),
-            (VarValue::Int(a), VarValue::Float(b)) => Ok(VarValue::Float(b + *a as f32)),
+            (VarValue::Float(a), ..) => Ok(VarValue::Float(a + b.get_float()?)),
+            (.., VarValue::Float(b)) => Ok(VarValue::Float(a.get_float()? + *b)),
+            (VarValue::Int(a), ..) => Ok(VarValue::Int(a + b.get_int()?)),
+            (.., VarValue::Int(b)) => Ok(VarValue::Int(a.get_int()? + *b)),
             (VarValue::Bool(a), VarValue::Bool(b)) => Ok(VarValue::Bool(*a || *b)),
             (VarValue::Vec2(a), VarValue::Vec2(b)) => Ok(VarValue::Vec2(*a + *b)),
             (VarValue::String(a), VarValue::String(b)) => Ok(VarValue::String(a.to_owned() + b)),

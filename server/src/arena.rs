@@ -33,11 +33,10 @@ pub struct TArenaRun {
     active: bool,
     finale: bool,
 
-    round: u32,
+    floor: u32,
     rerolls: u32,
-    score: u32,
     rewards: Vec<Reward>,
-    reward_limit: i64,
+    streak: u32,
 
     last_updated: Timestamp,
 }
@@ -50,7 +49,8 @@ pub struct TArenaRunArchive {
     owner: u64,
     team: u64,
     battles: Vec<u64>,
-    round: u32,
+    floor: u32,
+    rewards: Vec<Reward>,
 }
 
 impl TArenaRunArchive {
@@ -61,7 +61,8 @@ impl TArenaRunArchive {
             owner: run.owner,
             team: run.team,
             battles: run.battles,
-            round: run.round,
+            floor: run.floor,
+            rewards: run.rewards,
         })
         .expect("Failed to archive a run");
     }
@@ -96,14 +97,8 @@ pub struct Fusion {
 
 #[derive(SpacetimeType)]
 pub struct Reward {
-    name: String,
+    source: String,
     amount: i64,
-}
-
-impl Reward {
-    fn new(name: String, amount: i64) -> Self {
-        Self { name, amount }
-    }
 }
 
 #[spacetimedb(reducer)]
@@ -138,10 +133,7 @@ fn run_start_const(ctx: ReducerContext) -> Result<(), String> {
 #[spacetimedb(reducer)]
 fn run_finish(ctx: ReducerContext) -> Result<(), String> {
     let run = TArenaRun::current(&ctx)?;
-    let mut reward: i64 = run.rewards.iter().map(|r| r.amount).sum();
-    if run.reward_limit > 0 {
-        reward = reward.min(run.reward_limit);
-    }
+    let reward: i64 = run.rewards.iter().map(|r| r.amount).sum();
     TWallet::change(run.owner, reward)?;
     TArenaRun::delete_by_id(&run.id);
     TArenaRunArchive::add_from_run(run);
@@ -151,19 +143,19 @@ fn run_finish(ctx: ReducerContext) -> Result<(), String> {
 #[spacetimedb(reducer)]
 fn shop_finish(ctx: ReducerContext) -> Result<(), String> {
     let mut run = TArenaRun::current(&ctx)?;
-    run.round += 1;
+    run.floor += 1;
     let team = TTeam::get(run.team)?.apply_limit().save_clone();
     let enemy = if let Some(enemy) = run.enemies.first().copied() {
         run.enemies.remove(0);
         enemy
     } else {
         let c = TArenaLeaderboard::current_champion(&run.mode);
-        if c.as_ref().is_some_and(|c| c.round == run.round) {
+        if c.as_ref().is_some_and(|c| c.floor == run.floor) {
             run.enemies.push(team.id);
             run.finale = true;
             c.unwrap().team
         } else {
-            TArenaPool::get_random(&run.mode, run.round)
+            TArenaPool::get_random(&run.mode, run.floor)
                 .map(|d| d.team)
                 .unwrap_or_default()
         }
@@ -175,12 +167,12 @@ fn shop_finish(ctx: ReducerContext) -> Result<(), String> {
     run.battles
         .push(TBattle::new(run.mode.clone(), run.owner, team.id, enemy));
     if !team.units.is_empty() {
-        TArenaPool::add(run.mode.clone(), team.id, run.round);
+        TArenaPool::add(run.mode.clone(), team.id, run.floor);
     }
     run.rerolls = 0;
     run.fill_case()?;
     let ars = &settings().arena;
-    run.g += ars.g_income.value(run.round as i64) as i32;
+    run.g += ars.g_income.value(run.floor as i64) as i32;
     run.free_rerolls += ars.free_rerolls_income;
     run.save();
     Ok(())
@@ -196,8 +188,9 @@ fn submit_battle_result(ctx: ReducerContext, result: TBattleResult) -> Result<()
     }
     battle.set_result(result).save();
     if matches!(result, TBattleResult::Left) {
-        run.score += run.round;
+        run.add_streak();
     } else {
+        run.finish_streak();
         if run.finale {
             run.lives = 0;
         } else {
@@ -388,9 +381,8 @@ impl TArenaRun {
             shop_slots: Vec::new(),
             team_slots: Vec::new(),
             fusion: None,
-            round: 0,
+            floor: 0,
             rerolls: 0,
-            score: 0,
             last_updated: Timestamp::now(),
             g: ars.g_income.value(0) as i32,
             price_reroll: ars.price_reroll,
@@ -407,18 +399,13 @@ impl TArenaRun {
             },
             mode,
             rewards: Vec::new(),
-            reward_limit: 0,
+            streak: 0,
         }
     }
     fn start(user: TUser, mode: GameMode) -> Result<(), String> {
         TArenaRun::delete_by_owner(&user.id);
-        let reward_limit = match mode {
-            GameMode::ArenaNormal | GameMode::ArenaConst(_) => 0,
-            GameMode::ArenaRanked => 0,
-        };
         let mut run = TArenaRun::new(user.id, mode);
         run.fill_case()?;
-        run.reward_limit = reward_limit;
         TArenaRun::insert(run)?;
         Ok(())
     }
@@ -510,7 +497,7 @@ impl TArenaRun {
             rarities,
             ..
         } = settings();
-        let slots = ars.shop_slots.value(self.round as i64) as usize;
+        let slots = ars.shop_slots.value(self.floor as i64) as usize;
         let mut old_slots = Vec::default();
         mem::swap(&mut self.shop_slots, &mut old_slots);
         for i in 0..slots {
@@ -531,12 +518,12 @@ impl TArenaRun {
                 .unique()
                 .collect();
         }
-        let round = self.round as i32;
+        let floor = self.floor as i32;
         let weights = rarities
             .weights_initial
             .iter()
             .enumerate()
-            .map(|(i, w)| (*w + rarities.weights_per_round[i] * round).max(0))
+            .map(|(i, w)| (*w + rarities.weights_per_floor[i] * floor).max(0))
             .collect_vec();
         let mut rng = self.get_rng();
         for i in 0..slots {
@@ -556,27 +543,36 @@ impl TArenaRun {
     }
     fn get_seed(&self) -> String {
         let Self {
-            id, round, rerolls, ..
+            id, floor, rerolls, ..
         } = self;
         match &self.mode {
-            GameMode::ArenaNormal | GameMode::ArenaRanked => format!("{id}_{round}_{rerolls}"),
-            GameMode::ArenaConst(seed) => format!("{seed}_{round}_{rerolls}"),
+            GameMode::ArenaNormal | GameMode::ArenaRanked => format!("{id}_{floor}_{rerolls}"),
+            GameMode::ArenaConst(seed) => format!("{seed}_{floor}_{rerolls}"),
         }
     }
     fn get_rng(&self) -> Pcg64 {
         Seeder::from(self.get_seed()).make_rng()
     }
+    fn add_streak(&mut self) {
+        self.streak += 1;
+    }
+    fn finish_streak(&mut self) {
+        if self.streak > 0 {
+            self.add_reward(format!("Streak {}", self.streak), self.streak as i64);
+        }
+        self.streak = 0;
+    }
+    fn add_reward(&mut self, source: String, mut amount: i64) {
+        amount *= match self.mode {
+            GameMode::ArenaNormal => 1,
+            GameMode::ArenaRanked => 2,
+            GameMode::ArenaConst(_) => 3,
+        };
+        self.rewards.push(Reward { source, amount });
+    }
     fn finish(&mut self) {
         self.active = false;
-        if GameMode::ArenaRanked.eq(&self.mode) {
-            self.rewards.push(Reward::new(
-                "Ranked score * 2".into(),
-                self.score as i64 * 2,
-            ));
-        } else {
-            self.rewards
-                .push(Reward::new("Score".into(), self.score as i64));
-        }
+        self.finish_streak();
         if self.finale {
             if self
                 .battles
@@ -585,12 +581,10 @@ impl TArenaRun {
                 .map(|b| b.result.is_win())
                 .unwrap_or_default()
             {
-                self.rewards
-                    .push(Reward::new("Champion defeated".into(), 10));
+                self.add_reward("Champion defeated".into(), self.floor as i64 * 5);
                 TArenaLeaderboard::insert(TArenaLeaderboard::new(
                     self.mode.clone(),
-                    self.round,
-                    self.score,
+                    self.floor,
                     self.owner,
                     self.team,
                     self.id,

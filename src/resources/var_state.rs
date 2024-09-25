@@ -292,13 +292,11 @@ impl History {
             return Err(anyhow!("History is empty"));
         }
 
-        let mut i = 0;
-        for (n, h) in self.0.iter().enumerate() {
-            if h.t < t {
-                i = n;
-            } else {
-                break;
-            }
+        let mut i = match self.0.binary_search_by(|h| h.t.total_cmp(&t)) {
+            Ok(v) | Err(v) => v.at_least(1) - 1,
+        };
+        while self.0.get(i + 1).is_some_and(|h| h.t <= t) {
+            i += 1;
         }
         let cur_change = &self.0[i];
         let prev_change = if i > 0 { &self.0[i - 1] } else { cur_change };

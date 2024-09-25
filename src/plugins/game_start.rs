@@ -233,18 +233,7 @@ impl GameStartPlugin {
             Tile::new(Side::Right, move |ui, world| {
                 if let Some(run) = TArenaRun::get_current() {
                     ui.vertical_centered(|ui| {
-                        text_dots_text("run".cstr(), run.mode.cstr(), ui);
-                        text_dots_text(
-                            "round".cstr(),
-                            run.round.to_string().cstr_c(VISIBLE_LIGHT),
-                            ui,
-                        );
-                        text_dots_text("lives".cstr(), run.lives.to_string().cstr_c(GREEN), ui);
-                        text_dots_text(
-                            "score".cstr(),
-                            run.score.to_string().cstr_c(VISIBLE_BRIGHT),
-                            ui,
-                        );
+                        ShopPlugin::show_stats(&run, ui);
                         ui.add_space(20.0);
                         if Button::click("Continue".into()).ui(ui).clicked() {
                             GameState::Shop.proceed_to_target(world);
@@ -311,7 +300,7 @@ impl GameStartPlugin {
         TableState::reset_cache(&egui_context(world).unwrap());
         world.resource_mut::<GameStartResource>().leaderboard = TArenaLeaderboard::iter()
             .filter(|d| d.mode.eq(&game_mode))
-            .sorted_by_key(|d| -(d.round as i32))
+            .sorted_by_key(|d| -(d.floor as i32))
             .collect_vec();
     }
 }

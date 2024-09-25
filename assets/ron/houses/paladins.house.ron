@@ -5,7 +5,7 @@
     statuses: [
         (
             name: "Shield",
-            description: "Block {Charges} amount of damage",
+            description: "Absorb {Charges} DMG",
             polarity: 1,
             trigger: List(
                 [
@@ -37,12 +37,12 @@
     abilities: [
         (
             name: "Shield",
-            description: "Absorb {Charges} DMG",
+            description: "Absorb {1} DMG",
             effect: List([Vfx("apply_status"), ChangeStatus("Shield")]),
         ),
         (
             name: "Summon Guardian Angel",
-            description: "Summon 10/1 with [Shield] ({Charges})",
+            description: "Summon 10/1 with [Shield] ({1})",
             effect: Summon("Guardian Angel", ChangeStatus("Shield")),
         ),
     ],

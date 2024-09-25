@@ -16,6 +16,6 @@ use spacetimedb_sdk::{
 pub struct RaritySettings {
     pub prices: Vec<i32>,
     pub weights_initial: Vec<i32>,
-    pub weights_per_round: Vec<i32>,
+    pub weights_per_floor: Vec<i32>,
     pub lootbox_weights: Vec<i32>,
 }

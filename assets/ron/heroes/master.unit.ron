@@ -9,8 +9,14 @@
         triggers: [(BattleStart, None)],
         targets: [],
         effects: [
-            (AbilityStateAddVar("Skeleton", Pwr, Sum(Context(Lvl), I(1))), None),
-            (AbilityStateAddVar("Skeleton", Hp, Sum(Context(Lvl), I(1))), None),
+            (
+                AbilityStateAddVar("Skeleton", Pwr, Sum(Context(Lvl), I(1))),
+                Some("[Skeleton] PWR add {Lvl} + 1"),
+            ),
+            (
+                AbilityStateAddVar("Skeleton", Hp, Sum(Context(Lvl), I(1))),
+                Some("[Skeleton] PWR add {Lvl} + 1"),
+            ),
         ],
     ),
     representation: (

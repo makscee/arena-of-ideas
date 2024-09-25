@@ -33,7 +33,8 @@ impl PackedStatus {
             )
             .init(VarName::Name, VarValue::String(self.name.to_owned()))
             .init(VarName::Color, name_color(&self.name).into())
-            .init(VarName::Polarity, VarValue::Int(self.polarity as i32));
+            .init(VarName::Polarity, VarValue::Int(self.polarity as i32))
+            .init(VarName::Visible, true.into());
         let entity = Status {
             name: self.name.clone(),
             trigger: self.trigger.clone(),
@@ -88,6 +89,7 @@ impl Status {
                 let charges = state.change_int(VarName::Charges, delta);
                 if visible != (charges > 0) {
                     state.set_value(VarName::Visible, (charges > 0).into());
+                    dbg!(&state);
                     VarState::get_mut(entity, world).reindex_statuses();
                 }
                 charges

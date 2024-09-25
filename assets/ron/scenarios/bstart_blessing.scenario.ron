@@ -8,7 +8,7 @@
                 trigger: Fire(
                     triggers: [(BattleStart, None)],
                     targets: [(Owner, None)],
-                    effects: [(UseAbility("Blessing", 0), None)],
+                    effects: [(UseAbility("Blessing", 1), None)],
                 ),
             ),
         ],

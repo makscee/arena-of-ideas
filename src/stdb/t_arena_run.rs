@@ -34,11 +34,10 @@ pub struct TArenaRun {
     pub lives: u32,
     pub active: bool,
     pub finale: bool,
-    pub round: u32,
+    pub floor: u32,
     pub rerolls: u32,
-    pub score: u32,
     pub rewards: Vec<Reward>,
-    pub reward_limit: i64,
+    pub streak: u32,
     pub last_updated: u64,
 }
 
@@ -100,20 +99,16 @@ impl TArenaRun {
         Self::filter(|row| row.finale == finale)
     }
     #[allow(unused)]
-    pub fn filter_by_round(round: u32) -> TableIter<Self> {
-        Self::filter(|row| row.round == round)
+    pub fn filter_by_floor(floor: u32) -> TableIter<Self> {
+        Self::filter(|row| row.floor == floor)
     }
     #[allow(unused)]
     pub fn filter_by_rerolls(rerolls: u32) -> TableIter<Self> {
         Self::filter(|row| row.rerolls == rerolls)
     }
     #[allow(unused)]
-    pub fn filter_by_score(score: u32) -> TableIter<Self> {
-        Self::filter(|row| row.score == score)
-    }
-    #[allow(unused)]
-    pub fn filter_by_reward_limit(reward_limit: i64) -> TableIter<Self> {
-        Self::filter(|row| row.reward_limit == reward_limit)
+    pub fn filter_by_streak(streak: u32) -> TableIter<Self> {
+        Self::filter(|row| row.streak == streak)
     }
     #[allow(unused)]
     pub fn filter_by_last_updated(last_updated: u64) -> TableIter<Self> {

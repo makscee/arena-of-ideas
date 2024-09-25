@@ -17,8 +17,7 @@ use spacetimedb_sdk::{
 pub struct TArenaLeaderboard {
     pub mode: GameMode,
     pub season: u32,
-    pub round: u32,
-    pub score: u32,
+    pub floor: u32,
     pub user: u64,
     pub team: u64,
     pub run: u64,
@@ -36,12 +35,8 @@ impl TArenaLeaderboard {
         Self::filter(|row| row.season == season)
     }
     #[allow(unused)]
-    pub fn filter_by_round(round: u32) -> TableIter<Self> {
-        Self::filter(|row| row.round == round)
-    }
-    #[allow(unused)]
-    pub fn filter_by_score(score: u32) -> TableIter<Self> {
-        Self::filter(|row| row.score == score)
+    pub fn filter_by_floor(floor: u32) -> TableIter<Self> {
+        Self::filter(|row| row.floor == floor)
     }
     #[allow(unused)]
     pub fn filter_by_user(user: u64) -> TableIter<Self> {

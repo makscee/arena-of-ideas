@@ -179,31 +179,34 @@ impl ShopPlugin {
             UnitPlugin::despawn(entity, world);
         }
     }
+    pub fn show_stats(run: &TArenaRun, ui: &mut Ui) {
+        text_dots_text(
+            "G".cstr(),
+            run.g.to_string().cstr_cs(YELLOW, CstrStyle::Bold),
+            ui,
+        );
+        text_dots_text(
+            "lives".cstr(),
+            run.lives.to_string().cstr_cs(GREEN, CstrStyle::Bold),
+            ui,
+        );
+        text_dots_text(
+            "floor".cstr(),
+            run.floor.to_string().cstr_c(VISIBLE_BRIGHT),
+            ui,
+        );
+        text_dots_text(
+            "streak".cstr(),
+            run.streak.to_string().cstr_c(VISIBLE_BRIGHT),
+            ui,
+        );
+        text_dots_text("mode".cstr(), run.mode.cstr(), ui);
+    }
     pub fn add_tiles(world: &mut World) {
         Tile::new(Side::Left, |ui, _| {
             text_dots_text("name".cstr(), user_name().cstr_c(VISIBLE_BRIGHT), ui);
             if let Some(run) = TArenaRun::get_current() {
-                text_dots_text(
-                    "G".cstr(),
-                    run.g.to_string().cstr_cs(YELLOW, CstrStyle::Bold),
-                    ui,
-                );
-                text_dots_text(
-                    "lives".cstr(),
-                    run.lives.to_string().cstr_cs(GREEN, CstrStyle::Bold),
-                    ui,
-                );
-                text_dots_text(
-                    "round".cstr(),
-                    run.round.to_string().cstr_c(VISIBLE_BRIGHT),
-                    ui,
-                );
-                text_dots_text(
-                    "score".cstr(),
-                    run.score.to_string().cstr_c(VISIBLE_BRIGHT),
-                    ui,
-                );
-                text_dots_text("mode".cstr(), run.mode.cstr(), ui);
+                Self::show_stats(&run, ui);
             }
         })
         .transparent()
@@ -212,16 +215,16 @@ impl ShopPlugin {
         .push(world);
         Tile::new(Side::Right, |ui, _| {
             let run = TArenaRun::current();
-            let champion_round = TArenaLeaderboard::iter()
+            let champion_floor = TArenaLeaderboard::iter()
                 .filter(|d| d.mode.eq(&run.mode))
-                .map(|d| d.round)
+                .map(|d| d.floor)
                 .max()
                 .unwrap_or_default();
-            let own_round = run.round;
+            let own_floor = run.floor;
             let btn_text = "Start Battle".to_string();
-            if own_round + 1 == champion_round {
+            if own_floor + 1 == champion_floor {
                 "Champion Battle".cstr_cs(YELLOW, CstrStyle::Bold).label(ui);
-            } else if own_round == champion_round && champion_round > 0 {
+            } else if own_floor == champion_floor && champion_floor > 0 {
                 "Shadow Battle"
                     .cstr_cs(LIGHT_PURPLE, CstrStyle::Bold)
                     .label(ui);
@@ -481,33 +484,23 @@ impl ShopPlugin {
                 "Run Over".cstr_cs(YELLOW, CstrStyle::Bold).label(ui);
                 run.mode.cstr().label(ui);
                 text_dots_text(
-                    format!("Final round").cstr(),
-                    run.round.to_string().cstr_cs(YELLOW, CstrStyle::Bold),
-                    ui,
-                );
-                text_dots_text(
-                    format!("Score").cstr(),
-                    run.score.to_string().cstr_cs(YELLOW, CstrStyle::Bold),
+                    format!("Final floor").cstr(),
+                    run.floor.to_string().cstr_cs(YELLOW, CstrStyle::Bold),
                     ui,
                 );
                 br(ui);
                 "Rewards".cstr_cs(YELLOW, CstrStyle::Heading2).label(ui);
                 let mut total = 0;
-                for Reward { name, amount } in run.rewards {
+                for Reward { source, amount } in run.rewards {
                     text_dots_text(
-                        name.cstr_c(VISIBLE_DARK),
+                        source.cstr_c(VISIBLE_DARK),
                         amount.to_string().cstr_c(YELLOW),
                         ui,
                     );
                     total += amount;
                 }
-                let total_txt = if run.reward_limit > 0 {
-                    format!("Total (max {})", run.reward_limit)
-                } else {
-                    "Total".to_owned()
-                };
                 text_dots_text(
-                    total_txt.cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold),
+                    "Total".cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold),
                     total.to_string().cstr_cs(YELLOW, CstrStyle::Bold),
                     ui,
                 );

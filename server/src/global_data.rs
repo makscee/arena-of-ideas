@@ -63,7 +63,7 @@ pub fn update_constant_seed() {
     let mut gd = GlobalData::get();
     if gd.constant_seed.is_empty()
         || TArenaLeaderboard::current_champion(&GameMode::ArenaConst(gd.constant_seed.into()))
-            .is_some_and(|d| d.round >= 10)
+            .is_some_and(|d| d.floor >= 10)
     {
         let seed = generate_str_seed(10);
         self::println!("Constant seed updated to {seed}");

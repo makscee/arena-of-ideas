@@ -14,6 +14,6 @@ use spacetimedb_sdk::{
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct Reward {
-    pub name: String,
+    pub source: String,
     pub amount: i64,
 }
