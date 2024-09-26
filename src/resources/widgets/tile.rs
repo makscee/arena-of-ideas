@@ -365,32 +365,31 @@ impl Tile {
         }
 
         area.constrain_to(rect).show(ctx, |ui| {
-            ui.painter()
-                .add(frame.paint(rect.shrink2(frame.outer_margin.sum() * 0.5)));
-            let content_rect = rect.shrink2(self.margin_space * 0.5);
-            ui.set_clip_rect(content_rect.expand2(self.margin_space * 0.25));
-            let ui = &mut ui.child_ui(content_rect, Layout::top_down(Align::Min), None);
-            if !self.pinned {
-                const CROSS_SIZE: f32 = 13.0;
-                let cross_rect = Rect::from_two_pos(
-                    content_rect.right_top(),
-                    content_rect.right_top() + egui::vec2(-CROSS_SIZE, CROSS_SIZE),
-                );
-                let resp = ui.allocate_rect(cross_rect, Sense::click());
-                if resp.clicked() {
-                    self.open = false;
+            frame.show(ui, |ui| {
+                let content_rect = rect.shrink2(self.margin_space * 0.5);
+                ui.expand_to_include_rect(content_rect);
+                if !self.pinned {
+                    const CROSS_SIZE: f32 = 13.0;
+                    let cross_rect = Rect::from_two_pos(
+                        content_rect.right_top(),
+                        content_rect.right_top() + egui::vec2(-CROSS_SIZE, CROSS_SIZE),
+                    );
+                    let resp = ui.allocate_rect(cross_rect, Sense::click());
+                    if resp.clicked() {
+                        self.open = false;
+                    }
+                    let stroke = Stroke {
+                        width: 2.0,
+                        color: if resp.hovered() { YELLOW } else { VISIBLE_DARK },
+                    };
+                    ui.painter()
+                        .line_segment([cross_rect.left_top(), cross_rect.right_bottom()], stroke);
+                    ui.painter()
+                        .line_segment([cross_rect.right_top(), cross_rect.left_bottom()], stroke);
                 }
-                let stroke = Stroke {
-                    width: 2.0,
-                    color: if resp.hovered() { YELLOW } else { VISIBLE_DARK },
-                };
-                ui.painter()
-                    .line_segment([cross_rect.left_top(), cross_rect.right_bottom()], stroke);
-                ui.painter()
-                    .line_segment([cross_rect.right_top(), cross_rect.left_bottom()], stroke);
-            }
-            (self.content)(ui, world);
-            self.content_space = ui.min_size().at_least(self.min_space);
+                (self.content)(ui, world);
+                self.content_space = ui.min_size().at_least(self.min_space);
+            });
         });
         response
     }

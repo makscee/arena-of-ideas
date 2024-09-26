@@ -309,7 +309,7 @@ impl ShopPlugin {
                     };
                     if Button::click(text)
                         .title("Reroll".cstr())
-                        .enabled(g >= 1)
+                        .enabled(g >= run.price_reroll || run.free_rerolls > 0)
                         .ui(ui)
                         .clicked()
                     {

@@ -194,7 +194,7 @@ pub fn debug_rect(rect: Rect, ctx: &egui::Context) {
     ctx.debug_painter().rect(
         rect,
         Rounding::ZERO,
-        YELLOW_DARK,
+        YELLOW_DARK.gamma_multiply(0.5),
         Stroke {
             width: 1.0,
             color: YELLOW,

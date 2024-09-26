@@ -60,19 +60,22 @@ impl WidgetsPlugin {
         Area::new(Id::new("top_right_info"))
             .anchor(Align2::RIGHT_TOP, [0.0, 0.0])
             .show(ctx, |ui| {
-                ui.with_layout(Layout::right_to_left(egui::Align::Min), |ui| {
-                    ui.add_space(13.0);
-                    if let Some(fps) = world
-                        .resource::<DiagnosticsStore>()
-                        .get(&FrameTimeDiagnosticsPlugin::FPS)
-                    {
-                        if let Some(fps) = fps.smoothed() {
-                            ui.label(format!("fps: {fps:.0}"));
-                        }
+                let ui = &mut ui.child_ui(
+                    ui.available_rect_before_wrap(),
+                    Layout::right_to_left(Align::Min),
+                    None,
+                );
+                ui.add_space(13.0);
+                if let Some(fps) = world
+                    .resource::<DiagnosticsStore>()
+                    .get(&FrameTimeDiagnosticsPlugin::FPS)
+                {
+                    if let Some(fps) = fps.smoothed() {
+                        ui.label(format!("fps: {fps:.0}"));
                     }
-                    format!("arena-of-ideas {VERSION}").cstr().label(ui);
-                    current_server().1.cstr().bold().label(ui);
-                })
+                }
+                format!("arena-of-ideas {VERSION}").cstr().label(ui);
+                current_server().1.cstr().bold().label(ui);
             });
 
         SectionMenu::default().show(ctx, world);
