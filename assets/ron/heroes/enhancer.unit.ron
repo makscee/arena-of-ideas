@@ -8,7 +8,12 @@
     trigger: Fire(
         triggers: [(BattleStart, None)],
         targets: [],
-        effects: [(AbilityStateAddVar("Magic Missile", Damage, Context(Lvl)), None)],
+        effects: [
+            (
+                AbilityStateAddVar("Magic Missile", Damage, Context(Lvl)),
+                Some("[Magic Missle] DMG increase by {Lvl}"),
+            ),
+        ],
     ),
     representation: (
         material: Shape(

@@ -15,7 +15,7 @@ pub struct PackedUnit {
     pub pwr_mutation: i32,
     #[serde(default = "default_zero")]
     pub hp_mutation: i32,
-    #[serde(default = "default_zero")]
+    #[serde(default = "default_one")]
     pub lvl: i32,
     #[serde(default = "default_zero")]
     pub xp: i32,
@@ -224,7 +224,7 @@ impl From<TBaseUnit> for PackedUnit {
             hp: value.hp,
             pwr_mutation: 0,
             hp_mutation: 0,
-            lvl: 0,
+            lvl: 1,
             xp: 0,
             rarity: value.rarity,
             houses: vec![value.house],

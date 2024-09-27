@@ -9,8 +9,11 @@
         triggers: [(BattleStart, None)],
         targets: [],
         effects: [
-            (AbilityStateAddVar("Treant", Pwr, Context(Lvl)), None),
-            (AbilityStateAddVar("Treant", Hp, Context(Lvl)), None),
+            (
+                AbilityStateAddVar("Treant", Pwr, Context(Lvl)),
+                Some("[Treant] PWR increase by {Lvl}"),
+            ),
+            (AbilityStateAddVar("Treant", Hp, Context(Lvl)), Some("[Treant] HP increase by {Lvl}")),
         ],
     ),
     representation: (

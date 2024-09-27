@@ -7,8 +7,8 @@
     houses: ["Paladins"],
     trigger: Fire(
         triggers: [(TurnEnd, None)],
-        targets: [(FilterStatusUnits("Shield", AllEnemyUnits), None)],
-        effects: [(WithVar(Value, Context(Lvl), Damage), Some("Deal {Lvl} DMG"))],
+        targets: [(FilterStatusUnits("Shield", AllEnemyUnits), Some("all enemies with [Shield]"))],
+        effects: [(WithVar(Value, Context(Lvl), Damage), Some("deal {Lvl} DMG"))],
     ),
     representation: (
         material: Shape(

@@ -178,7 +178,7 @@
       "group": {
         "kind": "build"
       },
-      "command": "spacetime publish aoi_dev -p server"
+      "command": "spacetime publish aoi_prod -p server"
     },
     {
       "label": "STDB: Publish & Clear",

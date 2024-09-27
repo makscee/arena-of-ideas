@@ -73,7 +73,7 @@ impl UnitCard {
         })
     }
     pub fn ui(&self, ui: &mut Ui) {
-        let fusible_lvl = self.houses.len() as i32;
+        let fusible_lvl = self.houses.len() as i32 + 1;
         let fusible_str = if fusible_lvl > self.lvl {
             "Fusible from lvl "
                 .cstr()
@@ -133,7 +133,7 @@ impl UnitCard {
                     .push(": ".cstr_c(color))
                     .push(self.xp.to_string().cstr_c(VISIBLE_BRIGHT))
                     .push("/".cstr())
-                    .push((self.lvl + 1).to_string().cstr_c(VISIBLE_BRIGHT))
+                    .push((self.lvl).to_string().cstr_c(VISIBLE_BRIGHT))
                     .style(CstrStyle::Bold)
                     .label(ui);
                 ui.add_space(2.0);

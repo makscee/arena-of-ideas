@@ -44,7 +44,7 @@ impl FusedUnit {
             pwr: base.pwr,
             hp_mutation: 0,
             pwr_mutation: 0,
-            lvl: 0,
+            lvl: 1,
             xp: 0,
             id,
         }
@@ -126,13 +126,13 @@ impl FusedUnit {
         !a.into_iter().any(|h| b.contains(&h))
     }
     pub fn fusible(&self) -> bool {
-        self.lvl >= (self.bases.len() as u32)
+        self.lvl > (self.bases.len() as u32)
     }
     pub fn add_xp(&mut self, xp: u32) {
         self.xp += xp;
-        while self.xp > self.lvl {
-            self.add_lvl();
+        while self.xp >= self.lvl {
             self.xp -= self.lvl;
+            self.add_lvl();
         }
     }
     pub fn add_lvl(&mut self) {
