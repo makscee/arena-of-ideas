@@ -80,20 +80,21 @@ fn main() {
                 .continue_to_state(GameState::TestScenariosRun)
                 .load_collection::<TestScenarios>(),
         )
-        .add_plugins(RonAssetPlugin::<GlobalSettingsAsset>::new(&[
-            "global_settings.ron",
-        ]))
         .add_plugins(Material2dPlugin::<ShapeMaterial>::default())
         .add_plugins(Material2dPlugin::<CurveMaterial>::default())
-        .add_plugins(RonAssetPlugin::<BattleData>::new(&["battle.ron"]))
-        .add_plugins(RonAssetPlugin::<PackedUnit>::new(&["unit.ron"]))
-        .add_plugins(RonAssetPlugin::<House>::new(&["house.ron"]))
-        .add_plugins(RonAssetPlugin::<TestScenario>::new(&["scenario.ron"]))
-        .add_plugins(RonAssetPlugin::<Representation>::new(&["rep.ron"]))
-        .add_plugins(RonAssetPlugin::<Animations>::new(&["anim.ron"]))
-        .add_plugins(RonAssetPlugin::<Vfx>::new(&["vfx.ron"]))
+        .add_plugins((
+            RonAssetPlugin::<GlobalSettingsAsset>::new(&["global_settings.ron"]),
+            RonAssetPlugin::<BattleData>::new(&["battle.ron"]),
+            RonAssetPlugin::<PackedUnit>::new(&["unit.ron"]),
+            RonAssetPlugin::<House>::new(&["house.ron"]),
+            RonAssetPlugin::<TestScenario>::new(&["scenario.ron"]),
+            RonAssetPlugin::<Representation>::new(&["rep.ron"]),
+            RonAssetPlugin::<Animations>::new(&["anim.ron"]),
+            RonAssetPlugin::<Vfx>::new(&["vfx.ron"]),
+        ))
         .add_plugins(bevy_egui::EguiPlugin)
         .add_plugins(NoisyShaderPlugin)
+        .add_plugins(bevy_panic_handler::PanicHandler::new().build())
         .add_plugins((
             LoadingPlugin,
             UiPlugin,
