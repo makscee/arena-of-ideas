@@ -150,12 +150,12 @@ fn shop_finish(ctx: ReducerContext) -> Result<(), String> {
     if champion {
         run.champion = Some(enemy);
     }
+    if !team.units.is_empty() && run.battles.len() == run.floor as usize {
+        TArenaPool::add(run.mode.clone(), team.id, run.floor);
+    }
     run.battles
         .push(TBattle::new(run.mode.clone(), run.owner, team.id, enemy));
 
-    if !team.units.is_empty() && !run.champion_reached() {
-        TArenaPool::add(run.mode.clone(), team.id, run.floor);
-    }
     run.rerolls = 0;
     run.fill_case()?;
     let ars = &settings().arena;
