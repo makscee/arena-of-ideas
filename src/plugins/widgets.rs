@@ -92,7 +92,6 @@ impl WidgetsPlugin {
                 GameState::Login => LoginPlugin::login_ui(ui, world),
                 GameState::Battle => BattlePlugin::ui(ui, world),
                 GameState::GameOver => ShopPlugin::game_over_ui(ui),
-                GameState::TableView(query) => TableViewPlugin::ui_content(query, ui, world),
                 _ => {}
             });
 

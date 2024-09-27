@@ -38,17 +38,6 @@ impl TableViewPlugin {
             _ => panic!("Query not supported {query}"),
         }
     }
-    pub fn ui_content(query: StdbQuery, ui: &mut Ui, world: &mut World) {
-        match query {
-            StdbQuery::BaseUnits | StdbQuery::BattleHistory => {
-                TeamContainer::new(Faction::Team)
-                    .hover_content(ShopPlugin::container_on_hover)
-                    .slots(1)
-                    .ui(ui, world);
-            }
-            _ => panic!("Query not supported {query}"),
-        }
-    }
     fn add_battle_history_tile(world: &mut World) {
         Tile::new(Side::Left, |ui, world| {
             let td = world.remove_resource::<TablesData>().unwrap();
@@ -70,8 +59,8 @@ impl TableViewPlugin {
                 )
                 .column_cstr("result", |d, _| match d.result {
                     TBattleResult::Tbd => "-".cstr(),
-                    TBattleResult::Left | TBattleResult::Even => "W".cstr_c(GREEN),
-                    TBattleResult::Right => "L".cstr_c(RED),
+                    TBattleResult::Left => "W".cstr_c(GREEN),
+                    TBattleResult::Right | TBattleResult::Even => "L".cstr_c(RED),
                 })
                 .column_ts("time", |d| d.ts)
                 .column_btn("run", |d, _, world| {
