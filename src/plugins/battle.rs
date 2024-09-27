@@ -238,6 +238,7 @@ impl BattlePlugin {
                 } else {
                     Icon::Pause.image()
                 })
+                .rounding(13.0)
                 .ui(ui)
                 .clicked()
                 {
@@ -261,6 +262,7 @@ impl BattlePlugin {
                         gt().advance_play(-delta_time(world) * 2.0);
                     }
                     let resp = ImageButton::new(Icon::FFBack.image())
+                        .rounding(13.0)
                         .tint(if pressed { YELLOW } else { VISIBLE_BRIGHT })
                         .ui(ui);
                     set_context_bool(
@@ -276,6 +278,7 @@ impl BattlePlugin {
                         gt().advance_play(delta_time(world));
                     }
                     let resp = ImageButton::new(Icon::FFForward.image())
+                        .rounding(13.0)
                         .tint(if pressed { YELLOW } else { VISIBLE_BRIGHT })
                         .ui(ui);
                     set_context_bool(
@@ -296,12 +299,20 @@ impl BattlePlugin {
                     );
                 },
                 |ui, _| {
-                    if ImageButton::new(Icon::SkipBack.image()).ui(ui).clicked() {
+                    if ImageButton::new(Icon::SkipBack.image())
+                        .rounding(13.0)
+                        .ui(ui)
+                        .clicked()
+                    {
                         gt().play_head_to(0.0);
                     }
                 },
                 |ui, _| {
-                    if ImageButton::new(Icon::SkipForward.image()).ui(ui).clicked() {
+                    if ImageButton::new(Icon::SkipForward.image())
+                        .rounding(13.0)
+                        .ui(ui)
+                        .clicked()
+                    {
                         gt().skip_to_end();
                     }
                 },

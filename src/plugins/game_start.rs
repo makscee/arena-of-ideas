@@ -103,70 +103,95 @@ impl GameStartPlugin {
                             }
                         },
                     );
-                match &game_mode {
-                    GameMode::ArenaNormal => {
-                        if Button::click("Play".into())
-                            .enabled(can_start)
-                            .ui(ui)
-                            .clicked()
-                        {
-                            run_start_normal();
-                            once_on_run_start_normal(|_, _, status| {
-                                status.on_success(|w| GameState::Shop.proceed_to_target(w))
-                            });
+                ui.vertical_centered_justified(|ui| {
+                    ui.set_width(400.0);
+                    match &game_mode {
+                        GameMode::ArenaNormal => {
+                            if Button::click("Play".into())
+                                .enabled(can_start)
+                                .ui(ui)
+                                .clicked()
+                            {
+                                run_start_normal();
+                                once_on_run_start_normal(|_, _, status| {
+                                    status.on_success(|w| GameState::Shop.proceed_to_target(w))
+                                });
+                            }
                         }
-                    }
-                    GameMode::ArenaRanked => {
-                        let cost = TPrices::current().ranked_mode;
-                        let gsr = world.resource::<GameStartResource>();
-                        if gsr.teams.is_empty() {
-                            "Need at least one non-empty team to play this mode"
-                                .cstr_cs(RED, CstrStyle::Bold)
-                                .label(ui);
-                        } else {
-                            Middle3::default().width(300.0).ui_mut(
-                                ui,
-                                world,
-                                |ui, world| {
-                                    "Select team".cstr_c(VISIBLE_LIGHT).label(ui);
-                                    let gsr = world.resource_mut::<GameStartResource>();
-                                    let team = gsr.teams[gsr.selected_team].clone();
-                                    team.hover_label(ui, world);
-                                },
-                                |ui, world| {
-                                    if Button::click("<".to_owned())
-                                        .min_width(ARROW_WIDTH)
-                                        .ui(ui)
-                                        .clicked()
-                                    {
-                                        let mut gsr = world.resource_mut::<GameStartResource>();
-                                        gsr.selected_team = (gsr.selected_team + gsr.teams.len()
-                                            - 1)
-                                            % gsr.teams.len();
-                                    }
-                                },
-                                |ui, world| {
-                                    if Button::click(">".to_owned())
-                                        .min_width(ARROW_WIDTH)
-                                        .ui(ui)
-                                        .clicked()
-                                    {
-                                        let mut gsr = world.resource_mut::<GameStartResource>();
-                                        gsr.selected_team =
-                                            (gsr.selected_team + 1) % gsr.teams.len();
-                                    }
-                                },
-                            );
+                        GameMode::ArenaRanked => {
+                            let cost = TPrices::current().ranked_mode;
+                            let gsr = world.resource::<GameStartResource>();
+                            if gsr.teams.is_empty() {
+                                "Need at least one non-empty team to play this mode"
+                                    .cstr_cs(RED, CstrStyle::Bold)
+                                    .label(ui);
+                            } else {
+                                Middle3::default().width(300.0).ui_mut(
+                                    ui,
+                                    world,
+                                    |ui, world| {
+                                        "Select team".cstr_c(VISIBLE_LIGHT).label(ui);
+                                        let gsr = world.resource_mut::<GameStartResource>();
+                                        let team = gsr.teams[gsr.selected_team].clone();
+                                        team.hover_label(ui, world);
+                                    },
+                                    |ui, world| {
+                                        if Button::click("<".to_owned())
+                                            .min_width(ARROW_WIDTH)
+                                            .ui(ui)
+                                            .clicked()
+                                        {
+                                            let mut gsr = world.resource_mut::<GameStartResource>();
+                                            gsr.selected_team =
+                                                (gsr.selected_team + gsr.teams.len() - 1)
+                                                    % gsr.teams.len();
+                                        }
+                                    },
+                                    |ui, world| {
+                                        if Button::click(">".to_owned())
+                                            .min_width(ARROW_WIDTH)
+                                            .ui(ui)
+                                            .clicked()
+                                        {
+                                            let mut gsr = world.resource_mut::<GameStartResource>();
+                                            gsr.selected_team =
+                                                (gsr.selected_team + 1) % gsr.teams.len();
+                                        }
+                                    },
+                                );
+                                if Button::click(format!("-{} {CREDITS_SYM}", cost))
+                                    .title("Play".cstr())
+                                    .enabled(can_start && TWallet::current().amount >= cost)
+                                    .ui(ui)
+                                    .clicked()
+                                {
+                                    let gsr = world.resource::<GameStartResource>();
+                                    let team = gsr.teams[gsr.selected_team].id;
+                                    run_start_ranked(team);
+                                    once_on_run_start_ranked(|_, _, status, _| {
+                                        status.on_success(|w| GameState::Shop.proceed_to_target(w))
+                                    });
+                                }
+                                "Wallet: "
+                                    .cstr()
+                                    .push(
+                                        format!("{} {CREDITS_SYM}", TWallet::current().amount)
+                                            .cstr_cs(YELLOW, CstrStyle::Bold),
+                                    )
+                                    .label(ui);
+                            }
+                        }
+                        GameMode::ArenaConst(seed) => {
+                            let cost = TPrices::current().const_mode;
+                            seed.cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold).label(ui);
                             if Button::click(format!("-{} {CREDITS_SYM}", cost))
                                 .title("Play".cstr())
                                 .enabled(can_start && TWallet::current().amount >= cost)
                                 .ui(ui)
                                 .clicked()
                             {
-                                let gsr = world.resource::<GameStartResource>();
-                                let team = gsr.teams[gsr.selected_team].id;
-                                run_start_ranked(team);
-                                once_on_run_start_ranked(|_, _, status, _| {
+                                run_start_const();
+                                once_on_run_start_const(|_, _, status| {
                                     status.on_success(|w| GameState::Shop.proceed_to_target(w))
                                 });
                             }
@@ -179,29 +204,7 @@ impl GameStartPlugin {
                                 .label(ui);
                         }
                     }
-                    GameMode::ArenaConst(seed) => {
-                        let cost = TPrices::current().const_mode;
-                        seed.cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold).label(ui);
-                        if Button::click(format!("-{} {CREDITS_SYM}", cost))
-                            .title("Play".cstr())
-                            .enabled(can_start && TWallet::current().amount >= cost)
-                            .ui(ui)
-                            .clicked()
-                        {
-                            run_start_const();
-                            once_on_run_start_const(|_, _, status| {
-                                status.on_success(|w| GameState::Shop.proceed_to_target(w))
-                            });
-                        }
-                        "Wallet: "
-                            .cstr()
-                            .push(
-                                format!("{} {CREDITS_SYM}", TWallet::current().amount)
-                                    .cstr_cs(YELLOW, CstrStyle::Bold),
-                            )
-                            .label(ui);
-                    }
-                }
+                });
             });
         })
         .pinned()

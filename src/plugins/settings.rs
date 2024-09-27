@@ -22,6 +22,7 @@ impl SettingsPlugin {
             }
         })
         .set_id("Video Settings".into())
+        .min_space(egui::vec2(200.0, 0.0))
         .push(world);
     }
 }

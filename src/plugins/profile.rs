@@ -44,6 +44,7 @@ impl ProfilePlugin {
             })
         })
         .set_id("Profile Settings".into())
+        .min_space(egui::vec2(200.0, 0.0))
         .push(world);
     }
     fn settings_ui(ped: &mut ProfileEditData, ui: &mut Ui, world: &mut World) {
@@ -83,7 +84,9 @@ impl ProfilePlugin {
                 .password()
                 .ui_string(&mut ped.old_pass, ui);
         }
-        Input::new("new password").password().ui_string(&mut ped.pass, ui);
+        Input::new("new password")
+            .password()
+            .ui_string(&mut ped.pass, ui);
         Input::new("new password repeat")
             .password()
             .ui_string(&mut ped.pass_repeat, ui);
