@@ -109,7 +109,8 @@ fn run_start_normal(ctx: ReducerContext) -> Result<(), String> {
 #[spacetimedb(reducer)]
 fn run_start_ranked(ctx: ReducerContext, team_id: u64) -> Result<(), String> {
     let user = ctx.user()?;
-    TWallet::change(user.id, -settings().arena.ranked_cost)?;
+    let cost = TPrices::filter_by_owner(&user.id).unwrap().buy_ranked();
+    TWallet::change(user.id, -cost)?;
     let mut team = TTeam::get_owned(team_id, user.id)?;
     team.pool = TeamPool::Arena;
     let team = team.apply_limit().apply_empty_stat_bonus().save_clone();
@@ -123,6 +124,8 @@ fn run_start_ranked(ctx: ReducerContext, team_id: u64) -> Result<(), String> {
 #[spacetimedb(reducer)]
 fn run_start_const(ctx: ReducerContext) -> Result<(), String> {
     let user = ctx.user()?;
+    let cost = TPrices::filter_by_owner(&user.id).unwrap().buy_const();
+    TWallet::change(user.id, -cost)?;
     TArenaRun::start(
         user,
         GameMode::ArenaConst(GlobalData::get().constant_seed.clone()),

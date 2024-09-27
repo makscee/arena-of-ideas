@@ -81,6 +81,7 @@ pub mod t_battle_result;
 pub mod t_house;
 pub mod t_lootbox_item;
 pub mod t_meta_shop;
+pub mod t_prices;
 pub mod t_representation;
 pub mod t_status;
 pub mod t_team;
@@ -160,6 +161,7 @@ pub use t_battle_result::*;
 pub use t_house::*;
 pub use t_lootbox_item::*;
 pub use t_meta_shop::*;
+pub use t_prices::*;
 pub use t_representation::*;
 pub use t_status::*;
 pub use t_team::*;
@@ -296,6 +298,8 @@ impl SpacetimeModule for Module {
                     callbacks,
                     table_update,
                 ),
+            "TPrices" => client_cache
+                .handle_table_update_with_primary_key::<t_prices::TPrices>(callbacks, table_update),
             "TRepresentation" => client_cache
                 .handle_table_update_no_primary_key::<t_representation::TRepresentation>(
                     callbacks,
@@ -363,6 +367,7 @@ impl SpacetimeModule for Module {
         reminders.invoke_callbacks::<t_house::THouse>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_lootbox_item::TLootboxItem>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_meta_shop::TMetaShop>(worker, &reducer_event, state);
+        reminders.invoke_callbacks::<t_prices::TPrices>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_representation::TRepresentation>(
             worker,
             &reducer_event,
@@ -480,6 +485,9 @@ match &reducer_call.reducer_name[..] {
                 .handle_resubscribe_for_type::<t_lootbox_item::TLootboxItem>(callbacks, new_subs),
             "TMetaShop" => client_cache
                 .handle_resubscribe_for_type::<t_meta_shop::TMetaShop>(callbacks, new_subs),
+            "TPrices" => {
+                client_cache.handle_resubscribe_for_type::<t_prices::TPrices>(callbacks, new_subs)
+            }
             "TRepresentation" => client_cache
                 .handle_resubscribe_for_type::<t_representation::TRepresentation>(
                     callbacks, new_subs,

@@ -30,6 +30,7 @@ fn register_empty(ctx: ReducerContext) -> Result<(), String> {
     };
     TUser::insert(user)?;
     TWallet::new(id)?;
+    TPrices::new(id)?;
     Ok(())
 }
 

@@ -294,43 +294,20 @@ impl WorldExt for World {
     }
 }
 
-pub trait TableSingletonExt {
-    fn current() -> Self;
-    fn get_current() -> Option<Box<Self>>;
+pub trait TableSingletonExt: TableType {
+    fn current() -> Self {
+        *Self::get_current().unwrap()
+    }
+    fn get_current() -> Option<Box<Self>> {
+        Self::iter().exactly_one().ok().map(|d| Box::new(d))
+    }
 }
 
-impl TableSingletonExt for GlobalData {
-    fn current() -> Self {
-        *Self::get_current().unwrap()
-    }
-    fn get_current() -> Option<Box<Self>> {
-        Self::iter().exactly_one().ok().map(|d| Box::new(d))
-    }
-}
-impl TableSingletonExt for GlobalSettings {
-    fn current() -> Self {
-        *Self::get_current().unwrap()
-    }
-    fn get_current() -> Option<Box<Self>> {
-        Self::iter().exactly_one().ok().map(|d| Box::new(d))
-    }
-}
-impl TableSingletonExt for TArenaRun {
-    fn current() -> Self {
-        *Self::get_current().unwrap()
-    }
-    fn get_current() -> Option<Box<Self>> {
-        Self::iter().exactly_one().ok().map(|d| Box::new(d))
-    }
-}
-impl TableSingletonExt for TWallet {
-    fn current() -> Self {
-        *Self::get_current().unwrap()
-    }
-    fn get_current() -> Option<Box<Self>> {
-        Self::iter().exactly_one().ok().map(|d| Box::new(d))
-    }
-}
+impl TableSingletonExt for GlobalData {}
+impl TableSingletonExt for GlobalSettings {}
+impl TableSingletonExt for TArenaRun {}
+impl TableSingletonExt for TWallet {}
+impl TableSingletonExt for TPrices {}
 
 pub trait StdbStatusExt {
     fn on_success(&self, f: impl FnOnce(&mut World) + Send + Sync + 'static);
