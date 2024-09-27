@@ -201,6 +201,9 @@ pub fn debug_rect(rect: Rect, ctx: &egui::Context) {
         },
     );
 }
+pub fn debug_available_rect(ui: &mut Ui) {
+    debug_rect(ui.available_rect_before_wrap(), ui.ctx());
+}
 pub fn can_afford(cost: i64) -> bool {
     TWallet::current().amount >= cost
 }
@@ -455,5 +458,27 @@ impl BaseUnitExt for FusedUnit {
 impl BaseUnitExt for String {
     fn base(&self) -> &str {
         self
+    }
+}
+
+pub trait TTeamExt {
+    fn hover_label(&self, ui: &mut Ui, world: &mut World);
+}
+
+impl TTeamExt for TTeam {
+    fn hover_label(&self, ui: &mut Ui, world: &mut World) {
+        if self.cstr().label(ui).hovered() {
+            cursor_window(ui.ctx(), |ui| {
+                Frame {
+                    inner_margin: Margin::same(8.0),
+                    rounding: Rounding::same(13.0),
+                    fill: BG_TRANSPARENT,
+                    ..default()
+                }
+                .show(ui, |ui| {
+                    self.show(ui, world);
+                });
+            });
+        }
     }
 }

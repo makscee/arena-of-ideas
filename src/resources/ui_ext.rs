@@ -47,14 +47,12 @@ impl ShowTable<TBaseUnit> for Vec<TBaseUnit> {
                 "name",
                 |d: &TBaseUnit, _| d.cstr().into(),
                 |d, name, ui, world| {
-                    let r = name.get_cstr().unwrap().button(ui);
-                    if r.hovered() {
+                    if name.get_cstr().unwrap().button(ui).hovered() {
                         cursor_window(ui.ctx(), |ui| match cached_base_card(d, ui, world) {
                             Ok(_) => {}
                             Err(e) => error!("{e}"),
                         });
                     }
-                    r
                 },
                 true,
             )
@@ -97,7 +95,7 @@ impl ShowTable<FusedUnit> for Vec<FusedUnit> {
                 "name",
                 |d: &FusedUnit, _| d.cstr().into(),
                 |d, _, ui, world| {
-                    let r = d.cstr_limit(0, true).button(ui);
+                    let r = d.cstr_limit(3, true).button(ui);
                     if r.clicked() {
                         TilePlugin::add_fused_unit(d.clone(), world);
                     }
@@ -107,7 +105,6 @@ impl ShowTable<FusedUnit> for Vec<FusedUnit> {
                             Err(e) => error!("{e}"),
                         });
                     }
-                    r
                 },
                 true,
             )
@@ -168,10 +165,11 @@ impl ShowTable<TMetaShop> for Vec<TMetaShop> {
                 "buy",
                 |_, _| default(),
                 |d, _, ui, _| {
-                    let r = Button::click("buy".into())
+                    if Button::click("buy".into())
                         .enabled(can_afford(d.price))
-                        .ui(ui);
-                    if r.clicked() {
+                        .ui(ui)
+                        .clicked()
+                    {
                         meta_buy(d.id);
                         once_on_meta_buy(|_, _, status, _| match status {
                             StdbStatus::Committed => {}
@@ -179,7 +177,6 @@ impl ShowTable<TMetaShop> for Vec<TMetaShop> {
                             _ => panic!(),
                         });
                     }
-                    r
                 },
                 false,
             );
@@ -292,6 +289,9 @@ impl Show for FusedUnit {
 impl Show for TTeam {
     fn show(&self, ui: &mut Ui, world: &mut World) {
         title("Team", ui);
+        if !self.name.is_empty() {
+            text_dots_text("name".cstr(), self.name.cstr_c(VISIBLE_LIGHT), ui);
+        }
         text_dots_text("owner".cstr(), self.owner.get_user().cstr(), ui);
         text_dots_text("gid".cstr(), self.id.to_string().cstr_c(VISIBLE_LIGHT), ui);
         ui.push_id(self.id, |ui| {

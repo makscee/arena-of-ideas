@@ -210,7 +210,7 @@
       "group": {
         "kind": "build"
       },
-      "command": "spacetime sql aoi_dev2 --interactive"
+      "command": "spacetime sql aoi_dev --interactive"
     },
     {
       "label": "Flamegraph: Run Debug",

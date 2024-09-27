@@ -89,11 +89,11 @@ impl MetaPlugin {
                                 |_, _| default(),
                                 |d, _, ui, _| {
                                     let own = user_id() == d.owner;
-                                    let r =
-                                        Button::click(if own { "cancel" } else { "buy" }.into())
-                                            .enabled(own || can_afford(d.price))
-                                            .ui(ui);
-                                    if r.clicked() {
+                                    if Button::click(if own { "cancel" } else { "buy" }.into())
+                                        .enabled(own || can_afford(d.price))
+                                        .ui(ui)
+                                        .clicked()
+                                    {
                                         auction_buy(d.item_id);
                                         once_on_auction_buy(|_, _, status, id| match status {
                                             StdbStatus::Committed => {
@@ -103,7 +103,6 @@ impl MetaPlugin {
                                             _ => panic!(),
                                         });
                                     }
-                                    r
                                 },
                                 false,
                             )
@@ -190,10 +189,11 @@ impl MetaPlugin {
                         |d, _, ui, world| {
                             let craft_cost =
                                 GameAssets::get(world).global_settings.craft_shards_cost;
-                            let r = Button::click("craft".into())
+                            if Button::click("craft".into())
                                 .enabled(d.count >= craft_cost)
-                                .ui(ui);
-                            if r.clicked() {
+                                .ui(ui)
+                                .clicked()
+                            {
                                 craft_hero(d.unit.clone());
                                 once_on_craft_hero(|_, _, status, unit| match status {
                                     StdbStatus::Committed => {
@@ -204,7 +204,6 @@ impl MetaPlugin {
                                     _ => panic!(),
                                 });
                             }
-                            r
                         },
                         false,
                     )

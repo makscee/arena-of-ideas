@@ -22,7 +22,7 @@ pub struct TableState {
 
 pub struct TableColumn<T> {
     value: Box<dyn Fn(&T, &World) -> VarValue>,
-    show: Box<dyn Fn(&T, VarValue, &mut Ui, &mut World) -> Response>,
+    show: Box<dyn Fn(&T, VarValue, &mut Ui, &mut World)>,
     sortable: bool,
 }
 
@@ -68,7 +68,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
         mut self,
         name: &'static str,
         value: fn(&T, &World) -> VarValue,
-        show: fn(&T, VarValue, &mut Ui, &mut World) -> Response,
+        show: fn(&T, VarValue, &mut Ui, &mut World),
         sortable: bool,
     ) -> Self {
         self.columns.insert(
@@ -87,11 +87,9 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
             TableColumn {
                 value: Box::new(|_, _| name.to_string().into()),
                 show: Box::new(move |d, _, ui, w| {
-                    let r = Button::click(name.to_string()).ui(ui);
-                    if r.clicked() {
+                    if Button::click(name.to_string()).ui(ui).clicked() {
                         on_click(d, ui, w);
                     }
-                    r
                 }),
                 sortable: false,
             },
@@ -103,7 +101,9 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
             name,
             TableColumn {
                 value: Box::new(move |d, w| s(d, w).into()),
-                show: Box::new(|_, v, ui, _| v.get_cstr().unwrap().label(ui)),
+                show: Box::new(|_, v, ui, _| {
+                    v.get_cstr().unwrap().label(ui);
+                }),
                 sortable: true,
             },
         );
@@ -119,7 +119,9 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
             name,
             TableColumn {
                 value: Box::new(move |d, _| v(d).into()),
-                show: Box::new(move |d, v, ui, _| s(d, v).label(ui)),
+                show: Box::new(move |d, v, ui, _| {
+                    s(d, v).label(ui);
+                }),
                 sortable: true,
             },
         );
@@ -136,11 +138,9 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
             TableColumn {
                 value: Box::new(move |d, w| v(d, w).into()),
                 show: Box::new(move |d, v, ui, w| {
-                    let r = v.get_cstr().unwrap().clone().button(ui);
-                    if r.clicked() {
+                    if v.get_cstr().unwrap().clone().button(ui).clicked() {
                         on_click(d, w);
                     }
-                    r
                 }),
                 sortable: false,
             },
@@ -152,7 +152,9 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
             name,
             TableColumn {
                 value: Box::new(move |d, _| value(d).into()),
-                show: Box::new(|_, v, ui, _| v.cstr().label(ui)),
+                show: Box::new(|_, v, ui, _| {
+                    v.cstr().label(ui);
+                }),
                 sortable: true,
             },
         );
@@ -163,7 +165,9 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
             name,
             TableColumn {
                 value: Box::new(move |d, _| value(d).into()),
-                show: Box::new(|_, v, ui, _| v.cstr().label(ui)),
+                show: Box::new(|_, v, ui, _| {
+                    v.cstr().label(ui);
+                }),
                 sortable: true,
             },
         );
@@ -177,7 +181,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                 show: Box::new(|_, v, ui, _| {
                     format_timestamp(v.get_u64().unwrap())
                         .cstr_cs(VISIBLE_DARK, CstrStyle::Small)
-                        .label(ui)
+                        .label(ui);
                 }),
                 sortable: true,
             },
@@ -197,13 +201,11 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                 show: Box::new(move |_, v, ui, w| {
                     let gid = v.get_u64().unwrap();
                     if gid == 0 {
-                        return "...".cstr().label(ui);
+                        "...".cstr().label(ui);
                     } else {
-                        let r = gid.get_user().cstr().button(ui);
-                        if r.clicked() {
+                        if gid.get_user().cstr().button(ui).clicked() {
                             on_click(gid, ui, w);
                         }
-                        r
                     }
                 }),
                 sortable: true,
@@ -219,14 +221,9 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                 show: Box::new(|_, gid: VarValue, ui: &mut Ui, w: &mut World| {
                     let gid = gid.get_u64().unwrap();
                     if gid == 0 {
-                        "...".cstr().label(ui)
+                        "...".cstr().label(ui);
                     } else {
-                        let team = gid.get_team();
-                        let r = team.cstr().button(ui);
-                        if r.clicked() {
-                            TilePlugin::add_team(team.id, w);
-                        }
-                        r
+                        gid.get_team().hover_label(ui, w);
                     }
                 }),
                 sortable: true,
@@ -242,7 +239,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                 show: Box::new(|_, v, ui, _| {
                     Rarity::from_int(v.get_int().unwrap() as i8)
                         .cstr()
-                        .label(ui)
+                        .label(ui);
                 }),
                 sortable: true,
             },
@@ -262,8 +259,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                     let name = v.get_string().unwrap();
                     let r = match try_name_color(&name) {
                         Some(color) => {
-                            let r = name.cstr_c(color).label(ui);
-                            if r.hovered() {
+                            if name.cstr_c(color).label(ui).hovered() {
                                 cursor_window(ui.ctx(), |ui| {
                                     match cached_base_card(&name.base_unit(), ui, world) {
                                         Ok(_) => {}
@@ -271,9 +267,10 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                                     }
                                 });
                             }
-                            r
                         }
-                        None => name.cstr_c(VISIBLE_LIGHT).label(ui),
+                        None => {
+                            name.cstr_c(VISIBLE_LIGHT).label(ui);
+                        }
                     };
                     r
                 }),
@@ -301,7 +298,9 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                     }
                     .into()
                 }),
-                show: Box::new(|_, v, ui, _| v.get_cstr().unwrap().label(ui)),
+                show: Box::new(|_, v, ui, _| {
+                    v.get_cstr().unwrap().label(ui);
+                }),
                 sortable: true,
             },
         );
@@ -334,7 +333,6 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                             if r.clicked() {
                                 TilePlugin::add_fused_unit(unit, world);
                             }
-                            r
                         }
                         ItemKind::UnitShard => {
                             let item = id.unit_shard_item();
@@ -347,13 +345,14 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                                     }
                                 });
                             }
-                            r
                         }
-                        ItemKind::Lootbox => match id.lootbox_item().kind {
-                            LootboxKind::Regular => "Regular",
+                        ItemKind::Lootbox => {
+                            match id.lootbox_item().kind {
+                                LootboxKind::Regular => "Regular",
+                            }
+                            .cstr_c(VISIBLE_LIGHT)
+                            .label(ui);
                         }
-                        .cstr_c(VISIBLE_LIGHT)
-                        .label(ui),
                     }
                 }),
                 sortable: true,

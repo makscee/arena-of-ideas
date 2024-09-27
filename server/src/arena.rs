@@ -22,7 +22,6 @@ pub struct TArenaRun {
     owner: u64,
     team: u64,
     battles: Vec<u64>,
-    enemies: Vec<u64>,
     shop_slots: Vec<ShopSlot>,
     team_slots: Vec<TeamSlot>,
     fusion: Option<Fusion>,
@@ -31,7 +30,7 @@ pub struct TArenaRun {
     free_rerolls: u32,
     lives: u32,
     active: bool,
-    finale: bool,
+    champion: Option<u64>,
 
     floor: u32,
     rerolls: u32,
@@ -143,30 +142,15 @@ fn run_finish(ctx: ReducerContext) -> Result<(), String> {
 #[spacetimedb(reducer)]
 fn shop_finish(ctx: ReducerContext) -> Result<(), String> {
     let mut run = TArenaRun::current(&ctx)?;
-    run.floor += 1;
     let team = TTeam::get(run.team)?.apply_limit().save_clone();
-    let enemy = if let Some(enemy) = run.enemies.first().copied() {
-        run.enemies.remove(0);
-        enemy
-    } else {
-        let c = TArenaLeaderboard::current_champion(&run.mode);
-        if c.as_ref().is_some_and(|c| c.floor == run.floor) {
-            run.enemies.push(team.id);
-            run.finale = true;
-            c.unwrap().team
-        } else {
-            TArenaPool::get_random(&run.mode, run.floor)
-                .map(|d| d.team)
-                .unwrap_or_default()
-        }
-    };
-    if enemy == 0 {
-        run.finale = true;
+    let (champion, enemy) = TArenaPool::get_next_enemy(&run.mode, run.floor);
+    if champion {
+        run.champion = Some(enemy);
     }
-
     run.battles
         .push(TBattle::new(run.mode.clone(), run.owner, team.id, enemy));
-    if !team.units.is_empty() {
+
+    if !team.units.is_empty() && !run.champion_reached() {
         TArenaPool::add(run.mode.clone(), team.id, run.floor);
     }
     run.rerolls = 0;
@@ -181,6 +165,9 @@ fn shop_finish(ctx: ReducerContext) -> Result<(), String> {
 #[spacetimedb(reducer)]
 fn submit_battle_result(ctx: ReducerContext, result: TBattleResult) -> Result<(), String> {
     let mut run = TArenaRun::current(&ctx)?;
+    if !run.champion_reached() {
+        run.floor += 1;
+    }
     let bid = *run.battles.last().context_str("Last battle not present")?;
     let battle = TBattle::get(bid)?;
     if !battle.is_tbd() {
@@ -189,16 +176,19 @@ fn submit_battle_result(ctx: ReducerContext, result: TBattleResult) -> Result<()
     battle.set_result(result).save();
     if matches!(result, TBattleResult::Left) {
         run.add_streak();
+        if run.champion_reached() {
+            run.finish();
+        }
     } else {
         run.finish_streak();
-        if run.finale {
-            run.lives = 0;
-        } else {
-            run.lives -= 1;
+        run.lives -= 1;
+        if run.lives == 0 {
+            run.finish();
         }
     }
-    if run.lives == 0 || (run.finale && run.enemies.is_empty()) {
-        run.finish();
+    let (champion, enemy) = TArenaPool::get_next_enemy(&run.mode, run.floor);
+    if champion {
+        run.champion = Some(enemy);
     }
     run.save();
     Ok(())
@@ -390,13 +380,7 @@ impl TArenaRun {
             lives: ars.lives_initial,
             free_rerolls: ars.free_rerolls_initial,
             active: true,
-            finale: false,
-            enemies: match mode {
-                GameMode::ArenaNormal | GameMode::ArenaConst(_) => {
-                    GlobalData::get().initial_enemies
-                }
-                GameMode::ArenaRanked => default(),
-            },
+            champion: None,
             mode,
             rewards: Vec::new(),
             streak: 0,
@@ -558,7 +542,10 @@ impl TArenaRun {
     }
     fn finish_streak(&mut self) {
         if self.streak > 0 {
-            self.add_reward(format!("Streak {}", self.streak), self.streak as i64);
+            self.add_reward(
+                format!("Streak {}", self.streak),
+                (1..=self.streak as i64).sum(),
+            );
         }
         self.streak = 0;
     }
@@ -570,10 +557,13 @@ impl TArenaRun {
         };
         self.rewards.push(Reward { source, amount });
     }
+    fn champion_reached(&self) -> bool {
+        self.champion.is_some()
+    }
     fn finish(&mut self) {
         self.active = false;
         self.finish_streak();
-        if self.finale {
+        if self.champion_reached() {
             if self
                 .battles
                 .last()
@@ -581,10 +571,10 @@ impl TArenaRun {
                 .map(|b| b.result.is_win())
                 .unwrap_or_default()
             {
-                self.add_reward("Champion defeated".into(), self.floor as i64 * 5);
+                self.add_reward("Champion Defeated".into(), self.floor as i64 * 4 + 10);
                 TArenaLeaderboard::insert(TArenaLeaderboard::new(
                     self.mode.clone(),
-                    self.floor,
+                    self.floor + 1,
                     self.owner,
                     self.team,
                     self.id,

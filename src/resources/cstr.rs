@@ -423,6 +423,9 @@ impl ToCstr for FusedUnit {
 impl ToCstr for TTeam {
     fn cstr(&self) -> Cstr {
         let mut name = self.name.cstr_c(VISIBLE_LIGHT);
+        if self.units.is_empty() {
+            return "_".cstr();
+        }
         let mut units = self
             .units
             .iter()

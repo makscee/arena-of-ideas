@@ -7,6 +7,7 @@ pub struct Confirmation {
     accept_name: Option<String>,
     decline: fn(&mut World),
     decline_name: Option<String>,
+    decline_hide: bool,
     content: Option<fn(&mut Ui, &mut World)>,
 }
 
@@ -25,6 +26,7 @@ impl Confirmation {
             accept_name: None,
             decline_name: None,
             content: None,
+            decline_hide: false,
         }
     }
     #[must_use]
@@ -47,6 +49,12 @@ impl Confirmation {
         self.decline_name = Some(name);
         self
     }
+    #[must_use]
+    pub fn popup(mut self) -> Self {
+        self.decline_hide = true;
+        self.accept_name = Some("Close".into());
+        self
+    }
     fn ui(self, ctx: &egui::Context, world: &mut World) {
         popup("Confirmation window", ctx, |ui| {
             ui.vertical_centered_justified(|ui| {
@@ -59,10 +67,11 @@ impl Confirmation {
             space(ui);
             ui.columns(2, |ui| {
                 ui[0].vertical_centered_justified(|ui| {
-                    if Button::click(self.decline_name.unwrap_or("Decline".into()))
-                        .red(ui)
-                        .ui(ui)
-                        .clicked()
+                    if !self.decline_hide
+                        && Button::click(self.decline_name.unwrap_or("Decline".into()))
+                            .red(ui)
+                            .ui(ui)
+                            .clicked()
                     {
                         Self::clear(ui.ctx());
                         (self.decline)(world);

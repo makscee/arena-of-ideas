@@ -84,8 +84,8 @@ impl TilePlugin {
     pub fn show_all(ctx: &egui::Context, world: &mut World) {
         Self::reset(world);
         let mut tr = mem::take(world.resource_mut::<TileResource>().as_mut());
-
         let mut sr = world.remove_resource::<ScreenResource>().unwrap();
+
         let focused = tr.focused.clone();
         for tile in tr.tiles.values_mut() {
             tile.allocate_margin_space(false, &mut sr);
@@ -133,6 +133,9 @@ impl TilePlugin {
         }
         let mut new_tr = world.resource_mut::<TileResource>();
         tr.tiles.extend(new_tr.tiles.drain());
+        if !new_tr.focused.is_empty() {
+            tr.focused = mem::take(&mut new_tr.focused);
+        }
         *new_tr = tr;
 
         world.insert_resource(sr);
@@ -366,8 +369,9 @@ impl Tile {
 
         area.constrain_to(rect).show(ctx, |ui| {
             frame.show(ui, |ui| {
-                let content_rect = rect.shrink2(frame.total_margin().sum());
+                let content_rect = rect.shrink2(frame.total_margin().sum() * 0.5);
                 ui.expand_to_include_rect(content_rect);
+                ui.set_max_size(content_rect.size().at_least(egui::vec2(0.1, 0.1)));
                 if !self.pinned {
                     const CROSS_SIZE: f32 = 13.0;
                     let cross_rect = Rect::from_two_pos(

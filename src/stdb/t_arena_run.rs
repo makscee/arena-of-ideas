@@ -24,7 +24,6 @@ pub struct TArenaRun {
     pub owner: u64,
     pub team: u64,
     pub battles: Vec<u64>,
-    pub enemies: Vec<u64>,
     pub shop_slots: Vec<ShopSlot>,
     pub team_slots: Vec<TeamSlot>,
     pub fusion: Option<Fusion>,
@@ -33,7 +32,7 @@ pub struct TArenaRun {
     pub free_rerolls: u32,
     pub lives: u32,
     pub active: bool,
-    pub finale: bool,
+    pub champion: Option<u64>,
     pub floor: u32,
     pub rerolls: u32,
     pub rewards: Vec<Reward>,
@@ -93,10 +92,6 @@ impl TArenaRun {
     #[allow(unused)]
     pub fn filter_by_active(active: bool) -> TableIter<Self> {
         Self::filter(|row| row.active == active)
-    }
-    #[allow(unused)]
-    pub fn filter_by_finale(finale: bool) -> TableIter<Self> {
-        Self::filter(|row| row.finale == finale)
     }
     #[allow(unused)]
     pub fn filter_by_floor(floor: u32) -> TableIter<Self> {

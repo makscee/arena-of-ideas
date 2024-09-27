@@ -131,22 +131,7 @@ impl GameStartPlugin {
                                     "Select team".cstr_c(VISIBLE_LIGHT).label(ui);
                                     let gsr = world.resource_mut::<GameStartResource>();
                                     let team = gsr.teams[gsr.selected_team].clone();
-                                    if team.cstr().label(ui).hovered() {
-                                        cursor_window(ui.ctx(), |ui| {
-                                            Frame {
-                                                inner_margin: Margin::same(8.0),
-                                                rounding: Rounding::same(13.0),
-                                                fill: BG_TRANSPARENT,
-                                                ..default()
-                                            }
-                                            .show(
-                                                ui,
-                                                |ui| {
-                                                    team.show(ui, world);
-                                                },
-                                            );
-                                        });
-                                    }
+                                    team.hover_label(ui, world);
                                 },
                                 |ui, world| {
                                     if Button::click("<".to_owned())
@@ -263,27 +248,28 @@ impl GameStartPlugin {
                     "1. Defeat as many enemies as possible\n\
                     2. 3 lives, replenish every 5 floors\n\
                     3. Defeat current champion for big reward\n\
-                    4. Credits reward on reaching floor 10"
+                    4. Credits reward depending on win streak"
                         .cstr_c(VISIBLE_LIGHT)
                         .label(ui);
                 }
                 GameMode::ArenaRanked => {
-                    "1. Defeat as many enemies as possible\n\
-                    2. Entry fee growing every time, reset on day start\n\
-                    3. Get <¤> for each floor beaten\n\
-                    4. 3 lives, replenish every 5 floors\n\
-                    5. Defeat current champion for big reward"
+                    "1. Start with own team
+                    2. Defeat as many enemies as possible\n\
+                    3. 3 lives, replenish every 5 floors\n\
+                    4. Defeat current champion for big reward\n\
+                    5. Credits reward depending on win streak
+                    6. Rewards are multiplied by 2"
                         .cstr_c(VISIBLE_LIGHT)
-                        .inject_color(YELLOW)
                         .label(ui);
                 }
                 GameMode::ArenaConst(_) => {
                     "1. Defeat as many enemies as possible\n\
                     2. Entry fee growing every time, reset on day start\n\
-                    3. Get <¤> for each floor beaten\n\
+                    3. Credits reward depending on win streak
                     4. Fixed seed, new seed after reaching 10 floors\n\
                     5. 3 lives, replenish every 5 floors\n\
-                    6. Defeat current champion for big reward"
+                    6. Defeat current champion for big reward
+                    7. Rewards are multiplied by 3"
                         .cstr_c(VISIBLE_LIGHT)
                         .inject_color(YELLOW)
                         .label(ui);

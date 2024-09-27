@@ -89,7 +89,6 @@ impl Status {
                 let charges = state.change_int(VarName::Charges, delta);
                 if visible != (charges > 0) {
                     state.set_value(VarName::Visible, (charges > 0).into());
-                    dbg!(&state);
                     VarState::get_mut(entity, world).reindex_statuses();
                 }
                 charges

@@ -15,9 +15,9 @@ use spacetimedb_sdk::{
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct TArenaPool {
-    pub mode: GameMode,
     pub team: u64,
-    pub round: u32,
+    pub mode: GameMode,
+    pub floor: u32,
 }
 
 impl TableType for TArenaPool {
@@ -42,7 +42,7 @@ impl TArenaPool {
         Self::find(|row| row.team == team)
     }
     #[allow(unused)]
-    pub fn filter_by_round(round: u32) -> TableIter<Self> {
-        Self::filter(|row| row.round == round)
+    pub fn filter_by_floor(floor: u32) -> TableIter<Self> {
+        Self::filter(|row| row.floor == floor)
     }
 }

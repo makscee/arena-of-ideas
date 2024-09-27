@@ -214,26 +214,20 @@ impl ShopPlugin {
         .pinned()
         .non_focusable()
         .push(world);
-        Tile::new(Side::Right, |ui, _| {
+        Tile::new(Side::Right, |ui, world| {
             let run = TArenaRun::current();
-            let champion_floor = TArenaLeaderboard::iter()
-                .filter(|d| d.mode.eq(&run.mode))
-                .map(|d| d.floor)
-                .max()
-                .unwrap_or_default();
-            let own_floor = run.floor;
             let btn_text = "Start Battle".to_string();
-            if own_floor + 1 == champion_floor {
-                "Champion Battle".cstr_cs(YELLOW, CstrStyle::Bold).label(ui);
-            } else if own_floor == champion_floor && champion_floor > 0 {
-                "Shadow Battle"
-                    .cstr_cs(LIGHT_PURPLE, CstrStyle::Bold)
-                    .label(ui);
-            }
             if Button::click(btn_text).ui(ui).clicked() {
                 shop_finish();
                 once_on_shop_finish(|_, _, status| {
                     status.on_success(|w| GameState::ShopBattle.proceed_to_target(w))
+                });
+            }
+            if let Some(champion) = run.champion {
+                ui.vertical_centered_justified(|ui| {
+                    ui.add_space(30.0);
+                    "Champion Battle".cstr_cs(YELLOW, CstrStyle::Bold).label(ui);
+                    champion.get_team().hover_label(ui, world);
                 });
             }
         })
