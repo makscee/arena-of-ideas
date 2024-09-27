@@ -256,11 +256,11 @@ impl GameStartPlugin {
                         .label(ui);
                 }
                 GameMode::ArenaRanked => {
-                    "1. Start with own team
+                    "1. Start with own team\n\
                     2. Defeat as many enemies as possible\n\
                     3. 3 lives, replenish every 5 floors\n\
                     4. Defeat current champion for big reward\n\
-                    5. Credits reward depending on win streak
+                    5. Credits reward depending on win streak\n\
                     6. Rewards are multiplied by 2"
                         .cstr_c(VISIBLE_LIGHT)
                         .label(ui);
@@ -268,10 +268,10 @@ impl GameStartPlugin {
                 GameMode::ArenaConst(_) => {
                     "1. Defeat as many enemies as possible\n\
                     2. Entry fee growing every time, reset on day start\n\
-                    3. Credits reward depending on win streak
+                    3. Credits reward depending on win streak\n\
                     4. Fixed seed, new seed after reaching 10 floors\n\
                     5. 3 lives, replenish every 5 floors\n\
-                    6. Defeat current champion for big reward
+                    6. Defeat current champion for big reward\n\
                     7. Rewards are multiplied by 3"
                         .cstr_c(VISIBLE_LIGHT)
                         .inject_color(YELLOW)
