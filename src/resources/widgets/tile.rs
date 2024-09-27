@@ -366,7 +366,7 @@ impl Tile {
 
         area.constrain_to(rect).show(ctx, |ui| {
             frame.show(ui, |ui| {
-                let content_rect = rect.shrink2(self.margin_space * 0.5);
+                let content_rect = rect.shrink2(frame.total_margin().sum());
                 ui.expand_to_include_rect(content_rect);
                 if !self.pinned {
                     const CROSS_SIZE: f32 = 13.0;
