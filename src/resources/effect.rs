@@ -154,8 +154,12 @@ impl Effect {
             }
             Effect::ClearAllStatuses => {
                 let target = context.get_target()?;
-                for (s, _) in
-                    VarState::get(target, world).all_active_statuses_at(gt().insert_head())
+                let polarity = context
+                    .get_value(VarName::Polarity, world)
+                    .and_then(|v| v.get_int())
+                    .ok();
+                for (s, _) in VarState::get(target, world)
+                    .all_active_statuses_at(polarity, gt().insert_head())
                 {
                     ActionPlugin::action_push_front(Effect::ClearStatus(s), context.clone(), world);
                 }
@@ -173,8 +177,12 @@ impl Effect {
             }
             Effect::StealAllStatuses => {
                 let target = context.get_target()?;
-                for (s, _) in
-                    VarState::get(target, world).all_active_statuses_at(gt().insert_head())
+                let polarity = context
+                    .get_value(VarName::Polarity, world)
+                    .and_then(|v| v.get_int())
+                    .ok();
+                for (s, _) in VarState::get(target, world)
+                    .all_active_statuses_at(polarity, gt().insert_head())
                 {
                     ActionPlugin::action_push_front(Effect::StealStatus(s), context.clone(), world);
                 }

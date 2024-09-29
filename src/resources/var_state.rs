@@ -117,14 +117,22 @@ impl VarState {
             }
         }
     }
-    pub fn all_active_statuses_at(&self, t: f32) -> HashMap<String, i32> {
+    pub fn all_active_statuses_at(&self, polarity: Option<i32>, t: f32) -> HashMap<String, i32> {
         HashMap::from_iter(
             self.statuses
                 .iter()
                 .filter_map(|(name, state)| {
                     if LOCAL_STATUS.eq(name) {
                         None
-                    } else {
+                    } else if polarity.is_none()
+                        || polarity.is_some_and(|p| {
+                            state
+                                .get_value_at(VarName::Polarity, t)
+                                .map(|v| v.get_int().unwrap_or_default())
+                                .unwrap_or_default()
+                                == p
+                        })
+                    {
                         Some((
                             name.into(),
                             state
@@ -132,6 +140,8 @@ impl VarState {
                                 .and_then(|v| v.get_int())
                                 .unwrap_or_default(),
                         ))
+                    } else {
+                        None
                     }
                 })
                 .filter(|(_, c)| *c > 0),

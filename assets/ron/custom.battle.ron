@@ -1,2 +1,39 @@
 #![enable(implicit_some)]
-(left: (units: [(hp: 2, pwr: 1000)]), right: (units: [(hp: 100, pwr: 1)]))
+(
+    left: (
+        units: [
+            (
+                name: "Trickster",
+                hp: 5,
+                pwr: 1,
+                rarity: 0,
+                houses: ["Rogues"],
+                trigger: Fire(
+                    triggers: [(BeforeStrike, None)],
+                    targets: [(Target, None)],
+                    effects: [(UseAbility("Rob", 0), None)],
+                ),
+                representation: (
+                    material: Shape(
+                        shape: Circle(radius: F(1.0)),
+                        shape_type: Line(thickness: F(2.4)),
+                        fill: Solid(color: OwnerState(Color)),
+                        fbm: (
+                            octaves: I(3),
+                            lacunarity: F(0.22),
+                            gain: Sum(F(0.54), Mul(Beat, F(0.1))),
+                            strength: F(1.0),
+                            offset: Mul(Mul(GT, F(-1.0)), F(0.13)),
+                        ),
+                        alpha: F(1.0),
+                        padding: F(-0.0),
+                    ),
+                    children: [],
+                    mapping: {Rotation: Mul(Index, F(0.13))},
+                    count: 3,
+                ),
+            ),
+        ],
+    ),
+    right: (units: [(hp: 100, pwr: 1)]),
+)
