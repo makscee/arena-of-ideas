@@ -16,6 +16,8 @@ fn setup(world: &mut World) {
     .pinned()
     .transparent()
     .no_frame()
+    .no_margin()
+    .no_expand()
     .order(Order::Foreground)
     .push_persistent(world);
 }
@@ -35,6 +37,8 @@ pub struct Tile {
     transparent: bool,
     framed: bool,
     open: bool,
+    no_margin: bool,
+    no_expand: bool,
 }
 
 #[derive(Resource, Default)]
@@ -222,6 +226,8 @@ impl Tile {
             transparent: false,
             framed: true,
             min_space: default(),
+            no_margin: false,
+            no_expand: false,
         }
     }
     #[must_use]
@@ -242,6 +248,16 @@ impl Tile {
     #[must_use]
     pub fn no_frame(mut self) -> Self {
         self.framed = false;
+        self
+    }
+    #[must_use]
+    pub fn no_margin(mut self) -> Self {
+        self.no_margin = true;
+        self
+    }
+    #[must_use]
+    pub fn no_expand(mut self) -> Self {
+        self.no_expand = true;
         self
     }
     #[must_use]
@@ -364,13 +380,20 @@ impl Tile {
             FRAME
         };
         if self.transparent {
-            frame = frame.fill(Color32::TRANSPARENT);
+            frame.fill = Color32::TRANSPARENT;
+        }
+        if self.no_margin {
+            frame.inner_margin = default();
+            frame.outer_margin = default();
+            self.margin_space = default();
         }
 
         area.constrain_to(rect).show(ctx, |ui| {
             frame.show(ui, |ui| {
                 let content_rect = rect.shrink2(frame.total_margin().sum() * 0.5);
-                ui.expand_to_include_rect(content_rect);
+                if !self.no_expand {
+                    ui.expand_to_include_rect(content_rect);
+                }
                 ui.set_max_size(content_rect.size().at_least(egui::vec2(0.1, 0.1)));
                 if !self.pinned {
                     const CROSS_SIZE: f32 = 13.0;
