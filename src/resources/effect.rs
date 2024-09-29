@@ -10,6 +10,7 @@ pub enum Effect {
     ChangeStatus(String),
     ClearStatus(String),
     StealStatus(String),
+    ClearAllStatuses,
     StealAllStatuses,
     UseAbility(String, i32),
     AbilityStateAddVar(String, VarName, Expression),
@@ -36,6 +37,7 @@ impl Effect {
             | Effect::ChangeStatus(..)
             | Effect::ClearStatus(..)
             | Effect::StealStatus(..)
+            | Effect::ClearAllStatuses
             | Effect::StealAllStatuses
             | Effect::UseAbility(..)
             | Effect::AbilityStateAddVar(..)
@@ -148,6 +150,14 @@ impl Effect {
                     return Err(anyhow!("Status {name} is absent (c: {charges})"));
                 }
                 Status::change_charges_with_text(name, target, -charges, world);
+            }
+            Effect::ClearAllStatuses => {
+                let target = context.get_target()?;
+                for (s, _) in
+                    VarState::get(target, world).all_active_statuses_at(gt().insert_head())
+                {
+                    ActionPlugin::action_push_front(Effect::ClearStatus(s), context.clone(), world);
+                }
             }
             Effect::StealStatus(name) => {
                 let target = context.get_target()?;
