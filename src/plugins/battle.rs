@@ -45,6 +45,7 @@ impl BattlePlugin {
     fn on_exit(world: &mut World) {
         gt().reset();
         world.game_clear();
+        ActionPlugin::reset(world);
     }
     fn on_enter_custom(world: &mut World) {
         world.insert_resource(GameAssets::get(world).custom_battle.clone());
@@ -92,6 +93,13 @@ impl BattlePlugin {
         }
         let result = Self::get_result(world);
         info!("Battle finished with result: {result:?}");
+        if let Ok(result) = result.as_ref() {
+            if result.is_win().unwrap_or_default() {
+                ActionPlugin::register_sound_effect(SoundEffect::Victory, world);
+            } else {
+                ActionPlugin::register_sound_effect(SoundEffect::Defeat, world);
+            }
+        }
         result
     }
     pub fn clear(world: &mut World) {

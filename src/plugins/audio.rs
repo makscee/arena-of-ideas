@@ -24,6 +24,16 @@ pub struct AudioAssets {
     audio_start_game: Handle<AudioSource>,
     #[asset(key = "audio_strike")]
     audio_strike: Handle<AudioSource>,
+    #[asset(key = "audio_pain")]
+    audio_pain: Handle<AudioSource>,
+    #[asset(key = "audio_status_add")]
+    audio_status_add: Handle<AudioSource>,
+    #[asset(key = "audio_status_remove")]
+    audio_status_remove: Handle<AudioSource>,
+    #[asset(key = "audio_victory")]
+    audio_victory: Handle<AudioSource>,
+    #[asset(key = "audio_defeat")]
+    audio_defeat: Handle<AudioSource>,
 }
 
 #[derive(Resource, Debug)]
@@ -41,6 +51,11 @@ pub enum SoundEffect {
     Coin,
     StartGame,
     Strike,
+    Pain,
+    StatusAdd,
+    StatusRemove,
+    Victory,
+    Defeat,
 }
 
 static FX_QUEUE: Mutex<Vec<SoundEffect>> = Mutex::new(Vec::new());
@@ -90,11 +105,14 @@ impl AudioPlugin {
             let aa = world.resource::<AudioAssets>();
             let sound = match q {
                 SoundEffect::Click => aa.audio_click.clone(),
-
                 SoundEffect::Coin => aa.audio_coin.clone(),
-
                 SoundEffect::StartGame => aa.audio_start_game.clone(),
                 SoundEffect::Strike => aa.audio_strike.clone(),
+                SoundEffect::Pain => aa.audio_pain.clone(),
+                SoundEffect::StatusAdd => aa.audio_status_add.clone(),
+                SoundEffect::StatusRemove => aa.audio_status_remove.clone(),
+                SoundEffect::Victory => aa.audio_victory.clone(),
+                SoundEffect::Defeat => aa.audio_defeat.clone(),
             };
             Self::play(sound, world);
         }

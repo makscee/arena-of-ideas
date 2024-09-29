@@ -2,6 +2,7 @@
     duration: Some(0.4),
     anim: Run(
         [
+            Sfx(sfx: Pain),
             Change(var: Alpha, value: Value(Float(0.8))),
             Change(var: T, value: Value(Float(1.0))),
             Change(

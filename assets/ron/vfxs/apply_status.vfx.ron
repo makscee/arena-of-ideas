@@ -2,6 +2,7 @@
     duration: Some(0.3),
     anim: Run(
         [
+            Sfx(sfx: StatusAdd),
             Change(var: T, value: F(0.5)),
             Change(var: Thickness, value: F(2.5)),
             Change(var: T, value: F(1.0), duration: F(0.2)),
