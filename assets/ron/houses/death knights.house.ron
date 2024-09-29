@@ -58,7 +58,6 @@
             name: "Skeleton",
             hp: 4,
             pwr: 1,
-            xp: 1,
             houses: ["Death Knights"],
             trigger: Fire(
                 triggers: [(AfterDamageDealt, None)],

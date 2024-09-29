@@ -3,9 +3,8 @@
     name: "Inciter",
     hp: 2,
     pwr: 2,
-    xp: 1,
     rarity: 2,
-    houses: "Meta",
+    houses: ["Meta"],
     trigger: Fire(
         triggers: [(AllyDeath, None)],
         targets: [(TargetStateLast(LastAttacker), "last attacker")],
@@ -13,9 +12,7 @@
     ),
     representation: (
         material: Shape(
-            shape: Circle(
-                radius: Max(Mul(Abs(Beat), F(0.5)), Mul(Abs(Cos(Mul(GameTime, F(0.3)))), F(0.2))),
-            ),
+            shape: Circle(radius: Max(Mul(Abs(Beat), F(0.5)), Mul(Abs(Cos(Mul(GT, F(0.3)))), F(0.2)))),
             shape_type: Line(thickness: F(1.0)),
             fill: Solid(color: OwnerState(Color)),
             fbm: None,
@@ -25,7 +22,7 @@
         children: [],
         mapping: {
             Offset: Mul(
-                UnitVec(Sum(Mul(Index, Mul(PI, F(0.2))), Mul(Sin(Mul(GameTime, F(0.3))), F(5.0)))),
+                UnitVec(Sum(Mul(Index, Mul(PI, F(0.2))), Mul(Sin(Mul(GT, F(0.3))), F(5.0)))),
                 F(0.2),
             ),
         },

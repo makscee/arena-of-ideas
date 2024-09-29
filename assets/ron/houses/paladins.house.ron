@@ -51,7 +51,6 @@
             name: "Guardian Angel",
             hp: 1,
             pwr: 10,
-            xp: 1,
             houses: ["Paladins"],
             representation: (
                 material: Shape(

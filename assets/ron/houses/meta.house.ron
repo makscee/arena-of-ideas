@@ -15,7 +15,7 @@
             effect: List(
                 [
                     Vfx("apply_status"),
-                    WithOwner(Target, List([Text(S("Betray")), WithTarget(AdjacentUnits, Damage)])),
+                    List([Text(S("Betray")), WithOwner(Target, WithTarget(AdjacentUnits, Damage))]),
                 ],
             ),
         ),

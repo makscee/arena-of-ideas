@@ -353,7 +353,8 @@ impl Effect {
                     .and_then(|c| c.get_color())
                     .map(|c| c.c32())
                     .unwrap_or(VISIBLE_BRIGHT);
-                TextColumnPlugin::add(owner, text.cstr_cs(color, CstrStyle::Bold), world);
+                let target = context.get_target().unwrap_or(owner);
+                TextColumnPlugin::add(target, text.cstr_cs(color, CstrStyle::Bold), world);
             }
         }
         Ok(())
