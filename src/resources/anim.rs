@@ -16,6 +16,9 @@ pub enum Anim {
         #[serde(default)]
         tween: Tween,
     },
+    Sfx {
+        sfx: SoundEffect,
+    },
 }
 
 fn default_zero_f32_e() -> Expression {
@@ -55,6 +58,9 @@ impl Anim {
                     value,
                 };
                 VarState::get_mut(context.owner(), world).push_change(var, default(), change);
+            }
+            Anim::Sfx { sfx } => {
+                ActionPlugin::register_sound_effect(sfx, world);
             }
         }
         Ok(head_shift)

@@ -12,17 +12,19 @@ pub struct GameTimer {
     end: f32,
     batches: Vec<f32>,
     paused: bool,
+    last_delta: f32,
 }
 
 impl Default for GameTimer {
     fn default() -> Self {
         Self {
             playback_speed: 1.0,
-            play_head: default(),
-            insert_head: default(),
-            end: default(),
+            play_head: 0.0,
+            insert_head: 0.0,
+            end: 0.0,
             batches: default(),
-            paused: default(),
+            paused: false,
+            last_delta: 0.0,
         }
     }
 }
@@ -33,9 +35,7 @@ pub fn gt() -> MutexGuard<'static, GameTimer> {
 
 impl GameTimer {
     pub fn update(&mut self, delta: f32) {
-        if !self.paused {
-            self.advance_play(delta * self.playback_speed);
-        }
+        self.advance_play(delta * self.playback_speed * (!self.paused as i32 as f32));
     }
     pub fn pause(&mut self, value: bool) -> &mut Self {
         self.paused = value;
@@ -43,6 +43,9 @@ impl GameTimer {
     }
     pub fn paused(&self) -> bool {
         self.paused
+    }
+    pub fn last_delta(&self) -> f32 {
+        self.last_delta
     }
     pub fn play_head(&self) -> f32 {
         self.play_head
@@ -54,6 +57,7 @@ impl GameTimer {
     pub fn advance_play(&mut self, delta: f32) -> &mut Self {
         self.play_head = (self.play_head + delta).max(0.0);
         self.insert_head = self.insert_head.max(self.play_head);
+        self.last_delta = delta;
         self
     }
     pub fn insert_head(&self) -> f32 {

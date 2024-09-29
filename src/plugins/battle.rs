@@ -160,6 +160,11 @@ impl BattlePlugin {
     fn strike(left: Entity, right: Entity, world: &mut World) -> Result<()> {
         debug!("strike {left} {right}");
         let units = vec![(left, right), (right, left)];
+        GameAssets::get(world)
+            .animations
+            .strike
+            .clone()
+            .apply(Context::default(), world)?;
         for (caster, target) in units {
             let context = Context::new(caster)
                 .set_target(target)

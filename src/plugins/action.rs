@@ -18,6 +18,7 @@ struct Action {
 struct ActionsData {
     events: Vec<(f32, Event)>,
     turns: Vec<(f32, usize)>,
+    sounds: Vec<(f32, SoundEffect)>,
     chain: usize,
 }
 
@@ -33,6 +34,8 @@ impl Plugin for ActionPlugin {
 impl ActionPlugin {
     fn update(world: &mut World) {
         Self::spin(world).expect("Spin failed");
+        let ph = gt().play_head();
+        Self::queue_current_sound_effect(ph - gt().last_delta(), ph, world)
     }
     pub fn spin(world: &mut World) -> Result<bool> {
         let mut processed = false;
@@ -155,6 +158,29 @@ impl ActionPlugin {
         let next = data.turns.last().map(|(_, r)| *r).unwrap_or_default() + 1;
         data.turns.push((gt().insert_head(), next));
         data.chain = 0;
+    }
+    pub fn register_sound_effect(sfx: SoundEffect, world: &mut World) {
+        world
+            .resource_mut::<ActionsData>()
+            .sounds
+            .push((gt().insert_head(), sfx));
+    }
+    fn queue_current_sound_effect(from: f32, to: f32, world: &World) {
+        if from >= to || to - from > 1.0 {
+            return;
+        }
+        let Some(ad) = world.get_resource::<ActionsData>() else {
+            return;
+        };
+        for (ts, sfx) in ad.sounds.iter().copied() {
+            if ts >= from {
+                if ts <= to {
+                    AudioPlugin::queue_sound(sfx);
+                } else {
+                    break;
+                }
+            }
+        }
     }
     pub fn get_turn(t: f32, world: &World) -> (usize, f32) {
         world

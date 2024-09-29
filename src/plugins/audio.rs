@@ -22,6 +22,8 @@ pub struct AudioAssets {
     audio_coin: Handle<AudioSource>,
     #[asset(key = "audio_start_game")]
     audio_start_game: Handle<AudioSource>,
+    #[asset(key = "audio_strike")]
+    audio_strike: Handle<AudioSource>,
 }
 
 #[derive(Resource, Debug)]
@@ -33,10 +35,12 @@ struct AudioResource {
 #[derive(Component)]
 struct BackgroundAudioMarker;
 
+#[derive(Clone, Copy, Serialize, Deserialize, Debug)]
 pub enum SoundEffect {
     Click,
     Coin,
     StartGame,
+    Strike,
 }
 
 static FX_QUEUE: Mutex<Vec<SoundEffect>> = Mutex::new(Vec::new());
@@ -47,8 +51,8 @@ impl AudioPlugin {
             s.set_volume(value);
         }
     }
-    pub fn queue_sound(se: SoundEffect) {
-        FX_QUEUE.lock().unwrap().push(se);
+    pub fn queue_sound(sfx: SoundEffect) {
+        FX_QUEUE.lock().unwrap().push(sfx);
     }
     fn play(source: Handle<AudioSource>, world: &mut World) {
         world.spawn(AudioBundle {
@@ -83,18 +87,16 @@ impl AudioPlugin {
     }
     fn update(world: &mut World) {
         for q in FX_QUEUE.lock().unwrap().drain(..) {
-            match q {
-                SoundEffect::Click => {
-                    Self::play(world.resource::<AudioAssets>().audio_click.clone(), world)
-                }
-                SoundEffect::Coin => {
-                    Self::play(world.resource::<AudioAssets>().audio_coin.clone(), world)
-                }
-                SoundEffect::StartGame => Self::play(
-                    world.resource::<AudioAssets>().audio_start_game.clone(),
-                    world,
-                ),
-            }
+            let aa = world.resource::<AudioAssets>();
+            let sound = match q {
+                SoundEffect::Click => aa.audio_click.clone(),
+
+                SoundEffect::Coin => aa.audio_coin.clone(),
+
+                SoundEffect::StartGame => aa.audio_start_game.clone(),
+                SoundEffect::Strike => aa.audio_strike.clone(),
+            };
+            Self::play(sound, world);
         }
         let Some((entity, sink)) = Self::music_sink(world) else {
             return;

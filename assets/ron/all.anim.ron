@@ -13,4 +13,5 @@
         timeframe: Value(Float(0.4)),
         tween: QuartOut,
     ),
+    strike: Sfx(sfx: Strike),
 )

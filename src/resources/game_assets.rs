@@ -123,6 +123,7 @@ impl GameAssets {
 pub struct Animations {
     pub before_strike: Anim,
     pub move_to_slot: Anim,
+    pub strike: Anim,
 }
 
 pub struct LoadingPlugin;

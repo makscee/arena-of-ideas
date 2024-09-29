@@ -13,6 +13,7 @@
         "audio_click": File(path: "audio/fx/click.ogg"),
         "audio_coin": File(path: "audio/fx/coin.ogg"),
         "audio_start_game": File(path: "audio/fx/start_game.ogg"),
+        "audio_strike": File(path: "audio/fx/insert_main.ogg"),
         "test_scenarios": Folder(path: "ron/scenarios"),
     },
 )

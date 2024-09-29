@@ -1,18 +1,2 @@
 #![enable(implicit_some)]
-(
-    left: (
-        units: [
-            (hp: 100, pwr: 1),
-            (
-                hp: 1,
-                pwr: 1,
-                trigger: Fire(
-                    triggers: [(BattleStart, None)],
-                    targets: [(RandomUnit(AllEnemyUnits), None)],
-                    effects: [(UseAbility("Doom", 0), None)],
-                ),
-            ),
-        ],
-    ),
-    right: (units: [(hp: 100, pwr: 1)]),
-)
+(left: (units: [(hp: 100, pwr: 1)]), right: (units: [(hp: 100, pwr: 1)]))
