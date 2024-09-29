@@ -27,9 +27,7 @@
         children: [],
         mapping: {
             Offset: Mul(
-                UnitVec(
-                    Mul(Sum(Index, Mul(GT, Mul(RandomFloatUnit(Owner), F(2.0)))), Mul(PI, F(0.3))),
-                ),
+                UnitVec(Mul(Sum(Index, Mul(GT, Mul(RandomF(Owner), F(2.0)))), Mul(PI, F(0.3)))),
                 Sum(F(0.05), Mul(Sin(Sum(GT, Index)), F(0.05))),
             ),
         },
