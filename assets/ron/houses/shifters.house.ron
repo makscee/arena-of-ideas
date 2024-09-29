@@ -5,8 +5,8 @@
     statuses: [],
     abilities: [
         (
-            name: "Copy",
-            description: "Fully copy target",
+            name: "Full Copy",
+            description: "Copy all target vars, statuses and triggers",
             effect: List([FullCopy, Vfx("apply_status")]),
         ),
     ],

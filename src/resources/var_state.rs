@@ -284,6 +284,14 @@ impl VarState {
         );
         result
     }
+    pub fn all_own_values(&self) -> HashMap<VarName, VarValue> {
+        HashMap::from_iter(self.vars.iter().filter_map(|(k, v)| {
+            match v.get("").map(|v| v.get_value_last().unwrap_or_default()) {
+                Some(v) => Some((*k, v)),
+                None => None,
+            }
+        }))
+    }
 
     pub fn take(&mut self) -> Self {
         mem::take(self)

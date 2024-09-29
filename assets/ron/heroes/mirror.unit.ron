@@ -3,12 +3,12 @@
     name: "Mirror",
     hp: 6,
     pwr: 0,
-    rarity: 0,
+    rarity: 1,
     houses: ["Shifters"],
     trigger: Fire(
         triggers: [(BeforeStrike, None)],
         targets: [(Target, None)],
-        effects: [(UseAbility("Copy", 0), None)],
+        effects: [(UseAbility("Full Copy", 0), None)],
     ),
     representation: (
         material: Shape(
@@ -27,9 +27,7 @@
         children: [],
         mapping: {
             Offset: Mul(
-                UnitVec(
-                    Mul(Sum(Index, Mul(GT, Mul(RandomFloatUnit(Owner), F(5.0)))), Mul(PI, F(0.5))),
-                ),
+                UnitVec(Mul(Sum(Index, Mul(GT, Mul(RandomF(Owner), F(5.0)))), Mul(PI, F(0.5)))),
                 F(0.05),
             ),
         },

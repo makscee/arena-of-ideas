@@ -26,6 +26,7 @@ pub enum Effect {
     StateAddVar(VarName, Expression, Expression),
     StatusSetVar(Expression, String, VarName, Box<Expression>),
     Text(Expression),
+    FullCopy,
 }
 
 impl Effect {
@@ -35,6 +36,7 @@ impl Effect {
             | Effect::Damage
             | Effect::Kill
             | Effect::Heal
+            | Effect::FullCopy
             | Effect::ChangeStatus(..)
             | Effect::ClearStatus(..)
             | Effect::StealStatus(..)
@@ -151,13 +153,13 @@ impl Effect {
                     .get_value(VarName::Polarity, world)
                     .and_then(|v| v.get_int())
                     .ok();
-                for (s, _) in VarState::get(target, world)
-                    .all_active_statuses_at(polarity, gt().insert_head())
+                for (s, _) in
+                    VarState::get(target, world).all_active_statuses_at(polarity, context.t())
                 {
                     ActionPlugin::action_push_front(
                         Effect::ChangeStatus(s),
                         context.clone(),
-                        world,  
+                        world,
                     );
                 }
             }
@@ -176,8 +178,8 @@ impl Effect {
                     .get_value(VarName::Polarity, world)
                     .and_then(|v| v.get_int())
                     .ok();
-                for (s, _) in VarState::get(target, world)
-                    .all_active_statuses_at(polarity, gt().insert_head())
+                for (s, _) in
+                    VarState::get(target, world).all_active_statuses_at(polarity, context.t())
                 {
                     ActionPlugin::action_push_front(Effect::ClearStatus(s), context.clone(), world);
                 }
@@ -199,8 +201,8 @@ impl Effect {
                     .get_value(VarName::Polarity, world)
                     .and_then(|v| v.get_int())
                     .ok();
-                for (s, _) in VarState::get(target, world)
-                    .all_active_statuses_at(polarity, gt().insert_head())
+                for (s, _) in
+                    VarState::get(target, world).all_active_statuses_at(polarity, context.t())
                 {
                     ActionPlugin::action_push_front(Effect::StealStatus(s), context.clone(), world);
                 }
@@ -381,6 +383,36 @@ impl Effect {
                     .unwrap_or(VISIBLE_BRIGHT);
                 let target = context.get_target().unwrap_or(owner);
                 TextColumnPlugin::add(target, text.cstr_cs(color, CstrStyle::Bold), world);
+            }
+            Effect::FullCopy => {
+                let target = context.get_target()?;
+                let state = VarState::get(target, world);
+                let mut vars = state.all_own_values();
+                vars.remove(&VarName::Slot);
+                vars.remove(&VarName::Position);
+                let status_charges = state.all_active_statuses_at(None, context.t());
+                let status_components = Status::collect_statuses(target, world);
+                let mut state = VarState::get_mut(owner, world);
+                for (var, value) in vars {
+                    state.set_value(var, value);
+                }
+                if let Some((_, local_status)) = status_components
+                    .into_iter()
+                    .find(|(_, s)| s.name.eq(LOCAL_STATUS))
+                {
+                    if let Ok(own_local_status) =
+                        Status::find_status_entity(owner, LOCAL_STATUS, world)
+                    {
+                        world.entity_mut(own_local_status).insert(local_status);
+                    } else {
+                        local_status.spawn(owner, world);
+                    }
+                }
+                for (status, charges) in status_charges {
+                    let own_charges =
+                        Status::get_charges(&status, owner, world).unwrap_or_default();
+                    Status::change_charges(&status, owner, charges - own_charges, world);
+                }
             }
         }
         Ok(())
