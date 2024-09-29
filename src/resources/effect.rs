@@ -10,6 +10,7 @@ pub enum Effect {
     ChangeStatus(String),
     ClearStatus(String),
     StealStatus(String),
+    ChangeAllStatuses,
     ClearAllStatuses,
     StealAllStatuses,
     UseAbility(String, i32),
@@ -37,6 +38,7 @@ impl Effect {
             | Effect::ChangeStatus(..)
             | Effect::ClearStatus(..)
             | Effect::StealStatus(..)
+            | Effect::ChangeAllStatuses
             | Effect::ClearAllStatuses
             | Effect::StealAllStatuses
             | Effect::UseAbility(..)
@@ -142,6 +144,22 @@ impl Effect {
             Effect::ChangeStatus(name) => {
                 let delta = context.get_charges(world).unwrap_or(1);
                 Status::change_charges_with_text(name, context.get_target()?, delta, world);
+            }
+            Effect::ChangeAllStatuses => {
+                let target = context.get_target()?;
+                let polarity = context
+                    .get_value(VarName::Polarity, world)
+                    .and_then(|v| v.get_int())
+                    .ok();
+                for (s, _) in VarState::get(target, world)
+                    .all_active_statuses_at(polarity, gt().insert_head())
+                {
+                    ActionPlugin::action_push_front(
+                        Effect::ChangeStatus(s),
+                        context.clone(),
+                        world,  
+                    );
+                }
             }
             Effect::ClearStatus(name) => {
                 let target = context.get_target()?;

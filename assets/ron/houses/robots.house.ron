@@ -7,7 +7,7 @@
         (
             name: "Charge",
             description: "Increase all status charges by {1}",
-            effect: List([Vfx("apply_status"), AddAllStatuses]),
+            effect: List([Vfx("apply_status"), ChangeAllStatuses]),
         ),
     ],
 )
