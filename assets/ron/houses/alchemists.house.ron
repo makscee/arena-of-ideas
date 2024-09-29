@@ -11,7 +11,7 @@
                 triggers: [(AfterIncomingDamage, None)],
                 effects: [
                     (WithVar(Charges, I(-1), ChangeStatus("Petrify")), None),
-                    (Damage(Mul(Sub(Context(Hp), Context(Dmg)), F(0.5))), None),
+                    (WithVar(Value, Mul(Sub(Context(Hp), Context(Dmg)), F(0.5)), Damage), None),
                 ],
             ),
         ),
