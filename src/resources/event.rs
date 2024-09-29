@@ -69,7 +69,11 @@ impl Event {
             }
             Event::BeforeStrike(owner, target) | Event::AfterStrike(owner, target) => {
                 context.set_target(*target);
-                [*owner].into()
+                if !UnitPlugin::is_dead(*owner, world) {
+                    [*owner].into()
+                } else {
+                    default()
+                }
             }
             Event::Kill { owner, target } => {
                 context.set_target(*target);
