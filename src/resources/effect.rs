@@ -145,7 +145,8 @@ impl Effect {
             }
             Effect::ClearStatus(name) => {
                 let target = context.get_target()?;
-                let charges = Status::get_charges(name, target, world)?;
+                let charges = context.get_charges(world).unwrap_or(1);
+                let charges = charges.at_most(Status::get_charges(name, target, world)?);
                 if charges <= 0 {
                     return Err(anyhow!("Status {name} is absent (c: {charges})"));
                 }
@@ -166,7 +167,7 @@ impl Effect {
                     return Err(anyhow!("Can't steal nonpositive charges amount"));
                 }
                 let c = Status::get_charges(name, target, world)?;
-                let delta = c.min(charges);
+                let delta = c.at_most(charges);
                 Status::change_charges_with_text(name, target, -delta, world);
                 Status::change_charges_with_text(name, owner, delta, world);
             }
