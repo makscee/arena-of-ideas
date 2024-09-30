@@ -72,7 +72,11 @@ impl AudioPlugin {
     fn play(source: Handle<AudioSource>, world: &mut World) {
         world.spawn(AudioBundle {
             source,
-            settings: PlaybackSettings::DESPAWN,
+            settings: PlaybackSettings {
+                mode: bevy::audio::PlaybackMode::Despawn,
+                volume: Volume::new(client_settings().volume_fx),
+                ..default()
+            },
         });
     }
     fn background_sink(world: &mut World) -> Option<(Entity, &AudioSink)> {

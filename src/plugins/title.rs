@@ -16,6 +16,9 @@ impl TitlePlugin {
                             if Button::click("Video".into()).ui(ui).clicked() {
                                 SettingsPlugin::add_tile_video(world);
                             }
+                            if Button::click("Audio".into()).ui(ui).clicked() {
+                                SettingsPlugin::add_tile_audio(world);
+                            }
                             if Button::click("Profile".into()).ui(ui).clicked() {
                                 ProfilePlugin::add_tile_settings(world);
                             }

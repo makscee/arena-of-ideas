@@ -25,4 +25,19 @@ impl SettingsPlugin {
         .min_space(egui::vec2(200.0, 0.0))
         .push(world);
     }
+    pub fn add_tile_audio(world: &mut World) {
+        Tile::new(Side::Left, |ui, world| {
+            title("Audio Settings", ui);
+            let mut cs = client_settings().clone();
+            Slider::new("Music").ui(&mut cs.volume_music, 0.0..=1.0, ui);
+            Slider::new("Sfx").ui(&mut cs.volume_fx, 0.0..=1.0, ui);
+
+            if !cs.eq(&client_settings()) {
+                cs.save_to_file().apply(world);
+            }
+        })
+        .set_id("Audio Settings".into())
+        .min_space(egui::vec2(200.0, 0.0))
+        .push(world);
+    }
 }
