@@ -94,7 +94,6 @@ fn main() {
         ))
         .add_plugins(bevy_egui::EguiPlugin)
         .add_plugins(NoisyShaderPlugin)
-        .add_plugins(bevy_panic_handler::PanicHandler::new().build())
         .add_plugins((
             LoadingPlugin,
             UiPlugin,
@@ -127,8 +126,11 @@ fn main() {
         ))
         .init_state::<GameState>()
         .init_resource::<NotificationsResource>()
-        .init_resource::<TeamContainerResource>()
-        .run();
+        .init_resource::<TeamContainerResource>();
+    if !cfg!(debug_assertions) {
+        app.add_plugins(bevy_panic_handler::PanicHandler::new().build());
+    }
+    app.run();
 }
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
