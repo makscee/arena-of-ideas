@@ -105,7 +105,7 @@ impl Effect {
                 }
                 TextColumnPlugin::add(
                     target,
-                    format!("-{i_value}").cstr_cs(RED, CstrStyle::Bold),
+                    format!("-{}", i_value.at_least(0)).cstr_cs(RED, CstrStyle::Bold),
                     world,
                 );
                 Vfx::get("damage", world)
