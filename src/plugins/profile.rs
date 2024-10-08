@@ -43,7 +43,7 @@ impl ProfilePlugin {
                 Self::settings_ui(&mut ped, ui, world);
             })
         })
-        .set_id("Profile Settings".into())
+        .with_id("Profile Settings".into())
         .min_space(egui::vec2(200.0, 0.0))
         .push(world);
     }

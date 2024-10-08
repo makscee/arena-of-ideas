@@ -25,7 +25,7 @@ impl TitlePlugin {
                         });
                     })
                     .min_space(egui::vec2(200.0, 0.0))
-                    .set_id("Settings".into())
+                    .with_id("Settings".into())
                     .push(world);
                 }
             });

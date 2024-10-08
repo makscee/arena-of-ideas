@@ -82,8 +82,8 @@ impl TeamSyncPlugin {
         Self::sync_units(team.units, faction, world);
     }
     fn sync_units(units: Vec<FusedUnit>, faction: Faction, world: &mut World) {
-        let team_units: OrderedHashMap<u64, FusedUnit> =
-            OrderedHashMap::from_iter(units.into_iter().map(|u| (u.id, u)));
+        let team_units: IndexMap<u64, FusedUnit> =
+            IndexMap::from_iter(units.into_iter().map(|u| (u.id, u)));
         let mut world_units: HashMap<u64, Entity> = HashMap::from_iter(
             UnitPlugin::collect_faction(faction, world)
                 .into_iter()

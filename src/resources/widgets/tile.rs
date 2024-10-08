@@ -43,10 +43,13 @@ pub struct Tile {
 
 #[derive(Resource, Default)]
 struct TileResource {
-    tiles: OrderedHashMap<String, Tile>,
+    tiles: IndexMap<String, Tile>,
     focused: String,
     persistent_overlay: Vec<Tile>,
     content: Option<Tile>,
+}
+fn rm(world: &mut World) -> Mut<TileResource> {
+    world.resource_mut::<TileResource>()
 }
 
 #[derive(Resource)]
@@ -87,8 +90,8 @@ impl Default for ScreenResource {
 impl TilePlugin {
     pub fn show_all(ctx: &egui::Context, world: &mut World) {
         Self::reset(world);
-        let mut tr = mem::take(world.resource_mut::<TileResource>().as_mut());
         let mut sr = world.remove_resource::<ScreenResource>().unwrap();
+        let mut tr = rm(world);
 
         let focused = tr.focused.clone();
         for tile in tr.tiles.values_mut() {
@@ -107,40 +110,50 @@ impl TilePlugin {
             }
             tile.allocate_content_space(false, &mut sr);
         }
-        let mut remove = None;
-        let mut new_focus = None;
-        for tile in tr.tiles.values_mut() {
-            let focused = focused.eq(&tile.id);
-            if tile.show(focused, &mut sr, ctx, world) {
-                new_focus = Some(tile.id.clone());
+        let mut tiles_len = tr.tiles.len();
+
+        let mut i = 0;
+        while i < tiles_len {
+            let Some((_, mut tile)) = rm(world).tiles.swap_remove_index(i) else {
+                break;
+            };
+            let tile_focused = focused.eq(&tile.id);
+            if tile.show(tile_focused, &mut sr, ctx, world) {
+                let mut rm = rm(world);
+                if focused.eq(&rm.focused) {
+                    rm.focused = tile.id.clone();
+                }
             }
-            if !tile.open && tile.actual_space.length() < 1.0 {
-                remove = Some(tile.id.clone());
+            let tiles = &mut rm(world).tiles;
+            let mut removed = false;
+            if tile.open || tile.actual_space.length() > 1.0 {
+                tiles.insert(tile.id.clone(), tile);
+                tiles.swap_indices(i, tiles_len - 1);
+            } else {
+                if let Some((key, tile)) = tiles.shift_remove_index(i) {
+                    tiles.insert(key, tile);
+                    tiles_len -= 1;
+                    removed = true;
+                }
+            }
+            if !removed {
+                i += 1;
             }
         }
         let content_space = sr.screen_rect;
-        if let Some(content) = &mut tr.content {
+        if let Some(mut content) = rm(world).content.take() {
             content.show(false, &mut sr, ctx, world);
+            rm(world).content = Some(content);
         }
         sr.screen_rect = content_space;
         sr.screen_space = content_space.size();
-        for tile in &mut tr.persistent_overlay {
+        let mut po = mem::take(&mut rm(world).persistent_overlay);
+        for tile in po.iter_mut() {
             tile.allocate_margin_space(false, &mut sr);
             tile.allocate_content_space(false, &mut sr);
             tile.show(false, &mut sr, ctx, world);
         }
-        if let Some(remove) = remove {
-            tr.tiles.remove(&remove);
-        }
-        if let Some(focus) = new_focus {
-            tr.focused = focus;
-        }
-        let mut new_tr = world.resource_mut::<TileResource>();
-        tr.tiles.extend(new_tr.tiles.drain());
-        if !new_tr.focused.is_empty() {
-            tr.focused = mem::take(&mut new_tr.focused);
-        }
-        *new_tr = tr;
+        rm(world).persistent_overlay.extend(po);
 
         world.insert_resource(sr);
     }
@@ -149,7 +162,7 @@ impl TilePlugin {
         let mut sr = world.resource_mut::<ScreenResource>();
         sr.screen_rect = ctx.available_rect();
         sr.screen_space = sr.screen_rect.size();
-        let mut tr = world.resource_mut::<TileResource>();
+        let mut tr = rm(world);
         for tile in tr.tiles.values_mut() {
             tile.allocated_space = default();
         }
@@ -161,7 +174,7 @@ impl TilePlugin {
         }
     }
     fn clear(world: &mut World) {
-        let mut tr = world.resource_mut::<TileResource>();
+        let mut tr = rm(world);
         tr.tiles.clear();
         tr.content = None;
     }
@@ -170,18 +183,22 @@ impl TilePlugin {
         Tile::new(Side::Right, move |ui, world| {
             gid.get_team().show(ui, world);
         })
+        .with_id(format!("team_{gid}"))
         .push(world)
     }
     pub fn add_user(gid: u64, world: &mut World) {
         Tile::new(Side::Right, move |ui, world| {
             gid.get_user().show(ui, world);
         })
+        .with_id(format!("user_{gid}"))
         .push(world)
     }
     pub fn add_fused_unit(unit: FusedUnit, world: &mut World) {
+        let gid = unit.id;
         Tile::new(Side::Right, move |ui, world| {
             unit.show(ui, world);
         })
+        .with_id(format!("unit_{gid}"))
         .push(world)
     }
     pub fn change_state(to: GameState, world: &mut World) {
@@ -261,7 +278,7 @@ impl Tile {
         self
     }
     #[must_use]
-    pub fn set_id(mut self, id: String) -> Self {
+    pub fn with_id(mut self, id: String) -> Self {
         self.id = id;
         self
     }
@@ -276,18 +293,22 @@ impl Tile {
         self
     }
     pub fn push(self, world: &mut World) {
-        let mut tr = world.resource_mut::<TileResource>();
+        let mut tr = rm(world);
         if self.focusable {
             tr.focused = self.id.clone();
         }
-        tr.tiles.insert(self.id.clone(), self);
+        if let Some(tile) = tr.tiles.get_mut(&self.id) {
+            tile.open = false;
+        } else {
+            tr.tiles.insert(self.id.clone(), self);
+        }
     }
     pub fn push_persistent(self, world: &mut World) {
-        let mut tr = world.resource_mut::<TileResource>();
+        let mut tr = rm(world);
         tr.persistent_overlay.push(self);
     }
     pub fn push_as_content(self, world: &mut World) {
-        let mut tr = world.resource_mut::<TileResource>();
+        let mut tr = rm(world);
         tr.content = Some(self);
     }
 

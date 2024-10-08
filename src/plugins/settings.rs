@@ -21,7 +21,7 @@ impl SettingsPlugin {
                 cs.save_to_file().apply(world);
             }
         })
-        .set_id("Video Settings".into())
+        .with_id("Video Settings".into())
         .min_space(egui::vec2(200.0, 0.0))
         .push(world);
     }
@@ -36,7 +36,7 @@ impl SettingsPlugin {
                 cs.save_to_file().apply(world);
             }
         })
-        .set_id("Audio Settings".into())
+        .with_id("Audio Settings".into())
         .min_space(egui::vec2(200.0, 0.0))
         .push(world);
     }

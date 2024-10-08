@@ -53,11 +53,10 @@ rand_chacha = "0.3.1"
 colored = "2.0.0"
 clap = { version = "4.4.5", features = ["derive"] }
 hex = "0.4.3"
-ordered_hash_map = "0.4.0"
 home = "0.5.5"
 lazy_static = "1.4.0"
 convert_case = "0.6.0"
-indexmap = { version = "2.2.5", features = ["serde"] }
+indexmap = { version = "2.6.0", features = ["serde"] }
 noisy_bevy = "0.7.0"
 chrono = "0.4.38"
 egui_commonmark = "0.17.0"

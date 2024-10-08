@@ -1,11 +1,10 @@
 use egui_extras::{Column, TableBuilder};
-use ordered_hash_map::OrderedHashMap;
 
 use super::*;
 
 pub struct Table<T> {
     name: &'static str,
-    columns: OrderedHashMap<&'static str, TableColumn<T>>,
+    columns: IndexMap<&'static str, TableColumn<T>>,
     title: bool,
     selectable: bool,
     filters: Vec<(&'static str, &'static str, VarValue)>,

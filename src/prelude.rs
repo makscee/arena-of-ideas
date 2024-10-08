@@ -73,11 +73,11 @@ pub use egui::{
     Layout, Margin, NumExt, Order, Rect, Response, RichText, Rounding, Sense, SidePanel, Style,
     TextFormat, TextStyle, TopBottomPanel, Widget, WidgetText, Window,
 };
+pub use indexmap::IndexMap;
 pub use itertools::Itertools;
 pub use lazy_static::lazy_static;
 pub use log::*;
 pub use once_cell::sync::OnceCell;
-pub use ordered_hash_map::OrderedHashMap;
 pub use rand::{seq::IteratorRandom, thread_rng, Rng, SeedableRng};
 pub use rand_chacha::ChaCha8Rng;
 pub use ron::{
