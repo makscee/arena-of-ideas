@@ -25,6 +25,16 @@ pub fn left_mouse_just_released(world: &World) -> bool {
         .resource::<ButtonInput<MouseButton>>()
         .just_released(MouseButton::Left)
 }
+pub fn right_mouse_just_pressed(world: &World) -> bool {
+    world
+        .resource::<ButtonInput<MouseButton>>()
+        .just_pressed(MouseButton::Right)
+}
+pub fn right_mouse_just_released(world: &World) -> bool {
+    world
+        .resource::<ButtonInput<MouseButton>>()
+        .just_released(MouseButton::Right)
+}
 pub fn egui_context(world: &mut World) -> Option<egui::Context> {
     world
         .query::<&mut EguiContext>()

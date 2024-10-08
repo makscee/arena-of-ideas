@@ -43,6 +43,13 @@ pub struct Tile {
     no_expand: bool,
 }
 
+#[derive(Default)]
+enum TileResponse {
+    #[default]
+    None,
+    WantFocus,
+}
+
 #[derive(Resource, Default)]
 struct TileResource {
     tiles: IndexMap<String, Tile>,
@@ -120,10 +127,13 @@ impl TilePlugin {
                 break;
             };
             let tile_focused = focused.eq(&tile.id);
-            if tile.show(tile_focused, &mut sr, ctx, world) {
-                let mut rm = rm(world);
-                if focused.eq(&rm.focused) {
-                    rm.focused = tile.id.clone();
+            match tile.show(tile_focused, &mut sr, ctx, world) {
+                TileResponse::None => {}
+                TileResponse::WantFocus => {
+                    let mut rm = rm(world);
+                    if focused.eq(&rm.focused) {
+                        rm.focused = tile.id.clone();
+                    }
                 }
             }
             let tiles = &mut rm(world).tiles;
@@ -158,6 +168,22 @@ impl TilePlugin {
         rm(world).persistent_overlay.extend(po);
 
         world.insert_resource(sr);
+        if just_pressed(KeyCode::Escape, world) {
+            let mut rm = rm(world);
+            let focused = rm.focused.clone();
+            if let Some(tile) = rm.tiles.get_mut(&focused).filter(|t| !t.pinned) {
+                tile.open = false;
+                rm.focused = default()
+            } else {
+                for (_, tile) in rm.tiles.iter_mut().rev() {
+                    if tile.pinned || !tile.open {
+                        continue;
+                    }
+                    tile.open = false;
+                    break;
+                }
+            }
+        }
     }
     fn reset(world: &mut World) {
         let ctx = &egui_context(world).unwrap();
@@ -341,8 +367,8 @@ impl Tile {
         sr: &mut ScreenResource,
         ctx: &egui::Context,
         world: &mut World,
-    ) -> bool {
-        let mut response = false;
+    ) -> TileResponse {
+        let mut response = TileResponse::None;
         self.actual_space
             .lerp_to(self.allocated_space, delta_time(world) * 13.0);
         let id = Id::new(&self.id);
@@ -388,7 +414,15 @@ impl Tile {
                 .pointer_interact_pos()
                 .is_some_and(|pos| rect.contains(pos))
             {
-                response = true;
+                response = TileResponse::WantFocus;
+            }
+        }
+        if !self.pinned && right_mouse_just_released(world) {
+            if ctx
+                .pointer_interact_pos()
+                .is_some_and(|pos| rect.contains(pos))
+            {
+                self.open = false;
             }
         }
         let mut frame = if focused {
