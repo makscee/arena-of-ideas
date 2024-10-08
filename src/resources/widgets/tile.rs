@@ -1,3 +1,5 @@
+use lerp::Lerp;
+
 use super::*;
 
 pub struct TilePlugin;
@@ -341,9 +343,8 @@ impl Tile {
         world: &mut World,
     ) -> bool {
         let mut response = false;
-        self.actual_space += (self.allocated_space - self.actual_space)
-            * delta_time(world).at_most(1.0 / 60.0)
-            * 13.0;
+        self.actual_space
+            .lerp_to(self.allocated_space, delta_time(world) * 13.0);
         let id = Id::new(&self.id);
         let (mut area, rect) = match self.side {
             Side::Right => (
@@ -410,34 +411,35 @@ impl Tile {
         }
 
         area.constrain_to(rect).show(ctx, |ui| {
-            frame.show(ui, |ui| {
-                let content_rect = rect.shrink2(frame.total_margin().sum() * 0.5);
-                if !self.no_expand {
-                    ui.expand_to_include_rect(content_rect);
+            let content_rect = rect.shrink2(frame.total_margin().sum() * 0.5);
+            if !self.no_expand {
+                ui.expand_to_include_rect(content_rect);
+            }
+            ui.painter()
+                .add(frame.paint(rect.shrink2(frame.outer_margin.sum() * 0.5)));
+            let ui = &mut ui.child_ui(content_rect, *ui.layout(), None);
+            ui.set_clip_rect(content_rect);
+            if !self.pinned {
+                const CROSS_SIZE: f32 = 13.0;
+                let cross_rect = Rect::from_two_pos(
+                    content_rect.right_top(),
+                    content_rect.right_top() + egui::vec2(-CROSS_SIZE, CROSS_SIZE),
+                );
+                let resp = ui.allocate_rect(cross_rect, Sense::click());
+                if resp.clicked() {
+                    self.open = false;
                 }
-                ui.set_max_size(content_rect.size().at_least(egui::vec2(0.1, 0.1)));
-                if !self.pinned {
-                    const CROSS_SIZE: f32 = 13.0;
-                    let cross_rect = Rect::from_two_pos(
-                        content_rect.right_top(),
-                        content_rect.right_top() + egui::vec2(-CROSS_SIZE, CROSS_SIZE),
-                    );
-                    let resp = ui.allocate_rect(cross_rect, Sense::click());
-                    if resp.clicked() {
-                        self.open = false;
-                    }
-                    let stroke = Stroke {
-                        width: 2.0,
-                        color: if resp.hovered() { YELLOW } else { VISIBLE_DARK },
-                    };
-                    ui.painter()
-                        .line_segment([cross_rect.left_top(), cross_rect.right_bottom()], stroke);
-                    ui.painter()
-                        .line_segment([cross_rect.right_top(), cross_rect.left_bottom()], stroke);
-                }
-                (self.content)(ui, world);
-                self.content_space = ui.min_size().at_least(self.min_space);
-            });
+                let stroke = Stroke {
+                    width: 2.0,
+                    color: if resp.hovered() { YELLOW } else { VISIBLE_DARK },
+                };
+                ui.painter()
+                    .line_segment([cross_rect.left_top(), cross_rect.right_bottom()], stroke);
+                ui.painter()
+                    .line_segment([cross_rect.right_top(), cross_rect.left_bottom()], stroke);
+            }
+            (self.content)(ui, world);
+            self.content_space = ui.min_size().at_least(self.min_space);
         });
         response
     }

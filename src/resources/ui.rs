@@ -174,7 +174,7 @@ impl UiPlugin {
                     bg_stroke: Stroke::new(1.0, VISIBLE_LIGHT), // e.g. hover over window edge or button
                     fg_stroke: Stroke::new(1.5, VISIBLE_BRIGHT),
                     rounding: Rounding::same(13.0),
-                    expansion: 1.0,
+                    expansion: 0.0,
                 },
                 active: WidgetVisuals {
                     weak_bg_fill: Color32::TRANSPARENT,
@@ -182,7 +182,7 @@ impl UiPlugin {
                     bg_stroke: Stroke::new(1.0, YELLOW),
                     fg_stroke: Stroke::new(2.0, YELLOW),
                     rounding: Rounding::same(13.0),
-                    expansion: 1.0,
+                    expansion: 0.0,
                 },
                 open: WidgetVisuals {
                     weak_bg_fill: Color32::from_gray(45),

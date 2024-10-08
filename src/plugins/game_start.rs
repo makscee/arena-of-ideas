@@ -239,11 +239,10 @@ impl GameStartPlugin {
                 }
             })
             .transparent()
-            .non_focusable()
             .pinned()
             .push(world);
         }
-        Tile::new(Side::Bottom, |ui, world| {
+        Tile::new(Side::Left, |ui, world| {
             let gsr = world.resource_mut::<GameStartResource>();
             let game_mode = gsr.game_modes[gsr.selected].clone();
             match game_mode {
@@ -281,7 +280,6 @@ impl GameStartPlugin {
         })
         .transparent()
         .pinned()
-        .non_focusable()
         .push(world);
     }
 
