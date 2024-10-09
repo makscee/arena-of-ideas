@@ -133,13 +133,34 @@ impl ShowTable<TArenaLeaderboard> for Vec<TArenaLeaderboard> {
         m: fn(Table<TArenaLeaderboard>) -> Table<TArenaLeaderboard>,
     ) -> TableState {
         let mut t = Table::new(name)
-            .title()
             .column_int("floor", |d: &TArenaLeaderboard| d.floor as i32)
             .column_ts("time", |d| d.ts)
             .column_team("team", |d| d.team)
             .column_user_click(
                 "owner",
                 |d| d.user,
+                |gid, _, world| TilePlugin::add_user(gid, world),
+            )
+            .column_cstr("mode", |d, _| d.mode.cstr());
+        t = m(t);
+        t.ui(self, ui, world)
+    }
+}
+impl ShowTable<TArenaRunArchive> for Vec<TArenaRunArchive> {
+    fn show_modified_table(
+        &self,
+        name: &'static str,
+        ui: &mut Ui,
+        world: &mut World,
+        m: fn(Table<TArenaRunArchive>) -> Table<TArenaRunArchive>,
+    ) -> TableState {
+        let mut t = Table::new(name)
+            .column_gid("id", |d: &TArenaRunArchive| d.id)
+            .column_int("floor", |d| d.floor as i32)
+            .column_team("team", |d| d.team)
+            .column_user_click(
+                "owner",
+                |d| d.owner,
                 |gid, _, world| TilePlugin::add_user(gid, world),
             )
             .column_cstr("mode", |d, _| d.mode.cstr());

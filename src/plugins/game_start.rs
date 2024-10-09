@@ -15,8 +15,17 @@ struct GameStartResource {
     game_modes: Vec<GameMode>,
     selected: usize,
     leaderboard: Vec<TArenaLeaderboard>,
+    runs: Vec<TArenaRunArchive>,
+    show_leaderboard: bool,
     teams: Vec<TTeam>,
     selected_team: usize,
+}
+
+fn rm(world: &mut World) -> Mut<GameStartResource> {
+    world.resource_mut::<GameStartResource>()
+}
+fn r(world: &World) -> &GameStartResource {
+    world.resource::<GameStartResource>()
 }
 
 impl Default for GameStartResource {
@@ -30,6 +39,8 @@ impl Default for GameStartResource {
             .into(),
             selected: 0,
             leaderboard: default(),
+            runs: default(),
+            show_leaderboard: true,
             teams: TTeam::filter_by_owner(user_id())
                 .filter(|t| t.pool == TeamPool::Owned && !t.units.is_empty())
                 .collect_vec(),
@@ -40,11 +51,11 @@ impl Default for GameStartResource {
 
 impl GameStartPlugin {
     pub fn add_tiles(world: &mut World) {
-        let gsr = world.resource_mut::<GameStartResource>();
+        let gsr = rm(world);
         Self::load_leaderboard(gsr.game_modes[gsr.selected].clone(), world);
         Tile::new(Side::Bottom, |ui, world| {
             ui.vertical_centered(|ui| {
-                let gsr = world.resource_mut::<GameStartResource>();
+                let gsr = rm(world);
                 let game_mode = gsr.game_modes[gsr.selected].clone();
                 let can_start = !GameOption::ActiveRun.is_fulfilled(world);
                 ui.vertical_centered_justified(|ui| {
@@ -64,7 +75,7 @@ impl GameStartPlugin {
                         }
                         GameMode::ArenaRanked => {
                             let cost = TPrices::current().ranked_mode;
-                            let gsr = world.resource::<GameStartResource>();
+                            let gsr = r(world);
                             if gsr.teams.is_empty() {
                                 "Need at least one non-empty team to play this mode"
                                     .cstr_cs(RED, CstrStyle::Bold)
@@ -75,7 +86,7 @@ impl GameStartPlugin {
                                     world,
                                     |ui, world| {
                                         "Select team".cstr_c(VISIBLE_LIGHT).label(ui);
-                                        let gsr = world.resource_mut::<GameStartResource>();
+                                        let gsr = rm(world);
                                         let team = gsr.teams[gsr.selected_team].clone();
                                         team.hover_label(ui, world);
                                     },
@@ -85,7 +96,7 @@ impl GameStartPlugin {
                                             .ui(ui)
                                             .clicked()
                                         {
-                                            let mut gsr = world.resource_mut::<GameStartResource>();
+                                            let mut gsr = rm(world);
                                             gsr.selected_team =
                                                 (gsr.selected_team + gsr.teams.len() - 1)
                                                     % gsr.teams.len();
@@ -97,7 +108,7 @@ impl GameStartPlugin {
                                             .ui(ui)
                                             .clicked()
                                         {
-                                            let mut gsr = world.resource_mut::<GameStartResource>();
+                                            let mut gsr = rm(world);
                                             gsr.selected_team =
                                                 (gsr.selected_team + 1) % gsr.teams.len();
                                         }
@@ -109,7 +120,7 @@ impl GameStartPlugin {
                                     .ui(ui)
                                     .clicked()
                                 {
-                                    let gsr = world.resource::<GameStartResource>();
+                                    let gsr = r(world);
                                     let team = gsr.teams[gsr.selected_team].id;
                                     run_start_ranked(team);
                                     once_on_run_start_ranked(|_, _, status, _| {
@@ -186,7 +197,7 @@ impl GameStartPlugin {
                                 .ui(ui)
                                 .clicked()
                             {
-                                let mut gsr = world.resource_mut::<GameStartResource>();
+                                let mut gsr = rm(world);
                                 gsr.selected = (gsr.selected + gsr.game_modes.len() - 1)
                                     % gsr.game_modes.len();
                                 Self::load_leaderboard(gsr.game_modes[gsr.selected].clone(), world);
@@ -198,7 +209,7 @@ impl GameStartPlugin {
                                 .ui(ui)
                                 .clicked()
                             {
-                                let mut gsr = world.resource_mut::<GameStartResource>();
+                                let mut gsr = rm(world);
                                 gsr.selected = (gsr.selected + 1) % gsr.game_modes.len();
                                 Self::load_leaderboard(gsr.game_modes[gsr.selected].clone(), world);
                             }
@@ -209,8 +220,28 @@ impl GameStartPlugin {
         .pinned()
         .push(world);
         Tile::new(Side::Left, |ui, world| {
-            world.resource_scope(|world, gsr: Mut<GameStartResource>| {
-                gsr.leaderboard.show_table("Leaderboard", ui, world);
+            world.resource_scope(|world, mut gsr: Mut<GameStartResource>| {
+                ui.horizontal(|ui| {
+                    if Button::click("Leaderboard".into())
+                        .active(gsr.show_leaderboard)
+                        .ui(ui)
+                        .clicked()
+                    {
+                        gsr.show_leaderboard = true;
+                    }
+                    if Button::click("Runs".into())
+                        .active(!gsr.show_leaderboard)
+                        .ui(ui)
+                        .clicked()
+                    {
+                        gsr.show_leaderboard = false;
+                    }
+                });
+                if gsr.show_leaderboard {
+                    gsr.leaderboard.show_table("Leaderboard", ui, world);
+                } else {
+                    gsr.runs.show_table("Runs", ui, world);
+                }
             });
         })
         .pinned()
@@ -242,7 +273,7 @@ impl GameStartPlugin {
             .push(world);
         }
         Tile::new(Side::Left, |ui, world| {
-            let gsr = world.resource_mut::<GameStartResource>();
+            let gsr = rm(world);
             let game_mode = gsr.game_modes[gsr.selected].clone();
             match game_mode {
                 GameMode::ArenaNormal => {
@@ -285,9 +316,14 @@ impl GameStartPlugin {
 
     fn load_leaderboard(game_mode: GameMode, world: &mut World) {
         TableState::reset_cache(&egui_context(world).unwrap());
-        world.resource_mut::<GameStartResource>().leaderboard = TArenaLeaderboard::iter()
+        let mut gsr = rm(world);
+        gsr.leaderboard = TArenaLeaderboard::iter()
             .filter(|d| d.mode.eq(&game_mode))
             .sorted_by_key(|d| -(d.floor as i32))
+            .collect_vec();
+        gsr.runs = TArenaRunArchive::iter()
+            .filter(|d| d.mode.eq(&game_mode))
+            .sorted_by_key(|d| -(d.id as i32))
             .collect_vec();
     }
 }
