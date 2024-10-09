@@ -44,65 +44,9 @@ impl GameStartPlugin {
         Self::load_leaderboard(gsr.game_modes[gsr.selected].clone(), world);
         Tile::new(Side::Bottom, |ui, world| {
             ui.vertical_centered(|ui| {
-                "Game Mode".cstr().label(ui);
-                const ARROW_WIDTH: f32 = 100.0;
                 let gsr = world.resource_mut::<GameStartResource>();
                 let game_mode = gsr.game_modes[gsr.selected].clone();
                 let can_start = !GameOption::ActiveRun.is_fulfilled(world);
-                Middle3::default()
-                    .width(300.0)
-                    .side_align(Align::Min)
-                    .ui_mut(
-                        ui,
-                        world,
-                        |ui, _| {
-                            match &game_mode {
-                                GameMode::ArenaNormal => {
-                                    "Arena Normal"
-                                        .cstr_c(VISIBLE_BRIGHT)
-                                        .style(CstrStyle::Heading2)
-                                        .label(ui);
-                                }
-                                GameMode::ArenaRanked => {
-                                    "Arena Ranked"
-                                        .cstr_c(YELLOW)
-                                        .style(CstrStyle::Heading2)
-                                        .label(ui);
-                                }
-                                GameMode::ArenaConst(..) => {
-                                    "Arena Constant"
-                                        .cstr_c(CYAN)
-                                        .style(CstrStyle::Heading2)
-                                        .label(ui);
-                                }
-                            };
-                        },
-                        |ui, world| {
-                            ui.add_space(50.0);
-                            if Button::click("<".to_owned())
-                                .min_width(ARROW_WIDTH)
-                                .ui(ui)
-                                .clicked()
-                            {
-                                let mut gsr = world.resource_mut::<GameStartResource>();
-                                gsr.selected = (gsr.selected + gsr.game_modes.len() - 1)
-                                    % gsr.game_modes.len();
-                                Self::load_leaderboard(gsr.game_modes[gsr.selected].clone(), world);
-                            }
-                        },
-                        |ui, world| {
-                            ui.add_space(50.0);
-                            if Button::click(">".to_owned())
-                                .min_width(ARROW_WIDTH)
-                                .ui(ui)
-                                .clicked()
-                            {
-                                let mut gsr = world.resource_mut::<GameStartResource>();
-                                gsr.selected = (gsr.selected + 1) % gsr.game_modes.len();
-                                Self::load_leaderboard(gsr.game_modes[gsr.selected].clone(), world);
-                            }
-                        },
-                    );
                 ui.vertical_centered_justified(|ui| {
                     ui.set_width(400.0);
                     match &game_mode {
@@ -183,7 +127,6 @@ impl GameStartPlugin {
                         }
                         GameMode::ArenaConst(seed) => {
                             let cost = TPrices::current().const_mode;
-                            seed.cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold).label(ui);
                             if Button::click(format!("-{} {CREDITS_SYM}", cost))
                                 .title("Play".cstr())
                                 .enabled(can_start && TWallet::current().amount >= cost)
@@ -195,6 +138,7 @@ impl GameStartPlugin {
                                     status.on_success(|w| GameState::Shop.proceed_to_target(w))
                                 });
                             }
+                            seed.cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold).label(ui);
                             "Wallet: "
                                 .cstr()
                                 .push(
@@ -205,10 +149,64 @@ impl GameStartPlugin {
                         }
                     }
                 });
+                ui.add_space(30.0);
+                "Game Mode".cstr().label(ui);
+                const ARROW_WIDTH: f32 = 100.0;
+                Middle3::default()
+                    .width(300.0)
+                    .side_align(Align::Min)
+                    .ui_mut(
+                        ui,
+                        world,
+                        |ui, _| {
+                            match &game_mode {
+                                GameMode::ArenaNormal => {
+                                    "Arena Normal"
+                                        .cstr_c(VISIBLE_BRIGHT)
+                                        .style(CstrStyle::Heading2)
+                                        .label(ui);
+                                }
+                                GameMode::ArenaRanked => {
+                                    "Arena Ranked"
+                                        .cstr_c(YELLOW)
+                                        .style(CstrStyle::Heading2)
+                                        .label(ui);
+                                }
+                                GameMode::ArenaConst(..) => {
+                                    "Arena Constant"
+                                        .cstr_c(CYAN)
+                                        .style(CstrStyle::Heading2)
+                                        .label(ui);
+                                }
+                            };
+                        },
+                        |ui, world| {
+                            if Button::click("<".to_owned())
+                                .min_width(ARROW_WIDTH)
+                                .ui(ui)
+                                .clicked()
+                            {
+                                let mut gsr = world.resource_mut::<GameStartResource>();
+                                gsr.selected = (gsr.selected + gsr.game_modes.len() - 1)
+                                    % gsr.game_modes.len();
+                                Self::load_leaderboard(gsr.game_modes[gsr.selected].clone(), world);
+                            }
+                        },
+                        |ui, world| {
+                            if Button::click(">".to_owned())
+                                .min_width(ARROW_WIDTH)
+                                .ui(ui)
+                                .clicked()
+                            {
+                                let mut gsr = world.resource_mut::<GameStartResource>();
+                                gsr.selected = (gsr.selected + 1) % gsr.game_modes.len();
+                                Self::load_leaderboard(gsr.game_modes[gsr.selected].clone(), world);
+                            }
+                        },
+                    );
             });
         })
         .pinned()
-        .min_space(egui::vec2(0.0, 220.0))
         .push(world);
         Tile::new(Side::Left, |ui, world| {
             world.resource_scope(|world, gsr: Mut<GameStartResource>| {
@@ -240,6 +238,7 @@ impl GameStartPlugin {
             })
             .transparent()
             .pinned()
+            .no_expand()
             .push(world);
         }
         Tile::new(Side::Left, |ui, world| {
@@ -280,6 +279,7 @@ impl GameStartPlugin {
         })
         .transparent()
         .pinned()
+        .no_expand()
         .push(world);
     }
 

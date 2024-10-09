@@ -56,6 +56,7 @@ struct TileResource {
     focused: String,
     persistent_overlay: Vec<Tile>,
     content: Option<Tile>,
+    new_tiles: Vec<Tile>,
 }
 fn rm(world: &mut World) -> Mut<TileResource> {
     world.resource_mut::<TileResource>()
@@ -150,6 +151,17 @@ impl TilePlugin {
             }
             if !removed {
                 i += 1;
+            }
+        }
+        let mut tr = rm(world);
+        for tile in mem::take(&mut tr.new_tiles) {
+            if tile.focusable {
+                tr.focused = tile.id.clone();
+            }
+            if let Some(tile) = tr.tiles.get_mut(&tile.id) {
+                tile.open = false;
+            } else {
+                tr.tiles.insert(tile.id.clone(), tile);
             }
         }
         let content_space = sr.screen_rect;
@@ -322,14 +334,7 @@ impl Tile {
     }
     pub fn push(self, world: &mut World) {
         let mut tr = rm(world);
-        if self.focusable {
-            tr.focused = self.id.clone();
-        }
-        if let Some(tile) = tr.tiles.get_mut(&self.id) {
-            tile.open = false;
-        } else {
-            tr.tiles.insert(self.id.clone(), self);
-        }
+        tr.new_tiles.push(self);
     }
     pub fn push_persistent(self, world: &mut World) {
         let mut tr = rm(world);
@@ -369,9 +374,9 @@ impl Tile {
         world: &mut World,
     ) -> TileResponse {
         let mut response = TileResponse::None;
+        let id = Id::new(&self.id);
         self.actual_space
             .lerp_to(self.allocated_space, delta_time(world) * 13.0);
-        let id = Id::new(&self.id);
         let (mut area, rect) = match self.side {
             Side::Right => (
                 Area::new(id)
@@ -444,14 +449,27 @@ impl Tile {
             self.margin_space = default();
         }
 
-        area.constrain_to(rect).show(ctx, |ui| {
-            let content_rect = rect.shrink2(frame.total_margin().sum() * 0.5);
-            if !self.no_expand {
-                ui.expand_to_include_rect(content_rect);
+        area.show(ctx, |ui| {
+            let mut content_rect = rect.shrink2(frame.total_margin().sum() * 0.5);
+            if self.no_expand {
+                match self.side {
+                    Side::Right | Side::Left => {
+                        content_rect.set_height(self.content_space.y);
+                    }
+                    Side::Top | Side::Bottom => {
+                        content_rect.set_width(self.content_space.x);
+                    }
+                }
             }
+            ui.expand_to_include_rect(content_rect);
+
             ui.painter()
-                .add(frame.paint(rect.shrink2(frame.outer_margin.sum() * 0.5)));
-            let ui = &mut ui.child_ui(content_rect, *ui.layout(), None);
+                .add(frame.paint(content_rect.expand2(frame.inner_margin.sum() * 0.5)));
+            let ui = &mut ui.child_ui(
+                content_rect,
+                *ui.layout(),
+                Some(egui::UiStackInfo::new(egui::UiKind::ScrollArea)),
+            );
             ui.set_clip_rect(content_rect);
             if !self.pinned {
                 const CROSS_SIZE: f32 = 13.0;
