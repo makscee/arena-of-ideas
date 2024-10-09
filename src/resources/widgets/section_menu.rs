@@ -28,6 +28,7 @@ impl Default for SectionMenu {
                         GameState::MetaHeroes,
                         GameState::MetaHeroShards,
                         GameState::MetaLootboxes,
+                        GameState::MetaGallery,
                     ]
                     .into(),
                     options: [GameOption::Login].into(),

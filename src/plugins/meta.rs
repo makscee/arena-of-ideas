@@ -33,6 +33,7 @@ impl MetaPlugin {
                     GameState::MetaHeroes,
                     GameState::MetaHeroShards,
                     GameState::MetaLootboxes,
+                    GameState::MetaGallery,
                 ],
                 ui,
                 world,
@@ -261,6 +262,13 @@ impl MetaPlugin {
                         });
                     })
                 });
+            })
+            .pinned()
+            .push(world),
+            GameState::MetaGallery => Tile::new(Side::Left, |ui, world| {
+                TBaseUnit::iter()
+                    .collect_vec()
+                    .show_table("Base Units", ui, world);
             })
             .pinned()
             .push(world),

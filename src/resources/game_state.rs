@@ -11,6 +11,7 @@ pub enum GameState {
     MetaHeroes,
     MetaHeroShards,
     MetaLootboxes,
+    MetaGallery,
     Inbox,
     Connect,
     Login,
@@ -127,6 +128,7 @@ impl GameState {
             GameState::MetaHeroes => "Heroes",
             GameState::MetaHeroShards => "Hero Shards",
             GameState::MetaLootboxes => "Lootboxes",
+            GameState::MetaGallery => "Gallery",
             _ => self.to_string().to_case(Case::Title).leak(),
         }
     }

@@ -40,30 +40,25 @@ impl TitlePlugin {
                     .ui(ui)
                     .clicked()
                 {
-                    ui.ctx().open_url(egui::OpenUrl {
-                        url: "https://discord.gg/c3UT58M9wb".into(),
-                        new_tab: false,
-                    });
+                    ui.ctx()
+                        .open_url(egui::OpenUrl::same_tab("https://discord.gg/c3UT58M9wb"));
                 }
                 if Button::click("Youtube".into())
                     .icon(Icon::Youtube)
                     .ui(ui)
                     .clicked()
                 {
-                    ui.ctx().open_url(egui::OpenUrl {
-                        url: "https://www.youtube.com/@makscee".into(),
-                        new_tab: false,
-                    });
+                    ui.ctx()
+                        .open_url(egui::OpenUrl::same_tab("https://www.youtube.com/@makscee"));
                 }
                 if Button::click("Github".into())
                     .icon(Icon::Github)
                     .ui(ui)
                     .clicked()
                 {
-                    ui.ctx().open_url(egui::OpenUrl {
-                        url: "https://github.com/makscee/arena-of-ideas/releases".into(),
-                        new_tab: false,
-                    });
+                    ui.ctx().open_url(egui::OpenUrl::same_tab(
+                        "https://github.com/makscee/arena-of-ideas/releases",
+                    ));
                 }
             });
         })

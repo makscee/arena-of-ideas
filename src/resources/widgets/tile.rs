@@ -253,7 +253,8 @@ impl TilePlugin {
             | GameState::MetaAuction
             | GameState::MetaHeroes
             | GameState::MetaHeroShards
-            | GameState::MetaLootboxes => MetaPlugin::add_tiles(world),
+            | GameState::MetaLootboxes
+            | GameState::MetaGallery => MetaPlugin::add_tiles(world),
             GameState::Shop => ShopPlugin::add_tiles(world),
             GameState::Battle => BattlePlugin::add_tiles(world),
             GameState::TableView(query) => TableViewPlugin::add_tiles(query, world),

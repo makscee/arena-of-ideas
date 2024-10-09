@@ -236,9 +236,13 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
             TableColumn {
                 value: Box::new(move |d, _| value(d).into()),
                 show: Box::new(|_, v, ui, _| {
-                    Rarity::from_int(v.get_int().unwrap() as i8)
-                        .cstr()
-                        .label(ui);
+                    let r = v.get_int().unwrap() as i8;
+                    if r < 0 {
+                        "-".cstr()
+                    } else {
+                        Rarity::from_int(r).cstr()
+                    }
+                    .label(ui);
                 }),
                 sortable: true,
             },
