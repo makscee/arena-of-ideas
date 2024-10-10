@@ -123,6 +123,7 @@ fn main() {
             TilePlugin,
             TeamSyncPlugin,
             AudioPlugin,
+            MetaPlugin,
         ))
         .init_state::<GameState>()
         .init_resource::<NotificationsResource>()

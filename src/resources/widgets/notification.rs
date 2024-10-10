@@ -44,25 +44,38 @@ impl Notification {
         d.push_front((t, self));
         d.make_contiguous();
     }
-    pub fn show_recent(ui: &mut Ui, world: &mut World) {
-        let now = now_micros();
-        let notifications = world
-            .resource::<NotificationsResource>()
-            .shown
-            .iter()
-            .filter(|(t, _)| now - *t < 5000000)
-            .map(|(_, n)| n.clone())
-            .rev()
-            .collect_vec();
-        if notifications.is_empty() {
-            return;
-        }
+    pub fn show_recent(ctx: &egui::Context, world: &mut World) {
+        Area::new(Id::new("recent_notifications"))
+            .anchor(Align2::LEFT_TOP, [0.0, 0.0])
+            .order(Order::Foreground)
+            .show(ctx, |ui| {
+                let ui = &mut ui.child_ui(ui.available_rect_before_wrap(), *ui.layout(), None);
 
-        for n in notifications {
-            FRAME.show(ui, |ui| {
-                n.text.label(ui);
+                let now = now_micros();
+                let notifications = world
+                    .resource::<NotificationsResource>()
+                    .shown
+                    .iter()
+                    .filter(|(t, _)| now - *t < 5000000)
+                    .map(|(_, n)| n.clone())
+                    .rev()
+                    .collect_vec();
+                if notifications.is_empty() {
+                    return;
+                }
+                ui.add_space(23.0);
+                ui.set_max_width(300.0);
+                ui.vertical(|ui| {
+                    for n in notifications {
+                        FRAME.show(ui, |ui| {
+                            n.text
+                                .as_label(ui)
+                                .wrap_mode(egui::TextWrapMode::Wrap)
+                                .ui(ui);
+                        });
+                    }
+                });
             });
-        }
     }
     pub fn show_all_table(ui: &mut Ui, world: &mut World) {
         world.resource_scope(|world, nr: Mut<NotificationsResource>| {
@@ -77,10 +90,13 @@ impl Notification {
 const FRAME: Frame = Frame {
     inner_margin: Margin::same(13.0),
     rounding: Rounding::same(13.0),
-    fill: BG_LIGHT,
+    fill: BG_DARK,
     outer_margin: Margin::ZERO,
     shadow: SHADOW,
-    stroke: Stroke::NONE,
+    stroke: Stroke {
+        width: 1.0,
+        color: VISIBLE_BRIGHT,
+    },
 };
 
 pub trait NotificationPusher: ToString {

@@ -1,8 +1,16 @@
 use chrono::Utc;
+use rand::seq::SliceRandom;
 
 use super::*;
 
 pub struct MetaPlugin;
+
+impl Plugin for MetaPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(OnEnter(GameState::MetaBalancing), Self::on_enter_balancing)
+            .add_systems(OnExit(GameState::MetaBalancing), Self::on_exit_balancing);
+    }
+}
 
 #[derive(Resource)]
 struct AuctionResource {
@@ -10,6 +18,15 @@ struct AuctionResource {
     count: u32,
     max_count: u32,
     price: i64,
+}
+#[derive(Resource)]
+struct BalancingResource {
+    units: Vec<String>,
+    current: String,
+    vote: Option<i32>,
+}
+fn brm(world: &mut World) -> Mut<BalancingResource> {
+    world.resource_mut::<BalancingResource>()
 }
 
 impl AuctionResource {
@@ -24,6 +41,46 @@ impl AuctionResource {
 }
 
 impl MetaPlugin {
+    fn get_next_for_balancing(world: &mut World) {
+        world.game_clear();
+        TableState::reset_cache(&egui_context(world).unwrap());
+        let mut br = world.resource_mut::<BalancingResource>();
+        if let Some(unit) = br.units.pop() {
+            br.current = unit.clone();
+            PackedUnit::from(TBaseUnit::find_by_name(unit).unwrap()).unpack(
+                TeamPlugin::entity(Faction::Team, world),
+                None,
+                None,
+                world,
+            );
+        }
+    }
+    fn skip_balancing(world: &mut World) {
+        let mut br = world.resource_mut::<BalancingResource>();
+        let current = br.current.clone();
+        br.units.insert(0, current);
+        Self::get_next_for_balancing(world);
+    }
+    fn on_enter_balancing(world: &mut World) {
+        let voted: HashSet<String> =
+            HashSet::from_iter(TUnitBalance::filter_by_owner(user_id()).map(|u| u.unit));
+        let mut units = TBaseUnit::iter()
+            .filter_map(|u| match u.rarity >= 0 && !voted.contains(&u.name) {
+                true => Some(u.name),
+                false => None,
+            })
+            .collect_vec();
+        units.shuffle(&mut thread_rng());
+        world.insert_resource(BalancingResource {
+            units,
+            current: default(),
+            vote: default(),
+        });
+        Self::get_next_for_balancing(world);
+    }
+    fn on_exit_balancing(world: &mut World) {
+        world.game_clear();
+    }
     pub fn add_tiles(world: &mut World) {
         Tile::new(Side::Top, |ui, world| {
             if SubstateMenu::show(
@@ -34,6 +91,7 @@ impl MetaPlugin {
                     GameState::MetaHeroShards,
                     GameState::MetaLootboxes,
                     GameState::MetaGallery,
+                    GameState::MetaBalancing,
                 ],
                 ui,
                 world,
@@ -272,6 +330,106 @@ impl MetaPlugin {
             })
             .pinned()
             .push(world),
+            GameState::MetaBalancing => {
+                Tile::new(Side::Left, |ui, world| {
+                    let votes: HashMap<String, i32> = HashMap::from_iter(
+                        TUnitBalance::filter_by_owner(user_id()).map(|u| (u.unit, u.vote)),
+                    );
+                    TBaseUnit::iter()
+                        .filter(|u| votes.contains_key(&u.name))
+                        .collect_vec()
+                        .show_modified_table("Base Units", ui, world, |t| {
+                            t.column_int("vote", |u| {
+                                TUnitBalance::filter_by_unit(u.name.clone())
+                                    .map(|u| u.vote)
+                                    .sum::<i32>()
+                            })
+                            .column_cstr_click(
+                                "action",
+                                |_, _| "vote".cstr_c(VISIBLE_LIGHT),
+                                |d, world| {
+                                    brm(world).units.push(d.name.clone());
+                                    Self::get_next_for_balancing(world);
+                                },
+                            )
+                        });
+                })
+                .pinned()
+                .push(world);
+                Tile::new(Side::Top, |ui, world| {
+                    TeamContainer::new(Faction::Team)
+                        .slots(1)
+                        .slot_content(|_, entity, ui, world| {
+                            let Some(entity) = entity else {
+                                return;
+                            };
+                            if let Ok(card) = UnitCard::new(&Context::new(entity), world) {
+                                card.ui(ui);
+                            }
+                        })
+                        .ui(ui, world);
+                })
+                .pinned()
+                .transparent()
+                .push(world);
+                Tile::new(Side::Bottom, |ui, world| {
+                    brm(world).vote = None;
+                    ui.horizontal_centered(|ui| {
+                        Middle3::default().width(200.0).ui_mut(
+                            ui,
+                            world,
+                            |ui, world| {
+                                if Button::click("OK".into()).ui(ui).clicked() {
+                                    brm(world).vote = Some(0);
+                                }
+                                if Button::click("Skip".into()).gray(ui).ui(ui).clicked() {
+                                    Self::skip_balancing(world);
+                                }
+                            },
+                            |ui, world| {
+                                if Button::click("Too Weak".into())
+                                    .color(CYAN, ui)
+                                    .ui(ui)
+                                    .clicked()
+                                {
+                                    brm(world).vote = Some(-1);
+                                }
+                            },
+                            |ui, world| {
+                                if Button::click("Too Strong".into())
+                                    .color(YELLOW, ui)
+                                    .ui(ui)
+                                    .clicked()
+                                {
+                                    brm(world).vote = Some(1);
+                                }
+                            },
+                        );
+                    });
+
+                    if let Some(vote) = brm(world).vote {
+                        unit_balance_vote(
+                            world.resource::<BalancingResource>().current.clone(),
+                            vote,
+                        );
+                        once_on_unit_balance_vote(|_, _, status, unit, vote| {
+                            let unit = unit.clone();
+                            let vote = if *vote >= 0 {
+                                format!("+{vote}")
+                            } else {
+                                vote.to_string()
+                            };
+                            status.on_success(move |w| {
+                                format!("Vote accepted: {unit} {vote}").notify(w);
+                                Self::get_next_for_balancing(w);
+                            });
+                        });
+                    }
+                })
+                .pinned()
+                .transparent()
+                .push(world);
+            }
             _ => panic!(),
         }
     }

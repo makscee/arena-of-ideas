@@ -19,6 +19,7 @@ mod status;
 mod sync;
 mod team;
 mod trade;
+mod unit_balance;
 mod user;
 mod wallet;
 
@@ -45,6 +46,7 @@ pub use spacetimedb::{eprintln, println};
 pub use spacetimedb::{spacetimedb, Identity, ReducerContext, SpacetimeType, TableType, Timestamp};
 pub use team::*;
 pub use trade::*;
+pub use unit_balance::*;
 pub use user::*;
 pub use wallet::*;
 

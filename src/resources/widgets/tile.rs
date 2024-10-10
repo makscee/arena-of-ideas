@@ -5,23 +5,9 @@ use super::*;
 pub struct TilePlugin;
 impl Plugin for TilePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, setup)
-            .init_resource::<TileResource>()
+        app.init_resource::<TileResource>()
             .init_resource::<ScreenResource>();
     }
-}
-
-fn setup(world: &mut World) {
-    Tile::new(Side::Right, |ui, world| {
-        Notification::show_recent(ui, world);
-    })
-    .pinned()
-    .transparent()
-    .no_frame()
-    .no_margin()
-    .no_expand()
-    .order(Order::Foreground)
-    .push_persistent(world);
 }
 
 pub struct Tile {
@@ -164,13 +150,12 @@ impl TilePlugin {
                 tr.tiles.insert(tile.id.clone(), tile);
             }
         }
-        let content_space = sr.screen_rect;
         if let Some(mut content) = rm(world).content.take() {
             content.show(false, &mut sr, ctx, world);
             rm(world).content = Some(content);
         }
-        sr.screen_rect = content_space;
-        sr.screen_space = content_space.size();
+        sr.screen_rect = ctx.available_rect();
+        sr.screen_space = sr.screen_rect.size();
         let mut po = mem::take(&mut rm(world).persistent_overlay);
         for tile in po.iter_mut() {
             tile.allocate_margin_space(false, &mut sr);
@@ -254,7 +239,8 @@ impl TilePlugin {
             | GameState::MetaHeroes
             | GameState::MetaHeroShards
             | GameState::MetaLootboxes
-            | GameState::MetaGallery => MetaPlugin::add_tiles(world),
+            | GameState::MetaGallery
+            | GameState::MetaBalancing => MetaPlugin::add_tiles(world),
             GameState::Shop => ShopPlugin::add_tiles(world),
             GameState::Battle => BattlePlugin::add_tiles(world),
             GameState::TableView(query) => TableViewPlugin::add_tiles(query, world),

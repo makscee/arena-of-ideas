@@ -86,6 +86,7 @@ pub mod t_representation;
 pub mod t_status;
 pub mod t_team;
 pub mod t_trade;
+pub mod t_unit_balance;
 pub mod t_unit_item;
 pub mod t_unit_shard_item;
 pub mod t_user;
@@ -97,6 +98,7 @@ pub mod team_pool;
 pub mod team_remove_unit_reducer;
 pub mod team_slot;
 pub mod team_swap_units_reducer;
+pub mod unit_balance_vote_reducer;
 pub mod upload_assets_reducer;
 pub mod upload_game_archive_reducer;
 
@@ -166,6 +168,7 @@ pub use t_representation::*;
 pub use t_status::*;
 pub use t_team::*;
 pub use t_trade::*;
+pub use t_unit_balance::*;
 pub use t_unit_item::*;
 pub use t_unit_shard_item::*;
 pub use t_user::*;
@@ -177,6 +180,7 @@ pub use team_pool::*;
 pub use team_remove_unit_reducer::*;
 pub use team_slot::*;
 pub use team_swap_units_reducer::*;
+pub use unit_balance_vote_reducer::*;
 pub use upload_assets_reducer::*;
 pub use upload_game_archive_reducer::*;
 
@@ -221,6 +225,7 @@ pub enum ReducerEvent {
     TeamDisband(team_disband_reducer::TeamDisbandArgs),
     TeamRemoveUnit(team_remove_unit_reducer::TeamRemoveUnitArgs),
     TeamSwapUnits(team_swap_units_reducer::TeamSwapUnitsArgs),
+    UnitBalanceVote(unit_balance_vote_reducer::UnitBalanceVoteArgs),
     UploadAssets(upload_assets_reducer::UploadAssetsArgs),
     UploadGameArchive(upload_game_archive_reducer::UploadGameArchiveArgs),
 }
@@ -311,6 +316,11 @@ impl SpacetimeModule for Module {
                 .handle_table_update_with_primary_key::<t_team::TTeam>(callbacks, table_update),
             "TTrade" => client_cache
                 .handle_table_update_with_primary_key::<t_trade::TTrade>(callbacks, table_update),
+            "TUnitBalance" => client_cache
+                .handle_table_update_with_primary_key::<t_unit_balance::TUnitBalance>(
+                    callbacks,
+                    table_update,
+                ),
             "TUnitItem" => client_cache
                 .handle_table_update_with_primary_key::<t_unit_item::TUnitItem>(
                     callbacks,
@@ -376,6 +386,7 @@ impl SpacetimeModule for Module {
         reminders.invoke_callbacks::<t_status::TStatus>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_team::TTeam>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_trade::TTrade>(worker, &reducer_event, state);
+        reminders.invoke_callbacks::<t_unit_balance::TUnitBalance>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_unit_item::TUnitItem>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_unit_shard_item::TUnitShardItem>(
             worker,
@@ -432,6 +443,7 @@ match &reducer_call.reducer_name[..] {
 			"team_disband" => _reducer_callbacks.handle_event_of_type::<team_disband_reducer::TeamDisbandArgs, ReducerEvent>(event, _state, ReducerEvent::TeamDisband),
 			"team_remove_unit" => _reducer_callbacks.handle_event_of_type::<team_remove_unit_reducer::TeamRemoveUnitArgs, ReducerEvent>(event, _state, ReducerEvent::TeamRemoveUnit),
 			"team_swap_units" => _reducer_callbacks.handle_event_of_type::<team_swap_units_reducer::TeamSwapUnitsArgs, ReducerEvent>(event, _state, ReducerEvent::TeamSwapUnits),
+			"unit_balance_vote" => _reducer_callbacks.handle_event_of_type::<unit_balance_vote_reducer::UnitBalanceVoteArgs, ReducerEvent>(event, _state, ReducerEvent::UnitBalanceVote),
 			"upload_assets" => _reducer_callbacks.handle_event_of_type::<upload_assets_reducer::UploadAssetsArgs, ReducerEvent>(event, _state, ReducerEvent::UploadAssets),
 			"upload_game_archive" => _reducer_callbacks.handle_event_of_type::<upload_game_archive_reducer::UploadGameArchiveArgs, ReducerEvent>(event, _state, ReducerEvent::UploadGameArchive),
 			unknown => { spacetimedb_sdk::log::error!("Event on an unknown reducer: {:?}", unknown); None }
@@ -501,6 +513,8 @@ match &reducer_call.reducer_name[..] {
             "TTrade" => {
                 client_cache.handle_resubscribe_for_type::<t_trade::TTrade>(callbacks, new_subs)
             }
+            "TUnitBalance" => client_cache
+                .handle_resubscribe_for_type::<t_unit_balance::TUnitBalance>(callbacks, new_subs),
             "TUnitItem" => client_cache
                 .handle_resubscribe_for_type::<t_unit_item::TUnitItem>(callbacks, new_subs),
             "TUnitShardItem" => client_cache

@@ -50,6 +50,9 @@ fn add_tile(world: &mut World) {
     if just_pressed(KeyCode::KeyS, world) {
         Tile::new(Side::Bottom, content).push(world);
     }
+    if just_pressed(KeyCode::KeyN, world) {
+        "test test test test test test test test test test test test test test test".notify(world);
+    }
 }
 
 impl WidgetsPlugin {
@@ -98,5 +101,6 @@ impl WidgetsPlugin {
         // Overlay
         Trade::show_active(ctx, world);
         Confirmation::show_current(ctx, world);
+        Notification::show_recent(ctx, world);
     }
 }

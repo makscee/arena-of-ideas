@@ -146,7 +146,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
         );
         self
     }
-    pub fn column_int(mut self, name: &'static str, value: fn(&T) -> i32) -> Self {
+    pub fn column_int_dyn(mut self, name: &'static str, value: Box<dyn Fn(&T) -> i32>) -> Self {
         self.columns.insert(
             name,
             TableColumn {
@@ -158,6 +158,9 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
             },
         );
         self
+    }
+    pub fn column_int(self, name: &'static str, value: fn(&T) -> i32) -> Self {
+        self.column_int_dyn(name, Box::new(value))
     }
     pub fn column_gid(mut self, name: &'static str, value: fn(&T) -> u64) -> Self {
         self.columns.insert(
@@ -249,7 +252,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
         );
         self
     }
-    pub fn column_base_unit_box(
+    pub fn column_base_unit_dyn(
         mut self,
         name: &'static str,
         unit: Box<dyn Fn(&T) -> String>,
@@ -283,7 +286,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
         self
     }
     pub fn column_base_unit(self, name: &'static str, unit: fn(&T) -> String) -> Self {
-        self.column_base_unit_box(name, Box::new(unit))
+        self.column_base_unit_dyn(name, Box::new(unit))
     }
     pub fn columns_item_kind(mut self, data: fn(&T) -> (ItemKind, u64)) -> Self {
         self.columns.insert(

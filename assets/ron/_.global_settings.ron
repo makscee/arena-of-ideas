@@ -4,7 +4,7 @@
         always_zero: 0,
         craft_shards_cost: 10,
         create_team_cost: 100,
-        meta: (price_lootbox: 150, price_shard: 10, shop_shard_slots: 4),
+        meta: (price_lootbox: 150, price_shard: 10, shop_shard_slots: 4, balance_vote_reward: 1),
         ghost_unit: "Ghost",
         arena: (
             shop_slots: (start: 3, max: 6, inflation: 0.34),
