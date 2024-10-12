@@ -100,7 +100,13 @@ impl TilePlugin {
         let mut tr = rm(world);
 
         let focused = tr.focused.clone();
-        for (_, tile) in &mut tr.tiles {
+        if let Some(focused) = tr.tiles.get_mut(&focused) {
+            focused.allocate_space(egui::vec2(1.0, 1.0), &mut sr, dt);
+        }
+        for (id, tile) in &mut tr.tiles {
+            if focused.eq(id) {
+                continue;
+            }
             tile.allocate_space(mood, &mut sr, dt);
         }
         let mut tiles_len = tr.tiles.len();
