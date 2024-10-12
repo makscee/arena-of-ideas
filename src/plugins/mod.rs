@@ -21,6 +21,7 @@ mod test_scenarios;
 mod text_column;
 mod title;
 mod unit;
+mod unit_editor;
 mod widgets;
 
 use super::*;
@@ -47,4 +48,5 @@ pub use test_scenarios::*;
 pub use text_column::*;
 pub use title::*;
 pub use unit::*;
+pub use unit_editor::*;
 pub use widgets::*;

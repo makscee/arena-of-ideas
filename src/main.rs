@@ -124,6 +124,7 @@ fn main() {
             TeamSyncPlugin,
             AudioPlugin,
             MetaPlugin,
+            UnitEditorPlugin,
         ))
         .init_state::<GameState>()
         .init_resource::<NotificationsResource>()

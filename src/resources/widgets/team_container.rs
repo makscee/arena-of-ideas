@@ -36,10 +36,11 @@ impl Default for TeamContainerData {
 
 impl TeamContainer {
     pub fn new(faction: Faction) -> Self {
+        let slots = global_settings().arena.team_slots as usize;
         Self {
             faction,
-            slots: 5,
-            max_slots: 5,
+            slots,
+            max_slots: slots,
             right_to_left: false,
             show_name: false,
             top_content: None,
@@ -117,72 +118,74 @@ impl TeamContainer {
 
         let size = CameraPlugin::pixel_unit(ui.ctx(), world) * 1.3;
         let size = size.at_most(ui.available_width() / self.slots as f32 * 0.5);
-        ui.columns(self.slots, |ui| {
-            for (i, ui) in ui.iter_mut().rev().enumerate() {
-                let resp = Self::show_unit_frame(i, self.max_slots, size, ui);
-                if let Some(name) = self.slot_name.get(&i) {
-                    let ui = &mut ui.child_ui(
-                        Rect::from_center_size(
-                            resp.rect.center_top(),
-                            egui::vec2(resp.rect.width(), 0.0),
-                        )
-                        .translate(egui::vec2(0.0, -20.0)),
-                        Layout::left_to_right(Align::Max),
-                        None,
-                    );
-                    name.cstr_cs(VISIBLE_DARK, CstrStyle::Bold).label(ui);
-                }
-                data.positions[i] = resp.rect.center();
-                if let Some(entity) = data.entities[i] {
-                    ui.vertical_centered_justified(|ui| {
-                        entity_name(entity).label(ui);
-                    });
-                    if let Some(action) = &self.on_swap {
-                        if resp.dragged() {
-                            if let Some(pointer) = ui.ctx().pointer_latest_pos() {
-                                let origin = resp.rect.center();
-                                ui.set_clip_rect(ui.ctx().screen_rect());
-                                ui.painter().arrow(
-                                    origin,
-                                    pointer.to_vec2() - origin.to_vec2(),
-                                    Stroke {
-                                        width: 3.0,
-                                        color: YELLOW,
-                                    },
-                                )
-                            }
-                        }
-                        resp.dnd_set_drag_payload(i);
-                        if let Some(drop_i) = resp.dnd_release_payload::<usize>() {
-                            if i != *drop_i {
-                                debug!("swap {drop_i} {i}");
-                                action(*drop_i, i, world);
-                            }
-                        }
+        if size > 5.0 {
+            ui.columns(self.slots, |ui| {
+                for (i, ui) in ui.iter_mut().rev().enumerate() {
+                    let resp = Self::show_unit_frame(i, self.max_slots, size, ui);
+                    if let Some(name) = self.slot_name.get(&i) {
+                        let ui = &mut ui.child_ui(
+                            Rect::from_center_size(
+                                resp.rect.center_top(),
+                                egui::vec2(resp.rect.width(), 0.0),
+                            )
+                            .translate(egui::vec2(0.0, -20.0)),
+                            Layout::left_to_right(Align::Max),
+                            None,
+                        );
+                        name.cstr_cs(VISIBLE_DARK, CstrStyle::Bold).label(ui);
                     }
-                    if resp.hovered() && ui.ctx().dragged_id().is_none() {
-                        cursor_window(ui.ctx(), |ui| {
-                            match UnitCard::new(&Context::new(entity), world) {
-                                Ok(c) => c.ui(ui),
-                                Err(e) => error!("{e}"),
+                    data.positions[i] = resp.rect.center();
+                    if let Some(entity) = data.entities[i] {
+                        ui.vertical_centered_justified(|ui| {
+                            entity_name(entity).label(ui);
+                        });
+                        if let Some(action) = &self.on_swap {
+                            if resp.dragged() {
+                                if let Some(pointer) = ui.ctx().pointer_latest_pos() {
+                                    let origin = resp.rect.center();
+                                    ui.set_clip_rect(ui.ctx().screen_rect());
+                                    ui.painter().arrow(
+                                        origin,
+                                        pointer.to_vec2() - origin.to_vec2(),
+                                        Stroke {
+                                            width: 3.0,
+                                            color: YELLOW,
+                                        },
+                                    )
+                                }
                             }
+                            resp.dnd_set_drag_payload(i);
+                            if let Some(drop_i) = resp.dnd_release_payload::<usize>() {
+                                if i != *drop_i {
+                                    debug!("swap {drop_i} {i}");
+                                    action(*drop_i, i, world);
+                                }
+                            }
+                        }
+                        if resp.hovered() && ui.ctx().dragged_id().is_none() {
+                            cursor_window(ui.ctx(), |ui| {
+                                match UnitCard::new(&Context::new(entity), world) {
+                                    Ok(c) => c.ui(ui),
+                                    Err(e) => error!("{e}"),
+                                }
+                            });
+                        }
+                    } else if let Some(text) = self.empty_slot_text.as_ref() {
+                        let ui = &mut ui.child_ui(
+                            resp.rect,
+                            Layout::centered_and_justified(egui::Direction::TopDown),
+                            None,
+                        );
+                        text.label(ui);
+                    }
+                    if let Some(content) = &self.slot_content {
+                        ui.vertical_centered_justified(|ui| {
+                            (content)(i, data.entities[i], ui, world);
                         });
                     }
-                } else if let Some(text) = self.empty_slot_text.as_ref() {
-                    let ui = &mut ui.child_ui(
-                        resp.rect,
-                        Layout::centered_and_justified(egui::Direction::TopDown),
-                        None,
-                    );
-                    text.label(ui);
                 }
-                if let Some(content) = &self.slot_content {
-                    ui.vertical_centered_justified(|ui| {
-                        (content)(i, data.entities[i], ui, world);
-                    });
-                }
-            }
-        });
+            });
+        }
 
         world
             .resource_mut::<TeamContainerResource>()

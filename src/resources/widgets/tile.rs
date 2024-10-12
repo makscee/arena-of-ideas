@@ -14,11 +14,7 @@ pub struct Tile {
     id: String,
     side: Side,
     content: Box<dyn Fn(&mut Ui, &mut World) + Send + Sync>,
-    order: Order,
-    actual_space: egui::Vec2,
-    allocated_space: egui::Vec2,
     content_space: egui::Vec2,
-    margin_space: egui::Vec2,
     min_space: egui::Vec2,
     pinned: bool,
     focusable: bool,
@@ -27,6 +23,16 @@ pub struct Tile {
     open: bool,
     no_margin: bool,
     no_expand: bool,
+    extension: f32,
+    stretch_mode: StretchMode,
+}
+
+#[derive(Default)]
+enum StretchMode {
+    #[default]
+    Floating,
+    Min,
+    Max,
 }
 
 #[derive(Default)]
@@ -40,8 +46,6 @@ enum TileResponse {
 struct TileResource {
     tiles: IndexMap<String, Tile>,
     focused: String,
-    persistent_overlay: Vec<Tile>,
-    content: Option<Tile>,
     new_tiles: Vec<Tile>,
 }
 fn rm(world: &mut World) -> Mut<TileResource> {
@@ -50,8 +54,10 @@ fn rm(world: &mut World) -> Mut<TileResource> {
 
 #[derive(Resource)]
 struct ScreenResource {
-    screen_rect: Rect,
     screen_space: egui::Vec2,
+    screen_space_initial: egui::Vec2,
+    screen_mood: egui::Vec2,
+    screen_rect: Rect,
 }
 
 const MARGIN: f32 = 7.0;
@@ -78,6 +84,8 @@ impl Default for ScreenResource {
     fn default() -> Self {
         Self {
             screen_space: default(),
+            screen_space_initial: default(),
+            screen_mood: egui::vec2(1.0, 1.0),
             screen_rect: Rect::NOTHING,
         }
     }
@@ -86,25 +94,14 @@ impl Default for ScreenResource {
 impl TilePlugin {
     pub fn show_all(ctx: &egui::Context, world: &mut World) {
         Self::reset(world);
+        let dt = delta_time(world) * 13.0;
         let mut sr = world.remove_resource::<ScreenResource>().unwrap();
+        let mood = sr.screen_mood;
         let mut tr = rm(world);
 
         let focused = tr.focused.clone();
-        for tile in tr.tiles.values_mut() {
-            tile.allocate_margin_space(false, &mut sr);
-        }
-        if let Some(focused) = tr.tiles.get_mut(&focused) {
-            focused.allocate_content_space(false, &mut sr);
-        }
-        if let Some(content) = &mut tr.content {
-            content.allocate_margin_space(true, &mut sr);
-            content.allocate_content_space(true, &mut sr);
-        }
-        for tile in tr.tiles.values_mut().rev() {
-            if focused.eq(&tile.id) {
-                continue;
-            }
-            tile.allocate_content_space(false, &mut sr);
+        for (_, tile) in &mut tr.tiles {
+            tile.allocate_space(mood, &mut sr, dt);
         }
         let mut tiles_len = tr.tiles.len();
 
@@ -125,7 +122,7 @@ impl TilePlugin {
             }
             let tiles = &mut rm(world).tiles;
             let mut removed = false;
-            if tile.open || tile.actual_space.length() > 1.0 {
+            if tile.open || tile.extension > 0.01 {
                 tiles.insert(tile.id.clone(), tile);
                 tiles.swap_indices(i, tiles_len - 1);
             } else {
@@ -150,19 +147,13 @@ impl TilePlugin {
                 tr.tiles.insert(tile.id.clone(), tile);
             }
         }
-        if let Some(mut content) = rm(world).content.take() {
-            content.show(false, &mut sr, ctx, world);
-            rm(world).content = Some(content);
-        }
-        sr.screen_rect = ctx.available_rect();
-        sr.screen_space = sr.screen_rect.size();
-        let mut po = mem::take(&mut rm(world).persistent_overlay);
-        for tile in po.iter_mut() {
-            tile.allocate_margin_space(false, &mut sr);
-            tile.allocate_content_space(false, &mut sr);
-            tile.show(false, &mut sr, ctx, world);
-        }
-        rm(world).persistent_overlay.extend(po);
+        sr.screen_mood += egui::vec2(
+            sr.screen_space.x / sr.screen_space_initial.x,
+            sr.screen_space.y / sr.screen_space_initial.y,
+        ) * dt;
+        sr.screen_mood = sr
+            .screen_mood
+            .clamp(egui::vec2(-1.0, -1.0), egui::vec2(1.0, 1.0));
 
         world.insert_resource(sr);
         if just_pressed(KeyCode::Escape, world) {
@@ -187,21 +178,11 @@ impl TilePlugin {
         let mut sr = world.resource_mut::<ScreenResource>();
         sr.screen_rect = ctx.available_rect();
         sr.screen_space = sr.screen_rect.size();
-        let mut tr = rm(world);
-        for tile in tr.tiles.values_mut() {
-            tile.allocated_space = default();
-        }
-        for tile in &mut tr.persistent_overlay {
-            tile.allocated_space = default();
-        }
-        if let Some(content) = &mut tr.content {
-            content.allocated_space = default();
-        }
+        sr.screen_space_initial = sr.screen_space;
     }
     fn clear(world: &mut World) {
         let mut tr = rm(world);
         tr.tiles.clear();
-        tr.content = None;
     }
 
     pub fn add_team(gid: u64, world: &mut World) {
@@ -247,6 +228,7 @@ impl TilePlugin {
             GameState::GameStart => GameStartPlugin::add_tiles(world),
             GameState::Title => TitlePlugin::add_tiles(world),
             GameState::Teams | GameState::TeamEditor => TeamPlugin::add_tiles(to, world),
+            GameState::UnitEditor => UnitEditorPlugin::add_tiles(world),
             _ => {}
         }
     }
@@ -259,11 +241,7 @@ impl Tile {
             id: next_id().to_string(),
             content: Box::new(content),
             side,
-            order: Order::Middle,
-            actual_space: default(),
-            allocated_space: default(),
             content_space: default(),
-            margin_space: FRAME.total_margin().sum(),
             open: true,
             pinned: false,
             focusable: true,
@@ -272,6 +250,8 @@ impl Tile {
             min_space: default(),
             no_margin: false,
             no_expand: false,
+            extension: 0.0,
+            stretch_mode: default(),
         }
     }
     #[must_use]
@@ -314,44 +294,30 @@ impl Tile {
         self.min_space = value;
         self
     }
-    #[must_use]
-    pub fn order(mut self, value: Order) -> Self {
-        self.order = value;
-        self
-    }
     pub fn push(self, world: &mut World) {
         let mut tr = rm(world);
         tr.new_tiles.push(self);
     }
-    pub fn push_persistent(self, world: &mut World) {
-        let mut tr = rm(world);
-        tr.persistent_overlay.push(self);
-    }
-    pub fn push_as_content(self, world: &mut World) {
-        let mut tr = rm(world);
-        tr.content = Some(self);
-    }
 
-    fn allocate_space(&mut self, mut space: egui::Vec2, full: bool, sr: &mut ScreenResource) {
+    fn allocate_space(&mut self, mood: egui::Vec2, sr: &mut ScreenResource, dt: f32) {
         if !self.open {
+            self.extension.lerp_to(0.0, dt);
             return;
         }
-        if self.side.is_x() && !full {
-            space.y = 0.0;
-        }
-        if self.side.is_y() && !full {
-            space.x = 0.0;
-        }
-        self.allocated_space += space;
-        sr.screen_space -= space;
-    }
-    fn allocate_margin_space(&mut self, full: bool, sr: &mut ScreenResource) {
-        let space = self.margin_space.at_most(sr.screen_space);
-        self.allocate_space(space, full, sr);
-    }
-    fn allocate_content_space(&mut self, full: bool, sr: &mut ScreenResource) {
-        let space = self.content_space.at_most(sr.screen_space);
-        self.allocate_space(space, full, sr);
+        let allocation = match self.stretch_mode {
+            StretchMode::Floating => {
+                if self.side.is_x() {
+                    self.extension.lerp_to(mood.x, dt);
+                    egui::vec2(self.content_space.x * self.extension, 0.0)
+                } else {
+                    self.extension.lerp_to(mood.y, dt);
+                    egui::vec2(0.0, self.content_space.y * self.extension)
+                }
+            }
+            StretchMode::Min => todo!(),
+            StretchMode::Max => todo!(),
+        };
+        sr.screen_space -= allocation;
     }
     fn show(
         &mut self,
@@ -362,44 +328,47 @@ impl Tile {
     ) -> TileResponse {
         let mut response = TileResponse::None;
         let id = Id::new(&self.id);
-        self.actual_space
-            .lerp_to(self.allocated_space, delta_time(world) * 13.0);
-        let (mut area, rect) = match self.side {
+
+        let allocated_space = if self.side.is_x() {
+            egui::vec2(self.extension, 0.0)
+        } else {
+            egui::vec2(0.0, self.extension)
+        } * self.content_space;
+        let (area, rect) = match self.side {
             Side::Right => (
                 Area::new(id)
                     .pivot(Align2::RIGHT_TOP)
                     .fixed_pos(sr.screen_rect.right_top()),
                 sr.screen_rect
-                    .with_min_x(sr.screen_rect.max.x - self.actual_space.x),
+                    .with_min_x(sr.screen_rect.max.x - allocated_space.x),
             ),
             Side::Left => (
                 Area::new(id)
                     .pivot(Align2::LEFT_TOP)
                     .fixed_pos(sr.screen_rect.left_top()),
                 sr.screen_rect
-                    .with_max_x(sr.screen_rect.min.x + self.actual_space.x),
+                    .with_max_x(sr.screen_rect.min.x + allocated_space.x),
             ),
             Side::Top => (
                 Area::new(id)
                     .pivot(Align2::LEFT_TOP)
                     .fixed_pos(sr.screen_rect.left_top()),
                 sr.screen_rect
-                    .with_max_y(sr.screen_rect.min.y + self.actual_space.y),
+                    .with_max_y(sr.screen_rect.min.y + allocated_space.y),
             ),
             Side::Bottom => (
                 Area::new(id)
                     .pivot(Align2::LEFT_BOTTOM)
                     .fixed_pos(sr.screen_rect.left_bottom()),
                 sr.screen_rect
-                    .with_min_y(sr.screen_rect.max.y - self.actual_space.y),
+                    .with_min_y(sr.screen_rect.max.y - allocated_space.y),
             ),
         };
-        area = area.order(self.order);
         match self.side {
-            Side::Right => sr.screen_rect.max.x -= self.actual_space.x,
-            Side::Left => sr.screen_rect.min.x += self.actual_space.x,
-            Side::Top => sr.screen_rect.min.y += self.actual_space.y,
-            Side::Bottom => sr.screen_rect.max.y -= self.actual_space.y,
+            Side::Right => sr.screen_rect.max.x -= allocated_space.x,
+            Side::Left => sr.screen_rect.min.x += allocated_space.x,
+            Side::Top => sr.screen_rect.min.y += allocated_space.y,
+            Side::Bottom => sr.screen_rect.max.y -= allocated_space.y,
         }
         if self.focusable && left_mouse_just_released(world) {
             if ctx
@@ -433,18 +402,20 @@ impl Tile {
         if self.no_margin {
             frame.inner_margin = default();
             frame.outer_margin = default();
-            self.margin_space = default();
         }
-
+        if !rect.area().is_finite() {
+            return response;
+        }
         area.show(ctx, |ui| {
             let mut content_rect = rect.shrink2(frame.total_margin().sum() * 0.5);
             if self.no_expand {
                 match self.side {
                     Side::Right | Side::Left => {
-                        content_rect.set_height(self.content_space.y);
+                        content_rect
+                            .set_height(self.content_space.y - frame.total_margin().sum().y);
                     }
                     Side::Top | Side::Bottom => {
-                        content_rect.set_width(self.content_space.x);
+                        content_rect.set_width(self.content_space.x - frame.total_margin().sum().x);
                     }
                 }
             }
@@ -452,11 +423,7 @@ impl Tile {
 
             ui.painter()
                 .add(frame.paint(content_rect.expand2(frame.inner_margin.sum() * 0.5)));
-            let ui = &mut ui.child_ui(
-                content_rect,
-                *ui.layout(),
-                Some(egui::UiStackInfo::new(egui::UiKind::ScrollArea)),
-            );
+            let ui = &mut ui.child_ui(content_rect, *ui.layout(), None);
             ui.set_clip_rect(content_rect);
             if !self.pinned {
                 const CROSS_SIZE: f32 = 13.0;
@@ -478,7 +445,8 @@ impl Tile {
                     .line_segment([cross_rect.right_top(), cross_rect.left_bottom()], stroke);
             }
             (self.content)(ui, world);
-            self.content_space = ui.min_size().at_least(self.min_space);
+            self.content_space =
+                ui.min_size().at_least(self.min_space) + frame.total_margin().sum();
         });
         response
     }
