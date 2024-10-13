@@ -107,9 +107,9 @@ impl BattlePlugin {
             world.entity_mut(unit).despawn_recursive();
         }
     }
-    fn get_strikers(world: &mut World) -> Option<(Entity, Entity)> {
-        if let Some(left) = UnitPlugin::find_unit(Faction::Left, 1, world) {
-            if let Some(right) = UnitPlugin::find_unit(Faction::Right, 1, world) {
+    pub fn get_strikers(world: &mut World) -> Option<(Entity, Entity)> {
+        if let Some(left) = UnitPlugin::find_unit(Faction::Left, 0, world) {
+            if let Some(right) = UnitPlugin::find_unit(Faction::Right, 0, world) {
                 return Some((left, right));
             }
         }
@@ -118,7 +118,7 @@ impl BattlePlugin {
     fn striker_death_check(left: Entity, right: Entity, world: &mut World) -> bool {
         UnitPlugin::is_dead(left, world) || UnitPlugin::is_dead(right, world)
     }
-    fn run_strike(left: Entity, right: Entity, world: &mut World) -> Result<()> {
+    pub fn run_strike(left: Entity, right: Entity, world: &mut World) -> Result<()> {
         ActionPlugin::spin(world)?;
         ActionPlugin::register_next_turn(world);
         Event::TurnStart.send(world);

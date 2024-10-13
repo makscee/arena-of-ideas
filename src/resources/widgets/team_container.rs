@@ -104,6 +104,16 @@ impl TeamContainer {
         self.empty_slot_text = Some(text);
         self
     }
+    pub fn slot_position(faction: Faction, slot: usize, world: &World) -> Vec2 {
+        let pos = world
+            .resource::<TeamContainerResource>()
+            .containers
+            .get(&faction)
+            .and_then(|d| d.positions.get(slot))
+            .copied()
+            .unwrap_or_default();
+        screen_to_world(pos.to_bvec2(), world)
+    }
     pub fn ui(self, ui: &mut Ui, world: &mut World) {
         let mut data = world
             .resource_mut::<TeamContainerResource>()
@@ -120,7 +130,12 @@ impl TeamContainer {
         let size = size.at_most(ui.available_width() / self.slots as f32 * 0.5);
         if size > 5.0 {
             ui.columns(self.slots, |ui| {
-                for (i, ui) in ui.iter_mut().rev().enumerate() {
+                for (i, ui) in ui.iter_mut().enumerate() {
+                    let i = if self.right_to_left {
+                        self.slots - i - 1
+                    } else {
+                        i
+                    };
                     let resp = Self::show_unit_frame(i, self.max_slots, size, ui);
                     if let Some(name) = self.slot_name.get(&i) {
                         let ui = &mut ui.child_ui(
@@ -249,7 +264,10 @@ impl TeamContainer {
             return;
         };
         let delta = delta_time(world);
-        let units = UnitPlugin::collect_factions([Faction::Shop, Faction::Team].into(), world);
+        let units = UnitPlugin::collect_factions(
+            [Faction::Shop, Faction::Team, Faction::Left, Faction::Right].into(),
+            world,
+        );
         let mut data = world.remove_resource::<TeamContainerResource>().unwrap();
         let camera = world.get::<Camera>(cam_entity).unwrap().clone();
         let transform = world.get::<GlobalTransform>(cam_entity).unwrap().clone();

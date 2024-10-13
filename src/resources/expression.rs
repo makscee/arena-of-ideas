@@ -60,6 +60,8 @@ pub enum Expression {
     ToI(Box<Expression>),
     Vec2E(Box<Expression>),
     UnitVec(Box<Expression>),
+    VX(Box<Expression>),
+    VY(Box<Expression>),
     Sin(Box<Expression>),
     Cos(Box<Expression>),
     Sqr(Box<Expression>),
@@ -232,6 +234,8 @@ impl Expression {
                 let x = vec2(x.cos(), x.sin());
                 Ok(x.into())
             }
+            Expression::VX(x) => Ok(x.get_vec2(context, world)?.x.into()),
+            Expression::VY(x) => Ok(x.get_vec2(context, world)?.y.into()),
             Expression::Vec2E(e) => {
                 let v = e.get_float(context, world)?;
                 Ok(VarValue::Vec2(vec2(v, v)))
@@ -477,6 +481,8 @@ impl ToCstr for Expression {
             Expression::Vec2E(v)
             | Expression::ToI(v)
             | Expression::UnitVec(v)
+            | Expression::VX(v)
+            | Expression::VY(v)
             | Expression::Sin(v)
             | Expression::Cos(v)
             | Expression::Sqr(v)

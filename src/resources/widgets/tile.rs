@@ -15,6 +15,7 @@ pub struct Tile {
     side: Side,
     content: Box<dyn Fn(&mut Ui, &mut World) + Send + Sync>,
     content_space: egui::Vec2,
+    allocated_space: egui::Vec2,
     min_space: egui::Vec2,
     pinned: bool,
     focusable: bool,
@@ -27,7 +28,7 @@ pub struct Tile {
     stretch_mode: StretchMode,
 }
 
-#[derive(Default)]
+#[derive(Default, PartialEq, Eq)]
 enum StretchMode {
     #[default]
     Floating,
@@ -103,10 +104,18 @@ impl TilePlugin {
         if let Some(focused) = tr.tiles.get_mut(&focused) {
             focused.allocate_space(egui::vec2(1.0, 1.0), &mut sr, dt);
         }
-        for (id, tile) in &mut tr.tiles {
-            if focused.eq(id) {
-                continue;
-            }
+        for (_, tile) in tr
+            .tiles
+            .iter_mut()
+            .filter(|(id, t)| t.stretch_mode == StretchMode::Floating && !focused.eq(*id))
+        {
+            tile.allocate_space(mood, &mut sr, dt);
+        }
+        if let Some((_, tile)) = tr
+            .tiles
+            .iter_mut()
+            .find(|(_, t)| t.stretch_mode == StretchMode::Max)
+        {
             tile.allocate_space(mood, &mut sr, dt);
         }
         let mut tiles_len = tr.tiles.len();
@@ -258,6 +267,7 @@ impl Tile {
             no_expand: false,
             extension: 0.0,
             stretch_mode: default(),
+            allocated_space: default(),
         }
     }
     #[must_use]
@@ -300,6 +310,12 @@ impl Tile {
         self.min_space = value;
         self
     }
+    #[must_use]
+    pub fn max(mut self) -> Self {
+        self.stretch_mode = StretchMode::Max;
+        self.focusable = false;
+        self
+    }
     pub fn push(self, world: &mut World) {
         let mut tr = rm(world);
         tr.new_tiles.push(self);
@@ -308,22 +324,25 @@ impl Tile {
     fn allocate_space(&mut self, mood: egui::Vec2, sr: &mut ScreenResource, dt: f32) {
         if !self.open {
             self.extension.lerp_to(0.0, dt);
-            return;
         }
-        let allocation = match self.stretch_mode {
+        self.allocated_space = match self.stretch_mode {
             StretchMode::Floating => {
                 if self.side.is_x() {
-                    self.extension.lerp_to(mood.x, dt);
+                    if self.open {
+                        self.extension.lerp_to(mood.x, dt);
+                    }
                     egui::vec2(self.content_space.x * self.extension, 0.0)
                 } else {
-                    self.extension.lerp_to(mood.y, dt);
+                    if self.open {
+                        self.extension.lerp_to(mood.y, dt);
+                    }
                     egui::vec2(0.0, self.content_space.y * self.extension)
                 }
             }
-            StretchMode::Min => todo!(),
-            StretchMode::Max => todo!(),
+            StretchMode::Min => self.content_space,
+            StretchMode::Max => sr.screen_space,
         };
-        sr.screen_space -= allocation;
+        sr.screen_space -= self.allocated_space;
     }
     fn show(
         &mut self,
@@ -335,46 +354,42 @@ impl Tile {
         let mut response = TileResponse::None;
         let id = Id::new(&self.id);
 
-        let allocated_space = if self.side.is_x() {
-            egui::vec2(self.extension, 0.0)
-        } else {
-            egui::vec2(0.0, self.extension)
-        } * self.content_space;
         let (area, rect) = match self.side {
             Side::Right => (
                 Area::new(id)
                     .pivot(Align2::RIGHT_TOP)
                     .fixed_pos(sr.screen_rect.right_top()),
                 sr.screen_rect
-                    .with_min_x(sr.screen_rect.max.x - allocated_space.x),
+                    .with_min_x(sr.screen_rect.max.x - self.allocated_space.x),
             ),
             Side::Left => (
                 Area::new(id)
                     .pivot(Align2::LEFT_TOP)
                     .fixed_pos(sr.screen_rect.left_top()),
                 sr.screen_rect
-                    .with_max_x(sr.screen_rect.min.x + allocated_space.x),
+                    .with_max_x(sr.screen_rect.min.x + self.allocated_space.x),
             ),
             Side::Top => (
                 Area::new(id)
                     .pivot(Align2::LEFT_TOP)
                     .fixed_pos(sr.screen_rect.left_top()),
                 sr.screen_rect
-                    .with_max_y(sr.screen_rect.min.y + allocated_space.y),
+                    .with_max_y(sr.screen_rect.min.y + self.allocated_space.y),
             ),
             Side::Bottom => (
                 Area::new(id)
                     .pivot(Align2::LEFT_BOTTOM)
                     .fixed_pos(sr.screen_rect.left_bottom()),
                 sr.screen_rect
-                    .with_min_y(sr.screen_rect.max.y - allocated_space.y),
+                    .with_min_y(sr.screen_rect.max.y - self.allocated_space.y),
             ),
         };
+
         match self.side {
-            Side::Right => sr.screen_rect.max.x -= allocated_space.x,
-            Side::Left => sr.screen_rect.min.x += allocated_space.x,
-            Side::Top => sr.screen_rect.min.y += allocated_space.y,
-            Side::Bottom => sr.screen_rect.max.y -= allocated_space.y,
+            Side::Right => sr.screen_rect.max.x -= self.allocated_space.x,
+            Side::Left => sr.screen_rect.min.x += self.allocated_space.x,
+            Side::Top => sr.screen_rect.min.y += self.allocated_space.y,
+            Side::Bottom => sr.screen_rect.max.y -= self.allocated_space.y,
         }
         if self.focusable && left_mouse_just_released(world) {
             if ctx

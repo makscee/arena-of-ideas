@@ -113,7 +113,7 @@ impl UnitPlugin {
         for (unit, ind) in Self::collect_faction(faction, world)
             .into_iter()
             .sorted_by_key(|x| Context::new(*x).get_int(VarName::Slot, world).unwrap())
-            .zip(1..)
+            .zip(0..)
             .collect_vec()
         {
             let slot = ind + if ind >= slot { 1 } else { 0 };
@@ -123,19 +123,11 @@ impl UnitPlugin {
     pub fn get_unit_position(entity: Entity, world: &World) -> Result<Vec2> {
         Context::new(entity).get_vec2(VarName::Position, world)
     }
-    pub fn get_slot_position(faction: Faction, slot: usize) -> Vec2 {
-        match faction {
-            Faction::Left => vec2(slot as f32 * -SLOT_SPACING, 0.0),
-            Faction::Right => vec2(slot as f32 * SLOT_SPACING, 0.0),
-            Faction::Team => vec2(slot as f32 * -SLOT_SPACING + 14.0, -3.0),
-            Faction::Shop => vec2(slot as f32 * SLOT_SPACING - 4.0, 5.5),
-        }
-    }
     pub fn get_entity_slot_position(entity: Entity, world: &World) -> Result<Vec2> {
         let context = Context::new(entity);
         let slot = context.get_value(VarName::Slot, world)?.get_int()? as usize;
         let faction = context.get_value(VarName::Faction, world)?.get_faction()?;
-        Ok(Self::get_slot_position(faction, slot))
+        Ok(TeamContainer::slot_position(faction, slot, world))
     }
     pub fn translate_to_slots(world: &mut World) {
         let mut shift: f32 = 0.0;
