@@ -96,10 +96,16 @@ impl Confirmation {
     pub fn clear(ctx: &egui::Context) {
         ctx.data_mut(|w| w.remove_by_type::<Confirmation>());
     }
+    fn data(ctx: &egui::Context) -> Option<Self> {
+        ctx.data(|r| r.get_temp::<Self>(current_id()))
+    }
     pub fn show_current(ctx: &egui::Context, world: &mut World) {
-        let Some(c) = ctx.data(|r| r.get_temp::<Confirmation>(current_id())) else {
+        let Some(c) = Self::data(ctx) else {
             return;
         };
         c.ui(ctx, world);
+    }
+    pub fn has_active(ctx: &egui::Context) -> bool {
+        Self::data(ctx).is_some()
     }
 }

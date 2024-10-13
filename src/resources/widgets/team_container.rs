@@ -6,6 +6,7 @@ pub struct TeamContainer {
     max_slots: usize,
     right_to_left: bool,
     show_name: bool,
+    on_click: Option<Box<dyn Fn(usize, Option<Entity>, &mut World) + Send + Sync>>,
     on_swap: Option<Box<dyn Fn(usize, usize, &mut World) + Send + Sync>>,
     top_content: Option<Box<dyn FnOnce(&mut Ui, &mut World) + Send + Sync>>,
     slot_content: Option<Box<dyn Fn(usize, Option<Entity>, &mut Ui, &mut World) + Send + Sync>>,
@@ -46,6 +47,7 @@ impl TeamContainer {
             top_content: None,
             slot_content: None,
             hover_content: None,
+            on_click: None,
             on_swap: None,
             slot_name: default(),
             empty_slot_text: None,
@@ -94,6 +96,13 @@ impl TeamContainer {
         action: impl Fn(usize, usize, &mut World) + Send + Sync + 'static,
     ) -> Self {
         self.on_swap = Some(Box::new(action));
+        self
+    }
+    pub fn on_click(
+        mut self,
+        action: impl Fn(usize, Option<Entity>, &mut World) + Send + Sync + 'static,
+    ) -> Self {
+        self.on_click = Some(Box::new(action));
         self
     }
     pub fn slot_name(mut self, i: usize, name: String) -> Self {
@@ -150,6 +159,12 @@ impl TeamContainer {
                         name.cstr_cs(VISIBLE_DARK, CstrStyle::Bold).label(ui);
                     }
                     data.positions[i] = resp.rect.center();
+
+                    if resp.clicked() {
+                        if let Some(action) = self.on_click.as_ref() {
+                            (action)(i, data.entities[i], world);
+                        }
+                    }
                     if let Some(entity) = data.entities[i] {
                         ui.vertical_centered_justified(|ui| {
                             entity_name(entity).label(ui);
@@ -212,7 +227,7 @@ impl TeamContainer {
         let rect = Rect::from_center_size(rect.center_top(), egui::Vec2::ZERO)
             .expand2(egui::vec2(size, 0.0))
             .with_max_y(rect.center_top().y + size * 2.0);
-        let resp = ui.allocate_rect(rect, Sense::drag());
+        let resp = ui.allocate_rect(rect, Sense::click_and_drag());
         let color = if resp.hovered() {
             YELLOW
         } else if ind >= max_slots {

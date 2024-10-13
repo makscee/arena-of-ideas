@@ -2,7 +2,7 @@ use ron::to_string;
 
 use super::*;
 
-#[derive(Asset, Deserialize, Serialize, TypePath, Debug, Clone, PartialEq, Default)]
+#[derive(Asset, Deserialize, Serialize, TypePath, Debug, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct PackedUnit {
     #[serde(default = "default_empty")]
@@ -50,6 +50,12 @@ fn default_house() -> Vec<String> {
 }
 
 pub const LOCAL_STATUS: &str = "_local";
+
+impl Default for PackedUnit {
+    fn default() -> Self {
+        ron::from_str("(pwr: 1, hp: 3)").unwrap()
+    }
+}
 
 impl PackedUnit {
     pub fn unpack(

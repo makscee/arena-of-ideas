@@ -19,8 +19,11 @@ impl Input {
         self
     }
     pub fn ui_string(self, value: &mut String, ui: &mut Ui) {
+        if ui.available_width() < 10.0 {
+            return;
+        }
         ui.columns(2, |ui| {
-            self.name.cstr().push(":".cstr()).label(&mut ui[0]);
+            self.name.cstr().label(&mut ui[0]);
             ui[1].style_mut().visuals.widgets.inactive.bg_stroke = STROKE_DARK;
             TextEdit::singleline(value)
                 .password(self.password)

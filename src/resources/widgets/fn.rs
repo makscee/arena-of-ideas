@@ -21,6 +21,7 @@ pub fn center_window(name: &str, ui: &mut Ui, add_contents: impl FnOnce(&mut Ui)
         .fixed_pos(ui.clip_rect().center())
         .constrain(false)
         .title_bar(false)
+        .order(Order::Foreground)
         .default_width(300.0)
         .resizable([false, false])
         .show(ui.ctx(), add_contents);

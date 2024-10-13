@@ -6,8 +6,6 @@ use super::*;
 pub enum Expression {
     #[default]
     Zero,
-    Dbg(Box<Expression>),
-    Ctx(Box<Expression>),
 
     OppositeFaction,
     SlotPosition,
@@ -22,10 +20,6 @@ pub enum Expression {
     Caster,
     Target,
     Status,
-
-    RandomUnit(Box<Expression>),
-    RandomUnitSubset(Box<Expression>, Box<Expression>),
-    MaxUnit(Box<Expression>, Box<Expression>),
 
     AllAllyUnits,
     AllEnemyUnits,
@@ -57,6 +51,8 @@ pub enum Expression {
     S(String),
     V2(f32, f32),
 
+    Dbg(Box<Expression>),
+    Ctx(Box<Expression>),
     ToI(Box<Expression>),
     Vec2E(Box<Expression>),
     UnitVec(Box<Expression>),
@@ -72,8 +68,11 @@ pub enum Expression {
     Fract(Box<Expression>),
     SlotUnit(Box<Expression>),
     RandomF(Box<Expression>),
+    RandomUnit(Box<Expression>),
     ListCount(Box<Expression>),
 
+    MaxUnit(Box<Expression>, Box<Expression>),
+    RandomUnitSubset(Box<Expression>, Box<Expression>),
     Vec2EE(Box<Expression>, Box<Expression>),
     Sum(Box<Expression>, Box<Expression>),
     Sub(Box<Expression>, Box<Expression>),
