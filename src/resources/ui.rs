@@ -55,7 +55,7 @@ pub const SHADOW: Shadow = Shadow {
     offset: egui::vec2(10.0, 20.0),
     blur: 15.0,
     spread: 0.0,
-    color: Color32::from_black_alpha(96),
+    color: Color32::from_rgba_premultiplied(20, 20, 20, 25),
 };
 
 pub struct UiPlugin;

@@ -66,7 +66,7 @@ const FRAME: Frame = Frame {
     inner_margin: Margin::same(MARGIN),
     outer_margin: Margin::same(MARGIN),
     rounding: Rounding::same(13.0),
-    shadow: Shadow::NONE,
+    shadow: SHADOW,
     fill: BG_DARK,
     stroke: Stroke {
         width: 1.0,
@@ -419,6 +419,9 @@ impl Tile {
         };
         if self.transparent {
             frame.fill = Color32::TRANSPARENT;
+            frame.shadow.color = frame.shadow.color.gamma_multiply(0.3);
+        } else if focused {
+            frame.shadow.color = frame.shadow.color.lerp_to_gamma(Color32::WHITE, 0.07);
         }
         if self.no_margin {
             frame.inner_margin = default();
