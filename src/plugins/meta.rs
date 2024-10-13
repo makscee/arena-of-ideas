@@ -103,13 +103,6 @@ impl MetaPlugin {
         .push(world);
         match cur_state(world) {
             GameState::MetaShop => Tile::new(Side::Left, |ui, world| {
-                text_dots_text(
-                    "wallet".cstr(),
-                    format!("{} {CREDITS_SYM}", TWallet::current().amount)
-                        .cstr_cs(YELLOW, CstrStyle::Bold),
-                    ui,
-                );
-                br(ui);
                 let now = Utc::now().timestamp();
                 let til_refresh = (now / 86400 + 1) * 86400 - now;
                 "Refresh in "
@@ -133,13 +126,6 @@ impl MetaPlugin {
             .push(world),
             GameState::MetaAuction => {
                 Tile::new(Side::Left, |ui, world| {
-                    text_dots_text(
-                        "wallet".cstr(),
-                        format!("{} {CREDITS_SYM}", TWallet::current().amount)
-                            .cstr_cs(YELLOW, CstrStyle::Bold),
-                        ui,
-                    );
-                    br(ui);
                     TAuction::iter()
                         .collect_vec()
                         .show_modified_table("Auction", ui, world, |t| {

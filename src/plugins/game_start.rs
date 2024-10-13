@@ -127,13 +127,6 @@ impl GameStartPlugin {
                                         status.on_success(|w| GameState::Shop.proceed_to_target(w))
                                     });
                                 }
-                                "Wallet: "
-                                    .cstr()
-                                    .push(
-                                        format!("{} {CREDITS_SYM}", TWallet::current().amount)
-                                            .cstr_cs(YELLOW, CstrStyle::Bold),
-                                    )
-                                    .label(ui);
                             }
                         }
                         GameMode::ArenaConst(seed) => {
@@ -150,13 +143,6 @@ impl GameStartPlugin {
                                 });
                             }
                             seed.cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold).label(ui);
-                            "Wallet: "
-                                .cstr()
-                                .push(
-                                    format!("{} {CREDITS_SYM}", TWallet::current().amount)
-                                        .cstr_cs(YELLOW, CstrStyle::Bold),
-                                )
-                                .label(ui);
                         }
                     }
                 });
