@@ -24,7 +24,7 @@ pub enum Effect {
     If(Expression, Box<Effect>, Box<Effect>),
     Vfx(String),
     StateAddVar(VarName, Expression, Expression),
-    StatusSetVar(Expression, String, VarName, Box<Expression>),
+    StatusSetVar(Expression, String, VarName, Expression),
     Text(Expression),
     FullCopy,
 }
@@ -53,7 +53,7 @@ impl Effect {
                 "Invoke: "
                     .cstr_c(YELLOW)
                     .push(
-                        self.cstr()
+                        self.cstr_expanded()
                             .inject_context(context, world)
                             .push("\n".cstr())
                             .take(),
@@ -67,7 +67,7 @@ impl Effect {
             | Effect::Repeat(..)
             | Effect::If(..) => {}
         };
-        context.set_effect(self.cstr());
+        context.set_effect(self.cstr_expanded());
         let owner = context.owner();
         match self {
             Effect::Noop => {}
@@ -421,6 +421,31 @@ impl Effect {
 
 impl ToCstr for Effect {
     fn cstr(&self) -> Cstr {
+        self.as_ref().cstr_c(match self {
+            Effect::Noop | Effect::Damage | Effect::Kill | Effect::Heal => VISIBLE_LIGHT,
+            Effect::ChangeStatus(_)
+            | Effect::ClearStatus(_)
+            | Effect::StealStatus(_)
+            | Effect::ChangeAllStatuses
+            | Effect::ClearAllStatuses
+            | Effect::StealAllStatuses => CYAN,
+            Effect::Text(_)
+            | Effect::FullCopy
+            | Effect::UseAbility(_, _)
+            | Effect::AbilityStateAddVar(_, _, _)
+            | Effect::Summon(_, _) => PURPLE,
+            Effect::WithTarget(_, _)
+            | Effect::WithOwner(_, _)
+            | Effect::WithVar(_, _, _)
+            | Effect::List(_)
+            | Effect::Repeat(_, _)
+            | Effect::If(_, _, _)
+            | Effect::Vfx(_)
+            | Effect::StateAddVar(_, _, _)
+            | Effect::StatusSetVar(_, _, _, _) => YELLOW,
+        })
+    }
+    fn cstr_expanded(&self) -> Cstr {
         match self {
             Effect::UseAbility(name, base) => {
                 let mut c = format!("use ")

@@ -24,12 +24,14 @@ impl Selector {
                 }
             });
     }
-    pub fn ui_vec<E: PartialEq + Clone + ToString + ToCstr>(
+    pub fn ui_iter<'a, E: PartialEq + Clone + ToString + ToCstr + 'a, I>(
         self,
         value: &mut E,
-        values: &Vec<E>,
+        values: I,
         ui: &mut Ui,
-    ) {
+    ) where
+        I: IntoIterator<Item = &'a E>,
+    {
         ui.columns(2, |ui| {
             self.name.cstr().label(&mut ui[0]);
             ComboBox::from_id_source(self.name)

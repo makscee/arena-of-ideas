@@ -311,6 +311,33 @@ impl Trigger {
 
 impl ToCstr for FireTrigger {
     fn cstr(&self) -> Cstr {
+        self.as_ref().cstr_c(match self {
+            FireTrigger::None => VISIBLE_LIGHT,
+            FireTrigger::List(_) | FireTrigger::Period(_, _, _) | FireTrigger::OnceAfter(_, _) => {
+                RED
+            }
+            FireTrigger::UnitUsedAbility(_)
+            | FireTrigger::AllyUsedAbility(_)
+            | FireTrigger::EnemyUsedAbility(_) => PURPLE,
+            FireTrigger::If(_, _) => CYAN,
+
+            FireTrigger::AfterIncomingDamage
+            | FireTrigger::AfterDamageTaken
+            | FireTrigger::AfterDamageDealt
+            | FireTrigger::BattleStart
+            | FireTrigger::TurnStart
+            | FireTrigger::TurnEnd
+            | FireTrigger::BeforeStrike
+            | FireTrigger::AfterStrike
+            | FireTrigger::AllyDeath
+            | FireTrigger::AnyDeath
+            | FireTrigger::AllySummon
+            | FireTrigger::EnemySummon
+            | FireTrigger::BeforeDeath
+            | FireTrigger::AfterKill => YELLOW,
+        })
+    }
+    fn cstr_expanded(&self) -> Cstr {
         match self {
             FireTrigger::List(list) => {
                 Cstr::join_vec(list.iter().map(|t| t.cstr_c(VISIBLE_LIGHT)).collect_vec())
@@ -318,14 +345,12 @@ impl ToCstr for FireTrigger {
                     .take()
             }
             FireTrigger::Period(_, delay, trigger) => format!("Every {delay} ")
-                .cstr()
+                .cstr_c(VISIBLE_LIGHT)
                 .push(trigger.cstr_expanded())
-                .color(VISIBLE_LIGHT)
                 .take(),
             FireTrigger::OnceAfter(delay, trigger) => format!("Once in {delay} ")
-                .cstr()
+                .cstr_c(VISIBLE_LIGHT)
                 .push(trigger.cstr_expanded())
-                .color(VISIBLE_LIGHT)
                 .take(),
             FireTrigger::If(cond, trigger) => trigger
                 .cstr_expanded()

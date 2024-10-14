@@ -90,7 +90,7 @@ impl UnitEditorPlugin {
                 Confirmation::pop(ui.ctx());
             }
             let mut r = rm(world);
-            Selector::new("spawn").ui_vec(
+            Selector::new("spawn").ui_iter(
                 &mut r.hero_to_spawn,
                 &TBaseUnit::iter()
                     .filter_map(|u| match u.rarity >= 0 {
@@ -231,8 +231,38 @@ fn lookup_text_pop(ctx: &egui::Context) {
     ctx.data_mut(|w| w.get_temp_mut_or_default::<String>(lookup_id()).pop());
 }
 pub trait ShowEditor: ToCstr + IntoEnumIterator {
-    fn show_node(&mut self, context: &Context, world: &mut World, ui: &mut Ui);
-    fn show_value(&mut self, _context: &Context, _world: &mut World, _ui: &mut Ui) {}
+    fn show_node(&mut self, context: &Context, world: &mut World, ui: &mut Ui) {
+        const SHADOW: Shadow = Shadow {
+            offset: egui::Vec2::ZERO,
+            blur: 5.0,
+            spread: 5.0,
+            color: Color32::from_rgba_premultiplied(20, 20, 20, 25),
+        };
+        const FRAME: Frame = Frame {
+            inner_margin: Margin::same(4.0),
+            rounding: Rounding::same(6.0),
+            shadow: SHADOW,
+            outer_margin: Margin::ZERO,
+            fill: BG_DARK,
+            stroke: Stroke {
+                width: 1.0,
+                color: VISIBLE_DARK,
+            },
+        };
+        FRAME.show(ui, |ui| {
+            ui.horizontal(|ui| {
+                ui.vertical(|ui| {
+                    self.show_self(ui);
+                    ui.set_max_width(ui.min_size().x);
+                    self.show_content(context, world, ui);
+                });
+                ui.vertical(|ui| {
+                    self.show_children(context, world, ui);
+                });
+            });
+        });
+    }
+    fn show_content(&mut self, _context: &Context, _world: &mut World, _ui: &mut Ui) {}
     fn show_children(&mut self, context: &Context, world: &mut World, ui: &mut Ui);
     fn show_self(&mut self, ui: &mut Ui) {
         let widget = self.cstr().widget(1.0, ui);
@@ -307,9 +337,11 @@ fn show_named_node<T: ShowEditor>(
 }
 impl ShowEditor for Trigger {
     fn show_node(&mut self, context: &Context, world: &mut World, ui: &mut Ui) {
-        self.show_self(ui);
-        self.cstr_expanded().label(ui);
-        self.show_children(context, world, ui);
+        ScrollArea::vertical().show(ui, |ui| {
+            self.show_self(ui);
+            self.cstr_expanded().label(ui);
+            self.show_children(context, world, ui);
+        });
     }
     fn show_children(&mut self, context: &Context, world: &mut World, ui: &mut Ui) {
         match self {
@@ -318,8 +350,18 @@ impl ShowEditor for Trigger {
                 targets,
                 effects,
             } => {
+                ui.collapsing("Triggers", |ui| {
+                    for (node, name) in triggers {
+                        show_named_node(name, node, context, world, ui);
+                    }
+                });
                 ui.collapsing("Targets", |ui| {
                     for (node, name) in targets {
+                        show_named_node(name, node, context, world, ui);
+                    }
+                });
+                ui.collapsing("Effects", |ui| {
+                    for (node, name) in effects {
                         show_named_node(name, node, context, world, ui);
                     }
                 });
@@ -331,36 +373,6 @@ impl ShowEditor for Trigger {
 }
 
 impl ShowEditor for Expression {
-    fn show_node(&mut self, context: &Context, world: &mut World, ui: &mut Ui) {
-        const SHADOW: Shadow = Shadow {
-            offset: egui::Vec2::ZERO,
-            blur: 5.0,
-            spread: 5.0,
-            color: Color32::from_rgba_premultiplied(20, 20, 20, 25),
-        };
-        const FRAME: Frame = Frame {
-            inner_margin: Margin::same(4.0),
-            rounding: Rounding::same(6.0),
-            shadow: SHADOW,
-            outer_margin: Margin::ZERO,
-            fill: BG_DARK,
-            stroke: Stroke {
-                width: 1.0,
-                color: VISIBLE_DARK,
-            },
-        };
-        FRAME.show(ui, |ui| {
-            ui.horizontal(|ui| {
-                ui.vertical(|ui| {
-                    self.show_self(ui);
-                    ui.set_max_width(ui.min_size().x);
-                    self.show_value(context, world, ui);
-                });
-                self.show_children(context, world, ui);
-            });
-        });
-    }
-
     fn show_children(&mut self, context: &Context, world: &mut World, ui: &mut Ui) {
         match self {
             Expression::Zero
@@ -439,27 +451,23 @@ impl ShowEditor for Expression {
             | Expression::GreaterThen(a, b)
             | Expression::LessThen(a, b)
             | Expression::WithVar(_, a, b) => {
-                ui.vertical(|ui| {
-                    a.show_node(context, world, ui);
-                    b.show_node(context, world, ui);
-                });
+                a.show_node(context, world, ui);
+                b.show_node(context, world, ui);
             }
             Expression::If(a, b, c) => {
-                ui.vertical(|ui| {
-                    a.show_node(context, world, ui);
-                    b.show_node(context, world, ui);
-                    c.show_node(context, world, ui);
-                });
+                a.show_node(context, world, ui);
+                b.show_node(context, world, ui);
+                c.show_node(context, world, ui);
             }
         }
     }
 
-    fn show_value(&mut self, context: &Context, world: &mut World, ui: &mut Ui) {
+    fn show_content(&mut self, context: &Context, world: &mut World, ui: &mut Ui) {
         let value = self.get_value(context, world);
         match self {
-            Expression::FilterStatusUnits(text, e)
-            | Expression::FilterNoStatusUnits(text, e)
-            | Expression::StatusEntity(text, e) => {
+            Expression::FilterStatusUnits(text, _)
+            | Expression::FilterNoStatusUnits(text, _)
+            | Expression::StatusEntity(text, _) => {
                 Input::new("s:").ui_string(text, ui);
             }
             Expression::Value(v) => todo!(),
@@ -561,18 +569,196 @@ impl ShowEditor for Expression {
             | Expression::If(..)
             | Expression::WithVar(..) => {}
         };
-        match value {
-            Ok(v) => v
-                .cstr_cs(VISIBLE_DARK, CstrStyle::Small)
-                .as_label(ui)
-                .truncate()
-                .ui(ui),
-            Err(e) => e
-                .to_string()
-                .cstr_cs(RED, CstrStyle::Small)
-                .as_label(ui)
-                .truncate()
-                .ui(ui),
-        };
+        show_value(value, ui);
     }
+}
+
+impl ShowEditor for Effect {
+    fn show_children(&mut self, context: &Context, world: &mut World, ui: &mut Ui) {
+        match self {
+            Effect::Repeat(ex, ef)
+            | Effect::WithTarget(ex, ef)
+            | Effect::WithOwner(ex, ef)
+            | Effect::WithVar(_, ex, ef) => {
+                ex.show_node(context, world, ui);
+                ef.show_node(context, world, ui);
+            }
+            Effect::AbilityStateAddVar(_, _, e) | Effect::Text(e) => {
+                e.show_node(context, world, ui)
+            }
+
+            Effect::Summon(_, e) => {
+                if let Some(e) = e {
+                    e.show_node(context, world, ui);
+                }
+            }
+
+            Effect::List(l) => {
+                for e in l {
+                    e.show_node(context, world, ui);
+                }
+            }
+
+            Effect::If(e, th, el) => {
+                e.show_node(context, world, ui);
+                th.show_node(context, world, ui);
+                el.show_node(context, world, ui);
+            }
+            Effect::StatusSetVar(a, _, _, b) | Effect::StateAddVar(_, a, b) => {
+                a.show_node(context, world, ui);
+                b.show_node(context, world, ui);
+            }
+            Effect::Noop
+            | Effect::Damage
+            | Effect::Kill
+            | Effect::Heal
+            | Effect::ChangeAllStatuses
+            | Effect::ClearAllStatuses
+            | Effect::StealAllStatuses
+            | Effect::FullCopy
+            | Effect::ChangeStatus(_)
+            | Effect::ClearStatus(_)
+            | Effect::StealStatus(_)
+            | Effect::UseAbility(_, _)
+            | Effect::Vfx(_) => {}
+        }
+    }
+    fn show_content(&mut self, _: &Context, world: &mut World, ui: &mut Ui) {
+        match self {
+            Effect::ChangeStatus(status)
+            | Effect::ClearStatus(status)
+            | Effect::StealStatus(status) => {
+                status_selector(status, world, ui);
+            }
+            Effect::UseAbility(ability, base) => {
+                ability_selector(ability, world, ui);
+                Slider::new("base").ui(base, 0..=10, ui);
+            }
+            Effect::AbilityStateAddVar(ability, var, _) => {
+                ability_selector(ability, world, ui);
+                var_selector(var, ui);
+            }
+            Effect::StatusSetVar(_, status, var, _) => {
+                status_selector(status, world, ui);
+                var_selector(var, ui);
+            }
+            Effect::Summon(summon, _) => summon_selector(summon, world, ui),
+            Effect::StateAddVar(var, _, _) | Effect::WithVar(var, _, _) => var_selector(var, ui),
+            Effect::Vfx(vfx) => vfx_selector(vfx, world, ui),
+
+            Effect::WithTarget(_, _)
+            | Effect::WithOwner(_, _)
+            | Effect::Repeat(_, _)
+            | Effect::If(_, _, _)
+            | Effect::Text(_)
+            | Effect::List(_)
+            | Effect::ChangeAllStatuses
+            | Effect::ClearAllStatuses
+            | Effect::StealAllStatuses
+            | Effect::FullCopy
+            | Effect::Noop
+            | Effect::Damage
+            | Effect::Kill
+            | Effect::Heal => {}
+        }
+    }
+}
+
+impl ShowEditor for FireTrigger {
+    fn show_children(&mut self, context: &Context, world: &mut World, ui: &mut Ui) {
+        match self {
+            FireTrigger::List(l) => {
+                for t in l {
+                    t.show_node(context, world, ui);
+                }
+            }
+            FireTrigger::Period(_, _, t) | FireTrigger::OnceAfter(_, t) => {
+                t.show_node(context, world, ui)
+            }
+            FireTrigger::If(e, t) => {
+                e.show_node(context, world, ui);
+                t.show_node(context, world, ui);
+            }
+            FireTrigger::None
+            | FireTrigger::UnitUsedAbility(..)
+            | FireTrigger::AllyUsedAbility(..)
+            | FireTrigger::EnemyUsedAbility(..)
+            | FireTrigger::AfterIncomingDamage
+            | FireTrigger::AfterDamageTaken
+            | FireTrigger::AfterDamageDealt
+            | FireTrigger::BattleStart
+            | FireTrigger::TurnStart
+            | FireTrigger::TurnEnd
+            | FireTrigger::BeforeStrike
+            | FireTrigger::AfterStrike
+            | FireTrigger::AllyDeath
+            | FireTrigger::AnyDeath
+            | FireTrigger::AllySummon
+            | FireTrigger::EnemySummon
+            | FireTrigger::BeforeDeath
+            | FireTrigger::AfterKill => {}
+        }
+    }
+
+    fn show_content(&mut self, _: &Context, world: &mut World, ui: &mut Ui) {
+        match self {
+            FireTrigger::Period(_, delay, _) => {
+                DragValue::new(delay).ui(ui);
+            }
+            FireTrigger::OnceAfter(delay, _) => {
+                DragValue::new(delay).ui(ui);
+            }
+            FireTrigger::UnitUsedAbility(ability)
+            | FireTrigger::AllyUsedAbility(ability)
+            | FireTrigger::EnemyUsedAbility(ability) => ability_selector(ability, world, ui),
+            FireTrigger::If(..)
+            | FireTrigger::None
+            | FireTrigger::List(_)
+            | FireTrigger::AfterIncomingDamage
+            | FireTrigger::AfterDamageTaken
+            | FireTrigger::AfterDamageDealt
+            | FireTrigger::BattleStart
+            | FireTrigger::TurnStart
+            | FireTrigger::TurnEnd
+            | FireTrigger::BeforeStrike
+            | FireTrigger::AfterStrike
+            | FireTrigger::AllyDeath
+            | FireTrigger::AnyDeath
+            | FireTrigger::AllySummon
+            | FireTrigger::EnemySummon
+            | FireTrigger::BeforeDeath
+            | FireTrigger::AfterKill => {}
+        }
+    }
+}
+
+fn status_selector(status: &mut String, world: &World, ui: &mut Ui) {
+    Selector::new("status").ui_iter(status, GameAssets::get(world).statuses.keys(), ui);
+}
+fn ability_selector(ability: &mut String, world: &World, ui: &mut Ui) {
+    Selector::new("ability").ui_iter(ability, GameAssets::get(world).abilities.keys(), ui);
+}
+fn summon_selector(summon: &mut String, world: &World, ui: &mut Ui) {
+    Selector::new("summon").ui_iter(summon, GameAssets::get(world).summons.keys(), ui);
+}
+fn vfx_selector(vfx: &mut String, world: &World, ui: &mut Ui) {
+    Selector::new("vfx").ui_iter(vfx, GameAssets::get(world).vfxs.keys(), ui);
+}
+fn var_selector(var: &mut VarName, ui: &mut Ui) {
+    Selector::new("var").ui_enum(var, ui);
+}
+fn show_value(value: Result<VarValue>, ui: &mut Ui) {
+    match value {
+        Ok(v) => v
+            .cstr_cs(VISIBLE_DARK, CstrStyle::Small)
+            .as_label(ui)
+            .truncate()
+            .ui(ui),
+        Err(e) => e
+            .to_string()
+            .cstr_cs(RED, CstrStyle::Small)
+            .as_label(ui)
+            .truncate()
+            .ui(ui),
+    };
 }
