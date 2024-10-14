@@ -79,6 +79,10 @@ lazy_static! {
             GameState::GameArchiveDownload,
             [GameOption::Connect, GameOption::Table(StdbQuery::GameFull)].into(),
         );
+        m.insert(
+            GameState::UnitEditor,
+            [GameOption::Connect, GameOption::ForceLogin].into(),
+        );
         m
     };
 }

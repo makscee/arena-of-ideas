@@ -62,6 +62,24 @@
       "problemMatcher": [
         "$rustc"
       ],
+      "label": "Editor",
+      "args": [
+        "--features",
+        "bevy/dynamic_linking",
+        "--",
+        "--mode",
+        "editor"
+      ],
+      "group": {
+        "kind": "build"
+      }
+    },
+    {
+      "type": "cargo",
+      "command": "run",
+      "problemMatcher": [
+        "$rustc"
+      ],
       "label": "Archive Download",
       "args": [
         "--features",
