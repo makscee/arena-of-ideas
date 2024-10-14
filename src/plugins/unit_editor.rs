@@ -77,7 +77,7 @@ impl UnitEditorPlugin {
                     .units
                     .push(PackedUnit::default());
                 Self::respawn_teams(world);
-                Confirmation::clear(ui.ctx());
+                Confirmation::pop(ui.ctx());
             }
             let mut r = rm(world);
             Selector::new("spawn").ui_vec(
@@ -129,7 +129,6 @@ impl UnitEditorPlugin {
                     Confirmation::new("Trigger Editor".cstr(), |world| {
                         let mut r = rm(world);
                         r.editing_hero.trigger = mem::take(&mut r.editing_trigger);
-                        Self::open_unit_editor(&egui_context(world).unwrap());
                     })
                     .content(|ui, world| {
                         rm(world).editing_trigger.show_editor(ui);

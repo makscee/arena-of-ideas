@@ -11,7 +11,7 @@ pub struct Confirmation {
     content: Option<fn(&mut Ui, &mut World)>,
 }
 
-fn current_id() -> Id {
+fn id() -> Id {
     static TILES_DATA: OnceCell<Id> = OnceCell::new();
     *TILES_DATA.get_or_init(|| Id::new("tiles_data"))
 }
@@ -73,7 +73,7 @@ impl Confirmation {
                             .ui(ui)
                             .clicked()
                     {
-                        Self::clear(ui.ctx());
+                        Self::pop(ui.ctx());
                         (self.decline)(world);
                     }
                 });
@@ -82,7 +82,7 @@ impl Confirmation {
                         .ui(ui)
                         .clicked()
                     {
-                        Self::clear(ui.ctx());
+                        Self::pop(ui.ctx());
                         (self.accept)(world);
                     }
                 });
@@ -91,21 +91,20 @@ impl Confirmation {
     }
 
     pub fn push(self, ctx: &egui::Context) {
-        ctx.data_mut(|w| w.insert_temp(current_id(), self));
+        ctx.data_mut(|w| w.get_temp_mut_or_default::<Vec<Self>>(id()).push(self));
     }
-    pub fn clear(ctx: &egui::Context) {
-        ctx.data_mut(|w| w.remove_by_type::<Confirmation>());
+    pub fn pop(ctx: &egui::Context) {
+        ctx.data_mut(|w| w.get_temp_mut_or_default::<Vec<Self>>(id()).pop());
     }
-    fn data(ctx: &egui::Context) -> Option<Self> {
-        ctx.data(|r| r.get_temp::<Self>(current_id()))
+    fn data(ctx: &egui::Context) -> Vec<Self> {
+        ctx.data(|r| r.get_temp::<Vec<Self>>(id()).unwrap_or_default())
     }
     pub fn show_current(ctx: &egui::Context, world: &mut World) {
-        let Some(c) = Self::data(ctx) else {
-            return;
-        };
-        c.ui(ctx, world);
+        if let Some(c) = Self::data(ctx).pop() {
+            c.ui(ctx, world);
+        }
     }
     pub fn has_active(ctx: &egui::Context) -> bool {
-        Self::data(ctx).is_some()
+        !Self::data(ctx).is_empty()
     }
 }
