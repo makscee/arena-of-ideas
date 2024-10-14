@@ -22,12 +22,12 @@ impl Input {
         if ui.available_width() < 10.0 {
             return;
         }
-        ui.columns(2, |ui| {
-            self.name.cstr().label(&mut ui[0]);
-            ui[1].style_mut().visuals.widgets.inactive.bg_stroke = STROKE_DARK;
-            TextEdit::singleline(value)
-                .password(self.password)
-                .ui(&mut ui[1]);
-        });
+        self.name.cstr().label(ui);
+        ui.style_mut().visuals.widgets.inactive.bg_stroke = STROKE_DARK;
+        TextEdit::singleline(value)
+            .password(self.password)
+            .desired_width(100.0)
+            .ui(ui);
+        ui.reset_style();
     }
 }

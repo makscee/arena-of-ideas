@@ -21,7 +21,7 @@ impl VarValue {
     pub fn get_list(&self) -> Result<Vec<VarValue>> {
         match self {
             VarValue::List(list) => Ok(list.clone()),
-            _ => Err(anyhow!("List not supported by {self:?}")),
+            _ => Err(anyhow!("List not supported by {self}")),
         }
     }
     pub fn get_int(&self) -> Result<i32> {
@@ -30,7 +30,7 @@ impl VarValue {
             VarValue::Int(v) => Ok(*v),
             VarValue::Float(v) => Ok(*v as i32),
             VarValue::Bool(v) => Ok(*v as i32),
-            _ => Err(anyhow!("Int not supported by {self:?}")),
+            _ => Err(anyhow!("Int not supported by {self}")),
         }
     }
     pub fn get_int_list(&self) -> Result<Vec<i32>> {
@@ -51,7 +51,7 @@ impl VarValue {
             VarValue::Int(v) => Ok(*v as f32),
             VarValue::Float(v) => Ok(*v),
             VarValue::Bool(v) => Ok(*v as i32 as f32),
-            _ => Err(anyhow!("Float not supported by {self:?}")),
+            _ => Err(anyhow!("Float not supported by {self}")),
         }
     }
     pub fn get_float_list(&self) -> Result<Vec<f32>> {
@@ -73,7 +73,7 @@ impl VarValue {
             VarValue::Int(v) => Ok(*v > 0),
             VarValue::Float(v) => Ok(*v > 0.0),
             VarValue::String(v) => Ok(!v.is_empty()),
-            _ => Err(anyhow!("Bool not supported by {self:?}")),
+            _ => Err(anyhow!("Bool not supported by {self}")),
         }
     }
     pub fn get_bool_list(&self) -> Result<Vec<bool>> {
@@ -94,7 +94,7 @@ impl VarValue {
             VarValue::Int(v) => Ok(vec2(*v as f32, *v as f32)),
             VarValue::Float(v) => Ok(vec2(*v, *v)),
             VarValue::Vec2(v) => Ok(*v),
-            _ => Err(anyhow!("Vec2 not supported by {self:?}")),
+            _ => Err(anyhow!("Vec2 not supported by {self}")),
         }
     }
     pub fn get_vec2_list(&self) -> Result<Vec<Vec2>> {
@@ -113,14 +113,14 @@ impl VarValue {
         match self {
             VarValue::None => Ok(BEVY_MISSING_COLOR.into()),
             VarValue::Color(v) => Ok(*v),
-            _ => Err(anyhow!("Color not supported by {self:?}")),
+            _ => Err(anyhow!("Color not supported by {self}")),
         }
     }
     pub fn get_color32(&self) -> Result<Color32> {
         match self {
             VarValue::None => Ok(Color::from(BEVY_MISSING_COLOR).c32()),
             VarValue::Color(v) => Ok(v.c32()),
-            _ => Err(anyhow!("Color not supported by {self:?}")),
+            _ => Err(anyhow!("Color not supported by {self}")),
         }
     }
     pub fn get_color_list(&self) -> Result<Vec<Color>> {
@@ -150,7 +150,7 @@ impl VarValue {
     pub fn get_entity(&self) -> Result<Entity> {
         match self {
             VarValue::Entity(v) => Ok(*v),
-            _ => Err(anyhow!("Entity not supported by {self:?}")),
+            _ => Err(anyhow!("Entity not supported by {self}")),
         }
     }
     pub fn get_entity_list(&self) -> Result<Vec<Entity>> {
@@ -172,7 +172,7 @@ impl VarValue {
             VarValue::Float(v) => Ok(v.to_string()),
             VarValue::Vec2(v) => Ok(v.to_string()),
             VarValue::String(v) => Ok(v.clone()),
-            _ => Err(anyhow!("String not supported by {self:?}")),
+            _ => Err(anyhow!("String not supported by {self}")),
         }
     }
     pub fn get_string_list(&self) -> Result<Vec<String>> {
@@ -191,7 +191,7 @@ impl VarValue {
         match self {
             VarValue::None => Ok(default()),
             VarValue::Cstr(v) => Ok(v.clone()),
-            _ => Err(anyhow!("Cstr not supported by {self:?}")),
+            _ => Err(anyhow!("Cstr not supported by {self}")),
         }
     }
     pub fn get_cstr_list(&self) -> Result<Vec<Cstr>> {
@@ -209,7 +209,7 @@ impl VarValue {
     pub fn get_faction(&self) -> Result<Faction> {
         match self {
             VarValue::Faction(v) => Ok(*v),
-            _ => Err(anyhow!("Faction not supported by {self:?}")),
+            _ => Err(anyhow!("Faction not supported by {self}")),
         }
     }
     pub fn get_faction_list(&self) -> Result<Vec<Faction>> {
@@ -227,7 +227,7 @@ impl VarValue {
     pub fn get_u64(&self) -> Result<u64> {
         match self {
             VarValue::U64(v) => Ok(*v),
-            _ => Err(anyhow!("Faction not supported by {self:?}")),
+            _ => Err(anyhow!("Faction not supported by {self}")),
         }
     }
     pub fn get_gid_list(&self) -> Result<Vec<u64>> {
@@ -252,7 +252,7 @@ impl VarValue {
             (VarValue::Bool(a), VarValue::Bool(b)) => Ok(VarValue::Bool(*a || *b)),
             (VarValue::Vec2(a), VarValue::Vec2(b)) => Ok(VarValue::Vec2(*a + *b)),
             (VarValue::String(a), VarValue::String(b)) => Ok(VarValue::String(a.to_owned() + b)),
-            _ => Err(anyhow!("{a:?} + {b:?} not supported")),
+            _ => Err(anyhow!("{a} + {b} not supported")),
         }
     }
     pub fn sub(a: &VarValue, b: &VarValue) -> Result<VarValue> {
@@ -262,7 +262,7 @@ impl VarValue {
             (VarValue::Float(a), VarValue::Int(b)) => Ok(VarValue::Float(a - *b as f32)),
             (VarValue::Int(a), VarValue::Float(b)) => Ok(VarValue::Float(*a as f32 - b)),
             (VarValue::Vec2(a), VarValue::Vec2(b)) => Ok(VarValue::Vec2(*a - *b)),
-            _ => Err(anyhow!("{a:?} - {b:?} not supported")),
+            _ => Err(anyhow!("{a} - {b} not supported")),
         }
     }
     pub fn mul(a: &VarValue, b: &VarValue) -> Result<VarValue> {
@@ -274,12 +274,12 @@ impl VarValue {
             (VarValue::Vec2(a), VarValue::Vec2(b)) => Ok(VarValue::Vec2(*a * *b)),
             (VarValue::Vec2(a), VarValue::Float(b)) => Ok(VarValue::Vec2(*a * *b)),
             (VarValue::Float(a), VarValue::Vec2(b)) => Ok(VarValue::Vec2(*a * *b)),
-            _ => Err(anyhow!("{a:?} * {b:?} not supported")),
+            _ => Err(anyhow!("{a} * {b} not supported")),
         }
     }
     pub fn div(a: &VarValue, b: &VarValue) -> Result<VarValue> {
         if VarValue::Int(0).eq(b) {
-            return Err(anyhow!("{a:?} / {b:?} division by zero"));
+            return Err(anyhow!("{a} / {b} division by zero"));
         }
         match (a, b) {
             (VarValue::Float(a), VarValue::Float(b)) => Ok(VarValue::Float(a / b)),
@@ -288,7 +288,7 @@ impl VarValue {
             (VarValue::Int(a), VarValue::Float(b)) => Ok(VarValue::Float(*a as f32 / b)),
             (VarValue::Vec2(a), VarValue::Vec2(b)) => Ok(VarValue::Vec2(*a / *b)),
             (VarValue::Vec2(a), VarValue::Float(b)) => Ok(VarValue::Vec2(*a / *b)),
-            _ => Err(anyhow!("{a:?} / {b:?} not supported")),
+            _ => Err(anyhow!("{a} / {b} not supported")),
         }
     }
     pub fn compare(a: &VarValue, b: &VarValue) -> Result<Ordering> {
@@ -300,7 +300,7 @@ impl VarValue {
             (VarValue::Bool(a), VarValue::Bool(b)) => Ok(a.cmp(b)),
             (VarValue::String(a), VarValue::String(b)) => Ok(a.cmp(b)),
             (VarValue::Cstr(a), VarValue::Cstr(b)) => Ok(a.get_text().cmp(&b.get_text())),
-            _ => Err(anyhow!("Comparing {a:?} and {b:?} not supported")),
+            _ => Err(anyhow!("Comparing {a} and {b} not supported")),
         }
     }
     pub fn min(a: &VarValue, b: &VarValue) -> Result<VarValue> {
@@ -308,7 +308,7 @@ impl VarValue {
             (VarValue::Float(a), VarValue::Float(b)) => Ok(VarValue::Float(a.min(*b))),
             (VarValue::Int(a), VarValue::Int(b)) => Ok(VarValue::Int(*(a.min(b)))),
             (VarValue::Bool(a), VarValue::Bool(b)) => Ok(VarValue::Bool(*a && *b)),
-            _ => Err(anyhow!("Comparing {a:?} and {b:?} not supported")),
+            _ => Err(anyhow!("Comparing {a} and {b} not supported")),
         }
     }
     pub fn max(a: &VarValue, b: &VarValue) -> Result<VarValue> {
@@ -316,7 +316,7 @@ impl VarValue {
             (VarValue::Float(a), VarValue::Float(b)) => Ok(VarValue::Float(a.max(*b))),
             (VarValue::Int(a), VarValue::Int(b)) => Ok(VarValue::Int(*(a.max(b)))),
             (VarValue::Bool(a), VarValue::Bool(b)) => Ok(VarValue::Bool(*a || *b)),
-            _ => Err(anyhow!("Comparing {a:?} and {b:?} not supported")),
+            _ => Err(anyhow!("Comparing {a} and {b} not supported")),
         }
     }
     pub fn abs(self) -> Result<VarValue> {
@@ -324,7 +324,7 @@ impl VarValue {
             VarValue::Float(x) => Ok(VarValue::Float(x.abs())),
             VarValue::Int(x) => Ok(VarValue::Int(x.abs())),
             VarValue::Vec2(x) => Ok(VarValue::Vec2(x.abs())),
-            _ => Err(anyhow!("Abs {self:?} not supported")),
+            _ => Err(anyhow!("Abs {self} not supported")),
         }
     }
 }
@@ -375,13 +375,31 @@ impl ToCstr for VarValue {
                 let h = v.to_srgba().to_hex();
                 format!("#{h}").cstr_c(v.c32())
             }
-            VarValue::Entity(v) => format!("{v:?}").cstr(),
+            VarValue::Entity(v) => v.to_string().cstr(),
             VarValue::U64(v) => v.to_string().cstr(),
             VarValue::List(list) => {
                 Cstr::join_vec(list.into_iter().map(|v| v.cstr()).collect_vec())
                     .join(&" + ".cstr())
                     .take()
             }
+        }
+    }
+}
+impl std::fmt::Display for VarValue {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            VarValue::None => write!(f, "None"),
+            VarValue::Int(v) => write!(f, "{}({})", self.as_ref(), v),
+            VarValue::Float(v) => write!(f, "{}({})", self.as_ref(), v),
+            VarValue::Vec2(v) => write!(f, "{}({}, {})", self.as_ref(), v.x, v.y),
+            VarValue::String(v) => write!(f, "{}({})", self.as_ref(), v),
+            VarValue::Cstr(v) => write!(f, "{}({})", self.as_ref(), v),
+            VarValue::Bool(v) => write!(f, "{}({})", self.as_ref(), v),
+            VarValue::Faction(v) => write!(f, "{}({})", self.as_ref(), v),
+            VarValue::Color(v) => write!(f, "{}({})", self.as_ref(), v.c32().to_hex()),
+            VarValue::Entity(v) => write!(f, "{}({})", self.as_ref(), v),
+            VarValue::U64(v) => write!(f, "{}({})", self.as_ref(), v),
+            VarValue::List(v) => write!(f, "{}({})", self.as_ref(), v.iter().join(", ")),
         }
     }
 }

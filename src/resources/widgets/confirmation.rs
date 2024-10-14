@@ -57,7 +57,7 @@ impl Confirmation {
     }
     fn ui(self, ctx: &egui::Context, world: &mut World) {
         popup("Confirmation window", ctx, |ui| {
-            ui.vertical_centered_justified(|ui| {
+            ui.vertical(|ui| {
                 self.text.as_label(ui).wrap().ui(ui);
                 if let Some(content) = self.content {
                     br(ui);

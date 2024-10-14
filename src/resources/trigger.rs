@@ -277,7 +277,7 @@ impl Trigger {
                                 .take(),
                         );
                     } else {
-                        cs.0.push(trigger.cstr());
+                        cs.0.push(trigger.cstr_expanded());
                     }
                 }
                 for (target, rename) in targets {
@@ -288,7 +288,7 @@ impl Trigger {
                                 .take(),
                         );
                     } else {
-                        cs.1.push(target.cstr());
+                        cs.1.push(target.cstr_expanded());
                     }
                 }
                 for (effect, rename) in effects {
@@ -299,7 +299,7 @@ impl Trigger {
                                 .take(),
                         );
                     } else {
-                        cs.2.push(effect.cstr());
+                        cs.2.push(effect.cstr_expanded());
                     }
                 }
             }
@@ -319,17 +319,19 @@ impl ToCstr for FireTrigger {
             }
             FireTrigger::Period(_, delay, trigger) => format!("Every {delay} ")
                 .cstr()
-                .push(trigger.cstr())
+                .push(trigger.cstr_expanded())
                 .color(VISIBLE_LIGHT)
                 .take(),
             FireTrigger::OnceAfter(delay, trigger) => format!("Once in {delay} ")
                 .cstr()
-                .push(trigger.cstr())
+                .push(trigger.cstr_expanded())
                 .color(VISIBLE_LIGHT)
                 .take(),
-            FireTrigger::If(cond, trigger) => {
-                trigger.cstr().push(" if ".cstr()).push(cond.cstr()).take()
-            }
+            FireTrigger::If(cond, trigger) => trigger
+                .cstr_expanded()
+                .push(" if ".cstr())
+                .push(cond.cstr_expanded())
+                .take(),
             FireTrigger::UnitUsedAbility(name)
             | FireTrigger::AllyUsedAbility(name)
             | FireTrigger::EnemyUsedAbility(name) => self
@@ -358,7 +360,7 @@ impl ToCstr for FireTrigger {
 }
 
 impl ToCstr for Trigger {
-    fn cstr(&self) -> Cstr {
+    fn cstr_expanded(&self) -> Cstr {
         match self {
             Trigger::Fire {
                 triggers,
@@ -368,7 +370,11 @@ impl ToCstr for Trigger {
                 let mut c = "Fire".cstr();
                 let triggers = triggers
                     .iter()
-                    .map(|(t, n)| n.clone().map(|s| s.cstr()).unwrap_or_else(|| t.cstr()))
+                    .map(|(t, n)| {
+                        n.clone()
+                            .map(|s| s.cstr())
+                            .unwrap_or_else(|| t.cstr_expanded())
+                    })
                     .collect_vec();
                 let triggers = Cstr::join_vec(triggers).style(CstrStyle::Small).take();
                 c.push("\ntrg:".cstr());
@@ -376,7 +382,11 @@ impl ToCstr for Trigger {
 
                 let targets = targets
                     .iter()
-                    .map(|(t, n)| n.clone().map(|s| s.cstr()).unwrap_or_else(|| t.cstr()))
+                    .map(|(t, n)| {
+                        n.clone()
+                            .map(|s| s.cstr())
+                            .unwrap_or_else(|| t.cstr_expanded())
+                    })
                     .collect_vec();
                 let targets = Cstr::join_vec(targets).style(CstrStyle::Small).take();
                 c.push("\ntgt:".cstr());
@@ -384,7 +394,11 @@ impl ToCstr for Trigger {
 
                 let effects = effects
                     .iter()
-                    .map(|(t, n)| n.clone().map(|s| s.cstr()).unwrap_or_else(|| t.cstr()))
+                    .map(|(t, n)| {
+                        n.clone()
+                            .map(|s| s.cstr())
+                            .unwrap_or_else(|| t.cstr_expanded())
+                    })
                     .collect_vec();
                 let effects = Cstr::join_vec(effects).style(CstrStyle::Small).take();
                 c.push("\neff:".cstr());
@@ -396,6 +410,14 @@ impl ToCstr for Trigger {
                 .cstr()
                 .push(Cstr::join_vec(list.iter().map(|e| e.cstr()).collect_vec()))
                 .take(),
+        }
+    }
+
+    fn cstr(&self) -> Cstr {
+        match self {
+            Trigger::Fire { .. } => "Fire".cstr_c(YELLOW),
+            Trigger::Change { .. } => "Change".cstr_c(CYAN),
+            Trigger::List(..) => "List".cstr_c(LIGHT_PURPLE),
         }
     }
 }

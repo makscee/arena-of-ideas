@@ -13,6 +13,7 @@ use super::*;
     Display,
     AsRefStr,
     EnumString,
+    EnumIter,
 )]
 pub enum VarName {
     #[default]

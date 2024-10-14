@@ -355,6 +355,10 @@ pub trait ToCstr: Sized {
     fn cstr_cs(&self, color: Color32, style: CstrStyle) -> Cstr {
         self.cstr().color(color).style(style).take()
     }
+    #[must_use]
+    fn cstr_expanded(&self) -> Cstr {
+        self.cstr()
+    }
 }
 
 impl<'a> ToCstr for &'a str {

@@ -136,6 +136,7 @@ impl UiPlugin {
                 button_padding: egui::vec2(3.0, 3.0),
                 ..default()
             };
+            style.wrap_mode = Some(egui::TextWrapMode::Extend);
             style.spacing.window_margin = Margin::same(13.0);
             style.spacing.slider_rail_height = 2.0;
             style.spacing.button_padding = egui::vec2(8.0, 2.0);

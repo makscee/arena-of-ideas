@@ -412,6 +412,88 @@ impl Expression {
 
 impl ToCstr for Expression {
     fn cstr(&self) -> Cstr {
+        match self {
+            Expression::Zero
+            | Expression::OppositeFaction
+            | Expression::SlotPosition
+            | Expression::GT
+            | Expression::Beat
+            | Expression::PI
+            | Expression::PI2
+            | Expression::Age
+            | Expression::Index
+            | Expression::Owner
+            | Expression::Caster
+            | Expression::Target
+            | Expression::Status
+            | Expression::AllAllyUnits
+            | Expression::AllEnemyUnits
+            | Expression::AllUnits
+            | Expression::AllOtherUnits
+            | Expression::AdjacentUnits => self.as_ref().cstr_c(VISIBLE_LIGHT),
+            Expression::FilterStatusUnits(_, _)
+            | Expression::FilterNoStatusUnits(_, _)
+            | Expression::StatusEntity(_, _) => self.as_ref().cstr_c(PURPLE),
+            Expression::Value(_)
+            | Expression::Context(_)
+            | Expression::OwnerState(_)
+            | Expression::TargetState(_)
+            | Expression::CasterState(_)
+            | Expression::StatusState(_, _)
+            | Expression::OwnerStateLast(_)
+            | Expression::TargetStateLast(_)
+            | Expression::CasterStateLast(_)
+            | Expression::StatusStateLast(_, _)
+            | Expression::AbilityContext(_, _)
+            | Expression::AbilityState(_, _)
+            | Expression::StatusCharges(_)
+            | Expression::HexColor(_)
+            | Expression::F(_)
+            | Expression::I(_)
+            | Expression::B(_)
+            | Expression::S(_)
+            | Expression::V2(_, _) => self.as_ref().cstr_c(CYAN),
+
+            Expression::Dbg(_)
+            | Expression::Ctx(_)
+            | Expression::ToI(_)
+            | Expression::Vec2E(_)
+            | Expression::UnitVec(_)
+            | Expression::VX(_)
+            | Expression::VY(_)
+            | Expression::Sin(_)
+            | Expression::Cos(_)
+            | Expression::Sqr(_)
+            | Expression::Even(_)
+            | Expression::Abs(_)
+            | Expression::Floor(_)
+            | Expression::Ceil(_)
+            | Expression::Fract(_)
+            | Expression::SlotUnit(_)
+            | Expression::RandomF(_)
+            | Expression::RandomUnit(_)
+            | Expression::ListCount(_) => self.as_ref().cstr_c(LIGHT_PURPLE),
+
+            Expression::MaxUnit(_, _)
+            | Expression::RandomUnitSubset(_, _)
+            | Expression::Vec2EE(_, _)
+            | Expression::Sum(_, _)
+            | Expression::Sub(_, _)
+            | Expression::Mul(_, _)
+            | Expression::Div(_, _)
+            | Expression::Max(_, _)
+            | Expression::Min(_, _)
+            | Expression::Mod(_, _)
+            | Expression::And(_, _)
+            | Expression::Or(_, _)
+            | Expression::Equals(_, _)
+            | Expression::GreaterThen(_, _)
+            | Expression::LessThen(_, _)
+            | Expression::If(_, _, _)
+            | Expression::WithVar(_, _, _) => self.as_ref().cstr_c(PURPLE),
+        }
+    }
+    fn cstr_expanded(&self) -> Cstr {
         let mut s = self.as_ref().to_case(Case::Lower).cstr_c(VISIBLE_LIGHT);
         match self {
             Expression::Value(v) => {
@@ -496,7 +578,7 @@ impl ToCstr for Expression {
             | Expression::Fract(v)
             | Expression::Ceil(v)
             | Expression::SlotUnit(v) => {
-                s.push(v.cstr().wrap(("(".cstr(), ")".cstr())).take());
+                s.push(v.cstr_expanded().wrap(("(".cstr(), ")".cstr())).take());
             }
             Expression::Vec2EE(a, b)
             | Expression::Sum(a, b)
@@ -514,9 +596,9 @@ impl ToCstr for Expression {
             | Expression::GreaterThen(a, b)
             | Expression::LessThen(a, b) => {
                 s.push(
-                    a.cstr()
+                    a.cstr_expanded()
                         .push(", ".cstr())
-                        .push(b.cstr())
+                        .push(b.cstr_expanded())
                         .wrap(("(".cstr(), ")".cstr()))
                         .take(),
                 );
@@ -525,27 +607,27 @@ impl ToCstr for Expression {
                 s.push(
                     format!("if ")
                         .cstr()
-                        .push(i.cstr().wrap(("(".cstr(), ")".cstr())).take())
+                        .push(i.cstr_expanded().wrap(("(".cstr(), ")".cstr())).take())
                         .take(),
                 )
                 .push(
                     format!("then ")
                         .cstr()
-                        .push(t.cstr().wrap(("(".cstr(), ")".cstr())).take())
+                        .push(t.cstr_expanded().wrap(("(".cstr(), ")".cstr())).take())
                         .take(),
                 )
                 .push(
                     format!("else ")
                         .cstr()
-                        .push(e.cstr().wrap(("(".cstr(), ")".cstr())).take())
+                        .push(e.cstr_expanded().wrap(("(".cstr(), ")".cstr())).take())
                         .take(),
                 );
             }
             Expression::WithVar(var, val, e) => {
                 s.push(
                     var.cstr()
-                        .push(val.cstr())
-                        .push(e.cstr())
+                        .push(val.cstr_expanded())
+                        .push(e.cstr_expanded())
                         .join(&", ".cstr())
                         .wrap(("(".cstr(), ")".cstr()))
                         .take(),
@@ -558,7 +640,7 @@ impl ToCstr for Expression {
                     status
                         .cstr_c(name_color(status))
                         .push(", ".cstr())
-                        .push(u.cstr())
+                        .push(u.cstr_expanded())
                         .wrap(("(".cstr(), ")".cstr()))
                         .take(),
                 );
