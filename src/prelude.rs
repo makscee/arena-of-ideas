@@ -86,6 +86,7 @@ pub use ron::{
 };
 pub use serde::{Deserialize, Serialize};
 pub use spacetimedb_sdk::{identity::Credentials, reducer::Status as StdbStatus, table::TableType};
+pub use std::sync::RwLock;
 pub use std::{
     cmp::Ordering,
     f32::consts::PI,

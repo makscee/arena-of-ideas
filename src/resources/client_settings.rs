@@ -1,5 +1,3 @@
-use std::sync::RwLock;
-
 use bevy::{
     ecs::event::EventReader,
     window::{PresentMode, WindowResized},

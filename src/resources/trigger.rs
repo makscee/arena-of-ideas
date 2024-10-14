@@ -356,3 +356,46 @@ impl ToCstr for FireTrigger {
         }
     }
 }
+
+impl ToCstr for Trigger {
+    fn cstr(&self) -> Cstr {
+        match self {
+            Trigger::Fire {
+                triggers,
+                targets,
+                effects,
+            } => {
+                let mut c = "Fire".cstr();
+                let triggers = triggers
+                    .iter()
+                    .map(|(t, n)| n.clone().map(|s| s.cstr()).unwrap_or_else(|| t.cstr()))
+                    .collect_vec();
+                let triggers = Cstr::join_vec(triggers).style(CstrStyle::Small).take();
+                c.push("\ntrg:".cstr());
+                c.push(triggers);
+
+                let targets = targets
+                    .iter()
+                    .map(|(t, n)| n.clone().map(|s| s.cstr()).unwrap_or_else(|| t.cstr()))
+                    .collect_vec();
+                let targets = Cstr::join_vec(targets).style(CstrStyle::Small).take();
+                c.push("\ntgt:".cstr());
+                c.push(targets);
+
+                let effects = effects
+                    .iter()
+                    .map(|(t, n)| n.clone().map(|s| s.cstr()).unwrap_or_else(|| t.cstr()))
+                    .collect_vec();
+                let effects = Cstr::join_vec(effects).style(CstrStyle::Small).take();
+                c.push("\neff:".cstr());
+                c.push(effects);
+                c
+            }
+            Trigger::Change { trigger, expr } => "Change".cstr(),
+            Trigger::List(list) => "List "
+                .cstr()
+                .push(Cstr::join_vec(list.iter().map(|e| e.cstr()).collect_vec()))
+                .take(),
+        }
+    }
+}

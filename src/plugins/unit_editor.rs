@@ -1,4 +1,4 @@
-use egui::{DragValue, ScrollArea};
+use egui::{Checkbox, DragValue, ScrollArea};
 
 use super::*;
 
@@ -7,6 +7,7 @@ pub struct UnitEditorPlugin;
 impl Plugin for UnitEditorPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(GameState::UnitEditor), Self::on_enter)
+            .add_systems(OnExit(GameState::UnitEditor), Self::on_exit)
             .init_resource::<UnitEditorResource>();
     }
 }
@@ -27,6 +28,7 @@ fn rm(world: &mut World) -> Mut<UnitEditorResource> {
 impl UnitEditorPlugin {
     fn on_enter(world: &mut World) {
         let mut r = rm(world);
+        r.teams = client_state().editor_teams.clone();
         for faction in [Faction::Left, Faction::Right] {
             if r.teams.contains_key(&faction) {
                 continue;
@@ -35,12 +37,19 @@ impl UnitEditorPlugin {
         }
         Self::respawn_teams(world);
     }
+    fn on_exit(world: &mut World) {
+        TeamPlugin::despawn(Faction::Left, world);
+        TeamPlugin::despawn(Faction::Right, world);
+    }
     fn respawn_teams(world: &mut World) {
         TeamPlugin::despawn(Faction::Left, world);
         TeamPlugin::despawn(Faction::Right, world);
         for (faction, team) in rm(world).teams.clone() {
-            team.clone().unpack(faction, world);
+            team.unpack(faction, world);
         }
+        let mut cs = client_state().clone();
+        cs.editor_teams = rm(world).teams.clone();
+        cs.save();
     }
     fn set_team_unit(unit: PackedUnit, faction: Faction, slot: usize, world: &mut World) {
         let mut r = rm(world);
@@ -120,10 +129,10 @@ impl UnitEditorPlugin {
                 DragValue::new(&mut hero.pwr).prefix("pwr:").ui(&mut ui[0]);
                 DragValue::new(&mut hero.hp).prefix("hp:").ui(&mut ui[1]);
             });
-            let trigger = hero.trigger.to_string();
+            let trigger = hero.trigger.cstr();
             ui.horizontal(|ui| {
                 "trigger:".cstr().label(ui);
-                if Button::click(trigger).ui(ui).clicked() {
+                if trigger.button(ui).clicked() {
                     let mut r = rm(world);
                     r.editing_trigger = r.editing_hero.trigger.clone();
                     Confirmation::new("Trigger Editor".cstr(), |world| {
@@ -199,12 +208,26 @@ impl UnitEditorPlugin {
     }
 }
 
-pub trait ShowEditor {
+pub trait ShowEditor: ToCstr + IntoEnumIterator {
     fn show_editor(&mut self, ui: &mut Ui);
+    fn show_self(&mut self, ui: &mut Ui) {
+        let widget = self.cstr().widget(1.0, ui);
+        ui.menu_button(widget, |ui| {
+            ScrollArea::vertical().show(ui, |ui| {
+                for e in Self::iter() {
+                    if e.cstr().button(ui).clicked() {
+                        *self = e;
+                        ui.close_menu();
+                    }
+                }
+            });
+        });
+    }
 }
 
 impl ShowEditor for Trigger {
     fn show_editor(&mut self, ui: &mut Ui) {
+        self.show_self(ui);
         match self {
             Trigger::Fire {
                 triggers,
@@ -213,6 +236,19 @@ impl ShowEditor for Trigger {
             } => {
                 for (target, name) in targets {
                     target.show_editor(ui);
+
+                    ui.horizontal(|ui| {
+                        if Checkbox::new(&mut name.is_some(), "").ui(ui).changed() {
+                            if name.is_some() {
+                                *name = None;
+                            } else {
+                                *name = Some(default());
+                            }
+                        }
+                        if let Some(name) = name {
+                            Input::new("rename").ui_string(name, ui);
+                        }
+                    });
                 }
             }
             Trigger::Change { trigger, expr } => todo!(),

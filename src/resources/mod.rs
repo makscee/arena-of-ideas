@@ -1,6 +1,7 @@
 mod ability;
 mod anim;
 mod client_settings;
+mod client_state;
 mod context;
 mod cstr;
 mod effect;
@@ -31,6 +32,7 @@ use super::*;
 pub use ability::*;
 pub use anim::*;
 pub use client_settings::*;
+pub use client_state::*;
 pub use context::*;
 pub use cstr::*;
 pub use effect::*;

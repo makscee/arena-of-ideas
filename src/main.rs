@@ -54,6 +54,7 @@ fn main() {
         RunMode::ArchiveUpload => GameState::GameArchiveUpload,
     };
     load_client_settings();
+    load_client_state();
     GameState::set_target(target);
     let default_plugins = DefaultPlugins.set(LogPlugin {
         level: bevy::log::Level::DEBUG,
