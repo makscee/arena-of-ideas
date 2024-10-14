@@ -362,44 +362,25 @@ impl std::hash::Hash for VarValue {
 
 impl ToCstr for VarValue {
     fn cstr(&self) -> Cstr {
-        match self {
-            VarValue::None => self.as_ref().cstr(),
-            VarValue::Int(v) => v.to_string().cstr(),
-            VarValue::Float(v) => v.to_string().cstr(),
-            VarValue::Vec2(v) => v.to_string().cstr(),
-            VarValue::String(v) => v.to_string().cstr(),
-            VarValue::Cstr(v) => v.clone(),
-            VarValue::Bool(v) => v.to_string().cstr(),
-            VarValue::Faction(v) => v.to_string().cstr(),
-            VarValue::Color(v) => {
-                let h = v.to_srgba().to_hex();
-                format!("#{h}").cstr_c(v.c32())
-            }
-            VarValue::Entity(v) => v.to_string().cstr(),
-            VarValue::U64(v) => v.to_string().cstr(),
-            VarValue::List(list) => {
-                Cstr::join_vec(list.into_iter().map(|v| v.cstr()).collect_vec())
-                    .join(&" + ".cstr())
-                    .take()
-            }
-        }
+        self.to_string().cstr()
     }
 }
 impl std::fmt::Display for VarValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let (n, _) = self.as_ref().split_at(1);
         match self {
             VarValue::None => write!(f, "None"),
-            VarValue::Int(v) => write!(f, "{}({})", self.as_ref(), v),
-            VarValue::Float(v) => write!(f, "{}({})", self.as_ref(), v),
-            VarValue::Vec2(v) => write!(f, "{}({}, {})", self.as_ref(), v.x, v.y),
-            VarValue::String(v) => write!(f, "{}({})", self.as_ref(), v),
-            VarValue::Cstr(v) => write!(f, "{}({})", self.as_ref(), v),
-            VarValue::Bool(v) => write!(f, "{}({})", self.as_ref(), v),
-            VarValue::Faction(v) => write!(f, "{}({})", self.as_ref(), v),
-            VarValue::Color(v) => write!(f, "{}({})", self.as_ref(), v.c32().to_hex()),
-            VarValue::Entity(v) => write!(f, "{}({})", self.as_ref(), v),
-            VarValue::U64(v) => write!(f, "{}({})", self.as_ref(), v),
-            VarValue::List(v) => write!(f, "{}({})", self.as_ref(), v.iter().join(", ")),
+            VarValue::Int(v) => write!(f, "{}({})", n, v),
+            VarValue::Float(v) => write!(f, "{}({:.3})", n, v),
+            VarValue::Vec2(v) => write!(f, "{}({:.3}, {:.3})", n, v.x, v.y),
+            VarValue::String(v) => write!(f, "{}({})", n, v),
+            VarValue::Cstr(v) => write!(f, "{}({})", n, v),
+            VarValue::Bool(v) => write!(f, "{}({})", n, v),
+            VarValue::Faction(v) => write!(f, "{}({})", n, v),
+            VarValue::Color(v) => write!(f, "{}({})", n, v.c32().to_hex()),
+            VarValue::Entity(v) => write!(f, "{}({})", n, v),
+            VarValue::U64(v) => write!(f, "{}({})", n, v),
+            VarValue::List(v) => write!(f, "{}({})", n, v.iter().join(", ")),
         }
     }
 }

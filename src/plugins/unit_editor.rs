@@ -145,7 +145,7 @@ impl UnitEditorPlugin {
                         let mut r = rm(world);
                         let context = Context::new(r.editing_entity.unwrap());
                         let mut trigger = mem::take(&mut r.editing_trigger);
-                        trigger.show_node(&context, world, ui);
+                        trigger.show_node("", &context, world, ui);
                         rm(world).editing_trigger = trigger;
                     })
                     .push(ui.ctx());
@@ -231,7 +231,7 @@ fn lookup_text_pop(ctx: &egui::Context) {
     ctx.data_mut(|w| w.get_temp_mut_or_default::<String>(lookup_id()).pop());
 }
 pub trait ShowEditor: ToCstr + IntoEnumIterator {
-    fn show_node(&mut self, context: &Context, world: &mut World, ui: &mut Ui) {
+    fn show_node(&mut self, name: &str, context: &Context, world: &mut World, ui: &mut Ui) {
         const SHADOW: Shadow = Shadow {
             offset: egui::Vec2::ZERO,
             blur: 5.0,
@@ -249,11 +249,14 @@ pub trait ShowEditor: ToCstr + IntoEnumIterator {
                 color: VISIBLE_DARK,
             },
         };
+        if !name.is_empty() {
+            name.cstr_cs(VISIBLE_DARK, CstrStyle::Small).label(ui);
+        }
         FRAME.show(ui, |ui| {
             ui.horizontal(|ui| {
                 ui.vertical(|ui| {
                     self.show_self(ui);
-                    ui.set_max_width(ui.min_size().x);
+                    // ui.set_max_width(ui.min_size().x);
                     self.show_content(context, world, ui);
                 });
                 ui.vertical(|ui| {
@@ -331,12 +334,12 @@ fn show_named_node<T: ShowEditor>(
             }
         });
         ui.horizontal(|ui| {
-            node.show_node(context, world, ui);
+            node.show_node("", context, world, ui);
         });
     });
 }
 impl ShowEditor for Trigger {
-    fn show_node(&mut self, context: &Context, world: &mut World, ui: &mut Ui) {
+    fn show_node(&mut self, _: &str, context: &Context, world: &mut World, ui: &mut Ui) {
         ScrollArea::vertical().show(ui, |ui| {
             self.show_self(ui);
             self.cstr_expanded().label(ui);
@@ -433,12 +436,9 @@ impl ShowEditor for Expression {
             | Expression::SlotUnit(e)
             | Expression::RandomF(e)
             | Expression::RandomUnit(e)
-            | Expression::ListCount(e) => e.show_node(context, world, ui),
+            | Expression::ListCount(e) => e.show_node("", context, world, ui),
 
-            Expression::MaxUnit(a, b)
-            | Expression::RandomUnitSubset(a, b)
-            | Expression::Vec2EE(a, b)
-            | Expression::Sum(a, b)
+            Expression::Sum(a, b)
             | Expression::Sub(a, b)
             | Expression::Mul(a, b)
             | Expression::Div(a, b)
@@ -449,15 +449,31 @@ impl ShowEditor for Expression {
             | Expression::Or(a, b)
             | Expression::Equals(a, b)
             | Expression::GreaterThen(a, b)
-            | Expression::LessThen(a, b)
-            | Expression::WithVar(_, a, b) => {
-                a.show_node(context, world, ui);
-                b.show_node(context, world, ui);
+            | Expression::LessThen(a, b) => {
+                a.show_node("", context, world, ui);
+                b.show_node("", context, world, ui);
             }
-            Expression::If(a, b, c) => {
-                a.show_node(context, world, ui);
-                b.show_node(context, world, ui);
-                c.show_node(context, world, ui);
+
+            Expression::MaxUnit(value, units) => {
+                value.show_node("value", context, world, ui);
+                units.show_node("units", context, world, ui);
+            }
+            Expression::RandomUnitSubset(amount, units) => {
+                amount.show_node("amount", context, world, ui);
+                units.show_node("units", context, world, ui);
+            }
+            Expression::Vec2EE(x, y) => {
+                x.show_node("x", context, world, ui);
+                y.show_node("y", context, world, ui);
+            }
+            Expression::WithVar(_, value, expression) => {
+                value.show_node("value", context, world, ui);
+                expression.show_node("e", context, world, ui);
+            }
+            Expression::If(cond, th, el) => {
+                cond.show_node("condition", context, world, ui);
+                th.show_node("then", context, world, ui);
+                el.show_node("else", context, world, ui);
             }
         }
     }
@@ -576,37 +592,38 @@ impl ShowEditor for Expression {
 impl ShowEditor for Effect {
     fn show_children(&mut self, context: &Context, world: &mut World, ui: &mut Ui) {
         match self {
-            Effect::Repeat(ex, ef)
-            | Effect::WithTarget(ex, ef)
-            | Effect::WithOwner(ex, ef)
-            | Effect::WithVar(_, ex, ef) => {
-                ex.show_node(context, world, ui);
-                ef.show_node(context, world, ui);
+            Effect::Repeat(count, ef) => {
+                count.show_node("count", context, world, ui);
+                ef.show_node("effect", context, world, ui);
+            }
+            Effect::WithTarget(ex, ef) | Effect::WithOwner(ex, ef) | Effect::WithVar(_, ex, ef) => {
+                ex.show_node("value", context, world, ui);
+                ef.show_node("effect", context, world, ui);
             }
             Effect::AbilityStateAddVar(_, _, e) | Effect::Text(e) => {
-                e.show_node(context, world, ui)
+                e.show_node("", context, world, ui)
             }
 
             Effect::Summon(_, e) => {
                 if let Some(e) = e {
-                    e.show_node(context, world, ui);
+                    e.show_node("", context, world, ui);
                 }
             }
 
             Effect::List(l) => {
                 for e in l {
-                    e.show_node(context, world, ui);
+                    e.show_node("", context, world, ui);
                 }
             }
 
             Effect::If(e, th, el) => {
-                e.show_node(context, world, ui);
-                th.show_node(context, world, ui);
-                el.show_node(context, world, ui);
+                e.show_node("condition", context, world, ui);
+                th.show_node("then", context, world, ui);
+                el.show_node("else", context, world, ui);
             }
-            Effect::StatusSetVar(a, _, _, b) | Effect::StateAddVar(_, a, b) => {
-                a.show_node(context, world, ui);
-                b.show_node(context, world, ui);
+            Effect::StatusSetVar(target, _, _, value) | Effect::StateAddVar(_, target, value) => {
+                target.show_node("target", context, world, ui);
+                value.show_node("value", context, world, ui);
             }
             Effect::Noop
             | Effect::Damage
@@ -632,7 +649,7 @@ impl ShowEditor for Effect {
             }
             Effect::UseAbility(ability, base) => {
                 ability_selector(ability, world, ui);
-                Slider::new("base").ui(base, 0..=10, ui);
+                DragValue::new(base).range(0..=10).ui(ui);
             }
             Effect::AbilityStateAddVar(ability, var, _) => {
                 ability_selector(ability, world, ui);
@@ -669,15 +686,15 @@ impl ShowEditor for FireTrigger {
         match self {
             FireTrigger::List(l) => {
                 for t in l {
-                    t.show_node(context, world, ui);
+                    t.show_node("", context, world, ui);
                 }
             }
             FireTrigger::Period(_, _, t) | FireTrigger::OnceAfter(_, t) => {
-                t.show_node(context, world, ui)
+                t.show_node("", context, world, ui)
             }
             FireTrigger::If(e, t) => {
-                e.show_node(context, world, ui);
-                t.show_node(context, world, ui);
+                e.show_node("condition", context, world, ui);
+                t.show_node("", context, world, ui);
             }
             FireTrigger::None
             | FireTrigger::UnitUsedAbility(..)
@@ -748,6 +765,8 @@ fn var_selector(var: &mut VarName, ui: &mut Ui) {
     Selector::new("var").ui_enum(var, ui);
 }
 fn show_value(value: Result<VarValue>, ui: &mut Ui) {
+    let w = ui.available_width();
+    ui.set_max_width(ui.min_size().x);
     match value {
         Ok(v) => v
             .cstr_cs(VISIBLE_DARK, CstrStyle::Small)
@@ -761,4 +780,5 @@ fn show_value(value: Result<VarValue>, ui: &mut Ui) {
             .truncate()
             .ui(ui),
     };
+    ui.set_max_width(w);
 }
