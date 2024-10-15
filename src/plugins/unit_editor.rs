@@ -1,4 +1,5 @@
 use egui::{Checkbox, DragValue, Key, ScrollArea};
+use serde::de::DeserializeOwned;
 
 use super::*;
 
@@ -230,7 +231,7 @@ fn lookup_text_push(ctx: &egui::Context, s: &str) {
 fn lookup_text_pop(ctx: &egui::Context) {
     ctx.data_mut(|w| w.get_temp_mut_or_default::<String>(lookup_id()).pop());
 }
-pub trait ShowEditor: ToCstr + IntoEnumIterator + Default {
+pub trait ShowEditor: ToCstr + IntoEnumIterator + Default + Serialize + DeserializeOwned {
     fn show_node(&mut self, name: &str, context: &Context, world: &mut World, ui: &mut Ui) {
         const SHADOW: Shadow = Shadow {
             offset: egui::Vec2::ZERO,
@@ -255,7 +256,7 @@ pub trait ShowEditor: ToCstr + IntoEnumIterator + Default {
         FRAME.show(ui, |ui| {
             ui.horizontal(|ui| {
                 ui.vertical(|ui| {
-                    self.show_self(ui);
+                    self.show_self(ui, world);
                     ui.set_max_width(ui.min_size().x);
                     self.show_content(context, world, ui);
                 });
@@ -267,9 +268,9 @@ pub trait ShowEditor: ToCstr + IntoEnumIterator + Default {
     }
     fn show_content(&mut self, _context: &Context, _world: &mut World, _ui: &mut Ui) {}
     fn show_children(&mut self, context: &Context, world: &mut World, ui: &mut Ui);
-    fn show_self(&mut self, ui: &mut Ui) {
+    fn show_self(&mut self, ui: &mut Ui, world: &mut World) {
         let widget = self.cstr().widget(1.0, ui);
-        if ui
+        let resp = ui
             .menu_button(widget, |ui| {
                 lookup_text(ui.ctx()).cstr().label(ui);
                 let mut take_first = false;
@@ -289,6 +290,7 @@ pub trait ShowEditor: ToCstr + IntoEnumIterator + Default {
                         _ => {}
                     }
                 }
+                ui.set_min_height(300.0);
                 ScrollArea::vertical().auto_shrink(false).show(ui, |ui| {
                     ui.reset_style();
                     let lookup = lookup_text(ui.ctx()).to_lowercase();
@@ -305,11 +307,33 @@ pub trait ShowEditor: ToCstr + IntoEnumIterator + Default {
                     }
                 });
             })
-            .response
-            .clicked()
-        {
+            .response;
+        if resp.clicked() {
             lookup_text_clear(ui.ctx());
         }
+        resp.context_menu(|ui| {
+            ui.reset_style();
+            if Button::click("Copy".into()).ui(ui).clicked() {
+                match ron::to_string(self) {
+                    Ok(v) => {
+                        save_to_clipboard(&v, world);
+                    }
+                    Err(e) => format!("Failed to copy: {e}").notify_error(world),
+                }
+                ui.close_menu();
+            }
+            if Button::click("Paste".into()).ui(ui).clicked() {
+                if let Some(v) = get_from_clipboard(world) {
+                    match ron::from_str::<Self>(&v) {
+                        Ok(v) => self.replace_self(v),
+                        Err(e) => format!("Failed to paste text {v}: {e}").notify_error(world),
+                    }
+                } else {
+                    format!("Clipboard is empty").notify_error(world);
+                }
+                ui.close_menu();
+            }
+        });
     }
     fn replace_self(&mut self, value: Self) {
         let mut inner = self
@@ -357,7 +381,7 @@ fn show_named_node<T: ShowEditor>(
 }
 impl ShowEditor for Trigger {
     fn show_node(&mut self, _: &str, context: &Context, world: &mut World, ui: &mut Ui) {
-        self.show_self(ui);
+        self.show_self(ui, world);
         self.cstr_expanded().label(ui);
         self.show_children(context, world, ui);
     }
