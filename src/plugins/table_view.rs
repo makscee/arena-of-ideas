@@ -63,6 +63,15 @@ impl TableViewPlugin {
                     TBattleResult::Right | TBattleResult::Even => "L".cstr_c(RED),
                 })
                 .column_ts("time", |d| d.ts)
+                .column_btn("editor", |d, _, world| {
+                    let mut cs = client_state().clone();
+                    cs.editor_teams
+                        .insert(Faction::Left, PackedTeam::from_id(d.team_left));
+                    cs.editor_teams
+                        .insert(Faction::Right, PackedTeam::from_id(d.team_right));
+                    cs.save();
+                    GameState::UnitEditor.proceed_to_target(world);
+                })
                 .column_btn("run", |d, _, world| {
                     world.insert_resource(BattleData::from(d.clone()));
                     GameState::Battle.set_next(world);
