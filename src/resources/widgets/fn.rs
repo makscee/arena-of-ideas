@@ -1,3 +1,5 @@
+use egui::ScrollArea;
+
 use super::*;
 
 pub fn br(ui: &mut Ui) {
@@ -24,7 +26,10 @@ pub fn center_window(name: &str, ui: &mut Ui, add_contents: impl FnOnce(&mut Ui)
         .order(Order::Foreground)
         .default_width(300.0)
         .resizable([false, false])
-        .show(ui.ctx(), add_contents);
+        .show(ui.ctx(), |ui| {
+            ui.set_max_height(ui.ctx().screen_rect().height() * 0.9);
+            ScrollArea::vertical().show(ui, add_contents);
+        });
 }
 pub fn popup(name: &str, ctx: &egui::Context, add_contents: impl FnOnce(&mut Ui)) {
     let rect = ctx.screen_rect();

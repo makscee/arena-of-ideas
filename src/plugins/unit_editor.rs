@@ -357,11 +357,9 @@ fn show_named_node<T: ShowEditor>(
 }
 impl ShowEditor for Trigger {
     fn show_node(&mut self, _: &str, context: &Context, world: &mut World, ui: &mut Ui) {
-        ScrollArea::vertical().show(ui, |ui| {
-            self.show_self(ui);
-            self.cstr_expanded().label(ui);
-            self.show_children(context, world, ui);
-        });
+        self.show_self(ui);
+        self.cstr_expanded().label(ui);
+        self.show_children(context, world, ui);
     }
     fn show_children(&mut self, context: &Context, world: &mut World, ui: &mut Ui) {
         match self {
@@ -370,19 +368,29 @@ impl ShowEditor for Trigger {
                 targets,
                 effects,
             } => {
+                let mut c = 0;
                 ui.collapsing("Triggers", |ui| {
                     for (node, name) in triggers {
-                        show_named_node(name, node, context, world, ui);
+                        c += 1;
+                        ui.push_id(c, |ui| {
+                            show_named_node(name, node, context, world, ui);
+                        });
                     }
                 });
                 ui.collapsing("Targets", |ui| {
                     for (node, name) in targets {
-                        show_named_node(name, node, context, world, ui);
+                        c += 1;
+                        ui.push_id(c, |ui| {
+                            show_named_node(name, node, context, world, ui);
+                        });
                     }
                 });
                 ui.collapsing("Effects", |ui| {
                     for (node, name) in effects {
-                        show_named_node(name, node, context, world, ui);
+                        c += 1;
+                        ui.push_id(c, |ui| {
+                            show_named_node(name, node, context, world, ui);
+                        });
                     }
                 });
             }
