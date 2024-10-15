@@ -362,7 +362,15 @@ impl std::hash::Hash for VarValue {
 
 impl ToCstr for VarValue {
     fn cstr(&self) -> Cstr {
-        self.to_string().cstr()
+        match self {
+            VarValue::Entity(e) => entity_name(*e),
+            VarValue::Color(c) => {
+                let c = c.c32();
+                c.to_hex().cstr_c(c)
+            }
+            VarValue::Cstr(c) => c.clone(),
+            _ => self.to_string().cstr(),
+        }
     }
 }
 impl std::fmt::Display for VarValue {

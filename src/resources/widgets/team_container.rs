@@ -7,6 +7,7 @@ pub struct TeamContainer {
     right_to_left: bool,
     show_name: bool,
     on_click: Option<Box<dyn Fn(usize, Option<Entity>, &mut World) + Send + Sync>>,
+    context_menu: Option<Box<dyn Fn(usize, Option<Entity>, &mut Ui, &mut World) + Send + Sync>>,
     on_swap: Option<Box<dyn Fn(usize, usize, &mut World) + Send + Sync>>,
     top_content: Option<Box<dyn FnOnce(&mut Ui, &mut World) + Send + Sync>>,
     slot_content: Option<Box<dyn Fn(usize, Option<Entity>, &mut Ui, &mut World) + Send + Sync>>,
@@ -15,12 +16,12 @@ pub struct TeamContainer {
     empty_slot_text: Option<Cstr>,
 }
 
-#[derive(Resource, Default)]
+#[derive(Resource, Default, Clone)]
 pub struct TeamContainerResource {
     containers: HashMap<Faction, TeamContainerData>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct TeamContainerData {
     positions: Vec<Pos2>,
     entities: Vec<Option<Entity>>,
@@ -49,6 +50,7 @@ impl TeamContainer {
             hover_content: None,
             on_click: None,
             on_swap: None,
+            context_menu: None,
             slot_name: default(),
             empty_slot_text: None,
         }
@@ -91,6 +93,13 @@ impl TeamContainer {
         self.hover_content = Some(Box::new(content));
         self
     }
+    pub fn context_menu(
+        mut self,
+        content: impl Fn(usize, Option<Entity>, &mut Ui, &mut World) + Send + Sync + 'static,
+    ) -> Self {
+        self.context_menu = Some(Box::new(content));
+        self
+    }
     pub fn on_swap(
         mut self,
         action: impl Fn(usize, usize, &mut World) + Send + Sync + 'static,
@@ -114,20 +123,29 @@ impl TeamContainer {
         self
     }
     pub fn slot_position(faction: Faction, slot: usize, world: &World) -> Vec2 {
-        let pos = world
+        world
             .resource::<TeamContainerResource>()
             .containers
             .get(&faction)
             .and_then(|d| d.positions.get(slot))
             .copied()
-            .unwrap_or_default();
-        screen_to_world(pos.to_bvec2(), world)
+            .map(|p| screen_to_world(p.to_bvec2(), world))
+            .unwrap_or({
+                let slot = slot as f32 + 1.0;
+                match faction {
+                    Faction::Left => vec2(slot * -SLOT_SPACING, 0.0),
+                    Faction::Right => vec2(slot * SLOT_SPACING, 0.0),
+                    Faction::Team => vec2(slot * -SLOT_SPACING + 14.0, -3.0),
+                    Faction::Shop => vec2(slot * SLOT_SPACING - 4.0, 5.5),
+                }
+            })
     }
     pub fn ui(self, ui: &mut Ui, world: &mut World) {
         let mut data = world
             .resource_mut::<TeamContainerResource>()
             .containers
-            .remove(&self.faction)
+            .get(&self.faction)
+            .cloned()
             .unwrap_or_default();
         data.positions.resize(self.slots, default());
         data.entities.resize(self.slots, None);
@@ -165,6 +183,11 @@ impl TeamContainer {
                             (action)(i, data.entities[i], world);
                         }
                     }
+                    if let Some(menu) = self.context_menu.as_ref() {
+                        resp.context_menu(|ui| {
+                            menu(i, data.entities[i], ui, world);
+                        });
+                    }
                     if let Some(entity) = data.entities[i] {
                         ui.vertical_centered_justified(|ui| {
                             entity_name(entity).label(ui);
@@ -192,7 +215,10 @@ impl TeamContainer {
                                 }
                             }
                         }
-                        if resp.hovered() && ui.ctx().dragged_id().is_none() {
+                        if resp.hovered()
+                            && ui.ctx().dragged_id().is_none()
+                            && !ui.ctx().is_context_menu_open()
+                        {
                             cursor_window(ui.ctx(), |ui| {
                                 match UnitCard::new(&Context::new(entity), world) {
                                     Ok(c) => c.ui(ui),

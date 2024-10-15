@@ -172,7 +172,7 @@ pub fn entity_name(entity: Entity) -> Cstr {
         .unwrap()
         .get(&entity)
         .cloned()
-        .unwrap_or_default()
+        .unwrap_or(entity.to_string().cstr())
 }
 pub fn entity_name_with_id(entity: Entity) -> Cstr {
     entity_name(entity).push(format!("#{entity}").cstr()).take()

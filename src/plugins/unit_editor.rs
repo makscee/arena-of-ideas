@@ -49,6 +49,7 @@ impl UnitEditorPlugin {
         for (faction, team) in rm(world).teams.clone() {
             team.unpack(faction, world);
         }
+        UnitPlugin::place_into_slots(world);
         let mut cs = client_state().clone();
         cs.editor_teams = rm(world).teams.clone();
         cs.save();
@@ -63,6 +64,12 @@ impl UnitEditorPlugin {
             team.units.insert(slot, unit);
         }
         UnitEditorPlugin::respawn_teams(world);
+    }
+    fn remove_team_unit(faction: Faction, slot: usize, world: &mut World) {
+        if let Some(team) = rm(world).teams.get_mut(&faction) {
+            team.units.remove(slot);
+            UnitEditorPlugin::respawn_teams(world);
+        }
     }
     pub fn load_team(faction: Faction, team: PackedTeam, world: &mut World) {
         rm(world).teams.insert(faction, team);
@@ -188,24 +195,84 @@ impl UnitEditorPlugin {
                 return;
             }
             ui.add_space(100.0);
+            fn on_click(slot: usize, faction: Faction, entity: Option<Entity>, world: &mut World) {
+                let ctx = &egui_context(world).unwrap();
+                if Confirmation::has_active(ctx) {
+                    return;
+                }
+                if let Some(entity) = entity {
+                    UnitEditorPlugin::load_unit_editor(entity, faction, slot, world);
+                    UnitEditorPlugin::open_unit_editor(ctx);
+                } else {
+                    UnitEditorPlugin::open_new_unit_picker(faction, slot, ctx, world);
+                }
+            }
+            fn context_menu(
+                slot: usize,
+                faction: Faction,
+                entity: Option<Entity>,
+                ui: &mut Ui,
+                world: &mut World,
+            ) {
+                ui.reset_style();
+                ui.set_min_width(150.0);
+                if Button::click("Paste".into()).ui(ui).clicked() {
+                    if let Some(v) = get_from_clipboard(world) {
+                        match ron::from_str::<PackedUnit>(&v) {
+                            Ok(v) => UnitEditorPlugin::set_team_unit(v, faction, slot, world),
+                            Err(e) => format!("Failed to deserialize unit from {v}: {e}")
+                                .notify_error(world),
+                        }
+                    } else {
+                        "Clipboard is empty".notify_error(world);
+                    }
+                    ui.close_menu();
+                }
+                if entity.is_none() {
+                    if Button::click("Spawn default".into())
+                        .red(ui)
+                        .ui(ui)
+                        .clicked()
+                    {
+                        UnitEditorPlugin::set_team_unit(default(), faction, slot, world);
+                        ui.close_menu();
+                    }
+                } else {
+                    if Button::click("Copy".into()).ui(ui).clicked() {
+                        if let Some(unit) = rm(world)
+                            .teams
+                            .get(&faction)
+                            .and_then(|t| t.units.get(slot))
+                        {
+                            match ron::to_string(unit) {
+                                Ok(v) => save_to_clipboard(&v, world),
+                                Err(e) => {
+                                    format!("Failed to serialize unit: {e}").notify_error(world)
+                                }
+                            }
+                        }
+                        ui.close_menu();
+                    }
+                    if Button::click("Delete".into()).red(ui).ui(ui).clicked() {
+                        UnitEditorPlugin::remove_team_unit(faction, slot, world);
+                        ui.close_menu();
+                    }
+                }
+            }
             ui.columns(2, |ui| {
                 TeamContainer::new(Faction::Left)
                     .right_to_left()
-                    .on_click(|slot, entity, world| {
-                        let ctx = &egui_context(world).unwrap();
-                        if Confirmation::has_active(ctx) {
-                            return;
-                        }
-                        let faction = Faction::Left;
-                        if let Some(entity) = entity {
-                            Self::load_unit_editor(entity, faction, slot, world);
-                            Self::open_unit_editor(ctx);
-                        } else {
-                            Self::open_new_unit_picker(faction, slot, ctx, world);
-                        }
+                    .on_click(|slot, entity, world| on_click(slot, Faction::Left, entity, world))
+                    .context_menu(|slot, entity, ui, world| {
+                        context_menu(slot, Faction::Left, entity, ui, world)
                     })
                     .ui(&mut ui[0], world);
-                TeamContainer::new(Faction::Right).ui(&mut ui[1], world);
+                TeamContainer::new(Faction::Right)
+                    .on_click(|slot, entity, world| on_click(slot, Faction::Right, entity, world))
+                    .context_menu(|slot, entity, ui, world| {
+                        context_menu(slot, Faction::Right, entity, ui, world)
+                    })
+                    .ui(&mut ui[1], world);
             });
         })
         .max()
@@ -394,27 +461,36 @@ impl ShowEditor for Trigger {
             } => {
                 let mut c = 0;
                 ui.collapsing("Triggers", |ui| {
-                    for (node, name) in triggers {
+                    for (node, name) in triggers.iter_mut() {
                         c += 1;
                         ui.push_id(c, |ui| {
                             show_named_node(name, node, context, world, ui);
                         });
+                    }
+                    if Button::click("+".into()).ui(ui).clicked() {
+                        triggers.push((default(), None));
                     }
                 });
                 ui.collapsing("Targets", |ui| {
-                    for (node, name) in targets {
+                    for (node, name) in targets.iter_mut() {
                         c += 1;
                         ui.push_id(c, |ui| {
                             show_named_node(name, node, context, world, ui);
                         });
                     }
+                    if Button::click("+".into()).ui(ui).clicked() {
+                        targets.push((default(), None));
+                    }
                 });
                 ui.collapsing("Effects", |ui| {
-                    for (node, name) in effects {
+                    for (node, name) in effects.iter_mut() {
                         c += 1;
                         ui.push_id(c, |ui| {
                             show_named_node(name, node, context, world, ui);
                         });
+                    }
+                    if Button::click("+".into()).ui(ui).clicked() {
+                        effects.push((default(), None));
                     }
                 });
             }
@@ -547,7 +623,8 @@ impl ShowEditor for Expression {
             | Expression::CasterState(var)
             | Expression::OwnerStateLast(var)
             | Expression::TargetStateLast(var)
-            | Expression::CasterStateLast(var) => {
+            | Expression::CasterStateLast(var)
+            | Expression::WithVar(var, ..) => {
                 var_selector(var, ui);
             }
             Expression::StatusState(status, var) | Expression::StatusStateLast(status, var) => {
@@ -637,8 +714,7 @@ impl ShowEditor for Expression {
             | Expression::Equals(..)
             | Expression::GreaterThen(..)
             | Expression::LessThen(..)
-            | Expression::If(..)
-            | Expression::WithVar(..) => {}
+            | Expression::If(..) => {}
         };
         show_value(value, ui);
     }
@@ -797,13 +873,17 @@ impl ShowEditor for Effect {
             Effect::Summon(summon, _) => summon_selector(summon, world, ui),
             Effect::StateAddVar(var, _, _) | Effect::WithVar(var, _, _) => var_selector(var, ui),
             Effect::Vfx(vfx) => vfx_selector(vfx, world, ui),
+            Effect::List(l) => {
+                if Button::click("+".into()).ui(ui).clicked() {
+                    l.push(default());
+                }
+            }
 
             Effect::WithTarget(_, _)
             | Effect::WithOwner(_, _)
             | Effect::Repeat(_, _)
             | Effect::If(_, _, _)
             | Effect::Text(_)
-            | Effect::List(_)
             | Effect::ChangeAllStatuses
             | Effect::ClearAllStatuses
             | Effect::StealAllStatuses
@@ -960,7 +1040,8 @@ fn show_value(value: Result<VarValue>, ui: &mut Ui) {
     ui.set_max_width(ui.min_size().x);
     match value {
         Ok(v) => v
-            .cstr_cs(VISIBLE_DARK, CstrStyle::Small)
+            .cstr()
+            .style(CstrStyle::Small)
             .as_label(ui)
             .truncate()
             .ui(ui),

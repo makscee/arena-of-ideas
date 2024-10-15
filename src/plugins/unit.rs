@@ -143,6 +143,12 @@ impl UnitPlugin {
         }
         gt().advance_insert(shift);
     }
+    pub fn place_into_slots(world: &mut World) {
+        for unit in Self::collect_all(world) {
+            let pos = Self::get_entity_slot_position(unit, world).unwrap_or_default();
+            VarState::get_mut(unit, world).set_vec2(VarName::Position, pos);
+        }
+    }
     pub fn despawn(entity: Entity, world: &mut World) {
         world.entity_mut(entity).despawn_recursive();
     }
