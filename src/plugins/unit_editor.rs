@@ -37,38 +37,52 @@ impl UnitEditorPlugin {
             }
             r.teams.insert(faction, default());
         }
-        Self::respawn_teams(world);
+        Self::respawn_teams(false, world);
     }
     fn on_exit(world: &mut World) {
         TeamPlugin::despawn(Faction::Left, world);
         TeamPlugin::despawn(Faction::Right, world);
     }
-    fn respawn_teams(world: &mut World) {
+    fn respawn_teams(instant_placement: bool, world: &mut World) {
         TeamPlugin::despawn(Faction::Left, world);
         TeamPlugin::despawn(Faction::Right, world);
         for (faction, team) in rm(world).teams.clone() {
             team.unpack(faction, world);
         }
-        UnitPlugin::place_into_slots(world);
+        if instant_placement {
+            UnitPlugin::place_into_slots(world);
+        }
         let mut cs = client_state().clone();
         cs.editor_teams = rm(world).teams.clone();
         cs.save();
     }
     fn set_team_unit(unit: PackedUnit, faction: Faction, slot: usize, world: &mut World) {
         let mut r = rm(world);
-        let team = r.teams.get_mut(&faction).unwrap();
-        if team.units.len() <= slot {
-            team.units.push(unit);
-        } else {
-            team.units.remove(slot);
-            team.units.insert(slot, unit);
+        if let Some(team) = rm(world).teams.get_mut(&faction) {
+            if team.units.len() <= slot {
+                team.units.push(unit);
+            } else {
+                team.units.remove(slot);
+                team.units.insert(slot, unit);
+            }
+            UnitEditorPlugin::respawn_teams(true, world);
         }
-        UnitEditorPlugin::respawn_teams(world);
     }
     fn remove_team_unit(faction: Faction, slot: usize, world: &mut World) {
         if let Some(team) = rm(world).teams.get_mut(&faction) {
             team.units.remove(slot);
-            UnitEditorPlugin::respawn_teams(world);
+            UnitEditorPlugin::respawn_teams(true, world);
+        }
+    }
+    fn move_team_units(faction: Faction, from: usize, to: usize, world: &mut World) {
+        if let Some(team) = rm(world).teams.get_mut(&faction) {
+            if from >= team.units.len() {
+                format!("Wrong slot index").notify_error(world);
+                return;
+            }
+            let unit = team.units.remove(from);
+            team.units.insert(to.at_most(team.units.len()), unit);
+            Self::respawn_teams(false, world);
         }
     }
     pub fn load_team(faction: Faction, team: PackedTeam, world: &mut World) {
@@ -94,7 +108,7 @@ impl UnitEditorPlugin {
                     .unwrap()
                     .units
                     .push(PackedUnit::default());
-                Self::respawn_teams(world);
+                Self::respawn_teams(true, world);
                 Confirmation::pop(ui.ctx());
             }
             let mut r = rm(world);
@@ -177,11 +191,11 @@ impl UnitEditorPlugin {
                         );
                     }
 
-                    Self::respawn_teams(world);
+                    Self::respawn_teams(true, world);
                 }
                 if Button::click("Strike".into()).ui(ui).clicked() {
                     if let Some((left, right)) = BattlePlugin::get_strikers(world) {
-                        BattlePlugin::run_strike(left, right, world);
+                        let _ = BattlePlugin::run_strike(left, right, world);
                     }
                 }
             });
@@ -266,11 +280,17 @@ impl UnitEditorPlugin {
                     .context_menu(|slot, entity, ui, world| {
                         context_menu(slot, Faction::Left, entity, ui, world)
                     })
+                    .on_swap(|from, to, world| {
+                        UnitEditorPlugin::move_team_units(Faction::Left, from, to, world);
+                    })
                     .ui(&mut ui[0], world);
                 TeamContainer::new(Faction::Right)
                     .on_click(|slot, entity, world| on_click(slot, Faction::Right, entity, world))
                     .context_menu(|slot, entity, ui, world| {
                         context_menu(slot, Faction::Right, entity, ui, world)
+                    })
+                    .on_swap(|from, to, world| {
+                        UnitEditorPlugin::move_team_units(Faction::Left, from, to, world);
                     })
                     .ui(&mut ui[1], world);
             });
