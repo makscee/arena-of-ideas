@@ -9,6 +9,7 @@ pub enum Icon {
     Youtube,
     Itch,
     Github,
+    Patreon,
     FFBack,
     FFForward,
     SkipBack,
@@ -43,6 +44,9 @@ impl Icon {
             }
             Icon::Github => {
                 Image::new(include_image!("../../assets/svg/github.svg")).fit_to_original_size(0.8)
+            }
+            Icon::Patreon => {
+                Image::new(include_image!("../../assets/svg/patreon.svg")).fit_to_original_size(0.8)
             }
             Icon::FFBack => {
                 Image::new(include_image!("../../assets/svg/ff_back.svg")).fit_to_original_size(1.0)

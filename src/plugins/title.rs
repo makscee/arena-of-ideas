@@ -60,6 +60,14 @@ impl TitlePlugin {
                         "https://github.com/makscee/arena-of-ideas/releases",
                     ));
                 }
+                if Button::click("Patreon".into())
+                    .icon(Icon::Patreon)
+                    .ui(ui)
+                    .clicked()
+                {
+                    ui.ctx()
+                        .open_url(egui::OpenUrl::same_tab("https://www.patreon.com/makscee"));
+                }
             });
         })
         .pinned()
