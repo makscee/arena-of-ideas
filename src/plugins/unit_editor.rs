@@ -193,6 +193,12 @@ impl UnitEditorPlugin {
 
                     Self::respawn_teams(true, world);
                 }
+                if Button::click("Run battle".into()).ui(ui).clicked() {
+                    match BattlePlugin::run(world) {
+                        Ok(r) => r.to_string().notify(world),
+                        Err(e) => format!("Battle run error: {e}").notify_error(world),
+                    }
+                }
                 if Button::click("Strike".into()).ui(ui).clicked() {
                     if let Some((left, right)) = BattlePlugin::get_strikers(world) {
                         let _ = BattlePlugin::run_strike(left, right, world);
