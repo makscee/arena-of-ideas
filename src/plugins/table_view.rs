@@ -73,7 +73,7 @@ impl TableViewPlugin {
                     GameState::UnitEditor.proceed_to_target(world);
                 })
                 .column_btn("run", |d, _, world| {
-                    world.insert_resource(BattleData::from(d.clone()));
+                    world.insert_resource(BattleResource::from(d.clone()));
                     GameState::Battle.set_next(world);
                 })
                 .filter("My", "player", user_id().into())

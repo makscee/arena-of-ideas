@@ -194,10 +194,13 @@ impl UnitEditorPlugin {
                     Self::respawn_teams(true, world);
                 }
                 if Button::click("Run battle".into()).ui(ui).clicked() {
-                    match BattlePlugin::run(world) {
-                        Ok(r) => r.to_string().notify(world),
-                        Err(e) => format!("Battle run error: {e}").notify_error(world),
-                    }
+                    BattlePlugin::load_teams(
+                        rm(world).teams.get(&Faction::Left).unwrap().clone(),
+                        rm(world).teams.get(&Faction::Right).unwrap().clone(),
+                        world,
+                    );
+                    BattlePlugin::set_next_state(GameState::UnitEditor, world);
+                    GameState::Battle.proceed_to_target(world);
                 }
                 if Button::click("Strike".into()).ui(ui).clicked() {
                     if let Some((left, right)) = BattlePlugin::get_strikers(world) {

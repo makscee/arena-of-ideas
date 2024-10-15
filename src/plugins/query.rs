@@ -17,7 +17,7 @@ struct QueryData {
     subscribed_queries: Vec<StdbQuery>,
 }
 
-#[derive(PartialEq, Eq, Hash, Clone, Copy, Display, Debug, Serialize)]
+#[derive(PartialEq, Eq, Hash, Clone, Copy, Display, Debug, Serialize, Deserialize)]
 pub enum StdbQuery {
     Connect,
     Game(u64),

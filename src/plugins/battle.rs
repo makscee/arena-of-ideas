@@ -15,7 +15,7 @@ impl Plugin for BattlePlugin {
                 Self::hover_check.run_if(in_state(GameState::Battle)),
             )
             .add_systems(Update, Self::input.run_if(in_state(GameState::Battle)))
-            .init_resource::<BattleData>();
+            .init_resource::<BattleResource>();
     }
 }
 
@@ -24,7 +24,7 @@ impl BattlePlugin {
         info!("Start battle");
         gt().reset();
         let result = Self::run(world).unwrap();
-        let mut bd = world.resource_mut::<BattleData>();
+        let mut bd = world.resource_mut::<BattleResource>();
         bd.result = result;
         if bd.id > 0 && bd.from_run {
             submit_battle_result(match result {
@@ -55,13 +55,17 @@ impl BattlePlugin {
         let run = TArenaRun::current();
         let bid = *run.battles.last().unwrap();
         let battle = TBattle::find_by_id(bid).unwrap();
-        let mut bd = BattleData::from(battle);
+        let mut bd = BattleResource::from(battle);
         bd.from_run = true;
+        bd.next_state = GameState::Shop;
         world.insert_resource(bd);
         GameState::Battle.set_next(world);
     }
+    pub fn set_next_state(state: GameState, world: &mut World) {
+        rm(world).next_state = state;
+    }
     pub fn load_teams(left: PackedTeam, right: PackedTeam, world: &mut World) {
-        world.insert_resource(BattleData {
+        world.insert_resource(BattleResource {
             left,
             right,
             ..default()
@@ -69,7 +73,7 @@ impl BattlePlugin {
     }
     pub fn run(world: &mut World) -> Result<BattleResult> {
         ActionPlugin::reset(world);
-        let bd = world.resource::<BattleData>();
+        let bd = world.resource::<BattleResource>();
         let left = bd.left.clone();
         let right = bd.right.clone();
         left.unpack(Faction::Left, world);
@@ -336,7 +340,7 @@ impl BattlePlugin {
         .pinned()
         .push(world);
 
-        let bd = world.resource::<BattleData>();
+        let bd = rm(world);
         if bd.id == 0 {
             return;
         }
@@ -383,7 +387,7 @@ impl BattlePlugin {
         }
         popup("end_panel", ui.ctx(), |ui| {
             ui.vertical_centered_justified(|ui| {
-                let bd = world.resource::<BattleData>();
+                let bd = world.resource::<BattleResource>();
                 if bd.result.is_win().unwrap_or_default() {
                     "Victory".cstr_cs(GREEN, CstrStyle::Heading2)
                 } else {
@@ -400,7 +404,7 @@ impl BattlePlugin {
                 });
                 ui[1].vertical_centered_justified(|ui| {
                     if Button::click("Finish".into()).ui(ui).clicked() {
-                        GameState::Shop.proceed_to_target(world);
+                        rm(world).next_state.proceed_to_target(world);
                     }
                 });
             })
@@ -436,7 +440,7 @@ impl BattlePlugin {
 }
 
 #[derive(Asset, TypePath, Resource, Default, Clone, Debug, Deserialize)]
-pub struct BattleData {
+pub struct BattleResource {
     #[serde(default)]
     id: u64,
     left: PackedTeam,
@@ -445,9 +449,14 @@ pub struct BattleData {
     result: BattleResult,
     #[serde(default)]
     from_run: bool,
+    #[serde(default)]
+    next_state: GameState,
+}
+fn rm(world: &mut World) -> Mut<BattleResource> {
+    world.resource_mut::<BattleResource>()
 }
 
-impl From<TBattle> for BattleData {
+impl From<TBattle> for BattleResource {
     fn from(value: TBattle) -> Self {
         Self {
             id: value.id,
@@ -455,6 +464,7 @@ impl From<TBattle> for BattleData {
             right: PackedTeam::from_id(value.team_right),
             result: BattleResult::Tbd,
             from_run: false,
+            next_state: GameState::Shop,
         }
     }
 }

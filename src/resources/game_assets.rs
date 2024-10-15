@@ -6,7 +6,7 @@ pub struct GameAssetsHandles {
     #[asset(key = "global_settings")]
     global_settings: Handle<GlobalSettingsAsset>,
     #[asset(key = "custom_battle")]
-    custom_battle: Handle<BattleData>,
+    custom_battle: Handle<BattleResource>,
     #[asset(key = "unit.rep")]
     unit_rep: Handle<Representation>,
     #[asset(key = "ghost.unit")]
@@ -26,7 +26,7 @@ pub struct GameAssetsHandles {
 #[derive(Resource, Debug, Clone)]
 pub struct GameAssets {
     pub global_settings: GlobalSettings,
-    pub custom_battle: BattleData,
+    pub custom_battle: BattleResource,
     pub unit_rep: Representation,
     pub status_rep: Representation,
     pub animations: Animations,
@@ -137,7 +137,7 @@ impl Plugin for LoadingPlugin {
 impl LoadingPlugin {
     fn save_assets(
         global_settings: GlobalSettings,
-        custom_battle: BattleData,
+        custom_battle: BattleResource,
         unit_rep: Representation,
         ghost: PackedUnit,
         status_rep: Representation,
@@ -209,7 +209,7 @@ impl LoadingPlugin {
             .0
             .clone();
         let custom_battle = world
-            .resource::<Assets<BattleData>>()
+            .resource::<Assets<BattleResource>>()
             .get(&handles.custom_battle)
             .unwrap()
             .clone();

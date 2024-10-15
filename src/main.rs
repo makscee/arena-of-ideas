@@ -87,7 +87,7 @@ fn main() {
         .add_plugins(Material2dPlugin::<CurveMaterial>::default())
         .add_plugins((
             RonAssetPlugin::<GlobalSettingsAsset>::new(&["global_settings.ron"]),
-            RonAssetPlugin::<BattleData>::new(&["battle.ron"]),
+            RonAssetPlugin::<BattleResource>::new(&["battle.ron"]),
             RonAssetPlugin::<PackedUnit>::new(&["unit.ron"]),
             RonAssetPlugin::<House>::new(&["house.ron"]),
             RonAssetPlugin::<TestScenario>::new(&["scenario.ron"]),
