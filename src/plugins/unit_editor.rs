@@ -318,7 +318,9 @@ fn lookup_text_push(ctx: &egui::Context, s: &str) {
 fn lookup_text_pop(ctx: &egui::Context) {
     ctx.data_mut(|w| w.get_temp_mut_or_default::<String>(lookup_id()).pop());
 }
-pub trait ShowEditor: ToCstr + IntoEnumIterator + Default + Serialize + DeserializeOwned {
+pub trait ShowEditor:
+    ToCstr + IntoEnumIterator + Default + Serialize + DeserializeOwned + Clone
+{
     fn show_node(&mut self, name: &str, context: &Context, world: &mut World, ui: &mut Ui) {
         const SHADOW: Shadow = Shadow {
             offset: egui::Vec2::ZERO,
@@ -340,7 +342,7 @@ pub trait ShowEditor: ToCstr + IntoEnumIterator + Default + Serialize + Deserial
         if !name.is_empty() {
             name.cstr_cs(VISIBLE_DARK, CstrStyle::Small).label(ui);
         }
-        FRAME.show(ui, |ui| {
+        let resp = FRAME.show(ui, |ui| {
             ui.horizontal(|ui| {
                 ui.vertical(|ui| {
                     self.show_self(ui, world);
@@ -352,6 +354,24 @@ pub trait ShowEditor: ToCstr + IntoEnumIterator + Default + Serialize + Deserial
                 });
             });
         });
+        let rect = resp.response.rect;
+        let rect = Rect::from_center_size(rect.left_center(), egui::vec2(2.0, rect.height() - 8.0));
+        let resp = ui.allocate_rect(rect, Sense::click());
+        let color = if resp.hovered() {
+            YELLOW
+        } else {
+            VISIBLE_LIGHT
+        };
+        ui.painter().rect_filled(rect, Rounding::ZERO, color);
+        if resp.clicked() {
+            let mut s = Self::wrapper();
+            let mut inner = s.get_inner_mut();
+            if inner.is_empty() {
+                return;
+            }
+            *inner[0] = Box::new(self.clone());
+            *self = s;
+        }
     }
     fn show_content(&mut self, _context: &Context, _world: &mut World, _ui: &mut Ui) {}
     fn show_children(&mut self, context: &Context, world: &mut World, ui: &mut Ui);
@@ -412,7 +432,7 @@ pub trait ShowEditor: ToCstr + IntoEnumIterator + Default + Serialize + Deserial
             if Button::click("Paste".into()).ui(ui).clicked() {
                 if let Some(v) = get_from_clipboard(world) {
                     match ron::from_str::<Self>(&v) {
-                        Ok(v) => self.replace_self(v),
+                        Ok(v) => *self = v,
                         Err(e) => format!("Failed to paste text {v}: {e}").notify_error(world),
                     }
                 } else {
@@ -439,6 +459,9 @@ pub trait ShowEditor: ToCstr + IntoEnumIterator + Default + Serialize + Deserial
         }
     }
     fn get_inner_mut(&mut self) -> Vec<&mut Box<Self>>;
+    fn wrapper() -> Self {
+        default()
+    }
 }
 
 fn show_named_node<T: ShowEditor>(
@@ -524,6 +547,9 @@ impl ShowEditor for Trigger {
 }
 
 impl ShowEditor for Expression {
+    fn wrapper() -> Self {
+        Self::Abs(default())
+    }
     fn show_children(&mut self, context: &Context, world: &mut World, ui: &mut Ui) {
         match self {
             Expression::Zero
@@ -821,6 +847,9 @@ impl ShowEditor for Expression {
 }
 
 impl ShowEditor for Effect {
+    fn wrapper() -> Self {
+        Self::List([default()].into())
+    }
     fn show_children(&mut self, context: &Context, world: &mut World, ui: &mut Ui) {
         match self {
             Effect::Repeat(count, ef) => {
@@ -946,6 +975,9 @@ impl ShowEditor for Effect {
 }
 
 impl ShowEditor for FireTrigger {
+    fn wrapper() -> Self {
+        Self::List([default()].into())
+    }
     fn show_children(&mut self, context: &Context, world: &mut World, ui: &mut Ui) {
         match self {
             FireTrigger::List(l) => {
