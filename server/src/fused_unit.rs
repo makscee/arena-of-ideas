@@ -68,34 +68,59 @@ impl FusedUnit {
         self.pwr = (self.pwr + self.pwr_mutation).max(0);
         self
     }
-    pub fn fuse(a: &FusedUnit, b: &FusedUnit) -> Result<Vec<FusedUnit>, String> {
+    pub fn fuse(
+        a: &FusedUnit,
+        b: &FusedUnit,
+    ) -> Result<(FusedUnit, [Vec<u32>; 3], [Vec<u32>; 3], [Vec<u32>; 3]), String> {
         if !Self::can_fuse(a, b) {
             return Err(format!("{} and {} can not be fused", a.name(), b.name()));
         }
-        let mut options: Vec<FusedUnit> = Vec::new();
-        let mut option = a.clone();
-        option.bases.extend(b.bases.clone());
-        option.hp = a.hp.max(b.hp);
-        option.pwr = a.pwr.max(b.pwr);
-        option.add_fuse_xp(b);
-
-        let i = ((option.bases.len() - b.bases.len()) as u32)..option.bases.len() as u32;
-        if !b.triggers.is_empty() {
-            let mut option = option.clone().new_id();
-            option.triggers.extend(i.clone());
-            options.push(option);
-        }
-        if !b.targets.is_empty() {
-            let mut option = option.clone().new_id();
-            option.targets.extend(i.clone());
-            options.push(option);
-        }
-        if !b.effects.is_empty() {
-            let mut option = option.clone().new_id();
-            option.effects.extend(i.clone());
-            options.push(option);
-        }
-        Ok(options)
+        let mut unit = a.clone();
+        unit.bases.extend(b.bases.clone());
+        unit.hp = a.hp.max(b.hp);
+        unit.pwr = a.pwr.max(b.pwr);
+        unit.add_fuse_xp(b);
+        let offset = a.bases.len() as u32;
+        let triggers = [
+            a.triggers.clone(),
+            a.triggers
+                .iter()
+                .copied()
+                .chain(b.triggers.iter().map(|t| *t + offset))
+                .collect_vec(),
+            b.triggers
+                .clone()
+                .into_iter()
+                .map(|t| t + offset)
+                .collect_vec(),
+        ];
+        let targets = [
+            a.targets.clone(),
+            a.targets
+                .iter()
+                .copied()
+                .chain(b.targets.iter().map(|t| *t + offset))
+                .collect_vec(),
+            b.targets
+                .clone()
+                .into_iter()
+                .map(|t| t + offset)
+                .collect_vec(),
+        ];
+        let effects = [
+            a.effects.clone(),
+            a.effects
+                .iter()
+                .copied()
+                .chain(b.effects.iter().map(|t| *t + offset))
+                .collect_vec(),
+            b.effects
+                .clone()
+                .into_iter()
+                .map(|t| t + offset)
+                .collect_vec(),
+        ];
+        Ok((unit, triggers, targets, effects))
     }
     pub fn get_bases(&self) -> Vec<TBaseUnit> {
         self.bases
@@ -141,7 +166,7 @@ impl FusedUnit {
         self.hp += 1;
     }
     pub fn total_xp(&self) -> u32 {
-        self.lvl * (self.lvl + 1) / 2 + self.xp
+        self.lvl * (self.lvl - 1) / 2 + self.xp
     }
     pub fn add_fuse_xp(&mut self, source: &FusedUnit) {
         self.add_xp(source.total_xp() - 1);

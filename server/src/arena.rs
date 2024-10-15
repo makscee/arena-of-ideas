@@ -89,7 +89,10 @@ pub struct TeamSlot {
 
 #[derive(SpacetimeType)]
 pub struct Fusion {
-    options: Vec<FusedUnit>,
+    unit: FusedUnit,
+    triggers: Vec<Vec<u32>>,
+    targets: Vec<Vec<u32>>,
+    effects: Vec<Vec<u32>>,
     a: u8,
     b: u8,
 }
@@ -279,10 +282,14 @@ fn shop_change_g(ctx: ReducerContext, delta: i32) -> Result<(), String> {
 fn fuse_start(ctx: ReducerContext, a: u8, b: u8) -> Result<(), String> {
     let mut run = TArenaRun::current(&ctx)?;
     let team = run.team()?;
+    let (unit, triggers, targets, effects) = FusedUnit::fuse(team.get_unit(a)?, team.get_unit(b)?)?;
     let fusion = Fusion {
-        options: FusedUnit::fuse(team.get_unit(a)?, team.get_unit(b)?)?,
         a,
         b,
+        unit,
+        triggers: triggers.into(),
+        targets: targets.into(),
+        effects: effects.into(),
     };
     run.fusion = Some(fusion);
     run.save();
@@ -301,18 +308,48 @@ fn fuse_cancel(ctx: ReducerContext) -> Result<(), String> {
 }
 
 #[spacetimedb(reducer)]
-fn fuse_choose(ctx: ReducerContext, slot: u8) -> Result<(), String> {
+fn fuse_swap(ctx: ReducerContext) -> Result<(), String> {
     let mut run = TArenaRun::current(&ctx)?;
-    let Fusion { options, a, b } = run.fusion.take().context_str("Fusion not started")?;
-    let slot = slot as usize;
+    if let Some(fusion) = &mut run.fusion {
+        fuse_start(ctx, fusion.b, fusion.a)
+    } else {
+        return Err("Fusion not started".to_owned());
+    }
+}
+
+#[spacetimedb(reducer)]
+fn fuse_choose(ctx: ReducerContext, trigger: i8, target: i8, effect: i8) -> Result<(), String> {
+    let mut run = TArenaRun::current(&ctx)?;
+    if trigger + target + effect != 0 || trigger == target || target == effect {
+        return Err("Choice condition failed".into());
+    }
+    let Fusion {
+        mut unit,
+        triggers,
+        targets,
+        effects,
+        a,
+        b,
+    } = run.fusion.take().context_str("Fusion not started")?;
+    unit.triggers = triggers
+        .get((trigger + 1) as usize)
+        .context_str("Failed to get trigger")?
+        .clone();
+    unit.targets = targets
+        .get((target + 1) as usize)
+        .context_str("Failed to get target")?
+        .clone();
+    unit.effects = effects
+        .get((effect + 1) as usize)
+        .context_str("Failed to get effect")?
+        .clone();
+    unit.id = next_id();
+
     let a = a as usize;
     let b = b as usize;
-    if slot >= options.len() {
-        return Err("Wrong fusion index".to_owned());
-    }
     let mut team = run.team()?;
     team.units.remove(a);
-    team.units.insert(a, options[slot].clone());
+    team.units.insert(a, unit);
     team.units.remove(b);
     team.save();
     run.save();

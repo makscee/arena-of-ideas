@@ -1,5 +1,6 @@
 use super::*;
 
+#[derive(Clone)]
 pub struct UnitCard {
     name: Cstr,
     houses: Vec<String>,
@@ -19,6 +20,15 @@ pub struct UnitCard {
 }
 
 impl UnitCard {
+    pub fn from_packed(unit: PackedUnit, world: &mut World) -> Result<Self> {
+        let unit = unit.unpack(TeamPlugin::entity(Faction::Team, world), None, None, world);
+        let context = Context::new(unit).detach(world).take();
+        UnitPlugin::despawn(unit, world);
+        UnitCard::new(&context, world)
+    }
+    pub fn from_fused(unit: FusedUnit, world: &mut World) -> Result<Self> {
+        Self::from_packed(unit.into(), world)
+    }
     pub fn new(context: &Context, world: &World) -> Result<Self> {
         let mut effects = context
             .get_value(VarName::EffectsDescription, world)?
@@ -295,10 +305,7 @@ fn cache_packed_unit(
     cache: &mut MutexGuard<HashMap<String, UnitCard>>,
     world: &mut World,
 ) -> Result<()> {
-    let unit = unit.unpack(TeamPlugin::entity(Faction::Team, world), None, None, world);
-    let context = Context::new(unit).detach(world).take();
-    UnitPlugin::despawn(unit, world);
-    cache.insert(id, UnitCard::new(&context, world)?);
+    cache.insert(id, UnitCard::from_packed(unit, world)?);
     Ok(())
 }
 pub fn cached_fused_card(unit: &FusedUnit, ui: &mut Ui, world: &mut World) -> Result<()> {

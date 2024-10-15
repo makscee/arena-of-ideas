@@ -277,6 +277,7 @@ impl From<FusedUnit> for PackedUnit {
         let mut state = VarState::default();
         let mut rarity_colors: Vec<Color> = default();
         let mut house_colors: Vec<Color> = default();
+        result.houses = default();
         for base in bases {
             let house_color = name_color(&base.house).to_color();
             rarity_colors.push(rarity_color(base.rarity).to_color());

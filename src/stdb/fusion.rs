@@ -15,7 +15,10 @@ use spacetimedb_sdk::{
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct Fusion {
-    pub options: Vec<FusedUnit>,
+    pub unit: FusedUnit,
+    pub triggers: Vec<Vec<u32>>,
+    pub targets: Vec<Vec<u32>>,
+    pub effects: Vec<Vec<u32>>,
     pub a: u8,
     pub b: u8,
 }

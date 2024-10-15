@@ -32,6 +32,7 @@ pub mod daily_update_timer;
 pub mod fuse_cancel_reducer;
 pub mod fuse_choose_reducer;
 pub mod fuse_start_reducer;
+pub mod fuse_swap_reducer;
 pub mod fused_unit;
 pub mod fusion;
 pub mod game_mode;
@@ -114,6 +115,7 @@ pub use daily_update_timer::*;
 pub use fuse_cancel_reducer::*;
 pub use fuse_choose_reducer::*;
 pub use fuse_start_reducer::*;
+pub use fuse_swap_reducer::*;
 pub use fused_unit::*;
 pub use fusion::*;
 pub use game_mode::*;
@@ -196,6 +198,7 @@ pub enum ReducerEvent {
     FuseCancel(fuse_cancel_reducer::FuseCancelArgs),
     FuseChoose(fuse_choose_reducer::FuseChooseArgs),
     FuseStart(fuse_start_reducer::FuseStartArgs),
+    FuseSwap(fuse_swap_reducer::FuseSwapArgs),
     GiveCredits(give_credits_reducer::GiveCreditsArgs),
     Login(login_reducer::LoginArgs),
     LoginByIdentity(login_by_identity_reducer::LoginByIdentityArgs),
@@ -414,6 +417,7 @@ match &reducer_call.reducer_name[..] {
 			"fuse_cancel" => _reducer_callbacks.handle_event_of_type::<fuse_cancel_reducer::FuseCancelArgs, ReducerEvent>(event, _state, ReducerEvent::FuseCancel),
 			"fuse_choose" => _reducer_callbacks.handle_event_of_type::<fuse_choose_reducer::FuseChooseArgs, ReducerEvent>(event, _state, ReducerEvent::FuseChoose),
 			"fuse_start" => _reducer_callbacks.handle_event_of_type::<fuse_start_reducer::FuseStartArgs, ReducerEvent>(event, _state, ReducerEvent::FuseStart),
+			"fuse_swap" => _reducer_callbacks.handle_event_of_type::<fuse_swap_reducer::FuseSwapArgs, ReducerEvent>(event, _state, ReducerEvent::FuseSwap),
 			"give_credits" => _reducer_callbacks.handle_event_of_type::<give_credits_reducer::GiveCreditsArgs, ReducerEvent>(event, _state, ReducerEvent::GiveCredits),
 			"login" => _reducer_callbacks.handle_event_of_type::<login_reducer::LoginArgs, ReducerEvent>(event, _state, ReducerEvent::Login),
 			"login_by_identity" => _reducer_callbacks.handle_event_of_type::<login_by_identity_reducer::LoginByIdentityArgs, ReducerEvent>(event, _state, ReducerEvent::LoginByIdentity),

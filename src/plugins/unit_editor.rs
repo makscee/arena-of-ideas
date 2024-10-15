@@ -486,7 +486,9 @@ impl ShowEditor for Expression {
             | Expression::StatusEntity(text, _) => {
                 Input::new("s:").ui_string(text, ui);
             }
-            Expression::Value(v) => todo!(),
+            Expression::Value(v) => {
+                v.cstr().label(ui);
+            }
             Expression::Context(var)
             | Expression::OwnerState(var)
             | Expression::TargetState(var)
