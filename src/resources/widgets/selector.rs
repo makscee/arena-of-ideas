@@ -32,21 +32,14 @@ impl Selector {
     ) where
         I: IntoIterator<Item = &'a E>,
     {
-        ui.columns(2, |ui| {
-            self.name.cstr().label(&mut ui[0]);
-            ComboBox::from_id_source(self.name)
-                .selected_text(
-                    value
-                        .cstr_c(name_color(&value.to_string()))
-                        .widget(1.0, &mut ui[1]),
-                )
-                .width(ui[1].available_width())
-                .show_ui(&mut ui[1], |ui| {
-                    for e in values {
-                        let text = e.cstr_c(name_color(&e.to_string())).widget(1.0, ui);
-                        ui.selectable_value(value, e.clone(), text);
-                    }
-                });
-        });
+        self.name.cstr().label(ui);
+        ComboBox::from_id_source(self.name)
+            .selected_text(value.cstr_c(name_color(&value.to_string())).widget(1.0, ui))
+            .show_ui(ui, |ui| {
+                for e in values {
+                    let text = e.cstr_c(name_color(&e.to_string())).widget(1.0, ui);
+                    ui.selectable_value(value, e.clone(), text);
+                }
+            });
     }
 }

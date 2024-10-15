@@ -19,7 +19,7 @@ pub enum Effect {
     WithTarget(Expression, Box<Effect>),
     WithOwner(Expression, Box<Effect>),
     WithVar(VarName, Expression, Box<Effect>),
-    List(Vec<Effect>),
+    List(Vec<Box<Effect>>),
     Repeat(Expression, Box<Effect>),
     If(Expression, Box<Effect>, Box<Effect>),
     Vfx(String),
@@ -329,7 +329,7 @@ impl Effect {
             }
             Effect::List(list) => {
                 for effect in list.into_iter().rev() {
-                    ActionPlugin::action_push_front(effect.clone(), context.clone(), world);
+                    ActionPlugin::action_push_front(*effect.clone(), context.clone(), world);
                 }
             }
             Effect::Repeat(count, effect) => {

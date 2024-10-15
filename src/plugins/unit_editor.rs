@@ -230,7 +230,7 @@ fn lookup_text_push(ctx: &egui::Context, s: &str) {
 fn lookup_text_pop(ctx: &egui::Context) {
     ctx.data_mut(|w| w.get_temp_mut_or_default::<String>(lookup_id()).pop());
 }
-pub trait ShowEditor: ToCstr + IntoEnumIterator {
+pub trait ShowEditor: ToCstr + IntoEnumIterator + Default {
     fn show_node(&mut self, name: &str, context: &Context, world: &mut World, ui: &mut Ui) {
         const SHADOW: Shadow = Shadow {
             offset: egui::Vec2::ZERO,
@@ -256,7 +256,7 @@ pub trait ShowEditor: ToCstr + IntoEnumIterator {
             ui.horizontal(|ui| {
                 ui.vertical(|ui| {
                     self.show_self(ui);
-                    // ui.set_max_width(ui.min_size().x);
+                    ui.set_max_width(ui.min_size().x);
                     self.show_content(context, world, ui);
                 });
                 ui.vertical(|ui| {
@@ -298,7 +298,7 @@ pub trait ShowEditor: ToCstr + IntoEnumIterator {
                             continue;
                         }
                         if c.button(ui).clicked() || take_first {
-                            *self = e;
+                            self.replace_self(e);
                             ui.close_menu();
                             break;
                         }
@@ -311,6 +311,23 @@ pub trait ShowEditor: ToCstr + IntoEnumIterator {
             lookup_text_clear(ui.ctx());
         }
     }
+    fn replace_self(&mut self, value: Self) {
+        let mut inner = self
+            .get_inner_mut()
+            .into_iter()
+            .map(|i| mem::take(i))
+            .rev()
+            .collect_vec();
+        *self = value;
+        for s in self.get_inner_mut() {
+            if let Some(i) = inner.pop() {
+                *s = i;
+            } else {
+                break;
+            }
+        }
+    }
+    fn get_inner_mut(&mut self) -> Vec<&mut Box<Self>>;
 }
 
 fn show_named_node<T: ShowEditor>(
@@ -372,6 +389,9 @@ impl ShowEditor for Trigger {
             Trigger::Change { trigger, expr } => todo!(),
             Trigger::List(_) => todo!(),
         }
+    }
+    fn get_inner_mut(&mut self) -> Vec<&mut Box<Self>> {
+        default()
     }
 }
 
@@ -481,10 +501,10 @@ impl ShowEditor for Expression {
     fn show_content(&mut self, context: &Context, world: &mut World, ui: &mut Ui) {
         let value = self.get_value(context, world);
         match self {
-            Expression::FilterStatusUnits(text, _)
-            | Expression::FilterNoStatusUnits(text, _)
-            | Expression::StatusEntity(text, _) => {
-                Input::new("s:").ui_string(text, ui);
+            Expression::FilterStatusUnits(status, _)
+            | Expression::FilterNoStatusUnits(status, _)
+            | Expression::StatusEntity(status, _) => {
+                status_selector(status, world, ui);
             }
             Expression::Value(v) => {
                 v.cstr().label(ui);
@@ -496,16 +516,17 @@ impl ShowEditor for Expression {
             | Expression::OwnerStateLast(var)
             | Expression::TargetStateLast(var)
             | Expression::CasterStateLast(var) => {
-                Selector::new("var").ui_enum(var, ui);
+                var_selector(var, ui);
             }
-            Expression::StatusState(status, var)
-            | Expression::StatusStateLast(status, var)
-            | Expression::AbilityContext(status, var)
-            | Expression::AbilityState(status, var) => {
-                Input::new("status:").ui_string(status, ui);
-                Selector::new("var").ui_enum(var, ui);
+            Expression::StatusState(status, var) | Expression::StatusStateLast(status, var) => {
+                status_selector(status, world, ui);
+                var_selector(var, ui);
             }
-            Expression::StatusCharges(status) => Input::new("status:").ui_string(status, ui),
+            Expression::AbilityContext(ability, var) | Expression::AbilityState(ability, var) => {
+                ability_selector(ability, world, ui);
+                var_selector(var, ui);
+            }
+            Expression::StatusCharges(status) => status_selector(status, world, ui),
             Expression::HexColor(color) => {
                 if let Ok(value) = value.as_ref() {
                     if let Ok(mut c32) = value.get_color32() {
@@ -588,6 +609,86 @@ impl ShowEditor for Expression {
             | Expression::WithVar(..) => {}
         };
         show_value(value, ui);
+    }
+    fn get_inner_mut(&mut self) -> Vec<&mut Box<Self>> {
+        match self {
+            Expression::FilterStatusUnits(_, e)
+            | Expression::FilterNoStatusUnits(_, e)
+            | Expression::StatusEntity(_, e)
+            | Expression::Dbg(e)
+            | Expression::Ctx(e)
+            | Expression::ToI(e)
+            | Expression::Vec2E(e)
+            | Expression::UnitVec(e)
+            | Expression::VX(e)
+            | Expression::VY(e)
+            | Expression::Sin(e)
+            | Expression::Cos(e)
+            | Expression::Sqr(e)
+            | Expression::Even(e)
+            | Expression::Abs(e)
+            | Expression::Floor(e)
+            | Expression::Ceil(e)
+            | Expression::Fract(e)
+            | Expression::SlotUnit(e)
+            | Expression::RandomF(e)
+            | Expression::RandomUnit(e)
+            | Expression::ListCount(e) => [e].into(),
+            Expression::MaxUnit(a, b)
+            | Expression::RandomUnitSubset(a, b)
+            | Expression::Vec2EE(a, b)
+            | Expression::Sum(a, b)
+            | Expression::Sub(a, b)
+            | Expression::Mul(a, b)
+            | Expression::Div(a, b)
+            | Expression::Max(a, b)
+            | Expression::Min(a, b)
+            | Expression::Mod(a, b)
+            | Expression::And(a, b)
+            | Expression::Or(a, b)
+            | Expression::Equals(a, b)
+            | Expression::GreaterThen(a, b)
+            | Expression::WithVar(_, a, b)
+            | Expression::LessThen(a, b) => [a, b].into(),
+            Expression::If(a, b, c) => [a, b, c].into(),
+            Expression::Zero
+            | Expression::OppositeFaction
+            | Expression::SlotPosition
+            | Expression::GT
+            | Expression::Beat
+            | Expression::PI
+            | Expression::PI2
+            | Expression::Age
+            | Expression::Index
+            | Expression::Owner
+            | Expression::Caster
+            | Expression::Target
+            | Expression::Status
+            | Expression::AllAllyUnits
+            | Expression::AllEnemyUnits
+            | Expression::AllUnits
+            | Expression::AllOtherUnits
+            | Expression::AdjacentUnits
+            | Expression::Value(_)
+            | Expression::Context(_)
+            | Expression::OwnerState(_)
+            | Expression::TargetState(_)
+            | Expression::CasterState(_)
+            | Expression::StatusState(_, _)
+            | Expression::OwnerStateLast(_)
+            | Expression::TargetStateLast(_)
+            | Expression::CasterStateLast(_)
+            | Expression::StatusStateLast(_, _)
+            | Expression::AbilityContext(_, _)
+            | Expression::AbilityState(_, _)
+            | Expression::StatusCharges(_)
+            | Expression::HexColor(_)
+            | Expression::F(_)
+            | Expression::I(_)
+            | Expression::B(_)
+            | Expression::S(_)
+            | Expression::V2(_, _) => default(),
+        }
     }
 }
 
@@ -681,6 +782,35 @@ impl ShowEditor for Effect {
             | Effect::Heal => {}
         }
     }
+    fn get_inner_mut(&mut self) -> Vec<&mut Box<Self>> {
+        match self {
+            Effect::WithTarget(_, e)
+            | Effect::WithOwner(_, e)
+            | Effect::WithVar(_, _, e)
+            | Effect::Repeat(_, e) => [e].into(),
+            Effect::List(l) => l.iter_mut().collect_vec(),
+            Effect::If(_, a, b) => [a, b].into(),
+
+            Effect::Summon(_, _)
+            | Effect::Noop
+            | Effect::Damage
+            | Effect::Kill
+            | Effect::Heal
+            | Effect::ChangeStatus(_)
+            | Effect::ClearStatus(_)
+            | Effect::StealStatus(_)
+            | Effect::ChangeAllStatuses
+            | Effect::ClearAllStatuses
+            | Effect::StealAllStatuses
+            | Effect::UseAbility(_, _)
+            | Effect::AbilityStateAddVar(_, _, _)
+            | Effect::Vfx(_)
+            | Effect::StateAddVar(_, _, _)
+            | Effect::StatusSetVar(_, _, _, _)
+            | Effect::Text(_)
+            | Effect::FullCopy => default(),
+        }
+    }
 }
 
 impl ShowEditor for FireTrigger {
@@ -747,6 +877,33 @@ impl ShowEditor for FireTrigger {
             | FireTrigger::EnemySummon
             | FireTrigger::BeforeDeath
             | FireTrigger::AfterKill => {}
+        }
+    }
+
+    fn get_inner_mut(&mut self) -> Vec<&mut Box<Self>> {
+        match self {
+            FireTrigger::List(l) => l.iter_mut().collect_vec(),
+            FireTrigger::Period(_, _, t) | FireTrigger::If(_, t) | FireTrigger::OnceAfter(_, t) => {
+                [t].into()
+            }
+            FireTrigger::None
+            | FireTrigger::UnitUsedAbility(_)
+            | FireTrigger::AllyUsedAbility(_)
+            | FireTrigger::EnemyUsedAbility(_)
+            | FireTrigger::AfterIncomingDamage
+            | FireTrigger::AfterDamageTaken
+            | FireTrigger::AfterDamageDealt
+            | FireTrigger::BattleStart
+            | FireTrigger::TurnStart
+            | FireTrigger::TurnEnd
+            | FireTrigger::BeforeStrike
+            | FireTrigger::AfterStrike
+            | FireTrigger::AllyDeath
+            | FireTrigger::AnyDeath
+            | FireTrigger::AllySummon
+            | FireTrigger::EnemySummon
+            | FireTrigger::BeforeDeath
+            | FireTrigger::AfterKill => default(),
         }
     }
 }
