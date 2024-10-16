@@ -449,11 +449,15 @@ pub struct BattleResource {
     result: BattleResult,
     #[serde(default)]
     from_run: bool,
-    #[serde(default)]
+    #[serde(default = "default_state")]
     next_state: GameState,
 }
 fn rm(world: &mut World) -> Mut<BattleResource> {
     world.resource_mut::<BattleResource>()
+}
+
+fn default_state() -> GameState {
+    GameState::Title
 }
 
 impl From<TBattle> for BattleResource {
