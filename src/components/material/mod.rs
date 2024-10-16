@@ -7,7 +7,7 @@ use bevy::color::Alpha;
 pub use curve::*;
 pub use shape::*;
 
-#[derive(Serialize, Deserialize, Debug, Clone, Display, Default, EnumIter, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Display, Default, EnumIter, PartialEq, AsRefStr)]
 #[serde(deny_unknown_fields)]
 pub enum RepresentationMaterial {
     #[default]
@@ -89,7 +89,7 @@ fn color_arr_e() -> Vec<Expression> {
     .into()
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, EnumIter, Display)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, EnumIter, Display, AsRefStr)]
 pub enum RepShape {
     Circle {
         #[serde(default = "f32_one_e")]
@@ -101,7 +101,7 @@ pub enum RepShape {
     },
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, EnumIter, Display)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, EnumIter, Display, AsRefStr)]
 pub enum RepFill {
     Solid {
         #[serde(default = "color_e")]
@@ -515,5 +515,26 @@ impl RepresentationMaterial {
                 }
             }
         }
+    }
+}
+
+impl ToCstr for RepresentationMaterial {
+    fn cstr(&self) -> Cstr {
+        self.as_ref().cstr()
+    }
+    fn cstr_expanded(&self) -> Cstr {
+        format!("{self:?}").cstr()
+    }
+}
+
+impl ToCstr for RepShape {
+    fn cstr(&self) -> Cstr {
+        self.as_ref().cstr()
+    }
+}
+
+impl ToCstr for RepFill {
+    fn cstr(&self) -> Cstr {
+        self.as_ref().cstr()
     }
 }

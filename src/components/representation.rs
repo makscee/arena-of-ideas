@@ -122,3 +122,9 @@ impl Representation {
         }
     }
 }
+
+impl ToCstr for Representation {
+    fn cstr(&self) -> Cstr {
+        self.material.as_ref().cstr()
+    }
+}

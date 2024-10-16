@@ -1,5 +1,4 @@
 use bevy::input::common_conditions::input_just_pressed;
-use egui::ScrollArea;
 use spacetimedb_sdk::table::{TableWithPrimaryKey, UpdateCallbackId};
 
 use super::*;

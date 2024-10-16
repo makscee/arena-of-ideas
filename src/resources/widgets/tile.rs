@@ -107,6 +107,13 @@ impl TilePlugin {
         for (_, tile) in tr
             .tiles
             .iter_mut()
+            .filter(|(id, t)| t.stretch_mode == StretchMode::Min && !focused.eq(*id))
+        {
+            tile.allocate_space(mood, &mut sr, dt);
+        }
+        for (_, tile) in tr
+            .tiles
+            .iter_mut()
             .filter(|(id, t)| t.stretch_mode == StretchMode::Floating && !focused.eq(*id))
         {
             tile.allocate_space(mood, &mut sr, dt);
@@ -311,8 +318,14 @@ impl Tile {
         self
     }
     #[must_use]
-    pub fn max(mut self) -> Self {
+    pub fn stretch_max(mut self) -> Self {
         self.stretch_mode = StretchMode::Max;
+        self.focusable = false;
+        self
+    }
+    #[must_use]
+    pub fn stretch_min(mut self) -> Self {
+        self.stretch_mode = StretchMode::Min;
         self.focusable = false;
         self
     }
@@ -399,14 +412,14 @@ impl Tile {
                 response = TileResponse::WantFocus;
             }
         }
-        if !self.pinned && right_mouse_just_released(world) {
-            if ctx
-                .pointer_interact_pos()
-                .is_some_and(|pos| rect.contains(pos))
-            {
-                self.open = false;
-            }
-        }
+        // if !self.pinned && right_mouse_just_released(world) {
+        //     if ctx
+        //         .pointer_interact_pos()
+        //         .is_some_and(|pos| rect.contains(pos))
+        //     {
+        //         self.open = false;
+        //     }
+        // }
         let mut frame = if focused {
             FRAME.stroke(Stroke {
                 width: 1.0,

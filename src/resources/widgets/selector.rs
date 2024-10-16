@@ -10,7 +10,7 @@ impl Selector {
     pub fn new(name: &'static str) -> Self {
         Self { name }
     }
-    pub fn ui_enum<E: ToCstr + IntoEnumIterator + Copy + PartialEq>(
+    pub fn ui_enum<E: ToCstr + IntoEnumIterator + Clone + PartialEq>(
         self,
         value: &mut E,
         ui: &mut Ui,

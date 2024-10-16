@@ -22,6 +22,7 @@ struct UnitEditorResource {
     editing_faction: Faction,
     hero_to_spawn: String,
     editing_trigger: Trigger,
+    editing_representation: Representation,
 }
 fn rm(world: &mut World) -> Mut<UnitEditorResource> {
     world.resource_mut::<UnitEditorResource>()
@@ -181,6 +182,30 @@ impl UnitEditorPlugin {
                     .push(ui.ctx());
                 }
             });
+            if Button::click("Edit representation".into()).ui(ui).clicked() {
+                Confirmation::pop(ui.ctx());
+                let mut r = rm(world);
+                r.editing_representation = r.editing_hero.representation.clone();
+                const ID: &str = "rep_edit";
+                Tile::new(Side::Bottom, |ui, world| {
+                    ScrollArea::both().show(ui, |ui| {
+                        let r = rm(world);
+                        let mut repr = r.editing_representation.clone();
+                        let context = Context::new(r.editing_entity.unwrap());
+                        repr.show_node("", &context, world, ui);
+                        let mut r = rm(world);
+                        if !repr.eq(&r.editing_representation) {
+                            r.editing_hero.representation = repr.clone();
+                            r.editing_representation = repr;
+                            Self::respawn_teams(true, world);
+                        }
+                    });
+                })
+                .with_id(ID.into())
+                .stretch_max()
+                .transparent()
+                .push(world);
+            }
         })
         .push(ctx);
     }
@@ -220,12 +245,12 @@ impl UnitEditorPlugin {
         .pinned()
         .transparent()
         .non_focusable()
+        .stretch_min()
         .push(world);
         Tile::new(Side::Top, |ui, world| {
             if ui.available_width() < 10.0 {
                 return;
             }
-            ui.add_space(100.0);
             fn on_click(slot: usize, faction: Faction, entity: Option<Entity>, world: &mut World) {
                 let ctx = &egui_context(world).unwrap();
                 if Confirmation::has_active(ctx) {
@@ -312,7 +337,7 @@ impl UnitEditorPlugin {
                     .ui(&mut ui[1], world);
             });
         })
-        .max()
+        .stretch_min()
         .transparent()
         .pinned()
         .push(world);
@@ -335,9 +360,8 @@ fn lookup_text_push(ctx: &egui::Context, s: &str) {
 fn lookup_text_pop(ctx: &egui::Context) {
     ctx.data_mut(|w| w.get_temp_mut_or_default::<String>(lookup_id()).pop());
 }
-pub trait ShowEditor:
-    ToCstr + IntoEnumIterator + Default + Serialize + DeserializeOwned + Clone
-{
+pub trait ShowEditor: ToCstr + Default + Serialize + DeserializeOwned + Clone {
+    fn get_variants() -> impl Iterator<Item = Self>;
     fn show_node(&mut self, name: &str, context: &Context, world: &mut World, ui: &mut Ui) {
         const SHADOW: Shadow = Shadow {
             offset: egui::Vec2::ZERO,
@@ -359,6 +383,7 @@ pub trait ShowEditor:
         if !name.is_empty() {
             name.cstr_cs(VISIBLE_DARK, CstrStyle::Small).label(ui);
         }
+
         let resp = FRAME.show(ui, |ui| {
             ui.horizontal(|ui| {
                 ui.vertical(|ui| {
@@ -419,7 +444,7 @@ pub trait ShowEditor:
                 ScrollArea::vertical().auto_shrink(false).show(ui, |ui| {
                     ui.reset_style();
                     let lookup = lookup_text(ui.ctx()).to_lowercase();
-                    for e in Self::iter() {
+                    for e in Self::get_variants() {
                         let c = e.cstr();
                         if !lookup.is_empty() && !c.get_text().to_lowercase().starts_with(&lookup) {
                             continue;
@@ -507,6 +532,17 @@ fn show_named_node<T: ShowEditor>(
         });
     });
 }
+fn show_collapsing_node<T: ShowEditor>(
+    name: &str,
+    node: &mut T,
+    context: &Context,
+    ui: &mut Ui,
+    world: &mut World,
+) {
+    ui.collapsing(name, |ui| {
+        node.show_node(name, context, world, ui);
+    });
+}
 impl ShowEditor for Trigger {
     fn show_node(&mut self, _: &str, context: &Context, world: &mut World, ui: &mut Ui) {
         self.show_self(ui, world);
@@ -561,6 +597,9 @@ impl ShowEditor for Trigger {
     }
     fn get_inner_mut(&mut self) -> Vec<&mut Box<Self>> {
         default()
+    }
+    fn get_variants() -> impl Iterator<Item = Self> {
+        Self::iter()
     }
 }
 
@@ -862,6 +901,10 @@ impl ShowEditor for Expression {
             | Expression::V2(_, _) => default(),
         }
     }
+
+    fn get_variants() -> impl Iterator<Item = Self> {
+        Self::iter()
+    }
 }
 
 impl ShowEditor for Effect {
@@ -990,6 +1033,9 @@ impl ShowEditor for Effect {
             | Effect::FullCopy => default(),
         }
     }
+    fn get_variants() -> impl Iterator<Item = Self> {
+        Self::iter()
+    }
 }
 
 impl ShowEditor for FireTrigger {
@@ -1061,7 +1107,6 @@ impl ShowEditor for FireTrigger {
             | FireTrigger::AfterKill => {}
         }
     }
-
     fn get_inner_mut(&mut self) -> Vec<&mut Box<Self>> {
         match self {
             FireTrigger::List(l) => l.iter_mut().collect_vec(),
@@ -1087,6 +1132,9 @@ impl ShowEditor for FireTrigger {
             | FireTrigger::BeforeDeath
             | FireTrigger::AfterKill => default(),
         }
+    }
+    fn get_variants() -> impl Iterator<Item = Self> {
+        Self::iter()
     }
 }
 
@@ -1123,4 +1171,116 @@ fn show_value(value: Result<VarValue>, ui: &mut Ui) {
             .ui(ui),
     };
     ui.set_max_width(w);
+}
+
+impl ShowEditor for Representation {
+    fn get_variants() -> impl Iterator<Item = Self> {
+        RepresentationMaterial::iter().map(|material| Self {
+            material,
+            ..default()
+        })
+    }
+    fn show_children(&mut self, context: &Context, world: &mut World, ui: &mut Ui) {
+        for (i, child) in self.children.iter_mut().enumerate() {
+            ui.push_id(i, |ui| {
+                child.show_node("", context, world, ui);
+            });
+        }
+    }
+    fn show_content(&mut self, context: &Context, world: &mut World, ui: &mut Ui) {
+        self.material.show_node("", context, world, ui);
+        for (var, value) in &mut self.mapping {
+            value.show_node(&var.to_string(), context, world, ui)
+        }
+    }
+    fn get_inner_mut(&mut self) -> Vec<&mut Box<Self>> {
+        default()
+    }
+}
+
+impl ShowEditor for RepresentationMaterial {
+    fn show_content(&mut self, context: &Context, world: &mut World, ui: &mut Ui) {
+        match self {
+            RepresentationMaterial::None => {}
+            RepresentationMaterial::Shape {
+                shape,
+                shape_type,
+                fill,
+                fbm,
+                alpha: _,
+                padding: _,
+            } => {
+                Selector::new("shape").ui_enum(shape, ui);
+                Selector::new("fill").ui_enum(fill, ui);
+            }
+            RepresentationMaterial::Text {
+                size,
+                text,
+                color,
+                alpha,
+                font_size,
+            } => todo!(),
+            RepresentationMaterial::Curve {
+                thickness,
+                dilations,
+                curvature,
+                aa,
+                alpha,
+                color,
+            } => todo!(),
+        }
+    }
+    fn show_children(&mut self, context: &Context, world: &mut World, ui: &mut Ui) {
+        match self {
+            RepresentationMaterial::None => {}
+            RepresentationMaterial::Shape {
+                shape,
+                shape_type,
+                fill: _,
+                fbm: _,
+                alpha,
+                padding,
+            } => {
+                match shape {
+                    RepShape::Circle { radius } => {
+                        show_collapsing_node("radius", radius, context, ui, world)
+                    }
+                    RepShape::Rectangle { size } => {
+                        show_collapsing_node("size", size, context, ui, world)
+                    }
+                }
+                match shape_type {
+                    RepShapeType::Opaque => {}
+                    RepShapeType::Line { thickness } => {
+                        show_collapsing_node("thickness", thickness, context, ui, world)
+                    }
+                }
+                show_collapsing_node("alpha", alpha, context, ui, world);
+                show_collapsing_node("padding", padding, context, ui, world);
+            }
+            RepresentationMaterial::Text {
+                size,
+                text,
+                color,
+                alpha,
+                font_size,
+            } => todo!(),
+            RepresentationMaterial::Curve {
+                thickness,
+                dilations,
+                curvature,
+                aa,
+                alpha,
+                color,
+            } => todo!(),
+        }
+    }
+
+    fn get_inner_mut(&mut self) -> Vec<&mut Box<Self>> {
+        default()
+    }
+
+    fn get_variants() -> impl Iterator<Item = Self> {
+        Self::iter()
+    }
 }
