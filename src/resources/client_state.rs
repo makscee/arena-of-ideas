@@ -42,7 +42,7 @@ impl ClientState {
                 .expect("Failed to serialize default client settings"),
         ) {
             Ok(_) => {
-                info!("Store successful {self:?}")
+                info!("State store successful")
             }
             Err(e) => {
                 error!("Store error: {e}")

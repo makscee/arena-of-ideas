@@ -57,7 +57,6 @@ impl UnitEditorPlugin {
         cs.save();
     }
     fn set_team_unit(unit: PackedUnit, faction: Faction, slot: usize, world: &mut World) {
-        let mut r = rm(world);
         if let Some(team) = rm(world).teams.get_mut(&faction) {
             if team.units.len() <= slot {
                 team.units.push(unit);
@@ -147,13 +146,22 @@ impl UnitEditorPlugin {
             },
         )
         .content(|ui, world| {
-            let hero = &mut rm(world).editing_hero;
+            let mut hero = mem::take(&mut rm(world).editing_hero);
             Input::new("name:").ui_string(&mut hero.name, ui);
-            ui.columns(2, |ui| {
-                DragValue::new(&mut hero.pwr).prefix("pwr:").ui(&mut ui[0]);
-                DragValue::new(&mut hero.hp).prefix("hp:").ui(&mut ui[1]);
+            ui.horizontal(|ui| {
+                DragValue::new(&mut hero.pwr).prefix("pwr:").ui(ui);
+                DragValue::new(&mut hero.hp).prefix("hp:").ui(ui);
+                DragValue::new(&mut hero.lvl).prefix("lvl:").ui(ui);
+                let mut rarity: Rarity = hero.rarity.into();
+                if Selector::new("rarity").ui_enum(&mut rarity, ui) {
+                    hero.rarity = rarity.into();
+                }
+                if let Some(house) = hero.houses.get_mut(0) {
+                    Selector::new("house").ui_iter(house, GameAssets::get(world).houses.keys(), ui);
+                }
             });
             let trigger = hero.trigger.cstr_expanded();
+            rm(world).editing_hero = hero;
             ui.horizontal(|ui| {
                 "trigger:".cstr().label(ui);
                 if trigger.button(ui).clicked() {
@@ -364,7 +372,8 @@ pub trait ShowEditor:
             });
         });
         let rect = resp.response.rect;
-        let rect = Rect::from_center_size(rect.left_center(), egui::vec2(2.0, rect.height() - 8.0));
+        let rect =
+            Rect::from_center_size(rect.left_center(), egui::vec2(2.0, rect.height() - 13.0));
         let resp = ui.allocate_rect(rect, Sense::click());
         let color = if resp.hovered() {
             YELLOW

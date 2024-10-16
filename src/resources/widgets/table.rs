@@ -243,7 +243,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                     if r < 0 {
                         "-".cstr()
                     } else {
-                        Rarity::from_int(r).cstr()
+                        Rarity::from(r).cstr()
                     }
                     .label(ui);
                 }),
