@@ -129,7 +129,7 @@ pub enum RepFill {
     },
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default, EnumIter, Display)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default, EnumIter, Display, AsRefStr)]
 pub enum RepShapeType {
     #[default]
     Opaque,
@@ -534,6 +534,12 @@ impl ToCstr for RepShape {
 }
 
 impl ToCstr for RepFill {
+    fn cstr(&self) -> Cstr {
+        self.as_ref().cstr()
+    }
+}
+
+impl ToCstr for RepShapeType {
     fn cstr(&self) -> Cstr {
         self.as_ref().cstr()
     }

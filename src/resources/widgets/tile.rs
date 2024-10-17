@@ -48,9 +48,13 @@ struct TileResource {
     tiles: IndexMap<String, Tile>,
     focused: String,
     new_tiles: Vec<Tile>,
+    close_tiles: Vec<String>,
 }
 fn rm(world: &mut World) -> Mut<TileResource> {
     world.resource_mut::<TileResource>()
+}
+fn r(world: &World) -> &TileResource {
+    world.resource::<TileResource>()
 }
 
 #[derive(Resource)]
@@ -159,6 +163,9 @@ impl TilePlugin {
             }
         }
         let mut tr = rm(world);
+        for id in mem::take(&mut tr.close_tiles) {
+            tr.tiles.shift_remove(&id);
+        }
         for tile in mem::take(&mut tr.new_tiles) {
             if tile.focusable {
                 tr.focused = tile.id.clone();
@@ -228,6 +235,12 @@ impl TilePlugin {
         })
         .with_id(format!("unit_{gid}"))
         .push(world)
+    }
+    pub fn is_open(id: &str, world: &World) -> bool {
+        r(world).tiles.contains_key(id)
+    }
+    pub fn close(id: &str, world: &mut World) {
+        rm(world).close_tiles.push(id.into());
     }
     pub fn change_state(to: GameState, world: &mut World) {
         Self::clear(world);
@@ -338,21 +351,27 @@ impl Tile {
         if !self.open {
             self.extension.lerp_to(0.0, dt);
         }
-        self.allocated_space = match self.stretch_mode {
+        match self.stretch_mode {
             StretchMode::Floating => {
-                if self.side.is_x() {
-                    if self.open {
+                if self.open {
+                    if self.side.is_x() {
                         self.extension.lerp_to(mood.x, dt);
-                    }
-                    egui::vec2(self.content_space.x * self.extension, 0.0)
-                } else {
-                    if self.open {
+                    } else {
                         self.extension.lerp_to(mood.y, dt);
                     }
+                }
+            }
+            StretchMode::Min => self.extension.lerp_to(1.0, dt),
+            StretchMode::Max => {}
+        }
+        self.allocated_space = match self.stretch_mode {
+            StretchMode::Min | StretchMode::Floating => {
+                if self.side.is_x() {
+                    egui::vec2(self.content_space.x * self.extension, 0.0)
+                } else {
                     egui::vec2(0.0, self.content_space.y * self.extension)
                 }
             }
-            StretchMode::Min => self.content_space,
             StretchMode::Max => sr.screen_space,
         };
         sr.screen_space -= self.allocated_space;

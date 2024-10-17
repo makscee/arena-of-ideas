@@ -30,8 +30,8 @@ fn rm(world: &mut World) -> Mut<UnitEditorResource> {
 
 impl UnitEditorPlugin {
     fn on_enter(world: &mut World) {
+        Self::load_state(world);
         let mut r = rm(world);
-        r.teams = client_state().editor_teams.clone();
         for faction in [Faction::Left, Faction::Right] {
             if r.teams.contains_key(&faction) {
                 continue;
@@ -44,6 +44,33 @@ impl UnitEditorPlugin {
         TeamPlugin::despawn(Faction::Left, world);
         TeamPlugin::despawn(Faction::Right, world);
     }
+    fn save_state(world: &mut World) {
+        let mut cs = client_state().clone();
+        cs.editor_teams = rm(world).teams.clone();
+        cs.save();
+    }
+    fn load_state(world: &mut World) {
+        rm(world).teams = client_state().editor_teams.clone();
+        Self::respawn_teams(false, world);
+    }
+    fn apply_edits(world: &mut World) {
+        let r = rm(world);
+        let unit = r.editing_hero.clone();
+        let faction = r.editing_faction;
+        let slot = r.editing_slot;
+        if let Some(entity) = r.editing_entity {
+            UnitPlugin::despawn(entity, world);
+        }
+        Self::set_team_unit(unit.clone(), faction, slot, world);
+        let unit = unit.unpack(
+            TeamPlugin::entity(faction, world),
+            Some(slot as i32),
+            None,
+            world,
+        );
+        UnitPlugin::place_into_slot(unit, world);
+        rm(world).editing_entity = Some(unit);
+    }
     fn respawn_teams(instant_placement: bool, world: &mut World) {
         TeamPlugin::despawn(Faction::Left, world);
         TeamPlugin::despawn(Faction::Right, world);
@@ -53,9 +80,6 @@ impl UnitEditorPlugin {
         if instant_placement {
             UnitPlugin::place_into_slots(world);
         }
-        let mut cs = client_state().clone();
-        cs.editor_teams = rm(world).teams.clone();
-        cs.save();
     }
     fn set_team_unit(unit: PackedUnit, faction: Faction, slot: usize, world: &mut World) {
         if let Some(team) = rm(world).teams.get_mut(&faction) {
@@ -65,7 +89,6 @@ impl UnitEditorPlugin {
                 team.units.remove(slot);
                 team.units.insert(slot, unit);
             }
-            UnitEditorPlugin::respawn_teams(true, world);
         }
     }
     fn remove_team_unit(faction: Faction, slot: usize, world: &mut World) {
@@ -98,6 +121,7 @@ impl UnitEditorPlugin {
                 .map(|u| PackedUnit::from(u))
                 .unwrap_or_default();
             Self::set_team_unit(unit, r.editing_faction, r.editing_slot, world);
+            Self::respawn_teams(true, world);
         })
         .content(|ui, world| {
             if Button::click("Spawn Default".into()).ui(ui).clicked() {
@@ -137,22 +161,22 @@ impl UnitEditorPlugin {
             .cloned()
             .unwrap_or_default();
     }
-    fn open_unit_editor(ctx: &egui::Context) {
-        Confirmation::new(
-            "Edit Unit".cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold),
-            |world| {
-                let mut r = rm(world);
-                let unit = mem::take(&mut r.editing_hero);
-                Self::set_team_unit(unit, r.editing_faction, r.editing_slot, world);
-            },
-        )
-        .content(|ui, world| {
-            let mut hero = mem::take(&mut rm(world).editing_hero);
+    fn open_unit_editor(world: &mut World) {
+        const UNIT_ID: &str = "unit_edit";
+        const REP_ID: &str = "rep_edit";
+        if TilePlugin::is_open(UNIT_ID, world) || TilePlugin::is_open(REP_ID, world) {
+            TilePlugin::close(UNIT_ID, world);
+            TilePlugin::close(REP_ID, world);
+        }
+        Tile::new(Side::Left, |ui, world| {
+            let mut hero = rm(world).editing_hero.clone();
             Input::new("name:").ui_string(&mut hero.name, ui);
             ui.horizontal(|ui| {
                 DragValue::new(&mut hero.pwr).prefix("pwr:").ui(ui);
                 DragValue::new(&mut hero.hp).prefix("hp:").ui(ui);
                 DragValue::new(&mut hero.lvl).prefix("lvl:").ui(ui);
+            });
+            ui.horizontal(|ui| {
                 let mut rarity: Rarity = hero.rarity.into();
                 if Selector::new("rarity").ui_enum(&mut rarity, ui) {
                     hero.rarity = rarity.into();
@@ -162,7 +186,11 @@ impl UnitEditorPlugin {
                 }
             });
             let trigger = hero.trigger.cstr_expanded();
-            rm(world).editing_hero = hero;
+            let mut r = rm(world);
+            if !r.editing_hero.eq(&hero) {
+                r.editing_hero = hero;
+                Self::apply_edits(world);
+            }
             ui.horizontal(|ui| {
                 "trigger:".cstr().label(ui);
                 if trigger.button(ui).clicked() {
@@ -171,6 +199,7 @@ impl UnitEditorPlugin {
                     Confirmation::new("Trigger Editor".cstr(), |world| {
                         let mut r = rm(world);
                         r.editing_hero.trigger = mem::take(&mut r.editing_trigger);
+                        Self::apply_edits(world);
                     })
                     .content(|ui, world| {
                         let mut r = rm(world);
@@ -186,32 +215,41 @@ impl UnitEditorPlugin {
                 Confirmation::pop(ui.ctx());
                 let mut r = rm(world);
                 r.editing_representation = r.editing_hero.representation.clone();
-                const ID: &str = "rep_edit";
-                Tile::new(Side::Bottom, |ui, world| {
+                Tile::new(Side::Left, |ui, world| {
                     ScrollArea::both().show(ui, |ui| {
                         let r = rm(world);
                         let mut repr = r.editing_representation.clone();
-                        let context = Context::new(r.editing_entity.unwrap());
+                        let context = Context::new(r.editing_entity.unwrap())
+                            .set_var(VarName::Index, 1.into())
+                            .take();
                         repr.show_node("", &context, world, ui);
                         let mut r = rm(world);
                         if !repr.eq(&r.editing_representation) {
                             r.editing_hero.representation = repr.clone();
                             r.editing_representation = repr;
-                            Self::respawn_teams(true, world);
+                            Self::apply_edits(world);
                         }
                     });
                 })
-                .with_id(ID.into())
-                .stretch_max()
+                .with_id(REP_ID.into())
                 .transparent()
+                .stretch_max()
                 .push(world);
             }
         })
-        .push(ctx);
+        .with_id(UNIT_ID.into())
+        .non_focusable()
+        .push(world);
     }
     pub fn add_tiles(world: &mut World) {
         Tile::new(Side::Top, |ui, world| {
             ui.horizontal(|ui| {
+                if Button::click("Reload".into()).ui(ui).clicked() {
+                    Self::load_state(world);
+                }
+                if Button::click("Save".into()).ui(ui).clicked() {
+                    Self::save_state(world);
+                }
                 if Button::click("Load sample".into()).ui(ui).clicked() {
                     for faction in [Faction::Left, Faction::Right] {
                         Self::load_team(
@@ -258,7 +296,7 @@ impl UnitEditorPlugin {
                 }
                 if let Some(entity) = entity {
                     UnitEditorPlugin::load_unit_editor(entity, faction, slot, world);
-                    UnitEditorPlugin::open_unit_editor(ctx);
+                    UnitEditorPlugin::open_unit_editor(world);
                 } else {
                     UnitEditorPlugin::open_new_unit_picker(faction, slot, ctx, world);
                 }
@@ -275,7 +313,10 @@ impl UnitEditorPlugin {
                 if Button::click("Paste".into()).ui(ui).clicked() {
                     if let Some(v) = get_from_clipboard(world) {
                         match ron::from_str::<PackedUnit>(&v) {
-                            Ok(v) => UnitEditorPlugin::set_team_unit(v, faction, slot, world),
+                            Ok(v) => {
+                                UnitEditorPlugin::set_team_unit(v, faction, slot, world);
+                                UnitEditorPlugin::respawn_teams(true, world)
+                            }
                             Err(e) => format!("Failed to deserialize unit from {v}: {e}")
                                 .notify_error(world),
                         }
@@ -291,6 +332,7 @@ impl UnitEditorPlugin {
                         .clicked()
                     {
                         UnitEditorPlugin::set_team_unit(default(), faction, slot, world);
+                        UnitEditorPlugin::respawn_teams(true, world);
                         ui.close_menu();
                     }
                 } else {
@@ -738,7 +780,9 @@ impl ShowEditor for Expression {
                 ability_selector(ability, world, ui);
                 var_selector(var, ui);
             }
-            Expression::StatusCharges(status) => status_selector(status, world, ui),
+            Expression::StatusCharges(status) => {
+                status_selector(status, world, ui);
+            }
             Expression::HexColor(color) => {
                 if let Ok(value) = value.as_ref() {
                     if let Ok(mut c32) = value.get_color32() {
@@ -980,9 +1024,15 @@ impl ShowEditor for Effect {
                 status_selector(status, world, ui);
                 var_selector(var, ui);
             }
-            Effect::Summon(summon, _) => summon_selector(summon, world, ui),
-            Effect::StateAddVar(var, _, _) | Effect::WithVar(var, _, _) => var_selector(var, ui),
-            Effect::Vfx(vfx) => vfx_selector(vfx, world, ui),
+            Effect::Summon(summon, _) => {
+                summon_selector(summon, world, ui);
+            }
+            Effect::StateAddVar(var, _, _) | Effect::WithVar(var, _, _) => {
+                var_selector(var, ui);
+            }
+            Effect::Vfx(vfx) => {
+                vfx_selector(vfx, world, ui);
+            }
             Effect::List(l) => {
                 if Button::click("+".into()).ui(ui).clicked() {
                     l.push(default());
@@ -1087,7 +1137,9 @@ impl ShowEditor for FireTrigger {
             }
             FireTrigger::UnitUsedAbility(ability)
             | FireTrigger::AllyUsedAbility(ability)
-            | FireTrigger::EnemyUsedAbility(ability) => ability_selector(ability, world, ui),
+            | FireTrigger::EnemyUsedAbility(ability) => {
+                ability_selector(ability, world, ui);
+            }
             FireTrigger::If(..)
             | FireTrigger::None
             | FireTrigger::List(_)
@@ -1138,20 +1190,20 @@ impl ShowEditor for FireTrigger {
     }
 }
 
-fn status_selector(status: &mut String, world: &World, ui: &mut Ui) {
-    Selector::new("status").ui_iter(status, GameAssets::get(world).statuses.keys(), ui);
+fn status_selector(status: &mut String, world: &World, ui: &mut Ui) -> bool {
+    Selector::new("status").ui_iter(status, GameAssets::get(world).statuses.keys(), ui)
 }
-fn ability_selector(ability: &mut String, world: &World, ui: &mut Ui) {
-    Selector::new("ability").ui_iter(ability, GameAssets::get(world).abilities.keys(), ui);
+fn ability_selector(ability: &mut String, world: &World, ui: &mut Ui) -> bool {
+    Selector::new("ability").ui_iter(ability, GameAssets::get(world).abilities.keys(), ui)
 }
-fn summon_selector(summon: &mut String, world: &World, ui: &mut Ui) {
-    Selector::new("summon").ui_iter(summon, GameAssets::get(world).summons.keys(), ui);
+fn summon_selector(summon: &mut String, world: &World, ui: &mut Ui) -> bool {
+    Selector::new("summon").ui_iter(summon, GameAssets::get(world).summons.keys(), ui)
 }
-fn vfx_selector(vfx: &mut String, world: &World, ui: &mut Ui) {
-    Selector::new("vfx").ui_iter(vfx, GameAssets::get(world).vfxs.keys(), ui);
+fn vfx_selector(vfx: &mut String, world: &World, ui: &mut Ui) -> bool {
+    Selector::new("vfx").ui_iter(vfx, GameAssets::get(world).vfxs.keys(), ui)
 }
-fn var_selector(var: &mut VarName, ui: &mut Ui) {
-    Selector::new("var").ui_enum(var, ui);
+fn var_selector(var: &mut VarName, ui: &mut Ui) -> bool {
+    Selector::new("var").ui_enum(var, ui)
 }
 fn show_value(value: Result<VarValue>, ui: &mut Ui) {
     let w = ui.available_width();
@@ -1188,10 +1240,33 @@ impl ShowEditor for Representation {
         }
     }
     fn show_content(&mut self, context: &Context, world: &mut World, ui: &mut Ui) {
+        DragValue::new(&mut self.count)
+            .range(0..=20)
+            .prefix("count:")
+            .ui(ui);
+        ui.collapsing(format!("Mapping ({})", self.mapping.len()), |ui| {
+            let mut move_var: Option<(VarName, VarName)> = None;
+            for (var, value) in &mut self.mapping {
+                ui.push_id(var, |ui| {
+                    ui.horizontal(|ui| {
+                        let mut new_var = *var;
+                        if var_selector(&mut new_var, ui) {
+                            move_var = Some((*var, new_var));
+                        }
+                        value.show_node("", context, world, ui)
+                    });
+                });
+            }
+            if let Some((from, to)) = move_var {
+                let index = self.mapping.get_index_of(&from).unwrap();
+                let value = self.mapping.shift_remove(&from).unwrap();
+                let (index, old) = self.mapping.insert_before(index, to, value);
+                if let Some(old) = old {
+                    self.mapping.insert_before(index, from, old);
+                }
+            }
+        });
         self.material.show_node("", context, world, ui);
-        for (var, value) in &mut self.mapping {
-            value.show_node(&var.to_string(), context, world, ui)
-        }
     }
     fn get_inner_mut(&mut self) -> Vec<&mut Box<Self>> {
         default()
@@ -1199,7 +1274,7 @@ impl ShowEditor for Representation {
 }
 
 impl ShowEditor for RepresentationMaterial {
-    fn show_content(&mut self, context: &Context, world: &mut World, ui: &mut Ui) {
+    fn show_content(&mut self, _: &Context, _: &mut World, ui: &mut Ui) {
         match self {
             RepresentationMaterial::None => {}
             RepresentationMaterial::Shape {
@@ -1212,6 +1287,15 @@ impl ShowEditor for RepresentationMaterial {
             } => {
                 Selector::new("shape").ui_enum(shape, ui);
                 Selector::new("fill").ui_enum(fill, ui);
+                Selector::new("shape type").ui_enum(shape_type, ui);
+                let mut fbm_enabled = fbm.is_some();
+                if Checkbox::new(&mut fbm_enabled, "fbm").ui(ui).changed() {
+                    if fbm_enabled {
+                        *fbm = Some(default());
+                    } else {
+                        *fbm = None;
+                    }
+                }
             }
             RepresentationMaterial::Text {
                 size,
@@ -1237,7 +1321,7 @@ impl ShowEditor for RepresentationMaterial {
                 shape,
                 shape_type,
                 fill: _,
-                fbm: _,
+                fbm,
                 alpha,
                 padding,
             } => {
@@ -1257,6 +1341,21 @@ impl ShowEditor for RepresentationMaterial {
                 }
                 show_collapsing_node("alpha", alpha, context, ui, world);
                 show_collapsing_node("padding", padding, context, ui, world);
+                if let Some(RepFbm {
+                    octaves,
+                    lacunarity,
+                    gain,
+                    strength,
+                    offset,
+                }) = fbm
+                {
+                    "FBM".cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold).label(ui);
+                    show_collapsing_node("octaves", octaves, context, ui, world);
+                    show_collapsing_node("lacunarity", lacunarity, context, ui, world);
+                    show_collapsing_node("gain", gain, context, ui, world);
+                    show_collapsing_node("strength", strength, context, ui, world);
+                    show_collapsing_node("offset", offset, context, ui, world);
+                }
             }
             RepresentationMaterial::Text {
                 size,

@@ -75,7 +75,7 @@ impl PackedUnit {
                 TextColumn::default(),
             ))
             .id();
-        debug!("unpack unit: #{id:?} {entity} {self:?}");
+        debug!("unpack unit: #{id:?} {entity} {}", self.name);
         save_entity_name(entity, UnitPlugin::name_cstr(&self.name));
         self.state = self.generate_state();
         {

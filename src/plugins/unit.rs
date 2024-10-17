@@ -145,12 +145,17 @@ impl UnitPlugin {
     }
     pub fn place_into_slots(world: &mut World) {
         for unit in Self::collect_all(world) {
-            let pos = Self::get_entity_slot_position(unit, world).unwrap_or_default();
-            VarState::get_mut(unit, world).set_vec2(VarName::Position, pos);
+            Self::place_into_slot(unit, world);
         }
     }
+    pub fn place_into_slot(unit: Entity, world: &mut World) {
+        let pos = Self::get_entity_slot_position(unit, world).unwrap_or_default();
+        VarState::get_mut(unit, world).set_vec2(VarName::Position, pos);
+    }
     pub fn despawn(entity: Entity, world: &mut World) {
-        world.entity_mut(entity).despawn_recursive();
+        if let Some(e) = world.get_entity_mut(entity) {
+            e.despawn_recursive();
+        }
     }
     pub fn name_cstr(name: &str) -> Cstr {
         let bases = name.split("+").collect_vec();
