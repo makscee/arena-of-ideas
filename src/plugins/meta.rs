@@ -134,7 +134,7 @@ impl MetaPlugin {
                                 |_, _| default(),
                                 |d, _, ui, _| {
                                     let own = user_id() == d.owner;
-                                    if Button::click(if own { "cancel" } else { "buy" }.into())
+                                    if Button::click(if own { "cancel" } else { "buy" })
                                         .enabled(own || can_afford(d.price))
                                         .ui(ui)
                                         .clicked()
@@ -234,7 +234,7 @@ impl MetaPlugin {
                         |d, _, ui, world| {
                             let craft_cost =
                                 GameAssets::get(world).global_settings.craft_shards_cost;
-                            if Button::click("craft".into())
+                            if Button::click("craft")
                                 .enabled(d.count >= craft_cost)
                                 .ui(ui)
                                 .clicked()
@@ -365,24 +365,20 @@ impl MetaPlugin {
                             ui,
                             world,
                             |ui, world| {
-                                if Button::click("OK".into()).ui(ui).clicked() {
+                                if Button::click("OK").ui(ui).clicked() {
                                     brm(world).vote = Some(0);
                                 }
-                                if Button::click("Skip".into()).gray(ui).ui(ui).clicked() {
+                                if Button::click("Skip").gray(ui).ui(ui).clicked() {
                                     Self::skip_balancing(world);
                                 }
                             },
                             |ui, world| {
-                                if Button::click("Too Weak".into())
-                                    .color(CYAN, ui)
-                                    .ui(ui)
-                                    .clicked()
-                                {
+                                if Button::click("Too Weak").color(CYAN, ui).ui(ui).clicked() {
                                     brm(world).vote = Some(-1);
                                 }
                             },
                             |ui, world| {
-                                if Button::click("Too Strong".into())
+                                if Button::click("Too Strong")
                                     .color(YELLOW, ui)
                                     .ui(ui)
                                     .clicked()

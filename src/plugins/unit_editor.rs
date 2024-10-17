@@ -1,4 +1,3 @@
-use egui::{Checkbox, DragValue, Key, ScrollArea};
 use serde::de::DeserializeOwned;
 
 use super::*;
@@ -28,6 +27,8 @@ fn rm(world: &mut World) -> Mut<UnitEditorResource> {
     world.resource_mut::<UnitEditorResource>()
 }
 
+const UNIT_ID: &str = "unit_edit";
+const REP_ID: &str = "rep_edit";
 impl UnitEditorPlugin {
     fn on_enter(world: &mut World) {
         Self::load_state(world);
@@ -50,7 +51,9 @@ impl UnitEditorPlugin {
         cs.save();
     }
     fn load_state(world: &mut World) {
-        rm(world).teams = client_state().editor_teams.clone();
+        Self::close_editors(world);
+        let mut r = rm(world);
+        r.teams = client_state().editor_teams.clone();
         Self::respawn_teams(false, world);
     }
     fn apply_edits(world: &mut World) {
@@ -124,7 +127,7 @@ impl UnitEditorPlugin {
             Self::respawn_teams(true, world);
         })
         .content(|ui, world| {
-            if Button::click("Spawn Default".into()).ui(ui).clicked() {
+            if Button::click("Spawn Default").ui(ui).clicked() {
                 let mut r = rm(world);
                 let faction = r.editing_faction;
                 r.teams
@@ -161,13 +164,21 @@ impl UnitEditorPlugin {
             .cloned()
             .unwrap_or_default();
     }
-    fn open_unit_editor(world: &mut World) {
-        const UNIT_ID: &str = "unit_edit";
-        const REP_ID: &str = "rep_edit";
-        if TilePlugin::is_open(UNIT_ID, world) || TilePlugin::is_open(REP_ID, world) {
+    fn editor_open(world: &mut World) -> bool {
+        TilePlugin::is_open(UNIT_ID, world) || TilePlugin::is_open(REP_ID, world)
+    }
+    fn close_editors(world: &mut World) {
+        if Self::editor_open(world) {
             TilePlugin::close(UNIT_ID, world);
             TilePlugin::close(REP_ID, world);
         }
+        let ctx = &egui_context(world).unwrap();
+        while Confirmation::has_active(ctx) {
+            Confirmation::pop(ctx);
+        }
+    }
+    fn open_unit_editor(world: &mut World) {
+        Self::close_editors(world);
         Tile::new(Side::Left, |ui, world| {
             let mut hero = rm(world).editing_hero.clone();
             Input::new("name:").ui_string(&mut hero.name, ui);
@@ -211,7 +222,7 @@ impl UnitEditorPlugin {
                     .push(ui.ctx());
                 }
             });
-            if Button::click("Edit representation".into()).ui(ui).clicked() {
+            if Button::click("Edit representation").ui(ui).clicked() {
                 Confirmation::pop(ui.ctx());
                 let mut r = rm(world);
                 r.editing_representation = r.editing_hero.representation.clone();
@@ -244,13 +255,13 @@ impl UnitEditorPlugin {
     pub fn add_tiles(world: &mut World) {
         Tile::new(Side::Top, |ui, world| {
             ui.horizontal(|ui| {
-                if Button::click("Reload".into()).ui(ui).clicked() {
+                if Button::click("Reload").ui(ui).clicked() {
                     Self::load_state(world);
                 }
-                if Button::click("Save".into()).ui(ui).clicked() {
+                if Button::click("Save").ui(ui).clicked() {
                     Self::save_state(world);
                 }
-                if Button::click("Load sample".into()).ui(ui).clicked() {
+                if Button::click("Load sample").ui(ui).clicked() {
                     for faction in [Faction::Left, Faction::Right] {
                         Self::load_team(
                             faction,
@@ -264,7 +275,7 @@ impl UnitEditorPlugin {
 
                     Self::respawn_teams(true, world);
                 }
-                if Button::click("Run battle".into()).ui(ui).clicked() {
+                if Button::click("Run battle").ui(ui).clicked() {
                     BattlePlugin::load_teams(
                         rm(world).teams.get(&Faction::Left).unwrap().clone(),
                         rm(world).teams.get(&Faction::Right).unwrap().clone(),
@@ -273,7 +284,7 @@ impl UnitEditorPlugin {
                     BattlePlugin::set_next_state(GameState::UnitEditor, world);
                     GameState::Battle.proceed_to_target(world);
                 }
-                if Button::click("Strike".into()).ui(ui).clicked() {
+                if Button::click("Strike").ui(ui).clicked() {
                     if let Some((left, right)) = BattlePlugin::get_strikers(world) {
                         let _ = BattlePlugin::run_strike(left, right, world);
                     }
@@ -310,7 +321,7 @@ impl UnitEditorPlugin {
             ) {
                 ui.reset_style();
                 ui.set_min_width(150.0);
-                if Button::click("Paste".into()).ui(ui).clicked() {
+                if Button::click("Paste").ui(ui).clicked() {
                     if let Some(v) = get_from_clipboard(world) {
                         match ron::from_str::<PackedUnit>(&v) {
                             Ok(v) => {
@@ -326,17 +337,13 @@ impl UnitEditorPlugin {
                     ui.close_menu();
                 }
                 if entity.is_none() {
-                    if Button::click("Spawn default".into())
-                        .red(ui)
-                        .ui(ui)
-                        .clicked()
-                    {
+                    if Button::click("Spawn default").red(ui).ui(ui).clicked() {
                         UnitEditorPlugin::set_team_unit(default(), faction, slot, world);
                         UnitEditorPlugin::respawn_teams(true, world);
                         ui.close_menu();
                     }
                 } else {
-                    if Button::click("Copy".into()).ui(ui).clicked() {
+                    if Button::click("Copy").ui(ui).clicked() {
                         if let Some(unit) = rm(world)
                             .teams
                             .get(&faction)
@@ -351,12 +358,20 @@ impl UnitEditorPlugin {
                         }
                         ui.close_menu();
                     }
-                    if Button::click("Delete".into()).red(ui).ui(ui).clicked() {
+                    if Button::click("Delete").red(ui).ui(ui).clicked() {
                         UnitEditorPlugin::remove_team_unit(faction, slot, world);
                         ui.close_menu();
                     }
                 }
             }
+            let (slot, faction) = {
+                if Self::editor_open(world) {
+                    let r = rm(world);
+                    (Some(r.editing_slot), r.editing_faction)
+                } else {
+                    (None, Faction::Team)
+                }
+            };
             ui.columns(2, |ui| {
                 TeamContainer::new(Faction::Left)
                     .right_to_left()
@@ -367,6 +382,7 @@ impl UnitEditorPlugin {
                     .on_swap(|from, to, world| {
                         UnitEditorPlugin::move_team_units(Faction::Left, from, to, world);
                     })
+                    .highlighted_slot(if faction == Faction::Left { slot } else { None })
                     .ui(&mut ui[0], world);
                 TeamContainer::new(Faction::Right)
                     .on_click(|slot, entity, world| on_click(slot, Faction::Right, entity, world))
@@ -375,6 +391,11 @@ impl UnitEditorPlugin {
                     })
                     .on_swap(|from, to, world| {
                         UnitEditorPlugin::move_team_units(Faction::Left, from, to, world);
+                    })
+                    .highlighted_slot(if faction == Faction::Right {
+                        slot
+                    } else {
+                        None
                     })
                     .ui(&mut ui[1], world);
             });
@@ -404,6 +425,12 @@ fn lookup_text_pop(ctx: &egui::Context) {
 }
 pub trait ShowEditor: ToCstr + Default + Serialize + DeserializeOwned + Clone {
     fn get_variants() -> impl Iterator<Item = Self>;
+    fn get_inner_mut(&mut self) -> Vec<&mut Box<Self>>;
+    fn wrapper() -> Option<Self> {
+        None
+    }
+    fn show_content(&mut self, _context: &Context, _world: &mut World, _ui: &mut Ui) {}
+    fn show_children(&mut self, context: &Context, world: &mut World, ui: &mut Ui);
     fn show_node(&mut self, name: &str, context: &Context, world: &mut World, ui: &mut Ui) {
         const SHADOW: Shadow = Shadow {
             offset: egui::Vec2::ZERO,
@@ -438,74 +465,83 @@ pub trait ShowEditor: ToCstr + Default + Serialize + DeserializeOwned + Clone {
                 });
             });
         });
-        let rect = resp.response.rect;
-        let rect =
-            Rect::from_center_size(rect.left_center(), egui::vec2(2.0, rect.height() - 13.0));
-        let resp = ui.allocate_rect(rect, Sense::click());
-        let color = if resp.hovered() {
-            YELLOW
-        } else {
-            VISIBLE_LIGHT
-        };
-        ui.painter().rect_filled(rect, Rounding::ZERO, color);
-        if resp.clicked() {
-            let mut s = Self::wrapper();
-            let mut inner = s.get_inner_mut();
-            if inner.is_empty() {
-                return;
+        if let Some(mut wrapper) = Self::wrapper() {
+            let rect = resp.response.rect;
+            let rect =
+                Rect::from_center_size(rect.left_center(), egui::vec2(2.0, rect.height() - 13.0));
+            let e_rect = rect.expand2(egui::vec2(4.0, 0.0));
+            let ui = &mut ui.child_ui(rect, *ui.layout(), None);
+            let resp = ui.allocate_rect(e_rect, Sense::click());
+            let color = if resp.hovered() {
+                YELLOW
+            } else {
+                VISIBLE_LIGHT
+            };
+            ui.painter().rect_filled(rect, Rounding::ZERO, color);
+            if resp.clicked() {
+                let mut inner = wrapper.get_inner_mut();
+                if inner.is_empty() {
+                    return;
+                }
+                *inner[0] = Box::new(self.clone());
+                *self = wrapper;
             }
-            *inner[0] = Box::new(self.clone());
-            *self = s;
         }
     }
-    fn show_content(&mut self, _context: &Context, _world: &mut World, _ui: &mut Ui) {}
-    fn show_children(&mut self, context: &Context, world: &mut World, ui: &mut Ui);
     fn show_self(&mut self, ui: &mut Ui, world: &mut World) {
         let widget = self.cstr().widget(1.0, ui);
-        let resp = ui
-            .menu_button(widget, |ui| {
-                lookup_text(ui.ctx()).cstr().label(ui);
-                let mut take_first = false;
-                for e in ui.ctx().input(|i| i.events.clone()) {
-                    match e {
-                        egui::Event::Text(s) => lookup_text_push(ui.ctx(), &s),
-                        egui::Event::Key {
-                            key: Key::Backspace,
-                            pressed: true,
-                            ..
-                        } => lookup_text_pop(ui.ctx()),
-                        egui::Event::Key {
-                            key: Key::Tab,
-                            pressed: true,
-                            ..
-                        } => take_first = true,
-                        _ => {}
-                    }
-                }
-                ui.set_min_height(300.0);
-                ScrollArea::vertical().auto_shrink(false).show(ui, |ui| {
-                    ui.reset_style();
-                    let lookup = lookup_text(ui.ctx()).to_lowercase();
-                    for e in Self::get_variants() {
-                        let c = e.cstr();
-                        if !lookup.is_empty() && !c.get_text().to_lowercase().starts_with(&lookup) {
-                            continue;
-                        }
-                        if c.button(ui).clicked() || take_first {
-                            self.replace_self(e);
-                            ui.close_menu();
-                            break;
+        let variants = Self::get_variants();
+        let resp = if variants.try_len().is_ok_and(|l| l > 0) {
+            let resp = ui
+                .menu_button(widget, |ui| {
+                    lookup_text(ui.ctx()).cstr().label(ui);
+                    let mut take_first = false;
+                    for e in ui.ctx().input(|i| i.events.clone()) {
+                        match e {
+                            egui::Event::Text(s) => lookup_text_push(ui.ctx(), &s),
+                            egui::Event::Key {
+                                key: Key::Backspace,
+                                pressed: true,
+                                ..
+                            } => lookup_text_pop(ui.ctx()),
+                            egui::Event::Key {
+                                key: Key::Tab,
+                                pressed: true,
+                                ..
+                            } => take_first = true,
+                            _ => {}
                         }
                     }
-                });
-            })
-            .response;
-        if resp.clicked() {
-            lookup_text_clear(ui.ctx());
-        }
+                    ui.set_min_height(300.0);
+                    ScrollArea::vertical().auto_shrink(false).show(ui, |ui| {
+                        ui.reset_style();
+                        let lookup = lookup_text(ui.ctx()).to_lowercase();
+                        for e in Self::get_variants() {
+                            let c = e.cstr();
+                            if !lookup.is_empty()
+                                && !c.get_text().to_lowercase().starts_with(&lookup)
+                            {
+                                continue;
+                            }
+                            if c.button(ui).clicked() || take_first {
+                                self.replace_self(e);
+                                ui.close_menu();
+                                break;
+                            }
+                        }
+                    });
+                })
+                .response;
+            if resp.clicked() {
+                lookup_text_clear(ui.ctx());
+            }
+            resp
+        } else {
+            ui.label(widget)
+        };
         resp.context_menu(|ui| {
             ui.reset_style();
-            if Button::click("Copy".into()).ui(ui).clicked() {
+            if Button::click("Copy").ui(ui).clicked() {
                 match ron::to_string(self) {
                     Ok(v) => {
                         save_to_clipboard(&v, world);
@@ -514,7 +550,7 @@ pub trait ShowEditor: ToCstr + Default + Serialize + DeserializeOwned + Clone {
                 }
                 ui.close_menu();
             }
-            if Button::click("Paste".into()).ui(ui).clicked() {
+            if Button::click("Paste").ui(ui).clicked() {
                 if let Some(v) = get_from_clipboard(world) {
                     match ron::from_str::<Self>(&v) {
                         Ok(v) => *self = v,
@@ -542,844 +578,5 @@ pub trait ShowEditor: ToCstr + Default + Serialize + DeserializeOwned + Clone {
                 break;
             }
         }
-    }
-    fn get_inner_mut(&mut self) -> Vec<&mut Box<Self>>;
-    fn wrapper() -> Self {
-        default()
-    }
-}
-
-fn show_named_node<T: ShowEditor>(
-    name: &mut Option<String>,
-    node: &mut T,
-    context: &Context,
-    world: &mut World,
-    ui: &mut Ui,
-) {
-    ui.vertical(|ui| {
-        ui.horizontal(|ui| {
-            if Checkbox::new(&mut name.is_some(), "").ui(ui).changed() {
-                if name.is_some() {
-                    *name = None;
-                } else {
-                    *name = Some(default());
-                }
-            }
-            if let Some(name) = name {
-                Input::new("rename").ui_string(name, ui);
-            }
-        });
-        ui.horizontal(|ui| {
-            node.show_node("", context, world, ui);
-        });
-    });
-}
-fn show_collapsing_node<T: ShowEditor>(
-    name: &str,
-    node: &mut T,
-    context: &Context,
-    ui: &mut Ui,
-    world: &mut World,
-) {
-    ui.collapsing(name, |ui| {
-        node.show_node(name, context, world, ui);
-    });
-}
-impl ShowEditor for Trigger {
-    fn show_node(&mut self, _: &str, context: &Context, world: &mut World, ui: &mut Ui) {
-        self.show_self(ui, world);
-        self.cstr_expanded().label(ui);
-        self.show_children(context, world, ui);
-    }
-    fn show_children(&mut self, context: &Context, world: &mut World, ui: &mut Ui) {
-        match self {
-            Trigger::Fire {
-                triggers,
-                targets,
-                effects,
-            } => {
-                let mut c = 0;
-                ui.collapsing("Triggers", |ui| {
-                    for (node, name) in triggers.iter_mut() {
-                        c += 1;
-                        ui.push_id(c, |ui| {
-                            show_named_node(name, node, context, world, ui);
-                        });
-                    }
-                    if Button::click("+".into()).ui(ui).clicked() {
-                        triggers.push((default(), None));
-                    }
-                });
-                ui.collapsing("Targets", |ui| {
-                    for (node, name) in targets.iter_mut() {
-                        c += 1;
-                        ui.push_id(c, |ui| {
-                            show_named_node(name, node, context, world, ui);
-                        });
-                    }
-                    if Button::click("+".into()).ui(ui).clicked() {
-                        targets.push((default(), None));
-                    }
-                });
-                ui.collapsing("Effects", |ui| {
-                    for (node, name) in effects.iter_mut() {
-                        c += 1;
-                        ui.push_id(c, |ui| {
-                            show_named_node(name, node, context, world, ui);
-                        });
-                    }
-                    if Button::click("+".into()).ui(ui).clicked() {
-                        effects.push((default(), None));
-                    }
-                });
-            }
-            Trigger::Change { trigger, expr } => todo!(),
-            Trigger::List(_) => todo!(),
-        }
-    }
-    fn get_inner_mut(&mut self) -> Vec<&mut Box<Self>> {
-        default()
-    }
-    fn get_variants() -> impl Iterator<Item = Self> {
-        Self::iter()
-    }
-}
-
-impl ShowEditor for Expression {
-    fn wrapper() -> Self {
-        Self::Abs(default())
-    }
-    fn show_children(&mut self, context: &Context, world: &mut World, ui: &mut Ui) {
-        match self {
-            Expression::Zero
-            | Expression::OppositeFaction
-            | Expression::SlotPosition
-            | Expression::GT
-            | Expression::Beat
-            | Expression::PI
-            | Expression::PI2
-            | Expression::Age
-            | Expression::Index
-            | Expression::Owner
-            | Expression::Caster
-            | Expression::Target
-            | Expression::Status
-            | Expression::AllAllyUnits
-            | Expression::AllEnemyUnits
-            | Expression::AllUnits
-            | Expression::AllOtherUnits
-            | Expression::AdjacentUnits
-            | Expression::Value(..)
-            | Expression::Context(..)
-            | Expression::OwnerState(..)
-            | Expression::TargetState(..)
-            | Expression::CasterState(..)
-            | Expression::OwnerStateLast(..)
-            | Expression::TargetStateLast(..)
-            | Expression::CasterStateLast(..)
-            | Expression::StatusState(_, _)
-            | Expression::StatusStateLast(_, _)
-            | Expression::AbilityContext(_, _)
-            | Expression::AbilityState(_, _)
-            | Expression::StatusCharges(_)
-            | Expression::HexColor(_)
-            | Expression::F(_)
-            | Expression::I(_)
-            | Expression::B(_)
-            | Expression::S(_)
-            | Expression::V2(_, _) => {}
-            Expression::FilterStatusUnits(_, e)
-            | Expression::FilterNoStatusUnits(_, e)
-            | Expression::StatusEntity(_, e)
-            | Expression::Dbg(e)
-            | Expression::Ctx(e)
-            | Expression::ToI(e)
-            | Expression::Vec2E(e)
-            | Expression::UnitVec(e)
-            | Expression::VX(e)
-            | Expression::VY(e)
-            | Expression::Sin(e)
-            | Expression::Cos(e)
-            | Expression::Sqr(e)
-            | Expression::Even(e)
-            | Expression::Abs(e)
-            | Expression::Floor(e)
-            | Expression::Ceil(e)
-            | Expression::Fract(e)
-            | Expression::SlotUnit(e)
-            | Expression::RandomF(e)
-            | Expression::RandomUnit(e)
-            | Expression::ListCount(e) => e.show_node("", context, world, ui),
-
-            Expression::Sum(a, b)
-            | Expression::Sub(a, b)
-            | Expression::Mul(a, b)
-            | Expression::Div(a, b)
-            | Expression::Max(a, b)
-            | Expression::Min(a, b)
-            | Expression::Mod(a, b)
-            | Expression::And(a, b)
-            | Expression::Or(a, b)
-            | Expression::Equals(a, b)
-            | Expression::GreaterThen(a, b)
-            | Expression::LessThen(a, b) => {
-                a.show_node("", context, world, ui);
-                b.show_node("", context, world, ui);
-            }
-
-            Expression::MaxUnit(value, units) => {
-                value.show_node("value", context, world, ui);
-                units.show_node("units", context, world, ui);
-            }
-            Expression::RandomUnitSubset(amount, units) => {
-                amount.show_node("amount", context, world, ui);
-                units.show_node("units", context, world, ui);
-            }
-            Expression::Vec2EE(x, y) => {
-                x.show_node("x", context, world, ui);
-                y.show_node("y", context, world, ui);
-            }
-            Expression::WithVar(_, value, expression) => {
-                value.show_node("value", context, world, ui);
-                expression.show_node("e", context, world, ui);
-            }
-            Expression::If(cond, th, el) => {
-                cond.show_node("condition", context, world, ui);
-                th.show_node("then", context, world, ui);
-                el.show_node("else", context, world, ui);
-            }
-        }
-    }
-
-    fn show_content(&mut self, context: &Context, world: &mut World, ui: &mut Ui) {
-        let value = self.get_value(context, world);
-        match self {
-            Expression::FilterStatusUnits(status, _)
-            | Expression::FilterNoStatusUnits(status, _)
-            | Expression::StatusEntity(status, _) => {
-                status_selector(status, world, ui);
-            }
-            Expression::Value(v) => {
-                v.cstr().label(ui);
-            }
-            Expression::Context(var)
-            | Expression::OwnerState(var)
-            | Expression::TargetState(var)
-            | Expression::CasterState(var)
-            | Expression::OwnerStateLast(var)
-            | Expression::TargetStateLast(var)
-            | Expression::CasterStateLast(var)
-            | Expression::WithVar(var, ..) => {
-                var_selector(var, ui);
-            }
-            Expression::StatusState(status, var) | Expression::StatusStateLast(status, var) => {
-                status_selector(status, world, ui);
-                var_selector(var, ui);
-            }
-            Expression::AbilityContext(ability, var) | Expression::AbilityState(ability, var) => {
-                ability_selector(ability, world, ui);
-                var_selector(var, ui);
-            }
-            Expression::StatusCharges(status) => {
-                status_selector(status, world, ui);
-            }
-            Expression::HexColor(color) => {
-                if let Ok(value) = value.as_ref() {
-                    if let Ok(mut c32) = value.get_color32() {
-                        if ui.color_edit_button_srgba(&mut c32).changed() {
-                            *color = c32.to_hex();
-                        }
-                    }
-                }
-            }
-            Expression::F(v) => {
-                DragValue::new(v).ui(ui);
-            }
-            Expression::I(v) => {
-                DragValue::new(v).ui(ui);
-            }
-            Expression::B(v) => {
-                Checkbox::new(v, "").ui(ui);
-            }
-            Expression::S(v) => {
-                Input::new("").ui_string(v, ui);
-            }
-            Expression::V2(x, y) => {
-                DragValue::new(x).ui(ui);
-                DragValue::new(y).ui(ui);
-            }
-
-            Expression::Zero
-            | Expression::OppositeFaction
-            | Expression::SlotPosition
-            | Expression::GT
-            | Expression::Beat
-            | Expression::PI
-            | Expression::PI2
-            | Expression::Age
-            | Expression::Index
-            | Expression::Owner
-            | Expression::Caster
-            | Expression::Target
-            | Expression::Status
-            | Expression::AllAllyUnits
-            | Expression::AllEnemyUnits
-            | Expression::AllUnits
-            | Expression::AllOtherUnits
-            | Expression::AdjacentUnits
-            | Expression::Dbg(..)
-            | Expression::Ctx(..)
-            | Expression::ToI(..)
-            | Expression::Vec2E(..)
-            | Expression::UnitVec(..)
-            | Expression::VX(..)
-            | Expression::VY(..)
-            | Expression::Sin(..)
-            | Expression::Cos(..)
-            | Expression::Sqr(..)
-            | Expression::Even(..)
-            | Expression::Abs(..)
-            | Expression::Floor(..)
-            | Expression::Ceil(..)
-            | Expression::Fract(..)
-            | Expression::SlotUnit(..)
-            | Expression::RandomF(..)
-            | Expression::RandomUnit(..)
-            | Expression::ListCount(..)
-            | Expression::MaxUnit(..)
-            | Expression::RandomUnitSubset(..)
-            | Expression::Vec2EE(..)
-            | Expression::Sum(..)
-            | Expression::Sub(..)
-            | Expression::Mul(..)
-            | Expression::Div(..)
-            | Expression::Max(..)
-            | Expression::Min(..)
-            | Expression::Mod(..)
-            | Expression::And(..)
-            | Expression::Or(..)
-            | Expression::Equals(..)
-            | Expression::GreaterThen(..)
-            | Expression::LessThen(..)
-            | Expression::If(..) => {}
-        };
-        show_value(value, ui);
-    }
-    fn get_inner_mut(&mut self) -> Vec<&mut Box<Self>> {
-        match self {
-            Expression::FilterStatusUnits(_, e)
-            | Expression::FilterNoStatusUnits(_, e)
-            | Expression::StatusEntity(_, e)
-            | Expression::Dbg(e)
-            | Expression::Ctx(e)
-            | Expression::ToI(e)
-            | Expression::Vec2E(e)
-            | Expression::UnitVec(e)
-            | Expression::VX(e)
-            | Expression::VY(e)
-            | Expression::Sin(e)
-            | Expression::Cos(e)
-            | Expression::Sqr(e)
-            | Expression::Even(e)
-            | Expression::Abs(e)
-            | Expression::Floor(e)
-            | Expression::Ceil(e)
-            | Expression::Fract(e)
-            | Expression::SlotUnit(e)
-            | Expression::RandomF(e)
-            | Expression::RandomUnit(e)
-            | Expression::ListCount(e) => [e].into(),
-            Expression::MaxUnit(a, b)
-            | Expression::RandomUnitSubset(a, b)
-            | Expression::Vec2EE(a, b)
-            | Expression::Sum(a, b)
-            | Expression::Sub(a, b)
-            | Expression::Mul(a, b)
-            | Expression::Div(a, b)
-            | Expression::Max(a, b)
-            | Expression::Min(a, b)
-            | Expression::Mod(a, b)
-            | Expression::And(a, b)
-            | Expression::Or(a, b)
-            | Expression::Equals(a, b)
-            | Expression::GreaterThen(a, b)
-            | Expression::WithVar(_, a, b)
-            | Expression::LessThen(a, b) => [a, b].into(),
-            Expression::If(a, b, c) => [a, b, c].into(),
-            Expression::Zero
-            | Expression::OppositeFaction
-            | Expression::SlotPosition
-            | Expression::GT
-            | Expression::Beat
-            | Expression::PI
-            | Expression::PI2
-            | Expression::Age
-            | Expression::Index
-            | Expression::Owner
-            | Expression::Caster
-            | Expression::Target
-            | Expression::Status
-            | Expression::AllAllyUnits
-            | Expression::AllEnemyUnits
-            | Expression::AllUnits
-            | Expression::AllOtherUnits
-            | Expression::AdjacentUnits
-            | Expression::Value(_)
-            | Expression::Context(_)
-            | Expression::OwnerState(_)
-            | Expression::TargetState(_)
-            | Expression::CasterState(_)
-            | Expression::StatusState(_, _)
-            | Expression::OwnerStateLast(_)
-            | Expression::TargetStateLast(_)
-            | Expression::CasterStateLast(_)
-            | Expression::StatusStateLast(_, _)
-            | Expression::AbilityContext(_, _)
-            | Expression::AbilityState(_, _)
-            | Expression::StatusCharges(_)
-            | Expression::HexColor(_)
-            | Expression::F(_)
-            | Expression::I(_)
-            | Expression::B(_)
-            | Expression::S(_)
-            | Expression::V2(_, _) => default(),
-        }
-    }
-
-    fn get_variants() -> impl Iterator<Item = Self> {
-        Self::iter()
-    }
-}
-
-impl ShowEditor for Effect {
-    fn wrapper() -> Self {
-        Self::List([default()].into())
-    }
-    fn show_children(&mut self, context: &Context, world: &mut World, ui: &mut Ui) {
-        match self {
-            Effect::Repeat(count, ef) => {
-                count.show_node("count", context, world, ui);
-                ef.show_node("effect", context, world, ui);
-            }
-            Effect::WithTarget(ex, ef) | Effect::WithOwner(ex, ef) | Effect::WithVar(_, ex, ef) => {
-                ex.show_node("value", context, world, ui);
-                ef.show_node("effect", context, world, ui);
-            }
-            Effect::AbilityStateAddVar(_, _, e) | Effect::Text(e) => {
-                e.show_node("", context, world, ui)
-            }
-
-            Effect::Summon(_, e) => {
-                if let Some(e) = e {
-                    e.show_node("", context, world, ui);
-                }
-            }
-
-            Effect::List(l) => {
-                for e in l {
-                    e.show_node("", context, world, ui);
-                }
-            }
-
-            Effect::If(e, th, el) => {
-                e.show_node("condition", context, world, ui);
-                th.show_node("then", context, world, ui);
-                el.show_node("else", context, world, ui);
-            }
-            Effect::StatusSetVar(target, _, _, value) | Effect::StateAddVar(_, target, value) => {
-                target.show_node("target", context, world, ui);
-                value.show_node("value", context, world, ui);
-            }
-            Effect::Noop
-            | Effect::Damage
-            | Effect::Kill
-            | Effect::Heal
-            | Effect::ChangeAllStatuses
-            | Effect::ClearAllStatuses
-            | Effect::StealAllStatuses
-            | Effect::FullCopy
-            | Effect::ChangeStatus(_)
-            | Effect::ClearStatus(_)
-            | Effect::StealStatus(_)
-            | Effect::UseAbility(_, _)
-            | Effect::Vfx(_) => {}
-        }
-    }
-    fn show_content(&mut self, _: &Context, world: &mut World, ui: &mut Ui) {
-        match self {
-            Effect::ChangeStatus(status)
-            | Effect::ClearStatus(status)
-            | Effect::StealStatus(status) => {
-                status_selector(status, world, ui);
-            }
-            Effect::UseAbility(ability, base) => {
-                ability_selector(ability, world, ui);
-                DragValue::new(base).range(0..=10).ui(ui);
-            }
-            Effect::AbilityStateAddVar(ability, var, _) => {
-                ability_selector(ability, world, ui);
-                var_selector(var, ui);
-            }
-            Effect::StatusSetVar(_, status, var, _) => {
-                status_selector(status, world, ui);
-                var_selector(var, ui);
-            }
-            Effect::Summon(summon, _) => {
-                summon_selector(summon, world, ui);
-            }
-            Effect::StateAddVar(var, _, _) | Effect::WithVar(var, _, _) => {
-                var_selector(var, ui);
-            }
-            Effect::Vfx(vfx) => {
-                vfx_selector(vfx, world, ui);
-            }
-            Effect::List(l) => {
-                if Button::click("+".into()).ui(ui).clicked() {
-                    l.push(default());
-                }
-            }
-
-            Effect::WithTarget(_, _)
-            | Effect::WithOwner(_, _)
-            | Effect::Repeat(_, _)
-            | Effect::If(_, _, _)
-            | Effect::Text(_)
-            | Effect::ChangeAllStatuses
-            | Effect::ClearAllStatuses
-            | Effect::StealAllStatuses
-            | Effect::FullCopy
-            | Effect::Noop
-            | Effect::Damage
-            | Effect::Kill
-            | Effect::Heal => {}
-        }
-    }
-    fn get_inner_mut(&mut self) -> Vec<&mut Box<Self>> {
-        match self {
-            Effect::WithTarget(_, e)
-            | Effect::WithOwner(_, e)
-            | Effect::WithVar(_, _, e)
-            | Effect::Repeat(_, e) => [e].into(),
-            Effect::List(l) => l.iter_mut().collect_vec(),
-            Effect::If(_, a, b) => [a, b].into(),
-
-            Effect::Summon(_, _)
-            | Effect::Noop
-            | Effect::Damage
-            | Effect::Kill
-            | Effect::Heal
-            | Effect::ChangeStatus(_)
-            | Effect::ClearStatus(_)
-            | Effect::StealStatus(_)
-            | Effect::ChangeAllStatuses
-            | Effect::ClearAllStatuses
-            | Effect::StealAllStatuses
-            | Effect::UseAbility(_, _)
-            | Effect::AbilityStateAddVar(_, _, _)
-            | Effect::Vfx(_)
-            | Effect::StateAddVar(_, _, _)
-            | Effect::StatusSetVar(_, _, _, _)
-            | Effect::Text(_)
-            | Effect::FullCopy => default(),
-        }
-    }
-    fn get_variants() -> impl Iterator<Item = Self> {
-        Self::iter()
-    }
-}
-
-impl ShowEditor for FireTrigger {
-    fn wrapper() -> Self {
-        Self::List([default()].into())
-    }
-    fn show_children(&mut self, context: &Context, world: &mut World, ui: &mut Ui) {
-        match self {
-            FireTrigger::List(l) => {
-                for t in l {
-                    t.show_node("", context, world, ui);
-                }
-            }
-            FireTrigger::Period(_, _, t) | FireTrigger::OnceAfter(_, t) => {
-                t.show_node("", context, world, ui)
-            }
-            FireTrigger::If(e, t) => {
-                e.show_node("condition", context, world, ui);
-                t.show_node("", context, world, ui);
-            }
-            FireTrigger::None
-            | FireTrigger::UnitUsedAbility(..)
-            | FireTrigger::AllyUsedAbility(..)
-            | FireTrigger::EnemyUsedAbility(..)
-            | FireTrigger::AfterIncomingDamage
-            | FireTrigger::AfterDamageTaken
-            | FireTrigger::AfterDamageDealt
-            | FireTrigger::BattleStart
-            | FireTrigger::TurnStart
-            | FireTrigger::TurnEnd
-            | FireTrigger::BeforeStrike
-            | FireTrigger::AfterStrike
-            | FireTrigger::AllyDeath
-            | FireTrigger::AnyDeath
-            | FireTrigger::AllySummon
-            | FireTrigger::EnemySummon
-            | FireTrigger::BeforeDeath
-            | FireTrigger::AfterKill => {}
-        }
-    }
-
-    fn show_content(&mut self, _: &Context, world: &mut World, ui: &mut Ui) {
-        match self {
-            FireTrigger::Period(_, delay, _) => {
-                DragValue::new(delay).ui(ui);
-            }
-            FireTrigger::OnceAfter(delay, _) => {
-                DragValue::new(delay).ui(ui);
-            }
-            FireTrigger::UnitUsedAbility(ability)
-            | FireTrigger::AllyUsedAbility(ability)
-            | FireTrigger::EnemyUsedAbility(ability) => {
-                ability_selector(ability, world, ui);
-            }
-            FireTrigger::If(..)
-            | FireTrigger::None
-            | FireTrigger::List(_)
-            | FireTrigger::AfterIncomingDamage
-            | FireTrigger::AfterDamageTaken
-            | FireTrigger::AfterDamageDealt
-            | FireTrigger::BattleStart
-            | FireTrigger::TurnStart
-            | FireTrigger::TurnEnd
-            | FireTrigger::BeforeStrike
-            | FireTrigger::AfterStrike
-            | FireTrigger::AllyDeath
-            | FireTrigger::AnyDeath
-            | FireTrigger::AllySummon
-            | FireTrigger::EnemySummon
-            | FireTrigger::BeforeDeath
-            | FireTrigger::AfterKill => {}
-        }
-    }
-    fn get_inner_mut(&mut self) -> Vec<&mut Box<Self>> {
-        match self {
-            FireTrigger::List(l) => l.iter_mut().collect_vec(),
-            FireTrigger::Period(_, _, t) | FireTrigger::If(_, t) | FireTrigger::OnceAfter(_, t) => {
-                [t].into()
-            }
-            FireTrigger::None
-            | FireTrigger::UnitUsedAbility(_)
-            | FireTrigger::AllyUsedAbility(_)
-            | FireTrigger::EnemyUsedAbility(_)
-            | FireTrigger::AfterIncomingDamage
-            | FireTrigger::AfterDamageTaken
-            | FireTrigger::AfterDamageDealt
-            | FireTrigger::BattleStart
-            | FireTrigger::TurnStart
-            | FireTrigger::TurnEnd
-            | FireTrigger::BeforeStrike
-            | FireTrigger::AfterStrike
-            | FireTrigger::AllyDeath
-            | FireTrigger::AnyDeath
-            | FireTrigger::AllySummon
-            | FireTrigger::EnemySummon
-            | FireTrigger::BeforeDeath
-            | FireTrigger::AfterKill => default(),
-        }
-    }
-    fn get_variants() -> impl Iterator<Item = Self> {
-        Self::iter()
-    }
-}
-
-fn status_selector(status: &mut String, world: &World, ui: &mut Ui) -> bool {
-    Selector::new("status").ui_iter(status, GameAssets::get(world).statuses.keys(), ui)
-}
-fn ability_selector(ability: &mut String, world: &World, ui: &mut Ui) -> bool {
-    Selector::new("ability").ui_iter(ability, GameAssets::get(world).abilities.keys(), ui)
-}
-fn summon_selector(summon: &mut String, world: &World, ui: &mut Ui) -> bool {
-    Selector::new("summon").ui_iter(summon, GameAssets::get(world).summons.keys(), ui)
-}
-fn vfx_selector(vfx: &mut String, world: &World, ui: &mut Ui) -> bool {
-    Selector::new("vfx").ui_iter(vfx, GameAssets::get(world).vfxs.keys(), ui)
-}
-fn var_selector(var: &mut VarName, ui: &mut Ui) -> bool {
-    Selector::new("var").ui_enum(var, ui)
-}
-fn show_value(value: Result<VarValue>, ui: &mut Ui) {
-    let w = ui.available_width();
-    ui.set_max_width(ui.min_size().x);
-    match value {
-        Ok(v) => v
-            .cstr()
-            .style(CstrStyle::Small)
-            .as_label(ui)
-            .truncate()
-            .ui(ui),
-        Err(e) => e
-            .to_string()
-            .cstr_cs(RED, CstrStyle::Small)
-            .as_label(ui)
-            .truncate()
-            .ui(ui),
-    };
-    ui.set_max_width(w);
-}
-
-impl ShowEditor for Representation {
-    fn get_variants() -> impl Iterator<Item = Self> {
-        RepresentationMaterial::iter().map(|material| Self {
-            material,
-            ..default()
-        })
-    }
-    fn show_children(&mut self, context: &Context, world: &mut World, ui: &mut Ui) {
-        for (i, child) in self.children.iter_mut().enumerate() {
-            ui.push_id(i, |ui| {
-                child.show_node("", context, world, ui);
-            });
-        }
-    }
-    fn show_content(&mut self, context: &Context, world: &mut World, ui: &mut Ui) {
-        DragValue::new(&mut self.count)
-            .range(0..=20)
-            .prefix("count:")
-            .ui(ui);
-        ui.collapsing(format!("Mapping ({})", self.mapping.len()), |ui| {
-            let mut move_var: Option<(VarName, VarName)> = None;
-            for (var, value) in &mut self.mapping {
-                ui.push_id(var, |ui| {
-                    ui.horizontal(|ui| {
-                        let mut new_var = *var;
-                        if var_selector(&mut new_var, ui) {
-                            move_var = Some((*var, new_var));
-                        }
-                        value.show_node("", context, world, ui)
-                    });
-                });
-            }
-            if let Some((from, to)) = move_var {
-                let index = self.mapping.get_index_of(&from).unwrap();
-                let value = self.mapping.shift_remove(&from).unwrap();
-                let (index, old) = self.mapping.insert_before(index, to, value);
-                if let Some(old) = old {
-                    self.mapping.insert_before(index, from, old);
-                }
-            }
-        });
-        self.material.show_node("", context, world, ui);
-    }
-    fn get_inner_mut(&mut self) -> Vec<&mut Box<Self>> {
-        default()
-    }
-}
-
-impl ShowEditor for RepresentationMaterial {
-    fn show_content(&mut self, _: &Context, _: &mut World, ui: &mut Ui) {
-        match self {
-            RepresentationMaterial::None => {}
-            RepresentationMaterial::Shape {
-                shape,
-                shape_type,
-                fill,
-                fbm,
-                alpha: _,
-                padding: _,
-            } => {
-                Selector::new("shape").ui_enum(shape, ui);
-                Selector::new("fill").ui_enum(fill, ui);
-                Selector::new("shape type").ui_enum(shape_type, ui);
-                let mut fbm_enabled = fbm.is_some();
-                if Checkbox::new(&mut fbm_enabled, "fbm").ui(ui).changed() {
-                    if fbm_enabled {
-                        *fbm = Some(default());
-                    } else {
-                        *fbm = None;
-                    }
-                }
-            }
-            RepresentationMaterial::Text {
-                size,
-                text,
-                color,
-                alpha,
-                font_size,
-            } => todo!(),
-            RepresentationMaterial::Curve {
-                thickness,
-                dilations,
-                curvature,
-                aa,
-                alpha,
-                color,
-            } => todo!(),
-        }
-    }
-    fn show_children(&mut self, context: &Context, world: &mut World, ui: &mut Ui) {
-        match self {
-            RepresentationMaterial::None => {}
-            RepresentationMaterial::Shape {
-                shape,
-                shape_type,
-                fill: _,
-                fbm,
-                alpha,
-                padding,
-            } => {
-                match shape {
-                    RepShape::Circle { radius } => {
-                        show_collapsing_node("radius", radius, context, ui, world)
-                    }
-                    RepShape::Rectangle { size } => {
-                        show_collapsing_node("size", size, context, ui, world)
-                    }
-                }
-                match shape_type {
-                    RepShapeType::Opaque => {}
-                    RepShapeType::Line { thickness } => {
-                        show_collapsing_node("thickness", thickness, context, ui, world)
-                    }
-                }
-                show_collapsing_node("alpha", alpha, context, ui, world);
-                show_collapsing_node("padding", padding, context, ui, world);
-                if let Some(RepFbm {
-                    octaves,
-                    lacunarity,
-                    gain,
-                    strength,
-                    offset,
-                }) = fbm
-                {
-                    "FBM".cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold).label(ui);
-                    show_collapsing_node("octaves", octaves, context, ui, world);
-                    show_collapsing_node("lacunarity", lacunarity, context, ui, world);
-                    show_collapsing_node("gain", gain, context, ui, world);
-                    show_collapsing_node("strength", strength, context, ui, world);
-                    show_collapsing_node("offset", offset, context, ui, world);
-                }
-            }
-            RepresentationMaterial::Text {
-                size,
-                text,
-                color,
-                alpha,
-                font_size,
-            } => todo!(),
-            RepresentationMaterial::Curve {
-                thickness,
-                dilations,
-                curvature,
-                aa,
-                alpha,
-                color,
-            } => todo!(),
-        }
-    }
-
-    fn get_inner_mut(&mut self) -> Vec<&mut Box<Self>> {
-        default()
-    }
-
-    fn get_variants() -> impl Iterator<Item = Self> {
-        Self::iter()
     }
 }

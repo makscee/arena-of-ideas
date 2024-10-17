@@ -73,6 +73,7 @@ pub use egui::{
     Layout, Margin, NumExt, Order, Rect, Response, RichText, Rounding, Sense, SidePanel, Style,
     TextFormat, TextStyle, TopBottomPanel, Widget, WidgetText, Window,
 };
+pub use egui::{Checkbox, DragValue, Key, ScrollArea};
 pub use indexmap::IndexMap;
 pub use itertools::Itertools;
 pub use lazy_static::lazy_static;

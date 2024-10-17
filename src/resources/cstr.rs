@@ -65,7 +65,7 @@ impl Cstr {
                 .take(),
         )
     }
-    pub fn push_wrapped_curly(&mut self, mut cstr: Cstr) -> &mut Self {
+    pub fn push_wrapped_circ(&mut self, mut cstr: Cstr) -> &mut Self {
         self.push(cstr.wrap(("(".cstr(), ")".cstr())).take())
     }
     fn to_colored(&self) -> String {
@@ -160,7 +160,7 @@ impl Cstr {
     }
 
     pub fn button(self, ui: &mut Ui) -> Response {
-        Button::click(self.to_string()).cstr(self).ui(ui)
+        Button::click(self.clone()).cstr(self).ui(ui)
     }
 
     pub fn label(&self, ui: &mut Ui) -> Response {
@@ -457,6 +457,11 @@ impl ToCstr for GameMode {
     }
 }
 
+impl From<Cstr> for String {
+    fn from(value: Cstr) -> Self {
+        value.get_text()
+    }
+}
 impl From<&str> for SubText {
     fn from(value: &str) -> Self {
         SubText::String(value.into())
@@ -528,5 +533,23 @@ impl FusedUnit {
             result.push(" ".cstr()).push(mutation_str);
         }
         result
+    }
+}
+
+pub trait JoinCstr {
+    fn join(self, sep: Cstr) -> Cstr;
+}
+
+impl JoinCstr for Vec<Cstr> {
+    fn join(self, sep: Cstr) -> Cstr {
+        let mut res = Cstr::default();
+        let len = self.len();
+        for (i, c) in self.into_iter().enumerate() {
+            res.push(c);
+            if i < len - 1 {
+                res.push(sep.clone());
+            }
+        }
+        res
     }
 }

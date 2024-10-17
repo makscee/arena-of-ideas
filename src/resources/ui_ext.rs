@@ -186,7 +186,7 @@ impl ShowTable<TMetaShop> for Vec<TMetaShop> {
                 "buy",
                 |_, _| default(),
                 |d, _, ui, _| {
-                    if Button::click("buy".into())
+                    if Button::click("buy")
                         .enabled(can_afford(d.price))
                         .ui(ui)
                         .clicked()

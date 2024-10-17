@@ -163,7 +163,7 @@ impl UiPlugin {
                 },
                 inactive: WidgetVisuals {
                     weak_bg_fill: Color32::TRANSPARENT,
-                    bg_fill: VISIBLE_LIGHT, // checkbox background
+                    bg_fill: BG_DARK, // checkbox background
                     bg_stroke: Stroke::new(1.0, BG_LIGHT),
                     fg_stroke: Stroke::new(1.0, VISIBLE_LIGHT), // button text
                     rounding: Rounding::same(13.0),

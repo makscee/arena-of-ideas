@@ -109,7 +109,7 @@ impl ShopPlugin {
                 fuse_choose(fc[0], fc[1], fc[2]);
             })
             .content(|ui, world| {
-                if Button::click("Swap".into()).ui(ui).clicked() {
+                if Button::click("Swap").ui(ui).clicked() {
                     Confirmation::pop(&egui_context(world).unwrap());
                     fuse_swap();
                 }
@@ -125,7 +125,7 @@ impl ShopPlugin {
                     let mut need_update = false;
                     for i in 0..3 {
                         ui[i as usize].vertical_centered_justified(|ui| {
-                            if Button::click("Trigger".into())
+                            if Button::click("Trigger")
                                 .active(r.fusion_choice[0] == i - 1)
                                 .ui(ui)
                                 .clicked()
@@ -138,7 +138,7 @@ impl ShopPlugin {
                                 }
                                 r.fusion_choice[0] = i - 1;
                             }
-                            if Button::click("Target".into())
+                            if Button::click("Target")
                                 .active(r.fusion_choice[1] == i - 1)
                                 .ui(ui)
                                 .clicked()
@@ -151,7 +151,7 @@ impl ShopPlugin {
                                 }
                                 r.fusion_choice[1] = i - 1;
                             }
-                            if Button::click("Effect".into())
+                            if Button::click("Effect")
                                 .active(r.fusion_choice[2] == i - 1)
                                 .ui(ui)
                                 .clicked()
@@ -400,7 +400,7 @@ impl ShopPlugin {
                 if ss.available {
                     if let Some((stack_source, faction)) = sd.stack_source {
                         if slot == stack_source && faction.eq(&Faction::Shop) {
-                            if Button::click("Cancel".into()).red(ui).ui(ui).clicked() {
+                            if Button::click("Cancel").red(ui).ui(ui).clicked() {
                                 Self::cancel_stack(world);
                             }
                         }
@@ -414,15 +414,11 @@ impl ShopPlugin {
                             shop_buy(slot as u8);
                         }
                         if ss.freeze {
-                            if Button::click("Unfreeze".into())
-                                .set_bg(true, ui)
-                                .ui(ui)
-                                .clicked()
-                            {
+                            if Button::click("Unfreeze").set_bg(true, ui).ui(ui).clicked() {
                                 shop_set_freeze(slot as u8, false);
                             }
                         } else {
-                            if Button::click("Freeze".into()).gray(ui).ui(ui).clicked() {
+                            if Button::click("Freeze").gray(ui).ui(ui).clicked() {
                                 shop_set_freeze(slot as u8, true);
                             }
                         }
@@ -468,23 +464,23 @@ impl ShopPlugin {
                 if e.is_some() && run.fusion.is_none() {
                     if let Some((stack_source, faction)) = sd.stack_source {
                         if slot == stack_source && faction.eq(&Faction::Team) {
-                            if Button::click("Cancel".into()).red(ui).ui(ui).clicked() {
+                            if Button::click("Cancel").red(ui).ui(ui).clicked() {
                                 Self::cancel_stack(world);
                             }
                         } else if sd.stack_targets.contains(&slot) {
-                            if Button::click("Stack".into()).ui(ui).clicked() {
+                            if Button::click("Stack").ui(ui).clicked() {
                                 Self::do_stack(slot as u8, world);
                             }
                         }
                     } else if let Some(fuse_source) = sd.fuse_source {
                         if slot == fuse_source {
-                            if Button::click("Cancel".into()).red(ui).ui(ui).clicked() {
+                            if Button::click("Cancel").red(ui).ui(ui).clicked() {
                                 let mut sd = rm(world);
                                 sd.fuse_source = None;
                                 sd.fuse_targets.clear();
                             }
                         } else if sd.fuse_targets.contains(&slot) {
-                            if Button::click("Choose".into()).ui(ui).clicked() {
+                            if Button::click("Choose").ui(ui).clicked() {
                                 fuse_start(fuse_source as u8, slot as u8);
                                 once_on_fuse_start(|_, _, status, _, _| match status {
                                     StdbStatus::Committed => {}
@@ -503,7 +499,7 @@ impl ShopPlugin {
                                 shop_sell(slot as u8);
                             }
                             if !ts.stack_targets.is_empty() {
-                                if Button::click("Stack".into()).ui(ui).clicked() {
+                                if Button::click("Stack").ui(ui).clicked() {
                                     let mut sd = rm(world);
                                     sd.stack_source = Some((slot, Faction::Team));
                                     sd.stack_targets =
@@ -511,7 +507,7 @@ impl ShopPlugin {
                                 }
                             }
                             if !ts.fuse_targets.is_empty() {
-                                if Button::click("Fuse".into()).ui(ui).clicked() {
+                                if Button::click("Fuse").ui(ui).clicked() {
                                     let mut sd = rm(world);
                                     sd.fuse_source = Some(slot);
                                     sd.fuse_targets =
@@ -573,7 +569,7 @@ impl ShopPlugin {
                     total.to_string().cstr_cs(YELLOW, CstrStyle::Bold),
                     ui,
                 );
-                if Button::click("Finish".into()).ui(ui).clicked() {
+                if Button::click("Finish").ui(ui).clicked() {
                     run_finish();
                     once_on_run_finish(|_, _, status| match status {
                         StdbStatus::Committed => OperationsPlugin::add(|w| {

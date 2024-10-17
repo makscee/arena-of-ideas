@@ -62,11 +62,7 @@ impl GameStartPlugin {
                     ui.set_width(400.0);
                     match &game_mode {
                         GameMode::ArenaNormal => {
-                            if Button::click("Play".into())
-                                .enabled(can_start)
-                                .ui(ui)
-                                .clicked()
-                            {
+                            if Button::click("Play").enabled(can_start).ui(ui).clicked() {
                                 run_start_normal();
                                 once_on_run_start_normal(|_, _, status| {
                                     status.on_success(|w| GameState::Shop.proceed_to_target(w))
@@ -91,7 +87,7 @@ impl GameStartPlugin {
                                         team.hover_label(ui, world);
                                     },
                                     |ui, world| {
-                                        if Button::click("<".to_owned())
+                                        if Button::click("<")
                                             .min_width(ARROW_WIDTH)
                                             .ui(ui)
                                             .clicked()
@@ -103,7 +99,7 @@ impl GameStartPlugin {
                                         }
                                     },
                                     |ui, world| {
-                                        if Button::click(">".to_owned())
+                                        if Button::click(">")
                                             .min_width(ARROW_WIDTH)
                                             .ui(ui)
                                             .clicked()
@@ -178,11 +174,7 @@ impl GameStartPlugin {
                             };
                         },
                         |ui, world| {
-                            if Button::click("<".to_owned())
-                                .min_width(ARROW_WIDTH)
-                                .ui(ui)
-                                .clicked()
-                            {
+                            if Button::click("<").min_width(ARROW_WIDTH).ui(ui).clicked() {
                                 let mut gsr = rm(world);
                                 gsr.selected = (gsr.selected + gsr.game_modes.len() - 1)
                                     % gsr.game_modes.len();
@@ -190,11 +182,7 @@ impl GameStartPlugin {
                             }
                         },
                         |ui, world| {
-                            if Button::click(">".to_owned())
-                                .min_width(ARROW_WIDTH)
-                                .ui(ui)
-                                .clicked()
-                            {
+                            if Button::click(">").min_width(ARROW_WIDTH).ui(ui).clicked() {
                                 let mut gsr = rm(world);
                                 gsr.selected = (gsr.selected + 1) % gsr.game_modes.len();
                                 Self::load_leaderboard(gsr.game_modes[gsr.selected].clone(), world);
@@ -208,14 +196,14 @@ impl GameStartPlugin {
         Tile::new(Side::Left, |ui, world| {
             world.resource_scope(|world, mut gsr: Mut<GameStartResource>| {
                 ui.horizontal(|ui| {
-                    if Button::click("Leaderboard".into())
+                    if Button::click("Leaderboard")
                         .active(gsr.show_leaderboard)
                         .ui(ui)
                         .clicked()
                     {
                         gsr.show_leaderboard = true;
                     }
-                    if Button::click("Runs".into())
+                    if Button::click("Runs")
                         .active(!gsr.show_leaderboard)
                         .ui(ui)
                         .clicked()
@@ -238,10 +226,10 @@ impl GameStartPlugin {
                     ui.vertical_centered(|ui| {
                         ShopPlugin::show_stats(&run, ui);
                         ui.add_space(20.0);
-                        if Button::click("Continue".into()).ui(ui).clicked() {
+                        if Button::click("Continue").ui(ui).clicked() {
                             GameState::Shop.proceed_to_target(world);
                         }
-                        if Button::click("Abandon run".into()).red(ui).ui(ui).clicked() {
+                        if Button::click("Abandon run").red(ui).ui(ui).clicked() {
                             Confirmation::new(
                                 "Abandon current run?".cstr_c(VISIBLE_BRIGHT),
                                 |_| {

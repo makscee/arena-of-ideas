@@ -14,6 +14,7 @@ pub struct TeamContainer {
     hover_content: Option<Box<dyn Fn(usize, Option<Entity>, &mut Ui, &mut World) + Send + Sync>>,
     slot_name: HashMap<usize, String>,
     empty_slot_text: Option<Cstr>,
+    highlighted_slot: Option<usize>,
 }
 
 #[derive(Resource, Default, Clone)]
@@ -53,6 +54,7 @@ impl TeamContainer {
             context_menu: None,
             slot_name: default(),
             empty_slot_text: None,
+            highlighted_slot: None,
         }
     }
     pub fn slots(mut self, value: usize) -> Self {
@@ -122,6 +124,10 @@ impl TeamContainer {
         self.empty_slot_text = Some(text);
         self
     }
+    pub fn highlighted_slot(mut self, slot: Option<usize>) -> Self {
+        self.highlighted_slot = slot;
+        self
+    }
     pub fn slot_position(faction: Faction, slot: usize, world: &World) -> Vec2 {
         world
             .resource::<TeamContainerResource>()
@@ -163,7 +169,8 @@ impl TeamContainer {
                     } else {
                         i
                     };
-                    let resp = Self::show_unit_frame(i, self.max_slots, size, ui);
+                    let highlighted = self.highlighted_slot.is_some_and(|s| s == i);
+                    let resp = Self::show_unit_frame(i, self.max_slots, size, highlighted, ui);
                     if let Some(name) = self.slot_name.get(&i) {
                         let ui = &mut ui.child_ui(
                             Rect::from_center_size(
@@ -248,7 +255,13 @@ impl TeamContainer {
             .containers
             .insert(self.faction, data);
     }
-    fn show_unit_frame(ind: usize, max_slots: usize, size: f32, ui: &mut Ui) -> Response {
+    fn show_unit_frame(
+        ind: usize,
+        max_slots: usize,
+        size: f32,
+        highlighted: bool,
+        ui: &mut Ui,
+    ) -> Response {
         let rect = ui.available_rect_before_wrap();
         let rect = Rect::from_center_size(rect.center_top(), egui::Vec2::ZERO)
             .expand2(egui::vec2(size, 0.0))
@@ -256,6 +269,8 @@ impl TeamContainer {
         let resp = ui.allocate_rect(rect, Sense::click_and_drag());
         let color = if resp.hovered() {
             YELLOW
+        } else if highlighted {
+            CYAN
         } else if ind >= max_slots {
             DARK_RED
         } else {

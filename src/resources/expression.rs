@@ -5,6 +5,7 @@ use super::*;
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, EnumIter, AsRefStr)]
 pub enum Expression {
     #[default]
+    One,
     Zero,
 
     OppositeFaction,
@@ -95,6 +96,7 @@ pub enum Expression {
 impl Expression {
     pub fn get_value(&self, context: &Context, world: &mut World) -> Result<VarValue> {
         match self {
+            Expression::One => Ok(VarValue::Int(1)),
             Expression::Zero => Ok(VarValue::Int(0)),
             Expression::Dbg(e) => dbg!(e.get_value(context, world)),
             Expression::Ctx(e) => {
@@ -145,9 +147,8 @@ impl Expression {
             Expression::HexColor(s) => Ok(VarValue::Color({
                 let s = s.strip_prefix('#').unwrap_or(s);
                 HexColor::from_str_without_hash(s)
-                    .unwrap()
-                    .color()
-                    .to_color()
+                    .map(|c| c.color().to_color())
+                    .unwrap_or_default()
             })),
             Expression::Sin(v) => Ok(v.get_float(context, world)?.sin().into()),
             Expression::Cos(v) => Ok(v.get_float(context, world)?.cos().into()),
@@ -413,7 +414,8 @@ impl Expression {
 impl ToCstr for Expression {
     fn cstr(&self) -> Cstr {
         match self {
-            Expression::Zero
+            Expression::One
+            | Expression::Zero
             | Expression::OppositeFaction
             | Expression::SlotPosition
             | Expression::GT
@@ -646,7 +648,8 @@ impl ToCstr for Expression {
                 );
             }
 
-            Expression::Zero
+            Expression::One
+            | Expression::Zero
             | Expression::OppositeFaction
             | Expression::SlotPosition
             | Expression::GT
@@ -667,4 +670,333 @@ impl ToCstr for Expression {
         }
         s
     }
+}
+
+impl ShowEditor for Expression {
+    fn wrapper() -> Option<Self> {
+        Some(Self::Abs(default()))
+    }
+    fn show_children(&mut self, context: &Context, world: &mut World, ui: &mut Ui) {
+        match self {
+            Expression::One
+            | Expression::Zero
+            | Expression::OppositeFaction
+            | Expression::SlotPosition
+            | Expression::GT
+            | Expression::Beat
+            | Expression::PI
+            | Expression::PI2
+            | Expression::Age
+            | Expression::Index
+            | Expression::Owner
+            | Expression::Caster
+            | Expression::Target
+            | Expression::Status
+            | Expression::AllAllyUnits
+            | Expression::AllEnemyUnits
+            | Expression::AllUnits
+            | Expression::AllOtherUnits
+            | Expression::AdjacentUnits
+            | Expression::Value(..)
+            | Expression::Context(..)
+            | Expression::OwnerState(..)
+            | Expression::TargetState(..)
+            | Expression::CasterState(..)
+            | Expression::OwnerStateLast(..)
+            | Expression::TargetStateLast(..)
+            | Expression::CasterStateLast(..)
+            | Expression::StatusState(_, _)
+            | Expression::StatusStateLast(_, _)
+            | Expression::AbilityContext(_, _)
+            | Expression::AbilityState(_, _)
+            | Expression::StatusCharges(_)
+            | Expression::HexColor(_)
+            | Expression::F(_)
+            | Expression::I(_)
+            | Expression::B(_)
+            | Expression::S(_)
+            | Expression::V2(_, _) => {}
+            Expression::FilterStatusUnits(_, e)
+            | Expression::FilterNoStatusUnits(_, e)
+            | Expression::StatusEntity(_, e)
+            | Expression::Dbg(e)
+            | Expression::Ctx(e)
+            | Expression::ToI(e)
+            | Expression::Vec2E(e)
+            | Expression::UnitVec(e)
+            | Expression::VX(e)
+            | Expression::VY(e)
+            | Expression::Sin(e)
+            | Expression::Cos(e)
+            | Expression::Sqr(e)
+            | Expression::Even(e)
+            | Expression::Abs(e)
+            | Expression::Floor(e)
+            | Expression::Ceil(e)
+            | Expression::Fract(e)
+            | Expression::SlotUnit(e)
+            | Expression::RandomF(e)
+            | Expression::RandomUnit(e)
+            | Expression::ListCount(e) => e.show_node("", context, world, ui),
+
+            Expression::Sum(a, b)
+            | Expression::Sub(a, b)
+            | Expression::Mul(a, b)
+            | Expression::Div(a, b)
+            | Expression::Max(a, b)
+            | Expression::Min(a, b)
+            | Expression::Mod(a, b)
+            | Expression::And(a, b)
+            | Expression::Or(a, b)
+            | Expression::Equals(a, b)
+            | Expression::GreaterThen(a, b)
+            | Expression::LessThen(a, b) => {
+                a.show_node("", context, world, ui);
+                b.show_node("", context, world, ui);
+            }
+
+            Expression::MaxUnit(value, units) => {
+                value.show_node("value", context, world, ui);
+                units.show_node("units", context, world, ui);
+            }
+            Expression::RandomUnitSubset(amount, units) => {
+                amount.show_node("amount", context, world, ui);
+                units.show_node("units", context, world, ui);
+            }
+            Expression::Vec2EE(x, y) => {
+                x.show_node("x", context, world, ui);
+                y.show_node("y", context, world, ui);
+            }
+            Expression::WithVar(_, value, expression) => {
+                value.show_node("value", context, world, ui);
+                expression.show_node("e", context, world, ui);
+            }
+            Expression::If(cond, th, el) => {
+                cond.show_node("condition", context, world, ui);
+                th.show_node("then", context, world, ui);
+                el.show_node("else", context, world, ui);
+            }
+        }
+    }
+
+    fn show_content(&mut self, context: &Context, world: &mut World, ui: &mut Ui) {
+        let value = self.get_value(context, world);
+        match self {
+            Expression::FilterStatusUnits(status, _)
+            | Expression::FilterNoStatusUnits(status, _)
+            | Expression::StatusEntity(status, _) => {
+                status_selector(status, world, ui);
+            }
+            Expression::Value(v) => {
+                v.cstr().label(ui);
+            }
+            Expression::Context(var)
+            | Expression::OwnerState(var)
+            | Expression::TargetState(var)
+            | Expression::CasterState(var)
+            | Expression::OwnerStateLast(var)
+            | Expression::TargetStateLast(var)
+            | Expression::CasterStateLast(var)
+            | Expression::WithVar(var, ..) => {
+                var_selector(var, ui);
+            }
+            Expression::StatusState(status, var) | Expression::StatusStateLast(status, var) => {
+                status_selector(status, world, ui);
+                var_selector(var, ui);
+            }
+            Expression::AbilityContext(ability, var) | Expression::AbilityState(ability, var) => {
+                ability_selector(ability, world, ui);
+                var_selector(var, ui);
+            }
+            Expression::StatusCharges(status) => {
+                status_selector(status, world, ui);
+            }
+            Expression::HexColor(color) => {
+                if let Ok(value) = value.as_ref() {
+                    if let Ok(mut c32) = value.get_color32() {
+                        if ui.color_edit_button_srgba(&mut c32).changed() {
+                            *color = c32.to_hex();
+                        }
+                    }
+                }
+            }
+            Expression::F(v) => {
+                DragValue::new(v).ui(ui);
+            }
+            Expression::I(v) => {
+                DragValue::new(v).ui(ui);
+            }
+            Expression::B(v) => {
+                Checkbox::new(v, "").ui(ui);
+            }
+            Expression::S(v) => {
+                Input::new("").ui_string(v, ui);
+            }
+            Expression::V2(x, y) => {
+                DragValue::new(x).ui(ui);
+                DragValue::new(y).ui(ui);
+            }
+
+            Expression::One
+            | Expression::Zero
+            | Expression::OppositeFaction
+            | Expression::SlotPosition
+            | Expression::GT
+            | Expression::Beat
+            | Expression::PI
+            | Expression::PI2
+            | Expression::Age
+            | Expression::Index
+            | Expression::Owner
+            | Expression::Caster
+            | Expression::Target
+            | Expression::Status
+            | Expression::AllAllyUnits
+            | Expression::AllEnemyUnits
+            | Expression::AllUnits
+            | Expression::AllOtherUnits
+            | Expression::AdjacentUnits
+            | Expression::Dbg(..)
+            | Expression::Ctx(..)
+            | Expression::ToI(..)
+            | Expression::Vec2E(..)
+            | Expression::UnitVec(..)
+            | Expression::VX(..)
+            | Expression::VY(..)
+            | Expression::Sin(..)
+            | Expression::Cos(..)
+            | Expression::Sqr(..)
+            | Expression::Even(..)
+            | Expression::Abs(..)
+            | Expression::Floor(..)
+            | Expression::Ceil(..)
+            | Expression::Fract(..)
+            | Expression::SlotUnit(..)
+            | Expression::RandomF(..)
+            | Expression::RandomUnit(..)
+            | Expression::ListCount(..)
+            | Expression::MaxUnit(..)
+            | Expression::RandomUnitSubset(..)
+            | Expression::Vec2EE(..)
+            | Expression::Sum(..)
+            | Expression::Sub(..)
+            | Expression::Mul(..)
+            | Expression::Div(..)
+            | Expression::Max(..)
+            | Expression::Min(..)
+            | Expression::Mod(..)
+            | Expression::And(..)
+            | Expression::Or(..)
+            | Expression::Equals(..)
+            | Expression::GreaterThen(..)
+            | Expression::LessThen(..)
+            | Expression::If(..) => {}
+        };
+        show_value(value, ui);
+    }
+    fn get_inner_mut(&mut self) -> Vec<&mut Box<Self>> {
+        match self {
+            Expression::FilterStatusUnits(_, e)
+            | Expression::FilterNoStatusUnits(_, e)
+            | Expression::StatusEntity(_, e)
+            | Expression::Dbg(e)
+            | Expression::Ctx(e)
+            | Expression::ToI(e)
+            | Expression::Vec2E(e)
+            | Expression::UnitVec(e)
+            | Expression::VX(e)
+            | Expression::VY(e)
+            | Expression::Sin(e)
+            | Expression::Cos(e)
+            | Expression::Sqr(e)
+            | Expression::Even(e)
+            | Expression::Abs(e)
+            | Expression::Floor(e)
+            | Expression::Ceil(e)
+            | Expression::Fract(e)
+            | Expression::SlotUnit(e)
+            | Expression::RandomF(e)
+            | Expression::RandomUnit(e)
+            | Expression::ListCount(e) => [e].into(),
+            Expression::MaxUnit(a, b)
+            | Expression::RandomUnitSubset(a, b)
+            | Expression::Vec2EE(a, b)
+            | Expression::Sum(a, b)
+            | Expression::Sub(a, b)
+            | Expression::Mul(a, b)
+            | Expression::Div(a, b)
+            | Expression::Max(a, b)
+            | Expression::Min(a, b)
+            | Expression::Mod(a, b)
+            | Expression::And(a, b)
+            | Expression::Or(a, b)
+            | Expression::Equals(a, b)
+            | Expression::GreaterThen(a, b)
+            | Expression::WithVar(_, a, b)
+            | Expression::LessThen(a, b) => [a, b].into(),
+            Expression::If(a, b, c) => [a, b, c].into(),
+            Expression::One
+            | Expression::Zero
+            | Expression::OppositeFaction
+            | Expression::SlotPosition
+            | Expression::GT
+            | Expression::Beat
+            | Expression::PI
+            | Expression::PI2
+            | Expression::Age
+            | Expression::Index
+            | Expression::Owner
+            | Expression::Caster
+            | Expression::Target
+            | Expression::Status
+            | Expression::AllAllyUnits
+            | Expression::AllEnemyUnits
+            | Expression::AllUnits
+            | Expression::AllOtherUnits
+            | Expression::AdjacentUnits
+            | Expression::Value(_)
+            | Expression::Context(_)
+            | Expression::OwnerState(_)
+            | Expression::TargetState(_)
+            | Expression::CasterState(_)
+            | Expression::StatusState(_, _)
+            | Expression::OwnerStateLast(_)
+            | Expression::TargetStateLast(_)
+            | Expression::CasterStateLast(_)
+            | Expression::StatusStateLast(_, _)
+            | Expression::AbilityContext(_, _)
+            | Expression::AbilityState(_, _)
+            | Expression::StatusCharges(_)
+            | Expression::HexColor(_)
+            | Expression::F(_)
+            | Expression::I(_)
+            | Expression::B(_)
+            | Expression::S(_)
+            | Expression::V2(_, _) => default(),
+        }
+    }
+
+    fn get_variants() -> impl Iterator<Item = Self> {
+        Self::iter()
+    }
+}
+
+fn show_value(value: Result<VarValue>, ui: &mut Ui) {
+    let w = ui.available_width();
+    ui.set_max_width(ui.min_size().x);
+    match value {
+        Ok(v) => v
+            .cstr()
+            .style(CstrStyle::Small)
+            .as_label(ui)
+            .truncate()
+            .ui(ui),
+        Err(e) => e
+            .to_string()
+            .cstr_cs(RED, CstrStyle::Small)
+            .as_label(ui)
+            .truncate()
+            .ui(ui),
+    };
+    ui.set_max_width(w);
 }

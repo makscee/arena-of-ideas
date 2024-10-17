@@ -448,7 +448,7 @@ impl ToCstr for Effect {
     fn cstr_expanded(&self) -> Cstr {
         match self {
             Effect::UseAbility(name, base) => {
-                let mut c = format!("use ")
+                let mut c = "use "
                     .cstr_c(VISIBLE_LIGHT)
                     .push(name.cstr_cs(name_color(name), CstrStyle::Bold))
                     .push(" lvl.".cstr_cs(VISIBLE_DARK, CstrStyle::Small))
@@ -456,6 +456,16 @@ impl ToCstr for Effect {
                     .take();
                 if *base > 0 {
                     c.push(format!(" +{base}").cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold));
+                }
+                c
+            }
+            Effect::Summon(name, after) => {
+                let mut c = "summon "
+                    .cstr_c(VISIBLE_LIGHT)
+                    .push(name.cstr_cs(name_color(name), CstrStyle::Bold))
+                    .take();
+                if let Some(after) = after {
+                    c.push(" then ".cstr().push(after.cstr_expanded()).take());
                 }
                 c
             }
@@ -467,7 +477,162 @@ impl ToCstr for Effect {
                 .push(value.cstr_cs(VISIBLE_BRIGHT, CstrStyle::Bold))
                 .take(),
             Effect::Vfx(name) => format!("Vfx({name})").cstr_c(VISIBLE_LIGHT),
+            Effect::List(l) => "List"
+                .cstr()
+                .push_wrapped_circ(
+                    l.into_iter()
+                        .map(|l| l.cstr_expanded())
+                        .collect_vec()
+                        .join(" + ".cstr()),
+                )
+                .take(),
             _ => self.as_ref().cstr_c(VISIBLE_LIGHT),
         }
+    }
+}
+
+impl ShowEditor for Effect {
+    fn wrapper() -> Option<Self> {
+        Some(Self::List([default()].into()))
+    }
+    fn show_children(&mut self, context: &Context, world: &mut World, ui: &mut Ui) {
+        match self {
+            Effect::Repeat(count, ef) => {
+                count.show_node("count", context, world, ui);
+                ef.show_node("effect", context, world, ui);
+            }
+            Effect::WithTarget(ex, ef) | Effect::WithOwner(ex, ef) | Effect::WithVar(_, ex, ef) => {
+                ex.show_node("value", context, world, ui);
+                ef.show_node("effect", context, world, ui);
+            }
+            Effect::AbilityStateAddVar(_, _, e) | Effect::Text(e) => {
+                e.show_node("", context, world, ui)
+            }
+
+            Effect::Summon(_, e) => {
+                if let Some(e) = e {
+                    e.show_node("", context, world, ui);
+                }
+            }
+
+            Effect::List(l) => {
+                let mut to_remove = None;
+                for (i, e) in l.into_iter().enumerate() {
+                    ui.horizontal(|ui| {
+                        if Button::click("-").red(ui).ui(ui).clicked() {
+                            to_remove = Some(i);
+                        }
+                        e.show_node("", context, world, ui);
+                    });
+                }
+                if let Some(i) = to_remove {
+                    l.remove(i);
+                }
+            }
+
+            Effect::If(e, th, el) => {
+                e.show_node("condition", context, world, ui);
+                th.show_node("then", context, world, ui);
+                el.show_node("else", context, world, ui);
+            }
+            Effect::StatusSetVar(target, _, _, value) | Effect::StateAddVar(_, target, value) => {
+                target.show_node("target", context, world, ui);
+                value.show_node("value", context, world, ui);
+            }
+            Effect::Noop
+            | Effect::Damage
+            | Effect::Kill
+            | Effect::Heal
+            | Effect::ChangeAllStatuses
+            | Effect::ClearAllStatuses
+            | Effect::StealAllStatuses
+            | Effect::FullCopy
+            | Effect::ChangeStatus(_)
+            | Effect::ClearStatus(_)
+            | Effect::StealStatus(_)
+            | Effect::UseAbility(_, _)
+            | Effect::Vfx(_) => {}
+        }
+    }
+    fn show_content(&mut self, _: &Context, world: &mut World, ui: &mut Ui) {
+        match self {
+            Effect::ChangeStatus(status)
+            | Effect::ClearStatus(status)
+            | Effect::StealStatus(status) => {
+                status_selector(status, world, ui);
+            }
+            Effect::UseAbility(ability, base) => {
+                ability_selector(ability, world, ui);
+                DragValue::new(base).range(0..=10).ui(ui);
+            }
+            Effect::AbilityStateAddVar(ability, var, _) => {
+                ability_selector(ability, world, ui);
+                var_selector(var, ui);
+            }
+            Effect::StatusSetVar(_, status, var, _) => {
+                status_selector(status, world, ui);
+                var_selector(var, ui);
+            }
+            Effect::Summon(summon, _) => {
+                summon_selector(summon, world, ui);
+            }
+            Effect::StateAddVar(var, _, _) | Effect::WithVar(var, _, _) => {
+                var_selector(var, ui);
+            }
+            Effect::Vfx(vfx) => {
+                vfx_selector(vfx, world, ui);
+            }
+            Effect::List(l) => {
+                if Button::click("+").ui(ui).clicked() {
+                    l.push(default());
+                }
+            }
+
+            Effect::WithTarget(_, _)
+            | Effect::WithOwner(_, _)
+            | Effect::Repeat(_, _)
+            | Effect::If(_, _, _)
+            | Effect::Text(_)
+            | Effect::ChangeAllStatuses
+            | Effect::ClearAllStatuses
+            | Effect::StealAllStatuses
+            | Effect::FullCopy
+            | Effect::Noop
+            | Effect::Damage
+            | Effect::Kill
+            | Effect::Heal => {}
+        }
+    }
+    fn get_inner_mut(&mut self) -> Vec<&mut Box<Self>> {
+        match self {
+            Effect::WithTarget(_, e)
+            | Effect::WithOwner(_, e)
+            | Effect::WithVar(_, _, e)
+            | Effect::Repeat(_, e) => [e].into(),
+            Effect::List(l) => l.iter_mut().collect_vec(),
+            Effect::If(_, a, b) => [a, b].into(),
+
+            Effect::Summon(_, _)
+            | Effect::Noop
+            | Effect::Damage
+            | Effect::Kill
+            | Effect::Heal
+            | Effect::ChangeStatus(_)
+            | Effect::ClearStatus(_)
+            | Effect::StealStatus(_)
+            | Effect::ChangeAllStatuses
+            | Effect::ClearAllStatuses
+            | Effect::StealAllStatuses
+            | Effect::UseAbility(_, _)
+            | Effect::AbilityStateAddVar(_, _, _)
+            | Effect::Vfx(_)
+            | Effect::StateAddVar(_, _, _)
+            | Effect::StatusSetVar(_, _, _, _)
+            | Effect::Text(_)
+            | Effect::FullCopy => default(),
+        }
+    }
+    fn get_variants() -> impl Iterator<Item = Self> {
+        Self::iter()
     }
 }

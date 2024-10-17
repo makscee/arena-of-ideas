@@ -398,12 +398,12 @@ impl BattlePlugin {
             space(ui);
             ui.columns(2, |ui| {
                 ui[0].vertical_centered_justified(|ui| {
-                    if Button::click("Replay".into()).gray(ui).ui(ui).clicked() {
+                    if Button::click("Replay").gray(ui).ui(ui).clicked() {
                         gt().play_head_to(0.0);
                     }
                 });
                 ui[1].vertical_centered_justified(|ui| {
-                    if Button::click("Finish".into()).ui(ui).clicked() {
+                    if Button::click("Finish").ui(ui).clicked() {
                         rm(world).next_state.proceed_to_target(world);
                     }
                 });

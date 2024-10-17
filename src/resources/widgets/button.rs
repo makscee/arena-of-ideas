@@ -27,8 +27,11 @@ impl Default for Button {
 }
 
 impl Button {
-    pub fn click(name: String) -> Self {
-        Self { name, ..default() }
+    pub fn click(name: impl Into<String>) -> Self {
+        Self {
+            name: name.into(),
+            ..default()
+        }
     }
     pub fn cstr(mut self, name: Cstr) -> Self {
         self.name_cstr = Some(name);

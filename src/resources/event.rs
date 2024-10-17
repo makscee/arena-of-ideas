@@ -130,7 +130,7 @@ impl ToCstr for Event {
         match self {
             Event::BattleStart | Event::TurnStart | Event::TurnEnd => {}
             Event::BeforeStrike(a, b) | Event::AfterStrike(a, b) => {
-                s.push_wrapped_curly(
+                s.push_wrapped_circ(
                     entity_name_with_id(*a)
                         .push(", ".cstr())
                         .push(entity_name_with_id(*b))
@@ -138,10 +138,10 @@ impl ToCstr for Event {
                 );
             }
             Event::Summon(a) | Event::Death(a) => {
-                s.push_wrapped_curly(entity_name_with_id(*a));
+                s.push_wrapped_circ(entity_name_with_id(*a));
             }
             Event::Kill { owner, target } => {
-                s.push_wrapped_curly(
+                s.push_wrapped_circ(
                     entity_name_with_id(*owner)
                         .push(" -> ".cstr())
                         .push(entity_name_with_id(*target))
@@ -149,7 +149,7 @@ impl ToCstr for Event {
                 );
             }
             Event::IncomingDamage { owner, value } | Event::DamageTaken { owner, value } => {
-                s.push_wrapped_curly(
+                s.push_wrapped_circ(
                     entity_name_with_id(*owner)
                         .push(format!(" {value}").cstr_c(VISIBLE_LIGHT))
                         .take(),
@@ -165,7 +165,7 @@ impl ToCstr for Event {
                 target,
                 value,
             } => {
-                s.push_wrapped_curly(
+                s.push_wrapped_circ(
                     entity_name_with_id(*owner)
                         .push(" -> ".cstr())
                         .push(entity_name_with_id(*target))
@@ -174,7 +174,7 @@ impl ToCstr for Event {
                 );
             }
             Event::UseAbility(ability) => {
-                s.push_wrapped_curly(ability.cstr_c(name_color(ability)));
+                s.push_wrapped_circ(ability.cstr_c(name_color(ability)));
             }
         }
         s

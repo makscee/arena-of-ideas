@@ -18,139 +18,6 @@ pub enum Trigger {
     List(Vec<Box<Trigger>>),
 }
 
-#[derive(Deserialize, Serialize, Clone, Debug, Display, PartialEq, EnumIter, Default)]
-pub enum DeltaTrigger {
-    #[default]
-    IncomingDamage,
-    Var(VarName),
-}
-
-#[derive(Deserialize, Serialize, Clone, Debug, PartialEq, EnumIter, Default, AsRefStr)]
-pub enum FireTrigger {
-    #[default]
-    None,
-    List(Vec<Box<FireTrigger>>),
-    Period(usize, usize, Box<FireTrigger>),
-    OnceAfter(i32, Box<FireTrigger>),
-    UnitUsedAbility(String),
-    AllyUsedAbility(String),
-    EnemyUsedAbility(String),
-    If(Expression, Box<FireTrigger>),
-    AfterIncomingDamage,
-    AfterDamageTaken,
-    AfterDamageDealt,
-    BattleStart,
-    TurnStart,
-    TurnEnd,
-    BeforeStrike,
-    AfterStrike,
-    AllyDeath,
-    AnyDeath,
-    AllySummon,
-    EnemySummon,
-    BeforeDeath,
-    AfterKill,
-}
-
-impl FireTrigger {
-    fn catch(&mut self, event: &Event, context: &Context, world: &mut World) -> bool {
-        match self {
-            FireTrigger::List(list) => list.iter_mut().any(|t| t.catch(event, context, world)),
-            FireTrigger::AfterIncomingDamage => matches!(event, Event::IncomingDamage { .. }),
-            FireTrigger::AfterDamageTaken => matches!(event, Event::DamageTaken { .. }),
-            FireTrigger::AfterDamageDealt => matches!(event, Event::DamageDealt { .. }),
-            FireTrigger::BattleStart => matches!(event, Event::BattleStart { .. }),
-            FireTrigger::TurnStart => matches!(event, Event::TurnStart { .. }),
-            FireTrigger::TurnEnd => matches!(event, Event::TurnEnd { .. }),
-            FireTrigger::BeforeStrike => matches!(event, Event::BeforeStrike { .. }),
-            FireTrigger::AfterStrike => matches!(event, Event::AfterStrike { .. }),
-            FireTrigger::AfterKill => matches!(event, Event::Kill { .. }),
-            FireTrigger::AnyDeath => {
-                matches!(event, Event::Death (dead) if !context.owner().eq(dead))
-            }
-            FireTrigger::AllyDeath => match event {
-                Event::Death(dead) => {
-                    !context.owner().eq(dead)
-                        && dead.faction(world).eq(&context.owner().faction(world))
-                }
-                _ => false,
-            },
-            FireTrigger::AllySummon => match event {
-                Event::Summon(e) => e.faction(world).eq(&context.owner().faction(world)),
-                _ => false,
-            },
-            FireTrigger::EnemySummon => match event {
-                Event::Summon(e) => e
-                    .faction(world)
-                    .eq(&context.owner().faction(world).opposite()),
-                _ => false,
-            },
-            FireTrigger::UnitUsedAbility(name) => match event {
-                Event::UseAbility(e) => e.eq(name),
-                _ => false,
-            },
-            FireTrigger::AllyUsedAbility(name) => match event {
-                Event::UseAbility(e) => {
-                    e.eq(name)
-                        && context
-                            .owner()
-                            .faction(world)
-                            .eq(&context.caster().faction(world))
-                }
-                _ => false,
-            },
-            FireTrigger::EnemyUsedAbility(name) => match event {
-                Event::UseAbility(e) => {
-                    e.eq(name)
-                        && context
-                            .owner()
-                            .faction(world)
-                            .opposite()
-                            .eq(&context.target().faction(world))
-                }
-                _ => false,
-            },
-            FireTrigger::BeforeDeath => match event {
-                Event::Death(dead) => dead.eq(&context.owner()),
-                _ => false,
-            },
-            FireTrigger::Period(counter, delay, trigger) => {
-                if !trigger.catch(event, context, world) {
-                    return false;
-                }
-                if *counter == *delay {
-                    *counter = 0;
-                    true
-                } else {
-                    *counter += 1;
-                    false
-                }
-            }
-            FireTrigger::OnceAfter(counter, trigger) => {
-                if !trigger.catch(event, context, world) {
-                    return false;
-                }
-                *counter -= 1;
-                *counter == -1
-            }
-            FireTrigger::If(cond, trigger) => {
-                cond.get_bool(context, world).unwrap_or_default()
-                    && trigger.catch(event, context, world)
-            }
-            FireTrigger::None => false,
-        }
-    }
-}
-
-impl DeltaTrigger {
-    fn catch(&self, event: &Event) -> bool {
-        match self {
-            DeltaTrigger::IncomingDamage => matches!(event, Event::IncomingDamage { .. }),
-            DeltaTrigger::Var(..) => false,
-        }
-    }
-}
-
 impl Default for Trigger {
     fn default() -> Self {
         Self::Fire {
@@ -309,81 +176,6 @@ impl Trigger {
     }
 }
 
-impl ToCstr for FireTrigger {
-    fn cstr(&self) -> Cstr {
-        self.as_ref().cstr_c(match self {
-            FireTrigger::None => VISIBLE_LIGHT,
-            FireTrigger::List(_) | FireTrigger::Period(_, _, _) | FireTrigger::OnceAfter(_, _) => {
-                RED
-            }
-            FireTrigger::UnitUsedAbility(_)
-            | FireTrigger::AllyUsedAbility(_)
-            | FireTrigger::EnemyUsedAbility(_) => PURPLE,
-            FireTrigger::If(_, _) => CYAN,
-
-            FireTrigger::AfterIncomingDamage
-            | FireTrigger::AfterDamageTaken
-            | FireTrigger::AfterDamageDealt
-            | FireTrigger::BattleStart
-            | FireTrigger::TurnStart
-            | FireTrigger::TurnEnd
-            | FireTrigger::BeforeStrike
-            | FireTrigger::AfterStrike
-            | FireTrigger::AllyDeath
-            | FireTrigger::AnyDeath
-            | FireTrigger::AllySummon
-            | FireTrigger::EnemySummon
-            | FireTrigger::BeforeDeath
-            | FireTrigger::AfterKill => YELLOW,
-        })
-    }
-    fn cstr_expanded(&self) -> Cstr {
-        match self {
-            FireTrigger::List(list) => {
-                Cstr::join_vec(list.iter().map(|t| t.cstr_c(VISIBLE_LIGHT)).collect_vec())
-                    .join(&" + ".cstr_c(VISIBLE_DARK))
-                    .take()
-            }
-            FireTrigger::Period(_, delay, trigger) => format!("Every {delay} ")
-                .cstr_c(VISIBLE_LIGHT)
-                .push(trigger.cstr_expanded())
-                .take(),
-            FireTrigger::OnceAfter(delay, trigger) => format!("Once in {delay} ")
-                .cstr_c(VISIBLE_LIGHT)
-                .push(trigger.cstr_expanded())
-                .take(),
-            FireTrigger::If(cond, trigger) => trigger
-                .cstr_expanded()
-                .push(" if ".cstr())
-                .push(cond.cstr_expanded())
-                .take(),
-            FireTrigger::UnitUsedAbility(name)
-            | FireTrigger::AllyUsedAbility(name)
-            | FireTrigger::EnemyUsedAbility(name) => self
-                .as_ref()
-                .to_case(Case::Lower)
-                .cstr_c(VISIBLE_LIGHT)
-                .push(format!(" {name}").cstr_cs(name_color(name), CstrStyle::Bold))
-                .take(),
-            FireTrigger::None
-            | FireTrigger::AfterIncomingDamage
-            | FireTrigger::AfterDamageTaken
-            | FireTrigger::AfterDamageDealt
-            | FireTrigger::BattleStart
-            | FireTrigger::TurnStart
-            | FireTrigger::TurnEnd
-            | FireTrigger::BeforeStrike
-            | FireTrigger::AfterStrike
-            | FireTrigger::AllyDeath
-            | FireTrigger::AnyDeath
-            | FireTrigger::AllySummon
-            | FireTrigger::EnemySummon
-            | FireTrigger::BeforeDeath
-            | FireTrigger::AfterKill => self.as_ref().to_case(Case::Lower).cstr_c(VISIBLE_LIGHT),
-        }
-    }
-}
-
 impl ToCstr for Trigger {
     fn cstr_expanded(&self) -> Cstr {
         match self {
@@ -399,6 +191,8 @@ impl ToCstr for Trigger {
                         n.clone()
                             .map(|s| s.cstr())
                             .unwrap_or_else(|| t.cstr_expanded())
+                            .push("|".cstr())
+                            .take()
                     })
                     .collect_vec();
                 let triggers = Cstr::join_vec(triggers).style(CstrStyle::Small).take();
@@ -411,6 +205,8 @@ impl ToCstr for Trigger {
                         n.clone()
                             .map(|s| s.cstr())
                             .unwrap_or_else(|| t.cstr_expanded())
+                            .push("|".cstr())
+                            .take()
                     })
                     .collect_vec();
                 let targets = Cstr::join_vec(targets).style(CstrStyle::Small).take();
@@ -423,6 +219,8 @@ impl ToCstr for Trigger {
                         n.clone()
                             .map(|s| s.cstr())
                             .unwrap_or_else(|| t.cstr_expanded())
+                            .push("|".cstr())
+                            .take()
                     })
                     .collect_vec();
                 let effects = Cstr::join_vec(effects).style(CstrStyle::Small).take();
@@ -444,5 +242,85 @@ impl ToCstr for Trigger {
             Trigger::Change { .. } => "Change".cstr_c(CYAN),
             Trigger::List(..) => "List".cstr_c(LIGHT_PURPLE),
         }
+    }
+}
+
+fn show_named_nodes<T: ShowEditor>(
+    name: &str,
+    nodes: &mut Vec<(T, Option<String>)>,
+    context: &Context,
+    world: &mut World,
+    ui: &mut Ui,
+) {
+    let mut c = 0;
+    ui.collapsing(name, |ui| {
+        for (node, name) in nodes.iter_mut() {
+            c += 1;
+            ui.push_id(c, |ui| {
+                ui.horizontal(|ui| {
+                    if Checkbox::new(&mut name.is_some(), "").ui(ui).changed() {
+                        if name.is_some() {
+                            *name = None;
+                        } else {
+                            *name = Some(default());
+                        }
+                    }
+                    if let Some(name) = name {
+                        Input::new("rename").ui_string(name, ui);
+                    }
+                });
+                node.show_node("", context, world, ui);
+            });
+        }
+        if Button::click("+").ui(ui).clicked() {
+            nodes.push((default(), None));
+        }
+    });
+}
+impl ShowEditor for Trigger {
+    fn show_node(&mut self, _: &str, context: &Context, world: &mut World, ui: &mut Ui) {
+        self.show_self(ui, world);
+        self.cstr_expanded().label(ui);
+        self.show_children(context, world, ui);
+    }
+    fn show_children(&mut self, context: &Context, world: &mut World, ui: &mut Ui) {
+        match self {
+            Trigger::Fire {
+                triggers,
+                targets,
+                effects,
+            } => {
+                show_named_nodes("Triggers", triggers, context, world, ui);
+                show_named_nodes("Targets", targets, context, world, ui);
+                show_named_nodes("Effects", effects, context, world, ui);
+            }
+            Trigger::Change { trigger, expr } => {
+                trigger.show_node("trigger", context, world, ui);
+                expr.show_node("expression", context, world, ui);
+            }
+            Trigger::List(l) => {
+                let mut to_remove = None;
+                for (i, t) in l.into_iter().enumerate() {
+                    ui.push_id(i, |ui| {
+                        if Button::click("-").red(ui).ui(ui).clicked() {
+                            to_remove = Some(i);
+                        }
+                        t.show_node("", context, world, ui);
+                    });
+                }
+                if let Some(i) = to_remove {
+                    l.remove(i);
+                }
+                if Button::click("+").ui(ui).clicked() {
+                    l.push(default());
+                }
+            }
+        }
+    }
+    fn get_inner_mut(&mut self) -> Vec<&mut Box<Self>> {
+        default()
+    }
+    fn get_variants() -> impl Iterator<Item = Self> {
+        Self::iter()
     }
 }

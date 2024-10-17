@@ -53,7 +53,7 @@ impl Trade {
                 lootboxes.show_table("Lootboxes", ui, world);
             }
             ui.vertical_centered_justified(|ui| {
-                if Button::click("Accept".into()).ui(ui).clicked() {
+                if Button::click("Accept").ui(ui).clicked() {
                     accept_trade(id);
                     once_on_accept_trade(|_, _, status, id| match status {
                         StdbStatus::Committed => {}

@@ -29,6 +29,7 @@ pub enum RepresentationMaterial {
     Text {
         #[serde(default = "f32_one_e")]
         size: Expression,
+        #[serde(default = "text")]
         text: Expression,
         #[serde(default = "color_e")]
         color: Expression,
@@ -87,6 +88,9 @@ fn color_arr_e() -> Vec<Expression> {
         Expression::HexColor("#ffffff".to_owned()),
     ]
     .into()
+}
+fn text() -> Expression {
+    Expression::S("Sample Text".into())
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, EnumIter, Display, AsRefStr)]
@@ -515,6 +519,147 @@ impl RepresentationMaterial {
                 }
             }
         }
+    }
+}
+
+impl ShowEditor for RepresentationMaterial {
+    fn show_content(&mut self, _: &Context, _: &mut World, ui: &mut Ui) {
+        match self {
+            RepresentationMaterial::None => {}
+            RepresentationMaterial::Shape {
+                shape,
+                shape_type,
+                fill,
+                fbm,
+                alpha: _,
+                padding: _,
+            } => {
+                Selector::new("shape").ui_enum(shape, ui);
+                Selector::new("fill").ui_enum(fill, ui);
+                Selector::new("shape type").ui_enum(shape_type, ui);
+                let mut fbm_enabled = fbm.is_some();
+                if Checkbox::new(&mut fbm_enabled, "fbm").ui(ui).changed() {
+                    if fbm_enabled {
+                        *fbm = Some(default());
+                    } else {
+                        *fbm = None;
+                    }
+                }
+            }
+            RepresentationMaterial::Text {
+                size: _,
+                text: _,
+                color: _,
+                alpha: _,
+                font_size,
+            } => {
+                DragValue::new(font_size).range(1..=100).ui(ui);
+            }
+            RepresentationMaterial::Curve { .. } => {}
+        }
+    }
+    fn show_children(&mut self, context: &Context, world: &mut World, ui: &mut Ui) {
+        match self {
+            RepresentationMaterial::None => {}
+            RepresentationMaterial::Shape {
+                shape,
+                shape_type,
+                fill: _,
+                fbm,
+                alpha,
+                padding,
+            } => {
+                match shape {
+                    RepShape::Circle { radius } => {
+                        show_collapsing_node("radius", radius, context, ui, world)
+                    }
+                    RepShape::Rectangle { size } => {
+                        show_collapsing_node("size", size, context, ui, world)
+                    }
+                }
+                match shape_type {
+                    RepShapeType::Opaque => {}
+                    RepShapeType::Line { thickness } => {
+                        show_collapsing_node("thickness", thickness, context, ui, world)
+                    }
+                }
+                show_collapsing_node("alpha", alpha, context, ui, world);
+                show_collapsing_node("padding", padding, context, ui, world);
+                if let Some(RepFbm {
+                    octaves,
+                    lacunarity,
+                    gain,
+                    strength,
+                    offset,
+                }) = fbm
+                {
+                    "FBM".cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold).label(ui);
+                    show_collapsing_node("octaves", octaves, context, ui, world);
+                    show_collapsing_node("lacunarity", lacunarity, context, ui, world);
+                    show_collapsing_node("gain", gain, context, ui, world);
+                    show_collapsing_node("strength", strength, context, ui, world);
+                    show_collapsing_node("offset", offset, context, ui, world);
+                }
+            }
+            RepresentationMaterial::Text {
+                size,
+                text,
+                color,
+                alpha,
+                ..
+            } => {
+                show_collapsing_node("size", size, context, ui, world);
+                show_collapsing_node("text", text, context, ui, world);
+                show_collapsing_node("color", color, context, ui, world);
+                show_collapsing_node("alpha", alpha, context, ui, world);
+            }
+            RepresentationMaterial::Curve {
+                thickness,
+                dilations,
+                curvature,
+                aa,
+                alpha,
+                color,
+            } => {
+                show_collapsing_node("thickness", thickness, context, ui, world);
+                show_collapsing_node("curvature", curvature, context, ui, world);
+                show_collapsing_node("aa", aa, context, ui, world);
+                show_collapsing_node("alpha", alpha, context, ui, world);
+                show_collapsing_node("color", color, context, ui, world);
+                ui.collapsing("dilations", |ui| {
+                    let mut to_remove = None;
+                    for (i, (p, v)) in dilations.into_iter().enumerate() {
+                        if Button::click("-").red(ui).ui(ui).clicked() {
+                            to_remove = Some(i);
+                        }
+                        p.show_node("p", context, world, ui);
+                        v.show_node("v", context, world, ui);
+                    }
+                    if let Some(i) = to_remove {
+                        dilations.remove(i);
+                    }
+                    if Button::click("+").ui(ui).clicked() {
+                        dilations.push((default(), default()));
+                    }
+                });
+            }
+        }
+    }
+
+    fn get_inner_mut(&mut self) -> Vec<&mut Box<Self>> {
+        default()
+    }
+
+    fn get_variants() -> impl Iterator<Item = Self> {
+        Self::iter().map(|m| {
+            ron::from_str::<RepresentationMaterial>(&match &m {
+                RepresentationMaterial::None => m.as_ref().into(),
+                RepresentationMaterial::Shape { .. }
+                | RepresentationMaterial::Text { .. }
+                | RepresentationMaterial::Curve { .. } => format!("{}()", m.as_ref()),
+            })
+            .unwrap()
+        })
     }
 }
 

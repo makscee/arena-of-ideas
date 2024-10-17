@@ -349,7 +349,7 @@ impl ToCstr for ContextLayer {
     fn cstr(&self) -> Cstr {
         self.as_ref()
             .cstr()
-            .push_wrapped_curly(match self {
+            .push_wrapped_circ(match self {
                 ContextLayer::Caster(e) | ContextLayer::Target(e) | ContextLayer::Owner(e) => {
                     entity_name_with_id(*e)
                 }

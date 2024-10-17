@@ -142,7 +142,7 @@ impl TeamPlugin {
             title("Team Manager", ui);
             let cost = GlobalSettings::current().create_team_cost;
             ui.vertical_centered_justified(|ui| {
-                if Button::click("New Team".into())
+                if Button::click("New Team")
                     .credits_cost(cost)
                     .ui(ui)
                     .clicked()
@@ -179,7 +179,7 @@ impl TeamPlugin {
                 .empty_slot_text("+1/+1\nto all".cstr_cs(VISIBLE_DARK, CstrStyle::Bold))
                 .top_content(|ui, _| {
                     ui.horizontal(|ui| {
-                        if Button::click("Add Unit".into()).ui(ui).clicked() {
+                        if Button::click("Add Unit").ui(ui).clicked() {
                             Confirmation::new("Add unit to team".cstr(), |world| {
                                 let mut tr = world.resource_mut::<TeamResource>();
                                 let id = tr.unit_to_add;
@@ -207,7 +207,7 @@ impl TeamPlugin {
                             })
                             .push(ui.ctx());
                         }
-                        if Button::click("Disband".into()).red(ui).ui(ui).clicked() {
+                        if Button::click("Disband").red(ui).ui(ui).clicked() {
                             Confirmation::new("Disband team?".cstr_c(VISIBLE_LIGHT), |world| {
                                 let tr = world.resource_mut::<TeamResource>();
                                 team_disband(tr.team);
@@ -228,7 +228,7 @@ impl TeamPlugin {
                         return;
                     }
                     ui.vertical_centered_justified(|ui| {
-                        if Button::click("Remove".into()).ui(ui).clicked() {
+                        if Button::click("Remove").ui(ui).clicked() {
                             let tr = world.resource::<TeamResource>();
                             team_remove_unit(tr.team, tr.team.get_team().units[slot].id);
                             once_on_team_remove_unit(|_, _, status, _, _| {

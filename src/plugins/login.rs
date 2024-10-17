@@ -79,7 +79,7 @@ impl LoginPlugin {
                     format!("Login as {}", user.name)
                         .cstr_cs(VISIBLE_LIGHT, CstrStyle::Heading2)
                         .label(ui);
-                    if Button::click("Login".into()).ui(ui).clicked() {
+                    if Button::click("Login").ui(ui).clicked() {
                         login_by_identity();
                         once_on_login_by_identity(|_, _, status| {
                             match status {
@@ -96,7 +96,7 @@ impl LoginPlugin {
                         });
                     }
                     br(ui);
-                    if Button::click("Logout".into()).gray(ui).ui(ui).clicked() {
+                    if Button::click("Logout").gray(ui).ui(ui).clicked() {
                         ld.identity_user = None;
                     }
                 } else {
@@ -104,7 +104,7 @@ impl LoginPlugin {
                     "Register"
                         .cstr_cs(VISIBLE_LIGHT, CstrStyle::Heading)
                         .label(ui);
-                    if Button::click("New Player".into()).ui(ui).clicked() {
+                    if Button::click("New Player").ui(ui).clicked() {
                         register_empty();
                         once_on_register_empty(|_, _, status| match status {
                             spacetimedb_sdk::reducer::Status::Committed => {
@@ -131,7 +131,7 @@ impl LoginPlugin {
                     Input::new("password")
                         .password()
                         .ui_string(&mut ld.pass_field, ui);
-                    if Button::click("Submit".into()).ui(ui).clicked() {
+                    if Button::click("Submit").ui(ui).clicked() {
                         login(ld.name_field.clone(), ld.pass_field.clone());
                         once_on_login(|_, _, status, name, _| match status {
                             spacetimedb_sdk::reducer::Status::Committed => {
