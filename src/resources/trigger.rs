@@ -299,21 +299,7 @@ impl ShowEditor for Trigger {
                 expr.show_node("expression", context, world, ui);
             }
             Trigger::List(l) => {
-                let mut to_remove = None;
-                for (i, t) in l.into_iter().enumerate() {
-                    ui.push_id(i, |ui| {
-                        if Button::click("-").red(ui).ui(ui).clicked() {
-                            to_remove = Some(i);
-                        }
-                        t.show_node("", context, world, ui);
-                    });
-                }
-                if let Some(i) = to_remove {
-                    l.remove(i);
-                }
-                if Button::click("+").ui(ui).clicked() {
-                    l.push(default());
-                }
+                show_list_node(l, context, ui, world);
             }
         }
     }

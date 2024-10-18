@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, EnumIter, AsRefStr, PartialEq)]
 pub enum Anim {
     Sequence(Vec<Box<Anim>>),
     Run(Vec<Box<Anim>>),
@@ -70,5 +70,68 @@ impl Anim {
             }
         }
         Ok(head_shift)
+    }
+}
+
+impl ToCstr for Anim {
+    fn cstr(&self) -> Cstr {
+        self.as_ref().cstr()
+    }
+}
+
+impl ShowEditor for Anim {
+    fn transparent() -> bool {
+        true
+    }
+    fn wrapper() -> Option<Self> {
+        Some(Self::Run([default()].into()))
+    }
+    fn show_content(&mut self, context: &Context, world: &mut World, ui: &mut Ui) {
+        match self {
+            Anim::Sequence(l) | Anim::Run(l) => {
+                if Button::click("+").ui(ui).clicked() {
+                    l.push(default());
+                }
+            }
+            Anim::Change {
+                var,
+                value,
+                t,
+                duration,
+                timeframe,
+                tween,
+            } => {
+                ui.horizontal(|ui| {
+                    ui.vertical(|ui| {
+                        DragValue::new(t).prefix("t: ").ui(ui);
+                        Selector::new("tween").ui_enum(tween, ui);
+                        var_selector(var, ui);
+                    });
+                    value.show_node("value", context, world, ui);
+                    duration.show_node("duration", context, world, ui);
+                    timeframe.show_node("timeframe", context, world, ui);
+                });
+            }
+            Anim::Sfx { sfx } => {
+                Selector::new("sfx").ui_enum(sfx, ui);
+            }
+        }
+    }
+    fn get_variants() -> impl Iterator<Item = Self> {
+        Self::iter()
+    }
+    fn get_inner_mut(&mut self) -> Vec<&mut Box<Self>> {
+        match self {
+            Anim::Sequence(l) | Anim::Run(l) => l.iter_mut().collect(),
+            Anim::Change { .. } | Anim::Sfx { .. } => default(),
+        }
+    }
+    fn show_children(&mut self, context: &Context, world: &mut World, ui: &mut Ui) {
+        match self {
+            Anim::Sequence(l) | Anim::Run(l) => {
+                show_list_node(l, context, ui, world);
+            }
+            Anim::Change { .. } | Anim::Sfx { .. } => {}
+        }
     }
 }

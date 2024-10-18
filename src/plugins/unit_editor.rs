@@ -428,6 +428,9 @@ fn lookup_text_pop(ctx: &egui::Context) {
     ctx.data_mut(|w| w.get_temp_mut_or_default::<String>(lookup_id()).pop());
 }
 pub trait ShowEditor: ToCstr + Default + Serialize + DeserializeOwned + Clone {
+    fn transparent() -> bool {
+        false
+    }
     fn get_variants() -> impl Iterator<Item = Self>;
     fn get_inner_mut(&mut self) -> Vec<&mut Box<Self>>;
     fn wrapper() -> Option<Self> {
@@ -442,7 +445,7 @@ pub trait ShowEditor: ToCstr + Default + Serialize + DeserializeOwned + Clone {
             spread: 5.0,
             color: Color32::from_rgba_premultiplied(20, 20, 20, 25),
         };
-        const FRAME: Frame = Frame {
+        const FRAME_REGULAR: Frame = Frame {
             inner_margin: Margin::same(4.0),
             rounding: Rounding::same(6.0),
             shadow: SHADOW,
@@ -453,12 +456,27 @@ pub trait ShowEditor: ToCstr + Default + Serialize + DeserializeOwned + Clone {
                 color: VISIBLE_DARK,
             },
         };
+        const FRAME_TRANSPARENT: Frame = Frame {
+            inner_margin: Margin::same(4.0),
+            rounding: Rounding::same(6.0),
+            shadow: Shadow::NONE,
+            outer_margin: Margin::ZERO,
+            fill: TRANSPARENT,
+            stroke: Stroke {
+                width: 1.0,
+                color: VISIBLE_DARK,
+            },
+        };
         if !name.is_empty() {
             name.cstr_cs(VISIBLE_DARK, CstrStyle::Small).label(ui);
         }
-
-        let resp = FRAME.show(ui, |ui| {
-            ui.horizontal(|ui| {
+        let resp = if Self::transparent() {
+            FRAME_TRANSPARENT
+        } else {
+            FRAME_REGULAR
+        }
+        .show(ui, |ui| {
+            ui.with_layout(Layout::left_to_right(Align::Min), |ui| {
                 ui.vertical(|ui| {
                     self.show_self(ui, world);
                     ui.set_max_width(ui.min_size().x);

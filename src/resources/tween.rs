@@ -2,7 +2,7 @@ use super::*;
 use ::tween;
 use bevy::color::Mix;
 
-#[derive(Serialize, Deserialize, Clone, Copy, Debug, Default, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, Default, PartialEq, AsRefStr, EnumIter)]
 pub enum Tween {
     #[default]
     Linear,
@@ -58,5 +58,11 @@ impl Tween {
             _ => panic!("Tweening not supported for {a:?} and {b:?}"),
         };
         Ok(v)
+    }
+}
+
+impl ToCstr for Tween {
+    fn cstr(&self) -> Cstr {
+        self.as_ref().cstr()
     }
 }

@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Asset, Deserialize, Serialize, Debug, Clone, TypePath, Default)]
+#[derive(Asset, Deserialize, Serialize, Debug, Clone, TypePath, Default, PartialEq)]
 pub struct Vfx {
     pub anim: Anim,
     pub representation: Representation,
@@ -14,7 +14,7 @@ pub struct Vfx {
 }
 
 impl Vfx {
-    pub fn get(name: &str, world: &World) -> Self {
+    pub fn get(name: &str) -> Self {
         game_assets()
             .vfxs
             .get(name)
@@ -22,14 +22,14 @@ impl Vfx {
             .unwrap()
             .clone()
     }
-    pub fn unpack(self, world: &mut World) -> Result<f32> {
+    pub fn unpack(self, world: &mut World) -> Result<Entity> {
         let entity = world.spawn_empty().id();
         self.representation.unpack(entity, world);
         if let Some(parent) = self.parent {
             world.entity_mut(entity).set_parent(parent);
         }
         self.state.attach(entity, 0, world);
-        let result = self.anim.apply(Context::new(entity), world);
+        self.anim.apply(Context::new(entity), world)?;
         if let Some(duration) = self.duration {
             let mut state = VarState::get_mut(entity, world);
             state.init(VarName::Visible, true.into());
@@ -45,7 +45,7 @@ impl Vfx {
         if self.timeframe > 0.0 {
             gt().advance_insert(self.timeframe);
         }
-        result
+        Ok(entity)
     }
     pub fn set_var(mut self, var: VarName, value: VarValue) -> Self {
         self.state.init(var, value);
@@ -70,5 +70,50 @@ impl Vfx {
             self = self.set_var(var, value);
         }
         self
+    }
+}
+
+impl ShowEditor for Vfx {
+    fn transparent() -> bool {
+        true
+    }
+    fn show_content(&mut self, context: &Context, world: &mut World, ui: &mut Ui) {
+        show_collapsing_node("anim", &mut self.anim, context, ui, world);
+        show_collapsing_node(
+            "representation",
+            &mut self.representation,
+            context,
+            ui,
+            world,
+        );
+        let mut c = self.duration.is_some();
+        ui.horizontal(|ui| {
+            if Checkbox::new(&mut c, "duration").ui(ui).changed() {
+                if c {
+                    self.duration = Some(1.0);
+                } else {
+                    self.duration = None;
+                }
+            }
+            if let Some(duration) = self.duration.as_mut() {
+                DragValue::new(duration).ui(ui);
+            }
+        });
+        DragValue::new(&mut self.timeframe)
+            .prefix("timeframe: ")
+            .ui(ui);
+    }
+    fn get_variants() -> impl Iterator<Item = Self> {
+        None.into_iter()
+    }
+    fn get_inner_mut(&mut self) -> Vec<&mut Box<Self>> {
+        default()
+    }
+    fn show_children(&mut self, _context: &Context, _world: &mut World, _ui: &mut Ui) {}
+}
+
+impl ToCstr for Vfx {
+    fn cstr(&self) -> Cstr {
+        self.anim.cstr()
     }
 }

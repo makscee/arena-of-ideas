@@ -785,7 +785,7 @@ impl ShowEditor for Expression {
             Expression::FilterStatusUnits(status, _)
             | Expression::FilterNoStatusUnits(status, _)
             | Expression::StatusEntity(status, _) => {
-                status_selector(status, world, ui);
+                status_selector(status, ui);
             }
             Expression::Value(v) => {
                 v.cstr().label(ui);
@@ -801,15 +801,15 @@ impl ShowEditor for Expression {
                 var_selector(var, ui);
             }
             Expression::StatusState(status, var) | Expression::StatusStateLast(status, var) => {
-                status_selector(status, world, ui);
+                status_selector(status, ui);
                 var_selector(var, ui);
             }
             Expression::AbilityContext(ability, var) | Expression::AbilityState(ability, var) => {
-                ability_selector(ability, world, ui);
+                ability_selector(ability, ui);
                 var_selector(var, ui);
             }
             Expression::StatusCharges(status) => {
-                status_selector(status, world, ui);
+                status_selector(status, ui);
             }
             Expression::HexColor(color) => {
                 if let Ok(value) = value.as_ref() {

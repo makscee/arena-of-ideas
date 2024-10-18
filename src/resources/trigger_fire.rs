@@ -166,7 +166,7 @@ impl ShowEditor for FireTrigger {
             FireTrigger::UnitUsedAbility(ability)
             | FireTrigger::AllyUsedAbility(ability)
             | FireTrigger::EnemyUsedAbility(ability) => {
-                ability_selector(ability, world, ui);
+                ability_selector(ability, ui);
             }
             FireTrigger::List(l) => {
                 if Button::click("+").ui(ui).clicked() {

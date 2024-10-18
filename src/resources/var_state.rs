@@ -43,6 +43,17 @@ impl VarChange {
 }
 
 impl VarState {
+    pub fn is_animating(&self) -> bool {
+        let birth = self.birth;
+        self.vars.values().any(|v| {
+            v.values().any(|v| {
+                !v.0.is_empty() && {
+                    let last = v.0.last().unwrap();
+                    last.t + last.duration + birth > gt().play_head()
+                }
+            })
+        })
+    }
     pub fn birth(&self) -> f32 {
         self.birth
     }

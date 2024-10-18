@@ -95,16 +95,16 @@ pub fn cursor_window(ctx: &egui::Context, content: impl FnOnce(&mut Ui)) {
             });
         });
 }
-pub fn status_selector(status: &mut String, world: &World, ui: &mut Ui) -> bool {
+pub fn status_selector(status: &mut String, ui: &mut Ui) -> bool {
     Selector::new("status").ui_iter(status, game_assets().statuses.keys(), ui)
 }
-pub fn ability_selector(ability: &mut String, world: &World, ui: &mut Ui) -> bool {
+pub fn ability_selector(ability: &mut String, ui: &mut Ui) -> bool {
     Selector::new("ability").ui_iter(ability, game_assets().abilities.keys(), ui)
 }
-pub fn summon_selector(summon: &mut String, world: &World, ui: &mut Ui) -> bool {
+pub fn summon_selector(summon: &mut String, ui: &mut Ui) -> bool {
     Selector::new("summon").ui_iter(summon, game_assets().summons.keys(), ui)
 }
-pub fn vfx_selector(vfx: &mut String, world: &World, ui: &mut Ui) -> bool {
+pub fn vfx_selector(vfx: &mut String, ui: &mut Ui) -> bool {
     Selector::new("vfx").ui_iter(vfx, game_assets().vfxs.keys(), ui)
 }
 pub fn var_selector(var: &mut VarName, ui: &mut Ui) -> bool {
@@ -120,4 +120,25 @@ pub fn show_collapsing_node<T: ShowEditor>(
     ui.collapsing(name, |ui| {
         node.show_node(name, context, world, ui);
     });
+}
+pub fn show_list_node<E: ShowEditor>(
+    l: &mut Vec<Box<E>>,
+    context: &Context,
+    ui: &mut Ui,
+    world: &mut World,
+) {
+    let mut to_remove = None;
+    for (i, e) in l.into_iter().enumerate() {
+        ui.push_id(i, |ui| {
+            ui.horizontal(|ui| {
+                if Button::click("-").red(ui).ui(ui).clicked() {
+                    to_remove = Some(i);
+                }
+                e.show_node("", context, world, ui);
+            });
+        });
+    }
+    if let Some(i) = to_remove {
+        l.remove(i);
+    }
 }

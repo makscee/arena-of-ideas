@@ -6,7 +6,8 @@ impl Plugin for EditorPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<EditorResource>()
             .add_systems(OnEnter(GameState::Editor), Self::on_enter)
-            .add_systems(OnExit(GameState::Editor), Self::on_exit);
+            .add_systems(OnExit(GameState::Editor), Self::on_exit)
+            .add_systems(Update, Self::update);
     }
 }
 
@@ -24,6 +25,8 @@ pub struct EditorResource {
 
     representation: Representation,
     vfx: Vfx,
+    vfx_entity: Option<Entity>,
+    vfx_selected: String,
 }
 fn rm(world: &mut World) -> Mut<EditorResource> {
     world.resource_mut::<EditorResource>()
@@ -37,7 +40,6 @@ enum Mode {
     Team,
     Battle,
     Unit,
-    Representation,
     Vfx,
 }
 
@@ -64,7 +66,14 @@ impl Into<String> for UnitMode {
 
 impl EditorPlugin {
     fn on_enter(world: &mut World) {
-        *rm(world) = client_state().editor.clone();
+        let mut rm = rm(world);
+        *rm = client_state().editor.clone();
+        rm.vfx_selected = game_assets()
+            .vfxs
+            .keys()
+            .next()
+            .cloned()
+            .unwrap_or_default();
     }
     fn on_exit(world: &mut World) {
         Self::clear(world);
@@ -96,8 +105,9 @@ impl EditorPlugin {
                 UnitPlugin::place_into_slot(entity, world);
                 rm(world).unit_entity = Some(entity);
             }
-            Mode::Representation => todo!(),
-            Mode::Vfx => todo!(),
+            Mode::Vfx => {
+                rm(world).vfx_entity = rm(world).vfx.clone().unpack(world).ok();
+            }
         }
     }
     fn get_team_unit(slot: usize, world: &mut World) -> Option<PackedUnit> {
@@ -127,7 +137,6 @@ impl EditorPlugin {
         match mode {
             Mode::Team => {
                 rm(world).team.clone().unpack(Faction::Team, world);
-
                 Tile::new(Side::Top, |ui, world| {
                     TeamContainer::new(Faction::Team)
                         .top_content(|ui, _| {
@@ -312,8 +321,45 @@ impl EditorPlugin {
                 .stretch_max()
                 .push(world);
             }
-            Mode::Representation => {}
-            Mode::Vfx => {}
+            Mode::Vfx => {
+                Self::refresh(world);
+                Tile::new(Side::Top, |ui, world| {
+                    ui.horizontal(|ui| {
+                        Selector::new("").ui_iter(
+                            &mut rm(world).vfx_selected,
+                            game_assets().vfxs.keys(),
+                            ui,
+                        );
+                        if Button::click("Load").ui(ui).clicked() {
+                            rm(world).vfx = Vfx::get(&rm(world).vfx_selected);
+                        }
+                    });
+                })
+                .pinned()
+                .no_expand()
+                .transparent()
+                .push(world);
+                Tile::new(Side::Left, |ui, world| {
+                    ScrollArea::both()
+                        .auto_shrink([false, false])
+                        .show(ui, |ui| {
+                            let r = rm(world);
+                            let Some(entity) = r.vfx_entity else {
+                                return;
+                            };
+                            let mut vfx = r.vfx.clone();
+                            vfx.show_node("", &Context::new(entity), world, ui);
+                            if vfx != rm(world).vfx {
+                                rm(world).vfx = vfx;
+                                Self::refresh(world);
+                            }
+                        });
+                })
+                .transparent()
+                .pinned()
+                .stretch_max()
+                .push(world);
+            }
         }
     }
     pub fn add_tiles(world: &mut World) {
@@ -361,5 +407,19 @@ impl EditorPlugin {
     }
     fn rep_edit(rep: &mut Representation, context: &Context, ui: &mut Ui, world: &mut World) {
         rep.show_node("", context, world, ui);
+    }
+    fn update(world: &mut World) {
+        let r = rm(world);
+        match r.mode {
+            Mode::Vfx => {
+                let Some(entity) = r.vfx_entity else {
+                    return;
+                };
+                if !VarState::get(entity, world).is_animating() {
+                    Self::refresh(world);
+                }
+            }
+            Mode::Team | Mode::Battle | Mode::Unit => {}
+        }
     }
 }

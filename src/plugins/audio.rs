@@ -45,8 +45,11 @@ struct AudioResource {
 #[derive(Component)]
 struct BackgroundAudioMarker;
 
-#[derive(Clone, Copy, Serialize, Deserialize, Debug)]
+#[derive(
+    Clone, Copy, Serialize, Deserialize, Debug, Default, EnumIter, AsRefStr, PartialEq, Eq,
+)]
 pub enum SoundEffect {
+    #[default]
     Click,
     Coin,
     StartGame,
@@ -130,5 +133,11 @@ impl AudioPlugin {
         if Self::background_sink(world).is_none() {
             Self::play_next_bg(world);
         }
+    }
+}
+
+impl ToCstr for SoundEffect {
+    fn cstr(&self) -> Cstr {
+        self.as_ref().cstr()
     }
 }

@@ -101,14 +101,14 @@ impl Effect {
                         value: i_value,
                     }
                     .send_with_context(context.clone(), world);
-                    Vfx::get("pain", world).set_parent(target).unpack(world)?;
+                    Vfx::get("pain").set_parent(target).unpack(world)?;
                 }
                 TextColumnPlugin::add(
                     target,
                     format!("-{}", i_value.at_least(0)).cstr_cs(RED, CstrStyle::Bold),
                     world,
                 );
-                Vfx::get("damage", world)
+                Vfx::get("damage")
                     .attach_context(context, world)
                     .unpack(world)?;
             }
@@ -116,8 +116,8 @@ impl Effect {
                 let target = context.get_target()?;
                 let mut state = VarState::try_get_mut(target, world)?;
                 state.set_int(VarName::Dmg, i32::MAX / 2);
-                Vfx::get("pain", world).set_parent(target).unpack(world)?;
-                Vfx::get("damage", world)
+                Vfx::get("pain").set_parent(target).unpack(world)?;
+                Vfx::get("damage")
                     .attach_context(context, world)
                     .unpack(world)?;
             }
@@ -130,9 +130,7 @@ impl Effect {
                 if i_value > 0 {
                     let dmg = Context::new(target).get_int(VarName::Dmg, world)?;
                     if dmg > 0 {
-                        Vfx::get("pleasure", world)
-                            .set_parent(target)
-                            .unpack(world)?;
+                        Vfx::get("pleasure").set_parent(target).unpack(world)?;
                     }
                     let dmg = (dmg - i_value).max(0);
                     VarState::get_mut(target, world).set_int(VarName::Dmg, dmg);
@@ -353,7 +351,7 @@ impl Effect {
                 );
             }
             Effect::Vfx(name) => {
-                Vfx::get(name, world)
+                Vfx::get(name)
                     .attach_context(context, world)
                     .unpack(world)?;
             }
@@ -517,18 +515,7 @@ impl ShowEditor for Effect {
             }
 
             Effect::List(l) => {
-                let mut to_remove = None;
-                for (i, e) in l.into_iter().enumerate() {
-                    ui.horizontal(|ui| {
-                        if Button::click("-").red(ui).ui(ui).clicked() {
-                            to_remove = Some(i);
-                        }
-                        e.show_node("", context, world, ui);
-                    });
-                }
-                if let Some(i) = to_remove {
-                    l.remove(i);
-                }
+                show_list_node(l, context, ui, world);
             }
 
             Effect::If(e, th, el) => {
@@ -560,28 +547,28 @@ impl ShowEditor for Effect {
             Effect::ChangeStatus(status)
             | Effect::ClearStatus(status)
             | Effect::StealStatus(status) => {
-                status_selector(status, world, ui);
+                status_selector(status, ui);
             }
             Effect::UseAbility(ability, base) => {
-                ability_selector(ability, world, ui);
+                ability_selector(ability, ui);
                 DragValue::new(base).range(0..=10).ui(ui);
             }
             Effect::AbilityStateAddVar(ability, var, _) => {
-                ability_selector(ability, world, ui);
+                ability_selector(ability, ui);
                 var_selector(var, ui);
             }
             Effect::StatusSetVar(_, status, var, _) => {
-                status_selector(status, world, ui);
+                status_selector(status, ui);
                 var_selector(var, ui);
             }
             Effect::Summon(summon, _) => {
-                summon_selector(summon, world, ui);
+                summon_selector(summon, ui);
             }
             Effect::StateAddVar(var, _, _) | Effect::WithVar(var, _, _) => {
                 var_selector(var, ui);
             }
             Effect::Vfx(vfx) => {
-                vfx_selector(vfx, world, ui);
+                vfx_selector(vfx, ui);
             }
             Effect::List(l) => {
                 if Button::click("+").ui(ui).clicked() {
