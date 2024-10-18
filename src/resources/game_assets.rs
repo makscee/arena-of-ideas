@@ -23,7 +23,7 @@ pub struct GameAssetsHandles {
     vfxs: HashMap<String, Handle<Vfx>>,
 }
 
-#[derive(Resource, Debug, Clone)]
+#[derive(Debug, Clone)]
 pub struct GameAssets {
     pub global_settings: GlobalSettings,
     pub custom_battle: BattleResource,
@@ -39,6 +39,11 @@ pub struct GameAssets {
     pub ability_defaults: HashMap<String, HashMap<VarName, VarValue>>,
     pub statuses: HashMap<String, PackedStatus>,
     pub summons: HashMap<String, PackedUnit>,
+}
+
+static GAME_ASSETS: OnceCell<RwLock<GameAssets>> = OnceCell::new();
+pub fn game_assets() -> std::sync::RwLockReadGuard<'static, GameAssets> {
+    GAME_ASSETS.get().unwrap().read().unwrap()
 }
 
 lazy_static! {
@@ -70,13 +75,7 @@ pub fn definition_names() -> Vec<String> {
 }
 
 impl GameAssets {
-    pub fn get(world: &World) -> &Self {
-        world.resource::<Self>()
-    }
-    pub fn get_mut(world: &mut World) -> Mut<Self> {
-        world.resource_mut::<Self>()
-    }
-    pub fn cache_tables(world: &mut World) {
+    pub fn cache_tables() {
         info!("Cache tables start");
         let global_settings = GlobalSettings::iter()
             .exactly_one()
@@ -90,13 +89,13 @@ impl GameAssets {
         for house in THouse::iter() {
             houses.insert(house.name.clone(), house.into());
         }
-        let ga = world.remove_resource::<GameAssets>().unwrap();
+        let ga = game_assets().clone();
         let unit_rep = ga.unit_rep;
         let ghost = ga.ghost;
         let status_rep = ga.status_rep;
         let animations = ga.animations;
         let vfxs = ga.vfxs;
-        LoadingPlugin::save_assets(
+        let assets = LoadingPlugin::pack_game_assets(
             global_settings,
             default(),
             unit_rep,
@@ -106,11 +105,11 @@ impl GameAssets {
             heroes,
             houses,
             vfxs,
-            world,
         );
+        *GAME_ASSETS.get().unwrap().write().unwrap() = assets;
     }
-    pub fn ability_default(name: &str, var: VarName, world: &World) -> VarValue {
-        Self::get(world)
+    pub fn ability_default(name: &str, var: VarName) -> VarValue {
+        game_assets()
             .ability_defaults
             .get(name)
             .and_then(|m| m.get(&var))
@@ -135,7 +134,7 @@ impl Plugin for LoadingPlugin {
 }
 
 impl LoadingPlugin {
-    fn save_assets(
+    fn pack_game_assets(
         global_settings: GlobalSettings,
         custom_battle: BattleResource,
         unit_rep: Representation,
@@ -145,8 +144,7 @@ impl LoadingPlugin {
         heroes: HashMap<String, PackedUnit>,
         houses: HashMap<String, House>,
         vfxs: HashMap<String, Vfx>,
-        world: &mut World,
-    ) {
+    ) -> GameAssets {
         let mut colors = HashMap::default();
         let mut definitions = NAME_DEFINITIONS.lock().unwrap();
         let mut ability_defaults: HashMap<String, HashMap<VarName, VarValue>> = default();
@@ -182,7 +180,7 @@ impl LoadingPlugin {
         for ability in abilities.values() {
             definitions.insert(ability.name.clone(), Cstr::parse(&ability.description));
         }
-        let assets = GameAssets {
+        GameAssets {
             global_settings,
             custom_battle,
             unit_rep,
@@ -196,8 +194,7 @@ impl LoadingPlugin {
             vfxs,
             ability_defaults,
             summons,
-        };
-        world.insert_resource(assets);
+        }
     }
     fn setup(world: &mut World) {
         let handles = world.resource::<GameAssetsHandles>();
@@ -250,7 +247,7 @@ impl LoadingPlugin {
             let hero = heroes.get(h).unwrap().clone();
             (hero.name.clone(), hero)
         }));
-        Self::save_assets(
+        let ga = Self::pack_game_assets(
             global_settings,
             custom_battle,
             unit_rep,
@@ -260,8 +257,8 @@ impl LoadingPlugin {
             heroes,
             houses,
             vfxs,
-            world,
         );
+        GAME_ASSETS.set(RwLock::new(ga));
     }
 }
 

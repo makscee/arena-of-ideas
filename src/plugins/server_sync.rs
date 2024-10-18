@@ -11,7 +11,7 @@ impl Plugin for ServerSyncPlugin {
 impl ServerSyncPlugin {
     fn sync(world: &mut World) {
         info!("Sync assets start");
-        let ga = GameAssets::get(world).clone();
+        let ga = game_assets().clone();
         let gs = ga.global_settings;
 
         let mut representations: HashMap<String, TRepresentation> = default();

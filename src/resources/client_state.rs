@@ -8,6 +8,9 @@ pub struct ClientState {
 static CLIENT_STATE: OnceCell<RwLock<ClientState>> = OnceCell::new();
 const CLIENT_STATE_FILE: &str = "client_state.ron";
 
+pub fn client_state() -> std::sync::RwLockReadGuard<'static, ClientState> {
+    CLIENT_STATE.get_or_init(|| default()).read().unwrap()
+}
 fn path() -> PathBuf {
     let mut path = home_dir_path();
     path.push(CLIENT_STATE_FILE);
@@ -23,9 +26,6 @@ pub fn load_client_state() {
         ClientState::default().save_to_file()
     };
     cs.save_to_cache();
-}
-pub fn client_state() -> std::sync::RwLockReadGuard<'static, ClientState> {
-    CLIENT_STATE.get_or_init(|| default()).read().unwrap()
 }
 
 impl ClientState {

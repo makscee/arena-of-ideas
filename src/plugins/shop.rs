@@ -201,12 +201,12 @@ impl ShopPlugin {
                         shop_units.remove(&id);
                         continue;
                     }
-                    GameAssets::get(world)
-                        .heroes
-                        .get(&unit)
-                        .cloned()
-                        .unwrap()
-                        .unpack(team, Some(slot), Some(id), world);
+                    game_assets().heroes.get(&unit).cloned().unwrap().unpack(
+                        team,
+                        Some(slot),
+                        Some(id),
+                        world,
+                    );
                 }
             }
         }
@@ -453,7 +453,7 @@ impl ShopPlugin {
             return;
         };
         let team = run.team.get_team();
-        let slots = GameAssets::get(world).global_settings.arena.team_slots as usize;
+        let slots = game_assets().global_settings.arena.team_slots as usize;
         let sd = world.resource::<ShopResource>().clone();
         TeamContainer::new(Faction::Team)
             .slots(slots.max(team.units.len()))

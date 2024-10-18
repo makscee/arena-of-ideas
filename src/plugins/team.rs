@@ -89,7 +89,7 @@ impl TeamPlugin {
         faction: Faction,
         world: &mut World,
     ) {
-        let d = GameAssets::ability_default(&ability, var, world);
+        let d = GameAssets::ability_default(&ability, var);
         let entity = Self::entity(faction, world);
         let mut states = world.get_mut::<AbilityStates>(entity).unwrap();
         let state = states.0.entry(ability).or_default();

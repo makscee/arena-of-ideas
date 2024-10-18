@@ -208,9 +208,10 @@ impl Effect {
                 }
             }
             Effect::UseAbility(name, base) => {
-                let ability = GameAssets::get(world)
+                let ability = game_assets()
                     .abilities
                     .get(name)
+                    .cloned()
                     .with_context(|| format!("Ability not found {name}"))
                     .unwrap();
                 let charges = context
@@ -226,7 +227,7 @@ impl Effect {
                     .set_caster(caster)
                     .set_var(VarName::Color, name_color(name).into())
                     .take();
-                ActionPlugin::action_push_front(ability.effect.clone(), context.clone(), world);
+                ActionPlugin::action_push_front(ability.effect, context.clone(), world);
                 let txt = if *base > 0 {
                     format!("{name} +{base}")
                 } else {
@@ -261,7 +262,7 @@ impl Effect {
                 );
             }
             Effect::Summon(name, then) => {
-                let mut unit = GameAssets::get(world)
+                let mut unit = game_assets()
                     .summons
                     .get(name)
                     .with_context(|| format!("Summon {name} not found"))

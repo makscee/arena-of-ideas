@@ -22,7 +22,7 @@ fn rm(world: &mut World) -> Mut<EditorResource> {
     world.resource_mut::<EditorResource>()
 }
 
-#[derive(Default, EnumIter, AsRefStr, Clone, Copy, PartialEq, Eq)]
+#[derive(Default, EnumIter, AsRefStr, Clone, Copy, PartialEq, Eq, Display)]
 enum Mode {
     #[default]
     Team,
@@ -41,16 +41,34 @@ impl Into<String> for Mode {
 impl EditorPlugin {
     fn clear(world: &mut World) {
         world.game_clear();
+        TilePlugin::clear(world);
     }
     fn load_mode(world: &mut World) {
+        let mode = rm(world).mode;
+        info!("Load editor mode {mode}");
+        Self::clear(world);
         match rm(world).mode {
             Mode::Team => {
                 Tile::new(Side::Top, |ui, world| {
                     TeamContainer::new(Faction::Team)
-                        .top_content(|ui, world| {
+                        .top_content(|ui, _| {
                             if Button::click("Load own").ui(ui).clicked() {
                                 Confirmation::new("Open own team".cstr())
-                                    .content(|ui, world| {})
+                                    .content(|ui, world| {
+                                        TTeam::filter_by_owner(user_id())
+                                            .filter(|t| t.pool.eq(&TeamPool::Owned))
+                                            .collect_vec()
+                                            .show_modified_table("Teams", ui, world, |t| {
+                                                t.column_btn("select", |t, ui, world| {
+                                                    rm(world).team = PackedTeam::from_id(t.id);
+                                                    Confirmation::close_current(
+                                                        &egui_context(world).unwrap(),
+                                                    );
+                                                    Self::load_mode(world);
+                                                })
+                                            });
+                                    })
+                                    .cancel(|_| {})
                                     .push(ui.ctx());
                             }
                         })
@@ -60,6 +78,8 @@ impl EditorPlugin {
                 .transparent()
                 .pinned()
                 .push(world);
+
+                rm(world).team.clone().unpack(Faction::Team, world);
             }
             Mode::Battle => {}
             Mode::Unit => {}
@@ -68,7 +88,6 @@ impl EditorPlugin {
         }
     }
     pub fn add_tiles(world: &mut World) {
-        Self::load_mode(world);
         Tile::new(Side::Top, |ui, world| {
             if EnumSwitcher::show(&mut rm(world).mode, ui) {
                 Self::load_mode(world);
@@ -77,6 +96,8 @@ impl EditorPlugin {
         .pinned()
         .no_expand()
         .transparent()
+        .keep()
         .push(world);
+        Self::load_mode(world);
     }
 }

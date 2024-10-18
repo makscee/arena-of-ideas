@@ -236,8 +236,7 @@ impl MetaPlugin {
                         "craft",
                         |_, _| default(),
                         |d, _, ui, world| {
-                            let craft_cost =
-                                GameAssets::get(world).global_settings.craft_shards_cost;
+                            let craft_cost = game_assets().global_settings.craft_shards_cost;
                             if Button::click("craft")
                                 .enabled(d.count >= craft_cost)
                                 .ui(ui)

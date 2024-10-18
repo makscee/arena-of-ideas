@@ -186,7 +186,7 @@ pub fn format_timestamp(ts: u64) -> String {
         .to_string()
 }
 pub fn global_settings() -> GlobalSettings {
-    GlobalSettings::find_by_always_zero(0).unwrap()
+    GlobalSettings::find_by_always_zero(0).unwrap_or_else(|| game_assets().global_settings.clone())
 }
 pub fn app_exit(world: &mut World) {
     world

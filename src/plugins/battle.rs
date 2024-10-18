@@ -48,7 +48,7 @@ impl BattlePlugin {
         ActionPlugin::reset(world);
     }
     fn on_enter_custom(world: &mut World) {
-        world.insert_resource(GameAssets::get(world).custom_battle.clone());
+        world.insert_resource(game_assets().custom_battle.clone());
         GameState::Battle.set_next(world);
     }
     fn on_enter_shop(world: &mut World) {
@@ -152,7 +152,7 @@ impl BattlePlugin {
         let mut shift: f32 = 0.0;
         for (caster, dir) in units {
             shift = shift.max(
-                GameAssets::get(world)
+                game_assets()
                     .animations
                     .before_strike
                     .clone()
@@ -172,7 +172,7 @@ impl BattlePlugin {
     fn strike(left: Entity, right: Entity, world: &mut World) -> Result<()> {
         debug!("strike {left} {right}");
         let units = vec![(left, right), (right, left)];
-        GameAssets::get(world)
+        game_assets()
             .animations
             .strike
             .clone()
@@ -217,7 +217,7 @@ impl BattlePlugin {
         }
     }
     fn fatigue(turn: usize, world: &mut World) -> Result<()> {
-        let fatigue = GameAssets::get(world).global_settings.battle.fatigue_start as usize;
+        let fatigue = game_assets().global_settings.battle.fatigue_start as usize;
         if turn <= fatigue {
             return Ok(());
         }

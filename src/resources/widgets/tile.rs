@@ -24,6 +24,7 @@ pub struct Tile {
     open: bool,
     no_margin: bool,
     no_expand: bool,
+    keep: bool,
     extension: f32,
     stretch_mode: StretchMode,
 }
@@ -209,9 +210,17 @@ impl TilePlugin {
         sr.screen_space = sr.screen_rect.size();
         sr.screen_space_initial = sr.screen_space;
     }
-    fn clear(world: &mut World) {
-        let mut tr = rm(world);
-        tr.tiles.clear();
+    pub fn clear(world: &mut World) {
+        let mut r = rm(world);
+        let tiles = r
+            .tiles
+            .iter()
+            .filter_map(|(k, v)| if v.keep { None } else { Some(k.into()) })
+            .collect_vec();
+        r.close_tiles.extend(tiles);
+    }
+    fn clear_all(world: &mut World) {
+        rm(world).tiles.clear();
     }
 
     pub fn add_team(gid: u64, world: &mut World) {
@@ -243,7 +252,7 @@ impl TilePlugin {
         rm(world).close_tiles.push(id.into());
     }
     pub fn change_state(to: GameState, world: &mut World) {
-        Self::clear(world);
+        Self::clear_all(world);
         match to {
             GameState::Inbox => Tile::new(Side::Left, |ui, world| {
                 Notification::show_all_table(ui, world)
@@ -286,6 +295,7 @@ impl Tile {
             min_space: default(),
             no_margin: false,
             no_expand: false,
+            keep: false,
             extension: 0.0,
             stretch_mode: default(),
             allocated_space: default(),
@@ -341,6 +351,11 @@ impl Tile {
     pub fn stretch_min(mut self) -> Self {
         self.stretch_mode = StretchMode::Min;
         self.focusable = false;
+        self
+    }
+    #[must_use]
+    pub fn keep(mut self) -> Self {
+        self.keep = true;
         self
     }
     pub fn push(self, world: &mut World) {

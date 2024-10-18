@@ -133,7 +133,7 @@ impl UnitPlugin {
         let mut shift: f32 = 0.0;
         for unit in Self::collect_all(world) {
             shift = shift.max(
-                GameAssets::get(world)
+                game_assets()
                     .animations
                     .move_to_slot
                     .clone()

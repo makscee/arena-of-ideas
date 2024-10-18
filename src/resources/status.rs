@@ -42,7 +42,7 @@ impl PackedStatus {
         .spawn(owner, world);
         debug!("unpack status {} {entity}", self.name);
         RepresentationPlugin::get_by_id(self.name.clone())
-            .unwrap_or(GameAssets::get(world).status_rep.clone())
+            .unwrap_or(game_assets().status_rep.clone())
             .unpack(entity, world);
         VarState::get_mut(owner, world).add_status(self.name, self.state);
         entity
@@ -93,7 +93,7 @@ impl Status {
                 }
                 charges
             } else {
-                GameAssets::get(world)
+                game_assets()
                     .statuses
                     .get(name)
                     .unwrap()

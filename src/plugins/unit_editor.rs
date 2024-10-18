@@ -195,7 +195,7 @@ impl UnitEditorPlugin {
                     hero.rarity = rarity.into();
                 }
                 if let Some(house) = hero.houses.get_mut(0) {
-                    Selector::new("house").ui_iter(house, GameAssets::get(world).houses.keys(), ui);
+                    Selector::new("house").ui_iter(house, game_assets().houses.keys(), ui);
                 }
             });
             let trigger = hero.trigger.cstr_expanded();

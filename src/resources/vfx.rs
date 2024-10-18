@@ -15,7 +15,7 @@ pub struct Vfx {
 
 impl Vfx {
     pub fn get(name: &str, world: &World) -> Self {
-        GameAssets::get(world)
+        game_assets()
             .vfxs
             .get(name)
             .with_context(|| format!("Vfx {name} not loaded"))

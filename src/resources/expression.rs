@@ -132,7 +132,7 @@ impl Expression {
                 Ok(
                     TeamPlugin::get_ability_state(ability, context.get_faction(world)?, world)
                         .and_then(|s| s.get_value_at(*var, gt().play_head()).ok())
-                        .unwrap_or_else(|| GameAssets::ability_default(&ability, *var, world)),
+                        .unwrap_or_else(|| GameAssets::ability_default(&ability, *var)),
                 )
             }
             Expression::WithVar(var, value, e) => e.get_value(

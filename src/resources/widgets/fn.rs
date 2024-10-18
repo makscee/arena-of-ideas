@@ -96,16 +96,16 @@ pub fn cursor_window(ctx: &egui::Context, content: impl FnOnce(&mut Ui)) {
         });
 }
 pub fn status_selector(status: &mut String, world: &World, ui: &mut Ui) -> bool {
-    Selector::new("status").ui_iter(status, GameAssets::get(world).statuses.keys(), ui)
+    Selector::new("status").ui_iter(status, game_assets().statuses.keys(), ui)
 }
 pub fn ability_selector(ability: &mut String, world: &World, ui: &mut Ui) -> bool {
-    Selector::new("ability").ui_iter(ability, GameAssets::get(world).abilities.keys(), ui)
+    Selector::new("ability").ui_iter(ability, game_assets().abilities.keys(), ui)
 }
 pub fn summon_selector(summon: &mut String, world: &World, ui: &mut Ui) -> bool {
-    Selector::new("summon").ui_iter(summon, GameAssets::get(world).summons.keys(), ui)
+    Selector::new("summon").ui_iter(summon, game_assets().summons.keys(), ui)
 }
 pub fn vfx_selector(vfx: &mut String, world: &World, ui: &mut Ui) -> bool {
-    Selector::new("vfx").ui_iter(vfx, GameAssets::get(world).vfxs.keys(), ui)
+    Selector::new("vfx").ui_iter(vfx, game_assets().vfxs.keys(), ui)
 }
 pub fn var_selector(var: &mut VarName, ui: &mut Ui) -> bool {
     Selector::new("var").ui_enum(var, ui)

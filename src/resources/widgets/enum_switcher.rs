@@ -14,6 +14,7 @@ impl EnumSwitcher {
                     .active(e.eq(value))
                     .ui(ui)
                     .clicked()
+                    && !e.eq(value)
                 {
                     clicked = true;
                     *value = e;

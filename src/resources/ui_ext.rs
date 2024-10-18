@@ -25,9 +25,11 @@ impl ShowTable<TTeam> for Vec<TTeam> {
             .title()
             .column_cstr("name", |d: &TTeam, _| d.name.cstr_c(VISIBLE_LIGHT))
             .column_cstr("units", |d, _| {
-                Cstr::from(d.units.iter().map(|u| u.cstr_limit(1, false)).collect_vec())
-                    .join_char(' ')
-                    .take()
+                d.units
+                    .iter()
+                    .map(|u| u.cstr_limit(1, false))
+                    .collect_vec()
+                    .join(" ".cstr())
             });
         t = m(t);
         t.ui(self, ui, world)

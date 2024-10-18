@@ -140,7 +140,7 @@ impl Context {
 
     pub fn set_ability_state(&mut self, ability: &str, world: &World) -> Result<&mut Self> {
         let team = TeamPlugin::entity(self.get_faction(world)?, world);
-        let mut values = GameAssets::get(world)
+        let mut values = game_assets()
             .ability_defaults
             .get(ability)
             .cloned()

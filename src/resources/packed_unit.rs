@@ -80,7 +80,7 @@ impl PackedUnit {
         self.state = self.generate_state();
         {
             self.representation.unpack(entity, world);
-            let entity = GameAssets::get(world)
+            let entity = game_assets()
                 .unit_rep
                 .clone()
                 .unpack(world.spawn_empty().set_parent(entity).id(), world);

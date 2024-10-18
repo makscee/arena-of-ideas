@@ -50,7 +50,7 @@ impl LoginPlugin {
         LoginOption { user }.save(world);
         once_on_subscription_applied(|| {
             OperationsPlugin::add(|world| {
-                GameAssets::cache_tables(world);
+                GameAssets::cache_tables();
                 GameState::proceed(world);
             });
             TWallet::on_update(|before, after, _| {
