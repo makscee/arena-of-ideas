@@ -3,35 +3,48 @@ use super::*;
 #[derive(Clone)]
 pub struct Confirmation {
     text: Cstr,
-    accept: fn(&mut World),
-    accept_name: Option<String>,
-    decline: fn(&mut World),
-    decline_name: Option<String>,
-    decline_hide: bool,
+    accept: Option<fn(&mut World)>,
+    accept_name: String,
+    cancel: Option<fn(&mut World)>,
+    cancel_name: String,
     content: Option<fn(&mut Ui, &mut World)>,
 }
 
 fn id() -> Id {
-    static TILES_DATA: OnceCell<Id> = OnceCell::new();
-    *TILES_DATA.get_or_init(|| Id::new("tiles_data"))
+    static ID: OnceCell<Id> = OnceCell::new();
+    *ID.get_or_init(|| Id::new("confirmation_id"))
 }
 
 impl Confirmation {
     #[must_use]
-    pub fn new(text: Cstr, accept: fn(&mut World)) -> Self {
+    pub fn new(text: Cstr) -> Self {
         Self {
             text,
-            accept,
-            decline: |_| {},
-            accept_name: None,
-            decline_name: None,
+            accept: None,
+            accept_name: "Accept".into(),
+            cancel: None,
+            cancel_name: "Cancel".into(),
             content: None,
-            decline_hide: false,
         }
     }
     #[must_use]
-    pub fn decline(mut self, action: fn(&mut World)) -> Self {
-        self.decline = action;
+    pub fn accept(mut self, action: fn(&mut World)) -> Self {
+        self.accept = Some(action);
+        self
+    }
+    #[must_use]
+    pub fn cancel(mut self, action: fn(&mut World)) -> Self {
+        self.cancel = Some(action);
+        self
+    }
+    #[must_use]
+    pub fn accept_name(mut self, name: impl Into<String>) -> Self {
+        self.accept_name = name.into();
+        self
+    }
+    #[must_use]
+    pub fn cancel_name(mut self, name: impl Into<String>) -> Self {
+        self.cancel_name = name.into();
         self
     }
     #[must_use]
@@ -40,19 +53,9 @@ impl Confirmation {
         self
     }
     #[must_use]
-    pub fn accept_name(mut self, name: String) -> Self {
-        self.accept_name = Some(name);
-        self
-    }
-    #[must_use]
-    pub fn decline_name(mut self, name: String) -> Self {
-        self.decline_name = Some(name);
-        self
-    }
-    #[must_use]
     pub fn popup(mut self) -> Self {
-        self.decline_hide = true;
-        self.accept_name = Some("Close".into());
+        self.accept_name = "Close".into();
+        self.accept = Some(|_| {});
         self
     }
     fn ui(self, ctx: &egui::Context, world: &mut World) {
@@ -67,23 +70,19 @@ impl Confirmation {
             space(ui);
             ui.columns(2, |ui| {
                 ui[0].vertical_centered_justified(|ui| {
-                    if !self.decline_hide
-                        && Button::click(self.decline_name.unwrap_or("Decline".into()))
-                            .red(ui)
-                            .ui(ui)
-                            .clicked()
-                    {
-                        Self::pop(ui.ctx());
-                        (self.decline)(world);
+                    if let Some(cancel) = self.cancel {
+                        if Button::click(self.cancel_name).red(ui).ui(ui).clicked() {
+                            Self::close_current(ui.ctx());
+                            cancel(world);
+                        }
                     }
                 });
                 ui[1].vertical_centered_justified(|ui| {
-                    if Button::click(self.accept_name.unwrap_or("Accept".into()))
-                        .ui(ui)
-                        .clicked()
-                    {
-                        Self::pop(ui.ctx());
-                        (self.accept)(world);
+                    if let Some(accept) = self.accept {
+                        if Button::click(self.accept_name).ui(ui).clicked() {
+                            Self::close_current(ui.ctx());
+                            accept(world);
+                        }
                     }
                 });
             })
@@ -93,7 +92,7 @@ impl Confirmation {
     pub fn push(self, ctx: &egui::Context) {
         ctx.data_mut(|w| w.get_temp_mut_or_default::<Vec<Self>>(id()).push(self));
     }
-    pub fn pop(ctx: &egui::Context) {
+    pub fn close_current(ctx: &egui::Context) {
         ctx.data_mut(|w| w.get_temp_mut_or_default::<Vec<Self>>(id()).pop());
     }
     fn data(ctx: &egui::Context) -> Vec<Self> {

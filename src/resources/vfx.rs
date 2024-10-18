@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Asset, Deserialize, Serialize, Debug, Clone, TypePath)]
+#[derive(Asset, Deserialize, Serialize, Debug, Clone, TypePath, Default)]
 pub struct Vfx {
     pub anim: Anim,
     pub representation: Representation,

@@ -118,39 +118,41 @@ impl UnitEditorPlugin {
         let mut r = rm(world);
         r.editing_faction = faction;
         r.editing_slot = slot;
-        Confirmation::new("Add Unit".cstr(), |world| {
-            let r = rm(world);
-            let unit = TBaseUnit::find_by_name(r.hero_to_spawn.clone())
-                .map(|u| PackedUnit::from(u))
-                .unwrap_or_default();
-            Self::set_team_unit(unit, r.editing_faction, r.editing_slot, world);
-            Self::respawn_teams(true, world);
-        })
-        .content(|ui, world| {
-            if Button::click("Spawn Default").ui(ui).clicked() {
-                let mut r = rm(world);
-                let faction = r.editing_faction;
-                r.teams
-                    .get_mut(&faction)
-                    .unwrap()
-                    .units
-                    .push(PackedUnit::default());
+        Confirmation::new("Add Unit".cstr())
+            .accept(|world| {
+                let r = rm(world);
+                let unit = TBaseUnit::find_by_name(r.hero_to_spawn.clone())
+                    .map(|u| PackedUnit::from(u))
+                    .unwrap_or_default();
+                Self::set_team_unit(unit, r.editing_faction, r.editing_slot, world);
                 Self::respawn_teams(true, world);
-                Confirmation::pop(ui.ctx());
-            }
-            let mut r = rm(world);
-            Selector::new("spawn").ui_iter(
-                &mut r.hero_to_spawn,
-                &TBaseUnit::iter()
-                    .filter_map(|u| match u.rarity >= 0 {
-                        true => Some(u.name),
-                        false => None,
-                    })
-                    .collect_vec(),
-                ui,
-            );
-        })
-        .push(ctx);
+            })
+            .cancel(|_| {})
+            .content(|ui, world| {
+                if Button::click("Spawn Default").ui(ui).clicked() {
+                    let mut r = rm(world);
+                    let faction = r.editing_faction;
+                    r.teams
+                        .get_mut(&faction)
+                        .unwrap()
+                        .units
+                        .push(PackedUnit::default());
+                    Self::respawn_teams(true, world);
+                    Confirmation::close_current(ui.ctx());
+                }
+                let mut r = rm(world);
+                Selector::new("spawn").ui_iter(
+                    &mut r.hero_to_spawn,
+                    &TBaseUnit::iter()
+                        .filter_map(|u| match u.rarity >= 0 {
+                            true => Some(u.name),
+                            false => None,
+                        })
+                        .collect_vec(),
+                    ui,
+                );
+            })
+            .push(ctx);
     }
     fn load_unit_editor(entity: Entity, faction: Faction, slot: usize, world: &mut World) {
         let mut r = rm(world);
@@ -174,7 +176,7 @@ impl UnitEditorPlugin {
         }
         let ctx = &egui_context(world).unwrap();
         while Confirmation::has_active(ctx) {
-            Confirmation::pop(ctx);
+            Confirmation::close_current(ctx);
         }
     }
     fn open_unit_editor(world: &mut World) {
@@ -207,23 +209,25 @@ impl UnitEditorPlugin {
                 if trigger.button(ui).clicked() {
                     let mut r = rm(world);
                     r.editing_trigger = r.editing_hero.trigger.clone();
-                    Confirmation::new("Trigger Editor".cstr(), |world| {
-                        let mut r = rm(world);
-                        r.editing_hero.trigger = mem::take(&mut r.editing_trigger);
-                        Self::apply_edits(world);
-                    })
-                    .content(|ui, world| {
-                        let mut r = rm(world);
-                        let context = Context::new(r.editing_entity.unwrap());
-                        let mut trigger = mem::take(&mut r.editing_trigger);
-                        trigger.show_node("", &context, world, ui);
-                        rm(world).editing_trigger = trigger;
-                    })
-                    .push(ui.ctx());
+                    Confirmation::new("Trigger Editor".cstr())
+                        .accept(|world| {
+                            let mut r = rm(world);
+                            r.editing_hero.trigger = mem::take(&mut r.editing_trigger);
+                            Self::apply_edits(world);
+                        })
+                        .cancel(|_| {})
+                        .content(|ui, world| {
+                            let mut r = rm(world);
+                            let context = Context::new(r.editing_entity.unwrap());
+                            let mut trigger = mem::take(&mut r.editing_trigger);
+                            trigger.show_node("", &context, world, ui);
+                            rm(world).editing_trigger = trigger;
+                        })
+                        .push(ui.ctx());
                 }
             });
             if Button::click("Edit representation").ui(ui).clicked() {
-                Confirmation::pop(ui.ctx());
+                Confirmation::close_current(ui.ctx());
                 let mut r = rm(world);
                 r.editing_representation = r.editing_hero.representation.clone();
                 Tile::new(Side::Left, |ui, world| {
@@ -374,7 +378,6 @@ impl UnitEditorPlugin {
             };
             ui.columns(2, |ui| {
                 TeamContainer::new(Faction::Left)
-                    .right_to_left()
                     .on_click(|slot, entity, world| on_click(slot, Faction::Left, entity, world))
                     .context_menu(|slot, entity, ui, world| {
                         context_menu(slot, Faction::Left, entity, ui, world)
@@ -385,6 +388,7 @@ impl UnitEditorPlugin {
                     .highlighted_slot(if faction == Faction::Left { slot } else { None })
                     .ui(&mut ui[0], world);
                 TeamContainer::new(Faction::Right)
+                    .left_to_right()
                     .on_click(|slot, entity, world| on_click(slot, Faction::Right, entity, world))
                     .context_menu(|slot, entity, ui, world| {
                         context_menu(slot, Faction::Right, entity, ui, world)

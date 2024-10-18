@@ -230,13 +230,12 @@ impl GameStartPlugin {
                             GameState::Shop.proceed_to_target(world);
                         }
                         if Button::click("Abandon run").red(ui).ui(ui).clicked() {
-                            Confirmation::new(
-                                "Abandon current run?".cstr_c(VISIBLE_BRIGHT),
-                                |_| {
+                            Confirmation::new("Abandon current run?".cstr_c(VISIBLE_BRIGHT))
+                                .accept(|_| {
                                     run_finish();
-                                },
-                            )
-                            .push(ui.ctx());
+                                })
+                                .cancel(|_| {})
+                                .push(ui.ctx());
                         }
                     });
                 }

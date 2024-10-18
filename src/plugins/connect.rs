@@ -44,18 +44,18 @@ impl ConnectPlugin {
                                         .cstr_cs(VISIBLE_BRIGHT, CstrStyle::Bold),
                                 )
                                 .take(),
-                            |w| {
-                                egui_context(w).unwrap().open_url(egui::OpenUrl {
-                                    url: "https://github.com/makscee/arena-of-ideas/releases"
-                                        .to_owned(),
-                                    new_tab: true,
-                                });
-                                app_exit(w);
-                            },
                         )
-                        .decline(|w| app_exit(w))
-                        .accept_name("Update".into())
-                        .decline_name("Exit".into())
+                        .accept(|w| {
+                            egui_context(w).unwrap().open_url(egui::OpenUrl {
+                                url: "https://github.com/makscee/arena-of-ideas/releases"
+                                    .to_owned(),
+                                new_tab: true,
+                            });
+                            app_exit(w);
+                        })
+                        .cancel(|w| app_exit(w))
+                        .accept_name("Update")
+                        .cancel_name("Exit")
                         .push(ctx);
                     });
                 }

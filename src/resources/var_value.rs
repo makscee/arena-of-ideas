@@ -375,20 +375,19 @@ impl ToCstr for VarValue {
 }
 impl std::fmt::Display for VarValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let (n, _) = self.as_ref().split_at(1);
         match self {
             VarValue::None => write!(f, "None"),
-            VarValue::Int(v) => write!(f, "{}({})", n, v),
-            VarValue::Float(v) => write!(f, "{}({:.3})", n, v),
-            VarValue::Vec2(v) => write!(f, "{}({:.3}, {:.3})", n, v.x, v.y),
-            VarValue::String(v) => write!(f, "{}({})", n, v),
-            VarValue::Cstr(v) => write!(f, "{}({})", n, v),
-            VarValue::Bool(v) => write!(f, "{}({})", n, v),
-            VarValue::Faction(v) => write!(f, "{}({})", n, v),
-            VarValue::Color(v) => write!(f, "{}({})", n, v.c32().to_hex()),
-            VarValue::Entity(v) => write!(f, "{}({})", n, v),
-            VarValue::U64(v) => write!(f, "{}({})", n, v),
-            VarValue::List(v) => write!(f, "{}({})", n, v.iter().join(", ")),
+            VarValue::Int(v) => write!(f, "{}", v),
+            VarValue::Float(v) => write!(f, "{:.3}", v),
+            VarValue::Vec2(v) => write!(f, "{:.3}, {:.3}", v.x, v.y),
+            VarValue::String(v) => write!(f, "{}", v),
+            VarValue::Cstr(v) => write!(f, "{}", v),
+            VarValue::Bool(v) => write!(f, "{}", v),
+            VarValue::Faction(v) => write!(f, "{}", v),
+            VarValue::Color(v) => write!(f, "{}", v.c32().to_hex()),
+            VarValue::Entity(v) => write!(f, "{}", v),
+            VarValue::U64(v) => write!(f, "{}", v),
+            VarValue::List(v) => write!(f, "{}", v.iter().join(", ")),
         }
     }
 }

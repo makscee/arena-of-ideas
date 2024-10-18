@@ -59,7 +59,7 @@ impl Default for SectionMenu {
                 },
                 GameSection {
                     name: "EDITOR",
-                    target_state: GameState::UnitEditor,
+                    target_state: GameState::Editor,
                     inner_states: default(),
                     options: [GameOption::Login].into(),
                 },

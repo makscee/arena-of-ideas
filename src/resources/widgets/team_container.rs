@@ -4,7 +4,7 @@ pub struct TeamContainer {
     faction: Faction,
     slots: usize,
     max_slots: usize,
-    right_to_left: bool,
+    left_to_right: bool,
     show_name: bool,
     on_click: Option<Box<dyn Fn(usize, Option<Entity>, &mut World) + Send + Sync>>,
     context_menu: Option<Box<dyn Fn(usize, Option<Entity>, &mut Ui, &mut World) + Send + Sync>>,
@@ -44,7 +44,7 @@ impl TeamContainer {
             faction,
             slots,
             max_slots: slots,
-            right_to_left: false,
+            left_to_right: false,
             show_name: false,
             top_content: None,
             slot_content: None,
@@ -66,8 +66,8 @@ impl TeamContainer {
         self.max_slots = value;
         self
     }
-    pub fn right_to_left(mut self) -> Self {
-        self.right_to_left = true;
+    pub fn left_to_right(mut self) -> Self {
+        self.left_to_right = true;
         self
     }
     pub fn name(mut self) -> Self {
@@ -164,10 +164,10 @@ impl TeamContainer {
         if size > 5.0 {
             ui.columns(self.slots, |ui| {
                 for (i, ui) in ui.iter_mut().enumerate() {
-                    let i = if self.right_to_left {
-                        self.slots - i - 1
-                    } else {
+                    let i = if self.left_to_right {
                         i
+                    } else {
+                        self.slots - i - 1
                     };
                     let highlighted = self.highlighted_slot.is_some_and(|s| s == i);
                     let resp = Self::show_unit_frame(i, self.max_slots, size, highlighted, ui);

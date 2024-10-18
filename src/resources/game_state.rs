@@ -33,6 +33,8 @@ pub enum GameState {
     Teams,
     TeamEditor,
     UnitEditor,
+
+    Editor,
 }
 
 static TARGET_STATE: Mutex<GameState> = Mutex::new(GameState::Loaded);

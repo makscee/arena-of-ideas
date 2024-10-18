@@ -49,7 +49,7 @@ fn main() {
         RunMode::Regular => GameState::Title,
         RunMode::Custom => GameState::CustomBattle,
         RunMode::Shop => GameState::Shop,
-        RunMode::Editor => GameState::UnitEditor,
+        RunMode::Editor => GameState::Editor,
         RunMode::Test => GameState::TestScenariosRun,
         RunMode::Sync => GameState::ServerSync,
         RunMode::ArchiveDownload => GameState::GameArchiveDownload,
@@ -128,6 +128,7 @@ fn main() {
             AudioPlugin,
             MetaPlugin,
             UnitEditorPlugin,
+            EditorPlugin,
         ))
         .init_state::<GameState>()
         .init_resource::<NotificationsResource>()

@@ -1,5 +1,6 @@
 mod button;
 mod confirmation;
+mod enum_switcher;
 mod r#fn;
 mod input;
 mod middle_3;
@@ -17,6 +18,7 @@ mod unit_card;
 use super::*;
 pub use button::*;
 pub use confirmation::*;
+pub use enum_switcher::*;
 pub use input::*;
 pub use middle_3::*;
 pub use notification::*;

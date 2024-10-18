@@ -181,14 +181,16 @@ impl MetaPlugin {
                                     max_count: 1,
                                     price: 1,
                                 });
-                                Confirmation::new("Create Auction".cstr(), |world| {
-                                    AuctionResource::post(world);
-                                })
-                                .content(|ui, world| {
-                                    let mut ar = world.resource_mut::<AuctionResource>();
-                                    Slider::new("price").ui(&mut ar.price, 1..=1000, ui);
-                                })
-                                .push(&egui_context(world).unwrap());
+                                Confirmation::new("Create Auction".cstr())
+                                    .accept(|world| {
+                                        AuctionResource::post(world);
+                                    })
+                                    .cancel(|_| {})
+                                    .content(|ui, world| {
+                                        let mut ar = world.resource_mut::<AuctionResource>();
+                                        Slider::new("price").ui(&mut ar.price, 1..=1000, ui);
+                                    })
+                                    .push(&egui_context(world).unwrap());
                             },
                         )
                     });
@@ -214,18 +216,20 @@ impl MetaPlugin {
                                 max_count: item.count,
                                 price: 1,
                             });
-                            Confirmation::new("Create Auction".cstr(), |world| {
-                                AuctionResource::post(world);
-                            })
-                            .content(|ui, world| {
-                                let mut ar = world.resource_mut::<AuctionResource>();
-                                let max = ar.max_count;
-                                if max > 1 {
-                                    Slider::new("count").ui(&mut ar.count, 1..=max, ui);
-                                }
-                                Slider::new("price").ui(&mut ar.price, 1..=1000, ui);
-                            })
-                            .push(&egui_context(world).unwrap());
+                            Confirmation::new("Create Auction".cstr())
+                                .accept(|world| {
+                                    AuctionResource::post(world);
+                                })
+                                .cancel(|_| {})
+                                .content(|ui, world| {
+                                    let mut ar = world.resource_mut::<AuctionResource>();
+                                    let max = ar.max_count;
+                                    if max > 1 {
+                                        Slider::new("count").ui(&mut ar.count, 1..=max, ui);
+                                    }
+                                    Slider::new("price").ui(&mut ar.price, 1..=1000, ui);
+                                })
+                                .push(&egui_context(world).unwrap());
                         },
                     )
                     .column(
@@ -275,18 +279,20 @@ impl MetaPlugin {
                                 max_count: item.count,
                                 price: 1,
                             });
-                            Confirmation::new("Create Auction".cstr(), |world| {
-                                AuctionResource::post(world);
-                            })
-                            .content(|ui, world| {
-                                let mut ar = world.resource_mut::<AuctionResource>();
-                                let max = ar.max_count;
-                                if max > 1 {
-                                    Slider::new("count").ui(&mut ar.count, 1..=max, ui);
-                                }
-                                Slider::new("price").ui(&mut ar.price, 1..=1000, ui);
-                            })
-                            .push(&egui_context(world).unwrap());
+                            Confirmation::new("Create Auction".cstr())
+                                .accept(|world| {
+                                    AuctionResource::post(world);
+                                })
+                                .cancel(|_| {})
+                                .content(|ui, world| {
+                                    let mut ar = world.resource_mut::<AuctionResource>();
+                                    let max = ar.max_count;
+                                    if max > 1 {
+                                        Slider::new("count").ui(&mut ar.count, 1..=max, ui);
+                                    }
+                                    Slider::new("price").ui(&mut ar.price, 1..=1000, ui);
+                                })
+                                .push(&egui_context(world).unwrap());
                         },
                     )
                     .column_btn("open", |d, _, _| {

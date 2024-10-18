@@ -25,6 +25,12 @@ fn default_zero_f32_e() -> Expression {
     Expression::Value(VarValue::Float(0.0))
 }
 
+impl Default for Anim {
+    fn default() -> Self {
+        Anim::Sequence(default())
+    }
+}
+
 impl Anim {
     pub fn apply(self, context: Context, world: &mut World) -> Result<f32> {
         let mut head_shift = 0.0;
