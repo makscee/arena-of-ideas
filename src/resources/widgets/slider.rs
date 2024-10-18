@@ -26,21 +26,28 @@ impl Slider {
         self.log = true;
         self
     }
-    pub fn ui<Num: Numeric>(self, value: &mut Num, range: RangeInclusive<Num>, ui: &mut Ui) {
+    pub fn ui<Num: Numeric>(
+        self,
+        value: &mut Num,
+        range: RangeInclusive<Num>,
+        ui: &mut Ui,
+    ) -> bool {
         if self.show_name {
             ui.label(self.name);
         }
-        let width = ui.available_width() - 80.0;
-        if width < 5.0 {
-            return;
-        }
-        ui.spacing_mut().slider_width = width;
-        egui::Slider::new(value, range)
+        // let width = ui.available_width() - 80.0;
+        // if width < 5.0 {
+        //     return false;
+        // }
+        // ui.spacing_mut().slider_width = width;
+        let changed = egui::Slider::new(value, range)
             .handle_shape(HandleShape::Circle)
             .logarithmic(self.log)
             .trailing_fill(false)
             .smallest_positive(0.1)
-            .ui(ui);
+            .ui(ui)
+            .changed();
         ui.reset_style();
+        changed
     }
 }

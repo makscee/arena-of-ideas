@@ -50,6 +50,7 @@ struct TileResource {
     focused: String,
     new_tiles: Vec<Tile>,
     close_tiles: Vec<String>,
+    close_not_kept: bool,
 }
 fn rm(world: &mut World) -> Mut<TileResource> {
     world.resource_mut::<TileResource>()
@@ -164,6 +165,14 @@ impl TilePlugin {
             }
         }
         let mut tr = rm(world);
+        if mem::take(&mut tr.close_not_kept) {
+            let tiles = tr
+                .tiles
+                .iter()
+                .filter_map(|(k, v)| if v.keep { None } else { Some(k.into()) })
+                .collect_vec();
+            tr.close_tiles.extend(tiles);
+        }
         for id in mem::take(&mut tr.close_tiles) {
             tr.tiles.shift_remove(&id);
         }
@@ -211,13 +220,7 @@ impl TilePlugin {
         sr.screen_space_initial = sr.screen_space;
     }
     pub fn clear(world: &mut World) {
-        let mut r = rm(world);
-        let tiles = r
-            .tiles
-            .iter()
-            .filter_map(|(k, v)| if v.keep { None } else { Some(k.into()) })
-            .collect_vec();
-        r.close_tiles.extend(tiles);
+        rm(world).close_not_kept = true;
     }
     fn clear_all(world: &mut World) {
         rm(world).tiles.clear();

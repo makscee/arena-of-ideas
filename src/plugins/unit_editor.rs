@@ -326,7 +326,7 @@ impl UnitEditorPlugin {
                 ui.reset_style();
                 ui.set_min_width(150.0);
                 if Button::click("Paste").ui(ui).clicked() {
-                    if let Some(v) = get_from_clipboard(world) {
+                    if let Some(v) = paste_from_clipboard(world) {
                         match ron::from_str::<PackedUnit>(&v) {
                             Ok(v) => {
                                 UnitEditorPlugin::set_team_unit(v, faction, slot, world);
@@ -354,7 +354,7 @@ impl UnitEditorPlugin {
                             .and_then(|t| t.units.get(slot))
                         {
                             match ron::to_string(unit) {
-                                Ok(v) => save_to_clipboard(&v, world),
+                                Ok(v) => copy_to_clipboard(&v, world),
                                 Err(e) => {
                                     format!("Failed to serialize unit: {e}").notify_error(world)
                                 }
@@ -548,14 +548,14 @@ pub trait ShowEditor: ToCstr + Default + Serialize + DeserializeOwned + Clone {
             if Button::click("Copy").ui(ui).clicked() {
                 match ron::to_string(self) {
                     Ok(v) => {
-                        save_to_clipboard(&v, world);
+                        copy_to_clipboard(&v, world);
                     }
                     Err(e) => format!("Failed to copy: {e}").notify_error(world),
                 }
                 ui.close_menu();
             }
             if Button::click("Paste").ui(ui).clicked() {
-                if let Some(v) = get_from_clipboard(world) {
+                if let Some(v) = paste_from_clipboard(world) {
                     match ron::from_str::<Self>(&v) {
                         Ok(v) => *self = v,
                         Err(e) => format!("Failed to paste text {v}: {e}").notify_error(world),

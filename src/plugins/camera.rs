@@ -22,7 +22,7 @@ impl Plugin for CameraPlugin {
     }
 }
 
-#[derive(Resource)]
+#[derive(Resource, Clone, Copy)]
 pub struct CameraData {
     pub entity: Entity,
     pub need_scale: f32,
@@ -34,12 +34,18 @@ const SCALE_CHANGE_SPEED: f32 = 3.0;
 pub const SLOT_SPACING: f32 = 3.0;
 
 impl CameraData {
-    fn apply(&self, projection: &mut OrthographicProjection) {
+    pub fn apply(&self, projection: &mut OrthographicProjection) {
         projection.scaling_mode = ScalingMode::FixedHorizontal(self.cur_scale);
     }
 }
 
 impl CameraPlugin {
+    pub fn apply(world: &mut World) {
+        let cd = *world.resource::<CameraData>();
+        if let Some(mut proj) = world.get_mut::<OrthographicProjection>(Self::entity(world)) {
+            cd.apply(&mut proj);
+        }
+    }
     pub fn pixel_unit(ctx: &egui::Context, world: &World) -> f32 {
         let width = ctx.screen_rect().width();
         width / world.resource::<CameraData>().cur_scale

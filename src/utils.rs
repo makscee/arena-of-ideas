@@ -135,13 +135,13 @@ pub fn get_children(entity: Entity, world: &World) -> Vec<Entity> {
         .map(|c| c.to_vec())
         .unwrap_or_default()
 }
-pub fn save_to_clipboard(text: &str, world: &mut World) {
+pub fn copy_to_clipboard(text: &str, world: &mut World) {
     world
         .resource_mut::<bevy_egui::EguiClipboard>()
         .set_contents(text);
     debug!("Saved to clipboard:\n{text}");
 }
-pub fn get_from_clipboard(world: &mut World) -> Option<String> {
+pub fn paste_from_clipboard(world: &mut World) -> Option<String> {
     world
         .resource_mut::<bevy_egui::EguiClipboard>()
         .get_contents()

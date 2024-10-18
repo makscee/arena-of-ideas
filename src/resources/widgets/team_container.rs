@@ -6,6 +6,7 @@ pub struct TeamContainer {
     max_slots: usize,
     left_to_right: bool,
     show_name: bool,
+    hug_unit: bool,
     on_click: Option<Box<dyn Fn(usize, Option<Entity>, &mut World) + Send + Sync>>,
     context_menu: Option<Box<dyn Fn(usize, Option<Entity>, &mut Ui, &mut World) + Send + Sync>>,
     on_swap: Option<Box<dyn Fn(usize, usize, &mut World) + Send + Sync>>,
@@ -46,6 +47,7 @@ impl TeamContainer {
             max_slots: slots,
             left_to_right: false,
             show_name: false,
+            hug_unit: false,
             top_content: None,
             slot_content: None,
             hover_content: None,
@@ -128,6 +130,10 @@ impl TeamContainer {
         self.highlighted_slot = slot;
         self
     }
+    pub fn hug_unit(mut self) -> Self {
+        self.hug_unit = true;
+        self
+    }
     pub fn slot_position(faction: Faction, slot: usize, world: &World) -> Vec2 {
         world
             .resource::<TeamContainerResource>()
@@ -159,8 +165,10 @@ impl TeamContainer {
             (content)(ui, world);
         }
 
-        let size = CameraPlugin::pixel_unit(ui.ctx(), world) * 1.3;
-        let size = size.at_most(ui.available_width() / self.slots as f32 * 0.5);
+        let mut size = CameraPlugin::pixel_unit(ui.ctx(), world) * 1.3;
+        if !self.hug_unit {
+            size = size.at_most(ui.available_width() / self.slots as f32 * 0.5);
+        }
         if size > 5.0 {
             ui.columns(self.slots, |ui| {
                 for (i, ui) in ui.iter_mut().enumerate() {
@@ -346,7 +354,7 @@ impl TeamContainer {
                     cd.entities[slot] = Some(entity);
                 }
                 let mut state = VarState::get_mut(entity, world);
-                state.change_vec2(VarName::Position, (need_pos - position) * delta * 5.0);
+                state.change_vec2(VarName::Position, (need_pos - position) * delta * 13.0);
             }
         }
         world.insert_resource(data);

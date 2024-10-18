@@ -3,6 +3,7 @@ use super::*;
 #[derive(Deserialize, Serialize, Debug, Clone, Default)]
 pub struct ClientState {
     pub editor_teams: HashMap<Faction, PackedTeam>,
+    pub editor: EditorResource,
 }
 
 static CLIENT_STATE: OnceCell<RwLock<ClientState>> = OnceCell::new();
