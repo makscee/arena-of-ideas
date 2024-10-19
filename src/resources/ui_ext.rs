@@ -9,7 +9,7 @@ pub trait ShowTable<T> {
         name: &'static str,
         ui: &mut Ui,
         world: &mut World,
-        m: fn(Table<T>) -> Table<T>,
+        m: impl Fn(Table<T>) -> Table<T>,
     ) -> TableState;
 }
 
@@ -19,7 +19,7 @@ impl ShowTable<TTeam> for Vec<TTeam> {
         name: &'static str,
         ui: &mut Ui,
         world: &mut World,
-        m: fn(Table<TTeam>) -> Table<TTeam>,
+        m: impl Fn(Table<TTeam>) -> Table<TTeam>,
     ) -> TableState {
         let mut t = Table::new(name)
             .title()
@@ -41,7 +41,7 @@ impl ShowTable<TBaseUnit> for Vec<TBaseUnit> {
         name: &'static str,
         ui: &mut Ui,
         world: &mut World,
-        m: fn(Table<TBaseUnit>) -> Table<TBaseUnit>,
+        m: impl Fn(Table<TBaseUnit>) -> Table<TBaseUnit>,
     ) -> TableState {
         let mut t = Table::new(name)
             .title()
@@ -75,7 +75,7 @@ impl ShowTable<FusedUnit> for Vec<FusedUnit> {
         name: &'static str,
         ui: &mut Ui,
         world: &mut World,
-        m: fn(Table<FusedUnit>) -> Table<FusedUnit>,
+        m: impl Fn(Table<FusedUnit>) -> Table<FusedUnit>,
     ) -> TableState {
         fn format_stat(value: i32, mutation: i32) -> Cstr {
             match mutation.signum() {
@@ -132,7 +132,7 @@ impl ShowTable<TArenaLeaderboard> for Vec<TArenaLeaderboard> {
         name: &'static str,
         ui: &mut Ui,
         world: &mut World,
-        m: fn(Table<TArenaLeaderboard>) -> Table<TArenaLeaderboard>,
+        m: impl Fn(Table<TArenaLeaderboard>) -> Table<TArenaLeaderboard>,
     ) -> TableState {
         let mut t = Table::new(name)
             .column_int("floor", |d: &TArenaLeaderboard| d.floor as i32)
@@ -154,7 +154,7 @@ impl ShowTable<TArenaRunArchive> for Vec<TArenaRunArchive> {
         name: &'static str,
         ui: &mut Ui,
         world: &mut World,
-        m: fn(Table<TArenaRunArchive>) -> Table<TArenaRunArchive>,
+        m: impl Fn(Table<TArenaRunArchive>) -> Table<TArenaRunArchive>,
     ) -> TableState {
         let mut t = Table::new(name)
             .column_gid("id", |d: &TArenaRunArchive| d.id)
@@ -176,7 +176,7 @@ impl ShowTable<TMetaShop> for Vec<TMetaShop> {
         name: &'static str,
         ui: &mut Ui,
         world: &mut World,
-        m: fn(Table<TMetaShop>) -> Table<TMetaShop>,
+        m: impl Fn(Table<TMetaShop>) -> Table<TMetaShop>,
     ) -> TableState {
         let mut t = Table::new(name)
             .title()
@@ -213,7 +213,7 @@ impl ShowTable<TUnitShardItem> for Vec<TUnitShardItem> {
         name: &'static str,
         ui: &mut Ui,
         world: &mut World,
-        m: fn(Table<TUnitShardItem>) -> Table<TUnitShardItem>,
+        m: impl Fn(Table<TUnitShardItem>) -> Table<TUnitShardItem>,
     ) -> TableState {
         let mut t = Table::new(name)
             .title()
@@ -230,7 +230,7 @@ impl ShowTable<TLootboxItem> for Vec<TLootboxItem> {
         name: &'static str,
         ui: &mut Ui,
         world: &mut World,
-        m: fn(Table<TLootboxItem>) -> Table<TLootboxItem>,
+        m: impl Fn(Table<TLootboxItem>) -> Table<TLootboxItem>,
     ) -> TableState {
         let mut t = Table::new(name)
             .title()
@@ -248,7 +248,7 @@ impl ShowTable<TAuction> for Vec<TAuction> {
         name: &'static str,
         ui: &mut Ui,
         world: &mut World,
-        m: fn(Table<TAuction>) -> Table<TAuction>,
+        m: impl Fn(Table<TAuction>) -> Table<TAuction>,
     ) -> TableState {
         fn count(d: &TAuction) -> i32 {
             match d.item_kind {

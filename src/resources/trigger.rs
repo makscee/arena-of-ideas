@@ -228,7 +228,7 @@ impl ToCstr for Trigger {
                 c.push(effects);
                 c
             }
-            Trigger::Change { trigger, expr } => "Change".cstr(),
+            Trigger::Change { .. } => "Change".cstr(),
             Trigger::List(list) => "List "
                 .cstr()
                 .push(Cstr::join_vec(list.iter().map(|e| e.cstr()).collect_vec()))

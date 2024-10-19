@@ -542,7 +542,7 @@ impl ShowEditor for Effect {
             | Effect::Vfx(_) => {}
         }
     }
-    fn show_content(&mut self, _: &Context, world: &mut World, ui: &mut Ui) {
+    fn show_content(&mut self, _: &Context, _: &mut World, ui: &mut Ui) {
         match self {
             Effect::ChangeStatus(status)
             | Effect::ClearStatus(status)

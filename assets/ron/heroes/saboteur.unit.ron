@@ -7,7 +7,7 @@
     houses: ["Rogues"],
     trigger: Fire(
         triggers: [(BattleStart, None)],
-        targets: [(WithVar(Faction, OppositeFaction, SlotUnit(I(1))), "front enemy")],
+        targets: [(WithVar(Faction, OppositeFaction, SlotUnit(I(0))), "front enemy")],
         effects: [(UseAbility("Rob", 0), None)],
     ),
     representation: (

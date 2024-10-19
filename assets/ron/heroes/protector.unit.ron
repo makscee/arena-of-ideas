@@ -7,7 +7,7 @@
     houses: ["Paladins"],
     trigger: Fire(
         triggers: [(BattleStart, None)],
-        targets: [(SlotUnit(I(1)), "front ally")],
+        targets: [(SlotUnit(I(0)), "front ally")],
         effects: [(UseAbility("Shield", 0), None)],
     ),
     representation: (

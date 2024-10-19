@@ -114,7 +114,7 @@ impl UnitEditorPlugin {
     pub fn load_team(faction: Faction, team: PackedTeam, world: &mut World) {
         rm(world).teams.insert(faction, team);
     }
-    fn open_new_unit_picker(faction: Faction, slot: usize, ctx: &egui::Context, world: &mut World) {
+    fn open_new_unit_picker(faction: Faction, slot: usize, world: &mut World) {
         let mut r = rm(world);
         r.editing_faction = faction;
         r.editing_slot = slot;
@@ -138,7 +138,7 @@ impl UnitEditorPlugin {
                         .units
                         .push(PackedUnit::default());
                     Self::respawn_teams(true, world);
-                    Confirmation::close_current(ui.ctx());
+                    Confirmation::close_current(world);
                 }
                 let mut r = rm(world);
                 Selector::new("spawn").ui_iter(
@@ -152,7 +152,7 @@ impl UnitEditorPlugin {
                     ui,
                 );
             })
-            .push(ctx);
+            .push(world);
     }
     fn load_unit_editor(entity: Entity, faction: Faction, slot: usize, world: &mut World) {
         let mut r = rm(world);
@@ -174,9 +174,8 @@ impl UnitEditorPlugin {
             TilePlugin::close(UNIT_ID, world);
             TilePlugin::close(REP_ID, world);
         }
-        let ctx = &egui_context(world).unwrap();
-        while Confirmation::has_active(ctx) {
-            Confirmation::close_current(ctx);
+        while Confirmation::has_active(world) {
+            Confirmation::close_current(world);
         }
     }
     fn open_unit_editor(world: &mut World) {
@@ -223,11 +222,11 @@ impl UnitEditorPlugin {
                             trigger.show_node("", &context, world, ui);
                             rm(world).editing_trigger = trigger;
                         })
-                        .push(ui.ctx());
+                        .push(world);
                 }
             });
             if Button::click("Edit representation").ui(ui).clicked() {
-                Confirmation::close_current(ui.ctx());
+                Confirmation::close_current(world);
                 let mut r = rm(world);
                 r.editing_representation = r.editing_hero.representation.clone();
                 Tile::new(Side::Left, |ui, world| {
@@ -305,15 +304,14 @@ impl UnitEditorPlugin {
                 return;
             }
             fn on_click(slot: usize, faction: Faction, entity: Option<Entity>, world: &mut World) {
-                let ctx = &egui_context(world).unwrap();
-                if Confirmation::has_active(ctx) {
+                if Confirmation::has_active(world) {
                     return;
                 }
                 if let Some(entity) = entity {
                     UnitEditorPlugin::load_unit_editor(entity, faction, slot, world);
                     UnitEditorPlugin::open_unit_editor(world);
                 } else {
-                    UnitEditorPlugin::open_new_unit_picker(faction, slot, ctx, world);
+                    UnitEditorPlugin::open_new_unit_picker(faction, slot, world);
                 }
             }
             fn context_menu(

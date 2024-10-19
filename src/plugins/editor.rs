@@ -5,7 +5,7 @@ pub struct EditorPlugin;
 impl Plugin for EditorPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<EditorResource>()
-            .add_systems(OnEnter(GameState::Editor), Self::on_enter)
+            .add_systems(OnEnter(GameState::Editor), Self::load_state)
             .add_systems(OnExit(GameState::Editor), Self::on_exit)
             .add_systems(Update, Self::update);
     }
@@ -17,7 +17,7 @@ pub struct EditorResource {
 
     team: PackedTeam,
 
-    battle: (PackedTeam, PackedTeam),
+    pub battle: (PackedTeam, PackedTeam),
 
     unit: PackedUnit,
     unit_entity: Option<Entity>,
@@ -65,7 +65,14 @@ impl Into<String> for UnitMode {
 }
 
 impl EditorPlugin {
-    fn on_enter(world: &mut World) {
+    pub fn load_battle(left: PackedTeam, right: PackedTeam) {
+        let mut cs = client_state().clone();
+        cs.editor.battle.0 = left;
+        cs.editor.battle.1 = right;
+        cs.editor.mode = Mode::Battle;
+        cs.save();
+    }
+    fn load_state(world: &mut World) {
         let mut rm = rm(world);
         *rm = client_state().editor.clone();
         rm.vfx_selected = game_assets()
@@ -83,6 +90,7 @@ impl EditorPlugin {
         TilePlugin::clear(world);
     }
     fn save_state(world: &mut World) {
+        debug!("Save editor state");
         let mut cs = client_state().clone();
         cs.editor = rm(world).clone();
         cs.save();
@@ -94,7 +102,11 @@ impl EditorPlugin {
                 rm(world).team.clone().unpack(Faction::Team, world);
                 UnitPlugin::place_into_slots(world);
             }
-            Mode::Battle => todo!(),
+            Mode::Battle => {
+                rm(world).battle.0.clone().unpack(Faction::Left, world);
+                rm(world).battle.1.clone().unpack(Faction::Right, world);
+                UnitPlugin::place_into_slots(world);
+            }
             Mode::Unit => {
                 let entity = rm(world).unit.clone().unpack(
                     TeamPlugin::entity(Faction::Team, world),
@@ -110,11 +122,28 @@ impl EditorPlugin {
             }
         }
     }
-    fn get_team_unit(slot: usize, world: &mut World) -> Option<PackedUnit> {
-        rm(world).team.units.get(slot).cloned()
+    fn get_team_mut(faction: Faction, r: &mut EditorResource) -> &mut PackedTeam {
+        match r.mode {
+            Mode::Team => &mut r.team,
+            Mode::Battle => {
+                if faction == Faction::Right {
+                    &mut r.battle.1
+                } else {
+                    &mut r.battle.0
+                }
+            }
+            Mode::Unit | Mode::Vfx => panic!(),
+        }
     }
-    fn set_team_unit(slot: usize, unit: PackedUnit, world: &mut World) {
-        let team = &mut rm(world).team;
+    fn get_team_unit(slot: usize, faction: Faction, world: &mut World) -> Option<PackedUnit> {
+        Self::get_team_mut(faction, &mut rm(world))
+            .units
+            .get(slot)
+            .cloned()
+    }
+    fn set_team_unit(slot: usize, faction: Faction, unit: PackedUnit, world: &mut World) {
+        let mut r = rm(world);
+        let team = Self::get_team_mut(faction, &mut r);
         if team.units.len() > slot {
             team.units.remove(slot);
             team.units.insert(slot, unit);
@@ -122,12 +151,98 @@ impl EditorPlugin {
             team.units.push(unit);
         }
     }
-    fn remove_team_unit(slot: usize, world: &mut World) {
-        let team = &mut rm(world).team;
+    fn remove_team_unit(slot: usize, faction: Faction, world: &mut World) {
+        let mut r = rm(world);
+        let team = Self::get_team_mut(faction, &mut r);
         if team.units.len() < slot {
             return;
         }
         team.units.remove(slot);
+    }
+    fn team_container(faction: Faction) -> TeamContainer {
+        TeamContainer::new(faction)
+            .top_content(move |ui, world| {
+                if Button::click("Load own").ui(ui).clicked() {
+                    Confirmation::new("Open own team".cstr())
+                        .content(move |ui, world| {
+                            TTeam::filter_by_owner(user_id())
+                                .filter(|t| t.pool.eq(&TeamPool::Owned))
+                                .collect_vec()
+                                .show_modified_table("Teams", ui, world, move |t| {
+                                    t.column_btn_dyn(
+                                        "select",
+                                        Box::new(move |t: &TTeam, _, world| {
+                                            let mut r = rm(world);
+                                            *Self::get_team_mut(faction, &mut r) =
+                                                PackedTeam::from_id(t.id);
+                                            Confirmation::close_current(world);
+                                            Self::load_mode(world);
+                                        }),
+                                    )
+                                });
+                        })
+                        .cancel(|_| {})
+                        .push(world);
+                }
+            })
+            .slot_content(move |slot, e, ui, world| {
+                if e.is_none() {
+                    return;
+                }
+                if Button::click("Edit").ui(ui).clicked() {
+                    if let Some(unit) = Self::get_team_unit(slot, faction, world) {
+                        let mut rm = rm(world);
+                        rm.unit = unit;
+                        rm.mode = Mode::Unit;
+                        Self::load_mode(world);
+                    }
+                }
+            })
+            .context_menu(move |slot, entity, ui, world| {
+                ui.reset_style();
+                ui.set_min_width(150.0);
+                if Button::click("Paste").ui(ui).clicked() {
+                    if let Some(v) = paste_from_clipboard(world) {
+                        match ron::from_str::<PackedUnit>(&v) {
+                            Ok(v) => {
+                                Self::set_team_unit(slot, faction, v, world);
+                                Self::refresh(world);
+                            }
+                            Err(e) => format!("Failed to deserialize unit from {v}: {e}")
+                                .notify_error(world),
+                        }
+                    } else {
+                        "Clipboard is empty".notify_error(world);
+                    }
+                    ui.close_menu();
+                }
+                if entity.is_none() {
+                    if Button::click("Spawn default").ui(ui).clicked() {
+                        Self::set_team_unit(slot, faction, default(), world);
+                        Self::refresh(world);
+                        ui.close_menu();
+                    }
+                } else {
+                    if Button::click("Copy").ui(ui).clicked() {
+                        if let Some(unit) = Self::get_team_unit(slot, faction, world) {
+                            copy_to_clipboard(&unit.to_ron_str(), world);
+                        }
+                        ui.close_menu();
+                    }
+                    if Button::click("Delete").red(ui).ui(ui).clicked() {
+                        Self::remove_team_unit(slot, faction, world);
+                        Self::refresh(world);
+                        ui.close_menu();
+                    }
+                }
+            })
+            .on_swap(move |slot, target, world| {
+                let mut r = rm(world);
+                let team = Self::get_team_mut(faction, &mut r);
+                let unit = team.units.remove(slot);
+                team.units.insert(target.at_most(team.units.len()), unit);
+                Self::refresh(world);
+            })
     }
     fn load_mode(world: &mut World) {
         let mode = rm(world).mode;
@@ -138,91 +253,60 @@ impl EditorPlugin {
             Mode::Team => {
                 rm(world).team.clone().unpack(Faction::Team, world);
                 Tile::new(Side::Top, |ui, world| {
-                    TeamContainer::new(Faction::Team)
-                        .top_content(|ui, _| {
-                            if Button::click("Load own").ui(ui).clicked() {
-                                Confirmation::new("Open own team".cstr())
-                                    .content(|ui, world| {
-                                        TTeam::filter_by_owner(user_id())
-                                            .filter(|t| t.pool.eq(&TeamPool::Owned))
-                                            .collect_vec()
-                                            .show_modified_table("Teams", ui, world, |t| {
-                                                t.column_btn("select", |t, ui, world| {
-                                                    rm(world).team = PackedTeam::from_id(t.id);
-                                                    Confirmation::close_current(
-                                                        &egui_context(world).unwrap(),
-                                                    );
-                                                    Self::load_mode(world);
-                                                })
-                                            });
-                                    })
-                                    .cancel(|_| {})
-                                    .push(ui.ctx());
-                            }
-                        })
-                        .slot_content(|slot, e, ui, world| {
-                            if e.is_none() {
-                                return;
-                            }
-                            if Button::click("Edit").ui(ui).clicked() {
-                                let mut rm = rm(world);
-                                rm.unit = rm.team.units[slot].clone();
-                                rm.mode = Mode::Unit;
-                                Self::load_mode(world);
-                            }
-                        })
-                        .context_menu(|slot, entity, ui, world| {
-                            ui.reset_style();
-                            ui.set_min_width(150.0);
-                            if Button::click("Paste").ui(ui).clicked() {
-                                if let Some(v) = paste_from_clipboard(world) {
-                                    match ron::from_str::<PackedUnit>(&v) {
-                                        Ok(v) => {
-                                            Self::set_team_unit(slot, v, world);
-                                            Self::refresh(world);
-                                        }
-                                        Err(e) => {
-                                            format!("Failed to deserialize unit from {v}: {e}")
-                                                .notify_error(world)
-                                        }
-                                    }
-                                } else {
-                                    "Clipboard is empty".notify_error(world);
-                                }
-                                ui.close_menu();
-                            }
-                            if entity.is_none() {
-                                if Button::click("Spawn default").ui(ui).clicked() {
-                                    Self::set_team_unit(slot, default(), world);
-                                    Self::refresh(world);
-                                    ui.close_menu();
-                                }
-                            } else {
-                                if Button::click("Copy").ui(ui).clicked() {
-                                    if let Some(unit) = Self::get_team_unit(slot, world) {
-                                        match ron::to_string(&unit) {
-                                            Ok(v) => copy_to_clipboard(&v, world),
-                                            Err(e) => format!("Failed to serialize unit: {e}")
-                                                .notify_error(world),
-                                        }
-                                    }
-                                    ui.close_menu();
-                                }
-                                if Button::click("Delete").red(ui).ui(ui).clicked() {
-                                    Self::remove_team_unit(slot, world);
-                                    Self::refresh(world);
-                                    ui.close_menu();
-                                }
-                            }
-                        })
-                        .ui(ui, world);
+                    Self::team_container(Faction::Team).ui(ui, world);
                 })
                 .stretch_min()
                 .transparent()
                 .pinned()
                 .push(world);
             }
-            Mode::Battle => {}
+            Mode::Battle => {
+                let b = rm(world).battle.clone();
+                b.0.unpack(Faction::Left, world);
+                b.1.unpack(Faction::Right, world);
+                Tile::new(Side::Top, |ui, world| {
+                    ui.columns(2, |ui| {
+                        ui[0].vertical(|ui| {
+                            Self::team_container(Faction::Left).ui(ui, world);
+                        });
+                        ui[1].vertical(|ui| {
+                            Self::team_container(Faction::Right)
+                                .left_to_right()
+                                .ui(ui, world);
+                        });
+                    });
+                })
+                .stretch_min()
+                .transparent()
+                .pinned()
+                .push(world);
+                Tile::new(Side::Top, |ui, world| {
+                    ui.horizontal(|ui| {
+                        if Button::click("Run battle").ui(ui).clicked() {
+                            BattlePlugin::load_teams(
+                                rm(world).battle.0.clone(),
+                                rm(world).battle.1.clone(),
+                                world,
+                            );
+                            BattlePlugin::set_next_state(GameState::Editor, world);
+                            TeamContainerResource::clear_state(world);
+                            GameState::Battle.set_next(world);
+                        }
+                        if Button::click("Send BattleStart").ui(ui).clicked() {
+                            Event::BattleStart.send(world);
+                        }
+                        if Button::click("Strike").ui(ui).clicked() {
+                            if let Some((left, right)) = BattlePlugin::get_strikers(world) {
+                                let _ = BattlePlugin::run_strike(left, right, world);
+                            }
+                        }
+                    });
+                })
+                .transparent()
+                .no_expand()
+                .pinned()
+                .push(world);
+            }
             Mode::Unit => {
                 Self::refresh(world);
                 Tile::new(Side::Right, |ui, world| {
@@ -236,7 +320,7 @@ impl EditorPlugin {
                                         ui.horizontal(|ui| {
                                             if Button::click("Copy").ui(ui).clicked() {
                                                 copy_to_clipboard(
-                                                    &ron::to_string(&rm(world).unit).unwrap(),
+                                                    &rm(world).unit.clone().to_ron_str(),
                                                     world,
                                                 );
                                             }
@@ -333,9 +417,6 @@ impl EditorPlugin {
                         if Button::click("Load").ui(ui).clicked() {
                             rm(world).vfx = Vfx::get(&rm(world).vfx_selected);
                         }
-                        if Button::click("Save").ui(ui).clicked() {
-                            Self::save_state(world);
-                        }
                         if Button::click("Copy").ui(ui).clicked() {
                             copy_to_clipboard(&ron::to_string(&rm(world).vfx).unwrap(), world);
                         }
@@ -393,12 +474,20 @@ impl EditorPlugin {
                 if EnumSwitcher::show(&mut rm(world).mode, ui) {
                     Self::load_mode(world);
                 }
+                ui.add_space(50.0);
                 if Slider::new("scale").log().ui(
                     &mut world.resource_mut::<CameraData>().cur_scale,
                     5.0..=50.0,
                     ui,
                 ) {
                     CameraPlugin::apply(world);
+                    Self::load_mode(world);
+                }
+                if Button::click("Save state").ui(ui).clicked() {
+                    Self::save_state(world);
+                }
+                if Button::click("Load state").ui(ui).clicked() {
+                    Self::load_state(world);
                     Self::load_mode(world);
                 }
             });

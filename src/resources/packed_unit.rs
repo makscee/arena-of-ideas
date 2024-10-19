@@ -172,6 +172,10 @@ impl PackedUnit {
         }
         state
     }
+    pub fn to_ron_str(mut self) -> String {
+        self.state = default();
+        ron::to_string(&self).unwrap()
+    }
 }
 
 impl From<PackedUnit> for TBaseUnit {

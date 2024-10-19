@@ -190,7 +190,7 @@ impl MetaPlugin {
                                         let mut ar = world.resource_mut::<AuctionResource>();
                                         Slider::new("price").ui(&mut ar.price, 1..=1000, ui);
                                     })
-                                    .push(&egui_context(world).unwrap());
+                                    .push(world);
                             },
                         )
                     });
@@ -229,13 +229,13 @@ impl MetaPlugin {
                                     }
                                     Slider::new("price").ui(&mut ar.price, 1..=1000, ui);
                                 })
-                                .push(&egui_context(world).unwrap());
+                                .push(world);
                         },
                     )
                     .column(
                         "craft",
                         |_, _| default(),
-                        |d, _, ui, world| {
+                        |d, _, ui, _| {
                             let craft_cost = game_assets().global_settings.craft_shards_cost;
                             if Button::click("craft")
                                 .enabled(d.count >= craft_cost)
@@ -291,7 +291,7 @@ impl MetaPlugin {
                                     }
                                     Slider::new("price").ui(&mut ar.price, 1..=1000, ui);
                                 })
-                                .push(&egui_context(world).unwrap());
+                                .push(world);
                         },
                     )
                     .column_btn("open", |d, _, _| {

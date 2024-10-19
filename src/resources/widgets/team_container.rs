@@ -23,6 +23,15 @@ pub struct TeamContainerResource {
     containers: HashMap<Faction, TeamContainerData>,
 }
 
+impl TeamContainerResource {
+    pub fn clear_state(world: &mut World) {
+        world
+            .resource_mut::<TeamContainerResource>()
+            .containers
+            .clear();
+    }
+}
+
 #[derive(Debug, Clone)]
 struct TeamContainerData {
     positions: Vec<Pos2>,

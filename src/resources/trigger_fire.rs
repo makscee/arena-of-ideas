@@ -155,7 +155,7 @@ impl ShowEditor for FireTrigger {
         }
     }
 
-    fn show_content(&mut self, _: &Context, world: &mut World, ui: &mut Ui) {
+    fn show_content(&mut self, _: &Context, _: &mut World, ui: &mut Ui) {
         match self {
             FireTrigger::Period(_, delay, _) => {
                 DragValue::new(delay).ui(ui);

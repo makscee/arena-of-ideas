@@ -80,7 +80,11 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
         );
         self
     }
-    pub fn column_btn(mut self, name: &'static str, on_click: fn(&T, &mut Ui, &mut World)) -> Self {
+    pub fn column_btn_dyn(
+        mut self,
+        name: &'static str,
+        on_click: Box<dyn Fn(&T, &mut Ui, &mut World)>,
+    ) -> Self {
         self.columns.insert(
             name,
             TableColumn {
@@ -94,6 +98,9 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
             },
         );
         self
+    }
+    pub fn column_btn(self, name: &'static str, on_click: fn(&T, &mut Ui, &mut World)) -> Self {
+        self.column_btn_dyn(name, Box::new(on_click))
     }
     pub fn column_cstr(mut self, name: &'static str, s: fn(&T, &World) -> Cstr) -> Self {
         self.columns.insert(

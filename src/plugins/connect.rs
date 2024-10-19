@@ -35,7 +35,6 @@ impl ConnectPlugin {
                     });
                 } else {
                     OperationsPlugin::add(move |w| {
-                        let ctx = &egui_context(w).unwrap();
                         Confirmation::new(
                             "Wrong game version: "
                                 .cstr_c(VISIBLE_LIGHT)
@@ -56,7 +55,7 @@ impl ConnectPlugin {
                         .cancel(|w| app_exit(w))
                         .accept_name("Update")
                         .cancel_name("Exit")
-                        .push(ctx);
+                        .push(w);
                     });
                 }
             });

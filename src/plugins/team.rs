@@ -10,7 +10,6 @@ struct TeamResource {
     table: Vec<TTeam>,
     new_team_name: String,
     team: u64,
-    unit_to_add: u64,
 }
 
 #[derive(Component)]
@@ -25,7 +24,6 @@ impl Plugin for TeamPlugin {
             table: default(),
             new_team_name: default(),
             team: 0,
-            unit_to_add: 0,
         });
     }
 }
@@ -114,7 +112,6 @@ impl TeamPlugin {
         TeamSyncPlugin::subscribe(team, Faction::Team, world);
     }
     fn open_new_team_popup(world: &mut World) {
-        let ctx = egui_context(world).unwrap();
         Confirmation::new("New Team".cstr_cs(VISIBLE_LIGHT, CstrStyle::Heading2))
             .accept(|world| {
                 let name = world.resource_mut::<TeamResource>().new_team_name.take();
@@ -133,7 +130,7 @@ impl TeamPlugin {
                 Input::new("name")
                     .ui_string(&mut world.resource_mut::<TeamResource>().new_team_name, ui);
             })
-            .push(&ctx);
+            .push(world);
     }
 
     fn teams_tiles(world: &mut World) {
@@ -176,7 +173,7 @@ impl TeamPlugin {
             title(&team.name, ui);
             TeamContainer::new(Faction::Team)
                 .empty_slot_text("+1/+1\nto all".cstr_cs(VISIBLE_DARK, CstrStyle::Bold))
-                .top_content(|ui, _| {
+                .top_content(|ui, world| {
                     ui.horizontal(|ui| {
                         if Button::click("Disband").red(ui).ui(ui).clicked() {
                             Confirmation::new("Disband team?".cstr_c(VISIBLE_LIGHT))
@@ -192,7 +189,7 @@ impl TeamPlugin {
                                     });
                                 })
                                 .cancel(|_| {})
-                                .push(ui.ctx());
+                                .push(world);
                         }
                     });
                 })
@@ -213,15 +210,13 @@ impl TeamPlugin {
                                     once_on_team_add_unit(|_, _, status, _, _| {
                                         status.on_success(|world| {
                                             TableState::reset_cache(&egui_context(world).unwrap());
-                                            Confirmation::close_current(
-                                                &egui_context(world).unwrap(),
-                                            );
+                                            Confirmation::close_current(world);
                                         })
                                     });
                                 })
                             });
                         })
-                        .push(&egui_context(world).unwrap());
+                        .push(world);
                 })
                 .slot_content(|slot, entity, ui, world| {
                     if entity.is_none() {

@@ -235,7 +235,7 @@ impl GameStartPlugin {
                                     run_finish();
                                 })
                                 .cancel(|_| {})
-                                .push(ui.ctx());
+                                .push(world);
                         }
                     });
                 }

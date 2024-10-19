@@ -258,7 +258,7 @@ impl LoadingPlugin {
             houses,
             vfxs,
         );
-        GAME_ASSETS.set(RwLock::new(ga));
+        GAME_ASSETS.set(RwLock::new(ga)).unwrap();
     }
 }
 

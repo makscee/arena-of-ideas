@@ -70,13 +70,11 @@ impl TableViewPlugin {
                     );
                 })
                 .column_btn("editor", |d, _, world| {
-                    let mut cs = client_state().clone();
-                    cs.editor_teams
-                        .insert(Faction::Left, PackedTeam::from_id(d.team_left));
-                    cs.editor_teams
-                        .insert(Faction::Right, PackedTeam::from_id(d.team_right));
-                    cs.save();
-                    GameState::UnitEditor.proceed_to_target(world);
+                    EditorPlugin::load_battle(
+                        PackedTeam::from_id(d.team_left),
+                        PackedTeam::from_id(d.team_right),
+                    );
+                    GameState::Editor.set_next(world);
                 })
                 .column_btn("run", |d, _, world| {
                     world.insert_resource(BattleResource::from(d.clone()));

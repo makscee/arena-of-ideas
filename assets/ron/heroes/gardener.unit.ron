@@ -7,7 +7,7 @@
     houses: ["Druids"],
     trigger: Fire(
         triggers: [(TurnEnd, None)],
-        targets: [(SlotUnit(I(1)), "front ally")],
+        targets: [(SlotUnit(I(0)), "front ally")],
         effects: [(UseAbility("Thorns", 0), None)],
     ),
     representation: (

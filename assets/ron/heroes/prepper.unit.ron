@@ -7,7 +7,7 @@
     houses: ["Medics"],
     trigger: Fire(
         triggers: [(BattleStart, None)],
-        targets: [(SlotUnit(I(1)), "front ally")],
+        targets: [(SlotUnit(I(0)), "front ally")],
         effects: [
             (
                 WithVar(Lvl, Mul(ListCount(AllUnits), Context(Lvl)), UseAbility("Vitality", 0)),

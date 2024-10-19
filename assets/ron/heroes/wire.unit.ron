@@ -8,8 +8,8 @@
     trigger: Fire(
         triggers: [(BattleStart, None)],
         targets: [
-            (SlotUnit(I(1)), "front ally"),
-            (WithVar(Faction, OppositeFaction, SlotUnit(I(1))), "front enemy"),
+            (SlotUnit(I(0)), "front ally"),
+            (WithVar(Faction, OppositeFaction, SlotUnit(I(0))), "front enemy"),
         ],
         effects: [(UseAbility("Charge", 4), None)],
     ),

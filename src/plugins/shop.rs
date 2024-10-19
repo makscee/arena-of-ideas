@@ -114,7 +114,7 @@ impl ShopPlugin {
                 })
                 .content(|ui, world| {
                     if Button::click("Swap").ui(ui).clicked() {
-                        Confirmation::close_current(&egui_context(world).unwrap());
+                        Confirmation::close_current(world);
                         fuse_swap();
                     }
                     ui.set_width(ui.ctx().screen_rect().width() * 0.9);
@@ -175,7 +175,7 @@ impl ShopPlugin {
                         }
                     });
                 })
-                .push(&egui_context(world).unwrap());
+                .push(world);
         } else {
             let mut sd = rm(world);
             sd.fuse_source = None;

@@ -7,7 +7,7 @@
     houses: ["Warlocks"],
     trigger: Fire(
         triggers: [(BattleStart, None)],
-        targets: [(SlotUnit(I(1)), "front ally")],
+        targets: [(SlotUnit(I(0)), "front ally")],
         effects: [(UseAbility("Doom", 0), None)],
     ),
     representation: (
