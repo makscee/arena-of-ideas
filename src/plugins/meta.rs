@@ -114,7 +114,7 @@ impl MetaPlugin {
                             til_refresh / 60 % 60,
                             til_refresh % 60
                         )
-                        .cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold),
+                        .cstr_cs(visible_light(), CstrStyle::Bold),
                     )
                     .label(ui);
                 TMetaShop::iter()
@@ -169,7 +169,7 @@ impl MetaPlugin {
                     .show_modified_table("Units", ui, world, |t| {
                         t.column_cstr_click(
                             "sell",
-                            |_, _| "sell".cstr_c(VISIBLE_LIGHT),
+                            |_, _| "sell".cstr_c(visible_light()),
                             |unit, world| {
                                 let item = TUnitItem::filter_by_owner(user_id())
                                     .find(|i| i.unit.id == unit.id)
@@ -204,7 +204,7 @@ impl MetaPlugin {
                 d.show_modified_table("Hero Shards", ui, world, |t| {
                     t.column_cstr_click(
                         "sell",
-                        |_, _| "sell".cstr_c(VISIBLE_LIGHT),
+                        |_, _| "sell".cstr_c(visible_light()),
                         |unit, world| {
                             let item = TUnitShardItem::filter_by_owner(user_id())
                                 .find(|i| i.id == unit.id)
@@ -266,7 +266,7 @@ impl MetaPlugin {
                 d.show_modified_table("Lootboxes", ui, world, |t| {
                     t.column_cstr_click(
                         "sell",
-                        |_, _| "sell".cstr_c(VISIBLE_LIGHT),
+                        |_, _| "sell".cstr_c(visible_light()),
                         |unit, world| {
                             let item = TLootboxItem::filter_by_owner(user_id())
                                 .find(|i| i.id == unit.id)
@@ -337,7 +337,7 @@ impl MetaPlugin {
                             })
                             .column_cstr_click(
                                 "action",
-                                |_, _| "vote".cstr_c(VISIBLE_LIGHT),
+                                |_, _| "vote".cstr_c(visible_light()),
                                 |d, world| {
                                     brm(world).units.push(d.name.clone());
                                     Self::get_next_for_balancing(world);

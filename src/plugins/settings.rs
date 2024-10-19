@@ -17,6 +17,23 @@ impl SettingsPlugin {
                 cs.vsync = !cs.vsync;
             }
 
+            //<Plankton>
+            let theme = if cs.dark_theme {
+                "Dark Theme"
+            } else {
+                "Light Theme"
+            }
+            .to_owned();
+            if Button::click(theme)
+                .title("Theme".cstr())
+                .set_bg(cs.dark_theme, ui)
+                .ui(ui)
+                .clicked()
+            {
+                cs.dark_theme = !cs.dark_theme;
+            }
+            //</Plankton>
+
             if !cs.eq(&client_settings()) {
                 cs.save_to_file().apply(world);
             }

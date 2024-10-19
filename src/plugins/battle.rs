@@ -269,7 +269,7 @@ impl BattlePlugin {
                 world,
                 |ui, _| {
                     format!("{:.2}", gt().play_head())
-                        .cstr_cs(VISIBLE_BRIGHT, CstrStyle::Heading)
+                        .cstr_cs(visible_bright(), CstrStyle::Heading)
                         .label(ui);
                 },
                 |ui, world| {
@@ -280,7 +280,7 @@ impl BattlePlugin {
                     }
                     let resp = ImageButton::new(Icon::FFBack.image())
                         .rounding(13.0)
-                        .tint(if pressed { YELLOW } else { VISIBLE_BRIGHT })
+                        .tint(if pressed { YELLOW } else { visible_bright() })
                         .ui(ui);
                     set_context_bool(
                         world,
@@ -296,7 +296,7 @@ impl BattlePlugin {
                     }
                     let resp = ImageButton::new(Icon::FFForward.image())
                         .rounding(13.0)
-                        .tint(if pressed { YELLOW } else { VISIBLE_BRIGHT })
+                        .tint(if pressed { YELLOW } else { visible_bright() })
                         .ui(ui);
                     set_context_bool(
                         world,
@@ -353,13 +353,13 @@ impl BattlePlugin {
                 if !team.name.is_empty() {
                     text_dots_text(
                         "team name".cstr(),
-                        team.name.cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold),
+                        team.name.cstr_cs(visible_light(), CstrStyle::Bold),
                         ui,
                     );
                 }
                 text_dots_text(
                     "team id".cstr(),
-                    team.id.to_string().cstr_c(VISIBLE_LIGHT),
+                    team.id.to_string().cstr_c(visible_light()),
                     ui,
                 );
             };

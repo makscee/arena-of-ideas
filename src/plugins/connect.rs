@@ -38,10 +38,10 @@ impl ConnectPlugin {
                         let ctx = &egui_context(w).unwrap();
                         Confirmation::new(
                             "Wrong game version: "
-                                .cstr_c(VISIBLE_LIGHT)
+                                .cstr_c(visible_light())
                                 .push(
                                     format!("{} != {}", VERSION, server_version)
-                                        .cstr_cs(VISIBLE_BRIGHT, CstrStyle::Bold),
+                                        .cstr_cs(visible_bright(), CstrStyle::Bold),
                                 )
                                 .take(),
                         )
@@ -82,7 +82,7 @@ impl ConnectPlugin {
     pub fn ui(ui: &mut Ui) {
         center_window("status", ui, |ui| {
             "Connecting..."
-                .cstr_cs(VISIBLE_BRIGHT, CstrStyle::Heading)
+                .cstr_cs(visible_bright(), CstrStyle::Heading)
                 .label(ui);
         });
     }

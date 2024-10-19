@@ -140,7 +140,7 @@ impl Trigger {
                     if let Some(rename) = rename {
                         cs.0.push(
                             Cstr::parse(rename)
-                                .replace_absent_color(VISIBLE_LIGHT)
+                                .replace_absent_color(visible_light())
                                 .take(),
                         );
                     } else {
@@ -151,7 +151,7 @@ impl Trigger {
                     if let Some(rename) = rename {
                         cs.1.push(
                             Cstr::parse(rename)
-                                .replace_absent_color(VISIBLE_LIGHT)
+                                .replace_absent_color(visible_light())
                                 .take(),
                         );
                     } else {
@@ -162,7 +162,7 @@ impl Trigger {
                     if let Some(rename) = rename {
                         cs.2.push(
                             Cstr::parse(rename)
-                                .replace_absent_color(VISIBLE_LIGHT)
+                                .replace_absent_color(visible_light())
                                 .take(),
                         );
                     } else {

@@ -593,7 +593,7 @@ impl ShowEditor for RepresentationMaterial {
                     offset,
                 }) = fbm
                 {
-                    "FBM".cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold).label(ui);
+                    "FBM".cstr_cs(visible_light(), CstrStyle::Bold).label(ui);
                     show_collapsing_node("octaves", octaves, context, ui, world);
                     show_collapsing_node("lacunarity", lacunarity, context, ui, world);
                     show_collapsing_node("gain", gain, context, ui, world);

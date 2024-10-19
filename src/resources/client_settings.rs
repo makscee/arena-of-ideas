@@ -14,6 +14,7 @@ pub struct ClientSettings {
     pub window_mode: WindowMode,
     pub resolution: Vec2,
     pub vsync: bool,
+    pub dark_theme: bool, //Plankton
 
     pub animation_time: f32,
     pub volume_music: f32,
@@ -31,6 +32,7 @@ impl Default for ClientSettings {
             dev_mode: false,
             window_mode: default(),
             vsync: false,
+            dark_theme: true, //Plankton
             resolution: vec2(1280.0, 720.0),
             animation_time: 0.3,
             volume_music: 0.5,
@@ -125,7 +127,10 @@ impl ClientSettings {
             };
             AudioPlugin::set_music_volume(self.volume_music, world);
         }
+        
         self.save_to_cache();
+        let mut bg_res = world.resource_mut::<ClearColor>();
+        bg_res.0 = emptiness().to_color();
     }
 }
 

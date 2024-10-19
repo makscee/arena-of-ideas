@@ -10,13 +10,13 @@ macro_rules! hex_color_noa {
     }};
 }
 
-pub const EMPTINESS: Color32 = hex_color_noa!("#080808");
-pub const BG_DARK: Color32 = hex_color_noa!("#191919");
-pub const BG_LIGHT: Color32 = hex_color_noa!("#252525");
+pub fn emptiness() -> Color32 { if client_settings().dark_theme {hex_color_noa!("#080808")} else {hex_color_noa!("#B1B1B1")} }
+pub fn bg_dark() -> Color32 { if client_settings().dark_theme {hex_color_noa!("#191919")} else {hex_color_noa!("#898989")}}
+pub fn bg_light() -> Color32 { if client_settings().dark_theme {hex_color_noa!("#252525")} else {hex_color_noa!("#666666")}} 
 pub const BG_TRANSPARENT: Color32 = Color32::from_black_alpha(235);
-pub const VISIBLE_DARK: Color32 = hex_color_noa!("#606060");
-pub const VISIBLE_LIGHT: Color32 = hex_color_noa!("#B4B4B4");
-pub const VISIBLE_BRIGHT: Color32 = hex_color_noa!("#FFFFFF");
+pub fn visible_dark() -> Color32 {if client_settings().dark_theme {hex_color_noa!("#606060")} else {hex_color_noa!("333333")}}
+pub fn visible_light() -> Color32{ if client_settings().dark_theme {hex_color_noa!("#B4B4B4")}else {hex_color_noa!("202020")}}
+pub fn visible_bright() -> Color32 {if client_settings().dark_theme {hex_color_noa!("#FFFFFF")}else {hex_color_noa!("000000")}}
 
 pub const YELLOW: Color32 = hex_color_noa!("#D98F00");
 pub const YELLOW_DARK: Color32 = hex_color_noa!("#493501");
@@ -38,14 +38,14 @@ pub const TRANSPARENT: Color32 = Color32::TRANSPARENT;
 
 pub const CREDITS_SYM: char = '¤';
 
-pub const STROKE_LIGHT: Stroke = Stroke {
+pub fn stroke_light() -> Stroke {Stroke {
     width: 1.0,
-    color: VISIBLE_LIGHT,
-};
-pub const STROKE_DARK: Stroke = Stroke {
+    color: visible_light(),
+}}
+pub fn stroke_dark() -> Stroke {Stroke {
     width: 1.0,
-    color: VISIBLE_DARK,
-};
+    color: visible_dark(),
+}}
 pub const STROKE_YELLOW: Stroke = Stroke {
     width: 1.0,
     color: YELLOW,
@@ -142,38 +142,38 @@ impl UiPlugin {
             style.spacing.button_padding = egui::vec2(8.0, 2.0);
             style.visuals.striped = false;
             style.visuals.slider_trailing_fill = true;
-            style.visuals.faint_bg_color = BG_LIGHT;
+            style.visuals.faint_bg_color = bg_light();
             style.visuals.handle_shape = HandleShape::Rect { aspect_ratio: 0.1 };
             style.visuals.selection.bg_fill = YELLOW_DARK;
             style.visuals.resize_corner_size = 0.0;
             style.visuals.window_stroke = Stroke {
                 width: 1.0,
-                color: VISIBLE_DARK,
+                color: visible_dark(),
             };
-            style.visuals.window_fill = BG_DARK;
-            style.visuals.extreme_bg_color = EMPTINESS;
+            style.visuals.window_fill = bg_dark();
+            style.visuals.extreme_bg_color = emptiness();
             style.visuals.widgets = Widgets {
                 noninteractive: WidgetVisuals {
                     weak_bg_fill: Color32::TRANSPARENT,
                     bg_fill: Color32::from_gray(27),
-                    bg_stroke: Stroke::new(1.0, VISIBLE_DARK), // separators, indentation lines
-                    fg_stroke: Stroke::new(1.0, VISIBLE_DARK), // normal text color
+                    bg_stroke: Stroke::new(1.0, visible_dark()), // separators, indentation lines
+                    fg_stroke: Stroke::new(1.0, visible_dark()), // normal text color
                     rounding: Rounding::same(13.0),
                     expansion: 0.0,
                 },
                 inactive: WidgetVisuals {
                     weak_bg_fill: Color32::TRANSPARENT,
-                    bg_fill: BG_DARK, // checkbox background
-                    bg_stroke: Stroke::new(1.0, BG_LIGHT),
-                    fg_stroke: Stroke::new(1.0, VISIBLE_LIGHT), // button text
+                    bg_fill: bg_dark(), // checkbox background
+                    bg_stroke: Stroke::new(1.0, bg_light()),
+                    fg_stroke: Stroke::new(1.0, visible_light()), // button text
                     rounding: Rounding::same(13.0),
                     expansion: 0.0,
                 },
                 hovered: WidgetVisuals {
                     weak_bg_fill: Color32::TRANSPARENT,
                     bg_fill: Color32::from_gray(70),
-                    bg_stroke: Stroke::new(1.0, VISIBLE_LIGHT), // e.g. hover over window edge or button
-                    fg_stroke: Stroke::new(1.5, VISIBLE_BRIGHT),
+                    bg_stroke: Stroke::new(1.0, visible_light()), // e.g. hover over window edge or button
+                    fg_stroke: Stroke::new(1.5, visible_bright()),
                     rounding: Rounding::same(13.0),
                     expansion: 0.0,
                 },

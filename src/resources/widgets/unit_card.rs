@@ -98,7 +98,7 @@ impl UnitCard {
             outer_margin: Margin::ZERO,
             rounding: Rounding::ZERO,
             shadow: Shadow::NONE,
-            fill: EMPTINESS,
+            fill: emptiness(),
             stroke: Stroke::NONE,
         }
         .show(ui, |ui| {
@@ -115,7 +115,7 @@ impl UnitCard {
                 let color = YELLOW;
                 var.cstr_c(color)
                     .push(": ".cstr_c(color))
-                    .push(self.pwr.to_string().cstr_c(VISIBLE_BRIGHT))
+                    .push(self.pwr.to_string().cstr_c(visible_bright()))
                     .style(CstrStyle::Bold)
                     .push(mutation_cstr(self.pwr_mutation))
                     .label(ui);
@@ -124,7 +124,7 @@ impl UnitCard {
                 let color = RED;
                 var.cstr_c(color)
                     .push(": ".cstr_c(color))
-                    .push(self.hp.to_string().cstr_c(VISIBLE_BRIGHT))
+                    .push(self.hp.to_string().cstr_c(visible_bright()))
                     .style(CstrStyle::Bold)
                     .push(mutation_cstr(self.hp_mutation))
                     .label(ui);
@@ -133,7 +133,7 @@ impl UnitCard {
                 let color = PURPLE;
                 var.cstr_c(color)
                     .push(": ".cstr_c(color))
-                    .push(self.lvl.to_string().cstr_c(VISIBLE_BRIGHT))
+                    .push(self.lvl.to_string().cstr_c(visible_bright()))
                     .style(CstrStyle::Bold)
                     .label(ui);
                 ui.add_space(2.0);
@@ -141,9 +141,9 @@ impl UnitCard {
                 let color = LIGHT_PURPLE;
                 var.cstr_c(color)
                     .push(": ".cstr_c(color))
-                    .push(self.xp.to_string().cstr_c(VISIBLE_BRIGHT))
+                    .push(self.xp.to_string().cstr_c(visible_bright()))
                     .push("/".cstr())
-                    .push((self.lvl).to_string().cstr_c(VISIBLE_BRIGHT))
+                    .push((self.lvl).to_string().cstr_c(visible_bright()))
                     .style(CstrStyle::Bold)
                     .label(ui);
                 ui.add_space(2.0);
@@ -217,7 +217,7 @@ impl UnitCard {
         let from = rect.center_bottom() - (self.rarity_colors.len() as f32 - 1.0) * 0.5 * OFFSET;
         for (i, color) in self.rarity_colors.iter().enumerate() {
             let pos = from + OFFSET * i as f32;
-            ui.painter().circle_filled(pos, 13.0, BG_LIGHT);
+            ui.painter().circle_filled(pos, 13.0, bg_light());
             ui.painter().circle_filled(pos, 10.0, *color);
         }
     }
@@ -225,7 +225,7 @@ impl UnitCard {
 
 fn show_trigger_part(title: &str, content: &Vec<Cstr>, color: Color32, ui: &mut Ui) {
     ui.horizontal(|ui| {
-        title.cstr_c(VISIBLE_DARK).label(ui);
+        title.cstr_c(visible_dark()).label(ui);
         let rect = Frame::none()
             .inner_margin(Margin::same(4.0))
             .show(ui, |ui| {

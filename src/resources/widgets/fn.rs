@@ -9,7 +9,7 @@ pub fn br(ui: &mut Ui) {
             [rect.left_top(), rect.right_top()],
             Stroke {
                 width: 1.0,
-                color: VISIBLE_DARK,
+                color: visible_dark(),
             },
         );
     });
@@ -58,7 +58,7 @@ pub fn text_dots_text(text1: Cstr, text2: Cstr, ui: &mut Ui) {
         let bottom = rect.bottom() - 6.0;
         let line = egui::Shape::dotted_line(
             &[[left, bottom].into(), [right, bottom].into()],
-            VISIBLE_LIGHT,
+            visible_light(),
             12.0,
             0.5,
         );
@@ -67,7 +67,7 @@ pub fn text_dots_text(text1: Cstr, text2: Cstr, ui: &mut Ui) {
     });
 }
 pub fn title(text: &str, ui: &mut Ui) {
-    text.cstr_cs(VISIBLE_DARK, CstrStyle::Heading2).label(ui);
+    text.cstr_cs(visible_dark(), CstrStyle::Heading2).label(ui);
     br(ui);
 }
 

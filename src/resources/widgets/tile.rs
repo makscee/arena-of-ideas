@@ -68,17 +68,17 @@ struct ScreenResource {
 }
 
 const MARGIN: f32 = 7.0;
-const FRAME: Frame = Frame {
+fn frame() -> Frame {Frame {
     inner_margin: Margin::same(MARGIN),
     outer_margin: Margin::same(MARGIN),
     rounding: Rounding::same(13.0),
     shadow: SHADOW,
-    fill: BG_DARK,
+    fill: bg_dark(),
     stroke: Stroke {
         width: 1.0,
-        color: BG_LIGHT,
+        color: bg_light(),
     },
-};
+}}
 
 static NEXT_ID: Mutex<u64> = Mutex::new(0);
 fn next_id() -> u64 {
@@ -459,14 +459,14 @@ impl Tile {
         //     }
         // }
         let mut frame = if focused {
-            FRAME.stroke(Stroke {
+            frame().stroke(Stroke {
                 width: 1.0,
-                color: VISIBLE_DARK,
+                color: visible_dark(),
             })
         } else if !self.framed {
-            FRAME.stroke(Stroke::NONE)
+            frame().stroke(Stroke::NONE)
         } else {
-            FRAME
+            frame()
         };
         if self.transparent {
             frame.fill = Color32::TRANSPARENT;
@@ -512,7 +512,7 @@ impl Tile {
                 }
                 let stroke = Stroke {
                     width: 2.0,
-                    color: if resp.hovered() { YELLOW } else { VISIBLE_DARK },
+                    color: if resp.hovered() { YELLOW } else { visible_dark() },
                 };
                 ui.painter()
                     .line_segment([cross_rect.left_top(), cross_rect.right_bottom()], stroke);

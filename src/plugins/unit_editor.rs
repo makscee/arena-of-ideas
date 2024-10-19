@@ -445,18 +445,18 @@ pub trait ShowEditor: ToCstr + Default + Serialize + DeserializeOwned + Clone {
             spread: 5.0,
             color: Color32::from_rgba_premultiplied(20, 20, 20, 25),
         };
-        const FRAME_REGULAR: Frame = Frame {
+        let frame_regular: Frame = Frame {
             inner_margin: Margin::same(4.0),
             rounding: Rounding::same(6.0),
             shadow: SHADOW,
             outer_margin: Margin::ZERO,
-            fill: BG_DARK,
+            fill: bg_dark(),
             stroke: Stroke {
                 width: 1.0,
-                color: VISIBLE_DARK,
+                color: visible_dark(),
             },
         };
-        const FRAME_TRANSPARENT: Frame = Frame {
+        let frame_transparent: Frame = Frame {
             inner_margin: Margin::same(4.0),
             rounding: Rounding::same(6.0),
             shadow: Shadow::NONE,
@@ -464,16 +464,16 @@ pub trait ShowEditor: ToCstr + Default + Serialize + DeserializeOwned + Clone {
             fill: TRANSPARENT,
             stroke: Stroke {
                 width: 1.0,
-                color: VISIBLE_DARK,
+                color: visible_dark(),
             },
         };
         if !name.is_empty() {
-            name.cstr_cs(VISIBLE_DARK, CstrStyle::Small).label(ui);
+            name.cstr_cs(visible_dark(), CstrStyle::Small).label(ui);
         }
         let resp = if Self::transparent() {
-            FRAME_TRANSPARENT
+            frame_transparent
         } else {
-            FRAME_REGULAR
+            frame_regular
         }
         .show(ui, |ui| {
             ui.with_layout(Layout::left_to_right(Align::Min), |ui| {
@@ -497,7 +497,7 @@ pub trait ShowEditor: ToCstr + Default + Serialize + DeserializeOwned + Clone {
             let color = if resp.hovered() {
                 YELLOW
             } else {
-                VISIBLE_LIGHT
+                visible_light()
             };
             ui.painter().rect_filled(rect, Rounding::ZERO, color);
             if resp.clicked() {

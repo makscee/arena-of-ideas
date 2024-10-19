@@ -77,7 +77,7 @@ impl Cstr {
                      color,
                      style: _,
                  }| {
-                    let color = color.unwrap_or(VISIBLE_DARK);
+                    let color = color.unwrap_or(visible_dark());
                     let color = CustomColor {
                         r: color.r(),
                         g: color.g(),
@@ -251,19 +251,19 @@ impl Cstr {
             let var = VarName::from_str(s).unwrap();
             CstrSub {
                 text: SubText::VarText(var, text.into()),
-                color: Some(VISIBLE_BRIGHT),
+                color: Some(visible_bright()),
                 style: default(),
             }
         } else {
             match VarName::from_str(s) {
                 Ok(var) => {
                     let mut var: CstrSub = var.into();
-                    var.color = Some(VISIBLE_BRIGHT);
+                    var.color = Some(visible_bright());
                     var
                 }
                 Err(_) => CstrSub {
                     text: s.into(),
-                    color: Some(VISIBLE_BRIGHT),
+                    color: Some(visible_bright()),
                     style: CstrStyle::Bold,
                 },
             }
@@ -426,7 +426,7 @@ impl ToCstr for FusedUnit {
 }
 impl ToCstr for TTeam {
     fn cstr(&self) -> Cstr {
-        let mut name = self.name.cstr_c(VISIBLE_LIGHT);
+        let mut name = self.name.cstr_c(visible_light());
         if self.units.is_empty() {
             return "_".cstr();
         }
@@ -444,13 +444,13 @@ impl ToCstr for TTeam {
 }
 impl ToCstr for TUser {
     fn cstr(&self) -> Cstr {
-        self.name.cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold)
+        self.name.cstr_cs(visible_light(), CstrStyle::Bold)
     }
 }
 impl ToCstr for GameMode {
     fn cstr(&self) -> Cstr {
         match self {
-            GameMode::ArenaNormal => "normal".cstr_cs(VISIBLE_DARK, CstrStyle::Small),
+            GameMode::ArenaNormal => "normal".cstr_cs(visible_dark(), CstrStyle::Small),
             GameMode::ArenaRanked => "ranked".cstr_cs(YELLOW, CstrStyle::Small),
             GameMode::ArenaConst(seed) => format!("const {seed}").cstr_cs(CYAN, CstrStyle::Small),
         }

@@ -151,7 +151,7 @@ impl ToCstr for Event {
             Event::IncomingDamage { owner, value } | Event::DamageTaken { owner, value } => {
                 s.push_wrapped_circ(
                     entity_name_with_id(*owner)
-                        .push(format!(" {value}").cstr_c(VISIBLE_LIGHT))
+                        .push(format!(" {value}").cstr_c(visible_light()))
                         .take(),
                 );
             }
@@ -169,7 +169,7 @@ impl ToCstr for Event {
                     entity_name_with_id(*owner)
                         .push(" -> ".cstr())
                         .push(entity_name_with_id(*target))
-                        .push(format!(" {value}").cstr_c(VISIBLE_LIGHT))
+                        .push(format!(" {value}").cstr_c(visible_light()))
                         .take(),
                 );
             }

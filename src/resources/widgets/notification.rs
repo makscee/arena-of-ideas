@@ -22,7 +22,7 @@ pub struct NotificationsResource {
 
 impl Notification {
     pub fn new_string(text: String) -> Self {
-        Self::new(text.cstr_c(VISIBLE_LIGHT))
+        Self::new(text.cstr_c(visible_light()))
     }
     pub fn new(text: Cstr) -> Self {
         Self {
@@ -67,7 +67,7 @@ impl Notification {
                 ui.set_max_width(300.0);
                 ui.vertical(|ui| {
                     for n in notifications {
-                        FRAME.show(ui, |ui| {
+                        frame().show(ui, |ui| {
                             n.text
                                 .as_label(ui)
                                 .wrap_mode(egui::TextWrapMode::Wrap)
@@ -87,17 +87,17 @@ impl Notification {
     }
 }
 
-const FRAME: Frame = Frame {
+fn frame() -> Frame {Frame {
     inner_margin: Margin::same(13.0),
     rounding: Rounding::same(13.0),
-    fill: BG_DARK,
+    fill: bg_dark(),
     outer_margin: Margin::ZERO,
     shadow: SHADOW,
     stroke: Stroke {
         width: 1.0,
-        color: VISIBLE_BRIGHT,
+        color: visible_light(),
     },
-};
+}}
 
 pub trait NotificationPusher: ToString {
     fn notify(&self, world: &mut World) {

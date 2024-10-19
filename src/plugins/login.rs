@@ -64,7 +64,7 @@ impl LoginPlugin {
                 Notification::new(
                     "Credits "
                         .cstr_c(YELLOW)
-                        .push(delta_txt.cstr_c(VISIBLE_LIGHT))
+                        .push(delta_txt.cstr_c(visible_light()))
                         .take(),
                 )
                 .push_op();
@@ -77,7 +77,7 @@ impl LoginPlugin {
                 let mut ld = world.resource_mut::<LoginData>();
                 if let Some(user) = ld.identity_user.clone() {
                     format!("Login as {}", user.name)
-                        .cstr_cs(VISIBLE_LIGHT, CstrStyle::Heading2)
+                        .cstr_cs(visible_light(), CstrStyle::Heading2)
                         .label(ui);
                     if Button::click("Login").ui(ui).clicked() {
                         login_by_identity();
@@ -102,7 +102,7 @@ impl LoginPlugin {
                 } else {
                     let mut ld = world.resource_mut::<LoginData>();
                     "Register"
-                        .cstr_cs(VISIBLE_LIGHT, CstrStyle::Heading)
+                        .cstr_cs(visible_light(), CstrStyle::Heading)
                         .label(ui);
                     if Button::click("New Player").ui(ui).clicked() {
                         register_empty();
@@ -126,7 +126,7 @@ impl LoginPlugin {
                         });
                     }
                     br(ui);
-                    "Login".cstr_cs(VISIBLE_LIGHT, CstrStyle::Heading).label(ui);
+                    "Login".cstr_cs(visible_light(), CstrStyle::Heading).label(ui);
                     Input::new("name").ui_string(&mut ld.name_field, ui);
                     Input::new("password")
                         .password()

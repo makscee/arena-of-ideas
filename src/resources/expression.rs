@@ -432,7 +432,7 @@ impl ToCstr for Expression {
             | Expression::AllEnemyUnits
             | Expression::AllUnits
             | Expression::AllOtherUnits
-            | Expression::AdjacentUnits => self.as_ref().cstr_c(VISIBLE_LIGHT),
+            | Expression::AdjacentUnits => self.as_ref().cstr_c(visible_light()),
             Expression::FilterStatusUnits(_, _)
             | Expression::FilterNoStatusUnits(_, _)
             | Expression::StatusEntity(_, _) => self.as_ref().cstr_c(PURPLE),
@@ -496,13 +496,13 @@ impl ToCstr for Expression {
         }
     }
     fn cstr_expanded(&self) -> Cstr {
-        let mut s = self.as_ref().to_case(Case::Lower).cstr_c(VISIBLE_LIGHT);
+        let mut s = self.as_ref().to_case(Case::Lower).cstr_c(visible_light());
         match self {
             Expression::Value(v) => {
                 s.push(
                     v.cstr()
                         .wrap(("(".cstr(), ")".cstr()))
-                        .color(VISIBLE_LIGHT)
+                        .color(visible_light())
                         .take(),
                 );
             }
@@ -515,11 +515,11 @@ impl ToCstr for Expression {
                 s.push(
                     v.cstr()
                         .wrap(("(".cstr(), ")".cstr()))
-                        .color(VISIBLE_LIGHT)
+                        .color(visible_light())
                         .take(),
                 );
             }
-            Expression::Context(v) => s = (*v).cstr_cs(VISIBLE_BRIGHT, CstrStyle::Bold),
+            Expression::Context(v) => s = (*v).cstr_cs(visible_bright(), CstrStyle::Bold),
             Expression::AbilityContext(name, v)
             | Expression::AbilityState(name, v)
             | Expression::StatusState(name, v)

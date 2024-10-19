@@ -115,7 +115,7 @@ impl TeamPlugin {
     }
     fn open_new_team_popup(world: &mut World) {
         let ctx = egui_context(world).unwrap();
-        Confirmation::new("New Team".cstr_cs(VISIBLE_LIGHT, CstrStyle::Heading2))
+        Confirmation::new("New Team".cstr_cs(visible_light(), CstrStyle::Heading2))
             .accept(|world| {
                 let name = world.resource_mut::<TeamResource>().new_team_name.take();
                 if name.is_empty() {
@@ -175,7 +175,7 @@ impl TeamPlugin {
             };
             title(&team.name, ui);
             TeamContainer::new(Faction::Team)
-                .empty_slot_text("+1/+1\nto all".cstr_cs(VISIBLE_DARK, CstrStyle::Bold))
+                .empty_slot_text("+1/+1\nto all".cstr_cs(visible_dark(), CstrStyle::Bold))
                 .top_content(|ui, _| {
                     ui.horizontal(|ui| {
                         if Button::click("Add Unit").ui(ui).clicked() {
@@ -211,7 +211,7 @@ impl TeamPlugin {
                                 .push(ui.ctx());
                         }
                         if Button::click("Disband").red(ui).ui(ui).clicked() {
-                            Confirmation::new("Disband team?".cstr_c(VISIBLE_LIGHT))
+                            Confirmation::new("Disband team?".cstr_c(visible_light()))
                                 .accept(|world| {
                                     let tr = world.resource_mut::<TeamResource>();
                                     team_disband(tr.team);

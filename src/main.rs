@@ -63,7 +63,7 @@ fn main() {
         filter: "info,debug,wgpu_core=warn,wgpu_hal=warn,naga=warn".into(),
         ..default()
     });
-    app.insert_resource(ClearColor(EMPTINESS.to_color()))
+    app.insert_resource(ClearColor(emptiness().to_color()))
         .add_systems(Startup, setup)
         .add_systems(Update, update)
         .add_systems(OnEnter(GameState::Error), on_error_state)

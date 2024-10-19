@@ -7,7 +7,7 @@ impl SubstateMenu {
         let state = cur_state(world);
         let mut clicked = false;
         ui.horizontal(|ui| {
-            ui.visuals_mut().widgets.hovered.bg_fill = VISIBLE_LIGHT;
+            ui.visuals_mut().widgets.hovered.bg_fill = visible_light();
             for i in options {
                 let active = i.eq(&state);
                 let name = i.get_name().to_owned();

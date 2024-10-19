@@ -225,7 +225,7 @@ impl ShowEditor for FireTrigger {
 impl ToCstr for FireTrigger {
     fn cstr(&self) -> Cstr {
         self.as_ref().cstr_c(match self {
-            FireTrigger::None => VISIBLE_LIGHT,
+            FireTrigger::None => visible_light(),
             FireTrigger::List(_) | FireTrigger::Period(_, _, _) | FireTrigger::OnceAfter(_, _) => {
                 RED
             }
@@ -253,16 +253,16 @@ impl ToCstr for FireTrigger {
     fn cstr_expanded(&self) -> Cstr {
         match self {
             FireTrigger::List(list) => {
-                Cstr::join_vec(list.iter().map(|t| t.cstr_c(VISIBLE_LIGHT)).collect_vec())
-                    .join(&" + ".cstr_c(VISIBLE_DARK))
+                Cstr::join_vec(list.iter().map(|t| t.cstr_c(visible_light())).collect_vec())
+                    .join(&" + ".cstr_c(visible_dark()))
                     .take()
             }
             FireTrigger::Period(_, delay, trigger) => format!("Every {delay} ")
-                .cstr_c(VISIBLE_LIGHT)
+                .cstr_c(visible_light())
                 .push(trigger.cstr_expanded())
                 .take(),
             FireTrigger::OnceAfter(delay, trigger) => format!("Once in {delay} ")
-                .cstr_c(VISIBLE_LIGHT)
+                .cstr_c(visible_light())
                 .push(trigger.cstr_expanded())
                 .take(),
             FireTrigger::If(cond, trigger) => trigger
@@ -275,7 +275,7 @@ impl ToCstr for FireTrigger {
             | FireTrigger::EnemyUsedAbility(name) => self
                 .as_ref()
                 .to_case(Case::Lower)
-                .cstr_c(VISIBLE_LIGHT)
+                .cstr_c(visible_light())
                 .push(format!(" {name}").cstr_cs(name_color(name), CstrStyle::Bold))
                 .take(),
             FireTrigger::None
@@ -292,7 +292,7 @@ impl ToCstr for FireTrigger {
             | FireTrigger::AllySummon
             | FireTrigger::EnemySummon
             | FireTrigger::BeforeDeath
-            | FireTrigger::AfterKill => self.as_ref().to_case(Case::Lower).cstr_c(VISIBLE_LIGHT),
+            | FireTrigger::AfterKill => self.as_ref().to_case(Case::Lower).cstr_c(visible_light()),
         }
     }
 }

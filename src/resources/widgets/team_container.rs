@@ -189,7 +189,7 @@ impl TeamContainer {
                             Layout::left_to_right(Align::Max),
                             None,
                         );
-                        name.cstr_cs(VISIBLE_DARK, CstrStyle::Bold).label(ui);
+                        name.cstr_cs(visible_dark(), CstrStyle::Bold).label(ui);
                     }
                     data.positions[i] = resp.rect.center();
 
@@ -282,7 +282,7 @@ impl TeamContainer {
         } else if ind >= max_slots {
             DARK_RED
         } else {
-            VISIBLE_DARK
+            visible_dark()
         };
         let stroke = Stroke { width: 1.0, color };
         let ind_rect = Rect::from_min_max(

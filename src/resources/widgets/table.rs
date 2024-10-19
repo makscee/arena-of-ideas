@@ -182,7 +182,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                 value: Box::new(move |d, _| value(d).into()),
                 show: Box::new(|_, v, ui, _| {
                     format_timestamp(v.get_u64().unwrap())
-                        .cstr_cs(VISIBLE_DARK, CstrStyle::Small)
+                        .cstr_cs(visible_dark(), CstrStyle::Small)
                         .label(ui);
                 }),
                 sortable: true,
@@ -275,7 +275,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                             }
                         }
                         None => {
-                            name.cstr_c(VISIBLE_LIGHT).label(ui);
+                            name.cstr_c(visible_light()).label(ui);
                         }
                     };
                     r
@@ -356,7 +356,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                             match id.lootbox_item().kind {
                                 LootboxKind::Regular => "Regular",
                             }
-                            .cstr_c(VISIBLE_LIGHT)
+                            .cstr_c(visible_light())
                             .label(ui);
                         }
                     }
@@ -468,7 +468,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                                 }
                                 if self.selectable {
                                     row.col(|ui| {
-                                        if "select".cstr_c(VISIBLE_BRIGHT).button(ui).clicked() {
+                                        if "select".cstr_c(visible_bright()).button(ui).clicked() {
                                             state.selected_row = Some(row_i);
                                         }
                                     });

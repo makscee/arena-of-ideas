@@ -23,7 +23,7 @@ impl ShowTable<TTeam> for Vec<TTeam> {
     ) -> TableState {
         let mut t = Table::new(name)
             .title()
-            .column_cstr("name", |d: &TTeam, _| d.name.cstr_c(VISIBLE_LIGHT))
+            .column_cstr("name", |d: &TTeam, _| d.name.cstr_c(visible_light()))
             .column_cstr("units", |d, _| {
                 d.units
                     .iter()
@@ -235,7 +235,7 @@ impl ShowTable<TLootboxItem> for Vec<TLootboxItem> {
         let mut t = Table::new(name)
             .title()
             .column_cstr("kind", |d: &TLootboxItem, _| match d.kind {
-                LootboxKind::Regular => "Regular".cstr_c(VISIBLE_LIGHT),
+                LootboxKind::Regular => "Regular".cstr_c(visible_light()),
             })
             .column_int("count", |d| d.count as i32);
         t = m(t);
@@ -292,16 +292,16 @@ impl Show for TUser {
     fn show(&self, ui: &mut Ui, _: &mut World) {
         text_dots_text(
             "name".cstr(),
-            self.name.cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold),
+            self.name.cstr_cs(visible_light(), CstrStyle::Bold),
             ui,
         );
-        text_dots_text("id".cstr(), self.id.to_string().cstr_c(VISIBLE_LIGHT), ui);
+        text_dots_text("id".cstr(), self.id.to_string().cstr_c(visible_light()), ui);
     }
 }
 impl Show for FusedUnit {
     fn show(&self, ui: &mut Ui, world: &mut World) {
         title("Fused Unit", ui);
-        text_dots_text("gid".cstr(), self.id.to_string().cstr_c(VISIBLE_LIGHT), ui);
+        text_dots_text("gid".cstr(), self.id.to_string().cstr_c(visible_light()), ui);
         self.bases
             .iter()
             .map(|u| u.base_unit())
@@ -313,10 +313,10 @@ impl Show for TTeam {
     fn show(&self, ui: &mut Ui, world: &mut World) {
         title("Team", ui);
         if !self.name.is_empty() {
-            text_dots_text("name".cstr(), self.name.cstr_c(VISIBLE_LIGHT), ui);
+            text_dots_text("name".cstr(), self.name.cstr_c(visible_light()), ui);
         }
         text_dots_text("owner".cstr(), self.owner.get_user().cstr(), ui);
-        text_dots_text("gid".cstr(), self.id.to_string().cstr_c(VISIBLE_LIGHT), ui);
+        text_dots_text("gid".cstr(), self.id.to_string().cstr_c(visible_light()), ui);
         ui.push_id(self.id, |ui| {
             self.units.show_table("Units", ui, world);
         });

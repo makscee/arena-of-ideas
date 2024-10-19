@@ -84,7 +84,7 @@ impl SectionMenu {
                 ui.horizontal(|ui| {
                     let target = GameState::get_target();
                     let current = cur_state(world);
-                    ui.visuals_mut().widgets.hovered.fg_stroke.color = VISIBLE_BRIGHT;
+                    ui.visuals_mut().widgets.hovered.fg_stroke.color = visible_bright();
                     for GameSection {
                         name,
                         target_state,
@@ -97,9 +97,9 @@ impl SectionMenu {
                         let color = if active {
                             YELLOW
                         } else if enabled {
-                            VISIBLE_LIGHT
+                            visible_light()
                         } else {
-                            VISIBLE_DARK
+                            visible_dark()
                         };
                         let resp = Button::click(name.to_owned())
                             .enabled(enabled)
@@ -122,7 +122,7 @@ impl SectionMenu {
                         wallet
                             .amount
                             .to_string()
-                            .cstr_c(VISIBLE_LIGHT)
+                            .cstr_c(visible_light())
                             .push(format!(" {CREDITS_SYM}").cstr_c(YELLOW))
                             .style(CstrStyle::Bold)
                             .label(ui);

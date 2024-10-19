@@ -73,7 +73,7 @@ impl Status {
             "status "
                 .cstr()
                 .push(name.cstr_cs(name_color(name), CstrStyle::Bold))
-                .push(format!(" {delta_str} ({charges})").cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold))
+                .push(format!(" {delta_str} ({charges})").cstr_cs(visible_light(), CstrStyle::Bold))
                 .take(),
             world,
         );

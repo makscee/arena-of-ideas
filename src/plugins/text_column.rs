@@ -79,7 +79,7 @@ impl TextColumnPlugin {
                             ui.painter().add(epaint::TextShape::new(
                                 rect.left_top(),
                                 galley,
-                                VISIBLE_LIGHT,
+                                visible_light(),
                             ));
                         } else {
                             remove.push(i);

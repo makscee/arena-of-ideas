@@ -23,7 +23,7 @@ impl Input {
             return;
         }
         self.name.cstr().label(ui);
-        ui.style_mut().visuals.widgets.inactive.bg_stroke = STROKE_DARK;
+        ui.style_mut().visuals.widgets.inactive.bg_stroke = stroke_dark();
         TextEdit::singleline(value)
             .password(self.password)
             .desired_width(100.0)

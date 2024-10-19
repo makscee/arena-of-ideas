@@ -283,19 +283,19 @@ impl ShopPlugin {
         );
         text_dots_text(
             "floor".cstr(),
-            run.floor.to_string().cstr_c(VISIBLE_BRIGHT),
+            run.floor.to_string().cstr_c(visible_bright()),
             ui,
         );
         text_dots_text(
             "streak".cstr(),
-            run.streak.to_string().cstr_c(VISIBLE_BRIGHT),
+            run.streak.to_string().cstr_c(visible_bright()),
             ui,
         );
         text_dots_text("mode".cstr(), run.mode.cstr(), ui);
     }
     pub fn add_tiles(world: &mut World) {
         Tile::new(Side::Left, |ui, _| {
-            text_dots_text("name".cstr(), user_name().cstr_c(VISIBLE_BRIGHT), ui);
+            text_dots_text("name".cstr(), user_name().cstr_c(visible_bright()), ui);
             if let Some(run) = TArenaRun::get_current() {
                 Self::show_stats(&run, ui);
             }
@@ -557,14 +557,14 @@ impl ShopPlugin {
                 let mut total = 0;
                 for Reward { source, amount } in run.rewards {
                     text_dots_text(
-                        source.cstr_c(VISIBLE_DARK),
+                        source.cstr_c(visible_dark()),
                         amount.to_string().cstr_c(YELLOW),
                         ui,
                     );
                     total += amount;
                 }
                 text_dots_text(
-                    "Total".cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold),
+                    "Total".cstr_cs(visible_light(), CstrStyle::Bold),
                     total.to_string().cstr_cs(YELLOW, CstrStyle::Bold),
                     ui,
                 );

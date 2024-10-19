@@ -252,8 +252,8 @@ impl Effect {
                 TextColumnPlugin::add(
                     owner,
                     name.cstr_cs(name_color(name), CstrStyle::Bold)
-                        .push(var.cstr_c(VISIBLE_BRIGHT))
-                        .push(format!("+{delta}").cstr_c(VISIBLE_LIGHT))
+                        .push(var.cstr_c(visible_bright()))
+                        .push(format!("+{delta}").cstr_c(visible_light()))
                         .join(&" ".cstr())
                         .take(),
                     world,
@@ -379,7 +379,7 @@ impl Effect {
                     .get_value(VarName::Color, world)
                     .and_then(|c| c.get_color())
                     .map(|c| c.c32())
-                    .unwrap_or(VISIBLE_BRIGHT);
+                    .unwrap_or(visible_bright());
                 let target = context.get_target().unwrap_or(owner);
                 TextColumnPlugin::add(target, text.cstr_cs(color, CstrStyle::Bold), world);
             }
@@ -421,7 +421,7 @@ impl Effect {
 impl ToCstr for Effect {
     fn cstr(&self) -> Cstr {
         self.as_ref().cstr_c(match self {
-            Effect::Noop | Effect::Damage | Effect::Kill | Effect::Heal => VISIBLE_LIGHT,
+            Effect::Noop | Effect::Damage | Effect::Kill | Effect::Heal => visible_light(),
             Effect::ChangeStatus(_)
             | Effect::ClearStatus(_)
             | Effect::StealStatus(_)
@@ -448,19 +448,19 @@ impl ToCstr for Effect {
         match self {
             Effect::UseAbility(name, base) => {
                 let mut c = "use "
-                    .cstr_c(VISIBLE_LIGHT)
+                    .cstr_c(visible_light())
                     .push(name.cstr_cs(name_color(name), CstrStyle::Bold))
-                    .push(" lvl.".cstr_cs(VISIBLE_DARK, CstrStyle::Small))
-                    .push(VarName::Lvl.cstr_cs(VISIBLE_BRIGHT, CstrStyle::Bold))
+                    .push(" lvl.".cstr_cs(visible_dark(), CstrStyle::Small))
+                    .push(VarName::Lvl.cstr_cs(visible_bright(), CstrStyle::Bold))
                     .take();
                 if *base > 0 {
-                    c.push(format!(" +{base}").cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold));
+                    c.push(format!(" +{base}").cstr_cs(visible_light(), CstrStyle::Bold));
                 }
                 c
             }
             Effect::Summon(name, after) => {
                 let mut c = "summon "
-                    .cstr_c(VISIBLE_LIGHT)
+                    .cstr_c(visible_light())
                     .push(name.cstr_cs(name_color(name), CstrStyle::Bold))
                     .take();
                 if let Some(after) = after {
@@ -470,12 +470,12 @@ impl ToCstr for Effect {
             }
             Effect::AbilityStateAddVar(ability, var, value) => ability
                 .cstr_cs(name_color(ability), CstrStyle::Bold)
-                .push(var.to_string().cstr_c(VISIBLE_BRIGHT))
-                .push("add ".cstr_c(VISIBLE_LIGHT))
+                .push(var.to_string().cstr_c(visible_bright()))
+                .push("add ".cstr_c(visible_light()))
                 .join_char(' ')
-                .push(value.cstr_cs(VISIBLE_BRIGHT, CstrStyle::Bold))
+                .push(value.cstr_cs(visible_bright(), CstrStyle::Bold))
                 .take(),
-            Effect::Vfx(name) => format!("Vfx({name})").cstr_c(VISIBLE_LIGHT),
+            Effect::Vfx(name) => format!("Vfx({name})").cstr_c(visible_light()),
             Effect::List(l) => "List"
                 .cstr()
                 .push_wrapped_circ(
@@ -485,7 +485,7 @@ impl ToCstr for Effect {
                         .join(" + ".cstr()),
                 )
                 .take(),
-            _ => self.as_ref().cstr_c(VISIBLE_LIGHT),
+            _ => self.as_ref().cstr_c(visible_light()),
         }
     }
 }

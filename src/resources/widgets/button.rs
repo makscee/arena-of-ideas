@@ -43,7 +43,7 @@ impl Button {
         self
     }
     pub fn gray(self, ui: &mut Ui) -> Self {
-        self.color(VISIBLE_DARK, ui)
+        self.color(visible_dark(), ui)
     }
     pub fn red(self, ui: &mut Ui) -> Self {
         let style = ui.style_mut();
@@ -53,8 +53,8 @@ impl Button {
     }
     pub fn bg(self, ui: &mut Ui) -> Self {
         let style = ui.style_mut();
-        style.visuals.widgets.inactive.weak_bg_fill = BG_LIGHT;
-        style.visuals.widgets.hovered.weak_bg_fill = BG_LIGHT;
+        style.visuals.widgets.inactive.weak_bg_fill = bg_light();
+        style.visuals.widgets.hovered.weak_bg_fill = bg_light();
         self
     }
     pub fn set_bg(self, value: bool, ui: &mut Ui) -> Self {
@@ -78,11 +78,11 @@ impl Button {
         self.name_cstr = Some({
             let mut c = cost
                 .to_string()
-                .cstr_c(VISIBLE_LIGHT)
+                .cstr_c(visible_light())
                 .push(format!(" {CREDITS_SYM}").cstr_cs(YELLOW, CstrStyle::Bold))
                 .take();
             if !self.enabled {
-                c = c.color(VISIBLE_DARK).take();
+                c = c.color(visible_dark()).take();
             }
             c
         });
@@ -112,7 +112,7 @@ impl Button {
         let style = ui.style_mut();
         if !self.enabled {
             style.visuals.widgets.noninteractive.bg_stroke.color = TRANSPARENT;
-            style.visuals.widgets.noninteractive.fg_stroke.color = VISIBLE_DARK;
+            style.visuals.widgets.noninteractive.fg_stroke.color = visible_dark();
         } else if self.active {
             style.visuals.widgets.inactive.fg_stroke.color = YELLOW;
             style.visuals.widgets.hovered.fg_stroke.color = YELLOW;

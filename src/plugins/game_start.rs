@@ -81,7 +81,7 @@ impl GameStartPlugin {
                                     ui,
                                     world,
                                     |ui, world| {
-                                        "Select team".cstr_c(VISIBLE_LIGHT).label(ui);
+                                        "Select team".cstr_c(visible_light()).label(ui);
                                         let gsr = rm(world);
                                         let team = gsr.teams[gsr.selected_team].clone();
                                         team.hover_label(ui, world);
@@ -138,7 +138,7 @@ impl GameStartPlugin {
                                     status.on_success(|w| GameState::Shop.proceed_to_target(w))
                                 });
                             }
-                            seed.cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold).label(ui);
+                            seed.cstr_cs(visible_light(), CstrStyle::Bold).label(ui);
                         }
                     }
                 });
@@ -155,7 +155,7 @@ impl GameStartPlugin {
                             match &game_mode {
                                 GameMode::ArenaNormal => {
                                     "Arena Normal"
-                                        .cstr_c(VISIBLE_BRIGHT)
+                                        .cstr_c(visible_bright())
                                         .style(CstrStyle::Heading2)
                                         .label(ui);
                                 }
@@ -230,7 +230,7 @@ impl GameStartPlugin {
                             GameState::Shop.proceed_to_target(world);
                         }
                         if Button::click("Abandon run").red(ui).ui(ui).clicked() {
-                            Confirmation::new("Abandon current run?".cstr_c(VISIBLE_BRIGHT))
+                            Confirmation::new("Abandon current run?".cstr_c(visible_bright()))
                                 .accept(|_| {
                                     run_finish();
                                 })
@@ -254,7 +254,7 @@ impl GameStartPlugin {
                     2. 3 lives, replenish every 5 floors\n\
                     3. Defeat current champion for big reward\n\
                     4. Credits reward depending on win streak"
-                        .cstr_c(VISIBLE_LIGHT)
+                        .cstr_c(visible_light())
                         .label(ui);
                 }
                 GameMode::ArenaRanked => {
@@ -264,7 +264,7 @@ impl GameStartPlugin {
                     4. Defeat current champion for big reward\n\
                     5. Credits reward depending on win streak\n\
                     6. Rewards are multiplied by 2"
-                        .cstr_c(VISIBLE_LIGHT)
+                        .cstr_c(visible_light())
                         .label(ui);
                 }
                 GameMode::ArenaConst(_) => {
@@ -275,7 +275,7 @@ impl GameStartPlugin {
                     5. 3 lives, replenish every 5 floors\n\
                     6. Defeat current champion for big reward\n\
                     7. Rewards are multiplied by 3"
-                        .cstr_c(VISIBLE_LIGHT)
+                        .cstr_c(visible_light())
                         .inject_color(YELLOW)
                         .label(ui);
                 }
