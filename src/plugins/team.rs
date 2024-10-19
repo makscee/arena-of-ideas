@@ -178,38 +178,6 @@ impl TeamPlugin {
                 .empty_slot_text("+1/+1\nto all".cstr_cs(VISIBLE_DARK, CstrStyle::Bold))
                 .top_content(|ui, _| {
                     ui.horizontal(|ui| {
-                        if Button::click("Add Unit").ui(ui).clicked() {
-                            Confirmation::new("Add unit to team".cstr())
-                                .accept(|world| {
-                                    let mut tr = world.resource_mut::<TeamResource>();
-                                    let id = tr.unit_to_add;
-                                    if id != 0 {
-                                        tr.unit_to_add = 0;
-                                        team_add_unit(tr.team, id);
-                                        once_on_team_add_unit(|_, _, status, _, _| {
-                                            status.on_success(|world| {
-                                                TableState::reset_cache(
-                                                    &egui_context(world).unwrap(),
-                                                );
-                                            })
-                                        });
-                                    }
-                                })
-                                .cancel(|_| {})
-                                .content(|ui, world| {
-                                    let units = TUnitItem::filter_by_owner(user_id())
-                                        .map(|u| u.unit)
-                                        .collect_vec();
-                                    let selected = units
-                                        .show_modified_table("Units", ui, world, |t| t.selectable())
-                                        .selected_row;
-                                    if let Some(selected) = selected {
-                                        world.resource_mut::<TeamResource>().unit_to_add =
-                                            units[selected].id;
-                                    }
-                                })
-                                .push(ui.ctx());
-                        }
                         if Button::click("Disband").red(ui).ui(ui).clicked() {
                             Confirmation::new("Disband team?".cstr_c(VISIBLE_LIGHT))
                                 .accept(|world| {
@@ -227,6 +195,33 @@ impl TeamPlugin {
                                 .push(ui.ctx());
                         }
                     });
+                })
+                .on_click(|_, e, world| {
+                    if e.is_some() {
+                        return;
+                    }
+                    Confirmation::new("Add unit to team".cstr())
+                        .cancel(|_| {})
+                        .content(|ui, world| {
+                            let units = TUnitItem::filter_by_owner(user_id())
+                                .map(|u| u.unit)
+                                .collect_vec();
+                            units.show_modified_table("Units", ui, world, |t| {
+                                t.column_btn("select", |u, _, world| {
+                                    let tr = world.resource::<TeamResource>();
+                                    team_add_unit(tr.team, u.id);
+                                    once_on_team_add_unit(|_, _, status, _, _| {
+                                        status.on_success(|world| {
+                                            TableState::reset_cache(&egui_context(world).unwrap());
+                                            Confirmation::close_current(
+                                                &egui_context(world).unwrap(),
+                                            );
+                                        })
+                                    });
+                                })
+                            });
+                        })
+                        .push(&egui_context(world).unwrap());
                 })
                 .slot_content(|slot, entity, ui, world| {
                     if entity.is_none() {
