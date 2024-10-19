@@ -362,18 +362,34 @@ impl Expression {
             Expression::RandomUnitSubset(amount, units) => {
                 let units = units.get_value(context, world)?.get_entity_list()?;
                 let amount = amount.get_int(context, world)? as usize;
-                Ok(units
-                    .into_iter()
-                    .choose_multiple(&mut thread_rng(), amount)
-                    .into())
+                if let Some(mut rng) = ActionPlugin::resource(world).rng.take() {
+                    let result = units.into_iter().choose_multiple(&mut rng, amount).into();
+                    ActionPlugin::resource(world).rng = Some(rng);
+                    Ok(result)
+                } else {
+                    Ok(units
+                        .into_iter()
+                        .choose_multiple(&mut thread_rng(), amount)
+                        .into())
+                }
             }
             Expression::RandomUnit(units) => {
                 let units = units.get_value(context, world)?.get_entity_list()?;
-                units
-                    .into_iter()
-                    .choose(&mut thread_rng())
-                    .map(|u| u.into())
-                    .context("No units to choose from")
+                if let Some(mut rng) = ActionPlugin::resource(world).rng.take() {
+                    let result = units
+                        .into_iter()
+                        .choose(&mut rng)
+                        .map(|u| u.into())
+                        .context("No units to choose from");
+                    ActionPlugin::resource(world).rng = Some(rng);
+                    result
+                } else {
+                    units
+                        .into_iter()
+                        .choose(&mut thread_rng())
+                        .map(|u| u.into())
+                        .context("No units to choose from")
+                }
             }
             Expression::RandomF(x) => {
                 let x = x.get_value(context, world)?;

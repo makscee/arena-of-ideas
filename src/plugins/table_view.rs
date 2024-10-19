@@ -63,6 +63,12 @@ impl TableViewPlugin {
                     TBattleResult::Right | TBattleResult::Even => "L".cstr_c(RED),
                 })
                 .column_ts("time", |d| d.ts)
+                .column_btn("copy", |d, _, world| {
+                    copy_to_clipboard(
+                        &ron::to_string(&BattleResource::from(d.clone())).unwrap(),
+                        world,
+                    );
+                })
                 .column_btn("editor", |d, _, world| {
                     let mut cs = client_state().clone();
                     cs.editor_teams
@@ -74,6 +80,7 @@ impl TableViewPlugin {
                 })
                 .column_btn("run", |d, _, world| {
                     world.insert_resource(BattleResource::from(d.clone()));
+                    BattlePlugin::set_next_state(cur_state(world), world);
                     GameState::Battle.set_next(world);
                 })
                 .filter("My", "player", user_id().into())

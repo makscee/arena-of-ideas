@@ -1,6 +1,8 @@
 use super::*;
 
-#[derive(Clone, Copy, Eq, PartialEq, Debug, Hash, Default, States, Display, Deserialize)]
+#[derive(
+    Clone, Copy, Eq, PartialEq, Debug, Hash, Default, States, Display, Deserialize, Serialize,
+)]
 pub enum GameState {
     #[default]
     Loading,

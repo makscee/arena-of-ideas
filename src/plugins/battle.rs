@@ -439,12 +439,12 @@ impl BattlePlugin {
     }
 }
 
-#[derive(Asset, TypePath, Resource, Default, Clone, Debug, Deserialize)]
+#[derive(Asset, TypePath, Resource, Default, Clone, Debug, Deserialize, Serialize)]
 pub struct BattleResource {
     #[serde(default)]
-    id: u64,
-    left: PackedTeam,
-    right: PackedTeam,
+    pub id: u64,
+    pub left: PackedTeam,
+    pub right: PackedTeam,
     #[serde(default)]
     result: BattleResult,
     #[serde(default)]

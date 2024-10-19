@@ -1,5 +1,7 @@
 use std::collections::VecDeque;
 
+use rand::RngCore;
+
 use super::*;
 
 pub struct ActionPlugin;
@@ -15,18 +17,22 @@ struct Action {
     delay: f32,
 }
 #[derive(Resource, Default)]
-struct ActionsData {
+pub struct ActionsResource {
     events: Vec<(f32, Event)>,
     turns: Vec<(f32, usize)>,
     sounds: Vec<(f32, SoundEffect)>,
     chain: usize,
+    pub rng: Option<ChaCha8Rng>,
+}
+fn rm(world: &mut World) -> Mut<ActionsResource> {
+    world.resource_mut::<ActionsResource>()
 }
 
 impl Plugin for ActionPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<EventQueue>()
             .init_resource::<ActionQueue>()
-            .init_resource::<ActionsData>()
+            .init_resource::<ActionsResource>()
             .add_systems(Update, Self::update);
     }
 }
@@ -37,9 +43,25 @@ impl ActionPlugin {
         let ph = gt().play_head();
         Self::queue_current_sound_effect(ph - gt().last_delta(), ph, world)
     }
+    pub fn resource(world: &mut World) -> Mut<ActionsResource> {
+        rm(world)
+    }
     pub fn spin(world: &mut World) -> Result<bool> {
         let mut processed = false;
         let mut limit = 100000;
+        let mut hasher = DefaultHasher::new();
+        rm(world).turns.len().hash(&mut hasher);
+        let br = world.resource::<BattleResource>();
+        let id = if br.id > 0 {
+            br.id
+        } else {
+            thread_rng().next_u64()
+        };
+        id.hash(&mut hasher);
+        br.left.units.iter().for_each(|u| u.name.hash(&mut hasher));
+        br.right.units.iter().for_each(|u| u.name.hash(&mut hasher));
+        let rng = ChaCha8Rng::seed_from_u64(hasher.finish());
+        rm(world).rng = Some(rng);
         loop {
             if limit == 0 {
                 return Err(anyhow!("Limit exceeded"));
@@ -55,7 +77,7 @@ impl ActionPlugin {
                 match effect.invoke(&mut context, world) {
                     Ok(_) => {
                         processed = true;
-                        world.resource_mut::<ActionsData>().chain += 1;
+                        rm(world).chain += 1;
                         gt().advance_insert(delay);
                         for unit in UnitPlugin::collect_alive(world) {
                             Status::refresh_mappings(unit, world);
@@ -80,6 +102,7 @@ impl ActionPlugin {
         if processed {
             Self::clear_dead(world);
         }
+        rm(world).rng = None;
         Ok(processed)
     }
     pub fn clear_dead(world: &mut World) -> bool {
@@ -149,19 +172,19 @@ impl ActionPlugin {
     }
     pub fn register_event(event: Event, world: &mut World) {
         world
-            .resource_mut::<ActionsData>()
+            .resource_mut::<ActionsResource>()
             .events
             .push((gt().insert_head(), event));
     }
     pub fn register_next_turn(world: &mut World) {
-        let mut data = world.resource_mut::<ActionsData>();
+        let mut data = rm(world);
         let next = data.turns.last().map(|(_, r)| *r).unwrap_or_default() + 1;
         data.turns.push((gt().insert_head(), next));
         data.chain = 0;
     }
     pub fn register_sound_effect(sfx: SoundEffect, world: &mut World) {
         world
-            .resource_mut::<ActionsData>()
+            .resource_mut::<ActionsResource>()
             .sounds
             .push((gt().insert_head(), sfx));
     }
@@ -169,7 +192,7 @@ impl ActionPlugin {
         if from >= to || to - from > 1.0 {
             return;
         }
-        let Some(ad) = world.get_resource::<ActionsData>() else {
+        let Some(ad) = world.get_resource::<ActionsResource>() else {
             return;
         };
         for (ts, sfx) in ad.sounds.iter().copied() {
@@ -184,7 +207,7 @@ impl ActionPlugin {
     }
     pub fn get_turn(t: f32, world: &World) -> (usize, f32) {
         world
-            .get_resource::<ActionsData>()
+            .get_resource::<ActionsResource>()
             .and_then(|d| {
                 d.turns.iter().rev().find_map(|(ts, e)| match t >= *ts {
                     true => Some((*e, t - *ts)),
@@ -195,6 +218,6 @@ impl ActionPlugin {
     }
 
     pub fn reset(world: &mut World) {
-        *world.resource_mut::<ActionsData>() = default();
+        *rm(world) = default();
     }
 }
