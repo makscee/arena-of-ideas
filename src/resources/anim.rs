@@ -80,9 +80,6 @@ impl ToCstr for Anim {
 }
 
 impl ShowEditor for Anim {
-    fn transparent() -> bool {
-        true
-    }
     fn wrapper() -> Option<Self> {
         Some(Self::Run([default()].into()))
     }

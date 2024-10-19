@@ -26,6 +26,8 @@ pub struct AudioAssets {
     audio_strike: Handle<AudioSource>,
     #[asset(key = "audio_pain")]
     audio_pain: Handle<AudioSource>,
+    #[asset(key = "audio_death")]
+    audio_death: Handle<AudioSource>,
     #[asset(key = "audio_status_add")]
     audio_status_add: Handle<AudioSource>,
     #[asset(key = "audio_status_remove")]
@@ -55,6 +57,7 @@ pub enum SoundEffect {
     StartGame,
     Strike,
     Pain,
+    Death,
     StatusAdd,
     StatusRemove,
     Victory,
@@ -123,6 +126,7 @@ impl AudioPlugin {
                 SoundEffect::StartGame => aa.audio_start_game.clone(),
                 SoundEffect::Strike => aa.audio_strike.clone(),
                 SoundEffect::Pain => aa.audio_pain.clone(),
+                SoundEffect::Death => aa.audio_death.clone(),
                 SoundEffect::StatusAdd => aa.audio_status_add.clone(),
                 SoundEffect::StatusRemove => aa.audio_status_remove.clone(),
                 SoundEffect::Victory => aa.audio_victory.clone(),

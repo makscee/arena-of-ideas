@@ -74,9 +74,6 @@ impl Vfx {
 }
 
 impl ShowEditor for Vfx {
-    fn transparent() -> bool {
-        true
-    }
     fn show_content(&mut self, context: &Context, world: &mut World, ui: &mut Ui) {
         show_collapsing_node("anim", &mut self.anim, context, ui, world);
         show_collapsing_node(

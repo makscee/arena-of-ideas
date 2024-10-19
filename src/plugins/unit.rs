@@ -55,11 +55,18 @@ impl UnitPlugin {
         let mut unit = world.entity_mut(entity);
         unit.remove::<Unit>();
         unit.insert(Corpse);
-        VarState::get_mut(unit.id(), world).push_change(
+        let mut state = VarState::get_mut(unit.id(), world);
+        state.push_change(
             VarName::Visible,
             default(),
             VarChange::new(VarValue::Bool(false)),
         );
+        let _ = Vfx::get("death")
+            .set_var(
+                VarName::Position,
+                state.get_value_last(VarName::Position).unwrap(),
+            )
+            .unpack(world);
     }
     pub fn collect_all(world: &mut World) -> Vec<Entity> {
         world

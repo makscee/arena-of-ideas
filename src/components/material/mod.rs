@@ -66,10 +66,10 @@ fn f32_one_e() -> Expression {
 fn f32_zero_e() -> Expression {
     Expression::Value(VarValue::Float(0.0))
 }
-fn f32_arr_e() -> Vec<Expression> {
+fn f32_arr_e() -> Vec<Box<Expression>> {
     [
-        Expression::Value(VarValue::Float(0.0)),
-        Expression::Value(VarValue::Float(1.0)),
+        Box::new(Expression::Value(VarValue::Float(0.0))),
+        Box::new(Expression::Value(VarValue::Float(1.0))),
     ]
     .into()
 }
@@ -82,10 +82,10 @@ fn vec2_one_e() -> Expression {
 fn color_e() -> Expression {
     Expression::OwnerState(VarName::Color)
 }
-fn color_arr_e() -> Vec<Expression> {
+fn color_arr_e() -> Vec<Box<Expression>> {
     [
-        Expression::OwnerState(VarName::Color),
-        Expression::HexColor("#ffffff".to_owned()),
+        Box::new(Expression::OwnerState(VarName::Color)),
+        Box::new(Expression::HexColor("#ffffff".to_owned())),
     ]
     .into()
 }
@@ -117,9 +117,9 @@ pub enum RepFill {
         #[serde(default = "vec2_one_e")]
         point2: Expression,
         #[serde(default = "f32_arr_e")]
-        parts: Vec<Expression>,
+        parts: Vec<Box<Expression>>,
         #[serde(default = "color_arr_e")]
-        colors: Vec<Expression>,
+        colors: Vec<Box<Expression>>,
     },
     GradientRadial {
         #[serde(default = "vec2_zero_e")]
@@ -127,9 +127,9 @@ pub enum RepFill {
         #[serde(default = "f32_one_e")]
         radius: Expression,
         #[serde(default = "f32_arr_e")]
-        parts: Vec<Expression>,
+        parts: Vec<Box<Expression>>,
         #[serde(default = "color_arr_e")]
-        colors: Vec<Expression>,
+        colors: Vec<Box<Expression>>,
     },
 }
 
@@ -564,7 +564,7 @@ impl ShowEditor for RepresentationMaterial {
             RepresentationMaterial::Shape {
                 shape,
                 shape_type,
-                fill: _,
+                fill,
                 fbm,
                 alpha,
                 padding,
@@ -581,6 +581,53 @@ impl ShowEditor for RepresentationMaterial {
                     RepShapeType::Opaque => {}
                     RepShapeType::Line { thickness } => {
                         show_collapsing_node("thickness", thickness, context, ui, world)
+                    }
+                }
+                match fill {
+                    RepFill::Solid { color } => {
+                        show_collapsing_node("color", color, context, ui, world)
+                    }
+                    RepFill::GradientLinear {
+                        point1,
+                        point2,
+                        parts,
+                        colors,
+                    } => {
+                        show_collapsing_node("point1", point1, context, ui, world);
+                        show_collapsing_node("point2", point2, context, ui, world);
+                        show_list_node(parts, context, ui, world);
+                        show_list_node(colors, context, ui, world);
+                    }
+                    RepFill::GradientRadial {
+                        center,
+                        radius,
+                        parts,
+                        colors,
+                    } => {
+                        show_collapsing_node("gradient center", center, context, ui, world);
+                        show_collapsing_node("gradient radius", radius, context, ui, world);
+                        ui.collapsing("colors", |ui| {
+                            if Button::click("+").ui(ui).clicked() {
+                                colors.push(default());
+                                parts.push(default());
+                            }
+                            let mut to_remove = None;
+                            for i in 0..parts.len() {
+                                ui.push_id(i, |ui| {
+                                    ui.horizontal(|ui| {
+                                        if Button::click("-").red(ui).ui(ui).clicked() {
+                                            to_remove = Some(i);
+                                        }
+                                        parts[i].show_node("part", context, world, ui);
+                                        colors[i].show_node("color", context, world, ui);
+                                    });
+                                });
+                            }
+                            if let Some(i) = to_remove {
+                                parts.remove(i);
+                                colors.remove(i);
+                            }
+                        });
                     }
                 }
                 show_collapsing_node("alpha", alpha, context, ui, world);

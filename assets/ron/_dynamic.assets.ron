@@ -19,6 +19,7 @@
         "audio_status_remove": File(path: "audio/fx/undo.ogg"),
         "audio_victory": File(path: "audio/fx/field_complete.ogg"),
         "audio_defeat": File(path: "audio/fx/lose_game.ogg"),
+        "audio_death": File(path: "audio/fx/debuff.ogg"),
         "test_scenarios": Folder(path: "ron/scenarios"),
     },
 )

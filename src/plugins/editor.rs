@@ -333,6 +333,26 @@ impl EditorPlugin {
                         if Button::click("Load").ui(ui).clicked() {
                             rm(world).vfx = Vfx::get(&rm(world).vfx_selected);
                         }
+                        if Button::click("Save").ui(ui).clicked() {
+                            Self::save_state(world);
+                        }
+                        if Button::click("Copy").ui(ui).clicked() {
+                            copy_to_clipboard(&ron::to_string(&rm(world).vfx).unwrap(), world);
+                        }
+                        if Button::click("Paste").ui(ui).clicked() {
+                            if let Some(s) = paste_from_clipboard(world) {
+                                match ron::from_str(&s) {
+                                    Ok(v) => {
+                                        rm(world).vfx = v;
+                                        Self::refresh(world);
+                                    }
+                                    Err(e) => format!("Clipboard deserialize error: {e}")
+                                        .notify_error(world),
+                                }
+                            } else {
+                                "Clipboard is empty".notify_error(world);
+                            }
+                        }
                     });
                 })
                 .pinned()
@@ -348,7 +368,12 @@ impl EditorPlugin {
                                 return;
                             };
                             let mut vfx = r.vfx.clone();
-                            vfx.show_node("", &Context::new(entity), world, ui);
+                            vfx.show_node(
+                                "",
+                                Context::new(entity).set_var(VarName::Index, default()),
+                                world,
+                                ui,
+                            );
                             if vfx != rm(world).vfx {
                                 rm(world).vfx = vfx;
                                 Self::refresh(world);
@@ -415,7 +440,7 @@ impl EditorPlugin {
                 let Some(entity) = r.vfx_entity else {
                     return;
                 };
-                if !VarState::get(entity, world).is_animating() {
+                if !VarState::try_get(entity, world).is_ok_and(|s| s.is_animating()) {
                     Self::refresh(world);
                 }
             }

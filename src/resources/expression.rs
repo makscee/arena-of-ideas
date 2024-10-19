@@ -16,6 +16,7 @@ pub enum Expression {
     PI2,
     Age,
     Index,
+    T,
 
     Owner,
     Caster,
@@ -338,6 +339,7 @@ impl Expression {
                 Ok((gt().play_head() - VarState::get(context.owner(), world).birth()).into())
             }
             Expression::Index => Expression::Context(VarName::Index).get_value(context, world),
+            Expression::T => Expression::Context(VarName::T).get_value(context, world),
             Expression::MaxUnit(value, units) => {
                 let units = units.get_value(context, world)?.get_entity_list()?;
                 if units.is_empty() {
@@ -424,6 +426,7 @@ impl ToCstr for Expression {
             | Expression::PI2
             | Expression::Age
             | Expression::Index
+            | Expression::T
             | Expression::Owner
             | Expression::Caster
             | Expression::Target
@@ -658,6 +661,7 @@ impl ToCstr for Expression {
             | Expression::PI2
             | Expression::Age
             | Expression::Index
+            | Expression::T
             | Expression::Owner
             | Expression::Caster
             | Expression::Target
@@ -677,7 +681,7 @@ impl ShowEditor for Expression {
         Some(Self::Abs(default()))
     }
     fn show_children(&mut self, context: &Context, world: &mut World, ui: &mut Ui) {
-        match self {
+        ui.push_id(self.as_ref().to_string(), |ui| match self {
             Expression::One
             | Expression::Zero
             | Expression::OppositeFaction
@@ -688,6 +692,7 @@ impl ShowEditor for Expression {
             | Expression::PI2
             | Expression::Age
             | Expression::Index
+            | Expression::T
             | Expression::Owner
             | Expression::Caster
             | Expression::Target
@@ -776,7 +781,7 @@ impl ShowEditor for Expression {
                 th.show_node("then", context, world, ui);
                 el.show_node("else", context, world, ui);
             }
-        }
+        });
     }
 
     fn show_content(&mut self, context: &Context, world: &mut World, ui: &mut Ui) {
@@ -847,6 +852,7 @@ impl ShowEditor for Expression {
             | Expression::PI2
             | Expression::Age
             | Expression::Index
+            | Expression::T
             | Expression::Owner
             | Expression::Caster
             | Expression::Target
@@ -945,6 +951,7 @@ impl ShowEditor for Expression {
             | Expression::PI2
             | Expression::Age
             | Expression::Index
+            | Expression::T
             | Expression::Owner
             | Expression::Caster
             | Expression::Target

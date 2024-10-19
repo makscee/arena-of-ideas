@@ -429,7 +429,7 @@ fn lookup_text_pop(ctx: &egui::Context) {
 }
 pub trait ShowEditor: ToCstr + Default + Serialize + DeserializeOwned + Clone {
     fn transparent() -> bool {
-        false
+        true
     }
     fn get_variants() -> impl Iterator<Item = Self>;
     fn get_inner_mut(&mut self) -> Vec<&mut Box<Self>>;

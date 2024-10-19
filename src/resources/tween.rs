@@ -40,24 +40,23 @@ impl Tween {
             Tween::CubicOut => tween::Tweener::cubic_out(0.0, 1.0, 1.0).move_to(t),
             Tween::BackIn => tween::Tweener::back_in(0.0, 1.0, 1.0).move_to(t),
         };
-        let v = match (a, b) {
-            (VarValue::Float(a), VarValue::Float(b)) => VarValue::Float(*a + (*b - *a) * t),
+        match (a, b) {
+            (VarValue::Float(a), VarValue::Float(b)) => Ok(VarValue::Float(*a + (*b - *a) * t)),
             (VarValue::Int(a), VarValue::Int(b)) => {
-                VarValue::Int(*a + ((*b - *a) as f32 * t) as i32)
+                Ok(VarValue::Int(*a + ((*b - *a) as f32 * t) as i32))
             }
-            (VarValue::String(a), VarValue::String(b)) => VarValue::String(match t > 0.5 {
+            (VarValue::String(a), VarValue::String(b)) => Ok(VarValue::String(match t > 0.5 {
                 true => a.into(),
                 false => b.into(),
-            }),
-            (VarValue::Vec2(a), VarValue::Vec2(b)) => VarValue::Vec2(*a + (*b - *a) * t),
-            (VarValue::Color(a), VarValue::Color(b)) => a.mix(b, t).into(),
-            (VarValue::Bool(a), VarValue::Bool(b)) => VarValue::Bool(match t > 0.5 {
+            })),
+            (VarValue::Vec2(a), VarValue::Vec2(b)) => Ok(VarValue::Vec2(*a + (*b - *a) * t)),
+            (VarValue::Color(a), VarValue::Color(b)) => Ok(a.mix(b, t).into()),
+            (VarValue::Bool(a), VarValue::Bool(b)) => Ok(VarValue::Bool(match t > 0.5 {
                 true => *a,
                 false => *b,
-            }),
-            _ => panic!("Tweening not supported for {a:?} and {b:?}"),
-        };
-        Ok(v)
+            })),
+            _ => Err(anyhow!("Tweening not supported for {a:?} and {b:?}")),
+        }
     }
 }
 
