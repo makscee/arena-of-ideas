@@ -126,7 +126,9 @@ impl LoginPlugin {
                         });
                     }
                     br(ui);
-                    "Login".cstr_cs(visible_light(), CstrStyle::Heading).label(ui);
+                    "Login"
+                        .cstr_cs(visible_light(), CstrStyle::Heading)
+                        .label(ui);
                     Input::new("name").ui_string(&mut ld.name_field, ui);
                     Input::new("password")
                         .password()

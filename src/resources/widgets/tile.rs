@@ -68,17 +68,19 @@ struct ScreenResource {
 }
 
 const MARGIN: f32 = 7.0;
-fn frame() -> Frame {Frame {
-    inner_margin: Margin::same(MARGIN),
-    outer_margin: Margin::same(MARGIN),
-    rounding: Rounding::same(13.0),
-    shadow: SHADOW,
-    fill: bg_dark(),
-    stroke: Stroke {
-        width: 1.0,
-        color: bg_light(),
-    },
-}}
+fn frame() -> Frame {
+    Frame {
+        inner_margin: Margin::same(MARGIN),
+        outer_margin: Margin::same(MARGIN),
+        rounding: Rounding::same(13.0),
+        shadow: SHADOW,
+        fill: bg_dark(),
+        stroke: Stroke {
+            width: 1.0,
+            color: bg_light(),
+        },
+    }
+}
 
 static NEXT_ID: Mutex<u64> = Mutex::new(0);
 fn next_id() -> u64 {
@@ -512,7 +514,11 @@ impl Tile {
                 }
                 let stroke = Stroke {
                     width: 2.0,
-                    color: if resp.hovered() { YELLOW } else { visible_dark() },
+                    color: if resp.hovered() {
+                        YELLOW
+                    } else {
+                        visible_dark()
+                    },
                 };
                 ui.painter()
                     .line_segment([cross_rect.left_top(), cross_rect.right_bottom()], stroke);

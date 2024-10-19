@@ -87,17 +87,19 @@ impl Notification {
     }
 }
 
-fn frame() -> Frame {Frame {
-    inner_margin: Margin::same(13.0),
-    rounding: Rounding::same(13.0),
-    fill: bg_dark(),
-    outer_margin: Margin::ZERO,
-    shadow: SHADOW,
-    stroke: Stroke {
-        width: 1.0,
-        color: visible_light(),
-    },
-}}
+fn frame() -> Frame {
+    Frame {
+        inner_margin: Margin::same(13.0),
+        rounding: Rounding::same(13.0),
+        fill: bg_dark(),
+        outer_margin: Margin::ZERO,
+        shadow: SHADOW,
+        stroke: Stroke {
+            width: 1.0,
+            color: visible_light(),
+        },
+    }
+}
 
 pub trait NotificationPusher: ToString {
     fn notify(&self, world: &mut World) {

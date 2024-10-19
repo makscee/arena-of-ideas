@@ -301,7 +301,11 @@ impl Show for TUser {
 impl Show for FusedUnit {
     fn show(&self, ui: &mut Ui, world: &mut World) {
         title("Fused Unit", ui);
-        text_dots_text("gid".cstr(), self.id.to_string().cstr_c(visible_light()), ui);
+        text_dots_text(
+            "gid".cstr(),
+            self.id.to_string().cstr_c(visible_light()),
+            ui,
+        );
         self.bases
             .iter()
             .map(|u| u.base_unit())
@@ -316,7 +320,11 @@ impl Show for TTeam {
             text_dots_text("name".cstr(), self.name.cstr_c(visible_light()), ui);
         }
         text_dots_text("owner".cstr(), self.owner.get_user().cstr(), ui);
-        text_dots_text("gid".cstr(), self.id.to_string().cstr_c(visible_light()), ui);
+        text_dots_text(
+            "gid".cstr(),
+            self.id.to_string().cstr_c(visible_light()),
+            ui,
+        );
         ui.push_id(self.id, |ui| {
             self.units.show_table("Units", ui, world);
         });

@@ -9,14 +9,67 @@ macro_rules! hex_color_noa {
         $crate::Color32::from_rgb(array[0], array[1], array[2])
     }};
 }
+pub const L_EMPTINESS: Color32 = hex_color_noa!("#B1B1B1");
+pub const D_EMPTINESS: Color32 = hex_color_noa!("#080808");
 
-pub fn emptiness() -> Color32 { if client_settings().dark_theme {hex_color_noa!("#080808")} else {hex_color_noa!("#B1B1B1")} }
-pub fn bg_dark() -> Color32 { if client_settings().dark_theme {hex_color_noa!("#191919")} else {hex_color_noa!("#898989")}}
-pub fn bg_light() -> Color32 { if client_settings().dark_theme {hex_color_noa!("#252525")} else {hex_color_noa!("#666666")}} 
+pub const L_BG_DARK: Color32 = hex_color_noa!("#898989");
+pub const D_BG_DARK: Color32 = hex_color_noa!("#191919");
+
+pub const L_BG_LIGHT: Color32 = hex_color_noa!("#666666");
+pub const D_BG_LIGHT: Color32 = hex_color_noa!("#252525");
+
+pub const L_VISIBLE_DARK: Color32 = hex_color_noa!("333333");
+pub const D_VISIBLE_DARK: Color32 = hex_color_noa!("#606060");
+
+pub const L_VISIBLE_LIGHT: Color32 = hex_color_noa!("202020");
+pub const D_VISIBLE_LIGHT: Color32 = hex_color_noa!("#B4B4B4");
+
+pub const L_VISIBLE_BRIGHT: Color32 = hex_color_noa!("000000");
+pub const D_VISIBLE_BRIGHT: Color32 = hex_color_noa!("#FFFFFF");
+
+pub fn emptiness() -> Color32 {
+    if client_settings().dark_theme {
+        D_EMPTINESS
+    } else {
+        L_EMPTINESS
+    }
+}
+pub fn bg_dark() -> Color32 {
+    if client_settings().dark_theme {
+        D_BG_DARK
+    } else {
+        L_BG_DARK
+    }
+}
+pub fn bg_light() -> Color32 {
+    if client_settings().dark_theme {
+        D_BG_LIGHT
+    } else {
+        L_BG_LIGHT
+    }
+}
 pub const BG_TRANSPARENT: Color32 = Color32::from_black_alpha(235);
-pub fn visible_dark() -> Color32 {if client_settings().dark_theme {hex_color_noa!("#606060")} else {hex_color_noa!("333333")}}
-pub fn visible_light() -> Color32{ if client_settings().dark_theme {hex_color_noa!("#B4B4B4")}else {hex_color_noa!("202020")}}
-pub fn visible_bright() -> Color32 {if client_settings().dark_theme {hex_color_noa!("#FFFFFF")}else {hex_color_noa!("000000")}}
+pub fn visible_dark() -> Color32 {
+    if client_settings().dark_theme {
+        D_VISIBLE_DARK
+    } else {
+        L_VISIBLE_DARK
+    }
+}
+pub fn visible_light() -> Color32 {
+    if client_settings().dark_theme {
+        D_VISIBLE_LIGHT
+    } else {
+        L_VISIBLE_LIGHT
+    }
+}
+pub fn visible_bright() -> Color32 {
+    if client_settings().dark_theme {
+        D_VISIBLE_BRIGHT
+    } else {
+        L_VISIBLE_BRIGHT
+    }
+}
 
 pub const YELLOW: Color32 = hex_color_noa!("#D98F00");
 pub const YELLOW_DARK: Color32 = hex_color_noa!("#493501");
@@ -38,14 +91,18 @@ pub const TRANSPARENT: Color32 = Color32::TRANSPARENT;
 
 pub const CREDITS_SYM: char = '¤';
 
-pub fn stroke_light() -> Stroke {Stroke {
-    width: 1.0,
-    color: visible_light(),
-}}
-pub fn stroke_dark() -> Stroke {Stroke {
-    width: 1.0,
-    color: visible_dark(),
-}}
+pub fn stroke_light() -> Stroke {
+    Stroke {
+        width: 1.0,
+        color: visible_light(),
+    }
+}
+pub fn stroke_dark() -> Stroke {
+    Stroke {
+        width: 1.0,
+        color: visible_dark(),
+    }
+}
 pub const STROKE_YELLOW: Stroke = Stroke {
     width: 1.0,
     color: YELLOW,

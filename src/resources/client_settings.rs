@@ -127,7 +127,7 @@ impl ClientSettings {
             };
             AudioPlugin::set_music_volume(self.volume_music, world);
         }
-        
+
         self.save_to_cache();
         let mut bg_res = world.resource_mut::<ClearColor>();
         bg_res.0 = emptiness().to_color();
