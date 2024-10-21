@@ -205,16 +205,34 @@ impl ActionPlugin {
             }
         }
     }
-    pub fn get_turn(t: f32, world: &World) -> (usize, f32) {
+    pub fn get_turn(t: f32, world: &World) -> usize {
         world
             .get_resource::<ActionsResource>()
             .and_then(|d| {
                 d.turns.iter().rev().find_map(|(ts, e)| match t >= *ts {
-                    true => Some((*e, t - *ts)),
+                    true => Some(*e),
                     false => None,
                 })
             })
             .unwrap_or_default()
+    }
+    pub fn get_event(t: f32, world: &World) -> Option<Event> {
+        world.get_resource::<ActionsResource>().and_then(|d| {
+            d.events.iter().rev().find_map(|(ts, e)| match t >= *ts {
+                true => Some(e.clone()),
+                false => None,
+            })
+        })
+    }
+    pub fn collect_events(until: f32, world: &World) -> Vec<(f32, Event)> {
+        let Some(ar) = world.get_resource::<ActionsResource>() else {
+            return default();
+        };
+        ar.events
+            .iter()
+            .filter(|(t, _)| *t <= until)
+            .cloned()
+            .collect_vec()
     }
 
     pub fn reset(world: &mut World) {

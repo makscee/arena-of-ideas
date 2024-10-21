@@ -130,6 +130,9 @@ impl Context {
         self.layers.push(ContextLayer::Event(event));
         self
     }
+    pub fn get_event(&self) -> Option<Event> {
+        self.layers.iter().rev().find_map(|l| l.get_event())
+    }
     pub fn set_effect(&mut self, effect: Cstr) -> &mut Self {
         self.layers.push(ContextLayer::Effect(effect));
         self
@@ -313,6 +316,12 @@ impl ContextLayer {
                     None
                 }
             }
+            _ => None,
+        }
+    }
+    fn get_event(&self) -> Option<Event> {
+        match self {
+            ContextLayer::Event(e) => Some(e.clone()),
             _ => None,
         }
     }

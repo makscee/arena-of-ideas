@@ -136,7 +136,7 @@ impl BattlePlugin {
         Event::TurnEnd.send(world);
         ActionPlugin::spin(world)?;
         ActionPlugin::spin(world)?;
-        let (turn, _) = ActionPlugin::get_turn(gt().insert_head(), world);
+        let turn = ActionPlugin::get_turn(gt().insert_head(), world);
         Self::fatigue(turn, world)
     }
     fn before_strike(left: Entity, right: Entity, world: &mut World) -> Result<()> {
@@ -341,9 +341,6 @@ impl BattlePlugin {
         .push(world);
 
         let bd = rm(world);
-        if bd.id == 0 {
-            return;
-        }
         if let Some(battle) = TBattle::find_by_id(bd.id) {
             let show_team = |team: TTeam, ui: &mut Ui| {
                 if team.id == 0 {
@@ -380,6 +377,44 @@ impl BattlePlugin {
             .no_frame()
             .push(world);
         }
+        Tile::new(Side::Top, |ui, world| {
+            ui.vertical_centered_justified(|ui| {
+                let r = rm(world);
+                if r.id > 0 && r.next_state == GameState::Shop {
+                    if let Some(run) = TArenaRun::get_current() {
+                        format!("Floor {}", run.floor)
+                            .cstr_cs(VISIBLE_LIGHT, CstrStyle::Heading2)
+                            .label(ui);
+                    }
+                }
+                let t = gt().play_head();
+                let turn = ActionPlugin::get_turn(t, world);
+                format!("Turn {turn}")
+                    .cstr_cs(YELLOW, CstrStyle::Heading2)
+                    .label(ui);
+                if let Some(event) = ActionPlugin::get_event(t, world) {
+                    if event.cstr().button(ui).clicked() {
+                        let events = ActionPlugin::collect_events(t, world);
+                        Confirmation::new("Events".cstr())
+                            .content(move |ui, _| {
+                                ui.vertical(|ui| {
+                                    for (t, event) in &events {
+                                        format!("{t:.2}: ").cstr().push(event.cstr()).label(ui);
+                                    }
+                                });
+                            })
+                            .cancel(|_| {})
+                            .cancel_name("Close")
+                            .push(world);
+                    }
+                }
+            });
+        })
+        .transparent()
+        .pinned()
+        .non_focusable()
+        .no_frame()
+        .push(world);
     }
     pub fn ui(ui: &mut Ui, world: &mut World) {
         if !gt().ended() {
