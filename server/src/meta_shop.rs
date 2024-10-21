@@ -53,7 +53,7 @@ fn meta_buy(ctx: ReducerContext, id: u64) -> Result<(), String> {
     let mut item = TMetaShop::filter_by_id(&id).context_str("Item not found")?;
     TWallet::change(user.id, -item.price)?;
     match item.item_kind {
-        ItemKind::UnitShard | ItemKind::Unit => {
+        ItemKind::UnitShard | ItemKind::Unit | ItemKind::RainbowShard => {
             item.price += 1;
             TMetaShop::update_by_id(&id, item);
         }

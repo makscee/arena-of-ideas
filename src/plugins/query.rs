@@ -51,6 +51,9 @@ impl StdbQuery {
                     "select * from TUnitShardItem where (owner = {uid} or owner = 0) and count > 0"
                 ),
                 format!(
+                    "select * from TRainbowShardItem where (owner = {uid} or owner = 0) and count > 0"
+                ),
+                format!(
                     "select * from TLootboxItem where (owner = {uid} or owner = 0) and count > 0"
                 ),
                 format!("select * from TTrade where a_user = {uid} or b_user = {uid}"),

@@ -346,6 +346,7 @@ pub trait GIDExt {
     fn get_user(self) -> TUser;
     fn unit_item(self) -> TUnitItem;
     fn unit_shard_item(self) -> TUnitShardItem;
+    fn rainbow_shard_item(self) -> TRainbowShardItem;
     fn lootbox_item(self) -> TLootboxItem;
 }
 
@@ -387,6 +388,11 @@ impl GIDExt for u64 {
     fn unit_shard_item(self) -> TUnitShardItem {
         TUnitShardItem::find_by_id(self)
             .with_context(|| format!("Failed to find UnitShardItem#{self}"))
+            .unwrap()
+    }
+    fn rainbow_shard_item(self) -> TRainbowShardItem {
+        TRainbowShardItem::find_by_id(self)
+            .with_context(|| format!("Failed to find RainbowShardItem#{self}"))
             .unwrap()
     }
     fn lootbox_item(self) -> TLootboxItem {

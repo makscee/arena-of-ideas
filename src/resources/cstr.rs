@@ -1,5 +1,7 @@
 use std::str::FromStr;
 
+use ecolor::Hsva;
+
 use super::*;
 
 #[derive(Default, Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]
@@ -358,6 +360,18 @@ pub trait ToCstr: Sized {
     #[must_use]
     fn cstr_expanded(&self) -> Cstr {
         self.cstr()
+    }
+    #[must_use]
+    fn cstr_rainbow(&self) -> Cstr {
+        let mut c = Cstr::default();
+        let chars = self.cstr().get_text().chars().collect_vec();
+        let len = chars.len();
+        for (i, char) in chars.into_iter().enumerate() {
+            let h = i as f32 / len as f32 + gt().play_head() * 0.1;
+            let color = Hsva::new(h.fract(), 1.0, 1.0, 1.0);
+            c.push(String::from(char).cstr_c(color.into()));
+        }
+        c
     }
 }
 

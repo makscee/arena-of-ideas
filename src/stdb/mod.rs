@@ -29,6 +29,7 @@ pub mod battle_settings;
 pub mod craft_hero_reducer;
 pub mod daily_update_reducer;
 pub mod daily_update_timer;
+pub mod dismantle_hero_reducer;
 pub mod fuse_cancel_reducer;
 pub mod fuse_choose_reducer;
 pub mod fuse_start_reducer;
@@ -83,6 +84,7 @@ pub mod t_house;
 pub mod t_lootbox_item;
 pub mod t_meta_shop;
 pub mod t_prices;
+pub mod t_rainbow_shard_item;
 pub mod t_representation;
 pub mod t_status;
 pub mod t_team;
@@ -112,6 +114,7 @@ pub use battle_settings::*;
 pub use craft_hero_reducer::*;
 pub use daily_update_reducer::*;
 pub use daily_update_timer::*;
+pub use dismantle_hero_reducer::*;
 pub use fuse_cancel_reducer::*;
 pub use fuse_choose_reducer::*;
 pub use fuse_start_reducer::*;
@@ -166,6 +169,7 @@ pub use t_house::*;
 pub use t_lootbox_item::*;
 pub use t_meta_shop::*;
 pub use t_prices::*;
+pub use t_rainbow_shard_item::*;
 pub use t_representation::*;
 pub use t_status::*;
 pub use t_team::*;
@@ -195,6 +199,7 @@ pub enum ReducerEvent {
     AuctionCreate(auction_create_reducer::AuctionCreateArgs),
     CraftHero(craft_hero_reducer::CraftHeroArgs),
     DailyUpdate(daily_update_reducer::DailyUpdateArgs),
+    DismantleHero(dismantle_hero_reducer::DismantleHeroArgs),
     FuseCancel(fuse_cancel_reducer::FuseCancelArgs),
     FuseChoose(fuse_choose_reducer::FuseChooseArgs),
     FuseStart(fuse_start_reducer::FuseStartArgs),
@@ -308,6 +313,11 @@ impl SpacetimeModule for Module {
                 ),
             "TPrices" => client_cache
                 .handle_table_update_with_primary_key::<t_prices::TPrices>(callbacks, table_update),
+            "TRainbowShardItem" => client_cache
+                .handle_table_update_with_primary_key::<t_rainbow_shard_item::TRainbowShardItem>(
+                    callbacks,
+                    table_update,
+                ),
             "TRepresentation" => client_cache
                 .handle_table_update_no_primary_key::<t_representation::TRepresentation>(
                     callbacks,
@@ -381,6 +391,11 @@ impl SpacetimeModule for Module {
         reminders.invoke_callbacks::<t_lootbox_item::TLootboxItem>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_meta_shop::TMetaShop>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_prices::TPrices>(worker, &reducer_event, state);
+        reminders.invoke_callbacks::<t_rainbow_shard_item::TRainbowShardItem>(
+            worker,
+            &reducer_event,
+            state,
+        );
         reminders.invoke_callbacks::<t_representation::TRepresentation>(
             worker,
             &reducer_event,
@@ -414,6 +429,7 @@ match &reducer_call.reducer_name[..] {
 			"auction_create" => _reducer_callbacks.handle_event_of_type::<auction_create_reducer::AuctionCreateArgs, ReducerEvent>(event, _state, ReducerEvent::AuctionCreate),
 			"craft_hero" => _reducer_callbacks.handle_event_of_type::<craft_hero_reducer::CraftHeroArgs, ReducerEvent>(event, _state, ReducerEvent::CraftHero),
 			"daily_update" => _reducer_callbacks.handle_event_of_type::<daily_update_reducer::DailyUpdateArgs, ReducerEvent>(event, _state, ReducerEvent::DailyUpdate),
+			"dismantle_hero" => _reducer_callbacks.handle_event_of_type::<dismantle_hero_reducer::DismantleHeroArgs, ReducerEvent>(event, _state, ReducerEvent::DismantleHero),
 			"fuse_cancel" => _reducer_callbacks.handle_event_of_type::<fuse_cancel_reducer::FuseCancelArgs, ReducerEvent>(event, _state, ReducerEvent::FuseCancel),
 			"fuse_choose" => _reducer_callbacks.handle_event_of_type::<fuse_choose_reducer::FuseChooseArgs, ReducerEvent>(event, _state, ReducerEvent::FuseChoose),
 			"fuse_start" => _reducer_callbacks.handle_event_of_type::<fuse_start_reducer::FuseStartArgs, ReducerEvent>(event, _state, ReducerEvent::FuseStart),
@@ -504,6 +520,10 @@ match &reducer_call.reducer_name[..] {
             "TPrices" => {
                 client_cache.handle_resubscribe_for_type::<t_prices::TPrices>(callbacks, new_subs)
             }
+            "TRainbowShardItem" => client_cache
+                .handle_resubscribe_for_type::<t_rainbow_shard_item::TRainbowShardItem>(
+                    callbacks, new_subs,
+                ),
             "TRepresentation" => client_cache
                 .handle_resubscribe_for_type::<t_representation::TRepresentation>(
                     callbacks, new_subs,

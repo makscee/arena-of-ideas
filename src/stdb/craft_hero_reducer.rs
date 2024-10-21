@@ -15,6 +15,7 @@ use spacetimedb_sdk::{
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct CraftHeroArgs {
     pub base: String,
+    pub use_rainbow: u32,
 }
 
 impl Reducer for CraftHeroArgs {
@@ -22,27 +23,27 @@ impl Reducer for CraftHeroArgs {
 }
 
 #[allow(unused)]
-pub fn craft_hero(base: String) {
-    CraftHeroArgs { base }.invoke();
+pub fn craft_hero(base: String, use_rainbow: u32) {
+    CraftHeroArgs { base, use_rainbow }.invoke();
 }
 
 #[allow(unused)]
 pub fn on_craft_hero(
-    mut __callback: impl FnMut(&Identity, Option<Address>, &Status, &String) + Send + 'static,
+    mut __callback: impl FnMut(&Identity, Option<Address>, &Status, &String, &u32) + Send + 'static,
 ) -> ReducerCallbackId<CraftHeroArgs> {
     CraftHeroArgs::on_reducer(move |__identity, __addr, __status, __args| {
-        let CraftHeroArgs { base } = __args;
-        __callback(__identity, __addr, __status, base);
+        let CraftHeroArgs { base, use_rainbow } = __args;
+        __callback(__identity, __addr, __status, base, use_rainbow);
     })
 }
 
 #[allow(unused)]
 pub fn once_on_craft_hero(
-    __callback: impl FnOnce(&Identity, Option<Address>, &Status, &String) + Send + 'static,
+    __callback: impl FnOnce(&Identity, Option<Address>, &Status, &String, &u32) + Send + 'static,
 ) -> ReducerCallbackId<CraftHeroArgs> {
     CraftHeroArgs::once_on_reducer(move |__identity, __addr, __status, __args| {
-        let CraftHeroArgs { base } = __args;
-        __callback(__identity, __addr, __status, base);
+        let CraftHeroArgs { base, use_rainbow } = __args;
+        __callback(__identity, __addr, __status, base, use_rainbow);
     })
 }
 

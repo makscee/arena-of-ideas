@@ -80,6 +80,23 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
         );
         self
     }
+    pub fn column_dyn(
+        mut self,
+        name: &'static str,
+        value: Box<dyn Fn(&T, &World) -> VarValue>,
+        show: Box<dyn Fn(&T, VarValue, &mut Ui, &mut World)>,
+        sortable: bool,
+    ) -> Self {
+        self.columns.insert(
+            name,
+            TableColumn {
+                value,
+                show,
+                sortable,
+            },
+        );
+        self
+    }
     pub fn column_btn_dyn(
         mut self,
         name: &'static str,
@@ -308,6 +325,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                         ItemKind::UnitShard => "unit shard"
                             .cstr_c(rarity_color(id.unit_shard_item().unit.base_unit().rarity)),
                         ItemKind::Lootbox => "lootbox".cstr_c(CYAN),
+                        ItemKind::RainbowShard => "rainbow shard".cstr_rainbow(),
                     }
                     .into()
                 }),
@@ -326,6 +344,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                         ItemKind::Unit => "unit",
                         ItemKind::UnitShard => "shard",
                         ItemKind::Lootbox => "lootbox",
+                        ItemKind::RainbowShard => "rainbow shard",
                     }
                     .into()
                 }),
@@ -366,6 +385,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                             }
                             .label(ui);
                         }
+                        ItemKind::RainbowShard => default(),
                     }
                 }),
                 sortable: true,

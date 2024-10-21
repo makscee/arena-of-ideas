@@ -18,5 +18,7 @@ pub enum ItemKind {
 
     UnitShard,
 
+    RainbowShard,
+
     Lootbox,
 }

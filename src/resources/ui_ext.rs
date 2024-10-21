@@ -266,6 +266,7 @@ impl ShowTable<TAuction> for Vec<TAuction> {
                 ItemKind::Unit => 1,
                 ItemKind::UnitShard => d.item_id.unit_shard_item().count as i32,
                 ItemKind::Lootbox => d.item_id.lootbox_item().count as i32,
+                ItemKind::RainbowShard => d.item_id.rainbow_shard_item().count as i32,
             }
         }
         let mut t = Table::new(name)

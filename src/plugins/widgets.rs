@@ -15,10 +15,13 @@ impl Plugin for WidgetsPlugin {
         if cfg!(debug_assertions) {
             app.add_systems(
                 Update,
-                give_c
-                    .run_if(input_just_pressed(KeyCode::KeyG).and_then(in_state(GameState::Title))),
+                give_c.run_if(
+                    input_just_pressed(KeyCode::KeyG).and_then(
+                        in_state(GameState::Title).or_else(in_state(GameState::MetaShop)),
+                    ),
+                ),
             )
-            .add_systems(Update, add_tile.run_if(input_pressed(KeyCode::SuperLeft)));
+            .add_systems(Update, cmd_test.run_if(input_pressed(KeyCode::SuperLeft)));
         }
     }
 }
@@ -26,7 +29,7 @@ impl Plugin for WidgetsPlugin {
 fn give_c() {
     give_credits();
 }
-fn add_tile(world: &mut World) {
+fn cmd_test(world: &mut World) {
     let content = |ui: &mut Ui, _: &mut World| {
         "12345678910 11 12 13 14 15 16 17 18 19 20".cstr().label(ui);
         // br(ui);
@@ -52,6 +55,12 @@ fn add_tile(world: &mut World) {
     }
     if just_pressed(KeyCode::KeyN, world) {
         "test test test test test test test test test test test test test test test".notify(world);
+    }
+    if just_pressed(KeyCode::KeyC, world) {
+        Confirmation::new("Test".cstr())
+            .accept(|_| {})
+            .cancel(|_| {})
+            .push(world);
     }
 }
 

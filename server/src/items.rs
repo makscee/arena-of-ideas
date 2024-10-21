@@ -4,6 +4,7 @@ use super::*;
 pub enum ItemKind {
     Unit,
     UnitShard,
+    RainbowShard,
     Lootbox,
 }
 
@@ -35,6 +36,15 @@ pub struct TUnitShardItem {
 
 #[spacetimedb(table(public))]
 #[derive(Clone)]
+pub struct TRainbowShardItem {
+    #[primarykey]
+    pub id: u64,
+    pub owner: u64,
+    pub count: u32,
+}
+
+#[spacetimedb(table(public))]
+#[derive(Clone)]
 pub struct TLootboxItem {
     #[primarykey]
     pub id: u64,
@@ -55,6 +65,8 @@ impl ItemKind {
             Ok(Self::Unit)
         } else if TUnitShardItem::filter_by_id(&id).is_some() {
             Ok(Self::UnitShard)
+        } else if TRainbowShardItem::filter_by_id(&id).is_some() {
+            Ok(Self::RainbowShard)
         } else if TLootboxItem::filter_by_id(&id).is_some() {
             Ok(Self::Lootbox)
         } else {
@@ -77,9 +89,16 @@ impl ItemKind {
                 owner_item.count += item.count;
                 TUnitShardItem::update_by_id(&owner_item.id.clone(), owner_item);
             }
+            ItemKind::RainbowShard => {
+                let item = TRainbowShardItem::filter_by_id(&item_id)
+                    .context_str("RainbowShardItem not found")?;
+                let mut owner_item = TRainbowShardItem::get_or_init(owner);
+                owner_item.count += item.count;
+                TRainbowShardItem::update_by_id(&owner_item.id.clone(), owner_item);
+            }
             ItemKind::Lootbox => {
                 let item =
-                    TLootboxItem::filter_by_id(&item_id).context_str("UnitShardItem not found")?;
+                    TLootboxItem::filter_by_id(&item_id).context_str("LootboxItem not found")?;
                 let mut owner_item = TLootboxItem::get_or_init(owner, item.kind);
                 owner_item.count += item.count;
                 TLootboxItem::update_by_id(&owner_item.id.clone(), owner_item);
@@ -96,16 +115,28 @@ impl ItemKind {
                 TUnitItem::update_by_id(&item_id, item);
             }
             ItemKind::UnitShard => {
-                let mut item = TUnitShardItem::filter_by_id(&item_id)
+                let item = TUnitShardItem::filter_by_id(&item_id)
                     .context_str("UnitShardItem not found")?;
-                item.owner = new_owner;
-                TUnitShardItem::update_by_id(&item.id.clone(), item);
+                let mut owner_item = TUnitShardItem::get_or_init(new_owner, &item.unit);
+                owner_item.count += item.count;
+                TUnitShardItem::update_by_id(&owner_item.id.clone(), owner_item);
+                TUnitShardItem::delete_by_id(&item.id);
+            }
+            ItemKind::RainbowShard => {
+                let item = TRainbowShardItem::filter_by_id(&item_id)
+                    .context_str("RainbowShardItem not found")?;
+                let mut owner_item = TRainbowShardItem::get_or_init(new_owner);
+                owner_item.count += item.count;
+                TRainbowShardItem::update_by_id(&owner_item.id.clone(), owner_item);
+                TRainbowShardItem::delete_by_id(&item.id);
             }
             ItemKind::Lootbox => {
-                let mut item =
-                    TLootboxItem::filter_by_id(&item_id).context_str("TLootboxItem not found")?;
-                item.owner = new_owner;
-                TLootboxItem::update_by_id(&item.id.clone(), item);
+                let item =
+                    TLootboxItem::filter_by_id(&item_id).context_str("LootboxItem not found")?;
+                let mut owner_item = TLootboxItem::get_or_init(new_owner, item.kind);
+                owner_item.count += item.count;
+                TLootboxItem::update_by_id(&owner_item.id.clone(), owner_item);
+                TLootboxItem::delete_by_id(&item.id);
             }
         }
         Ok(())
@@ -137,6 +168,22 @@ impl ItemKind {
                 let id = new_item.id;
                 TUnitShardItem::insert(new_item).unwrap();
                 TUnitShardItem::update_by_id(&item.id.clone(), item);
+                Ok(id)
+            }
+            ItemKind::RainbowShard => {
+                let mut item = TRainbowShardItem::filter_by_id(&item_id)
+                    .context_str("RainbowShardItem not found")?;
+                if item.count < count {
+                    return Err("Insufficient item count".into());
+                }
+                let mut new_item = item.clone();
+                new_item.id = next_id();
+                new_item.count = count;
+                new_item.owner = new_owner;
+                item.count -= count;
+                let id = new_item.id;
+                TRainbowShardItem::insert(new_item).unwrap();
+                TRainbowShardItem::update_by_id(&item.id.clone(), item);
                 Ok(id)
             }
             ItemKind::Lootbox => {
@@ -181,6 +228,28 @@ impl TUnitShardItem {
                 })
                 .unwrap()
             })
+    }
+}
+
+impl TRainbowShardItem {
+    pub fn new(owner: u64) -> Self {
+        Self::insert(Self {
+            id: next_id(),
+            owner,
+
+            count: 1,
+        })
+        .unwrap()
+    }
+    fn get_or_init(owner: u64) -> Self {
+        Self::filter_by_owner(&owner).next().unwrap_or_else(|| {
+            Self::insert(Self {
+                id: next_id(),
+                owner,
+                count: 0,
+            })
+            .unwrap()
+        })
     }
 }
 
@@ -238,20 +307,51 @@ impl ItemBundle {
 }
 
 #[spacetimedb(reducer)]
-fn craft_hero(ctx: ReducerContext, base: String) -> Result<(), String> {
+fn craft_hero(ctx: ReducerContext, base: String, use_rainbow: u32) -> Result<(), String> {
     let user = ctx.user()?;
     let mut item = TUnitShardItem::get_or_init(user.id, &base);
     let cost = GlobalSettings::get().craft_shards_cost;
-    if item.count < cost {
-        return Err(format!("Not enough shards: {} < {cost}", item.count));
+    if use_rainbow >= cost {
+        return Err("Tried to use too many rainbow shards".into());
     }
-    item.count -= cost;
+    if use_rainbow > 0 {
+        let mut item = TRainbowShardItem::get_or_init(user.id);
+        if item.count < use_rainbow {
+            return Err(format!(
+                "Not enough rainbow shards: {} < {use_rainbow}",
+                item.count
+            ));
+        }
+        item.count -= use_rainbow;
+        TRainbowShardItem::update_by_id(&item.id.clone(), item);
+    }
+    if item.count + use_rainbow < cost {
+        return Err(format!(
+            "Not enough shards: {} + {use_rainbow} < {cost}",
+            item.count
+        ));
+    }
+    item.count = item.count - cost + use_rainbow;
     TUnitShardItem::update_by_id(&item.id.clone(), item);
     TUnitItem::insert(TUnitItem {
         id: next_id(),
         owner: user.id,
         unit: FusedUnit::from_base_name(base, next_id())?.mutate(),
     })?;
+    Ok(())
+}
+
+#[spacetimedb(reducer)]
+fn dismantle_hero(ctx: ReducerContext, item: u64) -> Result<(), String> {
+    let user = ctx.user()?;
+    let unit = TUnitItem::filter_by_id(&item).context_str("Item not found")?;
+    if unit.owner != user.id {
+        return Err(format!("Item not owned by {}", user.id));
+    }
+    TUnitItem::delete_by_id(&unit.id);
+    let mut item = TRainbowShardItem::get_or_init(user.id);
+    item.count += unit.unit.rarity() as u32 + 1;
+    TRainbowShardItem::update_by_id(&item.id.clone(), item);
     Ok(())
 }
 
