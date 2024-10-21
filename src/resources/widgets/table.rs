@@ -360,10 +360,10 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                             }
                         }
                         ItemKind::Lootbox => {
-                            match id.lootbox_item().kind {
-                                LootboxKind::Regular => "Regular",
+                            match &id.lootbox_item().kind {
+                                LootboxKind::Regular => "Regular".cstr_c(VISIBLE_LIGHT),
+                                LootboxKind::House(house) => house.cstr_c(name_color(house)),
                             }
-                            .cstr_c(VISIBLE_LIGHT)
                             .label(ui);
                         }
                     }

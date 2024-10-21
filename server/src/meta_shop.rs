@@ -1,3 +1,5 @@
+use house::THouse;
+
 use super::*;
 
 #[spacetimedb(table(public))]
@@ -17,6 +19,12 @@ impl TMetaShop {
         let ms = GlobalSettings::get().meta;
         Self::insert(Self {
             id: TLootboxItem::new(0, LootboxKind::Regular).id,
+            item_kind: ItemKind::Lootbox,
+            price: ms.price_lootbox,
+        })?;
+        let house = THouse::iter().choose(&mut rng()).unwrap().name;
+        Self::insert(Self {
+            id: TLootboxItem::new(0, LootboxKind::House(house)).id,
             item_kind: ItemKind::Lootbox,
             price: ms.price_lootbox,
         })?;

@@ -43,9 +43,10 @@ pub struct TLootboxItem {
     pub count: u32,
 }
 
-#[derive(SpacetimeType, Copy, Clone, Eq, PartialEq)]
+#[derive(SpacetimeType, Clone, Eq, PartialEq)]
 pub enum LootboxKind {
     Regular,
+    House(String),
 }
 
 impl ItemKind {
@@ -265,37 +266,37 @@ fn open_lootbox(ctx: ReducerContext, id: u64) -> Result<(), String> {
         return Err("No lootbox owned".into());
     }
     lootbox.count -= 1;
-    match lootbox.kind {
-        LootboxKind::Regular => {
-            let unit: FusedUnit = TBaseUnit::get_random_for_lootbox().into();
-            let unit = TUnitItem::insert(TUnitItem {
-                id: next_id(),
-                owner: user.id,
-                unit: unit.mutate(),
-            })?
-            .id;
-            const AMOUNT: usize = 3;
-            let unit_shards = (0..AMOUNT)
-                .map(|_| TUnitShardItem {
-                    id: next_id(),
-                    owner: 0,
-                    unit: TBaseUnit::get_random_for_lootbox().name,
-                    count: rng().gen_range(3..7),
-                })
-                .map(|s| {
-                    let id = s.id;
-                    TUnitShardItem::insert(s).unwrap();
-                    id
-                })
-                .collect_vec();
-            let bundle = ItemBundle {
-                units: [unit].into(),
-                unit_shards,
-                lootboxes: default(),
-            };
-            TTrade::open_lootbox(user.id, bundle)?;
-        }
-    }
+    let houses = match &lootbox.kind {
+        LootboxKind::House(house) => [house.clone()].into(),
+        LootboxKind::Regular => default(),
+    };
+    let unit: FusedUnit = TBaseUnit::get_random_for_lootbox(&houses).into();
+    let unit = TUnitItem::insert(TUnitItem {
+        id: next_id(),
+        owner: user.id,
+        unit: unit.mutate(),
+    })?
+    .id;
+    const AMOUNT: usize = 3;
+    let unit_shards = (0..AMOUNT)
+        .map(|_| TUnitShardItem {
+            id: next_id(),
+            owner: 0,
+            unit: TBaseUnit::get_random_for_lootbox(&houses).name,
+            count: rng().gen_range(3..7),
+        })
+        .map(|s| {
+            let id = s.id;
+            TUnitShardItem::insert(s).unwrap();
+            id
+        })
+        .collect_vec();
+    let bundle = ItemBundle {
+        units: [unit].into(),
+        unit_shards,
+        lootboxes: default(),
+    };
+    TTrade::open_lootbox(user.id, bundle)?;
     TLootboxItem::update_by_id(&lootbox.id.clone(), lootbox);
     Ok(())
 }

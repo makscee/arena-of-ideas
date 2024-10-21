@@ -244,8 +244,9 @@ impl ShowTable<TLootboxItem> for Vec<TLootboxItem> {
     ) -> TableState {
         let mut t = Table::new(name)
             .title()
-            .column_cstr("kind", |d: &TLootboxItem, _| match d.kind {
+            .column_cstr("kind", |d: &TLootboxItem, _| match &d.kind {
                 LootboxKind::Regular => "Regular".cstr_c(VISIBLE_LIGHT),
+                LootboxKind::House(house) => house.cstr_c(name_color(&house)),
             })
             .column_int("count", |d| d.count as i32);
         t = m(t);

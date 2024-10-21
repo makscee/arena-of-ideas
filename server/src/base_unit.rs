@@ -27,9 +27,9 @@ impl TBaseUnit {
         let dist = WeightedIndex::new(units.iter().map(|u| weights[u.rarity as usize])).unwrap();
         units.remove(dist.sample(rng))
     }
-    pub fn get_random_for_lootbox() -> Self {
+    pub fn get_random_for_lootbox(houses: &Vec<String>) -> Self {
         Self::get_random(
-            &[].into(),
+            houses,
             &GlobalSettings::get().rarities.lootbox_weights,
             &mut rng(),
         )

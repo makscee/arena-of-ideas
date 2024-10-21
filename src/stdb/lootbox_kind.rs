@@ -15,4 +15,6 @@ use spacetimedb_sdk::{
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub enum LootboxKind {
     Regular,
+
+    House(String),
 }
