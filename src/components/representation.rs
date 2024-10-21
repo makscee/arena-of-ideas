@@ -130,10 +130,20 @@ impl ShowEditor for Representation {
         None.into_iter()
     }
     fn show_children(&mut self, context: &Context, world: &mut World, ui: &mut Ui) {
+        if Button::click("+").ui(ui).clicked() {
+            self.children.push(default());
+        }
+        let mut to_remove = None;
         for (i, child) in self.children.iter_mut().enumerate() {
             ui.push_id(i, |ui| {
+                if Button::click("-").red(ui).ui(ui).clicked() {
+                    to_remove = Some(i);
+                }
                 child.show_node("", context, world, ui);
             });
+        }
+        if let Some(i) = to_remove {
+            self.children.remove(i);
         }
     }
     fn show_content(&mut self, context: &Context, world: &mut World, ui: &mut Ui) {

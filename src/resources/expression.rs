@@ -772,8 +772,8 @@ impl ShowEditor for Expression {
             | Expression::Equals(a, b)
             | Expression::GreaterThen(a, b)
             | Expression::LessThen(a, b) => {
-                a.show_node("", context, world, ui);
-                b.show_node("", context, world, ui);
+                a.show_node("a", context, world, ui);
+                b.show_node("b", context, world, ui);
             }
 
             Expression::MaxUnit(value, units) => {

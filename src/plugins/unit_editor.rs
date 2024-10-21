@@ -474,14 +474,16 @@ pub trait ShowEditor: ToCstr + Default + Serialize + DeserializeOwned + Clone {
             FRAME_REGULAR
         }
         .show(ui, |ui| {
-            ui.with_layout(Layout::left_to_right(Align::Min), |ui| {
-                ui.vertical(|ui| {
-                    self.show_self(ui, world);
-                    ui.set_max_width(ui.min_size().x);
-                    self.show_content(context, world, ui);
-                });
-                ui.vertical(|ui| {
-                    self.show_children(context, world, ui);
+            ui.push_id(name, |ui| {
+                ui.with_layout(Layout::left_to_right(Align::Min), |ui| {
+                    ui.vertical(|ui| {
+                        self.show_self(ui, world);
+                        ui.set_max_width(ui.min_size().x);
+                        self.show_content(context, world, ui);
+                    });
+                    ui.vertical(|ui| {
+                        self.show_children(context, world, ui);
+                    });
                 });
             });
         });

@@ -43,5 +43,31 @@
                 ),
             ],
         ),
+        (
+            material: Shape(
+                shape: Circle(radius: F(0.2)),
+                shape_type: Line(thickness: Value(Float(0.7))),
+                fill: Solid(color: HexColor("#ff7100ff")),
+                fbm: None,
+                alpha: Value(Float(1.0)),
+                padding: Value(Float(0.2)),
+            ),
+            children: [
+                (
+                    material: Text(
+                        size: F(0.4),
+                        text: Context(Lvl),
+                        color: HexColor("#ffffffff"),
+                        alpha: Value(Float(1.0)),
+                        font_size: 32.0,
+                    ),
+                    children: [],
+                    mapping: {},
+                    count: 0,
+                ),
+            ],
+            mapping: {Offset: Mul(UnitVec(F(8.6)), F(1.2))},
+            count: 0,
+        ),
     ],
 )

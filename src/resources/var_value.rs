@@ -245,13 +245,16 @@ impl VarValue {
 
     pub fn sum(a: &VarValue, b: &VarValue) -> Result<VarValue> {
         match (a, b) {
+            (VarValue::String(a), ..) => {
+                Ok(VarValue::String(a.to_owned() + b.get_string()?.as_str()))
+            }
+            (.., VarValue::String(b)) => Ok(VarValue::String(a.get_string()? + b.as_str())),
             (VarValue::Float(a), ..) => Ok(VarValue::Float(a + b.get_float()?)),
             (.., VarValue::Float(b)) => Ok(VarValue::Float(a.get_float()? + *b)),
             (VarValue::Int(a), ..) => Ok(VarValue::Int(a + b.get_int()?)),
             (.., VarValue::Int(b)) => Ok(VarValue::Int(a.get_int()? + *b)),
             (VarValue::Bool(a), VarValue::Bool(b)) => Ok(VarValue::Bool(*a || *b)),
             (VarValue::Vec2(a), VarValue::Vec2(b)) => Ok(VarValue::Vec2(*a + *b)),
-            (VarValue::String(a), VarValue::String(b)) => Ok(VarValue::String(a.to_owned() + b)),
             _ => Err(anyhow!("{a} + {b} not supported")),
         }
     }
