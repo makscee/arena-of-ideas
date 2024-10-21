@@ -292,6 +292,17 @@ impl ShopPlugin {
             ui,
         );
         text_dots_text("mode".cstr(), run.mode.cstr(), ui);
+        br(ui);
+        let total_weight = run.weights.iter().map(|w| w.at_least(0)).sum::<i32>() as f32;
+        for rarity in Rarity::iter() {
+            let name = rarity.cstr();
+            let chance = format!(
+                "{:.0}%",
+                run.weights[rarity as i8 as usize] as f32 / total_weight * 100.0
+            )
+            .cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold);
+            text_dots_text(name, chance, ui);
+        }
     }
     pub fn add_tiles(world: &mut World) {
         Tile::new(Side::Left, |ui, _| {

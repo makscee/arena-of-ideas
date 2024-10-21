@@ -37,6 +37,7 @@ pub struct TArenaRun {
     pub rerolls: u32,
     pub rewards: Vec<Reward>,
     pub streak: u32,
+    pub weights: Vec<i32>,
     pub last_updated: u64,
 }
 

@@ -36,6 +36,7 @@ pub struct TArenaRun {
     rerolls: u32,
     rewards: Vec<Reward>,
     streak: u32,
+    weights: Vec<i32>,
 
     last_updated: Timestamp,
 }
@@ -424,6 +425,7 @@ impl TArenaRun {
             mode,
             rewards: Vec::new(),
             streak: 0,
+            weights: default(),
         }
     }
     fn start(user: TUser, mode: GameMode) -> Result<(), String> {
@@ -549,6 +551,7 @@ impl TArenaRun {
             .enumerate()
             .map(|(i, w)| (*w + rarities.weights_per_floor[i] * floor).max(0))
             .collect_vec();
+        self.weights = weights.clone();
         let mut rng = self.get_rng();
         for i in 0..slots {
             let id = next_id();
