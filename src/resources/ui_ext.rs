@@ -110,6 +110,11 @@ impl ShowTable<FusedUnit> for Vec<FusedUnit> {
                 },
                 true,
             )
+            .column_cstr("house", |d, _| {
+                let house = d.base_unit().house;
+                let color = name_color(&house);
+                house.cstr_c(color)
+            })
             .column_rarity(|d| (Rarity::from_base(&d.bases[0]) as i32).into())
             .column_int("lvl", |d| d.lvl as i32)
             .column_cstr_value(
@@ -218,6 +223,11 @@ impl ShowTable<TUnitShardItem> for Vec<TUnitShardItem> {
         let mut t = Table::new(name)
             .title()
             .column_base_unit("unit", |d: &TUnitShardItem| d.unit.clone())
+            .column_cstr("house", |d, _| {
+                let house = d.unit.base_unit().house;
+                let color = name_color(&house);
+                house.cstr_c(color)
+            })
             .column_rarity(|d| (Rarity::from_base(&d.unit) as i32).into())
             .column_int("count", |d| d.count as i32);
         t = m(t);

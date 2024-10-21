@@ -254,10 +254,14 @@ fn show_named_nodes<T: ShowEditor>(
 ) {
     let mut c = 0;
     ui.collapsing(name, |ui| {
-        for (node, name) in nodes.iter_mut() {
+        let mut to_remove = None;
+        for (i, (node, name)) in nodes.iter_mut().enumerate() {
             c += 1;
             ui.push_id(c, |ui| {
                 ui.horizontal(|ui| {
+                    if Button::click("-").red(ui).ui(ui).clicked() {
+                        to_remove = Some(i);
+                    }
                     if Checkbox::new(&mut name.is_some(), "").ui(ui).changed() {
                         if name.is_some() {
                             *name = None;
@@ -274,6 +278,9 @@ fn show_named_nodes<T: ShowEditor>(
         }
         if Button::click("+").ui(ui).clicked() {
             nodes.push((default(), None));
+        }
+        if let Some(i) = to_remove {
+            nodes.remove(i);
         }
     });
 }
