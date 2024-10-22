@@ -383,7 +383,7 @@ fn open_lootbox(ctx: ReducerContext, id: u64) -> Result<(), String> {
             id: next_id(),
             owner: 0,
             unit: TBaseUnit::get_random_for_lootbox(&houses).name,
-            count: rng().gen_range(3..7),
+            count: rng().gen_range(1..4),
         })
         .map(|s| {
             let id = s.id;

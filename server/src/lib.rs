@@ -5,6 +5,7 @@ mod arena_pool;
 mod auction;
 mod base_unit;
 mod battle;
+mod daily_state;
 mod daily_updater;
 mod fused_unit;
 mod global_data;
@@ -13,7 +14,7 @@ mod house;
 mod inflating_number;
 mod items;
 mod meta_shop;
-mod prices;
+mod quest;
 mod representation;
 mod status;
 mod sync;
@@ -31,6 +32,7 @@ pub use arena_leaderboard::*;
 pub use arena_pool::*;
 pub use base_unit::*;
 pub use battle::*;
+pub use daily_state::*;
 use daily_updater::daily_timer_init;
 pub use fused_unit::*;
 pub use global_data::*;
@@ -39,7 +41,7 @@ pub use inflating_number::*;
 pub use items::*;
 pub use itertools::Itertools;
 pub use meta_shop::*;
-pub use prices::*;
+pub use quest::*;
 pub use rand::{distributions::Alphanumeric, seq::IteratorRandom, Rng};
 pub use spacetimedb::rng;
 pub use spacetimedb::{eprintln, println};
@@ -74,11 +76,20 @@ pub fn next_id() -> u64 {
     GlobalData::next_id()
 }
 
-#[derive(SpacetimeType, Clone, PartialEq, Eq)]
+#[derive(SpacetimeType, Clone, Default)]
 pub enum GameMode {
+    #[default]
     ArenaNormal,
     ArenaRanked,
     ArenaConst(String),
+}
+
+impl PartialEq for GameMode {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            _ => core::mem::discriminant(self) == core::mem::discriminant(other),
+        }
+    }
 }
 
 const ADMIN_IDENTITY_HEX: &str = "ad22b9dc867768c48531281bab2d5e0be1f915c4e46d107547bf624fb6dbf26c";

@@ -115,7 +115,7 @@ fn run_start_normal(ctx: ReducerContext) -> Result<(), String> {
 #[spacetimedb(reducer)]
 fn run_start_ranked(ctx: ReducerContext, team_id: u64) -> Result<(), String> {
     let user = ctx.user()?;
-    let cost = TPrices::filter_by_owner(&user.id).unwrap().buy_ranked();
+    let cost = TDailyState::filter_by_owner(&user.id).unwrap().buy_ranked();
     TWallet::change(user.id, -cost)?;
     let mut team = TTeam::get_owned(team_id, user.id)?;
     team.pool = TeamPool::Arena;
@@ -130,7 +130,7 @@ fn run_start_ranked(ctx: ReducerContext, team_id: u64) -> Result<(), String> {
 #[spacetimedb(reducer)]
 fn run_start_const(ctx: ReducerContext) -> Result<(), String> {
     let user = ctx.user()?;
-    let cost = TPrices::filter_by_owner(&user.id).unwrap().buy_const();
+    let cost = TDailyState::filter_by_owner(&user.id).unwrap().buy_const();
     TWallet::change(user.id, -cost)?;
     TArenaRun::start(
         user,
@@ -183,13 +183,15 @@ fn submit_battle_result(ctx: ReducerContext, result: TBattleResult) -> Result<()
         return Err("Result already submitted".to_owned());
     }
     battle.set_result(result).save();
-    if matches!(result, TBattleResult::Left) {
+    if result == TBattleResult::Left {
+        QuestEvent::Win.register_event(run.mode.clone(), run.owner);
         if run.replenish_lives > 0 && run.lives < run.max_lives {
             run.lives += 1;
             run.replenish_lives -= 1;
         }
         run.add_streak();
         if run.champion_reached() {
+            QuestEvent::Champion.register_event(run.mode.clone(), run.owner);
             run.finish();
         }
     } else {
@@ -354,6 +356,7 @@ fn fuse_choose(ctx: ReducerContext, trigger: i8, target: i8, effect: i8) -> Resu
         .context_str("Failed to get effect")?
         .clone();
     unit.id = next_id();
+    let fuse_amount = unit.bases.len() as u32;
 
     let a = a as usize;
     let b = b as usize;
@@ -362,6 +365,7 @@ fn fuse_choose(ctx: ReducerContext, trigger: i8, target: i8, effect: i8) -> Resu
     team.units.insert(a, unit);
     team.units.remove(b);
     team.save();
+    QuestEvent::Fuse(fuse_amount).register_event(run.mode.clone(), run.owner);
     run.save();
     Ok(())
 }
@@ -593,6 +597,7 @@ impl TArenaRun {
     }
     fn add_streak(&mut self) {
         self.streak += 1;
+        QuestEvent::Streak(self.streak).register_event(self.mode.clone(), self.owner);
     }
     fn finish_streak(&mut self) {
         if self.streak > 0 {

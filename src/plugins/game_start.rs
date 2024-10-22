@@ -70,7 +70,7 @@ impl GameStartPlugin {
                             }
                         }
                         GameMode::ArenaRanked => {
-                            let cost = TPrices::current().ranked_mode;
+                            let cost = TDailyState::current().ranked_cost;
                             let gsr = r(world);
                             if gsr.teams.is_empty() {
                                 "Need at least one non-empty team to play this mode"
@@ -126,7 +126,7 @@ impl GameStartPlugin {
                             }
                         }
                         GameMode::ArenaConst(seed) => {
-                            let cost = TPrices::current().const_mode;
+                            let cost = TDailyState::current().const_cost;
                             if Button::click(format!("-{} {CREDITS_SYM}", cost))
                                 .title("Play".cstr())
                                 .enabled(can_start && TWallet::current().amount >= cost)
@@ -251,19 +251,17 @@ impl GameStartPlugin {
             match game_mode {
                 GameMode::ArenaNormal => {
                     "1. Defeat as many enemies as possible\n\
-                    2. 3 lives, replenish every 5 floors\n\
-                    3. Defeat current champion for big reward\n\
-                    4. Credits reward depending on win streak"
+                    2. 3 lives, replenish on win every 5 floors\n\
+                    3. Defeat current champion for a reward"
                         .cstr_c(VISIBLE_LIGHT)
                         .label(ui);
                 }
                 GameMode::ArenaRanked => {
                     "1. Start with own team\n\
                     2. Defeat as many enemies as possible\n\
-                    3. 3 lives, replenish every 5 floors\n\
-                    4. Defeat current champion for big reward\n\
-                    5. Credits reward depending on win streak\n\
-                    6. Rewards are multiplied by 2"
+                    3. 3 lives, replenish on win every 5 floors\n\
+                    4. Defeat current champion for a reward\n\
+                    5. Credits reward depending on win streak"
                         .cstr_c(VISIBLE_LIGHT)
                         .label(ui);
                 }
@@ -271,10 +269,10 @@ impl GameStartPlugin {
                     "1. Defeat as many enemies as possible\n\
                     2. Entry fee growing every time, reset on day start\n\
                     3. Credits reward depending on win streak\n\
-                    4. Fixed seed, new seed after reaching 10 floors\n\
-                    5. 3 lives, replenish every 5 floors\n\
-                    6. Defeat current champion for big reward\n\
-                    7. Rewards are multiplied by 3"
+                    4. Fixed seed, everyone gets same units in shop\n\
+                    5. 3 lives, replenish on win every 5 floors\n\
+                    6. Defeat current champion for a reward\n\
+                    7. Rewards are multiplied by 2"
                         .cstr_c(VISIBLE_LIGHT)
                         .inject_color(YELLOW)
                         .label(ui);

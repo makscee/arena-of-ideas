@@ -5,6 +5,7 @@
 use super::arena_settings::ArenaSettings;
 use super::battle_settings::BattleSettings;
 use super::meta_settings::MetaSettings;
+use super::quest_settings::QuestSettings;
 use super::rarity_settings::RaritySettings;
 use spacetimedb_sdk::{
     anyhow::{anyhow, Result},
@@ -26,6 +27,7 @@ pub struct GlobalSettings {
     pub create_team_cost: i64,
     pub meta: MetaSettings,
     pub ghost_unit: String,
+    pub quest: QuestSettings,
 }
 
 impl TableType for GlobalSettings {

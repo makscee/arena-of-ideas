@@ -15,8 +15,9 @@ use spacetimedb_sdk::{
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct TDailyState {
     pub owner: u64,
-    pub ranked_mode: i64,
-    pub const_mode: i64,
+    pub ranked_cost: i64,
+    pub const_cost: i64,
+    pub quests_taken: u32,
 }
 
 impl TableType for TDailyState {
@@ -41,11 +42,15 @@ impl TDailyState {
         Self::find(|row| row.owner == owner)
     }
     #[allow(unused)]
-    pub fn filter_by_ranked_mode(ranked_mode: i64) -> TableIter<Self> {
-        Self::filter(|row| row.ranked_mode == ranked_mode)
+    pub fn filter_by_ranked_cost(ranked_cost: i64) -> TableIter<Self> {
+        Self::filter(|row| row.ranked_cost == ranked_cost)
     }
     #[allow(unused)]
-    pub fn filter_by_const_mode(const_mode: i64) -> TableIter<Self> {
-        Self::filter(|row| row.const_mode == const_mode)
+    pub fn filter_by_const_cost(const_cost: i64) -> TableIter<Self> {
+        Self::filter(|row| row.const_cost == const_cost)
+    }
+    #[allow(unused)]
+    pub fn filter_by_quests_taken(quests_taken: u32) -> TableIter<Self> {
+        Self::filter(|row| row.quests_taken == quests_taken)
     }
 }

@@ -317,7 +317,7 @@ impl TableSingletonExt for GlobalData {}
 impl TableSingletonExt for GlobalSettings {}
 impl TableSingletonExt for TArenaRun {}
 impl TableSingletonExt for TWallet {}
-impl TableSingletonExt for TPrices {}
+impl TableSingletonExt for TDailyState {}
 
 pub trait StdbStatusExt {
     fn on_success(&self, f: impl FnOnce(&mut World) + Send + Sync + 'static);

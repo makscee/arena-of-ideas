@@ -11,6 +11,7 @@ pub struct GlobalSettings {
     pub create_team_cost: i64,
     pub meta: MetaSettings,
     pub ghost_unit: String,
+    pub quest: QuestSettings,
 }
 
 impl GlobalSettings {
@@ -61,4 +62,10 @@ pub struct MetaSettings {
     pub price_shard: i64,
     pub shop_shard_slots: u32,
     pub balance_vote_reward: i64,
+}
+
+#[derive(SpacetimeType)]
+pub struct QuestSettings {
+    pub daily_options: u32,
+    pub daily_limit: u32,
 }

@@ -50,6 +50,10 @@ pub mod lootbox_kind;
 pub mod meta_buy_reducer;
 pub mod meta_settings;
 pub mod open_lootbox_reducer;
+pub mod quest_accept_reducer;
+pub mod quest_finish_reducer;
+pub mod quest_settings;
+pub mod quest_variant;
 pub mod rarity_settings;
 pub mod register_empty_reducer;
 pub mod register_reducer;
@@ -80,10 +84,11 @@ pub mod t_auction;
 pub mod t_base_unit;
 pub mod t_battle;
 pub mod t_battle_result;
+pub mod t_daily_state;
 pub mod t_house;
 pub mod t_lootbox_item;
 pub mod t_meta_shop;
-pub mod t_prices;
+pub mod t_quest;
 pub mod t_rainbow_shard_item;
 pub mod t_representation;
 pub mod t_status;
@@ -135,6 +140,10 @@ pub use lootbox_kind::*;
 pub use meta_buy_reducer::*;
 pub use meta_settings::*;
 pub use open_lootbox_reducer::*;
+pub use quest_accept_reducer::*;
+pub use quest_finish_reducer::*;
+pub use quest_settings::*;
+pub use quest_variant::*;
 pub use rarity_settings::*;
 pub use register_empty_reducer::*;
 pub use register_reducer::*;
@@ -165,10 +174,11 @@ pub use t_auction::*;
 pub use t_base_unit::*;
 pub use t_battle::*;
 pub use t_battle_result::*;
+pub use t_daily_state::*;
 pub use t_house::*;
 pub use t_lootbox_item::*;
 pub use t_meta_shop::*;
-pub use t_prices::*;
+pub use t_quest::*;
 pub use t_rainbow_shard_item::*;
 pub use t_representation::*;
 pub use t_status::*;
@@ -210,6 +220,8 @@ pub enum ReducerEvent {
     Logout(logout_reducer::LogoutArgs),
     MetaBuy(meta_buy_reducer::MetaBuyArgs),
     OpenLootbox(open_lootbox_reducer::OpenLootboxArgs),
+    QuestAccept(quest_accept_reducer::QuestAcceptArgs),
+    QuestFinish(quest_finish_reducer::QuestFinishArgs),
     Register(register_reducer::RegisterArgs),
     RegisterEmpty(register_empty_reducer::RegisterEmptyArgs),
     RunFinish(run_finish_reducer::RunFinishArgs),
@@ -299,6 +311,11 @@ impl SpacetimeModule for Module {
                 ),
             "TBattle" => client_cache
                 .handle_table_update_with_primary_key::<t_battle::TBattle>(callbacks, table_update),
+            "TDailyState" => client_cache
+                .handle_table_update_with_primary_key::<t_daily_state::TDailyState>(
+                    callbacks,
+                    table_update,
+                ),
             "THouse" => client_cache
                 .handle_table_update_with_primary_key::<t_house::THouse>(callbacks, table_update),
             "TLootboxItem" => client_cache
@@ -311,8 +328,8 @@ impl SpacetimeModule for Module {
                     callbacks,
                     table_update,
                 ),
-            "TPrices" => client_cache
-                .handle_table_update_with_primary_key::<t_prices::TPrices>(callbacks, table_update),
+            "TQuest" => client_cache
+                .handle_table_update_with_primary_key::<t_quest::TQuest>(callbacks, table_update),
             "TRainbowShardItem" => client_cache
                 .handle_table_update_with_primary_key::<t_rainbow_shard_item::TRainbowShardItem>(
                     callbacks,
@@ -387,10 +404,11 @@ impl SpacetimeModule for Module {
         reminders.invoke_callbacks::<t_auction::TAuction>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_base_unit::TBaseUnit>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_battle::TBattle>(worker, &reducer_event, state);
+        reminders.invoke_callbacks::<t_daily_state::TDailyState>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_house::THouse>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_lootbox_item::TLootboxItem>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_meta_shop::TMetaShop>(worker, &reducer_event, state);
-        reminders.invoke_callbacks::<t_prices::TPrices>(worker, &reducer_event, state);
+        reminders.invoke_callbacks::<t_quest::TQuest>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_rainbow_shard_item::TRainbowShardItem>(
             worker,
             &reducer_event,
@@ -440,6 +458,8 @@ match &reducer_call.reducer_name[..] {
 			"logout" => _reducer_callbacks.handle_event_of_type::<logout_reducer::LogoutArgs, ReducerEvent>(event, _state, ReducerEvent::Logout),
 			"meta_buy" => _reducer_callbacks.handle_event_of_type::<meta_buy_reducer::MetaBuyArgs, ReducerEvent>(event, _state, ReducerEvent::MetaBuy),
 			"open_lootbox" => _reducer_callbacks.handle_event_of_type::<open_lootbox_reducer::OpenLootboxArgs, ReducerEvent>(event, _state, ReducerEvent::OpenLootbox),
+			"quest_accept" => _reducer_callbacks.handle_event_of_type::<quest_accept_reducer::QuestAcceptArgs, ReducerEvent>(event, _state, ReducerEvent::QuestAccept),
+			"quest_finish" => _reducer_callbacks.handle_event_of_type::<quest_finish_reducer::QuestFinishArgs, ReducerEvent>(event, _state, ReducerEvent::QuestFinish),
 			"register" => _reducer_callbacks.handle_event_of_type::<register_reducer::RegisterArgs, ReducerEvent>(event, _state, ReducerEvent::Register),
 			"register_empty" => _reducer_callbacks.handle_event_of_type::<register_empty_reducer::RegisterEmptyArgs, ReducerEvent>(event, _state, ReducerEvent::RegisterEmpty),
 			"run_finish" => _reducer_callbacks.handle_event_of_type::<run_finish_reducer::RunFinishArgs, ReducerEvent>(event, _state, ReducerEvent::RunFinish),
@@ -510,6 +530,8 @@ match &reducer_call.reducer_name[..] {
             "TBattle" => {
                 client_cache.handle_resubscribe_for_type::<t_battle::TBattle>(callbacks, new_subs)
             }
+            "TDailyState" => client_cache
+                .handle_resubscribe_for_type::<t_daily_state::TDailyState>(callbacks, new_subs),
             "THouse" => {
                 client_cache.handle_resubscribe_for_type::<t_house::THouse>(callbacks, new_subs)
             }
@@ -517,8 +539,8 @@ match &reducer_call.reducer_name[..] {
                 .handle_resubscribe_for_type::<t_lootbox_item::TLootboxItem>(callbacks, new_subs),
             "TMetaShop" => client_cache
                 .handle_resubscribe_for_type::<t_meta_shop::TMetaShop>(callbacks, new_subs),
-            "TPrices" => {
-                client_cache.handle_resubscribe_for_type::<t_prices::TPrices>(callbacks, new_subs)
+            "TQuest" => {
+                client_cache.handle_resubscribe_for_type::<t_quest::TQuest>(callbacks, new_subs)
             }
             "TRainbowShardItem" => client_cache
                 .handle_resubscribe_for_type::<t_rainbow_shard_item::TRainbowShardItem>(

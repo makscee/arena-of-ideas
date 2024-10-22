@@ -26,7 +26,8 @@ fn daily_update(_ctx: ReducerContext, _timer: DailyUpdateTimer) -> Result<(), St
 fn update() -> Result<(), String> {
     update_constant_seed();
     TMetaShop::refresh()?;
-    TPrices::refresh_all();
+    TDailyState::daily_refresh();
+    quests_daily_refresh();
     Ok(())
 }
 
