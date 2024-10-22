@@ -278,7 +278,9 @@ impl ShopPlugin {
         );
         text_dots_text(
             "lives".cstr(),
-            run.lives.to_string().cstr_cs(GREEN, CstrStyle::Bold),
+            format!("{}/{}", run.lives, run.max_lives)
+                .to_string()
+                .cstr_cs(GREEN, CstrStyle::Bold),
             ui,
         );
         text_dots_text(
@@ -330,6 +332,8 @@ impl ShopPlugin {
                     "Champion Battle".cstr_cs(YELLOW, CstrStyle::Bold).label(ui);
                     champion.get_team().hover_label(ui, world);
                 });
+            } else if run.replenish_lives > 0 {
+                "Win for +1 life".cstr_cs(GREEN, CstrStyle::Bold).label(ui);
             }
         })
         .transparent()

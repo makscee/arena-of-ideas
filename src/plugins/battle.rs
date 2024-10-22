@@ -58,6 +58,7 @@ impl BattlePlugin {
         let mut bd = BattleResource::from(battle);
         bd.from_run = true;
         bd.next_state = GameState::Shop;
+        bd.lives_before = run.lives;
         world.insert_resource(bd);
         GameState::Battle.set_next(world);
     }
@@ -429,6 +430,17 @@ impl BattlePlugin {
                     "Defeat".cstr_cs(RED, CstrStyle::Heading2)
                 }
                 .label(ui);
+                if let Some(run) = TArenaRun::get_current() {
+                    space(ui);
+                    if bd.lives_before < run.lives {
+                        format!("+{} life", run.lives - bd.lives_before)
+                            .cstr_c(GREEN)
+                            .label(ui);
+                    }
+                    format!("{}/{} lives", run.lives, run.max_lives)
+                        .cstr_cs(GREEN, CstrStyle::Bold)
+                        .label(ui);
+                }
             });
             space(ui);
             ui.columns(2, |ui| {
@@ -484,6 +496,8 @@ pub struct BattleResource {
     result: BattleResult,
     #[serde(default)]
     from_run: bool,
+    #[serde(default)]
+    lives_before: u32,
     #[serde(default = "default_state")]
     next_state: GameState,
 }
@@ -503,6 +517,7 @@ impl From<TBattle> for BattleResource {
             right: PackedTeam::from_id(value.team_right),
             result: BattleResult::Tbd,
             from_run: false,
+            lives_before: 0,
             next_state: GameState::Shop,
         }
     }

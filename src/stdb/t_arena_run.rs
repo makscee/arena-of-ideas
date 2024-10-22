@@ -31,6 +31,8 @@ pub struct TArenaRun {
     pub price_reroll: i32,
     pub free_rerolls: u32,
     pub lives: u32,
+    pub max_lives: u32,
+    pub replenish_lives: u32,
     pub active: bool,
     pub champion: Option<u64>,
     pub floor: u32,
@@ -89,6 +91,14 @@ impl TArenaRun {
     #[allow(unused)]
     pub fn filter_by_lives(lives: u32) -> TableIter<Self> {
         Self::filter(|row| row.lives == lives)
+    }
+    #[allow(unused)]
+    pub fn filter_by_max_lives(max_lives: u32) -> TableIter<Self> {
+        Self::filter(|row| row.max_lives == max_lives)
+    }
+    #[allow(unused)]
+    pub fn filter_by_replenish_lives(replenish_lives: u32) -> TableIter<Self> {
+        Self::filter(|row| row.replenish_lives == replenish_lives)
     }
     #[allow(unused)]
     pub fn filter_by_active(active: bool) -> TableIter<Self> {

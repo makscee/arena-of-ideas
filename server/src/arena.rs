@@ -29,6 +29,8 @@ pub struct TArenaRun {
     price_reroll: i32,
     free_rerolls: u32,
     lives: u32,
+    max_lives: u32,
+    replenish_lives: u32,
     active: bool,
     champion: Option<u64>,
 
@@ -182,6 +184,10 @@ fn submit_battle_result(ctx: ReducerContext, result: TBattleResult) -> Result<()
     }
     battle.set_result(result).save();
     if matches!(result, TBattleResult::Left) {
+        if run.replenish_lives > 0 && run.lives < run.max_lives {
+            run.lives += 1;
+            run.replenish_lives -= 1;
+        }
         run.add_streak();
         if run.champion_reached() {
             run.finish();
@@ -196,6 +202,9 @@ fn submit_battle_result(ctx: ReducerContext, result: TBattleResult) -> Result<()
     let (champion, enemy) = TArenaPool::get_next_enemy(&run.mode, run.floor);
     if champion {
         run.champion = Some(enemy);
+    }
+    if run.floor % 5 == 0 {
+        run.replenish_lives += 1;
     }
     run.save();
     Ok(())
@@ -419,6 +428,8 @@ impl TArenaRun {
             price_reroll: ars.price_reroll,
             battles: Vec::new(),
             lives: ars.lives_initial,
+            max_lives: ars.lives_initial,
+            replenish_lives: 0,
             free_rerolls: ars.free_rerolls_initial,
             active: true,
             champion: None,
