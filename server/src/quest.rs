@@ -35,7 +35,7 @@ impl TQuest {
     fn register_update(&mut self, value: u32) {
         match self.variant {
             QuestVariant::Win | QuestVariant::FuseMany | QuestVariant::Champion => {
-                self.counter += value
+                self.counter += 1
             }
             QuestVariant::Streak | QuestVariant::FuseOne => {
                 self.counter = value.max(self.counter);
@@ -178,14 +178,15 @@ pub fn quests_daily_refresh() {
 #[spacetimedb(reducer)]
 fn quest_accept(ctx: ReducerContext, id: u64) -> Result<(), String> {
     let user = ctx.user()?;
-    if !TDailyState::get(user.id).take_quest() {
-        return Err("Daily quest limit reached".into());
-    }
     let mut quest =
         TQuest::filter_by_id(&id).with_context_str(|| format!("Quest#{id} not found"))?;
+    if quest.owner != 0 {
+        return Err("Wrong quest".into());
+    }
+    TDailyState::get(user.id).take_quest(id)?;
     quest.id = next_id();
     quest.owner = user.id;
-    TQuest::update_by_id(&quest.id.clone(), quest);
+    TQuest::insert(quest)?;
     Ok(())
 }
 

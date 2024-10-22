@@ -46,6 +46,12 @@ impl Default for SectionMenu {
                     options: [GameOption::Login].into(),
                 },
                 GameSection {
+                    name: "QUESTS",
+                    target_state: GameState::Quests,
+                    inner_states: [GameState::Quests].into(),
+                    options: [GameOption::Login].into(),
+                },
+                GameSection {
                     name: "INBOX",
                     target_state: GameState::Inbox,
                     inner_states: default(),

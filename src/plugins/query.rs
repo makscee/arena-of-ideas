@@ -47,6 +47,7 @@ impl StdbQuery {
                 format!("select * from TDailyState where owner = {uid}"),
                 format!("select * from TUnitBalance where owner = {uid}"),
                 format!("select * from TUnitItem where owner = {uid} or owner = 0"),
+                format!("select * from TQuest where owner = {uid} or owner = 0"),
                 format!(
                     "select * from TUnitShardItem where (owner = {uid} or owner = 0) and count > 0"
                 ),

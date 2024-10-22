@@ -17,7 +17,7 @@ pub struct TDailyState {
     pub owner: u64,
     pub ranked_cost: i64,
     pub const_cost: i64,
-    pub quests_taken: u32,
+    pub quests_taken: Vec<u64>,
 }
 
 impl TableType for TDailyState {
@@ -48,9 +48,5 @@ impl TDailyState {
     #[allow(unused)]
     pub fn filter_by_const_cost(const_cost: i64) -> TableIter<Self> {
         Self::filter(|row| row.const_cost == const_cost)
-    }
-    #[allow(unused)]
-    pub fn filter_by_quests_taken(quests_taken: u32) -> TableIter<Self> {
-        Self::filter(|row| row.quests_taken == quests_taken)
     }
 }

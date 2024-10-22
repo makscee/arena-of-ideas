@@ -37,6 +37,7 @@ pub enum GameState {
     UnitEditor,
 
     Editor,
+    Quests,
 }
 
 static TARGET_STATE: Mutex<GameState> = Mutex::new(GameState::Loaded);

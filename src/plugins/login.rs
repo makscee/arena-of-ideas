@@ -69,6 +69,34 @@ impl LoginPlugin {
                 )
                 .push_op();
             });
+            TQuest::on_insert(|d, _| {
+                let text = "New Quest\n".cstr().push(d.cstr()).take();
+                Notification::new(text).push_op();
+            });
+            TQuest::on_update(|before, after, _| {
+                let before = before.clone();
+                let after = after.clone();
+                OperationsPlugin::add(move |world| {
+                    if before.counter < after.counter {
+                        ShopPlugin::maybe_queue_notification(
+                            "Quest Progress:\n"
+                                .cstr_c(VISIBLE_BRIGHT)
+                                .push(after.cstr())
+                                .take(),
+                            world,
+                        )
+                    }
+                    if !before.complete && after.complete {
+                        ShopPlugin::maybe_queue_notification(
+                            "Quest Complete!\n"
+                                .cstr_c(VISIBLE_BRIGHT)
+                                .push(after.cstr())
+                                .take(),
+                            world,
+                        )
+                    }
+                });
+            });
         });
     }
     pub fn login_ui(ui: &mut Ui, world: &mut World) {

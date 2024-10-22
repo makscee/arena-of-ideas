@@ -31,6 +31,7 @@ pub struct ShopResource {
     family_slot: Option<usize>,
     fusion_choice: Vec<i8>,
     fusion_cards: Vec<UnitCard>,
+    queued_notifications: Vec<Cstr>,
 }
 fn rm(world: &mut World) -> Mut<ShopResource> {
     world.resource_mut::<ShopResource>()
@@ -44,6 +45,9 @@ impl ShopPlugin {
         TeamPlugin::change_ability_var_int("Siphon".into(), VarName::M1, 1, Faction::Team, world);
     }
     fn enter(mut sd: ResMut<ShopResource>) {
+        for text in sd.queued_notifications.drain(..) {
+            Notification::new(text).push_op();
+        }
         if let Some(run) = TArenaRun::get_current() {
             if !run.active {
                 GameState::GameOver.set_next_op();
@@ -293,7 +297,7 @@ impl ShopPlugin {
             run.streak.to_string().cstr_c(VISIBLE_BRIGHT),
             ui,
         );
-        text_dots_text("mode".cstr(), run.mode.cstr(), ui);
+        text_dots_text("mode".cstr(), run.mode.cstr_expanded(), ui);
         br(ui);
         let total_weight = run.weights.iter().map(|w| w.at_least(0)).sum::<i32>() as f32;
         for rarity in Rarity::iter() {
@@ -561,7 +565,7 @@ impl ShopPlugin {
                 }
                 .label(ui);
                 "Run Over".cstr_cs(YELLOW, CstrStyle::Bold).label(ui);
-                run.mode.cstr().label(ui);
+                run.mode.cstr_expanded().label(ui);
                 text_dots_text(
                     format!("Final floor").cstr(),
                     run.floor.to_string().cstr_cs(YELLOW, CstrStyle::Bold),
@@ -595,5 +599,11 @@ impl ShopPlugin {
                 }
             });
         });
+    }
+    pub fn maybe_queue_notification(text: Cstr, world: &mut World) {
+        match cur_state(world) {
+            GameState::Battle => rm(world).queued_notifications.push(text),
+            _ => Notification::new(text).push(world),
+        }
     }
 }

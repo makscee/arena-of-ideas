@@ -466,8 +466,18 @@ impl ToCstr for GameMode {
         match self {
             GameMode::ArenaNormal => "normal".cstr_cs(VISIBLE_DARK, CstrStyle::Small),
             GameMode::ArenaRanked => "ranked".cstr_cs(YELLOW, CstrStyle::Small),
-            GameMode::ArenaConst(seed) => format!("const {seed}").cstr_cs(CYAN, CstrStyle::Small),
+            GameMode::ArenaConst(_) => "const".cstr_cs(CYAN, CstrStyle::Small),
         }
+    }
+    fn cstr_expanded(&self) -> Cstr {
+        let mut c = self.cstr();
+        match self {
+            GameMode::ArenaNormal | GameMode::ArenaRanked => {}
+            GameMode::ArenaConst(seed) => {
+                c.push(format!(" {seed}").cstr_cs(VISIBLE_LIGHT, CstrStyle::Small));
+            }
+        }
+        c
     }
 }
 

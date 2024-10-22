@@ -23,10 +23,16 @@ pub struct TableColumn<T> {
     value: Box<dyn Fn(&T, &World) -> VarValue>,
     show: Box<dyn Fn(&T, VarValue, &mut Ui, &mut World)>,
     sortable: bool,
+    hide_name: bool,
 }
 
 impl<T> TableColumn<T> {
     pub fn no_sort(mut self) -> Self {
+        self.sortable = false;
+        self
+    }
+    pub fn no_name(mut self) -> Self {
+        self.hide_name = true;
         self.sortable = false;
         self
     }
@@ -76,6 +82,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                 value: Box::new(value),
                 show: Box::new(show),
                 sortable,
+                hide_name: false,
             },
         );
         self
@@ -93,6 +100,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                 value,
                 show,
                 sortable,
+                hide_name: false,
             },
         );
         self
@@ -112,6 +120,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                     }
                 }),
                 sortable: false,
+                hide_name: true,
             },
         );
         self
@@ -128,6 +137,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                     v.get_cstr().unwrap().label(ui);
                 }),
                 sortable: true,
+                hide_name: false,
             },
         );
         self
@@ -146,6 +156,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                     s(d, v).label(ui);
                 }),
                 sortable: true,
+                hide_name: false,
             },
         );
         self
@@ -166,6 +177,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                     }
                 }),
                 sortable: false,
+                hide_name: true,
             },
         );
         self
@@ -179,6 +191,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                     v.cstr().label(ui);
                 }),
                 sortable: true,
+                hide_name: false,
             },
         );
         self
@@ -195,6 +208,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                     v.cstr().label(ui);
                 }),
                 sortable: true,
+                hide_name: false,
             },
         );
         self
@@ -210,6 +224,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                         .label(ui);
                 }),
                 sortable: true,
+                hide_name: false,
             },
         );
         self
@@ -235,6 +250,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                     }
                 }),
                 sortable: true,
+                hide_name: false,
             },
         );
         self
@@ -253,6 +269,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                     }
                 }),
                 sortable: true,
+                hide_name: false,
             },
         );
         self
@@ -272,6 +289,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                     .label(ui);
                 }),
                 sortable: true,
+                hide_name: false,
             },
         );
         self
@@ -305,6 +323,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                     r
                 }),
                 sortable: true,
+                hide_name: false,
             },
         );
         self
@@ -333,6 +352,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                     v.get_cstr().unwrap().label(ui);
                 }),
                 sortable: true,
+                hide_name: false,
             },
         );
         self.columns.insert(
@@ -389,6 +409,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                     }
                 }),
                 sortable: true,
+                hide_name: false,
             },
         );
         self
@@ -450,7 +471,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                         .header(30.0, |mut row| {
                             for (i, (name, column)) in self.columns.iter().enumerate() {
                                 row.col(|ui| {
-                                    let resp = if column.sortable {
+                                    let clicked = if column.sortable {
                                         let mut btn = Button::click(name.to_string());
                                         btn = if state
                                             .sorting
@@ -461,14 +482,17 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                                         } else {
                                             btn
                                         };
-                                        btn.ui(ui)
+                                        btn.ui(ui).clicked()
+                                    } else if column.hide_name {
+                                        false
                                     } else {
                                         Button::click(name.to_string())
                                             .enabled(false)
                                             .gray(ui)
-                                            .ui(ui)
+                                            .ui(ui);
+                                        false
                                     };
-                                    if resp.clicked() {
+                                    if clicked {
                                         if state.sorting.is_some_and(|(s_i, s)| s_i == i && !s) {
                                             state.sorting = Some((i, true));
                                         } else {
