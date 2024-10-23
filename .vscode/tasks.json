@@ -236,7 +236,7 @@
       "group": {
         "kind": "build"
       },
-      "command": "sudo cargo flamegraph --dev -- --mode custom"
+      "command": "sudo cargo flamegraph --dev -- --mode regular"
     },
     {
       "label": "Flamegraph: Run Release",

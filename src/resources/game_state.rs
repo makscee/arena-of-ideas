@@ -165,6 +165,7 @@ fn on_change(world: &mut World) {
     let to = cur_state(world);
     TeamSyncPlugin::unsubscribe_all(world);
     TilePlugin::change_state(to, world);
+    stdb_cache_reset();
 }
 
 lazy_static! {

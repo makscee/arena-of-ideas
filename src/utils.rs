@@ -1,3 +1,5 @@
+use std::sync::RwLockWriteGuard;
+
 use bevy::{color::ColorToPacked, input::mouse::MouseButton};
 use chrono::Utc;
 use spacetimedb_sdk::table::TableType;
@@ -350,6 +352,20 @@ pub trait GIDExt {
     fn lootbox_item(self) -> TLootboxItem;
 }
 
+#[derive(Default)]
+struct StdbCache {
+    teams: HashMap<u64, TTeam>,
+}
+
+static STDB_CACHE: OnceCell<RwLock<StdbCache>> = OnceCell::new();
+fn stdb_cache_get_mut() -> RwLockWriteGuard<'static, StdbCache> {
+    STDB_CACHE.get_or_init(|| default()).write().unwrap()
+}
+
+pub fn stdb_cache_reset() {
+    *stdb_cache_get_mut() = default()
+}
+
 impl GIDExt for u64 {
     fn get_team(self) -> TTeam {
         if self == 0 {
@@ -361,9 +377,16 @@ impl GIDExt for u64 {
                 pool: TeamPool::Owned,
             };
         }
-        TTeam::find_by_id(self)
-            .with_context(|| format!("Failed to find Team#{self}"))
-            .unwrap()
+        let mut cache = stdb_cache_get_mut();
+        if let Some(team) = cache.teams.get(&self) {
+            return team.clone();
+        } else {
+            let team = TTeam::find_by_id(self)
+                .with_context(|| format!("Failed to find Team#{self}"))
+                .unwrap();
+            cache.teams.insert(self, team.clone());
+            team
+        }
     }
     fn get_user(self) -> TUser {
         if self == 0 {
