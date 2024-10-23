@@ -1,12 +1,12 @@
 #![enable(implicit_some)]
 (
     name: "Spy",
-    hp: 4,
-    pwr: 2,
+    hp: 3,
+    pwr: 0,
     rarity: 0,
     houses: ["Shifters"],
     trigger: Fire(
-        triggers: [(BeforeStrike, None)],
+        triggers: [(AfterStrike, None)],
         targets: [(RandomUnit(AllEnemyUnits), None)],
         effects: [(UseAbility("Full Copy", 0), None)],
     ),

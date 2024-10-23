@@ -8,7 +8,7 @@
     trigger: Fire(
         triggers: [(BattleStart, None)],
         targets: [(AllAllyUnits, None)],
-        effects: [(UseAbility("Vitality", 0), None)],
+        effects: [(UseAbility("Vitality", 2), None)],
     ),
     representation: (
         material: Shape(

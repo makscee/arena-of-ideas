@@ -3,7 +3,7 @@
     name: "Taser",
     hp: 2,
     pwr: 1,
-    rarity: 0,
+    rarity: 1,
     houses: ["Robots"],
     trigger: Fire(
         triggers: [(BeforeStrike, None)],

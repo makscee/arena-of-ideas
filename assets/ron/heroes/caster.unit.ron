@@ -3,12 +3,12 @@
     name: "Caster",
     hp: 1,
     pwr: 1,
-    rarity: 1,
+    rarity: 0,
     houses: ["Mages"],
     trigger: Fire(
         triggers: [(AllyDeath, None)],
         targets: [(TargetStateLast(LastAttacker), "last attacker")],
-        effects: [(UseAbility("Magic Missile", 2), None)],
+        effects: [(UseAbility("Magic Missile", 1), None)],
     ),
     representation: (
         material: Shape(

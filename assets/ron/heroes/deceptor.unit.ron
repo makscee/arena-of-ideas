@@ -1,9 +1,9 @@
 #![enable(implicit_some)]
 (
     name: "Deceptor",
-    hp: 2,
-    pwr: 2,
-    rarity: 1,
+    hp: 1,
+    pwr: 1,
+    rarity: 0,
     houses: ["Meta"],
     trigger: Fire(
         triggers: [(AfterStrike, None)],

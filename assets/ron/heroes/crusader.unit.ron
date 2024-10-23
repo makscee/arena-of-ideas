@@ -2,8 +2,8 @@
 (
     name: "Crusader",
     hp: 1,
-    pwr: 2,
-    rarity: 0,
+    pwr: 1,
+    rarity: 3,
     houses: ["Holy"],
     trigger: Fire(
         triggers: [(BattleStart, None)],

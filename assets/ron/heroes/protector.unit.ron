@@ -1,8 +1,8 @@
 #![enable(implicit_some)]
 (
     name: "Protector",
-    hp: 2,
-    pwr: 2,
+    hp: 1,
+    pwr: 1,
     rarity: 0,
     houses: ["Paladins"],
     trigger: Fire(

@@ -1,14 +1,14 @@
 #![enable(implicit_some)]
 (
     name: "Leech",
-    hp: 4,
+    hp: 2,
     pwr: 1,
     rarity: 1,
     houses: ["Vampires"],
     trigger: Fire(
         triggers: [(AfterDamageDealt, None)],
         targets: [(Target, None)],
-        effects: [(UseAbility("Siphon", 2), None)],
+        effects: [(UseAbility("Siphon", 1), None)],
     ),
     representation: (
         material: Shape(

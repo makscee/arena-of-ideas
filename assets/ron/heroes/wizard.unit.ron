@@ -1,9 +1,10 @@
 #![enable(implicit_some)]
 (
     name: "Wizard",
-    hp: 3,
+    hp: 1,
     pwr: 1,
     houses: ["Mages"],
+    rarity: 1,
     trigger: Fire(
         triggers: [(TurnEnd, None)],
         targets: [(RandomUnit(AllEnemyUnits), None)],

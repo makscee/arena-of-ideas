@@ -1,14 +1,14 @@
 #![enable(implicit_some)]
 (
     name: "Ganger",
-    hp: 2,
+    hp: 3,
     pwr: 1,
     rarity: 0,
     houses: ["Mages"],
     trigger: Fire(
         triggers: [(EnemySummon, None)],
         targets: [(Caster, None)],
-        effects: [(UseAbility("Magic Missile", 0), None)],
+        effects: [(UseAbility("Magic Missile", 1), None)],
     ),
     representation: (
         material: Shape(

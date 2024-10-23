@@ -8,7 +8,7 @@
     trigger: Fire(
         triggers: [(Period(0, 4, TurnEnd), "every 5 turns")],
         targets: [(AllEnemyUnits, None)],
-        effects: [(UseAbility("Plague", 0), None)],
+        effects: [(UseAbility("Plague", 2), None)],
     ),
     representation: (
         material: Shape(

@@ -8,7 +8,7 @@
     trigger: Fire(
         triggers: [(OnceAfter(4, TurnEnd), "in 5 turns")],
         targets: [],
-        effects: [(UseAbility("Summon Treant", 2), None)],
+        effects: [(Repeat(I(3), UseAbility("Summon Treant", 0)), Some("[Summon Treant] 3 times"))],
     ),
     representation: (
         material: Shape(

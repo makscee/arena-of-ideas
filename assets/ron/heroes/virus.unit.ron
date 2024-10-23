@@ -1,7 +1,7 @@
 #![enable(implicit_some)]
 (
     name: "Virus",
-    hp: 3,
+    hp: 2,
     pwr: 0,
     rarity: 1,
     houses: ["Death Knights"],

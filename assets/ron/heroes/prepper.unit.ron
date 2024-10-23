@@ -3,15 +3,15 @@
     name: "Prepper",
     hp: 1,
     pwr: 1,
-    rarity: 0,
+    rarity: 2,
     houses: ["Medics"],
     trigger: Fire(
         triggers: [(BattleStart, None)],
         targets: [(SlotUnit(I(0)), "front ally")],
         effects: [
             (
-                WithVar(Lvl, Mul(ListCount(AllUnits), Context(Lvl)), UseAbility("Vitality", 0)),
-                "use [Vitality] ({Lvl}) per unit in battle",
+                WithVar(Lvl, Mul(ListCount(AllAllyUnits), Context(Lvl)), UseAbility("Vitality", 0)),
+                "use [Vitality] ({Lvl}) per ally",
             ),
         ],
     ),

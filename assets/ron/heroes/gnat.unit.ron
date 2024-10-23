@@ -3,7 +3,7 @@
     name: "Gnat",
     hp: 1,
     pwr: 1,
-    rarity: 1,
+    rarity: 2,
     houses: ["Vampires"],
     trigger: Fire(
         triggers: [(TurnEnd, None)],

@@ -2,11 +2,11 @@
 (
     name: "Hag",
     hp: 2,
-    pwr: 2,
+    pwr: 3,
     rarity: 2,
     houses: ["Witches"],
     trigger: Fire(
-        triggers: [(BattleStart, None)],
+        triggers: [(BeforeDeath, None)],
         targets: [(AllEnemyUnits, None)],
         effects: [(UseAbility("Weakness", 0), None)],
     ),

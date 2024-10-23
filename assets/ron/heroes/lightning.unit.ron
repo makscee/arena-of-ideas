@@ -1,14 +1,14 @@
 #![enable(implicit_some)]
 (
     name: "Lightning",
-    hp: 1,
-    pwr: 1,
+    hp: 3,
+    pwr: 3,
     rarity: 3,
     houses: ["Robots"],
     trigger: Fire(
         triggers: [(BattleStart, None)],
         targets: [(AllUnits, None)],
-        effects: [(UseAbility("Charge", 0), None)],
+        effects: [(UseAbility("Charge", 3), None)],
     ),
     representation: (
         material: Shape(

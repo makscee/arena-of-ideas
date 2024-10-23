@@ -1,9 +1,9 @@
 #![enable(implicit_some)]
 (
     name: "Gardener",
-    hp: 5,
+    hp: 4,
     pwr: 1,
-    rarity: 2,
+    rarity: 1,
     houses: ["Druids"],
     trigger: Fire(
         triggers: [(TurnEnd, None)],

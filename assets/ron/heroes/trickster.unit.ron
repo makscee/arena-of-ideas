@@ -1,9 +1,9 @@
 #![enable(implicit_some)]
 (
     name: "Trickster",
-    hp: 3,
+    hp: 2,
     pwr: 1,
-    rarity: 0,
+    rarity: 1,
     houses: ["Rogues"],
     trigger: Fire(
         triggers: [(BeforeStrike, None)],

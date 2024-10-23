@@ -1,14 +1,14 @@
 #![enable(implicit_some)]
 (
     name: "Fighter",
-    hp: 1,
-    pwr: 1,
+    hp: 2,
+    pwr: 0,
     rarity: 0,
     houses: ["Warriors"],
     trigger: Fire(
         triggers: [(BeforeStrike, None)],
         targets: [(Owner, None)],
-        effects: [(UseAbility("Strength", 3), None)],
+        effects: [(UseAbility("Strength", 0), None)],
     ),
     representation: (
         material: Shape(

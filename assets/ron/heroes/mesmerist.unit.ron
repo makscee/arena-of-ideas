@@ -2,8 +2,8 @@
 (
     name: "Mesmerist",
     hp: 1,
-    pwr: 3,
-    rarity: 0,
+    pwr: 1,
+    rarity: 1,
     houses: ["Meta"],
     trigger: Fire(
         triggers: [(BattleStart, None)],

@@ -3,7 +3,7 @@
     name: "Inciter",
     hp: 2,
     pwr: 2,
-    rarity: 2,
+    rarity: 1,
     houses: ["Meta"],
     trigger: Fire(
         triggers: [(AllyDeath, None)],

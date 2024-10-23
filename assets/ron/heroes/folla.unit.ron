@@ -6,7 +6,7 @@
     rarity: 1,
     houses: ["Dragons"],
     trigger: Fire(
-        triggers: [(BeforeStrike, None)],
+        triggers: [(AfterStrike, None)],
         targets: [(Owner, None)],
         effects: [(UseAbility("Grow", 1), None)],
     ),

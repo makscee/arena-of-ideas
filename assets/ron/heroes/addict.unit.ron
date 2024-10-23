@@ -3,12 +3,12 @@
     name: "Addict",
     hp: 1,
     pwr: 3,
-    rarity: 1,
+    rarity: 0,
     houses: ["Rogues"],
     trigger: Fire(
         triggers: [(BattleStart, None)],
         targets: [(AdjacentUnits, None)],
-        effects: [(UseAbility("Rob", 1), None)],
+        effects: [(UseAbility("Rob", 3), None)],
     ),
     representation: (
         material: Shape(

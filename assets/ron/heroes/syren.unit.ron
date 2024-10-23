@@ -1,14 +1,14 @@
 #![enable(implicit_some)]
 (
     name: "Syren",
-    hp: 1,
-    pwr: 3,
-    rarity: 0,
+    hp: 2,
+    pwr: 1,
+    rarity: 1,
     houses: ["Witches"],
     trigger: Fire(
         triggers: [(BeforeStrike, None)],
         targets: [(Target, None)],
-        effects: [(UseAbility("Weakness", 1), None)],
+        effects: [(UseAbility("Weakness", 0), None)],
     ),
     representation: (
         material: Curve(

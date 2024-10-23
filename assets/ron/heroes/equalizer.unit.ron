@@ -1,14 +1,14 @@
 #![enable(implicit_some)]
 (
     name: "Equalizer",
-    hp: 2,
-    pwr: 1,
+    hp: 4,
+    pwr: 2,
     rarity: 3,
     houses: ["Alchemists"],
     trigger: Fire(
         triggers: [(BattleStart, None)],
         targets: [(AllUnits, None)],
-        effects: [(UseAbility("Petrify", 0), None)],
+        effects: [(UseAbility("Petrify", 3), None)],
     ),
     representation: (
         material: None,

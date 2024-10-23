@@ -1,9 +1,9 @@
 #![enable(implicit_some)]
 (
     name: "Bloodthinner",
-    hp: 2,
-    pwr: 2,
-    rarity: 0,
+    hp: 3,
+    pwr: 1,
+    rarity: 1,
     houses: ["Vampires"],
     trigger: Fire(
         triggers: [(BattleStart, None)],

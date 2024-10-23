@@ -1,9 +1,9 @@
 #![enable(implicit_some)]
 (
     name: "Doppelganger",
-    hp: 2,
+    hp: 6,
     pwr: 3,
-    rarity: 1,
+    rarity: 2,
     houses: ["Shifters"],
     trigger: Fire(
         triggers: [(BattleStart, None)],

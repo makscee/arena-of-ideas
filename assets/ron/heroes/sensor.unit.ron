@@ -1,12 +1,12 @@
 #![enable(implicit_some)]
 (
     name: "Sensor",
-    hp: 4,
+    hp: 3,
     pwr: 1,
     rarity: 0,
     houses: ["Rogues"],
     trigger: Fire(
-        triggers: [(BeforeStrike, None)],
+        triggers: [(AfterStrike, None)],
         targets: [(Target, None)],
         effects: [(UseAbility("Expose", 0), None)],
     ),

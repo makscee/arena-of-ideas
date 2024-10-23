@@ -1,14 +1,14 @@
 #![enable(implicit_some)]
 (
     name: "Rot",
-    hp: 5,
+    hp: 3,
     pwr: 0,
-    rarity: 0,
+    rarity: 1,
     houses: ["Death Knights"],
     trigger: Fire(
         triggers: [(AfterStrike, None)],
         targets: [(RandomUnit(AllEnemyUnits), None)],
-        effects: [(UseAbility("Decay", 1), None)],
+        effects: [(UseAbility("Decay", 0), None)],
     ),
     representation: (
         material: Shape(
