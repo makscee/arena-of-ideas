@@ -45,6 +45,9 @@ impl AuctionResource {
 }
 
 impl MetaPlugin {
+    pub fn can_balance_vote() -> bool {
+        TUnitBalance::filter_by_owner(user_id()).count() < game_assets().heroes.len()
+    }
     fn get_next_for_balancing(world: &mut World) {
         world.game_clear();
         TableState::reset_cache(&egui_context(world).unwrap());
@@ -57,6 +60,8 @@ impl MetaPlugin {
                 None,
                 world,
             );
+        } else {
+            br.current = default();
         }
     }
     fn skip_balancing(world: &mut World) {
@@ -472,7 +477,11 @@ impl MetaPlugin {
                 .transparent()
                 .push(world);
                 Tile::new(Side::Bottom, |ui, world| {
-                    brm(world).vote = None;
+                    let mut r = brm(world);
+                    r.vote = None;
+                    if r.current.is_empty() {
+                        return;
+                    }
                     ui.horizontal_centered(|ui| {
                         Middle3::default().width(200.0).ui_mut(
                             ui,

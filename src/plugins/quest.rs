@@ -3,14 +3,27 @@ use super::*;
 pub struct QuestPlugin;
 
 impl QuestPlugin {
+    pub fn new_available() -> bool {
+        global_settings().quest.daily_limit as usize
+            > TDailyState::get_current()
+                .map(|ds| ds.quests_taken.len())
+                .unwrap_or_default()
+    }
     pub fn add_tiles(world: &mut World) {
         Tile::new(Side::Left, |ui, world| {
             let quests_taken = TDailyState::get_current()
                 .map(|ds| ds.quests_taken)
                 .unwrap_or_default();
-            if global_settings().quest.daily_limit as usize > quests_taken.len() {
-                Table::new("New Quests")
-                    .title()
+            let taken = quests_taken.len();
+            let limit = global_settings().quest.daily_limit as usize;
+            if limit > taken {
+                title("New Quests", ui);
+                ui.vertical_centered_justified(|ui| {
+                    format!("Taken {taken}/{limit}")
+                        .cstr_cs(VISIBLE_BRIGHT, CstrStyle::Heading2)
+                        .label(ui);
+                });
+                Table::new("new quests")
                     .column_cstr("quest", |d: &TQuest, _| d.cstr())
                     .column_btn("accept", |d, _, _| {
                         quest_accept(d.id);

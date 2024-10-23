@@ -323,22 +323,24 @@ impl ShopPlugin {
         .push(world);
         Tile::new(Side::Right, |ui, world| {
             let run = TArenaRun::current();
-            let btn_text = "Start Battle".to_string();
-            if Button::click(btn_text).ui(ui).clicked() {
-                shop_finish();
-                once_on_shop_finish(|_, _, status| {
-                    status.on_success(|w| GameState::ShopBattle.proceed_to_target(w))
-                });
-            }
-            if let Some(champion) = run.champion {
-                ui.vertical_centered_justified(|ui| {
-                    ui.add_space(30.0);
-                    "Champion Battle".cstr_cs(YELLOW, CstrStyle::Bold).label(ui);
-                    champion.get_team().hover_label(ui, world);
-                });
-            } else if run.replenish_lives > 0 {
-                "Win for +1 life".cstr_cs(GREEN, CstrStyle::Bold).label(ui);
-            }
+            ui.horizontal_centered(|ui| {
+                let btn_text = "Start Battle".to_string();
+                if Button::click(btn_text).ui(ui).clicked() {
+                    shop_finish();
+                    once_on_shop_finish(|_, _, status| {
+                        status.on_success(|w| GameState::ShopBattle.proceed_to_target(w))
+                    });
+                }
+                if let Some(champion) = run.champion {
+                    ui.vertical_centered_justified(|ui| {
+                        ui.add_space(30.0);
+                        "Champion Battle".cstr_cs(YELLOW, CstrStyle::Bold).label(ui);
+                        champion.get_team().hover_label(ui, world);
+                    });
+                } else if run.replenish_lives > 0 {
+                    "Win for +1 life".cstr_cs(GREEN, CstrStyle::Bold).label(ui);
+                }
+            });
         })
         .transparent()
         .non_focusable()

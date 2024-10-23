@@ -28,6 +28,23 @@ impl TitlePlugin {
                     .with_id("Settings".into())
                     .push(world);
                 }
+                if QuestPlugin::new_available()
+                    && Button::click("New Quests")
+                        .cstr("New Quests".cstr_rainbow())
+                        .color(CYAN, ui)
+                        .ui(ui)
+                        .clicked()
+                {
+                    GameState::Quests.proceed_to_target(world);
+                }
+                if MetaPlugin::can_balance_vote()
+                    && Button::click("Vote to earn credits")
+                        .color(YELLOW, ui)
+                        .ui(ui)
+                        .clicked()
+                {
+                    GameState::MetaBalancing.proceed_to_target(world);
+                }
             });
         })
         .min_space(egui::vec2(200.0, 0.0))

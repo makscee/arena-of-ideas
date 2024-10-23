@@ -83,7 +83,9 @@ impl GameAssets {
             .expect("Assets not synced");
         let mut heroes: HashMap<String, PackedUnit> = default();
         for unit in TBaseUnit::iter() {
-            heroes.insert(unit.name.clone(), unit.into());
+            if unit.rarity >= 0 {
+                heroes.insert(unit.name.clone(), unit.into());
+            }
         }
         let mut houses: HashMap<String, House> = default();
         for house in THouse::iter() {
