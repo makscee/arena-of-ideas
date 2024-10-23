@@ -89,6 +89,9 @@ impl ActionPlugin {
             }
             let mut actions_added = false;
             while let Some((event, context)) = Self::pop_event(world) {
+                if Self::deafness(world) {
+                    continue;
+                }
                 if event.process(context, world) {
                     gt().advance_insert(0.2);
                     actions_added = true;
@@ -104,6 +107,16 @@ impl ActionPlugin {
         }
         rm(world).rng = None;
         Ok(processed)
+    }
+    fn deafness(world: &mut World) -> bool {
+        let mut r = rm(world);
+        let chain = r.chain;
+        let chance = ((chain as f64 - 1000.0) / 200.0).clamp(0.0, 1.0);
+        if let Some(rng) = r.rng.as_mut() {
+            rng.gen_bool(chance)
+        } else {
+            thread_rng().gen_bool(chance)
+        }
     }
     pub fn clear_dead(world: &mut World) -> bool {
         let dead = UnitPlugin::run_death_check(world);
