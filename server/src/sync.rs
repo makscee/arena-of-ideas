@@ -89,49 +89,25 @@ fn upload_assets(
 #[spacetimedb(reducer)]
 fn upload_game_archive(
     ctx: ReducerContext,
-    global_settings: Option<GlobalSettings>,
-    global_data: Option<GlobalData>,
+    next_id: u64,
     users: Vec<TUser>,
-    base_units: Vec<TBaseUnit>,
-    houses: Vec<THouse>,
-    abilities: Vec<TAbility>,
-    statuses: Vec<TStatus>,
-    representations: Vec<TRepresentation>,
-    arena_runs: Vec<TArenaRun>,
     arena_runs_archive: Vec<TArenaRunArchive>,
     arena_leaderboard: Vec<TArenaLeaderboard>,
     teams: Vec<TTeam>,
     battles: Vec<TBattle>,
+    wallets: Vec<TWallet>,
+    unit_items: Vec<TUnitItem>,
+    unit_shards: Vec<TUnitShardItem>,
+    lootboxes: Vec<TLootboxItem>,
 ) -> Result<(), String> {
     ctx.is_admin()?;
-    if let Some(global_settings) = global_settings {
-        replace_assets(
-            global_settings,
-            representations,
-            base_units,
-            houses,
-            abilities,
-            statuses,
-        )?;
-    }
-    if let Some(data) = global_data {
-        GlobalData::delete_by_always_zero(&0);
-        GlobalData::insert(data)?;
-    }
+    GlobalData::set_next_id(next_id);
     if !users.is_empty() {
         for d in TUser::iter() {
             d.delete();
         }
         for d in users {
             TUser::insert(d)?;
-        }
-    }
-    if !arena_runs.is_empty() {
-        for d in TArenaRun::iter() {
-            d.delete();
-        }
-        for d in arena_runs {
-            TArenaRun::insert(d)?;
         }
     }
     if !arena_runs_archive.is_empty() {
@@ -164,6 +140,38 @@ fn upload_game_archive(
         }
         for d in battles {
             TBattle::insert(d)?;
+        }
+    }
+    if !wallets.is_empty() {
+        for d in TWallet::iter() {
+            d.delete();
+        }
+        for d in wallets {
+            TWallet::insert(d)?;
+        }
+    }
+    if !unit_items.is_empty() {
+        for d in TUnitItem::iter() {
+            d.delete();
+        }
+        for d in unit_items {
+            TUnitItem::insert(d)?;
+        }
+    }
+    if !unit_shards.is_empty() {
+        for d in TUnitShardItem::iter() {
+            d.delete();
+        }
+        for d in unit_shards {
+            TUnitShardItem::insert(d)?;
+        }
+    }
+    if !lootboxes.is_empty() {
+        for d in TLootboxItem::iter() {
+            d.delete();
+        }
+        for d in lootboxes {
+            TLootboxItem::insert(d)?;
         }
     }
 

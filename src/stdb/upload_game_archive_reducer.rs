@@ -2,19 +2,15 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN RUST INSTEAD.
 
 #![allow(unused_imports)]
-use super::global_data::GlobalData;
-use super::global_settings::GlobalSettings;
-use super::t_ability::TAbility;
 use super::t_arena_leaderboard::TArenaLeaderboard;
-use super::t_arena_run::TArenaRun;
 use super::t_arena_run_archive::TArenaRunArchive;
-use super::t_base_unit::TBaseUnit;
 use super::t_battle::TBattle;
-use super::t_house::THouse;
-use super::t_representation::TRepresentation;
-use super::t_status::TStatus;
+use super::t_lootbox_item::TLootboxItem;
 use super::t_team::TTeam;
+use super::t_unit_item::TUnitItem;
+use super::t_unit_shard_item::TUnitShardItem;
 use super::t_user::TUser;
+use super::t_wallet::TWallet;
 use spacetimedb_sdk::{
     anyhow::{anyhow, Result},
     identity::Identity,
@@ -27,19 +23,16 @@ use spacetimedb_sdk::{
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct UploadGameArchiveArgs {
-    pub global_settings: Option<GlobalSettings>,
-    pub global_data: Option<GlobalData>,
+    pub next_id: u64,
     pub users: Vec<TUser>,
-    pub base_units: Vec<TBaseUnit>,
-    pub houses: Vec<THouse>,
-    pub abilities: Vec<TAbility>,
-    pub statuses: Vec<TStatus>,
-    pub representations: Vec<TRepresentation>,
-    pub arena_runs: Vec<TArenaRun>,
     pub arena_runs_archive: Vec<TArenaRunArchive>,
     pub arena_leaderboard: Vec<TArenaLeaderboard>,
     pub teams: Vec<TTeam>,
     pub battles: Vec<TBattle>,
+    pub wallets: Vec<TWallet>,
+    pub unit_items: Vec<TUnitItem>,
+    pub unit_shards: Vec<TUnitShardItem>,
+    pub lootboxes: Vec<TLootboxItem>,
 }
 
 impl Reducer for UploadGameArchiveArgs {
@@ -48,34 +41,28 @@ impl Reducer for UploadGameArchiveArgs {
 
 #[allow(unused)]
 pub fn upload_game_archive(
-    global_settings: Option<GlobalSettings>,
-    global_data: Option<GlobalData>,
+    next_id: u64,
     users: Vec<TUser>,
-    base_units: Vec<TBaseUnit>,
-    houses: Vec<THouse>,
-    abilities: Vec<TAbility>,
-    statuses: Vec<TStatus>,
-    representations: Vec<TRepresentation>,
-    arena_runs: Vec<TArenaRun>,
     arena_runs_archive: Vec<TArenaRunArchive>,
     arena_leaderboard: Vec<TArenaLeaderboard>,
     teams: Vec<TTeam>,
     battles: Vec<TBattle>,
+    wallets: Vec<TWallet>,
+    unit_items: Vec<TUnitItem>,
+    unit_shards: Vec<TUnitShardItem>,
+    lootboxes: Vec<TLootboxItem>,
 ) {
     UploadGameArchiveArgs {
-        global_settings,
-        global_data,
+        next_id,
         users,
-        base_units,
-        houses,
-        abilities,
-        statuses,
-        representations,
-        arena_runs,
         arena_runs_archive,
         arena_leaderboard,
         teams,
         battles,
+        wallets,
+        unit_items,
+        unit_shards,
+        lootboxes,
     }
     .invoke();
 }
@@ -86,55 +73,46 @@ pub fn on_upload_game_archive(
             &Identity,
             Option<Address>,
             &Status,
-            &Option<GlobalSettings>,
-            &Option<GlobalData>,
+            &u64,
             &Vec<TUser>,
-            &Vec<TBaseUnit>,
-            &Vec<THouse>,
-            &Vec<TAbility>,
-            &Vec<TStatus>,
-            &Vec<TRepresentation>,
-            &Vec<TArenaRun>,
             &Vec<TArenaRunArchive>,
             &Vec<TArenaLeaderboard>,
             &Vec<TTeam>,
             &Vec<TBattle>,
+            &Vec<TWallet>,
+            &Vec<TUnitItem>,
+            &Vec<TUnitShardItem>,
+            &Vec<TLootboxItem>,
         ) + Send
         + 'static,
 ) -> ReducerCallbackId<UploadGameArchiveArgs> {
     UploadGameArchiveArgs::on_reducer(move |__identity, __addr, __status, __args| {
         let UploadGameArchiveArgs {
-            global_settings,
-            global_data,
+            next_id,
             users,
-            base_units,
-            houses,
-            abilities,
-            statuses,
-            representations,
-            arena_runs,
             arena_runs_archive,
             arena_leaderboard,
             teams,
             battles,
+            wallets,
+            unit_items,
+            unit_shards,
+            lootboxes,
         } = __args;
         __callback(
             __identity,
             __addr,
             __status,
-            global_settings,
-            global_data,
+            next_id,
             users,
-            base_units,
-            houses,
-            abilities,
-            statuses,
-            representations,
-            arena_runs,
             arena_runs_archive,
             arena_leaderboard,
             teams,
             battles,
+            wallets,
+            unit_items,
+            unit_shards,
+            lootboxes,
         );
     })
 }
@@ -145,55 +123,46 @@ pub fn once_on_upload_game_archive(
             &Identity,
             Option<Address>,
             &Status,
-            &Option<GlobalSettings>,
-            &Option<GlobalData>,
+            &u64,
             &Vec<TUser>,
-            &Vec<TBaseUnit>,
-            &Vec<THouse>,
-            &Vec<TAbility>,
-            &Vec<TStatus>,
-            &Vec<TRepresentation>,
-            &Vec<TArenaRun>,
             &Vec<TArenaRunArchive>,
             &Vec<TArenaLeaderboard>,
             &Vec<TTeam>,
             &Vec<TBattle>,
+            &Vec<TWallet>,
+            &Vec<TUnitItem>,
+            &Vec<TUnitShardItem>,
+            &Vec<TLootboxItem>,
         ) + Send
         + 'static,
 ) -> ReducerCallbackId<UploadGameArchiveArgs> {
     UploadGameArchiveArgs::once_on_reducer(move |__identity, __addr, __status, __args| {
         let UploadGameArchiveArgs {
-            global_settings,
-            global_data,
+            next_id,
             users,
-            base_units,
-            houses,
-            abilities,
-            statuses,
-            representations,
-            arena_runs,
             arena_runs_archive,
             arena_leaderboard,
             teams,
             battles,
+            wallets,
+            unit_items,
+            unit_shards,
+            lootboxes,
         } = __args;
         __callback(
             __identity,
             __addr,
             __status,
-            global_settings,
-            global_data,
+            next_id,
             users,
-            base_units,
-            houses,
-            abilities,
-            statuses,
-            representations,
-            arena_runs,
             arena_runs_archive,
             arena_leaderboard,
             teams,
             battles,
+            wallets,
+            unit_items,
+            unit_shards,
+            lootboxes,
         );
     })
 }

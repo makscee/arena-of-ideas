@@ -35,6 +35,11 @@ impl GlobalData {
         GlobalData::update_by_always_zero(&0, gd);
         id
     }
+    pub fn set_next_id(value: u64) {
+        let mut gd = GlobalData::filter_by_always_zero(&0).unwrap();
+        gd.next_id = value;
+        GlobalData::update_by_always_zero(&0, gd);
+    }
 
     pub fn get() -> Self {
         GlobalData::filter_by_always_zero(&0).unwrap()
