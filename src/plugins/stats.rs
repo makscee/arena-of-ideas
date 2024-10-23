@@ -17,6 +17,7 @@ struct StatsResource {
 #[derive(Clone)]
 struct HeroStat {
     name: String,
+    rarity: Rarity,
     cnt: i32,
     percent: f32,
 }
@@ -56,6 +57,7 @@ impl StatsPlugin {
             hero_stats: units
                 .into_iter()
                 .map(|(name, cnt)| HeroStat {
+                    rarity: Rarity::from_base(&name),
                     name,
                     cnt,
                     percent: cnt as f32 / total_units as f32 * 100.0,
@@ -79,8 +81,13 @@ impl StatsPlugin {
             world.resource_scope(|world, r: Mut<StatsResource>| {
                 Table::new("Hero Stats")
                     .column_base_unit("hero", |d: &HeroStat| d.name.clone())
+                    .column_rarity(|d| d.rarity as i32)
                     .column_int("cnt", |d| d.cnt)
                     .column_float("percent", |d| d.percent)
+                    .filter("Common", "rarity", 0.into())
+                    .filter("Rare", "rarity", 1.into())
+                    .filter("Epic", "rarity", 2.into())
+                    .filter("Legendary", "rarity", 3.into())
                     .ui(&r.hero_stats, ui, world);
             });
         })
