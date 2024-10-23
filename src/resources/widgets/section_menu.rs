@@ -64,6 +64,12 @@ impl Default for SectionMenu {
                     options: [GameOption::Login].into(),
                 },
                 GameSection {
+                    name: "STATS",
+                    target_state: GameState::Stats,
+                    inner_states: default(),
+                    options: [GameOption::Login].into(),
+                },
+                GameSection {
                     name: "EDITOR",
                     target_state: GameState::Editor,
                     inner_states: default(),

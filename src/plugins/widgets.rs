@@ -86,7 +86,7 @@ impl WidgetsPlugin {
                         ui.label(format!("fps: {fps:.0}"));
                     }
                 }
-                format!("arena-of-ideas {VERSION}").cstr().label(ui);
+                VERSION.cstr().label(ui);
                 current_server().1.cstr().bold().label(ui);
             });
 

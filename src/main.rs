@@ -127,7 +127,6 @@ fn main() {
             TeamSyncPlugin,
             AudioPlugin,
             MetaPlugin,
-            UnitEditorPlugin,
             EditorPlugin,
             ConfirmationPlugin,
         ))

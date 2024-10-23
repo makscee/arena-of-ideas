@@ -34,10 +34,9 @@ pub enum GameState {
     Error,
     Teams,
     TeamEditor,
-    UnitEditor,
-
     Editor,
     Quests,
+    Stats,
 }
 
 static TARGET_STATE: Mutex<GameState> = Mutex::new(GameState::Loaded);
@@ -83,10 +82,6 @@ lazy_static! {
         m.insert(
             GameState::GameArchiveDownload,
             [GameOption::Connect, GameOption::Table(StdbQuery::GameFull)].into(),
-        );
-        m.insert(
-            GameState::UnitEditor,
-            [GameOption::Connect, GameOption::ForceLogin].into(),
         );
         m
     };

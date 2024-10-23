@@ -275,7 +275,6 @@ impl TilePlugin {
             GameState::GameStart => GameStartPlugin::add_tiles(world),
             GameState::Title => TitlePlugin::add_tiles(world),
             GameState::Teams | GameState::TeamEditor => TeamPlugin::add_tiles(to, world),
-            GameState::UnitEditor => UnitEditorPlugin::add_tiles(world),
             GameState::Editor => EditorPlugin::add_tiles(world),
             GameState::Quests => QuestPlugin::add_tiles(world),
             _ => {}
