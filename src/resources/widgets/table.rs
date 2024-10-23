@@ -199,6 +199,23 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
     pub fn column_int(self, name: &'static str, value: fn(&T) -> i32) -> Self {
         self.column_int_dyn(name, Box::new(value))
     }
+    pub fn column_float_dyn(mut self, name: &'static str, value: Box<dyn Fn(&T) -> f32>) -> Self {
+        self.columns.insert(
+            name,
+            TableColumn {
+                value: Box::new(move |d, _| value(d).into()),
+                show: Box::new(|_, v, ui, _| {
+                    v.cstr().label(ui);
+                }),
+                sortable: true,
+                hide_name: false,
+            },
+        );
+        self
+    }
+    pub fn column_float(self, name: &'static str, value: fn(&T) -> f32) -> Self {
+        self.column_float_dyn(name, Box::new(value))
+    }
     pub fn column_gid(mut self, name: &'static str, value: fn(&T) -> u64) -> Self {
         self.columns.insert(
             name,

@@ -129,6 +129,7 @@ fn main() {
             MetaPlugin,
             EditorPlugin,
             ConfirmationPlugin,
+            StatsPlugin,
         ))
         .init_state::<GameState>()
         .init_resource::<NotificationsResource>()
