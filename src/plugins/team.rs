@@ -29,6 +29,16 @@ impl Plugin for TeamPlugin {
 }
 
 impl TeamPlugin {
+    pub fn team_entity_faction(entity: Entity, world: &World) -> Option<Faction> {
+        world
+            .resource::<TeamResource>()
+            .entities
+            .iter()
+            .find_map(|(k, v)| match entity.eq(v) {
+                true => Some(*k),
+                false => None,
+            })
+    }
     pub fn unit_faction(entity: Entity, world: &World) -> Faction {
         let team = entity.get_parent(world).unwrap();
         for (faction, entity) in world.resource::<TeamResource>().entities.iter() {

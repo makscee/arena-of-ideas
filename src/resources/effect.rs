@@ -278,7 +278,7 @@ impl Effect {
                     .get_int()?;
                 unit.pwr += extra_pwr;
                 unit.hp += extra_hp;
-                let unit = unit.unpack(TeamPlugin::entity(faction, world), None, None, world);
+                let unit = unit.unpack(TeamPlugin::entity(faction, world), Some(0), None, world);
                 UnitPlugin::fill_gaps_and_translate(world);
                 if let Some(then) = then {
                     ActionPlugin::action_push_front(
