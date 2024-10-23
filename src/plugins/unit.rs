@@ -145,7 +145,7 @@ impl UnitPlugin {
                     .move_to_slot
                     .clone()
                     .apply(Context::new(unit), world)
-                    .unwrap(),
+                    .unwrap_or_default(),
             );
         }
         gt().advance_insert(shift);
