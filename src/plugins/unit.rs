@@ -42,13 +42,14 @@ impl UnitPlugin {
         let context = Context::new(entity);
         context
             .get_value(VarName::Hp, world)
-            .unwrap()
+            .unwrap_or_default()
             .get_int()
             .unwrap()
             <= context
                 .get_value(VarName::Dmg, world)
-                .map(|v| v.get_int().unwrap_or_default())
                 .unwrap_or_default()
+                .get_int()
+                .unwrap()
     }
     pub fn turn_into_corpse(entity: Entity, world: &mut World) {
         debug!("Turn {entity} into corpse");

@@ -604,16 +604,18 @@ impl TArenaRun {
             self.add_reward(
                 format!("Streak {}", self.streak),
                 (1..=self.streak as i64).sum(),
+                0,
             );
         }
         self.streak = 0;
     }
-    fn add_reward(&mut self, source: String, mut amount: i64) {
+    fn add_reward(&mut self, source: String, mut amount: i64, min_mul: i64) {
         amount *= match self.mode {
-            GameMode::ArenaNormal => 1,
-            GameMode::ArenaRanked => 2,
-            GameMode::ArenaConst(_) => 3,
-        };
+            GameMode::ArenaNormal => 0,
+            GameMode::ArenaRanked => 1,
+            GameMode::ArenaConst(_) => 2,
+        }
+        .max(min_mul);
         self.rewards.push(Reward { source, amount });
     }
     fn champion_reached(&self) -> bool {
@@ -630,7 +632,7 @@ impl TArenaRun {
                 .map(|b| b.result.is_win())
                 .unwrap_or_default()
             {
-                self.add_reward("Champion Defeated".into(), self.floor as i64 * 4 + 10);
+                self.add_reward("Champion Defeated".into(), self.floor as i64 * 4 + 10, 1);
                 TArenaLeaderboard::insert(TArenaLeaderboard::new(
                     self.mode.clone(),
                     self.floor + 1,

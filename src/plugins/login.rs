@@ -77,6 +77,9 @@ impl LoginPlugin {
                 let before = before.clone();
                 let after = after.clone();
                 OperationsPlugin::add(move |world| {
+                    if before.complete && after.complete {
+                        return;
+                    }
                     if before.counter < after.counter {
                         ShopPlugin::maybe_queue_notification(
                             "Quest Progress:\n"

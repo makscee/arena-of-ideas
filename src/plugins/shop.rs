@@ -67,8 +67,10 @@ impl ShopPlugin {
         sd.callback = Some(cb);
     }
     fn exit(world: &mut World) {
+        debug!("Shop exit");
         world.game_clear();
         if let Some(cb) = rm(world).callback.take() {
+            debug!("Unsubscribe shop updater");
             TArenaRun::remove_on_update(cb);
         }
     }
@@ -311,32 +313,23 @@ impl ShopPlugin {
         }
     }
     pub fn add_tiles(world: &mut World) {
-        Tile::new(Side::Left, |ui, _| {
+        Tile::new(Side::Right, |ui, world| {
             text_dots_text("name".cstr(), user_name().cstr_c(VISIBLE_BRIGHT), ui);
             if let Some(run) = TArenaRun::get_current() {
                 Self::show_stats(&run, ui);
             }
-        })
-        .transparent()
-        .pinned()
-        .non_focusable()
-        .push(world);
-        Tile::new(Side::Right, |ui, world| {
+            ui.add_space(40.0);
             let run = TArenaRun::current();
-            ui.horizontal_centered(|ui| {
-                let btn_text = "Start Battle".to_string();
-                if Button::click(btn_text).ui(ui).clicked() {
+            ui.vertical(|ui| {
+                if Button::click("Start Battle").ui(ui).clicked() {
                     shop_finish();
                     once_on_shop_finish(|_, _, status| {
                         status.on_success(|w| GameState::ShopBattle.proceed_to_target(w))
                     });
                 }
                 if let Some(champion) = run.champion {
-                    ui.vertical_centered_justified(|ui| {
-                        ui.add_space(30.0);
-                        "Champion Battle".cstr_cs(YELLOW, CstrStyle::Bold).label(ui);
-                        champion.get_team().hover_label(ui, world);
-                    });
+                    "Champion Battle".cstr_cs(YELLOW, CstrStyle::Bold).label(ui);
+                    champion.get_team().hover_label(ui, world);
                 } else if run.replenish_lives > 0 {
                     "Win for +1 life".cstr_cs(GREEN, CstrStyle::Bold).label(ui);
                 }
