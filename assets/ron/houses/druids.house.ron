@@ -23,7 +23,7 @@
         (
             name: "Summon Treant",
             description: "Summon 0/3 unit with [Thorns] ({3})",
-            effect: Summon("Treant", ChangeStatus("Thorns")),
+            effect: Summon("Treant", WithOwner(Target, WithVar(Charges, I(3), ChangeStatus("Thorns")))),
         ),
     ],
     summons: [
@@ -53,7 +53,6 @@
                 mapping: {Rotation: Sin(Sum(Mul(GT, F(0.2)), Mul(Index, F(0.13))))},
                 count: 4,
             ),
-            statuses: [("Thorns", 2)],
         ),
     ],
 )
