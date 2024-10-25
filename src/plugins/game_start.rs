@@ -15,6 +15,7 @@ struct GameStartResource {
     game_modes: Vec<GameMode>,
     selected: usize,
     leaderboard: Vec<TArenaLeaderboard>,
+    selected_season: u32,
     runs: Vec<TArenaRunArchive>,
     show_leaderboard: bool,
     teams: Vec<TTeam>,
@@ -45,14 +46,14 @@ impl Default for GameStartResource {
                 .filter(|t| t.pool == TeamPool::Owned && !t.units.is_empty())
                 .collect_vec(),
             selected_team: 0,
+            selected_season: global_settings().season,
         }
     }
 }
 
 impl GameStartPlugin {
     pub fn add_tiles(world: &mut World) {
-        let gsr = rm(world);
-        Self::load_leaderboard(gsr.game_modes[gsr.selected].clone(), world);
+        Self::load_leaderboard(world);
         Tile::new(Side::Bottom, |ui, world| {
             ui.vertical_centered(|ui| {
                 let gsr = rm(world);
@@ -178,14 +179,14 @@ impl GameStartPlugin {
                                 let mut gsr = rm(world);
                                 gsr.selected = (gsr.selected + gsr.game_modes.len() - 1)
                                     % gsr.game_modes.len();
-                                Self::load_leaderboard(gsr.game_modes[gsr.selected].clone(), world);
+                                Self::load_leaderboard(world);
                             }
                         },
                         |ui, world| {
                             if Button::click(">").min_width(ARROW_WIDTH).ui(ui).clicked() {
                                 let mut gsr = rm(world);
                                 gsr.selected = (gsr.selected + 1) % gsr.game_modes.len();
-                                Self::load_leaderboard(gsr.game_modes[gsr.selected].clone(), world);
+                                Self::load_leaderboard(world);
                             }
                         },
                     );
@@ -194,6 +195,7 @@ impl GameStartPlugin {
         .pinned()
         .push(world);
         Tile::new(Side::Left, |ui, world| {
+            let mut need_reload = false;
             world.resource_scope(|world, mut gsr: Mut<GameStartResource>| {
                 ui.horizontal(|ui| {
                     if Button::click("Leaderboard")
@@ -212,11 +214,26 @@ impl GameStartPlugin {
                     }
                 });
                 if gsr.show_leaderboard {
+                    ui.horizontal(|ui| {
+                        for s in 0..=global_settings().season {
+                            if Button::click(format!("Season {s}"))
+                                .active(gsr.selected_season == s)
+                                .ui(ui)
+                                .clicked()
+                            {
+                                gsr.selected_season = s;
+                                need_reload = true;
+                            }
+                        }
+                    });
                     gsr.leaderboard.show_table("Leaderboard", ui, world);
                 } else {
                     gsr.runs.show_table("Runs", ui, world);
                 }
             });
+            if need_reload {
+                Self::load_leaderboard(world);
+            }
         })
         .pinned()
         .push(world);
@@ -285,15 +302,16 @@ impl GameStartPlugin {
         .push(world);
     }
 
-    fn load_leaderboard(game_mode: GameMode, world: &mut World) {
+    fn load_leaderboard(world: &mut World) {
         TableState::reset_cache(&egui_context(world).unwrap());
         let mut gsr = rm(world);
-        gsr.leaderboard = TArenaLeaderboard::iter()
-            .filter(|d| d.mode.eq(&game_mode))
+        let mode = gsr.game_modes[gsr.selected].clone();
+        gsr.leaderboard = TArenaLeaderboard::filter_by_season(gsr.selected_season)
+            .filter(|d| d.mode.eq(&mode))
             .sorted_by_key(|d| -(d.floor as i32))
             .collect_vec();
         gsr.runs = TArenaRunArchive::iter()
-            .filter(|d| d.mode.eq(&game_mode))
+            .filter(|d| d.mode.eq(&mode))
             .sorted_by_key(|d| -(d.id as i32))
             .collect_vec();
     }

@@ -26,7 +26,7 @@ impl TArenaLeaderboard {
         }
     }
     pub fn current_champion(mode: &GameMode) -> Option<Self> {
-        TArenaLeaderboard::iter()
+        TArenaLeaderboard::filter_by_season(&GlobalSettings::get().season)
             .filter(|d| d.mode.eq(mode))
             .max_by_key(|d| d.floor)
     }
