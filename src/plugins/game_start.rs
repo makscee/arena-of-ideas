@@ -268,7 +268,7 @@ impl GameStartPlugin {
             match game_mode {
                 GameMode::ArenaNormal => {
                     "1. Defeat as many enemies as possible\n\
-                    2. 3 lives, replenish on win every 5 floors\n\
+                    2. 4 lives, replenish on win every 5 floors\n\
                     3. Defeat current champion for a reward"
                         .cstr_c(VISIBLE_LIGHT)
                         .label(ui);
@@ -276,18 +276,19 @@ impl GameStartPlugin {
                 GameMode::ArenaRanked => {
                     "1. Start with own team\n\
                     2. Defeat as many enemies as possible\n\
-                    3. 3 lives, replenish on win every 5 floors\n\
+                    3. 4 lives, replenish on win every 5 floors\n\
                     4. Defeat current champion for a reward\n\
-                    5. Credits reward depending on win streak"
+                    5. Credits reward depending on win streak\n\
+                    6. No fee once a day"
                         .cstr_c(VISIBLE_LIGHT)
                         .label(ui);
                 }
                 GameMode::ArenaConst(_) => {
                     "1. Defeat as many enemies as possible\n\
-                    2. Entry fee growing every time, reset on day start\n\
-                    3. Credits reward depending on win streak\n\
-                    4. Fixed seed, everyone gets same units in shop\n\
-                    5. 3 lives, replenish on win every 5 floors\n\
+                    2. 4 lives, replenish on win every 5 floors\n\
+                    3. Entry fee growing every time, reset on day start\n\
+                    4. Credits reward depending on win streak\n\
+                    5. Fixed seed, everyone gets same units in shop\n\
                     6. Defeat current champion for a reward\n\
                     7. Rewards are multiplied by 2"
                         .cstr_c(VISIBLE_LIGHT)
@@ -307,7 +308,7 @@ impl GameStartPlugin {
         let mut gsr = rm(world);
         let mode = gsr.game_modes[gsr.selected].clone();
         gsr.leaderboard = TArenaLeaderboard::filter_by_season(gsr.selected_season)
-            .filter(|d| d.mode.eq(&mode))
+            .filter(|d| mem::discriminant(&d.mode) == mem::discriminant(&mode))
             .sorted_by_key(|d| -(d.floor as i32))
             .collect_vec();
         gsr.runs = TArenaRunArchive::iter()

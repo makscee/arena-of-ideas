@@ -148,7 +148,7 @@ impl ShowTable<TArenaLeaderboard> for Vec<TArenaLeaderboard> {
                 |d| d.user,
                 |gid, _, world| TilePlugin::add_user(gid, world),
             )
-            .column_cstr("mode", |d, _| d.mode.cstr());
+            .column_cstr("mode", |d, _| d.mode.cstr_expanded());
         t = m(t);
         t.ui(self, ui, world)
     }
