@@ -91,10 +91,8 @@ fn upload_game_archive(
     ctx: ReducerContext,
     next_id: u64,
     users: Vec<TUser>,
-    arena_runs_archive: Vec<TArenaRunArchive>,
     arena_leaderboard: Vec<TArenaLeaderboard>,
     teams: Vec<TTeam>,
-    battles: Vec<TBattle>,
     wallets: Vec<TWallet>,
     unit_items: Vec<TUnitItem>,
     unit_shards: Vec<TUnitShardItem>,
@@ -108,14 +106,6 @@ fn upload_game_archive(
         }
         for d in users {
             TUser::insert(d)?;
-        }
-    }
-    if !arena_runs_archive.is_empty() {
-        for d in TArenaRunArchive::iter() {
-            d.delete();
-        }
-        for d in arena_runs_archive {
-            TArenaRunArchive::insert(d)?;
         }
     }
     if !arena_leaderboard.is_empty() {
@@ -132,14 +122,6 @@ fn upload_game_archive(
         }
         for d in teams {
             TTeam::insert(d)?;
-        }
-    }
-    if !battles.is_empty() {
-        for d in TBattle::iter() {
-            d.delete();
-        }
-        for d in battles {
-            TBattle::insert(d)?;
         }
     }
     if !wallets.is_empty() {

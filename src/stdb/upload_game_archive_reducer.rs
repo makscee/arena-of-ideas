@@ -3,8 +3,6 @@
 
 #![allow(unused_imports)]
 use super::t_arena_leaderboard::TArenaLeaderboard;
-use super::t_arena_run_archive::TArenaRunArchive;
-use super::t_battle::TBattle;
 use super::t_lootbox_item::TLootboxItem;
 use super::t_team::TTeam;
 use super::t_unit_item::TUnitItem;
@@ -25,10 +23,8 @@ use spacetimedb_sdk::{
 pub struct UploadGameArchiveArgs {
     pub next_id: u64,
     pub users: Vec<TUser>,
-    pub arena_runs_archive: Vec<TArenaRunArchive>,
     pub arena_leaderboard: Vec<TArenaLeaderboard>,
     pub teams: Vec<TTeam>,
-    pub battles: Vec<TBattle>,
     pub wallets: Vec<TWallet>,
     pub unit_items: Vec<TUnitItem>,
     pub unit_shards: Vec<TUnitShardItem>,
@@ -43,10 +39,8 @@ impl Reducer for UploadGameArchiveArgs {
 pub fn upload_game_archive(
     next_id: u64,
     users: Vec<TUser>,
-    arena_runs_archive: Vec<TArenaRunArchive>,
     arena_leaderboard: Vec<TArenaLeaderboard>,
     teams: Vec<TTeam>,
-    battles: Vec<TBattle>,
     wallets: Vec<TWallet>,
     unit_items: Vec<TUnitItem>,
     unit_shards: Vec<TUnitShardItem>,
@@ -55,10 +49,8 @@ pub fn upload_game_archive(
     UploadGameArchiveArgs {
         next_id,
         users,
-        arena_runs_archive,
         arena_leaderboard,
         teams,
-        battles,
         wallets,
         unit_items,
         unit_shards,
@@ -75,10 +67,8 @@ pub fn on_upload_game_archive(
             &Status,
             &u64,
             &Vec<TUser>,
-            &Vec<TArenaRunArchive>,
             &Vec<TArenaLeaderboard>,
             &Vec<TTeam>,
-            &Vec<TBattle>,
             &Vec<TWallet>,
             &Vec<TUnitItem>,
             &Vec<TUnitShardItem>,
@@ -90,10 +80,8 @@ pub fn on_upload_game_archive(
         let UploadGameArchiveArgs {
             next_id,
             users,
-            arena_runs_archive,
             arena_leaderboard,
             teams,
-            battles,
             wallets,
             unit_items,
             unit_shards,
@@ -105,10 +93,8 @@ pub fn on_upload_game_archive(
             __status,
             next_id,
             users,
-            arena_runs_archive,
             arena_leaderboard,
             teams,
-            battles,
             wallets,
             unit_items,
             unit_shards,
@@ -125,10 +111,8 @@ pub fn once_on_upload_game_archive(
             &Status,
             &u64,
             &Vec<TUser>,
-            &Vec<TArenaRunArchive>,
             &Vec<TArenaLeaderboard>,
             &Vec<TTeam>,
-            &Vec<TBattle>,
             &Vec<TWallet>,
             &Vec<TUnitItem>,
             &Vec<TUnitShardItem>,
@@ -140,10 +124,8 @@ pub fn once_on_upload_game_archive(
         let UploadGameArchiveArgs {
             next_id,
             users,
-            arena_runs_archive,
             arena_leaderboard,
             teams,
-            battles,
             wallets,
             unit_items,
             unit_shards,
@@ -155,10 +137,8 @@ pub fn once_on_upload_game_archive(
             __status,
             next_id,
             users,
-            arena_runs_archive,
             arena_leaderboard,
             teams,
-            battles,
             wallets,
             unit_items,
             unit_shards,

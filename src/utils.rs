@@ -319,7 +319,22 @@ impl TableSingletonExt for GlobalData {}
 impl TableSingletonExt for GlobalSettings {}
 impl TableSingletonExt for TArenaRun {}
 impl TableSingletonExt for TWallet {}
-impl TableSingletonExt for TDailyState {}
+impl TableSingletonExt for TDailyState {
+    fn current() -> Self {
+        *Self::get_current().unwrap_or_else(|| {
+            Box::new(Self {
+                owner: user_id(),
+                ranked_cost: 0,
+                const_cost: 0,
+                quests_taken: default(),
+            })
+        })
+    }
+
+    fn get_current() -> Option<Box<Self>> {
+        Self::iter().exactly_one().ok().map(|d| Box::new(d))
+    }
+}
 
 pub trait StdbStatusExt {
     fn on_success(&self, f: impl FnOnce(&mut World) + Send + Sync + 'static);
