@@ -20,6 +20,7 @@ use spacetimedb_sdk::{
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct GlobalSettings {
     pub always_zero: u32,
+    pub season: u32,
     pub arena: ArenaSettings,
     pub rarities: RaritySettings,
     pub battle: BattleSettings,
@@ -43,6 +44,10 @@ impl GlobalSettings {
     #[allow(unused)]
     pub fn find_by_always_zero(always_zero: u32) -> Option<Self> {
         Self::find(|row| row.always_zero == always_zero)
+    }
+    #[allow(unused)]
+    pub fn filter_by_season(season: u32) -> TableIter<Self> {
+        Self::filter(|row| row.season == season)
     }
     #[allow(unused)]
     pub fn filter_by_craft_shards_cost(craft_shards_cost: u32) -> TableIter<Self> {

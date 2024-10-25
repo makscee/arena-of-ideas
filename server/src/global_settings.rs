@@ -4,6 +4,7 @@ use super::*;
 pub struct GlobalSettings {
     #[unique]
     always_zero: u32,
+    pub season: u32,
     pub arena: ArenaSettings,
     pub rarities: RaritySettings,
     pub battle: BattleSettings,

@@ -45,26 +45,30 @@ pub struct TArenaRun {
 
 #[spacetimedb(table(public))]
 pub struct TArenaRunArchive {
-    mode: GameMode,
     #[primarykey]
     id: u64,
+    season: u32,
+    mode: GameMode,
     owner: u64,
     team: u64,
     battles: Vec<u64>,
     floor: u32,
     rewards: Vec<Reward>,
+    ts: Timestamp,
 }
 
 impl TArenaRunArchive {
     fn add_from_run(run: TArenaRun) {
         Self::insert(Self {
-            mode: run.mode,
             id: run.id,
+            mode: run.mode,
+            season: GlobalSettings::get().season,
             owner: run.owner,
             team: run.team,
             battles: run.battles,
             floor: run.floor,
             rewards: run.rewards,
+            ts: Timestamp::now(),
         })
         .expect("Failed to archive a run");
     }

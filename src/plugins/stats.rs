@@ -29,10 +29,6 @@ struct UserStat {
     percent: f32,
 }
 
-fn rm(world: &mut World) -> Mut<StatsResource> {
-    world.resource_mut::<StatsResource>()
-}
-
 impl StatsPlugin {
     fn on_enter(world: &mut World) {
         let mut units: HashMap<String, i32> = default();

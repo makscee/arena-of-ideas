@@ -17,7 +17,7 @@ impl TArenaLeaderboard {
     pub fn new(mode: GameMode, floor: u32, user: u64, team: u64, run: u64) -> Self {
         Self {
             mode,
-            season: GlobalData::get().season,
+            season: GlobalSettings::get().season,
             floor,
             user,
             team,

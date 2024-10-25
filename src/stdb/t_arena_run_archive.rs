@@ -16,13 +16,15 @@ use spacetimedb_sdk::{
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct TArenaRunArchive {
-    pub mode: GameMode,
     pub id: u64,
+    pub season: u32,
+    pub mode: GameMode,
     pub owner: u64,
     pub team: u64,
     pub battles: Vec<u64>,
     pub floor: u32,
     pub rewards: Vec<Reward>,
+    pub ts: u64,
 }
 
 impl TableType for TArenaRunArchive {
@@ -47,6 +49,10 @@ impl TArenaRunArchive {
         Self::find(|row| row.id == id)
     }
     #[allow(unused)]
+    pub fn filter_by_season(season: u32) -> TableIter<Self> {
+        Self::filter(|row| row.season == season)
+    }
+    #[allow(unused)]
     pub fn filter_by_owner(owner: u64) -> TableIter<Self> {
         Self::filter(|row| row.owner == owner)
     }
@@ -57,5 +63,9 @@ impl TArenaRunArchive {
     #[allow(unused)]
     pub fn filter_by_floor(floor: u32) -> TableIter<Self> {
         Self::filter(|row| row.floor == floor)
+    }
+    #[allow(unused)]
+    pub fn filter_by_ts(ts: u64) -> TableIter<Self> {
+        Self::filter(|row| row.ts == ts)
     }
 }
