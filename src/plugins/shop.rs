@@ -74,6 +74,99 @@ impl ShopPlugin {
             TArenaRun::remove_on_update(cb);
         }
     }
+    fn sync_fusion(a: usize, b: usize, run: &TArenaRun, world: &mut World) {
+        let team = run.team.get_team();
+        let left_card = UnitCard::from_fused(team.units[a].clone(), world).unwrap();
+        let right_card = UnitCard::from_fused(team.units[b].clone(), world).unwrap();
+        let mut r = rm(world);
+        r.fusion_cards = [left_card.clone(), left_card, right_card].into();
+        r.fusion_choice = [-1, 1, 0].into();
+        fn update_result_card(world: &mut World) {
+            let run = TArenaRun::current();
+            let fusion = run.fusion.unwrap();
+            let mut unit = fusion.unit;
+            let r = rm(world);
+            unit.triggers = fusion.triggers[(r.fusion_choice[0] + 1) as usize].clone();
+            unit.targets = fusion.targets[(r.fusion_choice[1] + 1) as usize].clone();
+            unit.effects = fusion.effects[(r.fusion_choice[2] + 1) as usize].clone();
+            let card = UnitCard::from_fused(unit, world).unwrap();
+            rm(world).fusion_cards[1] = card;
+        }
+        update_result_card(world);
+
+        Confirmation::new("Fusion".cstr_c(YELLOW))
+            .accept(|world| {
+                let fc = rm(world).fusion_choice.clone();
+                fuse_choose(fc[0], fc[1], fc[2]);
+            })
+            .cancel(|_| {
+                fuse_cancel();
+            })
+            .content(|ui, world| {
+                if Button::click("Swap").ui(ui).clicked() {
+                    Confirmation::close_current(world);
+                    fuse_swap();
+                }
+                ui.set_width(ui.ctx().screen_rect().width() * 0.9);
+                ui.columns(3, |ui| {
+                    let r = rm(world);
+                    for i in 0..3 {
+                        r.fusion_cards[i].ui(&mut ui[i]);
+                    }
+                });
+                ui.columns(3, |ui| {
+                    let mut r = rm(world);
+                    let mut need_update = false;
+                    for i in 0..3 {
+                        ui[i as usize].vertical_centered_justified(|ui| {
+                            if Button::click("Trigger")
+                                .active(r.fusion_choice[0] == i - 1)
+                                .ui(ui)
+                                .clicked()
+                            {
+                                need_update = true;
+                                if r.fusion_choice[1] == i - 1 {
+                                    r.fusion_choice[1] = r.fusion_choice[0];
+                                } else if r.fusion_choice[2] == i - 1 {
+                                    r.fusion_choice[2] = r.fusion_choice[0];
+                                }
+                                r.fusion_choice[0] = i - 1;
+                            }
+                            if Button::click("Target")
+                                .active(r.fusion_choice[1] == i - 1)
+                                .ui(ui)
+                                .clicked()
+                            {
+                                need_update = true;
+                                if r.fusion_choice[0] == i - 1 {
+                                    r.fusion_choice[0] = r.fusion_choice[1];
+                                } else if r.fusion_choice[2] == i - 1 {
+                                    r.fusion_choice[2] = r.fusion_choice[1];
+                                }
+                                r.fusion_choice[1] = i - 1;
+                            }
+                            if Button::click("Effect")
+                                .active(r.fusion_choice[2] == i - 1)
+                                .ui(ui)
+                                .clicked()
+                            {
+                                need_update = true;
+                                if r.fusion_choice[0] == i - 1 {
+                                    r.fusion_choice[0] = r.fusion_choice[2];
+                                } else if r.fusion_choice[1] == i - 1 {
+                                    r.fusion_choice[1] = r.fusion_choice[2];
+                                }
+                                r.fusion_choice[2] = i - 1;
+                            }
+                        });
+                    }
+                    if need_update {
+                        update_result_card(world);
+                    }
+                });
+            })
+            .push(world);
+    }
     fn sync_run(run: TArenaRun, world: &mut World) {
         debug!("Sync run");
         let mut shop_units: HashMap<u64, Entity> = HashMap::from_iter(
@@ -91,97 +184,7 @@ impl ShopPlugin {
             b,
         }) = run.fusion
         {
-            let team = run.team.get_team();
-            let left_card = UnitCard::from_fused(team.units[a as usize].clone(), world).unwrap();
-            let right_card = UnitCard::from_fused(team.units[b as usize].clone(), world).unwrap();
-            let mut r = rm(world);
-            r.fusion_cards = [left_card.clone(), left_card, right_card].into();
-            r.fusion_choice = [-1, 1, 0].into();
-            fn update_result_card(world: &mut World) {
-                let run = TArenaRun::current();
-                let fusion = run.fusion.unwrap();
-                let mut unit = fusion.unit;
-                let r = rm(world);
-                unit.triggers = fusion.triggers[(r.fusion_choice[0] + 1) as usize].clone();
-                unit.targets = fusion.targets[(r.fusion_choice[1] + 1) as usize].clone();
-                unit.effects = fusion.effects[(r.fusion_choice[2] + 1) as usize].clone();
-                let card = UnitCard::from_fused(unit, world).unwrap();
-                rm(world).fusion_cards[1] = card;
-            }
-            update_result_card(world);
-
-            Confirmation::new("Fusion".cstr_c(YELLOW))
-                .accept(|world| {
-                    let fc = rm(world).fusion_choice.clone();
-                    fuse_choose(fc[0], fc[1], fc[2]);
-                })
-                .cancel(|_| {
-                    fuse_cancel();
-                })
-                .content(|ui, world| {
-                    if Button::click("Swap").ui(ui).clicked() {
-                        Confirmation::close_current(world);
-                        fuse_swap();
-                    }
-                    ui.set_width(ui.ctx().screen_rect().width() * 0.9);
-                    ui.columns(3, |ui| {
-                        let r = rm(world);
-                        for i in 0..3 {
-                            r.fusion_cards[i].ui(&mut ui[i]);
-                        }
-                    });
-                    ui.columns(3, |ui| {
-                        let mut r = rm(world);
-                        let mut need_update = false;
-                        for i in 0..3 {
-                            ui[i as usize].vertical_centered_justified(|ui| {
-                                if Button::click("Trigger")
-                                    .active(r.fusion_choice[0] == i - 1)
-                                    .ui(ui)
-                                    .clicked()
-                                {
-                                    need_update = true;
-                                    if r.fusion_choice[1] == i - 1 {
-                                        r.fusion_choice[1] = r.fusion_choice[0];
-                                    } else if r.fusion_choice[2] == i - 1 {
-                                        r.fusion_choice[2] = r.fusion_choice[0];
-                                    }
-                                    r.fusion_choice[0] = i - 1;
-                                }
-                                if Button::click("Target")
-                                    .active(r.fusion_choice[1] == i - 1)
-                                    .ui(ui)
-                                    .clicked()
-                                {
-                                    need_update = true;
-                                    if r.fusion_choice[0] == i - 1 {
-                                        r.fusion_choice[0] = r.fusion_choice[1];
-                                    } else if r.fusion_choice[2] == i - 1 {
-                                        r.fusion_choice[2] = r.fusion_choice[1];
-                                    }
-                                    r.fusion_choice[1] = i - 1;
-                                }
-                                if Button::click("Effect")
-                                    .active(r.fusion_choice[2] == i - 1)
-                                    .ui(ui)
-                                    .clicked()
-                                {
-                                    need_update = true;
-                                    if r.fusion_choice[0] == i - 1 {
-                                        r.fusion_choice[0] = r.fusion_choice[2];
-                                    } else if r.fusion_choice[1] == i - 1 {
-                                        r.fusion_choice[1] = r.fusion_choice[2];
-                                    }
-                                    r.fusion_choice[2] = i - 1;
-                                }
-                            });
-                        }
-                        if need_update {
-                            update_result_card(world);
-                        }
-                    });
-                })
-                .push(world);
+            Self::sync_fusion(a as usize, b as usize, &run, world);
         } else {
             let mut sd = rm(world);
             sd.fuse_source = None;

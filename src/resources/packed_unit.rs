@@ -65,11 +65,6 @@ impl PackedUnit {
         id: Option<u64>,
         world: &mut World,
     ) -> Entity {
-        if let Some(slot) = slot {
-            if let Some(faction) = TeamPlugin::team_entity_faction(parent, world) {
-                UnitPlugin::make_slot_gap(faction, slot, world);
-            }
-        }
         let entity = world
             .spawn_empty()
             .set_parent(parent)
