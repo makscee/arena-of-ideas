@@ -111,12 +111,14 @@ impl ItemKind {
             ItemKind::Unit => {
                 let mut item =
                     TUnitItem::filter_by_id(&item_id).context_str("UnitItem not found")?;
+                GlobalEvent::ReceiveUnit(item.clone()).post(new_owner);
                 item.owner = new_owner;
                 TUnitItem::update_by_id(&item_id, item);
             }
             ItemKind::UnitShard => {
                 let item = TUnitShardItem::filter_by_id(&item_id)
                     .context_str("UnitShardItem not found")?;
+                GlobalEvent::ReceiveUnitShard(item.clone()).post(new_owner);
                 let mut owner_item = TUnitShardItem::get_or_init(new_owner, &item.unit);
                 owner_item.count += item.count;
                 TUnitShardItem::update_by_id(&owner_item.id.clone(), owner_item);
@@ -125,6 +127,7 @@ impl ItemKind {
             ItemKind::RainbowShard => {
                 let item = TRainbowShardItem::filter_by_id(&item_id)
                     .context_str("RainbowShardItem not found")?;
+                GlobalEvent::ReceiveRainbowShard(item.clone()).post(new_owner);
                 let mut owner_item = TRainbowShardItem::get_or_init(new_owner);
                 owner_item.count += item.count;
                 TRainbowShardItem::update_by_id(&owner_item.id.clone(), owner_item);
@@ -133,6 +136,7 @@ impl ItemKind {
             ItemKind::Lootbox => {
                 let item =
                     TLootboxItem::filter_by_id(&item_id).context_str("LootboxItem not found")?;
+                GlobalEvent::ReceiveLootbox(item.clone()).post(new_owner);
                 let mut owner_item = TLootboxItem::get_or_init(new_owner, item.kind);
                 owner_item.count += item.count;
                 TLootboxItem::update_by_id(&owner_item.id.clone(), owner_item);
@@ -333,11 +337,13 @@ fn craft_hero(ctx: ReducerContext, base: String, use_rainbow: u32) -> Result<(),
     }
     item.count = item.count - cost + use_rainbow;
     TUnitShardItem::update_by_id(&item.id.clone(), item);
-    TUnitItem::insert(TUnitItem {
+
+    GlobalEvent::CraftUnit(TUnitItem::insert(TUnitItem {
         id: next_id(),
         owner: user.id,
         unit: FusedUnit::from_base_name(base, next_id())?.mutate(),
-    })?;
+    })?)
+    .post(user.id);
     Ok(())
 }
 

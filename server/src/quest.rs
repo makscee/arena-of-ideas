@@ -2,20 +2,20 @@ use super::*;
 
 #[spacetimedb(table(public))]
 #[derive(Clone, Default)]
-struct TQuest {
+pub struct TQuest {
     #[primarykey]
-    id: u64,
-    owner: u64,
-    mode: GameMode,
-    variant: QuestVariant,
-    counter: u32,
-    goal: u32,
-    reward: i64,
-    complete: bool,
+    pub id: u64,
+    pub owner: u64,
+    pub mode: GameMode,
+    pub variant: QuestVariant,
+    pub counter: u32,
+    pub goal: u32,
+    pub reward: i64,
+    pub complete: bool,
 }
 
 #[derive(SpacetimeType, PartialEq, Eq, Clone, Default)]
-enum QuestVariant {
+pub enum QuestVariant {
     #[default]
     Win,
     Streak,
@@ -186,6 +186,7 @@ fn quest_accept(ctx: ReducerContext, id: u64) -> Result<(), String> {
     TDailyState::get(user.id).take_quest(id)?;
     quest.id = next_id();
     quest.owner = user.id;
+    GlobalEvent::QuestAccepted(quest.clone()).post(user.id);
     TQuest::insert(quest)?;
     Ok(())
 }
@@ -198,6 +199,7 @@ fn quest_finish(ctx: ReducerContext, id: u64) -> Result<(), String> {
         return Err(format!("Quest#{id} not owned by {}", user.id));
     }
     TWallet::change(user.id, quest.reward)?;
+    GlobalEvent::QuestComplete(quest.clone()).post(user.id);
     TQuest::delete_by_id(&quest.id);
     Ok(())
 }

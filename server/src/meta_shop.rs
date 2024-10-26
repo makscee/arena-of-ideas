@@ -59,5 +59,6 @@ fn meta_buy(ctx: ReducerContext, id: u64) -> Result<(), String> {
         }
         ItemKind::Lootbox => {}
     };
+    GlobalEvent::MetaShopBuy(item.clone()).post(user.id);
     item.take(user.id)
 }

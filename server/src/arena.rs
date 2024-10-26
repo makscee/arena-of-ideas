@@ -449,6 +449,7 @@ impl TArenaRun {
     }
     fn start(user: TUser, mode: GameMode) -> Result<(), String> {
         TArenaRun::delete_by_owner(&user.id);
+        GlobalEvent::RunStart(mode.clone()).post(user.id);
         let mut run = TArenaRun::new(user.id, mode);
         run.fill_case()?;
         TArenaRun::insert(run)?;
@@ -468,6 +469,7 @@ impl TArenaRun {
         if price > self.g {
             return Err("Not enough G".to_owned());
         }
+        GlobalEvent::GameShopBuy(s.unit.clone()).post(self.owner);
         self.g -= price;
         s.available = false;
         Ok(s.unit.clone())
@@ -480,6 +482,7 @@ impl TArenaRun {
     }
     fn sell(&mut self, slot: usize) -> Result<(), String> {
         self.remove_team(slot)?;
+        GlobalEvent::GameShopSell(self.team()?.units[slot].clone()).post(self.owner);
         self.g += self.team_slots[slot].sell_price;
         Ok(())
     }

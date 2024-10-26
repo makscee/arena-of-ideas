@@ -38,14 +38,16 @@ fn register(ctx: ReducerContext, name: String, pass: String) -> Result<(), Strin
     let name = TUser::validate_name(name)?;
     let pass_hash = Some(TUser::hash_pass(pass)?);
     TUser::clear_identity(&ctx.sender);
+    let id = next_id();
     TUser::insert(TUser {
-        id: next_id(),
+        id,
         identities: vec![ctx.sender],
         name,
         pass_hash,
         online: false,
         last_login: Timestamp::UNIX_EPOCH,
     })?;
+    GlobalEvent::Register.post(id);
     Ok(())
 }
 
@@ -83,6 +85,7 @@ fn login_by_identity(ctx: ReducerContext) -> Result<(), String> {
 fn logout(ctx: ReducerContext) -> Result<(), String> {
     let mut user = ctx.user()?;
     user.online = false;
+    GlobalEvent::LogOut.post(user.id);
     user.remove_identity(&ctx.sender);
     TUser::update_by_id(&user.id.clone(), user);
     Ok(())
@@ -117,6 +120,7 @@ fn set_password(ctx: ReducerContext, old_pass: String, new_pass: String) -> Resu
 fn identity_disconnected(ctx: ReducerContext) {
     if let Ok(mut user) = ctx.user() {
         user.online = false;
+        GlobalEvent::LogOut.post(user.id);
         TUser::update_by_id(&user.id.clone(), user);
     }
 }
@@ -164,6 +168,7 @@ impl TUser {
     fn login(mut self) {
         self.online = true;
         self.last_login = Timestamp::now();
+        GlobalEvent::LogIn.post(self.id);
         TUser::update_by_id(&self.id.clone(), self);
     }
 

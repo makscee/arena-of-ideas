@@ -3,6 +3,7 @@ use spacetimedb::Timestamp;
 use super::*;
 
 #[spacetimedb(table(public))]
+#[derive(Clone)]
 pub struct TBattle {
     #[primarykey]
     pub id: u64,
@@ -47,6 +48,7 @@ impl TBattle {
     pub fn set_result(mut self, result: TBattleResult) -> Self {
         self.result = result;
         self.ts = Timestamp::now();
+        GlobalEvent::BattleFinish(self.clone()).post(self.owner);
         self
     }
     pub fn is_tbd(&self) -> bool {

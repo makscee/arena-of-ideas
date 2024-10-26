@@ -1,6 +1,7 @@
 use super::*;
 
 #[spacetimedb(table(public))]
+#[derive(Clone)]
 pub struct TAuction {
     #[primarykey]
     pub item_id: u64,
@@ -14,13 +15,14 @@ fn auction_create(ctx: ReducerContext, item_id: u64, count: u32, price: i64) -> 
     let user = ctx.user()?;
     let item_kind = ItemKind::from_id(item_id)?;
     let new_item = item_kind.split(item_id, count, 0)?;
-    TAuction::insert(TAuction {
+    let auction = TAuction {
         item_id: new_item,
         owner: user.id,
         item_kind,
         price,
-    })
-    .map_err(|e| e.to_string())?;
+    };
+    GlobalEvent::AuctionPost(auction.clone()).post(user.id);
+    TAuction::insert(auction).map_err(|e| e.to_string())?;
     Ok(())
 }
 #[spacetimedb(reducer)]
@@ -33,6 +35,7 @@ fn auction_buy(ctx: ReducerContext, item_id: u64) -> Result<(), String> {
     let item_kind = ItemKind::from_id(item_id)?;
     item_kind.take(item_id, user.id)?;
     TAuction::delete_by_item_id(&item_id);
+    GlobalEvent::AuctionBuy(auction).post(user.id);
     Ok(())
 }
 #[spacetimedb(reducer)]
@@ -44,6 +47,7 @@ fn auction_cancel(ctx: ReducerContext, item_id: u64) -> Result<(), String> {
         return Err(format!("Action#{item_id} not owned by {}", user.id));
     }
     TAuction::delete_by_item_id(&item_id);
+    GlobalEvent::AuctionCancel(auction).post(user.id);
     let item_kind = ItemKind::from_id(item_id)?;
     item_kind.take(item_id, user.id)
 }
