@@ -33,6 +33,7 @@ pub enum GlobalEvent {
     ReceiveUnitShard(TUnitShardItem),
     ReceiveRainbowShard(TRainbowShardItem),
     ReceiveLootbox(TLootboxItem),
+    OpenLootbox(TLootboxItem),
     QuestAccepted(TQuest),
     QuestComplete(TQuest),
     Fuse(FusedUnit),

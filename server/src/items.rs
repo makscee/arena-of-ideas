@@ -403,6 +403,7 @@ fn open_lootbox(ctx: ReducerContext, id: u64) -> Result<(), String> {
         lootboxes: default(),
     };
     TTrade::open_lootbox(user.id, bundle)?;
+    GlobalEvent::OpenLootbox(lootbox.clone()).post(user.id);
     TLootboxItem::update_by_id(&lootbox.id.clone(), lootbox);
     Ok(())
 }
