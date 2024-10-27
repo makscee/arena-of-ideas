@@ -22,6 +22,7 @@ pub struct EditorResource {
     unit: PackedUnit,
     unit_entity: Option<Entity>,
     unit_mode: UnitMode,
+    unit_to_load: String,
 
     representation: Representation,
     vfx: Vfx,
@@ -357,8 +358,30 @@ impl EditorPlugin {
                 .transparent()
                 .pinned()
                 .push(world);
+                let mut r = rm(world);
+                if r.unit_to_load.is_empty() {
+                    r.unit_to_load = game_assets()
+                        .heroes
+                        .keys()
+                        .choose(&mut thread_rng())
+                        .cloned()
+                        .unwrap();
+                }
                 Tile::new(Side::Top, |ui, world| {
-                    EnumSwitcher::show(&mut rm(world).unit_mode, ui);
+                    ui.horizontal(|ui| {
+                        let mut r = rm(world);
+                        EnumSwitcher::show(&mut r.unit_mode, ui);
+                        ui.add_space(30.0);
+                        Selector::new("").ui_iter(
+                            &mut r.unit_to_load,
+                            game_assets().heroes.keys().sorted(),
+                            ui,
+                        );
+                        if Button::click("load").ui(ui).clicked() {
+                            r.unit = game_assets().heroes.get(&r.unit_to_load).unwrap().clone();
+                            Self::refresh(world);
+                        }
+                    });
                 })
                 .pinned()
                 .no_expand()

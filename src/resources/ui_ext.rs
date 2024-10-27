@@ -49,12 +49,25 @@ impl ShowTable<TBaseUnit> for Vec<TBaseUnit> {
                 "name",
                 |d: &TBaseUnit, _| d.cstr().into(),
                 |d, name, ui, world| {
-                    if name.get_cstr().unwrap().button(ui).hovered() {
+                    let r = name.get_cstr().unwrap().button(ui);
+                    if r.hovered() {
                         cursor_window(ui.ctx(), |ui| match cached_base_card(d, ui, world) {
                             Ok(_) => {}
                             Err(e) => error!("{e}"),
                         });
                     }
+                    r.context_menu(|ui| {
+                        ui.reset_style();
+                        if Button::click("Copy").ui(ui).clicked() {
+                            match ron::to_string(&PackedUnit::from(d.clone())) {
+                                Ok(v) => {
+                                    copy_to_clipboard(&v, world);
+                                }
+                                Err(e) => format!("Failed to copy: {e}").notify_error(world),
+                            }
+                            ui.close_menu();
+                        }
+                    });
                 },
                 true,
             )
@@ -107,6 +120,18 @@ impl ShowTable<FusedUnit> for Vec<FusedUnit> {
                             Err(e) => error!("{e}"),
                         });
                     }
+                    r.context_menu(|ui| {
+                        ui.reset_style();
+                        if Button::click("Copy").ui(ui).clicked() {
+                            match ron::to_string(&PackedUnit::from(d.clone())) {
+                                Ok(v) => {
+                                    copy_to_clipboard(&v, world);
+                                }
+                                Err(e) => format!("Failed to copy: {e}").notify_error(world),
+                            }
+                            ui.close_menu();
+                        }
+                    });
                 },
                 true,
             )
