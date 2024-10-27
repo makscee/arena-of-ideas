@@ -119,7 +119,7 @@ fn run_start_normal(ctx: ReducerContext) -> Result<(), String> {
 #[spacetimedb(reducer)]
 fn run_start_ranked(ctx: ReducerContext, team_id: u64) -> Result<(), String> {
     let user = ctx.user()?;
-    let cost = TDailyState::filter_by_owner(&user.id).unwrap().buy_ranked();
+    let cost = TDailyState::get(user.id).buy_ranked();
     TWallet::change(user.id, -cost)?;
     let mut team = TTeam::get_owned(team_id, user.id)?;
     team.pool = TeamPool::Arena;
@@ -134,7 +134,7 @@ fn run_start_ranked(ctx: ReducerContext, team_id: u64) -> Result<(), String> {
 #[spacetimedb(reducer)]
 fn run_start_const(ctx: ReducerContext) -> Result<(), String> {
     let user = ctx.user()?;
-    let cost = TDailyState::filter_by_owner(&user.id).unwrap().buy_const();
+    let cost = TDailyState::get(user.id).buy_const();
     TWallet::change(user.id, -cost)?;
     TArenaRun::start(
         user,
