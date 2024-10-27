@@ -360,16 +360,17 @@ fn fuse_choose(ctx: ReducerContext, trigger: i8, target: i8, effect: i8) -> Resu
         .context_str("Failed to get effect")?
         .clone();
     unit.id = next_id();
-    let fuse_amount = unit.bases.len() as u32;
 
     let a = a as usize;
     let b = b as usize;
     let mut team = run.team()?;
     team.units.remove(a);
-    team.units.insert(a, unit);
+    team.units.insert(a, unit.clone());
     team.units.remove(b);
     team.save();
+    let fuse_amount = unit.bases.len() as u32;
     QuestEvent::Fuse(fuse_amount).register_event(run.mode.clone(), run.owner);
+    GlobalEvent::Fuse(unit).post(run.owner);
     run.save();
     Ok(())
 }
@@ -550,9 +551,14 @@ impl TArenaRun {
         mem::swap(&mut self.shop_slots, &mut old_slots);
         for i in 0..slots {
             if let Some(slot) = old_slots.get(i) {
-                if slot.available && slot.freeze {
-                    self.shop_slots.push(slot.clone());
-                    continue;
+                if slot.available {
+                    if slot.freeze {
+                        self.shop_slots.push(slot.clone());
+                        continue;
+                    } else {
+                        GlobalEvent::GameShopSkip(slot.unit.clone()).post(self.owner);
+                        continue;
+                    }
                 }
             }
             self.shop_slots.push(ShopSlot::default());

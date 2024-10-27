@@ -22,6 +22,7 @@ pub enum GlobalEvent {
     BattleFinish(TBattle),
     MetaShopBuy(TMetaShop),
     GameShopBuy(String),
+    GameShopSkip(String),
     GameShopSell(FusedUnit),
     AuctionBuy(TAuction),
     AuctionCancel(TAuction),
@@ -34,6 +35,7 @@ pub enum GlobalEvent {
     ReceiveLootbox(TLootboxItem),
     QuestAccepted(TQuest),
     QuestComplete(TQuest),
+    Fuse(FusedUnit),
 }
 
 impl GlobalEvent {
