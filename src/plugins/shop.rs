@@ -110,6 +110,19 @@ impl ShopPlugin {
                 ui.set_width(ui.ctx().screen_rect().width() * 0.9);
                 ui.columns(3, |ui| {
                     let r = rm(world);
+                    ui[0].vertical_centered_justified(|ui| {
+                        "Left".cstr_cs(VISIBLE_LIGHT, CstrStyle::Heading2).label(ui);
+                    });
+                    ui[1].vertical_centered_justified(|ui| {
+                        "Result"
+                            .cstr_cs(VISIBLE_LIGHT, CstrStyle::Heading2)
+                            .label(ui);
+                    });
+                    ui[2].vertical_centered_justified(|ui| {
+                        "Right"
+                            .cstr_cs(VISIBLE_LIGHT, CstrStyle::Heading2)
+                            .label(ui);
+                    });
                     for i in 0..3 {
                         r.fusion_cards[i].ui(&mut ui[i]);
                     }
