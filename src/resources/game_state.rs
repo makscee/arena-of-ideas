@@ -30,7 +30,7 @@ pub enum GameState {
     GameArchiveDownload,
     GameArchiveUpload,
     Profile,
-    TableView(StdbQuery),
+    BattleHistory,
     Error,
     Teams,
     TeamEditor,
@@ -67,30 +67,14 @@ lazy_static! {
             [GameOption::TestScenariosLoad].into(),
         );
         m.insert(
-            GameState::TableView(StdbQuery::BaseUnits),
-            [GameOption::Connect, GameOption::Table(StdbQuery::BaseUnits)].into(),
-        );
-        m.insert(
-            GameState::TableView(StdbQuery::BattleHistory),
-            [
-                GameOption::Connect,
-                GameOption::Table(StdbQuery::BattleHistory),
-            ]
-            .into(),
-        );
-        m.insert(
             GameState::Stats,
             [
                 GameOption::Connect,
-                GameOption::Table(StdbQuery::BattleHistory),
+                GameOption::Table(StdbTable::TBattle.full()),
             ]
             .into(),
         );
         m.insert(GameState::GameArchiveUpload, [GameOption::Connect].into());
-        m.insert(
-            GameState::GameArchiveDownload,
-            [GameOption::Connect, GameOption::Table(StdbQuery::GameFull)].into(),
-        );
         m
     };
 }

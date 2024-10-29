@@ -1,7 +1,4 @@
-use spacetimedb_sdk::{
-    once_on_subscription_applied,
-    table::{TableType, TableWithPrimaryKey},
-};
+use spacetimedb_sdk::table::{TableType, TableWithPrimaryKey};
 
 use super::*;
 
@@ -34,7 +31,7 @@ impl LoginPlugin {
         let co = ConnectOption::get(world);
         let mut identity_user = None;
         if let Some(user) = TUser::iter().find(|u| u.identities.contains(&co.creds.identity)) {
-            if matches!(currently_fulfilling(), GameOption::ForceLogin) {
+            if currently_fulfilling() == GameOption::ForceLogin {
                 Self::complete(user.clone(), world);
             }
             identity_user = Some(user);
@@ -46,13 +43,11 @@ impl LoginPlugin {
         });
     }
     fn complete(user: TUser, world: &mut World) {
-        StdbQuery::Game(user.id).subscribe();
         LoginOption { user }.save(world);
-        once_on_subscription_applied(|| {
-            OperationsPlugin::add(|world| {
-                GameAssets::cache_tables();
-                GameState::proceed(world);
-            });
+        StdbQuery::subscribe(StdbQuery::queries_game(), move |world| {
+            GameAssets::cache_tables();
+            GameState::proceed(world);
+
             TWallet::on_update(|before, after, _| {
                 let delta = after.amount - before.amount;
                 let delta_txt = if delta > 0 {
@@ -167,8 +162,8 @@ impl LoginPlugin {
                         once_on_login(|_, _, status, name, _| match status {
                             spacetimedb_sdk::reducer::Status::Committed => {
                                 let name = name.clone();
-                                OperationsPlugin::add(move |world| {
-                                    let user = TUser::find_by_name(name).unwrap();
+                                let user = TUser::find_by_name(name).unwrap();
+                                OperationsPlugin::add(|world| {
                                     Self::complete(user, world);
                                 });
                             }

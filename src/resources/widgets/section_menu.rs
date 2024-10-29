@@ -59,7 +59,7 @@ impl Default for SectionMenu {
                 },
                 GameSection {
                     name: "HISTORY",
-                    target_state: GameState::TableView(StdbQuery::BattleHistory),
+                    target_state: GameState::BattleHistory,
                     inner_states: default(),
                     options: [GameOption::Login].into(),
                 },

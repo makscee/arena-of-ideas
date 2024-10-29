@@ -1,9 +1,6 @@
 use std::thread::sleep;
 
-use spacetimedb_sdk::{
-    identity::{load_credentials, once_on_connect, save_credentials},
-    once_on_subscription_applied,
-};
+use spacetimedb_sdk::identity::{load_credentials, once_on_connect, save_credentials};
 
 use super::*;
 
@@ -24,39 +21,33 @@ impl ConnectPlugin {
         once_on_connect(|creds, _| {
             let creds = creds.clone();
             info!("Connected {}", hex::encode(creds.identity.as_bytes()));
-            StdbQuery::Connect.subscribe();
-            save_credentials(HOME_DIR, &creds).expect("Failed to save credentials");
-            once_on_subscription_applied(|| {
+            StdbQuery::subscribe(StdbQuery::queries_login(), move |world| {
                 let server_version = GlobalData::current().game_version;
+                save_credentials(HOME_DIR, &creds).expect("Failed to save credentials");
                 if server_version == VERSION {
-                    OperationsPlugin::add(|world| {
-                        ConnectOption { creds }.save(world);
-                        GameState::proceed(world);
-                    });
+                    ConnectOption { creds }.save(world);
+                    GameState::proceed(world);
                 } else {
-                    OperationsPlugin::add(move |w| {
-                        Confirmation::new(
-                            "Wrong game version: "
-                                .cstr_c(VISIBLE_LIGHT)
-                                .push(
-                                    format!("{} != {}", VERSION, server_version)
-                                        .cstr_cs(VISIBLE_BRIGHT, CstrStyle::Bold),
-                                )
-                                .take(),
-                        )
-                        .accept(|w| {
-                            egui_context(w).unwrap().open_url(egui::OpenUrl {
-                                url: "https://github.com/makscee/arena-of-ideas/releases"
-                                    .to_owned(),
-                                new_tab: true,
-                            });
-                            app_exit(w);
-                        })
-                        .cancel(|w| app_exit(w))
-                        .accept_name("Update")
-                        .cancel_name("Exit")
-                        .push(w);
-                    });
+                    Confirmation::new(
+                        "Wrong game version: "
+                            .cstr_c(VISIBLE_LIGHT)
+                            .push(
+                                format!("{} != {}", VERSION, server_version)
+                                    .cstr_cs(VISIBLE_BRIGHT, CstrStyle::Bold),
+                            )
+                            .take(),
+                    )
+                    .accept(|world| {
+                        egui_context(world).unwrap().open_url(egui::OpenUrl {
+                            url: "https://github.com/makscee/arena-of-ideas/releases".to_owned(),
+                            new_tab: true,
+                        });
+                        app_exit(world);
+                    })
+                    .cancel(|world| app_exit(world))
+                    .accept_name("Update")
+                    .cancel_name("Exit")
+                    .push(world);
                 }
             });
         });

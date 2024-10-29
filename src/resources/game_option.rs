@@ -1,8 +1,8 @@
-use spacetimedb_sdk::{identity::Credentials, once_on_subscription_applied};
+use spacetimedb_sdk::identity::Credentials;
 
 use super::*;
 
-#[derive(Clone, Copy, Debug, Display, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, AsRefStr)]
 pub enum GameOption {
     Connect,
     Login,
@@ -12,40 +12,49 @@ pub enum GameOption {
     ActiveRun,
 }
 
+impl ToCstr for GameOption {
+    fn cstr(&self) -> Cstr {
+        match self {
+            GameOption::Connect
+            | GameOption::Login
+            | GameOption::ForceLogin
+            | GameOption::TestScenariosLoad
+            | GameOption::ActiveRun => self.as_ref().cstr_c(GREEN),
+            GameOption::Table(q) => self
+                .as_ref()
+                .cstr_c(GREEN)
+                .push_wrapped_circ(q.cstr())
+                .take(),
+        }
+    }
+}
+
 static CURRENTLY_FULFILLING: Mutex<GameOption> = Mutex::new(GameOption::Connect);
 pub fn currently_fulfilling() -> GameOption {
-    *CURRENTLY_FULFILLING.lock().unwrap()
+    CURRENTLY_FULFILLING.lock().unwrap().clone()
 }
 
 impl GameOption {
-    pub fn is_fulfilled(self, world: &World) -> bool {
+    pub fn is_fulfilled(&self, world: &World) -> bool {
         match self {
             GameOption::Connect => world.get_resource::<ConnectOption>().is_some(),
             GameOption::Login | GameOption::ForceLogin => {
                 world.get_resource::<LoginOption>().is_some()
             }
             GameOption::TestScenariosLoad => world.get_resource::<TestScenarios>().is_some(),
-            GameOption::Table(query) => StdbQueryPlugin::is_subscribed(query),
+            GameOption::Table(query) => query.is_subscribed(),
             GameOption::ActiveRun => TArenaRun::get_current().is_some(),
         }
     }
-    pub fn fulfill(self, world: &mut World) {
-        info!(
-            "{} {}",
-            "Start fulfill option:".dimmed(),
-            self.to_string().bold().blue()
-        );
-        *CURRENTLY_FULFILLING.lock().unwrap() = self;
+    pub fn fulfill(&self, world: &mut World) {
+        info!("{} {}", "Start fulfill option:".dimmed(), self.cstr());
+        *CURRENTLY_FULFILLING.lock().unwrap() = self.clone();
         match self {
             GameOption::Connect => ConnectOption::fulfill(world),
             GameOption::Login | GameOption::ForceLogin => LoginOption::fulfill(world),
             GameOption::TestScenariosLoad => GameState::TestScenariosLoad.set_next(world),
             GameOption::Table(query) => {
-                if query.subscribe() {
-                    once_on_subscription_applied(GameState::proceed_op);
-                } else {
-                    GameState::proceed(world);
-                }
+                StdbQuery::subscribe([query.clone()], |world| GameState::proceed(world));
             }
             GameOption::ActiveRun => {
                 GameState::Title.proceed_to_target(world);

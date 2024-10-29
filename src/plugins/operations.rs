@@ -23,6 +23,9 @@ impl Plugin for OperationsPlugin {
 impl OperationsPlugin {
     pub fn add(operation: impl FnOnce(&mut World) + Send + Sync + 'static) {
         let operation = Box::new(operation);
+        Self::add_boxed(operation)
+    }
+    pub fn add_boxed(operation: Box<impl FnOnce(&mut World) + Send + Sync + 'static>) {
         OPERATIONS.lock().unwrap().queue.push_back(operation)
     }
 }

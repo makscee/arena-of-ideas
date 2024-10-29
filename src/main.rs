@@ -117,9 +117,7 @@ fn main() {
         .add_plugins((
             OperationsPlugin,
             ProfilePlugin,
-            StdbQueryPlugin,
             ConnectPlugin,
-            TableViewPlugin,
             GameArchivePlugin,
             ClientSettingsPlugin,
             GameStartPlugin,
