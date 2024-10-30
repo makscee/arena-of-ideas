@@ -17,9 +17,9 @@ The goal is to make a game that is created and managed by its players as much as
 [![Patreon](https://img.shields.io/badge/Patreon-F96854?style=for-the-badge&logo=patreon&logoColor=white)](https://patreon.com/makscee)
 
 <!-- BEGIN YOUTUBE-CARDS -->
-[![my game will get you addicted](https://ytcards.demolab.com/?id=8Csqoueqw-g&title=my+game+will+get+you+addicted&lang=en&timestamp=1730129485&background_color=%230d1117&title_color=%23ffffff&stats_color=%23dedede&max_title_lines=1&width=250&border_radius=5 "my game will get you addicted")](https://www.youtube.com/watch?v=8Csqoueqw-g)
-[![making auto battler with rust](https://ytcards.demolab.com/?id=t3pLWDbC6bY&title=making+auto+battler+with+rust&lang=en&timestamp=1729077217&background_color=%230d1117&title_color=%23ffffff&stats_color=%23dedede&max_title_lines=1&width=250&border_radius=5 "making auto battler with rust")](https://www.youtube.com/watch?v=t3pLWDbC6bY)
-[![I remade my game from scratch in 4 months with Rust](https://ytcards.demolab.com/?id=Pkf0y8H-XBk&title=I+remade+my+game+from+scratch+in+4+months+with+Rust&lang=en&timestamp=1727716675&background_color=%230d1117&title_color=%23ffffff&stats_color=%23dedede&max_title_lines=1&width=250&border_radius=5 "I remade my game from scratch in 4 months with Rust")](https://www.youtube.com/watch?v=Pkf0y8H-XBk)
+[![chill game coding 🦀](https://ytcards.demolab.com/?id=w5woeAVat20&title=chill+game+coding+%F0%9F%A6%80&lang=en&timestamp=1730247062&background_color=%230d1117&title_color=%23ffffff&stats_color=%23dedede&max_title_lines=1&width=250&border_radius=5 "chill game coding 🦀")](https://www.youtube.com/watch?v=w5woeAVat20)
+[![chill game coding 🦀](https://ytcards.demolab.com/?id=Eqf-6QvbwsM&title=chill+game+coding+%F0%9F%A6%80&lang=en&timestamp=1730212285&background_color=%230d1117&title_color=%23ffffff&stats_color=%23dedede&max_title_lines=1&width=250&border_radius=5 "chill game coding 🦀")](https://www.youtube.com/watch?v=Eqf-6QvbwsM)
+[![chill game coding 🦀](https://ytcards.demolab.com/?id=9K9HGLn0k2o&title=chill+game+coding+%F0%9F%A6%80&lang=en&timestamp=1730211850&background_color=%230d1117&title_color=%23ffffff&stats_color=%23dedede&max_title_lines=1&width=250&border_radius=5 "chill game coding 🦀")](https://www.youtube.com/watch?v=9K9HGLn0k2o)
 <!-- END YOUTUBE-CARDS -->
 
 # Play
