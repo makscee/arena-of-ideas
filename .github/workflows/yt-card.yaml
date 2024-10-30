@@ -17,5 +17,4 @@ jobs:
         with:
           channel_id: UCBPNPR5nWAQL48PvycsTw4Q
           max_videos: 3
-          show_duration: true
           playlist_id: PLqgg20d6CY1Nu0NvohkFQR-9C2RebyEuV
