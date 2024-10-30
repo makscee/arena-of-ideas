@@ -257,7 +257,7 @@ impl ToCstr for FireTrigger {
                     .join(&" + ".cstr_c(VISIBLE_DARK))
                     .take()
             }
-            FireTrigger::Period(_, delay, trigger) => format!("Every {delay} ")
+            FireTrigger::Period(_, delay, trigger) => format!("Every {} ", delay + 1)
                 .cstr_c(VISIBLE_LIGHT)
                 .push(trigger.cstr_expanded())
                 .take(),
