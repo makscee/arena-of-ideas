@@ -21,11 +21,11 @@ use spacetimedb_sdk::{
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct UploadAssetsArgs {
     pub global_settings: GlobalSettings,
-    pub representations: Vec<TRepresentation>,
-    pub base_units: Vec<TBaseUnit>,
-    pub houses: Vec<THouse>,
-    pub abilities: Vec<TAbility>,
-    pub statuses: Vec<TStatus>,
+    pub representation: Vec<TRepresentation>,
+    pub base_unit: Vec<TBaseUnit>,
+    pub house: Vec<THouse>,
+    pub ability: Vec<TAbility>,
+    pub status: Vec<TStatus>,
 }
 
 impl Reducer for UploadAssetsArgs {
@@ -35,19 +35,19 @@ impl Reducer for UploadAssetsArgs {
 #[allow(unused)]
 pub fn upload_assets(
     global_settings: GlobalSettings,
-    representations: Vec<TRepresentation>,
-    base_units: Vec<TBaseUnit>,
-    houses: Vec<THouse>,
-    abilities: Vec<TAbility>,
-    statuses: Vec<TStatus>,
+    representation: Vec<TRepresentation>,
+    base_unit: Vec<TBaseUnit>,
+    house: Vec<THouse>,
+    ability: Vec<TAbility>,
+    status: Vec<TStatus>,
 ) {
     UploadAssetsArgs {
         global_settings,
-        representations,
-        base_units,
-        houses,
-        abilities,
-        statuses,
+        representation,
+        base_unit,
+        house,
+        ability,
+        status,
     }
     .invoke();
 }
@@ -70,22 +70,22 @@ pub fn on_upload_assets(
     UploadAssetsArgs::on_reducer(move |__identity, __addr, __status, __args| {
         let UploadAssetsArgs {
             global_settings,
-            representations,
-            base_units,
-            houses,
-            abilities,
-            statuses,
+            representation,
+            base_unit,
+            house,
+            ability,
+            status,
         } = __args;
         __callback(
             __identity,
             __addr,
             __status,
             global_settings,
-            representations,
-            base_units,
-            houses,
-            abilities,
-            statuses,
+            representation,
+            base_unit,
+            house,
+            ability,
+            status,
         );
     })
 }
@@ -108,22 +108,22 @@ pub fn once_on_upload_assets(
     UploadAssetsArgs::once_on_reducer(move |__identity, __addr, __status, __args| {
         let UploadAssetsArgs {
             global_settings,
-            representations,
-            base_units,
-            houses,
-            abilities,
-            statuses,
+            representation,
+            base_unit,
+            house,
+            ability,
+            status,
         } = __args;
         __callback(
             __identity,
             __addr,
             __status,
             global_settings,
-            representations,
-            base_units,
-            houses,
-            abilities,
-            statuses,
+            representation,
+            base_unit,
+            house,
+            ability,
+            status,
         );
     })
 }

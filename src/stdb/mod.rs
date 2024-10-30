@@ -36,9 +36,11 @@ pub mod fuse_start_reducer;
 pub mod fuse_swap_reducer;
 pub mod fused_unit;
 pub mod fusion;
+pub mod game_data;
 pub mod game_mode;
 pub mod give_credits_reducer;
 pub mod global_data;
+pub mod global_event;
 pub mod global_settings;
 pub mod inflating_int;
 pub mod item_bundle;
@@ -85,6 +87,7 @@ pub mod t_base_unit;
 pub mod t_battle;
 pub mod t_battle_result;
 pub mod t_daily_state;
+pub mod t_global_event;
 pub mod t_house;
 pub mod t_lootbox_item;
 pub mod t_meta_shop;
@@ -108,7 +111,7 @@ pub mod team_slot;
 pub mod team_swap_units_reducer;
 pub mod unit_balance_vote_reducer;
 pub mod upload_assets_reducer;
-pub mod upload_game_archive_reducer;
+pub mod upload_game_data_reducer;
 
 pub use accept_trade_reducer::*;
 pub use arena_settings::*;
@@ -126,9 +129,11 @@ pub use fuse_start_reducer::*;
 pub use fuse_swap_reducer::*;
 pub use fused_unit::*;
 pub use fusion::*;
+pub use game_data::*;
 pub use game_mode::*;
 pub use give_credits_reducer::*;
 pub use global_data::*;
+pub use global_event::*;
 pub use global_settings::*;
 pub use inflating_int::*;
 pub use item_bundle::*;
@@ -175,6 +180,7 @@ pub use t_base_unit::*;
 pub use t_battle::*;
 pub use t_battle_result::*;
 pub use t_daily_state::*;
+pub use t_global_event::*;
 pub use t_house::*;
 pub use t_lootbox_item::*;
 pub use t_meta_shop::*;
@@ -198,7 +204,7 @@ pub use team_slot::*;
 pub use team_swap_units_reducer::*;
 pub use unit_balance_vote_reducer::*;
 pub use upload_assets_reducer::*;
-pub use upload_game_archive_reducer::*;
+pub use upload_game_data_reducer::*;
 
 #[allow(unused)]
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
@@ -247,7 +253,7 @@ pub enum ReducerEvent {
     TeamSwapUnits(team_swap_units_reducer::TeamSwapUnitsArgs),
     UnitBalanceVote(unit_balance_vote_reducer::UnitBalanceVoteArgs),
     UploadAssets(upload_assets_reducer::UploadAssetsArgs),
-    UploadGameArchive(upload_game_archive_reducer::UploadGameArchiveArgs),
+    UploadGameData(upload_game_data_reducer::UploadGameDataArgs),
 }
 
 #[allow(unused)]
@@ -313,6 +319,11 @@ impl SpacetimeModule for Module {
                 .handle_table_update_with_primary_key::<t_battle::TBattle>(callbacks, table_update),
             "TDailyState" => client_cache
                 .handle_table_update_with_primary_key::<t_daily_state::TDailyState>(
+                    callbacks,
+                    table_update,
+                ),
+            "TGlobalEvent" => client_cache
+                .handle_table_update_with_primary_key::<t_global_event::TGlobalEvent>(
                     callbacks,
                     table_update,
                 ),
@@ -405,6 +416,7 @@ impl SpacetimeModule for Module {
         reminders.invoke_callbacks::<t_base_unit::TBaseUnit>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_battle::TBattle>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_daily_state::TDailyState>(worker, &reducer_event, state);
+        reminders.invoke_callbacks::<t_global_event::TGlobalEvent>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_house::THouse>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_lootbox_item::TLootboxItem>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_meta_shop::TMetaShop>(worker, &reducer_event, state);
@@ -485,7 +497,7 @@ match &reducer_call.reducer_name[..] {
 			"team_swap_units" => _reducer_callbacks.handle_event_of_type::<team_swap_units_reducer::TeamSwapUnitsArgs, ReducerEvent>(event, _state, ReducerEvent::TeamSwapUnits),
 			"unit_balance_vote" => _reducer_callbacks.handle_event_of_type::<unit_balance_vote_reducer::UnitBalanceVoteArgs, ReducerEvent>(event, _state, ReducerEvent::UnitBalanceVote),
 			"upload_assets" => _reducer_callbacks.handle_event_of_type::<upload_assets_reducer::UploadAssetsArgs, ReducerEvent>(event, _state, ReducerEvent::UploadAssets),
-			"upload_game_archive" => _reducer_callbacks.handle_event_of_type::<upload_game_archive_reducer::UploadGameArchiveArgs, ReducerEvent>(event, _state, ReducerEvent::UploadGameArchive),
+			"upload_game_data" => _reducer_callbacks.handle_event_of_type::<upload_game_data_reducer::UploadGameDataArgs, ReducerEvent>(event, _state, ReducerEvent::UploadGameData),
 			unknown => { spacetimedb_sdk::log::error!("Event on an unknown reducer: {:?}", unknown); None }
 }
     }
@@ -532,6 +544,8 @@ match &reducer_call.reducer_name[..] {
             }
             "TDailyState" => client_cache
                 .handle_resubscribe_for_type::<t_daily_state::TDailyState>(callbacks, new_subs),
+            "TGlobalEvent" => client_cache
+                .handle_resubscribe_for_type::<t_global_event::TGlobalEvent>(callbacks, new_subs),
             "THouse" => {
                 client_cache.handle_resubscribe_for_type::<t_house::THouse>(callbacks, new_subs)
             }

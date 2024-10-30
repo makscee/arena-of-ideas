@@ -1,4 +1,5 @@
 use ability::TAbility;
+use auction::TAuction;
 use base_unit::TBaseUnit;
 use house::THouse;
 use representation::TRepresentation;
@@ -7,45 +8,103 @@ use status::TStatus;
 
 use super::*;
 
-fn replace_assets(
-    global_settings: GlobalSettings,
-    representations: Vec<TRepresentation>,
-    base_units: Vec<TBaseUnit>,
-    houses: Vec<THouse>,
-    abilities: Vec<TAbility>,
-    statuses: Vec<TStatus>,
-) -> Result<(), String> {
-    global_settings.replace();
-    for r in TRepresentation::iter() {
+#[derive(SpacetimeType, Default)]
+struct GameData {
+    global_data: Vec<GlobalData>,
+    global_settings: Vec<GlobalSettings>,
+    ability: Vec<TAbility>,
+    arena_leaderboard: Vec<TArenaLeaderboard>,
+    arena_run: Vec<TArenaRun>,
+    arena_run_archive: Vec<TArenaRunArchive>,
+    auction: Vec<TAuction>,
+    base_unit: Vec<TBaseUnit>,
+    battle: Vec<TBattle>,
+    daily_state: Vec<TDailyState>,
+    house: Vec<THouse>,
+    lootbox_item: Vec<TLootboxItem>,
+    meta_shop: Vec<TMetaShop>,
+    quest: Vec<TQuest>,
+    rainbow_shard_item: Vec<TRainbowShardItem>,
+    representation: Vec<TRepresentation>,
+    status: Vec<TStatus>,
+    team: Vec<TTeam>,
+    trade: Vec<TTrade>,
+    unit_balance: Vec<TUnitBalance>,
+    unit_item: Vec<TUnitItem>,
+    unit_shard_item: Vec<TUnitShardItem>,
+    user: Vec<TUser>,
+    wallet: Vec<TWallet>,
+}
+
+fn replace<E: TableType>(data: Vec<E>) {
+    if data.is_empty() {
+        return;
+    }
+    for r in E::iter() {
         r.delete();
     }
-    for r in representations {
-        TRepresentation::insert(r)?;
+    for r in data {
+        E::insert(r);
     }
-    for unit in TBaseUnit::iter() {
-        unit.delete();
+}
+
+fn replace_assets(data: GameData) -> Result<(), String> {
+    let GameData {
+        mut global_data,
+        mut global_settings,
+        ability,
+        arena_leaderboard,
+        arena_run,
+        arena_run_archive,
+        auction,
+        base_unit,
+        battle,
+        daily_state,
+        house,
+        lootbox_item,
+        meta_shop,
+        quest,
+        rainbow_shard_item,
+        representation,
+        status,
+        team,
+        trade,
+        unit_balance,
+        unit_item,
+        unit_shard_item,
+        user,
+        wallet,
+    } = data;
+    if !global_settings.is_empty() {
+        global_settings.remove(0).replace();
     }
-    for unit in base_units {
-        TBaseUnit::insert(unit)?;
+    if !global_data.is_empty() {
+        GlobalData::delete_by_always_zero(&0);
+        GlobalData::insert(global_data.remove(0)).unwrap();
     }
-    for house in THouse::iter() {
-        house.delete();
-    }
-    for house in houses {
-        THouse::insert(house)?;
-    }
-    for status in TStatus::iter() {
-        status.delete();
-    }
-    for status in statuses {
-        TStatus::insert(status)?;
-    }
-    for ability in TAbility::iter() {
-        ability.delete();
-    }
-    for ability in abilities {
-        TAbility::insert(ability)?;
-    }
+    replace(ability);
+    replace(arena_leaderboard);
+    replace(arena_run);
+    replace(arena_run_archive);
+    replace(auction);
+    replace(base_unit);
+    replace(battle);
+    replace(daily_state);
+    replace(house);
+    replace(lootbox_item);
+    replace(meta_shop);
+    replace(quest);
+    replace(rainbow_shard_item);
+    replace(representation);
+    replace(status);
+    replace(team);
+    replace(trade);
+    replace(unit_balance);
+    replace(unit_item);
+    replace(unit_shard_item);
+    replace(user);
+    replace(wallet);
+
     let ghost = || FusedUnit::from_base_name(GlobalSettings::get().ghost_unit, next_id()).unwrap();
     let enemies = [
         TTeam::new(0, TeamPool::Enemy).units(vec![ghost()]).save(),
@@ -69,93 +128,30 @@ fn replace_assets(
 fn upload_assets(
     ctx: ReducerContext,
     global_settings: GlobalSettings,
-    representations: Vec<TRepresentation>,
-    base_units: Vec<TBaseUnit>,
-    houses: Vec<THouse>,
-    abilities: Vec<TAbility>,
-    statuses: Vec<TStatus>,
+    representation: Vec<TRepresentation>,
+    base_unit: Vec<TBaseUnit>,
+    house: Vec<THouse>,
+    ability: Vec<TAbility>,
+    status: Vec<TStatus>,
 ) -> Result<(), String> {
     ctx.is_admin()?;
-    replace_assets(
-        global_settings,
-        representations,
-        base_units,
-        houses,
-        abilities,
-        statuses,
-    )
+    replace_assets(GameData {
+        global_settings: vec![global_settings],
+        ability,
+        base_unit,
+        house,
+        representation,
+        status,
+        ..default()
+    })
 }
 
 #[spacetimedb(reducer)]
-fn upload_game_archive(
-    ctx: ReducerContext,
-    next_id: u64,
-    users: Vec<TUser>,
-    arena_leaderboard: Vec<TArenaLeaderboard>,
-    teams: Vec<TTeam>,
-    wallets: Vec<TWallet>,
-    unit_items: Vec<TUnitItem>,
-    unit_shards: Vec<TUnitShardItem>,
-    lootboxes: Vec<TLootboxItem>,
-) -> Result<(), String> {
+fn upload_game_data(ctx: ReducerContext, next_id: u64, data: GameData) -> Result<(), String> {
     ctx.is_admin()?;
-    GlobalData::set_next_id(next_id);
-    if !users.is_empty() {
-        for d in TUser::iter() {
-            d.delete();
-        }
-        for d in users {
-            TUser::insert(d)?;
-        }
+    if next_id > 0 {
+        GlobalData::set_next_id(next_id);
     }
-    if !arena_leaderboard.is_empty() {
-        for d in TArenaLeaderboard::iter() {
-            d.delete();
-        }
-        for d in arena_leaderboard {
-            TArenaLeaderboard::insert(d);
-        }
-    }
-    if !teams.is_empty() {
-        for d in TTeam::iter() {
-            d.delete();
-        }
-        for d in teams {
-            TTeam::insert(d)?;
-        }
-    }
-    if !wallets.is_empty() {
-        for d in TWallet::iter() {
-            d.delete();
-        }
-        for d in wallets {
-            TWallet::insert(d)?;
-        }
-    }
-    if !unit_items.is_empty() {
-        for d in TUnitItem::iter() {
-            d.delete();
-        }
-        for d in unit_items {
-            TUnitItem::insert(d)?;
-        }
-    }
-    if !unit_shards.is_empty() {
-        for d in TUnitShardItem::iter() {
-            d.delete();
-        }
-        for d in unit_shards {
-            TUnitShardItem::insert(d)?;
-        }
-    }
-    if !lootboxes.is_empty() {
-        for d in TLootboxItem::iter() {
-            d.delete();
-        }
-        for d in lootboxes {
-            TLootboxItem::insert(d)?;
-        }
-    }
-
+    replace_assets(data)?;
     Ok(())
 }

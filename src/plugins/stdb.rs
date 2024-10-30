@@ -1,8 +1,10 @@
+use serde_json::to_string_pretty;
+use spacetimedb_lib::ser::serde::SerializeWrapper;
 use spacetimedb_sdk::{once_on_subscription_applied, subscribe_owned};
 
 use super::*;
 
-#[derive(EnumIter, AsRefStr, Hash, PartialEq, Eq, Display, Copy, Clone, Debug)]
+#[derive(EnumIter, EnumString, AsRefStr, Hash, PartialEq, Eq, Display, Copy, Clone, Debug)]
 pub enum StdbTable {
     GlobalSettings,
     GlobalData,
@@ -155,6 +157,83 @@ impl StdbQuery {
 }
 
 impl StdbTable {
+    pub fn get_json_data(self) -> String {
+        match self {
+            StdbTable::GlobalSettings => {
+                to_string_pretty(&SerializeWrapper::new(GlobalSettings::iter().collect_vec()))
+            }
+            StdbTable::GlobalData => {
+                to_string_pretty(&SerializeWrapper::new(GlobalData::iter().collect_vec()))
+            }
+            StdbTable::TBaseUnit => {
+                to_string_pretty(&SerializeWrapper::new(TBaseUnit::iter().collect_vec()))
+            }
+            StdbTable::THouse => {
+                to_string_pretty(&SerializeWrapper::new(THouse::iter().collect_vec()))
+            }
+            StdbTable::TAbility => {
+                to_string_pretty(&SerializeWrapper::new(TAbility::iter().collect_vec()))
+            }
+            StdbTable::TStatus => {
+                to_string_pretty(&SerializeWrapper::new(TStatus::iter().collect_vec()))
+            }
+            StdbTable::TRepresentation => to_string_pretty(&SerializeWrapper::new(
+                TRepresentation::iter().collect_vec(),
+            )),
+            StdbTable::TMetaShop => {
+                to_string_pretty(&SerializeWrapper::new(TMetaShop::iter().collect_vec()))
+            }
+            StdbTable::TTrade => {
+                to_string_pretty(&SerializeWrapper::new(TTrade::iter().collect_vec()))
+            }
+            StdbTable::TUser => {
+                to_string_pretty(&SerializeWrapper::new(TUser::iter().collect_vec()))
+            }
+            StdbTable::TQuest => {
+                to_string_pretty(&SerializeWrapper::new(TQuest::iter().collect_vec()))
+            }
+            StdbTable::TArenaRun => {
+                to_string_pretty(&SerializeWrapper::new(TArenaRun::iter().collect_vec()))
+            }
+            StdbTable::TArenaRunArchive => to_string_pretty(&SerializeWrapper::new(
+                TArenaRunArchive::iter().collect_vec(),
+            )),
+            StdbTable::TArenaLeaderboard => to_string_pretty(&SerializeWrapper::new(
+                TArenaLeaderboard::iter().collect_vec(),
+            )),
+            StdbTable::TTeam => {
+                to_string_pretty(&SerializeWrapper::new(TTeam::iter().collect_vec()))
+            }
+            StdbTable::TBattle => {
+                to_string_pretty(&SerializeWrapper::new(TBattle::iter().collect_vec()))
+            }
+            StdbTable::TAuction => {
+                to_string_pretty(&SerializeWrapper::new(TAuction::iter().collect_vec()))
+            }
+            StdbTable::TUnitItem => {
+                to_string_pretty(&SerializeWrapper::new(TUnitItem::iter().collect_vec()))
+            }
+            StdbTable::TUnitShardItem => {
+                to_string_pretty(&SerializeWrapper::new(TUnitShardItem::iter().collect_vec()))
+            }
+            StdbTable::TRainbowShardItem => to_string_pretty(&SerializeWrapper::new(
+                TRainbowShardItem::iter().collect_vec(),
+            )),
+            StdbTable::TLootboxItem => {
+                to_string_pretty(&SerializeWrapper::new(TLootboxItem::iter().collect_vec()))
+            }
+            StdbTable::TWallet => {
+                to_string_pretty(&SerializeWrapper::new(TWallet::iter().collect_vec()))
+            }
+            StdbTable::TDailyState => {
+                to_string_pretty(&SerializeWrapper::new(TDailyState::iter().collect_vec()))
+            }
+            StdbTable::TUnitBalance => {
+                to_string_pretty(&SerializeWrapper::new(TUnitBalance::iter().collect_vec()))
+            }
+        }
+        .unwrap()
+    }
     pub fn full(self) -> StdbQuery {
         StdbQuery {
             table: self,

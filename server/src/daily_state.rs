@@ -17,7 +17,7 @@ impl TDailyState {
     }
     pub fn daily_refresh() {
         for d in Self::iter() {
-            Self::delete_by_owner(&d.owner);
+            d.delete();
         }
     }
     pub fn buy_ranked(mut self) -> i64 {
