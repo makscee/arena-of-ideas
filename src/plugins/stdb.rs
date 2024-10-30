@@ -173,6 +173,7 @@ impl StdbTable {
             | StdbTable::TArenaLeaderboard
             | StdbTable::TTeam
             | StdbTable::TUser
+            | StdbTable::TArenaRunArchive
             | StdbTable::TMetaShop => self.full(),
 
             StdbTable::TTrade => StdbQuery {
@@ -194,7 +195,6 @@ impl StdbTable {
             }
 
             StdbTable::TArenaRun
-            | StdbTable::TArenaRunArchive
             | StdbTable::TBattle
             | StdbTable::TAuction
             | StdbTable::TWallet
