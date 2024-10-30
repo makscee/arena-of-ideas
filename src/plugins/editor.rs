@@ -54,14 +54,14 @@ enum UnitMode {
     Rep,
 }
 
-impl Into<String> for Mode {
-    fn into(self) -> String {
-        self.as_ref().to_case(Case::Title).to_string()
+impl ToCstr for Mode {
+    fn cstr(&self) -> Cstr {
+        self.as_ref().cstr()
     }
 }
-impl Into<String> for UnitMode {
-    fn into(self) -> String {
-        self.as_ref().to_case(Case::Title).to_string()
+impl ToCstr for UnitMode {
+    fn cstr(&self) -> Cstr {
+        self.as_ref().cstr()
     }
 }
 
@@ -163,28 +163,85 @@ impl EditorPlugin {
     fn team_container(faction: Faction) -> TeamContainer {
         TeamContainer::new(faction)
             .top_content(move |ui, world| {
-                if Button::click("Load own").ui(ui).clicked() {
-                    Confirmation::new("Open own team".cstr())
-                        .content(move |ui, world| {
-                            TTeam::filter_by_owner(user_id())
-                                .filter(|t| t.pool.eq(&TeamPool::Owned))
-                                .collect_vec()
-                                .show_modified_table("Teams", ui, world, move |t| {
-                                    t.column_btn_dyn(
-                                        "select",
-                                        Box::new(move |t: &TTeam, _, world| {
-                                            let mut r = rm(world);
-                                            *Self::get_team_mut(faction, &mut r) =
-                                                PackedTeam::from_id(t.id);
-                                            Confirmation::close_current(world);
-                                            Self::load_mode(world);
-                                        }),
-                                    )
-                                });
-                        })
-                        .cancel(|_| {})
-                        .push(world);
-                }
+                ui.horizontal(|ui| {
+                    if Button::click("Load own").ui(ui).clicked() {
+                        Confirmation::new("Open own team".cstr())
+                            .content(move |ui, world| {
+                                TTeam::filter_by_owner(user_id())
+                                    .filter(|t| t.pool.eq(&TeamPool::Owned))
+                                    .collect_vec()
+                                    .show_modified_table("Teams", ui, world, move |t| {
+                                        t.column_btn_dyn(
+                                            "select",
+                                            Box::new(move |t: &TTeam, _, world| {
+                                                let mut r = rm(world);
+                                                *Self::get_team_mut(faction, &mut r) =
+                                                    PackedTeam::from_id(t.id);
+                                                Confirmation::close_current(world);
+                                                Self::load_mode(world);
+                                            }),
+                                        )
+                                    });
+                            })
+                            .cancel(|_| {})
+                            .push(world);
+                    }
+
+                    ui.add_space(30.0);
+                    if Button::click("Paste").ui(ui).clicked() {
+                        if let Some(team) =
+                            paste_from_clipboard(world).and_then(|t| ron::from_str(&t).ok())
+                        {
+                            let mut r = rm(world);
+                            *Self::get_team_mut(faction, &mut r) = team;
+                            Self::load_mode(world);
+                        }
+                    }
+
+                    const GAME_MODE_ID: &str = "champion_mode";
+                    fn selected_mode(ctx: &egui::Context) -> GameMode {
+                        ctx.data(|r| r.get_temp::<GameMode>(Id::new(GAME_MODE_ID)))
+                            .unwrap_or(GameMode::ArenaNormal)
+                    }
+                    ui.add_space(30.0);
+                    if Button::click("Load Champion").ui(ui).clicked() {
+                        Confirmation::new("Load Champion".cstr_c(VISIBLE_LIGHT))
+                            .content(|ui, _| {
+                                let mut mode = selected_mode(ui.ctx());
+                                if Selector::new("mode").ui_iter(
+                                    &mut mode,
+                                    [
+                                        &GameMode::ArenaNormal,
+                                        &GameMode::ArenaRanked,
+                                        &GameMode::ArenaConst(default()),
+                                    ],
+                                    ui,
+                                ) {
+                                    ui.ctx().data_mut(|w| {
+                                        w.insert_temp(Id::new(GAME_MODE_ID), mode.clone());
+                                    })
+                                }
+                            })
+                            .accept(move |world| {
+                                let ctx = egui_context(world).unwrap();
+                                let mode = selected_mode(&ctx);
+                                if let Some(champion) =
+                                    TArenaLeaderboard::filter_by_season(global_settings().season)
+                                        .filter(|a| {
+                                            mem::discriminant(&a.mode) == mem::discriminant(&mode)
+                                        })
+                                        .max_by_key(|a| a.floor)
+                                {
+                                    let mut r = rm(world);
+                                    *Self::get_team_mut(faction, &mut r) =
+                                        PackedTeam::from_id(champion.team);
+                                    Self::load_mode(world);
+                                }
+                            })
+                            .cancel(|_| {})
+                            .push(world);
+                    }
+                });
             })
             .slot_content(move |slot, e, ui, world| {
                 if e.is_none() {
@@ -268,12 +325,16 @@ impl EditorPlugin {
                 Tile::new(Side::Top, |ui, world| {
                     ui.columns(2, |ui| {
                         ui[0].vertical(|ui| {
-                            Self::team_container(Faction::Left).ui(ui, world);
+                            ui.push_id("left", |ui| {
+                                Self::team_container(Faction::Left).ui(ui, world);
+                            });
                         });
                         ui[1].vertical(|ui| {
-                            Self::team_container(Faction::Right)
-                                .left_to_right()
-                                .ui(ui, world);
+                            ui.push_id("right", |ui| {
+                                Self::team_container(Faction::Right)
+                                    .left_to_right()
+                                    .ui(ui, world);
+                            });
                         });
                     });
                 })

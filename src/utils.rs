@@ -534,3 +534,13 @@ impl TTeamExt for TTeam {
         }
     }
 }
+
+impl ToString for GameMode {
+    fn to_string(&self) -> String {
+        match self {
+            GameMode::ArenaNormal => "Normal".into(),
+            GameMode::ArenaRanked => "Ranked".into(),
+            GameMode::ArenaConst(_) => "Const".into(),
+        }
+    }
+}
