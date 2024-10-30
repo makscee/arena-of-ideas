@@ -282,7 +282,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                     if gid == 0 {
                         "...".cstr().label(ui);
                     } else {
-                        gid.get_team().hover_label(ui, w);
+                        gid.get_team_cached().hover_label(ui, w);
                     }
                 }),
                 sortable: true,

@@ -362,6 +362,7 @@ impl StdbStatusExt for spacetimedb_sdk::reducer::Status {
 
 pub trait GIDExt {
     fn get_team(self) -> TTeam;
+    fn get_team_cached(self) -> TTeam;
     fn get_user(self) -> TUser;
     fn unit_item(self) -> TUnitItem;
     fn unit_shard_item(self) -> TUnitShardItem;
@@ -394,13 +395,16 @@ impl GIDExt for u64 {
                 pool: TeamPool::Owned,
             };
         }
+        TTeam::find_by_id(self)
+            .with_context(|| format!("Failed to find Team#{self}"))
+            .unwrap()
+    }
+    fn get_team_cached(self) -> TTeam {
         let mut cache = stdb_cache_get_mut();
         if let Some(team) = cache.teams.get(&self) {
             return team.clone();
         } else {
-            let team = TTeam::find_by_id(self)
-                .with_context(|| format!("Failed to find Team#{self}"))
-                .unwrap();
+            let team = self.get_team();
             cache.teams.insert(self, team.clone());
             team
         }
