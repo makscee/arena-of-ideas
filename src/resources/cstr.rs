@@ -440,7 +440,16 @@ impl ToCstr for FusedUnit {
 }
 impl ToCstr for TTeam {
     fn cstr(&self) -> Cstr {
-        let mut name = self.name.cstr_c(VISIBLE_LIGHT);
+        let mut name = if self.name.len() > 20 {
+            self.name
+                .split_at(20)
+                .0
+                .cstr_c(VISIBLE_LIGHT)
+                .push("...".cstr_cs(VISIBLE_DARK, CstrStyle::Small))
+                .take()
+        } else {
+            self.name.cstr_c(VISIBLE_LIGHT)
+        };
         if self.units.is_empty() {
             return "_".cstr();
         }

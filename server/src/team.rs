@@ -86,6 +86,9 @@ impl TTeam {
 
 #[spacetimedb(reducer)]
 fn team_create(ctx: ReducerContext, name: String) -> Result<(), String> {
+    if name.len() > 20 {
+        return Err("Name is too long (max 20 chars)".into());
+    }
     let user = ctx.user()?;
     TWallet::change(user.id, -GlobalSettings::get().create_team_cost)?;
     TTeam::new(user.id, TeamPool::Owned).name(name).save();

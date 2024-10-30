@@ -330,7 +330,7 @@ impl ShopPlugin {
     }
     pub fn add_tiles(world: &mut World) {
         Tile::new(Side::Right, |ui, world| {
-            ui.set_max_width(180.0);
+            ui.set_max_width(200.0);
             text_dots_text("name".cstr(), user_name().cstr_c(VISIBLE_BRIGHT), ui);
             if let Some(run) = TArenaRun::get_current() {
                 Self::show_stats(&run, ui);
@@ -410,9 +410,8 @@ impl ShopPlugin {
         let mut shop_container = TeamContainer::new(Faction::Shop)
             .slots(run.shop_slots.len())
             .name()
-            .bottom_content(move |ui, _| {
+            .top_content(move |ui, _| {
                 ui.vertical_centered_justified(|ui| {
-                    ui.add_space(20.0);
                     ui.set_max_width(300.0);
                     let run = TArenaRun::current();
                     let text = if run.free_rerolls > 0 {
@@ -437,6 +436,7 @@ impl ShopPlugin {
                     {
                         shop_reroll();
                     }
+                    ui.add_space(20.0);
                 });
             })
             .slot_content(move |slot, _, ui, world| {

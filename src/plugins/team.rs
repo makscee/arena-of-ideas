@@ -137,8 +137,11 @@ impl TeamPlugin {
             })
             .cancel(|_| {})
             .content(|ui, world| {
-                Input::new("name")
-                    .ui_string(&mut world.resource_mut::<TeamResource>().new_team_name, ui);
+                ui.vertical_centered_justified(|ui| {
+                    Input::new("name")
+                        .char_limit(20)
+                        .ui_string(&mut world.resource_mut::<TeamResource>().new_team_name, ui);
+                });
             })
             .push(world);
     }

@@ -482,8 +482,8 @@ impl TArenaRun {
         Ok(())
     }
     fn sell(&mut self, slot: usize) -> Result<(), String> {
-        self.remove_team(slot)?;
         GlobalEvent::GameShopSell(self.team()?.units[slot].clone()).post(self.owner);
+        self.remove_team(slot)?;
         self.g += self.team_slots[slot].sell_price;
         Ok(())
     }
@@ -557,7 +557,6 @@ impl TArenaRun {
                         continue;
                     } else {
                         GlobalEvent::GameShopSkip(slot.unit.clone()).post(self.owner);
-                        continue;
                     }
                 }
             }

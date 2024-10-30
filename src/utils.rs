@@ -500,7 +500,13 @@ pub trait TTeamExt {
 
 impl TTeamExt for TTeam {
     fn hover_label(&self, ui: &mut Ui, world: &mut World) {
-        if self.cstr().label(ui).hovered() {
+        let resp = self
+            .cstr()
+            .as_label(ui)
+            .sense(Sense::click())
+            .selectable(false)
+            .ui(ui);
+        if resp.hovered() {
             cursor_window(ui.ctx(), |ui| {
                 Frame {
                     inner_margin: Margin::same(8.0),
@@ -512,6 +518,15 @@ impl TTeamExt for TTeam {
                     self.show(ui, world);
                 });
             });
+            if resp.clicked() {
+                let packed = PackedTeam::from_id(self.id);
+                let s = ron::to_string(&packed).unwrap();
+                copy_to_clipboard(&s, world);
+                Notification::new(
+                    format!("Team#{} copied to clipboard", self.id).cstr_c(VISIBLE_LIGHT),
+                )
+                .push(world);
+            }
         }
     }
 }
