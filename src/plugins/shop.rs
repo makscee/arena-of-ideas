@@ -330,13 +330,14 @@ impl ShopPlugin {
     }
     pub fn add_tiles(world: &mut World) {
         Tile::new(Side::Right, |ui, world| {
+            ui.set_max_width(180.0);
             text_dots_text("name".cstr(), user_name().cstr_c(VISIBLE_BRIGHT), ui);
             if let Some(run) = TArenaRun::get_current() {
                 Self::show_stats(&run, ui);
             }
             ui.add_space(40.0);
             let run = TArenaRun::current();
-            ui.vertical(|ui| {
+            ui.vertical_centered_justified(|ui| {
                 if Button::click("Start Battle").ui(ui).clicked() {
                     shop_finish();
                     once_on_shop_finish(|_, _, status| {
@@ -409,21 +410,34 @@ impl ShopPlugin {
         let mut shop_container = TeamContainer::new(Faction::Shop)
             .slots(run.shop_slots.len())
             .name()
-            .top_content(move |ui, _| {
-                let run = TArenaRun::current();
-                let text = if run.free_rerolls > 0 {
-                    format!("-0 G ({})", run.free_rerolls)
-                } else {
-                    format!("-{} G", run.price_reroll)
-                };
-                if Button::click(text)
-                    .title("Reroll".cstr())
-                    .enabled(g >= run.price_reroll || run.free_rerolls > 0)
-                    .ui(ui)
-                    .clicked()
-                {
-                    shop_reroll();
-                }
+            .bottom_content(move |ui, _| {
+                ui.vertical_centered_justified(|ui| {
+                    ui.add_space(20.0);
+                    ui.set_max_width(300.0);
+                    let run = TArenaRun::current();
+                    let text = if run.free_rerolls > 0 {
+                        "-0 G"
+                            .cstr_c(YELLOW)
+                            .push(format!(" ({})", run.free_rerolls).cstr_c(VISIBLE_LIGHT))
+                            .take()
+                    } else {
+                        format!("-{} G", run.price_reroll).cstr_c(YELLOW)
+                    };
+                    if Button::click("reroll")
+                        .cstr(
+                            "Reroll "
+                                .cstr_c(VISIBLE_LIGHT)
+                                .push(text)
+                                .style(CstrStyle::Heading)
+                                .take(),
+                        )
+                        .enabled(g >= run.price_reroll || run.free_rerolls > 0)
+                        .ui(ui)
+                        .clicked()
+                    {
+                        shop_reroll();
+                    }
+                });
             })
             .slot_content(move |slot, _, ui, world| {
                 let ss = &run.shop_slots[slot];

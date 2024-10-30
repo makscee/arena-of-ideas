@@ -11,6 +11,7 @@ pub struct TeamContainer {
     context_menu: Option<Box<dyn Fn(usize, Option<Entity>, &mut Ui, &mut World) + Send + Sync>>,
     on_swap: Option<Box<dyn Fn(usize, usize, &mut World) + Send + Sync>>,
     top_content: Option<Box<dyn FnOnce(&mut Ui, &mut World) + Send + Sync>>,
+    bottom_content: Option<Box<dyn FnOnce(&mut Ui, &mut World) + Send + Sync>>,
     slot_content: Option<Box<dyn Fn(usize, Option<Entity>, &mut Ui, &mut World) + Send + Sync>>,
     hover_content: Option<Box<dyn Fn(usize, Option<Entity>, &mut Ui, &mut World) + Send + Sync>>,
     slot_name: HashMap<usize, String>,
@@ -58,6 +59,7 @@ impl TeamContainer {
             show_name: false,
             hug_unit: false,
             top_content: None,
+            bottom_content: None,
             slot_content: None,
             hover_content: None,
             on_click: None,
@@ -90,6 +92,13 @@ impl TeamContainer {
         content: impl FnOnce(&mut Ui, &mut World) + Send + Sync + 'static,
     ) -> Self {
         self.top_content = Some(Box::new(content));
+        self
+    }
+    pub fn bottom_content(
+        mut self,
+        content: impl FnOnce(&mut Ui, &mut World) + Send + Sync + 'static,
+    ) -> Self {
+        self.bottom_content = Some(Box::new(content));
         self
     }
     pub fn slot_content(
@@ -266,7 +275,9 @@ impl TeamContainer {
                 }
             });
         }
-
+        if let Some(content) = self.bottom_content {
+            (content)(ui, world);
+        }
         world
             .resource_mut::<TeamContainerResource>()
             .containers

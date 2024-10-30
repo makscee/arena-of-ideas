@@ -4,7 +4,6 @@ use bevy::{
         camera::{OrthographicProjection, ScalingMode},
         view::InheritedVisibility,
     },
-    window::PrimaryWindow,
 };
 
 use super::*;
@@ -13,12 +12,10 @@ pub struct CameraPlugin;
 
 impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::Title), Self::respawn_camera)
-            .add_systems(OnEnter(GameState::Loading), Self::respawn_camera)
-            .add_systems(
-                Update,
-                Self::adjust_to_fit_units.run_if(in_state(GameState::Battle)),
-            );
+        app.add_systems(
+            Update,
+            Self::adjust_to_fit_units.run_if(in_state(GameState::Battle)),
+        );
     }
 }
 
@@ -27,7 +24,6 @@ pub struct CameraData {
     pub entity: Entity,
     pub need_scale: f32,
     pub cur_scale: f32,
-    pub slot_pixel_spacing: f32,
 }
 
 const SCALE_CHANGE_SPEED: f32 = 3.0;
@@ -63,13 +59,12 @@ impl CameraPlugin {
             None
         }
     }
-    fn respawn_camera(world: &mut World) {
+    pub fn respawn_camera(world: &mut World) {
         let mut camera = Camera2dBundle::default();
         let entity = world.spawn_empty().id();
         let data = CameraData {
             entity,
             cur_scale: 30.0,
-            slot_pixel_spacing: 150.0,
             need_scale: default(),
         };
         data.apply(&mut camera.projection);
@@ -83,7 +78,6 @@ impl CameraPlugin {
         visible: Query<(&Transform, &InheritedVisibility)>,
         mut projection: Query<(&mut OrthographicProjection, &Camera)>,
         mut data: ResMut<CameraData>,
-        window: Query<&bevy::window::Window, With<PrimaryWindow>>,
         time: Res<Time>,
     ) {
         let (mut projection, camera) = projection.single_mut();
@@ -102,8 +96,6 @@ impl CameraPlugin {
         data.need_scale = width;
         data.cur_scale +=
             (data.need_scale - data.cur_scale) * time.delta_seconds() * SCALE_CHANGE_SPEED;
-        let window_width = window.single().resolution.width();
-        data.slot_pixel_spacing = SLOT_SPACING / data.cur_scale * window_width;
         data.apply(&mut projection);
     }
 }

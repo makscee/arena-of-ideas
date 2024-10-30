@@ -290,7 +290,6 @@ impl EditorPlugin {
                                 world,
                             );
                             BattlePlugin::set_next_state(GameState::Editor, world);
-                            TeamContainerResource::clear_state(world);
                             GameState::Battle.set_next(world);
                         }
                         if Button::click("Send BattleStart").ui(ui).clicked() {

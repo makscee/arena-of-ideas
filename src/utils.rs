@@ -122,7 +122,9 @@ pub fn screen_to_world(pos: Vec2, world: &World) -> Vec2 {
     screen_to_world_cam(pos, camera, transform)
 }
 pub fn screen_to_world_cam(pos: Vec2, camera: &Camera, transform: &GlobalTransform) -> Vec2 {
-    camera.viewport_to_world_2d(transform, pos).unwrap()
+    camera
+        .viewport_to_world_2d(transform, pos)
+        .unwrap_or_default()
 }
 pub fn cursor_pos(world: &mut World) -> Option<Vec2> {
     let window = world.query::<&bevy::window::Window>().single(world);

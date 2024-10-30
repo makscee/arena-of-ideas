@@ -149,6 +149,8 @@ fn on_change(world: &mut World) {
     let to = cur_state(world);
     TeamSyncPlugin::unsubscribe_all(world);
     TilePlugin::change_state(to, world);
+    TeamContainerResource::clear_state(world);
+    CameraPlugin::respawn_camera(world);
     stdb_cache_reset();
 }
 

@@ -22,6 +22,7 @@ impl Plugin for BattlePlugin {
 impl BattlePlugin {
     fn on_enter(world: &mut World) {
         info!("Start battle");
+        TeamContainerResource::clear_state(world);
         gt().reset();
         let result = Self::run(world).unwrap();
         let mut bd = world.resource_mut::<BattleResource>();
