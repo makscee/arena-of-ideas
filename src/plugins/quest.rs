@@ -9,6 +9,12 @@ impl QuestPlugin {
                 .map(|ds| ds.quests_taken.len())
                 .unwrap_or_default()
     }
+    pub fn have_completed() -> bool {
+        TQuest::filter_by_owner(user_id())
+            .filter(|q| q.complete)
+            .count()
+            > 0
+    }
     pub fn add_tiles(world: &mut World) {
         Tile::new(Side::Left, |ui, world| {
             let quests_taken = TDailyState::get_current()

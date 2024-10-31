@@ -4,11 +4,13 @@ pub struct SectionMenu {
     sections: Vec<GameSection>,
 }
 
+#[derive(Default)]
 struct GameSection {
     name: &'static str,
     target_state: GameState,
     inner_states: Vec<GameState>,
     options: Vec<GameOption>,
+    indicator: Option<fn(&World) -> bool>,
 }
 
 impl Default for SectionMenu {
@@ -18,8 +20,7 @@ impl Default for SectionMenu {
                 GameSection {
                     name: "TITLE",
                     target_state: GameState::Title,
-                    inner_states: default(),
-                    options: default(),
+                    ..default()
                 },
                 GameSection {
                     name: "META",
@@ -32,48 +33,58 @@ impl Default for SectionMenu {
                     ]
                     .into(),
                     options: [GameOption::Login].into(),
+                    ..default()
                 },
                 GameSection {
                     name: "TEAMS",
                     target_state: GameState::Teams,
                     inner_states: [GameState::TeamEditor].into(),
                     options: [GameOption::Login].into(),
+                    ..default()
                 },
                 GameSection {
                     name: "GAME",
                     target_state: GameState::GameStart,
                     inner_states: [GameState::Battle, GameState::Shop].into(),
                     options: [GameOption::Login].into(),
+                    ..default()
                 },
                 GameSection {
                     name: "QUESTS",
                     target_state: GameState::Quests,
                     inner_states: [GameState::Quests].into(),
                     options: [GameOption::Login].into(),
+                    indicator: Some(|_| {
+                        QuestPlugin::have_completed() || QuestPlugin::new_available()
+                    }),
                 },
                 GameSection {
                     name: "INBOX",
                     target_state: GameState::Inbox,
                     inner_states: default(),
                     options: [GameOption::Login].into(),
+                    ..default()
                 },
                 GameSection {
                     name: "HISTORY",
                     target_state: GameState::BattleHistory,
                     inner_states: default(),
                     options: [GameOption::Login].into(),
+                    ..default()
                 },
                 GameSection {
                     name: "STATS",
                     target_state: GameState::Stats,
                     inner_states: default(),
                     options: [GameOption::Login].into(),
+                    ..default()
                 },
                 GameSection {
                     name: "EDITOR",
                     target_state: GameState::Editor,
                     inner_states: default(),
                     options: [GameOption::Login].into(),
+                    ..default()
                 },
             ]
             .into(),
@@ -97,15 +108,29 @@ impl SectionMenu {
                     let target = GameState::get_target();
                     let current = cur_state(world);
                     ui.visuals_mut().widgets.hovered.fg_stroke.color = VISIBLE_BRIGHT;
+                    let ph = gt().play_head();
+                    const TICK: f32 = 3.0;
+                    let blink = (ph / TICK).fract() * 2.0;
+                    let ticked = gt().ticked(TICK);
                     for GameSection {
                         name,
                         target_state,
                         inner_states,
                         options,
+                        indicator,
                     } in self.sections
                     {
                         let active = target.eq(&target_state) || inner_states.contains(&current);
                         let enabled = active || options.iter().all(|o| o.is_fulfilled(world));
+                        let mut show_indicator = false;
+                        if enabled {
+                            if let Some(indicator) = indicator {
+                                if ticked {
+                                    set_context_bool(world, name, indicator(world));
+                                }
+                                show_indicator = get_context_bool(world, name);
+                            }
+                        }
                         let color = if active {
                             YELLOW
                         } else if enabled {
@@ -120,6 +145,18 @@ impl SectionMenu {
                             .ui(ui);
                         if resp.clicked() {
                             target_state.proceed_to_target(world);
+                        }
+                        if show_indicator {
+                            let center = resp.rect.right_center() - egui::vec2(10.0, 0.0);
+                            let radius = 4.0;
+                            ui.painter().circle(center, radius, YELLOW, Stroke::NONE);
+                            if blink < 1.0 {
+                                ui.painter().circle_stroke(
+                                    center,
+                                    blink * 10.0,
+                                    Stroke::new((1.0 - blink) * 3.0, YELLOW),
+                                );
+                            }
                         }
                         ui.painter().line_segment(
                             [

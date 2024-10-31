@@ -34,6 +34,9 @@ pub fn gt() -> MutexGuard<'static, GameTimer> {
 }
 
 impl GameTimer {
+    pub fn ticked(&self, period: f32) -> bool {
+        (self.play_head / period).floor() != ((self.play_head - self.last_delta) / period).floor()
+    }
     pub fn update(&mut self, delta: f32) {
         self.advance_play(delta * self.playback_speed * (!self.paused as i32 as f32));
     }
