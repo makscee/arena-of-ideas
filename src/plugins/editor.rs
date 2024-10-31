@@ -430,7 +430,7 @@ impl EditorPlugin {
                 Tile::new(Side::Top, |ui, world| {
                     ui.horizontal(|ui| {
                         let mut r = rm(world);
-                        EnumSwitcher::show(&mut r.unit_mode, ui);
+                        EnumSwitcher::new().show(&mut r.unit_mode, ui);
                         ui.add_space(30.0);
                         Selector::new("").ui_iter(
                             &mut r.unit_to_load,
@@ -554,7 +554,7 @@ impl EditorPlugin {
     pub fn add_tiles(world: &mut World) {
         Tile::new(Side::Top, |ui, world| {
             ui.horizontal(|ui| {
-                if EnumSwitcher::show(&mut rm(world).mode, ui) {
+                if EnumSwitcher::new().show(&mut rm(world).mode, ui) {
                     Self::load_mode(world);
                 }
                 ui.add_space(50.0);

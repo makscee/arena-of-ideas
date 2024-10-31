@@ -29,12 +29,13 @@ pub struct Tile {
     stretch_mode: StretchMode,
 }
 
-#[derive(Default, PartialEq, Eq)]
+#[derive(Default, PartialEq)]
 enum StretchMode {
     #[default]
     Floating,
     Min,
     Max,
+    Part(f32),
 }
 
 #[derive(Default)]
@@ -117,11 +118,11 @@ impl TilePlugin {
         {
             tile.allocate_space(mood, &mut sr, dt);
         }
-        for (_, tile) in tr
-            .tiles
-            .iter_mut()
-            .filter(|(id, t)| t.stretch_mode == StretchMode::Floating && !focused.eq(*id))
-        {
+        for (_, tile) in tr.tiles.iter_mut().filter(|(id, t)| {
+            (t.stretch_mode == StretchMode::Floating
+                || matches!(t.stretch_mode, StretchMode::Part(..)))
+                && !focused.eq(*id)
+        }) {
             tile.allocate_space(mood, &mut sr, dt);
         }
         if let Some((_, tile)) = tr
@@ -358,6 +359,12 @@ impl Tile {
         self
     }
     #[must_use]
+    pub fn stretch_part(mut self, v: f32) -> Self {
+        self.stretch_mode = StretchMode::Part(v);
+        self.focusable = false;
+        self
+    }
+    #[must_use]
     pub fn keep(mut self) -> Self {
         self.keep = true;
         self
@@ -381,7 +388,7 @@ impl Tile {
                     }
                 }
             }
-            StretchMode::Min => self.extension.lerp_to(1.0, dt),
+            StretchMode::Min | StretchMode::Part(..) => self.extension.lerp_to(1.0, dt),
             StretchMode::Max => {}
         }
         self.allocated_space = match self.stretch_mode {
@@ -393,6 +400,13 @@ impl Tile {
                 }
             }
             StretchMode::Max => sr.screen_space,
+            StretchMode::Part(v) => {
+                if self.side.is_x() {
+                    egui::vec2(sr.screen_space_initial.x * v * self.extension, 0.0)
+                } else {
+                    egui::vec2(0.0, sr.screen_space_initial.y * v * self.extension)
+                }
+            }
         };
         sr.screen_space -= self.allocated_space;
     }

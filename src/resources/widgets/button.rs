@@ -10,6 +10,7 @@ pub struct Button {
     min_width: f32,
     enabled: bool,
     active: bool,
+    big: bool,
 }
 
 impl Default for Button {
@@ -19,6 +20,7 @@ impl Default for Button {
             title: default(),
             enabled: true,
             active: false,
+            big: false,
             name_cstr: None,
             icon: None,
             min_width: 0.0,
@@ -104,6 +106,10 @@ impl Button {
         self.active = value;
         self
     }
+    pub fn big(mut self) -> Self {
+        self.big = true;
+        self
+    }
     pub fn ui(self, ui: &mut Ui) -> Response {
         if let Some(title) = self.title {
             title.label(ui);
@@ -116,6 +122,8 @@ impl Button {
         } else if self.active {
             style.visuals.widgets.inactive.fg_stroke.color = YELLOW;
             style.visuals.widgets.hovered.fg_stroke.color = YELLOW;
+            style.visuals.widgets.inactive.bg_stroke.color = YELLOW;
+            style.visuals.widgets.hovered.bg_stroke.color = YELLOW;
         }
         let sense = if self.enabled {
             Sense::click()
@@ -128,7 +136,13 @@ impl Button {
             if let Some(name) = self.name_cstr {
                 egui::Button::new(name.widget(1.0, ui))
             } else {
-                egui::Button::new(self.name)
+                egui::Button::new({
+                    let mut rt = RichText::new(self.name);
+                    if self.big {
+                        rt = rt.text_style(TextStyle::Heading);
+                    }
+                    rt
+                })
             }
             .wrap_mode(egui::TextWrapMode::Extend)
             .sense(sense)

@@ -183,8 +183,8 @@ impl Cstr {
 
     pub fn widget(&self, alpha: f32, ui: &mut Ui) -> WidgetText {
         let mut job = LayoutJob::default();
+        let ui_style = ui.style();
         for CstrSub { text, color, style } in self.subs.iter() {
-            let ui_style = ui.style();
             let color = color
                 .unwrap_or(ui_style.visuals.widgets.noninteractive.fg_stroke.color)
                 .gamma_multiply(alpha);
@@ -445,10 +445,11 @@ impl ToCstr for TTeam {
                 .split_at(20)
                 .0
                 .cstr_c(VISIBLE_LIGHT)
-                .push("...".cstr_cs(VISIBLE_DARK, CstrStyle::Small))
+                .push("...".cstr_c(VISIBLE_DARK))
+                .style(CstrStyle::Small)
                 .take()
         } else {
-            self.name.cstr_c(VISIBLE_LIGHT)
+            self.name.cstr_cs(VISIBLE_LIGHT, CstrStyle::Small)
         };
         if self.units.is_empty() {
             return "_".cstr();
@@ -483,10 +484,17 @@ impl ToCstr for GameMode {
         match self {
             GameMode::ArenaNormal | GameMode::ArenaRanked => {}
             GameMode::ArenaConst(seed) => {
-                c.push(format!(" {seed}").cstr_cs(VISIBLE_LIGHT, CstrStyle::Small));
+                if !seed.is_empty() {
+                    c.push(format!(" {seed}").cstr_cs(VISIBLE_LIGHT, CstrStyle::Small));
+                }
             }
         }
         c
+    }
+}
+impl ToCstr for u32 {
+    fn cstr(&self) -> Cstr {
+        self.to_string().cstr_c(VISIBLE_LIGHT)
     }
 }
 
