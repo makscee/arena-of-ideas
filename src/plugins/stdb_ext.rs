@@ -257,3 +257,34 @@ impl Into<usize> for GameMode {
         }
     }
 }
+
+impl Default for GameData {
+    fn default() -> Self {
+        Self {
+            global_data: default(),
+            global_settings: default(),
+            ability: default(),
+            arena_leaderboard: default(),
+            arena_run: default(),
+            arena_run_archive: default(),
+            auction: default(),
+            base_unit: default(),
+            battle: default(),
+            daily_state: default(),
+            house: default(),
+            lootbox_item: default(),
+            meta_shop: default(),
+            quest: default(),
+            rainbow_shard_item: default(),
+            representation: default(),
+            status: default(),
+            team: default(),
+            trade: default(),
+            unit_balance: default(),
+            unit_item: default(),
+            unit_shard_item: default(),
+            user: default(),
+            wallet: default(),
+        }
+    }
+}

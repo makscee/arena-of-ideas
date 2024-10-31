@@ -1,8 +1,5 @@
-use std::sync::RwLockWriteGuard;
-
 use bevy::{color::ColorToPacked, input::mouse::MouseButton};
 use chrono::Utc;
-use spacetimedb_sdk::table::TableType;
 
 use super::*;
 

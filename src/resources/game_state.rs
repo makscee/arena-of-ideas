@@ -27,8 +27,8 @@ pub enum GameState {
     TestScenariosLoad,
     TestScenariosRun,
     ServerSync,
-    GameArchiveDownload,
-    GameArchiveUpload,
+    MigrationDownload,
+    MigrationUpload,
     Profile,
     BattleHistory,
     Error,
@@ -74,8 +74,8 @@ lazy_static! {
             ]
             .into(),
         );
-        m.insert(GameState::GameArchiveUpload, [GameOption::Connect].into());
-        m.insert(GameState::GameArchiveDownload, [GameOption::Connect].into());
+        m.insert(GameState::MigrationUpload, [GameOption::Connect].into());
+        m.insert(GameState::MigrationDownload, [GameOption::Connect].into());
         m.insert(
             GameState::BattleHistory,
             [GameOption::Table(StdbTable::TBattle.full())].into(),

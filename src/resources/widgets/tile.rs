@@ -373,6 +373,10 @@ impl Tile {
         let mut tr = rm(world);
         tr.new_tiles.push(self);
     }
+    pub fn push_front(self, world: &mut World) {
+        let mut tr = rm(world);
+        tr.new_tiles.insert(0, self);
+    }
 
     fn allocate_space(&mut self, mood: egui::Vec2, sr: &mut ScreenResource, dt: f32) {
         if !self.open {
@@ -402,9 +406,9 @@ impl Tile {
             StretchMode::Max => sr.screen_space,
             StretchMode::Part(v) => {
                 if self.side.is_x() {
-                    egui::vec2(sr.screen_space_initial.x * v * self.extension, 0.0)
+                    egui::vec2(sr.screen_space.x * v * self.extension, 0.0)
                 } else {
-                    egui::vec2(0.0, sr.screen_space_initial.y * v * self.extension)
+                    egui::vec2(0.0, sr.screen_space.y * v * self.extension)
                 }
             }
         };

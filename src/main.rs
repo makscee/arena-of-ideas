@@ -33,8 +33,8 @@ pub enum RunMode {
     Editor,
     Test,
     Sync,
-    ArchiveDownload,
-    ArchiveUpload,
+    MigrationDownload,
+    MigrationUpload,
 }
 
 fn main() {
@@ -52,8 +52,8 @@ fn main() {
         RunMode::Editor => GameState::Editor,
         RunMode::Test => GameState::TestScenariosRun,
         RunMode::Sync => GameState::ServerSync,
-        RunMode::ArchiveDownload => GameState::GameArchiveDownload,
-        RunMode::ArchiveUpload => GameState::GameArchiveUpload,
+        RunMode::MigrationDownload => GameState::MigrationDownload,
+        RunMode::MigrationUpload => GameState::MigrationUpload,
     };
     load_client_settings();
     load_client_state();
@@ -118,7 +118,7 @@ fn main() {
             OperationsPlugin,
             ProfilePlugin,
             ConnectPlugin,
-            GameArchivePlugin,
+            MigrationPlugin,
             ClientSettingsPlugin,
             TilePlugin,
             TeamSyncPlugin,

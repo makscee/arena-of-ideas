@@ -1,5 +1,5 @@
 use serde_json::to_string_pretty;
-use spacetimedb_lib::ser::serde::SerializeWrapper;
+use spacetimedb_lib::{de::serde::DeserializeWrapper, ser::serde::SerializeWrapper};
 use spacetimedb_sdk::{once_on_subscription_applied, subscribe_owned};
 
 use super::*;
@@ -157,6 +157,140 @@ impl StdbQuery {
 }
 
 impl StdbTable {
+    pub fn fill_from_json_data(self, json: &str, data: &mut GameData) {
+        match self {
+            StdbTable::GlobalSettings => {
+                data.global_settings =
+                    serde_json::from_str::<DeserializeWrapper<Vec<GlobalSettings>>>(json)
+                        .unwrap()
+                        .0;
+            }
+            StdbTable::GlobalData => {
+                data.global_data =
+                    serde_json::from_str::<DeserializeWrapper<Vec<GlobalData>>>(json)
+                        .unwrap()
+                        .0;
+            }
+            StdbTable::TBaseUnit => {
+                data.base_unit = serde_json::from_str::<DeserializeWrapper<Vec<TBaseUnit>>>(json)
+                    .unwrap()
+                    .0;
+            }
+            StdbTable::THouse => {
+                data.house = serde_json::from_str::<DeserializeWrapper<Vec<THouse>>>(json)
+                    .unwrap()
+                    .0;
+            }
+            StdbTable::TAbility => {
+                data.ability = serde_json::from_str::<DeserializeWrapper<Vec<TAbility>>>(json)
+                    .unwrap()
+                    .0;
+            }
+            StdbTable::TStatus => {
+                data.status = serde_json::from_str::<DeserializeWrapper<Vec<TStatus>>>(json)
+                    .unwrap()
+                    .0;
+            }
+            StdbTable::TRepresentation => {
+                data.representation =
+                    serde_json::from_str::<DeserializeWrapper<Vec<TRepresentation>>>(json)
+                        .unwrap()
+                        .0;
+            }
+            StdbTable::TMetaShop => {
+                data.meta_shop = serde_json::from_str::<DeserializeWrapper<Vec<TMetaShop>>>(json)
+                    .unwrap()
+                    .0;
+            }
+            StdbTable::TTrade => {
+                data.trade = serde_json::from_str::<DeserializeWrapper<Vec<TTrade>>>(json)
+                    .unwrap()
+                    .0;
+            }
+            StdbTable::TUser => {
+                data.user = serde_json::from_str::<DeserializeWrapper<Vec<TUser>>>(json)
+                    .unwrap()
+                    .0;
+            }
+            StdbTable::TQuest => {
+                data.quest = serde_json::from_str::<DeserializeWrapper<Vec<TQuest>>>(json)
+                    .unwrap()
+                    .0;
+            }
+            StdbTable::TArenaRun => {
+                data.arena_run = serde_json::from_str::<DeserializeWrapper<Vec<TArenaRun>>>(json)
+                    .unwrap()
+                    .0;
+            }
+            StdbTable::TArenaRunArchive => {
+                data.arena_run_archive =
+                    serde_json::from_str::<DeserializeWrapper<Vec<TArenaRunArchive>>>(json)
+                        .unwrap()
+                        .0;
+            }
+            StdbTable::TArenaLeaderboard => {
+                data.arena_leaderboard =
+                    serde_json::from_str::<DeserializeWrapper<Vec<TArenaLeaderboard>>>(json)
+                        .unwrap()
+                        .0;
+            }
+            StdbTable::TTeam => {
+                data.team = serde_json::from_str::<DeserializeWrapper<Vec<TTeam>>>(json)
+                    .unwrap()
+                    .0;
+            }
+            StdbTable::TBattle => {
+                data.battle = serde_json::from_str::<DeserializeWrapper<Vec<TBattle>>>(json)
+                    .unwrap()
+                    .0;
+            }
+            StdbTable::TAuction => {
+                data.auction = serde_json::from_str::<DeserializeWrapper<Vec<TAuction>>>(json)
+                    .unwrap()
+                    .0;
+            }
+            StdbTable::TUnitItem => {
+                data.unit_item = serde_json::from_str::<DeserializeWrapper<Vec<TUnitItem>>>(json)
+                    .unwrap()
+                    .0;
+            }
+            StdbTable::TUnitShardItem => {
+                data.unit_shard_item =
+                    serde_json::from_str::<DeserializeWrapper<Vec<TUnitShardItem>>>(json)
+                        .unwrap()
+                        .0;
+            }
+            StdbTable::TRainbowShardItem => {
+                data.rainbow_shard_item =
+                    serde_json::from_str::<DeserializeWrapper<Vec<TRainbowShardItem>>>(json)
+                        .unwrap()
+                        .0;
+            }
+            StdbTable::TLootboxItem => {
+                data.lootbox_item =
+                    serde_json::from_str::<DeserializeWrapper<Vec<TLootboxItem>>>(json)
+                        .unwrap()
+                        .0;
+            }
+            StdbTable::TWallet => {
+                data.wallet = serde_json::from_str::<DeserializeWrapper<Vec<TWallet>>>(json)
+                    .unwrap()
+                    .0;
+            }
+            StdbTable::TDailyState => {
+                data.daily_state =
+                    serde_json::from_str::<DeserializeWrapper<Vec<TDailyState>>>(json)
+                        .unwrap()
+                        .0;
+            }
+            StdbTable::TUnitBalance => {
+                data.unit_balance =
+                    serde_json::from_str::<DeserializeWrapper<Vec<TUnitBalance>>>(json)
+                        .unwrap()
+                        .0;
+            }
+        }
+    }
     pub fn get_json_data(self) -> String {
         match self {
             StdbTable::GlobalSettings => {

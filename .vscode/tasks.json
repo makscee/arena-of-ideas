@@ -80,13 +80,13 @@
       "problemMatcher": [
         "$rustc"
       ],
-      "label": "Archive Download",
+      "label": "Migration Download",
       "args": [
         "--features",
         "bevy/dynamic_linking",
         "--",
         "--mode",
-        "archive-download"
+        "migration-download"
       ],
       "group": {
         "kind": "build"
@@ -98,13 +98,13 @@
       "problemMatcher": [
         "$rustc"
       ],
-      "label": "Archive Upload",
+      "label": "Migration Upload",
       "args": [
         "--features",
         "bevy/dynamic_linking",
         "--",
         "--mode",
-        "archive-upload"
+        "migration-upload"
       ],
       "group": {
         "kind": "build"

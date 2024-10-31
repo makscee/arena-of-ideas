@@ -8,17 +8,17 @@ use spacetimedb_lib::{
     ser::{serde::SerializeWrapper, Serialize},
 };
 
-const DOWNLOAD_FOLDER: &str = "archive_download/";
-const UPLOAD_FOLDER: &str = "archive_upload/";
-pub struct GameArchivePlugin;
+const DOWNLOAD_FOLDER: &str = "migration_download/";
+const UPLOAD_FOLDER: &str = "migration_upload/";
+pub struct MigrationPlugin;
 
-impl Plugin for GameArchivePlugin {
+impl Plugin for MigrationPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::GameArchiveDownload), Self::download)
-            .add_systems(OnEnter(GameState::GameArchiveUpload), Self::upload);
+        app.add_systems(OnEnter(GameState::MigrationDownload), Self::download)
+            .add_systems(OnEnter(GameState::MigrationUpload), Self::upload);
     }
 }
-impl GameArchivePlugin {
+impl MigrationPlugin {
     fn path_download(name: &str) -> PathBuf {
         let mut path = home_dir_path();
         path.push(DOWNLOAD_FOLDER);
@@ -62,17 +62,24 @@ impl GameArchivePlugin {
     fn upload() {
         Self::path_create();
         let paths = std::fs::read_dir(Self::path_upload()).unwrap();
-
+        let mut gd = GameData::default();
         for path in paths {
+            let path = path.unwrap();
             let table = path
-                .unwrap()
                 .file_name()
                 .into_string()
                 .unwrap()
                 .trim_end_matches(".json")
                 .to_string();
             let table = StdbTable::from_str(&table).unwrap();
+            let json = std::fs::read_to_string(&path.path()).unwrap();
+            table.fill_from_json_data(&json, &mut gd);
         }
+        upload_game_data(GlobalData::current().next_id, gd);
+        once_on_upload_game_data(|_, _, s, _, _| {
+            info!("Upload finish: {s:?}");
+            app_exit_op();
+        });
         // let data = &std::fs::read_to_string(&Self::path()).unwrap();
         // let GameArchive {
         //     // global_settings,

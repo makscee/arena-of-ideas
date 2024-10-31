@@ -46,7 +46,7 @@ impl Default for GameStartResource {
 impl GameStartPlugin {
     fn load_data(world: &mut World) {
         TableState::reset_cache(&egui_context(world).unwrap());
-        let mut gsr = GameStartResource::default();
+        let mut gsr = rm(world);
         gsr.leaderboard = HashMap::from_iter(
             TArenaLeaderboard::filter_by_season(gsr.selected_season)
                 .sorted_by_key(|d| -(d.floor as i32))
@@ -61,10 +61,16 @@ impl GameStartPlugin {
                 .into_grouping_map()
                 .collect(),
         );
-        world.insert_resource(gsr);
     }
     pub fn add_tiles(world: &mut World) {
+        if !world.is_resource_added::<GameStartResource>() {
+            world.init_resource::<GameStartResource>();
+        }
         Self::load_data(world);
+        Tile::new(Side::Left, Self::show_middle)
+            .stretch_min()
+            .pinned()
+            .push(world);
         Tile::new(Side::Left, |ui, world| {
             world.resource_scope(|world, r: Mut<GameStartResource>| {
                 if let Some(data) = r.leaderboard.get(&r.selected_mode) {
@@ -88,10 +94,10 @@ impl GameStartPlugin {
                 }
             })
         })
-        .stretch_part(0.4)
         .pinned()
         .transparent()
-        .push(world);
+        .stretch_part(0.5)
+        .push_front(world);
         Tile::new(Side::Right, |ui, world| {
             world.resource_scope(|world, r: Mut<GameStartResource>| {
                 if let Some(data) = r.runs.get(&r.selected_mode) {
@@ -102,79 +108,73 @@ impl GameStartPlugin {
                 }
             })
         })
-        .stretch_part(0.4)
         .pinned()
         .transparent()
+        .stretch_max()
         .push(world);
-        Tile::new(Side::Left, |ui, world| {
-            let mut r = rm(world);
-            let modes = r.game_modes.clone().into_iter();
-            let mut mode: GameMode = r.selected_mode.clone().into();
-            ui.add_space(5.0);
-            EnumSwitcher::new()
-                .style(CstrStyle::Bold)
-                .columns()
-                .show_iter(&mut mode, modes, ui);
-            if EnumSwitcher::new().prefix("Season ".cstr()).show_iter(
-                &mut r.selected_season,
-                0..=global_settings().season,
-                ui,
-            ) {
-                Self::load_data(world);
-                return;
-            }
-            br(ui);
+    }
+    fn show_middle(ui: &mut Ui, world: &mut World) {
+        let mut r = rm(world);
+        let modes = r.game_modes.clone().into_iter();
+        let mut mode: GameMode = r.selected_mode.clone().into();
+        ui.add_space(5.0);
+        if EnumSwitcher::new()
+            .style(CstrStyle::Bold)
+            .columns()
+            .show_iter(&mut mode, modes, ui)
+        {
             r.selected_mode = mode.clone().into();
-            ui.vertical_centered_justified(|ui| {
-                mode.cstr().style(CstrStyle::Heading).label(ui);
-                ui.add_space(30.0);
-                let run = TArenaRun::get_current();
-                let mut entry_fee = None;
-                if run.is_none() {
-                    let mut enabled = true;
-                    match &mode {
-                        GameMode::ArenaNormal => {}
-                        GameMode::ArenaRanked => {
-                            let mut r = rm(world);
-                            if r.teams.is_empty() {
-                                "Need to create at least one team"
-                                    .cstr_cs(RED, CstrStyle::Bold)
-                                    .as_label(ui)
-                                    .wrap()
-                                    .ui(ui);
-                                enabled = false;
-                            } else {
-                                let cost = TDailyState::current().ranked_cost;
-                                let mut new_selected = None;
-                                ui.horizontal_wrapped(|ui| {
-                                    for (i, team) in r.teams.iter().enumerate() {
-                                        if Button::click(i.to_string())
-                                            .cstr(team.cstr())
-                                            .active(r.selected_team == i)
-                                            .ui(ui)
-                                            .clicked()
-                                        {
-                                            new_selected = Some(i);
-                                        }
+            Self::load_data(world);
+            return;
+        }
+        if EnumSwitcher::new().prefix("Season ".cstr()).show_iter(
+            &mut r.selected_season,
+            0..=global_settings().season,
+            ui,
+        ) {
+            Self::load_data(world);
+            return;
+        }
+        br(ui);
+        ui.vertical_centered_justified(|ui| {
+            mode.cstr().style(CstrStyle::Heading).label(ui);
+            ui.add_space(30.0);
+            let run = TArenaRun::get_current();
+            let mut entry_fee = None;
+            if run.is_none() {
+                let mut enabled = true;
+                match &mode {
+                    GameMode::ArenaNormal => {}
+                    GameMode::ArenaRanked => {
+                        let mut r = rm(world);
+                        if r.teams.is_empty() {
+                            "Need to create at least one team"
+                                .cstr_cs(RED, CstrStyle::Bold)
+                                .as_label(ui)
+                                .wrap()
+                                .ui(ui);
+                            enabled = false;
+                        } else {
+                            let cost = TDailyState::current().ranked_cost;
+                            let mut new_selected = None;
+                            ui.horizontal_wrapped(|ui| {
+                                for (i, team) in r.teams.iter().enumerate() {
+                                    if Button::click(i.to_string())
+                                        .cstr(team.cstr())
+                                        .active(r.selected_team == i)
+                                        .ui(ui)
+                                        .clicked()
+                                    {
+                                        new_selected = Some(i);
                                     }
-                                });
-                                if let Some(i) = new_selected {
-                                    r.selected_team = i;
                                 }
-                                ui.add_space(30.0);
-                                r.teams[r.selected_team].clone().hover_label(ui, world);
-
-                                if cost == 0 {
-                                    "First daily run free!"
-                                        .cstr_cs(GREEN, CstrStyle::Bold)
-                                        .label(ui);
-                                    space(ui);
-                                }
-                                entry_fee = Some(cost);
+                            });
+                            if let Some(i) = new_selected {
+                                r.selected_team = i;
                             }
-                        }
-                        GameMode::ArenaConst(_) => {
-                            let cost = TDailyState::current().const_cost;
+                            ui.add_space(30.0);
+                            r.teams[r.selected_team].clone().hover_label(ui, world);
+
                             if cost == 0 {
                                 "First daily run free!"
                                     .cstr_cs(GREEN, CstrStyle::Bold)
@@ -183,97 +183,104 @@ impl GameStartPlugin {
                             }
                             entry_fee = Some(cost);
                         }
-                    };
-                    let mut btn = Button::click("Play");
-                    if let Some(cost) = entry_fee {
-                        btn = btn.credits_cost(cost);
-                        enabled = enabled && can_afford(cost);
                     }
-                    if btn.big().enabled(enabled).ui(ui).clicked() {
-                        let r = rm(world);
-                        let mut cs = client_state().clone();
-                        cs.last_played_mode = Some(r.selected_mode as u64);
-                        match &mode {
-                            GameMode::ArenaNormal => {
-                                run_start_normal();
-                                once_on_run_start_normal(|_, _, status| {
-                                    status.on_success(|w| GameState::Shop.proceed_to_target(w))
-                                });
-                            }
-                            GameMode::ArenaRanked => {
-                                let team = r.teams[r.selected_team].id;
-                                cs.last_played_team = Some(team);
-                                run_start_ranked(team);
-                                once_on_run_start_ranked(|_, _, status, _| {
-                                    status.on_success(|w| GameState::Shop.proceed_to_target(w))
-                                });
-                            }
-                            GameMode::ArenaConst(_) => {
-                                run_start_const();
-                                once_on_run_start_const(|_, _, status| {
-                                    status.on_success(|w| GameState::Shop.proceed_to_target(w))
-                                });
-                            }
+                    GameMode::ArenaConst(_) => {
+                        let cost = TDailyState::current().const_cost;
+                        if cost == 0 {
+                            "First daily run free!"
+                                .cstr_cs(GREEN, CstrStyle::Bold)
+                                .label(ui);
+                            space(ui);
                         }
-                        cs.save();
+                        entry_fee = Some(cost);
                     }
+                };
+                let mut btn = Button::click("Play");
+                if let Some(cost) = entry_fee {
+                    btn = btn.credits_cost(cost);
+                    enabled = enabled && can_afford(cost);
                 }
-                ui.add_space(13.0);
-                if let Some(run) = run {
-                    ui.vertical_centered(|ui| {
-                        if Button::click("Continue")
-                            .cstr("Continue".cstr_cs(VISIBLE_BRIGHT, CstrStyle::Heading))
-                            .ui(ui)
-                            .clicked()
-                        {
-                            GameState::Shop.proceed_to_target(world);
-                        }
-                        if Button::click("Abandon run").red(ui).ui(ui).clicked() {
-                            Confirmation::new("Abandon current run?".cstr_c(VISIBLE_BRIGHT))
-                                .accept(|_| {
-                                    run_finish();
-                                })
-                                .cancel(|_| {})
-                                .push(world);
-                        }
-                        ui.add_space(20.0);
-                        ShopPlugin::show_stats(&run, ui);
-                    });
-                }
-                ui.with_layout(Layout::bottom_up(Align::LEFT), |ui| {
-                    match mode {
+                if btn.big().enabled(enabled).ui(ui).clicked() {
+                    let r = rm(world);
+                    let mut cs = client_state().clone();
+                    cs.last_played_mode = Some(r.selected_mode as u64);
+                    match &mode {
                         GameMode::ArenaNormal => {
-                            "1. Defeat as many enemies as possible\n\
-                        2. 4 lives, replenish on win every 5 floors\n\
-                        3. Defeat current champion for a reward"
+                            run_start_normal();
+                            once_on_run_start_normal(|_, _, status| {
+                                status.on_success(|w| GameState::Shop.proceed_to_target(w))
+                            });
                         }
                         GameMode::ArenaRanked => {
-                            "1. Start with own team\n\
-                        2. Defeat as many enemies as possible\n\
-                        3. 4 lives, replenish on win every 5 floors\n\
-                        4. Defeat current champion for a reward\n\
-                        5. Credits reward depending on win streak\n\
-                        6. No fee once a day"
+                            let team = r.teams[r.selected_team].id;
+                            cs.last_played_team = Some(team);
+                            run_start_ranked(team);
+                            once_on_run_start_ranked(|_, _, status, _| {
+                                status.on_success(|w| GameState::Shop.proceed_to_target(w))
+                            });
                         }
                         GameMode::ArenaConst(_) => {
-                            "1. Defeat as many enemies as possible\n\
-                        2. 4 lives, replenish on win every 5 floors\n\
-                        3. Entry fee growing every time, reset on day start\n\
-                        4. Credits reward depending on win streak\n\
-                        5. Fixed seed, everyone gets same units in shop\n\
-                        6. Defeat current champion for a reward\n\
-                        7. Rewards are multiplied by 2"
+                            run_start_const();
+                            once_on_run_start_const(|_, _, status| {
+                                status.on_success(|w| GameState::Shop.proceed_to_target(w))
+                            });
                         }
                     }
-                    .cstr_cs(VISIBLE_LIGHT, CstrStyle::Small)
-                    .as_label(ui)
-                    .wrap()
-                    .ui(ui);
+                    cs.save();
+                }
+            }
+            ui.add_space(13.0);
+            if let Some(run) = run {
+                ui.vertical_centered(|ui| {
+                    if Button::click("Continue")
+                        .cstr("Continue".cstr_cs(VISIBLE_BRIGHT, CstrStyle::Heading))
+                        .ui(ui)
+                        .clicked()
+                    {
+                        GameState::Shop.proceed_to_target(world);
+                    }
+                    if Button::click("Abandon run").red(ui).ui(ui).clicked() {
+                        Confirmation::new("Abandon current run?".cstr_c(VISIBLE_BRIGHT))
+                            .accept(|_| {
+                                run_finish();
+                            })
+                            .cancel(|_| {})
+                            .push(world);
+                    }
+                    ui.add_space(20.0);
+                    ShopPlugin::show_stats(&run, ui);
                 });
+            }
+            ui.with_layout(Layout::bottom_up(Align::LEFT), |ui| {
+                match mode {
+                    GameMode::ArenaNormal => {
+                        "1. Defeat as many enemies as possible\n\
+                    2. 4 lives, replenish on win every 5 floors\n\
+                    3. Defeat current champion for a reward"
+                    }
+                    GameMode::ArenaRanked => {
+                        "1. Start with own team\n\
+                    2. Defeat as many enemies as possible\n\
+                    3. 4 lives, replenish on win every 5 floors\n\
+                    4. Defeat current champion for a reward\n\
+                    5. Credits reward depending on win streak\n\
+                    6. No fee once a day"
+                    }
+                    GameMode::ArenaConst(_) => {
+                        "1. Defeat as many enemies as possible\n\
+                    2. 4 lives, replenish on win every 5 floors\n\
+                    3. Entry fee growing every time, reset on day start\n\
+                    4. Credits reward depending on win streak\n\
+                    5. Fixed seed, everyone gets same units in shop\n\
+                    6. Defeat current champion for a reward\n\
+                    7. Rewards are multiplied by 2"
+                    }
+                }
+                .cstr_cs(VISIBLE_LIGHT, CstrStyle::Small)
+                .as_label(ui)
+                .wrap()
+                .ui(ui);
             });
-        })
-        .stretch_part(0.2)
-        .pinned()
-        .push(world);
+        });
     }
 }

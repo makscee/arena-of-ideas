@@ -165,14 +165,14 @@ impl ShowTable<TArenaLeaderboard> for Vec<TArenaLeaderboard> {
         m: impl Fn(Table<TArenaLeaderboard>) -> Table<TArenaLeaderboard>,
     ) -> TableState {
         let mut t = Table::new(name)
-            .column_int("floor", |d: &TArenaLeaderboard| d.floor as i32)
-            .column_ts("time", |d| d.ts)
-            .column_team("team", |d| d.team)
+            .column_int("flr", |d: &TArenaLeaderboard| d.floor as i32)
             .column_user_click(
                 "owner",
                 |d| d.user,
                 |gid, _, world| TilePlugin::add_user(gid, world),
             )
+            .column_team("team", |d| d.team)
+            .column_ts("time", |d| d.ts)
             .column_cstr("mode", |d, _| d.mode.cstr_expanded());
         t = m(t);
         t.ui(self, ui, world)
@@ -187,15 +187,16 @@ impl ShowTable<TArenaRunArchive> for Vec<TArenaRunArchive> {
         m: impl Fn(Table<TArenaRunArchive>) -> Table<TArenaRunArchive>,
     ) -> TableState {
         let mut t = Table::new(name)
-            .column_gid("id", |d: &TArenaRunArchive| d.id)
-            .column_int("floor", |d| d.floor as i32)
-            .column_team("team", |d| d.team)
+            .column_int("flr", |d: &TArenaRunArchive| d.floor as i32)
             .column_user_click(
                 "owner",
                 |d| d.owner,
                 |gid, _, world| TilePlugin::add_user(gid, world),
             )
-            .column_cstr("mode", |d, _| d.mode.cstr());
+            .column_team("team", |d| d.team)
+            .column_gid("id", |d| d.id)
+            .column_ts("time", |d| d.ts)
+            .column_cstr("mode", |d, _| d.mode.cstr_expanded());
         t = m(t);
         t.ui(self, ui, world)
     }
