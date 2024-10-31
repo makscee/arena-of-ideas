@@ -2,14 +2,6 @@ use super::*;
 
 pub struct GameStartPlugin;
 
-impl Plugin for GameStartPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::GameStart), |world: &mut World| {
-            world.insert_resource(GameStartResource::default());
-        });
-    }
-}
-
 #[derive(Resource)]
 struct GameStartResource {
     game_modes: Vec<GameMode>,
@@ -54,7 +46,7 @@ impl Default for GameStartResource {
 impl GameStartPlugin {
     fn load_data(world: &mut World) {
         TableState::reset_cache(&egui_context(world).unwrap());
-        let mut gsr = rm(world);
+        let mut gsr = GameStartResource::default();
         gsr.leaderboard = HashMap::from_iter(
             TArenaLeaderboard::filter_by_season(gsr.selected_season)
                 .sorted_by_key(|d| -(d.floor as i32))
@@ -69,10 +61,7 @@ impl GameStartPlugin {
                 .into_grouping_map()
                 .collect(),
         );
-        gsr.teams = TTeam::filter_by_owner(user_id())
-            .filter(|t| t.pool == TeamPool::Owned)
-            .sorted_by_key(|d| d.id)
-            .collect_vec();
+        world.insert_resource(gsr);
     }
     pub fn add_tiles(world: &mut World) {
         Self::load_data(world);
@@ -80,6 +69,19 @@ impl GameStartPlugin {
             world.resource_scope(|world, r: Mut<GameStartResource>| {
                 if let Some(data) = r.leaderboard.get(&r.selected_mode) {
                     title("Leaderboard", ui);
+                    if let Some(first) = data.get(0) {
+                        ui.vertical_centered_justified(|ui| {
+                            "Current champion"
+                                .cstr_cs(YELLOW, CstrStyle::Bold)
+                                .label(ui);
+                            first
+                                .user
+                                .get_user()
+                                .name
+                                .cstr_cs(VISIBLE_BRIGHT, CstrStyle::Heading2)
+                                .label(ui);
+                        });
+                    }
                     ScrollArea::both().auto_shrink(false).show(ui, |ui| {
                         data.show_table("Leaderboard", ui, world);
                     });
@@ -123,9 +125,9 @@ impl GameStartPlugin {
             }
             br(ui);
             r.selected_mode = mode.clone().into();
-            ui.add_space(30.0);
             ui.vertical_centered_justified(|ui| {
                 mode.cstr().style(CstrStyle::Heading).label(ui);
+                ui.add_space(30.0);
                 let run = TArenaRun::get_current();
                 let mut entry_fee = None;
                 if run.is_none() {
@@ -137,7 +139,9 @@ impl GameStartPlugin {
                             if r.teams.is_empty() {
                                 "Need to create at least one team"
                                     .cstr_cs(RED, CstrStyle::Bold)
-                                    .label(ui);
+                                    .as_label(ui)
+                                    .wrap()
+                                    .ui(ui);
                                 enabled = false;
                             } else {
                                 let cost = TDailyState::current().ranked_cost;

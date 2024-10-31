@@ -120,7 +120,6 @@ fn main() {
             ConnectPlugin,
             GameArchivePlugin,
             ClientSettingsPlugin,
-            GameStartPlugin,
             TilePlugin,
             TeamSyncPlugin,
             AudioPlugin,
