@@ -2,6 +2,7 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN RUST INSTEAD.
 
 #![allow(unused_imports)]
+use super::unit_pool::UnitPool;
 use spacetimedb_sdk::{
     anyhow::{anyhow, Result},
     identity::Identity,
@@ -17,8 +18,9 @@ pub struct TBaseUnit {
     pub name: String,
     pub pwr: i32,
     pub hp: i32,
-    pub rarity: i8,
+    pub rarity: u8,
     pub house: String,
+    pub pool: UnitPool,
     pub triggers: Vec<String>,
     pub targets: Vec<String>,
     pub effects: Vec<String>,
@@ -54,7 +56,7 @@ impl TBaseUnit {
         Self::filter(|row| row.hp == hp)
     }
     #[allow(unused)]
-    pub fn filter_by_rarity(rarity: i8) -> TableIter<Self> {
+    pub fn filter_by_rarity(rarity: u8) -> TableIter<Self> {
         Self::filter(|row| row.rarity == rarity)
     }
     #[allow(unused)]

@@ -69,26 +69,6 @@ impl WidgetsPlugin {
         let Some(ctx) = &egui_context(world) else {
             return;
         };
-        Area::new(Id::new("corner_info"))
-            .anchor(Align2::RIGHT_BOTTOM, [0.0, -20.0])
-            .show(ctx, |ui| {
-                let ui = &mut ui.child_ui(
-                    ui.available_rect_before_wrap(),
-                    Layout::right_to_left(Align::Min),
-                    None,
-                );
-                ui.add_space(13.0);
-                if let Some(fps) = world
-                    .resource::<DiagnosticsStore>()
-                    .get(&FrameTimeDiagnosticsPlugin::FPS)
-                {
-                    if let Some(fps) = fps.smoothed() {
-                        ui.label(format!("fps: {fps:.0}"));
-                    }
-                }
-                VERSION.cstr().label(ui);
-                current_server().1.cstr().bold().label(ui);
-            });
 
         SectionMenu::default().show(ctx, world);
 
@@ -111,5 +91,27 @@ impl WidgetsPlugin {
         Trade::show_active(ctx, world);
         Confirmation::show_current(ctx, world);
         Notification::show_recent(ctx, world);
+
+        Area::new(Id::new("corner_info"))
+            .anchor(Align2::RIGHT_BOTTOM, [0.0, -20.0])
+            .order(Order::Tooltip)
+            .show(ctx, |ui| {
+                let ui = &mut ui.child_ui(
+                    ui.available_rect_before_wrap(),
+                    Layout::right_to_left(Align::Min),
+                    None,
+                );
+                ui.add_space(13.0);
+                if let Some(fps) = world
+                    .resource::<DiagnosticsStore>()
+                    .get(&FrameTimeDiagnosticsPlugin::FPS)
+                {
+                    if let Some(fps) = fps.smoothed() {
+                        ui.label(format!("fps: {fps:.0}"));
+                    }
+                }
+                VERSION.cstr().label(ui);
+                current_server().1.cstr().bold().label(ui);
+            });
     }
 }

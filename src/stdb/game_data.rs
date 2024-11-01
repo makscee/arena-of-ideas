@@ -13,6 +13,9 @@ use super::t_base_unit::TBaseUnit;
 use super::t_battle::TBattle;
 use super::t_daily_state::TDailyState;
 use super::t_house::THouse;
+use super::t_incubator::TIncubator;
+use super::t_incubator_favorite::TIncubatorFavorite;
+use super::t_incubator_vote::TIncubatorVote;
 use super::t_lootbox_item::TLootboxItem;
 use super::t_meta_shop::TMetaShop;
 use super::t_quest::TQuest;
@@ -62,4 +65,7 @@ pub struct GameData {
     pub unit_shard_item: Vec<TUnitShardItem>,
     pub user: Vec<TUser>,
     pub wallet: Vec<TWallet>,
+    pub incubator: Vec<TIncubator>,
+    pub incubator_vote: Vec<TIncubatorVote>,
+    pub incubator_favorite: Vec<TIncubatorFavorite>,
 }

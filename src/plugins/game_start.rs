@@ -327,18 +327,10 @@ impl GameStartPlugin {
                                             "L".cstr_c(RED)
                                         }
                                     })
-                                    .column_user_click(
-                                        "player",
-                                        |d| d.owner,
-                                        |gid, _, world| TilePlugin::add_user(gid, world),
-                                    )
+                                    .column_user_click("player", |d| d.owner)
                                     .column_team("player >", |d| d.team_left)
                                     .column_team("< enemy", |d| d.team_right)
-                                    .column_user_click(
-                                        "enemy",
-                                        |d| d.team_right.get_team().owner,
-                                        |gid, _, world| TilePlugin::add_user(gid, world),
-                                    )
+                                    .column_user_click("enemy", |d| d.team_right.get_team().owner)
                                     .column_gid("id", |d| d.id)
                                     .column_cstr("mode", |d, _| d.mode.cstr())
                                     .column_btn("copy", |d, _, world| {

@@ -3,7 +3,6 @@
     name: "Ghost",
     hp: 1,
     pwr: 0,
-    rarity: -1,
     houses: ["Default"],
     representation: (
         material: Shape(

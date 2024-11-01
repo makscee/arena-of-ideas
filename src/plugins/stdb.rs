@@ -34,6 +34,9 @@ pub enum StdbTable {
     TWallet,
     TDailyState,
     TUnitBalance,
+    TIncubator,
+    TIncubatorVote,
+    TIncubatorFavorite,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -289,6 +292,23 @@ impl StdbTable {
                         .unwrap()
                         .0;
             }
+            StdbTable::TIncubator => {
+                data.incubator = serde_json::from_str::<DeserializeWrapper<Vec<TIncubator>>>(json)
+                    .unwrap()
+                    .0;
+            }
+            StdbTable::TIncubatorVote => {
+                data.incubator_vote =
+                    serde_json::from_str::<DeserializeWrapper<Vec<TIncubatorVote>>>(json)
+                        .unwrap()
+                        .0;
+            }
+            StdbTable::TIncubatorFavorite => {
+                data.incubator_favorite =
+                    serde_json::from_str::<DeserializeWrapper<Vec<TIncubatorFavorite>>>(json)
+                        .unwrap()
+                        .0;
+            }
         }
     }
     pub fn get_json_data(self) -> String {
@@ -365,6 +385,15 @@ impl StdbTable {
             StdbTable::TUnitBalance => {
                 to_string_pretty(&SerializeWrapper::new(TUnitBalance::iter().collect_vec()))
             }
+            StdbTable::TIncubator => {
+                to_string_pretty(&SerializeWrapper::new(TIncubator::iter().collect_vec()))
+            }
+            StdbTable::TIncubatorVote => {
+                to_string_pretty(&SerializeWrapper::new(TIncubatorVote::iter().collect_vec()))
+            }
+            StdbTable::TIncubatorFavorite => to_string_pretty(&SerializeWrapper::new(
+                TIncubatorFavorite::iter().collect_vec(),
+            )),
         }
         .unwrap()
     }
@@ -389,6 +418,9 @@ impl StdbTable {
             | StdbTable::TTeam
             | StdbTable::TUser
             | StdbTable::TArenaRunArchive
+            | StdbTable::TIncubator
+            | StdbTable::TIncubatorVote
+            | StdbTable::TIncubatorFavorite
             | StdbTable::TMetaShop => self.full(),
 
             StdbTable::TTrade => StdbQuery {

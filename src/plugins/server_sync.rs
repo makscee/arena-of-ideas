@@ -14,36 +14,37 @@ impl ServerSyncPlugin {
         let ga = game_assets().clone();
         let gs = ga.global_settings;
 
-        let mut representations: HashMap<String, TRepresentation> = default();
+        let mut representations: HashMap<String, Representation> = default();
         let mut units: Vec<TBaseUnit> = default();
-        let mut packed_units = ga.heroes.into_values().collect_vec();
-        packed_units.push(ga.ghost);
+        representations.insert(ga.ghost.name.clone(), ga.ghost.representation.clone());
+        units.push({
+            let mut unit: TBaseUnit = ga.ghost.into();
+            unit.pool = UnitPool::Summon;
+            unit
+        });
         for house in ga.houses.values() {
-            for mut summon in house.summons.iter().cloned() {
-                summon.rarity = -1;
-                packed_units.push(summon);
+            for summon in house.summons.iter().cloned() {
+                representations.insert(summon.name.clone(), summon.representation.clone());
+                let mut unit: TBaseUnit = summon.into();
+                unit.pool = UnitPool::Summon;
+                units.push(unit);
             }
         }
-        for unit in packed_units {
-            if representations
-                .insert(
-                    unit.name.clone(),
-                    TRepresentation {
-                        id: unit.name.clone(),
-                        data: ron::to_string(&unit.representation).unwrap(),
-                    },
-                )
-                .is_some()
-            {
-                panic!("Duplicate representation {:?}", unit);
-            }
-            units.push(unit.into());
+        for hero in ga.heroes.into_values() {
+            representations.insert(hero.name.clone(), hero.representation.clone());
+            units.push(hero.into());
         }
 
         let houses = ga.houses.into_values().map(|h| h.into()).collect_vec();
         let abilities = ga.abilities.into_values().map(|a| a.into()).collect_vec();
         let statuses = ga.statuses.into_values().map(|s| s.into()).collect_vec();
-        let representations = representations.into_values().collect_vec();
+        let representations = representations
+            .into_iter()
+            .map(|(id, rep)| TRepresentation {
+                id,
+                data: ron::to_string(&rep).unwrap(),
+            })
+            .collect_vec();
         upload_assets(gs, representations, units, houses, abilities, statuses);
         once_on_upload_assets(|_, _, status, _, _, _, _, _, _| {
             match status {

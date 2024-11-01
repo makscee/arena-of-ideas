@@ -83,8 +83,12 @@ impl GameAssets {
             .expect("Assets not synced");
         let mut heroes: HashMap<String, PackedUnit> = default();
         for unit in TBaseUnit::iter() {
-            if unit.rarity >= 0 {
-                heroes.insert(unit.name.clone(), unit.into());
+            match unit.pool {
+                UnitPool::Game => {
+                    heroes.insert(unit.name.clone(), unit.into());
+                }
+                UnitPool::Incubator => {}
+                UnitPool::Summon => {}
             }
         }
         let mut houses: HashMap<String, House> = default();
@@ -166,8 +170,6 @@ impl LoadingPlugin {
                 colors.insert(ability.name.clone(), color);
             }
             for unit in house.summons.iter() {
-                let mut unit = unit.clone();
-                unit.rarity = -1;
                 colors.insert(unit.name.clone(), color);
                 summons.insert(unit.name.clone(), unit.clone());
             }

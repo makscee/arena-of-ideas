@@ -73,10 +73,12 @@ impl MetaPlugin {
         let voted: HashSet<String> =
             HashSet::from_iter(TUnitBalance::filter_by_owner(user_id()).map(|u| u.unit));
         let mut units = TBaseUnit::iter()
-            .filter_map(|u| match u.rarity >= 0 && !voted.contains(&u.name) {
-                true => Some(u.name),
-                false => None,
-            })
+            .filter_map(
+                |u| match u.pool == UnitPool::Game && !voted.contains(&u.name) {
+                    true => Some(u.name),
+                    false => None,
+                },
+            )
             .collect_vec();
         units.shuffle(&mut thread_rng());
         world.insert_resource(BalancingResource {

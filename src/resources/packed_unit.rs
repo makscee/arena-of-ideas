@@ -19,8 +19,8 @@ pub struct PackedUnit {
     pub lvl: i32,
     #[serde(default = "default_zero")]
     pub xp: i32,
-    #[serde(default = "default_zero_i8")]
-    pub rarity: i8,
+    #[serde(default = "default_zero_u8")]
+    pub rarity: u8,
     #[serde(default = "default_house")]
     pub houses: Vec<String>,
     #[serde(default)]
@@ -39,7 +39,7 @@ fn default_one() -> i32 {
 fn default_zero() -> i32 {
     0
 }
-fn default_zero_i8() -> i8 {
+fn default_zero_u8() -> u8 {
     0
 }
 fn default_empty() -> String {
@@ -210,6 +210,7 @@ impl From<PackedUnit> for TBaseUnit {
             triggers,
             targets,
             effects,
+            pool: UnitPool::Game,
         }
     }
 }

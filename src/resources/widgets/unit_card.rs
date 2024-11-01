@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize, Default, Debug)]
 pub struct UnitCard {
     name: Cstr,
     houses: Vec<String>,
@@ -102,6 +102,7 @@ impl UnitCard {
             stroke: Stroke::NONE,
         }
         .show(ui, |ui| {
+            ui.set_min_width(ui.available_width());
             self.name.label(ui);
             fn mutation_cstr(value: i32) -> Cstr {
                 match value.signum() {

@@ -166,11 +166,7 @@ impl ShowTable<TArenaLeaderboard> for Vec<TArenaLeaderboard> {
     ) -> TableState {
         let mut t = Table::new(name)
             .column_int("flr", |d: &TArenaLeaderboard| d.floor as i32)
-            .column_user_click(
-                "owner",
-                |d| d.user,
-                |gid, _, world| TilePlugin::add_user(gid, world),
-            )
+            .column_user_click("owner", |d| d.user)
             .column_team("team", |d| d.team)
             .column_ts("time", |d| d.ts)
             .column_cstr("mode", |d, _| d.mode.cstr_expanded());
@@ -188,11 +184,7 @@ impl ShowTable<TArenaRunArchive> for Vec<TArenaRunArchive> {
     ) -> TableState {
         let mut t = Table::new(name)
             .column_int("flr", |d: &TArenaRunArchive| d.floor as i32)
-            .column_user_click(
-                "owner",
-                |d| d.owner,
-                |gid, _, world| TilePlugin::add_user(gid, world),
-            )
+            .column_user_click("owner", |d| d.owner)
             .column_team("team", |d| d.team)
             .column_gid("id", |d| d.id)
             .column_ts("time", |d| d.ts)
@@ -312,11 +304,7 @@ impl ShowTable<TAuction> for Vec<TAuction> {
                 |d| (d.price as f32 / count(d) as f32).into(),
                 |_, v| format!("{} {CREDITS_SYM}", v.get_float().unwrap()).cstr_c(YELLOW),
             )
-            .column_user_click(
-                "seller",
-                |d| d.owner,
-                |gid, _, world| TilePlugin::add_user(gid, world),
-            );
+            .column_user_click("seller", |d| d.owner);
         t = m(t);
         t.ui(self, ui, world)
     }

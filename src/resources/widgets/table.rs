@@ -246,12 +246,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
         );
         self
     }
-    pub fn column_user_click(
-        mut self,
-        name: &'static str,
-        gid: fn(&T) -> u64,
-        on_click: fn(u64, &mut Ui, &mut World),
-    ) -> Self {
+    pub fn column_user_click(mut self, name: &'static str, gid: fn(&T) -> u64) -> Self {
         self.columns.insert(
             name,
             TableColumn {
@@ -262,7 +257,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                         "...".cstr().label(ui);
                     } else {
                         if gid.get_user().cstr().button(ui).clicked() {
-                            on_click(gid, ui, w);
+                            TilePlugin::add_user(gid, w);
                         }
                     }
                 }),
@@ -297,13 +292,8 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
             TableColumn {
                 value: Box::new(move |d, _| value(d).into()),
                 show: Box::new(|_, v, ui, _| {
-                    let r = v.get_int().unwrap() as i8;
-                    if r < 0 {
-                        "-".cstr()
-                    } else {
-                        Rarity::from(r).cstr()
-                    }
-                    .label(ui);
+                    let r = v.get_int().unwrap() as u8;
+                    Rarity::from(r).cstr().label(ui);
                 }),
                 sortable: true,
                 hide_name: false,
@@ -322,22 +312,19 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                 value: Box::new(move |d, _| unit(d).into()),
                 show: Box::new(|_, v, ui, world| {
                     let name = v.get_string().unwrap();
-                    let r = match try_name_color(&name) {
-                        Some(color) => {
-                            if name.cstr_c(color).label(ui).hovered() {
-                                cursor_window(ui.ctx(), |ui| {
-                                    match cached_base_card(&name.base_unit(), ui, world) {
-                                        Ok(_) => {}
-                                        Err(e) => error!("{e}"),
-                                    }
-                                });
-                            }
+                    if let Some(unit) = TBaseUnit::find_by_name(name.clone()) {
+                        let color = name_color(&unit.house);
+                        if name.cstr_c(color).label(ui).hovered() {
+                            cursor_window(ui.ctx(), |ui| {
+                                match cached_base_card(&name.base_unit(), ui, world) {
+                                    Ok(_) => {}
+                                    Err(e) => error!("{e}"),
+                                }
+                            });
                         }
-                        None => {
-                            name.cstr_c(VISIBLE_LIGHT).label(ui);
-                        }
-                    };
-                    r
+                    } else {
+                        name.cstr_c(VISIBLE_LIGHT).label(ui);
+                    }
                 }),
                 sortable: true,
                 hide_name: false,

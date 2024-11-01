@@ -278,6 +278,7 @@ impl TilePlugin {
             GameState::Editor => EditorPlugin::add_tiles(world),
             GameState::Quests => QuestPlugin::add_tiles(world),
             GameState::Stats => StatsPlugin::add_tiles(world),
+            GameState::Incubator => IncubatorPlugin::add_tiles(world),
             _ => {}
         }
     }

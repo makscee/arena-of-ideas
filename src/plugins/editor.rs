@@ -24,6 +24,8 @@ pub struct EditorResource {
     unit_mode: UnitMode,
     unit_to_load: String,
 
+    incubator_card: UnitCard,
+
     representation: Representation,
     vfx: Vfx,
     vfx_entity: Option<Entity>,
@@ -378,6 +380,13 @@ impl EditorPlugin {
                             if let Some(entity) = rm(world).unit_entity {
                                 match UnitCard::new(&Context::new(entity), world) {
                                     Ok(c) => {
+                                        if Button::click("Post to Incubator")
+                                            .color(YELLOW, ui)
+                                            .ui(ui)
+                                            .clicked()
+                                        {
+                                            Self::post_to_incubator(world);
+                                        }
                                         ui.horizontal(|ui| {
                                             if Button::click("Copy").ui(ui).clicked() {
                                                 copy_to_clipboard(
@@ -617,6 +626,39 @@ impl EditorPlugin {
                 }
             }
             Mode::Team | Mode::Battle | Mode::Unit => {}
+        }
+    }
+    fn post_to_incubator(world: &mut World) {
+        let unit: TBaseUnit = rm(world).unit.clone().into();
+        match UnitCard::from_packed(unit.into(), world) {
+            Ok(c) => {
+                rm(world).incubator_card = c;
+                Confirmation::new("Post to Incubator".cstr_c(VISIBLE_LIGHT))
+                    .content(|ui, world| {
+                        rm(world).incubator_card.ui(ui);
+                    })
+                    .accept(|world| {
+                        let packed_unit = rm(world).unit.clone();
+                        let unit: TBaseUnit = packed_unit.clone().into();
+                        incubator_post_unit(
+                            unit,
+                            ron::to_string(&packed_unit.representation).unwrap(),
+                        );
+                        once_on_incubator_post_unit(|_, _, status, unit, _| {
+                            let unit = unit.clone();
+                            status.on_success(move |world| {
+                                Notification::new(
+                                    format!("Unit {} submitted to Incubator", unit.name)
+                                        .cstr_c(VISIBLE_LIGHT),
+                                )
+                                .push(world);
+                            });
+                        });
+                    })
+                    .cancel(|_| {})
+                    .push(world);
+            }
+            Err(e) => e.to_string().notify_error(world),
         }
     }
 }

@@ -285,6 +285,14 @@ impl Default for GameData {
             unit_shard_item: default(),
             user: default(),
             wallet: default(),
+            incubator: default(),
+            incubator_vote: default(),
+            incubator_favorite: default(),
         }
+    }
+}
+impl Default for UnitPool {
+    fn default() -> Self {
+        Self::Game
     }
 }

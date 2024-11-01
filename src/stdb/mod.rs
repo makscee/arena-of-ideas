@@ -42,6 +42,11 @@ pub mod give_credits_reducer;
 pub mod global_data;
 pub mod global_event;
 pub mod global_settings;
+pub mod incubator_delete_unit_reducer;
+pub mod incubator_favorite_reducer;
+pub mod incubator_post_unit_reducer;
+pub mod incubator_update_unit_reducer;
+pub mod incubator_vote_reducer;
 pub mod inflating_int;
 pub mod item_bundle;
 pub mod item_kind;
@@ -89,6 +94,9 @@ pub mod t_battle_result;
 pub mod t_daily_state;
 pub mod t_global_event;
 pub mod t_house;
+pub mod t_incubator;
+pub mod t_incubator_favorite;
+pub mod t_incubator_vote;
 pub mod t_lootbox_item;
 pub mod t_meta_shop;
 pub mod t_quest;
@@ -110,6 +118,7 @@ pub mod team_remove_unit_reducer;
 pub mod team_slot;
 pub mod team_swap_units_reducer;
 pub mod unit_balance_vote_reducer;
+pub mod unit_pool;
 pub mod upload_assets_reducer;
 pub mod upload_game_data_reducer;
 
@@ -135,6 +144,11 @@ pub use give_credits_reducer::*;
 pub use global_data::*;
 pub use global_event::*;
 pub use global_settings::*;
+pub use incubator_delete_unit_reducer::*;
+pub use incubator_favorite_reducer::*;
+pub use incubator_post_unit_reducer::*;
+pub use incubator_update_unit_reducer::*;
+pub use incubator_vote_reducer::*;
 pub use inflating_int::*;
 pub use item_bundle::*;
 pub use item_kind::*;
@@ -182,6 +196,9 @@ pub use t_battle_result::*;
 pub use t_daily_state::*;
 pub use t_global_event::*;
 pub use t_house::*;
+pub use t_incubator::*;
+pub use t_incubator_favorite::*;
+pub use t_incubator_vote::*;
 pub use t_lootbox_item::*;
 pub use t_meta_shop::*;
 pub use t_quest::*;
@@ -203,6 +220,7 @@ pub use team_remove_unit_reducer::*;
 pub use team_slot::*;
 pub use team_swap_units_reducer::*;
 pub use unit_balance_vote_reducer::*;
+pub use unit_pool::*;
 pub use upload_assets_reducer::*;
 pub use upload_game_data_reducer::*;
 
@@ -221,6 +239,11 @@ pub enum ReducerEvent {
     FuseStart(fuse_start_reducer::FuseStartArgs),
     FuseSwap(fuse_swap_reducer::FuseSwapArgs),
     GiveCredits(give_credits_reducer::GiveCreditsArgs),
+    IncubatorDeleteUnit(incubator_delete_unit_reducer::IncubatorDeleteUnitArgs),
+    IncubatorFavorite(incubator_favorite_reducer::IncubatorFavoriteArgs),
+    IncubatorPostUnit(incubator_post_unit_reducer::IncubatorPostUnitArgs),
+    IncubatorUpdateUnit(incubator_update_unit_reducer::IncubatorUpdateUnitArgs),
+    IncubatorVote(incubator_vote_reducer::IncubatorVoteArgs),
     Login(login_reducer::LoginArgs),
     LoginByIdentity(login_by_identity_reducer::LoginByIdentityArgs),
     Logout(logout_reducer::LogoutArgs),
@@ -329,6 +352,21 @@ impl SpacetimeModule for Module {
                 ),
             "THouse" => client_cache
                 .handle_table_update_with_primary_key::<t_house::THouse>(callbacks, table_update),
+            "TIncubator" => client_cache
+                .handle_table_update_with_primary_key::<t_incubator::TIncubator>(
+                    callbacks,
+                    table_update,
+                ),
+            "TIncubatorFavorite" => client_cache
+                .handle_table_update_with_primary_key::<t_incubator_favorite::TIncubatorFavorite>(
+                    callbacks,
+                    table_update,
+                ),
+            "TIncubatorVote" => client_cache
+                .handle_table_update_with_primary_key::<t_incubator_vote::TIncubatorVote>(
+                    callbacks,
+                    table_update,
+                ),
             "TLootboxItem" => client_cache
                 .handle_table_update_with_primary_key::<t_lootbox_item::TLootboxItem>(
                     callbacks,
@@ -418,6 +456,17 @@ impl SpacetimeModule for Module {
         reminders.invoke_callbacks::<t_daily_state::TDailyState>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_global_event::TGlobalEvent>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_house::THouse>(worker, &reducer_event, state);
+        reminders.invoke_callbacks::<t_incubator::TIncubator>(worker, &reducer_event, state);
+        reminders.invoke_callbacks::<t_incubator_favorite::TIncubatorFavorite>(
+            worker,
+            &reducer_event,
+            state,
+        );
+        reminders.invoke_callbacks::<t_incubator_vote::TIncubatorVote>(
+            worker,
+            &reducer_event,
+            state,
+        );
         reminders.invoke_callbacks::<t_lootbox_item::TLootboxItem>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_meta_shop::TMetaShop>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_quest::TQuest>(worker, &reducer_event, state);
@@ -465,6 +514,11 @@ match &reducer_call.reducer_name[..] {
 			"fuse_start" => _reducer_callbacks.handle_event_of_type::<fuse_start_reducer::FuseStartArgs, ReducerEvent>(event, _state, ReducerEvent::FuseStart),
 			"fuse_swap" => _reducer_callbacks.handle_event_of_type::<fuse_swap_reducer::FuseSwapArgs, ReducerEvent>(event, _state, ReducerEvent::FuseSwap),
 			"give_credits" => _reducer_callbacks.handle_event_of_type::<give_credits_reducer::GiveCreditsArgs, ReducerEvent>(event, _state, ReducerEvent::GiveCredits),
+			"incubator_delete_unit" => _reducer_callbacks.handle_event_of_type::<incubator_delete_unit_reducer::IncubatorDeleteUnitArgs, ReducerEvent>(event, _state, ReducerEvent::IncubatorDeleteUnit),
+			"incubator_favorite" => _reducer_callbacks.handle_event_of_type::<incubator_favorite_reducer::IncubatorFavoriteArgs, ReducerEvent>(event, _state, ReducerEvent::IncubatorFavorite),
+			"incubator_post_unit" => _reducer_callbacks.handle_event_of_type::<incubator_post_unit_reducer::IncubatorPostUnitArgs, ReducerEvent>(event, _state, ReducerEvent::IncubatorPostUnit),
+			"incubator_update_unit" => _reducer_callbacks.handle_event_of_type::<incubator_update_unit_reducer::IncubatorUpdateUnitArgs, ReducerEvent>(event, _state, ReducerEvent::IncubatorUpdateUnit),
+			"incubator_vote" => _reducer_callbacks.handle_event_of_type::<incubator_vote_reducer::IncubatorVoteArgs, ReducerEvent>(event, _state, ReducerEvent::IncubatorVote),
 			"login" => _reducer_callbacks.handle_event_of_type::<login_reducer::LoginArgs, ReducerEvent>(event, _state, ReducerEvent::Login),
 			"login_by_identity" => _reducer_callbacks.handle_event_of_type::<login_by_identity_reducer::LoginByIdentityArgs, ReducerEvent>(event, _state, ReducerEvent::LoginByIdentity),
 			"logout" => _reducer_callbacks.handle_event_of_type::<logout_reducer::LogoutArgs, ReducerEvent>(event, _state, ReducerEvent::Logout),
@@ -549,6 +603,16 @@ match &reducer_call.reducer_name[..] {
             "THouse" => {
                 client_cache.handle_resubscribe_for_type::<t_house::THouse>(callbacks, new_subs)
             }
+            "TIncubator" => client_cache
+                .handle_resubscribe_for_type::<t_incubator::TIncubator>(callbacks, new_subs),
+            "TIncubatorFavorite" => client_cache
+                .handle_resubscribe_for_type::<t_incubator_favorite::TIncubatorFavorite>(
+                    callbacks, new_subs,
+                ),
+            "TIncubatorVote" => client_cache
+                .handle_resubscribe_for_type::<t_incubator_vote::TIncubatorVote>(
+                    callbacks, new_subs,
+                ),
             "TLootboxItem" => client_cache
                 .handle_resubscribe_for_type::<t_lootbox_item::TLootboxItem>(callbacks, new_subs),
             "TMetaShop" => client_cache
