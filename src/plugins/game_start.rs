@@ -9,12 +9,27 @@ struct GameStartResource {
     leaderboard: HashMap<usize, Vec<TArenaLeaderboard>>,
     selected_season: u32,
     runs: HashMap<usize, Vec<TArenaRunArchive>>,
+    battles: HashMap<usize, Vec<TBattle>>,
     teams: Vec<TTeam>,
     selected_team: usize,
+    right_mode: Mode,
 }
 
 fn rm(world: &mut World) -> Mut<GameStartResource> {
     world.resource_mut::<GameStartResource>()
+}
+
+#[derive(Default, Clone, Copy, AsRefStr, PartialEq, Eq, EnumIter)]
+enum Mode {
+    #[default]
+    Runs,
+    Battles,
+}
+
+impl ToCstr for Mode {
+    fn cstr(&self) -> Cstr {
+        self.as_ref().cstr_c(VISIBLE_LIGHT)
+    }
 }
 
 impl Default for GameStartResource {
@@ -36,9 +51,11 @@ impl Default for GameStartResource {
             selected_mode: client_state().last_played_mode.unwrap_or_default() as usize,
             leaderboard: default(),
             runs: default(),
+            battles: default(),
             teams,
             selected_team,
             selected_season: global_settings().season,
+            right_mode: default(),
         }
     }
 }
@@ -55,7 +72,14 @@ impl GameStartPlugin {
                 .collect(),
         );
         gsr.runs = HashMap::from_iter(
-            TArenaRunArchive::filter_by_season(gsr.selected_season)
+            TArenaRunArchive::iter()
+                .sorted_by_key(|d| -(d.id as i32))
+                .map(|d| (d.mode.clone().into(), d))
+                .into_grouping_map()
+                .collect(),
+        );
+        gsr.battles = HashMap::from_iter(
+            TBattle::iter()
                 .sorted_by_key(|d| -(d.id as i32))
                 .map(|d| (d.mode.clone().into(), d))
                 .into_grouping_map()
@@ -72,6 +96,15 @@ impl GameStartPlugin {
             .pinned()
             .push(world);
         Tile::new(Side::Left, |ui, world| {
+            let mut r = rm(world);
+            if EnumSwitcher::new().prefix("Season ".cstr()).show_iter(
+                &mut r.selected_season,
+                0..=global_settings().season,
+                ui,
+            ) {
+                Self::load_data(world);
+                return;
+            }
             world.resource_scope(|world, r: Mut<GameStartResource>| {
                 if let Some(data) = r.leaderboard.get(&r.selected_mode) {
                     title("Leaderboard", ui);
@@ -99,14 +132,7 @@ impl GameStartPlugin {
         .stretch_part(0.5)
         .push_front(world);
         Tile::new(Side::Right, |ui, world| {
-            world.resource_scope(|world, r: Mut<GameStartResource>| {
-                if let Some(data) = r.runs.get(&r.selected_mode) {
-                    title("Runs", ui);
-                    ScrollArea::both().auto_shrink(false).show(ui, |ui| {
-                        data.show_table("Runs", ui, world);
-                    });
-                }
-            })
+            Self::show_right(ui, world);
         })
         .pinned()
         .transparent()
@@ -124,14 +150,6 @@ impl GameStartPlugin {
             .show_iter(&mut mode, modes, ui)
         {
             r.selected_mode = mode.clone().into();
-            Self::load_data(world);
-            return;
-        }
-        if EnumSwitcher::new().prefix("Season ".cstr()).show_iter(
-            &mut r.selected_season,
-            0..=global_settings().season,
-            ui,
-        ) {
             Self::load_data(world);
             return;
         }
@@ -282,5 +300,78 @@ impl GameStartPlugin {
                 .ui(ui);
             });
         });
+    }
+    fn show_right(ui: &mut Ui, world: &mut World) {
+        world.resource_scope(|world, mut r: Mut<GameStartResource>| {
+            EnumSwitcher::new().show(&mut r.right_mode, ui);
+
+            match r.right_mode {
+                Mode::Runs => {
+                    if let Some(data) = r.runs.get(&r.selected_mode) {
+                        title("Runs", ui);
+                        ScrollArea::both()
+                            .auto_shrink(false)
+                            .show(ui, |ui| data.show_table("Runs", ui, world));
+                    }
+                }
+                Mode::Battles => {
+                    if let Some(data) = r.battles.get(&r.selected_mode) {
+                        title("Battles", ui);
+                        ScrollArea::both().auto_shrink(false).show(ui, |ui| {
+                            ui.push_id(r.selected_mode, |ui| {
+                                Table::new("Battle History")
+                                    .title()
+                                    .column_ts("time", |d: &TBattle| d.ts)
+                                    .column_cstr("result", |d, _| match d.result {
+                                        TBattleResult::Tbd => "-".cstr(),
+                                        TBattleResult::Left => "W".cstr_c(GREEN),
+                                        TBattleResult::Right | TBattleResult::Even => {
+                                            "L".cstr_c(RED)
+                                        }
+                                    })
+                                    .column_user_click(
+                                        "player",
+                                        |d| d.owner,
+                                        |gid, _, world| TilePlugin::add_user(gid, world),
+                                    )
+                                    .column_team("player >", |d| d.team_left)
+                                    .column_team("< enemy", |d| d.team_right)
+                                    .column_user_click(
+                                        "enemy",
+                                        |d| d.team_right.get_team().owner,
+                                        |gid, _, world| TilePlugin::add_user(gid, world),
+                                    )
+                                    .column_gid("id", |d| d.id)
+                                    .column_cstr("mode", |d, _| d.mode.cstr())
+                                    .column_btn("copy", |d, _, world| {
+                                        copy_to_clipboard(
+                                            &ron::to_string(&BattleResource::from(d.clone()))
+                                                .unwrap(),
+                                            world,
+                                        );
+                                    })
+                                    .column_btn("editor", |d, _, world| {
+                                        EditorPlugin::load_battle(
+                                            PackedTeam::from_id(d.team_left),
+                                            PackedTeam::from_id(d.team_right),
+                                        );
+                                        GameState::Editor.set_next(world);
+                                    })
+                                    .column_btn("run", |d, _, world| {
+                                        world.insert_resource(BattleResource::from(d.clone()));
+                                        BattlePlugin::set_next_state(cur_state(world), world);
+                                        GameState::Battle.set_next(world);
+                                    })
+                                    .filter("My", "player", user_id().into())
+                                    .filter("Win", "result", "W".into())
+                                    .filter("Lose", "result", "L".into())
+                                    .filter("TBD", "result", "-".into())
+                                    .ui(data, ui, world)
+                            });
+                        });
+                    }
+                }
+            }
+        })
     }
 }

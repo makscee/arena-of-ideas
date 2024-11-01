@@ -30,7 +30,6 @@ pub enum GameState {
     MigrationDownload,
     MigrationUpload,
     Profile,
-    BattleHistory,
     Error,
     Teams,
     TeamEditor,
@@ -76,10 +75,6 @@ lazy_static! {
         );
         m.insert(GameState::MigrationUpload, [GameOption::Connect].into());
         m.insert(GameState::MigrationDownload, [GameOption::Connect].into());
-        m.insert(
-            GameState::BattleHistory,
-            [GameOption::Table(StdbTable::TBattle.full())].into(),
-        );
         m
     };
 }

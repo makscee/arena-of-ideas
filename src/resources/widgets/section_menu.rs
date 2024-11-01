@@ -66,13 +66,6 @@ impl Default for SectionMenu {
                     ..default()
                 },
                 GameSection {
-                    name: "HISTORY",
-                    target_state: GameState::BattleHistory,
-                    inner_states: default(),
-                    options: [GameOption::Login].into(),
-                    ..default()
-                },
-                GameSection {
                     name: "STATS",
                     target_state: GameState::Stats,
                     inner_states: default(),

@@ -183,7 +183,7 @@ pub fn smoothstep(edge0: f32, edge1: f32, x: f32) -> f32 {
 }
 pub fn format_timestamp(ts: u64) -> String {
     DateTime::<chrono::Local>::from(UNIX_EPOCH + Duration::from_micros(ts))
-        .format("%d/%m/%Y %H:%M")
+        .format("%d/%m %H:%M")
         .to_string()
 }
 pub fn global_settings() -> GlobalSettings {

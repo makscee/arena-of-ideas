@@ -272,7 +272,6 @@ impl TilePlugin {
             | GameState::MetaBalancing => MetaPlugin::add_tiles(world),
             GameState::Shop => ShopPlugin::add_tiles(world),
             GameState::Battle => BattlePlugin::add_tiles(world),
-            GameState::BattleHistory => BattleHistoryPlugin::add_tiles(world),
             GameState::GameStart => GameStartPlugin::add_tiles(world),
             GameState::Title => TitlePlugin::add_tiles(world),
             GameState::Teams | GameState::TeamEditor => TeamPlugin::add_tiles(to, world),

@@ -1,7 +1,6 @@
 mod action;
 mod audio;
 mod battle;
-mod battle_history;
 mod camera;
 mod connect;
 mod editor;
@@ -32,7 +31,6 @@ use super::*;
 pub use action::*;
 pub use audio::*;
 pub use battle::*;
-pub use battle_history::*;
 pub use camera::*;
 pub use connect::*;
 pub use editor::*;

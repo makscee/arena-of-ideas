@@ -384,6 +384,8 @@ impl StdbTable {
             | StdbTable::TStatus
             | StdbTable::TRepresentation
             | StdbTable::TArenaLeaderboard
+            | StdbTable::TBattle
+            | StdbTable::TAuction
             | StdbTable::TTeam
             | StdbTable::TUser
             | StdbTable::TArenaRunArchive
@@ -408,8 +410,6 @@ impl StdbTable {
             }
 
             StdbTable::TArenaRun
-            | StdbTable::TBattle
-            | StdbTable::TAuction
             | StdbTable::TWallet
             | StdbTable::TDailyState
             | StdbTable::TUnitBalance => StdbQuery {
