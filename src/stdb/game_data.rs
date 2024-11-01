@@ -20,7 +20,6 @@ use super::t_lootbox_item::TLootboxItem;
 use super::t_meta_shop::TMetaShop;
 use super::t_quest::TQuest;
 use super::t_rainbow_shard_item::TRainbowShardItem;
-use super::t_representation::TRepresentation;
 use super::t_status::TStatus;
 use super::t_team::TTeam;
 use super::t_trade::TTrade;
@@ -56,7 +55,6 @@ pub struct GameData {
     pub meta_shop: Vec<TMetaShop>,
     pub quest: Vec<TQuest>,
     pub rainbow_shard_item: Vec<TRainbowShardItem>,
-    pub representation: Vec<TRepresentation>,
     pub status: Vec<TStatus>,
     pub team: Vec<TTeam>,
     pub trade: Vec<TTrade>,

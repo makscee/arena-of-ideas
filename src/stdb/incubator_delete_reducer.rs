@@ -13,40 +13,40 @@ use spacetimedb_sdk::{
 };
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
-pub struct IncubatorDeleteUnitArgs {
+pub struct IncubatorDeleteArgs {
     pub id: u64,
 }
 
-impl Reducer for IncubatorDeleteUnitArgs {
-    const REDUCER_NAME: &'static str = "incubator_delete_unit";
+impl Reducer for IncubatorDeleteArgs {
+    const REDUCER_NAME: &'static str = "incubator_delete";
 }
 
 #[allow(unused)]
-pub fn incubator_delete_unit(id: u64) {
-    IncubatorDeleteUnitArgs { id }.invoke();
+pub fn incubator_delete(id: u64) {
+    IncubatorDeleteArgs { id }.invoke();
 }
 
 #[allow(unused)]
-pub fn on_incubator_delete_unit(
+pub fn on_incubator_delete(
     mut __callback: impl FnMut(&Identity, Option<Address>, &Status, &u64) + Send + 'static,
-) -> ReducerCallbackId<IncubatorDeleteUnitArgs> {
-    IncubatorDeleteUnitArgs::on_reducer(move |__identity, __addr, __status, __args| {
-        let IncubatorDeleteUnitArgs { id } = __args;
+) -> ReducerCallbackId<IncubatorDeleteArgs> {
+    IncubatorDeleteArgs::on_reducer(move |__identity, __addr, __status, __args| {
+        let IncubatorDeleteArgs { id } = __args;
         __callback(__identity, __addr, __status, id);
     })
 }
 
 #[allow(unused)]
-pub fn once_on_incubator_delete_unit(
+pub fn once_on_incubator_delete(
     __callback: impl FnOnce(&Identity, Option<Address>, &Status, &u64) + Send + 'static,
-) -> ReducerCallbackId<IncubatorDeleteUnitArgs> {
-    IncubatorDeleteUnitArgs::once_on_reducer(move |__identity, __addr, __status, __args| {
-        let IncubatorDeleteUnitArgs { id } = __args;
+) -> ReducerCallbackId<IncubatorDeleteArgs> {
+    IncubatorDeleteArgs::once_on_reducer(move |__identity, __addr, __status, __args| {
+        let IncubatorDeleteArgs { id } = __args;
         __callback(__identity, __addr, __status, id);
     })
 }
 
 #[allow(unused)]
-pub fn remove_on_incubator_delete_unit(id: ReducerCallbackId<IncubatorDeleteUnitArgs>) {
-    IncubatorDeleteUnitArgs::remove_on_reducer(id);
+pub fn remove_on_incubator_delete(id: ReducerCallbackId<IncubatorDeleteArgs>) {
+    IncubatorDeleteArgs::remove_on_reducer(id);
 }

@@ -16,7 +16,5 @@ use spacetimedb_sdk::{
 pub enum UnitPool {
     Game,
 
-    Incubator,
-
     Summon,
 }

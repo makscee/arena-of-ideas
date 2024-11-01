@@ -2,7 +2,6 @@ use ability::TAbility;
 use auction::TAuction;
 use base_unit::TBaseUnit;
 use house::THouse;
-use representation::TRepresentation;
 
 use status::TStatus;
 
@@ -25,7 +24,6 @@ struct GameData {
     meta_shop: Vec<TMetaShop>,
     quest: Vec<TQuest>,
     rainbow_shard_item: Vec<TRainbowShardItem>,
-    representation: Vec<TRepresentation>,
     status: Vec<TStatus>,
     team: Vec<TTeam>,
     trade: Vec<TTrade>,
@@ -68,7 +66,6 @@ fn replace_assets(data: GameData) -> Result<(), String> {
         meta_shop,
         quest,
         rainbow_shard_item,
-        representation,
         status,
         team,
         trade,
@@ -101,7 +98,6 @@ fn replace_assets(data: GameData) -> Result<(), String> {
     replace(meta_shop);
     replace(quest);
     replace(rainbow_shard_item);
-    replace(representation);
     replace(status);
     replace(team);
     replace(trade);
@@ -137,7 +133,6 @@ fn replace_assets(data: GameData) -> Result<(), String> {
 fn upload_assets(
     ctx: ReducerContext,
     global_settings: GlobalSettings,
-    representation: Vec<TRepresentation>,
     base_unit: Vec<TBaseUnit>,
     house: Vec<THouse>,
     ability: Vec<TAbility>,
@@ -149,7 +144,6 @@ fn upload_assets(
         ability,
         base_unit,
         house,
-        representation,
         status,
         ..default()
     })

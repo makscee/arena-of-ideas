@@ -240,7 +240,7 @@ impl ShowTable<TUnitShardItem> for Vec<TUnitShardItem> {
     ) -> TableState {
         let mut t = Table::new(name)
             .title()
-            .column_base_unit("unit", |d: &TUnitShardItem| d.unit.clone())
+            .column_base_unit_name("unit", |d: &TUnitShardItem| d.unit.clone())
             .column_cstr("house", |d, _| {
                 let house = d.unit.base_unit().house;
                 let color = name_color(&house);

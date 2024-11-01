@@ -206,6 +206,7 @@ impl From<PackedUnit> for TBaseUnit {
             pwr: value.pwr,
             hp: value.hp,
             rarity: value.rarity,
+            representation: ron::to_string(&value.representation).unwrap(),
             house: value.houses.first().unwrap().clone(),
             triggers,
             targets,
@@ -220,8 +221,7 @@ impl From<TBaseUnit> for PackedUnit {
         let triggers = value.triggers();
         let targets = value.targets();
         let effects = value.effects();
-        let representation =
-            RepresentationPlugin::get_by_id(value.name.clone()).unwrap_or_default();
+        let representation = ron::from_str(&value.representation).unwrap();
         let mut state = VarState::default();
         state.init(VarName::HouseColors, vec![name_color(&value.house)].into());
         state.init(
@@ -288,11 +288,10 @@ impl From<FusedUnit> for PackedUnit {
             house_colors.push(house_color);
             result.rarity = result.rarity.max(base.rarity);
             result.houses.push(base.house);
-            if let Some(mut repr) = RepresentationPlugin::get_by_id(base.name.clone()) {
-                repr.mapping
-                    .insert(VarName::Color, Expression::Value(house_color.into()));
-                result.representation.children.push(Box::new(repr));
-            }
+            let mut repr: Representation = ron::from_str(&base.representation).unwrap();
+            repr.mapping
+                .insert(VarName::Color, Expression::Value(house_color.into()));
+            result.representation.children.push(Box::new(repr));
         }
         result.pwr = value.pwr;
         result.hp = value.hp;

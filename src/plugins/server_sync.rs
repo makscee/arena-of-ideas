@@ -38,15 +38,8 @@ impl ServerSyncPlugin {
         let houses = ga.houses.into_values().map(|h| h.into()).collect_vec();
         let abilities = ga.abilities.into_values().map(|a| a.into()).collect_vec();
         let statuses = ga.statuses.into_values().map(|s| s.into()).collect_vec();
-        let representations = representations
-            .into_iter()
-            .map(|(id, rep)| TRepresentation {
-                id,
-                data: ron::to_string(&rep).unwrap(),
-            })
-            .collect_vec();
-        upload_assets(gs, representations, units, houses, abilities, statuses);
-        once_on_upload_assets(|_, _, status, _, _, _, _, _, _| {
+        upload_assets(gs, units, houses, abilities, statuses);
+        once_on_upload_assets(|_, _, status, _, _, _, _, _| {
             match status {
                 spacetimedb_sdk::reducer::Status::Committed => {
                     info!("Sync successful")

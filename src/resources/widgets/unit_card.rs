@@ -2,7 +2,7 @@ use super::*;
 
 #[derive(Clone, Serialize, Deserialize, Default, Debug)]
 pub struct UnitCard {
-    name: Cstr,
+    pub name: Cstr,
     houses: Vec<String>,
     house_colors: Vec<Color32>,
     rarity_colors: Vec<Color32>,
@@ -27,6 +27,9 @@ impl UnitCard {
         UnitCard::new(&context, world)
     }
     pub fn from_fused(unit: FusedUnit, world: &mut World) -> Result<Self> {
+        Self::from_packed(unit.into(), world)
+    }
+    pub fn from_base(unit: TBaseUnit, world: &mut World) -> Result<Self> {
         Self::from_packed(unit.into(), world)
     }
     pub fn new(context: &Context, world: &World) -> Result<Self> {

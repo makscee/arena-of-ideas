@@ -76,7 +76,7 @@ impl StatsPlugin {
         Tile::new(Side::Left, |ui, world| {
             world.resource_scope(|world, r: Mut<StatsResource>| {
                 Table::new("Hero Stats")
-                    .column_base_unit("hero", |d: &HeroStat| d.name.clone())
+                    .column_base_unit_name("hero", |d: &HeroStat| d.name.clone())
                     .column_rarity(|d| d.rarity as i32)
                     .column_int("cnt", |d| d.cnt)
                     .column_float("percent", |d| d.percent)

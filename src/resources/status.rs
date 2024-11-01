@@ -41,9 +41,7 @@ impl PackedStatus {
         }
         .spawn(owner, world);
         debug!("unpack status {} {entity}", self.name);
-        RepresentationPlugin::get_by_id(self.name.clone())
-            .unwrap_or(game_assets().status_rep.clone())
-            .unpack(entity, world);
+        game_assets().status_rep.clone().unpack(entity, world);
         VarState::get_mut(owner, world).add_status(self.name, self.state);
         entity
     }

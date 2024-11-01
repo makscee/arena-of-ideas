@@ -87,7 +87,6 @@ impl GameAssets {
                 UnitPool::Game => {
                     heroes.insert(unit.name.clone(), unit.into());
                 }
-                UnitPool::Incubator => {}
                 UnitPool::Summon => {}
             }
         }

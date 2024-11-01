@@ -2,6 +2,7 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN RUST INSTEAD.
 
 #![allow(unused_imports)]
+use super::t_base_unit::TBaseUnit;
 use spacetimedb_sdk::{
     anyhow::{anyhow, Result},
     identity::Identity,
@@ -16,7 +17,7 @@ use spacetimedb_sdk::{
 pub struct TIncubator {
     pub id: u64,
     pub owner: u64,
-    pub unit: String,
+    pub unit: Vec<TBaseUnit>,
 }
 
 impl TableType for TIncubator {
@@ -43,13 +44,5 @@ impl TIncubator {
     #[allow(unused)]
     pub fn filter_by_owner(owner: u64) -> TableIter<Self> {
         Self::filter(|row| row.owner == owner)
-    }
-    #[allow(unused)]
-    pub fn filter_by_unit(unit: String) -> TableIter<Self> {
-        Self::filter(|row| row.unit == unit)
-    }
-    #[allow(unused)]
-    pub fn find_by_unit(unit: String) -> Option<Self> {
-        Self::find(|row| row.unit == unit)
     }
 }

@@ -18,12 +18,12 @@ pub struct TBaseUnit {
     pub triggers: Vec<String>,
     pub targets: Vec<String>,
     pub effects: Vec<String>,
+    pub representation: String,
 }
 
 #[derive(SpacetimeType, Clone, Copy, PartialEq, Eq)]
 pub enum UnitPool {
     Game,
-    Incubator,
     Summon,
 }
 

@@ -13,7 +13,6 @@ pub enum StdbTable {
     THouse,
     TAbility,
     TStatus,
-    TRepresentation,
 
     TMetaShop,
 
@@ -194,12 +193,6 @@ impl StdbTable {
                     .unwrap()
                     .0;
             }
-            StdbTable::TRepresentation => {
-                data.representation =
-                    serde_json::from_str::<DeserializeWrapper<Vec<TRepresentation>>>(json)
-                        .unwrap()
-                        .0;
-            }
             StdbTable::TMetaShop => {
                 data.meta_shop = serde_json::from_str::<DeserializeWrapper<Vec<TMetaShop>>>(json)
                     .unwrap()
@@ -331,9 +324,6 @@ impl StdbTable {
             StdbTable::TStatus => {
                 to_string_pretty(&SerializeWrapper::new(TStatus::iter().collect_vec()))
             }
-            StdbTable::TRepresentation => to_string_pretty(&SerializeWrapper::new(
-                TRepresentation::iter().collect_vec(),
-            )),
             StdbTable::TMetaShop => {
                 to_string_pretty(&SerializeWrapper::new(TMetaShop::iter().collect_vec()))
             }
@@ -411,7 +401,6 @@ impl StdbTable {
             | StdbTable::THouse
             | StdbTable::TAbility
             | StdbTable::TStatus
-            | StdbTable::TRepresentation
             | StdbTable::TArenaLeaderboard
             | StdbTable::TBattle
             | StdbTable::TAuction

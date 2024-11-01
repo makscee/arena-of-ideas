@@ -6,7 +6,6 @@ use super::global_settings::GlobalSettings;
 use super::t_ability::TAbility;
 use super::t_base_unit::TBaseUnit;
 use super::t_house::THouse;
-use super::t_representation::TRepresentation;
 use super::t_status::TStatus;
 use spacetimedb_sdk::{
     anyhow::{anyhow, Result},
@@ -21,7 +20,6 @@ use spacetimedb_sdk::{
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct UploadAssetsArgs {
     pub global_settings: GlobalSettings,
-    pub representation: Vec<TRepresentation>,
     pub base_unit: Vec<TBaseUnit>,
     pub house: Vec<THouse>,
     pub ability: Vec<TAbility>,
@@ -35,7 +33,6 @@ impl Reducer for UploadAssetsArgs {
 #[allow(unused)]
 pub fn upload_assets(
     global_settings: GlobalSettings,
-    representation: Vec<TRepresentation>,
     base_unit: Vec<TBaseUnit>,
     house: Vec<THouse>,
     ability: Vec<TAbility>,
@@ -43,7 +40,6 @@ pub fn upload_assets(
 ) {
     UploadAssetsArgs {
         global_settings,
-        representation,
         base_unit,
         house,
         ability,
@@ -59,7 +55,6 @@ pub fn on_upload_assets(
             Option<Address>,
             &Status,
             &GlobalSettings,
-            &Vec<TRepresentation>,
             &Vec<TBaseUnit>,
             &Vec<THouse>,
             &Vec<TAbility>,
@@ -70,7 +65,6 @@ pub fn on_upload_assets(
     UploadAssetsArgs::on_reducer(move |__identity, __addr, __status, __args| {
         let UploadAssetsArgs {
             global_settings,
-            representation,
             base_unit,
             house,
             ability,
@@ -81,7 +75,6 @@ pub fn on_upload_assets(
             __addr,
             __status,
             global_settings,
-            representation,
             base_unit,
             house,
             ability,
@@ -97,7 +90,6 @@ pub fn once_on_upload_assets(
             Option<Address>,
             &Status,
             &GlobalSettings,
-            &Vec<TRepresentation>,
             &Vec<TBaseUnit>,
             &Vec<THouse>,
             &Vec<TAbility>,
@@ -108,7 +100,6 @@ pub fn once_on_upload_assets(
     UploadAssetsArgs::once_on_reducer(move |__identity, __addr, __status, __args| {
         let UploadAssetsArgs {
             global_settings,
-            representation,
             base_unit,
             house,
             ability,
@@ -119,7 +110,6 @@ pub fn once_on_upload_assets(
             __addr,
             __status,
             global_settings,
-            representation,
             base_unit,
             house,
             ability,

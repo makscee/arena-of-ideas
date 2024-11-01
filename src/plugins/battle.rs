@@ -340,6 +340,7 @@ impl BattlePlugin {
         .non_focusable()
         .transparent()
         .pinned()
+        .no_frame()
         .push(world);
 
         let bd = rm(world);
@@ -369,6 +370,7 @@ impl BattlePlugin {
             .pinned()
             .non_focusable()
             .no_frame()
+            .no_expand()
             .push(world);
             Tile::new(Side::Right, move |ui, _| {
                 show_team(battle.team_right.get_team(), ui);
@@ -377,6 +379,7 @@ impl BattlePlugin {
             .pinned()
             .non_focusable()
             .no_frame()
+            .no_expand()
             .push(world);
         }
         Tile::new(Side::Top, |ui, world| {

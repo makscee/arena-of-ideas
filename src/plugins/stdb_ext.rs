@@ -276,7 +276,6 @@ impl Default for GameData {
             meta_shop: default(),
             quest: default(),
             rainbow_shard_item: default(),
-            representation: default(),
             status: default(),
             team: default(),
             trade: default(),

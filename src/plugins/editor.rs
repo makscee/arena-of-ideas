@@ -4,10 +4,9 @@ pub struct EditorPlugin;
 
 impl Plugin for EditorPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<EditorResource>()
-            .add_systems(OnEnter(GameState::Editor), Self::load_state)
+        app.add_systems(OnEnter(GameState::Loaded), Self::on_enter)
             .add_systems(OnExit(GameState::Editor), Self::on_exit)
-            .add_systems(Update, Self::update);
+            .add_systems(Update, Self::update.run_if(in_state(GameState::Editor)));
     }
 }
 
@@ -24,6 +23,8 @@ pub struct EditorResource {
     unit_mode: UnitMode,
     unit_to_load: String,
 
+    incubator_link: Option<u64>,
+    incubator_card_before: Option<UnitCard>,
     incubator_card: UnitCard,
 
     representation: Representation,
@@ -40,9 +41,9 @@ fn rm(world: &mut World) -> Mut<EditorResource> {
 )]
 enum Mode {
     #[default]
+    Unit,
     Team,
     Battle,
-    Unit,
     Vfx,
 }
 
@@ -76,14 +77,12 @@ impl EditorPlugin {
         cs.save();
     }
     fn load_state(world: &mut World) {
-        let mut rm = rm(world);
-        *rm = client_state().editor.clone();
-        rm.vfx_selected = game_assets()
-            .vfxs
-            .keys()
-            .next()
-            .cloned()
-            .unwrap_or_default();
+        world.insert_resource(client_state().editor.clone());
+    }
+    fn on_enter(world: &mut World) {
+        if !world.is_resource_added::<EditorResource>() {
+            Self::load_state(world);
+        }
     }
     fn on_exit(world: &mut World) {
         Self::clear(world);
@@ -380,12 +379,20 @@ impl EditorPlugin {
                             if let Some(entity) = rm(world).unit_entity {
                                 match UnitCard::new(&Context::new(entity), world) {
                                     Ok(c) => {
-                                        if Button::click("Post to Incubator")
+                                        if rm(world).incubator_link.is_some()
+                                            && Button::click("Incubator Update")
+                                                .color(YELLOW, ui)
+                                                .ui(ui)
+                                                .clicked()
+                                        {
+                                            Self::incubator_update(world);
+                                        }
+                                        if Button::click("Incubator Post")
                                             .color(YELLOW, ui)
                                             .ui(ui)
                                             .clicked()
                                         {
-                                            Self::post_to_incubator(world);
+                                            Self::incubator_post(world);
                                         }
                                         ui.horizontal(|ui| {
                                             if Button::click("Copy").ui(ui).clicked() {
@@ -628,37 +635,83 @@ impl EditorPlugin {
             Mode::Team | Mode::Battle | Mode::Unit => {}
         }
     }
-    fn post_to_incubator(world: &mut World) {
+    pub fn load_unit(unit: PackedUnit, world: &mut World) {
+        let mut r = rm(world);
+        r.unit = unit.into();
+        r.mode = Mode::Unit;
+    }
+    pub fn load_from_incubator(id: u64, unit: TBaseUnit, world: &mut World) {
+        rm(world).incubator_link = Some(id);
+        Self::load_unit(unit.into(), world);
+    }
+    fn incubator_update(world: &mut World) {
         let unit: TBaseUnit = rm(world).unit.clone().into();
-        match UnitCard::from_packed(unit.into(), world) {
-            Ok(c) => {
-                rm(world).incubator_card = c;
-                Confirmation::new("Post to Incubator".cstr_c(VISIBLE_LIGHT))
-                    .content(|ui, world| {
-                        rm(world).incubator_card.ui(ui);
-                    })
-                    .accept(|world| {
-                        let packed_unit = rm(world).unit.clone();
-                        let unit: TBaseUnit = packed_unit.clone().into();
-                        incubator_post_unit(
-                            unit,
-                            ron::to_string(&packed_unit.representation).unwrap(),
-                        );
-                        once_on_incubator_post_unit(|_, _, status, unit, _| {
-                            let unit = unit.clone();
-                            status.on_success(move |world| {
-                                Notification::new(
-                                    format!("Unit {} submitted to Incubator", unit.name)
-                                        .cstr_c(VISIBLE_LIGHT),
-                                )
-                                .push(world);
-                            });
-                        });
-                    })
-                    .cancel(|_| {})
-                    .push(world);
-            }
-            Err(e) => e.to_string().notify_error(world),
-        }
+        let card = UnitCard::from_base(unit, world).unwrap();
+        let i = rm(world).incubator_link.unwrap();
+        let before_card = UnitCard::from_base(
+            TIncubator::find_by_id(i)
+                .unwrap()
+                .unit
+                .last()
+                .unwrap()
+                .clone(),
+            world,
+        )
+        .unwrap();
+
+        Confirmation::new("Update Incubator".cstr_c(VISIBLE_LIGHT))
+            .content(move |ui, _| {
+                ui.set_width(600.0);
+                ui.columns(2, |ui| {
+                    "Before".cstr_c(VISIBLE_LIGHT).label(&mut ui[0]);
+                    "After".cstr_c(VISIBLE_LIGHT).label(&mut ui[1]);
+                    before_card.ui(&mut ui[0]);
+                    card.ui(&mut ui[1]);
+                });
+            })
+            .accept(|world| {
+                let r = rm(world);
+                let packed_unit = r.unit.clone();
+                let unit: TBaseUnit = packed_unit.clone().into();
+                let id = r.incubator_link.unwrap();
+                incubator_update(id, unit);
+                once_on_incubator_update(|_, _, status, _, unit| {
+                    let unit = unit.name.clone();
+                    status.on_success(move |world| {
+                        Notification::new(
+                            format!("Unit {} updated in Incubator", unit).cstr_c(VISIBLE_LIGHT),
+                        )
+                        .push(world);
+                    });
+                });
+            })
+            .cancel(|_| {})
+            .push(world);
+    }
+    fn incubator_post(world: &mut World) {
+        let unit: TBaseUnit = rm(world).unit.clone().into();
+        let card = UnitCard::from_packed(unit.into(), world).unwrap();
+
+        Confirmation::new("Post to Incubator".cstr_c(VISIBLE_LIGHT))
+            .content(move |ui, _| {
+                card.ui(ui);
+            })
+            .accept(|world| {
+                let r = rm(world);
+                let packed_unit = r.unit.clone();
+                let unit: TBaseUnit = packed_unit.clone().into();
+                incubator_post(unit);
+                once_on_incubator_post(|_, _, status, unit| {
+                    let unit = unit.name.clone();
+                    status.on_success(move |world| {
+                        Notification::new(
+                            format!("Unit {} submitted to Incubator", unit).cstr_c(VISIBLE_LIGHT),
+                        )
+                        .push(world);
+                    });
+                });
+            })
+            .cancel(|_| {})
+            .push(world);
     }
 }

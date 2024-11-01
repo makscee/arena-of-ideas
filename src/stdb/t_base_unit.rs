@@ -24,6 +24,7 @@ pub struct TBaseUnit {
     pub triggers: Vec<String>,
     pub targets: Vec<String>,
     pub effects: Vec<String>,
+    pub representation: String,
 }
 
 impl TableType for TBaseUnit {
@@ -62,5 +63,9 @@ impl TBaseUnit {
     #[allow(unused)]
     pub fn filter_by_house(house: String) -> TableIter<Self> {
         Self::filter(|row| row.house == house)
+    }
+    #[allow(unused)]
+    pub fn filter_by_representation(representation: String) -> TableIter<Self> {
+        Self::filter(|row| row.representation == representation)
     }
 }

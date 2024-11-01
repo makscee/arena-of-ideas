@@ -9,9 +9,6 @@ impl Plugin for RepresentationPlugin {
 }
 
 impl RepresentationPlugin {
-    pub fn get_by_id(id: String) -> Option<Representation> {
-        TRepresentation::find_by_id(id).and_then(|r| ron::from_str(&r.data).ok())
-    }
     fn injector_system(world: &mut World) {
         let reps = world
             .query::<(Entity, &Representation)>()

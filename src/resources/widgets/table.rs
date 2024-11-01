@@ -301,7 +301,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
         );
         self
     }
-    pub fn column_base_unit_dyn(
+    pub fn column_base_unit_name_dyn(
         mut self,
         name: &'static str,
         unit: Box<dyn Fn(&T) -> String>,
@@ -332,8 +332,29 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
         );
         self
     }
-    pub fn column_base_unit(self, name: &'static str, unit: fn(&T) -> String) -> Self {
-        self.column_base_unit_dyn(name, Box::new(unit))
+    pub fn column_base_unit_name(self, name: &'static str, unit: fn(&T) -> String) -> Self {
+        self.column_base_unit_name_dyn(name, Box::new(unit))
+    }
+    pub fn column_base_unit(mut self, name: &'static str, unit: fn(&T) -> TBaseUnit) -> Self {
+        self.columns.insert(
+            name,
+            TableColumn {
+                value: Box::new(move |d, _| unit(d).name.into()),
+                show: Box::new(move |d, _, ui, world| {
+                    let unit = unit(d);
+                    let resp = unit.name.cstr_c(name_color(&unit.house)).label(ui);
+                    if resp.hovered() {
+                        cursor_window(ui.ctx(), |ui| match cached_base_card(&unit, ui, world) {
+                            Ok(_) => {}
+                            Err(e) => error!("{e}"),
+                        });
+                    }
+                }),
+                sortable: false,
+                hide_name: false,
+            },
+        );
+        self
     }
     pub fn columns_item_kind(mut self, data: fn(&T) -> (ItemKind, u64)) -> Self {
         self.columns.insert(
