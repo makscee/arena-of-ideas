@@ -73,6 +73,13 @@ impl Default for SectionMenu {
                     ..default()
                 },
                 GameSection {
+                    name: "INCUBATOR",
+                    target_state: GameState::Incubator,
+                    inner_states: default(),
+                    options: [GameOption::Login].into(),
+                    ..default()
+                },
+                GameSection {
                     name: "EDITOR",
                     target_state: GameState::Editor,
                     inner_states: default(),
