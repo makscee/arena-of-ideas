@@ -17,6 +17,7 @@ impl QuestPlugin {
     }
     pub fn add_tiles(world: &mut World) {
         Tile::new(Side::Left, |ui, world| {
+            show_daily_refresh_timer(ui);
             let quests_taken = TDailyState::get_current()
                 .map(|ds| ds.quests_taken)
                 .unwrap_or_default();

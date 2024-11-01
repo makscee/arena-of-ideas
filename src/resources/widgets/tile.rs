@@ -517,7 +517,7 @@ impl Tile {
             ui.painter()
                 .add(frame.paint(content_rect.expand2(frame.inner_margin.sum() * 0.5)));
             let ui = &mut ui.child_ui(content_rect, *ui.layout(), None);
-            ui.set_clip_rect(content_rect);
+            ui.set_clip_rect(content_rect.expand(2.0));
             if !self.pinned {
                 const CROSS_SIZE: f32 = 13.0;
                 let cross_rect = Rect::from_two_pos(

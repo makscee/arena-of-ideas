@@ -143,7 +143,6 @@ impl GameStartPlugin {
         let mut r = rm(world);
         let modes = r.game_modes.clone().into_iter();
         let mut mode: GameMode = r.selected_mode.clone().into();
-        ui.add_space(5.0);
         if EnumSwitcher::new()
             .style(CstrStyle::Bold)
             .columns()
@@ -304,7 +303,6 @@ impl GameStartPlugin {
     fn show_right(ui: &mut Ui, world: &mut World) {
         world.resource_scope(|world, mut r: Mut<GameStartResource>| {
             EnumSwitcher::new().show(&mut r.right_mode, ui);
-
             match r.right_mode {
                 Mode::Runs => {
                     if let Some(data) = r.runs.get(&r.selected_mode) {

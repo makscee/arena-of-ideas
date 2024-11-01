@@ -1,4 +1,3 @@
-use chrono::Utc;
 use rand::seq::SliceRandom;
 
 use super::*;
@@ -112,20 +111,7 @@ impl MetaPlugin {
         .push(world);
         match cur_state(world) {
             GameState::MetaShop => Tile::new(Side::Left, |ui, world| {
-                let now = Utc::now().timestamp();
-                let til_refresh = (now / 86400 + 1) * 86400 - now;
-                "Refresh in "
-                    .cstr()
-                    .push(
-                        format!(
-                            "{:02}:{:02}:{:02}",
-                            til_refresh / 3600,
-                            til_refresh / 60 % 60,
-                            til_refresh % 60
-                        )
-                        .cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold),
-                    )
-                    .label(ui);
+                show_daily_refresh_timer(ui);
                 TMetaShop::iter()
                     .sorted_by_key(|d| d.id)
                     .collect_vec()
@@ -170,6 +156,7 @@ impl MetaPlugin {
                             )
                         });
                 })
+                .pinned()
                 .push(world);
             }
             GameState::MetaHeroes => Tile::new(Side::Left, |ui, world| {

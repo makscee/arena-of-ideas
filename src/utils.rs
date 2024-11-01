@@ -218,6 +218,22 @@ pub fn debug_available_rect(ui: &mut Ui) {
 pub fn can_afford(cost: i64) -> bool {
     TWallet::current().amount >= cost
 }
+pub fn show_daily_refresh_timer(ui: &mut Ui) {
+    let now = Utc::now().timestamp();
+    let til_refresh = (now / 86400 + 1) * 86400 - now;
+    "Refresh in "
+        .cstr()
+        .push(
+            format!(
+                "{:02}:{:02}:{:02}",
+                til_refresh / 3600,
+                til_refresh / 60 % 60,
+                til_refresh % 60
+            )
+            .cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold),
+        )
+        .label(ui);
+}
 
 pub trait ToBVec2 {
     fn to_bvec2(&self) -> Vec2;
