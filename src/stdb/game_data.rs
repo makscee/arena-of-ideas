@@ -27,6 +27,8 @@ use super::t_unit_balance::TUnitBalance;
 use super::t_unit_item::TUnitItem;
 use super::t_unit_shard_item::TUnitShardItem;
 use super::t_user::TUser;
+use super::t_user_game_stats::TUserGameStats;
+use super::t_user_stats::TUserStats;
 use super::t_wallet::TWallet;
 use spacetimedb_sdk::{
     anyhow::{anyhow, Result},
@@ -62,6 +64,8 @@ pub struct GameData {
     pub unit_item: Vec<TUnitItem>,
     pub unit_shard_item: Vec<TUnitShardItem>,
     pub user: Vec<TUser>,
+    pub user_stats: Vec<TUserStats>,
+    pub user_game_stats: Vec<TUserGameStats>,
     pub wallet: Vec<TWallet>,
     pub incubator: Vec<TIncubator>,
     pub incubator_vote: Vec<TIncubatorVote>,

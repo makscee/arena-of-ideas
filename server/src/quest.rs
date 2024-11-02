@@ -201,5 +201,6 @@ fn quest_finish(ctx: ReducerContext, id: u64) -> Result<(), String> {
     TWallet::change(user.id, quest.reward)?;
     GlobalEvent::QuestComplete(quest.clone()).post(user.id);
     TQuest::delete_by_id(&quest.id);
+    TUserStats::register_completed_quest(user.id);
     Ok(())
 }

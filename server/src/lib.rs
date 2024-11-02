@@ -23,6 +23,7 @@ mod team;
 mod trade;
 mod unit_balance;
 mod user;
+mod user_stats;
 mod wallet;
 
 use std::str::FromStr;
@@ -53,6 +54,7 @@ pub use team::*;
 pub use trade::*;
 pub use unit_balance::*;
 pub use user::*;
+pub use user_stats::*;
 pub use wallet::*;
 
 trait StrContext<T> {

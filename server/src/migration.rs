@@ -31,6 +31,8 @@ struct GameData {
     unit_item: Vec<TUnitItem>,
     unit_shard_item: Vec<TUnitShardItem>,
     user: Vec<TUser>,
+    user_stats: Vec<TUserStats>,
+    user_game_stats: Vec<TUserGameStats>,
     wallet: Vec<TWallet>,
     incubator: Vec<TIncubator>,
     incubator_vote: Vec<TIncubatorVote>,
@@ -77,6 +79,8 @@ fn replace_assets(data: GameData) -> Result<(), String> {
         incubator,
         incubator_vote,
         incubator_favorite,
+        user_stats,
+        user_game_stats,
     } = data;
     if !global_settings.is_empty() {
         global_settings.remove(0).replace();
@@ -109,6 +113,8 @@ fn replace_assets(data: GameData) -> Result<(), String> {
     replace(incubator);
     replace(incubator_vote);
     replace(incubator_favorite);
+    replace(user_stats);
+    replace(user_game_stats);
 
     let ghost = || FusedUnit::from_base_name(GlobalSettings::get().ghost_unit, next_id()).unwrap();
     let enemies = [

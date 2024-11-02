@@ -145,6 +145,7 @@ fn run_start_const(ctx: ReducerContext) -> Result<(), String> {
 #[spacetimedb(reducer)]
 fn run_finish(ctx: ReducerContext) -> Result<(), String> {
     let run = TArenaRun::current(&ctx)?;
+    TUserGameStats::register_run_end(run.owner, run.mode.clone(), run.floor);
     let reward: i64 = run.rewards.iter().map(|r| r.amount).sum();
     TWallet::change(run.owner, reward)?;
     TArenaRun::delete_by_id(&run.id);
@@ -644,6 +645,7 @@ impl TArenaRun {
                 .map(|b| b.result.is_win())
                 .unwrap_or_default()
             {
+                TUserGameStats::register_champion(self.owner, self.mode.clone());
                 self.add_reward("Champion Defeated".into(), self.floor as i64 * 4 + 10, 1);
                 TArenaLeaderboard::insert(TArenaLeaderboard::new(
                     self.mode.clone(),

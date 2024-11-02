@@ -61,7 +61,7 @@ fn login(ctx: ReducerContext, name: String, pass: String) -> Result<(), String> 
         Err("Wrong name or password".to_owned())
     } else {
         if let Ok(mut user) = ctx.user() {
-            user.online = false;
+            user.logout();
             user.remove_identity(&ctx.sender);
             TUser::update_by_id(&user.id.clone(), user);
         }
@@ -84,7 +84,7 @@ fn login_by_identity(ctx: ReducerContext) -> Result<(), String> {
 #[spacetimedb(reducer)]
 fn logout(ctx: ReducerContext) -> Result<(), String> {
     let mut user = ctx.user()?;
-    user.online = false;
+    user.logout();
     GlobalEvent::LogOut.post(user.id);
     user.remove_identity(&ctx.sender);
     TUser::update_by_id(&user.id.clone(), user);
@@ -119,8 +119,8 @@ fn set_password(ctx: ReducerContext, old_pass: String, new_pass: String) -> Resu
 #[spacetimedb(disconnect)]
 fn identity_disconnected(ctx: ReducerContext) {
     if let Ok(mut user) = ctx.user() {
-        user.online = false;
         GlobalEvent::LogOut.post(user.id);
+        user.logout();
         TUser::update_by_id(&user.id.clone(), user);
     }
 }
@@ -166,6 +166,18 @@ impl TUser {
         self.last_login = Timestamp::now();
         GlobalEvent::LogIn.post(self.id);
         TUser::update_by_id(&self.id.clone(), self);
+    }
+    fn logout(&mut self) {
+        self.online = false;
+        if self.last_login.into_micros_since_epoch() > 0 {
+            TUserStats::register_time_played(
+                self.id,
+                Timestamp::now()
+                    .duration_since(self.last_login)
+                    .unwrap()
+                    .as_micros() as u64,
+            );
+        }
     }
     fn clear_identity(identity: &Identity) {
         if let Ok(mut user) = TUser::find_by_identity(identity) {

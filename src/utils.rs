@@ -186,6 +186,14 @@ pub fn format_timestamp(ts: u64) -> String {
         .format("%d/%m %H:%M")
         .to_string()
 }
+pub fn format_duration(seconds: u64) -> String {
+    format!(
+        "{:02}:{:02}:{:02}",
+        seconds / 3600,
+        seconds / 60 % 60,
+        seconds % 60
+    )
+}
 pub fn global_settings() -> GlobalSettings {
     GlobalSettings::find_by_always_zero(0).unwrap_or_else(|| game_assets().global_settings.clone())
 }
@@ -223,15 +231,7 @@ pub fn show_daily_refresh_timer(ui: &mut Ui) {
     let til_refresh = (now / 86400 + 1) * 86400 - now;
     "Refresh in "
         .cstr()
-        .push(
-            format!(
-                "{:02}:{:02}:{:02}",
-                til_refresh / 3600,
-                til_refresh / 60 % 60,
-                til_refresh % 60
-            )
-            .cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold),
-        )
+        .push(format_duration(til_refresh as u64).cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold))
         .label(ui);
 }
 

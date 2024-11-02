@@ -36,6 +36,8 @@ pub enum StdbTable {
     TIncubator,
     TIncubatorVote,
     TIncubatorFavorite,
+    TUserStats,
+    TUserGameStats,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -302,6 +304,17 @@ impl StdbTable {
                         .unwrap()
                         .0;
             }
+            StdbTable::TUserStats => {
+                data.user_stats = serde_json::from_str::<DeserializeWrapper<Vec<TUserStats>>>(json)
+                    .unwrap()
+                    .0;
+            }
+            StdbTable::TUserGameStats => {
+                data.user_game_stats =
+                    serde_json::from_str::<DeserializeWrapper<Vec<TUserGameStats>>>(json)
+                        .unwrap()
+                        .0;
+            }
         }
     }
     pub fn get_json_data(self) -> String {
@@ -384,6 +397,12 @@ impl StdbTable {
             StdbTable::TIncubatorFavorite => to_string_pretty(&SerializeWrapper::new(
                 TIncubatorFavorite::iter().collect_vec(),
             )),
+            StdbTable::TUserStats => {
+                to_string_pretty(&SerializeWrapper::new(TUserStats::iter().collect_vec()))
+            }
+            StdbTable::TUserGameStats => {
+                to_string_pretty(&SerializeWrapper::new(TUserGameStats::iter().collect_vec()))
+            }
         }
         .unwrap()
     }
@@ -410,6 +429,8 @@ impl StdbTable {
             | StdbTable::TIncubator
             | StdbTable::TIncubatorVote
             | StdbTable::TIncubatorFavorite
+            | StdbTable::TUserStats
+            | StdbTable::TUserGameStats
             | StdbTable::TMetaShop => self.full(),
 
             StdbTable::TTrade => StdbQuery {

@@ -19,6 +19,9 @@ impl TWallet {
         if w.amount < 0 {
             return Err("Insufficient funds".into());
         }
+        if delta > 0 {
+            TUserStats::register_credits_earned(owner, delta as u32);
+        }
         w.save();
         Ok(())
     }

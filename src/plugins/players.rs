@@ -6,9 +6,6 @@ pub struct PlayersPlugin;
 struct PlayersResource {
     players: Vec<TUser>,
 }
-fn rm(world: &mut World) -> Mut<PlayersResource> {
-    world.resource_mut::<PlayersResource>()
-}
 
 impl PlayersPlugin {
     fn load(world: &mut World) {
@@ -34,6 +31,15 @@ impl PlayersPlugin {
                                     .cstr_cs(VISIBLE_DARK, CstrStyle::Small)
                             }
                         }
+                    })
+                    .column_cstr("played", |u, _| {
+                        let secs = Duration::from_micros(
+                            TUserStats::filter_by_owner(u.id)
+                                .map(|u| u.time_played)
+                                .sum::<u64>(),
+                        )
+                        .as_secs();
+                        format_duration(secs).cstr_cs(VISIBLE_DARK, CstrStyle::Small)
                     })
                     .ui(&r.players, ui, world);
             });

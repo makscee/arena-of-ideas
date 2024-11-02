@@ -287,6 +287,8 @@ impl Default for GameData {
             incubator: default(),
             incubator_vote: default(),
             incubator_favorite: default(),
+            user_stats: default(),
+            user_game_stats: default(),
         }
     }
 }

@@ -109,6 +109,8 @@ pub mod t_unit_balance;
 pub mod t_unit_item;
 pub mod t_unit_shard_item;
 pub mod t_user;
+pub mod t_user_game_stats;
+pub mod t_user_stats;
 pub mod t_wallet;
 pub mod team_add_unit_reducer;
 pub mod team_create_reducer;
@@ -212,6 +214,8 @@ pub use t_unit_balance::*;
 pub use t_unit_item::*;
 pub use t_unit_shard_item::*;
 pub use t_user::*;
+pub use t_user_game_stats::*;
+pub use t_user_stats::*;
 pub use t_wallet::*;
 pub use team_add_unit_reducer::*;
 pub use team_create_reducer::*;
@@ -411,6 +415,16 @@ impl SpacetimeModule for Module {
                 ),
             "TUser" => client_cache
                 .handle_table_update_with_primary_key::<t_user::TUser>(callbacks, table_update),
+            "TUserGameStats" => client_cache
+                .handle_table_update_with_primary_key::<t_user_game_stats::TUserGameStats>(
+                    callbacks,
+                    table_update,
+                ),
+            "TUserStats" => client_cache
+                .handle_table_update_with_primary_key::<t_user_stats::TUserStats>(
+                    callbacks,
+                    table_update,
+                ),
             "TWallet" => client_cache
                 .handle_table_update_with_primary_key::<t_wallet::TWallet>(callbacks, table_update),
             _ => {
@@ -485,6 +499,12 @@ impl SpacetimeModule for Module {
             state,
         );
         reminders.invoke_callbacks::<t_user::TUser>(worker, &reducer_event, state);
+        reminders.invoke_callbacks::<t_user_game_stats::TUserGameStats>(
+            worker,
+            &reducer_event,
+            state,
+        );
+        reminders.invoke_callbacks::<t_user_stats::TUserStats>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_wallet::TWallet>(worker, &reducer_event, state);
     }
     fn handle_event(
@@ -640,6 +660,12 @@ match &reducer_call.reducer_name[..] {
             "TUser" => {
                 client_cache.handle_resubscribe_for_type::<t_user::TUser>(callbacks, new_subs)
             }
+            "TUserGameStats" => client_cache
+                .handle_resubscribe_for_type::<t_user_game_stats::TUserGameStats>(
+                    callbacks, new_subs,
+                ),
+            "TUserStats" => client_cache
+                .handle_resubscribe_for_type::<t_user_stats::TUserStats>(callbacks, new_subs),
             "TWallet" => {
                 client_cache.handle_resubscribe_for_type::<t_wallet::TWallet>(callbacks, new_subs)
             }
