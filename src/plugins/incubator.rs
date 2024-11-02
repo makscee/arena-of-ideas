@@ -67,6 +67,9 @@ impl IncubatorPlugin {
                             .collect_vec();
                         let own = d.owner == user_id();
                         let i = d.clone();
+                        fn tile_id(id: u64) -> String {
+                            format!("Incubator {}", id)
+                        }
                         Tile::new(Side::Left, move |ui, world| {
                             cards.last().unwrap().ui(ui);
                             if cards.len() > 1 {
@@ -90,15 +93,36 @@ impl IncubatorPlugin {
                                 });
                             }
                             if own {
-                                if Button::click("edit").ui(ui).clicked() {
-                                    EditorPlugin::load_from_incubator(
-                                        i.id,
-                                        i.unit.last().unwrap().clone(),
-                                        world,
-                                    );
-                                    GameState::Editor.proceed_to_target(world);
-                                    return;
-                                }
+                                ui.horizontal(|ui| {
+                                    if Button::click("edit").ui(ui).clicked() {
+                                        EditorPlugin::load_from_incubator(
+                                            i.id,
+                                            i.unit.last().unwrap().clone(),
+                                            world,
+                                        );
+                                        GameState::Editor.proceed_to_target(world);
+                                        return;
+                                    }
+                                    if Button::click("delete").red(ui).ui(ui).clicked() {
+                                        let id = i.id;
+                                        Confirmation::new("Delete Incubator unit".cstr_c(RED))
+                                            .accept(move |_| {
+                                                incubator_delete(id);
+                                                on_incubator_delete(|_, _, status, id| {
+                                                    let id = *id;
+                                                    status.on_success(move |world| {
+                                                        TilePlugin::close(&tile_id(id), world);
+                                                        Notification::new_string(format!(
+                                                            "Incubator entry#{id} deleted"
+                                                        ))
+                                                        .push(world)
+                                                    });
+                                                });
+                                            })
+                                            .cancel(|_| {})
+                                            .push(world);
+                                    }
+                                });
                             } else {
                                 if Button::click("open in editor").ui(ui).clicked() {
                                     EditorPlugin::load_unit(
@@ -110,7 +134,7 @@ impl IncubatorPlugin {
                                 }
                             }
                         })
-                        .with_id(format!("Incubator {}", d.id))
+                        .with_id(tile_id(d.id))
                         .min_space(egui::vec2(300.0, 0.0))
                         .push(world);
                     },

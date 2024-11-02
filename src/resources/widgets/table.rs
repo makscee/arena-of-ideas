@@ -275,7 +275,14 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                     if gid == 0 {
                         "...".cstr().label(ui);
                     } else {
-                        if gid.get_user().cstr().button(ui).clicked() {
+                        if gid
+                            .get_user()
+                            .cstr()
+                            .as_button()
+                            .active(gid == user_id())
+                            .ui(ui)
+                            .clicked()
+                        {
                             TilePlugin::add_user(gid, w);
                         }
                     }

@@ -162,7 +162,10 @@ impl Cstr {
     }
 
     pub fn button(self, ui: &mut Ui) -> Response {
-        Button::click(self.clone()).cstr(self).ui(ui)
+        self.as_button().ui(ui)
+    }
+    pub fn as_button(self) -> Button {
+        Button::click(self.clone()).cstr(self)
     }
 
     pub fn label(&self, ui: &mut Ui) -> Response {
