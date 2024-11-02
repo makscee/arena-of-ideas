@@ -135,7 +135,6 @@ impl TUser {
             Ok(name)
         }
     }
-
     fn check_pass(&self, pass: String) -> bool {
         if let Some(hash) = &self.pass_hash {
             match verify(pass, hash) {
@@ -149,7 +148,6 @@ impl TUser {
             true
         }
     }
-
     fn hash_pass(pass: String) -> Result<String, String> {
         let mut salt = [0u8; 16];
         rng().fill_bytes(&mut salt);
@@ -158,29 +156,32 @@ impl TUser {
             Err(e) => Err(e.to_string()),
         }
     }
-
     pub fn find_by_identity(identity: &Identity) -> Result<TUser, String> {
         TUser::iter()
             .find(|u| u.identities.contains(identity))
             .context_str("User not found")
     }
-
     fn login(mut self) {
         self.online = true;
         self.last_login = Timestamp::now();
         GlobalEvent::LogIn.post(self.id);
         TUser::update_by_id(&self.id.clone(), self);
     }
-
     fn clear_identity(identity: &Identity) {
         if let Ok(mut user) = TUser::find_by_identity(identity) {
             user.remove_identity(identity);
             TUser::update_by_id(&user.id.clone(), user);
         }
     }
-
     fn remove_identity(&mut self, identity: &Identity) {
         self.identities.retain(|i| !i.eq(identity));
+    }
+    pub fn cleanup() {
+        for user in TUser::iter() {
+            if user.identities.is_empty() && user.pass_hash.is_none() {
+                user.delete();
+            }
+        }
     }
 }
 

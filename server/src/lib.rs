@@ -126,3 +126,10 @@ fn init() -> Result<(), String> {
 pub fn default<T: Default>() -> T {
     Default::default()
 }
+
+#[spacetimedb(reducer)]
+fn cleanup(ctx: ReducerContext) -> Result<(), String> {
+    ctx.is_admin()?;
+    TUser::cleanup();
+    Ok(())
+}

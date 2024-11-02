@@ -26,6 +26,7 @@ pub mod auction_buy_reducer;
 pub mod auction_cancel_reducer;
 pub mod auction_create_reducer;
 pub mod battle_settings;
+pub mod cleanup_reducer;
 pub mod craft_hero_reducer;
 pub mod daily_update_reducer;
 pub mod daily_update_timer;
@@ -128,6 +129,7 @@ pub use auction_buy_reducer::*;
 pub use auction_cancel_reducer::*;
 pub use auction_create_reducer::*;
 pub use battle_settings::*;
+pub use cleanup_reducer::*;
 pub use craft_hero_reducer::*;
 pub use daily_update_reducer::*;
 pub use daily_update_timer::*;
@@ -231,6 +233,7 @@ pub enum ReducerEvent {
     AuctionBuy(auction_buy_reducer::AuctionBuyArgs),
     AuctionCancel(auction_cancel_reducer::AuctionCancelArgs),
     AuctionCreate(auction_create_reducer::AuctionCreateArgs),
+    Cleanup(cleanup_reducer::CleanupArgs),
     CraftHero(craft_hero_reducer::CraftHeroArgs),
     DailyUpdate(daily_update_reducer::DailyUpdateArgs),
     DismantleHero(dismantle_hero_reducer::DismantleHeroArgs),
@@ -497,6 +500,7 @@ match &reducer_call.reducer_name[..] {
 			"auction_buy" => _reducer_callbacks.handle_event_of_type::<auction_buy_reducer::AuctionBuyArgs, ReducerEvent>(event, _state, ReducerEvent::AuctionBuy),
 			"auction_cancel" => _reducer_callbacks.handle_event_of_type::<auction_cancel_reducer::AuctionCancelArgs, ReducerEvent>(event, _state, ReducerEvent::AuctionCancel),
 			"auction_create" => _reducer_callbacks.handle_event_of_type::<auction_create_reducer::AuctionCreateArgs, ReducerEvent>(event, _state, ReducerEvent::AuctionCreate),
+			"cleanup" => _reducer_callbacks.handle_event_of_type::<cleanup_reducer::CleanupArgs, ReducerEvent>(event, _state, ReducerEvent::Cleanup),
 			"craft_hero" => _reducer_callbacks.handle_event_of_type::<craft_hero_reducer::CraftHeroArgs, ReducerEvent>(event, _state, ReducerEvent::CraftHero),
 			"daily_update" => _reducer_callbacks.handle_event_of_type::<daily_update_reducer::DailyUpdateArgs, ReducerEvent>(event, _state, ReducerEvent::DailyUpdate),
 			"dismantle_hero" => _reducer_callbacks.handle_event_of_type::<dismantle_hero_reducer::DismantleHeroArgs, ReducerEvent>(event, _state, ReducerEvent::DismantleHero),

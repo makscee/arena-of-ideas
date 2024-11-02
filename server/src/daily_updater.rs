@@ -28,6 +28,7 @@ fn update() -> Result<(), String> {
     TMetaShop::refresh()?;
     TDailyState::daily_refresh();
     quests_daily_refresh();
+    TUser::cleanup();
     Ok(())
 }
 
