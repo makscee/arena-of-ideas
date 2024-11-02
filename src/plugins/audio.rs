@@ -80,7 +80,7 @@ impl AudioPlugin {
             source,
             settings: PlaybackSettings {
                 mode: bevy::audio::PlaybackMode::Despawn,
-                volume: Volume::new(client_settings().volume_fx),
+                volume: Volume::new(client_settings().fx_volume()),
                 ..default()
             },
         });
@@ -103,7 +103,7 @@ impl AudioPlugin {
                 source: bg,
                 settings: PlaybackSettings {
                     mode: bevy::audio::PlaybackMode::Despawn,
-                    volume: Volume::new(client_settings().volume_music),
+                    volume: Volume::new(client_settings().music_volume()),
                     ..default()
                 },
             },

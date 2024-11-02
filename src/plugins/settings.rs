@@ -29,6 +29,7 @@ impl SettingsPlugin {
         Tile::new(Side::Left, |ui, world| {
             title("Audio Settings", ui);
             let mut cs = client_settings().clone();
+            Slider::new("Master").ui(&mut cs.volume_master, 0.0..=1.0, ui);
             Slider::new("Music").ui(&mut cs.volume_music, 0.0..=1.0, ui);
             Slider::new("Sfx").ui(&mut cs.volume_fx, 0.0..=1.0, ui);
 

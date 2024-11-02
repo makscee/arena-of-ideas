@@ -16,6 +16,7 @@ pub struct ClientSettings {
     pub vsync: bool,
 
     pub animation_time: f32,
+    pub volume_master: f32,
     pub volume_music: f32,
     pub volume_fx: f32,
 }
@@ -33,6 +34,7 @@ impl Default for ClientSettings {
             vsync: false,
             resolution: vec2(1280.0, 720.0),
             animation_time: 0.3,
+            volume_master: 0.6,
             volume_music: 0.5,
             volume_fx: 1.0,
         }
@@ -123,9 +125,15 @@ impl ClientSettings {
                 true => PresentMode::AutoVsync,
                 false => PresentMode::AutoNoVsync,
             };
-            AudioPlugin::set_music_volume(self.volume_music, world);
+            AudioPlugin::set_music_volume(self.music_volume(), world);
         }
         self.save_to_cache();
+    }
+    pub fn music_volume(&self) -> f32 {
+        self.volume_music * self.volume_master
+    }
+    pub fn fx_volume(&self) -> f32 {
+        self.volume_fx * self.volume_master
     }
 }
 
