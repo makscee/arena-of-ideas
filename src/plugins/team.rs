@@ -124,7 +124,7 @@ impl TeamPlugin {
         TeamSyncPlugin::subscribe(id, Faction::Team, world);
     }
     fn open_new_team_popup(world: &mut World) {
-        Confirmation::new("New Team".cstr_cs(VISIBLE_LIGHT, CstrStyle::Heading2))
+        Confirmation::new("New team".cstr_cs(VISIBLE_LIGHT, CstrStyle::Heading2))
             .accept(|world| {
                 let name = world.resource_mut::<TeamResource>().new_team_name.take();
                 if name.is_empty() {
@@ -190,6 +190,29 @@ impl TeamPlugin {
                 .empty_slot_text("+1/+1\nto all".cstr_cs(VISIBLE_DARK, CstrStyle::Bold))
                 .top_content(|ui, world| {
                     ui.horizontal(|ui| {
+                        if Button::click("Rename").ui(ui).clicked() {
+                            Confirmation::new(
+                                "Rename team".cstr_cs(VISIBLE_LIGHT, CstrStyle::Heading2),
+                            )
+                            .accept(|world| {
+                                let mut tr = world.resource_mut::<TeamResource>();
+                                let name = tr.new_team_name.take();
+                                team_rename(tr.team, name);
+                                once_on_team_rename(|_, _, status, _, _| {
+                                    status.on_success(|world| Self::load_teams_table(world));
+                                });
+                            })
+                            .cancel(|_| {})
+                            .content(|ui, world| {
+                                ui.vertical_centered_justified(|ui| {
+                                    Input::new("name").char_limit(20).ui_string(
+                                        &mut world.resource_mut::<TeamResource>().new_team_name,
+                                        ui,
+                                    );
+                                });
+                            })
+                            .push(world);
+                        }
                         if Button::click("Disband").red(ui).ui(ui).clicked() {
                             Confirmation::new("Disband team?".cstr_c(VISIBLE_LIGHT))
                                 .accept(|world| {
@@ -197,8 +220,10 @@ impl TeamPlugin {
                                     team_disband(tr.team);
                                     once_on_team_disband(|_, _, status, id| {
                                         let id = *id;
-                                        status.on_success(move |w| {
-                                            format!("Team#{id} disbanded").notify(w);
+                                        status.on_success(move |world| {
+                                            format!("Team#{id} disbanded").notify(world);
+                                            MetaPlugin::clear(world);
+                                            MetaPlugin::load_mode(MetaMode::Teams, world);
                                         })
                                     });
                                 })

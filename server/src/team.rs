@@ -89,6 +89,9 @@ fn team_create(ctx: ReducerContext, name: String) -> Result<(), String> {
     if name.len() > 20 {
         return Err("Name is too long (max 20 chars)".into());
     }
+    if name.is_empty() {
+        return Err("Name can't be empty".into());
+    }
     let user = ctx.user()?;
     TWallet::change(user.id, -GlobalSettings::get().create_team_cost)?;
     TTeam::new(user.id, TeamPool::Owned).name(name).save();
@@ -149,5 +152,19 @@ fn team_disband(ctx: ReducerContext, team: u64) -> Result<(), String> {
         })?;
     }
     TTeam::delete_by_id(&team.id);
+    Ok(())
+}
+#[spacetimedb(reducer)]
+fn team_rename(ctx: ReducerContext, team: u64, name: String) -> Result<(), String> {
+    let user = ctx.user()?;
+    let mut team = TTeam::get_owned(team, user.id)?;
+    if name.is_empty() {
+        return Err("Name can't be empty".into());
+    }
+    if name.len() > 20 {
+        return Err("Name is too long (max 20 chars)".into());
+    }
+    team.name = name;
+    team.save();
     Ok(())
 }

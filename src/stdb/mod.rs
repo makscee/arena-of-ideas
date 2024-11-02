@@ -114,6 +114,7 @@ pub mod team_create_reducer;
 pub mod team_disband_reducer;
 pub mod team_pool;
 pub mod team_remove_unit_reducer;
+pub mod team_rename_reducer;
 pub mod team_slot;
 pub mod team_swap_units_reducer;
 pub mod unit_balance_vote_reducer;
@@ -215,6 +216,7 @@ pub use team_create_reducer::*;
 pub use team_disband_reducer::*;
 pub use team_pool::*;
 pub use team_remove_unit_reducer::*;
+pub use team_rename_reducer::*;
 pub use team_slot::*;
 pub use team_swap_units_reducer::*;
 pub use unit_balance_vote_reducer::*;
@@ -271,6 +273,7 @@ pub enum ReducerEvent {
     TeamCreate(team_create_reducer::TeamCreateArgs),
     TeamDisband(team_disband_reducer::TeamDisbandArgs),
     TeamRemoveUnit(team_remove_unit_reducer::TeamRemoveUnitArgs),
+    TeamRename(team_rename_reducer::TeamRenameArgs),
     TeamSwapUnits(team_swap_units_reducer::TeamSwapUnitsArgs),
     UnitBalanceVote(unit_balance_vote_reducer::UnitBalanceVoteArgs),
     UploadAssets(upload_assets_reducer::UploadAssetsArgs),
@@ -536,6 +539,7 @@ match &reducer_call.reducer_name[..] {
 			"team_create" => _reducer_callbacks.handle_event_of_type::<team_create_reducer::TeamCreateArgs, ReducerEvent>(event, _state, ReducerEvent::TeamCreate),
 			"team_disband" => _reducer_callbacks.handle_event_of_type::<team_disband_reducer::TeamDisbandArgs, ReducerEvent>(event, _state, ReducerEvent::TeamDisband),
 			"team_remove_unit" => _reducer_callbacks.handle_event_of_type::<team_remove_unit_reducer::TeamRemoveUnitArgs, ReducerEvent>(event, _state, ReducerEvent::TeamRemoveUnit),
+			"team_rename" => _reducer_callbacks.handle_event_of_type::<team_rename_reducer::TeamRenameArgs, ReducerEvent>(event, _state, ReducerEvent::TeamRename),
 			"team_swap_units" => _reducer_callbacks.handle_event_of_type::<team_swap_units_reducer::TeamSwapUnitsArgs, ReducerEvent>(event, _state, ReducerEvent::TeamSwapUnits),
 			"unit_balance_vote" => _reducer_callbacks.handle_event_of_type::<unit_balance_vote_reducer::UnitBalanceVoteArgs, ReducerEvent>(event, _state, ReducerEvent::UnitBalanceVote),
 			"upload_assets" => _reducer_callbacks.handle_event_of_type::<upload_assets_reducer::UploadAssetsArgs, ReducerEvent>(event, _state, ReducerEvent::UploadAssets),

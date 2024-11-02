@@ -81,7 +81,7 @@ impl MetaPlugin {
     pub fn set_mode(mode: MetaMode, world: &mut World) {
         world.resource_mut::<MetaResource>().load_mode = Some(mode);
     }
-    fn load_mode(mode: MetaMode, world: &mut World) {
+    pub fn load_mode(mode: MetaMode, world: &mut World) {
         Self::clear(world);
         match mode {
             MetaMode::Shop => Self::open_shop(world),
@@ -136,7 +136,7 @@ impl MetaPlugin {
         });
         Self::get_next_for_balancing(world);
     }
-    fn clear(world: &mut World) {
+    pub fn clear(world: &mut World) {
         TilePlugin::clear(world);
         world.game_clear();
         TeamSyncPlugin::unsubscribe_all(world);

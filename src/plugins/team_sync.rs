@@ -35,6 +35,7 @@ impl TeamSyncPlugin {
             .synced
             .insert(team_id, faction);
         Self::sync_team(team_id, world);
+        debug!("Subscribe team#{team_id}");
     }
     pub fn unsubscribe(team_id: u64, world: &mut World) {
         debug!("Unsubscribe team#{team_id}");
