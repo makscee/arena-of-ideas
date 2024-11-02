@@ -105,17 +105,21 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
         );
         self
     }
-    pub fn column_btn_dyn(
+    pub fn column_btn_mod_dyn(
         mut self,
         name: &'static str,
         on_click: Box<dyn Fn(&T, &mut Ui, &mut World)>,
+        modify: Box<dyn Fn(&T, &mut Ui, Button) -> Button>,
     ) -> Self {
         self.columns.insert(
             name,
             TableColumn {
                 value: Box::new(|_, _| name.to_string().into()),
                 show: Box::new(move |d, _, ui, w| {
-                    if Button::click(name.to_string()).ui(ui).clicked() {
+                    if modify(d, ui, Button::click(name.to_string()))
+                        .ui(ui)
+                        .clicked()
+                    {
                         on_click(d, ui, w);
                     }
                 }),
@@ -124,6 +128,21 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
             },
         );
         self
+    }
+    pub fn column_btn_mod(
+        self,
+        name: &'static str,
+        on_click: fn(&T, &mut Ui, &mut World),
+        modify: fn(&T, &mut Ui, Button) -> Button,
+    ) -> Self {
+        self.column_btn_mod_dyn(name, Box::new(on_click), Box::new(modify))
+    }
+    pub fn column_btn_dyn(
+        self,
+        name: &'static str,
+        on_click: Box<dyn Fn(&T, &mut Ui, &mut World)>,
+    ) -> Self {
+        self.column_btn_mod_dyn(name, on_click, Box::new(|_, _, b| b))
     }
     pub fn column_btn(self, name: &'static str, on_click: fn(&T, &mut Ui, &mut World)) -> Self {
         self.column_btn_dyn(name, Box::new(on_click))
@@ -350,7 +369,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                         });
                     }
                 }),
-                sortable: false,
+                sortable: true,
                 hide_name: false,
             },
         );

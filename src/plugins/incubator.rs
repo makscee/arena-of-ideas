@@ -9,7 +9,53 @@ impl IncubatorPlugin {
             Table::new("Incubator")
                 .title()
                 .column_base_unit("unit", |d: &TIncubator| d.unit.last().unwrap().clone())
+                .column_int("score", |d| {
+                    TIncubatorVote::filter_by_target(d.id)
+                        .map(|d| if d.vote { 1 } else { -1 })
+                        .sum::<i32>()
+                })
+                .column_int("fav", |d| {
+                    TIncubatorFavorite::filter_by_target(d.id).count() as i32
+                })
                 .column_user_click("owner", |d| d.owner)
+                .column_btn_mod(
+                    "+",
+                    |d, _, _| {
+                        incubator_vote(d.id, true);
+                    },
+                    |d, _, b| {
+                        let v = TIncubatorVote::filter_by_owner(user_id())
+                            .find(|v| v.target == d.id)
+                            .map(|v| v.vote)
+                            .unwrap_or_default();
+                        b.active(v)
+                    },
+                )
+                .column_btn_mod(
+                    "-",
+                    |d, _, _| {
+                        incubator_vote(d.id, false);
+                    },
+                    |d, ui, b| {
+                        let v = TIncubatorVote::filter_by_owner(user_id())
+                            .find(|v| v.target == d.id)
+                            .map(|v| !v.vote)
+                            .unwrap_or_default();
+                        b.red(ui).active(v)
+                    },
+                )
+                .column_btn_mod(
+                    "❤",
+                    |d, _, _| {
+                        incubator_favorite(d.id);
+                    },
+                    |d, _, b| {
+                        let v = TIncubatorFavorite::find_by_owner(user_id())
+                            .map(|v| v.target == d.id)
+                            .unwrap_or_default();
+                        b.active(v)
+                    },
+                )
                 .column_cstr_click(
                     "open",
                     |_, _| "open".cstr_c(VISIBLE_LIGHT),
@@ -25,7 +71,7 @@ impl IncubatorPlugin {
                             cards.last().unwrap().ui(ui);
                             if cards.len() > 1 {
                                 ui.collapsing("Previous versions", |ui| {
-                                    ui.horizontal(|ui| {
+                                    ui.horizontal_wrapped(|ui| {
                                         "^".cstr().label(ui);
                                         for i in (0..cards.len() - 1).rev() {
                                             let name = cards[i].name.get_text();
@@ -35,6 +81,7 @@ impl IncubatorPlugin {
                                                     card.ui(ui);
                                                 })
                                                 .with_id(format!("{name}{i}"))
+                                                .min_space(egui::vec2(300.0, 0.0))
                                                 .push(world);
                                             }
                                             "<".cstr().label(ui);
