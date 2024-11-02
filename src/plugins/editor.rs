@@ -23,6 +23,7 @@ pub struct EditorResource {
     unit_mode: UnitMode,
     unit_to_load: String,
 
+    #[serde(skip)]
     incubator_link: Option<u64>,
     incubator_card_before: Option<UnitCard>,
     incubator_card: UnitCard,
@@ -637,12 +638,13 @@ impl EditorPlugin {
     }
     pub fn load_unit(unit: PackedUnit, world: &mut World) {
         let mut r = rm(world);
+        r.incubator_link = None;
         r.unit = unit.into();
         r.mode = Mode::Unit;
     }
     pub fn load_from_incubator(id: u64, unit: TBaseUnit, world: &mut World) {
-        rm(world).incubator_link = Some(id);
         Self::load_unit(unit.into(), world);
+        rm(world).incubator_link = Some(id);
     }
     fn incubator_update(world: &mut World) {
         let unit: TBaseUnit = rm(world).unit.clone().into();
