@@ -479,7 +479,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
         }
         state.frame_nr = frame_nr;
 
-        if state.indices.is_empty() && state.filter.is_none() || state.indices.len() > data.len() {
+        if state.indices.len() != data.len() && state.filter.is_none() {
             state.indices = (0..data.len()).collect_vec();
         }
         if self.title {
@@ -511,7 +511,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
             .show(ui, |ui| {
                 ui.push_id(Id::new(self.name), |ui| {
                     ui.horizontal(|ui| {
-                        format!("total: {}", data.len()).cstr().label(ui);
+                        format!("total: {}", state.indices.len()).cstr().label(ui);
                     });
                     TableBuilder::new(ui)
                         .columns(

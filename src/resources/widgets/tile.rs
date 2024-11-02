@@ -263,18 +263,11 @@ impl TilePlugin {
             })
             .pinned()
             .push(world),
-            GameState::MetaShop
-            | GameState::MetaAuction
-            | GameState::MetaHeroes
-            | GameState::MetaHeroShards
-            | GameState::MetaLootboxes
-            | GameState::MetaGallery
-            | GameState::MetaBalancing => MetaPlugin::add_tiles(world),
+            GameState::Meta => MetaPlugin::add_tiles(world),
             GameState::Shop => ShopPlugin::add_tiles(world),
             GameState::Battle => BattlePlugin::add_tiles(world),
             GameState::GameStart => GameStartPlugin::add_tiles(world),
             GameState::Title => TitlePlugin::add_tiles(world),
-            GameState::Teams | GameState::TeamEditor => TeamPlugin::add_tiles(to, world),
             GameState::Editor => EditorPlugin::add_tiles(world),
             GameState::Quests => QuestPlugin::add_tiles(world),
             GameState::Stats => StatsPlugin::add_tiles(world),

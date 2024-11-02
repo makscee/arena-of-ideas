@@ -8,13 +8,7 @@ pub enum GameState {
     Loading,
     Loaded,
     Title,
-    MetaShop,
-    MetaAuction,
-    MetaHeroes,
-    MetaHeroShards,
-    MetaLootboxes,
-    MetaGallery,
-    MetaBalancing,
+    Meta,
     Inbox,
     Connect,
     Login,
@@ -31,12 +25,11 @@ pub enum GameState {
     MigrationUpload,
     Profile,
     Error,
-    Teams,
-    TeamEditor,
     Editor,
     Quests,
     Stats,
     Incubator,
+    Players,
 }
 
 static TARGET_STATE: Mutex<GameState> = Mutex::new(GameState::Loaded);
@@ -122,13 +115,6 @@ impl GameState {
     }
     pub fn get_name(self) -> &'static str {
         match self {
-            GameState::MetaShop => "Shop",
-            GameState::MetaAuction => "Auction",
-            GameState::MetaHeroes => "Heroes",
-            GameState::MetaHeroShards => "Hero Shards",
-            GameState::MetaLootboxes => "Lootboxes",
-            GameState::MetaGallery => "Gallery",
-            GameState::MetaBalancing => "Balancing",
             _ => self.to_string().to_case(Case::Title).leak(),
         }
     }

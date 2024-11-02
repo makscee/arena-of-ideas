@@ -24,21 +24,7 @@ impl Default for SectionMenu {
                 },
                 GameSection {
                     name: "META",
-                    target_state: GameState::MetaShop,
-                    inner_states: [
-                        GameState::MetaHeroes,
-                        GameState::MetaHeroShards,
-                        GameState::MetaLootboxes,
-                        GameState::MetaGallery,
-                    ]
-                    .into(),
-                    options: [GameOption::Login].into(),
-                    ..default()
-                },
-                GameSection {
-                    name: "TEAMS",
-                    target_state: GameState::Teams,
-                    inner_states: [GameState::TeamEditor].into(),
+                    target_state: GameState::Meta,
                     options: [GameOption::Login].into(),
                     ..default()
                 },

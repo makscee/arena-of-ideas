@@ -379,7 +379,7 @@ fn open_lootbox(ctx: ReducerContext, id: u64) -> Result<(), String> {
     let unit: FusedUnit = TBaseUnit::get_random_for_lootbox(&houses).into();
     let unit = TUnitItem::insert(TUnitItem {
         id: next_id(),
-        owner: user.id,
+        owner: 0,
         unit: unit.mutate(),
     })?
     .id;

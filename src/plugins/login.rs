@@ -48,6 +48,14 @@ impl LoginPlugin {
             GameAssets::cache_tables();
             GameState::proceed(world);
 
+            TTrade::on_insert(|trade, e| {
+                let id = trade.id;
+                if e.is_some_and(|e| matches!(e, ReducerEvent::OpenLootbox(..))) {
+                    OperationsPlugin::add(move |world| {
+                        Trade::open(id, &egui_context(world).unwrap());
+                    });
+                }
+            });
             TWallet::on_update(|before, after, _| {
                 let delta = after.amount - before.amount;
                 let delta_txt = if delta > 0 {

@@ -43,7 +43,8 @@ impl TitlePlugin {
                         .ui(ui)
                         .clicked()
                 {
-                    GameState::MetaBalancing.proceed_to_target(world);
+                    MetaPlugin::set_mode(MetaMode::Balancing, world);
+                    GameState::Meta.proceed_to_target(world);
                 }
             });
         })

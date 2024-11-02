@@ -16,9 +16,8 @@ impl Plugin for WidgetsPlugin {
             app.add_systems(
                 Update,
                 give_c.run_if(
-                    input_just_pressed(KeyCode::KeyG).and_then(
-                        in_state(GameState::Title).or_else(in_state(GameState::MetaShop)),
-                    ),
+                    input_just_pressed(KeyCode::KeyG)
+                        .and_then(in_state(GameState::Title).or_else(in_state(GameState::Meta))),
                 ),
             )
             .add_systems(Update, cmd_test.run_if(input_pressed(KeyCode::SuperLeft)));

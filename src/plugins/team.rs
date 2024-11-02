@@ -113,13 +113,15 @@ impl TeamPlugin {
             .collect_vec();
         TableState::reset_cache(&egui_context(world).unwrap());
     }
-    fn load_editor_team(world: &mut World) {
+    fn load_editor_team(id: u64, world: &mut World) {
         Self::despawn(Faction::Team, world);
-        let team = world.resource::<TeamResource>().team;
-        if team == 0 {
+        if id == 0 {
+            error!("Wrong team id");
             return;
         }
-        TeamSyncPlugin::subscribe(team, Faction::Team, world);
+        world.resource_mut::<TeamResource>().team = id;
+        TeamSyncPlugin::unsubscribe_all(world);
+        TeamSyncPlugin::subscribe(id, Faction::Team, world);
     }
     fn open_new_team_popup(world: &mut World) {
         Confirmation::new("New Team".cstr_cs(VISIBLE_LIGHT, CstrStyle::Heading2))
@@ -146,7 +148,8 @@ impl TeamPlugin {
             .push(world);
     }
 
-    fn teams_tiles(world: &mut World) {
+    pub fn teams_tiles(world: &mut World) {
+        Self::load_teams_table(world);
         Tile::new(Side::Left, |ui, world| {
             title("Team Manager", ui);
             let cost = GlobalSettings::current().create_team_cost;
@@ -162,9 +165,7 @@ impl TeamPlugin {
             let data = mem::take(&mut world.resource_mut::<TeamResource>().table);
             data.show_modified_table("Teams", ui, world, |t| {
                 t.column_btn("edit", |d, _, world| {
-                    let mut tr = world.resource_mut::<TeamResource>();
-                    tr.team = d.id;
-                    GameState::TeamEditor.proceed_to_target(world);
+                    Self::edit_team(d.id, world);
                 })
             });
             world.resource_mut::<TeamResource>().table = data;
@@ -173,14 +174,15 @@ impl TeamPlugin {
         .push(world);
     }
 
-    fn editor_tiles(world: &mut World) {
-        Self::load_editor_team(world);
-        Tile::new(Side::Top, |ui, world| {
-            let team = world.resource::<TeamResource>().team;
-            if team == 0 {
+    fn edit_team(id: u64, world: &mut World) {
+        Self::load_editor_team(id, world);
+        const EDITOR_TILE: &str = "team_editor";
+        TilePlugin::close(EDITOR_TILE, world);
+        Tile::new(Side::Top, move |ui, world| {
+            if id == 0 {
                 return;
             }
-            let Some(team) = TTeam::find_by_id(team) else {
+            let Some(team) = TTeam::find_by_id(id) else {
                 return;
             };
             title(&team.name, ui);
@@ -197,7 +199,6 @@ impl TeamPlugin {
                                         let id = *id;
                                         status.on_success(move |w| {
                                             format!("Team#{id} disbanded").notify(w);
-                                            GameState::Teams.proceed_to_target(w);
                                         })
                                     });
                                 })
@@ -222,7 +223,7 @@ impl TeamPlugin {
                                     team_add_unit(tr.team, u.id);
                                     once_on_team_add_unit(|_, _, status, _, _| {
                                         status.on_success(|world| {
-                                            TableState::reset_cache(&egui_context(world).unwrap());
+                                            Self::load_teams_table(world);
                                             Confirmation::close_current(world);
                                         })
                                     });
@@ -240,8 +241,10 @@ impl TeamPlugin {
                             let tr = world.resource::<TeamResource>();
                             team_remove_unit(tr.team, tr.team.get_team().units[slot].id);
                             once_on_team_remove_unit(|_, _, status, _, _| {
-                                TableState::reset_cache_op();
-                                status.on_success(|w| "Unit removed".notify(w));
+                                status.on_success(|w| {
+                                    "Unit removed".notify(w);
+                                    Self::load_teams_table(w);
+                                });
                             });
                         }
                     });
@@ -255,24 +258,8 @@ impl TeamPlugin {
         })
         .pinned()
         .transparent()
+        .with_id(EDITOR_TILE.into())
         .min_space(egui::vec2(200.0, 200.0))
         .push(world);
-    }
-
-    pub fn add_tiles(state: GameState, world: &mut World) {
-        TeamSyncPlugin::unsubscribe_all(world);
-        Tile::new(Side::Top, |ui, world| {
-            SubstateMenu::show(&[GameState::Teams, GameState::TeamEditor], ui, world);
-        })
-        .pinned()
-        .transparent()
-        .non_focusable()
-        .push(world);
-        Self::load_teams_table(world);
-        match state {
-            GameState::Teams => Self::teams_tiles(world),
-            GameState::TeamEditor => Self::editor_tiles(world),
-            _ => panic!("Unsupported state"),
-        }
     }
 }
