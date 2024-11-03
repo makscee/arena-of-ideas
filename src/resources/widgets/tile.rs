@@ -455,14 +455,6 @@ impl Tile {
             Side::Top => sr.screen_rect.min.y += self.allocated_space.y,
             Side::Bottom => sr.screen_rect.max.y -= self.allocated_space.y,
         }
-        if self.focusable && left_mouse_just_released(world) {
-            if ctx
-                .pointer_interact_pos()
-                .is_some_and(|pos| rect.contains(pos))
-            {
-                response = TileResponse::WantFocus;
-            }
-        }
         // if !self.pinned && right_mouse_just_released(world) {
         //     if ctx
         //         .pointer_interact_pos()
@@ -494,7 +486,7 @@ impl Tile {
         if !rect.area().is_finite() {
             return response;
         }
-        area.show(ctx, |ui| {
+        let area_response = area.sense(Sense::click()).show(ctx, |ui| {
             let mut content_rect = rect.shrink2(frame.total_margin().sum() * 0.5);
             if self.no_expand {
                 match self.side {
@@ -536,6 +528,10 @@ impl Tile {
             self.content_space =
                 ui.min_size().at_least(self.min_space) + frame.total_margin().sum();
         });
+
+        if self.focusable && area_response.response.clicked() {
+            response = TileResponse::WantFocus;
+        }
         response
     }
 }
