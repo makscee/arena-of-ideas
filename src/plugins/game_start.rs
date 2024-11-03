@@ -34,13 +34,6 @@ impl ToCstr for Mode {
 
 impl Default for GameStartResource {
     fn default() -> Self {
-        let teams = TTeam::filter_by_owner(user_id())
-            .filter(|t| t.pool == TeamPool::Owned && !t.units.is_empty())
-            .collect_vec();
-        let selected_team = client_state()
-            .last_played_team
-            .and_then(|id| teams.iter().position(|t| t.id == id))
-            .unwrap_or_default();
         Self {
             game_modes: [
                 GameMode::ArenaNormal,
@@ -52,8 +45,8 @@ impl Default for GameStartResource {
             leaderboard: default(),
             runs: default(),
             battles: default(),
-            teams,
-            selected_team,
+            teams: default(),
+            selected_team: 0,
             selected_season: global_settings().season,
             right_mode: default(),
         }
@@ -64,6 +57,15 @@ impl GameStartPlugin {
     fn load_data(world: &mut World) {
         TableState::reset_cache(&egui_context(world).unwrap());
         let mut gsr = rm(world);
+        gsr.teams = TTeam::filter_by_owner(user_id())
+            .filter(|t| t.pool == TeamPool::Owned && !t.units.is_empty())
+            .collect_vec();
+        if let Some(i) = client_state()
+            .last_played_team
+            .and_then(|id| gsr.teams.iter().position(|t| t.id == id))
+        {
+            gsr.selected_team = i;
+        }
         gsr.leaderboard = HashMap::from_iter(
             TArenaLeaderboard::filter_by_season(gsr.selected_season)
                 .sorted_by_key(|d| -(d.floor as i32))
