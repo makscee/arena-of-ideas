@@ -227,7 +227,7 @@ impl VarValue {
     pub fn get_u64(&self) -> Result<u64> {
         match self {
             VarValue::U64(v) => Ok(*v),
-            _ => Err(anyhow!("Faction not supported by {self}")),
+            _ => Err(anyhow!("u64 not supported by {self}")),
         }
     }
     pub fn get_gid_list(&self) -> Result<Vec<u64>> {

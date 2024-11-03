@@ -182,6 +182,9 @@ pub fn smoothstep(edge0: f32, edge1: f32, x: f32) -> f32 {
     x * x * (3.0 - 2.0 * x)
 }
 pub fn format_timestamp(ts: u64) -> String {
+    if ts == 0 {
+        return "-".into();
+    }
     DateTime::<chrono::Local>::from(UNIX_EPOCH + Duration::from_micros(ts))
         .format("%d/%m %H:%M")
         .to_string()

@@ -111,7 +111,6 @@ impl TeamPlugin {
         world.resource_mut::<TeamResource>().table = TTeam::filter_by_owner(user_id())
             .filter(|t| t.pool.eq(&TeamPool::Owned))
             .collect_vec();
-        TableState::reset_cache(&egui_context(world).unwrap());
     }
     fn load_editor_team(id: u64, world: &mut World) {
         Self::despawn(Faction::Team, world);

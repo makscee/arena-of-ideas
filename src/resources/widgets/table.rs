@@ -12,12 +12,21 @@ pub struct Table<T> {
 
 #[derive(Default, Clone, Debug)]
 pub struct TableState {
+    cells: HashMap<(usize, usize), CellState>,
     filter: Option<usize>,
     sorting: Option<(usize, bool)>,
     indices: Vec<usize>,
     frame_nr: u64,
     pub selected_row: Option<usize>,
 }
+
+#[derive(Default, Clone, Debug)]
+pub struct CellState {
+    cache: VarValue,
+    cache_ts: f32,
+    highlight: f32,
+}
+const CACHE_LIFETIME: f32 = 2.0;
 
 pub struct TableColumn<T> {
     value: Box<dyn Fn(&T, &World) -> VarValue>,
@@ -35,6 +44,31 @@ impl<T> TableColumn<T> {
         self.hide_name = true;
         self.sortable = false;
         self
+    }
+}
+
+impl CellState {
+    fn get_cached<T>(
+        &mut self,
+        data: &T,
+        f: &Box<dyn Fn(&T, &World) -> VarValue>,
+        world: &World,
+    ) -> VarValue {
+        let t = gt().play_head();
+        if self.cache_ts + CACHE_LIFETIME > t {
+            self.cache.clone()
+        } else {
+            let value = f(data, world);
+            if !self.cache.eq(&value) {
+                self.highlight = 1.0;
+            }
+            self.cache_ts = t;
+            self.cache = value.clone();
+            value
+        }
+    }
+    fn update(&mut self) {
+        self.highlight = (self.highlight - gt().last_delta()).at_least(0.0);
     }
 }
 
@@ -255,7 +289,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
             TableColumn {
                 value: Box::new(move |d, _| value(d).into()),
                 show: Box::new(|_, v, ui, _| {
-                    format_timestamp(v.get_u64().unwrap())
+                    format_timestamp(v.get_u64().unwrap_or_default())
                         .cstr_cs(VISIBLE_DARK, CstrStyle::Small)
                         .label(ui);
                 }),
@@ -271,7 +305,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
             TableColumn {
                 value: Box::new(move |d, _| gid(d).into()),
                 show: Box::new(move |_, v, ui, w| {
-                    let gid = v.get_u64().unwrap();
+                    let gid = v.get_u64().unwrap_or_default();
                     if gid == 0 {
                         "...".cstr().label(ui);
                     } else {
@@ -299,7 +333,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
             TableColumn {
                 value: Box::new(move |d, _| gid(d).into()),
                 show: Box::new(|_, gid: VarValue, ui: &mut Ui, w: &mut World| {
-                    let gid = gid.get_u64().unwrap();
+                    let gid = gid.get_u64().unwrap_or_default();
                     if gid == 0 {
                         "...".cstr().label(ui);
                     } else {
@@ -561,11 +595,23 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                                     row_i = *i;
                                 }
                                 row.set_selected(state.selected_row.is_some_and(|i| i == row_i));
-                                for (_, col) in self.columns.iter() {
+                                for (col_i, (_, col)) in self.columns.iter().enumerate() {
+                                    let cell = state.cells.entry((col_i, row_i)).or_default();
+                                    cell.update();
                                     row.col(|ui| {
                                         let d = &data[row_i];
-                                        let v = (col.value)(d, world);
+                                        let v: VarValue = cell.get_cached(d, &col.value, world);
                                         (col.show)(d, v, ui, world);
+                                        if cell.highlight > 0.0 {
+                                            ui.painter().rect_stroke(
+                                                ui.min_rect(),
+                                                Rounding::same(13.0),
+                                                Stroke::new(
+                                                    1.0,
+                                                    YELLOW.gamma_multiply(cell.highlight),
+                                                ),
+                                            );
+                                        }
                                     });
                                 }
                                 if self.selectable {

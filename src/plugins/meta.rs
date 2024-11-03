@@ -97,7 +97,6 @@ impl MetaPlugin {
     }
     fn get_next_for_balancing(world: &mut World) {
         world.game_clear();
-        TableState::reset_cache(&egui_context(world).unwrap());
         let mut br = world.resource_mut::<BalancingResource>();
         if let Some(unit) = br.units.pop() {
             br.current = unit.clone();
@@ -217,11 +216,12 @@ impl MetaPlugin {
     fn open_balancing(world: &mut World) {
         Self::on_enter_balancing(world);
         Tile::new(Side::Left, |ui, world| {
-            let votes: HashMap<String, i32> = HashMap::from_iter(
-                TUnitBalance::filter_by_owner(user_id()).map(|u| (u.unit, u.vote)),
+            let votes: HashMap<String, (u64, i32)> = HashMap::from_iter(
+                TUnitBalance::filter_by_owner(user_id()).map(|u| (u.unit, (u.id, u.vote))),
             );
             TBaseUnit::iter()
                 .filter(|u| votes.contains_key(&u.name))
+                .sorted_by_key(|u| votes.get(&u.name).unwrap().0)
                 .collect_vec()
                 .show_modified_table("Base Units", ui, world, |t| {
                     t.column_int("vote", |u| {
