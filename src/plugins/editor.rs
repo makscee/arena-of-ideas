@@ -203,7 +203,7 @@ impl EditorPlugin {
                     const GAME_MODE_ID: &str = "champion_mode";
                     fn selected_mode(ctx: &egui::Context) -> GameMode {
                         ctx.data(|r| r.get_temp::<GameMode>(Id::new(GAME_MODE_ID)))
-                            .unwrap_or(GameMode::ArenaNormal)
+                            .unwrap_or_default()
                     }
                     ui.add_space(30.0);
                     if Button::click("Load Champion").ui(ui).clicked() {
@@ -215,7 +215,7 @@ impl EditorPlugin {
                                     [
                                         &GameMode::ArenaNormal,
                                         &GameMode::ArenaRanked,
-                                        &GameMode::ArenaConst(default()),
+                                        &GameMode::ArenaConst,
                                     ],
                                     ui,
                                 ) {

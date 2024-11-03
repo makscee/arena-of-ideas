@@ -46,6 +46,7 @@ pub struct ArenaSettings {
     pub lives_initial: u32,
     pub free_rerolls_initial: u32,
     pub free_rerolls_income: u32,
+    pub initial_enemies_count: Vec<u32>,
 }
 
 #[derive(SpacetimeType)]

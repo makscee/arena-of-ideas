@@ -156,7 +156,7 @@ pub fn game_mode_switcher(value: &mut GameMode, ui: &mut Ui) -> bool {
             [
                 GameMode::ArenaNormal,
                 GameMode::ArenaRanked,
-                GameMode::ArenaConst(default()),
+                GameMode::ArenaConst,
             ],
             ui,
         )

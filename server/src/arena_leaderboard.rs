@@ -25,9 +25,17 @@ impl TArenaLeaderboard {
             ts: Timestamp::now(),
         }
     }
-    pub fn current_champion(mode: &GameMode) -> Option<Self> {
+    pub fn current() -> impl Iterator<Item = Self> {
+        Self::filter_by_season(&GlobalSettings::get().season)
+    }
+    pub fn floor_boss(mode: GameMode, floor: u32) -> Option<Self> {
+        Self::current()
+            .filter(|d| d.floor == floor && d.mode == mode)
+            .max_by_key(|d| d.ts)
+    }
+    pub fn current_champion(mode: GameMode) -> Option<Self> {
         TArenaLeaderboard::filter_by_season(&GlobalSettings::get().season)
-            .filter(|d| d.mode.eq(mode))
+            .filter(|d| d.mode.eq(&mode))
             .max_by_key(|d| d.floor)
     }
 }

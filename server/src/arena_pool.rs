@@ -11,9 +11,9 @@ pub struct TArenaPool {
 }
 
 impl TArenaPool {
-    pub fn get_next_enemy(mode: &GameMode, floor: u32) -> (bool, u64) {
+    pub fn get_next_enemy(mode: &GameMode, floor: u32) -> u64 {
         let initial_enemies = match mode {
-            GameMode::ArenaNormal | GameMode::ArenaConst(_) => GlobalData::get().initial_enemies,
+            GameMode::ArenaNormal | GameMode::ArenaConst => GlobalData::get().initial_enemies,
             GameMode::ArenaRanked => GlobalData::get()
                 .initial_enemies
                 .last()
@@ -22,17 +22,10 @@ impl TArenaPool {
                 .collect_vec(),
         };
         let u_floor = floor as usize;
-        let champion = TArenaLeaderboard::current_champion(&mode);
         if u_floor < initial_enemies.len() {
-            let enemy = initial_enemies[u_floor];
-            return (
-                u_floor == initial_enemies.len() - 1 && champion.is_none(),
-                enemy,
-            );
-        } else if champion.as_ref().is_some_and(|c| c.floor == floor) {
-            return (true, champion.unwrap().team);
+            initial_enemies[u_floor]
         } else {
-            return (false, Self::get_random(&mode, floor));
+            Self::get_random(&mode, floor)
         }
     }
     pub fn add(mode: GameMode, team: u64, floor: u32) {

@@ -55,7 +55,7 @@ impl CellState {
         world: &World,
     ) -> VarValue {
         let offset = (index.0 + index.1) as f32 * 0.05;
-        if !gt().ticked(CACHE_LIFETIME, -offset) {
+        if !gt().ticked(CACHE_LIFETIME, -offset) && self.cache != VarValue::default() {
             self.cache.clone()
         } else {
             let value = f(data, world);

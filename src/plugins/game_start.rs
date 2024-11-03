@@ -62,21 +62,39 @@ impl GameStartPlugin {
         gsr.leaderboard = HashMap::from_iter(
             TArenaLeaderboard::filter_by_season(gsr.selected_season)
                 .sorted_by_key(|d| -(d.floor as i32))
-                .map(|d| (d.mode.clone().into(), d))
+                .map(|d| (d.mode.into(), d))
                 .into_grouping_map()
                 .collect(),
         );
+        for (_, data) in gsr.leaderboard.iter_mut() {
+            let mut grouped: HashMap<u32, TArenaLeaderboard> = default();
+            for d in data.drain(..) {
+                if let Some(e) = grouped.get(&d.floor) {
+                    if e.ts < d.ts {
+                        grouped.insert(d.floor, d);
+                    }
+                } else {
+                    grouped.insert(d.floor, d);
+                }
+            }
+            data.extend(
+                grouped
+                    .into_iter()
+                    .sorted_by_key(|(k, _)| -(*k as i32))
+                    .map(|d| d.1),
+            );
+        }
         gsr.runs = HashMap::from_iter(
             TArenaRunArchive::iter()
                 .sorted_by_key(|d| -(d.id as i32))
-                .map(|d| (d.mode.clone().into(), d))
+                .map(|d| (d.mode.into(), d))
                 .into_grouping_map()
                 .collect(),
         );
         gsr.battles = HashMap::from_iter(
             TBattle::iter()
                 .sorted_by_key(|d| -(d.id as i32))
-                .map(|d| (d.mode.clone().into(), d))
+                .map(|d| (d.mode.into(), d))
                 .into_grouping_map()
                 .collect(),
         );
@@ -186,7 +204,7 @@ impl GameStartPlugin {
                             entry_fee = Some(cost);
                         }
                     }
-                    GameMode::ArenaConst(_) => {
+                    GameMode::ArenaConst => {
                         let cost = TDailyState::current().const_cost;
                         if cost == 0 {
                             "First daily run free!"
@@ -221,7 +239,7 @@ impl GameStartPlugin {
                                 status.on_success(|w| GameState::Shop.proceed_to_target(w))
                             });
                         }
-                        GameMode::ArenaConst(_) => {
+                        GameMode::ArenaConst => {
                             run_start_const();
                             once_on_run_start_const(|_, _, status| {
                                 status.on_success(|w| GameState::Shop.proceed_to_target(w))
@@ -268,7 +286,7 @@ impl GameStartPlugin {
                     5. Credits reward depending on win streak\n\
                     6. No fee once a day"
                     }
-                    GameMode::ArenaConst(_) => {
+                    GameMode::ArenaConst => {
                         "1. Defeat as many enemies as possible\n\
                     2. 4 lives, replenish on win every 5 floors\n\
                     3. Entry fee growing every time, reset on day start\n\
@@ -303,7 +321,6 @@ impl GameStartPlugin {
                         ScrollArea::both().auto_shrink(false).show(ui, |ui| {
                             ui.push_id(r.selected_mode.clone(), |ui| {
                                 Table::new("Battle History")
-                                    .title()
                                     .column_ts("time", |d: &TBattle| d.ts)
                                     .column_cstr("result", |d, _| match d.result {
                                         TBattleResult::Tbd => "-".cstr(),

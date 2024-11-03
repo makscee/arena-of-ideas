@@ -81,20 +81,12 @@ pub fn next_id() -> u64 {
     GlobalData::next_id()
 }
 
-#[derive(SpacetimeType, Clone, Default)]
+#[derive(SpacetimeType, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum GameMode {
     #[default]
-    ArenaNormal,
-    ArenaRanked,
-    ArenaConst(String),
-}
-
-impl PartialEq for GameMode {
-    fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            _ => core::mem::discriminant(self) == core::mem::discriminant(other),
-        }
-    }
+    ArenaNormal = 0,
+    ArenaRanked = 1,
+    ArenaConst = 2,
 }
 
 const ADMIN_IDENTITY_HEX: &str = "ad22b9dc867768c48531281bab2d5e0be1f915c4e46d107547bf624fb6dbf26c";

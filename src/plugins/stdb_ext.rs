@@ -223,7 +223,7 @@ impl ToString for GameMode {
         match self {
             GameMode::ArenaNormal => "Normal".into(),
             GameMode::ArenaRanked => "Ranked".into(),
-            GameMode::ArenaConst(_) => "Const".into(),
+            GameMode::ArenaConst => "Const".into(),
         }
     }
 }
@@ -233,13 +233,14 @@ impl Hash for GameMode {
         core::mem::discriminant(self).hash(state);
     }
 }
+impl Copy for GameMode {}
 
 impl From<u64> for GameMode {
     fn from(value: u64) -> Self {
         match value {
             0 => GameMode::ArenaNormal,
             1 => GameMode::ArenaRanked,
-            2 => GameMode::ArenaConst(default()),
+            2 => GameMode::ArenaConst,
             _ => panic!(),
         }
     }
@@ -249,7 +250,7 @@ impl Into<u64> for GameMode {
         match self {
             GameMode::ArenaNormal => 0,
             GameMode::ArenaRanked => 1,
-            GameMode::ArenaConst(_) => 2,
+            GameMode::ArenaConst => 2,
         }
     }
 }

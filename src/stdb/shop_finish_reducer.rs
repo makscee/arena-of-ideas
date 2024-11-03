@@ -13,34 +13,36 @@ use spacetimedb_sdk::{
 };
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
-pub struct ShopFinishArgs {}
+pub struct ShopFinishArgs {
+    pub face_boss: bool,
+}
 
 impl Reducer for ShopFinishArgs {
     const REDUCER_NAME: &'static str = "shop_finish";
 }
 
 #[allow(unused)]
-pub fn shop_finish() {
-    ShopFinishArgs {}.invoke();
+pub fn shop_finish(face_boss: bool) {
+    ShopFinishArgs { face_boss }.invoke();
 }
 
 #[allow(unused)]
 pub fn on_shop_finish(
-    mut __callback: impl FnMut(&Identity, Option<Address>, &Status) + Send + 'static,
+    mut __callback: impl FnMut(&Identity, Option<Address>, &Status, &bool) + Send + 'static,
 ) -> ReducerCallbackId<ShopFinishArgs> {
     ShopFinishArgs::on_reducer(move |__identity, __addr, __status, __args| {
-        let ShopFinishArgs {} = __args;
-        __callback(__identity, __addr, __status);
+        let ShopFinishArgs { face_boss } = __args;
+        __callback(__identity, __addr, __status, face_boss);
     })
 }
 
 #[allow(unused)]
 pub fn once_on_shop_finish(
-    __callback: impl FnOnce(&Identity, Option<Address>, &Status) + Send + 'static,
+    __callback: impl FnOnce(&Identity, Option<Address>, &Status, &bool) + Send + 'static,
 ) -> ReducerCallbackId<ShopFinishArgs> {
     ShopFinishArgs::once_on_reducer(move |__identity, __addr, __status, __args| {
-        let ShopFinishArgs {} = __args;
-        __callback(__identity, __addr, __status);
+        let ShopFinishArgs { face_boss } = __args;
+        __callback(__identity, __addr, __status, face_boss);
     })
 }
 

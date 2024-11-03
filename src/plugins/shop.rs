@@ -339,16 +339,32 @@ impl ShopPlugin {
             let run = TArenaRun::current();
             ui.vertical_centered_justified(|ui| {
                 if Button::click("Start Battle").ui(ui).clicked() {
-                    shop_finish();
-                    once_on_shop_finish(|_, _, status| {
+                    shop_finish(false);
+                    once_on_shop_finish(|_, _, status, _| {
                         status.on_success(|w| GameState::ShopBattle.proceed_to_target(w))
                     });
                 }
-                if let Some(champion) = run.champion {
+                if run.floor == run.boss_floor {
                     "Champion Battle".cstr_cs(YELLOW, CstrStyle::Bold).label(ui);
-                    champion.get_team().hover_label(ui, world);
-                } else if run.replenish_lives > 0 {
-                    "Win for +1 life".cstr_cs(GREEN, CstrStyle::Bold).label(ui);
+                    run.boss_team.get_team().hover_label(ui, world);
+                } else {
+                    "Next Floor".cstr_c(VISIBLE_DARK).label(ui);
+                    if run.replenish_lives > 0 {
+                        "Win for +1 life".cstr_cs(GREEN, CstrStyle::Bold).label(ui);
+                    }
+                    ui.add_space(50.0);
+                    if let Some(floor_boss) = run.current_floor_boss {
+                        if Button::click("Boss Battle").red(ui).ui(ui).clicked() {
+                            shop_finish(true);
+                            once_on_shop_finish(|_, _, status, _| {
+                                status.on_success(|w| GameState::ShopBattle.proceed_to_target(w))
+                            });
+                        }
+                        "Challenge Floor Boss"
+                            .cstr_cs(RED, CstrStyle::Bold)
+                            .label(ui);
+                        floor_boss.get_team().hover_label(ui, world);
+                    }
                 }
             });
         })

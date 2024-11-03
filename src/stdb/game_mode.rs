@@ -18,5 +18,5 @@ pub enum GameMode {
 
     ArenaRanked,
 
-    ArenaConst(String),
+    ArenaConst,
 }

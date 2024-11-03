@@ -7,7 +7,6 @@ pub struct GlobalData {
     next_id: u64,
     pub game_version: String,
     pub last_sync: Timestamp,
-    pub constant_seed: String,
     pub initial_enemies: Vec<u64>,
 }
 
@@ -19,7 +18,6 @@ impl GlobalData {
             next_id: 1,
             game_version: VERSION.to_owned(),
             last_sync: Timestamp::UNIX_EPOCH,
-            constant_seed: String::new(),
             initial_enemies: Vec::new(),
         })?;
         Ok(())
@@ -50,26 +48,5 @@ impl GlobalData {
         let mut gd = Self::get();
         gd.initial_enemies = teams;
         Self::update_by_always_zero(&0, gd);
-    }
-}
-
-fn generate_str_seed(count: usize) -> String {
-    rng()
-        .sample_iter(&Alphanumeric)
-        .take(count)
-        .map(char::from)
-        .collect()
-}
-
-pub fn update_constant_seed() {
-    let mut gd = GlobalData::get();
-    if gd.constant_seed.is_empty()
-    // || TArenaLeaderboard::current_champion(&GameMode::ArenaConst(gd.constant_seed.into()))
-    //     .is_some_and(|d| d.floor >= 10)
-    {
-        let seed = generate_str_seed(10);
-        self::println!("Constant seed updated to {seed}");
-        gd.constant_seed = seed;
-        GlobalData::update_by_always_zero(&0, gd);
     }
 }

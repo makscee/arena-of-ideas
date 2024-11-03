@@ -34,7 +34,9 @@ pub struct TArenaRun {
     pub max_lives: u32,
     pub replenish_lives: u32,
     pub active: bool,
-    pub champion: Option<u64>,
+    pub boss_team: u64,
+    pub boss_floor: u32,
+    pub current_floor_boss: Option<u64>,
     pub floor: u32,
     pub rerolls: u32,
     pub rewards: Vec<Reward>,
@@ -103,6 +105,14 @@ impl TArenaRun {
     #[allow(unused)]
     pub fn filter_by_active(active: bool) -> TableIter<Self> {
         Self::filter(|row| row.active == active)
+    }
+    #[allow(unused)]
+    pub fn filter_by_boss_team(boss_team: u64) -> TableIter<Self> {
+        Self::filter(|row| row.boss_team == boss_team)
+    }
+    #[allow(unused)]
+    pub fn filter_by_boss_floor(boss_floor: u32) -> TableIter<Self> {
+        Self::filter(|row| row.boss_floor == boss_floor)
     }
     #[allow(unused)]
     pub fn filter_by_floor(floor: u32) -> TableIter<Self> {
