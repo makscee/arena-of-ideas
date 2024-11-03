@@ -179,12 +179,8 @@ impl BaseUnitExt for String {
     }
 }
 
-pub trait TTeamExt {
-    fn hover_label(&self, ui: &mut Ui, world: &mut World);
-}
-
-impl TTeamExt for TTeam {
-    fn hover_label(&self, ui: &mut Ui, world: &mut World) {
+impl TTeam {
+    pub fn hover_label(&self, ui: &mut Ui, world: &mut World) {
         let resp = self
             .cstr()
             .as_label(ui)
@@ -238,8 +234,8 @@ impl Hash for GameMode {
     }
 }
 
-impl From<usize> for GameMode {
-    fn from(value: usize) -> Self {
+impl From<u64> for GameMode {
+    fn from(value: u64) -> Self {
         match value {
             0 => GameMode::ArenaNormal,
             1 => GameMode::ArenaRanked,
@@ -248,13 +244,18 @@ impl From<usize> for GameMode {
         }
     }
 }
-impl Into<usize> for GameMode {
-    fn into(self) -> usize {
+impl Into<u64> for GameMode {
+    fn into(self) -> u64 {
         match self {
             GameMode::ArenaNormal => 0,
             GameMode::ArenaRanked => 1,
             GameMode::ArenaConst(_) => 2,
         }
+    }
+}
+impl GameMode {
+    pub fn weak_eq(&self, other: &Self) -> bool {
+        mem::discriminant(self) == mem::discriminant(other)
     }
 }
 

@@ -103,7 +103,7 @@ impl SectionMenu {
                     let ph = gt().play_head();
                     const TICK: f32 = 3.0;
                     let blink = (ph / TICK).fract() * 2.0;
-                    let ticked = gt().ticked(TICK);
+                    let ticked = gt().ticked(TICK, 0.0);
                     for GameSection {
                         name,
                         target_state,

@@ -23,10 +23,9 @@ pub struct TableState {
 #[derive(Default, Clone, Debug)]
 pub struct CellState {
     cache: VarValue,
-    cache_ts: f32,
     highlight: f32,
 }
-const CACHE_LIFETIME: f32 = 2.0;
+const CACHE_LIFETIME: f32 = 1.0;
 
 pub struct TableColumn<T> {
     value: Box<dyn Fn(&T, &World) -> VarValue>,
@@ -50,19 +49,19 @@ impl<T> TableColumn<T> {
 impl CellState {
     fn get_cached<T>(
         &mut self,
+        index: (usize, usize),
         data: &T,
         f: &Box<dyn Fn(&T, &World) -> VarValue>,
         world: &World,
     ) -> VarValue {
-        let t = gt().play_head();
-        if self.cache_ts + CACHE_LIFETIME > t {
+        let offset = (index.0 + index.1) as f32 * 0.05;
+        if !gt().ticked(CACHE_LIFETIME, -offset) {
             self.cache.clone()
         } else {
             let value = f(data, world);
             if !self.cache.eq(&value) {
                 self.highlight = 1.0;
             }
-            self.cache_ts = t;
             self.cache = value.clone();
             value
         }
@@ -181,7 +180,11 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
     pub fn column_btn(self, name: &'static str, on_click: fn(&T, &mut Ui, &mut World)) -> Self {
         self.column_btn_dyn(name, Box::new(on_click))
     }
-    pub fn column_cstr(mut self, name: &'static str, s: fn(&T, &World) -> Cstr) -> Self {
+    pub fn column_cstr_dyn(
+        mut self,
+        name: &'static str,
+        s: Box<dyn Fn(&T, &World) -> Cstr>,
+    ) -> Self {
         self.columns.insert(
             name,
             TableColumn {
@@ -194,6 +197,9 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
             },
         );
         self
+    }
+    pub fn column_cstr(self, name: &'static str, s: fn(&T, &World) -> Cstr) -> Self {
+        self.column_cstr_dyn(name, Box::new(s))
     }
     pub fn column_cstr_value(
         mut self,
@@ -596,11 +602,13 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                                 }
                                 row.set_selected(state.selected_row.is_some_and(|i| i == row_i));
                                 for (col_i, (_, col)) in self.columns.iter().enumerate() {
-                                    let cell = state.cells.entry((col_i, row_i)).or_default();
+                                    let index = (col_i, row_i);
+                                    let cell = state.cells.entry(index).or_default();
                                     cell.update();
                                     row.col(|ui| {
                                         let d = &data[row_i];
-                                        let v: VarValue = cell.get_cached(d, &col.value, world);
+                                        let v: VarValue =
+                                            cell.get_cached(index, d, &col.value, world);
                                         (col.show)(d, v, ui, world);
                                         if cell.highlight > 0.0 {
                                             ui.painter().rect_stroke(

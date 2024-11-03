@@ -19,6 +19,7 @@ pub struct TUserStats {
     pub owner: u64,
     pub time_played: u64,
     pub quests_completed: u32,
+    pub credits_earned: u32,
 }
 
 impl TableType for TUserStats {
@@ -57,5 +58,9 @@ impl TUserStats {
     #[allow(unused)]
     pub fn filter_by_quests_completed(quests_completed: u32) -> TableIter<Self> {
         Self::filter(|row| row.quests_completed == quests_completed)
+    }
+    #[allow(unused)]
+    pub fn filter_by_credits_earned(credits_earned: u32) -> TableIter<Self> {
+        Self::filter(|row| row.credits_earned == credits_earned)
     }
 }

@@ -4,12 +4,11 @@ pub struct GameStartPlugin;
 
 #[derive(Resource)]
 struct GameStartResource {
-    game_modes: Vec<GameMode>,
-    selected_mode: usize,
-    leaderboard: HashMap<usize, Vec<TArenaLeaderboard>>,
+    selected_mode: GameMode,
+    leaderboard: HashMap<GameMode, Vec<TArenaLeaderboard>>,
     selected_season: u32,
-    runs: HashMap<usize, Vec<TArenaRunArchive>>,
-    battles: HashMap<usize, Vec<TBattle>>,
+    runs: HashMap<GameMode, Vec<TArenaRunArchive>>,
+    battles: HashMap<GameMode, Vec<TBattle>>,
     teams: Vec<TTeam>,
     selected_team: usize,
     right_mode: Mode,
@@ -35,13 +34,7 @@ impl ToCstr for Mode {
 impl Default for GameStartResource {
     fn default() -> Self {
         Self {
-            game_modes: [
-                GameMode::ArenaNormal,
-                GameMode::ArenaRanked,
-                GameMode::ArenaConst(default()),
-            ]
-            .into(),
-            selected_mode: client_state().last_played_mode.unwrap_or_default() as usize,
+            selected_mode: client_state().last_played_mode.unwrap_or_default().into(),
             leaderboard: default(),
             runs: default(),
             battles: default(),
@@ -99,11 +92,7 @@ impl GameStartPlugin {
             .push(world);
         Tile::new(Side::Left, |ui, world| {
             let mut r = rm(world);
-            if EnumSwitcher::new().prefix("Season ".cstr()).show_iter(
-                &mut r.selected_season,
-                0..=global_settings().season,
-                ui,
-            ) {
+            if season_switcher(&mut r.selected_season, ui) {
                 Self::load_data(world);
                 return;
             }
@@ -142,20 +131,14 @@ impl GameStartPlugin {
         .push(world);
     }
     fn show_middle(ui: &mut Ui, world: &mut World) {
-        let mut r = rm(world);
-        let modes = r.game_modes.clone().into_iter();
-        let mut mode: GameMode = r.selected_mode.clone().into();
-        if EnumSwitcher::new()
-            .style(CstrStyle::Bold)
-            .columns()
-            .show_iter(&mut mode, modes, ui)
-        {
-            r.selected_mode = mode.clone().into();
+        if game_mode_switcher(&mut rm(world).selected_mode, ui) {
             Self::load_data(world);
             return;
         }
         br(ui);
         ui.vertical_centered_justified(|ui| {
+            let r = rm(world);
+            let mode = r.selected_mode.clone();
             mode.cstr().style(CstrStyle::Heading).label(ui);
             ui.add_space(30.0);
             let run = TArenaRun::get_current();
@@ -222,8 +205,8 @@ impl GameStartPlugin {
                 if btn.big().enabled(enabled).ui(ui).clicked() {
                     let r = rm(world);
                     let mut cs = client_state().clone();
-                    cs.last_played_mode = Some(r.selected_mode as u64);
-                    match &mode {
+                    cs.last_played_mode = Some(r.selected_mode.clone().into());
+                    match &r.selected_mode {
                         GameMode::ArenaNormal => {
                             run_start_normal();
                             once_on_run_start_normal(|_, _, status| {
@@ -271,7 +254,7 @@ impl GameStartPlugin {
                 });
             }
             ui.with_layout(Layout::bottom_up(Align::LEFT), |ui| {
-                match mode {
+                match &mode {
                     GameMode::ArenaNormal => {
                         "1. Defeat as many enemies as possible\n\
                     2. 4 lives, replenish on win every 5 floors\n\
@@ -318,7 +301,7 @@ impl GameStartPlugin {
                     if let Some(data) = r.battles.get(&r.selected_mode) {
                         title("Battles", ui);
                         ScrollArea::both().auto_shrink(false).show(ui, |ui| {
-                            ui.push_id(r.selected_mode, |ui| {
+                            ui.push_id(r.selected_mode.clone(), |ui| {
                                 Table::new("Battle History")
                                     .title()
                                     .column_ts("time", |d: &TBattle| d.ts)

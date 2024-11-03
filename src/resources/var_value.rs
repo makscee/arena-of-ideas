@@ -381,8 +381,8 @@ impl std::fmt::Display for VarValue {
         match self {
             VarValue::None => write!(f, "None"),
             VarValue::Int(v) => write!(f, "{}", v),
-            VarValue::Float(v) => write!(f, "{:.3}", v),
-            VarValue::Vec2(v) => write!(f, "{:.3}, {:.3}", v.x, v.y),
+            VarValue::Float(v) => write!(f, "{:.2}", v),
+            VarValue::Vec2(v) => write!(f, "{:.2}, {:.2}", v.x, v.y),
             VarValue::String(v) => write!(f, "{}", v),
             VarValue::Cstr(v) => write!(f, "{}", v),
             VarValue::Bool(v) => write!(f, "{}", v),

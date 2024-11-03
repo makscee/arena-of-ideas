@@ -142,3 +142,22 @@ pub fn show_list_node<E: ShowEditor>(
         l.remove(i);
     }
 }
+pub fn season_switcher(value: &mut u32, ui: &mut Ui) -> bool {
+    EnumSwitcher::new()
+        .prefix("Season ".cstr())
+        .show_iter(value, 0..=global_settings().season, ui)
+}
+pub fn game_mode_switcher(value: &mut GameMode, ui: &mut Ui) -> bool {
+    EnumSwitcher::new()
+        .style(CstrStyle::Bold)
+        .columns()
+        .show_iter(
+            value,
+            [
+                GameMode::ArenaNormal,
+                GameMode::ArenaRanked,
+                GameMode::ArenaConst(default()),
+            ],
+            ui,
+        )
+}
