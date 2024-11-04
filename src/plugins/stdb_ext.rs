@@ -44,6 +44,7 @@ impl TableSingletonExt for TDailyState {
                 ranked_cost: 0,
                 const_cost: 0,
                 quests_taken: default(),
+                meta_shop_discount_spent: false,
             })
         })
     }

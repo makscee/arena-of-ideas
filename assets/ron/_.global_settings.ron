@@ -5,7 +5,13 @@
         season: 1,
         craft_shards_cost: 10,
         create_team_cost: 10,
-        meta: (price_lootbox: 200, price_shard: 10, shop_shard_slots: 3, balance_vote_reward: 1),
+        meta: (
+            price_lootbox: 200,
+            price_shard: 10,
+            shop_shard_slots: 3,
+            balance_vote_reward: 1,
+            daily_discount: 0.5,
+        ),
         ghost_unit: "Ghost",
         arena: (
             shop_slots: (start: 3, max: 6, inflation: 0.34),

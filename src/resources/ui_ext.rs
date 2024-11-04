@@ -205,7 +205,11 @@ impl ShowTable<TMetaShop> for Vec<TMetaShop> {
             .title()
             .columns_item_kind(|d: &TMetaShop| (d.item_kind.clone(), d.id))
             .column_cstr("price", |d, _| {
-                format!("{} {CREDITS_SYM}", d.price).cstr_c(YELLOW)
+                let mut price = d.price;
+                if !TDailyState::current().meta_shop_discount_spent {
+                    price = (price as f32 * global_settings().meta.daily_discount) as i64;
+                }
+                format!("{} {CREDITS_SYM}", price).cstr_c(YELLOW)
             })
             .column(
                 "buy",

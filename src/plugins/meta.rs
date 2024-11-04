@@ -143,6 +143,14 @@ impl MetaPlugin {
     fn open_shop(world: &mut World) {
         Tile::new(Side::Left, |ui, world| {
             show_daily_refresh_timer(ui);
+            if !TDailyState::current().meta_shop_discount_spent {
+                format!(
+                    "Daily discount on first buy {:.0}%",
+                    global_settings().meta.daily_discount * 100.0
+                )
+                .cstr_cs(GREEN, CstrStyle::Bold)
+                .label(ui);
+            }
             TMetaShop::iter()
                 .sorted_by_key(|d| d.id)
                 .collect_vec()

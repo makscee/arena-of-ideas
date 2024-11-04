@@ -51,7 +51,11 @@ impl TMetaShop {
 fn meta_buy(ctx: ReducerContext, id: u64) -> Result<(), String> {
     let player = ctx.player()?;
     let mut item = TMetaShop::filter_by_id(&id).context_str("Item not found")?;
-    TWallet::change(player.id, -item.price)?;
+    let mut price = item.price;
+    if TDailyState::get(player.id).meta_shop_discount() {
+        price = (price as f32 * GlobalSettings::get().meta.daily_discount) as i64;
+    }
+    TWallet::change(player.id, -price)?;
     match item.item_kind {
         ItemKind::UnitShard | ItemKind::Unit | ItemKind::RainbowShard => {
             item.price += 1;

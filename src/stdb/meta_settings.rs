@@ -18,4 +18,5 @@ pub struct MetaSettings {
     pub price_shard: i64,
     pub shop_shard_slots: u32,
     pub balance_vote_reward: i64,
+    pub daily_discount: f32,
 }

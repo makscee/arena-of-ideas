@@ -18,6 +18,7 @@ pub struct TDailyState {
     pub ranked_cost: i64,
     pub const_cost: i64,
     pub quests_taken: Vec<u64>,
+    pub meta_shop_discount_spent: bool,
 }
 
 impl TableType for TDailyState {
@@ -48,5 +49,9 @@ impl TDailyState {
     #[allow(unused)]
     pub fn filter_by_const_cost(const_cost: i64) -> TableIter<Self> {
         Self::filter(|row| row.const_cost == const_cost)
+    }
+    #[allow(unused)]
+    pub fn filter_by_meta_shop_discount_spent(meta_shop_discount_spent: bool) -> TableIter<Self> {
+        Self::filter(|row| row.meta_shop_discount_spent == meta_shop_discount_spent)
     }
 }

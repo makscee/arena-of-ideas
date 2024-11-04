@@ -8,6 +8,7 @@ pub struct TDailyState {
     pub ranked_cost: i64,
     pub const_cost: i64,
     pub quests_taken: Vec<u64>,
+    pub meta_shop_discount_spent: bool,
 }
 
 impl TDailyState {
@@ -42,6 +43,15 @@ impl TDailyState {
         self.quests_taken.push(id);
         self.save();
         Ok(())
+    }
+    pub fn meta_shop_discount(mut self) -> bool {
+        if !self.meta_shop_discount_spent {
+            self.meta_shop_discount_spent = true;
+            self.save();
+            true
+        } else {
+            false
+        }
     }
     fn save(self) {
         Self::update_by_owner(&self.owner.clone(), self);
