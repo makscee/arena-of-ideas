@@ -30,12 +30,20 @@
             effect: List(
                 [
                     Vfx("apply_status"),
-                    ChangeStatus("Siphoned Out"),
-                    WithTarget(Owner, ChangeStatus("Siphon HP")),
-                    If(
-                        AbilityContext("Siphon", M1),
-                        WithTarget(Owner, ChangeStatus("Siphon PWR")),
-                        Noop,
+                    WithVar(
+                        Charges,
+                        Min(TargetState(Hp), Context(Charges)),
+                        List(
+                            [
+                                ChangeStatus("Siphoned Out"),
+                                WithTarget(Owner, ChangeStatus("Siphon HP")),
+                                If(
+                                    AbilityContext("Siphon", M1),
+                                    WithTarget(Owner, ChangeStatus("Siphon PWR")),
+                                    Noop,
+                                ),
+                            ],
+                        ),
                     ),
                 ],
             ),

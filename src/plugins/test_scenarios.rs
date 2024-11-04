@@ -94,6 +94,7 @@ impl TestScenariosPlugin {
 
 impl TestScenario {
     fn run(self, world: &mut World) -> Result<()> {
+        gt().reset();
         BattlePlugin::load_teams(self.left, self.right, world);
         let r = match BattlePlugin::run(world) {
             Ok(result) => {

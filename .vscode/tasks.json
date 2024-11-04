@@ -140,7 +140,7 @@
         "--mode",
         "test",
         "--path",
-        "ron/scenarios/lose.scenario.ron"
+        "ron/scenarios/siphon_limit.scenario.ron"
       ],
       "group": {
         "kind": "build"
