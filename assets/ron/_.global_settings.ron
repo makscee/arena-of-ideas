@@ -4,7 +4,7 @@
         always_zero: 0,
         season: 1,
         craft_shards_cost: 10,
-        create_team_cost: 100,
+        create_team_cost: 10,
         meta: (price_lootbox: 200, price_shard: 10, shop_shard_slots: 3, balance_vote_reward: 1),
         ghost_unit: "Ghost",
         arena: (
