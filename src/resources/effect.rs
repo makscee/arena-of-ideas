@@ -260,13 +260,18 @@ impl Effect {
                 );
             }
             Effect::Summon(name, then) => {
+                let faction = context.get_faction(world)?;
+                if UnitPlugin::collect_faction(faction, world).len()
+                    >= global_settings().battle.summon_limit as usize
+                {
+                    return Err(anyhow!("Summon limit reached"));
+                }
                 let mut unit = game_assets()
                     .summons
                     .get(name)
                     .with_context(|| format!("Summon {name} not found"))
                     .unwrap()
                     .clone();
-                let faction = context.get_faction(world)?;
                 context.set_ability_state(name, world)?;
                 let extra_pwr = context
                     .get_ability_var(name, VarName::Pwr)

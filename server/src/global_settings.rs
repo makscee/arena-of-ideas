@@ -30,6 +30,7 @@ pub struct BattleSettings {
     pub fatigue_start: u32,
     pub deafness_start: u32,
     pub deafness_per_turn: f64,
+    pub summon_limit: u32,
 }
 
 #[derive(SpacetimeType)]

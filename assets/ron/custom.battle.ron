@@ -9,9 +9,9 @@
                 rarity: 0,
                 houses: ["Rogues"],
                 trigger: Fire(
-                    triggers: [(BeforeStrike, None)],
-                    targets: [(Target, None)],
-                    effects: [(UseAbility("Rob", 0), None)],
+                    triggers: [(BattleStart, None)],
+                    targets: [(Owner, None)],
+                    effects: [(Repeat(I(100), UseAbility("Summon Treant", 0)), None)],
                 ),
                 representation: (
                     material: Shape(

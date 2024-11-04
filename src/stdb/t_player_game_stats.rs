@@ -22,6 +22,7 @@ pub struct TPlayerGameStats {
     pub runs: u32,
     pub floors: Vec<u32>,
     pub champion: u32,
+    pub boss: u32,
 }
 
 impl TableType for TPlayerGameStats {
@@ -60,5 +61,9 @@ impl TPlayerGameStats {
     #[allow(unused)]
     pub fn filter_by_champion(champion: u32) -> TableIter<Self> {
         Self::filter(|row| row.champion == champion)
+    }
+    #[allow(unused)]
+    pub fn filter_by_boss(boss: u32) -> TableIter<Self> {
+        Self::filter(|row| row.boss == boss)
     }
 }

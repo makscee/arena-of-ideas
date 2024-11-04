@@ -27,7 +27,7 @@
             weights_per_floor: [0, 5, 5, 5],
             lootbox_weights: [100, 15, 5, 1],
         ),
-        battle: (fatigue_start: 20, deafness_start: 1000, deafness_per_turn: 0.005),
+        battle: (fatigue_start: 20, deafness_start: 1000, deafness_per_turn: 0.005, summon_limit: 30),
         quest: (daily_options: 5, daily_limit: 2),
     ),
 )
