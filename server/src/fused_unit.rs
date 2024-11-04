@@ -143,12 +143,8 @@ impl FusedUnit {
         unit.bases.len() == 1 && self.can_stack(&unit.bases[0])
     }
     pub fn can_fuse(a: &FusedUnit, b: &FusedUnit) -> bool {
-        if !a.fusible() || !b.fusible() {
-            return false;
-        }
-        let a = a.get_houses();
-        let b = b.get_houses();
-        !a.into_iter().any(|h| b.contains(&h))
+        a.fusible() && b.fusible()
+        // !a.bases.iter().any(|base| b.bases.contains(base))
     }
     pub fn fusible(&self) -> bool {
         self.lvl > (self.bases.len() as u32)
