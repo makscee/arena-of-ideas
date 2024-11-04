@@ -74,6 +74,15 @@ impl ActionPlugin {
             }) = Self::pop_action(world)
             {
                 context.t_to_insert();
+                let owner = context.owner();
+                if world.get::<Corpse>(owner).is_some() {
+                    error!(
+                        "{} is dead, drop effect {}",
+                        entity_name_with_id(owner),
+                        effect.cstr()
+                    );
+                    continue;
+                }
                 match effect.invoke(&mut context, world) {
                     Ok(_) => {
                         processed = true;
@@ -123,6 +132,9 @@ impl ActionPlugin {
     pub fn clear_dead(world: &mut World) -> bool {
         let dead = UnitPlugin::run_death_check(world);
         let died = !dead.is_empty();
+        if died {
+            let _ = Self::spin(world);
+        }
         for unit in dead {
             UnitPlugin::turn_into_corpse(unit, world);
         }

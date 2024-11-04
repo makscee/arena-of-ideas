@@ -1,4 +1,4 @@
-use bevy::app::PreUpdate;
+use bevy::{app::PreUpdate, ecs::query::Without};
 
 use super::*;
 
@@ -14,16 +14,20 @@ impl Plugin for UnitPlugin {
 pub struct Unit;
 
 #[derive(Component)]
+pub struct Dying;
+
+#[derive(Component)]
 pub struct Corpse;
 
 impl UnitPlugin {
     pub fn run_death_check(world: &mut World) -> Vec<Entity> {
         let dead = world
-            .query_filtered::<Entity, With<Unit>>()
+            .query_filtered::<Entity, (With<Unit>, Without<Dying>)>()
             .iter(world)
             .filter(|e| Self::is_dead(*e, world))
             .collect_vec();
         for unit in dead.iter() {
+            world.entity_mut(*unit).insert(Dying);
             Self::send_death_events(*unit, world);
         }
         dead
@@ -55,6 +59,7 @@ impl UnitPlugin {
         debug!("Turn {entity} into corpse");
         let mut unit = world.entity_mut(entity);
         unit.remove::<Unit>();
+        unit.remove::<Dying>();
         unit.insert(Corpse);
         let mut state = VarState::get_mut(unit.id(), world);
         state.push_change(
