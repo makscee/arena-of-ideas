@@ -59,4 +59,5 @@ pub enum VarName {
     LastAttacker,
     StatusIndex,
     Pain,
+    Deafness,
 }

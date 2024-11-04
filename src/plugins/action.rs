@@ -21,7 +21,7 @@ pub struct ActionsResource {
     events: Vec<(f32, Event)>,
     turns: Vec<(f32, usize)>,
     sounds: Vec<(f32, SoundEffect)>,
-    chain: usize,
+    chain: HashMap<Entity, usize>,
     pub rng: Option<ChaCha8Rng>,
 }
 fn rm(world: &mut World) -> Mut<ActionsResource> {
@@ -83,10 +83,22 @@ impl ActionPlugin {
                     );
                     continue;
                 }
+                Self::calculate_deafness(owner, world);
+                if Self::deafness(owner, world) {
+                    TextColumnPlugin::add(
+                        owner,
+                        "Deafness! "
+                            .cstr_cs(RED, CstrStyle::Bold)
+                            .push("Skip ".cstr_c(VISIBLE_LIGHT).push(effect.cstr()).take())
+                            .take(),
+                        world,
+                    );
+                    continue;
+                }
                 match effect.invoke(&mut context, world) {
                     Ok(_) => {
                         processed = true;
-                        rm(world).chain += 1;
+                        *rm(world).chain.entry(owner).or_default() += 1;
                         gt().advance_insert(delay);
                         for unit in UnitPlugin::collect_alive(world) {
                             Status::refresh_mappings(unit, world);
@@ -98,9 +110,6 @@ impl ActionPlugin {
             }
             let mut actions_added = false;
             while let Some((event, context)) = Self::pop_event(world) {
-                if Self::deafness(world) {
-                    continue;
-                }
                 if event.process(context, world) {
                     gt().advance_insert(0.2);
                     actions_added = true;
@@ -117,12 +126,20 @@ impl ActionPlugin {
         rm(world).rng = None;
         Ok(processed)
     }
-    fn deafness(world: &mut World) -> bool {
-        let mut r = rm(world);
-        let chain = r.chain;
+    fn calculate_deafness(entity: Entity, world: &mut World) {
+        let r = rm(world);
+        let chain = r.chain.get(&entity).copied().unwrap_or_default();
         let bs = global_settings().battle;
-        let chance =
-            ((chain as f64 - bs.deafness_start as f64) * bs.deafness_per_turn).clamp(0.0, 1.0);
+        let chance = ((chain as f32 - bs.deafness_start as f32 * 0.0) * bs.deafness_per_turn)
+            .clamp(0.0, 1.0);
+        VarState::get_mut(entity, world).set_float(VarName::Deafness, chance);
+    }
+    fn deafness(entity: Entity, world: &mut World) -> bool {
+        let chance = VarState::get(entity, world)
+            .get_value_last(VarName::Deafness)
+            .and_then(|v| v.get_float())
+            .unwrap_or_default() as f64;
+        let mut r = rm(world);
         if let Some(rng) = r.rng.as_mut() {
             rng.gen_bool(chance)
         } else {
@@ -207,7 +224,7 @@ impl ActionPlugin {
         let mut data = rm(world);
         let next = data.turns.last().map(|(_, r)| *r).unwrap_or_default() + 1;
         data.turns.push((gt().insert_head(), next));
-        data.chain = 0;
+        data.chain.clear();
     }
     pub fn register_sound_effect(sfx: SoundEffect, world: &mut World) {
         world

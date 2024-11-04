@@ -58,7 +58,7 @@ impl Trigger {
                                 _ => {}
                             }
                             if targets.is_empty() {
-                                ActionPlugin::action_push_back(
+                                ActionPlugin::action_push_front(
                                     effect.clone(),
                                     context.clone(),
                                     world,
@@ -69,7 +69,7 @@ impl Trigger {
                                         target.clone(),
                                         Box::new(effect.clone()),
                                     );
-                                    ActionPlugin::action_push_back(effect, context.clone(), world);
+                                    ActionPlugin::action_push_front(effect, context.clone(), world);
                                 }
                             }
                         }

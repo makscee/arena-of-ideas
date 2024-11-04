@@ -8,6 +8,31 @@
     mapping: {Scale: Vec2E(Sum(Mul(Sqr(Context(Pain)), F(0.2)), F(1.0)))},
     children: [
         (
+            material: None,
+            children: [
+                (
+                    material: Shape(
+                        shape: Circle(radius: Value(Float(0.3))),
+                        shape_type: Line(thickness: Value(Float(0.7))),
+                        fill: Solid(color: HexColor("#8d8d8dff")),
+                        padding: Value(Float(0.2)),
+                    ),
+                    children: [
+                        (
+                            material: Text(
+                                size: F(0.3),
+                                text: Sum(ToI(Mul(Context(Deafness), F(100.0))), S("%")),
+                                color: HexColor("#DC143C"),
+                                font_size: 32.0,
+                            ),
+                        ),
+                    ],
+                    mapping: {Offset: Vec2EE(F(0.0), F(-1.3))},
+                ),
+            ],
+            mapping: {Visible: GreaterThen(ToF(Context(Deafness)), F(0.01))},
+        ),
+        (
             material: Shape(
                 shape: Circle(radius: Value(Float(0.3))),
                 fill: Solid(color: HexColor("#FF3D00")),

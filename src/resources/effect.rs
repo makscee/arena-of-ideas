@@ -340,7 +340,12 @@ impl Effect {
             Effect::Repeat(count, effect) => {
                 let count = count.get_int(context, world)?;
                 for _ in 0..count {
-                    ActionPlugin::action_push_front(*effect.clone(), context.clone(), world);
+                    ActionPlugin::action_push_front_with_delay(
+                        *effect.clone(),
+                        context.clone(),
+                        0.1,
+                        world,
+                    );
                 }
             }
             Effect::If(cond, th, el) => {

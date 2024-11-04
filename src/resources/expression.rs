@@ -56,6 +56,7 @@ pub enum Expression {
     Dbg(Box<Expression>),
     Ctx(Box<Expression>),
     ToI(Box<Expression>),
+    ToF(Box<Expression>),
     Vec2E(Box<Expression>),
     UnitVec(Box<Expression>),
     VX(Box<Expression>),
@@ -252,6 +253,7 @@ impl Expression {
             Expression::F(v) => Ok((*v).into()),
             Expression::I(v) => Ok((*v).into()),
             Expression::ToI(v) => Ok(v.get_int(context, world).unwrap_or_default().into()),
+            Expression::ToF(v) => Ok(v.get_float(context, world).unwrap_or_default().into()),
             Expression::B(v) => Ok((*v).into()),
             Expression::S(v) => Ok((v.clone()).into()),
             Expression::V2(x, y) => Ok(vec2(*x, *y).into()),
@@ -478,6 +480,7 @@ impl ToCstr for Expression {
             Expression::Dbg(_)
             | Expression::Ctx(_)
             | Expression::ToI(_)
+            | Expression::ToF(_)
             | Expression::Vec2E(_)
             | Expression::UnitVec(_)
             | Expression::VX(_)
@@ -582,6 +585,7 @@ impl ToCstr for Expression {
             }
             Expression::Vec2E(v)
             | Expression::ToI(v)
+            | Expression::ToF(v)
             | Expression::UnitVec(v)
             | Expression::VX(v)
             | Expression::VY(v)
@@ -743,6 +747,8 @@ impl ShowEditor for Expression {
             | Expression::Dbg(e)
             | Expression::Ctx(e)
             | Expression::ToI(e)
+            | Expression::ToF(e)
+            | Expression::ToF(e)
             | Expression::Vec2E(e)
             | Expression::UnitVec(e)
             | Expression::VX(e)
@@ -881,6 +887,7 @@ impl ShowEditor for Expression {
             | Expression::Dbg(..)
             | Expression::Ctx(..)
             | Expression::ToI(..)
+            | Expression::ToF(..)
             | Expression::Vec2E(..)
             | Expression::UnitVec(..)
             | Expression::VX(..)
@@ -924,6 +931,7 @@ impl ShowEditor for Expression {
             | Expression::Dbg(e)
             | Expression::Ctx(e)
             | Expression::ToI(e)
+            | Expression::ToF(e)
             | Expression::Vec2E(e)
             | Expression::UnitVec(e)
             | Expression::VX(e)
