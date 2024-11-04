@@ -8,7 +8,7 @@ pub struct ConnectPlugin;
 
 impl Plugin for ConnectPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::Connect), Self::connect);
+        app.add_systems(OnEnter(GameState::Connect), Self::run_connect);
     }
 }
 
@@ -16,7 +16,7 @@ impl ConnectPlugin {
     fn load_credentials() -> Option<Credentials> {
         load_credentials(HOME_DIR).expect("Failed to load credentials")
     }
-    fn connect() {
+    fn run_connect() {
         info!("Connect start");
         once_on_connect(|creds, _| {
             let creds = creds.clone();
@@ -54,11 +54,8 @@ impl ConnectPlugin {
         let thread_pool = IoTaskPool::get();
         thread_pool
             .spawn(async {
-                let creds: Option<Credentials> = Self::load_credentials();
                 let mut tries = 3;
-                let server = current_server();
-                info!("Connect start {} {}", server.0, server.1);
-                while let Err(e) = connect(server.0, server.1, creds.clone()) {
+                while let Err(e) = Self::connect() {
                     error!("Connection error: {e}");
                     sleep(Duration::from_secs(1));
                     tries -= 1;
@@ -75,5 +72,11 @@ impl ConnectPlugin {
                 .cstr_cs(VISIBLE_BRIGHT, CstrStyle::Heading)
                 .label(ui);
         });
+    }
+    pub fn connect() -> Result<()> {
+        let creds: Option<Credentials> = Self::load_credentials();
+        let server = current_server();
+        info!("Connect start {} {}", server.0, server.1);
+        connect(server.0, server.1, creds.clone())
     }
 }

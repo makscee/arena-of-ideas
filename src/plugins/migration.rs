@@ -18,6 +18,17 @@ impl Plugin for MigrationPlugin {
             .add_systems(OnEnter(GameState::MigrationUpload), Self::upload);
     }
 }
+pub fn save_to_download_folder(file: &str, json: String) {
+    let path = MigrationPlugin::path_download(file);
+    match std::fs::write(path, json) {
+        Ok(_) => {
+            info!("{} {}", "Store successful:".dimmed(), file.green())
+        }
+        Err(e) => {
+            error!("{} {}", "Store error:", e.to_string().red())
+        }
+    }
+}
 impl MigrationPlugin {
     fn path_download(name: &str) -> PathBuf {
         let mut path = home_dir_path();
@@ -38,23 +49,12 @@ impl MigrationPlugin {
         path.push(DOWNLOAD_FOLDER);
         std::fs::create_dir_all(path);
     }
-    fn save_to_file(name: &str, data: String) {
-        let path = Self::path_download(name);
-        match std::fs::write(path, data) {
-            Ok(_) => {
-                info!("{} {}", "Store successful:".dimmed(), name.green())
-            }
-            Err(e) => {
-                error!("{} {}", "Store error:", e.to_string().red())
-            }
-        }
-    }
     fn download() {
         Self::path_create();
         StdbQuery::subscribe(StdbTable::iter().map(|t| t.full()), |world| {
             for table in StdbTable::iter() {
                 let json = table.get_json_data();
-                Self::save_to_file(table.as_ref(), json);
+                save_to_download_folder(table.as_ref(), json);
             }
             app_exit(world);
         });

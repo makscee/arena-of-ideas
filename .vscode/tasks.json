@@ -183,6 +183,24 @@
       }
     },
     {
+      "type": "cargo",
+      "command": "run",
+      "problemMatcher": [
+        "$rustc"
+      ],
+      "label": "Query",
+      "args": [
+        "--features",
+        "bevy/dynamic_linking",
+        "--",
+        "--mode",
+        "query"
+      ],
+      "group": {
+        "kind": "build"
+      }
+    },
+    {
       "label": "Format Ron",
       "type": "shell",
       "group": {

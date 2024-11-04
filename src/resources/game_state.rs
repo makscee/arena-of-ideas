@@ -30,6 +30,7 @@ pub enum GameState {
     Stats,
     Incubator,
     Players,
+    Query,
 }
 
 static TARGET_STATE: Mutex<GameState> = Mutex::new(GameState::Loaded);

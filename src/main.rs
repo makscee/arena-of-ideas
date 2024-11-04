@@ -35,6 +35,7 @@ pub enum RunMode {
     Sync,
     MigrationDownload,
     MigrationUpload,
+    Query,
 }
 
 fn main() {
@@ -54,6 +55,7 @@ fn main() {
         RunMode::Sync => GameState::ServerSync,
         RunMode::MigrationDownload => GameState::MigrationDownload,
         RunMode::MigrationUpload => GameState::MigrationUpload,
+        RunMode::Query => GameState::Query,
     };
     load_client_settings();
     load_client_state();
@@ -127,6 +129,7 @@ fn main() {
             EditorPlugin,
             ConfirmationPlugin,
             StatsPlugin,
+            QueryPlugin,
         ))
         .init_state::<GameState>()
         .init_resource::<NotificationsResource>()
