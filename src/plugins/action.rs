@@ -111,7 +111,9 @@ impl ActionPlugin {
     fn deafness(world: &mut World) -> bool {
         let mut r = rm(world);
         let chain = r.chain;
-        let chance = ((chain as f64 - 1000.0) / 200.0).clamp(0.0, 1.0);
+        let bs = global_settings().battle;
+        let chance =
+            ((chain as f64 - bs.deafness_start as f64) * bs.deafness_per_turn).clamp(0.0, 1.0);
         if let Some(rng) = r.rng.as_mut() {
             rng.gen_bool(chance)
         } else {

@@ -16,5 +16,5 @@ use spacetimedb_sdk::{
 pub struct BattleSettings {
     pub fatigue_start: u32,
     pub deafness_start: u32,
-    pub deafness_per_turn: f32,
+    pub deafness_per_turn: f64,
 }
