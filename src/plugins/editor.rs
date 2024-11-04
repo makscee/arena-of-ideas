@@ -191,11 +191,11 @@ impl EditorPlugin {
 
                     ui.add_space(30.0);
                     if Button::click("Paste").ui(ui).clicked() {
-                        if let Some(team) =
-                            paste_from_clipboard(world).and_then(|t| ron::from_str(&t).ok())
+                        if let Some(team) = paste_from_clipboard(world)
+                            .and_then(|t| ron::from_str::<PackedTeam>(&t).ok())
                         {
                             let mut r = rm(world);
-                            *Self::get_team_mut(faction, &mut r) = team;
+                            *Self::get_team_mut(faction, &mut r) = team.apply_limit();
                             Self::load_mode(world);
                         }
                     }
@@ -220,7 +220,7 @@ impl EditorPlugin {
                                     ui,
                                 ) {
                                     ui.ctx().data_mut(|w| {
-                                        w.insert_temp(Id::new(GAME_MODE_ID), mode.clone());
+                                        w.insert_temp(Id::new(GAME_MODE_ID), mode);
                                     })
                                 }
                             })

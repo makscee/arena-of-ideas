@@ -345,7 +345,7 @@ impl ShopPlugin {
                     });
                 }
                 if run.floor == run.boss_floor {
-                    "Champion Battle".cstr_cs(YELLOW, CstrStyle::Bold).label(ui);
+                    "Final Battle".cstr_cs(YELLOW, CstrStyle::Bold).label(ui);
                     run.boss_team.get_team().hover_label(ui, world);
                 } else {
                     "Next Floor".cstr_c(VISIBLE_DARK).label(ui);

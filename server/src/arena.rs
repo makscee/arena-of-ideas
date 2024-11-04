@@ -144,7 +144,7 @@ fn run_start_const(ctx: ReducerContext) -> Result<(), String> {
 #[spacetimedb(reducer)]
 fn run_finish(ctx: ReducerContext) -> Result<(), String> {
     let run = TArenaRun::current(&ctx)?;
-    TPlayerGameStats::register_run_end(run.owner, run.mode.clone(), run.floor);
+    TPlayerGameStats::register_run_end(run.owner, run.mode, run.floor);
     let reward: i64 = run.rewards.iter().map(|r| r.amount).sum();
     TWallet::change(run.owner, reward)?;
     TArenaRun::delete_by_id(&run.id);
@@ -164,22 +164,18 @@ fn shop_finish(ctx: ReducerContext, face_boss: bool) -> Result<(), String> {
 
     let team = TTeam::get(run.team)?.apply_limit().save_clone();
     if run.boss_floor == run.floor {
-        run.battles.push(TBattle::new(
-            run.mode.clone(),
-            run.owner,
-            team.id,
-            run.boss_team,
-        ));
+        run.battles
+            .push(TBattle::new(run.mode, run.owner, team.id, run.boss_team));
     } else {
         run.battles.push(TBattle::new(
-            run.mode.clone(),
+            run.mode,
             run.owner,
             team.id,
             TArenaPool::get_next_enemy(&run.mode, run.floor),
         ));
     }
     if !team.units.is_empty() && run.battles.len() == run.floor as usize {
-        TArenaPool::add(run.mode.clone(), team.id, run.floor);
+        TArenaPool::add(run.mode, team.id, run.floor);
     }
 
     run.rerolls = 0;
@@ -201,19 +197,19 @@ fn submit_battle_result(ctx: ReducerContext, result: TBattleResult) -> Result<()
     }
     battle.set_result(result).save();
     let boss_floor = run.floor == run.boss_floor;
-    if !boss_floor {
-        run.update_boss();
-    }
     if result == TBattleResult::Left {
         run.floor += 1;
-        QuestEvent::Win.register_event(run.mode.clone(), run.owner);
+        if !boss_floor {
+            run.update_boss();
+        }
+        QuestEvent::Win.register_event(run.mode, run.owner);
         if run.replenish_lives > 0 && run.lives < run.max_lives {
             run.lives += 1;
             run.replenish_lives -= 1;
         }
         run.add_streak();
         if boss_floor {
-            QuestEvent::Champion.register_event(run.mode.clone(), run.owner);
+            QuestEvent::Champion.register_event(run.mode, run.owner);
             run.finish();
         }
     } else {
@@ -383,7 +379,7 @@ fn fuse_choose(ctx: ReducerContext, trigger: i8, target: i8, effect: i8) -> Resu
     team.units.remove(b);
     team.save();
     let fuse_amount = unit.bases.len() as u32;
-    QuestEvent::Fuse(fuse_amount).register_event(run.mode.clone(), run.owner);
+    QuestEvent::Fuse(fuse_amount).register_event(run.mode, run.owner);
     GlobalEvent::Fuse(unit).post(run.owner);
     run.save();
     Ok(())
@@ -468,7 +464,7 @@ impl TArenaRun {
     }
     fn start(player: TPlayer, mode: GameMode) -> Result<(), String> {
         TArenaRun::delete_by_owner(&player.id);
-        GlobalEvent::RunStart(mode.clone()).post(player.id);
+        GlobalEvent::RunStart(mode).post(player.id);
         let mut run = TArenaRun::new(player.id, mode);
         run.fill_case()?;
         TArenaRun::insert(run)?;
@@ -627,7 +623,7 @@ impl TArenaRun {
     }
     fn add_streak(&mut self) {
         self.streak += 1;
-        QuestEvent::Streak(self.streak).register_event(self.mode.clone(), self.owner);
+        QuestEvent::Streak(self.streak).register_event(self.mode, self.owner);
     }
     fn finish_streak(&mut self) {
         if self.streak > 0 {
@@ -666,18 +662,34 @@ impl TArenaRun {
         if self.floor >= self.boss_floor {
             if let Some(battle) = self.battles.last().and_then(|id| TBattle::filter_by_id(id)) {
                 if battle.result.is_win() {
-                    TPlayerGameStats::register_champion(self.owner, self.mode.clone());
-                    let reward = match self.mode {
-                        GameMode::ArenaNormal => 0,
-                        GameMode::ArenaRanked | GameMode::ArenaConst => 100,
-                    };
-                    self.add_reward(
-                        "Champion Defeated".into(),
-                        reward + self.floor as i64 * 4 + 10,
-                        1,
-                    );
+                    if TArenaLeaderboard::current_champion(self.mode)
+                        .map(|c| c.floor <= self.floor)
+                        .unwrap_or(true)
+                    {
+                        let reward = match self.mode {
+                            GameMode::ArenaNormal => 0,
+                            GameMode::ArenaRanked | GameMode::ArenaConst => 25,
+                        };
+                        self.add_reward(
+                            "Champion Defeated".into(),
+                            reward + self.floor as i64 * 4 + 10,
+                            1,
+                        );
+                        TPlayerGameStats::register_champion(self.owner, self.mode);
+                    } else {
+                        let reward = match self.mode {
+                            GameMode::ArenaNormal => 10,
+                            GameMode::ArenaRanked | GameMode::ArenaConst => 10,
+                        };
+                        self.add_reward(
+                            "Boss Defeated".into(),
+                            reward + self.floor as i64 * 2 + 10,
+                            1,
+                        );
+                        TPlayerGameStats::register_boss(self.owner, self.mode);
+                    }
                     TArenaLeaderboard::insert(TArenaLeaderboard::new(
-                        self.mode.clone(),
+                        self.mode,
                         self.floor,
                         self.owner,
                         battle.team_left,

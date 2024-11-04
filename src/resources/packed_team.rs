@@ -29,4 +29,9 @@ impl PackedTeam {
         }
         world.entity_mut(entity).insert(self.ability_states);
     }
+    pub fn apply_limit(mut self) -> Self {
+        self.units
+            .resize(global_settings().arena.team_slots as usize, default());
+        self
+    }
 }

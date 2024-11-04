@@ -23,6 +23,7 @@ pub struct TPlayerGameStats {
     runs: u32,
     floors: Vec<u32>,
     champion: u32,
+    boss: u32,
 }
 
 impl TPlayerStats {
@@ -92,6 +93,11 @@ impl TPlayerGameStats {
     pub fn register_champion(owner: u64, mode: GameMode) {
         let mut stats = Self::get_or_init(owner, mode);
         stats.champion += 1;
+        stats.save();
+    }
+    pub fn register_boss(owner: u64, mode: GameMode) {
+        let mut stats = Self::get_or_init(owner, mode);
+        stats.boss += 1;
         stats.save();
     }
 }

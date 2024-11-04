@@ -33,7 +33,7 @@ impl PlayersPlugin {
             world.resource_scope(|world, mut r: Mut<PlayersResource>| {
                 season_switcher(&mut r.season, ui);
                 game_mode_switcher(&mut r.mode, ui);
-                let mode: u64 = r.mode.clone().into();
+                let mode: u64 = r.mode.into();
                 let season = r.season;
                 Table::new("Players")
                     .column_user_click("name", |d: &TPlayer| d.id)
