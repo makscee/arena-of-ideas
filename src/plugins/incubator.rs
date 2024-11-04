@@ -24,7 +24,7 @@ impl IncubatorPlugin {
                         incubator_vote(d.id, true);
                     },
                     |d, _, b| {
-                        let v = TIncubatorVote::filter_by_owner(user_id())
+                        let v = TIncubatorVote::filter_by_owner(player_id())
                             .find(|v| v.target == d.id)
                             .map(|v| v.vote)
                             .unwrap_or_default();
@@ -37,7 +37,7 @@ impl IncubatorPlugin {
                         incubator_vote(d.id, false);
                     },
                     |d, ui, b| {
-                        let v = TIncubatorVote::filter_by_owner(user_id())
+                        let v = TIncubatorVote::filter_by_owner(player_id())
                             .find(|v| v.target == d.id)
                             .map(|v| !v.vote)
                             .unwrap_or_default();
@@ -50,7 +50,7 @@ impl IncubatorPlugin {
                         incubator_favorite(d.id);
                     },
                     |d, _, b| {
-                        let v = TIncubatorFavorite::find_by_owner(user_id())
+                        let v = TIncubatorFavorite::find_by_owner(player_id())
                             .map(|v| v.target == d.id)
                             .unwrap_or_default();
                         b.active(v)
@@ -65,7 +65,7 @@ impl IncubatorPlugin {
                             .iter()
                             .map(|u| UnitCard::from_base(u.clone(), world).unwrap())
                             .collect_vec();
-                        let own = d.owner == user_id();
+                        let own = d.owner == player_id();
                         let i = d.clone();
                         fn tile_id(id: u64) -> String {
                             format!("Incubator {}", id)

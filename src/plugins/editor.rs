@@ -169,7 +169,7 @@ impl EditorPlugin {
                     if Button::click("Load own").ui(ui).clicked() {
                         Confirmation::new("Open own team".cstr())
                             .content(move |ui, world| {
-                                TTeam::filter_by_owner(user_id())
+                                TTeam::filter_by_owner(player_id())
                                     .filter(|t| t.pool.eq(&TeamPool::Owned))
                                     .collect_vec()
                                     .show_modified_table("Teams", ui, world, move |t| {

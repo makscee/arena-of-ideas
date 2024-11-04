@@ -25,7 +25,7 @@ impl TTeam {
     pub fn get_owned(team_id: u64, owner_id: u64) -> Result<Self, String> {
         let team = TTeam::get(team_id)?;
         if team.owner != owner_id {
-            return Err(format!("Team#{} not owned by user#{}", team.id, owner_id));
+            return Err(format!("Team#{} not owned by player#{}", team.id, owner_id));
         }
         Ok(team)
     }
@@ -92,16 +92,16 @@ fn team_create(ctx: ReducerContext, name: String) -> Result<(), String> {
     if name.is_empty() {
         return Err("Name can't be empty".into());
     }
-    let user = ctx.user()?;
-    TWallet::change(user.id, -GlobalSettings::get().create_team_cost)?;
-    TTeam::new(user.id, TeamPool::Owned).name(name).save();
+    let player = ctx.player()?;
+    TWallet::change(player.id, -GlobalSettings::get().create_team_cost)?;
+    TTeam::new(player.id, TeamPool::Owned).name(name).save();
     Ok(())
 }
 #[spacetimedb(reducer)]
 fn team_add_unit(ctx: ReducerContext, team: u64, unit: u64) -> Result<(), String> {
-    let user = ctx.user()?;
-    let mut team = TTeam::get_owned(team, user.id)?;
-    let unit = TUnitItem::filter_by_owner(&user.id)
+    let player = ctx.player()?;
+    let mut team = TTeam::get_owned(team, player.id)?;
+    let unit = TUnitItem::filter_by_owner(&player.id)
         .find(|u| u.unit.id == unit)
         .context_str("Unit not found")?;
     TUnitItem::delete_by_id(&unit.id);
@@ -111,13 +111,13 @@ fn team_add_unit(ctx: ReducerContext, team: u64, unit: u64) -> Result<(), String
 }
 #[spacetimedb(reducer)]
 fn team_remove_unit(ctx: ReducerContext, team: u64, unit: u64) -> Result<(), String> {
-    let user = ctx.user()?;
-    let mut team = TTeam::get_owned(team, user.id)?;
+    let player = ctx.player()?;
+    let mut team = TTeam::get_owned(team, player.id)?;
     if let Some(pos) = team.units.iter().position(|u| u.id == unit) {
         let unit = team.units.remove(pos);
         TUnitItem::insert(TUnitItem {
             id: next_id(),
-            owner: user.id,
+            owner: player.id,
             unit,
         })?;
         team.save();
@@ -128,8 +128,8 @@ fn team_remove_unit(ctx: ReducerContext, team: u64, unit: u64) -> Result<(), Str
 }
 #[spacetimedb(reducer)]
 fn team_swap_units(ctx: ReducerContext, team: u64, from: u8, to: u8) -> Result<(), String> {
-    let user = ctx.user()?;
-    let mut team = TTeam::get_owned(team, user.id)?;
+    let player = ctx.player()?;
+    let mut team = TTeam::get_owned(team, player.id)?;
     let from = from as usize;
     let to = (to as usize).min(team.units.len() - 1);
     if from >= team.units.len() {
@@ -142,12 +142,12 @@ fn team_swap_units(ctx: ReducerContext, team: u64, from: u8, to: u8) -> Result<(
 }
 #[spacetimedb(reducer)]
 fn team_disband(ctx: ReducerContext, team: u64) -> Result<(), String> {
-    let user = ctx.user()?;
-    let mut team = TTeam::get_owned(team, user.id)?;
+    let player = ctx.player()?;
+    let mut team = TTeam::get_owned(team, player.id)?;
     for unit in team.units.drain(..) {
         TUnitItem::insert(TUnitItem {
             id: next_id(),
-            owner: user.id,
+            owner: player.id,
             unit,
         })?;
     }
@@ -156,8 +156,8 @@ fn team_disband(ctx: ReducerContext, team: u64) -> Result<(), String> {
 }
 #[spacetimedb(reducer)]
 fn team_rename(ctx: ReducerContext, team: u64, name: String) -> Result<(), String> {
-    let user = ctx.user()?;
-    let mut team = TTeam::get_owned(team, user.id)?;
+    let player = ctx.player()?;
+    let mut team = TTeam::get_owned(team, player.id)?;
     if name.is_empty() {
         return Err("Name can't be empty".into());
     }

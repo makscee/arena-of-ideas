@@ -469,7 +469,7 @@ impl ToCstr for TTeam {
         name.push_wrapped(units.into(), ('(', ')')).take()
     }
 }
-impl ToCstr for TUser {
+impl ToCstr for TPlayer {
     fn cstr(&self) -> Cstr {
         self.name.cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold)
     }

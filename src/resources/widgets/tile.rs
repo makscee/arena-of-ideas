@@ -236,7 +236,7 @@ impl TilePlugin {
     }
     pub fn add_user(gid: u64, world: &mut World) {
         Tile::new(Side::Right, move |ui, world| {
-            gid.get_user().show(ui, world);
+            gid.get_player().show(ui, world);
         })
         .with_id(format!("user_{gid}"))
         .push(world)

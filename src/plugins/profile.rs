@@ -27,7 +27,7 @@ impl ProfilePlugin {
     }
     fn update_user(world: &mut World) {
         LoginOption {
-            user: TUser::find_by_id(user_id()).unwrap(),
+            player: TPlayer::find_by_id(player_id()).unwrap(),
         }
         .save(world);
     }
@@ -48,8 +48,8 @@ impl ProfilePlugin {
         .push(world);
     }
     fn settings_ui(ped: &mut ProfileEditData, ui: &mut Ui, world: &mut World) {
-        let user = &LoginOption::get(world).user;
-        let has_pass = user.pass_hash.is_some();
+        let player = &LoginOption::get(world).player;
+        let has_pass = player.pass_hash.is_some();
         Input::new("name").ui_string(&mut ped.name, ui);
         if Button::click("Submit")
             .enabled(!ped.name.eq(user_name()))

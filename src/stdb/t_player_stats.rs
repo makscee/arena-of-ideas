@@ -2,7 +2,6 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN RUST INSTEAD.
 
 #![allow(unused_imports)]
-use super::game_mode::GameMode;
 use spacetimedb_sdk::{
     anyhow::{anyhow, Result},
     identity::Identity,
@@ -14,30 +13,28 @@ use spacetimedb_sdk::{
 };
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
-pub struct TUserGameStats {
+pub struct TPlayerStats {
     pub id: u64,
     pub season: u32,
     pub owner: u64,
-    pub mode: GameMode,
-    pub runs_played: u32,
-    pub runs_floors: u32,
-    pub runs_max_floor: u32,
-    pub champion: u32,
+    pub time_played: u64,
+    pub quests_completed: u32,
+    pub credits_earned: u32,
 }
 
-impl TableType for TUserGameStats {
-    const TABLE_NAME: &'static str = "TUserGameStats";
+impl TableType for TPlayerStats {
+    const TABLE_NAME: &'static str = "TPlayerStats";
     type ReducerEvent = super::ReducerEvent;
 }
 
-impl TableWithPrimaryKey for TUserGameStats {
+impl TableWithPrimaryKey for TPlayerStats {
     type PrimaryKey = u64;
     fn primary_key(&self) -> &Self::PrimaryKey {
         &self.id
     }
 }
 
-impl TUserGameStats {
+impl TPlayerStats {
     #[allow(unused)]
     pub fn filter_by_id(id: u64) -> TableIter<Self> {
         Self::filter(|row| row.id == id)
@@ -55,19 +52,15 @@ impl TUserGameStats {
         Self::filter(|row| row.owner == owner)
     }
     #[allow(unused)]
-    pub fn filter_by_runs_played(runs_played: u32) -> TableIter<Self> {
-        Self::filter(|row| row.runs_played == runs_played)
+    pub fn filter_by_time_played(time_played: u64) -> TableIter<Self> {
+        Self::filter(|row| row.time_played == time_played)
     }
     #[allow(unused)]
-    pub fn filter_by_runs_floors(runs_floors: u32) -> TableIter<Self> {
-        Self::filter(|row| row.runs_floors == runs_floors)
+    pub fn filter_by_quests_completed(quests_completed: u32) -> TableIter<Self> {
+        Self::filter(|row| row.quests_completed == quests_completed)
     }
     #[allow(unused)]
-    pub fn filter_by_runs_max_floor(runs_max_floor: u32) -> TableIter<Self> {
-        Self::filter(|row| row.runs_max_floor == runs_max_floor)
-    }
-    #[allow(unused)]
-    pub fn filter_by_champion(champion: u32) -> TableIter<Self> {
-        Self::filter(|row| row.champion == champion)
+    pub fn filter_by_credits_earned(credits_earned: u32) -> TableIter<Self> {
+        Self::filter(|row| row.credits_earned == credits_earned)
     }
 }

@@ -108,7 +108,7 @@ impl TeamPlugin {
     }
 
     fn load_teams_table(world: &mut World) {
-        world.resource_mut::<TeamResource>().table = TTeam::filter_by_owner(user_id())
+        world.resource_mut::<TeamResource>().table = TTeam::filter_by_owner(player_id())
             .filter(|t| t.pool.eq(&TeamPool::Owned))
             .collect_vec();
     }
@@ -238,7 +238,7 @@ impl TeamPlugin {
                     Confirmation::new("Add unit to team".cstr())
                         .cancel(|_| {})
                         .content(|ui, world| {
-                            let units = TUnitItem::filter_by_owner(user_id())
+                            let units = TUnitItem::filter_by_owner(player_id())
                                 .map(|u| u.unit)
                                 .collect_vec();
                             units.show_modified_table("Units", ui, world, |t| {

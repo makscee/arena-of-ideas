@@ -13,7 +13,7 @@ use spacetimedb_sdk::{
 };
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
-pub struct TUser {
+pub struct TPlayer {
     pub id: u64,
     pub name: String,
     pub identities: Vec<Identity>,
@@ -22,19 +22,19 @@ pub struct TUser {
     pub last_login: u64,
 }
 
-impl TableType for TUser {
-    const TABLE_NAME: &'static str = "TUser";
+impl TableType for TPlayer {
+    const TABLE_NAME: &'static str = "TPlayer";
     type ReducerEvent = super::ReducerEvent;
 }
 
-impl TableWithPrimaryKey for TUser {
+impl TableWithPrimaryKey for TPlayer {
     type PrimaryKey = u64;
     fn primary_key(&self) -> &Self::PrimaryKey {
         &self.id
     }
 }
 
-impl TUser {
+impl TPlayer {
     #[allow(unused)]
     pub fn filter_by_id(id: u64) -> TableIter<Self> {
         Self::filter(|row| row.id == id)

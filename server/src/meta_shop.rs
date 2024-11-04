@@ -49,9 +49,9 @@ impl TMetaShop {
 
 #[spacetimedb(reducer)]
 fn meta_buy(ctx: ReducerContext, id: u64) -> Result<(), String> {
-    let user = ctx.user()?;
+    let player = ctx.player()?;
     let mut item = TMetaShop::filter_by_id(&id).context_str("Item not found")?;
-    TWallet::change(user.id, -item.price)?;
+    TWallet::change(player.id, -item.price)?;
     match item.item_kind {
         ItemKind::UnitShard | ItemKind::Unit | ItemKind::RainbowShard => {
             item.price += 1;
@@ -59,6 +59,6 @@ fn meta_buy(ctx: ReducerContext, id: u64) -> Result<(), String> {
         }
         ItemKind::Lootbox => {}
     };
-    GlobalEvent::MetaShopBuy(item.clone()).post(user.id);
-    item.take(user.id)
+    GlobalEvent::MetaShopBuy(item.clone()).post(player.id);
+    item.take(player.id)
 }

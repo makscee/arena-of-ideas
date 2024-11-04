@@ -18,7 +18,7 @@ pub struct TArenaLeaderboard {
     pub mode: GameMode,
     pub season: u32,
     pub floor: u32,
-    pub user: u64,
+    pub owner: u64,
     pub team: u64,
     pub run: u64,
     pub ts: u64,
@@ -39,8 +39,8 @@ impl TArenaLeaderboard {
         Self::filter(|row| row.floor == floor)
     }
     #[allow(unused)]
-    pub fn filter_by_user(user: u64) -> TableIter<Self> {
-        Self::filter(|row| row.user == user)
+    pub fn filter_by_owner(owner: u64) -> TableIter<Self> {
+        Self::filter(|row| row.owner == owner)
     }
     #[allow(unused)]
     pub fn filter_by_team(team: u64) -> TableIter<Self> {

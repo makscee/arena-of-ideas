@@ -312,14 +312,14 @@ impl ItemBundle {
 
 #[spacetimedb(reducer)]
 fn craft_hero(ctx: ReducerContext, base: String, use_rainbow: u32) -> Result<(), String> {
-    let user = ctx.user()?;
-    let mut item = TUnitShardItem::get_or_init(user.id, &base);
+    let player = ctx.player()?;
+    let mut item = TUnitShardItem::get_or_init(player.id, &base);
     let cost = GlobalSettings::get().craft_shards_cost;
     if use_rainbow >= cost {
         return Err("Tried to use too many rainbow shards".into());
     }
     if use_rainbow > 0 {
-        let mut item = TRainbowShardItem::get_or_init(user.id);
+        let mut item = TRainbowShardItem::get_or_init(player.id);
         if item.count < use_rainbow {
             return Err(format!(
                 "Not enough rainbow shards: {} < {use_rainbow}",
@@ -340,22 +340,22 @@ fn craft_hero(ctx: ReducerContext, base: String, use_rainbow: u32) -> Result<(),
 
     GlobalEvent::CraftUnit(TUnitItem::insert(TUnitItem {
         id: next_id(),
-        owner: user.id,
+        owner: player.id,
         unit: FusedUnit::from_base_name(base, next_id())?.mutate(),
     })?)
-    .post(user.id);
+    .post(player.id);
     Ok(())
 }
 
 #[spacetimedb(reducer)]
 fn dismantle_hero(ctx: ReducerContext, item: u64) -> Result<(), String> {
-    let user = ctx.user()?;
+    let player = ctx.player()?;
     let unit = TUnitItem::filter_by_id(&item).context_str("Item not found")?;
-    if unit.owner != user.id {
-        return Err(format!("Item not owned by {}", user.id));
+    if unit.owner != player.id {
+        return Err(format!("Item not owned by {}", player.id));
     }
     TUnitItem::delete_by_id(&unit.id);
-    let mut item = TRainbowShardItem::get_or_init(user.id);
+    let mut item = TRainbowShardItem::get_or_init(player.id);
     item.count += unit.unit.rarity() as u32 + 1;
     TRainbowShardItem::update_by_id(&item.id.clone(), item);
     Ok(())
@@ -363,9 +363,9 @@ fn dismantle_hero(ctx: ReducerContext, item: u64) -> Result<(), String> {
 
 #[spacetimedb(reducer)]
 fn open_lootbox(ctx: ReducerContext, id: u64) -> Result<(), String> {
-    let user = ctx.user()?;
+    let player = ctx.player()?;
     let mut lootbox = TLootboxItem::filter_by_id(&id).context_str("Lootbox not found")?;
-    if lootbox.owner != user.id {
+    if lootbox.owner != player.id {
         return Err("Tried to open lootbox that is not owned".into());
     }
     if lootbox.count == 0 {
@@ -402,8 +402,8 @@ fn open_lootbox(ctx: ReducerContext, id: u64) -> Result<(), String> {
         unit_shards,
         lootboxes: default(),
     };
-    TTrade::open_lootbox(user.id, bundle)?;
-    GlobalEvent::OpenLootbox(lootbox.clone()).post(user.id);
+    TTrade::open_lootbox(player.id, bundle)?;
+    GlobalEvent::OpenLootbox(lootbox.clone()).post(player.id);
     TLootboxItem::update_by_id(&lootbox.id.clone(), lootbox);
     Ok(())
 }

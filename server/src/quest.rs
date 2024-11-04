@@ -177,30 +177,30 @@ pub fn quests_daily_refresh() {
 
 #[spacetimedb(reducer)]
 fn quest_accept(ctx: ReducerContext, id: u64) -> Result<(), String> {
-    let user = ctx.user()?;
+    let player = ctx.player()?;
     let mut quest =
         TQuest::filter_by_id(&id).with_context_str(|| format!("Quest#{id} not found"))?;
     if quest.owner != 0 {
         return Err("Wrong quest".into());
     }
-    TDailyState::get(user.id).take_quest(id)?;
+    TDailyState::get(player.id).take_quest(id)?;
     quest.id = next_id();
-    quest.owner = user.id;
-    GlobalEvent::QuestAccepted(quest.clone()).post(user.id);
+    quest.owner = player.id;
+    GlobalEvent::QuestAccepted(quest.clone()).post(player.id);
     TQuest::insert(quest)?;
     Ok(())
 }
 
 #[spacetimedb(reducer)]
 fn quest_finish(ctx: ReducerContext, id: u64) -> Result<(), String> {
-    let user = ctx.user()?;
+    let player = ctx.player()?;
     let quest = TQuest::filter_by_id(&id).with_context_str(|| format!("Quest#{id} not found"))?;
-    if quest.owner != user.id {
-        return Err(format!("Quest#{id} not owned by {}", user.id));
+    if quest.owner != player.id {
+        return Err(format!("Quest#{id} not owned by {}", player.id));
     }
-    TWallet::change(user.id, quest.reward)?;
-    GlobalEvent::QuestComplete(quest.clone()).post(user.id);
+    TWallet::change(player.id, quest.reward)?;
+    GlobalEvent::QuestComplete(quest.clone()).post(player.id);
     TQuest::delete_by_id(&quest.id);
-    TUserStats::register_completed_quest(user.id);
+    TPlayerStats::register_completed_quest(player.id);
     Ok(())
 }

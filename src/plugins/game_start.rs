@@ -50,7 +50,7 @@ impl GameStartPlugin {
     fn load_data(world: &mut World) {
         TableState::reset_cache(&egui_context(world).unwrap());
         let mut gsr = rm(world);
-        gsr.teams = TTeam::filter_by_owner(user_id())
+        gsr.teams = TTeam::filter_by_owner(player_id())
             .filter(|t| t.pool == TeamPool::Owned && !t.units.is_empty())
             .collect_vec();
         if let Some(i) = client_state()
@@ -123,8 +123,8 @@ impl GameStartPlugin {
                                 .cstr_cs(YELLOW, CstrStyle::Bold)
                                 .label(ui);
                             first
-                                .user
-                                .get_user()
+                                .owner
+                                .get_player()
                                 .name
                                 .cstr_cs(VISIBLE_BRIGHT, CstrStyle::Heading2)
                                 .label(ui);
@@ -354,7 +354,7 @@ impl GameStartPlugin {
                                         BattlePlugin::set_next_state(cur_state(world), world);
                                         GameState::Battle.set_next(world);
                                     })
-                                    .filter("My", "player", user_id().into())
+                                    .filter("My", "player", player_id().into())
                                     .filter("Win", "result", "W".into())
                                     .filter("Lose", "result", "L".into())
                                     .filter("TBD", "result", "-".into())

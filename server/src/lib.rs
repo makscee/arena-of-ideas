@@ -17,13 +17,13 @@ mod inflating_number;
 mod items;
 mod meta_shop;
 mod migration;
+mod player;
+mod player_stats;
 mod quest;
 mod status;
 mod team;
 mod trade;
 mod unit_balance;
-mod user;
-mod user_stats;
 mod wallet;
 
 use std::str::FromStr;
@@ -45,6 +45,8 @@ pub use inflating_number::*;
 pub use items::*;
 pub use itertools::Itertools;
 pub use meta_shop::*;
+pub use player::*;
+pub use player_stats::*;
 pub use quest::*;
 pub use rand::{distributions::Alphanumeric, seq::IteratorRandom, Rng};
 pub use spacetimedb::rng;
@@ -53,8 +55,6 @@ pub use spacetimedb::{spacetimedb, Identity, ReducerContext, SpacetimeType, Tabl
 pub use team::*;
 pub use trade::*;
 pub use unit_balance::*;
-pub use user::*;
-pub use user_stats::*;
 pub use wallet::*;
 
 trait StrContext<T> {
@@ -124,6 +124,6 @@ pub fn default<T: Default>() -> T {
 #[spacetimedb(reducer)]
 fn cleanup(ctx: ReducerContext) -> Result<(), String> {
     ctx.is_admin()?;
-    TUser::cleanup();
+    TPlayer::cleanup();
     Ok(())
 }

@@ -20,7 +20,7 @@ impl TWallet {
             return Err("Insufficient funds".into());
         }
         if delta > 0 {
-            TUserStats::register_credits_earned(owner, delta as u32);
+            TPlayerStats::register_credits_earned(owner, delta as u32);
         }
         w.save();
         Ok(())
@@ -36,7 +36,7 @@ impl TWallet {
 #[spacetimedb(reducer)]
 fn give_credits(ctx: ReducerContext) -> Result<(), String> {
     ctx.is_admin()?;
-    let user = TUser::find_by_identity(&ctx.sender)?;
-    TWallet::change(user.id, 100)?;
+    let player = TPlayer::find_by_identity(&ctx.sender)?;
+    TWallet::change(player.id, 100)?;
     Ok(())
 }

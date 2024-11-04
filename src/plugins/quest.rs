@@ -10,7 +10,7 @@ impl QuestPlugin {
                 .unwrap_or_default()
     }
     pub fn have_completed() -> bool {
-        TQuest::filter_by_owner(user_id())
+        TQuest::filter_by_owner(player_id())
             .filter(|q| q.complete)
             .count()
             > 0
@@ -44,7 +44,7 @@ impl QuestPlugin {
                         world,
                     );
             }
-            let complete_quests = TQuest::filter_by_owner(user_id())
+            let complete_quests = TQuest::filter_by_owner(player_id())
                 .filter(|q| q.complete)
                 .collect_vec();
             if !complete_quests.is_empty() {
@@ -54,7 +54,7 @@ impl QuestPlugin {
                     .column_btn("complete", |d, _, _| quest_finish(d.id))
                     .ui(&complete_quests, ui, world);
             }
-            let current_quests = TQuest::filter_by_owner(user_id())
+            let current_quests = TQuest::filter_by_owner(player_id())
                 .filter(|q| !q.complete)
                 .collect_vec();
             if !current_quests.is_empty() {

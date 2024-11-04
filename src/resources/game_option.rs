@@ -65,7 +65,7 @@ impl GameOption {
 
 #[derive(Resource)]
 pub struct LoginOption {
-    pub user: TUser,
+    pub player: TPlayer,
 }
 
 #[derive(Resource, Clone)]
@@ -89,21 +89,21 @@ impl OptionResource for ConnectOption {
     }
 }
 
-static USER_NAME: Mutex<&'static str> = Mutex::new("");
-static USER_ID: Mutex<u64> = Mutex::new(0);
-pub fn user_id() -> u64 {
-    *USER_ID.lock().unwrap()
+static PLAYER_NAME: Mutex<&'static str> = Mutex::new("");
+static PLAYER_ID: Mutex<u64> = Mutex::new(0);
+pub fn player_id() -> u64 {
+    *PLAYER_ID.lock().unwrap()
 }
 pub fn user_name() -> &'static str {
-    *USER_NAME.lock().unwrap()
+    *PLAYER_NAME.lock().unwrap()
 }
 impl OptionResource for LoginOption {
     fn fulfill(world: &mut World) {
         GameState::Login.set_next(world);
     }
     fn save(self, world: &mut World) {
-        *USER_NAME.lock().unwrap() = self.user.name.clone().leak();
-        *USER_ID.lock().unwrap() = self.user.id;
+        *PLAYER_NAME.lock().unwrap() = self.player.name.clone().leak();
+        *PLAYER_ID.lock().unwrap() = self.player.id;
         world.insert_resource(self);
     }
 }

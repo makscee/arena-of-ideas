@@ -2,6 +2,7 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN RUST INSTEAD.
 
 #![allow(unused_imports)]
+use super::game_mode::GameMode;
 use spacetimedb_sdk::{
     anyhow::{anyhow, Result},
     identity::Identity,
@@ -13,28 +14,29 @@ use spacetimedb_sdk::{
 };
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
-pub struct TUserStats {
+pub struct TPlayerGameStats {
     pub id: u64,
     pub season: u32,
     pub owner: u64,
-    pub time_played: u64,
-    pub quests_completed: u32,
-    pub credits_earned: u32,
+    pub mode: GameMode,
+    pub runs: u32,
+    pub floors: Vec<u32>,
+    pub champion: u32,
 }
 
-impl TableType for TUserStats {
-    const TABLE_NAME: &'static str = "TUserStats";
+impl TableType for TPlayerGameStats {
+    const TABLE_NAME: &'static str = "TPlayerGameStats";
     type ReducerEvent = super::ReducerEvent;
 }
 
-impl TableWithPrimaryKey for TUserStats {
+impl TableWithPrimaryKey for TPlayerGameStats {
     type PrimaryKey = u64;
     fn primary_key(&self) -> &Self::PrimaryKey {
         &self.id
     }
 }
 
-impl TUserStats {
+impl TPlayerGameStats {
     #[allow(unused)]
     pub fn filter_by_id(id: u64) -> TableIter<Self> {
         Self::filter(|row| row.id == id)
@@ -52,15 +54,11 @@ impl TUserStats {
         Self::filter(|row| row.owner == owner)
     }
     #[allow(unused)]
-    pub fn filter_by_time_played(time_played: u64) -> TableIter<Self> {
-        Self::filter(|row| row.time_played == time_played)
+    pub fn filter_by_runs(runs: u32) -> TableIter<Self> {
+        Self::filter(|row| row.runs == runs)
     }
     #[allow(unused)]
-    pub fn filter_by_quests_completed(quests_completed: u32) -> TableIter<Self> {
-        Self::filter(|row| row.quests_completed == quests_completed)
-    }
-    #[allow(unused)]
-    pub fn filter_by_credits_earned(credits_earned: u32) -> TableIter<Self> {
-        Self::filter(|row| row.credits_earned == credits_earned)
+    pub fn filter_by_champion(champion: u32) -> TableIter<Self> {
+        Self::filter(|row| row.champion == champion)
     }
 }

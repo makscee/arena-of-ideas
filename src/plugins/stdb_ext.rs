@@ -40,7 +40,7 @@ impl TableSingletonExt for TDailyState {
     fn current() -> Self {
         *Self::get_current().unwrap_or_else(|| {
             Box::new(Self {
-                owner: user_id(),
+                owner: player_id(),
                 ranked_cost: 0,
                 const_cost: 0,
                 quests_taken: default(),
@@ -78,7 +78,7 @@ impl StdbStatusExt for spacetimedb_sdk::reducer::Status {
 pub trait GIDExt {
     fn get_team(self) -> TTeam;
     fn get_team_cached(self) -> TTeam;
-    fn get_user(self) -> TUser;
+    fn get_player(self) -> TPlayer;
     fn unit_item(self) -> TUnitItem;
     fn unit_shard_item(self) -> TUnitShardItem;
     fn rainbow_shard_item(self) -> TRainbowShardItem;
@@ -124,9 +124,9 @@ impl GIDExt for u64 {
             team
         }
     }
-    fn get_user(self) -> TUser {
+    fn get_player(self) -> TPlayer {
         if self == 0 {
-            return TUser {
+            return TPlayer {
                 id: 0,
                 name: "...".into(),
                 identities: default(),
@@ -135,8 +135,8 @@ impl GIDExt for u64 {
                 last_login: default(),
             };
         }
-        TUser::find_by_id(self)
-            .with_context(|| format!("Failed to find User#{self}"))
+        TPlayer::find_by_id(self)
+            .with_context(|| format!("Failed to find Player#{self}"))
             .unwrap()
     }
     fn unit_item(self) -> TUnitItem {
@@ -284,13 +284,13 @@ impl Default for GameData {
             unit_balance: default(),
             unit_item: default(),
             unit_shard_item: default(),
-            user: default(),
+            player: default(),
             wallet: default(),
             incubator: default(),
             incubator_vote: default(),
             incubator_favorite: default(),
-            user_stats: default(),
-            user_game_stats: default(),
+            player_stats: default(),
+            player_game_stats: default(),
         }
     }
 }

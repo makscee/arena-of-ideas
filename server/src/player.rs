@@ -5,7 +5,7 @@ use spacetimedb::Timestamp;
 use super::*;
 
 #[spacetimedb(table(public))]
-pub struct TUser {
+pub struct TPlayer {
     #[primarykey]
     pub id: u64,
     #[unique]
@@ -18,9 +18,9 @@ pub struct TUser {
 
 #[spacetimedb(reducer)]
 fn register_empty(ctx: ReducerContext) -> Result<(), String> {
-    TUser::clear_identity(&ctx.sender);
+    TPlayer::clear_identity(&ctx.sender);
     let id = next_id();
-    let user = TUser {
+    let player = TPlayer {
         id,
         identities: vec![ctx.sender],
         name: format!("player#{}", id),
@@ -28,18 +28,18 @@ fn register_empty(ctx: ReducerContext) -> Result<(), String> {
         online: false,
         last_login: Timestamp::UNIX_EPOCH,
     };
-    TUser::insert(user)?;
+    TPlayer::insert(player)?;
     TWallet::new(id)?;
     Ok(())
 }
 
 #[spacetimedb(reducer)]
 fn register(ctx: ReducerContext, name: String, pass: String) -> Result<(), String> {
-    let name = TUser::validate_name(name)?;
-    let pass_hash = Some(TUser::hash_pass(pass)?);
-    TUser::clear_identity(&ctx.sender);
+    let name = TPlayer::validate_name(name)?;
+    let pass_hash = Some(TPlayer::hash_pass(pass)?);
+    TPlayer::clear_identity(&ctx.sender);
     let id = next_id();
-    TUser::insert(TUser {
+    TPlayer::insert(TPlayer {
         id,
         identities: vec![ctx.sender],
         name,
@@ -53,83 +53,89 @@ fn register(ctx: ReducerContext, name: String, pass: String) -> Result<(), Strin
 
 #[spacetimedb(reducer)]
 fn login(ctx: ReducerContext, name: String, pass: String) -> Result<(), String> {
-    let mut user = TUser::filter_by_name(&name).context_str("Wrong name or password")?;
-    if user.pass_hash.is_none() {
-        return Err("No password set for user".to_owned());
+    let mut player = TPlayer::filter_by_name(&name).context_str("Wrong name or password")?;
+    if player.pass_hash.is_none() {
+        return Err("No password set for player".to_owned());
     }
-    if !user.check_pass(pass) {
+    if !player.check_pass(pass) {
         Err("Wrong name or password".to_owned())
     } else {
-        if let Ok(mut user) = ctx.user() {
-            user.logout();
-            user.remove_identity(&ctx.sender);
-            TUser::update_by_id(&user.id.clone(), user);
+        if let Ok(mut player) = ctx.player() {
+            player.logout();
+            player.remove_identity(&ctx.sender);
+            TPlayer::update_by_id(&player.id.clone(), player);
         }
-        if !user.identities.contains(&ctx.sender) {
-            TUser::clear_identity(&ctx.sender);
-            user.identities.push(ctx.sender);
+        if !player.identities.contains(&ctx.sender) {
+            TPlayer::clear_identity(&ctx.sender);
+            player.identities.push(ctx.sender);
         }
-        user.login();
+        player.login();
         Ok(())
     }
 }
 
 #[spacetimedb(reducer)]
 fn login_by_identity(ctx: ReducerContext) -> Result<(), String> {
-    let user = ctx.user()?;
-    user.login();
+    let player = ctx.player()?;
+    player.login();
     Ok(())
 }
 
 #[spacetimedb(reducer)]
 fn logout(ctx: ReducerContext) -> Result<(), String> {
-    let mut user = ctx.user()?;
-    user.logout();
-    GlobalEvent::LogOut.post(user.id);
-    user.remove_identity(&ctx.sender);
-    TUser::update_by_id(&user.id.clone(), user);
+    let mut player = ctx.player()?;
+    player.logout();
+    GlobalEvent::LogOut.post(player.id);
+    player.remove_identity(&ctx.sender);
+    TPlayer::update_by_id(&player.id.clone(), player);
     Ok(())
 }
 
 #[spacetimedb(reducer)]
 fn set_name(ctx: ReducerContext, name: String) -> Result<(), String> {
-    let name = TUser::validate_name(name)?;
-    if let Ok(user) = ctx.user() {
-        TUser::update_by_id(&user.id, TUser { name, ..user });
+    let name = TPlayer::validate_name(name)?;
+    if let Ok(player) = ctx.player() {
+        TPlayer::update_by_id(&player.id, TPlayer { name, ..player });
         Ok(())
     } else {
-        Err("Cannot set name for unknown user".to_string())
+        Err("Cannot set name for unknown player".to_string())
     }
 }
 
 #[spacetimedb(reducer)]
 fn set_password(ctx: ReducerContext, old_pass: String, new_pass: String) -> Result<(), String> {
-    if let Ok(user) = ctx.user() {
-        if !user.check_pass(old_pass) {
+    if let Ok(player) = ctx.player() {
+        if !player.check_pass(old_pass) {
             return Err("Old password did not match".to_owned());
         }
-        let pass_hash = Some(TUser::hash_pass(new_pass)?);
-        TUser::update_by_id(&user.id, TUser { pass_hash, ..user });
+        let pass_hash = Some(TPlayer::hash_pass(new_pass)?);
+        TPlayer::update_by_id(
+            &player.id,
+            TPlayer {
+                pass_hash,
+                ..player
+            },
+        );
         Ok(())
     } else {
-        Err("Cannot set name for unknown user".to_string())
+        Err("Cannot set name for unknown player".to_string())
     }
 }
 
 #[spacetimedb(disconnect)]
 fn identity_disconnected(ctx: ReducerContext) {
-    if let Ok(mut user) = ctx.user() {
-        GlobalEvent::LogOut.post(user.id);
-        user.logout();
-        TUser::update_by_id(&user.id.clone(), user);
+    if let Ok(mut player) = ctx.player() {
+        GlobalEvent::LogOut.post(player.id);
+        player.logout();
+        TPlayer::update_by_id(&player.id.clone(), player);
     }
 }
 
-impl TUser {
+impl TPlayer {
     fn validate_name(name: String) -> Result<String, String> {
         if name.is_empty() {
             Err("Names must not be empty".to_string())
-        } else if TUser::filter_by_name(&name).is_some() {
+        } else if TPlayer::filter_by_name(&name).is_some() {
             Err("Name is taken".to_string())
         } else {
             Ok(name)
@@ -156,21 +162,21 @@ impl TUser {
             Err(e) => Err(e.to_string()),
         }
     }
-    pub fn find_by_identity(identity: &Identity) -> Result<TUser, String> {
-        TUser::iter()
+    pub fn find_by_identity(identity: &Identity) -> Result<TPlayer, String> {
+        TPlayer::iter()
             .find(|u| u.identities.contains(identity))
-            .context_str("User not found")
+            .context_str("Player not found")
     }
     fn login(mut self) {
         self.online = true;
         self.last_login = Timestamp::now();
         GlobalEvent::LogIn.post(self.id);
-        TUser::update_by_id(&self.id.clone(), self);
+        TPlayer::update_by_id(&self.id.clone(), self);
     }
     fn logout(&mut self) {
         self.online = false;
         if self.last_login.into_micros_since_epoch() > 0 {
-            TUserStats::register_time_played(
+            TPlayerStats::register_time_played(
                 self.id,
                 Timestamp::now()
                     .duration_since(self.last_login)
@@ -180,29 +186,29 @@ impl TUser {
         }
     }
     fn clear_identity(identity: &Identity) {
-        if let Ok(mut user) = TUser::find_by_identity(identity) {
-            user.remove_identity(identity);
-            TUser::update_by_id(&user.id.clone(), user);
+        if let Ok(mut player) = TPlayer::find_by_identity(identity) {
+            player.remove_identity(identity);
+            TPlayer::update_by_id(&player.id.clone(), player);
         }
     }
     fn remove_identity(&mut self, identity: &Identity) {
         self.identities.retain(|i| !i.eq(identity));
     }
     pub fn cleanup() {
-        for user in TUser::iter() {
-            if user.identities.is_empty() && user.pass_hash.is_none() {
-                user.delete();
+        for player in TPlayer::iter() {
+            if player.identities.is_empty() && player.pass_hash.is_none() {
+                player.delete();
             }
         }
     }
 }
 
-pub trait GetUser {
-    fn user(&self) -> Result<TUser, String>;
+pub trait GetPlayer {
+    fn player(&self) -> Result<TPlayer, String>;
 }
 
-impl GetUser for ReducerContext {
-    fn user(&self) -> Result<TUser, String> {
-        TUser::find_by_identity(&self.sender)
+impl GetPlayer for ReducerContext {
+    fn player(&self) -> Result<TPlayer, String> {
+        TPlayer::find_by_identity(&self.sender)
     }
 }

@@ -4,7 +4,7 @@ pub struct PlayersPlugin;
 
 #[derive(Resource, Default)]
 struct PlayersResource {
-    players: Vec<TUser>,
+    players: Vec<TPlayer>,
     season: u32,
     mode: GameMode,
 }
@@ -12,7 +12,7 @@ struct PlayersResource {
 impl PlayersPlugin {
     fn load(world: &mut World) {
         let pr = PlayersResource {
-            players: TUser::iter().sorted_by_key(|d| d.id).collect_vec(),
+            players: TPlayer::iter().sorted_by_key(|d| d.id).collect_vec(),
             season: global_settings().season,
             ..default()
         };
@@ -21,14 +21,14 @@ impl PlayersPlugin {
     pub fn add_tiles(world: &mut World) {
         Self::load(world);
         Tile::new(Side::Left, |ui, world| {
-            fn get_game_stats(id: u64, mode: u64, season: u32) -> Option<TUserGameStats> {
+            fn get_game_stats(id: u64, mode: u64, season: u32) -> Option<TPlayerGameStats> {
                 let mode: GameMode = mode.into();
-                TUserGameStats::filter_by_owner(id)
+                TPlayerGameStats::filter_by_owner(id)
                     .filter(|d| d.season == season && d.mode.weak_eq(&mode))
                     .next()
             }
-            fn get_user_stats(id: u64, season: u32) -> Option<TUserStats> {
-                TUserStats::filter_by_owner(id).find(|d| d.season == season)
+            fn get_user_stats(id: u64, season: u32) -> Option<TPlayerStats> {
+                TPlayerStats::filter_by_owner(id).find(|d| d.season == season)
             }
             world.resource_scope(|world, mut r: Mut<PlayersResource>| {
                 season_switcher(&mut r.season, ui);
@@ -36,7 +36,7 @@ impl PlayersPlugin {
                 let mode: u64 = r.mode.clone().into();
                 let season = r.season;
                 Table::new("Players")
-                    .column_user_click("name", |d: &TUser| d.id)
+                    .column_user_click("name", |d: &TPlayer| d.id)
                     .column_cstr("online", |d, _| {
                         if d.online {
                             "online".cstr_c(VISIBLE_LIGHT)
@@ -70,18 +70,33 @@ impl PlayersPlugin {
                         }),
                     )
                     .column_int_dyn(
+                        "runs",
+                        Box::new(move |u| {
+                            get_game_stats(u.id, mode, season)
+                                .map(|d| d.runs as i32)
+                                .unwrap_or_default()
+                        }),
+                    )
+                    .column_int_dyn(
                         "top floor",
                         Box::new(move |u| {
                             get_game_stats(u.id, mode, season)
-                                .map(|d| d.runs_max_floor)
-                                .unwrap_or_default() as i32
+                                .map(|d| d.floors.len() as i32 - 1)
+                                .unwrap_or_default()
                         }),
                     )
                     .column_float_dyn(
                         "avg floor",
                         Box::new(move |u| {
                             get_game_stats(u.id, mode, season)
-                                .map(|d| d.runs_floors as f32 / d.runs_played as f32)
+                                .map(|d| {
+                                    d.floors
+                                        .into_iter()
+                                        .enumerate()
+                                        .map(|(i, c)| i as f32 * c as f32)
+                                        .sum::<f32>()
+                                        / d.runs as f32
+                                })
                                 .unwrap_or_default()
                         }),
                     )

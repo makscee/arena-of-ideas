@@ -18,7 +18,7 @@ pub enum StdbTable {
 
     TTrade,
 
-    TUser,
+    TPlayer,
     TQuest,
     TArenaRun,
     TArenaRunArchive,
@@ -36,8 +36,8 @@ pub enum StdbTable {
     TIncubator,
     TIncubatorVote,
     TIncubatorFavorite,
-    TUserStats,
-    TUserGameStats,
+    TPlayerStats,
+    TPlayerGameStats,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -99,7 +99,7 @@ impl StdbQuery {
         }
     }
     pub fn queries_login() -> Vec<StdbQuery> {
-        [StdbTable::TUser.full(), StdbTable::GlobalData.full()].into()
+        [StdbTable::TPlayer.full(), StdbTable::GlobalData.full()].into()
     }
     pub fn queries_game() -> Vec<StdbQuery> {
         StdbTable::iter().map(|t| t.owner()).collect_vec()
@@ -107,7 +107,7 @@ impl StdbQuery {
     fn query(self) -> String {
         let table = self.table.as_ref();
         let mut q = format!("select * from {table} ");
-        let uid = user_id();
+        let uid = player_id();
         match self.condition {
             StdbCondition::Full => {}
             StdbCondition::Owner => q.push_str(&format!("where owner = {uid}")),
@@ -117,7 +117,7 @@ impl StdbQuery {
                 q.push_str(&format!("where {conditions}"));
             }
             StdbCondition::OwnerMacro(m) => {
-                let m = m.replace("{uid}", &user_id().to_string());
+                let m = m.replace("{uid}", &player_id().to_string());
                 q.push_str(&format!("where {m}"));
             }
         };
@@ -205,8 +205,8 @@ impl StdbTable {
                     .unwrap()
                     .0;
             }
-            StdbTable::TUser => {
-                data.user = serde_json::from_str::<DeserializeWrapper<Vec<TUser>>>(json)
+            StdbTable::TPlayer => {
+                data.player = serde_json::from_str::<DeserializeWrapper<Vec<TPlayer>>>(json)
                     .unwrap()
                     .0;
             }
@@ -304,14 +304,15 @@ impl StdbTable {
                         .unwrap()
                         .0;
             }
-            StdbTable::TUserStats => {
-                data.user_stats = serde_json::from_str::<DeserializeWrapper<Vec<TUserStats>>>(json)
-                    .unwrap()
-                    .0;
+            StdbTable::TPlayerStats => {
+                data.player_stats =
+                    serde_json::from_str::<DeserializeWrapper<Vec<TPlayerStats>>>(json)
+                        .unwrap()
+                        .0;
             }
-            StdbTable::TUserGameStats => {
-                data.user_game_stats =
-                    serde_json::from_str::<DeserializeWrapper<Vec<TUserGameStats>>>(json)
+            StdbTable::TPlayerGameStats => {
+                data.player_game_stats =
+                    serde_json::from_str::<DeserializeWrapper<Vec<TPlayerGameStats>>>(json)
                         .unwrap()
                         .0;
             }
@@ -343,8 +344,8 @@ impl StdbTable {
             StdbTable::TTrade => {
                 to_string_pretty(&SerializeWrapper::new(TTrade::iter().collect_vec()))
             }
-            StdbTable::TUser => {
-                to_string_pretty(&SerializeWrapper::new(TUser::iter().collect_vec()))
+            StdbTable::TPlayer => {
+                to_string_pretty(&SerializeWrapper::new(TPlayer::iter().collect_vec()))
             }
             StdbTable::TQuest => {
                 to_string_pretty(&SerializeWrapper::new(TQuest::iter().collect_vec()))
@@ -397,12 +398,12 @@ impl StdbTable {
             StdbTable::TIncubatorFavorite => to_string_pretty(&SerializeWrapper::new(
                 TIncubatorFavorite::iter().collect_vec(),
             )),
-            StdbTable::TUserStats => {
-                to_string_pretty(&SerializeWrapper::new(TUserStats::iter().collect_vec()))
+            StdbTable::TPlayerStats => {
+                to_string_pretty(&SerializeWrapper::new(TPlayerStats::iter().collect_vec()))
             }
-            StdbTable::TUserGameStats => {
-                to_string_pretty(&SerializeWrapper::new(TUserGameStats::iter().collect_vec()))
-            }
+            StdbTable::TPlayerGameStats => to_string_pretty(&SerializeWrapper::new(
+                TPlayerGameStats::iter().collect_vec(),
+            )),
         }
         .unwrap()
     }
@@ -424,18 +425,18 @@ impl StdbTable {
             | StdbTable::TBattle
             | StdbTable::TAuction
             | StdbTable::TTeam
-            | StdbTable::TUser
+            | StdbTable::TPlayer
             | StdbTable::TArenaRunArchive
             | StdbTable::TIncubator
             | StdbTable::TIncubatorVote
             | StdbTable::TIncubatorFavorite
-            | StdbTable::TUserStats
-            | StdbTable::TUserGameStats
+            | StdbTable::TPlayerStats
+            | StdbTable::TPlayerGameStats
             | StdbTable::TMetaShop => self.full(),
 
             StdbTable::TTrade => StdbQuery {
                 table: self,
-                condition: StdbCondition::OwnerMacro("a_user = {uid} or b_user = {uid}".into()),
+                condition: StdbCondition::OwnerMacro("a_player = {uid} or b_player = {uid}".into()),
             },
 
             StdbTable::TUnitItem | StdbTable::TQuest => StdbQuery {

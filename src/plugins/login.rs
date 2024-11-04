@@ -23,18 +23,18 @@ impl Plugin for LoginPlugin {
 struct LoginData {
     name_field: String,
     pass_field: String,
-    identity_user: Option<TUser>,
+    identity_user: Option<TPlayer>,
 }
 
 impl LoginPlugin {
     fn login(world: &mut World) {
         let co = ConnectOption::get(world);
         let mut identity_user = None;
-        if let Some(user) = TUser::iter().find(|u| u.identities.contains(&co.creds.identity)) {
+        if let Some(player) = TPlayer::iter().find(|u| u.identities.contains(&co.creds.identity)) {
             if currently_fulfilling() == GameOption::ForceLogin {
-                Self::complete(user.clone(), world);
+                Self::complete(player.clone(), world);
             }
-            identity_user = Some(user);
+            identity_user = Some(player);
         }
         world.insert_resource(LoginData {
             name_field: default(),
@@ -42,8 +42,8 @@ impl LoginPlugin {
             identity_user,
         });
     }
-    fn complete(user: TUser, world: &mut World) {
-        LoginOption { user }.save(world);
+    fn complete(player: TPlayer, world: &mut World) {
+        LoginOption { player }.save(world);
         StdbQuery::subscribe(StdbQuery::queries_game(), move |world| {
             GameAssets::cache_tables();
             GameState::proceed(world);
@@ -109,8 +109,8 @@ impl LoginPlugin {
         center_window("login", ui, |ui| {
             ui.vertical_centered_justified(|ui| {
                 let mut ld = world.resource_mut::<LoginData>();
-                if let Some(user) = ld.identity_user.clone() {
-                    format!("Login as {}", user.name)
+                if let Some(player) = ld.identity_user.clone() {
+                    format!("Login as {}", player.name)
                         .cstr_cs(VISIBLE_LIGHT, CstrStyle::Heading2)
                         .label(ui);
                     if Button::click("Login").ui(ui).clicked() {
@@ -119,7 +119,7 @@ impl LoginPlugin {
                             match status {
                                 spacetimedb_sdk::reducer::Status::Committed => {
                                     OperationsPlugin::add(|world| {
-                                        Self::complete(user, world);
+                                        Self::complete(player, world);
                                     });
                                 }
                                 spacetimedb_sdk::reducer::Status::Failed(e) => {
@@ -146,9 +146,10 @@ impl LoginPlugin {
                                     Notification::new_string("New player created".to_owned())
                                         .push(world);
                                     let identity = ConnectOption::get(world).creds.identity.clone();
-                                    let user = TUser::find(|u| u.identities.contains(&identity))
-                                        .expect("Failed to find user after registration");
-                                    world.resource_mut::<LoginData>().identity_user = Some(user);
+                                    let player =
+                                        TPlayer::find(|u| u.identities.contains(&identity))
+                                            .expect("Failed to find player after registration");
+                                    world.resource_mut::<LoginData>().identity_user = Some(player);
                                 })
                             }
                             spacetimedb_sdk::reducer::Status::Failed(e) => {
@@ -170,9 +171,9 @@ impl LoginPlugin {
                         once_on_login(|_, _, status, name, _| match status {
                             spacetimedb_sdk::reducer::Status::Committed => {
                                 let name = name.clone();
-                                let user = TUser::find_by_name(name).unwrap();
+                                let player = TPlayer::find_by_name(name).unwrap();
                                 OperationsPlugin::add(|world| {
-                                    Self::complete(user, world);
+                                    Self::complete(player, world);
                                 });
                             }
                             spacetimedb_sdk::reducer::Status::Failed(e) => {

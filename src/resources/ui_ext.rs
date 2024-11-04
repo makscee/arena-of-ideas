@@ -166,7 +166,7 @@ impl ShowTable<TArenaLeaderboard> for Vec<TArenaLeaderboard> {
     ) -> TableState {
         let mut t = Table::new(name)
             .column_int("flr", |d: &TArenaLeaderboard| d.floor as i32)
-            .column_user_click("owner", |d| d.user)
+            .column_user_click("owner", |d| d.owner)
             .column_team("team", |d| d.team)
             .column_ts("time", |d| d.ts)
             .column_cstr("mode", |d, _| d.mode.cstr_expanded());
@@ -314,7 +314,7 @@ pub trait Show {
     fn show(&self, ui: &mut Ui, world: &mut World);
 }
 
-impl Show for TUser {
+impl Show for TPlayer {
     fn show(&self, ui: &mut Ui, _: &mut World) {
         text_dots_text(
             "name".cstr(),
@@ -341,7 +341,7 @@ impl Show for TTeam {
         if !self.name.is_empty() {
             text_dots_text("name".cstr(), self.name.cstr_c(VISIBLE_LIGHT), ui);
         }
-        text_dots_text("owner".cstr(), self.owner.get_user().cstr(), ui);
+        text_dots_text("owner".cstr(), self.owner.get_player().cstr(), ui);
         text_dots_text("gid".cstr(), self.id.to_string().cstr_c(VISIBLE_LIGHT), ui);
         ui.push_id(self.id, |ui| {
             self.units.show_table("Units", ui, world);

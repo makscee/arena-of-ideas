@@ -18,6 +18,9 @@ use super::t_incubator_favorite::TIncubatorFavorite;
 use super::t_incubator_vote::TIncubatorVote;
 use super::t_lootbox_item::TLootboxItem;
 use super::t_meta_shop::TMetaShop;
+use super::t_player::TPlayer;
+use super::t_player_game_stats::TPlayerGameStats;
+use super::t_player_stats::TPlayerStats;
 use super::t_quest::TQuest;
 use super::t_rainbow_shard_item::TRainbowShardItem;
 use super::t_status::TStatus;
@@ -26,9 +29,6 @@ use super::t_trade::TTrade;
 use super::t_unit_balance::TUnitBalance;
 use super::t_unit_item::TUnitItem;
 use super::t_unit_shard_item::TUnitShardItem;
-use super::t_user::TUser;
-use super::t_user_game_stats::TUserGameStats;
-use super::t_user_stats::TUserStats;
 use super::t_wallet::TWallet;
 use spacetimedb_sdk::{
     anyhow::{anyhow, Result},
@@ -63,9 +63,9 @@ pub struct GameData {
     pub unit_balance: Vec<TUnitBalance>,
     pub unit_item: Vec<TUnitItem>,
     pub unit_shard_item: Vec<TUnitShardItem>,
-    pub user: Vec<TUser>,
-    pub user_stats: Vec<TUserStats>,
-    pub user_game_stats: Vec<TUserGameStats>,
+    pub player: Vec<TPlayer>,
+    pub player_stats: Vec<TPlayerStats>,
+    pub player_game_stats: Vec<TPlayerGameStats>,
     pub wallet: Vec<TWallet>,
     pub incubator: Vec<TIncubator>,
     pub incubator_vote: Vec<TIncubatorVote>,

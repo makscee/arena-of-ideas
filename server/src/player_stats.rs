@@ -2,7 +2,7 @@ use super::*;
 
 #[spacetimedb(table(public))]
 #[derive(Default)]
-pub struct TUserStats {
+pub struct TPlayerStats {
     #[primarykey]
     id: u64,
     season: u32,
@@ -14,19 +14,18 @@ pub struct TUserStats {
 
 #[spacetimedb(table(public))]
 #[derive(Default)]
-pub struct TUserGameStats {
+pub struct TPlayerGameStats {
     #[primarykey]
     id: u64,
     season: u32,
     owner: u64,
     mode: GameMode,
-    runs_played: u32,
-    runs_floors: u32,
-    runs_max_floor: u32,
+    runs: u32,
+    floors: Vec<u32>,
     champion: u32,
 }
 
-impl TUserStats {
+impl TPlayerStats {
     fn get_or_init(owner: u64) -> Self {
         let season = GlobalSettings::get().season;
         Self::filter_by_owner(&owner)
@@ -61,7 +60,7 @@ impl TUserStats {
     }
 }
 
-impl TUserGameStats {
+impl TPlayerGameStats {
     fn get_or_init(owner: u64, mode: GameMode) -> Self {
         let season = GlobalSettings::get().season;
         Self::filter_by_owner(&owner)
@@ -82,9 +81,12 @@ impl TUserGameStats {
     }
     pub fn register_run_end(owner: u64, mode: GameMode, floor: u32) {
         let mut stats = Self::get_or_init(owner, mode);
-        stats.runs_played += 1;
-        stats.runs_floors += floor;
-        stats.runs_max_floor = stats.runs_max_floor.max(floor);
+        stats.runs += 1;
+        let u = floor as usize;
+        if stats.floors.len() < u + 1 {
+            stats.floors.resize(u + 1, 0);
+        }
+        stats.floors[u] += 1;
         stats.save();
     }
     pub fn register_champion(owner: u64, mode: GameMode) {

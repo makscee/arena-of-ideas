@@ -349,7 +349,7 @@ impl BattlePlugin {
                 if team.id == 0 {
                     return;
                 }
-                text_dots_text("owner".cstr(), team.owner.get_user().cstr(), ui);
+                text_dots_text("owner".cstr(), team.owner.get_player().cstr(), ui);
                 if !team.name.is_empty() {
                     text_dots_text(
                         "team name".cstr(),

@@ -316,10 +316,10 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                         "...".cstr().label(ui);
                     } else {
                         if gid
-                            .get_user()
+                            .get_player()
                             .cstr()
                             .as_button()
-                            .active(gid == user_id())
+                            .active(gid == player_id())
                             .ui(ui)
                             .clicked()
                         {

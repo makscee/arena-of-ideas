@@ -114,19 +114,19 @@ pub struct Reward {
 
 #[spacetimedb(reducer)]
 fn run_start_normal(ctx: ReducerContext) -> Result<(), String> {
-    let user = ctx.user()?;
-    TArenaRun::start(user, GameMode::ArenaNormal)
+    let player = ctx.player()?;
+    TArenaRun::start(player, GameMode::ArenaNormal)
 }
 
 #[spacetimedb(reducer)]
 fn run_start_ranked(ctx: ReducerContext, team_id: u64) -> Result<(), String> {
-    let user = ctx.user()?;
-    let cost = TDailyState::get(user.id).buy_ranked();
-    TWallet::change(user.id, -cost)?;
-    let mut team = TTeam::get_owned(team_id, user.id)?;
+    let player = ctx.player()?;
+    let cost = TDailyState::get(player.id).buy_ranked();
+    TWallet::change(player.id, -cost)?;
+    let mut team = TTeam::get_owned(team_id, player.id)?;
     team.pool = TeamPool::Arena;
     let team = team.apply_limit().apply_empty_stat_bonus().save_clone();
-    TArenaRun::start(user, GameMode::ArenaRanked)?;
+    TArenaRun::start(player, GameMode::ArenaRanked)?;
     let mut run = TArenaRun::current(&ctx)?;
     run.team = team.id;
     run.save();
@@ -135,16 +135,16 @@ fn run_start_ranked(ctx: ReducerContext, team_id: u64) -> Result<(), String> {
 
 #[spacetimedb(reducer)]
 fn run_start_const(ctx: ReducerContext) -> Result<(), String> {
-    let user = ctx.user()?;
-    let cost = TDailyState::get(user.id).buy_const();
-    TWallet::change(user.id, -cost)?;
-    TArenaRun::start(user, GameMode::ArenaConst)
+    let player = ctx.player()?;
+    let cost = TDailyState::get(player.id).buy_const();
+    TWallet::change(player.id, -cost)?;
+    TArenaRun::start(player, GameMode::ArenaConst)
 }
 
 #[spacetimedb(reducer)]
 fn run_finish(ctx: ReducerContext) -> Result<(), String> {
     let run = TArenaRun::current(&ctx)?;
-    TUserGameStats::register_run_end(run.owner, run.mode.clone(), run.floor);
+    TPlayerGameStats::register_run_end(run.owner, run.mode.clone(), run.floor);
     let reward: i64 = run.rewards.iter().map(|r| r.amount).sum();
     TWallet::change(run.owner, reward)?;
     TArenaRun::delete_by_id(&run.id);
@@ -466,16 +466,16 @@ impl TArenaRun {
         c.update_boss();
         c
     }
-    fn start(user: TUser, mode: GameMode) -> Result<(), String> {
-        TArenaRun::delete_by_owner(&user.id);
-        GlobalEvent::RunStart(mode.clone()).post(user.id);
-        let mut run = TArenaRun::new(user.id, mode);
+    fn start(player: TPlayer, mode: GameMode) -> Result<(), String> {
+        TArenaRun::delete_by_owner(&player.id);
+        GlobalEvent::RunStart(mode.clone()).post(player.id);
+        let mut run = TArenaRun::new(player.id, mode);
         run.fill_case()?;
         TArenaRun::insert(run)?;
         Ok(())
     }
     fn current(ctx: &ReducerContext) -> Result<Self, String> {
-        Self::filter_by_owner(&ctx.user()?.id).context_str("No arena run in progress")
+        Self::filter_by_owner(&ctx.player()?.id).context_str("No arena run in progress")
     }
     fn buy(&mut self, slot: u8, price: i32) -> Result<String, String> {
         let s = self
@@ -666,7 +666,7 @@ impl TArenaRun {
         if self.floor >= self.boss_floor {
             if let Some(battle) = self.battles.last().and_then(|id| TBattle::filter_by_id(id)) {
                 if battle.result.is_win() {
-                    TUserGameStats::register_champion(self.owner, self.mode.clone());
+                    TPlayerGameStats::register_champion(self.owner, self.mode.clone());
                     let reward = match self.mode {
                         GameMode::ArenaNormal => 0,
                         GameMode::ArenaRanked | GameMode::ArenaConst => 100,

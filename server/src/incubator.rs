@@ -26,13 +26,13 @@ pub struct TIncubatorFavorite {
 
 #[spacetimedb(reducer)]
 fn incubator_post(ctx: ReducerContext, unit: TBaseUnit) -> Result<(), String> {
-    let user = ctx.user()?;
+    let player = ctx.player()?;
     if TBaseUnit::filter_by_name(&unit.name).is_some() {
         return Err(format!("Name {} already taken", unit.name));
     }
     TIncubator::insert(TIncubator {
         id: next_id(),
-        owner: user.id,
+        owner: player.id,
         unit: vec![unit],
     })?;
     Ok(())
@@ -40,13 +40,13 @@ fn incubator_post(ctx: ReducerContext, unit: TBaseUnit) -> Result<(), String> {
 
 #[spacetimedb(reducer)]
 fn incubator_update(ctx: ReducerContext, id: u64, unit: TBaseUnit) -> Result<(), String> {
-    let user = ctx.user()?;
+    let player = ctx.player()?;
     let mut i = TIncubator::filter_by_id(&id).context_str("Incubator entry not found")?;
-    if i.owner != user.id {
+    if i.owner != player.id {
         return Err(format!(
             "Incubator entry for {} not owned by {}",
             i.unit.last().unwrap().name,
-            user.id
+            player.id
         ));
     }
     i.unit.push(unit);
@@ -59,13 +59,13 @@ fn incubator_update(ctx: ReducerContext, id: u64, unit: TBaseUnit) -> Result<(),
 
 #[spacetimedb(reducer)]
 fn incubator_delete(ctx: ReducerContext, id: u64) -> Result<(), String> {
-    let user = ctx.user()?;
+    let player = ctx.player()?;
     let i = TIncubator::filter_by_id(&id).context_str("Incubator entry not found")?;
-    if i.owner != user.id {
+    if i.owner != player.id {
         return Err(format!(
             "Incubator entry for {} not owned by {}",
             i.unit.last().unwrap().name,
-            user.id
+            player.id
         ));
     }
     TIncubator::delete_by_id(&id);
@@ -76,14 +76,14 @@ fn incubator_delete(ctx: ReducerContext, id: u64) -> Result<(), String> {
 
 #[spacetimedb(reducer)]
 fn incubator_vote(ctx: ReducerContext, id: u64, vote: bool) -> Result<(), String> {
-    let user = ctx.user()?;
-    if let Some(mut i) = TIncubatorVote::filter_by_owner(&user.id).find(|d| d.target == id) {
+    let player = ctx.player()?;
+    if let Some(mut i) = TIncubatorVote::filter_by_owner(&player.id).find(|d| d.target == id) {
         i.vote = vote;
         TIncubatorVote::update_by_id(&i.id.clone(), i);
     } else {
         TIncubatorVote::insert(TIncubatorVote {
             id: next_id(),
-            owner: user.id,
+            owner: player.id,
             target: id,
             vote,
         })?;
@@ -93,10 +93,10 @@ fn incubator_vote(ctx: ReducerContext, id: u64, vote: bool) -> Result<(), String
 
 #[spacetimedb(reducer)]
 fn incubator_favorite(ctx: ReducerContext, id: u64) -> Result<(), String> {
-    let user = ctx.user()?;
-    TIncubatorFavorite::delete_by_owner(&user.id);
+    let player = ctx.player()?;
+    TIncubatorFavorite::delete_by_owner(&player.id);
     TIncubatorFavorite::insert(TIncubatorFavorite {
-        owner: user.id,
+        owner: player.id,
         target: id,
     })?;
     Ok(())

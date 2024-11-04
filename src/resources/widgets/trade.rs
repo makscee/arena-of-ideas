@@ -23,7 +23,7 @@ impl Trade {
             .with_context(|| format!("Tried to open absent trade #{id}"))
             .unwrap();
         popup("Trade", ctx, |ui| {
-            let items = if trade.a_user == user_id() {
+            let items = if trade.a_player == player_id() {
                 trade.a_offer
             } else {
                 trade.a_offer

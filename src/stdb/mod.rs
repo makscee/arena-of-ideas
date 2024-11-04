@@ -100,6 +100,9 @@ pub mod t_incubator_favorite;
 pub mod t_incubator_vote;
 pub mod t_lootbox_item;
 pub mod t_meta_shop;
+pub mod t_player;
+pub mod t_player_game_stats;
+pub mod t_player_stats;
 pub mod t_quest;
 pub mod t_rainbow_shard_item;
 pub mod t_status;
@@ -108,9 +111,6 @@ pub mod t_trade;
 pub mod t_unit_balance;
 pub mod t_unit_item;
 pub mod t_unit_shard_item;
-pub mod t_user;
-pub mod t_user_game_stats;
-pub mod t_user_stats;
 pub mod t_wallet;
 pub mod team_add_unit_reducer;
 pub mod team_create_reducer;
@@ -205,6 +205,9 @@ pub use t_incubator_favorite::*;
 pub use t_incubator_vote::*;
 pub use t_lootbox_item::*;
 pub use t_meta_shop::*;
+pub use t_player::*;
+pub use t_player_game_stats::*;
+pub use t_player_stats::*;
 pub use t_quest::*;
 pub use t_rainbow_shard_item::*;
 pub use t_status::*;
@@ -213,9 +216,6 @@ pub use t_trade::*;
 pub use t_unit_balance::*;
 pub use t_unit_item::*;
 pub use t_unit_shard_item::*;
-pub use t_user::*;
-pub use t_user_game_stats::*;
-pub use t_user_stats::*;
 pub use t_wallet::*;
 pub use team_add_unit_reducer::*;
 pub use team_create_reducer::*;
@@ -385,6 +385,18 @@ impl SpacetimeModule for Module {
                     callbacks,
                     table_update,
                 ),
+            "TPlayer" => client_cache
+                .handle_table_update_with_primary_key::<t_player::TPlayer>(callbacks, table_update),
+            "TPlayerGameStats" => client_cache
+                .handle_table_update_with_primary_key::<t_player_game_stats::TPlayerGameStats>(
+                    callbacks,
+                    table_update,
+                ),
+            "TPlayerStats" => client_cache
+                .handle_table_update_with_primary_key::<t_player_stats::TPlayerStats>(
+                    callbacks,
+                    table_update,
+                ),
             "TQuest" => client_cache
                 .handle_table_update_with_primary_key::<t_quest::TQuest>(callbacks, table_update),
             "TRainbowShardItem" => client_cache
@@ -410,18 +422,6 @@ impl SpacetimeModule for Module {
                 ),
             "TUnitShardItem" => client_cache
                 .handle_table_update_with_primary_key::<t_unit_shard_item::TUnitShardItem>(
-                    callbacks,
-                    table_update,
-                ),
-            "TUser" => client_cache
-                .handle_table_update_with_primary_key::<t_user::TUser>(callbacks, table_update),
-            "TUserGameStats" => client_cache
-                .handle_table_update_with_primary_key::<t_user_game_stats::TUserGameStats>(
-                    callbacks,
-                    table_update,
-                ),
-            "TUserStats" => client_cache
-                .handle_table_update_with_primary_key::<t_user_stats::TUserStats>(
                     callbacks,
                     table_update,
                 ),
@@ -482,6 +482,13 @@ impl SpacetimeModule for Module {
         );
         reminders.invoke_callbacks::<t_lootbox_item::TLootboxItem>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_meta_shop::TMetaShop>(worker, &reducer_event, state);
+        reminders.invoke_callbacks::<t_player::TPlayer>(worker, &reducer_event, state);
+        reminders.invoke_callbacks::<t_player_game_stats::TPlayerGameStats>(
+            worker,
+            &reducer_event,
+            state,
+        );
+        reminders.invoke_callbacks::<t_player_stats::TPlayerStats>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_quest::TQuest>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_rainbow_shard_item::TRainbowShardItem>(
             worker,
@@ -498,13 +505,6 @@ impl SpacetimeModule for Module {
             &reducer_event,
             state,
         );
-        reminders.invoke_callbacks::<t_user::TUser>(worker, &reducer_event, state);
-        reminders.invoke_callbacks::<t_user_game_stats::TUserGameStats>(
-            worker,
-            &reducer_event,
-            state,
-        );
-        reminders.invoke_callbacks::<t_user_stats::TUserStats>(worker, &reducer_event, state);
         reminders.invoke_callbacks::<t_wallet::TWallet>(worker, &reducer_event, state);
     }
     fn handle_event(
@@ -633,6 +633,15 @@ match &reducer_call.reducer_name[..] {
                 .handle_resubscribe_for_type::<t_lootbox_item::TLootboxItem>(callbacks, new_subs),
             "TMetaShop" => client_cache
                 .handle_resubscribe_for_type::<t_meta_shop::TMetaShop>(callbacks, new_subs),
+            "TPlayer" => {
+                client_cache.handle_resubscribe_for_type::<t_player::TPlayer>(callbacks, new_subs)
+            }
+            "TPlayerGameStats" => client_cache
+                .handle_resubscribe_for_type::<t_player_game_stats::TPlayerGameStats>(
+                    callbacks, new_subs,
+                ),
+            "TPlayerStats" => client_cache
+                .handle_resubscribe_for_type::<t_player_stats::TPlayerStats>(callbacks, new_subs),
             "TQuest" => {
                 client_cache.handle_resubscribe_for_type::<t_quest::TQuest>(callbacks, new_subs)
             }
@@ -657,15 +666,6 @@ match &reducer_call.reducer_name[..] {
                 .handle_resubscribe_for_type::<t_unit_shard_item::TUnitShardItem>(
                     callbacks, new_subs,
                 ),
-            "TUser" => {
-                client_cache.handle_resubscribe_for_type::<t_user::TUser>(callbacks, new_subs)
-            }
-            "TUserGameStats" => client_cache
-                .handle_resubscribe_for_type::<t_user_game_stats::TUserGameStats>(
-                    callbacks, new_subs,
-                ),
-            "TUserStats" => client_cache
-                .handle_resubscribe_for_type::<t_user_stats::TUserStats>(callbacks, new_subs),
             "TWallet" => {
                 client_cache.handle_resubscribe_for_type::<t_wallet::TWallet>(callbacks, new_subs)
             }
@@ -679,7 +679,7 @@ match &reducer_call.reducer_name[..] {
 /// Connect to a database named `db_name` accessible over the internet at the URI `spacetimedb_uri`.
 ///
 /// If `credentials` are supplied, they will be passed to the new connection to
-/// identify and authenticate the user. Otherwise, a set of `Credentials` will be
+/// identify and authenticate the player. Otherwise, a set of `Credentials` will be
 /// generated by the server.
 pub fn connect<IntoUri>(
     spacetimedb_uri: IntoUri,

@@ -16,8 +16,8 @@ use spacetimedb_sdk::{
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct TTrade {
     pub id: u64,
-    pub a_user: u64,
-    pub b_user: u64,
+    pub a_player: u64,
+    pub b_player: u64,
     pub a_offer: ItemBundle,
     pub b_offer: ItemBundle,
     pub a_accepted: bool,
@@ -46,12 +46,12 @@ impl TTrade {
         Self::find(|row| row.id == id)
     }
     #[allow(unused)]
-    pub fn filter_by_a_user(a_user: u64) -> TableIter<Self> {
-        Self::filter(|row| row.a_user == a_user)
+    pub fn filter_by_a_player(a_player: u64) -> TableIter<Self> {
+        Self::filter(|row| row.a_player == a_player)
     }
     #[allow(unused)]
-    pub fn filter_by_b_user(b_user: u64) -> TableIter<Self> {
-        Self::filter(|row| row.b_user == b_user)
+    pub fn filter_by_b_player(b_player: u64) -> TableIter<Self> {
+        Self::filter(|row| row.b_player == b_player)
     }
     #[allow(unused)]
     pub fn filter_by_a_accepted(a_accepted: bool) -> TableIter<Self> {
