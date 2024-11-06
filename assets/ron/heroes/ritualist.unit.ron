@@ -7,8 +7,8 @@
     houses: ["Warlocks"],
     trigger: Fire(
         triggers: [(BattleStart, None)],
-        targets: [(SlotUnit(I(0)), "front ally")],
-        effects: [(UseAbility("Doom", 0), None)],
+        targets: [(RandomUnit(AdjacentUnits), Some("random adjacent ally"))],
+        effects: [(UseAbility("Ritual", 0), None)],
     ),
     representation: (
         material: Shape(
