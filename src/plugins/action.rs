@@ -127,12 +127,13 @@ impl ActionPlugin {
         Ok(processed)
     }
     fn calculate_deafness(entity: Entity, world: &mut World) {
-        let r = rm(world);
-        let chain = r.chain.get(&entity).copied().unwrap_or_default();
-        let bs = global_settings().battle;
-        let chance = ((chain as f32 - bs.deafness_start as f32 * 0.0) * bs.deafness_per_turn)
-            .clamp(0.0, 1.0);
-        VarState::get_mut(entity, world).set_float(VarName::Deafness, chance);
+        let chain = rm(world).chain.get(&entity).copied().unwrap_or_default();
+        if let Ok(mut state) = VarState::try_get_mut(entity, world) {
+            let bs = global_settings().battle;
+            let chance = ((chain as f32 - bs.deafness_start as f32 * 0.0) * bs.deafness_per_turn)
+                .clamp(0.0, 1.0);
+            state.set_float(VarName::Deafness, chance);
+        }
     }
     fn deafness(entity: Entity, world: &mut World) -> bool {
         let chance = VarState::get(entity, world)

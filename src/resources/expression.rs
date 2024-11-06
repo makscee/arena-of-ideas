@@ -748,7 +748,6 @@ impl ShowEditor for Expression {
             | Expression::Ctx(e)
             | Expression::ToI(e)
             | Expression::ToF(e)
-            | Expression::ToF(e)
             | Expression::Vec2E(e)
             | Expression::UnitVec(e)
             | Expression::VX(e)

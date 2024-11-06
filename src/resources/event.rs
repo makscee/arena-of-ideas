@@ -33,6 +33,7 @@ pub enum Event {
     },
     Summon(Entity),
     UseAbility(String),
+    ApplyStatus(String),
 }
 
 impl Event {
@@ -52,7 +53,8 @@ impl Event {
             | Event::TurnEnd
             | Event::Death(..)
             | Event::Summon(..)
-            | Event::UseAbility(..) => {
+            | Event::UseAbility(..)
+            | Event::ApplyStatus(..) => {
                 let mut units = UnitPlugin::collect_alive(world);
                 units.sort_by_key(|e| {
                     Context::new(*e)
@@ -173,8 +175,8 @@ impl ToCstr for Event {
                         .take(),
                 );
             }
-            Event::UseAbility(ability) => {
-                s.push_wrapped_circ(ability.cstr_c(name_color(ability)));
+            Event::UseAbility(name) | Event::ApplyStatus(name) => {
+                s.push_wrapped_circ(name.cstr_c(name_color(name)));
             }
         }
         s

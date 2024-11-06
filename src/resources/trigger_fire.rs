@@ -10,6 +10,7 @@ pub enum FireTrigger {
     UnitUsedAbility(String),
     AllyUsedAbility(String),
     EnemyUsedAbility(String),
+    StatusReceived(Option<String>, Option<i32>),
     If(Expression, Box<FireTrigger>),
     AfterIncomingDamage,
     AfterDamageTaken,
@@ -85,6 +86,21 @@ impl FireTrigger {
                 }
                 _ => false,
             },
+            FireTrigger::StatusReceived(name, polarity) => match event {
+                Event::ApplyStatus(e_name) => {
+                    name.clone()
+                        .and_then(|n| Some(n.eq(e_name)))
+                        .unwrap_or(true)
+                        && polarity
+                            .and_then(|p| {
+                                Some(
+                                    p as i8 == game_assets().statuses.get(e_name).unwrap().polarity,
+                                )
+                            })
+                            .unwrap_or(true)
+                }
+                _ => false,
+            },
             FireTrigger::BeforeDeath => match event {
                 Event::Death(dead) => dead.eq(&context.owner()),
                 _ => false,
@@ -138,6 +154,7 @@ impl ShowEditor for FireTrigger {
             | FireTrigger::UnitUsedAbility(..)
             | FireTrigger::AllyUsedAbility(..)
             | FireTrigger::EnemyUsedAbility(..)
+            | FireTrigger::StatusReceived(..)
             | FireTrigger::AfterIncomingDamage
             | FireTrigger::AfterDamageTaken
             | FireTrigger::AfterDamageDealt
@@ -173,6 +190,52 @@ impl ShowEditor for FireTrigger {
                     l.push(default());
                 }
             }
+            FireTrigger::StatusReceived(name, polarity) => {
+                let mut v = name.is_some();
+                if Checkbox::new(&mut v, "name").ui(ui).changed() {
+                    if v {
+                        *name = Some(default());
+                    } else {
+                        *name = None;
+                    }
+                }
+                if let Some(name) = name {
+                    status_selector(name, ui);
+                }
+                let mut v = polarity.is_some();
+                if Checkbox::new(&mut v, "polarity").ui(ui).changed() {
+                    if v {
+                        *polarity = Some(1);
+                    } else {
+                        *polarity = None;
+                    }
+                }
+                if let Some(polarity) = polarity {
+                    if Button::click("negative")
+                        .red(ui)
+                        .active(*polarity == -1)
+                        .ui(ui)
+                        .clicked()
+                    {
+                        *polarity = -1;
+                    }
+                    if Button::click("neutral")
+                        .active(*polarity == 0)
+                        .ui(ui)
+                        .clicked()
+                    {
+                        *polarity = 0;
+                    }
+                    if Button::click("positive")
+                        .color(GREEN, ui)
+                        .active(*polarity == 1)
+                        .ui(ui)
+                        .clicked()
+                    {
+                        *polarity = 1;
+                    }
+                }
+            }
             FireTrigger::If(..)
             | FireTrigger::None
             | FireTrigger::AfterIncomingDamage
@@ -201,6 +264,7 @@ impl ShowEditor for FireTrigger {
             | FireTrigger::UnitUsedAbility(_)
             | FireTrigger::AllyUsedAbility(_)
             | FireTrigger::EnemyUsedAbility(_)
+            | FireTrigger::StatusReceived(..)
             | FireTrigger::AfterIncomingDamage
             | FireTrigger::AfterDamageTaken
             | FireTrigger::AfterDamageDealt
@@ -231,7 +295,8 @@ impl ToCstr for FireTrigger {
             }
             FireTrigger::UnitUsedAbility(_)
             | FireTrigger::AllyUsedAbility(_)
-            | FireTrigger::EnemyUsedAbility(_) => PURPLE,
+            | FireTrigger::EnemyUsedAbility(_)
+            | FireTrigger::StatusReceived(..) => PURPLE,
             FireTrigger::If(_, _) => CYAN,
 
             FireTrigger::AfterIncomingDamage
@@ -277,6 +342,25 @@ impl ToCstr for FireTrigger {
                 .to_case(Case::Lower)
                 .cstr_c(VISIBLE_LIGHT)
                 .push(format!(" {name}").cstr_cs(name_color(name), CstrStyle::Bold))
+                .take(),
+            FireTrigger::StatusReceived(name, polarity) => self
+                .as_ref()
+                .to_case(Case::Lower)
+                .cstr_c(VISIBLE_LIGHT)
+                .push_wrapped_circ(if let Some(name) = name {
+                    format!("{name}").cstr_cs(name_color(name), CstrStyle::Bold)
+                } else {
+                    let mut c = "any".cstr_c(VISIBLE_LIGHT);
+                    if let Some(polarity) = polarity {
+                        c.push(match polarity {
+                            1 => " positive".cstr_c(GREEN),
+                            0 => " neutral".cstr_c(VISIBLE_LIGHT),
+                            -1 => " negative".cstr_c(RED),
+                            _ => panic!(),
+                        });
+                    }
+                    c
+                })
                 .take(),
             FireTrigger::None
             | FireTrigger::AfterIncomingDamage

@@ -143,6 +143,9 @@ impl Effect {
             }
             Effect::ChangeStatus(name) => {
                 let delta = context.get_charges(world).unwrap_or(1);
+                if delta > 0 {
+                    Event::ApplyStatus(name.into()).send_with_context(context.clone(), world);
+                }
                 Status::change_charges_with_text(name, context.get_target()?, delta, world);
             }
             Effect::ChangeAllStatuses => {
