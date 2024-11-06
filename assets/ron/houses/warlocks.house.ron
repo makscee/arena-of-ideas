@@ -35,13 +35,18 @@
     abilities: [
         (
             name: "Doom",
-            description: "Kill target in 5 turns then summon friendly [Doomguard]",
+            description: "Kill target in 5 turns then summon allied [Doomguard]",
             effect: List(
                 [
                     WithVar(Charges, I(5), List([Vfx("apply_status"), ChangeStatus("Doom")])),
                     StatusSetVar(Target, "Doom", Faction, Context(Faction)),
                 ],
             ),
+        ),
+        (
+            name: "Ritual",
+            description: "Kill self and target, summon [Doomguard]",
+            effect: List([WithTarget(Owner, Kill), Kill, Summon("Doomguard", None)]),
         ),
     ],
     summons: [

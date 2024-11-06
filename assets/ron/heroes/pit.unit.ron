@@ -1,0 +1,38 @@
+#![enable(implicit_some)]
+(
+    name: "Pit",
+    pwr: 1,
+    hp: 1,
+    rarity: 1,
+    houses: ["Warlocks"],
+    representation: (
+        material: Shape(
+            shape: Circle(radius: F(0.7)),
+            shape_type: Line(thickness: F(1.0)),
+            fill: Solid(color: OwnerState(Color)),
+            fbm: Some(
+                (
+                    octaves: I(2),
+                    lacunarity: F(5.3),
+                    gain: F(2.0),
+                    strength: Mul(Abs(Sin(Sum(GT, Mul(Index, F(10.0))))), F(2.0)),
+                    offset: Zero,
+                ),
+            ),
+            alpha: F(1.0),
+            padding: F(0.0),
+        ),
+        mapping: {
+            Offset: Mul(
+                UnitVec(Sum(GT, Mul(OwnerState(Index), Sum(F(1.04), Mul(Sin(GT), F(0.24)))))),
+                F(0.1),
+            ),
+        },
+        count: 6,
+    ),
+    trigger: Fire(
+        triggers: [(StatusReceived(None, Some(-1)), None)],
+        targets: [(Caster, None)],
+        effects: [(UseAbility("Ritual", 0), None)],
+    ),
+)
