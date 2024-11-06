@@ -1,9 +1,22 @@
-use ability::TAbility;
-use auction::TAuction;
-use base_unit::TBaseUnit;
-use house::THouse;
-
-use status::TStatus;
+use ability::ability;
+use arena_leaderboard::arena_leaderboard;
+use auction::auction;
+use base_unit::base_unit;
+use battle::battle;
+use daily_state::daily_state;
+use global_data::global_data;
+use house::house;
+use incubator::incubator;
+use meta_shop::meta_shop;
+use player::player;
+use player_stats::player_stats;
+use quest::quest;
+use spacetimedb::Table;
+use status::status;
+use team::team;
+use trade::trade;
+use unit_balance::unit_balance;
+use wallet::wallet;
 
 use super::*;
 
@@ -39,19 +52,7 @@ struct GameData {
     incubator_favorite: Vec<TIncubatorFavorite>,
 }
 
-fn replace<E: TableType>(data: Vec<E>) {
-    if data.is_empty() {
-        return;
-    }
-    for r in E::iter() {
-        r.delete();
-    }
-    for r in data {
-        E::insert(r);
-    }
-}
-
-fn replace_assets(data: GameData) -> Result<(), String> {
+fn replace_assets(ctx: &ReducerContext, data: GameData) -> Result<(), String> {
     let GameData {
         mut global_data,
         mut global_settings,
@@ -83,61 +84,247 @@ fn replace_assets(data: GameData) -> Result<(), String> {
         player_game_stats,
     } = data;
     if !global_settings.is_empty() {
-        global_settings.remove(0).replace();
+        global_settings.remove(0).replace(ctx);
     }
     if !global_data.is_empty() {
-        GlobalData::delete_by_always_zero(&0);
-        GlobalData::insert(global_data.remove(0)).unwrap();
+        ctx.db.global_data().always_zero().delete(0);
+        ctx.db.global_data().insert(global_data.remove(0));
     }
-    replace(ability);
-    replace(arena_leaderboard);
-    replace(arena_run);
-    replace(arena_run_archive);
-    replace(auction);
-    replace(base_unit);
-    replace(battle);
-    replace(daily_state);
-    replace(house);
-    replace(lootbox_item);
-    replace(meta_shop);
-    replace(quest);
-    replace(rainbow_shard_item);
-    replace(status);
-    replace(team);
-    replace(trade);
-    replace(unit_balance);
-    replace(unit_item);
-    replace(unit_shard_item);
-    replace(player);
-    replace(wallet);
-    replace(incubator);
-    replace(incubator_vote);
-    replace(incubator_favorite);
-    replace(player_stats);
-    replace(player_game_stats);
+    if !ability.is_empty() {
+        for d in ctx.db.ability().iter() {
+            ctx.db.ability().delete(d);
+        }
+        for d in ability {
+            ctx.db.ability().insert(d);
+        }
+    }
+    if !arena_leaderboard.is_empty() {
+        for d in ctx.db.arena_leaderboard().iter() {
+            ctx.db.arena_leaderboard().delete(d);
+        }
+        for d in arena_leaderboard {
+            ctx.db.arena_leaderboard().insert(d);
+        }
+    }
+    if !arena_run.is_empty() {
+        for d in ctx.db.arena_run().iter() {
+            ctx.db.arena_run().delete(d);
+        }
+        for d in arena_run {
+            ctx.db.arena_run().insert(d);
+        }
+    }
+    if !arena_run_archive.is_empty() {
+        for d in ctx.db.arena_run_archive().iter() {
+            ctx.db.arena_run_archive().delete(d);
+        }
+        for d in arena_run_archive {
+            ctx.db.arena_run_archive().insert(d);
+        }
+    }
+    if !auction.is_empty() {
+        for d in ctx.db.auction().iter() {
+            ctx.db.auction().delete(d);
+        }
+        for d in auction {
+            ctx.db.auction().insert(d);
+        }
+    }
+    if !base_unit.is_empty() {
+        for d in ctx.db.base_unit().iter() {
+            ctx.db.base_unit().delete(d);
+        }
+        for d in base_unit {
+            ctx.db.base_unit().insert(d);
+        }
+    }
+    if !battle.is_empty() {
+        for d in ctx.db.battle().iter() {
+            ctx.db.battle().delete(d);
+        }
+        for d in battle {
+            ctx.db.battle().insert(d);
+        }
+    }
+    if !daily_state.is_empty() {
+        for d in ctx.db.daily_state().iter() {
+            ctx.db.daily_state().delete(d);
+        }
+        for d in daily_state {
+            ctx.db.daily_state().insert(d);
+        }
+    }
+    if !house.is_empty() {
+        for d in ctx.db.house().iter() {
+            ctx.db.house().delete(d);
+        }
+        for d in house {
+            ctx.db.house().insert(d);
+        }
+    }
+    if !lootbox_item.is_empty() {
+        for d in ctx.db.lootbox_item().iter() {
+            ctx.db.lootbox_item().delete(d);
+        }
+        for d in lootbox_item {
+            ctx.db.lootbox_item().insert(d);
+        }
+    }
+    if !meta_shop.is_empty() {
+        for d in ctx.db.meta_shop().iter() {
+            ctx.db.meta_shop().delete(d);
+        }
+        for d in meta_shop {
+            ctx.db.meta_shop().insert(d);
+        }
+    }
+    if !quest.is_empty() {
+        for d in ctx.db.quest().iter() {
+            ctx.db.quest().delete(d);
+        }
+        for d in quest {
+            ctx.db.quest().insert(d);
+        }
+    }
+    if !rainbow_shard_item.is_empty() {
+        for d in ctx.db.rainbow_shard_item().iter() {
+            ctx.db.rainbow_shard_item().delete(d);
+        }
+        for d in rainbow_shard_item {
+            ctx.db.rainbow_shard_item().insert(d);
+        }
+    }
+    if !status.is_empty() {
+        for d in ctx.db.status().iter() {
+            ctx.db.status().delete(d);
+        }
+        for d in status {
+            ctx.db.status().insert(d);
+        }
+    }
+    if !team.is_empty() {
+        for d in ctx.db.team().iter() {
+            ctx.db.team().delete(d);
+        }
+        for d in team {
+            ctx.db.team().insert(d);
+        }
+    }
+    if !trade.is_empty() {
+        for d in ctx.db.trade().iter() {
+            ctx.db.trade().delete(d);
+        }
+        for d in trade {
+            ctx.db.trade().insert(d);
+        }
+    }
+    if !unit_balance.is_empty() {
+        for d in ctx.db.unit_balance().iter() {
+            ctx.db.unit_balance().delete(d);
+        }
+        for d in unit_balance {
+            ctx.db.unit_balance().insert(d);
+        }
+    }
+    if !unit_item.is_empty() {
+        for d in ctx.db.unit_item().iter() {
+            ctx.db.unit_item().delete(d);
+        }
+        for d in unit_item {
+            ctx.db.unit_item().insert(d);
+        }
+    }
+    if !unit_shard_item.is_empty() {
+        for d in ctx.db.unit_shard_item().iter() {
+            ctx.db.unit_shard_item().delete(d);
+        }
+        for d in unit_shard_item {
+            ctx.db.unit_shard_item().insert(d);
+        }
+    }
+    if !player.is_empty() {
+        for d in ctx.db.player().iter() {
+            ctx.db.player().delete(d);
+        }
+        for d in player {
+            ctx.db.player().insert(d);
+        }
+    }
+    if !wallet.is_empty() {
+        for d in ctx.db.wallet().iter() {
+            ctx.db.wallet().delete(d);
+        }
+        for d in wallet {
+            ctx.db.wallet().insert(d);
+        }
+    }
+    if !incubator.is_empty() {
+        for d in ctx.db.incubator().iter() {
+            ctx.db.incubator().delete(d);
+        }
+        for d in incubator {
+            ctx.db.incubator().insert(d);
+        }
+    }
+    if !incubator_vote.is_empty() {
+        for d in ctx.db.incubator_vote().iter() {
+            ctx.db.incubator_vote().delete(d);
+        }
+        for d in incubator_vote {
+            ctx.db.incubator_vote().insert(d);
+        }
+    }
+    if !incubator_favorite.is_empty() {
+        for d in ctx.db.incubator_favorite().iter() {
+            ctx.db.incubator_favorite().delete(d);
+        }
+        for d in incubator_favorite {
+            ctx.db.incubator_favorite().insert(d);
+        }
+    }
+    if !player_stats.is_empty() {
+        for d in ctx.db.player_stats().iter() {
+            ctx.db.player_stats().delete(d);
+        }
+        for d in player_stats {
+            ctx.db.player_stats().insert(d);
+        }
+    }
+    if !player_game_stats.is_empty() {
+        for d in ctx.db.player_game_stats().iter() {
+            ctx.db.player_game_stats().delete(d);
+        }
+        for d in player_game_stats {
+            ctx.db.player_game_stats().insert(d);
+        }
+    }
 
-    let ghost = || FusedUnit::from_base_name(GlobalSettings::get().ghost_unit, next_id()).unwrap();
+    let ghost = || {
+        FusedUnit::from_base_name(ctx, GlobalSettings::get(ctx).ghost_unit, next_id(ctx)).unwrap()
+    };
     let enemies = [
-        TTeam::new(0, TeamPool::Enemy).units(vec![ghost()]).save(),
-        TTeam::new(0, TeamPool::Enemy)
+        TTeam::new(ctx, 0, TeamPool::Enemy)
+            .units(vec![ghost()])
+            .save(ctx),
+        TTeam::new(ctx, 0, TeamPool::Enemy)
             .units(vec![ghost(), ghost()])
-            .save(),
-        TTeam::new(0, TeamPool::Enemy)
+            .save(ctx),
+        TTeam::new(ctx, 0, TeamPool::Enemy)
             .units(vec![ghost(), ghost(), ghost()])
-            .save(),
+            .save(ctx),
     ]
     .into();
-    GlobalData::set_initial_enemies(enemies);
-    if GlobalData::get().last_sync.eq(&Timestamp::UNIX_EPOCH) {
-        daily_timer_init();
+    GlobalData::set_initial_enemies(ctx, enemies);
+    if GlobalData::get(ctx).last_sync.eq(&Timestamp::UNIX_EPOCH) {
+        daily_timer_init(ctx);
     }
-    GlobalData::register_sync();
+    GlobalData::register_sync(ctx);
     Ok(())
 }
 
-#[spacetimedb(reducer)]
+#[spacetimedb::reducer]
 fn upload_assets(
-    ctx: ReducerContext,
+    ctx: &ReducerContext,
     global_settings: GlobalSettings,
     base_unit: Vec<TBaseUnit>,
     house: Vec<THouse>,
@@ -145,22 +332,25 @@ fn upload_assets(
     status: Vec<TStatus>,
 ) -> Result<(), String> {
     ctx.is_admin()?;
-    replace_assets(GameData {
-        global_settings: vec![global_settings],
-        ability,
-        base_unit,
-        house,
-        status,
-        ..default()
-    })
+    replace_assets(
+        ctx,
+        GameData {
+            global_settings: vec![global_settings],
+            ability,
+            base_unit,
+            house,
+            status,
+            ..default()
+        },
+    )
 }
 
-#[spacetimedb(reducer)]
-fn upload_game_data(ctx: ReducerContext, next_id: u64, data: GameData) -> Result<(), String> {
+#[spacetimedb::reducer]
+fn upload_game_data(ctx: &ReducerContext, next_id: u64, data: GameData) -> Result<(), String> {
     ctx.is_admin()?;
     if next_id > 0 {
-        GlobalData::set_next_id(next_id);
+        GlobalData::set_next_id(ctx, next_id);
     }
-    replace_assets(data)?;
+    replace_assets(ctx, data)?;
     Ok(())
 }

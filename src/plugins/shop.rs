@@ -75,7 +75,7 @@ impl ShopPlugin {
         }
     }
     fn sync_fusion(a: usize, b: usize, run: &TArenaRun, world: &mut World) {
-        let team = run.team.get_team();
+        let team = run.team.get_team(ctx);
         let left_card = UnitCard::from_fused(team.units[a].clone(), world).unwrap();
         let right_card = UnitCard::from_fused(team.units[b].clone(), world).unwrap();
         let mut r = rm(world);
@@ -346,7 +346,7 @@ impl ShopPlugin {
                 }
                 if run.floor == run.boss_floor {
                     "Final Battle".cstr_cs(YELLOW, CstrStyle::Bold).label(ui);
-                    run.boss_team.get_team().hover_label(ui, world);
+                    run.boss_team.get_team(ctx).hover_label(ui, world);
                 } else {
                     "Next Floor".cstr_c(VISIBLE_DARK).label(ui);
                     if run.replenish_lives > 0 {
@@ -363,7 +363,7 @@ impl ShopPlugin {
                         "Challenge Floor Boss"
                             .cstr_cs(RED, CstrStyle::Bold)
                             .label(ui);
-                        floor_boss.get_team().hover_label(ui, world);
+                        floor_boss.get_team(ctx).hover_label(ui, world);
                     }
                 }
             });
@@ -512,7 +512,7 @@ impl ShopPlugin {
         let Some(run) = TArenaRun::get_current() else {
             return;
         };
-        let team = run.team.get_team();
+        let team = run.team.get_team(ctx);
         let slots = game_assets().global_settings.arena.team_slots as usize;
         let sd = world.resource::<ShopResource>().clone();
         TeamContainer::new(Faction::Team)

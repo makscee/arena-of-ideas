@@ -15,39 +15,44 @@ pub struct ItemBundle {
     pub lootboxes: Vec<u64>,
 }
 
-#[spacetimedb(table(public))]
+#[spacetimedb::table(name = unit_item)]
 #[derive(Clone)]
 pub struct TUnitItem {
-    #[primarykey]
+    #[primary_key]
     pub id: u64,
+    #[index(btree)]
     pub owner: u64,
     pub unit: FusedUnit,
 }
 
-#[spacetimedb(table(public))]
+#[spacetimedb::table(name = unit_shard_item)]
 #[derive(Clone)]
 pub struct TUnitShardItem {
-    #[primarykey]
+    #[primary_key]
     pub id: u64,
+    #[index(btree)]
     pub owner: u64,
+    #[index(btree)]
     pub unit: String,
     pub count: u32,
 }
 
-#[spacetimedb(table(public))]
+#[spacetimedb::table(name = rainbow_shard_item)]
 #[derive(Clone)]
 pub struct TRainbowShardItem {
-    #[primarykey]
+    #[primary_key]
     pub id: u64,
+    #[index(btree)]
     pub owner: u64,
     pub count: u32,
 }
 
-#[spacetimedb(table(public))]
+#[spacetimedb::table(name = lootbox_item)]
 #[derive(Clone)]
 pub struct TLootboxItem {
-    #[primarykey]
+    #[primary_key]
     pub id: u64,
+    #[index(btree)]
     pub owner: u64,
     pub kind: LootboxKind,
     pub count: u32,
@@ -60,150 +65,204 @@ pub enum LootboxKind {
 }
 
 impl ItemKind {
-    pub fn from_id(id: u64) -> Result<Self, String> {
-        if TUnitItem::filter_by_id(&id).is_some() {
+    pub fn from_id(ctx: &ReducerContext, id: u64) -> Result<Self, String> {
+        if ctx.db.unit_item().id().find(id).is_some() {
             Ok(Self::Unit)
-        } else if TUnitShardItem::filter_by_id(&id).is_some() {
+        } else if ctx.db.unit_shard_item().id().find(id).is_some() {
             Ok(Self::UnitShard)
-        } else if TRainbowShardItem::filter_by_id(&id).is_some() {
+        } else if ctx.db.rainbow_shard_item().id().find(id).is_some() {
             Ok(Self::RainbowShard)
-        } else if TLootboxItem::filter_by_id(&id).is_some() {
+        } else if ctx.db.lootbox_item().id().find(id).is_some() {
             Ok(Self::Lootbox)
         } else {
             Err(format!("Item#{id} not found"))
         }
     }
-    pub fn clone_to(self, item_id: u64, owner: u64) -> Result<(), String> {
+    pub fn clone_to(self, ctx: &ReducerContext, item_id: u64, owner: u64) -> Result<(), String> {
         match self {
             ItemKind::Unit => {
-                let mut item =
-                    TUnitItem::filter_by_id(&item_id).context_str("UnitItem not found")?;
-                item.id = next_id();
+                let mut item = ctx
+                    .db
+                    .unit_item()
+                    .id()
+                    .find(item_id)
+                    .context_str("UnitItem not found")?;
+                item.id = next_id(ctx);
                 item.owner = owner;
-                TUnitItem::insert(item)?;
+                ctx.db.unit_item().insert(item);
             }
             ItemKind::UnitShard => {
-                let item = TUnitShardItem::filter_by_id(&item_id)
+                let item = ctx
+                    .db
+                    .unit_shard_item()
+                    .id()
+                    .find(item_id)
                     .context_str("UnitShardItem not found")?;
-                let mut owner_item = TUnitShardItem::get_or_init(owner, &item.unit);
+                let mut owner_item = TUnitShardItem::get_or_init(ctx, owner, &item.unit);
                 owner_item.count += item.count;
-                TUnitShardItem::update_by_id(&owner_item.id.clone(), owner_item);
+                ctx.db.unit_shard_item().id().update(owner_item);
             }
             ItemKind::RainbowShard => {
-                let item = TRainbowShardItem::filter_by_id(&item_id)
+                let item = ctx
+                    .db
+                    .rainbow_shard_item()
+                    .id()
+                    .find(item_id)
                     .context_str("RainbowShardItem not found")?;
-                let mut owner_item = TRainbowShardItem::get_or_init(owner);
+                let mut owner_item = TRainbowShardItem::get_or_init(ctx, owner);
                 owner_item.count += item.count;
-                TRainbowShardItem::update_by_id(&owner_item.id.clone(), owner_item);
+                ctx.db.rainbow_shard_item().id().update(owner_item);
             }
             ItemKind::Lootbox => {
-                let item =
-                    TLootboxItem::filter_by_id(&item_id).context_str("LootboxItem not found")?;
-                let mut owner_item = TLootboxItem::get_or_init(owner, item.kind);
+                let item = ctx
+                    .db
+                    .lootbox_item()
+                    .id()
+                    .find(item_id)
+                    .context_str("LootboxItem not found")?;
+                let mut owner_item = TLootboxItem::get_or_init(ctx, owner, item.kind);
                 owner_item.count += item.count;
-                TLootboxItem::update_by_id(&owner_item.id.clone(), owner_item);
+                ctx.db.lootbox_item().id().update(owner_item);
             }
         }
         Ok(())
     }
-    pub fn take(self, item_id: u64, new_owner: u64) -> Result<(), String> {
+    pub fn take(self, ctx: &ReducerContext, item_id: u64, new_owner: u64) -> Result<(), String> {
         match self {
             ItemKind::Unit => {
-                let mut item =
-                    TUnitItem::filter_by_id(&item_id).context_str("UnitItem not found")?;
-                GlobalEvent::ReceiveUnit(item.clone()).post(new_owner);
+                let mut item = ctx
+                    .db
+                    .unit_item()
+                    .id()
+                    .find(item_id)
+                    .context_str("UnitItem not found")?;
+                GlobalEvent::ReceiveUnit(item.clone()).post(ctx, new_owner);
                 item.owner = new_owner;
-                TUnitItem::update_by_id(&item_id, item);
+                ctx.db.unit_item().id().update(item);
             }
             ItemKind::UnitShard => {
-                let item = TUnitShardItem::filter_by_id(&item_id)
+                let item = ctx
+                    .db
+                    .unit_shard_item()
+                    .id()
+                    .find(item_id)
                     .context_str("UnitShardItem not found")?;
-                GlobalEvent::ReceiveUnitShard(item.clone()).post(new_owner);
-                let mut owner_item = TUnitShardItem::get_or_init(new_owner, &item.unit);
+                GlobalEvent::ReceiveUnitShard(item.clone()).post(ctx, new_owner);
+                let mut owner_item = TUnitShardItem::get_or_init(ctx, new_owner, &item.unit);
                 owner_item.count += item.count;
-                TUnitShardItem::update_by_id(&owner_item.id.clone(), owner_item);
-                TUnitShardItem::delete_by_id(&item.id);
+                ctx.db.unit_shard_item().id().update(owner_item);
+                ctx.db.unit_shard_item().id().delete(item.id);
             }
             ItemKind::RainbowShard => {
-                let item = TRainbowShardItem::filter_by_id(&item_id)
+                let item = ctx
+                    .db
+                    .rainbow_shard_item()
+                    .id()
+                    .find(item_id)
                     .context_str("RainbowShardItem not found")?;
-                GlobalEvent::ReceiveRainbowShard(item.clone()).post(new_owner);
-                let mut owner_item = TRainbowShardItem::get_or_init(new_owner);
+                GlobalEvent::ReceiveRainbowShard(item.clone()).post(ctx, new_owner);
+                let mut owner_item = TRainbowShardItem::get_or_init(ctx, new_owner);
                 owner_item.count += item.count;
-                TRainbowShardItem::update_by_id(&owner_item.id.clone(), owner_item);
-                TRainbowShardItem::delete_by_id(&item.id);
+                ctx.db.rainbow_shard_item().id().update(owner_item);
+                ctx.db.rainbow_shard_item().id().delete(item.id);
             }
             ItemKind::Lootbox => {
-                let item =
-                    TLootboxItem::filter_by_id(&item_id).context_str("LootboxItem not found")?;
-                GlobalEvent::ReceiveLootbox(item.clone()).post(new_owner);
-                let mut owner_item = TLootboxItem::get_or_init(new_owner, item.kind);
+                let item = ctx
+                    .db
+                    .lootbox_item()
+                    .id()
+                    .find(item_id)
+                    .context_str("LootboxItem not found")?;
+                GlobalEvent::ReceiveLootbox(item.clone()).post(ctx, new_owner);
+                let mut owner_item = TLootboxItem::get_or_init(ctx, new_owner, item.kind);
                 owner_item.count += item.count;
-                TLootboxItem::update_by_id(&owner_item.id.clone(), owner_item);
-                TLootboxItem::delete_by_id(&item.id);
+                ctx.db.lootbox_item().id().update(owner_item);
+                ctx.db.lootbox_item().id().delete(item.id);
             }
         }
         Ok(())
     }
-    pub fn split(self, item_id: u64, count: u32, new_owner: u64) -> Result<u64, String> {
+    pub fn split(
+        self,
+        ctx: &ReducerContext,
+        item_id: u64,
+        count: u32,
+        new_owner: u64,
+    ) -> Result<u64, String> {
         match self {
             ItemKind::Unit => {
                 if count == 1 {
-                    let mut item =
-                        TUnitItem::filter_by_id(&item_id).context_str("UnitItem not found")?;
+                    let mut item = ctx
+                        .db
+                        .unit_item()
+                        .id()
+                        .find(item_id)
+                        .context_str("UnitItem not found")?;
                     item.owner = new_owner;
-                    TUnitItem::update_by_id(&item_id, item);
+                    ctx.db.unit_item().id().update(item);
                     Ok(item_id)
                 } else {
                     Err("Can't split UnitItem".into())
                 }
             }
             ItemKind::UnitShard => {
-                let mut item = TUnitShardItem::filter_by_id(&item_id)
+                let mut item = ctx
+                    .db
+                    .unit_shard_item()
+                    .id()
+                    .find(item_id)
                     .context_str("UnitShardItem not found")?;
                 if item.count < count {
                     return Err("Insufficient item count".into());
                 }
                 let mut new_item = item.clone();
-                new_item.id = next_id();
+                new_item.id = next_id(ctx);
                 new_item.count = count;
                 new_item.owner = new_owner;
                 item.count -= count;
                 let id = new_item.id;
-                TUnitShardItem::insert(new_item).unwrap();
-                TUnitShardItem::update_by_id(&item.id.clone(), item);
+                ctx.db.unit_shard_item().insert(new_item);
+                ctx.db.unit_shard_item().id().update(item);
                 Ok(id)
             }
             ItemKind::RainbowShard => {
-                let mut item = TRainbowShardItem::filter_by_id(&item_id)
+                let mut item = ctx
+                    .db
+                    .rainbow_shard_item()
+                    .id()
+                    .find(item_id)
                     .context_str("RainbowShardItem not found")?;
                 if item.count < count {
                     return Err("Insufficient item count".into());
                 }
                 let mut new_item = item.clone();
-                new_item.id = next_id();
+                new_item.id = next_id(ctx);
                 new_item.count = count;
                 new_item.owner = new_owner;
                 item.count -= count;
                 let id = new_item.id;
-                TRainbowShardItem::insert(new_item).unwrap();
-                TRainbowShardItem::update_by_id(&item.id.clone(), item);
+                ctx.db.rainbow_shard_item().insert(new_item);
+                ctx.db.rainbow_shard_item().id().update(item);
                 Ok(id)
             }
             ItemKind::Lootbox => {
-                let mut item =
-                    TLootboxItem::filter_by_id(&item_id).context_str("TLootboxItem not found")?;
+                let mut item = ctx
+                    .db
+                    .lootbox_item()
+                    .id()
+                    .find(item_id)
+                    .context_str("TLootboxItem not found")?;
                 if item.count < count {
                     return Err("Insufficient item count".into());
                 }
                 let mut new_item = item.clone();
-                new_item.id = next_id();
+                new_item.id = next_id(ctx);
                 new_item.count = count;
                 new_item.owner = new_owner;
                 item.count -= count;
                 let id = new_item.id;
-                TLootboxItem::insert(new_item).unwrap();
-                TLootboxItem::update_by_id(&item.id.clone(), item);
+                ctx.db.lootbox_item().insert(new_item);
+                ctx.db.lootbox_item().id().update(item);
                 Ok(id)
             }
         }
@@ -211,115 +270,132 @@ impl ItemKind {
 }
 
 impl TUnitShardItem {
-    pub fn new(owner: u64, unit: String) -> Self {
-        Self::insert(Self {
-            id: next_id(),
+    pub fn new(ctx: &ReducerContext, owner: u64, unit: String) -> Self {
+        ctx.db.unit_shard_item().insert(Self {
+            id: next_id(ctx),
             owner,
             unit,
             count: 1,
         })
-        .unwrap()
     }
-    fn get_or_init(owner: u64, unit: &str) -> Self {
-        Self::filter_by_owner(&owner)
+    fn get_or_init(ctx: &ReducerContext, owner: u64, unit: &str) -> Self {
+        ctx.db
+            .unit_shard_item()
+            .owner()
+            .filter(owner)
             .find(|i| i.unit.eq(unit))
             .unwrap_or_else(|| {
-                Self::insert(Self {
-                    id: next_id(),
+                ctx.db.unit_shard_item().insert(Self {
+                    id: next_id(ctx),
                     owner,
                     unit: unit.into(),
                     count: 0,
                 })
-                .unwrap()
             })
     }
 }
 
 impl TRainbowShardItem {
-    pub fn new(owner: u64) -> Self {
-        Self::insert(Self {
-            id: next_id(),
+    pub fn new(ctx: &ReducerContext, owner: u64) -> Self {
+        ctx.db.rainbow_shard_item().insert(Self {
+            id: next_id(ctx),
             owner,
-
             count: 1,
         })
-        .unwrap()
     }
-    fn get_or_init(owner: u64) -> Self {
-        Self::filter_by_owner(&owner).next().unwrap_or_else(|| {
-            Self::insert(Self {
-                id: next_id(),
-                owner,
-                count: 0,
+    fn get_or_init(ctx: &ReducerContext, owner: u64) -> Self {
+        ctx.db
+            .rainbow_shard_item()
+            .owner()
+            .filter(owner)
+            .next()
+            .unwrap_or_else(|| {
+                ctx.db.rainbow_shard_item().insert(Self {
+                    id: next_id(ctx),
+                    owner,
+                    count: 0,
+                })
             })
-            .unwrap()
-        })
     }
 }
 
 impl TLootboxItem {
-    pub fn new(owner: u64, kind: LootboxKind) -> Self {
-        Self::insert(Self {
-            id: next_id(),
+    pub fn new(ctx: &ReducerContext, owner: u64, kind: LootboxKind) -> Self {
+        ctx.db.lootbox_item().insert(Self {
+            id: next_id(ctx),
             owner,
             kind,
             count: 1,
         })
-        .unwrap()
     }
-    fn get_or_init(owner: u64, kind: LootboxKind) -> Self {
-        Self::filter_by_owner(&owner)
+    fn get_or_init(ctx: &ReducerContext, owner: u64, kind: LootboxKind) -> Self {
+        ctx.db
+            .lootbox_item()
+            .owner()
+            .filter(owner)
             .find(|i| i.kind == kind)
             .unwrap_or_else(|| {
-                Self::insert(Self {
-                    id: next_id(),
+                ctx.db.lootbox_item().insert(Self {
+                    id: next_id(ctx),
                     owner,
                     count: 0,
                     kind,
                 })
-                .unwrap()
             })
     }
 }
 
 impl ItemBundle {
-    pub fn take(self, owner: u64) -> Result<(), String> {
+    pub fn take(self, ctx: &ReducerContext, owner: u64) -> Result<(), String> {
         for id in self.units {
-            let mut unit =
-                TUnitItem::filter_by_id(&id).with_context_str(|| format!("Unit {id} not found"))?;
+            let mut unit = ctx
+                .db
+                .unit_item()
+                .id()
+                .find(id)
+                .with_context_str(|| format!("Unit {id} not found"))?;
             unit.owner = owner;
-            TUnitItem::update_by_id(&unit.id.clone(), unit);
+            ctx.db.unit_item().id().update(unit);
         }
         for id in self.unit_shards {
-            let shard = TUnitShardItem::filter_by_id(&id)
+            let shard = ctx
+                .db
+                .unit_shard_item()
+                .id()
+                .find(id)
                 .with_context_str(|| format!("UnitShard {id} not found"))?;
-            TUnitShardItem::delete_by_id(&id);
-            let mut owner_shard = TUnitShardItem::get_or_init(owner, &shard.unit);
+            ctx.db.unit_shard_item().id().delete(id);
+
+            let mut owner_shard = TUnitShardItem::get_or_init(ctx, owner, &shard.unit);
             owner_shard.count += shard.count;
-            TUnitShardItem::update_by_id(&owner_shard.id.clone(), owner_shard);
+            ctx.db.unit_shard_item().id().update(owner_shard);
         }
         for id in self.lootboxes {
-            let lootbox = TLootboxItem::filter_by_id(&id)
+            let lootbox = ctx
+                .db
+                .lootbox_item()
+                .id()
+                .find(id)
                 .with_context_str(|| format!("UnitShard {id} not found"))?;
-            TLootboxItem::delete_by_id(&lootbox.id);
-            let mut owner_lootbox = TLootboxItem::get_or_init(owner, lootbox.kind);
+            ctx.db.lootbox_item().id().delete(lootbox.id);
+            let mut owner_lootbox = TLootboxItem::get_or_init(ctx, owner, lootbox.kind);
             owner_lootbox.count += lootbox.count;
-            TLootboxItem::update_by_id(&owner_lootbox.id.clone(), owner_lootbox);
+            ctx.db.lootbox_item().id().update(owner_lootbox);
         }
         Ok(())
     }
 }
 
-#[spacetimedb(reducer)]
-fn craft_hero(ctx: ReducerContext, base: String, use_rainbow: u32) -> Result<(), String> {
+#[spacetimedb::reducer]
+fn craft_hero(ctx: &ReducerContext, base: String, use_rainbow: u32) -> Result<(), String> {
     let player = ctx.player()?;
-    let mut item = TUnitShardItem::get_or_init(player.id, &base);
-    let cost = GlobalSettings::get().craft_shards_cost;
+    let mut item = TUnitShardItem::get_or_init(ctx, player.id, &base);
+    let cost = GlobalSettings::get(ctx).craft_shards_cost;
     if use_rainbow >= cost {
         return Err("Tried to use too many rainbow shards".into());
     }
     if use_rainbow > 0 {
-        let mut item = TRainbowShardItem::get_or_init(player.id);
+        let mut item = TRainbowShardItem::get_or_init(ctx, player.id);
         if item.count < use_rainbow {
             return Err(format!(
                 "Not enough rainbow shards: {} < {use_rainbow}",
@@ -327,7 +403,7 @@ fn craft_hero(ctx: ReducerContext, base: String, use_rainbow: u32) -> Result<(),
             ));
         }
         item.count -= use_rainbow;
-        TRainbowShardItem::update_by_id(&item.id.clone(), item);
+        ctx.db.rainbow_shard_item().id().update(item);
     }
     if item.count + use_rainbow < cost {
         return Err(format!(
@@ -336,35 +412,45 @@ fn craft_hero(ctx: ReducerContext, base: String, use_rainbow: u32) -> Result<(),
         ));
     }
     item.count = item.count - cost + use_rainbow;
-    TUnitShardItem::update_by_id(&item.id.clone(), item);
+    ctx.db.unit_shard_item().id().update(item);
 
-    GlobalEvent::CraftUnit(TUnitItem::insert(TUnitItem {
-        id: next_id(),
+    GlobalEvent::CraftUnit(ctx.db.unit_item().insert(TUnitItem {
+        id: next_id(ctx),
         owner: player.id,
-        unit: FusedUnit::from_base_name(base, next_id())?.mutate(),
-    })?)
-    .post(player.id);
+        unit: FusedUnit::from_base_name(ctx, base, next_id(ctx))?.mutate(ctx),
+    }))
+    .post(ctx, player.id);
     Ok(())
 }
 
-#[spacetimedb(reducer)]
-fn dismantle_hero(ctx: ReducerContext, item: u64) -> Result<(), String> {
+#[spacetimedb::reducer]
+fn dismantle_hero(ctx: &ReducerContext, item: u64) -> Result<(), String> {
     let player = ctx.player()?;
-    let unit = TUnitItem::filter_by_id(&item).context_str("Item not found")?;
+    let unit = ctx
+        .db
+        .unit_item()
+        .id()
+        .find(item)
+        .context_str("Item not found")?;
     if unit.owner != player.id {
         return Err(format!("Item not owned by {}", player.id));
     }
-    TUnitItem::delete_by_id(&unit.id);
-    let mut item = TRainbowShardItem::get_or_init(player.id);
-    item.count += unit.unit.rarity() as u32 + 1;
-    TRainbowShardItem::update_by_id(&item.id.clone(), item);
+    ctx.db.unit_item().id().delete(unit.id);
+    let mut item = TRainbowShardItem::get_or_init(ctx, player.id);
+    item.count += unit.unit.rarity(ctx) as u32 + 1;
+    ctx.db.rainbow_shard_item().id().update(item);
     Ok(())
 }
 
-#[spacetimedb(reducer)]
-fn open_lootbox(ctx: ReducerContext, id: u64) -> Result<(), String> {
+#[spacetimedb::reducer]
+fn open_lootbox(ctx: &ReducerContext, id: u64) -> Result<(), String> {
     let player = ctx.player()?;
-    let mut lootbox = TLootboxItem::filter_by_id(&id).context_str("Lootbox not found")?;
+    let mut lootbox = ctx
+        .db
+        .lootbox_item()
+        .id()
+        .find(id)
+        .context_str("Lootbox not found")?;
     if lootbox.owner != player.id {
         return Err("Tried to open lootbox that is not owned".into());
     }
@@ -376,24 +462,27 @@ fn open_lootbox(ctx: ReducerContext, id: u64) -> Result<(), String> {
         LootboxKind::House(house) => [house.clone()].into(),
         LootboxKind::Regular => default(),
     };
-    let unit: FusedUnit = TBaseUnit::get_random_for_lootbox(&houses).into();
-    let unit = TUnitItem::insert(TUnitItem {
-        id: next_id(),
-        owner: 0,
-        unit: unit.mutate(),
-    })?
-    .id;
+    let unit: FusedUnit = TBaseUnit::get_random_for_lootbox(ctx, &houses).into_fused(ctx);
+    let unit = ctx
+        .db
+        .unit_item()
+        .insert(TUnitItem {
+            id: next_id(ctx),
+            owner: 0,
+            unit: unit.mutate(ctx),
+        })
+        .id;
     const AMOUNT: usize = 3;
     let unit_shards = (0..AMOUNT)
         .map(|_| TUnitShardItem {
-            id: next_id(),
+            id: next_id(ctx),
             owner: 0,
-            unit: TBaseUnit::get_random_for_lootbox(&houses).name,
-            count: rng().gen_range(1..4),
+            unit: TBaseUnit::get_random_for_lootbox(ctx, &houses).name,
+            count: ctx.rng().gen_range(1..4),
         })
         .map(|s| {
             let id = s.id;
-            TUnitShardItem::insert(s).unwrap();
+            ctx.db.unit_shard_item().insert(s);
             id
         })
         .collect_vec();
@@ -402,9 +491,9 @@ fn open_lootbox(ctx: ReducerContext, id: u64) -> Result<(), String> {
         unit_shards,
         lootboxes: default(),
     };
-    TTrade::open_lootbox(player.id, bundle)?;
-    GlobalEvent::OpenLootbox(lootbox.clone()).post(player.id);
-    TLootboxItem::update_by_id(&lootbox.id.clone(), lootbox);
+    TTrade::open_lootbox(ctx, player.id, bundle);
+    GlobalEvent::OpenLootbox(lootbox.clone()).post(ctx, player.id);
+    ctx.db.lootbox_item().id().update(lootbox);
     Ok(())
 }
 

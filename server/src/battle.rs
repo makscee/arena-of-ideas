@@ -1,11 +1,11 @@
-use spacetimedb::Timestamp;
+use spacetimedb::{Table, Timestamp};
 
 use super::*;
 
-#[spacetimedb(table(public))]
+#[spacetimedb::table(name = battle)]
 #[derive(Clone)]
 pub struct TBattle {
-    #[primarykey]
+    #[primary_key]
     pub id: u64,
     pub mode: GameMode,
     pub owner: u64,
@@ -31,9 +31,15 @@ impl TBattleResult {
 }
 
 impl TBattle {
-    pub fn new(mode: GameMode, owner: u64, team_left: u64, team_right: u64) -> u64 {
-        let id = next_id();
-        TBattle::insert(TBattle {
+    pub fn new(
+        ctx: &ReducerContext,
+        mode: GameMode,
+        owner: u64,
+        team_left: u64,
+        team_right: u64,
+    ) -> u64 {
+        let id = next_id(ctx);
+        ctx.db.battle().insert(Self {
             id,
             mode,
             owner,
@@ -41,23 +47,26 @@ impl TBattle {
             team_right,
             ts: Timestamp::now(),
             result: TBattleResult::default(),
-        })
-        .expect("Failed to insert TBattle");
+        });
         id
     }
-    pub fn set_result(mut self, result: TBattleResult) -> Self {
+    pub fn set_result(mut self, ctx: &ReducerContext, result: TBattleResult) -> Self {
         self.result = result;
         self.ts = Timestamp::now();
-        GlobalEvent::BattleFinish(self.clone()).post(self.owner);
+        GlobalEvent::BattleFinish(self.clone()).post(ctx, self.owner);
         self
     }
     pub fn is_tbd(&self) -> bool {
         matches!(self.result, TBattleResult::Tbd)
     }
-    pub fn get(id: u64) -> Result<Self, String> {
-        Self::filter_by_id(&id).context_str("TBattle not found")
+    pub fn get(ctx: &ReducerContext, id: u64) -> Result<Self, String> {
+        ctx.db
+            .battle()
+            .id()
+            .find(id)
+            .context_str("TBattle not found")
     }
-    pub fn save(self) {
-        Self::update_by_id(&self.id.clone(), self);
+    pub fn save(self, ctx: &ReducerContext) {
+        ctx.db.battle().id().update(self);
     }
 }

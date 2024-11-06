@@ -1,20 +1,22 @@
 use rand::seq::IteratorRandom;
+use spacetimedb::Table;
 
 use super::*;
 
-#[spacetimedb(table(public))]
+#[spacetimedb::table(name = arena_pool)]
 pub struct TArenaPool {
-    #[primarykey]
+    #[primary_key]
     pub team: u64,
     pub mode: GameMode,
+    #[index(btree)]
     pub floor: u32,
 }
 
 impl TArenaPool {
-    pub fn get_next_enemy(mode: &GameMode, floor: u32) -> u64 {
+    pub fn get_next_enemy(ctx: &ReducerContext, mode: &GameMode, floor: u32) -> u64 {
         let initial_enemies = match mode {
-            GameMode::ArenaNormal | GameMode::ArenaConst => GlobalData::get().initial_enemies,
-            GameMode::ArenaRanked => GlobalData::get()
+            GameMode::ArenaNormal | GameMode::ArenaConst => GlobalData::get(ctx).initial_enemies,
+            GameMode::ArenaRanked => GlobalData::get(ctx)
                 .initial_enemies
                 .last()
                 .copied()
@@ -25,17 +27,20 @@ impl TArenaPool {
         if u_floor < initial_enemies.len() {
             initial_enemies[u_floor]
         } else {
-            Self::get_random(&mode, floor)
+            Self::get_random(ctx, &mode, floor)
         }
     }
-    pub fn add(mode: GameMode, team: u64, floor: u32) {
-        TArenaPool::insert(TArenaPool { mode, team, floor }).expect("Failed to add to TArenaPool");
+    pub fn add(ctx: &ReducerContext, mode: GameMode, team: u64, floor: u32) {
+        ctx.db.arena_pool().insert(TArenaPool { mode, team, floor });
     }
-    pub fn get_random(mode: &GameMode, floor: u32) -> u64 {
-        Self::filter_by_floor(&floor)
-            .filter(|d| d.mode.eq(mode))
-            .choose(&mut spacetimedb::rng())
-            .map(|p| p.team)
+    pub fn get_random(ctx: &ReducerContext, mode: &GameMode, floor: u32) -> u64 {
+        ctx.db
+            .arena_pool()
+            .floor()
+            .filter(floor)
+            .filter(|a| a.mode.eq(mode))
+            .choose(&mut ctx.rng())
+            .map(|a| a.team)
             .unwrap_or_default()
     }
 }

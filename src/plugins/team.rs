@@ -263,7 +263,7 @@ impl TeamPlugin {
                     ui.vertical_centered_justified(|ui| {
                         if Button::click("Remove").ui(ui).clicked() {
                             let tr = world.resource::<TeamResource>();
-                            team_remove_unit(tr.team, tr.team.get_team().units[slot].id);
+                            team_remove_unit(tr.team, tr.team.get_team(ctx).units[slot].id);
                             once_on_team_remove_unit(|_, _, status, _, _| {
                                 status.on_success(|w| {
                                     "Unit removed".notify(w);

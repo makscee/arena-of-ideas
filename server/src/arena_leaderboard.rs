@@ -2,9 +2,10 @@ use spacetimedb::Timestamp;
 
 use super::*;
 
-#[spacetimedb(table(public))]
+#[spacetimedb::table(name = arena_leaderboard)]
 pub struct TArenaLeaderboard {
     pub mode: GameMode,
+    #[index(btree)]
     pub season: u32,
     pub floor: u32,
     pub owner: u64,
@@ -14,10 +15,17 @@ pub struct TArenaLeaderboard {
 }
 
 impl TArenaLeaderboard {
-    pub fn new(mode: GameMode, floor: u32, owner: u64, team: u64, run: u64) -> Self {
+    pub fn new(
+        ctx: &ReducerContext,
+        mode: GameMode,
+        floor: u32,
+        owner: u64,
+        team: u64,
+        run: u64,
+    ) -> Self {
         Self {
             mode,
-            season: GlobalSettings::get().season,
+            season: GlobalSettings::get(ctx).season,
             floor,
             owner,
             team,
@@ -25,16 +33,22 @@ impl TArenaLeaderboard {
             ts: Timestamp::now(),
         }
     }
-    pub fn current() -> impl Iterator<Item = Self> {
-        Self::filter_by_season(&GlobalSettings::get().season)
+    pub fn current(ctx: &ReducerContext) -> impl Iterator<Item = Self> {
+        ctx.db
+            .arena_leaderboard()
+            .season()
+            .filter(GlobalSettings::get(ctx).season)
     }
-    pub fn floor_boss(mode: GameMode, floor: u32) -> Option<Self> {
-        Self::current()
+    pub fn floor_boss(ctx: &ReducerContext, mode: GameMode, floor: u32) -> Option<Self> {
+        Self::current(ctx)
             .filter(|d| d.floor == floor && d.mode == mode)
             .max_by_key(|d| d.ts)
     }
-    pub fn current_champion(mode: GameMode) -> Option<Self> {
-        TArenaLeaderboard::filter_by_season(&GlobalSettings::get().season)
+    pub fn current_champion(ctx: &ReducerContext, mode: GameMode) -> Option<Self> {
+        ctx.db
+            .arena_leaderboard()
+            .season()
+            .filter(GlobalSettings::get(ctx).season)
             .filter(|d| d.mode.eq(&mode))
             .max_by_key(|d| d.floor)
     }

@@ -364,7 +364,7 @@ impl BattlePlugin {
                 );
             };
             Tile::new(Side::Left, move |ui, _| {
-                show_team(battle.team_left.get_team(), ui);
+                show_team(battle.team_left.get_team(ctx), ui);
             })
             .transparent()
             .pinned()
@@ -373,7 +373,7 @@ impl BattlePlugin {
             .no_expand()
             .push(world);
             Tile::new(Side::Right, move |ui, _| {
-                show_team(battle.team_right.get_team(), ui);
+                show_team(battle.team_right.get_team(ctx), ui);
             })
             .transparent()
             .pinned()

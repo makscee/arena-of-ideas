@@ -1,22 +1,18 @@
 use std::mem;
 
+use arena_leaderboard::arena_leaderboard;
+use battle::battle;
 use itertools::Itertools;
 use rand_pcg::Pcg64;
 use rand_seeder::Seeder;
-use spacetimedb::Timestamp;
-
-use self::base_unit::TBaseUnit;
+use spacetimedb::{Table, Timestamp};
 
 use super::*;
 
-fn settings() -> GlobalSettings {
-    GlobalSettings::get()
-}
-
-#[spacetimedb(table(public))]
+#[spacetimedb::table(name = arena_run)]
 pub struct TArenaRun {
     mode: GameMode,
-    #[primarykey]
+    #[primary_key]
     id: u64,
     #[unique]
     owner: u64,
@@ -45,9 +41,9 @@ pub struct TArenaRun {
     last_updated: Timestamp,
 }
 
-#[spacetimedb(table(public))]
+#[spacetimedb::table(name = arena_run_archive)]
 pub struct TArenaRunArchive {
-    #[primarykey]
+    #[primary_key]
     id: u64,
     season: u32,
     mode: GameMode,
@@ -60,19 +56,18 @@ pub struct TArenaRunArchive {
 }
 
 impl TArenaRunArchive {
-    fn add_from_run(run: TArenaRun) {
-        Self::insert(Self {
+    fn add_from_run(ctx: &ReducerContext, run: TArenaRun) {
+        ctx.db.arena_run_archive().insert(Self {
             id: run.id,
             mode: run.mode,
-            season: GlobalSettings::get().season,
+            season: GlobalSettings::get(ctx).season,
             owner: run.owner,
             team: run.team,
             battles: run.battles,
             floor: run.floor,
             rewards: run.rewards,
             ts: Timestamp::now(),
-        })
-        .expect("Failed to archive a run");
+        });
     }
 }
 
@@ -112,124 +107,133 @@ pub struct Reward {
     amount: i64,
 }
 
-#[spacetimedb(reducer)]
-fn run_start_normal(ctx: ReducerContext) -> Result<(), String> {
+#[spacetimedb::reducer]
+fn run_start_normal(ctx: &ReducerContext) -> Result<(), String> {
     let player = ctx.player()?;
-    TArenaRun::start(player, GameMode::ArenaNormal)
+    TArenaRun::start(ctx, player, GameMode::ArenaNormal)
 }
 
-#[spacetimedb(reducer)]
-fn run_start_ranked(ctx: ReducerContext, team_id: u64) -> Result<(), String> {
+#[spacetimedb::reducer]
+fn run_start_ranked(ctx: &ReducerContext, team_id: u64) -> Result<(), String> {
     let player = ctx.player()?;
-    let cost = TDailyState::get(player.id).buy_ranked();
-    TWallet::change(player.id, -cost)?;
-    let mut team = TTeam::get_owned(team_id, player.id)?;
+    let cost = TDailyState::get(ctx, player.id).buy_ranked(ctx);
+    TWallet::change(ctx, player.id, -cost)?;
+    let mut team = TTeam::get_owned(ctx, team_id, player.id)?;
     team.pool = TeamPool::Arena;
-    let team = team.apply_limit().apply_empty_stat_bonus().save_clone();
-    TArenaRun::start(player, GameMode::ArenaRanked)?;
+    let team = team
+        .apply_limit(ctx)
+        .apply_empty_stat_bonus(ctx)
+        .save_clone(ctx);
+    TArenaRun::start(ctx, player, GameMode::ArenaRanked)?;
     let mut run = TArenaRun::current(&ctx)?;
     run.team = team.id;
-    run.save();
+    run.save(ctx);
     Ok(())
 }
 
-#[spacetimedb(reducer)]
-fn run_start_const(ctx: ReducerContext) -> Result<(), String> {
+#[spacetimedb::reducer]
+fn run_start_const(ctx: &ReducerContext) -> Result<(), String> {
     let player = ctx.player()?;
-    let cost = TDailyState::get(player.id).buy_const();
-    TWallet::change(player.id, -cost)?;
-    TArenaRun::start(player, GameMode::ArenaConst)
+    let cost = TDailyState::get(ctx, player.id).buy_const(ctx);
+    TWallet::change(ctx, player.id, -cost)?;
+    TArenaRun::start(ctx, player, GameMode::ArenaConst)
 }
 
-#[spacetimedb(reducer)]
-fn run_finish(ctx: ReducerContext) -> Result<(), String> {
+#[spacetimedb::reducer]
+fn run_finish(ctx: &ReducerContext) -> Result<(), String> {
     let run = TArenaRun::current(&ctx)?;
-    TPlayerGameStats::register_run_end(run.owner, run.mode, run.floor);
+    TPlayerGameStats::register_run_end(ctx, run.owner, run.mode, run.floor);
     let reward: i64 = run.rewards.iter().map(|r| r.amount).sum();
-    TWallet::change(run.owner, reward)?;
-    TArenaRun::delete_by_id(&run.id);
-    TArenaRunArchive::add_from_run(run);
+    TWallet::change(ctx, run.owner, reward)?;
+    ctx.db.arena_run().id().delete(run.id);
+    TArenaRunArchive::add_from_run(ctx, run);
     Ok(())
 }
 
-#[spacetimedb(reducer)]
-fn shop_finish(ctx: ReducerContext, face_boss: bool) -> Result<(), String> {
+#[spacetimedb::reducer]
+fn shop_finish(ctx: &ReducerContext, face_boss: bool) -> Result<(), String> {
     let mut run = TArenaRun::current(&ctx)?;
     if face_boss {
-        if let Some(boss) = TArenaLeaderboard::floor_boss(run.mode, run.floor) {
+        if let Some(boss) = TArenaLeaderboard::floor_boss(ctx, run.mode, run.floor) {
             run.boss_floor = boss.floor;
             run.boss_team = boss.team;
         }
     }
 
-    let team = TTeam::get(run.team)?.apply_limit().save_clone();
+    let team = TTeam::get(ctx, run.team)?.apply_limit(ctx).save_clone(ctx);
     if run.boss_floor == run.floor {
-        run.battles
-            .push(TBattle::new(run.mode, run.owner, team.id, run.boss_team));
-    } else {
         run.battles.push(TBattle::new(
+            ctx,
             run.mode,
             run.owner,
             team.id,
-            TArenaPool::get_next_enemy(&run.mode, run.floor),
+            run.boss_team,
+        ));
+    } else {
+        run.battles.push(TBattle::new(
+            ctx,
+            run.mode,
+            run.owner,
+            team.id,
+            TArenaPool::get_next_enemy(ctx, &run.mode, run.floor),
         ));
     }
     if !team.units.is_empty() && run.battles.len() == run.floor as usize {
-        TArenaPool::add(run.mode, team.id, run.floor);
+        TArenaPool::add(ctx, run.mode, team.id, run.floor);
     }
 
     run.rerolls = 0;
-    run.fill_case()?;
-    let ars = &settings().arena;
+    run.fill_case(ctx)?;
+    let ars = &GlobalSettings::get(ctx).arena;
     run.g += ars.g_income.value(run.floor as i64) as i32;
     run.free_rerolls += ars.free_rerolls_income;
-    run.save();
+    run.save(ctx);
     Ok(())
 }
 
-#[spacetimedb(reducer)]
-fn submit_battle_result(ctx: ReducerContext, result: TBattleResult) -> Result<(), String> {
+#[spacetimedb::reducer]
+fn submit_battle_result(ctx: &ReducerContext, result: TBattleResult) -> Result<(), String> {
     let mut run = TArenaRun::current(&ctx)?;
     let bid = *run.battles.last().context_str("Last battle not present")?;
-    let battle = TBattle::get(bid)?;
+    let battle = TBattle::get(ctx, bid)?;
     if !battle.is_tbd() {
         return Err("Result already submitted".to_owned());
     }
-    battle.set_result(result).save();
+    battle.set_result(ctx, result).save(ctx);
     let boss_floor = run.floor == run.boss_floor;
     if result == TBattleResult::Left {
         run.floor += 1;
         if !boss_floor {
-            run.update_boss();
+            run.update_boss(ctx);
         }
-        QuestEvent::Win.register_event(run.mode, run.owner);
+        QuestEvent::Win.register_event(ctx, run.mode, run.owner);
         if run.replenish_lives > 0 && run.lives < run.max_lives {
             run.lives += 1;
             run.replenish_lives -= 1;
         }
-        run.add_streak();
+        run.add_streak(ctx);
         if boss_floor {
-            QuestEvent::Champion.register_event(run.mode, run.owner);
-            run.finish();
+            QuestEvent::Champion.register_event(ctx, run.mode, run.owner);
+            run.finish(ctx);
         }
     } else {
         run.finish_streak();
         run.lives -= 1;
         if run.lives == 0 {
-            run.finish();
+            run.finish(ctx);
         }
     }
     if run.floor % 5 == 0 {
         run.replenish_lives += 1;
     }
-    run.save();
+    run.save(ctx);
     Ok(())
 }
 
-#[spacetimedb(reducer)]
-fn shop_reorder(ctx: ReducerContext, from: u8, to: u8) -> Result<(), String> {
+#[spacetimedb::reducer]
+fn shop_reorder(ctx: &ReducerContext, from: u8, to: u8) -> Result<(), String> {
     let run = TArenaRun::current(&ctx)?;
-    let mut team = TTeam::get(run.team)?;
+    let mut team = TTeam::get(ctx, run.team)?;
     let from = from as usize;
     let to = (to as usize).min(team.units.len() - 1);
     if team.units.len() < from {
@@ -237,13 +241,13 @@ fn shop_reorder(ctx: ReducerContext, from: u8, to: u8) -> Result<(), String> {
     }
     let unit = team.units.remove(from);
     team.units.insert(to, unit);
-    team.save();
-    run.save();
+    team.save(ctx);
+    run.save(ctx);
     Ok(())
 }
 
-#[spacetimedb(reducer)]
-fn shop_set_freeze(ctx: ReducerContext, slot: u8, value: bool) -> Result<(), String> {
+#[spacetimedb::reducer]
+fn shop_set_freeze(ctx: &ReducerContext, slot: u8, value: bool) -> Result<(), String> {
     let mut run = TArenaRun::current(&ctx)?;
     let slot = run
         .shop_slots
@@ -257,12 +261,12 @@ fn shop_set_freeze(ctx: ReducerContext, slot: u8, value: bool) -> Result<(), Str
         }
     }
     slot.freeze = value;
-    run.save();
+    run.save(ctx);
     Ok(())
 }
 
-#[spacetimedb(reducer)]
-fn shop_reroll(ctx: ReducerContext) -> Result<(), String> {
+#[spacetimedb::reducer]
+fn shop_reroll(ctx: &ReducerContext) -> Result<(), String> {
     let mut run = TArenaRun::current(&ctx)?;
     if run.free_rerolls > 0 {
         run.free_rerolls -= 1;
@@ -273,41 +277,41 @@ fn shop_reroll(ctx: ReducerContext) -> Result<(), String> {
         run.g -= run.price_reroll;
     }
     run.rerolls += 1;
-    run.fill_case()?;
-    run.save();
+    run.fill_case(ctx)?;
+    run.save(ctx);
     Ok(())
 }
 
-#[spacetimedb(reducer)]
-fn shop_buy(ctx: ReducerContext, slot: u8) -> Result<(), String> {
+#[spacetimedb::reducer]
+fn shop_buy(ctx: &ReducerContext, slot: u8) -> Result<(), String> {
     let mut run = TArenaRun::current(&ctx)?;
     let price = run.shop_slots[slot as usize].buy_price;
-    let unit = run.buy(slot, price)?;
-    run.add_to_team(FusedUnit::from_base_name(unit, next_id())?)?;
-    run.save();
+    let unit = run.buy(ctx, slot, price)?;
+    run.add_to_team(ctx, FusedUnit::from_base_name(ctx, unit, next_id(ctx))?)?;
+    run.save(ctx);
     Ok(())
 }
 
-#[spacetimedb(reducer)]
-fn shop_sell(ctx: ReducerContext, slot: u8) -> Result<(), String> {
+#[spacetimedb::reducer]
+fn shop_sell(ctx: &ReducerContext, slot: u8) -> Result<(), String> {
     let mut run = TArenaRun::current(&ctx)?;
-    run.sell(slot as usize)?;
-    run.save();
+    run.sell(ctx, slot as usize)?;
+    run.save(ctx);
     Ok(())
 }
 
-#[spacetimedb(reducer)]
-fn shop_change_g(ctx: ReducerContext, delta: i32) -> Result<(), String> {
+#[spacetimedb::reducer]
+fn shop_change_g(ctx: &ReducerContext, delta: i32) -> Result<(), String> {
     let mut run = TArenaRun::current(&ctx)?;
     run.g += delta;
-    run.save();
+    run.save(ctx);
     Ok(())
 }
 
-#[spacetimedb(reducer)]
-fn fuse_start(ctx: ReducerContext, a: u8, b: u8) -> Result<(), String> {
+#[spacetimedb::reducer]
+fn fuse_start(ctx: &ReducerContext, a: u8, b: u8) -> Result<(), String> {
     let mut run = TArenaRun::current(&ctx)?;
-    let team = run.team()?;
+    let team = run.team(ctx)?;
     let (unit, triggers, targets, effects) = FusedUnit::fuse(team.get_unit(a)?, team.get_unit(b)?)?;
     let fusion = Fusion {
         a,
@@ -318,23 +322,23 @@ fn fuse_start(ctx: ReducerContext, a: u8, b: u8) -> Result<(), String> {
         effects: effects.into(),
     };
     run.fusion = Some(fusion);
-    run.save();
+    run.save(ctx);
     Ok(())
 }
 
-#[spacetimedb(reducer)]
-fn fuse_cancel(ctx: ReducerContext) -> Result<(), String> {
+#[spacetimedb::reducer]
+fn fuse_cancel(ctx: &ReducerContext) -> Result<(), String> {
     let mut run = TArenaRun::current(&ctx)?;
     if run.fusion.is_none() {
         return Err("Fusion not started".to_owned());
     }
     run.fusion = None;
-    run.save();
+    run.save(ctx);
     Ok(())
 }
 
-#[spacetimedb(reducer)]
-fn fuse_swap(ctx: ReducerContext) -> Result<(), String> {
+#[spacetimedb::reducer]
+fn fuse_swap(ctx: &ReducerContext) -> Result<(), String> {
     let mut run = TArenaRun::current(&ctx)?;
     if let Some(fusion) = &mut run.fusion {
         fuse_start(ctx, fusion.b, fusion.a)
@@ -343,8 +347,8 @@ fn fuse_swap(ctx: ReducerContext) -> Result<(), String> {
     }
 }
 
-#[spacetimedb(reducer)]
-fn fuse_choose(ctx: ReducerContext, trigger: i8, target: i8, effect: i8) -> Result<(), String> {
+#[spacetimedb::reducer]
+fn fuse_choose(ctx: &ReducerContext, trigger: i8, target: i8, effect: i8) -> Result<(), String> {
     let mut run = TArenaRun::current(&ctx)?;
     if trigger + target + effect != 0 || trigger == target || target == effect {
         return Err("Choice condition failed".into());
@@ -369,54 +373,54 @@ fn fuse_choose(ctx: ReducerContext, trigger: i8, target: i8, effect: i8) -> Resu
         .get((effect + 1) as usize)
         .context_str("Failed to get effect")?
         .clone();
-    unit.id = next_id();
+    unit.id = next_id(ctx);
 
     let a = a as usize;
     let b = b as usize;
-    let mut team = run.team()?;
+    let mut team = run.team(ctx)?;
     team.units.remove(a);
     team.units.insert(a, unit.clone());
     team.units.remove(b);
-    team.save();
+    team.save(ctx);
     let fuse_amount = unit.bases.len() as u32;
-    QuestEvent::Fuse(fuse_amount).register_event(run.mode, run.owner);
-    GlobalEvent::Fuse(unit).post(run.owner);
-    run.save();
+    QuestEvent::Fuse(fuse_amount).register_event(ctx, run.mode, run.owner);
+    GlobalEvent::Fuse(unit).post(ctx, run.owner);
+    run.save(ctx);
     Ok(())
 }
 
-#[spacetimedb(reducer)]
-fn stack_shop(ctx: ReducerContext, source: u8, target: u8) -> Result<(), String> {
+#[spacetimedb::reducer]
+fn stack_shop(ctx: &ReducerContext, source: u8, target: u8) -> Result<(), String> {
     let mut run = TArenaRun::current(&ctx)?;
     let price = run.shop_slots[source as usize].stack_price;
-    let unit = run.buy(source, price)?;
-    let mut team = run.team()?;
+    let unit = run.buy(ctx, source, price)?;
+    let mut team = run.team(ctx)?;
     let target = team
         .units
         .get_mut(target as usize)
         .context_str("Team unit not found")?;
-    if !target.can_stack(&unit) {
+    if !target.can_stack(ctx, &unit) {
         return Err(format!(
             "Units {unit} and {} can not be stacked",
             target.bases.join("+")
         ));
     }
     target.add_xp(1);
-    team.save();
-    run.save();
+    team.save(ctx);
+    run.save(ctx);
     Ok(())
 }
 
-#[spacetimedb(reducer)]
-fn stack_team(ctx: ReducerContext, source: u8, target: u8) -> Result<(), String> {
+#[spacetimedb::reducer]
+fn stack_team(ctx: &ReducerContext, source: u8, target: u8) -> Result<(), String> {
     let mut run = TArenaRun::current(&ctx)?;
-    let mut team = run.team()?;
+    let mut team = run.team(ctx)?;
     let source_unit = team.units[source as usize].clone();
     let target_unit = team
         .units
         .get_mut(target as usize)
         .context_str("Team unit not found")?;
-    if !target_unit.can_stack_fused(&source_unit) {
+    if !target_unit.can_stack_fused(ctx, &source_unit) {
         return Err(format!(
             "Units {} and {} can not be stacked",
             source_unit.bases.join("+"),
@@ -425,18 +429,18 @@ fn stack_team(ctx: ReducerContext, source: u8, target: u8) -> Result<(), String>
     }
     target_unit.add_xp(1);
     team.units.remove(source as usize);
-    team.save();
-    run.save();
+    team.save(ctx);
+    run.save(ctx);
     Ok(())
 }
 
 impl TArenaRun {
-    fn new(user_id: u64, mode: GameMode) -> Self {
-        let ars = settings().arena;
+    fn new(ctx: &ReducerContext, user_id: u64, mode: GameMode) -> Self {
+        let ars = &GlobalSettings::get(ctx).arena;
         let mut c = Self {
-            id: next_id(),
+            id: next_id(ctx),
             owner: user_id,
-            team: TTeam::new(user_id, TeamPool::Arena).save(),
+            team: TTeam::new(ctx, user_id, TeamPool::Arena).save(ctx),
             shop_slots: Vec::new(),
             team_slots: Vec::new(),
             fusion: None,
@@ -459,21 +463,25 @@ impl TArenaRun {
             boss_floor: 0,
             current_floor_boss: None,
         };
-        c.update_boss();
+        c.update_boss(ctx);
         c
     }
-    fn start(player: TPlayer, mode: GameMode) -> Result<(), String> {
-        TArenaRun::delete_by_owner(&player.id);
-        GlobalEvent::RunStart(mode).post(player.id);
-        let mut run = TArenaRun::new(player.id, mode);
-        run.fill_case()?;
-        TArenaRun::insert(run)?;
+    fn start(ctx: &ReducerContext, player: TPlayer, mode: GameMode) -> Result<(), String> {
+        ctx.db.arena_run().owner().delete(player.id);
+        GlobalEvent::RunStart(mode).post(ctx, player.id);
+        let mut run = TArenaRun::new(ctx, player.id, mode);
+        run.fill_case(ctx)?;
+        ctx.db.arena_run().insert(run);
         Ok(())
     }
     fn current(ctx: &ReducerContext) -> Result<Self, String> {
-        Self::filter_by_owner(&ctx.player()?.id).context_str("No arena run in progress")
+        ctx.db
+            .arena_run()
+            .owner()
+            .find(ctx.player()?.id)
+            .context_str("No arena run in progress")
     }
-    fn buy(&mut self, slot: u8, price: i32) -> Result<String, String> {
+    fn buy(&mut self, ctx: &ReducerContext, slot: u8, price: i32) -> Result<String, String> {
         let s = self
             .shop_slots
             .get_mut(slot as usize)
@@ -484,46 +492,46 @@ impl TArenaRun {
         if price > self.g {
             return Err("Not enough G".to_owned());
         }
-        GlobalEvent::GameShopBuy(s.unit.clone()).post(self.owner);
+        GlobalEvent::GameShopBuy(s.unit.clone()).post(ctx, self.owner);
         self.g -= price;
         s.available = false;
         Ok(s.unit.clone())
     }
-    fn add_to_team(&mut self, unit: FusedUnit) -> Result<(), String> {
-        let mut team = self.team()?;
+    fn add_to_team(&mut self, ctx: &ReducerContext, unit: FusedUnit) -> Result<(), String> {
+        let mut team = self.team(ctx)?;
         team.units.insert(0, unit);
-        team.save();
+        team.save(ctx);
         Ok(())
     }
-    fn sell(&mut self, slot: usize) -> Result<(), String> {
-        GlobalEvent::GameShopSell(self.team()?.units[slot].clone()).post(self.owner);
-        self.remove_team(slot)?;
+    fn sell(&mut self, ctx: &ReducerContext, slot: usize) -> Result<(), String> {
+        GlobalEvent::GameShopSell(self.team(ctx)?.units[slot].clone()).post(ctx, self.owner);
+        self.remove_team(ctx, slot)?;
         self.g += self.team_slots[slot].sell_price;
         Ok(())
     }
-    fn team(&mut self) -> Result<TTeam, String> {
-        TTeam::get(self.team)
+    fn team(&mut self, ctx: &ReducerContext) -> Result<TTeam, String> {
+        TTeam::get(ctx, self.team)
     }
-    fn remove_team(&mut self, slot: usize) -> Result<FusedUnit, String> {
-        let mut team = self.team()?;
+    fn remove_team(&mut self, ctx: &ReducerContext, slot: usize) -> Result<FusedUnit, String> {
+        let mut team = self.team(ctx)?;
         if team.units.len() > slot {
             let unit = team.units.remove(slot);
-            team.save();
+            team.save(ctx);
             return Ok(unit);
         } else {
             return Err("Slot is empty".to_owned());
         }
     }
-    fn save(mut self) {
+    fn save(mut self, ctx: &ReducerContext) {
         self.last_updated = Timestamp::now();
-        let team = TTeam::get(self.team).unwrap();
+        let team = TTeam::get(ctx, self.team).unwrap();
         for slot in &mut self.shop_slots {
             slot.stack_targets.clear();
             if !slot.available {
                 continue;
             }
             for (i, unit) in team.units.iter().enumerate() {
-                if unit.can_stack(&slot.unit) {
+                if unit.can_stack(ctx, &slot.unit) {
                     slot.stack_targets.push(i as u8);
                 }
             }
@@ -532,19 +540,19 @@ impl TArenaRun {
             arena: ars,
             rarities: rs,
             ..
-        } = &settings();
+        } = &GlobalSettings::get(ctx);
         self.team_slots = vec![TeamSlot::default(); team.units.len()];
         for (slot_i, slot) in self.team_slots.iter_mut().enumerate() {
             slot.stack_targets.clear();
             if let Some(unit) = team.units.get(slot_i) {
-                let rarity = unit.rarity() as usize;
+                let rarity = unit.rarity(ctx) as usize;
                 slot.sell_price = rs.prices[rarity] - ars.sell_discount;
             }
             for (i, unit) in team.units.iter().enumerate() {
                 if i == slot_i {
                     continue;
                 }
-                if unit.can_stack_fused(&team.units[slot_i]) {
+                if unit.can_stack_fused(ctx, &team.units[slot_i]) {
                     slot.stack_targets.push(i as u8);
                 }
                 if FusedUnit::can_fuse(unit, &team.units[slot_i]) {
@@ -552,14 +560,14 @@ impl TArenaRun {
                 }
             }
         }
-        Self::update_by_owner(&self.owner.clone(), self);
+        ctx.db.arena_run().id().update(self);
     }
-    fn fill_case(&mut self) -> Result<(), String> {
+    fn fill_case(&mut self, ctx: &ReducerContext) -> Result<(), String> {
         let GlobalSettings {
             arena: ars,
             rarities,
             ..
-        } = settings();
+        } = GlobalSettings::get(ctx);
         let slots = ars.shop_slots.value(self.floor as i64) as usize;
         let mut old_slots = Vec::default();
         mem::swap(&mut self.shop_slots, &mut old_slots);
@@ -570,18 +578,18 @@ impl TArenaRun {
                         self.shop_slots.push(slot.clone());
                         continue;
                     } else {
-                        GlobalEvent::GameShopSkip(slot.unit.clone()).post(self.owner);
+                        GlobalEvent::GameShopSkip(slot.unit.clone()).post(ctx, self.owner);
                     }
                 }
             }
             self.shop_slots.push(ShopSlot::default());
         }
-        let team = self.team()?;
+        let team = self.team(ctx)?;
         if !team.units.is_empty() {
             self.shop_slots[0].house_filter = team
                 .units
                 .iter()
-                .flat_map(|u| u.get_houses())
+                .flat_map(|u| u.get_houses(ctx))
                 .unique()
                 .collect();
         }
@@ -593,37 +601,39 @@ impl TArenaRun {
             .map(|(i, w)| (*w + rarities.weights_per_floor[i] * floor).max(0))
             .collect_vec();
         self.weights = weights.clone();
-        let mut rng = self.get_rng();
+        let mut rng = self.get_rng(ctx);
         for i in 0..slots {
-            let id = next_id();
+            let id = next_id(ctx);
             let s = &mut self.shop_slots[i];
             if s.freeze {
                 continue;
             }
             s.available = true;
             s.id = id;
-            let unit = TBaseUnit::get_random(&s.house_filter, &weights, &mut rng);
+            let unit = TBaseUnit::get_random(ctx, &s.house_filter, &weights, &mut rng);
             s.unit = unit.name.clone();
             s.buy_price = rarities.prices[unit.rarity as usize];
             s.stack_price = s.buy_price - ars.stack_discount;
         }
         Ok(())
     }
-    fn get_seed(&self) -> String {
+    fn get_seed(&self, ctx: &ReducerContext) -> String {
         let Self {
             id, floor, rerolls, ..
         } = self;
         match &self.mode {
             GameMode::ArenaNormal | GameMode::ArenaRanked => format!("{id}_{floor}_{rerolls}"),
-            GameMode::ArenaConst => format!("{}_{floor}_{rerolls}", GlobalSettings::get().season),
+            GameMode::ArenaConst => {
+                format!("{}_{floor}_{rerolls}", GlobalSettings::get(ctx).season)
+            }
         }
     }
-    fn get_rng(&self) -> Pcg64 {
-        Seeder::from(self.get_seed()).make_rng()
+    fn get_rng(&self, ctx: &ReducerContext) -> Pcg64 {
+        Seeder::from(self.get_seed(ctx)).make_rng()
     }
-    fn add_streak(&mut self) {
+    fn add_streak(&mut self, ctx: &ReducerContext) {
         self.streak += 1;
-        QuestEvent::Streak(self.streak).register_event(self.mode, self.owner);
+        QuestEvent::Streak(self.streak).register_event(ctx, self.mode, self.owner);
     }
     fn finish_streak(&mut self) {
         if self.streak > 0 {
@@ -644,25 +654,29 @@ impl TArenaRun {
         .max(min_mul);
         self.rewards.push(Reward { source, amount });
     }
-    fn update_boss(&mut self) {
-        (self.boss_floor, self.boss_team) = TArenaLeaderboard::current_champion(self.mode)
+    fn update_boss(&mut self, ctx: &ReducerContext) {
+        (self.boss_floor, self.boss_team) = TArenaLeaderboard::current_champion(ctx, self.mode)
             .map(|c| (c.floor, c.team))
             .unwrap_or_else(|| {
                 (
-                    GlobalSettings::get().arena.initial_enemies_count[self.mode as usize] - 1,
-                    *GlobalData::get().initial_enemies.last().unwrap(),
+                    GlobalSettings::get(ctx).arena.initial_enemies_count[self.mode as usize] - 1,
+                    *GlobalData::get(ctx).initial_enemies.last().unwrap(),
                 )
             });
         self.current_floor_boss =
-            TArenaLeaderboard::floor_boss(self.mode, self.floor).map(|a| a.team)
+            TArenaLeaderboard::floor_boss(ctx, self.mode, self.floor).map(|a| a.team)
     }
-    fn finish(&mut self) {
+    fn finish(&mut self, ctx: &ReducerContext) {
         self.active = false;
         self.finish_streak();
         if self.floor >= self.boss_floor {
-            if let Some(battle) = self.battles.last().and_then(|id| TBattle::filter_by_id(id)) {
+            if let Some(battle) = self
+                .battles
+                .last()
+                .and_then(|id| ctx.db.battle().id().find(*id))
+            {
                 if battle.result.is_win() {
-                    if TArenaLeaderboard::current_champion(self.mode)
+                    if TArenaLeaderboard::current_champion(ctx, self.mode)
                         .map(|c| c.floor <= self.floor)
                         .unwrap_or(true)
                     {
@@ -675,7 +689,7 @@ impl TArenaRun {
                             reward + self.floor as i64 * 4 + 10,
                             1,
                         );
-                        TPlayerGameStats::register_champion(self.owner, self.mode);
+                        TPlayerGameStats::register_champion(ctx, self.owner, self.mode);
                     } else {
                         let reward = match self.mode {
                             GameMode::ArenaNormal => 10,
@@ -686,9 +700,10 @@ impl TArenaRun {
                             reward + self.floor as i64 * 2 + 10,
                             1,
                         );
-                        TPlayerGameStats::register_boss(self.owner, self.mode);
+                        TPlayerGameStats::register_boss(ctx, self.owner, self.mode);
                     }
-                    TArenaLeaderboard::insert(TArenaLeaderboard::new(
+                    ctx.db.arena_leaderboard().insert(TArenaLeaderboard::new(
+                        ctx,
                         self.mode,
                         self.floor,
                         self.owner,

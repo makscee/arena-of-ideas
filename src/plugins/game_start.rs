@@ -246,7 +246,7 @@ impl GameStartPlugin {
                             });
                         }
                     }
-                    cs.save();
+                    cs.save(ctx);
                 }
             }
             ui.add_space(13.0);
@@ -332,7 +332,7 @@ impl GameStartPlugin {
                                     .column_user_click("player", |d| d.owner)
                                     .column_team("player >", |d| d.team_left)
                                     .column_team("< enemy", |d| d.team_right)
-                                    .column_user_click("enemy", |d| d.team_right.get_team().owner)
+                                    .column_user_click("enemy", |d| d.team_right.get_team(ctx).owner)
                                     .column_gid("id", |d| d.id)
                                     .column_cstr("mode", |d, _| d.mode.cstr())
                                     .column_btn("copy", |d, _, world| {

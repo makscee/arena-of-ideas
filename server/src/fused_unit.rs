@@ -1,7 +1,6 @@
+use base_unit::base_unit;
 use itertools::Itertools;
 use rand::distributions::{Distribution, WeightedIndex};
-
-use self::base_unit::TBaseUnit;
 
 use super::*;
 
@@ -30,8 +29,8 @@ impl FusedUnit {
     pub fn name(&self) -> String {
         self.bases.join("+")
     }
-    pub fn new_id(mut self) -> Self {
-        self.id = next_id();
+    pub fn new_id(mut self, ctx: &ReducerContext) -> Self {
+        self.id = next_id(ctx);
         self
     }
     pub fn from_base(base: TBaseUnit, id: u64) -> Self {
@@ -49,22 +48,26 @@ impl FusedUnit {
             id,
         }
     }
-    pub fn from_base_name(name: String, id: u64) -> Result<Self, String> {
-        let base = TBaseUnit::filter_by_name(&name)
+    pub fn from_base_name(ctx: &ReducerContext, name: String, id: u64) -> Result<Self, String> {
+        let base = ctx
+            .db
+            .base_unit()
+            .name()
+            .find(&name)
             .with_context_str(|| format!("Base unit not found {name}"))?;
         Ok(Self::from_base(base, id))
     }
-    fn roll_stat_mutation() -> i32 {
+    fn roll_stat_mutation(ctx: &ReducerContext) -> i32 {
         let weights = [1, 10, 50, 10, 1];
         let stats = [-2, -1, 0, 1, 2];
         let index = WeightedIndex::new(&weights).unwrap();
-        let index = index.sample(&mut spacetimedb::rng());
+        let index = index.sample(&mut ctx.rng());
         stats[index]
     }
-    pub fn mutate(mut self) -> Self {
-        self.hp_mutation = Self::roll_stat_mutation();
+    pub fn mutate(mut self, ctx: &ReducerContext) -> Self {
+        self.hp_mutation = Self::roll_stat_mutation(ctx);
         self.hp = (self.hp + self.hp_mutation).max(1);
-        self.pwr_mutation = Self::roll_stat_mutation();
+        self.pwr_mutation = Self::roll_stat_mutation(ctx);
         self.pwr = (self.pwr + self.pwr_mutation).max(0);
         self
     }
@@ -122,25 +125,28 @@ impl FusedUnit {
         ];
         Ok((unit, triggers, targets, effects))
     }
-    pub fn get_bases(&self) -> Vec<TBaseUnit> {
+    pub fn get_bases(&self, ctx: &ReducerContext) -> Vec<TBaseUnit> {
         self.bases
             .iter()
-            .map(|b| TBaseUnit::filter_by_name(b).unwrap())
+            .map(|b| ctx.db.base_unit().name().find(b).unwrap())
             .collect_vec()
     }
-    pub fn get_houses(&self) -> Vec<String> {
-        self.get_bases().into_iter().map(|u| u.house).collect_vec()
+    pub fn get_houses(&self, ctx: &ReducerContext) -> Vec<String> {
+        self.get_bases(ctx)
+            .into_iter()
+            .map(|u| u.house)
+            .collect_vec()
     }
-    pub fn can_stack(&self, name: &String) -> bool {
+    pub fn can_stack(&self, ctx: &ReducerContext, name: &String) -> bool {
         if self.bases.len() == 1 {
             return name.eq(&self.bases[0]);
         } else {
-            self.get_houses()
-                .contains(&TBaseUnit::filter_by_name(name).unwrap().house)
+            self.get_houses(ctx)
+                .contains(&ctx.db.base_unit().name().find(name).unwrap().house)
         }
     }
-    pub fn can_stack_fused(&self, unit: &FusedUnit) -> bool {
-        unit.bases.len() == 1 && self.can_stack(&unit.bases[0])
+    pub fn can_stack_fused(&self, ctx: &ReducerContext, unit: &FusedUnit) -> bool {
+        unit.bases.len() == 1 && self.can_stack(ctx, &unit.bases[0])
     }
     pub fn can_fuse(a: &FusedUnit, b: &FusedUnit) -> bool {
         a.fusible() && b.fusible()
@@ -167,17 +173,11 @@ impl FusedUnit {
     pub fn add_fuse_xp(&mut self, source: &FusedUnit) {
         self.add_xp(source.total_xp() - 1);
     }
-    pub fn rarity(&self) -> u8 {
-        self.get_bases()
+    pub fn rarity(&self, ctx: &ReducerContext) -> u8 {
+        self.get_bases(ctx)
             .into_iter()
             .map(|u| u.rarity)
             .max()
             .unwrap_or_default()
-    }
-}
-
-impl From<TBaseUnit> for FusedUnit {
-    fn from(value: TBaseUnit) -> Self {
-        Self::from_base(value, next_id())
     }
 }

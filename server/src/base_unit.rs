@@ -3,12 +3,13 @@ use rand::{
     distributions::{Distribution, WeightedIndex},
     Rng,
 };
+use spacetimedb::Table;
 
 use super::*;
 
-#[spacetimedb(table(public))]
+#[spacetimedb::table(name = base_unit)]
 pub struct TBaseUnit {
-    #[primarykey]
+    #[primary_key]
     pub name: String,
     pub pwr: i32,
     pub hp: i32,
@@ -28,8 +29,16 @@ pub enum UnitPool {
 }
 
 impl TBaseUnit {
-    pub fn get_random(houses: &Vec<String>, weights: &Vec<i32>, rng: &mut impl Rng) -> Self {
-        let mut units = Self::iter()
+    pub fn get_random(
+        ctx: &ReducerContext,
+        houses: &Vec<String>,
+        weights: &Vec<i32>,
+        rng: &mut impl Rng,
+    ) -> Self {
+        let mut units = ctx
+            .db
+            .base_unit()
+            .iter()
             .filter(|u| {
                 u.pool == UnitPool::Game && (houses.is_empty() || houses.contains(&u.house))
             })
@@ -37,11 +46,15 @@ impl TBaseUnit {
         let dist = WeightedIndex::new(units.iter().map(|u| weights[u.rarity as usize])).unwrap();
         units.remove(dist.sample(rng))
     }
-    pub fn get_random_for_lootbox(houses: &Vec<String>) -> Self {
+    pub fn get_random_for_lootbox(ctx: &ReducerContext, houses: &Vec<String>) -> Self {
         Self::get_random(
+            ctx,
             houses,
-            &GlobalSettings::get().rarities.lootbox_weights,
-            &mut rng(),
+            &GlobalSettings::get(ctx).rarities.lootbox_weights,
+            &mut ctx.rng(),
         )
+    }
+    pub fn into_fused(self, ctx: &ReducerContext) -> FusedUnit {
+        FusedUnit::from_base(self, next_id(ctx))
     }
 }

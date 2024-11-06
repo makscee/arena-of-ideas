@@ -1,10 +1,13 @@
+use spacetimedb::Table;
+
 use super::*;
 
-#[spacetimedb(table(public))]
+#[spacetimedb::table(name = quest)]
 #[derive(Clone, Default)]
 pub struct TQuest {
-    #[primarykey]
+    #[primary_key]
     pub id: u64,
+    #[index(btree)]
     pub owner: u64,
     pub mode: GameMode,
     pub variant: QuestVariant,
@@ -48,8 +51,12 @@ impl TQuest {
 }
 
 impl QuestEvent {
-    pub fn register_event(self, mode: GameMode, owner: u64) {
-        let quests = TQuest::filter_by_owner(&owner)
+    pub fn register_event(self, ctx: &ReducerContext, mode: GameMode, owner: u64) {
+        let quests = ctx
+            .db
+            .quest()
+            .owner()
+            .filter(owner)
             .filter(|q| q.mode == mode)
             .collect_vec();
         match self {
@@ -59,7 +66,7 @@ impl QuestEvent {
                     .filter(|q| q.variant == QuestVariant::Win)
                 {
                     q.register_update(1);
-                    TQuest::update_by_id(&q.id.clone(), q);
+                    ctx.db.quest().id().update(q);
                 }
             }
             QuestEvent::Streak(c) => {
@@ -68,7 +75,7 @@ impl QuestEvent {
                     .filter(|q| q.variant == QuestVariant::Streak)
                 {
                     q.register_update(c);
-                    TQuest::update_by_id(&q.id.clone(), q);
+                    ctx.db.quest().id().update(q);
                 }
             }
             QuestEvent::Champion => {
@@ -77,7 +84,7 @@ impl QuestEvent {
                     .filter(|q| q.variant == QuestVariant::Champion)
                 {
                     q.register_update(1);
-                    TQuest::update_by_id(&q.id.clone(), q);
+                    ctx.db.quest().id().update(q);
                 }
             }
             QuestEvent::Fuse(c) => {
@@ -85,15 +92,15 @@ impl QuestEvent {
                     q.variant == QuestVariant::FuseMany || q.variant == QuestVariant::FuseOne
                 }) {
                     q.register_update(c);
-                    TQuest::update_by_id(&q.id.clone(), q);
+                    ctx.db.quest().id().update(q);
                 }
             }
         }
     }
 }
 
-pub fn quests_daily_refresh() {
-    TQuest::delete_by_owner(&0);
+pub fn quests_daily_refresh(ctx: &ReducerContext) {
+    ctx.db.quest().owner().delete(0);
     let mut options: Vec<TQuest> = [
         TQuest {
             mode: GameMode::ArenaNormal,
@@ -167,40 +174,50 @@ pub fn quests_daily_refresh() {
         },
     ]
     .into();
-    for _ in 0..GlobalSettings::get().quest.daily_options {
-        let i = rng().gen_range(0..options.len());
+    for _ in 0..GlobalSettings::get(ctx).quest.daily_options {
+        let i = ctx.rng().gen_range(0..options.len());
         let mut q = options.remove(i);
-        q.id = next_id();
-        TQuest::insert(q).unwrap();
+        q.id = next_id(ctx);
+        ctx.db.quest().insert(q);
     }
 }
 
-#[spacetimedb(reducer)]
-fn quest_accept(ctx: ReducerContext, id: u64) -> Result<(), String> {
+#[spacetimedb::reducer]
+fn quest_accept(ctx: &ReducerContext, id: u64) -> Result<(), String> {
     let player = ctx.player()?;
-    let mut quest =
-        TQuest::filter_by_id(&id).with_context_str(|| format!("Quest#{id} not found"))?;
+    let mut quest = ctx
+        .db
+        .quest()
+        .id()
+        .find(id)
+        .with_context_str(|| format!("Quest#{id} not found"))?;
     if quest.owner != 0 {
         return Err("Wrong quest".into());
     }
-    TDailyState::get(player.id).take_quest(id)?;
-    quest.id = next_id();
+
+    TDailyState::get(ctx, player.id).take_quest(ctx, id)?;
+    quest.id = next_id(ctx);
     quest.owner = player.id;
-    GlobalEvent::QuestAccepted(quest.clone()).post(player.id);
-    TQuest::insert(quest)?;
+    GlobalEvent::QuestAccepted(quest.clone()).post(ctx, player.id);
+    ctx.db.quest().insert(quest);
     Ok(())
 }
 
-#[spacetimedb(reducer)]
-fn quest_finish(ctx: ReducerContext, id: u64) -> Result<(), String> {
+#[spacetimedb::reducer]
+fn quest_finish(ctx: &ReducerContext, id: u64) -> Result<(), String> {
     let player = ctx.player()?;
-    let quest = TQuest::filter_by_id(&id).with_context_str(|| format!("Quest#{id} not found"))?;
+    let quest = ctx
+        .db
+        .quest()
+        .id()
+        .find(id)
+        .with_context_str(|| format!("Quest#{id} not found"))?;
     if quest.owner != player.id {
         return Err(format!("Quest#{id} not owned by {}", player.id));
     }
-    TWallet::change(player.id, quest.reward)?;
-    GlobalEvent::QuestComplete(quest.clone()).post(player.id);
-    TQuest::delete_by_id(&quest.id);
-    TPlayerStats::register_completed_quest(player.id);
+    TWallet::change(ctx, player.id, quest.reward)?;
+    GlobalEvent::QuestComplete(quest.clone()).post(ctx, player.id);
+    ctx.db.quest().id().delete(quest.id);
+    TPlayerStats::register_completed_quest(ctx, player.id);
     Ok(())
 }

@@ -34,7 +34,7 @@ impl StatsPlugin {
         let mut units: HashMap<String, i32> = default();
         let mut total_units = 0;
         for battle in TBattle::iter() {
-            let team = battle.team_left.get_team();
+            let team = battle.team_left.get_team(ctx);
             for unit in team.units {
                 for base in unit.bases {
                     *units.entry(base).or_default() += 1;

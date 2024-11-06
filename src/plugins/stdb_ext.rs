@@ -120,7 +120,7 @@ impl GIDExt for u64 {
         if let Some(team) = cache.teams.get(&self) {
             return team.clone();
         } else {
-            let team = self.get_team();
+            let team = self.get_team(ctx);
             cache.teams.insert(self, team.clone());
             team
         }

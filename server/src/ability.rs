@@ -1,8 +1,8 @@
 use super::*;
 
-#[spacetimedb(table(public))]
+#[spacetimedb::table(name = ability)]
 pub struct TAbility {
-    #[primarykey]
+    #[primary_key]
     pub name: String,
     pub description: String,
     pub effect: String,

@@ -1,6 +1,8 @@
+use spacetimedb::Table;
+
 use super::*;
 
-#[spacetimedb(table(public))]
+#[spacetimedb::table(name = global_settings)]
 pub struct GlobalSettings {
     #[unique]
     always_zero: u32,
@@ -16,12 +18,12 @@ pub struct GlobalSettings {
 }
 
 impl GlobalSettings {
-    pub fn get() -> Self {
-        GlobalSettings::filter_by_always_zero(&0).unwrap()
+    pub fn get(ctx: &ReducerContext) -> Self {
+        ctx.db.global_settings().always_zero().find(0).unwrap()
     }
-    pub fn replace(self) {
-        GlobalSettings::delete_by_always_zero(&0);
-        let _ = GlobalSettings::insert(self);
+    pub fn replace(self, ctx: &ReducerContext) {
+        ctx.db.global_settings().always_zero().delete(0);
+        ctx.db.global_settings().insert(self);
     }
 }
 

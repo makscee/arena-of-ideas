@@ -1,10 +1,11 @@
 use auction::TAuction;
+use spacetimedb::Table;
 
 use super::*;
 
-#[spacetimedb(table(public))]
+#[spacetimedb::table(name = global_event)]
 struct TGlobalEvent {
-    #[primarykey]
+    #[primary_key]
     id: u64,
     owner: u64,
     event: GlobalEvent,
@@ -40,13 +41,12 @@ pub enum GlobalEvent {
 }
 
 impl GlobalEvent {
-    pub fn post(self, owner: u64) {
-        TGlobalEvent::insert(TGlobalEvent {
-            id: next_id(),
+    pub fn post(self, ctx: &ReducerContext, owner: u64) {
+        ctx.db.global_event().insert(TGlobalEvent {
+            id: next_id(ctx),
             owner,
             event: self,
             ts: Timestamp::now(),
-        })
-        .unwrap();
+        });
     }
 }
