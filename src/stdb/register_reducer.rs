@@ -71,3 +71,23 @@ impl register for super::RemoteReducers {
             .remove_on_reducer::<Register>("register", callback.0)
     }
 }
+
+#[allow(non_camel_case_types)]
+#[doc(hidden)]
+/// Extension trait for setting the call-flags for the reducer `register`.
+///
+/// Implemented for [`super::SetReducerFlags`].
+///
+/// This type is currently unstable and may be removed without a major version bump.
+pub trait set_flags_for_register {
+    /// Set the call-reducer flags for the reducer `register` to `flags`.
+    ///
+    /// This type is currently unstable and may be removed without a major version bump.
+    fn register(&self, flags: __ws::CallReducerFlags);
+}
+
+impl set_flags_for_register for super::SetReducerFlags {
+    fn register(&self, flags: __ws::CallReducerFlags) {
+        self.imp.set_call_reducer_flags("register", flags);
+    }
+}

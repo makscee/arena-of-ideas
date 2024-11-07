@@ -66,3 +66,23 @@ impl fuse_swap for super::RemoteReducers {
             .remove_on_reducer::<FuseSwap>("fuse_swap", callback.0)
     }
 }
+
+#[allow(non_camel_case_types)]
+#[doc(hidden)]
+/// Extension trait for setting the call-flags for the reducer `fuse_swap`.
+///
+/// Implemented for [`super::SetReducerFlags`].
+///
+/// This type is currently unstable and may be removed without a major version bump.
+pub trait set_flags_for_fuse_swap {
+    /// Set the call-reducer flags for the reducer `fuse_swap` to `flags`.
+    ///
+    /// This type is currently unstable and may be removed without a major version bump.
+    fn fuse_swap(&self, flags: __ws::CallReducerFlags);
+}
+
+impl set_flags_for_fuse_swap for super::SetReducerFlags {
+    fn fuse_swap(&self, flags: __ws::CallReducerFlags) {
+        self.imp.set_call_reducer_flags("fuse_swap", flags);
+    }
+}

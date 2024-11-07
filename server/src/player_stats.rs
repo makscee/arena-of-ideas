@@ -1,6 +1,6 @@
 use super::*;
 
-#[spacetimedb::table(name = player_stats)]
+#[spacetimedb::table(public, name = player_stats)]
 #[derive(Default)]
 pub struct TPlayerStats {
     #[primary_key]
@@ -14,7 +14,7 @@ pub struct TPlayerStats {
     credits_earned: u32,
 }
 
-#[spacetimedb::table(name = player_game_stats)]
+#[spacetimedb::table(public, name = player_game_stats)]
 #[derive(Default)]
 pub struct TPlayerGameStats {
     #[primary_key]

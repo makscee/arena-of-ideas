@@ -72,3 +72,23 @@ impl stack_team for super::RemoteReducers {
             .remove_on_reducer::<StackTeam>("stack_team", callback.0)
     }
 }
+
+#[allow(non_camel_case_types)]
+#[doc(hidden)]
+/// Extension trait for setting the call-flags for the reducer `stack_team`.
+///
+/// Implemented for [`super::SetReducerFlags`].
+///
+/// This type is currently unstable and may be removed without a major version bump.
+pub trait set_flags_for_stack_team {
+    /// Set the call-reducer flags for the reducer `stack_team` to `flags`.
+    ///
+    /// This type is currently unstable and may be removed without a major version bump.
+    fn stack_team(&self, flags: __ws::CallReducerFlags);
+}
+
+impl set_flags_for_stack_team for super::SetReducerFlags {
+    fn stack_team(&self, flags: __ws::CallReducerFlags) {
+        self.imp.set_call_reducer_flags("stack_team", flags);
+    }
+}

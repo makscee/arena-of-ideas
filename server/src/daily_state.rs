@@ -2,7 +2,7 @@ use spacetimedb::Table;
 
 use super::*;
 
-#[spacetimedb::table(name = daily_state)]
+#[spacetimedb::table(public, name = daily_state)]
 #[derive(Default)]
 pub struct TDailyState {
     #[primary_key]

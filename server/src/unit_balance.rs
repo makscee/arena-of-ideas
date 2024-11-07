@@ -1,6 +1,6 @@
 use super::*;
 
-#[spacetimedb::table(name = unit_balance)]
+#[spacetimedb::table(public, name = unit_balance)]
 pub struct TUnitBalance {
     #[primary_key]
     pub id: u64,

@@ -72,3 +72,23 @@ impl craft_hero for super::RemoteReducers {
             .remove_on_reducer::<CraftHero>("craft_hero", callback.0)
     }
 }
+
+#[allow(non_camel_case_types)]
+#[doc(hidden)]
+/// Extension trait for setting the call-flags for the reducer `craft_hero`.
+///
+/// Implemented for [`super::SetReducerFlags`].
+///
+/// This type is currently unstable and may be removed without a major version bump.
+pub trait set_flags_for_craft_hero {
+    /// Set the call-reducer flags for the reducer `craft_hero` to `flags`.
+    ///
+    /// This type is currently unstable and may be removed without a major version bump.
+    fn craft_hero(&self, flags: __ws::CallReducerFlags);
+}
+
+impl set_flags_for_craft_hero for super::SetReducerFlags {
+    fn craft_hero(&self, flags: __ws::CallReducerFlags) {
+        self.imp.set_call_reducer_flags("craft_hero", flags);
+    }
+}

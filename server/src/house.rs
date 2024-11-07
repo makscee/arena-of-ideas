@@ -1,6 +1,6 @@
 use super::*;
 
-#[spacetimedb::table(name = house)]
+#[spacetimedb::table(public, name = house)]
 pub struct THouse {
     #[primary_key]
     pub name: String,

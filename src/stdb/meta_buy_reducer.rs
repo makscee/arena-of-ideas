@@ -68,3 +68,23 @@ impl meta_buy for super::RemoteReducers {
             .remove_on_reducer::<MetaBuy>("meta_buy", callback.0)
     }
 }
+
+#[allow(non_camel_case_types)]
+#[doc(hidden)]
+/// Extension trait for setting the call-flags for the reducer `meta_buy`.
+///
+/// Implemented for [`super::SetReducerFlags`].
+///
+/// This type is currently unstable and may be removed without a major version bump.
+pub trait set_flags_for_meta_buy {
+    /// Set the call-reducer flags for the reducer `meta_buy` to `flags`.
+    ///
+    /// This type is currently unstable and may be removed without a major version bump.
+    fn meta_buy(&self, flags: __ws::CallReducerFlags);
+}
+
+impl set_flags_for_meta_buy for super::SetReducerFlags {
+    fn meta_buy(&self, flags: __ws::CallReducerFlags) {
+        self.imp.set_call_reducer_flags("meta_buy", flags);
+    }
+}

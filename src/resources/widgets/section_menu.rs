@@ -158,15 +158,17 @@ impl SectionMenu {
                             Stroke { width: 1.0, color },
                         );
                     }
-                    if let Some(wallet) = cn().db.wallet().get_current() {
-                        ui.add_space(20.0);
-                        wallet
-                            .amount
-                            .to_string()
-                            .cstr_c(VISIBLE_LIGHT)
-                            .push(format!(" {CREDITS_SYM}").cstr_c(YELLOW))
-                            .style(CstrStyle::Bold)
-                            .label(ui);
+                    if GameOption::Login.is_fulfilled(world) {
+                        if let Some(wallet) = cn().db.wallet().get_current() {
+                            ui.add_space(20.0);
+                            wallet
+                                .amount
+                                .to_string()
+                                .cstr_c(VISIBLE_LIGHT)
+                                .push(format!(" {CREDITS_SYM}").cstr_c(YELLOW))
+                                .style(CstrStyle::Bold)
+                                .label(ui);
+                        }
                     }
                 });
             });

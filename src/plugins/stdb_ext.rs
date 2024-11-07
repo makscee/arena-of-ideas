@@ -69,7 +69,10 @@ impl<R> StdbStatusExt for Event<R> {
                 spacetimedb_sdk::Status::Failed(e) => e.notify_error_op(),
                 _ => panic!(),
             },
-            _ => {}
+            Event::SubscribeApplied | Event::UnsubscribeApplied => OperationsPlugin::add(f),
+            Event::SubscribeError(e) => e.to_string().notify_error_op(),
+            Event::UnknownTransaction => "Unknown transaction".notify_error_op(),
+            _ => panic!(),
         }
     }
     fn notify_error(&self) {
@@ -79,7 +82,9 @@ impl<R> StdbStatusExt for Event<R> {
                 spacetimedb_sdk::Status::Failed(e) => e.notify_error_op(),
                 _ => panic!(),
             },
-            _ => {}
+            Event::SubscribeError(e) => e.to_string().notify_error_op(),
+            Event::UnknownTransaction => "Unknown transaction".notify_error_op(),
+            _ => panic!(),
         }
     }
 }

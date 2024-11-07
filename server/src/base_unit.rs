@@ -7,7 +7,7 @@ use spacetimedb::Table;
 
 use super::*;
 
-#[spacetimedb::table(name = base_unit)]
+#[spacetimedb::table(public, name = base_unit)]
 pub struct TBaseUnit {
     #[primary_key]
     pub name: String,

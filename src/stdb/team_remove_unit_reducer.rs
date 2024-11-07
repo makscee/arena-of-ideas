@@ -72,3 +72,23 @@ impl team_remove_unit for super::RemoteReducers {
             .remove_on_reducer::<TeamRemoveUnit>("team_remove_unit", callback.0)
     }
 }
+
+#[allow(non_camel_case_types)]
+#[doc(hidden)]
+/// Extension trait for setting the call-flags for the reducer `team_remove_unit`.
+///
+/// Implemented for [`super::SetReducerFlags`].
+///
+/// This type is currently unstable and may be removed without a major version bump.
+pub trait set_flags_for_team_remove_unit {
+    /// Set the call-reducer flags for the reducer `team_remove_unit` to `flags`.
+    ///
+    /// This type is currently unstable and may be removed without a major version bump.
+    fn team_remove_unit(&self, flags: __ws::CallReducerFlags);
+}
+
+impl set_flags_for_team_remove_unit for super::SetReducerFlags {
+    fn team_remove_unit(&self, flags: __ws::CallReducerFlags) {
+        self.imp.set_call_reducer_flags("team_remove_unit", flags);
+    }
+}

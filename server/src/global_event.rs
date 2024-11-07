@@ -3,7 +3,7 @@ use spacetimedb::Table;
 
 use super::*;
 
-#[spacetimedb::table(name = global_event)]
+#[spacetimedb::table(public, name = global_event)]
 struct TGlobalEvent {
     #[primary_key]
     id: u64,

@@ -74,3 +74,23 @@ impl upload_game_data for super::RemoteReducers {
             .remove_on_reducer::<UploadGameData>("upload_game_data", callback.0)
     }
 }
+
+#[allow(non_camel_case_types)]
+#[doc(hidden)]
+/// Extension trait for setting the call-flags for the reducer `upload_game_data`.
+///
+/// Implemented for [`super::SetReducerFlags`].
+///
+/// This type is currently unstable and may be removed without a major version bump.
+pub trait set_flags_for_upload_game_data {
+    /// Set the call-reducer flags for the reducer `upload_game_data` to `flags`.
+    ///
+    /// This type is currently unstable and may be removed without a major version bump.
+    fn upload_game_data(&self, flags: __ws::CallReducerFlags);
+}
+
+impl set_flags_for_upload_game_data for super::SetReducerFlags {
+    fn upload_game_data(&self, flags: __ws::CallReducerFlags) {
+        self.imp.set_call_reducer_flags("upload_game_data", flags);
+    }
+}

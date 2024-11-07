@@ -2,7 +2,7 @@ use spacetimedb::Table;
 
 use super::*;
 
-#[spacetimedb::table(name = auction)]
+#[spacetimedb::table(public, name = auction)]
 #[derive(Clone)]
 pub struct TAuction {
     #[primary_key]

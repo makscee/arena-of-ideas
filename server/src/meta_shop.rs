@@ -4,7 +4,7 @@ use spacetimedb::Table;
 
 use super::*;
 
-#[spacetimedb::table(name = meta_shop)]
+#[spacetimedb::table(public, name = meta_shop)]
 #[derive(Clone, Copy)]
 pub struct TMetaShop {
     #[primary_key]

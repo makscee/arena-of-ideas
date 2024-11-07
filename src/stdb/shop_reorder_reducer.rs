@@ -72,3 +72,23 @@ impl shop_reorder for super::RemoteReducers {
             .remove_on_reducer::<ShopReorder>("shop_reorder", callback.0)
     }
 }
+
+#[allow(non_camel_case_types)]
+#[doc(hidden)]
+/// Extension trait for setting the call-flags for the reducer `shop_reorder`.
+///
+/// Implemented for [`super::SetReducerFlags`].
+///
+/// This type is currently unstable and may be removed without a major version bump.
+pub trait set_flags_for_shop_reorder {
+    /// Set the call-reducer flags for the reducer `shop_reorder` to `flags`.
+    ///
+    /// This type is currently unstable and may be removed without a major version bump.
+    fn shop_reorder(&self, flags: __ws::CallReducerFlags);
+}
+
+impl set_flags_for_shop_reorder for super::SetReducerFlags {
+    fn shop_reorder(&self, flags: __ws::CallReducerFlags) {
+        self.imp.set_call_reducer_flags("shop_reorder", flags);
+    }
+}

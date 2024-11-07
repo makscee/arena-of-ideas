@@ -65,3 +65,23 @@ impl cleanup for super::RemoteReducers {
         self.imp.remove_on_reducer::<Cleanup>("cleanup", callback.0)
     }
 }
+
+#[allow(non_camel_case_types)]
+#[doc(hidden)]
+/// Extension trait for setting the call-flags for the reducer `cleanup`.
+///
+/// Implemented for [`super::SetReducerFlags`].
+///
+/// This type is currently unstable and may be removed without a major version bump.
+pub trait set_flags_for_cleanup {
+    /// Set the call-reducer flags for the reducer `cleanup` to `flags`.
+    ///
+    /// This type is currently unstable and may be removed without a major version bump.
+    fn cleanup(&self, flags: __ws::CallReducerFlags);
+}
+
+impl set_flags_for_cleanup for super::SetReducerFlags {
+    fn cleanup(&self, flags: __ws::CallReducerFlags) {
+        self.imp.set_call_reducer_flags("cleanup", flags);
+    }
+}

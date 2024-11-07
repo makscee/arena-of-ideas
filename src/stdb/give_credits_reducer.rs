@@ -66,3 +66,23 @@ impl give_credits for super::RemoteReducers {
             .remove_on_reducer::<GiveCredits>("give_credits", callback.0)
     }
 }
+
+#[allow(non_camel_case_types)]
+#[doc(hidden)]
+/// Extension trait for setting the call-flags for the reducer `give_credits`.
+///
+/// Implemented for [`super::SetReducerFlags`].
+///
+/// This type is currently unstable and may be removed without a major version bump.
+pub trait set_flags_for_give_credits {
+    /// Set the call-reducer flags for the reducer `give_credits` to `flags`.
+    ///
+    /// This type is currently unstable and may be removed without a major version bump.
+    fn give_credits(&self, flags: __ws::CallReducerFlags);
+}
+
+impl set_flags_for_give_credits for super::SetReducerFlags {
+    fn give_credits(&self, flags: __ws::CallReducerFlags) {
+        self.imp.set_call_reducer_flags("give_credits", flags);
+    }
+}

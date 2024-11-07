@@ -8,38 +8,38 @@ use super::*;
 
 #[derive(EnumIter, EnumString, AsRefStr, Hash, PartialEq, Eq, Display, Copy, Clone, Debug)]
 pub enum StdbTable {
-    GlobalSettings,
-    GlobalData,
+    global_settings,
+    global_data,
 
-    TBaseUnit,
-    THouse,
-    TAbility,
-    TStatus,
+    base_unit,
+    house,
+    ability,
+    status,
 
-    TMetaShop,
+    meta_shop,
 
-    TTrade,
+    trade,
 
-    TPlayer,
-    TQuest,
-    TArenaRun,
-    TArenaRunArchive,
-    TArenaLeaderboard,
-    TTeam,
-    TBattle,
-    TAuction,
-    TUnitItem,
-    TUnitShardItem,
-    TRainbowShardItem,
-    TLootboxItem,
-    TWallet,
-    TDailyState,
-    TUnitBalance,
-    TIncubator,
-    TIncubatorVote,
-    TIncubatorFavorite,
-    TPlayerStats,
-    TPlayerGameStats,
+    player,
+    quest,
+    arena_run,
+    arena_run_archive,
+    arena_leaderboard,
+    team,
+    battle,
+    auction,
+    unit_item,
+    unit_shard_item,
+    rainbow_shard_item,
+    lootbox_item,
+    wallet,
+    daily_state,
+    unit_balance,
+    incubator,
+    incubator_vote,
+    incubator_favorite,
+    player_stats,
+    player_game_stats,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -101,7 +101,7 @@ impl StdbQuery {
         }
     }
     pub fn queries_login() -> Vec<StdbQuery> {
-        [StdbTable::TPlayer.full(), StdbTable::GlobalData.full()].into()
+        [StdbTable::player.full(), StdbTable::global_data.full()].into()
     }
     pub fn queries_game() -> Vec<StdbQuery> {
         StdbTable::iter().map(|t| t.owner()).collect_vec()
@@ -156,8 +156,11 @@ impl StdbQuery {
             .collect_vec();
         info!("Update subscriptions:\n{}", queries.iter().join("\n"));
         cn().subscription_builder()
+            .on_error(|e| e.event.notify_error())
             .on_applied(move |e| {
+                info!("Subscription applied");
                 e.event.on_success(|world| {
+                    info!("Subscription applied");
                     on_subscribe(world);
                 });
             })
@@ -168,154 +171,154 @@ impl StdbQuery {
 impl StdbTable {
     pub fn fill_from_json_data(self, json: &str, data: &mut GameData) {
         match self {
-            StdbTable::GlobalSettings => {
+            StdbTable::global_settings => {
                 data.global_settings =
                     serde_json::from_str::<DeserializeWrapper<Vec<GlobalSettings>>>(json)
                         .unwrap()
                         .0;
             }
-            StdbTable::GlobalData => {
+            StdbTable::global_data => {
                 data.global_data =
                     serde_json::from_str::<DeserializeWrapper<Vec<GlobalData>>>(json)
                         .unwrap()
                         .0;
             }
-            StdbTable::TBaseUnit => {
+            StdbTable::base_unit => {
                 data.base_unit = serde_json::from_str::<DeserializeWrapper<Vec<TBaseUnit>>>(json)
                     .unwrap()
                     .0;
             }
-            StdbTable::THouse => {
+            StdbTable::house => {
                 data.house = serde_json::from_str::<DeserializeWrapper<Vec<THouse>>>(json)
                     .unwrap()
                     .0;
             }
-            StdbTable::TAbility => {
+            StdbTable::ability => {
                 data.ability = serde_json::from_str::<DeserializeWrapper<Vec<TAbility>>>(json)
                     .unwrap()
                     .0;
             }
-            StdbTable::TStatus => {
+            StdbTable::status => {
                 data.status = serde_json::from_str::<DeserializeWrapper<Vec<TStatus>>>(json)
                     .unwrap()
                     .0;
             }
-            StdbTable::TMetaShop => {
+            StdbTable::meta_shop => {
                 data.meta_shop = serde_json::from_str::<DeserializeWrapper<Vec<TMetaShop>>>(json)
                     .unwrap()
                     .0;
             }
-            StdbTable::TTrade => {
+            StdbTable::trade => {
                 data.trade = serde_json::from_str::<DeserializeWrapper<Vec<TTrade>>>(json)
                     .unwrap()
                     .0;
             }
-            StdbTable::TPlayer => {
+            StdbTable::player => {
                 data.player = serde_json::from_str::<DeserializeWrapper<Vec<TPlayer>>>(json)
                     .unwrap()
                     .0;
             }
-            StdbTable::TQuest => {
+            StdbTable::quest => {
                 data.quest = serde_json::from_str::<DeserializeWrapper<Vec<TQuest>>>(json)
                     .unwrap()
                     .0;
             }
-            StdbTable::TArenaRun => {
+            StdbTable::arena_run => {
                 data.arena_run = serde_json::from_str::<DeserializeWrapper<Vec<TArenaRun>>>(json)
                     .unwrap()
                     .0;
             }
-            StdbTable::TArenaRunArchive => {
+            StdbTable::arena_run_archive => {
                 data.arena_run_archive =
                     serde_json::from_str::<DeserializeWrapper<Vec<TArenaRunArchive>>>(json)
                         .unwrap()
                         .0;
             }
-            StdbTable::TArenaLeaderboard => {
+            StdbTable::arena_leaderboard => {
                 data.arena_leaderboard =
                     serde_json::from_str::<DeserializeWrapper<Vec<TArenaLeaderboard>>>(json)
                         .unwrap()
                         .0;
             }
-            StdbTable::TTeam => {
+            StdbTable::team => {
                 data.team = serde_json::from_str::<DeserializeWrapper<Vec<TTeam>>>(json)
                     .unwrap()
                     .0;
             }
-            StdbTable::TBattle => {
+            StdbTable::battle => {
                 data.battle = serde_json::from_str::<DeserializeWrapper<Vec<TBattle>>>(json)
                     .unwrap()
                     .0;
             }
-            StdbTable::TAuction => {
+            StdbTable::auction => {
                 data.auction = serde_json::from_str::<DeserializeWrapper<Vec<TAuction>>>(json)
                     .unwrap()
                     .0;
             }
-            StdbTable::TUnitItem => {
+            StdbTable::unit_item => {
                 data.unit_item = serde_json::from_str::<DeserializeWrapper<Vec<TUnitItem>>>(json)
                     .unwrap()
                     .0;
             }
-            StdbTable::TUnitShardItem => {
+            StdbTable::unit_shard_item => {
                 data.unit_shard_item =
                     serde_json::from_str::<DeserializeWrapper<Vec<TUnitShardItem>>>(json)
                         .unwrap()
                         .0;
             }
-            StdbTable::TRainbowShardItem => {
+            StdbTable::rainbow_shard_item => {
                 data.rainbow_shard_item =
                     serde_json::from_str::<DeserializeWrapper<Vec<TRainbowShardItem>>>(json)
                         .unwrap()
                         .0;
             }
-            StdbTable::TLootboxItem => {
+            StdbTable::lootbox_item => {
                 data.lootbox_item =
                     serde_json::from_str::<DeserializeWrapper<Vec<TLootboxItem>>>(json)
                         .unwrap()
                         .0;
             }
-            StdbTable::TWallet => {
+            StdbTable::wallet => {
                 data.wallet = serde_json::from_str::<DeserializeWrapper<Vec<TWallet>>>(json)
                     .unwrap()
                     .0;
             }
-            StdbTable::TDailyState => {
+            StdbTable::daily_state => {
                 data.daily_state =
                     serde_json::from_str::<DeserializeWrapper<Vec<TDailyState>>>(json)
                         .unwrap()
                         .0;
             }
-            StdbTable::TUnitBalance => {
+            StdbTable::unit_balance => {
                 data.unit_balance =
                     serde_json::from_str::<DeserializeWrapper<Vec<TUnitBalance>>>(json)
                         .unwrap()
                         .0;
             }
-            StdbTable::TIncubator => {
+            StdbTable::incubator => {
                 data.incubator = serde_json::from_str::<DeserializeWrapper<Vec<TIncubator>>>(json)
                     .unwrap()
                     .0;
             }
-            StdbTable::TIncubatorVote => {
+            StdbTable::incubator_vote => {
                 data.incubator_vote =
                     serde_json::from_str::<DeserializeWrapper<Vec<TIncubatorVote>>>(json)
                         .unwrap()
                         .0;
             }
-            StdbTable::TIncubatorFavorite => {
+            StdbTable::incubator_favorite => {
                 data.incubator_favorite =
                     serde_json::from_str::<DeserializeWrapper<Vec<TIncubatorFavorite>>>(json)
                         .unwrap()
                         .0;
             }
-            StdbTable::TPlayerStats => {
+            StdbTable::player_stats => {
                 data.player_stats =
                     serde_json::from_str::<DeserializeWrapper<Vec<TPlayerStats>>>(json)
                         .unwrap()
                         .0;
             }
-            StdbTable::TPlayerGameStats => {
+            StdbTable::player_game_stats => {
                 data.player_game_stats =
                     serde_json::from_str::<DeserializeWrapper<Vec<TPlayerGameStats>>>(json)
                         .unwrap()
@@ -325,88 +328,88 @@ impl StdbTable {
     }
     pub fn get_json_data(self) -> String {
         match self {
-            StdbTable::GlobalSettings => to_string_pretty(&SerializeWrapper::new(
+            StdbTable::global_settings => to_string_pretty(&SerializeWrapper::new(
                 cn().db.global_settings().iter().collect_vec(),
             )),
-            StdbTable::GlobalData => to_string_pretty(&SerializeWrapper::new(
+            StdbTable::global_data => to_string_pretty(&SerializeWrapper::new(
                 cn().db.global_data().iter().collect_vec(),
             )),
-            StdbTable::TBaseUnit => to_string_pretty(&SerializeWrapper::new(
+            StdbTable::base_unit => to_string_pretty(&SerializeWrapper::new(
                 cn().db.base_unit().iter().collect_vec(),
             )),
-            StdbTable::THouse => {
+            StdbTable::house => {
                 to_string_pretty(&SerializeWrapper::new(cn().db.house().iter().collect_vec()))
             }
-            StdbTable::TAbility => to_string_pretty(&SerializeWrapper::new(
+            StdbTable::ability => to_string_pretty(&SerializeWrapper::new(
                 cn().db.ability().iter().collect_vec(),
             )),
-            StdbTable::TStatus => to_string_pretty(&SerializeWrapper::new(
+            StdbTable::status => to_string_pretty(&SerializeWrapper::new(
                 cn().db.status().iter().collect_vec(),
             )),
-            StdbTable::TMetaShop => to_string_pretty(&SerializeWrapper::new(
+            StdbTable::meta_shop => to_string_pretty(&SerializeWrapper::new(
                 cn().db.meta_shop().iter().collect_vec(),
             )),
-            StdbTable::TTrade => {
+            StdbTable::trade => {
                 to_string_pretty(&SerializeWrapper::new(cn().db.trade().iter().collect_vec()))
             }
-            StdbTable::TPlayer => to_string_pretty(&SerializeWrapper::new(
+            StdbTable::player => to_string_pretty(&SerializeWrapper::new(
                 cn().db.player().iter().collect_vec(),
             )),
-            StdbTable::TQuest => {
+            StdbTable::quest => {
                 to_string_pretty(&SerializeWrapper::new(cn().db.quest().iter().collect_vec()))
             }
-            StdbTable::TArenaRun => to_string_pretty(&SerializeWrapper::new(
+            StdbTable::arena_run => to_string_pretty(&SerializeWrapper::new(
                 cn().db.arena_run().iter().collect_vec(),
             )),
-            StdbTable::TArenaRunArchive => to_string_pretty(&SerializeWrapper::new(
+            StdbTable::arena_run_archive => to_string_pretty(&SerializeWrapper::new(
                 cn().db.arena_run_archive().iter().collect_vec(),
             )),
-            StdbTable::TArenaLeaderboard => to_string_pretty(&SerializeWrapper::new(
+            StdbTable::arena_leaderboard => to_string_pretty(&SerializeWrapper::new(
                 cn().db.arena_leaderboard().iter().collect_vec(),
             )),
-            StdbTable::TTeam => {
+            StdbTable::team => {
                 to_string_pretty(&SerializeWrapper::new(cn().db.team().iter().collect_vec()))
             }
-            StdbTable::TBattle => to_string_pretty(&SerializeWrapper::new(
+            StdbTable::battle => to_string_pretty(&SerializeWrapper::new(
                 cn().db.battle().iter().collect_vec(),
             )),
-            StdbTable::TAuction => to_string_pretty(&SerializeWrapper::new(
+            StdbTable::auction => to_string_pretty(&SerializeWrapper::new(
                 cn().db.auction().iter().collect_vec(),
             )),
-            StdbTable::TUnitItem => to_string_pretty(&SerializeWrapper::new(
+            StdbTable::unit_item => to_string_pretty(&SerializeWrapper::new(
                 cn().db.unit_item().iter().collect_vec(),
             )),
-            StdbTable::TUnitShardItem => to_string_pretty(&SerializeWrapper::new(
+            StdbTable::unit_shard_item => to_string_pretty(&SerializeWrapper::new(
                 cn().db.unit_shard_item().iter().collect_vec(),
             )),
-            StdbTable::TRainbowShardItem => to_string_pretty(&SerializeWrapper::new(
+            StdbTable::rainbow_shard_item => to_string_pretty(&SerializeWrapper::new(
                 cn().db.rainbow_shard_item().iter().collect_vec(),
             )),
-            StdbTable::TLootboxItem => to_string_pretty(&SerializeWrapper::new(
+            StdbTable::lootbox_item => to_string_pretty(&SerializeWrapper::new(
                 cn().db.lootbox_item().iter().collect_vec(),
             )),
-            StdbTable::TWallet => to_string_pretty(&SerializeWrapper::new(
+            StdbTable::wallet => to_string_pretty(&SerializeWrapper::new(
                 cn().db.wallet().iter().collect_vec(),
             )),
-            StdbTable::TDailyState => to_string_pretty(&SerializeWrapper::new(
+            StdbTable::daily_state => to_string_pretty(&SerializeWrapper::new(
                 cn().db.daily_state().iter().collect_vec(),
             )),
-            StdbTable::TUnitBalance => to_string_pretty(&SerializeWrapper::new(
+            StdbTable::unit_balance => to_string_pretty(&SerializeWrapper::new(
                 cn().db.unit_balance().iter().collect_vec(),
             )),
-            StdbTable::TIncubator => to_string_pretty(&SerializeWrapper::new(
+            StdbTable::incubator => to_string_pretty(&SerializeWrapper::new(
                 cn().db.incubator().iter().collect_vec(),
             )),
-            StdbTable::TIncubatorVote => to_string_pretty(&SerializeWrapper::new(
+            StdbTable::incubator_vote => to_string_pretty(&SerializeWrapper::new(
                 cn().db.incubator_vote().iter().collect_vec(),
             )),
-            StdbTable::TIncubatorFavorite => to_string_pretty(&SerializeWrapper::new(
+            StdbTable::incubator_favorite => to_string_pretty(&SerializeWrapper::new(
                 cn().db.incubator_favorite().iter().collect_vec(),
             )),
-            StdbTable::TPlayerStats => to_string_pretty(&SerializeWrapper::new(
+            StdbTable::player_stats => to_string_pretty(&SerializeWrapper::new(
                 cn().db.player_stats().iter().collect_vec(),
             )),
-            StdbTable::TPlayerGameStats => to_string_pretty(&SerializeWrapper::new(
+            StdbTable::player_game_stats => to_string_pretty(&SerializeWrapper::new(
                 cn().db.player_game_stats().iter().collect_vec(),
             )),
         }
@@ -420,47 +423,47 @@ impl StdbTable {
     }
     pub fn owner(self) -> StdbQuery {
         match self {
-            StdbTable::GlobalSettings
-            | StdbTable::GlobalData
-            | StdbTable::TBaseUnit
-            | StdbTable::THouse
-            | StdbTable::TAbility
-            | StdbTable::TStatus
-            | StdbTable::TArenaLeaderboard
-            | StdbTable::TBattle
-            | StdbTable::TAuction
-            | StdbTable::TTeam
-            | StdbTable::TPlayer
-            | StdbTable::TArenaRunArchive
-            | StdbTable::TIncubator
-            | StdbTable::TIncubatorVote
-            | StdbTable::TIncubatorFavorite
-            | StdbTable::TPlayerStats
-            | StdbTable::TPlayerGameStats
-            | StdbTable::TMetaShop => self.full(),
+            StdbTable::global_settings
+            | StdbTable::global_data
+            | StdbTable::base_unit
+            | StdbTable::house
+            | StdbTable::ability
+            | StdbTable::status
+            | StdbTable::arena_leaderboard
+            | StdbTable::battle
+            | StdbTable::auction
+            | StdbTable::team
+            | StdbTable::player
+            | StdbTable::arena_run_archive
+            | StdbTable::incubator
+            | StdbTable::incubator_vote
+            | StdbTable::incubator_favorite
+            | StdbTable::player_stats
+            | StdbTable::player_game_stats
+            | StdbTable::meta_shop => self.full(),
 
-            StdbTable::TTrade => StdbQuery {
+            StdbTable::trade => StdbQuery {
                 table: self,
                 condition: StdbCondition::OwnerMacro("a_player = {uid} or b_player = {uid}".into()),
             },
 
-            StdbTable::TUnitItem | StdbTable::TQuest => StdbQuery {
+            StdbTable::unit_item | StdbTable::quest => StdbQuery {
                 table: self,
                 condition: StdbCondition::OwnerOrZero,
             },
-            StdbTable::TUnitShardItem | StdbTable::TRainbowShardItem | StdbTable::TLootboxItem => {
-                StdbQuery {
-                    table: self,
-                    condition: StdbCondition::OwnerMacro(
-                        "(owner = {uid} or owner = 0) and count > 0".into(),
-                    ),
-                }
-            }
+            StdbTable::unit_shard_item
+            | StdbTable::rainbow_shard_item
+            | StdbTable::lootbox_item => StdbQuery {
+                table: self,
+                condition: StdbCondition::OwnerMacro(
+                    "(owner = {uid} or owner = 0) and count > 0".into(),
+                ),
+            },
 
-            StdbTable::TArenaRun
-            | StdbTable::TWallet
-            | StdbTable::TDailyState
-            | StdbTable::TUnitBalance => StdbQuery {
+            StdbTable::arena_run
+            | StdbTable::wallet
+            | StdbTable::daily_state
+            | StdbTable::unit_balance => StdbQuery {
                 table: self,
                 condition: StdbCondition::Owner,
             },

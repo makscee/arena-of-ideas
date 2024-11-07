@@ -9,7 +9,7 @@ use spacetimedb::{Table, Timestamp};
 
 use super::*;
 
-#[spacetimedb::table(name = arena_run)]
+#[spacetimedb::table(public, name = arena_run)]
 pub struct TArenaRun {
     mode: GameMode,
     #[primary_key]
@@ -41,7 +41,7 @@ pub struct TArenaRun {
     last_updated: Timestamp,
 }
 
-#[spacetimedb::table(name = arena_run_archive)]
+#[spacetimedb::table(public, name = arena_run_archive)]
 pub struct TArenaRunArchive {
     #[primary_key]
     id: u64,

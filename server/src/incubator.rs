@@ -2,7 +2,7 @@ use base_unit::base_unit;
 
 use super::*;
 
-#[spacetimedb::table(name = incubator)]
+#[spacetimedb::table(public, name = incubator)]
 pub struct TIncubator {
     #[primary_key]
     id: u64,
@@ -10,7 +10,7 @@ pub struct TIncubator {
     unit: Vec<TBaseUnit>,
 }
 
-#[spacetimedb::table(name = incubator_vote)]
+#[spacetimedb::table(public, name = incubator_vote)]
 pub struct TIncubatorVote {
     #[primary_key]
     id: u64,
@@ -21,7 +21,7 @@ pub struct TIncubatorVote {
     vote: bool,
 }
 
-#[spacetimedb::table(name = incubator_favorite)]
+#[spacetimedb::table(public, name = incubator_favorite)]
 pub struct TIncubatorFavorite {
     #[primary_key]
     owner: u64,

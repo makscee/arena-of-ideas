@@ -2,7 +2,7 @@ use spacetimedb::{Table, Timestamp};
 
 use super::*;
 
-#[spacetimedb::table(name = battle)]
+#[spacetimedb::table(public, name = battle)]
 #[derive(Clone)]
 pub struct TBattle {
     #[primary_key]

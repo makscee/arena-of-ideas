@@ -72,3 +72,23 @@ impl stack_shop for super::RemoteReducers {
             .remove_on_reducer::<StackShop>("stack_shop", callback.0)
     }
 }
+
+#[allow(non_camel_case_types)]
+#[doc(hidden)]
+/// Extension trait for setting the call-flags for the reducer `stack_shop`.
+///
+/// Implemented for [`super::SetReducerFlags`].
+///
+/// This type is currently unstable and may be removed without a major version bump.
+pub trait set_flags_for_stack_shop {
+    /// Set the call-reducer flags for the reducer `stack_shop` to `flags`.
+    ///
+    /// This type is currently unstable and may be removed without a major version bump.
+    fn stack_shop(&self, flags: __ws::CallReducerFlags);
+}
+
+impl set_flags_for_stack_shop for super::SetReducerFlags {
+    fn stack_shop(&self, flags: __ws::CallReducerFlags) {
+        self.imp.set_call_reducer_flags("stack_shop", flags);
+    }
+}

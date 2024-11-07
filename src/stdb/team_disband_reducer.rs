@@ -70,3 +70,23 @@ impl team_disband for super::RemoteReducers {
             .remove_on_reducer::<TeamDisband>("team_disband", callback.0)
     }
 }
+
+#[allow(non_camel_case_types)]
+#[doc(hidden)]
+/// Extension trait for setting the call-flags for the reducer `team_disband`.
+///
+/// Implemented for [`super::SetReducerFlags`].
+///
+/// This type is currently unstable and may be removed without a major version bump.
+pub trait set_flags_for_team_disband {
+    /// Set the call-reducer flags for the reducer `team_disband` to `flags`.
+    ///
+    /// This type is currently unstable and may be removed without a major version bump.
+    fn team_disband(&self, flags: __ws::CallReducerFlags);
+}
+
+impl set_flags_for_team_disband for super::SetReducerFlags {
+    fn team_disband(&self, flags: __ws::CallReducerFlags) {
+        self.imp.set_call_reducer_flags("team_disband", flags);
+    }
+}

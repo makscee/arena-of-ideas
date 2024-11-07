@@ -71,3 +71,23 @@ impl shop_change_g for super::RemoteReducers {
             .remove_on_reducer::<ShopChangeG>("shop_change_g", callback.0)
     }
 }
+
+#[allow(non_camel_case_types)]
+#[doc(hidden)]
+/// Extension trait for setting the call-flags for the reducer `shop_change_g`.
+///
+/// Implemented for [`super::SetReducerFlags`].
+///
+/// This type is currently unstable and may be removed without a major version bump.
+pub trait set_flags_for_shop_change_g {
+    /// Set the call-reducer flags for the reducer `shop_change_g` to `flags`.
+    ///
+    /// This type is currently unstable and may be removed without a major version bump.
+    fn shop_change_g(&self, flags: __ws::CallReducerFlags);
+}
+
+impl set_flags_for_shop_change_g for super::SetReducerFlags {
+    fn shop_change_g(&self, flags: __ws::CallReducerFlags) {
+        self.imp.set_call_reducer_flags("shop_change_g", flags);
+    }
+}

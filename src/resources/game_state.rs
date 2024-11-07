@@ -64,7 +64,7 @@ lazy_static! {
             GameState::Stats,
             [
                 GameOption::Connect,
-                GameOption::Table(StdbTable::TBattle.full()),
+                GameOption::Table(StdbTable::battle.full()),
             ]
             .into(),
         );

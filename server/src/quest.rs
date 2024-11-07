@@ -2,7 +2,7 @@ use spacetimedb::Table;
 
 use super::*;
 
-#[spacetimedb::table(name = quest)]
+#[spacetimedb::table(public, name = quest)]
 #[derive(Clone, Default)]
 pub struct TQuest {
     #[primary_key]
@@ -100,7 +100,7 @@ impl QuestEvent {
 }
 
 pub fn quests_daily_refresh(ctx: &ReducerContext) {
-    ctx.db.quest().owner().delete(0);
+    ctx.db.quest().owner().delete(0_u64);
     let mut options: Vec<TQuest> = [
         TQuest {
             mode: GameMode::ArenaNormal,

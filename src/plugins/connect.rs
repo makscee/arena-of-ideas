@@ -1,4 +1,5 @@
 use spacetimedb_lib::{bsatn, de::Deserialize, ser::Serialize, Identity};
+use spacetimedb_sdk::DbContext;
 
 use super::*;
 
@@ -36,7 +37,6 @@ impl ConnectPlugin {
                 })
             }
         };
-
         let creds = bsatn::from_slice::<Credentials>(&bytes).context(format!(
             "Error deserializing credentials from bytes stored in file {path:?}",
         ))?;
@@ -58,9 +58,10 @@ impl ConnectPlugin {
     fn run_connect() {
         info!("Connect start");
         Self::connect(|conn, identity, token| {
-            info!("Connected {}", hex::encode(identity.as_bytes()));
+            info!("Connected {identity}");
             let token = token.to_owned();
             StdbQuery::subscribe(StdbQuery::queries_login(), move |world| {
+                info!("On subscribe");
                 let server_version = cn().db.global_data().current().game_version;
                 Self::save_credentials(identity, token.clone())
                     .expect("Failed to save credentials");
@@ -102,13 +103,15 @@ impl ConnectPlugin {
     pub fn connect(on_connect: fn(&DbConnection, Identity, &str)) {
         let (uri, module) = current_server();
         info!("Connect start {} {}", uri, module);
+        let credentials = Self::load_credentials().unwrap();
         let c = DbConnection::builder()
-            .with_credentials(Self::load_credentials().unwrap())
+            .with_credentials(credentials)
             .with_uri(uri)
             .with_module_name(module)
             .on_connect(on_connect)
             .build()
             .unwrap();
+        c.run_threaded();
         apply_subscriptions(&c);
         CONNECTION.set(c).ok().unwrap();
     }

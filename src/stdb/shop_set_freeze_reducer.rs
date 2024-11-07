@@ -72,3 +72,23 @@ impl shop_set_freeze for super::RemoteReducers {
             .remove_on_reducer::<ShopSetFreeze>("shop_set_freeze", callback.0)
     }
 }
+
+#[allow(non_camel_case_types)]
+#[doc(hidden)]
+/// Extension trait for setting the call-flags for the reducer `shop_set_freeze`.
+///
+/// Implemented for [`super::SetReducerFlags`].
+///
+/// This type is currently unstable and may be removed without a major version bump.
+pub trait set_flags_for_shop_set_freeze {
+    /// Set the call-reducer flags for the reducer `shop_set_freeze` to `flags`.
+    ///
+    /// This type is currently unstable and may be removed without a major version bump.
+    fn shop_set_freeze(&self, flags: __ws::CallReducerFlags);
+}
+
+impl set_flags_for_shop_set_freeze for super::SetReducerFlags {
+    fn shop_set_freeze(&self, flags: __ws::CallReducerFlags) {
+        self.imp.set_call_reducer_flags("shop_set_freeze", flags);
+    }
+}

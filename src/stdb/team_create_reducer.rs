@@ -68,3 +68,23 @@ impl team_create for super::RemoteReducers {
             .remove_on_reducer::<TeamCreate>("team_create", callback.0)
     }
 }
+
+#[allow(non_camel_case_types)]
+#[doc(hidden)]
+/// Extension trait for setting the call-flags for the reducer `team_create`.
+///
+/// Implemented for [`super::SetReducerFlags`].
+///
+/// This type is currently unstable and may be removed without a major version bump.
+pub trait set_flags_for_team_create {
+    /// Set the call-reducer flags for the reducer `team_create` to `flags`.
+    ///
+    /// This type is currently unstable and may be removed without a major version bump.
+    fn team_create(&self, flags: __ws::CallReducerFlags);
+}
+
+impl set_flags_for_team_create for super::SetReducerFlags {
+    fn team_create(&self, flags: __ws::CallReducerFlags) {
+        self.imp.set_call_reducer_flags("team_create", flags);
+    }
+}

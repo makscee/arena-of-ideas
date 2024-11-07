@@ -3,7 +3,7 @@ use spacetimedb::Table;
 
 use super::*;
 
-#[spacetimedb::table(name = arena_pool)]
+#[spacetimedb::table(public, name = arena_pool)]
 pub struct TArenaPool {
     #[primary_key]
     pub team: u64,

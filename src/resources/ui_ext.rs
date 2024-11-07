@@ -220,7 +220,7 @@ impl ShowTable<TMetaShop> for Vec<TMetaShop> {
                         .ui(ui)
                         .clicked()
                     {
-                        cn().reducers.meta_buy(d.id);
+                        cn().reducers.meta_buy(d.id).unwrap();
                     }
                 },
                 false,

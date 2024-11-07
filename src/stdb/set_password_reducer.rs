@@ -72,3 +72,23 @@ impl set_password for super::RemoteReducers {
             .remove_on_reducer::<SetPassword>("set_password", callback.0)
     }
 }
+
+#[allow(non_camel_case_types)]
+#[doc(hidden)]
+/// Extension trait for setting the call-flags for the reducer `set_password`.
+///
+/// Implemented for [`super::SetReducerFlags`].
+///
+/// This type is currently unstable and may be removed without a major version bump.
+pub trait set_flags_for_set_password {
+    /// Set the call-reducer flags for the reducer `set_password` to `flags`.
+    ///
+    /// This type is currently unstable and may be removed without a major version bump.
+    fn set_password(&self, flags: __ws::CallReducerFlags);
+}
+
+impl set_flags_for_set_password for super::SetReducerFlags {
+    fn set_password(&self, flags: __ws::CallReducerFlags) {
+        self.imp.set_call_reducer_flags("set_password", flags);
+    }
+}

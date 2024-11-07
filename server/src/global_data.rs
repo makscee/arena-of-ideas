@@ -2,7 +2,7 @@ use spacetimedb::Table;
 
 use super::*;
 
-#[spacetimedb::table(name = global_data)]
+#[spacetimedb::table(public, name = global_data)]
 pub struct GlobalData {
     #[unique]
     pub always_zero: u32,

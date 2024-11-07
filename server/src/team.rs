@@ -1,6 +1,6 @@
 use super::*;
 
-#[spacetimedb::table(name = team)]
+#[spacetimedb::table(public, name = team)]
 #[derive(Clone)]
 pub struct TTeam {
     #[primary_key]

@@ -68,3 +68,23 @@ impl quest_finish for super::RemoteReducers {
             .remove_on_reducer::<QuestFinish>("quest_finish", callback.0)
     }
 }
+
+#[allow(non_camel_case_types)]
+#[doc(hidden)]
+/// Extension trait for setting the call-flags for the reducer `quest_finish`.
+///
+/// Implemented for [`super::SetReducerFlags`].
+///
+/// This type is currently unstable and may be removed without a major version bump.
+pub trait set_flags_for_quest_finish {
+    /// Set the call-reducer flags for the reducer `quest_finish` to `flags`.
+    ///
+    /// This type is currently unstable and may be removed without a major version bump.
+    fn quest_finish(&self, flags: __ws::CallReducerFlags);
+}
+
+impl set_flags_for_quest_finish for super::SetReducerFlags {
+    fn quest_finish(&self, flags: __ws::CallReducerFlags) {
+        self.imp.set_call_reducer_flags("quest_finish", flags);
+    }
+}

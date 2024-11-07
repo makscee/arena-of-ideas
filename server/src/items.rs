@@ -15,7 +15,7 @@ pub struct ItemBundle {
     pub lootboxes: Vec<u64>,
 }
 
-#[spacetimedb::table(name = unit_item)]
+#[spacetimedb::table(public, name = unit_item)]
 #[derive(Clone)]
 pub struct TUnitItem {
     #[primary_key]
@@ -25,7 +25,7 @@ pub struct TUnitItem {
     pub unit: FusedUnit,
 }
 
-#[spacetimedb::table(name = unit_shard_item)]
+#[spacetimedb::table(public, name = unit_shard_item)]
 #[derive(Clone)]
 pub struct TUnitShardItem {
     #[primary_key]
@@ -37,7 +37,7 @@ pub struct TUnitShardItem {
     pub count: u32,
 }
 
-#[spacetimedb::table(name = rainbow_shard_item)]
+#[spacetimedb::table(public, name = rainbow_shard_item)]
 #[derive(Clone)]
 pub struct TRainbowShardItem {
     #[primary_key]
@@ -47,7 +47,7 @@ pub struct TRainbowShardItem {
     pub count: u32,
 }
 
-#[spacetimedb::table(name = lootbox_item)]
+#[spacetimedb::table(public, name = lootbox_item)]
 #[derive(Clone)]
 pub struct TLootboxItem {
     #[primary_key]

@@ -1,6 +1,6 @@
 use super::*;
 
-#[spacetimedb::table(name = wallet)]
+#[spacetimedb::table(public, name = wallet)]
 pub struct TWallet {
     #[primary_key]
     owner: u64,

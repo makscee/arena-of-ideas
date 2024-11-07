@@ -71,3 +71,23 @@ impl fuse_start for super::RemoteReducers {
             .remove_on_reducer::<FuseStart>("fuse_start", callback.0)
     }
 }
+
+#[allow(non_camel_case_types)]
+#[doc(hidden)]
+/// Extension trait for setting the call-flags for the reducer `fuse_start`.
+///
+/// Implemented for [`super::SetReducerFlags`].
+///
+/// This type is currently unstable and may be removed without a major version bump.
+pub trait set_flags_for_fuse_start {
+    /// Set the call-reducer flags for the reducer `fuse_start` to `flags`.
+    ///
+    /// This type is currently unstable and may be removed without a major version bump.
+    fn fuse_start(&self, flags: __ws::CallReducerFlags);
+}
+
+impl set_flags_for_fuse_start for super::SetReducerFlags {
+    fn fuse_start(&self, flags: __ws::CallReducerFlags) {
+        self.imp.set_call_reducer_flags("fuse_start", flags);
+    }
+}

@@ -2,7 +2,7 @@ use spacetimedb::Timestamp;
 
 use super::*;
 
-#[spacetimedb::table(name = arena_leaderboard)]
+#[spacetimedb::table(public, name = arena_leaderboard)]
 pub struct TArenaLeaderboard {
     pub mode: GameMode,
     #[index(btree)]

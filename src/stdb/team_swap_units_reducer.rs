@@ -73,3 +73,23 @@ impl team_swap_units for super::RemoteReducers {
             .remove_on_reducer::<TeamSwapUnits>("team_swap_units", callback.0)
     }
 }
+
+#[allow(non_camel_case_types)]
+#[doc(hidden)]
+/// Extension trait for setting the call-flags for the reducer `team_swap_units`.
+///
+/// Implemented for [`super::SetReducerFlags`].
+///
+/// This type is currently unstable and may be removed without a major version bump.
+pub trait set_flags_for_team_swap_units {
+    /// Set the call-reducer flags for the reducer `team_swap_units` to `flags`.
+    ///
+    /// This type is currently unstable and may be removed without a major version bump.
+    fn team_swap_units(&self, flags: __ws::CallReducerFlags);
+}
+
+impl set_flags_for_team_swap_units for super::SetReducerFlags {
+    fn team_swap_units(&self, flags: __ws::CallReducerFlags) {
+        self.imp.set_call_reducer_flags("team_swap_units", flags);
+    }
+}

@@ -66,3 +66,23 @@ impl run_start_normal for super::RemoteReducers {
             .remove_on_reducer::<RunStartNormal>("run_start_normal", callback.0)
     }
 }
+
+#[allow(non_camel_case_types)]
+#[doc(hidden)]
+/// Extension trait for setting the call-flags for the reducer `run_start_normal`.
+///
+/// Implemented for [`super::SetReducerFlags`].
+///
+/// This type is currently unstable and may be removed without a major version bump.
+pub trait set_flags_for_run_start_normal {
+    /// Set the call-reducer flags for the reducer `run_start_normal` to `flags`.
+    ///
+    /// This type is currently unstable and may be removed without a major version bump.
+    fn run_start_normal(&self, flags: __ws::CallReducerFlags);
+}
+
+impl set_flags_for_run_start_normal for super::SetReducerFlags {
+    fn run_start_normal(&self, flags: __ws::CallReducerFlags) {
+        self.imp.set_call_reducer_flags("run_start_normal", flags);
+    }
+}

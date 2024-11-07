@@ -28,12 +28,14 @@ impl BattlePlugin {
         let mut bd = world.resource_mut::<BattleResource>();
         bd.result = result;
         if bd.id > 0 && bd.from_run {
-            cn().reducers.submit_battle_result(match result {
-                BattleResult::Tbd => TBattleResult::Tbd,
-                BattleResult::Left(_) => TBattleResult::Left,
-                BattleResult::Right(_) => TBattleResult::Right,
-                BattleResult::Even => TBattleResult::Even,
-            });
+            cn().reducers
+                .submit_battle_result(match result {
+                    BattleResult::Tbd => TBattleResult::Tbd,
+                    BattleResult::Left(_) => TBattleResult::Left,
+                    BattleResult::Right(_) => TBattleResult::Right,
+                    BattleResult::Even => TBattleResult::Even,
+                })
+                .unwrap();
         }
     }
     fn on_exit(world: &mut World) {

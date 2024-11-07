@@ -4,7 +4,7 @@ use spacetimedb::Timestamp;
 
 use super::*;
 
-#[spacetimedb::table(name = )]
+#[spacetimedb::table(public, name = )]
 pub struct TUser {
     #[primary_key]
     pub id: u64,
