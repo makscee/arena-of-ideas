@@ -31,7 +31,7 @@ impl IncubatorPlugin {
                 .column_btn_mod(
                     "+",
                     |d, _, _| {
-                        cn().reducers.incubator_vote_set(d.id, true);
+                        let _ = cn().reducers.incubator_vote_set(d.id, true);
                     },
                     |d, _, b| {
                         let v = cn()
@@ -47,7 +47,7 @@ impl IncubatorPlugin {
                 .column_btn_mod(
                     "-",
                     |d, _, _| {
-                        cn().reducers.incubator_vote_set(d.id, false);
+                        let _ = cn().reducers.incubator_vote_set(d.id, false);
                     },
                     |d, ui, b| {
                         let v = cn()
@@ -63,7 +63,7 @@ impl IncubatorPlugin {
                 .column_btn_mod(
                     "❤",
                     |d, _, _| {
-                        cn().reducers.incubator_favorite_set(d.id);
+                        let _ = cn().reducers.incubator_favorite_set(d.id);
                     },
                     |d, _, b| {
                         let v = cn()
@@ -124,7 +124,7 @@ impl IncubatorPlugin {
                                         let id = i.id;
                                         Confirmation::new("Delete Incubator unit".cstr_c(RED))
                                             .accept(move |_| {
-                                                cn().reducers.incubator_delete(id);
+                                                let _ = cn().reducers.incubator_delete(id);
                                             })
                                             .cancel(|_| {})
                                             .push(world);

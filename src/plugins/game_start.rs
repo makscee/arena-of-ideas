@@ -94,6 +94,7 @@ impl GameStartPlugin {
             cn().db
                 .arena_run_archive()
                 .iter()
+                .filter(|d| d.season == gsr.selected_season)
                 .sorted_by_key(|d| -(d.id as i32))
                 .map(|d| (d.mode.into(), d))
                 .into_grouping_map()
@@ -263,7 +264,7 @@ impl GameStartPlugin {
                     if Button::click("Abandon run").red(ui).ui(ui).clicked() {
                         Confirmation::new("Abandon current run?".cstr_c(VISIBLE_BRIGHT))
                             .accept(|_| {
-                                cn().reducers.run_finish();
+                                cn().reducers.run_finish().unwrap();
                             })
                             .cancel(|_| {})
                             .push(world);

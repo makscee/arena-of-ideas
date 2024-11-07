@@ -1,5 +1,3 @@
-use super::*;
-
 #[spacetimedb::table(public, name = house)]
 pub struct THouse {
     #[primary_key]

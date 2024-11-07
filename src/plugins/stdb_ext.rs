@@ -144,21 +144,9 @@ impl GIDExt for u64 {
     }
     fn get_player(self) -> TPlayer {
         if self == 0 {
-            return TPlayer {
-                id: 0,
-                name: "...".into(),
-                identities: default(),
-                pass_hash: default(),
-                online: default(),
-                last_login: default(),
-            };
+            return TPlayer::default();
         }
-        cn().db
-            .player()
-            .id()
-            .find(&self)
-            .with_context(|| format!("Failed to find Player#{self}"))
-            .unwrap()
+        cn().db.player().id().find(&self).unwrap_or_default()
     }
     fn unit_item(self) -> TUnitItem {
         cn().db
@@ -323,11 +311,24 @@ impl Default for GameData {
             incubator_favorite: default(),
             player_stats: default(),
             player_game_stats: default(),
+            global_event: default(),
         }
     }
 }
 impl Default for UnitPool {
     fn default() -> Self {
         Self::Game
+    }
+}
+impl Default for TPlayer {
+    fn default() -> Self {
+        Self {
+            id: 0,
+            name: "...".into(),
+            identities: default(),
+            pass_hash: default(),
+            online: default(),
+            last_login: default(),
+        }
     }
 }

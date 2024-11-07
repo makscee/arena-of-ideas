@@ -4,7 +4,7 @@ use spacetimedb::Table;
 use super::*;
 
 #[spacetimedb::table(public, name = global_event)]
-struct TGlobalEvent {
+pub struct TGlobalEvent {
     #[primary_key]
     id: u64,
     owner: u64,

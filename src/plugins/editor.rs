@@ -687,7 +687,7 @@ impl EditorPlugin {
                 let packed_unit = r.unit.clone();
                 let unit: TBaseUnit = packed_unit.clone().into();
                 let id = r.incubator_link.unwrap();
-                cn().reducers.incubator_update(id, unit);
+                cn().reducers.incubator_update(id, unit).unwrap();
             })
             .cancel(|_| {})
             .push(world);
@@ -704,7 +704,7 @@ impl EditorPlugin {
                 let r = rm(world);
                 let packed_unit = r.unit.clone();
                 let unit: TBaseUnit = packed_unit.clone().into();
-                cn().reducers.incubator_post(unit);
+                cn().reducers.incubator_post(unit).unwrap();
             })
             .cancel(|_| {})
             .push(world);

@@ -7,6 +7,7 @@ use crate::login;
 use super::*;
 
 #[derive(EnumIter, EnumString, AsRefStr, Hash, PartialEq, Eq, Display, Copy, Clone, Debug)]
+#[allow(non_camel_case_types)]
 pub enum StdbTable {
     global_settings,
     global_data,
@@ -40,6 +41,7 @@ pub enum StdbTable {
     incubator_favorite,
     player_stats,
     player_game_stats,
+    global_event,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -104,7 +106,7 @@ impl StdbQuery {
         [StdbTable::player.full(), StdbTable::global_data.full()].into()
     }
     pub fn queries_game() -> Vec<StdbQuery> {
-        StdbTable::iter().map(|t| t.owner()).collect_vec()
+        StdbTable::iter().filter_map(|t| t.owner()).collect_vec()
     }
     fn query(self) -> String {
         let table = self.table.as_ref();
@@ -324,6 +326,12 @@ impl StdbTable {
                         .unwrap()
                         .0;
             }
+            StdbTable::global_event => {
+                data.global_event =
+                    serde_json::from_str::<DeserializeWrapper<Vec<TGlobalEvent>>>(json)
+                        .unwrap()
+                        .0;
+            }
         }
     }
     pub fn get_json_data(self) -> String {
@@ -412,6 +420,9 @@ impl StdbTable {
             StdbTable::player_game_stats => to_string_pretty(&SerializeWrapper::new(
                 cn().db.player_game_stats().iter().collect_vec(),
             )),
+            StdbTable::global_event => to_string_pretty(&SerializeWrapper::new(
+                cn().db.global_event().iter().collect_vec(),
+            )),
         }
         .unwrap()
     }
@@ -421,7 +432,7 @@ impl StdbTable {
             condition: StdbCondition::Full,
         }
     }
-    pub fn owner(self) -> StdbQuery {
+    pub fn owner(self) -> Option<StdbQuery> {
         match self {
             StdbTable::global_settings
             | StdbTable::global_data
@@ -440,33 +451,34 @@ impl StdbTable {
             | StdbTable::incubator_favorite
             | StdbTable::player_stats
             | StdbTable::player_game_stats
-            | StdbTable::meta_shop => self.full(),
+            | StdbTable::meta_shop => Some(self.full()),
 
-            StdbTable::trade => StdbQuery {
+            StdbTable::trade => Some(StdbQuery {
                 table: self,
                 condition: StdbCondition::OwnerMacro("a_player = {uid} or b_player = {uid}".into()),
-            },
+            }),
 
-            StdbTable::unit_item | StdbTable::quest => StdbQuery {
+            StdbTable::unit_item | StdbTable::quest => Some(StdbQuery {
                 table: self,
                 condition: StdbCondition::OwnerOrZero,
-            },
+            }),
             StdbTable::unit_shard_item
             | StdbTable::rainbow_shard_item
-            | StdbTable::lootbox_item => StdbQuery {
+            | StdbTable::lootbox_item => Some(StdbQuery {
                 table: self,
                 condition: StdbCondition::OwnerMacro(
                     "(owner = {uid} or owner = 0) and count > 0".into(),
                 ),
-            },
+            }),
 
             StdbTable::arena_run
             | StdbTable::wallet
             | StdbTable::daily_state
-            | StdbTable::unit_balance => StdbQuery {
+            | StdbTable::unit_balance => Some(StdbQuery {
                 table: self,
                 condition: StdbCondition::Owner,
-            },
+            }),
+            StdbTable::global_event => None,
         }
     }
 }
@@ -519,7 +531,7 @@ pub fn apply_subscriptions(dbc: &DbConnection) {
             world.resource_mut::<LoginData>().identity_player = Some(player);
         })
     });
-    r.on_login(|e, name, pass| {
+    r.on_login(|e, name, _| {
         let name = name.clone();
         let player = e.db.player().name().find(&name).unwrap();
         e.event.on_success(move |world| {
@@ -548,13 +560,13 @@ pub fn apply_subscriptions(dbc: &DbConnection) {
     });
 
     r.on_dismantle_hero(|e, _| e.event.notify_error());
-    r.on_craft_hero(|e, u, i| {
+    r.on_craft_hero(|e, u, _| {
         let unit = u.clone();
         e.event.on_success(move |world| {
             format!("{unit} crafted").notify(world);
         })
     });
-    r.on_open_lootbox(|e, i| {
+    r.on_open_lootbox(|e, _| {
         e.event.on_success(|world| "Lootbox opened".notify(world));
     });
 

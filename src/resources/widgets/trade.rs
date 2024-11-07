@@ -58,7 +58,7 @@ impl Trade {
             }
             ui.vertical_centered_justified(|ui| {
                 if Button::click("Accept").ui(ui).clicked() {
-                    cn().reducers.accept_trade(id);
+                    cn().reducers.accept_trade(id).unwrap();
                     Self::close(ctx);
                 }
             });

@@ -18,6 +18,7 @@ use super::t_auction_type::TAuction;
 use super::t_base_unit_type::TBaseUnit;
 use super::t_battle_type::TBattle;
 use super::t_daily_state_type::TDailyState;
+use super::t_global_event_type::TGlobalEvent;
 use super::t_house_type::THouse;
 use super::t_incubator_favorite_type::TIncubatorFavorite;
 use super::t_incubator_type::TIncubator;
@@ -68,6 +69,7 @@ pub struct GameData {
     pub incubator: Vec<TIncubator>,
     pub incubator_vote: Vec<TIncubatorVote>,
     pub incubator_favorite: Vec<TIncubatorFavorite>,
+    pub global_event: Vec<TGlobalEvent>,
 }
 
 impl __sdk::spacetime_module::InModule for GameData {

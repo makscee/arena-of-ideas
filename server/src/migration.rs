@@ -5,6 +5,7 @@ use base_unit::base_unit;
 use battle::battle;
 use daily_state::daily_state;
 use global_data::global_data;
+use global_event::global_event;
 use house::house;
 use incubator::incubator;
 use meta_shop::meta_shop;
@@ -50,6 +51,7 @@ struct GameData {
     incubator: Vec<TIncubator>,
     incubator_vote: Vec<TIncubatorVote>,
     incubator_favorite: Vec<TIncubatorFavorite>,
+    global_event: Vec<TGlobalEvent>,
 }
 
 fn replace_assets(ctx: &ReducerContext, data: GameData) -> Result<(), String> {
@@ -82,6 +84,7 @@ fn replace_assets(ctx: &ReducerContext, data: GameData) -> Result<(), String> {
         incubator_favorite,
         player_stats,
         player_game_stats,
+        global_event,
     } = data;
     if !global_settings.is_empty() {
         global_settings.remove(0).replace(ctx);
@@ -296,6 +299,14 @@ fn replace_assets(ctx: &ReducerContext, data: GameData) -> Result<(), String> {
         }
         for d in player_game_stats {
             ctx.db.player_game_stats().insert(d);
+        }
+    }
+    if !global_event.is_empty() {
+        for d in ctx.db.global_event().iter() {
+            ctx.db.global_event().delete(d);
+        }
+        for d in global_event {
+            ctx.db.global_event().insert(d);
         }
     }
 

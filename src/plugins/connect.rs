@@ -1,5 +1,4 @@
 use spacetimedb_lib::{bsatn, de::Deserialize, ser::Serialize, Identity};
-use spacetimedb_sdk::DbContext;
 
 use super::*;
 
@@ -57,7 +56,7 @@ impl ConnectPlugin {
     }
     fn run_connect() {
         info!("Connect start");
-        Self::connect(|conn, identity, token| {
+        Self::connect(|_, identity, token| {
             info!("Connected {identity}");
             let token = token.to_owned();
             StdbQuery::subscribe(StdbQuery::queries_login(), move |world| {

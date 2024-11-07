@@ -2,7 +2,7 @@
 (
     settings: (
         always_zero: 0,
-        season: 1,
+        season: 2,
         craft_shards_cost: 10,
         create_team_cost: 10,
         meta: (
