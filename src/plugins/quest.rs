@@ -31,7 +31,7 @@ impl QuestPlugin {
                 Table::new("new quests")
                     .column_cstr("quest", |d: &TQuest, _| d.cstr())
                     .column_btn("accept", |d, _, _| {
-                        cn().reducers.quest_accept(d.id);
+                        cn().reducers.quest_accept(d.id).unwrap();
                     })
                     .ui(
                         &cn()
@@ -56,7 +56,7 @@ impl QuestPlugin {
                     .title()
                     .column_cstr("quest", |d: &TQuest, _| d.cstr())
                     .column_btn("complete", |d, _, _| {
-                        cn().reducers.quest_finish(d.id);
+                        cn().reducers.quest_finish(d.id).unwrap();
                     })
                     .ui(&complete_quests, ui, world);
             }

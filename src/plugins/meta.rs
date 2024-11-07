@@ -50,7 +50,7 @@ fn brm(world: &mut World) -> Mut<BalancingResource> {
 impl AuctionResource {
     fn post(world: &mut World) {
         if let Some(ar) = world.remove_resource::<AuctionResource>() {
-            cn().reducers.auction_create(ar.item_id, ar.count, ar.price);
+            let _ = cn().reducers.auction_create(ar.item_id, ar.count, ar.price);
         }
     }
 }
@@ -205,7 +205,7 @@ impl MetaPlugin {
                                 .ui(ui)
                                 .clicked()
                             {
-                                cn().reducers.auction_buy(d.item_id);
+                                let _ = cn().reducers.auction_buy(d.item_id);
                             }
                         },
                         false,
@@ -319,7 +319,8 @@ impl MetaPlugin {
             });
 
             if let Some(vote) = brm(world).vote {
-                cn().reducers
+                let _ = cn()
+                    .reducers
                     .unit_balance_vote(world.resource::<BalancingResource>().current.clone(), vote);
             }
         })
@@ -387,7 +388,7 @@ impl MetaPlugin {
                         .cstr_c(VISIBLE_LIGHT),
                     )
                     .accept(move |_| {
-                        cn().reducers.dismantle_hero(item_id);
+                        let _ = cn().reducers.dismantle_hero(item_id);
                     })
                     .cancel(|_| {})
                     .push(world);
@@ -524,7 +525,7 @@ impl MetaPlugin {
                             }
                         })
                         .accept(move |world| {
-                            cn().reducers.craft_hero(
+                            let _ = cn().reducers.craft_hero(
                                 unit.clone(),
                                 world.resource::<CraftResource>().use_rainbow,
                             );
@@ -585,7 +586,7 @@ impl MetaPlugin {
                 },
             )
             .column_btn("open", |d, _, _| {
-                cn().reducers.open_lootbox(d.id);
+                let _ = cn().reducers.open_lootbox(d.id);
             })
         });
     }

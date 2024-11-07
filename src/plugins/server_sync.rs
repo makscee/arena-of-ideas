@@ -39,7 +39,8 @@ impl ServerSyncPlugin {
         let abilities = ga.abilities.into_values().map(|a| a.into()).collect_vec();
         let statuses = ga.statuses.into_values().map(|s| s.into()).collect_vec();
         cn().reducers
-            .upload_assets(gs, units, houses, abilities, statuses);
+            .upload_assets(gs, units, houses, abilities, statuses)
+            .unwrap();
         cn().reducers.on_upload_assets(|e, _, _, _, _, _| {
             e.event.on_success(|_| info!("Sync successful"));
             OperationsPlugin::add(|world| app_exit(world));

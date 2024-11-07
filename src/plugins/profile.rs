@@ -62,7 +62,7 @@ impl ProfilePlugin {
             .ui(ui)
             .clicked()
         {
-            cn().reducers.set_name(ped.name.clone());
+            let _ = cn().reducers.set_name(ped.name.clone());
         };
         br(ui);
         if has_pass {
@@ -82,7 +82,7 @@ impl ProfilePlugin {
             .clicked()
         {
             cn().reducers
-                .set_password(ped.old_pass.clone(), ped.pass.clone());
+                .set_password(ped.old_pass.clone(), ped.pass.clone()).unwrap();
         }
         br(ui);
     }

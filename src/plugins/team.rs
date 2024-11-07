@@ -133,7 +133,7 @@ impl TeamPlugin {
                     Notification::new("Empty name".cstr()).error().push(world);
                     Self::open_new_team_popup(world);
                 } else {
-                    cn().reducers.team_create(name);
+                    cn().reducers.team_create(name).unwrap();
                 }
             })
             .cancel(|_| {})
@@ -196,7 +196,7 @@ impl TeamPlugin {
                             .accept(|world| {
                                 let mut tr = world.resource_mut::<TeamResource>();
                                 let name = tr.new_team_name.take();
-                                cn().reducers.team_rename(tr.team, name);
+                                cn().reducers.team_rename(tr.team, name).unwrap();
                             })
                             .cancel(|_| {})
                             .content(|ui, world| {
@@ -213,7 +213,7 @@ impl TeamPlugin {
                             Confirmation::new("Disband team?".cstr_c(VISIBLE_LIGHT))
                                 .accept(|world| {
                                     let tr = world.resource_mut::<TeamResource>();
-                                    cn().reducers.team_disband(tr.team);
+                                    cn().reducers.team_disband(tr.team).unwrap();
                                 })
                                 .cancel(|_| {})
                                 .push(world);
@@ -237,7 +237,7 @@ impl TeamPlugin {
                             units.show_modified_table("Units", ui, world, |t| {
                                 t.column_btn("select", |u, _, world| {
                                     let tr = world.resource::<TeamResource>();
-                                    cn().reducers.team_add_unit(tr.team, u.id);
+                                    cn().reducers.team_add_unit(tr.team, u.id).unwrap();
                                 })
                             });
                         })
@@ -251,13 +251,16 @@ impl TeamPlugin {
                         if Button::click("Remove").ui(ui).clicked() {
                             let tr = world.resource::<TeamResource>();
                             cn().reducers
-                                .team_remove_unit(tr.team, tr.team.get_team().units[slot].id);
+                                .team_remove_unit(tr.team, tr.team.get_team().units[slot].id)
+                                .unwrap();
                         }
                     });
                 })
                 .on_swap(|from, to, world| {
                     let team = world.resource::<TeamResource>().team;
-                    cn().reducers.team_swap_units(team, from as u8, to as u8);
+                    cn().reducers
+                        .team_swap_units(team, from as u8, to as u8)
+                        .unwrap();
                 })
                 .ui(ui, world);
         })

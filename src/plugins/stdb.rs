@@ -494,7 +494,7 @@ pub fn apply_subscriptions(dbc: &DbConnection) {
             .push(world);
         });
     });
-    r.on_incubator_update(|e, id, u| {
+    r.on_incubator_update(|e, _, u| {
         let unit = u.name.clone();
         e.event.on_success(move |world| {
             Notification::new(format!("Unit {} updated in Incubator", unit).cstr_c(VISIBLE_LIGHT))

@@ -72,7 +72,7 @@ impl LoginPlugin {
                     _ => {}
                 }
             });
-            cn().db.wallet().on_update(|e, before, after| {
+            cn().db.wallet().on_update(|_, before, after| {
                 let delta = after.amount - before.amount;
                 let delta_txt = if delta > 0 {
                     format!("+{delta}")
@@ -88,11 +88,11 @@ impl LoginPlugin {
                 )
                 .push_op();
             });
-            cn().db.quest().on_insert(|e, d| {
+            cn().db.quest().on_insert(|_, d| {
                 let text = "New Quest\n".cstr().push(d.cstr()).take();
                 Notification::new(text).push_op();
             });
-            cn().db.quest().on_update(|e, before, after| {
+            cn().db.quest().on_update(|_, before, after| {
                 let before = before.clone();
                 let after = after.clone();
                 OperationsPlugin::add(move |world| {
@@ -130,7 +130,7 @@ impl LoginPlugin {
                         .cstr_cs(VISIBLE_LIGHT, CstrStyle::Heading2)
                         .label(ui);
                     if Button::click("Login").ui(ui).clicked() {
-                        cn().reducers.login_by_identity();
+                        let _ = cn().reducers.login_by_identity();
                     }
                     br(ui);
                     if Button::click("Logout").gray(ui).ui(ui).clicked() {
@@ -142,7 +142,7 @@ impl LoginPlugin {
                         .cstr_cs(VISIBLE_LIGHT, CstrStyle::Heading)
                         .label(ui);
                     if Button::click("New Player").ui(ui).clicked() {
-                        cn().reducers.register_empty();
+                        let _ = cn().reducers.register_empty();
                     }
                     br(ui);
                     "Login".cstr_cs(VISIBLE_LIGHT, CstrStyle::Heading).label(ui);
@@ -151,7 +151,7 @@ impl LoginPlugin {
                         .password()
                         .ui_string(&mut ld.pass_field, ui);
                     if Button::click("Submit").ui(ui).clicked() {
-                        crate::login::login(
+                        let _ = crate::login::login(
                             &cn().reducers,
                             ld.name_field.clone(),
                             ld.pass_field.clone(),

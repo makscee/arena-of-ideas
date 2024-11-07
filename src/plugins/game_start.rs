@@ -237,15 +237,15 @@ impl GameStartPlugin {
                     cs.last_played_mode = Some(r.selected_mode.clone().into());
                     match &r.selected_mode {
                         GameMode::ArenaNormal => {
-                            cn().reducers.run_start_normal();
+                            let _ = cn().reducers.run_start_normal();
                         }
                         GameMode::ArenaRanked => {
                             let team = r.teams[r.selected_team].id;
                             cs.last_played_team = Some(team);
-                            cn().reducers.run_start_ranked(team);
+                            let _ = cn().reducers.run_start_ranked(team);
                         }
                         GameMode::ArenaConst => {
-                            cn().reducers.run_start_const();
+                            let _ = cn().reducers.run_start_const();
                         }
                     }
                     cs.save();

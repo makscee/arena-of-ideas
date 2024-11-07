@@ -39,7 +39,7 @@ fn rm(world: &mut World) -> Mut<ShopResource> {
 
 impl ShopPlugin {
     fn give_g() {
-        cn().reducers.shop_change_g(10);
+        cn().reducers.shop_change_g(10).unwrap();
     }
     fn test(world: &mut World) {
         TeamPlugin::change_ability_var_int("Siphon".into(), VarName::M1, 1, Faction::Team, world);
@@ -60,7 +60,7 @@ impl ShopPlugin {
             return;
         }
         AudioPlugin::queue_sound(SoundEffect::StartGame);
-        let cb = cn().db.arena_run().on_update(|e, _, run| {
+        let cb = cn().db.arena_run().on_update(|_, _, run| {
             let run = run.clone();
             OperationsPlugin::add(|w| Self::sync_run(run, w))
         });
@@ -97,15 +97,15 @@ impl ShopPlugin {
         Confirmation::new("Fusion".cstr_c(YELLOW))
             .accept(|world| {
                 let fc = rm(world).fusion_choice.clone();
-                cn().reducers.fuse_choose(fc[0], fc[1], fc[2]);
+                cn().reducers.fuse_choose(fc[0], fc[1], fc[2]).unwrap();
             })
             .cancel(|_| {
-                cn().reducers.fuse_cancel();
+                cn().reducers.fuse_cancel().unwrap();
             })
             .content(|ui, world| {
                 if Button::click("Swap").ui(ui).clicked() {
                     Confirmation::close_current(world);
-                    cn().reducers.fuse_swap();
+                    cn().reducers.fuse_swap().unwrap();
                 }
                 ui.set_width(ui.ctx().screen_rect().width() * 0.9);
                 ui.columns(3, |ui| {
@@ -339,7 +339,7 @@ impl ShopPlugin {
             let run = cn().db.arena_run().current();
             ui.vertical_centered_justified(|ui| {
                 if Button::click("Start Battle").ui(ui).clicked() {
-                    cn().reducers.shop_finish(false);
+                    cn().reducers.shop_finish(false).unwrap();
                 }
                 if run.floor == run.boss_floor {
                     "Final Battle".cstr_cs(YELLOW, CstrStyle::Bold).label(ui);
@@ -352,7 +352,7 @@ impl ShopPlugin {
                     ui.add_space(50.0);
                     if let Some(floor_boss) = run.current_floor_boss {
                         if Button::click("Boss Battle").red(ui).ui(ui).clicked() {
-                            cn().reducers.shop_finish(true);
+                            cn().reducers.shop_finish(true).unwrap();
                         }
                         "Challenge Floor Boss"
                             .cstr_cs(RED, CstrStyle::Bold)
@@ -384,10 +384,10 @@ impl ShopPlugin {
         let (source, faction) = sd.stack_source.unwrap();
         match faction {
             Faction::Team => {
-                cn().reducers.stack_team(source as u8, target);
+                cn().reducers.stack_team(source as u8, target).unwrap();
             }
             Faction::Shop => {
-                cn().reducers.stack_shop(source as u8, target);
+                cn().reducers.stack_shop(source as u8, target).unwrap();
             }
             _ => panic!(),
         }
@@ -401,7 +401,7 @@ impl ShopPlugin {
             return;
         };
 
-        let sd = world.resource::<ShopResource>().clone();
+        let sd = world.resource::<ShopResource>();
         let family_slot = sd.family_slot;
         let stack_source = sd.stack_source;
         let g = run.g;
@@ -432,7 +432,7 @@ impl ShopPlugin {
                         .ui(ui)
                         .clicked()
                     {
-                        cn().reducers.shop_reroll();
+                        cn().reducers.shop_reroll().unwrap();
                     }
                     ui.add_space(20.0);
                 });
@@ -453,15 +453,15 @@ impl ShopPlugin {
                             .ui(ui)
                             .clicked()
                         {
-                            cn().reducers.shop_buy(slot as u8);
+                            cn().reducers.shop_buy(slot as u8).unwrap();
                         }
                         if ss.freeze {
                             if Button::click("Unfreeze").set_bg(true, ui).ui(ui).clicked() {
-                                cn().reducers.shop_set_freeze(slot as u8, false);
+                                cn().reducers.shop_set_freeze(slot as u8, false).unwrap();
                             }
                         } else {
                             if Button::click("Freeze").gray(ui).ui(ui).clicked() {
-                                cn().reducers.shop_set_freeze(slot as u8, true);
+                                cn().reducers.shop_set_freeze(slot as u8, true).unwrap();
                             }
                         }
                         if !ss.stack_targets.is_empty() {
@@ -522,7 +522,9 @@ impl ShopPlugin {
                             }
                         } else if sd.fuse_targets.contains(&slot) {
                             if Button::click("Choose").ui(ui).clicked() {
-                                cn().reducers.fuse_start(fuse_source as u8, slot as u8);
+                                cn().reducers
+                                    .fuse_start(fuse_source as u8, slot as u8)
+                                    .unwrap();
                             }
                         }
                     } else {
@@ -532,7 +534,7 @@ impl ShopPlugin {
                                 .ui(ui)
                                 .clicked()
                             {
-                                cn().reducers.shop_sell(slot as u8);
+                                cn().reducers.shop_sell(slot as u8).unwrap();
                             }
                             if !ts.stack_targets.is_empty() {
                                 if Button::click("Stack").ui(ui).clicked() {
@@ -556,7 +558,7 @@ impl ShopPlugin {
             })
             .hover_content(Self::container_on_hover)
             .on_swap(|a, b, _| {
-                cn().reducers.shop_reorder(a as u8, b as u8);
+                cn().reducers.shop_reorder(a as u8, b as u8).unwrap();
             })
             .ui(ui, world);
     }
@@ -606,7 +608,7 @@ impl ShopPlugin {
                     ui,
                 );
                 if Button::click("Finish").ui(ui).clicked() {
-                    cn().reducers.run_finish();
+                    cn().reducers.run_finish().unwrap();
                 }
             });
         });
