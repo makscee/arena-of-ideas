@@ -41,6 +41,7 @@ impl TPlayerStats {
             .next()
             .unwrap_or_else(|| {
                 ctx.db.player_stats().insert(Self {
+                    id: next_id(ctx),
                     owner,
                     season,
                     ..default()
