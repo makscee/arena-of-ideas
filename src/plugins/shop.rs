@@ -1,5 +1,5 @@
 use bevy::input::common_conditions::input_just_pressed;
-use spacetimedb_sdk::table::{TableWithPrimaryKey, UpdateCallbackId};
+use spacetimedb_sdk::table::TableWithPrimaryKey;
 
 use super::*;
 
@@ -20,10 +20,10 @@ impl Plugin for ShopPlugin {
     }
 }
 
-#[derive(Resource, Clone, Default)]
+#[derive(Resource, Default)]
 pub struct ShopResource {
     pub case_height: f32,
-    callback: Option<UpdateCallbackId<TArenaRun>>,
+    callback: Option<ArenaRunUpdateCallbackId>,
     stack_source: Option<(usize, Faction)>,
     stack_targets: Vec<usize>,
     fuse_source: Option<usize>,
@@ -39,7 +39,7 @@ fn rm(world: &mut World) -> Mut<ShopResource> {
 
 impl ShopPlugin {
     fn give_g() {
-        shop_change_g(10);
+        cn().reducers.shop_change_g(10);
     }
     fn test(world: &mut World) {
         TeamPlugin::change_ability_var_int("Siphon".into(), VarName::M1, 1, Faction::Team, world);
@@ -48,7 +48,7 @@ impl ShopPlugin {
         for text in sd.queued_notifications.drain(..) {
             Notification::new(text).push_op();
         }
-        if let Some(run) = TArenaRun::get_current() {
+        if let Some(run) = cn().db.arena_run().get_current() {
             if !run.active {
                 GameState::GameOver.set_next_op();
                 return;
@@ -60,7 +60,7 @@ impl ShopPlugin {
             return;
         }
         AudioPlugin::queue_sound(SoundEffect::StartGame);
-        let cb = TArenaRun::on_update(|_, run, _| {
+        let cb = cn().db.arena_run().on_update(|e, _, run| {
             let run = run.clone();
             OperationsPlugin::add(|w| Self::sync_run(run, w))
         });
@@ -71,18 +71,18 @@ impl ShopPlugin {
         world.game_clear();
         if let Some(cb) = rm(world).callback.take() {
             debug!("Unsubscribe shop updater");
-            TArenaRun::remove_on_update(cb);
+            cn().db.arena_run().remove_on_update(cb);
         }
     }
     fn sync_fusion(a: usize, b: usize, run: &TArenaRun, world: &mut World) {
-        let team = run.team.get_team(ctx);
+        let team = run.team.get_team();
         let left_card = UnitCard::from_fused(team.units[a].clone(), world).unwrap();
         let right_card = UnitCard::from_fused(team.units[b].clone(), world).unwrap();
         let mut r = rm(world);
         r.fusion_cards = [left_card.clone(), left_card, right_card].into();
         r.fusion_choice = [-1, 1, 0].into();
         fn update_result_card(world: &mut World) {
-            let run = TArenaRun::current();
+            let run = cn().db.arena_run().current();
             let fusion = run.fusion.unwrap();
             let mut unit = fusion.unit;
             let r = rm(world);
@@ -97,15 +97,15 @@ impl ShopPlugin {
         Confirmation::new("Fusion".cstr_c(YELLOW))
             .accept(|world| {
                 let fc = rm(world).fusion_choice.clone();
-                fuse_choose(fc[0], fc[1], fc[2]);
+                cn().reducers.fuse_choose(fc[0], fc[1], fc[2]);
             })
             .cancel(|_| {
-                fuse_cancel();
+                cn().reducers.fuse_cancel();
             })
             .content(|ui, world| {
                 if Button::click("Swap").ui(ui).clicked() {
                     Confirmation::close_current(world);
-                    fuse_swap();
+                    cn().reducers.fuse_swap();
                 }
                 ui.set_width(ui.ctx().screen_rect().width() * 0.9);
                 ui.columns(3, |ui| {
@@ -241,7 +241,7 @@ impl ShopPlugin {
                 .map(|e| (VarState::get(e, world).id(), e)),
         );
         let team = TeamPlugin::entity(Faction::Team, world);
-        for (slot, unit) in (0..).zip(TTeam::find_by_id(run.team).unwrap().units.into_iter()) {
+        for (slot, unit) in (0..).zip(run.team.get_team().units.into_iter()) {
             let id = unit.id;
             if let Some(entity) = team_units.get(&id) {
                 let mut state = VarState::get_mut(*entity, world);
@@ -332,21 +332,18 @@ impl ShopPlugin {
         Tile::new(Side::Right, |ui, world| {
             ui.set_max_width(200.0);
             text_dots_text("name".cstr(), user_name().cstr_c(VISIBLE_BRIGHT), ui);
-            if let Some(run) = TArenaRun::get_current() {
+            if let Some(run) = cn().db.arena_run().get_current() {
                 Self::show_stats(&run, ui);
             }
             ui.add_space(40.0);
-            let run = TArenaRun::current();
+            let run = cn().db.arena_run().current();
             ui.vertical_centered_justified(|ui| {
                 if Button::click("Start Battle").ui(ui).clicked() {
-                    shop_finish(false);
-                    once_on_shop_finish(|_, _, status, _| {
-                        status.on_success(|w| GameState::ShopBattle.proceed_to_target(w))
-                    });
+                    cn().reducers.shop_finish(false);
                 }
                 if run.floor == run.boss_floor {
                     "Final Battle".cstr_cs(YELLOW, CstrStyle::Bold).label(ui);
-                    run.boss_team.get_team(ctx).hover_label(ui, world);
+                    run.boss_team.get_team().hover_label(ui, world);
                 } else {
                     "Next Floor".cstr_c(VISIBLE_DARK).label(ui);
                     if run.replenish_lives > 0 {
@@ -355,15 +352,12 @@ impl ShopPlugin {
                     ui.add_space(50.0);
                     if let Some(floor_boss) = run.current_floor_boss {
                         if Button::click("Boss Battle").red(ui).ui(ui).clicked() {
-                            shop_finish(true);
-                            once_on_shop_finish(|_, _, status, _| {
-                                status.on_success(|w| GameState::ShopBattle.proceed_to_target(w))
-                            });
+                            cn().reducers.shop_finish(true);
                         }
                         "Challenge Floor Boss"
                             .cstr_cs(RED, CstrStyle::Bold)
                             .label(ui);
-                        floor_boss.get_team(ctx).hover_label(ui, world);
+                        floor_boss.get_team().hover_label(ui, world);
                     }
                 }
             });
@@ -390,24 +384,10 @@ impl ShopPlugin {
         let (source, faction) = sd.stack_source.unwrap();
         match faction {
             Faction::Team => {
-                stack_team(source as u8, target);
-                once_on_stack_team(|_, _, status, _, _| match status {
-                    StdbStatus::Committed => {}
-                    StdbStatus::Failed(e) => Notification::new_string(format!("Stack failed: {e}"))
-                        .error()
-                        .push_op(),
-                    _ => panic!(),
-                });
+                cn().reducers.stack_team(source as u8, target);
             }
             Faction::Shop => {
-                stack_shop(source as u8, target);
-                once_on_stack_shop(|_, _, status, _, _| match status {
-                    StdbStatus::Committed => {}
-                    StdbStatus::Failed(e) => Notification::new_string(format!("Stack failed: {e}"))
-                        .error()
-                        .push_op(),
-                    _ => panic!(),
-                });
+                cn().reducers.stack_shop(source as u8, target);
             }
             _ => panic!(),
         }
@@ -417,11 +397,13 @@ impl ShopPlugin {
         rm(world).stack_source = None;
     }
     fn show_shop_container(ui: &mut Ui, world: &mut World) {
-        let Some(run) = TArenaRun::get_current() else {
+        let Some(run) = cn().db.arena_run().get_current() else {
             return;
         };
 
         let sd = world.resource::<ShopResource>().clone();
+        let family_slot = sd.family_slot;
+        let stack_source = sd.stack_source;
         let g = run.g;
         let mut shop_container = TeamContainer::new(Faction::Shop)
             .slots(run.shop_slots.len())
@@ -429,7 +411,7 @@ impl ShopPlugin {
             .top_content(move |ui, _| {
                 ui.vertical_centered_justified(|ui| {
                     ui.set_max_width(300.0);
-                    let run = TArenaRun::current();
+                    let run = cn().db.arena_run().current();
                     let text = if run.free_rerolls > 0 {
                         "-0 G"
                             .cstr_c(YELLOW)
@@ -450,7 +432,7 @@ impl ShopPlugin {
                         .ui(ui)
                         .clicked()
                     {
-                        shop_reroll();
+                        cn().reducers.shop_reroll();
                     }
                     ui.add_space(20.0);
                 });
@@ -458,7 +440,7 @@ impl ShopPlugin {
             .slot_content(move |slot, _, ui, world| {
                 let ss = &run.shop_slots[slot];
                 if ss.available {
-                    if let Some((stack_source, faction)) = sd.stack_source {
+                    if let Some((stack_source, faction)) = stack_source {
                         if slot == stack_source && faction.eq(&Faction::Shop) {
                             if Button::click("Cancel").red(ui).ui(ui).clicked() {
                                 Self::cancel_stack(world);
@@ -471,15 +453,15 @@ impl ShopPlugin {
                             .ui(ui)
                             .clicked()
                         {
-                            shop_buy(slot as u8);
+                            cn().reducers.shop_buy(slot as u8);
                         }
                         if ss.freeze {
                             if Button::click("Unfreeze").set_bg(true, ui).ui(ui).clicked() {
-                                shop_set_freeze(slot as u8, false);
+                                cn().reducers.shop_set_freeze(slot as u8, false);
                             }
                         } else {
                             if Button::click("Freeze").gray(ui).ui(ui).clicked() {
-                                shop_set_freeze(slot as u8, true);
+                                cn().reducers.shop_set_freeze(slot as u8, true);
                             }
                         }
                         if !ss.stack_targets.is_empty() {
@@ -503,23 +485,23 @@ impl ShopPlugin {
                 }
             })
             .hover_content(Self::container_on_hover);
-        if let Some(slot) = sd.family_slot {
+        if let Some(slot) = family_slot {
             shop_container = shop_container.slot_name(slot, "Family Slot".into());
         }
         shop_container.ui(ui, world);
     }
     fn show_team_container(ui: &mut Ui, world: &mut World) {
-        let Some(run) = TArenaRun::get_current() else {
+        let Some(run) = cn().db.arena_run().get_current() else {
             return;
         };
-        let team = run.team.get_team(ctx);
+        let team = run.team.get_team();
         let slots = game_assets().global_settings.arena.team_slots as usize;
-        let sd = world.resource::<ShopResource>().clone();
         TeamContainer::new(Faction::Team)
             .slots(slots.max(team.units.len()))
             .max_slots(slots)
             .name()
             .slot_content(move |slot, e, ui, world| {
+                let sd = rm(world);
                 if e.is_some() && run.fusion.is_none() {
                     if let Some((stack_source, faction)) = sd.stack_source {
                         if slot == stack_source && faction.eq(&Faction::Team) {
@@ -540,12 +522,7 @@ impl ShopPlugin {
                             }
                         } else if sd.fuse_targets.contains(&slot) {
                             if Button::click("Choose").ui(ui).clicked() {
-                                fuse_start(fuse_source as u8, slot as u8);
-                                once_on_fuse_start(|_, _, status, _, _| match status {
-                                    StdbStatus::Committed => {}
-                                    StdbStatus::Failed(e) => e.notify_error_op(),
-                                    _ => panic!(),
-                                });
+                                cn().reducers.fuse_start(fuse_source as u8, slot as u8);
                             }
                         }
                     } else {
@@ -555,7 +532,7 @@ impl ShopPlugin {
                                 .ui(ui)
                                 .clicked()
                             {
-                                shop_sell(slot as u8);
+                                cn().reducers.shop_sell(slot as u8);
                             }
                             if !ts.stack_targets.is_empty() {
                                 if Button::click("Stack").ui(ui).clicked() {
@@ -579,7 +556,7 @@ impl ShopPlugin {
             })
             .hover_content(Self::container_on_hover)
             .on_swap(|a, b, _| {
-                shop_reorder(a as u8, b as u8);
+                cn().reducers.shop_reorder(a as u8, b as u8);
             })
             .ui(ui, world);
     }
@@ -593,7 +570,7 @@ impl ShopPlugin {
         }
     }
     pub fn game_over_ui(ui: &mut Ui) {
-        let Some(run) = TArenaRun::get_current() else {
+        let Some(run) = cn().db.arena_run().get_current() else {
             return;
         };
         center_window("game_over", ui, |ui| {
@@ -629,14 +606,7 @@ impl ShopPlugin {
                     ui,
                 );
                 if Button::click("Finish").ui(ui).clicked() {
-                    run_finish();
-                    once_on_run_finish(|_, _, status| match status {
-                        StdbStatus::Committed => OperationsPlugin::add(|w| {
-                            GameState::GameStart.proceed_to_target(w);
-                        }),
-                        StdbStatus::Failed(e) => error!("Failed to finish run: {e}"),
-                        _ => panic!(),
-                    });
+                    cn().reducers.run_finish();
                 }
             });
         });

@@ -1,4 +1,4 @@
-use spacetimedb_sdk::table::{TableType, TableWithPrimaryKey};
+use spacetimedb_sdk::{table::TableWithPrimaryKey, Table};
 
 use super::*;
 
@@ -20,43 +20,59 @@ impl Plugin for LoginPlugin {
 }
 
 #[derive(Resource, Default)]
-struct LoginData {
+pub struct LoginData {
     name_field: String,
     pass_field: String,
-    identity_user: Option<TPlayer>,
+    pub identity_player: Option<TPlayer>,
 }
 
 impl LoginPlugin {
     fn login(world: &mut World) {
         let co = ConnectOption::get(world);
         let mut identity_user = None;
-        if let Some(player) = TPlayer::iter().find(|u| u.identities.contains(&co.creds.identity)) {
+        if let Some(player) = cn()
+            .db
+            .player()
+            .iter()
+            .find(|u| u.identities.contains(&co.identity))
+        {
             if currently_fulfilling() == GameOption::ForceLogin {
-                Self::complete(player.clone(), world);
+                Self::complete(Some(player.clone()), world);
             }
             identity_user = Some(player);
         }
         world.insert_resource(LoginData {
             name_field: default(),
             pass_field: default(),
-            identity_user,
+            identity_player: identity_user,
         });
     }
-    fn complete(player: TPlayer, world: &mut World) {
+    pub fn complete(player: Option<TPlayer>, world: &mut World) {
+        let player = player.unwrap_or_else(|| {
+            world
+                .resource::<LoginData>()
+                .identity_player
+                .clone()
+                .unwrap()
+        });
         LoginOption { player }.save(world);
         StdbQuery::subscribe(StdbQuery::queries_game(), move |world| {
             GameAssets::cache_tables();
             GameState::proceed(world);
-
-            TTrade::on_insert(|trade, e| {
-                let id = trade.id;
-                if e.is_some_and(|e| matches!(e, ReducerEvent::OpenLootbox(..))) {
-                    OperationsPlugin::add(move |world| {
-                        Trade::open(id, &egui_context(world).unwrap());
-                    });
+            cn().db.trade().on_insert(|e, r| {
+                let id = r.id;
+                match &e.event {
+                    spacetimedb_sdk::Event::Reducer(e) => {
+                        if matches!(e.reducer, Reducer::OpenLootbox(..)) {
+                            OperationsPlugin::add(move |world| {
+                                Trade::open(id, &egui_context(world).unwrap());
+                            });
+                        }
+                    }
+                    _ => {}
                 }
             });
-            TWallet::on_update(|before, after, _| {
+            cn().db.wallet().on_update(|e, before, after| {
                 let delta = after.amount - before.amount;
                 let delta_txt = if delta > 0 {
                     format!("+{delta}")
@@ -72,11 +88,11 @@ impl LoginPlugin {
                 )
                 .push_op();
             });
-            TQuest::on_insert(|d, _| {
+            cn().db.quest().on_insert(|e, d| {
                 let text = "New Quest\n".cstr().push(d.cstr()).take();
                 Notification::new(text).push_op();
             });
-            TQuest::on_update(|before, after, _| {
+            cn().db.quest().on_update(|e, before, after| {
                 let before = before.clone();
                 let after = after.clone();
                 OperationsPlugin::add(move |world| {
@@ -109,29 +125,16 @@ impl LoginPlugin {
         center_window("login", ui, |ui| {
             ui.vertical_centered_justified(|ui| {
                 let mut ld = world.resource_mut::<LoginData>();
-                if let Some(player) = ld.identity_user.clone() {
+                if let Some(player) = ld.identity_player.clone() {
                     format!("Login as {}", player.name)
                         .cstr_cs(VISIBLE_LIGHT, CstrStyle::Heading2)
                         .label(ui);
                     if Button::click("Login").ui(ui).clicked() {
-                        login_by_identity();
-                        once_on_login_by_identity(|_, _, status| {
-                            match status {
-                                spacetimedb_sdk::reducer::Status::Committed => {
-                                    OperationsPlugin::add(|world| {
-                                        Self::complete(player, world);
-                                    });
-                                }
-                                spacetimedb_sdk::reducer::Status::Failed(e) => {
-                                    Notification::new_string(format!("Login failed: {e}")).push_op()
-                                }
-                                _ => panic!(),
-                            };
-                        });
+                        cn().reducers.login_by_identity();
                     }
                     br(ui);
                     if Button::click("Logout").gray(ui).ui(ui).clicked() {
-                        ld.identity_user = None;
+                        ld.identity_player = None;
                     }
                 } else {
                     let mut ld = world.resource_mut::<LoginData>();
@@ -139,26 +142,7 @@ impl LoginPlugin {
                         .cstr_cs(VISIBLE_LIGHT, CstrStyle::Heading)
                         .label(ui);
                     if Button::click("New Player").ui(ui).clicked() {
-                        register_empty();
-                        once_on_register_empty(|_, _, status| match status {
-                            spacetimedb_sdk::reducer::Status::Committed => {
-                                OperationsPlugin::add(|world| {
-                                    Notification::new_string("New player created".to_owned())
-                                        .push(world);
-                                    let identity = ConnectOption::get(world).creds.identity.clone();
-                                    let player =
-                                        TPlayer::find(|u| u.identities.contains(&identity))
-                                            .expect("Failed to find player after registration");
-                                    world.resource_mut::<LoginData>().identity_user = Some(player);
-                                })
-                            }
-                            spacetimedb_sdk::reducer::Status::Failed(e) => {
-                                Notification::new_string(format!("Registration failed: {e}"))
-                                    .error()
-                                    .push_op()
-                            }
-                            _ => panic!(),
-                        });
+                        cn().reducers.register_empty();
                     }
                     br(ui);
                     "Login".cstr_cs(VISIBLE_LIGHT, CstrStyle::Heading).label(ui);
@@ -167,22 +151,11 @@ impl LoginPlugin {
                         .password()
                         .ui_string(&mut ld.pass_field, ui);
                     if Button::click("Submit").ui(ui).clicked() {
-                        login(ld.name_field.clone(), ld.pass_field.clone());
-                        once_on_login(|_, _, status, name, _| match status {
-                            spacetimedb_sdk::reducer::Status::Committed => {
-                                let name = name.clone();
-                                let player = TPlayer::find_by_name(name).unwrap();
-                                OperationsPlugin::add(|world| {
-                                    Self::complete(player, world);
-                                });
-                            }
-                            spacetimedb_sdk::reducer::Status::Failed(e) => {
-                                let text = format!("Login failed: {e}");
-                                error!("{text}");
-                                Notification::new_string(text).error().push_op();
-                            }
-                            _ => panic!(),
-                        });
+                        crate::login::login(
+                            &cn().reducers,
+                            ld.name_field.clone(),
+                            ld.pass_field.clone(),
+                        );
                     }
                 }
             });

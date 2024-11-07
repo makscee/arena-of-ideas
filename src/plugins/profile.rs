@@ -25,11 +25,17 @@ impl ProfilePlugin {
             pass_repeat: default(),
         })
     }
-    fn update_user(world: &mut World) {
+    pub fn update_user(world: &mut World) {
         LoginOption {
-            player: TPlayer::find_by_id(player_id()).unwrap(),
+            player: cn().db.player().id().find(&player_id()).unwrap(),
         }
         .save(world);
+    }
+    pub fn clear_edit(world: &mut World) {
+        let mut ped = world.resource_mut::<ProfileEditData>();
+        ped.pass.clear();
+        ped.pass_repeat.clear();
+        ped.old_pass.clear();
     }
     pub fn add_tile_settings(world: &mut World) {
         world.insert_resource(ProfileEditData {
@@ -56,27 +62,7 @@ impl ProfilePlugin {
             .ui(ui)
             .clicked()
         {
-            set_name(ped.name.clone());
-            once_on_set_name(|_, _, status, name| {
-                let name = name.clone();
-                match status {
-                    spacetimedb_sdk::reducer::Status::Committed => {
-                        OperationsPlugin::add(move |world| {
-                            Notification::new_string(format!(
-                                "Name successfully changed to {name}"
-                            ))
-                            .push(world);
-                            Self::update_user(world);
-                        })
-                    }
-                    spacetimedb_sdk::reducer::Status::Failed(e) => {
-                        Notification::new_string(format!("Name change error: {e}"))
-                            .error()
-                            .push_op()
-                    }
-                    _ => panic!(),
-                }
-            });
+            cn().reducers.set_name(ped.name.clone());
         };
         br(ui);
         if has_pass {
@@ -95,18 +81,8 @@ impl ProfilePlugin {
             .ui(ui)
             .clicked()
         {
-            set_password(ped.old_pass.clone(), ped.pass.clone());
-            once_on_set_password(|_, _, status, _, _| {
-                status.on_success(|world| {
-                    Notification::new_string("Password updated successfully".to_owned())
-                        .push(world);
-                    Self::update_user(world);
-                    let mut ped = world.resource_mut::<ProfileEditData>();
-                    ped.pass.clear();
-                    ped.pass_repeat.clear();
-                    ped.old_pass.clear();
-                })
-            });
+            cn().reducers
+                .set_password(ped.old_pass.clone(), ped.pass.clone());
         }
         br(ui);
     }

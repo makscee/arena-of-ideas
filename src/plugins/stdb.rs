@@ -1,6 +1,8 @@
 use serde_json::to_string_pretty;
 use spacetimedb_lib::{de::serde::DeserializeWrapper, ser::serde::SerializeWrapper};
-use spacetimedb_sdk::{once_on_subscription_applied, subscribe_owned};
+use spacetimedb_sdk::DbContext;
+
+use crate::login;
 
 use super::*;
 
@@ -141,7 +143,7 @@ impl StdbQuery {
             }
         }
 
-        let queries = subs
+        let queries: Vec<Box<str>> = subs
             .iter()
             .map(|(t, c)| {
                 StdbQuery {
@@ -149,14 +151,17 @@ impl StdbQuery {
                     condition: c.clone(),
                 }
                 .query()
+                .into()
             })
             .collect_vec();
         info!("Update subscriptions:\n{}", queries.iter().join("\n"));
-        subscribe_owned(queries).expect("Failed to subscribe");
-        once_on_subscription_applied(move || {
-            let on_subscribe = on_subscribe.clone();
-            OperationsPlugin::add(on_subscribe);
-        });
+        cn().subscription_builder()
+            .on_applied(move |e| {
+                e.event.on_success(|world| {
+                    on_subscribe(world);
+                });
+            })
+            .subscribe(queries.into_boxed_slice());
     }
 }
 
@@ -320,89 +325,89 @@ impl StdbTable {
     }
     pub fn get_json_data(self) -> String {
         match self {
-            StdbTable::GlobalSettings => {
-                to_string_pretty(&SerializeWrapper::new(GlobalSettings::iter().collect_vec()))
-            }
-            StdbTable::GlobalData => {
-                to_string_pretty(&SerializeWrapper::new(GlobalData::iter().collect_vec()))
-            }
-            StdbTable::TBaseUnit => {
-                to_string_pretty(&SerializeWrapper::new(TBaseUnit::iter().collect_vec()))
-            }
+            StdbTable::GlobalSettings => to_string_pretty(&SerializeWrapper::new(
+                cn().db.global_settings().iter().collect_vec(),
+            )),
+            StdbTable::GlobalData => to_string_pretty(&SerializeWrapper::new(
+                cn().db.global_data().iter().collect_vec(),
+            )),
+            StdbTable::TBaseUnit => to_string_pretty(&SerializeWrapper::new(
+                cn().db.base_unit().iter().collect_vec(),
+            )),
             StdbTable::THouse => {
-                to_string_pretty(&SerializeWrapper::new(THouse::iter().collect_vec()))
+                to_string_pretty(&SerializeWrapper::new(cn().db.house().iter().collect_vec()))
             }
-            StdbTable::TAbility => {
-                to_string_pretty(&SerializeWrapper::new(TAbility::iter().collect_vec()))
-            }
-            StdbTable::TStatus => {
-                to_string_pretty(&SerializeWrapper::new(TStatus::iter().collect_vec()))
-            }
-            StdbTable::TMetaShop => {
-                to_string_pretty(&SerializeWrapper::new(TMetaShop::iter().collect_vec()))
-            }
+            StdbTable::TAbility => to_string_pretty(&SerializeWrapper::new(
+                cn().db.ability().iter().collect_vec(),
+            )),
+            StdbTable::TStatus => to_string_pretty(&SerializeWrapper::new(
+                cn().db.status().iter().collect_vec(),
+            )),
+            StdbTable::TMetaShop => to_string_pretty(&SerializeWrapper::new(
+                cn().db.meta_shop().iter().collect_vec(),
+            )),
             StdbTable::TTrade => {
-                to_string_pretty(&SerializeWrapper::new(TTrade::iter().collect_vec()))
+                to_string_pretty(&SerializeWrapper::new(cn().db.trade().iter().collect_vec()))
             }
-            StdbTable::TPlayer => {
-                to_string_pretty(&SerializeWrapper::new(TPlayer::iter().collect_vec()))
-            }
+            StdbTable::TPlayer => to_string_pretty(&SerializeWrapper::new(
+                cn().db.player().iter().collect_vec(),
+            )),
             StdbTable::TQuest => {
-                to_string_pretty(&SerializeWrapper::new(TQuest::iter().collect_vec()))
+                to_string_pretty(&SerializeWrapper::new(cn().db.quest().iter().collect_vec()))
             }
-            StdbTable::TArenaRun => {
-                to_string_pretty(&SerializeWrapper::new(TArenaRun::iter().collect_vec()))
-            }
+            StdbTable::TArenaRun => to_string_pretty(&SerializeWrapper::new(
+                cn().db.arena_run().iter().collect_vec(),
+            )),
             StdbTable::TArenaRunArchive => to_string_pretty(&SerializeWrapper::new(
-                TArenaRunArchive::iter().collect_vec(),
+                cn().db.arena_run_archive().iter().collect_vec(),
             )),
             StdbTable::TArenaLeaderboard => to_string_pretty(&SerializeWrapper::new(
-                TArenaLeaderboard::iter().collect_vec(),
+                cn().db.arena_leaderboard().iter().collect_vec(),
             )),
             StdbTable::TTeam => {
-                to_string_pretty(&SerializeWrapper::new(TTeam::iter().collect_vec()))
+                to_string_pretty(&SerializeWrapper::new(cn().db.team().iter().collect_vec()))
             }
-            StdbTable::TBattle => {
-                to_string_pretty(&SerializeWrapper::new(TBattle::iter().collect_vec()))
-            }
-            StdbTable::TAuction => {
-                to_string_pretty(&SerializeWrapper::new(TAuction::iter().collect_vec()))
-            }
-            StdbTable::TUnitItem => {
-                to_string_pretty(&SerializeWrapper::new(TUnitItem::iter().collect_vec()))
-            }
-            StdbTable::TUnitShardItem => {
-                to_string_pretty(&SerializeWrapper::new(TUnitShardItem::iter().collect_vec()))
-            }
+            StdbTable::TBattle => to_string_pretty(&SerializeWrapper::new(
+                cn().db.battle().iter().collect_vec(),
+            )),
+            StdbTable::TAuction => to_string_pretty(&SerializeWrapper::new(
+                cn().db.auction().iter().collect_vec(),
+            )),
+            StdbTable::TUnitItem => to_string_pretty(&SerializeWrapper::new(
+                cn().db.unit_item().iter().collect_vec(),
+            )),
+            StdbTable::TUnitShardItem => to_string_pretty(&SerializeWrapper::new(
+                cn().db.unit_shard_item().iter().collect_vec(),
+            )),
             StdbTable::TRainbowShardItem => to_string_pretty(&SerializeWrapper::new(
-                TRainbowShardItem::iter().collect_vec(),
+                cn().db.rainbow_shard_item().iter().collect_vec(),
             )),
-            StdbTable::TLootboxItem => {
-                to_string_pretty(&SerializeWrapper::new(TLootboxItem::iter().collect_vec()))
-            }
-            StdbTable::TWallet => {
-                to_string_pretty(&SerializeWrapper::new(TWallet::iter().collect_vec()))
-            }
-            StdbTable::TDailyState => {
-                to_string_pretty(&SerializeWrapper::new(TDailyState::iter().collect_vec()))
-            }
-            StdbTable::TUnitBalance => {
-                to_string_pretty(&SerializeWrapper::new(TUnitBalance::iter().collect_vec()))
-            }
-            StdbTable::TIncubator => {
-                to_string_pretty(&SerializeWrapper::new(TIncubator::iter().collect_vec()))
-            }
-            StdbTable::TIncubatorVote => {
-                to_string_pretty(&SerializeWrapper::new(TIncubatorVote::iter().collect_vec()))
-            }
+            StdbTable::TLootboxItem => to_string_pretty(&SerializeWrapper::new(
+                cn().db.lootbox_item().iter().collect_vec(),
+            )),
+            StdbTable::TWallet => to_string_pretty(&SerializeWrapper::new(
+                cn().db.wallet().iter().collect_vec(),
+            )),
+            StdbTable::TDailyState => to_string_pretty(&SerializeWrapper::new(
+                cn().db.daily_state().iter().collect_vec(),
+            )),
+            StdbTable::TUnitBalance => to_string_pretty(&SerializeWrapper::new(
+                cn().db.unit_balance().iter().collect_vec(),
+            )),
+            StdbTable::TIncubator => to_string_pretty(&SerializeWrapper::new(
+                cn().db.incubator().iter().collect_vec(),
+            )),
+            StdbTable::TIncubatorVote => to_string_pretty(&SerializeWrapper::new(
+                cn().db.incubator_vote().iter().collect_vec(),
+            )),
             StdbTable::TIncubatorFavorite => to_string_pretty(&SerializeWrapper::new(
-                TIncubatorFavorite::iter().collect_vec(),
+                cn().db.incubator_favorite().iter().collect_vec(),
             )),
-            StdbTable::TPlayerStats => {
-                to_string_pretty(&SerializeWrapper::new(TPlayerStats::iter().collect_vec()))
-            }
+            StdbTable::TPlayerStats => to_string_pretty(&SerializeWrapper::new(
+                cn().db.player_stats().iter().collect_vec(),
+            )),
             StdbTable::TPlayerGameStats => to_string_pretty(&SerializeWrapper::new(
-                TPlayerGameStats::iter().collect_vec(),
+                cn().db.player_game_stats().iter().collect_vec(),
             )),
         }
         .unwrap()
@@ -461,4 +466,162 @@ impl StdbTable {
             },
         }
     }
+}
+
+pub fn apply_subscriptions(dbc: &DbConnection) {
+    let r = dbc.reducers();
+    r.on_incubator_post(|e, u| {
+        let unit = u.name.clone();
+        e.event.on_success(move |world| {
+            Notification::new(
+                format!("Unit {} submitted to Incubator", unit).cstr_c(VISIBLE_LIGHT),
+            )
+            .push(world);
+        });
+    });
+    r.on_incubator_update(|e, id, u| {
+        let unit = u.name.clone();
+        e.event.on_success(move |world| {
+            Notification::new(format!("Unit {} updated in Incubator", unit).cstr_c(VISIBLE_LIGHT))
+                .push(world);
+        });
+    });
+    r.on_run_start_normal(|e| e.event.on_success(|w| GameState::Shop.proceed_to_target(w)));
+    r.on_run_start_ranked(|e, _| e.event.on_success(|w| GameState::Shop.proceed_to_target(w)));
+    r.on_run_start_const(|e| e.event.on_success(|w| GameState::Shop.proceed_to_target(w)));
+
+    r.on_incubator_delete(|e, id| {
+        let id = *id;
+        e.event.on_success(move |world| {
+            TilePlugin::close(&IncubatorPlugin::tile_id(id), world);
+            Notification::new_string(format!("Incubator entry#{id} deleted")).push(world)
+        });
+    });
+
+    r.on_login_by_identity(|e| {
+        e.event.on_success(|world| {
+            LoginPlugin::complete(None, world);
+        });
+    });
+    r.on_register_empty(|e| {
+        e.event.on_success(|world| {
+            Notification::new_string("New player created".to_owned()).push(world);
+            let identity = ConnectOption::get(world).identity.clone();
+            let player = cn()
+                .db
+                .player()
+                .iter()
+                .find(|u| u.identities.contains(&identity))
+                .expect("Failed to find player after registration");
+            world.resource_mut::<LoginData>().identity_player = Some(player);
+        })
+    });
+    r.on_login(|e, name, pass| {
+        let name = name.clone();
+        let player = e.db.player().name().find(&name).unwrap();
+        e.event.on_success(move |world| {
+            LoginPlugin::complete(Some(player), world);
+        })
+    });
+
+    r.on_auction_create(|e, _, _, _| e.event.on_success(|w| "Auction created".notify(w)));
+    r.on_auction_buy(|e, id| {
+        let id = *id;
+        e.event
+            .on_success(move |world| format!("Auction#{id} bought").notify(world));
+    });
+
+    r.on_unit_balance_vote(|e, unit, vote| {
+        let unit = unit.clone();
+        let vote = if *vote >= 0 {
+            format!("+{vote}")
+        } else {
+            vote.to_string()
+        };
+        e.event.on_success(move |w| {
+            format!("Vote accepted: {unit} {vote}").notify(w);
+            MetaPlugin::get_next_for_balancing(w);
+        });
+    });
+
+    r.on_dismantle_hero(|e, _| e.event.notify_error());
+    r.on_craft_hero(|e, u, i| {
+        let unit = u.clone();
+        e.event.on_success(move |world| {
+            format!("{unit} crafted").notify(world);
+        })
+    });
+    r.on_open_lootbox(|e, i| {
+        e.event.on_success(|world| "Lootbox opened".notify(world));
+    });
+
+    r.on_set_name(|e, name| {
+        let name = name.clone();
+        e.event.on_success(move |world| {
+            format!("Name successfully changed to {name}").notify(world);
+            ProfilePlugin::update_user(world);
+        })
+    });
+
+    r.on_set_password(|e, _, _| {
+        e.event.on_success(|world| {
+            "Password updated successfully".notify(world);
+            ProfilePlugin::update_user(world);
+            ProfilePlugin::clear_edit(world);
+        })
+    });
+
+    r.on_shop_finish(|e, _| {
+        e.event
+            .on_success(|w| GameState::ShopBattle.proceed_to_target(w))
+    });
+
+    r.on_stack_team(|e, _, _| e.event.notify_error());
+    r.on_stack_shop(|e, _, _| e.event.notify_error());
+    r.on_fuse_start(|e, _, _| e.event.notify_error());
+
+    r.on_run_finish(|e| {
+        e.event.on_success(|w| {
+            GameState::GameStart.proceed_to_target(w);
+        });
+    });
+
+    r.on_team_create(|e, _| {
+        e.event
+            .on_success(|world| TeamPlugin::load_teams_table(world));
+    });
+    r.on_team_rename(|e, _, _| {
+        e.event
+            .on_success(|world| TeamPlugin::load_teams_table(world));
+    });
+
+    r.on_team_disband(|e, id| {
+        let id = *id;
+        e.event.on_success(move |world| {
+            format!("Team#{id} disbanded").notify(world);
+            MetaPlugin::clear(world);
+            MetaPlugin::load_mode(MetaMode::Teams, world);
+        })
+    });
+    r.on_team_add_unit(|e, _, _| {
+        e.event.on_success(|world| {
+            TeamPlugin::load_teams_table(world);
+            Confirmation::close_current(world);
+        })
+    });
+    r.on_team_remove_unit(|e, _, _| {
+        e.event.on_success(|w| {
+            "Unit removed".notify(w);
+            TeamPlugin::load_teams_table(w);
+        });
+    });
+    r.on_team_swap_units(|e, _, _, _| e.event.notify_error());
+
+    r.on_meta_buy(|e, _| {
+        e.event.notify_error();
+    });
+
+    r.on_accept_trade(|e, _| {
+        e.event.notify_error();
+    });
 }

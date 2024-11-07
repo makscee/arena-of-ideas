@@ -158,7 +158,7 @@ impl SectionMenu {
                             Stroke { width: 1.0, color },
                         );
                     }
-                    if let Some(wallet) = TWallet::get_current() {
+                    if let Some(wallet) = cn().db.wallet().get_current() {
                         ui.add_space(20.0);
                         wallet
                             .amount

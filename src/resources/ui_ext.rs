@@ -206,7 +206,7 @@ impl ShowTable<TMetaShop> for Vec<TMetaShop> {
             .columns_item_kind(|d: &TMetaShop| (d.item_kind.clone(), d.id))
             .column_cstr("price", |d, _| {
                 let mut price = d.price;
-                if !TDailyState::current().meta_shop_discount_spent {
+                if !cn().db.daily_state().current().meta_shop_discount_spent {
                     price = (price as f32 * global_settings().meta.daily_discount) as i64;
                 }
                 format!("{} {CREDITS_SYM}", price).cstr_c(YELLOW)
@@ -220,12 +220,7 @@ impl ShowTable<TMetaShop> for Vec<TMetaShop> {
                         .ui(ui)
                         .clicked()
                     {
-                        meta_buy(d.id);
-                        once_on_meta_buy(|_, _, status, _| match status {
-                            StdbStatus::Committed => {}
-                            StdbStatus::Failed(e) => e.notify_error_op(),
-                            _ => panic!(),
-                        });
+                        cn().reducers.meta_buy(d.id);
                     }
                 },
                 false,

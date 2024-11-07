@@ -3,29 +3,42 @@ use super::*;
 pub struct IncubatorPlugin;
 
 impl IncubatorPlugin {
+    pub fn tile_id(id: u64) -> String {
+        format!("Incubator {}", id)
+    }
     pub fn add_tiles(world: &mut World) {
         Tile::new(Side::Left, |ui, world| {
-            let data = TIncubator::iter().collect_vec();
+            let data = cn().db.incubator().iter().collect_vec();
             Table::new("Incubator")
                 .title()
                 .column_base_unit("unit", |d: &TIncubator| d.unit.last().unwrap().clone())
                 .column_int("score", |d| {
-                    TIncubatorVote::filter_by_target(d.id)
+                    cn().db
+                        .incubator_vote()
+                        .iter()
+                        .filter(|v| v.target == d.id)
                         .map(|d| if d.vote { 1 } else { -1 })
                         .sum::<i32>()
                 })
                 .column_int("fav", |d| {
-                    TIncubatorFavorite::filter_by_target(d.id).count() as i32
+                    cn().db
+                        .incubator_favorite()
+                        .iter()
+                        .filter(|f| f.target == d.id)
+                        .count() as i32
                 })
                 .column_user_click("owner", |d| d.owner)
                 .column_btn_mod(
                     "+",
                     |d, _, _| {
-                        incubator_vote(d.id, true);
+                        cn().reducers.incubator_vote_set(d.id, true);
                     },
                     |d, _, b| {
-                        let v = TIncubatorVote::filter_by_owner(player_id())
-                            .find(|v| v.target == d.id)
+                        let v = cn()
+                            .db
+                            .incubator_vote()
+                            .iter()
+                            .find(|v| v.owner == player_id() && v.target == d.id)
                             .map(|v| v.vote)
                             .unwrap_or_default();
                         b.active(v)
@@ -34,11 +47,14 @@ impl IncubatorPlugin {
                 .column_btn_mod(
                     "-",
                     |d, _, _| {
-                        incubator_vote(d.id, false);
+                        cn().reducers.incubator_vote_set(d.id, false);
                     },
                     |d, ui, b| {
-                        let v = TIncubatorVote::filter_by_owner(player_id())
-                            .find(|v| v.target == d.id)
+                        let v = cn()
+                            .db
+                            .incubator_vote()
+                            .iter()
+                            .find(|v| v.owner == player_id() && v.target == d.id)
                             .map(|v| !v.vote)
                             .unwrap_or_default();
                         b.red(ui).active(v)
@@ -47,11 +63,15 @@ impl IncubatorPlugin {
                 .column_btn_mod(
                     "❤",
                     |d, _, _| {
-                        incubator_favorite(d.id);
+                        cn().reducers.incubator_favorite_set(d.id);
                     },
                     |d, _, b| {
-                        let v = TIncubatorFavorite::find_by_owner(player_id())
-                            .map(|v| v.target == d.id)
+                        let v = cn()
+                            .db
+                            .incubator_favorite()
+                            .iter()
+                            .find(|f| f.owner == player_id())
+                            .map(|f| f.target == d.id)
                             .unwrap_or_default();
                         b.active(v)
                     },
@@ -67,9 +87,6 @@ impl IncubatorPlugin {
                             .collect_vec();
                         let own = d.owner == player_id();
                         let i = d.clone();
-                        fn tile_id(id: u64) -> String {
-                            format!("Incubator {}", id)
-                        }
                         Tile::new(Side::Left, move |ui, world| {
                             cards.last().unwrap().ui(ui);
                             if cards.len() > 1 {
@@ -107,17 +124,7 @@ impl IncubatorPlugin {
                                         let id = i.id;
                                         Confirmation::new("Delete Incubator unit".cstr_c(RED))
                                             .accept(move |_| {
-                                                incubator_delete(id);
-                                                on_incubator_delete(|_, _, status, id| {
-                                                    let id = *id;
-                                                    status.on_success(move |world| {
-                                                        TilePlugin::close(&tile_id(id), world);
-                                                        Notification::new_string(format!(
-                                                            "Incubator entry#{id} deleted"
-                                                        ))
-                                                        .push(world)
-                                                    });
-                                                });
+                                                cn().reducers.incubator_delete(id);
                                             })
                                             .cancel(|_| {})
                                             .push(world);
@@ -134,7 +141,7 @@ impl IncubatorPlugin {
                                 }
                             }
                         })
-                        .with_id(tile_id(d.id))
+                        .with_id(Self::tile_id(d.id))
                         .min_space(egui::vec2(300.0, 0.0))
                         .push(world);
                     },

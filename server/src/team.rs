@@ -6,6 +6,7 @@ pub struct TTeam {
     #[primary_key]
     pub id: u64,
     pub name: String,
+    #[index(btree)]
     pub owner: u64,
     pub units: Vec<FusedUnit>,
     pub pool: TeamPool,

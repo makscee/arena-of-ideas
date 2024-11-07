@@ -50,8 +50,11 @@ impl GameStartPlugin {
     fn load_data(world: &mut World) {
         TableState::reset_cache(&egui_context(world).unwrap());
         let mut gsr = rm(world);
-        gsr.teams = TTeam::filter_by_owner(player_id())
-            .filter(|t| t.pool == TeamPool::Owned && !t.units.is_empty())
+        gsr.teams = cn()
+            .db
+            .team()
+            .iter()
+            .filter(|t| t.owner == player_id() && t.pool == TeamPool::Owned && !t.units.is_empty())
             .collect_vec();
         if let Some(i) = client_state()
             .last_played_team
@@ -60,7 +63,10 @@ impl GameStartPlugin {
             gsr.selected_team = i;
         }
         gsr.leaderboard = HashMap::from_iter(
-            TArenaLeaderboard::filter_by_season(gsr.selected_season)
+            cn().db
+                .arena_leaderboard()
+                .iter()
+                .filter(|a| a.season == gsr.selected_season)
                 .sorted_by_key(|d| -(d.floor as i32))
                 .map(|d| (d.mode.into(), d))
                 .into_grouping_map()
@@ -85,14 +91,18 @@ impl GameStartPlugin {
             );
         }
         gsr.runs = HashMap::from_iter(
-            TArenaRunArchive::iter()
+            cn().db
+                .arena_run_archive()
+                .iter()
                 .sorted_by_key(|d| -(d.id as i32))
                 .map(|d| (d.mode.into(), d))
                 .into_grouping_map()
                 .collect(),
         );
         gsr.battles = HashMap::from_iter(
-            TBattle::iter()
+            cn().db
+                .battle()
+                .iter()
                 .sorted_by_key(|d| -(d.id as i32))
                 .map(|d| (d.mode.into(), d))
                 .into_grouping_map()
@@ -159,7 +169,7 @@ impl GameStartPlugin {
             let mode = r.selected_mode.clone();
             mode.cstr().style(CstrStyle::Heading).label(ui);
             ui.add_space(30.0);
-            let run = TArenaRun::get_current();
+            let run = cn().db.arena_run().get_current();
             let mut entry_fee = None;
             if run.is_none() {
                 let mut enabled = true;
@@ -175,7 +185,7 @@ impl GameStartPlugin {
                                 .ui(ui);
                             enabled = false;
                         } else {
-                            let cost = TDailyState::current().ranked_cost;
+                            let cost = cn().db.daily_state().current().ranked_cost;
                             let mut new_selected = None;
                             ui.horizontal_wrapped(|ui| {
                                 for (i, team) in r.teams.iter().enumerate() {
@@ -205,7 +215,7 @@ impl GameStartPlugin {
                         }
                     }
                     GameMode::ArenaConst => {
-                        let cost = TDailyState::current().const_cost;
+                        let cost = cn().db.daily_state().current().const_cost;
                         if cost == 0 {
                             "First daily run free!"
                                 .cstr_cs(GREEN, CstrStyle::Bold)
@@ -226,27 +236,18 @@ impl GameStartPlugin {
                     cs.last_played_mode = Some(r.selected_mode.clone().into());
                     match &r.selected_mode {
                         GameMode::ArenaNormal => {
-                            run_start_normal();
-                            once_on_run_start_normal(|_, _, status| {
-                                status.on_success(|w| GameState::Shop.proceed_to_target(w))
-                            });
+                            cn().reducers.run_start_normal();
                         }
                         GameMode::ArenaRanked => {
                             let team = r.teams[r.selected_team].id;
                             cs.last_played_team = Some(team);
-                            run_start_ranked(team);
-                            once_on_run_start_ranked(|_, _, status, _| {
-                                status.on_success(|w| GameState::Shop.proceed_to_target(w))
-                            });
+                            cn().reducers.run_start_ranked(team);
                         }
                         GameMode::ArenaConst => {
-                            run_start_const();
-                            once_on_run_start_const(|_, _, status| {
-                                status.on_success(|w| GameState::Shop.proceed_to_target(w))
-                            });
+                            cn().reducers.run_start_const();
                         }
                     }
-                    cs.save(ctx);
+                    cs.save();
                 }
             }
             ui.add_space(13.0);
@@ -262,7 +263,7 @@ impl GameStartPlugin {
                     if Button::click("Abandon run").red(ui).ui(ui).clicked() {
                         Confirmation::new("Abandon current run?".cstr_c(VISIBLE_BRIGHT))
                             .accept(|_| {
-                                run_finish();
+                                cn().reducers.run_finish();
                             })
                             .cancel(|_| {})
                             .push(world);
@@ -332,7 +333,7 @@ impl GameStartPlugin {
                                     .column_user_click("player", |d| d.owner)
                                     .column_team("player >", |d| d.team_left)
                                     .column_team("< enemy", |d| d.team_right)
-                                    .column_user_click("enemy", |d| d.team_right.get_team(ctx).owner)
+                                    .column_user_click("enemy", |d| d.team_right.get_team().owner)
                                     .column_gid("id", |d| d.id)
                                     .column_cstr("mode", |d, _| d.mode.cstr())
                                     .column_btn("copy", |d, _, world| {

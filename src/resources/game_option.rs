@@ -1,4 +1,4 @@
-use spacetimedb_sdk::identity::Credentials;
+use spacetimedb_lib::Identity;
 
 use super::*;
 
@@ -43,7 +43,7 @@ impl GameOption {
             }
             GameOption::TestScenariosLoad => world.get_resource::<TestScenarios>().is_some(),
             GameOption::Table(query) => query.is_subscribed(),
-            GameOption::ActiveRun => TArenaRun::get_current().is_some(),
+            GameOption::ActiveRun => cn().db.arena_run().get_current().is_some(),
         }
     }
     pub fn fulfill(&self, world: &mut World) {
@@ -70,7 +70,8 @@ pub struct LoginOption {
 
 #[derive(Resource, Clone)]
 pub struct ConnectOption {
-    pub creds: Credentials,
+    pub identity: Identity,
+    pub token: String,
 }
 
 pub trait OptionResource: Resource + Sized {

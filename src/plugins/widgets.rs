@@ -26,7 +26,7 @@ impl Plugin for WidgetsPlugin {
 }
 
 fn give_c() {
-    give_credits();
+    cn().reducers.give_credits();
 }
 fn cmd_test(world: &mut World) {
     let content = |ui: &mut Ui, _: &mut World| {

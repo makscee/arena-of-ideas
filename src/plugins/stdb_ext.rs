@@ -1,5 +1,7 @@
 use std::sync::RwLockWriteGuard;
 
+use spacetimedb_sdk::{Event, Table};
+
 use super::*;
 
 pub trait EntityExt {
@@ -23,23 +25,23 @@ impl EntityExt for Entity {
             .unwrap()
     }
 }
-pub trait TableSingletonExt: TableType {
-    fn current() -> Self {
-        *Self::get_current().unwrap()
+pub trait TableSingletonExt: Table {
+    fn current(&self) -> Self::Row {
+        *Self::get_current(self).unwrap()
     }
-    fn get_current() -> Option<Box<Self>> {
-        Self::iter().exactly_one().ok().map(|d| Box::new(d))
+    fn get_current(&self) -> Option<Box<Self::Row>> {
+        Self::iter(self).exactly_one().ok().map(|d| Box::new(d))
     }
 }
 
-impl TableSingletonExt for GlobalData {}
-impl TableSingletonExt for GlobalSettings {}
-impl TableSingletonExt for TArenaRun {}
-impl TableSingletonExt for TWallet {}
-impl TableSingletonExt for TDailyState {
-    fn current() -> Self {
-        *Self::get_current().unwrap_or_else(|| {
-            Box::new(Self {
+impl TableSingletonExt for GlobalDataTableHandle<'static> {}
+impl TableSingletonExt for GlobalSettingsTableHandle<'static> {}
+impl TableSingletonExt for ArenaRunTableHandle<'static> {}
+impl TableSingletonExt for WalletTableHandle<'static> {}
+impl TableSingletonExt for DailyStateTableHandle<'static> {
+    fn current(&self) -> Self::Row {
+        *Self::get_current(self).unwrap_or_else(|| {
+            Box::new(Self::Row {
                 owner: player_id(),
                 ranked_cost: 0,
                 const_cost: 0,
@@ -49,8 +51,8 @@ impl TableSingletonExt for TDailyState {
         })
     }
 
-    fn get_current() -> Option<Box<Self>> {
-        Self::iter().exactly_one().ok().map(|d| Box::new(d))
+    fn get_current(&self) -> Option<Box<Self::Row>> {
+        Self::iter(self).exactly_one().ok().map(|d| Box::new(d))
     }
 }
 
@@ -59,25 +61,32 @@ pub trait StdbStatusExt {
     fn notify_error(&self);
 }
 
-impl StdbStatusExt for spacetimedb_sdk::reducer::Status {
+impl<R> StdbStatusExt for Event<R> {
     fn on_success(&self, f: impl FnOnce(&mut World) + Send + Sync + 'static) {
         match self {
-            StdbStatus::Committed => OperationsPlugin::add(f),
-            StdbStatus::Failed(e) => e.notify_error_op(),
-            _ => panic!(),
+            Event::Reducer(r) => match &r.status {
+                spacetimedb_sdk::Status::Committed => OperationsPlugin::add(f),
+                spacetimedb_sdk::Status::Failed(e) => e.notify_error_op(),
+                _ => panic!(),
+            },
+            _ => {}
         }
     }
     fn notify_error(&self) {
         match self {
-            StdbStatus::Committed => {}
-            StdbStatus::Failed(e) => e.notify_error_op(),
-            _ => panic!(),
+            Event::Reducer(r) => match &r.status {
+                spacetimedb_sdk::Status::Committed => {}
+                spacetimedb_sdk::Status::Failed(e) => e.notify_error_op(),
+                _ => panic!(),
+            },
+            _ => {}
         }
     }
 }
 
 pub trait GIDExt {
     fn get_team(self) -> TTeam;
+    fn try_get_team(self) -> Option<TTeam>;
     fn get_team_cached(self) -> TTeam;
     fn get_player(self) -> TPlayer;
     fn unit_item(self) -> TUnitItem;
@@ -111,16 +120,19 @@ impl GIDExt for u64 {
                 pool: TeamPool::Owned,
             };
         }
-        TTeam::find_by_id(self)
+        self.try_get_team()
             .with_context(|| format!("Failed to find Team#{self}"))
             .unwrap()
+    }
+    fn try_get_team(self) -> Option<TTeam> {
+        cn().db.team().id().find(&self)
     }
     fn get_team_cached(self) -> TTeam {
         let mut cache = stdb_cache_get_mut();
         if let Some(team) = cache.teams.get(&self) {
             return team.clone();
         } else {
-            let team = self.get_team(ctx);
+            let team = self.get_team();
             cache.teams.insert(self, team.clone());
             team
         }
@@ -136,27 +148,42 @@ impl GIDExt for u64 {
                 last_login: default(),
             };
         }
-        TPlayer::find_by_id(self)
+        cn().db
+            .player()
+            .id()
+            .find(&self)
             .with_context(|| format!("Failed to find Player#{self}"))
             .unwrap()
     }
     fn unit_item(self) -> TUnitItem {
-        TUnitItem::find_by_id(self)
+        cn().db
+            .unit_item()
+            .id()
+            .find(&self)
             .with_context(|| format!("Failed to find UnitItem#{self}"))
             .unwrap()
     }
     fn unit_shard_item(self) -> TUnitShardItem {
-        TUnitShardItem::find_by_id(self)
+        cn().db
+            .unit_shard_item()
+            .id()
+            .find(&self)
             .with_context(|| format!("Failed to find UnitShardItem#{self}"))
             .unwrap()
     }
     fn rainbow_shard_item(self) -> TRainbowShardItem {
-        TRainbowShardItem::find_by_id(self)
+        cn().db
+            .rainbow_shard_item()
+            .id()
+            .find(&self)
             .with_context(|| format!("Failed to find RainbowShardItem#{self}"))
             .unwrap()
     }
     fn lootbox_item(self) -> TLootboxItem {
-        TLootboxItem::find_by_id(self)
+        cn().db
+            .lootbox_item()
+            .id()
+            .find(&self)
             .with_context(|| format!("Failed to find LootboxItem#{self}"))
             .unwrap()
     }
@@ -165,7 +192,11 @@ impl GIDExt for u64 {
 pub trait BaseUnitExt {
     fn base(&self) -> &str;
     fn base_unit(&self) -> TBaseUnit {
-        TBaseUnit::find_by_name(self.base().into()).unwrap()
+        cn().db
+            .base_unit()
+            .name()
+            .find(&self.base().into())
+            .unwrap()
     }
 }
 
@@ -253,11 +284,6 @@ impl Into<u64> for GameMode {
             GameMode::ArenaRanked => 1,
             GameMode::ArenaConst => 2,
         }
-    }
-}
-impl GameMode {
-    pub fn weak_eq(&self, other: &Self) -> bool {
-        mem::discriminant(self) == mem::discriminant(other)
     }
 }
 

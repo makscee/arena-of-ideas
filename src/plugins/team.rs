@@ -107,9 +107,12 @@ impl TeamPlugin {
         state.change_int(var, delta);
     }
 
-    fn load_teams_table(world: &mut World) {
-        world.resource_mut::<TeamResource>().table = TTeam::filter_by_owner(player_id())
-            .filter(|t| t.pool.eq(&TeamPool::Owned))
+    pub fn load_teams_table(world: &mut World) {
+        world.resource_mut::<TeamResource>().table = cn()
+            .db
+            .team()
+            .iter()
+            .filter(|t| t.owner == player_id() && t.pool == TeamPool::Owned)
             .collect_vec();
     }
     fn load_editor_team(id: u64, world: &mut World) {
@@ -130,10 +133,7 @@ impl TeamPlugin {
                     Notification::new("Empty name".cstr()).error().push(world);
                     Self::open_new_team_popup(world);
                 } else {
-                    team_create(name);
-                    once_on_team_create(|_, _, status, _| {
-                        status.on_success(|world| Self::load_teams_table(world));
-                    });
+                    cn().reducers.team_create(name);
                 }
             })
             .cancel(|_| {})
@@ -151,7 +151,7 @@ impl TeamPlugin {
         Self::load_teams_table(world);
         Tile::new(Side::Left, |ui, world| {
             title("Team Manager", ui);
-            let cost = GlobalSettings::current().create_team_cost;
+            let cost = global_settings().create_team_cost;
             ui.vertical_centered_justified(|ui| {
                 if Button::click("New Team")
                     .credits_cost(cost)
@@ -181,7 +181,7 @@ impl TeamPlugin {
             if id == 0 {
                 return;
             }
-            let Some(team) = TTeam::find_by_id(id) else {
+            let Some(team) = id.try_get_team() else {
                 return;
             };
             title(&team.name, ui);
@@ -196,10 +196,7 @@ impl TeamPlugin {
                             .accept(|world| {
                                 let mut tr = world.resource_mut::<TeamResource>();
                                 let name = tr.new_team_name.take();
-                                team_rename(tr.team, name);
-                                once_on_team_rename(|_, _, status, _, _| {
-                                    status.on_success(|world| Self::load_teams_table(world));
-                                });
+                                cn().reducers.team_rename(tr.team, name);
                             })
                             .cancel(|_| {})
                             .content(|ui, world| {
@@ -216,15 +213,7 @@ impl TeamPlugin {
                             Confirmation::new("Disband team?".cstr_c(VISIBLE_LIGHT))
                                 .accept(|world| {
                                     let tr = world.resource_mut::<TeamResource>();
-                                    team_disband(tr.team);
-                                    once_on_team_disband(|_, _, status, id| {
-                                        let id = *id;
-                                        status.on_success(move |world| {
-                                            format!("Team#{id} disbanded").notify(world);
-                                            MetaPlugin::clear(world);
-                                            MetaPlugin::load_mode(MetaMode::Teams, world);
-                                        })
-                                    });
+                                    cn().reducers.team_disband(tr.team);
                                 })
                                 .cancel(|_| {})
                                 .push(world);
@@ -238,19 +227,17 @@ impl TeamPlugin {
                     Confirmation::new("Add unit to team".cstr())
                         .cancel(|_| {})
                         .content(|ui, world| {
-                            let units = TUnitItem::filter_by_owner(player_id())
+                            let units = cn()
+                                .db
+                                .unit_item()
+                                .iter()
+                                .filter(|i| i.owner == player_id())
                                 .map(|u| u.unit)
                                 .collect_vec();
                             units.show_modified_table("Units", ui, world, |t| {
                                 t.column_btn("select", |u, _, world| {
                                     let tr = world.resource::<TeamResource>();
-                                    team_add_unit(tr.team, u.id);
-                                    once_on_team_add_unit(|_, _, status, _, _| {
-                                        status.on_success(|world| {
-                                            Self::load_teams_table(world);
-                                            Confirmation::close_current(world);
-                                        })
-                                    });
+                                    cn().reducers.team_add_unit(tr.team, u.id);
                                 })
                             });
                         })
@@ -263,20 +250,14 @@ impl TeamPlugin {
                     ui.vertical_centered_justified(|ui| {
                         if Button::click("Remove").ui(ui).clicked() {
                             let tr = world.resource::<TeamResource>();
-                            team_remove_unit(tr.team, tr.team.get_team(ctx).units[slot].id);
-                            once_on_team_remove_unit(|_, _, status, _, _| {
-                                status.on_success(|w| {
-                                    "Unit removed".notify(w);
-                                    Self::load_teams_table(w);
-                                });
-                            });
+                            cn().reducers
+                                .team_remove_unit(tr.team, tr.team.get_team().units[slot].id);
                         }
                     });
                 })
                 .on_swap(|from, to, world| {
                     let team = world.resource::<TeamResource>().team;
-                    team_swap_units(team, from as u8, to as u8);
-                    once_on_team_swap_units(|_, _, status, _, _, _| status.notify_error());
+                    cn().reducers.team_swap_units(team, from as u8, to as u8);
                 })
                 .ui(ui, world);
         })

@@ -75,9 +75,10 @@ impl MigrationPlugin {
             let json = std::fs::read_to_string(&path.path()).unwrap();
             table.fill_from_json_data(&json, &mut gd);
         }
-        upload_game_data(GlobalData::current().next_id, gd);
-        once_on_upload_game_data(|_, _, s, _, _| {
-            info!("Upload finish: {s:?}");
+        cn().reducers
+            .upload_game_data(cn().db.global_data().current().next_id, gd);
+        cn().reducers.on_upload_game_data(|e, _, _| {
+            info!("Upload finish: {:?}", e.event);
             app_exit_op();
         });
         // let data = &std::fs::read_to_string(&Self::path()).unwrap();

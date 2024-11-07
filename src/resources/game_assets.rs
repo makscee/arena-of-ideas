@@ -77,12 +77,14 @@ pub fn definition_names() -> Vec<String> {
 impl GameAssets {
     pub fn cache_tables() {
         info!("Cache tables start");
-        let global_settings = GlobalSettings::iter()
-            .exactly_one()
-            .ok()
+        let global_settings = cn()
+            .db
+            .global_settings()
+            .always_zero()
+            .find(&0)
             .expect("Assets not synced");
         let mut heroes: HashMap<String, PackedUnit> = default();
-        for unit in TBaseUnit::iter() {
+        for unit in cn().db.base_unit().iter() {
             match unit.pool {
                 UnitPool::Game => {
                     heroes.insert(unit.name.clone(), unit.into());
@@ -91,7 +93,7 @@ impl GameAssets {
             }
         }
         let mut houses: HashMap<String, House> = default();
-        for house in THouse::iter() {
+        for house in cn().db.house().iter() {
             houses.insert(house.name.clone(), house.into());
         }
         let ga = game_assets().clone();

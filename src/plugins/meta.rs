@@ -50,10 +50,7 @@ fn brm(world: &mut World) -> Mut<BalancingResource> {
 impl AuctionResource {
     fn post(world: &mut World) {
         if let Some(ar) = world.remove_resource::<AuctionResource>() {
-            auction_create(ar.item_id, ar.count, ar.price);
-            once_on_auction_create(|_, _, status, _, _, _| {
-                status.on_success(|w| "Auction created".notify(w));
-            });
+            cn().reducers.auction_create(ar.item_id, ar.count, ar.price);
         }
     }
 }
@@ -93,14 +90,19 @@ impl MetaPlugin {
         }
     }
     pub fn can_balance_vote() -> bool {
-        TUnitBalance::filter_by_owner(player_id()).count() < game_assets().heroes.len()
+        cn().db
+            .unit_balance()
+            .iter()
+            .filter(|b| b.owner == player_id())
+            .count()
+            < game_assets().heroes.len()
     }
-    fn get_next_for_balancing(world: &mut World) {
+    pub fn get_next_for_balancing(world: &mut World) {
         world.game_clear();
         let mut br = world.resource_mut::<BalancingResource>();
         if let Some(unit) = br.units.pop() {
             br.current = unit.clone();
-            PackedUnit::from(TBaseUnit::find_by_name(unit).unwrap()).unpack(
+            PackedUnit::from(cn().db.base_unit().name().find(&unit).unwrap()).unpack(
                 TeamPlugin::entity(Faction::Team, world),
                 None,
                 None,
@@ -117,9 +119,17 @@ impl MetaPlugin {
         Self::get_next_for_balancing(world);
     }
     fn on_enter_balancing(world: &mut World) {
-        let voted: HashSet<String> =
-            HashSet::from_iter(TUnitBalance::filter_by_owner(player_id()).map(|u| u.unit));
-        let mut units = TBaseUnit::iter()
+        let voted: HashSet<String> = HashSet::from_iter(
+            cn().db
+                .unit_balance()
+                .iter()
+                .filter(|b| b.owner == player_id())
+                .map(|u| u.unit),
+        );
+        let mut units = cn()
+            .db
+            .base_unit()
+            .iter()
             .filter_map(
                 |u| match u.pool == UnitPool::Game && !voted.contains(&u.name) {
                     true => Some(u.name),
@@ -143,7 +153,7 @@ impl MetaPlugin {
     fn open_shop(world: &mut World) {
         Tile::new(Side::Left, |ui, world| {
             show_daily_refresh_timer(ui);
-            if !TDailyState::current().meta_shop_discount_spent {
+            if !cn().db.daily_state().current().meta_shop_discount_spent {
                 format!(
                     "Daily discount on first buy {:.0}%",
                     global_settings().meta.daily_discount * 100.0
@@ -151,7 +161,9 @@ impl MetaPlugin {
                 .cstr_cs(GREEN, CstrStyle::Bold)
                 .label(ui);
             }
-            TMetaShop::iter()
+            cn().db
+                .meta_shop()
+                .iter()
                 .sorted_by_key(|d| d.id)
                 .collect_vec()
                 .show_table("Meta Shop", ui, world);
@@ -178,27 +190,22 @@ impl MetaPlugin {
     }
     fn open_auction(world: &mut World) {
         Tile::new(Side::Left, |ui, world| {
-            TAuction::iter()
+            cn().db
+                .auction()
+                .iter()
                 .collect_vec()
                 .show_modified_table("Auction", ui, world, |t| {
                     t.column(
                         "buy",
                         |_, _| default(),
-                        |d, _, ui, _| {
+                        |d: &TAuction, _, ui, _| {
                             let own = player_id() == d.owner;
                             if Button::click(if own { "cancel" } else { "buy" })
                                 .enabled(own || can_afford(d.price))
                                 .ui(ui)
                                 .clicked()
                             {
-                                auction_buy(d.item_id);
-                                once_on_auction_buy(|_, _, status, id| match status {
-                                    StdbStatus::Committed => {
-                                        format!("Auction#{id} bought").notify_op()
-                                    }
-                                    StdbStatus::Failed(e) => e.notify_error_op(),
-                                    _ => panic!(),
-                                });
+                                cn().reducers.auction_buy(d.item_id);
                             }
                         },
                         false,
@@ -214,7 +221,9 @@ impl MetaPlugin {
     }
     fn open_gallery(world: &mut World) {
         Tile::new(Side::Left, |ui, world| {
-            TBaseUnit::iter()
+            cn().db
+                .base_unit()
+                .iter()
                 .collect_vec()
                 .show_table("Base Units", ui, world);
         })
@@ -225,15 +234,24 @@ impl MetaPlugin {
         Self::on_enter_balancing(world);
         Tile::new(Side::Left, |ui, world| {
             let votes: HashMap<String, (u64, i32)> = HashMap::from_iter(
-                TUnitBalance::filter_by_owner(player_id()).map(|u| (u.unit, (u.id, u.vote))),
+                cn().db
+                    .unit_balance()
+                    .iter()
+                    .filter(|b| b.owner == player_id())
+                    .map(|u| (u.unit, (u.id, u.vote))),
             );
-            TBaseUnit::iter()
+            cn().db
+                .base_unit()
+                .iter()
                 .filter(|u| votes.contains_key(&u.name))
                 .sorted_by_key(|u| votes.get(&u.name).unwrap().0)
                 .collect_vec()
                 .show_modified_table("Base Units", ui, world, |t| {
                     t.column_int("vote", |u| {
-                        TUnitBalance::filter_by_unit(u.name.clone())
+                        cn().db
+                            .unit_balance()
+                            .iter()
+                            .filter(|b| b.unit == u.name)
                             .map(|u| u.vote)
                             .sum::<i32>()
                     })
@@ -301,19 +319,8 @@ impl MetaPlugin {
             });
 
             if let Some(vote) = brm(world).vote {
-                unit_balance_vote(world.resource::<BalancingResource>().current.clone(), vote);
-                once_on_unit_balance_vote(|_, _, status, unit, vote| {
-                    let unit = unit.clone();
-                    let vote = if *vote >= 0 {
-                        format!("+{vote}")
-                    } else {
-                        vote.to_string()
-                    };
-                    status.on_success(move |w| {
-                        format!("Vote accepted: {unit} {vote}").notify(w);
-                        Self::get_next_for_balancing(w);
-                    });
-                });
+                cn().reducers
+                    .unit_balance_vote(world.resource::<BalancingResource>().current.clone(), vote);
             }
         })
         .pinned()
@@ -322,7 +329,10 @@ impl MetaPlugin {
     }
 
     fn show_units(ui: &mut Ui, world: &mut World) {
-        TUnitItem::filter_by_owner(player_id())
+        cn().db
+            .unit_item()
+            .iter()
+            .filter(|u| u.owner == player_id())
             .map(|u| u.unit)
             .collect_vec()
             .show_modified_table("Units", ui, world, |t| {
@@ -330,7 +340,11 @@ impl MetaPlugin {
                     if Confirmation::has_active(world) {
                         return;
                     }
-                    let item = TUnitItem::filter_by_owner(player_id())
+                    let item = cn()
+                        .db
+                        .unit_item()
+                        .iter()
+                        .filter(|u| u.owner == player_id())
                         .find(|i| i.unit.id == unit.id)
                         .unwrap();
                     let item_id = item.id;
@@ -355,7 +369,11 @@ impl MetaPlugin {
                     if Confirmation::has_active(world) {
                         return;
                     }
-                    let item = TUnitItem::filter_by_owner(player_id())
+                    let item = cn()
+                        .db
+                        .unit_item()
+                        .iter()
+                        .filter(|u| u.owner == player_id())
                         .find(|i| i.unit.id == unit.id)
                         .unwrap();
                     let item_id = item.id;
@@ -369,10 +387,7 @@ impl MetaPlugin {
                         .cstr_c(VISIBLE_LIGHT),
                     )
                     .accept(move |_| {
-                        dismantle_hero(item_id);
-                        on_dismantle_hero(|_, _, status, _| {
-                            status.notify_error();
-                        });
+                        cn().reducers.dismantle_hero(item_id);
                     })
                     .cancel(|_| {})
                     .push(world);
@@ -381,7 +396,11 @@ impl MetaPlugin {
     }
 
     fn show_shards(ui: &mut Ui, world: &mut World) {
-        let rs = TRainbowShardItem::filter_by_owner(player_id())
+        let rs = cn()
+            .db
+            .rainbow_shard_item()
+            .iter()
+            .filter(|u| u.owner == player_id())
             .exactly_one()
             .ok();
         text_dots_text(
@@ -419,10 +438,18 @@ impl MetaPlugin {
                     .push(world);
             }
         }
-        let d = TUnitShardItem::filter_by_owner(player_id())
+        let d = cn()
+            .db
+            .unit_shard_item()
+            .iter()
+            .filter(|u| u.owner == player_id())
             .sorted_by_key(|d| -(d.count as i32))
             .collect_vec();
-        let rs = TRainbowShardItem::filter_by_owner(player_id())
+        let rs = cn()
+            .db
+            .rainbow_shard_item()
+            .iter()
+            .filter(|u| u.owner == player_id())
             .exactly_one()
             .map(|i| i.count)
             .unwrap_or_default();
@@ -434,7 +461,11 @@ impl MetaPlugin {
                     if Confirmation::has_active(world) {
                         return;
                     }
-                    let item = TUnitShardItem::filter_by_owner(player_id())
+                    let item = cn()
+                        .db
+                        .unit_shard_item()
+                        .iter()
+                        .filter(|u| u.owner == player_id())
                         .find(|i| i.id == unit.id)
                         .unwrap();
                     let item_id = item.id;
@@ -493,14 +524,10 @@ impl MetaPlugin {
                             }
                         })
                         .accept(move |world| {
-                            craft_hero(unit.clone(), world.resource::<CraftResource>().use_rainbow);
-                            once_on_craft_hero(|_, _, status, unit, _| match status {
-                                StdbStatus::Committed => {
-                                    Notification::new_string(format!("{unit} crafted")).push_op()
-                                }
-                                StdbStatus::Failed(e) => e.notify_error_op(),
-                                _ => panic!(),
-                            });
+                            cn().reducers.craft_hero(
+                                unit.clone(),
+                                world.resource::<CraftResource>().use_rainbow,
+                            );
                         })
                         .cancel(|_| {})
                         .push(world);
@@ -512,7 +539,11 @@ impl MetaPlugin {
     }
 
     fn show_lootboxes(ui: &mut Ui, world: &mut World) {
-        let d = TLootboxItem::filter_by_owner(player_id())
+        let d = cn()
+            .db
+            .lootbox_item()
+            .iter()
+            .filter(|u| u.owner == player_id())
             .sorted_by_key(|d| -(d.count as i32))
             .collect_vec();
         d.show_modified_table("Lootboxes", ui, world, |t| {
@@ -523,7 +554,11 @@ impl MetaPlugin {
                     if Confirmation::has_active(world) {
                         return;
                     }
-                    let item = TLootboxItem::filter_by_owner(player_id())
+                    let item = cn()
+                        .db
+                        .lootbox_item()
+                        .iter()
+                        .filter(|u| u.owner == player_id())
                         .find(|i| i.id == unit.id)
                         .unwrap();
                     let item_id = item.id;
@@ -550,12 +585,7 @@ impl MetaPlugin {
                 },
             )
             .column_btn("open", |d, _, _| {
-                open_lootbox(d.id);
-                once_on_open_lootbox(|_, _, status, _| {
-                    status.on_success(|world| {
-                        "Lootbox opened".notify(world);
-                    })
-                });
+                cn().reducers.open_lootbox(d.id);
             })
         });
     }

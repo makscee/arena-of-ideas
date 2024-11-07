@@ -12,7 +12,12 @@ struct PlayersResource {
 impl PlayersPlugin {
     fn load(world: &mut World) {
         let pr = PlayersResource {
-            players: TPlayer::iter().sorted_by_key(|d| d.id).collect_vec(),
+            players: cn()
+                .db
+                .player()
+                .iter()
+                .sorted_by_key(|d| d.id)
+                .collect_vec(),
             season: global_settings().season,
             ..default()
         };
@@ -23,12 +28,17 @@ impl PlayersPlugin {
         Tile::new(Side::Left, |ui, world| {
             fn get_game_stats(id: u64, mode: u64, season: u32) -> Option<TPlayerGameStats> {
                 let mode: GameMode = mode.into();
-                TPlayerGameStats::filter_by_owner(id)
-                    .filter(|d| d.season == season && d.mode.weak_eq(&mode))
+                cn().db
+                    .player_game_stats()
+                    .iter()
+                    .filter(|d| d.season == season && d.mode == mode && d.owner == id)
                     .next()
             }
             fn get_user_stats(id: u64, season: u32) -> Option<TPlayerStats> {
-                TPlayerStats::filter_by_owner(id).find(|d| d.season == season)
+                cn().db
+                    .player_stats()
+                    .iter()
+                    .find(|d| d.owner == id && d.season == season)
             }
             world.resource_scope(|world, mut r: Mut<PlayersResource>| {
                 season_switcher(&mut r.season, ui);

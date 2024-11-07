@@ -38,15 +38,10 @@ impl ServerSyncPlugin {
         let houses = ga.houses.into_values().map(|h| h.into()).collect_vec();
         let abilities = ga.abilities.into_values().map(|a| a.into()).collect_vec();
         let statuses = ga.statuses.into_values().map(|s| s.into()).collect_vec();
-        upload_assets(gs, units, houses, abilities, statuses);
-        once_on_upload_assets(|_, _, status, _, _, _, _, _| {
-            match status {
-                spacetimedb_sdk::reducer::Status::Committed => {
-                    info!("Sync successful")
-                }
-                spacetimedb_sdk::reducer::Status::Failed(e) => error!("Sync failed: {e}"),
-                _ => panic!(),
-            };
+        cn().reducers
+            .upload_assets(gs, units, houses, abilities, statuses);
+        cn().reducers.on_upload_assets(|e, _, _, _, _, _| {
+            e.event.on_success(|_| info!("Sync successful"));
             OperationsPlugin::add(|world| app_exit(world));
         });
     }

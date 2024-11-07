@@ -33,8 +33,8 @@ impl StatsPlugin {
     fn on_enter(world: &mut World) {
         let mut units: HashMap<String, i32> = default();
         let mut total_units = 0;
-        for battle in TBattle::iter() {
-            let team = battle.team_left.get_team(ctx);
+        for battle in cn().db.battle().iter() {
+            let team = battle.team_left.get_team();
             for unit in team.units {
                 for base in unit.bases {
                     *units.entry(base).or_default() += 1;
@@ -44,7 +44,7 @@ impl StatsPlugin {
         }
         let mut users: HashMap<u64, i32> = default();
         let mut total_users = 0;
-        for battle in TBattle::iter() {
+        for battle in cn().db.battle().iter() {
             let player = battle.owner.get_player();
             *users.entry(player.id).or_default() += 1;
             total_users += 1;
@@ -64,7 +64,7 @@ impl StatsPlugin {
                 .into_iter()
                 .map(|(id, cnt)| UserStat {
                     id,
-                    name: TPlayer::find_by_id(id).unwrap().name,
+                    name: cn().db.player().id().find(&id).unwrap().name,
                     cnt,
                     percent: cnt as f32 / total_users as f32 * 100.0,
                 })

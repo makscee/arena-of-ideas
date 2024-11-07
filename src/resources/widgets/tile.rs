@@ -82,7 +82,7 @@ const FRAME: Frame = Frame {
 };
 
 static NEXT_ID: Mutex<u64> = Mutex::new(0);
-fn next_id(ctx) -> u64 {
+fn next_id() -> u64 {
     let mut id = NEXT_ID.lock().unwrap();
     *id += 1;
     *id
@@ -229,7 +229,7 @@ impl TilePlugin {
 
     pub fn add_team(gid: u64, world: &mut World) {
         Tile::new(Side::Right, move |ui, world| {
-            gid.get_team(ctx).show(ui, world);
+            gid.get_team().show(ui, world);
         })
         .with_id(format!("team_{gid}"))
         .push(world)
@@ -282,7 +282,7 @@ impl Tile {
     #[must_use]
     pub fn new(side: Side, content: impl Fn(&mut Ui, &mut World) + Send + Sync + 'static) -> Self {
         Self {
-            id: next_id(ctx).to_string(),
+            id: next_id().to_string(),
             content: Box::new(content),
             side,
             content_space: default(),

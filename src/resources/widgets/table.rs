@@ -378,7 +378,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                 value: Box::new(move |d, _| unit(d).into()),
                 show: Box::new(|_, v, ui, world| {
                     let name = v.get_string().unwrap();
-                    if let Some(unit) = TBaseUnit::find_by_name(name.clone()) {
+                    if let Some(unit) = cn().db.base_unit().name().find(&name) {
                         let color = name_color(&unit.house);
                         if name.cstr_c(color).label(ui).hovered() {
                             cursor_window(ui.ctx(), |ui| {

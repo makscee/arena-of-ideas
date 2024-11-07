@@ -60,7 +60,7 @@ impl TeamSyncPlugin {
         }
     }
     fn setup() {
-        TTeam::on_update(|_, new, _| {
+        cn().db.team().on_update(|_, _, new| {
             let id = new.id;
             OperationsPlugin::add(move |world| {
                 Self::sync_team(id, world);
@@ -76,7 +76,7 @@ impl TeamSyncPlugin {
         else {
             return;
         };
-        let Some(team) = TTeam::find_by_id(team_id) else {
+        let Some(team) = cn().db.team().id().find(&team_id) else {
             error!("Team#{team_id} not found");
             return;
         };

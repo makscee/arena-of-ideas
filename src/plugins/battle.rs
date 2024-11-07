@@ -28,18 +28,11 @@ impl BattlePlugin {
         let mut bd = world.resource_mut::<BattleResource>();
         bd.result = result;
         if bd.id > 0 && bd.from_run {
-            submit_battle_result(match result {
+            cn().reducers.submit_battle_result(match result {
                 BattleResult::Tbd => TBattleResult::Tbd,
                 BattleResult::Left(_) => TBattleResult::Left,
                 BattleResult::Right(_) => TBattleResult::Right,
                 BattleResult::Even => TBattleResult::Even,
-            });
-            once_on_submit_battle_result(|_, _, status, _| match status {
-                StdbStatus::Committed => {}
-                StdbStatus::Failed(e) => {
-                    error!("Battle result submit error: {e}")
-                }
-                _ => panic!(),
             });
         }
     }
@@ -53,9 +46,9 @@ impl BattlePlugin {
         GameState::Battle.set_next(world);
     }
     fn on_enter_shop(world: &mut World) {
-        let run = TArenaRun::current();
+        let run = cn().db.arena_run().current();
         let bid = *run.battles.last().unwrap();
-        let battle = TBattle::find_by_id(bid).unwrap();
+        let battle = cn().db.battle().id().find(&bid).unwrap();
         let mut bd = BattleResource::from(battle);
         bd.from_run = true;
         bd.next_state = GameState::Shop;
@@ -344,7 +337,7 @@ impl BattlePlugin {
         .push(world);
 
         let bd = rm(world);
-        if let Some(battle) = TBattle::find_by_id(bd.id) {
+        if let Some(battle) = cn().db.battle().id().find(&bd.id) {
             let show_team = |team: TTeam, ui: &mut Ui| {
                 if team.id == 0 {
                     return;
@@ -364,7 +357,7 @@ impl BattlePlugin {
                 );
             };
             Tile::new(Side::Left, move |ui, _| {
-                show_team(battle.team_left.get_team(ctx), ui);
+                show_team(battle.team_left.get_team(), ui);
             })
             .transparent()
             .pinned()
@@ -373,7 +366,7 @@ impl BattlePlugin {
             .no_expand()
             .push(world);
             Tile::new(Side::Right, move |ui, _| {
-                show_team(battle.team_right.get_team(ctx), ui);
+                show_team(battle.team_right.get_team(), ui);
             })
             .transparent()
             .pinned()
@@ -386,7 +379,7 @@ impl BattlePlugin {
             ui.vertical_centered_justified(|ui| {
                 let r = rm(world);
                 if r.id > 0 && r.next_state == GameState::Shop {
-                    if let Some(run) = TArenaRun::get_current() {
+                    if let Some(run) = cn().db.arena_run().get_current() {
                         format!("Floor {}", run.floor)
                             .cstr_cs(VISIBLE_LIGHT, CstrStyle::Heading2)
                             .label(ui);
@@ -434,7 +427,7 @@ impl BattlePlugin {
                     "Defeat".cstr_cs(RED, CstrStyle::Heading2)
                 }
                 .label(ui);
-                if let Some(run) = TArenaRun::get_current() {
+                if let Some(run) = cn().db.arena_run().get_current() {
                     space(ui);
                     if bd.lives_before < run.lives {
                         format!("+{} life", run.lives - bd.lives_before)

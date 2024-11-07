@@ -1,3 +1,5 @@
+use spacetimedb_sdk::Table;
+
 use super::*;
 
 pub struct EditorPlugin;
@@ -75,7 +77,7 @@ impl EditorPlugin {
         cs.editor.battle.0 = left;
         cs.editor.battle.1 = right;
         cs.editor.mode = Mode::Battle;
-        cs.save(ctx);
+        cs.save();
     }
     fn load_state(world: &mut World) {
         world.insert_resource(client_state().editor.clone());
@@ -96,7 +98,7 @@ impl EditorPlugin {
         debug!("Save editor state");
         let mut cs = client_state().clone();
         cs.editor = rm(world).clone();
-        cs.save(ctx);
+        cs.save();
     }
     fn refresh(world: &mut World) {
         world.game_clear();
@@ -169,8 +171,12 @@ impl EditorPlugin {
                     if Button::click("Load own").ui(ui).clicked() {
                         Confirmation::new("Open own team".cstr())
                             .content(move |ui, world| {
-                                TTeam::filter_by_owner(player_id())
-                                    .filter(|t| t.pool.eq(&TeamPool::Owned))
+                                cn().db
+                                    .team()
+                                    .iter()
+                                    .filter(|t| {
+                                        t.pool.eq(&TeamPool::Owned) && t.owner == player_id()
+                                    })
                                     .collect_vec()
                                     .show_modified_table("Teams", ui, world, move |t| {
                                         t.column_btn_dyn(
@@ -227,12 +233,14 @@ impl EditorPlugin {
                             .accept(move |world| {
                                 let ctx = egui_context(world).unwrap();
                                 let mode = selected_mode(&ctx);
-                                if let Some(champion) =
-                                    TArenaLeaderboard::filter_by_season(global_settings().season)
-                                        .filter(|a| {
-                                            mem::discriminant(&a.mode) == mem::discriminant(&mode)
-                                        })
-                                        .max_by_key(|a| a.floor)
+                                if let Some(champion) = cn()
+                                    .db
+                                    .arena_leaderboard()
+                                    .iter()
+                                    .filter(|a| {
+                                        a.season == global_settings().season && a.mode == mode
+                                    })
+                                    .max_by_key(|a| a.floor)
                                 {
                                     let mut r = rm(world);
                                     *Self::get_team_mut(faction, &mut r) =
@@ -651,7 +659,10 @@ impl EditorPlugin {
         let card = UnitCard::from_base(unit, world).unwrap();
         let i = rm(world).incubator_link.unwrap();
         let before_card = UnitCard::from_base(
-            TIncubator::find_by_id(i)
+            cn().db
+                .incubator()
+                .id()
+                .find(&i)
                 .unwrap()
                 .unit
                 .last()
@@ -676,16 +687,7 @@ impl EditorPlugin {
                 let packed_unit = r.unit.clone();
                 let unit: TBaseUnit = packed_unit.clone().into();
                 let id = r.incubator_link.unwrap();
-                incubator_update(id, unit);
-                once_on_incubator_update(|_, _, status, _, unit| {
-                    let unit = unit.name.clone();
-                    status.on_success(move |world| {
-                        Notification::new(
-                            format!("Unit {} updated in Incubator", unit).cstr_c(VISIBLE_LIGHT),
-                        )
-                        .push(world);
-                    });
-                });
+                cn().reducers.incubator_update(id, unit);
             })
             .cancel(|_| {})
             .push(world);
@@ -702,16 +704,7 @@ impl EditorPlugin {
                 let r = rm(world);
                 let packed_unit = r.unit.clone();
                 let unit: TBaseUnit = packed_unit.clone().into();
-                incubator_post(unit);
-                once_on_incubator_post(|_, _, status, unit| {
-                    let unit = unit.name.clone();
-                    status.on_success(move |world| {
-                        Notification::new(
-                            format!("Unit {} submitted to Incubator", unit).cstr_c(VISIBLE_LIGHT),
-                        )
-                        .push(world);
-                    });
-                });
+                cn().reducers.incubator_post(unit);
             })
             .cancel(|_| {})
             .push(world);

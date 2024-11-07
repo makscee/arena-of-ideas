@@ -1,6 +1,4 @@
-use std::thread::sleep;
-
-use spacetimedb_sdk::identity::{load_credentials, once_on_connect, save_credentials};
+use spacetimedb_lib::{bsatn, de::Deserialize, ser::Serialize, Identity};
 
 use super::*;
 
@@ -12,20 +10,62 @@ impl Plugin for ConnectPlugin {
     }
 }
 
+static CONNECTION: OnceCell<DbConnection> = OnceCell::new();
+const CREDENTIALS_FILE: &str = "credentials";
+
+pub fn cn() -> &'static DbConnection {
+    CONNECTION.get().unwrap()
+}
+
+#[derive(Serialize, Deserialize)]
+struct Credentials {
+    identity: Identity,
+    token: String,
+}
+
 impl ConnectPlugin {
-    fn load_credentials() -> Option<Credentials> {
-        load_credentials(HOME_DIR).expect("Failed to load credentials")
+    fn load_credentials() -> Result<Option<(Identity, String)>> {
+        let mut path = home_dir_path();
+        path.push(CREDENTIALS_FILE);
+        let bytes = match std::fs::read(&path) {
+            Ok(bytes) => bytes,
+            Err(e) if matches!(e.kind(), std::io::ErrorKind::NotFound) => return Ok(None),
+            Err(e) => {
+                return Err(e).with_context(|| {
+                    format!("Error reading BSATN-serialized credentials from file {path:?}")
+                })
+            }
+        };
+
+        let creds = bsatn::from_slice::<Credentials>(&bytes).context(format!(
+            "Error deserializing credentials from bytes stored in file {path:?}",
+        ))?;
+        Ok(Some((creds.identity, creds.token)))
+    }
+    fn save_credentials(identity: Identity, token: String) -> Result<()> {
+        let mut path = home_dir_path();
+        path.push(CREDENTIALS_FILE);
+        let creds = bsatn::to_vec(&Credentials {
+            identity,
+            token: token.to_string(),
+        })
+        .context("Error serializing credentials for storage in file")?;
+        std::fs::write(&path, creds).with_context(|| {
+            format!("Error writing BSATN-serialized credentials to file {path:?}")
+        })?;
+        Ok(())
     }
     fn run_connect() {
         info!("Connect start");
-        once_on_connect(|creds, _| {
-            let creds = creds.clone();
-            info!("Connected {}", hex::encode(creds.identity.as_bytes()));
+        Self::connect(|conn, identity, token| {
+            info!("Connected {}", hex::encode(identity.as_bytes()));
+            let token = token.to_owned();
             StdbQuery::subscribe(StdbQuery::queries_login(), move |world| {
-                let server_version = GlobalData::current().game_version;
-                save_credentials(HOME_DIR, &creds).expect("Failed to save credentials");
+                let server_version = cn().db.global_data().current().game_version;
+                Self::save_credentials(identity, token.clone())
+                    .expect("Failed to save credentials");
                 if server_version == VERSION {
-                    ConnectOption { creds }.save(world);
+                    ConnectOption { identity, token }.save(world);
                     GameState::proceed(world);
                 } else {
                     Confirmation::new(
@@ -51,20 +91,6 @@ impl ConnectPlugin {
                 }
             });
         });
-        let thread_pool = IoTaskPool::get();
-        thread_pool
-            .spawn(async {
-                let mut tries = 3;
-                while let Err(e) = Self::connect() {
-                    error!("Connection error: {e}");
-                    sleep(Duration::from_secs(1));
-                    tries -= 1;
-                    if tries <= 0 {
-                        return;
-                    }
-                }
-            })
-            .detach();
     }
     pub fn ui(ui: &mut Ui) {
         center_window("status", ui, |ui| {
@@ -73,10 +99,17 @@ impl ConnectPlugin {
                 .label(ui);
         });
     }
-    pub fn connect() -> Result<()> {
-        let creds: Option<Credentials> = Self::load_credentials();
-        let server = current_server();
-        info!("Connect start {} {}", server.0, server.1);
-        connect(server.0, server.1, creds.clone())
+    pub fn connect(on_connect: fn(&DbConnection, Identity, &str)) {
+        let (uri, module) = current_server();
+        info!("Connect start {} {}", uri, module);
+        let c = DbConnection::builder()
+            .with_credentials(Self::load_credentials().unwrap())
+            .with_uri(uri)
+            .with_module_name(module)
+            .on_connect(on_connect)
+            .build()
+            .unwrap();
+        apply_subscriptions(&c);
+        CONNECTION.set(c).ok().unwrap();
     }
 }

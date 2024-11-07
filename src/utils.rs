@@ -198,7 +198,11 @@ pub fn format_duration(seconds: u64) -> String {
     )
 }
 pub fn global_settings() -> GlobalSettings {
-    GlobalSettings::find_by_always_zero(0).unwrap_or_else(|| game_assets().global_settings.clone())
+    cn().db
+        .global_settings()
+        .always_zero()
+        .find(&0)
+        .unwrap_or_else(|| game_assets().global_settings.clone())
 }
 pub fn app_exit(world: &mut World) {
     world
@@ -227,7 +231,7 @@ pub fn debug_available_rect(ui: &mut Ui) {
     debug_rect(ui.available_rect_before_wrap(), ui.ctx());
 }
 pub fn can_afford(cost: i64) -> bool {
-    TWallet::current().amount >= cost
+    cn().db.wallet().current().amount >= cost
 }
 pub fn show_daily_refresh_timer(ui: &mut Ui) {
     let now = Utc::now().timestamp();

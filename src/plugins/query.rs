@@ -1,5 +1,5 @@
 use spacetimedb_lib::ser::serde::SerializeWrapper;
-use spacetimedb_sdk::{identity::once_on_connect, once_on_subscription_applied, subscribe};
+use spacetimedb_sdk::DbContext;
 
 use super::*;
 
@@ -13,21 +13,22 @@ impl Plugin for QueryPlugin {
 
 impl QueryPlugin {
     fn on_enter() {
-        ConnectPlugin::connect().unwrap();
-        once_on_connect(|_, _| {
-            subscribe(&["select * from TGlobalEvent", "select * from TUser"]).unwrap();
-        });
-        once_on_subscription_applied(|| {
-            let json = serde_json::to_string_pretty(&SerializeWrapper::new(
-                TGlobalEvent::iter().collect_vec(),
-            ))
-            .unwrap();
-            save_to_download_folder("global_events", json);
-            let json =
-                serde_json::to_string_pretty(&SerializeWrapper::new(TPlayer::iter().collect_vec()))
+        ConnectPlugin::connect(|cn, _, _| {
+            cn.subscription_builder()
+                .on_applied(|e| {
+                    let json = serde_json::to_string_pretty(&SerializeWrapper::new(
+                        e.db.global_event().iter().collect_vec(),
+                    ))
                     .unwrap();
-            save_to_download_folder("users", json);
-            app_exit_op();
+                    save_to_download_folder("global_events", json);
+                    let json = serde_json::to_string_pretty(&SerializeWrapper::new(
+                        e.db.player().iter().collect_vec(),
+                    ))
+                    .unwrap();
+                    save_to_download_folder("users", json);
+                    app_exit_op();
+                })
+                .subscribe(["select * from TGlobalEvent", "select * from TUser"]);
         });
     }
 }

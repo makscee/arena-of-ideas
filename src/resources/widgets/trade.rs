@@ -19,7 +19,11 @@ impl Trade {
             return;
         };
 
-        let trade = TTrade::find_by_id(id)
+        let trade = cn()
+            .db
+            .trade()
+            .id()
+            .find(&id)
             .with_context(|| format!("Tried to open absent trade #{id}"))
             .unwrap();
         popup("Trade", ctx, |ui| {
@@ -54,14 +58,7 @@ impl Trade {
             }
             ui.vertical_centered_justified(|ui| {
                 if Button::click("Accept").ui(ui).clicked() {
-                    accept_trade(id);
-                    once_on_accept_trade(|_, _, status, id| match status {
-                        StdbStatus::Committed => {}
-                        StdbStatus::Failed(e) => {
-                            format!("Failed to accept trade #{id}: {e}").notify_error_op()
-                        }
-                        _ => panic!(),
-                    });
+                    cn().reducers.accept_trade(id);
                     Self::close(ctx);
                 }
             });
