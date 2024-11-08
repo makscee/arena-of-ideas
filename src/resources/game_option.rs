@@ -92,11 +92,18 @@ impl OptionResource for ConnectOption {
 
 static PLAYER_NAME: Mutex<&'static str> = Mutex::new("");
 static PLAYER_ID: Mutex<u64> = Mutex::new(0);
+static PLAYER_IDENTITY: Mutex<Identity> = Mutex::new(Identity::ZERO);
 pub fn player_id() -> u64 {
     *PLAYER_ID.lock().unwrap()
 }
-pub fn user_name() -> &'static str {
+pub fn player_name() -> &'static str {
     *PLAYER_NAME.lock().unwrap()
+}
+pub fn player_identity() -> Identity {
+    *PLAYER_IDENTITY.lock().unwrap()
+}
+pub fn save_identity(identity: Identity) {
+    *PLAYER_IDENTITY.lock().unwrap() = identity;
 }
 impl OptionResource for LoginOption {
     fn fulfill(world: &mut World) {

@@ -486,6 +486,9 @@ impl StdbTable {
 pub fn apply_subscriptions(dbc: &DbConnection) {
     let r = dbc.reducers();
     r.on_incubator_post(|e, u| {
+        if !e.check_identity() {
+            return;
+        }
         let unit = u.name.clone();
         e.event.on_success(move |world| {
             Notification::new(
@@ -495,17 +498,38 @@ pub fn apply_subscriptions(dbc: &DbConnection) {
         });
     });
     r.on_incubator_update(|e, _, u| {
+        if !e.check_identity() {
+            return;
+        }
         let unit = u.name.clone();
         e.event.on_success(move |world| {
             Notification::new(format!("Unit {} updated in Incubator", unit).cstr_c(VISIBLE_LIGHT))
                 .push(world);
         });
     });
-    r.on_run_start_normal(|e| e.event.on_success(|w| GameState::Shop.proceed_to_target(w)));
-    r.on_run_start_ranked(|e, _| e.event.on_success(|w| GameState::Shop.proceed_to_target(w)));
-    r.on_run_start_const(|e| e.event.on_success(|w| GameState::Shop.proceed_to_target(w)));
+    r.on_run_start_normal(|e| {
+        if !e.check_identity() {
+            return;
+        }
+        e.event.on_success(|w| GameState::Shop.proceed_to_target(w))
+    });
+    r.on_run_start_ranked(|e, _| {
+        if !e.check_identity() {
+            return;
+        }
+        e.event.on_success(|w| GameState::Shop.proceed_to_target(w))
+    });
+    r.on_run_start_const(|e| {
+        if !e.check_identity() {
+            return;
+        }
+        e.event.on_success(|w| GameState::Shop.proceed_to_target(w))
+    });
 
     r.on_incubator_delete(|e, id| {
+        if !e.check_identity() {
+            return;
+        }
         let id = *id;
         e.event.on_success(move |world| {
             TilePlugin::close(&IncubatorPlugin::tile_id(id), world);
@@ -514,11 +538,17 @@ pub fn apply_subscriptions(dbc: &DbConnection) {
     });
 
     r.on_login_by_identity(|e| {
+        if !e.check_identity() {
+            return;
+        }
         e.event.on_success(|world| {
             LoginPlugin::complete(None, world);
         });
     });
     r.on_register_empty(|e| {
+        if !e.check_identity() {
+            return;
+        }
         e.event.on_success(|world| {
             Notification::new_string("New player created".to_owned()).push(world);
             let identity = ConnectOption::get(world).identity.clone();
@@ -532,6 +562,9 @@ pub fn apply_subscriptions(dbc: &DbConnection) {
         })
     });
     r.on_login(|e, name, _| {
+        if !e.check_identity() {
+            return;
+        }
         let name = name.clone();
         let player = e.db.player().name().find(&name).unwrap();
         e.event.on_success(move |world| {
@@ -539,14 +572,25 @@ pub fn apply_subscriptions(dbc: &DbConnection) {
         })
     });
 
-    r.on_auction_create(|e, _, _, _| e.event.on_success(|w| "Auction created".notify(w)));
+    r.on_auction_create(|e, _, _, _| {
+        if !e.check_identity() {
+            return;
+        }
+        e.event.on_success(|w| "Auction created".notify(w))
+    });
     r.on_auction_buy(|e, id| {
+        if !e.check_identity() {
+            return;
+        }
         let id = *id;
         e.event
             .on_success(move |world| format!("Auction#{id} bought").notify(world));
     });
 
     r.on_unit_balance_vote(|e, unit, vote| {
+        if !e.check_identity() {
+            return;
+        }
         let unit = unit.clone();
         let vote = if *vote >= 0 {
             format!("+{vote}")
@@ -559,18 +603,32 @@ pub fn apply_subscriptions(dbc: &DbConnection) {
         });
     });
 
-    r.on_dismantle_hero(|e, _| e.event.notify_error());
+    r.on_dismantle_hero(|e, _| {
+        if !e.check_identity() {
+            return;
+        }
+        e.event.notify_error()
+    });
     r.on_craft_hero(|e, u, _| {
+        if !e.check_identity() {
+            return;
+        }
         let unit = u.clone();
         e.event.on_success(move |world| {
             format!("{unit} crafted").notify(world);
         })
     });
     r.on_open_lootbox(|e, _| {
+        if !e.check_identity() {
+            return;
+        }
         e.event.on_success(|world| "Lootbox opened".notify(world));
     });
 
     r.on_set_name(|e, name| {
+        if !e.check_identity() {
+            return;
+        }
         let name = name.clone();
         e.event.on_success(move |world| {
             format!("Name successfully changed to {name}").notify(world);
@@ -579,6 +637,9 @@ pub fn apply_subscriptions(dbc: &DbConnection) {
     });
 
     r.on_set_password(|e, _, _| {
+        if !e.check_identity() {
+            return;
+        }
         e.event.on_success(|world| {
             "Password updated successfully".notify(world);
             ProfilePlugin::update_user(world);
@@ -587,30 +648,60 @@ pub fn apply_subscriptions(dbc: &DbConnection) {
     });
 
     r.on_shop_finish(|e, _| {
+        if !e.check_identity() {
+            return;
+        }
         e.event
             .on_success(|w| GameState::ShopBattle.proceed_to_target(w))
     });
 
-    r.on_stack_team(|e, _, _| e.event.notify_error());
-    r.on_stack_shop(|e, _, _| e.event.notify_error());
-    r.on_fuse_start(|e, _, _| e.event.notify_error());
+    r.on_stack_team(|e, _, _| {
+        if !e.check_identity() {
+            return;
+        }
+        e.event.notify_error()
+    });
+    r.on_stack_shop(|e, _, _| {
+        if !e.check_identity() {
+            return;
+        }
+        e.event.notify_error()
+    });
+    r.on_fuse_start(|e, _, _| {
+        if !e.check_identity() {
+            return;
+        }
+        e.event.notify_error()
+    });
 
     r.on_run_finish(|e| {
+        if !e.check_identity() {
+            return;
+        }
         e.event.on_success(|w| {
             GameState::GameStart.proceed_to_target(w);
         });
     });
 
     r.on_team_create(|e, _| {
+        if !e.check_identity() {
+            return;
+        }
         e.event
             .on_success(|world| TeamPlugin::load_teams_table(world));
     });
     r.on_team_rename(|e, _, _| {
+        if !e.check_identity() {
+            return;
+        }
         e.event
             .on_success(|world| TeamPlugin::load_teams_table(world));
     });
 
     r.on_team_disband(|e, id| {
+        if !e.check_identity() {
+            return;
+        }
         let id = *id;
         e.event.on_success(move |world| {
             format!("Team#{id} disbanded").notify(world);
@@ -619,24 +710,41 @@ pub fn apply_subscriptions(dbc: &DbConnection) {
         })
     });
     r.on_team_add_unit(|e, _, _| {
+        if !e.check_identity() {
+            return;
+        }
         e.event.on_success(|world| {
             TeamPlugin::load_teams_table(world);
             Confirmation::close_current(world);
         })
     });
     r.on_team_remove_unit(|e, _, _| {
+        if !e.check_identity() {
+            return;
+        }
         e.event.on_success(|w| {
             "Unit removed".notify(w);
             TeamPlugin::load_teams_table(w);
         });
     });
-    r.on_team_swap_units(|e, _, _, _| e.event.notify_error());
+    r.on_team_swap_units(|e, _, _, _| {
+        if !e.check_identity() {
+            return;
+        }
+        e.event.notify_error()
+    });
 
     r.on_meta_buy(|e, _| {
+        if !e.check_identity() {
+            return;
+        }
         e.event.notify_error();
     });
 
     r.on_accept_trade(|e, _| {
+        if !e.check_identity() {
+            return;
+        }
         e.event.notify_error();
     });
 }

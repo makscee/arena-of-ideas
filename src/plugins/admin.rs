@@ -17,6 +17,7 @@ impl AdminPlugin {
             cn().reducers.admin_set_temp_pass(id).unwrap();
             cn().reducers.on_admin_set_temp_pass(|e, id| {
                 let id = *id;
+                info!("Set temp password for player#{id}");
                 e.event.on_success(move |w| {
                     info!("Password successfully set for {id}");
                     app_exit(w);

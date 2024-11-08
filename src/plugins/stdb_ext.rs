@@ -332,3 +332,11 @@ impl Default for TPlayer {
         }
     }
 }
+impl EventContext {
+    pub fn check_identity(&self) -> bool {
+        match &self.event {
+            Event::Reducer(r) => r.caller_identity == player_identity(),
+            _ => true,
+        }
+    }
+}

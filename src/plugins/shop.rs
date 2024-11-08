@@ -331,7 +331,7 @@ impl ShopPlugin {
     pub fn add_tiles(world: &mut World) {
         Tile::new(Side::Right, |ui, world| {
             ui.set_max_width(200.0);
-            text_dots_text("name".cstr(), user_name().cstr_c(VISIBLE_BRIGHT), ui);
+            text_dots_text("name".cstr(), player_name().cstr_c(VISIBLE_BRIGHT), ui);
             if let Some(run) = cn().db.arena_run().get_current() {
                 Self::show_stats(&run, ui);
             }

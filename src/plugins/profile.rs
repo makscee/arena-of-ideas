@@ -19,7 +19,7 @@ pub struct ProfileEditData {
 impl ProfilePlugin {
     fn on_enter(world: &mut World) {
         world.insert_resource(ProfileEditData {
-            name: user_name().to_owned(),
+            name: player_name().to_owned(),
             old_pass: default(),
             pass: default(),
             pass_repeat: default(),
@@ -39,7 +39,7 @@ impl ProfilePlugin {
     }
     pub fn add_tile_settings(world: &mut World) {
         world.insert_resource(ProfileEditData {
-            name: user_name().into(),
+            name: player_name().into(),
             old_pass: default(),
             pass: default(),
             pass_repeat: default(),
@@ -58,7 +58,7 @@ impl ProfilePlugin {
         let has_pass = player.pass_hash.is_some();
         Input::new("name").ui_string(&mut ped.name, ui);
         if Button::click("Submit")
-            .enabled(!ped.name.eq(user_name()))
+            .enabled(!ped.name.eq(player_name()))
             .ui(ui)
             .clicked()
         {
@@ -82,7 +82,8 @@ impl ProfilePlugin {
             .clicked()
         {
             cn().reducers
-                .set_password(ped.old_pass.clone(), ped.pass.clone()).unwrap();
+                .set_password(ped.old_pass.clone(), ped.pass.clone())
+                .unwrap();
         }
         br(ui);
     }

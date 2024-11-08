@@ -59,6 +59,7 @@ impl ConnectPlugin {
         Self::connect(|_, identity, token| {
             info!("Connected {identity}");
             let token = token.to_owned();
+            save_identity(identity);
             StdbQuery::subscribe(StdbQuery::queries_login(), move |world| {
                 info!("On subscribe");
                 let server_version = cn().db.global_data().current().game_version;
@@ -102,7 +103,7 @@ impl ConnectPlugin {
     pub fn connect(on_connect: fn(&DbConnection, Identity, &str)) {
         let (uri, module) = current_server();
         info!("Connect start {} {}", uri, module);
-        let credentials = Self::load_credentials().unwrap();
+        let credentials = Self::load_credentials().unwrap_or_default();
         let c = DbConnection::builder()
             .with_credentials(credentials)
             .with_uri(uri)
