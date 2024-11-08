@@ -198,11 +198,15 @@ pub fn format_duration(seconds: u64) -> String {
     )
 }
 pub fn global_settings() -> GlobalSettings {
-    cn().db
-        .global_settings()
-        .always_zero()
-        .find(&0)
-        .unwrap_or_else(|| game_assets().global_settings.clone())
+    if is_connected() {
+        cn().db
+            .global_settings()
+            .always_zero()
+            .find(&0)
+            .unwrap_or_else(|| game_assets().global_settings.clone())
+    } else {
+        game_assets().global_settings.clone()
+    }
 }
 pub fn app_exit(world: &mut World) {
     world

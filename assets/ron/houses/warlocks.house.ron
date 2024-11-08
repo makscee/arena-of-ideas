@@ -45,8 +45,18 @@
         ),
         (
             name: "Ritual",
-            description: "Kill self and target, summon [Doomguard]",
-            effect: List([WithTarget(Owner, Kill), Kill, Summon("Doomguard", None)]),
+            description: "Kill self and target, summon enemy [Doomguard]",
+            effect: If(
+                GreaterThen(Context(Hp), Context(Dmg)),
+                List(
+                    [
+                        WithTarget(Owner, Kill),
+                        Kill,
+                        WithVar(Faction, OppositeFaction, Summon("Doomguard", None)),
+                    ],
+                ),
+                Noop,
+            ),
         ),
     ],
     summons: [

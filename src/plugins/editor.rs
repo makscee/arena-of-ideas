@@ -72,12 +72,13 @@ impl ToCstr for UnitMode {
 }
 
 impl EditorPlugin {
-    pub fn load_battle(left: PackedTeam, right: PackedTeam) {
+    pub fn load_battle(left: PackedTeam, right: PackedTeam, world: &mut World) {
         let mut cs = client_state().clone();
         cs.editor.battle.0 = left;
         cs.editor.battle.1 = right;
         cs.editor.mode = Mode::Battle;
         cs.save();
+        Self::load_state(world);
     }
     fn load_state(world: &mut World) {
         world.insert_resource(client_state().editor.clone());

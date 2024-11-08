@@ -82,6 +82,7 @@ impl TPlayerGameStats {
                     id: next_id(ctx),
                     owner,
                     season,
+                    mode,
                     ..default()
                 })
             })

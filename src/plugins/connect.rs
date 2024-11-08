@@ -16,6 +16,9 @@ const CREDENTIALS_FILE: &str = "credentials";
 pub fn cn() -> &'static DbConnection {
     CONNECTION.get().unwrap()
 }
+pub fn is_connected() -> bool {
+    CONNECTION.get().is_some()
+}
 
 #[derive(Serialize, Deserialize)]
 struct Credentials {

@@ -349,6 +349,7 @@ impl GameStartPlugin {
                                         EditorPlugin::load_battle(
                                             PackedTeam::from_id(d.team_left),
                                             PackedTeam::from_id(d.team_right),
+                                            world,
                                         );
                                         GameState::Editor.set_next(world);
                                     })

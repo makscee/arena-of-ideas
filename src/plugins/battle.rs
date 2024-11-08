@@ -338,6 +338,9 @@ impl BattlePlugin {
         .no_frame()
         .push(world);
 
+        if !is_connected() {
+            return;
+        }
         let bd = rm(world);
         if let Some(battle) = cn().db.battle().id().find(&bd.id) {
             let show_team = |team: TTeam, ui: &mut Ui| {
@@ -429,16 +432,18 @@ impl BattlePlugin {
                     "Defeat".cstr_cs(RED, CstrStyle::Heading2)
                 }
                 .label(ui);
-                if let Some(run) = cn().db.arena_run().get_current() {
-                    space(ui);
-                    if bd.lives_before < run.lives {
-                        format!("+{} life", run.lives - bd.lives_before)
-                            .cstr_c(GREEN)
+                if is_connected() {
+                    if let Some(run) = cn().db.arena_run().get_current() {
+                        space(ui);
+                        if bd.lives_before < run.lives {
+                            format!("+{} life", run.lives - bd.lives_before)
+                                .cstr_c(GREEN)
+                                .label(ui);
+                        }
+                        format!("{}/{} lives", run.lives, run.max_lives)
+                            .cstr_cs(GREEN, CstrStyle::Bold)
                             .label(ui);
                     }
-                    format!("{}/{} lives", run.lives, run.max_lives)
-                        .cstr_cs(GREEN, CstrStyle::Bold)
-                        .label(ui);
                 }
             });
             space(ui);

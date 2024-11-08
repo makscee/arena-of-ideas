@@ -8,10 +8,10 @@
                 trigger: Fire(
                     triggers: [(BattleStart, None)],
                     targets: [(AllEnemyUnits, None)],
-                    effects: [(UseAbility("Siphon", 1), None)],
+                    effects: [(UseAbility("Ritual", 0), None)],
                 ),
             ),
         ],
     ),
-    right: (units: [(hp: 3, pwr: 4), (hp: 1, pwr: 1)]),
+    right: (units: [(hp: 3, pwr: 4), (hp: 1, pwr: 1), (hp: 1, pwr: 1), (hp: 1, pwr: 1)]),
 )
