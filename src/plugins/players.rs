@@ -47,18 +47,22 @@ impl PlayersPlugin {
                 let season = r.season;
                 Table::new("Players")
                     .column_user_click("name", |d: &TPlayer| d.id)
-                    .column_cstr("online", |d, _| {
-                        if d.online {
-                            "online".cstr_c(VISIBLE_LIGHT)
-                        } else {
-                            if d.last_login == 0 {
-                                "-".cstr_c(VISIBLE_DARK)
+                    .column_cstr_value(
+                        "online",
+                        |d| d.last_login.into(),
+                        |d, _| {
+                            if d.online {
+                                "online".cstr_c(VISIBLE_LIGHT)
                             } else {
-                                format_timestamp(d.last_login)
-                                    .cstr_cs(VISIBLE_DARK, CstrStyle::Small)
+                                if d.last_login == 0 {
+                                    "-".cstr_c(VISIBLE_DARK)
+                                } else {
+                                    format_timestamp(d.last_login)
+                                        .cstr_cs(VISIBLE_DARK, CstrStyle::Small)
+                                }
                             }
-                        }
-                    })
+                        },
+                    )
                     .column_cstr_dyn(
                         "played",
                         Box::new(move |u, _| {

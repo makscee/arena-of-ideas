@@ -80,45 +80,5 @@ impl MigrationPlugin {
             info!("Upload finished");
             app_exit_op();
         });
-        // let data = &std::fs::read_to_string(&Self::path()).unwrap();
-        // let GameArchive {
-        //     // global_settings,
-        //     // global_data,
-        //     // base_units,
-        //     // houses,
-        //     // abilities,
-        //     // statuses,
-        //     // representations,
-        //     // arena_runs,
-        //     next_id,
-        //     users,
-        //     arena_leaderboard,
-        //     teams,
-        //     wallets,
-        //     unit_items,
-        //     unit_shards,
-        //     lootboxes,
-        // } = serde_json::from_str::<DeserializeWrapper<GameArchive>>(data)
-        //     .expect("Failed to deserialize game data")
-        //     .0;
-        // info!("Start upload...");
-        // upload_game_archive(
-        //     next_id,
-        //     users,
-        //     arena_leaderboard,
-        //     teams,
-        //     wallets,
-        //     unit_items,
-        //     unit_shards,
-        //     lootboxes,
-        // );
-        // once_on_upload_game_archive(|_, _, status, _, _, _, _, _, _, _, _| {
-        //     match status {
-        //         StdbStatus::Committed => info!("{}", "Upload successful".green()),
-        //         StdbStatus::Failed(e) => e.notify_error_op(),
-        //         _ => panic!(),
-        //     };
-        //     app_exit_op();
-        // });
     }
 }
