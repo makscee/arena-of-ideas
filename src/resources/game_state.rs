@@ -31,6 +31,7 @@ pub enum GameState {
     Incubator,
     Players,
     Query,
+    Admin,
 }
 
 static TARGET_STATE: Mutex<GameState> = Mutex::new(GameState::Loaded);
@@ -70,6 +71,7 @@ lazy_static! {
         );
         m.insert(GameState::MigrationUpload, [GameOption::Connect].into());
         m.insert(GameState::MigrationDownload, [GameOption::Connect].into());
+        m.insert(GameState::Admin, [GameOption::Connect].into());
         m
     };
 }

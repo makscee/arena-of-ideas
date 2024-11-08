@@ -139,8 +139,26 @@
         "--",
         "--mode",
         "test",
-        "--path",
+        "--extra",
         "ron/scenarios/siphon_limit.scenario.ron"
+      ],
+      "group": {
+        "kind": "build"
+      }
+    },
+    {
+      "type": "cargo",
+      "command": "run",
+      "problemMatcher": [
+        "$rustc"
+      ],
+      "label": "Admin: Set temp pass",
+      "args": [
+        "--",
+        "--mode",
+        "admin",
+        "--extra",
+        "pass/572319"
       ],
       "group": {
         "kind": "build"

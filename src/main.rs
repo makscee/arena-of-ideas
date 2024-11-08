@@ -19,7 +19,7 @@ pub struct Args {
     #[arg(short, long)]
     mode: RunMode,
     #[arg(short, long)]
-    path: Option<String>,
+    extra: Option<String>,
 }
 
 pub static ARGS: OnceCell<Args> = OnceCell::new();
@@ -36,6 +36,7 @@ pub enum RunMode {
     MigrationDownload,
     MigrationUpload,
     Query,
+    Admin,
 }
 
 fn main() {
@@ -56,6 +57,7 @@ fn main() {
         RunMode::MigrationDownload => GameState::MigrationDownload,
         RunMode::MigrationUpload => GameState::MigrationUpload,
         RunMode::Query => GameState::Query,
+        RunMode::Admin => GameState::Admin,
     };
     load_client_settings();
     load_client_state();
@@ -130,6 +132,7 @@ fn main() {
             ConfirmationPlugin,
             StatsPlugin,
             QueryPlugin,
+            AdminPlugin,
         ))
         .init_state::<GameState>()
         .init_resource::<NotificationsResource>()

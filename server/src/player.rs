@@ -217,3 +217,28 @@ impl GetPlayer for ReducerContext {
         TPlayer::find_by_identity(self, &self.sender)
     }
 }
+
+#[spacetimedb::reducer]
+fn admin_set_temp_pass(ctx: &ReducerContext, id: u64) -> Result<(), String> {
+    ctx.is_admin()?;
+    let player = ctx
+        .db
+        .player()
+        .id()
+        .find(id)
+        .context_str("Player not found")?;
+    let pass: String = ctx
+        .rng()
+        .sample_iter(&Alphanumeric)
+        .take(8)
+        .map(char::from)
+        .collect();
+    spacetimedb::println!("Temp pass: {id} {} {pass}", player.name);
+    let pass_hash = Some(TPlayer::hash_pass(ctx, pass)?);
+    ctx.db.player().id().update(TPlayer {
+        pass_hash,
+        ..player
+    });
+
+    Ok(())
+}

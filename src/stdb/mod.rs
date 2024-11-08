@@ -10,6 +10,7 @@ use spacetimedb_sdk::{
 
 pub mod ability_table;
 pub mod accept_trade_reducer;
+pub mod admin_set_temp_pass_reducer;
 pub mod arena_leaderboard_table;
 pub mod arena_pool_table;
 pub mod arena_run_archive_table;
@@ -25,7 +26,7 @@ pub mod battle_table;
 pub mod cleanup_reducer;
 pub mod craft_hero_reducer;
 pub mod daily_state_table;
-pub mod daily_update_reducer;
+pub mod daily_update_reducer_reducer;
 pub mod daily_update_timer_table;
 pub mod daily_update_timer_type;
 pub mod dismantle_hero_reducer;
@@ -148,6 +149,7 @@ pub mod wallet_table;
 
 pub use ability_table::*;
 pub use accept_trade_reducer::*;
+pub use admin_set_temp_pass_reducer::*;
 pub use arena_leaderboard_table::*;
 pub use arena_pool_table::*;
 pub use arena_run_archive_table::*;
@@ -163,7 +165,7 @@ pub use battle_table::*;
 pub use cleanup_reducer::*;
 pub use craft_hero_reducer::*;
 pub use daily_state_table::*;
-pub use daily_update_reducer::*;
+pub use daily_update_reducer_reducer::*;
 pub use daily_update_timer_table::*;
 pub use daily_update_timer_type::*;
 pub use dismantle_hero_reducer::*;
@@ -296,12 +298,13 @@ pub enum Reducer {
     IdentityDisconnected(identity_disconnected_reducer::IdentityDisconnected),
     Init(init_reducer::Init),
     AcceptTrade(accept_trade_reducer::AcceptTrade),
+    AdminSetTempPass(admin_set_temp_pass_reducer::AdminSetTempPass),
     AuctionBuy(auction_buy_reducer::AuctionBuy),
     AuctionCancel(auction_cancel_reducer::AuctionCancel),
     AuctionCreate(auction_create_reducer::AuctionCreate),
     Cleanup(cleanup_reducer::Cleanup),
     CraftHero(craft_hero_reducer::CraftHero),
-    DailyUpdate(daily_update_reducer::DailyUpdate),
+    DailyUpdateReducer(daily_update_reducer_reducer::DailyUpdateReducer),
     DismantleHero(dismantle_hero_reducer::DismantleHero),
     FuseCancel(fuse_cancel_reducer::FuseCancel),
     FuseChoose(fuse_choose_reducer::FuseChoose),
@@ -359,12 +362,13 @@ impl __sdk::spacetime_module::Reducer for Reducer {
             Reducer::IdentityDisconnected(_) => "__identity_disconnected__",
             Reducer::Init(_) => "__init__",
             Reducer::AcceptTrade(_) => "accept_trade",
+            Reducer::AdminSetTempPass(_) => "admin_set_temp_pass",
             Reducer::AuctionBuy(_) => "auction_buy",
             Reducer::AuctionCancel(_) => "auction_cancel",
             Reducer::AuctionCreate(_) => "auction_create",
             Reducer::Cleanup(_) => "cleanup",
             Reducer::CraftHero(_) => "craft_hero",
-            Reducer::DailyUpdate(_) => "daily_update",
+            Reducer::DailyUpdateReducer(_) => "daily_update_reducer",
             Reducer::DismantleHero(_) => "dismantle_hero",
             Reducer::FuseCancel(_) => "fuse_cancel",
             Reducer::FuseChoose(_) => "fuse_choose",
@@ -417,12 +421,13 @@ impl __sdk::spacetime_module::Reducer for Reducer {
             Reducer::IdentityDisconnected(args) => args,
             Reducer::Init(args) => args,
             Reducer::AcceptTrade(args) => args,
+            Reducer::AdminSetTempPass(args) => args,
             Reducer::AuctionBuy(args) => args,
             Reducer::AuctionCancel(args) => args,
             Reducer::AuctionCreate(args) => args,
             Reducer::Cleanup(args) => args,
             Reducer::CraftHero(args) => args,
-            Reducer::DailyUpdate(args) => args,
+            Reducer::DailyUpdateReducer(args) => args,
             Reducer::DismantleHero(args) => args,
             Reducer::FuseCancel(args) => args,
             Reducer::FuseChoose(args) => args,
@@ -488,6 +493,9 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
             "accept_trade" => Ok(Reducer::AcceptTrade(
                 __sdk::spacetime_module::parse_reducer_args("accept_trade", &value.args)?,
             )),
+            "admin_set_temp_pass" => Ok(Reducer::AdminSetTempPass(
+                __sdk::spacetime_module::parse_reducer_args("admin_set_temp_pass", &value.args)?,
+            )),
             "auction_buy" => Ok(Reducer::AuctionBuy(
                 __sdk::spacetime_module::parse_reducer_args("auction_buy", &value.args)?,
             )),
@@ -503,8 +511,8 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
             "craft_hero" => Ok(Reducer::CraftHero(
                 __sdk::spacetime_module::parse_reducer_args("craft_hero", &value.args)?,
             )),
-            "daily_update" => Ok(Reducer::DailyUpdate(
-                __sdk::spacetime_module::parse_reducer_args("daily_update", &value.args)?,
+            "daily_update_reducer" => Ok(Reducer::DailyUpdateReducer(
+                __sdk::spacetime_module::parse_reducer_args("daily_update_reducer", &value.args)?,
             )),
             "dismantle_hero" => Ok(Reducer::DismantleHero(
                 __sdk::spacetime_module::parse_reducer_args("dismantle_hero", &value.args)?,
