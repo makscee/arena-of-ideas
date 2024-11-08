@@ -5,11 +5,11 @@ use battle::battle;
 use itertools::Itertools;
 use rand_pcg::Pcg64;
 use rand_seeder::Seeder;
-use spacetimedb::{Table, Timestamp};
+use spacetimedb::{table, Table, Timestamp};
 
 use super::*;
 
-#[spacetimedb::table(public, name = arena_run)]
+#[table(public, name = arena_run)]
 pub struct TArenaRun {
     mode: GameMode,
     #[primary_key]
@@ -41,7 +41,7 @@ pub struct TArenaRun {
     last_updated: Timestamp,
 }
 
-#[spacetimedb::table(public, name = arena_run_archive)]
+#[table(public, name = arena_run_archive)]
 pub struct TArenaRunArchive {
     #[primary_key]
     id: u64,
@@ -178,7 +178,7 @@ fn shop_finish(ctx: &ReducerContext, face_boss: bool) -> Result<(), String> {
             TArenaPool::get_next_enemy(ctx, &run.mode, run.floor),
         ));
     }
-    if !team.units.is_empty() && run.battles.len() == run.floor as usize {
+    if !team.units.is_empty() {
         TArenaPool::add(ctx, run.mode, team.id, run.floor);
     }
 
@@ -202,7 +202,12 @@ fn submit_battle_result(ctx: &ReducerContext, result: TBattleResult) -> Result<(
     battle.set_result(ctx, result).save(ctx);
     let boss_floor = run.floor == run.boss_floor;
     if result == TBattleResult::Left {
-        run.floor += 1;
+        if !boss_floor
+            || TArenaLeaderboard::current_champion(ctx, run.mode)
+                .is_some_and(|a| a.floor == run.floor)
+        {
+            run.floor += 1;
+        }
         if !boss_floor {
             run.update_boss(ctx);
         }
