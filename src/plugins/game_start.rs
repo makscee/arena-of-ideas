@@ -160,6 +160,7 @@ impl GameStartPlugin {
         .push(world);
     }
     fn show_middle(ui: &mut Ui, world: &mut World) {
+        ui.set_width(250.0);
         if game_mode_switcher(&mut rm(world).selected_mode, ui) {
             Self::load_data(world);
             return;

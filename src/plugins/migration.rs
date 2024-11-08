@@ -75,7 +75,87 @@ impl MigrationPlugin {
             let json = std::fs::read_to_string(&path.path()).unwrap();
             table.fill_from_json_data(&json, &mut gd);
         }
-        cn().reducers.upload_game_data(572125, gd);
+        let mut nid = 572125;
+        let mut next_id = || {
+            nid += 1;
+            nid
+        };
+
+        let mut logins: HashMap<u64, u64> = default();
+        let mut player_stats: HashMap<u64, TPlayerStats> =
+            HashMap::from_iter(gd.player.iter().map(|p| {
+                (
+                    p.id,
+                    TPlayerStats {
+                        id: next_id(),
+                        season: 1,
+                        owner: p.id,
+                        time_played: 0,
+                        quests_completed: 0,
+                        credits_earned: 0,
+                    },
+                )
+            }));
+        let mut player_game_stats: HashMap<(u64, u32, GameMode), TPlayerGameStats> = default();
+        for event in gd.global_event.iter().sorted_by_key(|e| e.ts) {
+            match &event.event {
+                GlobalEvent::LogIn => {
+                    logins.insert(event.owner, event.ts);
+                }
+                GlobalEvent::LogOut => {
+                    if let Some(ts) = logins.remove(&event.owner) {
+                        player_stats.get_mut(&event.owner).unwrap().time_played += event.ts - ts;
+                    }
+                }
+                GlobalEvent::Register => {}
+                GlobalEvent::RunFinish(_) => {}
+                GlobalEvent::RunStart(_) => {}
+                GlobalEvent::BattleFinish(_) => {}
+                GlobalEvent::MetaShopBuy(_) => {}
+                GlobalEvent::GameShopBuy(_) => {}
+                GlobalEvent::GameShopSkip(_) => {}
+                GlobalEvent::GameShopSell(_) => {}
+                GlobalEvent::AuctionBuy(_) => {}
+                GlobalEvent::AuctionCancel(_) => {}
+                GlobalEvent::AuctionPost(_) => {}
+                GlobalEvent::ReceiveUnit(_) => {}
+                GlobalEvent::DismantleUnit(_) => {}
+                GlobalEvent::CraftUnit(_) => {}
+                GlobalEvent::ReceiveUnitShard(_) => {}
+                GlobalEvent::ReceiveRainbowShard(_) => {}
+                GlobalEvent::ReceiveLootbox(_) => {}
+                GlobalEvent::OpenLootbox(_) => {}
+                GlobalEvent::QuestAccepted(_) => {}
+                GlobalEvent::QuestComplete(_) => {
+                    player_stats.get_mut(&event.owner).unwrap().quests_completed += 1;
+                }
+                GlobalEvent::Fuse(_) => {}
+            }
+        }
+        for run in &gd.arena_run_archive {
+            let stats = player_game_stats
+                .entry((run.owner, run.season, run.mode))
+                .or_insert_with(|| TPlayerGameStats {
+                    id: next_id(),
+                    season: run.season,
+                    owner: run.owner,
+                    mode: run.mode,
+                    runs: 0,
+                    floors: default(),
+                    champion: 0,
+                    boss: 0,
+                });
+            let floor = run.floor as usize;
+            if stats.floors.len() < floor + 1 {
+                stats.floors.resize(floor + 1, 0);
+            }
+            stats.floors[floor] += 1;
+            stats.runs += 1;
+        }
+        gd.player_stats = player_stats.into_values().collect_vec();
+        gd.player_game_stats = player_game_stats.into_values().collect_vec();
+        dbg!(nid);
+        cn().reducers.upload_game_data(nid, gd);
         cn().reducers.on_upload_game_data(|e, _, _| {
             info!("Upload finished");
             app_exit_op();

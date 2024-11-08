@@ -116,6 +116,17 @@ fn incubator_vote_set(ctx: &ReducerContext, id: u64, vote: bool) -> Result<(), S
 #[spacetimedb::reducer]
 fn incubator_favorite_set(ctx: &ReducerContext, id: u64) -> Result<(), String> {
     let player = ctx.player()?;
+    if ctx
+        .db
+        .incubator()
+        .id()
+        .find(id)
+        .context_str("Incubator entry not found")?
+        .owner
+        == player.id
+    {
+        return Err("Can't favorite own entry".into());
+    }
     ctx.db.incubator_favorite().owner().delete(player.id);
     ctx.db.incubator_favorite().insert(TIncubatorFavorite {
         owner: player.id,

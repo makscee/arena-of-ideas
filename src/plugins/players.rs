@@ -76,14 +76,6 @@ impl PlayersPlugin {
                         }),
                     )
                     .column_int_dyn(
-                        "earned",
-                        Box::new(move |u| {
-                            get_user_stats(u.id, season)
-                                .map(|u| u.credits_earned)
-                                .unwrap_or_default() as i32
-                        }),
-                    )
-                    .column_int_dyn(
                         "runs",
                         Box::new(move |u| {
                             get_game_stats(u.id, mode, season)
@@ -95,7 +87,13 @@ impl PlayersPlugin {
                         "top floor",
                         Box::new(move |u| {
                             get_game_stats(u.id, mode, season)
-                                .map(|d| d.floors.len() as i32 - 1)
+                                .map(|d| {
+                                    if d.floors.is_empty() {
+                                        0
+                                    } else {
+                                        d.floors.len() as i32 - 1
+                                    }
+                                })
                                 .unwrap_or_default()
                         }),
                     )
@@ -104,12 +102,16 @@ impl PlayersPlugin {
                         Box::new(move |u| {
                             get_game_stats(u.id, mode, season)
                                 .map(|d| {
-                                    d.floors
-                                        .into_iter()
-                                        .enumerate()
-                                        .map(|(i, c)| i as f32 * c as f32)
-                                        .sum::<f32>()
-                                        / d.runs as f32
+                                    if d.floors.is_empty() || d.runs == 0 {
+                                        0.0
+                                    } else {
+                                        d.floors
+                                            .into_iter()
+                                            .enumerate()
+                                            .map(|(i, c)| i as f32 * c as f32)
+                                            .sum::<f32>()
+                                            / d.runs as f32
+                                    }
                                 })
                                 .unwrap_or_default()
                         }),
@@ -119,6 +121,14 @@ impl PlayersPlugin {
                         Box::new(move |u| {
                             get_game_stats(u.id, mode, season)
                                 .map(|d| d.champion)
+                                .unwrap_or_default() as i32
+                        }),
+                    )
+                    .column_int_dyn(
+                        "earned",
+                        Box::new(move |u| {
+                            get_user_stats(u.id, season)
+                                .map(|u| u.credits_earned)
                                 .unwrap_or_default() as i32
                         }),
                     )

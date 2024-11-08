@@ -268,7 +268,8 @@ fn shop_set_freeze(ctx: &ReducerContext, slot: u8, value: bool) -> Result<(), St
 #[spacetimedb::reducer]
 fn shop_reroll(ctx: &ReducerContext) -> Result<(), String> {
     let mut run = TArenaRun::current(&ctx)?;
-    if run.free_rerolls > 0 {
+    if run.mode == GameMode::ArenaNormal && run.floor == 0 && run.team(ctx)?.units.is_empty() {
+    } else if run.free_rerolls > 0 {
         run.free_rerolls -= 1;
     } else {
         if run.g < run.price_reroll {

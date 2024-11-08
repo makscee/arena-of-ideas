@@ -4,6 +4,7 @@ use auction::auction;
 use base_unit::base_unit;
 use battle::battle;
 use daily_state::daily_state;
+use daily_updater::daily_update;
 use global_data::global_data;
 use global_event::global_event;
 use house::house;
@@ -363,5 +364,6 @@ fn upload_game_data(ctx: &ReducerContext, next_id: u64, data: GameData) -> Resul
         GlobalData::set_next_id(ctx, next_id);
     }
     replace_assets(ctx, data)?;
+    daily_update(ctx)?;
     Ok(())
 }

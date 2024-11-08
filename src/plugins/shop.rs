@@ -412,10 +412,17 @@ impl ShopPlugin {
                 ui.vertical_centered_justified(|ui| {
                     ui.set_max_width(300.0);
                     let run = cn().db.arena_run().current();
+                    let just_started = run.floor == 0
+                        && run.team.get_team().units.is_empty()
+                        && run.mode == GameMode::ArenaNormal;
                     let text = if run.free_rerolls > 0 {
                         "-0 G"
                             .cstr_c(YELLOW)
-                            .push(format!(" ({})", run.free_rerolls).cstr_c(VISIBLE_LIGHT))
+                            .push(if just_started {
+                                " (∞)".cstr_c(GREEN)
+                            } else {
+                                format!(" ({})", run.free_rerolls).cstr_c(VISIBLE_LIGHT)
+                            })
                             .take()
                     } else {
                         format!("-{} G", run.price_reroll).cstr_c(YELLOW)

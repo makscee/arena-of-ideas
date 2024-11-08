@@ -73,7 +73,7 @@ impl IncubatorPlugin {
                             .find(|f| f.owner == player_id())
                             .map(|f| f.target == d.id)
                             .unwrap_or_default();
-                        b.active(v)
+                        b.enabled(d.owner != player_id()).active(v)
                     },
                 )
                 .column_cstr_click(

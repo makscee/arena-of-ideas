@@ -2,13 +2,13 @@ use spacetimedb::Table;
 
 use super::*;
 
-#[spacetimedb::table(public, name = daily_update_timer, scheduled(daily_update))]
+#[spacetimedb::table(public, name = daily_update_timer, scheduled(daily_update_reducer))]
 pub struct DailyUpdateTimer {}
 
 #[spacetimedb::reducer]
-fn daily_update(ctx: &ReducerContext, _timer: DailyUpdateTimer) -> Result<(), String> {
+fn daily_update_reducer(ctx: &ReducerContext, _timer: DailyUpdateTimer) -> Result<(), String> {
     self::println!("Daily update called");
-    update(ctx)?;
+    daily_update(ctx)?;
     let next_day = (Timestamp::now()
         .duration_since(Timestamp::UNIX_EPOCH)
         .unwrap()
@@ -24,11 +24,11 @@ fn daily_update(ctx: &ReducerContext, _timer: DailyUpdateTimer) -> Result<(), St
     Ok(())
 }
 
-fn update(ctx: &ReducerContext) -> Result<(), String> {
+pub fn daily_update(ctx: &ReducerContext) -> Result<(), String> {
     TMetaShop::refresh(ctx)?;
     TDailyState::daily_refresh(ctx);
     quests_daily_refresh(ctx);
-    TPlayer::cleanup(ctx);
+    // TPlayer::cleanup(ctx);
     Ok(())
 }
 
