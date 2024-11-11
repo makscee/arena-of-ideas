@@ -215,8 +215,14 @@ impl ShowTable<TMetaShop> for Vec<TMetaShop> {
                 "buy",
                 |_, _| default(),
                 |d, _, ui, _| {
+                    let price = (d.price as f32
+                        * if !cn().db.daily_state().current().meta_shop_discount_spent {
+                            global_settings().meta.daily_discount
+                        } else {
+                            1.0
+                        }) as i64;
                     if Button::click("buy")
-                        .enabled(can_afford(d.price))
+                        .enabled(can_afford(price))
                         .ui(ui)
                         .clicked()
                     {
