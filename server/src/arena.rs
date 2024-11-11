@@ -182,7 +182,6 @@ fn shop_finish(ctx: &ReducerContext, face_boss: bool) -> Result<(), String> {
         TArenaPool::add(ctx, run.mode, team.id, run.floor);
     }
 
-    run.rerolls = 0;
     run.fill_case(ctx)?;
     let ars = &GlobalSettings::get(ctx).arena;
     run.g += ars.g_income.value(run.floor as i64) as i32;
@@ -207,6 +206,7 @@ fn submit_battle_result(ctx: &ReducerContext, result: TBattleResult) -> Result<(
                 .is_some_and(|a| a.floor == run.floor)
         {
             run.floor += 1;
+            run.rerolls = 0;
         }
         if !boss_floor {
             run.update_boss(ctx);
@@ -282,7 +282,6 @@ fn shop_reroll(ctx: &ReducerContext) -> Result<(), String> {
         }
         run.g -= run.price_reroll;
     }
-    run.rerolls += 1;
     run.fill_case(ctx)?;
     run.save(ctx);
     Ok(())
@@ -621,6 +620,7 @@ impl TArenaRun {
             s.buy_price = rarities.prices[unit.rarity as usize];
             s.stack_price = s.buy_price - ars.stack_discount;
         }
+        self.rerolls += 1;
         Ok(())
     }
     fn get_seed(&self, ctx: &ReducerContext) -> String {
