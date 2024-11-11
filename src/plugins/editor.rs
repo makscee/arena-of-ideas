@@ -16,14 +16,13 @@ impl Plugin for EditorPlugin {
 pub struct EditorResource {
     mode: Mode,
 
-    team: PackedTeam,
-
     pub battle: (PackedTeam, PackedTeam),
 
     unit: PackedUnit,
     unit_entity: Option<Entity>,
     unit_mode: UnitMode,
     unit_to_load: String,
+    unit_source: Option<(Faction, usize)>,
 
     #[serde(skip)]
     incubator_link: Option<u64>,
@@ -45,7 +44,6 @@ fn rm(world: &mut World) -> Mut<EditorResource> {
 enum Mode {
     #[default]
     Unit,
-    Team,
     Battle,
     Vfx,
 }
@@ -89,6 +87,8 @@ impl EditorPlugin {
         }
     }
     fn on_exit(world: &mut World) {
+        rm(world).unit_source = None;
+        Self::save_state(world);
         Self::clear(world);
     }
     fn clear(world: &mut World) {
@@ -104,10 +104,6 @@ impl EditorPlugin {
     fn refresh(world: &mut World) {
         world.game_clear();
         match rm(world).mode {
-            Mode::Team => {
-                rm(world).team.clone().unpack(Faction::Team, world);
-                UnitPlugin::place_into_slots(world);
-            }
             Mode::Battle => {
                 rm(world).battle.0.clone().unpack(Faction::Left, world);
                 rm(world).battle.1.clone().unpack(Faction::Right, world);
@@ -130,7 +126,6 @@ impl EditorPlugin {
     }
     fn get_team_mut(faction: Faction, r: &mut EditorResource) -> &mut PackedTeam {
         match r.mode {
-            Mode::Team => &mut r.team,
             Mode::Battle => {
                 if faction == Faction::Right {
                     &mut r.battle.1
@@ -263,6 +258,7 @@ impl EditorPlugin {
                         let mut rm = rm(world);
                         rm.unit = unit;
                         rm.mode = Mode::Unit;
+                        rm.unit_source = Some((faction, slot));
                         Self::load_mode(world);
                     }
                 }
@@ -314,21 +310,17 @@ impl EditorPlugin {
             })
     }
     fn load_mode(world: &mut World) {
-        let mode = rm(world).mode;
+        let mut r = rm(world);
+        let mode = r.mode;
         info!("Load editor mode {mode}");
+        if !matches!(mode, Mode::Unit) {
+            if let Some((faction, slot)) = r.unit_source {
+                Self::set_team_unit(slot, faction, r.unit.clone(), world);
+            }
+        }
         Self::clear(world);
         Self::save_state(world);
         match mode {
-            Mode::Team => {
-                rm(world).team.clone().unpack(Faction::Team, world);
-                Tile::new(Side::Top, |ui, world| {
-                    Self::team_container(Faction::Team).ui(ui, world);
-                })
-                .stretch_min()
-                .transparent()
-                .pinned()
-                .push(world);
-            }
             Mode::Battle => {
                 let b = rm(world).battle.clone();
                 b.0.unpack(Faction::Left, world);
@@ -466,6 +458,15 @@ impl EditorPlugin {
                         if Button::click("load").ui(ui).clicked() {
                             r.unit = game_assets().heroes.get(&r.unit_to_load).unwrap().clone();
                             Self::refresh(world);
+                        }
+                        let mut r = rm(world);
+                        if let Some((faction, slot)) = r.unit_source {
+                            format!("editing {faction} team {slot} unit")
+                                .cstr_c(YELLOW)
+                                .label(ui);
+                            if Button::click("unlink").ui(ui).clicked() {
+                                r.unit_source = None;
+                            }
                         }
                     });
                 })
@@ -642,7 +643,7 @@ impl EditorPlugin {
                     Self::refresh(world);
                 }
             }
-            Mode::Team | Mode::Battle | Mode::Unit => {}
+            Mode::Battle | Mode::Unit => {}
         }
     }
     pub fn load_unit(unit: PackedUnit, world: &mut World) {
