@@ -65,10 +65,13 @@ impl ConnectPlugin {
             save_identity(identity);
             StdbQuery::subscribe(StdbQuery::queries_login(), move |world| {
                 info!("On subscribe");
-                let server_version = cn().db.global_data().current().game_version;
+                let server_version_str = &cn().db.global_data().current().game_version;
+                let server_version = server_version_str.split('.').collect_vec();
+                let client_version = VERSION.split('.').collect_vec();
                 Self::save_credentials(identity, token.clone())
                     .expect("Failed to save credentials");
-                if server_version == VERSION {
+                if server_version[0] == client_version[0] && server_version[1] == client_version[1]
+                {
                     ConnectOption { identity, token }.save(world);
                     GameState::proceed(world);
                 } else {
@@ -76,7 +79,7 @@ impl ConnectPlugin {
                         "Wrong game version: "
                             .cstr_c(VISIBLE_LIGHT)
                             .push(
-                                format!("{} != {}", VERSION, server_version)
+                                format!("{} != {}", VERSION, server_version_str)
                                     .cstr_cs(VISIBLE_BRIGHT, CstrStyle::Bold),
                             )
                             .take(),
