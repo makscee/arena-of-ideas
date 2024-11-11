@@ -80,6 +80,7 @@ impl IncubatorPlugin {
                     "open",
                     |_, _| "open".cstr_c(VISIBLE_LIGHT),
                     |d, world| {
+                        let unit = d.unit.last().unwrap().clone();
                         let cards = d
                             .unit
                             .iter()
@@ -140,6 +141,16 @@ impl IncubatorPlugin {
                                     return;
                                 }
                             }
+                            if Button::click("spawn").ui(ui).clicked() {
+                                world.game_clear();
+                                let unit = PackedUnit::from(unit.clone()).unpack(
+                                    TeamPlugin::entity(Faction::Team, world),
+                                    None,
+                                    None,
+                                    world,
+                                );
+                                UnitPlugin::place_into_slot(unit, world);
+                            }
                         })
                         .with_id(Self::tile_id(d.id))
                         .min_space(egui::vec2(300.0, 0.0))
@@ -148,6 +159,12 @@ impl IncubatorPlugin {
                 )
                 .ui(&data, ui, world);
         })
+        .pinned()
+        .push(world);
+        Tile::new(Side::Bottom, |ui, world| {
+            TeamContainer::new(Faction::Team).slots(1).ui(ui, world);
+        })
+        .transparent()
         .pinned()
         .push(world);
     }
