@@ -232,7 +232,6 @@ impl Faction {
         match self {
             Faction::Left | Faction::Team | Faction::Shop => Faction::Right,
             Faction::Right => Faction::Left,
-            _ => panic!("Can't get opposite of {self}"),
         }
     }
 }

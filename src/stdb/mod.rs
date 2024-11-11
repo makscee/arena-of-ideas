@@ -10,6 +10,7 @@ use spacetimedb_sdk::{
 
 pub mod ability_table;
 pub mod accept_trade_reducer;
+pub mod admin_give_tag_reducer;
 pub mod admin_set_temp_pass_reducer;
 pub mod arena_leaderboard_table;
 pub mod arena_pool_table;
@@ -71,6 +72,7 @@ pub mod open_lootbox_reducer;
 pub mod player_game_stats_table;
 pub mod player_stats_table;
 pub mod player_table;
+pub mod player_tag_table;
 pub mod quest_accept_reducer;
 pub mod quest_finish_reducer;
 pub mod quest_settings_type;
@@ -118,6 +120,7 @@ pub mod t_lootbox_item_type;
 pub mod t_meta_shop_type;
 pub mod t_player_game_stats_type;
 pub mod t_player_stats_type;
+pub mod t_player_tag_type;
 pub mod t_player_type;
 pub mod t_quest_type;
 pub mod t_rainbow_shard_item_type;
@@ -149,6 +152,7 @@ pub mod wallet_table;
 
 pub use ability_table::*;
 pub use accept_trade_reducer::*;
+pub use admin_give_tag_reducer::*;
 pub use admin_set_temp_pass_reducer::*;
 pub use arena_leaderboard_table::*;
 pub use arena_pool_table::*;
@@ -210,6 +214,7 @@ pub use open_lootbox_reducer::*;
 pub use player_game_stats_table::*;
 pub use player_stats_table::*;
 pub use player_table::*;
+pub use player_tag_table::*;
 pub use quest_accept_reducer::*;
 pub use quest_finish_reducer::*;
 pub use quest_settings_type::*;
@@ -257,6 +262,7 @@ pub use t_lootbox_item_type::*;
 pub use t_meta_shop_type::*;
 pub use t_player_game_stats_type::*;
 pub use t_player_stats_type::*;
+pub use t_player_tag_type::*;
 pub use t_player_type::*;
 pub use t_quest_type::*;
 pub use t_rainbow_shard_item_type::*;
@@ -298,6 +304,7 @@ pub enum Reducer {
     IdentityDisconnected(identity_disconnected_reducer::IdentityDisconnected),
     Init(init_reducer::Init),
     AcceptTrade(accept_trade_reducer::AcceptTrade),
+    AdminGiveTag(admin_give_tag_reducer::AdminGiveTag),
     AdminSetTempPass(admin_set_temp_pass_reducer::AdminSetTempPass),
     AuctionBuy(auction_buy_reducer::AuctionBuy),
     AuctionCancel(auction_cancel_reducer::AuctionCancel),
@@ -362,6 +369,7 @@ impl __sdk::spacetime_module::Reducer for Reducer {
             Reducer::IdentityDisconnected(_) => "__identity_disconnected__",
             Reducer::Init(_) => "__init__",
             Reducer::AcceptTrade(_) => "accept_trade",
+            Reducer::AdminGiveTag(_) => "admin_give_tag",
             Reducer::AdminSetTempPass(_) => "admin_set_temp_pass",
             Reducer::AuctionBuy(_) => "auction_buy",
             Reducer::AuctionCancel(_) => "auction_cancel",
@@ -421,6 +429,7 @@ impl __sdk::spacetime_module::Reducer for Reducer {
             Reducer::IdentityDisconnected(args) => args,
             Reducer::Init(args) => args,
             Reducer::AcceptTrade(args) => args,
+            Reducer::AdminGiveTag(args) => args,
             Reducer::AdminSetTempPass(args) => args,
             Reducer::AuctionBuy(args) => args,
             Reducer::AuctionCancel(args) => args,
@@ -492,6 +501,9 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
             )?)),
             "accept_trade" => Ok(Reducer::AcceptTrade(
                 __sdk::spacetime_module::parse_reducer_args("accept_trade", &value.args)?,
+            )),
+            "admin_give_tag" => Ok(Reducer::AdminGiveTag(
+                __sdk::spacetime_module::parse_reducer_args("admin_give_tag", &value.args)?,
             )),
             "admin_set_temp_pass" => Ok(Reducer::AdminSetTempPass(
                 __sdk::spacetime_module::parse_reducer_args("admin_set_temp_pass", &value.args)?,
@@ -684,6 +696,7 @@ pub struct DbUpdate {
     player: __sdk::spacetime_module::TableUpdate<TPlayer>,
     player_game_stats: __sdk::spacetime_module::TableUpdate<TPlayerGameStats>,
     player_stats: __sdk::spacetime_module::TableUpdate<TPlayerStats>,
+    player_tag: __sdk::spacetime_module::TableUpdate<TPlayerTag>,
     quest: __sdk::spacetime_module::TableUpdate<TQuest>,
     rainbow_shard_item: __sdk::spacetime_module::TableUpdate<TRainbowShardItem>,
     status: __sdk::spacetime_module::TableUpdate<TStatus>,
@@ -764,6 +777,9 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
                 "player_stats" => {
                     db_update.player_stats = player_stats_table::parse_table_update(table_update)?
                 }
+                "player_tag" => {
+                    db_update.player_tag = player_tag_table::parse_table_update(table_update)?
+                }
                 "quest" => db_update.quest = quest_table::parse_table_update(table_update)?,
                 "rainbow_shard_item" => {
                     db_update.rainbow_shard_item =
@@ -826,6 +842,7 @@ impl __sdk::spacetime_module::DbUpdate for DbUpdate {
         cache.apply_diff_to_table::<TPlayer>("player", &self.player);
         cache.apply_diff_to_table::<TPlayerGameStats>("player_game_stats", &self.player_game_stats);
         cache.apply_diff_to_table::<TPlayerStats>("player_stats", &self.player_stats);
+        cache.apply_diff_to_table::<TPlayerTag>("player_tag", &self.player_tag);
         cache.apply_diff_to_table::<TQuest>("quest", &self.quest);
         cache.apply_diff_to_table::<TRainbowShardItem>(
             "rainbow_shard_item",
@@ -910,6 +927,7 @@ impl __sdk::spacetime_module::DbUpdate for DbUpdate {
             &self.player_stats,
             event,
         );
+        callbacks.invoke_table_row_callbacks::<TPlayerTag>("player_tag", &self.player_tag, event);
         callbacks.invoke_table_row_callbacks::<TQuest>("quest", &self.quest, event);
         callbacks.invoke_table_row_callbacks::<TRainbowShardItem>(
             "rainbow_shard_item",

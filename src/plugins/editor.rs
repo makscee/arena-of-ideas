@@ -310,7 +310,7 @@ impl EditorPlugin {
             })
     }
     fn load_mode(world: &mut World) {
-        let mut r = rm(world);
+        let r = rm(world);
         let mode = r.mode;
         info!("Load editor mode {mode}");
         if !matches!(mode, Mode::Unit) {

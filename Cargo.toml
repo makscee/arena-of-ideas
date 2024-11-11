@@ -13,6 +13,8 @@ edition.workspace = true
 
 [workspace.dependencies]
 spacetimedb = { version = "=1.0.0-rc1" }
+strum = "0.26.2"
+strum_macros = "0.26.2"
 
 [dependencies]
 spacetimedb-sdk = "=1.0.0-rc1"
@@ -44,8 +46,8 @@ serde_json = "1.0.104"
 ron = "0.8.0"
 itertools = "0.12.1"
 anyhow = "1.0.75"
-strum = "0.26.2"
-strum_macros = "0.26.2"
+strum = { workspace = true }
+strum_macros = { workspace = true }
 tween = "2.0.1"
 rand = "0.8.5"
 color-hex = "0.2.0"
