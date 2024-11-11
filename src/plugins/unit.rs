@@ -230,7 +230,7 @@ pub enum Faction {
 impl Faction {
     pub fn opposite(&self) -> Self {
         match self {
-            Faction::Left => Faction::Right,
+            Faction::Left | Faction::Team | Faction::Shop => Faction::Right,
             Faction::Right => Faction::Left,
             _ => panic!("Can't get opposite of {self}"),
         }
