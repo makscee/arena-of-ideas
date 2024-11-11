@@ -10,6 +10,7 @@ pub struct UnitCard {
     xp: i32,
     hp: i32,
     pwr: i32,
+    deafness: f32,
     hp_mutation: i32,
     pwr_mutation: i32,
     triggers: Vec<Cstr>,
@@ -56,6 +57,9 @@ impl UnitCard {
             xp: context.get_int(VarName::Xp, world)?,
             hp: context.get_int(VarName::Hp, world)?,
             pwr: context.get_int(VarName::Pwr, world)?,
+            deafness: context
+                .get_float(VarName::Deafness, world)
+                .unwrap_or_default(),
             hp_mutation: context.get_int(VarName::HpMutation, world)?,
             pwr_mutation: context.get_int(VarName::PwrMutation, world)?,
             triggers: context
@@ -150,6 +154,16 @@ impl UnitCard {
                     .push((self.lvl).to_string().cstr_c(VISIBLE_BRIGHT))
                     .style(CstrStyle::Bold)
                     .label(ui);
+                if self.deafness > 0.01 {
+                    ui.add_space(2.0);
+                    let var = VarName::Deafness;
+                    let color = RED;
+                    var.cstr_c(color)
+                        .push(": ".cstr_c(color))
+                        .push(format!("{}%", (self.deafness * 100.0) as i32).cstr_c(RED))
+                        .style(CstrStyle::Bold)
+                        .label(ui);
+                }
                 ui.add_space(2.0);
             });
 

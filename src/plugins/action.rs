@@ -130,8 +130,8 @@ impl ActionPlugin {
         let chain = rm(world).chain.get(&entity).copied().unwrap_or_default();
         if let Ok(mut state) = VarState::try_get_mut(entity, world) {
             let bs = global_settings().battle;
-            let chance = ((chain as f32 - bs.deafness_start as f32 * 0.0) * bs.deafness_per_turn)
-                .clamp(0.0, 1.0);
+            let chance =
+                ((chain as f32 - bs.deafness_start as f32) * bs.deafness_per_turn).clamp(0.0, 1.0);
             state.set_float(VarName::Deafness, chance);
         }
     }
