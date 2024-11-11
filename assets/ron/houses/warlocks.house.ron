@@ -52,7 +52,7 @@
                     [
                         WithTarget(Owner, Kill),
                         Kill,
-                        WithVar(Faction, OppositeFaction, Summon("Doomguard", None)),
+                        WithVar(Faction, TargetState(Faction), Summon("Doomguard", None)),
                     ],
                 ),
                 Noop,
