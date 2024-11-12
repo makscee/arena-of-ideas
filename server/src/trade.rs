@@ -30,7 +30,7 @@ impl TTrade {
 #[spacetimedb::reducer]
 fn accept_trade(ctx: &ReducerContext, id: u64) -> Result<(), String> {
     let player = ctx.player()?;
-    let mut trade = ctx
+    let mut trade: TTrade = ctx
         .db
         .trade()
         .id()

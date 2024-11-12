@@ -28,6 +28,7 @@ pub fn daily_update(ctx: &ReducerContext) -> Result<(), String> {
     TMetaShop::refresh(ctx)?;
     TDailyState::daily_refresh(ctx);
     quests_daily_refresh(ctx);
+    TReward::daily(ctx);
     // TPlayer::cleanup(ctx);
     Ok(())
 }
@@ -37,4 +38,10 @@ pub fn daily_timer_init(ctx: &ReducerContext) {
         scheduled_id: 0,
         scheduled_at: Timestamp::now().into(),
     });
+}
+
+#[spacetimedb::reducer]
+fn admin_daily_update(ctx: &ReducerContext) -> Result<(), String> {
+    ctx.is_admin()?;
+    daily_update(ctx)
 }

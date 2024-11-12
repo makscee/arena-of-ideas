@@ -36,6 +36,14 @@ impl AdminPlugin {
                     app_exit(w);
                 });
             });
+        } else if command == "daily_refresh" {
+            cn().reducers.admin_daily_update().unwrap();
+            cn().reducers.on_admin_daily_update(|e| {
+                e.event.on_success(move |w| {
+                    info!("{}", "Success".green());
+                    app_exit(w);
+                });
+            });
         }
     }
 }

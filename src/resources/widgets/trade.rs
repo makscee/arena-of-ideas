@@ -32,30 +32,7 @@ impl Trade {
             } else {
                 trade.a_offer
             };
-            let units = items
-                .units
-                .into_iter()
-                .map(|id| id.unit_item().unit)
-                .collect_vec();
-            if !units.is_empty() {
-                units.show_table("Units", ui, world);
-            }
-            let unit_shards = items
-                .unit_shards
-                .into_iter()
-                .map(|id| id.unit_shard_item())
-                .collect_vec();
-            if !unit_shards.is_empty() {
-                unit_shards.show_table("Unit Shards", ui, world);
-            }
-            let lootboxes = items
-                .lootboxes
-                .into_iter()
-                .map(|id| id.lootbox_item())
-                .collect_vec();
-            if !lootboxes.is_empty() {
-                lootboxes.show_table("Lootboxes", ui, world);
-            }
+            items.show(ui, world);
             ui.vertical_centered_justified(|ui| {
                 if Button::click("Accept").ui(ui).clicked() {
                     cn().reducers.accept_trade(id).unwrap();

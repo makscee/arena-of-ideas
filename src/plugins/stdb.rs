@@ -43,6 +43,7 @@ pub enum StdbTable {
     player_game_stats,
     global_event,
     player_tag,
+    reward,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -338,6 +339,11 @@ impl StdbTable {
                     .unwrap()
                     .0;
             }
+            StdbTable::reward => {
+                data.reward = serde_json::from_str::<DeserializeWrapper<Vec<TReward>>>(json)
+                    .unwrap()
+                    .0;
+            }
         }
     }
     pub fn get_json_data(self) -> String {
@@ -432,6 +438,9 @@ impl StdbTable {
             StdbTable::player_tag => to_string_pretty(&SerializeWrapper::new(
                 cn().db.player_tag().iter().collect_vec(),
             )),
+            StdbTable::reward => to_string_pretty(&SerializeWrapper::new(
+                cn().db.reward().iter().collect_vec(),
+            )),
         }
         .unwrap()
     }
@@ -484,10 +493,12 @@ impl StdbTable {
             StdbTable::arena_run
             | StdbTable::wallet
             | StdbTable::daily_state
-            | StdbTable::unit_balance => Some(StdbQuery {
+            | StdbTable::unit_balance
+            | StdbTable::reward => Some(StdbQuery {
                 table: self,
                 condition: StdbCondition::Owner,
             }),
+
             StdbTable::global_event => None,
         }
     }

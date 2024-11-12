@@ -313,6 +313,7 @@ impl Default for GameData {
             player_game_stats: default(),
             global_event: default(),
             player_tag: default(),
+            reward: default(),
         }
     }
 }

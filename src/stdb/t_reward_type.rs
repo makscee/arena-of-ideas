@@ -8,24 +8,17 @@ use spacetimedb_sdk::{
     lib as __lib, sats as __sats, ws_messages as __ws,
 };
 
+use super::item_bundle_type::ItemBundle;
+
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub enum PlayerTag {
-    Admin,
-
-    SupporterCommon,
-
-    SupporterRare,
-
-    SupporterEpic,
-
-    SupporterLegendary,
-
-    Contributor,
-
-    Champion,
+pub struct TReward {
+    pub id: u64,
+    pub owner: u64,
+    pub source: String,
+    pub bundle: ItemBundle,
 }
 
-impl __sdk::spacetime_module::InModule for PlayerTag {
+impl __sdk::spacetime_module::InModule for TReward {
     type Module = super::RemoteModule;
 }

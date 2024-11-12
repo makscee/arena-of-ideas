@@ -353,3 +353,38 @@ impl Show for TTeam {
         });
     }
 }
+impl Show for ItemBundle {
+    fn show(&self, ui: &mut Ui, world: &mut World) {
+        let units = self
+            .units
+            .iter()
+            .map(|id| id.unit_item().unit)
+            .collect_vec();
+        if !units.is_empty() {
+            units.show_table("Units", ui, world);
+        }
+        let unit_shards = self
+            .unit_shards
+            .iter()
+            .map(|id| id.unit_shard_item())
+            .collect_vec();
+        if !unit_shards.is_empty() {
+            unit_shards.show_table("Unit Shards", ui, world);
+        }
+        let lootboxes = self
+            .lootboxes
+            .iter()
+            .map(|id| id.lootbox_item())
+            .collect_vec();
+        if !lootboxes.is_empty() {
+            lootboxes.show_table("Lootboxes", ui, world);
+        }
+        if self.credits != 0 {
+            text_dots_text(
+                "credits".cstr(),
+                format!("{}{}", self.credits, CREDITS_SYM).cstr_cs(YELLOW, CstrStyle::Bold),
+                ui,
+            );
+        }
+    }
+}

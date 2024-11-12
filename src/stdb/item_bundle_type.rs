@@ -14,6 +14,7 @@ pub struct ItemBundle {
     pub units: Vec<u64>,
     pub unit_shards: Vec<u64>,
     pub lootboxes: Vec<u64>,
+    pub credits: i64,
 }
 
 impl __sdk::spacetime_module::InModule for ItemBundle {

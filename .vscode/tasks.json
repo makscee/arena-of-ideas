@@ -170,6 +170,24 @@
       "problemMatcher": [
         "$rustc"
       ],
+      "label": "Admin: daily refresh",
+      "args": [
+        "--",
+        "--mode",
+        "admin",
+        "--extra",
+        "daily_refresh"
+      ],
+      "group": {
+        "kind": "build"
+      }
+    },
+    {
+      "type": "cargo",
+      "command": "run",
+      "problemMatcher": [
+        "$rustc"
+      ],
       "label": "Sync Assets",
       "args": [
         "--features",

@@ -13,6 +13,7 @@ pub struct ItemBundle {
     pub units: Vec<u64>,
     pub unit_shards: Vec<u64>,
     pub lootboxes: Vec<u64>,
+    pub credits: i64,
 }
 
 #[spacetimedb::table(public, name = unit_item)]
@@ -382,6 +383,9 @@ impl ItemBundle {
             owner_lootbox.count += lootbox.count;
             ctx.db.lootbox_item().id().update(owner_lootbox);
         }
+        if self.credits != 0 {
+            TWallet::change(ctx, owner, self.credits)?;
+        }
         Ok(())
     }
 }
@@ -490,6 +494,7 @@ fn open_lootbox(ctx: &ReducerContext, id: u64) -> Result<(), String> {
         units: [unit].into(),
         unit_shards,
         lootboxes: default(),
+        credits: 0,
     };
     TTrade::open_lootbox(ctx, player.id, bundle);
     GlobalEvent::OpenLootbox(lootbox.clone()).post(ctx, player.id);
@@ -503,6 +508,7 @@ impl From<TUnitItem> for ItemBundle {
             units: [value.id].into(),
             unit_shards: default(),
             lootboxes: default(),
+            credits: 0,
         }
     }
 }
@@ -512,6 +518,7 @@ impl From<TUnitShardItem> for ItemBundle {
             units: default(),
             unit_shards: [value.id].into(),
             lootboxes: default(),
+            credits: 0,
         }
     }
 }
@@ -521,6 +528,7 @@ impl From<TLootboxItem> for ItemBundle {
             units: default(),
             unit_shards: default(),
             lootboxes: [value.id].into(),
+            credits: 0,
         }
     }
 }

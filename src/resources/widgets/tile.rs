@@ -258,11 +258,7 @@ impl TilePlugin {
     pub fn change_state(to: GameState, world: &mut World) {
         Self::clear_all(world);
         match to {
-            GameState::Inbox => Tile::new(Side::Left, |ui, world| {
-                Notification::show_all_table(ui, world)
-            })
-            .pinned()
-            .push(world),
+            GameState::Inbox => InboxPlugin::add_tiles(world),
             GameState::Meta => MetaPlugin::add_tiles(world),
             GameState::Shop => ShopPlugin::add_tiles(world),
             GameState::Battle => BattlePlugin::add_tiles(world),

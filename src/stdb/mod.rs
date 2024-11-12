@@ -10,6 +10,7 @@ use spacetimedb_sdk::{
 
 pub mod ability_table;
 pub mod accept_trade_reducer;
+pub mod admin_daily_update_reducer;
 pub mod admin_give_tag_reducer;
 pub mod admin_set_temp_pass_reducer;
 pub mod arena_leaderboard_table;
@@ -82,6 +83,8 @@ pub mod rainbow_shard_item_table;
 pub mod rarity_settings_type;
 pub mod register_empty_reducer;
 pub mod register_reducer;
+pub mod reward_claim_reducer;
+pub mod reward_table;
 pub mod reward_type;
 pub mod run_finish_reducer;
 pub mod run_start_const_reducer;
@@ -124,6 +127,7 @@ pub mod t_player_tag_type;
 pub mod t_player_type;
 pub mod t_quest_type;
 pub mod t_rainbow_shard_item_type;
+pub mod t_reward_type;
 pub mod t_status_type;
 pub mod t_team_type;
 pub mod t_trade_type;
@@ -152,6 +156,7 @@ pub mod wallet_table;
 
 pub use ability_table::*;
 pub use accept_trade_reducer::*;
+pub use admin_daily_update_reducer::*;
 pub use admin_give_tag_reducer::*;
 pub use admin_set_temp_pass_reducer::*;
 pub use arena_leaderboard_table::*;
@@ -224,6 +229,8 @@ pub use rainbow_shard_item_table::*;
 pub use rarity_settings_type::*;
 pub use register_empty_reducer::*;
 pub use register_reducer::*;
+pub use reward_claim_reducer::*;
+pub use reward_table::*;
 pub use reward_type::*;
 pub use run_finish_reducer::*;
 pub use run_start_const_reducer::*;
@@ -266,6 +273,7 @@ pub use t_player_tag_type::*;
 pub use t_player_type::*;
 pub use t_quest_type::*;
 pub use t_rainbow_shard_item_type::*;
+pub use t_reward_type::*;
 pub use t_status_type::*;
 pub use t_team_type::*;
 pub use t_trade_type::*;
@@ -304,6 +312,7 @@ pub enum Reducer {
     IdentityDisconnected(identity_disconnected_reducer::IdentityDisconnected),
     Init(init_reducer::Init),
     AcceptTrade(accept_trade_reducer::AcceptTrade),
+    AdminDailyUpdate(admin_daily_update_reducer::AdminDailyUpdate),
     AdminGiveTag(admin_give_tag_reducer::AdminGiveTag),
     AdminSetTempPass(admin_set_temp_pass_reducer::AdminSetTempPass),
     AuctionBuy(auction_buy_reducer::AuctionBuy),
@@ -332,6 +341,7 @@ pub enum Reducer {
     QuestFinish(quest_finish_reducer::QuestFinish),
     Register(register_reducer::Register),
     RegisterEmpty(register_empty_reducer::RegisterEmpty),
+    RewardClaim(reward_claim_reducer::RewardClaim),
     RunFinish(run_finish_reducer::RunFinish),
     RunStartConst(run_start_const_reducer::RunStartConst),
     RunStartNormal(run_start_normal_reducer::RunStartNormal),
@@ -369,6 +379,7 @@ impl __sdk::spacetime_module::Reducer for Reducer {
             Reducer::IdentityDisconnected(_) => "__identity_disconnected__",
             Reducer::Init(_) => "__init__",
             Reducer::AcceptTrade(_) => "accept_trade",
+            Reducer::AdminDailyUpdate(_) => "admin_daily_update",
             Reducer::AdminGiveTag(_) => "admin_give_tag",
             Reducer::AdminSetTempPass(_) => "admin_set_temp_pass",
             Reducer::AuctionBuy(_) => "auction_buy",
@@ -397,6 +408,7 @@ impl __sdk::spacetime_module::Reducer for Reducer {
             Reducer::QuestFinish(_) => "quest_finish",
             Reducer::Register(_) => "register",
             Reducer::RegisterEmpty(_) => "register_empty",
+            Reducer::RewardClaim(_) => "reward_claim",
             Reducer::RunFinish(_) => "run_finish",
             Reducer::RunStartConst(_) => "run_start_const",
             Reducer::RunStartNormal(_) => "run_start_normal",
@@ -429,6 +441,7 @@ impl __sdk::spacetime_module::Reducer for Reducer {
             Reducer::IdentityDisconnected(args) => args,
             Reducer::Init(args) => args,
             Reducer::AcceptTrade(args) => args,
+            Reducer::AdminDailyUpdate(args) => args,
             Reducer::AdminGiveTag(args) => args,
             Reducer::AdminSetTempPass(args) => args,
             Reducer::AuctionBuy(args) => args,
@@ -457,6 +470,7 @@ impl __sdk::spacetime_module::Reducer for Reducer {
             Reducer::QuestFinish(args) => args,
             Reducer::Register(args) => args,
             Reducer::RegisterEmpty(args) => args,
+            Reducer::RewardClaim(args) => args,
             Reducer::RunFinish(args) => args,
             Reducer::RunStartConst(args) => args,
             Reducer::RunStartNormal(args) => args,
@@ -501,6 +515,9 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
             )?)),
             "accept_trade" => Ok(Reducer::AcceptTrade(
                 __sdk::spacetime_module::parse_reducer_args("accept_trade", &value.args)?,
+            )),
+            "admin_daily_update" => Ok(Reducer::AdminDailyUpdate(
+                __sdk::spacetime_module::parse_reducer_args("admin_daily_update", &value.args)?,
             )),
             "admin_give_tag" => Ok(Reducer::AdminGiveTag(
                 __sdk::spacetime_module::parse_reducer_args("admin_give_tag", &value.args)?,
@@ -586,6 +603,9 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
             )),
             "register_empty" => Ok(Reducer::RegisterEmpty(
                 __sdk::spacetime_module::parse_reducer_args("register_empty", &value.args)?,
+            )),
+            "reward_claim" => Ok(Reducer::RewardClaim(
+                __sdk::spacetime_module::parse_reducer_args("reward_claim", &value.args)?,
             )),
             "run_finish" => Ok(Reducer::RunFinish(
                 __sdk::spacetime_module::parse_reducer_args("run_finish", &value.args)?,
@@ -699,6 +719,7 @@ pub struct DbUpdate {
     player_tag: __sdk::spacetime_module::TableUpdate<TPlayerTag>,
     quest: __sdk::spacetime_module::TableUpdate<TQuest>,
     rainbow_shard_item: __sdk::spacetime_module::TableUpdate<TRainbowShardItem>,
+    reward: __sdk::spacetime_module::TableUpdate<TReward>,
     status: __sdk::spacetime_module::TableUpdate<TStatus>,
     team: __sdk::spacetime_module::TableUpdate<TTeam>,
     trade: __sdk::spacetime_module::TableUpdate<TTrade>,
@@ -785,6 +806,7 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
                     db_update.rainbow_shard_item =
                         rainbow_shard_item_table::parse_table_update(table_update)?
                 }
+                "reward" => db_update.reward = reward_table::parse_table_update(table_update)?,
                 "status" => db_update.status = status_table::parse_table_update(table_update)?,
                 "team" => db_update.team = team_table::parse_table_update(table_update)?,
                 "trade" => db_update.trade = trade_table::parse_table_update(table_update)?,
@@ -848,6 +870,7 @@ impl __sdk::spacetime_module::DbUpdate for DbUpdate {
             "rainbow_shard_item",
             &self.rainbow_shard_item,
         );
+        cache.apply_diff_to_table::<TReward>("reward", &self.reward);
         cache.apply_diff_to_table::<TStatus>("status", &self.status);
         cache.apply_diff_to_table::<TTeam>("team", &self.team);
         cache.apply_diff_to_table::<TTrade>("trade", &self.trade);
@@ -934,6 +957,7 @@ impl __sdk::spacetime_module::DbUpdate for DbUpdate {
             &self.rainbow_shard_item,
             event,
         );
+        callbacks.invoke_table_row_callbacks::<TReward>("reward", &self.reward, event);
         callbacks.invoke_table_row_callbacks::<TStatus>("status", &self.status, event);
         callbacks.invoke_table_row_callbacks::<TTeam>("team", &self.team, event);
         callbacks.invoke_table_row_callbacks::<TTrade>("trade", &self.trade, event);

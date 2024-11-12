@@ -14,6 +14,7 @@ use player::player;
 use player_stats::player_stats;
 use player_tag::player_tag;
 use quest::quest;
+use reward::reward;
 use spacetimedb::Table;
 use status::status;
 use team::team;
@@ -55,6 +56,7 @@ struct GameData {
     incubator_favorite: Vec<TIncubatorFavorite>,
     global_event: Vec<TGlobalEvent>,
     player_tag: Vec<TPlayerTag>,
+    reward: Vec<TReward>,
 }
 
 fn replace_assets(ctx: &ReducerContext, data: GameData) -> Result<(), String> {
@@ -89,6 +91,7 @@ fn replace_assets(ctx: &ReducerContext, data: GameData) -> Result<(), String> {
         player_game_stats,
         global_event,
         player_tag,
+        reward,
     } = data;
     if !global_settings.is_empty() {
         global_settings.remove(0).replace(ctx);
@@ -319,6 +322,14 @@ fn replace_assets(ctx: &ReducerContext, data: GameData) -> Result<(), String> {
         }
         for d in player_tag {
             ctx.db.player_tag().insert(d);
+        }
+    }
+    if !reward.is_empty() {
+        for d in ctx.db.reward().iter() {
+            ctx.db.reward().delete(d);
+        }
+        for d in reward {
+            ctx.db.reward().insert(d);
         }
     }
 

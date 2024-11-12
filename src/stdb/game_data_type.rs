@@ -31,6 +31,7 @@ use super::t_player_tag_type::TPlayerTag;
 use super::t_player_type::TPlayer;
 use super::t_quest_type::TQuest;
 use super::t_rainbow_shard_item_type::TRainbowShardItem;
+use super::t_reward_type::TReward;
 use super::t_status_type::TStatus;
 use super::t_team_type::TTeam;
 use super::t_trade_type::TTrade;
@@ -72,6 +73,7 @@ pub struct GameData {
     pub incubator_favorite: Vec<TIncubatorFavorite>,
     pub global_event: Vec<TGlobalEvent>,
     pub player_tag: Vec<TPlayerTag>,
+    pub reward: Vec<TReward>,
 }
 
 impl __sdk::spacetime_module::InModule for GameData {

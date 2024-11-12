@@ -12,7 +12,7 @@ pub struct TPlayerTag {
     pub tag: String,
 }
 
-#[derive(Display, SpacetimeType, EnumString)]
+#[derive(Display, SpacetimeType, EnumString, Clone, Copy)]
 pub enum PlayerTag {
     Admin,
     SupporterCommon,
@@ -24,6 +24,15 @@ pub enum PlayerTag {
 }
 
 impl PlayerTag {
+    pub fn is_supporter(&self) -> bool {
+        match self {
+            PlayerTag::SupporterCommon
+            | PlayerTag::SupporterRare
+            | PlayerTag::SupporterEpic
+            | PlayerTag::SupporterLegendary => true,
+            _ => false,
+        }
+    }
     fn add(self, ctx: &ReducerContext, owner: u64) {
         let tag_str = self.to_string();
         if ctx
