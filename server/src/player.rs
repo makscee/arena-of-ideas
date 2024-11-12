@@ -139,6 +139,8 @@ impl TPlayer {
             Err("Names must not be empty".to_string())
         } else if ctx.db.player().name().find(&name).is_some() {
             Err("Name is taken".to_string())
+        } else if let Some(c) = name.chars().find(|c| !c.is_alphanumeric()) {
+            Err(format!("Wrong character: {c}"))
         } else {
             Ok(name)
         }
