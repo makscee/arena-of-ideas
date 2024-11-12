@@ -27,6 +27,7 @@ use super::t_lootbox_item_type::TLootboxItem;
 use super::t_meta_shop_type::TMetaShop;
 use super::t_player_game_stats_type::TPlayerGameStats;
 use super::t_player_stats_type::TPlayerStats;
+use super::t_player_tag_type::TPlayerTag;
 use super::t_player_type::TPlayer;
 use super::t_quest_type::TQuest;
 use super::t_rainbow_shard_item_type::TRainbowShardItem;
@@ -70,6 +71,7 @@ pub struct GameData {
     pub incubator_vote: Vec<TIncubatorVote>,
     pub incubator_favorite: Vec<TIncubatorFavorite>,
     pub global_event: Vec<TGlobalEvent>,
+    pub player_tag: Vec<TPlayerTag>,
 }
 
 impl __sdk::spacetime_module::InModule for GameData {

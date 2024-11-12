@@ -312,6 +312,7 @@ impl Default for GameData {
             player_stats: default(),
             player_game_stats: default(),
             global_event: default(),
+            player_tag: default(),
         }
     }
 }
@@ -330,6 +331,28 @@ impl Default for TPlayer {
             online: default(),
             last_login: default(),
         }
+    }
+}
+impl TPlayer {
+    pub fn get_supporter_level(&self) -> u8 {
+        const SUPPORTER_TAG_NAMES: [&str; 4] = [
+            "SupporterCommon",
+            "SupporterRare",
+            "SupporterEpic",
+            "SupporterLegendary",
+        ];
+        for tag in cn().db.player_tag().iter().filter_map(|t| {
+            if t.owner == self.id {
+                Some(t.tag)
+            } else {
+                None
+            }
+        }) {
+            if let Some(i) = SUPPORTER_TAG_NAMES.iter().position(|n| n == &tag) {
+                return i as u8 + 1;
+            }
+        }
+        0
     }
 }
 impl EventContext {

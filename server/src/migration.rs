@@ -12,6 +12,7 @@ use incubator::incubator;
 use meta_shop::meta_shop;
 use player::player;
 use player_stats::player_stats;
+use player_tag::player_tag;
 use quest::quest;
 use spacetimedb::Table;
 use status::status;
@@ -53,6 +54,7 @@ struct GameData {
     incubator_vote: Vec<TIncubatorVote>,
     incubator_favorite: Vec<TIncubatorFavorite>,
     global_event: Vec<TGlobalEvent>,
+    player_tag: Vec<TPlayerTag>,
 }
 
 fn replace_assets(ctx: &ReducerContext, data: GameData) -> Result<(), String> {
@@ -86,6 +88,7 @@ fn replace_assets(ctx: &ReducerContext, data: GameData) -> Result<(), String> {
         player_stats,
         player_game_stats,
         global_event,
+        player_tag,
     } = data;
     if !global_settings.is_empty() {
         global_settings.remove(0).replace(ctx);
@@ -308,6 +311,14 @@ fn replace_assets(ctx: &ReducerContext, data: GameData) -> Result<(), String> {
         }
         for d in global_event {
             ctx.db.global_event().insert(d);
+        }
+    }
+    if !player_tag.is_empty() {
+        for d in ctx.db.player_tag().iter() {
+            ctx.db.player_tag().delete(d);
+        }
+        for d in player_tag {
+            ctx.db.player_tag().insert(d);
         }
     }
 

@@ -471,7 +471,14 @@ impl ToCstr for TTeam {
 }
 impl ToCstr for TPlayer {
     fn cstr(&self) -> Cstr {
-        self.name.cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold)
+        let supporter_lvl = self.get_supporter_level();
+        let mut c = if supporter_lvl > 0 {
+            "★ ".cstr_c(rarity_color(supporter_lvl - 1))
+        } else {
+            Cstr::default()
+        };
+        c.push(self.name.cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold))
+            .take()
     }
 }
 impl ToCstr for GameMode {

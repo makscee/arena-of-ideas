@@ -42,6 +42,7 @@ pub enum StdbTable {
     player_stats,
     player_game_stats,
     global_event,
+    player_tag,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -332,6 +333,11 @@ impl StdbTable {
                         .unwrap()
                         .0;
             }
+            StdbTable::player_tag => {
+                data.player_tag = serde_json::from_str::<DeserializeWrapper<Vec<TPlayerTag>>>(json)
+                    .unwrap()
+                    .0;
+            }
         }
     }
     pub fn get_json_data(self) -> String {
@@ -423,6 +429,9 @@ impl StdbTable {
             StdbTable::global_event => to_string_pretty(&SerializeWrapper::new(
                 cn().db.global_event().iter().collect_vec(),
             )),
+            StdbTable::player_tag => to_string_pretty(&SerializeWrapper::new(
+                cn().db.player_tag().iter().collect_vec(),
+            )),
         }
         .unwrap()
     }
@@ -451,7 +460,8 @@ impl StdbTable {
             | StdbTable::incubator_favorite
             | StdbTable::player_stats
             | StdbTable::player_game_stats
-            | StdbTable::meta_shop => Some(self.full()),
+            | StdbTable::meta_shop
+            | StdbTable::player_tag => Some(self.full()),
 
             StdbTable::trade => Some(StdbQuery {
                 table: self,

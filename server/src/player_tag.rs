@@ -15,7 +15,11 @@ pub struct TPlayerTag {
 #[derive(Display, SpacetimeType, EnumString)]
 pub enum PlayerTag {
     Admin,
-    Supporter,
+    SupporterCommon,
+    SupporterRare,
+    SupporterEpic,
+    SupporterLegendary,
+    Contributor,
     Champion,
 }
 
