@@ -496,7 +496,7 @@ fn open_lootbox(ctx: &ReducerContext, id: u64) -> Result<(), String> {
         lootboxes: default(),
         credits: 0,
     };
-    TTrade::open_lootbox(ctx, player.id, bundle);
+    TReward::lootbox_open(ctx, player.id, bundle);
     GlobalEvent::OpenLootbox(lootbox.clone()).post(ctx, player.id);
     ctx.db.lootbox_item().id().update(lootbox);
     Ok(())

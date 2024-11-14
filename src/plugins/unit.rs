@@ -177,7 +177,7 @@ impl UnitPlugin {
     pub fn name_from_bases(bases: Vec<&str>, max_chars: usize) -> Cstr {
         if bases.len() == 1 && max_chars != 1 {
             let name = bases[0];
-            return name.cstr_c(name_color(name));
+            return name.cstr_cs(name_color(name), CstrStyle::Bold);
         }
         let mut name = Cstr::default();
         let max_chars = if max_chars == 0 {
@@ -196,7 +196,7 @@ impl UnitPlugin {
                 n.split_at(n.len() / 2).1
             };
             let n = n.split_at(n.len().min(max_chars)).0;
-            name.push(n.cstr_c(c));
+            name.push(n.cstr_cs(c, CstrStyle::Bold));
         }
         name
     }

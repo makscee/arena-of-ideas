@@ -221,7 +221,7 @@ impl TTeam {
                     ..default()
                 }
                 .show(ui, |ui| {
-                    self.show(ui, world);
+                    self.show(1.0, ui, world);
                 });
             });
             if resp.clicked() {

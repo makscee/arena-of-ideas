@@ -3,7 +3,6 @@ use player_tag::player_tag;
 use super::*;
 
 #[spacetimedb::table(public, name = reward)]
-#[derive(Default)]
 pub struct TReward {
     #[primary_key]
     pub id: u64,
@@ -11,6 +10,19 @@ pub struct TReward {
     pub owner: u64,
     pub source: String,
     pub bundle: ItemBundle,
+    pub ts: Timestamp,
+}
+
+impl Default for TReward {
+    fn default() -> Self {
+        Self {
+            id: default(),
+            owner: default(),
+            source: default(),
+            bundle: default(),
+            ts: Timestamp::now(),
+        }
+    }
 }
 
 impl TReward {
@@ -40,6 +52,9 @@ impl TReward {
             )
             .add(ctx, player);
         }
+    }
+    pub fn lootbox_open(ctx: &ReducerContext, owner: u64, bundle: ItemBundle) {
+        Self::new("Lootbox".into(), bundle).add(ctx, owner);
     }
 }
 

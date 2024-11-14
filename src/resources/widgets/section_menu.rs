@@ -97,9 +97,8 @@ impl SectionMenu {
                     let target = GameState::get_target();
                     let current = cur_state(world);
                     ui.visuals_mut().widgets.hovered.fg_stroke.color = VISIBLE_BRIGHT;
-                    let ph = gt().play_head();
                     const TICK: f32 = 3.0;
-                    let blink = (ph / TICK).fract() * 2.0;
+                    let blink = (gt().play_head() / TICK).fract() * 2.0;
                     let ticked = gt().ticked(TICK, 0.0);
                     for GameSection {
                         name,
@@ -115,9 +114,9 @@ impl SectionMenu {
                         if enabled {
                             if let Some(indicator) = indicator {
                                 if ticked {
-                                    set_context_bool(world, name, indicator(world));
+                                    set_ctx_bool_world(world, name, indicator(world));
                                 }
-                                show_indicator = get_context_bool(world, name);
+                                show_indicator = get_ctx_bool_world(world, name);
                             }
                         }
                         let color = if active {
@@ -156,6 +155,7 @@ impl SectionMenu {
                         );
                     }
                     if GameOption::Login.is_fulfilled(world) {
+                        IconMenu::default().show(ui, world);
                         if let Some(wallet) = cn().db.wallet().get_current() {
                             ui.add_space(20.0);
                             wallet

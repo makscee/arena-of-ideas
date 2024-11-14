@@ -73,7 +73,6 @@ impl Confirmation {
             });
             ui.vertical(|ui| {
                 if let Some(content) = &self.content {
-                    br(ui);
                     (content)(ui, world);
                 }
             });

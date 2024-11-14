@@ -582,7 +582,7 @@ impl ShopPlugin {
         let Some(run) = cn().db.arena_run().get_current() else {
             return;
         };
-        center_window("game_over", ui, |ui| {
+        center_window("game_over", ui.ctx(), |ui| {
             ui.set_width(300.0);
             ui.vertical_centered_justified(|ui| {
                 if run.lives > 0 {

@@ -229,14 +229,14 @@ impl TilePlugin {
 
     pub fn add_team(gid: u64, world: &mut World) {
         Tile::new(Side::Right, move |ui, world| {
-            gid.get_team().show(ui, world);
+            gid.get_team().show(1.0, ui, world);
         })
         .with_id(format!("team_{gid}"))
         .push(world)
     }
     pub fn add_user(gid: u64, world: &mut World) {
         Tile::new(Side::Right, move |ui, world| {
-            gid.get_player().show(ui, world);
+            gid.get_player().show(1.0, ui, world);
         })
         .with_id(format!("user_{gid}"))
         .push(world)
@@ -244,7 +244,7 @@ impl TilePlugin {
     pub fn add_fused_unit(unit: FusedUnit, world: &mut World) {
         let gid = unit.id;
         Tile::new(Side::Right, move |ui, world| {
-            unit.show(ui, world);
+            unit.show(1.0, ui, world);
         })
         .with_id(format!("unit_{gid}"))
         .push(world)

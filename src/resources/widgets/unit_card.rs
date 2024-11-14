@@ -34,6 +34,7 @@ impl UnitCard {
         Self::from_packed(unit.into(), world)
     }
     pub fn new(context: &Context, world: &World) -> Result<Self> {
+        debug!("new card");
         let mut effects = context
             .get_value(VarName::EffectsDescription, world)?
             .get_cstr_list()?;
@@ -324,6 +325,7 @@ fn cache_packed_unit(
     world: &mut World,
 ) -> Result<()> {
     cache.insert(id, UnitCard::from_packed(unit, world)?);
+    debug!("cache inserted");
     Ok(())
 }
 pub fn cached_fused_card(unit: &FusedUnit, ui: &mut Ui, world: &mut World) -> Result<()> {

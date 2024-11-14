@@ -17,30 +17,31 @@ pub fn br(ui: &mut Ui) {
 pub fn space(ui: &mut Ui) {
     ui.add_space(13.0);
 }
-pub fn center_window(name: &str, ui: &mut Ui, add_contents: impl FnOnce(&mut Ui)) {
+pub fn center_window(name: &str, ctx: &egui::Context, add_contents: impl FnOnce(&mut Ui)) {
     Window::new(name)
         .pivot(Align2::CENTER_CENTER)
-        .fixed_pos(ui.clip_rect().center())
-        .constrain(false)
+        .fixed_pos(ctx.screen_rect().center())
         .title_bar(false)
         .order(Order::Foreground)
         .default_width(300.0)
         .resizable([false, false])
-        .show(ui.ctx(), |ui| {
+        .show(ctx, |ui| {
             ui.set_max_height(ui.ctx().screen_rect().height() * 0.9);
             ScrollArea::vertical().show(ui, add_contents);
         });
 }
 pub fn popup(name: &str, ctx: &egui::Context, add_contents: impl FnOnce(&mut Ui)) {
     let rect = ctx.screen_rect();
-    CentralPanel::default()
-        .frame(Frame::none())
+    Area::new(Id::new("black_bg"))
+        .constrain_to(rect)
+        .anchor(Align2::CENTER_CENTER, egui::Vec2::ZERO)
+        .sense(Sense::click())
         .show(ctx, |ui| {
-            ui.allocate_rect(rect, Sense::click_and_drag());
+            ui.expand_to_include_rect(rect);
             ui.painter_at(rect)
-                .rect_filled(rect, Rounding::ZERO, Color32::from_black_alpha(180));
-            center_window(name, ui, add_contents);
+                .rect_filled(rect, Rounding::ZERO, Color32::from_black_alpha(200));
         });
+    center_window(name, ctx, add_contents);
 }
 pub fn text_dots_text(text1: Cstr, text2: Cstr, ui: &mut Ui) {
     ui.horizontal(|ui| {
@@ -89,6 +90,7 @@ pub fn cursor_window(ctx: &egui::Context, content: impl FnOnce(&mut Ui)) {
         .fixed_pos(pos)
         .resizable(false)
         .interactable(false)
+        .order(Order::Tooltip)
         .show(ctx, |ui| {
             ui.vertical_centered_justified(|ui| {
                 content(ui);

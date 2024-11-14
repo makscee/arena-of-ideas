@@ -4,6 +4,7 @@ use super::*;
 
 pub struct Button {
     name: String,
+    style: Option<CstrStyle>,
     name_cstr: Option<Cstr>,
     title: Option<Cstr>,
     icon: Option<Icon>,
@@ -24,6 +25,7 @@ impl Default for Button {
             name_cstr: None,
             icon: None,
             min_width: 0.0,
+            style: None,
         }
     }
 }
@@ -110,6 +112,10 @@ impl Button {
         self.big = true;
         self
     }
+    pub fn style(mut self, style: CstrStyle) -> Self {
+        self.style = Some(style);
+        self
+    }
     pub fn ui(self, ui: &mut Ui) -> Response {
         if let Some(title) = self.title {
             title.label(ui);
@@ -138,6 +144,9 @@ impl Button {
             } else {
                 egui::Button::new({
                     let mut rt = RichText::new(self.name);
+                    if let Some(cstr_style) = self.style {
+                        rt = rt.font(cstr_style.get_font(style));
+                    }
                     if self.big {
                         rt = rt.text_style(TextStyle::Heading);
                     }

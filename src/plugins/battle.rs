@@ -271,7 +271,7 @@ impl BattlePlugin {
                 },
                 |ui, world| {
                     const FF_LEFT_KEY: &str = "ff_back_btn";
-                    let pressed = get_context_bool(world, FF_LEFT_KEY);
+                    let pressed = get_ctx_bool_world(world, FF_LEFT_KEY);
                     if pressed {
                         gt().advance_play(-delta_time(world) * 2.0);
                     }
@@ -279,7 +279,7 @@ impl BattlePlugin {
                         .rounding(13.0)
                         .tint(if pressed { YELLOW } else { VISIBLE_BRIGHT })
                         .ui(ui);
-                    set_context_bool(
+                    set_ctx_bool_world(
                         world,
                         FF_LEFT_KEY,
                         resp.contains_pointer() && left_mouse_pressed(world),
@@ -287,7 +287,7 @@ impl BattlePlugin {
                 },
                 |ui, world| {
                     const FF_RIGHT_KEY: &str = "ff_forward_btn";
-                    let pressed = get_context_bool(world, FF_RIGHT_KEY);
+                    let pressed = get_ctx_bool_world(world, FF_RIGHT_KEY);
                     if pressed {
                         gt().advance_play(delta_time(world));
                     }
@@ -295,7 +295,7 @@ impl BattlePlugin {
                         .rounding(13.0)
                         .tint(if pressed { YELLOW } else { VISIBLE_BRIGHT })
                         .ui(ui);
-                    set_context_bool(
+                    set_ctx_bool_world(
                         world,
                         FF_RIGHT_KEY,
                         resp.contains_pointer() && left_mouse_pressed(world),

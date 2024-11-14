@@ -44,7 +44,7 @@ pub enum CstrStyle {
 }
 
 impl CstrStyle {
-    fn get_font(&self, style: &Style) -> FontId {
+    pub fn get_font(&self, style: &Style) -> FontId {
         match self {
             Self::Normal => TextStyle::Body,
             Self::Small => TextStyle::Small,
@@ -187,6 +187,7 @@ impl Cstr {
     pub fn widget(&self, alpha: f32, ui: &mut Ui) -> WidgetText {
         let mut job = LayoutJob::default();
         let ui_style = ui.style();
+        let alpha = alpha.clamp(0.0, 1.0);
         for CstrSub { text, color, style } in self.subs.iter() {
             let color = color
                 .unwrap_or(ui_style.visuals.widgets.noninteractive.fg_stroke.color)
@@ -561,14 +562,14 @@ impl FusedUnit {
                 _ => format!("{value}").cstr(),
             }
         }
-        let mutation_str = mutation(self.pwr_mutation)
-            .push("/".cstr())
-            .push(mutation(self.hp_mutation))
-            .style(CstrStyle::Small)
-            .take();
         let mut result =
             UnitPlugin::name_from_bases(self.bases.iter().map(|s| s.as_str()).collect(), max_chars);
         if show_mutation {
+            let mutation_str = mutation(self.pwr_mutation)
+                .push("/".cstr())
+                .push(mutation(self.hp_mutation))
+                .style(CstrStyle::Small)
+                .take();
             result.push(" ".cstr()).push(mutation_str);
         }
         result

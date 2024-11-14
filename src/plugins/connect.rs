@@ -100,7 +100,7 @@ impl ConnectPlugin {
         });
     }
     pub fn ui(ui: &mut Ui) {
-        center_window("status", ui, |ui| {
+        center_window("status", ui.ctx(), |ui| {
             "Connecting..."
                 .cstr_cs(VISIBLE_BRIGHT, CstrStyle::Heading)
                 .label(ui);

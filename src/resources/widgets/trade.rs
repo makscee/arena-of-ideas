@@ -32,7 +32,7 @@ impl Trade {
             } else {
                 trade.a_offer
             };
-            items.show(ui, world);
+            items.show(1.0, ui, world);
             ui.vertical_centered_justified(|ui| {
                 if Button::click("Accept").ui(ui).clicked() {
                     cn().reducers.accept_trade(id).unwrap();

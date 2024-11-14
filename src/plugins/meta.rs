@@ -173,17 +173,17 @@ impl MetaPlugin {
     }
     fn open_inventory(world: &mut World) {
         Tile::new(Side::Left, |ui, world| {
+            Self::show_lootboxes(ui, world);
+        })
+        .pinned()
+        .push(world);
+        Tile::new(Side::Left, |ui, world| {
             Self::show_units(ui, world);
         })
         .pinned()
         .push(world);
         Tile::new(Side::Left, |ui, world| {
             Self::show_shards(ui, world);
-        })
-        .pinned()
-        .push(world);
-        Tile::new(Side::Left, |ui, world| {
-            Self::show_lootboxes(ui, world);
         })
         .pinned()
         .push(world);

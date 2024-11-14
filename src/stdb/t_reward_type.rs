@@ -17,6 +17,7 @@ pub struct TReward {
     pub owner: u64,
     pub source: String,
     pub bundle: ItemBundle,
+    pub ts: u64,
 }
 
 impl __sdk::spacetime_module::InModule for TReward {

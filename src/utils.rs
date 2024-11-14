@@ -50,24 +50,36 @@ pub fn elapsed_seconds(world: &World) -> f32 {
 pub fn now_micros() -> i64 {
     Utc::now().timestamp_micros()
 }
-pub fn get_context_bool(world: &mut World, key: &str) -> bool {
-    let id = Id::new(key);
-    get_context_bool_id(world, id)
+pub fn get_ctx_bool_id(ctx: &egui::Context, id: Id) -> bool {
+    ctx.data(|r| r.get_temp::<bool>(id).unwrap_or_default())
 }
-pub fn set_context_bool(world: &mut World, key: &str, value: bool) {
-    let id = Id::new(key);
-    set_context_bool_id(world, id, value)
+pub fn set_ctx_bool_id(ctx: &egui::Context, id: Id, value: bool) {
+    ctx.data_mut(|w| w.insert_temp(id, value))
 }
-pub fn get_context_bool_id(world: &mut World, id: Id) -> bool {
-    if let Some(context) = egui_context(world) {
-        context.data(|r| r.get_temp::<bool>(id).unwrap_or_default())
+pub fn get_ctx_bool(ctx: &egui::Context, key: &str) -> bool {
+    get_ctx_bool_id(ctx, Id::new(key))
+}
+pub fn set_ctx_bool(ctx: &egui::Context, key: &str, value: bool) {
+    set_ctx_bool_id(ctx, Id::new(key), value)
+}
+pub fn get_ctx_bool_world(world: &mut World, key: &str) -> bool {
+    let id = Id::new(key);
+    get_ctx_bool_id_world(world, id)
+}
+pub fn set_ctx_bool_world(world: &mut World, key: &str, value: bool) {
+    let id = Id::new(key);
+    set_ctx_bool_id_world(world, id, value)
+}
+pub fn get_ctx_bool_id_world(world: &mut World, id: Id) -> bool {
+    if let Some(ctx) = &egui_context(world) {
+        get_ctx_bool_id(ctx, id)
     } else {
         default()
     }
 }
-pub fn set_context_bool_id(world: &mut World, id: Id, value: bool) {
-    if let Some(context) = egui_context(world) {
-        context.data_mut(|w| w.insert_temp(id, value))
+pub fn set_ctx_bool_id_world(world: &mut World, id: Id, value: bool) {
+    if let Some(ctx) = &egui_context(world) {
+        set_ctx_bool_id(ctx, id, value);
     }
 }
 pub fn get_context_string(world: &mut World, key: &str) -> String {

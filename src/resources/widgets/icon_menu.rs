@@ -1,0 +1,75 @@
+use super::*;
+
+pub struct IconMenu {
+    icons: Vec<Icon>,
+}
+
+struct Icon {
+    name: char,
+    color: Color32,
+    on_click: fn(&mut Ui, &mut World),
+    indicator: Option<fn(&World) -> bool>,
+}
+
+impl Default for IconMenu {
+    fn default() -> Self {
+        Self {
+            icons: [
+                Icon {
+                    name: 'i',
+                    color: CYAN,
+                    on_click: |ui, world| {},
+                    indicator: None,
+                },
+                Icon {
+                    name: 'q',
+                    color: YELLOW,
+                    on_click: |ui, world| {},
+                    indicator: Some(|_| QuestPlugin::new_available()),
+                },
+                Icon {
+                    name: 'r',
+                    color: GREEN,
+                    on_click: |ui, world| RewardsPlugin::open_rewards(world),
+                    indicator: Some(|_| RewardsPlugin::have_unclaimed()),
+                },
+            ]
+            .into(),
+        }
+    }
+}
+
+impl IconMenu {
+    pub fn show(self, ui: &mut Ui, world: &mut World) {
+        const TICK: f32 = 3.0;
+        let blink = (gt().play_head() / TICK).fract() * 3.0;
+        let ticked = gt().ticked(TICK, 0.0);
+        for i in self.icons {
+            let mut show_indicator = false;
+            let id = Id::new(i.name);
+            if ticked {
+                if let Some(indicator) = i.indicator {
+                    set_ctx_bool_id(ui.ctx(), id, indicator(world));
+                }
+            }
+            let resp = Button::click(i.name)
+                .color(i.color, ui)
+                .style(CstrStyle::Bold)
+                .ui(ui);
+            if resp.clicked() {
+                (i.on_click)(ui, world);
+            }
+            let rect = resp.rect;
+            show_indicator = get_ctx_bool_id(ui.ctx(), id);
+            if show_indicator {
+                ui.painter().rect_stroke(
+                    rect.expand(blink * 4.0),
+                    Rounding::same(13.0),
+                    Stroke::new((1.0 - blink) * 3.0, i.color),
+                );
+                ui.painter()
+                    .rect_stroke(rect, Rounding::same(13.0), Stroke::new(1.0, i.color));
+            }
+        }
+    }
+}
