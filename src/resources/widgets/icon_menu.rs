@@ -7,7 +7,7 @@ pub struct IconMenu {
 struct Icon {
     name: char,
     color: Color32,
-    on_click: fn(&mut Ui, &mut World),
+    on_click: fn(&mut World),
     indicator: Option<fn(&World) -> bool>,
 }
 
@@ -16,22 +16,22 @@ impl Default for IconMenu {
         Self {
             icons: [
                 Icon {
-                    name: 'i',
-                    color: CYAN,
-                    on_click: |ui, world| {},
-                    indicator: None,
-                },
-                Icon {
-                    name: 'q',
+                    name: 'Q',
                     color: YELLOW,
-                    on_click: |ui, world| {},
+                    on_click: QuestPlugin::popup,
                     indicator: Some(|_| QuestPlugin::new_available()),
                 },
                 Icon {
-                    name: 'r',
-                    color: GREEN,
-                    on_click: |ui, world| RewardsPlugin::open_rewards(world),
+                    name: 'R',
+                    color: CYAN,
+                    on_click: RewardsPlugin::open_rewards,
                     indicator: Some(|_| RewardsPlugin::have_unclaimed()),
+                },
+                Icon {
+                    name: 'N',
+                    color: LIGHT_PURPLE,
+                    on_click: Notification::popup,
+                    indicator: None,
                 },
             ]
             .into(),
@@ -45,7 +45,6 @@ impl IconMenu {
         let blink = (gt().play_head() / TICK).fract() * 3.0;
         let ticked = gt().ticked(TICK, 0.0);
         for i in self.icons {
-            let mut show_indicator = false;
             let id = Id::new(i.name);
             if ticked {
                 if let Some(indicator) = i.indicator {
@@ -57,10 +56,10 @@ impl IconMenu {
                 .style(CstrStyle::Bold)
                 .ui(ui);
             if resp.clicked() {
-                (i.on_click)(ui, world);
+                (i.on_click)(world);
             }
             let rect = resp.rect;
-            show_indicator = get_ctx_bool_id(ui.ctx(), id);
+            let show_indicator = get_ctx_bool_id(ui.ctx(), id);
             if show_indicator {
                 ui.painter().rect_stroke(
                     rect.expand(blink * 4.0),

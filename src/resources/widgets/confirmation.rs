@@ -107,8 +107,9 @@ impl Confirmation {
     pub fn show_current(ctx: &egui::Context, world: &mut World) {
         if let Some(c) = rm(world).stack.pop() {
             c.ui(ctx, world);
+            let esc = c.cancel.is_some() && just_pressed(KeyCode::Escape, world);
             let mut r = rm(world);
-            if r.close_requested {
+            if r.close_requested || esc {
                 r.close_requested = false;
             } else {
                 r.stack.push(c);

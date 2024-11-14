@@ -58,6 +58,20 @@ impl Notification {
         d.push_front((t, self));
         d.make_contiguous();
     }
+    pub fn popup(world: &mut World) {
+        Confirmation::new("Notifications".cstr_cs(VISIBLE_BRIGHT, CstrStyle::Heading2))
+            .cancel(|_| {})
+            .cancel_name("Close")
+            .content(|ui, world| {
+                world.resource_scope(|world, nr: Mut<NotificationsResource>| {
+                    Table::new("Notifications")
+                        .column_cstr("text", |(_, n): &(i64, Notification), _| n.text.clone())
+                        .column_ts("time", |(t, _)| *t as u64)
+                        .ui(&nr.shown.as_slices().0, ui, world);
+                })
+            })
+            .push(world);
+    }
     pub fn show_recent(ctx: &egui::Context, world: &mut World) {
         Area::new(Id::new("recent_notifications"))
             .anchor(Align2::RIGHT_TOP, [0.0, 20.0])
@@ -87,14 +101,6 @@ impl Notification {
                     }
                 });
             });
-    }
-    pub fn show_all_table(ui: &mut Ui, world: &mut World) {
-        world.resource_scope(|world, nr: Mut<NotificationsResource>| {
-            Table::new("Notifications")
-                .column_cstr("text", |(_, n): &(i64, Notification), _| n.text.clone())
-                .column_ts("time", |(t, _)| *t as u64)
-                .ui(&nr.shown.as_slices().0, ui, world);
-        })
     }
 }
 

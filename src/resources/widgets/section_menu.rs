@@ -42,22 +42,6 @@ impl Default for SectionMenu {
                     ..default()
                 },
                 GameSection {
-                    name: "QUESTS",
-                    target_state: GameState::Quests,
-                    options: [GameOption::Login].into(),
-                    indicator: Some(|_| {
-                        QuestPlugin::have_completed() || QuestPlugin::new_available()
-                    }),
-                    ..default()
-                },
-                GameSection {
-                    name: "INBOX",
-                    target_state: GameState::Inbox,
-                    options: [GameOption::Login].into(),
-                    indicator: Some(|_| cn().db.reward().iter().any(|r| r.owner == player_id())),
-                    ..default()
-                },
-                GameSection {
                     name: "STATS",
                     target_state: GameState::Stats,
                     options: [GameOption::Login].into(),

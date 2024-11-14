@@ -196,7 +196,7 @@ impl TilePlugin {
             .clamp(egui::vec2(-1.0, -1.0), egui::vec2(1.0, 1.0));
 
         world.insert_resource(sr);
-        if just_pressed(KeyCode::Escape, world) {
+        if just_pressed(KeyCode::Escape, world) && !Confirmation::has_active(world) {
             let mut rm = rm(world);
             let focused = rm.focused.clone();
             if let Some(tile) = rm.tiles.get_mut(&focused).filter(|t| !t.pinned) {
@@ -258,14 +258,12 @@ impl TilePlugin {
     pub fn change_state(to: GameState, world: &mut World) {
         Self::clear_all(world);
         match to {
-            GameState::Inbox => InboxPlugin::add_tiles(world),
             GameState::Meta => MetaPlugin::add_tiles(world),
             GameState::Shop => ShopPlugin::add_tiles(world),
             GameState::Battle => BattlePlugin::add_tiles(world),
             GameState::GameStart => GameStartPlugin::add_tiles(world),
             GameState::Title => TitlePlugin::add_tiles(world),
             GameState::Editor => EditorPlugin::add_tiles(world),
-            GameState::Quests => QuestPlugin::add_tiles(world),
             GameState::Stats => StatsPlugin::add_tiles(world),
             GameState::Incubator => IncubatorPlugin::add_tiles(world),
             GameState::Players => PlayersPlugin::add_tiles(world),

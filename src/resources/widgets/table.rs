@@ -558,6 +558,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                             Column::auto(),
                             self.columns.len() + self.selectable as usize,
                         )
+                        .auto_shrink([false, true])
                         .cell_layout(Layout::centered_and_justified(egui::Direction::TopDown))
                         .header(30.0, |mut row| {
                             for (i, (name, column)) in self.columns.iter().enumerate() {
