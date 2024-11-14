@@ -832,11 +832,29 @@ pub fn db_subscriptions() {
             }
         });
     });
+    fn receive_unit(unit: &FusedUnit) {
+        "Unit received: "
+            .cstr_c(VISIBLE_LIGHT)
+            .push(unit.cstr_expanded())
+            .to_notification()
+            .sfx(SoundEffect::Inventory)
+            .push_op();
+    }
     db.unit_item().on_update(|_, before, after| {
         if before.owner != after.owner && after.owner == player_id() {
-            "Unit received: "
+            receive_unit(&after.unit);
+        }
+    });
+    db.unit_item().on_insert(|_, row| {
+        if row.owner == player_id() {
+            receive_unit(&row.unit);
+        }
+    });
+    db.unit_item().on_delete(|_, row| {
+        if row.owner == player_id() {
+            "Unit removed: "
                 .cstr_c(VISIBLE_LIGHT)
-                .push(after.unit.cstr_expanded())
+                .push(row.unit.cstr_expanded())
                 .to_notification()
                 .sfx(SoundEffect::Inventory)
                 .push_op();
@@ -864,7 +882,12 @@ pub fn db_subscriptions() {
     });
     fn notify_lootbox(delta: i32, kind: &LootboxKind) {
         let delta = delta.cstr_expanded();
-        kind.cstr().push(" ".cstr()).push(delta).notify_op();
+        kind.cstr()
+            .push(" ".cstr())
+            .push(delta)
+            .to_notification()
+            .sfx(SoundEffect::Inventory)
+            .push_op();
     }
     db.lootbox_item().on_update(|_, before, after| {
         if after.owner == player_id() && before.count != after.count {
@@ -874,6 +897,16 @@ pub fn db_subscriptions() {
     db.lootbox_item().on_insert(|_, row| {
         if row.owner == player_id() {
             notify_lootbox(row.count as i32, &row.kind);
+        }
+    });
+    db.rainbow_shard_item().on_update(|_, before, after| {
+        if after.owner == player_id() && before.count != after.count {
+            "Rainbow Shards "
+                .cstr_rainbow()
+                .push((after.count as i32 - before.count as i32).cstr_expanded())
+                .to_notification()
+                .sfx(SoundEffect::Inventory)
+                .push_op();
         }
     });
 }
