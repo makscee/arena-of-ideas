@@ -12,21 +12,6 @@ pub struct TTrade {
     b_accepted: bool,
 }
 
-impl TTrade {
-    pub fn open_lootbox(ctx: &ReducerContext, owner: u64, bundle: ItemBundle) -> Self {
-        let trade = TTrade {
-            id: next_id(ctx),
-            a_player: 0,
-            b_player: owner,
-            a_offer: bundle,
-            b_offer: default(),
-            a_accepted: true,
-            b_accepted: false,
-        };
-        ctx.db.trade().insert(trade)
-    }
-}
-
 #[spacetimedb::reducer]
 fn accept_trade(ctx: &ReducerContext, id: u64) -> Result<(), String> {
     let player = ctx.player()?;

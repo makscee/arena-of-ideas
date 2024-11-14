@@ -1,4 +1,4 @@
-use spacetimedb_sdk::{table::TableWithPrimaryKey, Table};
+use spacetimedb_sdk::Table;
 
 use super::*;
 
@@ -59,66 +59,7 @@ impl LoginPlugin {
         StdbQuery::subscribe(StdbQuery::queries_game(), move |world| {
             GameAssets::cache_tables();
             GameState::proceed(world);
-            cn().db.trade().on_insert(|e, r| {
-                let id = r.id;
-                match &e.event {
-                    spacetimedb_sdk::Event::Reducer(e) => {
-                        if matches!(e.reducer, Reducer::OpenLootbox(..)) {
-                            OperationsPlugin::add(move |world| {
-                                Trade::open(id, &egui_context(world).unwrap());
-                            });
-                        }
-                    }
-                    _ => {}
-                }
-            });
-            cn().db.wallet().on_update(|_, before, after| {
-                let delta = after.amount - before.amount;
-                let delta_txt = if delta > 0 {
-                    format!("+{delta}")
-                } else {
-                    delta.to_string()
-                };
-                AudioPlugin::queue_sound(SoundEffect::Coin);
-                Notification::new(
-                    "Credits "
-                        .cstr_c(YELLOW)
-                        .push(delta_txt.cstr_c(VISIBLE_LIGHT))
-                        .take(),
-                )
-                .push_op();
-            });
-            cn().db.quest().on_insert(|_, d| {
-                let text = "New Quest\n".cstr().push(d.cstr()).take();
-                Notification::new(text).push_op();
-            });
-            cn().db.quest().on_update(|_, before, after| {
-                let before = before.clone();
-                let after = after.clone();
-                OperationsPlugin::add(move |world| {
-                    if before.complete && after.complete {
-                        return;
-                    }
-                    if before.counter < after.counter {
-                        ShopPlugin::maybe_queue_notification(
-                            "Quest Progress:\n"
-                                .cstr_c(VISIBLE_BRIGHT)
-                                .push(after.cstr())
-                                .take(),
-                            world,
-                        )
-                    }
-                    if !before.complete && after.complete {
-                        ShopPlugin::maybe_queue_notification(
-                            "Quest Complete!\n"
-                                .cstr_c(VISIBLE_BRIGHT)
-                                .push(after.cstr())
-                                .take(),
-                            world,
-                        )
-                    }
-                });
-            });
+            db_subscriptions();
         });
     }
     pub fn login_ui(ui: &mut Ui, world: &mut World) {

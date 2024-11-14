@@ -36,6 +36,8 @@ pub struct AudioAssets {
     audio_victory: Handle<AudioSource>,
     #[asset(key = "audio_defeat")]
     audio_defeat: Handle<AudioSource>,
+    #[asset(key = "audio_inventory")]
+    audio_inventory: Handle<AudioSource>,
 }
 
 #[derive(Resource, Debug)]
@@ -62,6 +64,7 @@ pub enum SoundEffect {
     StatusRemove,
     Victory,
     Defeat,
+    Inventory,
 }
 
 static FX_QUEUE: Mutex<Vec<SoundEffect>> = Mutex::new(Vec::new());
@@ -131,6 +134,7 @@ impl AudioPlugin {
                 SoundEffect::StatusRemove => aa.audio_status_remove.clone(),
                 SoundEffect::Victory => aa.audio_victory.clone(),
                 SoundEffect::Defeat => aa.audio_defeat.clone(),
+                SoundEffect::Inventory => aa.audio_inventory.clone(),
             };
             Self::play(sound, world);
         }

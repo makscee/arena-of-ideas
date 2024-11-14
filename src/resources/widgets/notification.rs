@@ -6,6 +6,7 @@ use super::*;
 pub struct Notification {
     text: Cstr,
     r#type: NotificationType,
+    sfx: Option<SoundEffect>,
 }
 
 #[derive(Default, Clone, Debug)]
@@ -28,6 +29,7 @@ impl Notification {
         Self {
             text,
             r#type: default(),
+            sfx: None,
         }
     }
     pub fn error(mut self) -> Self {
@@ -35,10 +37,22 @@ impl Notification {
         self.text = "Error: ".cstr_c(RED).push(self.text).take();
         self
     }
+    pub fn sfx(mut self, sfx: SoundEffect) -> Self {
+        self.sfx = Some(sfx);
+        self
+    }
     pub fn push_op(self) {
         OperationsPlugin::add(|w| self.push(w));
     }
     pub fn push(self, world: &mut World) {
+        let prefix = match self.r#type {
+            NotificationType::Alert => "Notify: ".dimmed(),
+            NotificationType::Error => "Error: ".dimmed().red(),
+        };
+        info!("{prefix} {}", self.text);
+        if let Some(sfx) = self.sfx {
+            AudioPlugin::queue_sound(sfx);
+        }
         let t = now_micros();
         let d = &mut world.resource_mut::<NotificationsResource>().shown;
         d.push_front((t, self));
@@ -96,29 +110,38 @@ const FRAME: Frame = Frame {
     },
 };
 
-pub trait NotificationPusher: ToString {
+pub trait NotificationPusher {
+    fn to_notification(&self) -> Notification;
     fn notify(&self, world: &mut World) {
-        let s = self.to_string();
-        info!("{} {}", "Notify: ".dimmed(), s);
-        Notification::new_string(s).push(world)
+        self.to_notification().push(world)
     }
     fn notify_op(&self) {
-        let s = self.to_string();
-        OperationsPlugin::add(move |world| s.notify(world))
+        self.to_notification().push_op()
     }
     fn notify_error(&self, world: &mut World) {
-        let s = self.to_string();
-        error!("{}{s}", "Notify error: ".dimmed());
-        Notification::new_string(s).error().push(world)
+        self.to_notification().error().push(world)
     }
     fn notify_error_op(&self) {
-        let s = self.to_string();
-        OperationsPlugin::add(move |world| s.notify_error(world))
+        self.to_notification().error().push_op();
     }
 }
 
-impl NotificationPusher for String {}
-impl NotificationPusher for str {}
+impl NotificationPusher for String {
+    fn to_notification(&self) -> Notification {
+        Notification::new_string(self.clone())
+    }
+}
+impl NotificationPusher for str {
+    fn to_notification(&self) -> Notification {
+        Notification::new_string(self.into())
+    }
+}
+
+impl NotificationPusher for Cstr {
+    fn to_notification(&self) -> Notification {
+        Notification::new(self.clone())
+    }
+}
 
 pub trait NotifyStatus {
     fn notify(&self, world: &mut World);

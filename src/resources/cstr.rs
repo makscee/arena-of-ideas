@@ -441,6 +441,9 @@ impl ToCstr for FusedUnit {
     fn cstr(&self) -> Cstr {
         self.cstr_limit(3, false)
     }
+    fn cstr_expanded(&self) -> Cstr {
+        self.cstr_limit(3, true)
+    }
 }
 impl ToCstr for TTeam {
     fn cstr(&self) -> Cstr {
@@ -494,6 +497,29 @@ impl ToCstr for GameMode {
 impl ToCstr for u32 {
     fn cstr(&self) -> Cstr {
         self.to_string().cstr_c(VISIBLE_LIGHT)
+    }
+}
+impl ToCstr for i32 {
+    fn cstr(&self) -> Cstr {
+        self.to_string().cstr()
+    }
+    fn cstr_expanded(&self) -> Cstr {
+        match self.signum() {
+            1 => format!("+{self}").cstr_c(GREEN),
+            -1 => format!("{self}").cstr_c(RED),
+            _ => format!("{self}").cstr(),
+        }
+    }
+}
+impl ToCstr for LootboxKind {
+    fn cstr(&self) -> Cstr {
+        "lootbox "
+            .cstr_c(VISIBLE_LIGHT)
+            .push(match self {
+                LootboxKind::Regular => "regular".cstr_c(VISIBLE_LIGHT),
+                LootboxKind::House(h) => format!("house {h}").cstr_c(name_color(h)),
+            })
+            .take()
     }
 }
 
@@ -555,19 +581,14 @@ impl From<Vec<Cstr>> for Cstr {
 
 impl FusedUnit {
     pub fn cstr_limit(&self, max_chars: usize, show_mutation: bool) -> Cstr {
-        fn mutation(value: i32) -> Cstr {
-            match value.signum() {
-                1 => format!("+{value}").cstr_c(GREEN),
-                -1 => format!("{value}").cstr_c(RED),
-                _ => format!("{value}").cstr(),
-            }
-        }
         let mut result =
             UnitPlugin::name_from_bases(self.bases.iter().map(|s| s.as_str()).collect(), max_chars);
         if show_mutation {
-            let mutation_str = mutation(self.pwr_mutation)
+            let mutation_str = self
+                .pwr_mutation
+                .cstr_expanded()
                 .push("/".cstr())
-                .push(mutation(self.hp_mutation))
+                .push(self.hp_mutation.cstr_expanded())
                 .style(CstrStyle::Small)
                 .take();
             result.push(" ".cstr()).push(mutation_str);

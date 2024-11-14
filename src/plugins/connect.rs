@@ -118,7 +118,7 @@ impl ConnectPlugin {
             .build()
             .unwrap();
         c.run_threaded();
-        apply_subscriptions(&c);
+        reducers_subscriptions(&c);
         CONNECTION.set(c).ok().unwrap();
     }
 }

@@ -203,6 +203,11 @@ impl BaseUnitExt for String {
         self
     }
 }
+impl BaseUnitExt for str {
+    fn base(&self) -> &str {
+        self
+    }
+}
 
 impl TTeam {
     pub fn hover_label(&self, ui: &mut Ui, world: &mut World) {

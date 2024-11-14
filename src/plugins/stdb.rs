@@ -1,6 +1,6 @@
 use serde_json::to_string_pretty;
 use spacetimedb_lib::{de::serde::DeserializeWrapper, ser::serde::SerializeWrapper};
-use spacetimedb_sdk::DbContext;
+use spacetimedb_sdk::{DbContext, TableWithPrimaryKey};
 
 use crate::login;
 
@@ -504,7 +504,7 @@ impl StdbTable {
     }
 }
 
-pub fn apply_subscriptions(dbc: &DbConnection) {
+pub fn reducers_subscriptions(dbc: &DbConnection) {
     let r = dbc.reducers();
     r.on_incubator_post(|e, u| {
         if !e.check_identity() {
@@ -767,5 +767,113 @@ pub fn apply_subscriptions(dbc: &DbConnection) {
             return;
         }
         e.event.notify_error();
+    });
+}
+
+pub fn db_subscriptions() {
+    let db = &cn().db;
+    db.trade().on_insert(|e, r| {
+        let id = r.id;
+        match &e.event {
+            spacetimedb_sdk::Event::Reducer(e) => {
+                if matches!(e.reducer, Reducer::OpenLootbox(..)) {
+                    OperationsPlugin::add(move |world| {
+                        Trade::open(id, &egui_context(world).unwrap());
+                    });
+                }
+            }
+            _ => {}
+        }
+    });
+    db.wallet().on_update(|_, before, after| {
+        let delta = after.amount - before.amount;
+        let delta_txt = if delta > 0 {
+            format!("+{delta}")
+        } else {
+            delta.to_string()
+        };
+        Notification::new(
+            "Credits "
+                .cstr_c(YELLOW)
+                .push(delta_txt.cstr_c(VISIBLE_LIGHT))
+                .take(),
+        )
+        .sfx(SoundEffect::Coin)
+        .push_op();
+    });
+    db.quest().on_insert(|_, d| {
+        let text = "New Quest\n".cstr().push(d.cstr()).take();
+        Notification::new(text).push_op();
+    });
+    db.quest().on_update(|_, before, after| {
+        let before = before.clone();
+        let after = after.clone();
+        OperationsPlugin::add(move |world| {
+            if before.complete && after.complete {
+                return;
+            }
+            if before.counter < after.counter {
+                ShopPlugin::maybe_queue_notification(
+                    "Quest Progress:\n"
+                        .cstr_c(VISIBLE_BRIGHT)
+                        .push(after.cstr())
+                        .take(),
+                    world,
+                )
+            }
+            if !before.complete && after.complete {
+                ShopPlugin::maybe_queue_notification(
+                    "Quest Complete!\n"
+                        .cstr_c(VISIBLE_BRIGHT)
+                        .push(after.cstr())
+                        .take(),
+                    world,
+                )
+            }
+        });
+    });
+    db.unit_item().on_update(|_, before, after| {
+        if before.owner != after.owner && after.owner == player_id() {
+            "Unit received: "
+                .cstr_c(VISIBLE_LIGHT)
+                .push(after.unit.cstr_expanded())
+                .to_notification()
+                .sfx(SoundEffect::Inventory)
+                .push_op();
+        }
+    });
+    fn notify_shard(delta: i32, unit: &str) {
+        let delta = delta.cstr_expanded();
+        unit.base_unit()
+            .cstr()
+            .push(" shards ".cstr_c(VISIBLE_LIGHT))
+            .push(delta)
+            .to_notification()
+            .sfx(SoundEffect::Inventory)
+            .push_op();
+    }
+    db.unit_shard_item().on_update(|_, before, after| {
+        if after.owner == player_id() && before.count != after.count {
+            notify_shard(after.count as i32 - before.count as i32, &after.unit);
+        }
+    });
+    db.unit_shard_item().on_insert(|_, row| {
+        if row.owner == player_id() {
+            notify_shard(row.count as i32, &row.unit);
+        }
+    });
+    fn notify_lootbox(delta: i32, kind: &LootboxKind) {
+        let delta = delta.cstr_expanded();
+        kind.cstr().push(" ".cstr()).push(delta).notify_op();
+    }
+    db.lootbox_item().on_update(|_, before, after| {
+        if after.owner == player_id() && before.count != after.count {
+            notify_lootbox(after.count as i32 - before.count as i32, &after.kind);
+        }
+    });
+    db.lootbox_item().on_insert(|_, row| {
+        if row.owner == player_id() {
+            notify_lootbox(row.count as i32, &row.kind);
+        }
     });
 }

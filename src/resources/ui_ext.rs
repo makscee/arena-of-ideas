@@ -453,10 +453,6 @@ impl Show for TLootboxItem {
 }
 impl Show for LootboxKind {
     fn show(&self, fade_in: f32, ui: &mut Ui, _: &mut World) {
-        match self {
-            LootboxKind::Regular => "regular".cstr_c(VISIBLE_LIGHT),
-            LootboxKind::House(h) => format!("house {h}").cstr_c(name_color(h)),
-        }
-        .label_alpha(fade_in, ui);
+        self.cstr().label_alpha(fade_in, ui);
     }
 }
