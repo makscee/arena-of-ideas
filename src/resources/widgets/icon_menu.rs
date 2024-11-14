@@ -9,6 +9,7 @@ struct Icon {
     color: Color32,
     on_click: fn(&mut World),
     indicator: Option<fn(&World) -> bool>,
+    hint: &'static str,
 }
 
 impl Default for IconMenu {
@@ -20,18 +21,21 @@ impl Default for IconMenu {
                     color: YELLOW,
                     on_click: QuestPlugin::popup,
                     indicator: Some(|_| QuestPlugin::new_available()),
+                    hint: "Quests",
                 },
                 Icon {
                     name: 'R',
                     color: CYAN,
                     on_click: RewardsPlugin::open_rewards,
                     indicator: Some(|_| RewardsPlugin::have_unclaimed()),
+                    hint: "Rewards",
                 },
                 Icon {
                     name: 'N',
                     color: LIGHT_PURPLE,
                     on_click: Notification::popup,
                     indicator: None,
+                    hint: "Notification history",
                 },
             ]
             .into(),
@@ -54,7 +58,8 @@ impl IconMenu {
             let resp = Button::click(i.name)
                 .color(i.color, ui)
                 .style(CstrStyle::Bold)
-                .ui(ui);
+                .ui(ui)
+                .on_hover_text(i.hint);
             if resp.clicked() {
                 (i.on_click)(world);
             }
