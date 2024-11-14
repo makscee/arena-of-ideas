@@ -832,6 +832,16 @@ pub fn db_subscriptions() {
             }
         });
     });
+
+    db.reward().on_insert(|_, row| {
+        if row.owner == player_id() && row.force_open {
+            let id = row.id;
+            OperationsPlugin::add(move |world| {
+                RewardsPlugin::open_reward(id, world);
+            });
+        }
+    });
+
     fn receive_unit(unit: &FusedUnit) {
         "Unit received: "
             .cstr_c(VISIBLE_LIGHT)

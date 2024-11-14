@@ -44,7 +44,7 @@ impl RewardsPlugin {
             });
         }
     }
-    fn open_reward(id: u64, world: &mut World) {
+    pub fn open_reward(id: u64, world: &mut World) {
         let open_ts = gt().play_head();
         Confirmation::new("Reward".cstr_cs(VISIBLE_BRIGHT, CstrStyle::Heading2))
             .accept(move |_| {

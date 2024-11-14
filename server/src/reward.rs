@@ -10,6 +10,7 @@ pub struct TReward {
     pub owner: u64,
     pub source: String,
     pub bundle: ItemBundle,
+    pub force_open: bool,
     pub ts: Timestamp,
 }
 
@@ -20,6 +21,7 @@ impl Default for TReward {
             owner: default(),
             source: default(),
             bundle: default(),
+            force_open: false,
             ts: Timestamp::now(),
         }
     }
@@ -32,6 +34,10 @@ impl TReward {
             bundle,
             ..default()
         }
+    }
+    pub fn force(mut self) -> Self {
+        self.force_open = true;
+        self
     }
     fn add(mut self, ctx: &ReducerContext, owner: u64) {
         self.owner = owner;
@@ -54,7 +60,7 @@ impl TReward {
         }
     }
     pub fn lootbox_open(ctx: &ReducerContext, owner: u64, bundle: ItemBundle) {
-        Self::new("Lootbox".into(), bundle).add(ctx, owner);
+        Self::new("Lootbox".into(), bundle).force().add(ctx, owner);
     }
 }
 

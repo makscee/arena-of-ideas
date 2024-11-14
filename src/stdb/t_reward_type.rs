@@ -17,6 +17,7 @@ pub struct TReward {
     pub owner: u64,
     pub source: String,
     pub bundle: ItemBundle,
+    pub force_open: bool,
     pub ts: u64,
 }
 
