@@ -252,10 +252,11 @@ pub fn can_afford(cost: i64) -> bool {
 pub fn show_daily_refresh_timer(ui: &mut Ui) {
     let now = Utc::now().timestamp();
     let til_refresh = (now / 86400 + 1) * 86400 - now;
-    "Refresh in "
-        .cstr()
-        .push(format_duration(til_refresh as u64).cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold))
-        .label(ui);
+    format!(
+        "Refresh in {}",
+        format_duration(til_refresh as u64).cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold)
+    )
+    .label(ui);
 }
 
 pub trait ToBVec2 {

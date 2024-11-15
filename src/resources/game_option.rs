@@ -20,11 +20,7 @@ impl ToCstr for GameOption {
             | GameOption::ForceLogin
             | GameOption::TestScenariosLoad
             | GameOption::ActiveRun => self.as_ref().cstr_c(GREEN),
-            GameOption::Table(q) => self
-                .as_ref()
-                .cstr_c(GREEN)
-                .push_wrapped_circ(q.cstr())
-                .take(),
+            GameOption::Table(q) => self.as_ref().cstr_c(GREEN) + &q.cstr(),
         }
     }
 }

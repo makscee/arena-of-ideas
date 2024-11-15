@@ -5,7 +5,7 @@
     statuses: [
         (
             name: "Vitality",
-            description: "+{Charges} HP",
+            description: "+$Charges [vb Hp]",
             polarity: 1,
             trigger: Change(trigger: Var(Hp), expr: Context(Charges)),
         ),
@@ -13,12 +13,12 @@
     abilities: [
         (
             name: "Vitality",
-            description: "Give +{1} HP",
+            description: "Give [vb [b +1]] [vb Hp]",
             effect: List([Vfx("apply_status"), ChangeStatus("Vitality")]),
         ),
         (
             name: "Mend",
-            description: "Heal {Pwr} amount of damage",
+            description: "Heal $Pwr amount of damage",
             effect: WithVar(Value, Sum(Context(Pwr), Sub(Context(Charges), I(1))), Heal),
         ),
     ],

@@ -5,7 +5,7 @@
     statuses: [
         (
             name: "Growth",
-            description: "+{Charges}/+{Charges}",
+            description: "+$Charges/+$Charges",
             polarity: 1,
             trigger: List(
                 [
@@ -18,7 +18,7 @@
     abilities: [
         (
             name: "Grow",
-            description: "Give +{1}/+{1}",
+            description: "Give [vb [b +1]]/[vb [b +1]]",
             effect: List([Vfx("apply_status"), ChangeStatus("Growth")]),
         ),
     ],

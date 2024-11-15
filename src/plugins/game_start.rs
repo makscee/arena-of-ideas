@@ -169,7 +169,7 @@ impl GameStartPlugin {
         ui.vertical_centered_justified(|ui| {
             let r = rm(world);
             let mode = r.selected_mode.clone();
-            mode.cstr().style(CstrStyle::Heading).label(ui);
+            mode.cstr_s(CstrStyle::Heading).label(ui);
             ui.add_space(30.0);
             let run = cn().db.arena_run().get_current();
             let mut entry_fee = None;

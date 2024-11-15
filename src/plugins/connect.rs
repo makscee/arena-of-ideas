@@ -75,15 +75,10 @@ impl ConnectPlugin {
                     ConnectOption { identity, token }.save(world);
                     GameState::proceed(world);
                 } else {
-                    Confirmation::new(
-                        "Wrong game version: "
-                            .cstr_c(VISIBLE_LIGHT)
-                            .push(
-                                format!("{} != {}", VERSION, server_version_str)
-                                    .cstr_cs(VISIBLE_BRIGHT, CstrStyle::Bold),
-                            )
-                            .take(),
-                    )
+                    Confirmation::new(format!(
+                        "[vl Wrong game version: ][vb [b{} != {}]]",
+                        VERSION, server_version_str
+                    ))
                     .accept(|world| {
                         egui_context(world).unwrap().open_url(egui::OpenUrl {
                             url: "https://github.com/makscee/arena-of-ideas/releases".to_owned(),

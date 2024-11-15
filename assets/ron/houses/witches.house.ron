@@ -5,7 +5,7 @@
     statuses: [
         (
             name: "Weakness",
-            description: "-{Charges} PWR",
+            description: "-$Charges [vb Pwr]",
             polarity: -1,
             trigger: Change(trigger: Var(Pwr), expr: Sub(I(0), Context(Charges))),
         ),
@@ -13,7 +13,7 @@
     abilities: [
         (
             name: "Weakness",
-            description: "-{1} PWR",
+            description: "[vb [b -1]] [vb Pwr]",
             effect: List([Vfx("apply_status"), ChangeStatus("Weakness")]),
         ),
     ],

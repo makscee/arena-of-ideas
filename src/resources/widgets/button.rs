@@ -80,13 +80,10 @@ impl Button {
             self.title = Some(self.name.clone().cstr());
         }
         self.name_cstr = Some({
-            let mut c = cost
-                .to_string()
-                .cstr_c(VISIBLE_LIGHT)
-                .push(format!(" {CREDITS_SYM}").cstr_cs(YELLOW, CstrStyle::Bold))
-                .take();
+            let mut c = cost.to_string().cstr_c(VISIBLE_LIGHT)
+                + &format!(" {CREDITS_SYM}").cstr_cs(YELLOW, CstrStyle::Bold);
             if !self.enabled {
-                c = c.color(VISIBLE_DARK).take();
+                c = c.cstr_c(VISIBLE_DARK);
             }
             c
         });
@@ -143,9 +140,9 @@ impl Button {
                 egui::Button::new(name.widget(1.0, ui))
             } else {
                 egui::Button::new({
-                    let mut rt = RichText::new(self.name);
+                    let mut rt = RichText::new(self.name.get_text());
                     if let Some(cstr_style) = self.style {
-                        rt = rt.font(cstr_style.get_font(style));
+                        rt = rt.font(cstr_style.get_font(style).unwrap_or_default());
                     }
                     if self.big {
                         rt = rt.text_style(TextStyle::Heading);

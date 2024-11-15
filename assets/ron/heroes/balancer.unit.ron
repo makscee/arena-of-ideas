@@ -7,7 +7,7 @@
     houses: ["Witches"],
     trigger: Fire(
         triggers: [(BattleStart, None)],
-        targets: [(MaxUnit(OwnerState(Pwr), AllEnemyUnits), "enemy with max {Hp}")],
+        targets: [(MaxUnit(OwnerState(Pwr), AllEnemyUnits), "enemy with max $Hp")],
         effects: [(UseAbility("Weakness", 4), None)],
     ),
     representation: (

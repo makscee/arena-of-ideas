@@ -32,6 +32,6 @@
     trigger: Fire(
         triggers: [(StatusReceived(None, Some(-1)), None)],
         targets: [(Caster, None)],
-        effects: [(UseAbility("Magic Missile", 2), None)],
+        effects: [(UseAbility("Magic_Missile", 2), None)],
     ),
 )

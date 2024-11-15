@@ -712,27 +712,24 @@ impl ShowEditor for RepresentationMaterial {
 
 impl ToCstr for RepresentationMaterial {
     fn cstr(&self) -> Cstr {
-        self.as_ref().cstr()
-    }
-    fn cstr_expanded(&self) -> Cstr {
-        format!("{self:?}").cstr()
+        self.as_ref().into()
     }
 }
 
 impl ToCstr for RepShape {
     fn cstr(&self) -> Cstr {
-        self.as_ref().cstr()
+        self.as_ref().into()
     }
 }
 
 impl ToCstr for RepFill {
     fn cstr(&self) -> Cstr {
-        self.as_ref().cstr()
+        self.as_ref().into()
     }
 }
 
 impl ToCstr for RepShapeType {
     fn cstr(&self) -> Cstr {
-        self.as_ref().cstr()
+        self.as_ref().into()
     }
 }

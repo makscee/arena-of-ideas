@@ -5,7 +5,6 @@
     statuses: [
         (
             name: "Petrify",
-            description: "Next damage taken will deal\nhalf of remaining HP as damage,\nthen consume 1 charge",
             polarity: -1,
             trigger: Fire(
                 triggers: [(AfterIncomingDamage, None)],
@@ -19,7 +18,7 @@
     abilities: [
         (
             name: "Petrify",
-            description: "Next damage taken will deal\nhalf of remaining HP as damage,\nthen consume 1 charge",
+            description: "Next damage taken will deal\nhalf of remaining [vb Hp] as damage,\nthen consume [vb [b 1]] [vb Charge]",
             effect: List([Vfx("apply_status"), ChangeStatus("Petrify")]),
         ),
     ],

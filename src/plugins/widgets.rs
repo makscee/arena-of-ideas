@@ -110,7 +110,7 @@ impl WidgetsPlugin {
                     }
                 }
                 VERSION.cstr().label(ui);
-                current_server().1.cstr().bold().label(ui);
+                current_server().1.cstr_s(CstrStyle::Bold).label(ui);
             });
     }
 }

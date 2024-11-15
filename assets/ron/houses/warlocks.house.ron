@@ -5,7 +5,7 @@
     statuses: [
         (
             name: "Doom",
-            description: "Die in {Charges} turns then summon Doomguard",
+            description: "Die in $Charges turns then summon Doomguard",
             polarity: 0,
             trigger: Fire(
                 triggers: [(TurnEnd, None)],
@@ -35,7 +35,7 @@
     abilities: [
         (
             name: "Doom",
-            description: "Kill target in 5 turns then summon allied [Doomguard]",
+            description: "Kill target in [vb [b 5]] turns then summon allied [Doomguard]",
             effect: List(
                 [
                     WithVar(Charges, I(5), List([Vfx("apply_status"), ChangeStatus("Doom")])),

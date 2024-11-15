@@ -180,10 +180,10 @@ impl LoadingPlugin {
         }
         *NAME_COLORS.lock().unwrap() = colors;
         for status in statuses.values() {
-            definitions.insert(status.name.clone(), Cstr::parse(&status.description));
+            definitions.insert(status.name.clone(), status.description.clone());
         }
         for ability in abilities.values() {
-            definitions.insert(ability.name.clone(), Cstr::parse(&ability.description));
+            definitions.insert(ability.name.clone(), ability.description.clone());
         }
         GameAssets {
             global_settings,

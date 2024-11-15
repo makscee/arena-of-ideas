@@ -10,8 +10,8 @@
         targets: [],
         effects: [
             (
-                Repeat(I(3), WithTarget(RandomUnit(AllEnemyUnits), UseAbility("Magic Missile", 0))),
-                "use [Magic Missile] ({Lvl}) on random enemy 3 times",
+                Repeat(I(3), WithTarget(RandomUnit(AllEnemyUnits), UseAbility("Magic_Missile", 0))),
+                "use [Magic_Missile] $Lvl on random enemy 3 times",
             ),
         ],
     ),

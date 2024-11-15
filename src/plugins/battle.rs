@@ -402,7 +402,7 @@ impl BattlePlugin {
                             .content(move |ui, _| {
                                 ui.vertical(|ui| {
                                     for (t, event) in &events {
-                                        format!("{t:.2}: ").cstr().push(event.cstr()).label(ui);
+                                        (format!("{t:.2}: {}", event.cstr())).label(ui);
                                     }
                                 });
                             })

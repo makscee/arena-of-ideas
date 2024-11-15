@@ -15,13 +15,13 @@
                         If(
                             LessThen(ToI(OwnerStateLast(Charges)), I(4)),
                             List(
-                                [StateAddVar(Charges, Owner, I(1)), UseAbility("Summon Treant", 0)],
+                                [StateAddVar(Charges, Owner, I(1)), UseAbility("Summon_Treant", 0)],
                             ),
                             Noop,
                         ),
                     ],
                 ),
-                "[Summon Treant] (max 4)",
+                "[Summon_Treant] (max 4)",
             ),
         ],
     ),

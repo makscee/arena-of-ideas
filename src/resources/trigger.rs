@@ -138,33 +138,21 @@ impl Trigger {
             } => {
                 for (trigger, rename) in triggers {
                     if let Some(rename) = rename {
-                        cs.0.push(
-                            Cstr::parse(rename)
-                                .replace_absent_color(VISIBLE_LIGHT)
-                                .take(),
-                        );
+                        cs.0.push(format!("[vl {rename}]"));
                     } else {
                         cs.0.push(trigger.cstr_expanded());
                     }
                 }
                 for (target, rename) in targets {
                     if let Some(rename) = rename {
-                        cs.1.push(
-                            Cstr::parse(rename)
-                                .replace_absent_color(VISIBLE_LIGHT)
-                                .take(),
-                        );
+                        cs.1.push(format!("[vl {rename}]"));
                     } else {
                         cs.1.push(target.cstr_expanded());
                     }
                 }
                 for (effect, rename) in effects {
                     if let Some(rename) = rename {
-                        cs.2.push(
-                            Cstr::parse(rename)
-                                .replace_absent_color(VISIBLE_LIGHT)
-                                .take(),
-                        );
+                        cs.2.push(format!("[vl {rename}]"));
                     } else {
                         cs.2.push(effect.cstr_expanded());
                     }
@@ -191,13 +179,11 @@ impl ToCstr for Trigger {
                         n.clone()
                             .map(|s| s.cstr())
                             .unwrap_or_else(|| t.cstr_expanded())
-                            .push("|".cstr())
-                            .take()
+                            + "|"
                     })
                     .collect_vec();
-                let triggers = Cstr::join_vec(triggers).style(CstrStyle::Small).take();
-                c.push("\ntrg:".cstr());
-                c.push(triggers);
+                let triggers = triggers.join("").cstr_s(CstrStyle::Small);
+                c = c + "\ntrg: " + &triggers;
 
                 let targets = targets
                     .iter()
@@ -205,13 +191,11 @@ impl ToCstr for Trigger {
                         n.clone()
                             .map(|s| s.cstr())
                             .unwrap_or_else(|| t.cstr_expanded())
-                            .push("|".cstr())
-                            .take()
+                            + "|"
                     })
                     .collect_vec();
-                let targets = Cstr::join_vec(targets).style(CstrStyle::Small).take();
-                c.push("\ntgt:".cstr());
-                c.push(targets);
+                let targets = targets.join("").cstr_s(CstrStyle::Small);
+                c = c + "\ntar: " + &targets;
 
                 let effects = effects
                     .iter()
@@ -219,20 +203,15 @@ impl ToCstr for Trigger {
                         n.clone()
                             .map(|s| s.cstr())
                             .unwrap_or_else(|| t.cstr_expanded())
-                            .push("|".cstr())
-                            .take()
+                            + "|"
                     })
                     .collect_vec();
-                let effects = Cstr::join_vec(effects).style(CstrStyle::Small).take();
-                c.push("\neff:".cstr());
-                c.push(effects);
+                let effects = effects.join("").cstr_s(CstrStyle::Small);
+                c = c + "\neff: " + &effects;
                 c
             }
             Trigger::Change { .. } => "Change".cstr(),
-            Trigger::List(list) => "List "
-                .cstr()
-                .push(Cstr::join_vec(list.iter().map(|e| e.cstr()).collect_vec()))
-                .take(),
+            Trigger::List(list) => format!("List({})", list.iter().map(|e| e.cstr()).join(", ")),
         }
     }
 

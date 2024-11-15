@@ -1,413 +1,331 @@
-use std::str::FromStr;
-
 use ecolor::Hsva;
 
 use super::*;
 
-#[derive(Default, Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]
-pub struct Cstr {
-    subs: Vec<CstrSub>,
+pub type Cstr = String;
+
+pub trait CstrTrait {
+    fn widget(&self, a: f32, ui: &mut Ui) -> WidgetText;
+    fn label(&self, ui: &mut Ui) -> Response;
+    fn label_alpha(&self, a: f32, ui: &mut Ui) -> Response;
+    fn as_label(&self, ui: &mut Ui) -> Label;
+    fn as_label_alpha(&self, a: f32, ui: &mut Ui) -> Label;
+    fn button(self, ui: &mut Ui) -> Response;
+    fn as_button(self) -> Button;
+    fn get_text(&self) -> String;
+    fn to_colored(&self) -> String;
+    fn print(&self);
+    fn info(&self);
+    fn debug(&self);
+    fn inject_vars(self, f: impl Fn(VarName) -> Option<VarValue>) -> Self;
 }
 
-#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]
-struct CstrSub {
-    text: SubText,
-    color: Option<Color32>,
-    style: CstrStyle,
-}
-
-#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Eq)]
-enum SubText {
-    String(String),
-    Var(VarName),
-    VarText(VarName, String),
-}
-
-impl SubText {
-    fn str(&self) -> &str {
-        match self {
-            SubText::String(s) => s,
-            SubText::Var(var) => var.as_ref(),
-            SubText::VarText(_, _) => default(),
-        }
+impl CstrTrait for Cstr {
+    fn widget(&self, a: f32, ui: &mut Ui) -> WidgetText {
+        cstr_parse(&self.to_string(), a, ui.style())
     }
-}
-
-#[derive(Clone, Copy, Debug, Default, Serialize, Deserialize, PartialEq, Eq)]
-pub enum CstrStyle {
-    #[default]
-    Normal,
-    Small,
-    Bold,
-    Heading,
-    Heading2,
-}
-
-impl CstrStyle {
-    pub fn get_font(&self, style: &Style) -> FontId {
-        match self {
-            Self::Normal => TextStyle::Body,
-            Self::Small => TextStyle::Small,
-            Self::Bold => TextStyle::Name("Bold".into()),
-            Self::Heading => TextStyle::Heading,
-            Self::Heading2 => TextStyle::Name("Heading2".into()),
-        }
-        .resolve(style)
-    }
-}
-
-impl Cstr {
-    pub fn push(&mut self, cstr: Cstr) -> &mut Self {
-        self.subs.extend(cstr.subs.into_iter());
-        self
-    }
-    pub fn push_wrapped(&mut self, mut cstr: Cstr, brackets: (char, char)) -> &mut Self {
-        self.push(
-            cstr.wrap((brackets.0.to_string().cstr(), brackets.1.to_string().cstr()))
-                .take(),
-        )
-    }
-    pub fn push_wrapped_circ(&mut self, mut cstr: Cstr) -> &mut Self {
-        self.push(cstr.wrap(("(".cstr(), ")".cstr())).take())
-    }
-    fn to_colored(&self) -> String {
-        self.subs
-            .iter()
-            .map(
-                |CstrSub {
-                     text,
-                     color,
-                     style: _,
-                 }| {
-                    let color = color.unwrap_or(VISIBLE_DARK);
-                    let color = CustomColor {
-                        r: color.r(),
-                        g: color.g(),
-                        b: color.b(),
-                    };
-                    text.str().custom_color(color)
-                },
-            )
-            .join("")
-    }
-    pub fn print(&self) {
-        println!("{}", self.to_colored())
-    }
-    pub fn info(&self) {
-        info!("{}", self.to_colored())
-    }
-    pub fn debug(&self) {
-        debug!("{}", self.to_colored())
-    }
-
-    pub fn bold(&mut self) -> &mut Self {
-        self.subs.iter_mut().for_each(
-            |CstrSub {
-                 text: _,
-                 color: _,
-                 style,
-             }| *style = CstrStyle::Bold,
-        );
-        self
-    }
-    pub fn color(&mut self, color: Color32) -> &mut Self {
-        for sub in self.subs.iter_mut() {
-            sub.color = Some(color);
-        }
-        self
-    }
-    pub fn replace_absent_color(&mut self, color: Color32) -> &mut Self {
-        for sub in self.subs.iter_mut() {
-            if sub.color.is_none() {
-                sub.color = Some(color);
-            }
-        }
-        self
-    }
-    pub fn style(&mut self, style: CstrStyle) -> &mut Self {
-        for sub in self.subs.iter_mut() {
-            sub.style = style;
-        }
-        self
-    }
-    pub fn wrap(&mut self, mut cs: (Cstr, Cstr)) -> &mut Self {
-        let mut subs = cs.0.subs;
-        subs.append(&mut self.subs);
-        subs.append(&mut cs.1.subs);
-        self.subs = subs;
-        self
-    }
-
-    pub fn join(&mut self, s: &Cstr) -> &mut Self {
-        let subs = mem::take(&mut self.subs);
-        let len = subs.len();
-        for (i, sub) in subs.into_iter().enumerate() {
-            self.subs.push(sub);
-            if i == len - 1 {
-                break;
-            }
-            for sub in &s.subs {
-                self.subs.push(sub.clone());
-            }
-        }
-        self
-    }
-    pub fn join_char(&mut self, c: char) -> &mut Self {
-        self.join(&c.to_string().cstr())
-    }
-    pub fn join_vec(v: Vec<Self>) -> Self {
-        Self {
-            subs: v.into_iter().flat_map(|v| v.subs).collect_vec(),
-        }
-    }
-
-    pub fn button(self, ui: &mut Ui) -> Response {
-        self.as_button().ui(ui)
-    }
-    pub fn as_button(self) -> Button {
-        Button::click(self.clone()).cstr(self)
-    }
-
-    pub fn label(&self, ui: &mut Ui) -> Response {
+    fn label(&self, ui: &mut Ui) -> Response {
         self.as_label(ui)
             .selectable(false)
             .wrap_mode(egui::TextWrapMode::Extend)
             .ui(ui)
     }
-    pub fn label_alpha(&self, a: f32, ui: &mut Ui) -> Response {
+    fn label_alpha(&self, a: f32, ui: &mut Ui) -> Response {
         self.as_label_alpha(a, ui).ui(ui)
     }
-    pub fn as_label(&self, ui: &mut Ui) -> Label {
+    fn as_label(&self, ui: &mut Ui) -> Label {
         self.as_label_alpha(1.0, ui)
     }
-    pub fn as_label_alpha(&self, a: f32, ui: &mut Ui) -> Label {
+    fn as_label_alpha(&self, a: f32, ui: &mut Ui) -> Label {
         Label::new(self.widget(a, ui))
     }
-
-    pub fn widget(&self, alpha: f32, ui: &mut Ui) -> WidgetText {
-        let mut job = LayoutJob::default();
-        let ui_style = ui.style();
-        let alpha = alpha.clamp(0.0, 1.0);
-        for CstrSub { text, color, style } in self.subs.iter() {
-            let color = color
-                .unwrap_or(ui_style.visuals.widgets.noninteractive.fg_stroke.color)
-                .gamma_multiply(alpha);
-            let font_id = style.get_font(ui_style);
-            job.append(
-                text.str(),
-                0.0,
-                TextFormat {
-                    color,
-                    font_id,
-                    ..default()
-                },
-            );
-        }
-        WidgetText::LayoutJob(job)
+    fn button(self, ui: &mut Ui) -> Response {
+        self.as_button().ui(ui)
     }
-
-    pub fn inject_context(&mut self, context: &Context, world: &World) -> &mut Self {
-        for mut sub in self.subs.drain(..).collect_vec() {
-            match &sub.text {
-                SubText::String(_) => self.subs.push(sub),
-                SubText::Var(var) => {
-                    sub.text = match context.get_string(*var, world) {
-                        Ok(v) => v,
-                        Err(e) => format!("err: {e}"),
-                    }
-                    .into();
-                    self.subs.push(sub);
+    fn as_button(self) -> Button {
+        Button::click(self.clone()).cstr(self)
+    }
+    fn get_text(&self) -> String {
+        let mut job: LayoutJob = default();
+        cstr_parse_into_job(self, 1.0, &mut job, &default());
+        job.text
+    }
+    fn to_colored(&self) -> String {
+        let mut job: LayoutJob = default();
+        cstr_parse_into_job(self, 1.0, &mut job, &default());
+        let mut s = String::new();
+        for egui::text::LayoutSection {
+            leading_space: _,
+            byte_range,
+            format,
+        } in job.sections
+        {
+            let text = &job.text[byte_range];
+            let color = format.color;
+            s += &text.custom_color(CustomColor {
+                r: color.r(),
+                g: color.g(),
+                b: color.b(),
+            });
+        }
+        s
+    }
+    fn print(&self) {
+        println!("{}", self.to_colored())
+    }
+    fn info(&self) {
+        info!("{}", self.to_colored())
+    }
+    fn debug(&self) {
+        debug!("{}", self.to_colored())
+    }
+    fn inject_vars(mut self, f: impl Fn(VarName) -> Option<VarValue>) -> Self {
+        while let Some(p) = self.find('$') {
+            let mut var = String::new();
+            for c in self[p + 1..].chars() {
+                if c.is_alphabetic() {
+                    var.push(c);
+                } else {
+                    break;
                 }
-                SubText::VarText(var, text) => {
-                    if context.get_bool(*var, world).unwrap_or_default() {
-                        let cs = Self::parse(text);
-                        self.subs.extend(cs.subs.into_iter());
-                    }
-                }
-            };
+            }
+            let replace = VarName::from_str(&var)
+                .ok()
+                .and_then(|v| f(v))
+                .and_then(|v| v.get_string().ok())
+                .map(|v| format!("[s [vd {var}:]][vb [b {v}]]"))
+                .unwrap_or(format!("[vb {var}]"));
+            self.replace_range(p..(p + var.len() + 1), &replace);
         }
         self
     }
-
-    pub fn inject_ability_state(&mut self, ability: &str, context: &Context) -> &mut Self {
-        for mut sub in self.subs.drain(..).collect_vec() {
-            match &sub.text {
-                SubText::String(_) => self.subs.push(sub),
-                SubText::Var(var) => {
-                    if let Ok(value) = context.get_ability_var(ability, *var) {
-                        sub.text = SubText::String(value.get_string().unwrap())
-                    }
-                    self.subs.push(sub);
-                }
-                SubText::VarText(var, text) => {
-                    if context
-                        .get_ability_var(ability, *var)
-                        .is_ok_and(|v| v.get_bool().unwrap_or_default())
-                    {
-                        let cs = Self::parse(text);
-                        self.subs.extend(cs.subs.into_iter());
-                    }
-                }
-            };
-        }
-        self
-    }
-    fn parse_var(s: &str) -> CstrSub {
-        if let Some((s, text)) = s.split_once('|') {
-            let var = VarName::from_str(s).unwrap();
-            CstrSub {
-                text: SubText::VarText(var, text.into()),
-                color: Some(VISIBLE_BRIGHT),
-                style: default(),
-            }
-        } else {
-            match VarName::from_str(s) {
-                Ok(var) => {
-                    let mut var: CstrSub = var.into();
-                    var.color = Some(VISIBLE_BRIGHT);
-                    var
-                }
-                Err(_) => CstrSub {
-                    text: s.into(),
-                    color: Some(VISIBLE_BRIGHT),
-                    style: CstrStyle::Bold,
-                },
-            }
-        }
-    }
-    fn parse_definition(s: &str) -> CstrSub {
-        let color = name_color(s);
-        CstrSub {
-            text: s.into(),
-            color: Some(color),
-            style: CstrStyle::Bold,
-        }
-    }
-    pub fn parse(s: &str) -> Self {
-        let mut cs = Cstr::default();
-        for (s, bracketed) in s.split_by_brackets('{', '}') {
-            if bracketed {
-                cs.subs.push(Self::parse_var(&s));
-            } else {
-                cs.subs.push(s.into());
-            }
-        }
-        for sub in cs.subs.drain(..).collect_vec() {
-            match sub.text {
-                SubText::String(text) => {
-                    for (s, bracketed) in text.split_by_brackets('[', ']') {
-                        if bracketed {
-                            cs.subs.push(Self::parse_definition(&s));
-                        } else {
-                            cs.subs.push(CstrSub {
-                                text: s.into(),
-                                color: sub.color,
-                                style: sub.style,
-                            });
-                        }
-                    }
-                }
-                _ => cs.subs.push(sub),
-            }
-        }
-
-        cs
-    }
-
-    pub fn get_text(&self) -> String {
-        self.subs.iter().map(|s| s.text.str()).join("")
-    }
-
-    pub fn take(&mut self) -> Self {
-        mem::take(self)
-    }
 }
 
-impl std::fmt::Display for Cstr {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(&self.to_colored())
-    }
-}
-
-pub trait ToCstr: Sized {
-    #[must_use]
+pub trait ToCstr {
     fn cstr(&self) -> Cstr;
-    #[must_use]
     fn cstr_c(&self, color: Color32) -> Cstr {
-        self.cstr().color(color).take()
+        format!("[{} {}]", color.to_hex(), self.cstr())
     }
-    #[must_use]
+    fn cstr_s(&self, style: CstrStyle) -> Cstr {
+        format!("[{} {}]", style.to_str(), self.cstr())
+    }
     fn cstr_cs(&self, color: Color32, style: CstrStyle) -> Cstr {
-        self.cstr().color(color).style(style).take()
+        self.cstr().cstr_c(color).cstr_s(style)
     }
-    #[must_use]
     fn cstr_expanded(&self) -> Cstr {
         self.cstr()
     }
-    #[must_use]
     fn cstr_rainbow(&self) -> Cstr {
-        let mut c = Cstr::default();
+        let mut c: String = default();
         let chars = self.cstr().get_text().chars().collect_vec();
         let len = chars.len();
         for (i, char) in chars.into_iter().enumerate() {
             let h = i as f32 / len as f32 + gt().play_head() * 0.1;
             let color = Hsva::new(h.fract(), 1.0, 1.0, 1.0);
-            c.push(String::from(char).cstr_c(color.into()));
+            c = c + &String::from(char).cstr_c(color.into());
         }
         c
     }
 }
+#[derive(Default)]
+struct StyleState {
+    stack: Vec<CstrStyle>,
+}
 
-impl<'a> ToCstr for &'a str {
-    fn cstr(&self) -> Cstr {
-        Cstr {
-            subs: vec![CstrSub {
-                text: (*self).into(),
-                color: None,
-                style: default(),
-            }],
+#[derive(Clone, Copy, Eq, PartialEq, Hash, Debug)]
+pub enum CstrStyle {
+    Color(Color32),
+    Bold,
+    Small,
+    Heading,
+    Heading2,
+}
+
+impl CstrStyle {
+    fn get_color(&self) -> Option<Color32> {
+        match self {
+            CstrStyle::Color(c) => Some(*c),
+            _ => None,
         }
     }
-    fn cstr_c(&self, color: Color32) -> Cstr {
-        Cstr {
-            subs: vec![CstrSub {
-                text: (*self).into(),
-                color: Some(color),
-                style: default(),
-            }],
+    pub fn get_font(&self, style: &Style) -> Option<FontId> {
+        match self {
+            Self::Small => Some(TextStyle::Small),
+            Self::Bold => Some(TextStyle::Name("Bold".into())),
+            Self::Heading => Some(TextStyle::Heading),
+            Self::Heading2 => Some(TextStyle::Name("Heading2".into())),
+            _ => None,
+        }
+        .and_then(|s| style.text_styles.get(&s).cloned())
+    }
+}
+
+static STRING_STYLE_MAP: OnceCell<HashMap<&'static str, CstrStyle>> = OnceCell::new();
+static STYLE_STRING_MAP: OnceCell<HashMap<CstrStyle, &'static str>> = OnceCell::new();
+pub fn init_style_map() {
+    let pairs = [
+        ("b", CstrStyle::Bold),
+        ("s", CstrStyle::Small),
+        ("h", CstrStyle::Heading),
+        ("h2", CstrStyle::Heading2),
+        ("red", CstrStyle::Color(RED)),
+        ("green", CstrStyle::Color(GREEN)),
+        ("yellow", CstrStyle::Color(YELLOW)),
+        ("vd", CstrStyle::Color(VISIBLE_DARK)),
+        ("vl", CstrStyle::Color(VISIBLE_LIGHT)),
+        ("vb", CstrStyle::Color(VISIBLE_BRIGHT)),
+    ];
+    STRING_STYLE_MAP.set(HashMap::from_iter(pairs)).unwrap();
+    STYLE_STRING_MAP
+        .set(HashMap::from_iter(
+            pairs.into_iter().map(|(str, style)| (style, str)),
+        ))
+        .unwrap();
+}
+
+impl CstrStyle {
+    fn from_str(value: &str) -> Option<Self> {
+        STRING_STYLE_MAP.get().unwrap().get(value).copied()
+    }
+    fn to_str(self) -> &'static str {
+        STYLE_STRING_MAP.get().unwrap().get(&self).unwrap()
+    }
+}
+
+impl StyleState {
+    fn append(&self, text: &mut String, alpha: f32, job: &mut LayoutJob, style: &Style) {
+        let color = self
+            .stack
+            .iter()
+            .rev()
+            .find_map(|s| s.get_color())
+            .unwrap_or_else(|| style.visuals.widgets.noninteractive.fg_stroke.color)
+            .gamma_multiply(alpha);
+        let font_id = self
+            .stack
+            .iter()
+            .rev()
+            .find_map(|s| s.get_font(style))
+            .unwrap_or_default();
+        job.append(
+            text,
+            0.0,
+            TextFormat {
+                font_id,
+                color,
+                ..default()
+            },
+        );
+        text.clear();
+    }
+    fn push(&mut self, style: CstrStyle) {
+        self.stack.push(style);
+    }
+    fn push_token(&mut self, token: &str) {
+        match CstrStyle::from_str(token) {
+            Some(v) => self.stack.push(v),
+            None => error!("Failed to parse token: {token}"),
         }
     }
-    fn cstr_cs(&self, color: Color32, style: CstrStyle) -> Cstr {
-        Cstr {
-            subs: vec![CstrSub {
-                text: (*self).into(),
-                color: Some(color),
-                style,
-            }],
+    fn pop(&mut self) {
+        if self.stack.is_empty() {
+            error!("Tried to pop empty style stack");
+        } else {
+            self.stack.pop();
         }
+    }
+}
+
+#[derive(PartialEq, Clone, Copy)]
+enum ParseState {
+    Token,
+    Var,
+    Text,
+    HexColor,
+}
+
+pub fn cstr_parse(s: &str, alpha: f32, style: &Style) -> WidgetText {
+    let mut job = LayoutJob::default();
+    cstr_parse_into_job(s, alpha, &mut job, style);
+    WidgetText::LayoutJob(job)
+}
+fn cstr_parse_into_job(s: &str, alpha: f32, job: &mut LayoutJob, style: &Style) {
+    let mut cur = String::new();
+    let mut style_state: StyleState = default();
+    let mut parse_state = ParseState::Text;
+    for c in s.chars() {
+        match c {
+            '[' => {
+                style_state.append(&mut cur, alpha, job, style);
+                parse_state = ParseState::Token;
+            }
+            ']' => {
+                if parse_state == ParseState::Token {
+                    let s = cur.cstr_cs(name_color(&cur), CstrStyle::Bold);
+                    cstr_parse_into_job(&s, alpha, job, style);
+                    parse_state = ParseState::Text;
+                    cur.clear();
+                } else {
+                    style_state.append(&mut cur, alpha, job, style);
+                    style_state.pop();
+                }
+            }
+            '$' => {
+                style_state.append(&mut cur, alpha, job, style);
+                parse_state = ParseState::Var;
+            }
+            '#' => {
+                if parse_state == ParseState::Token {
+                    parse_state = ParseState::HexColor;
+                }
+                cur.push(c);
+            }
+            ' ' => {
+                match parse_state {
+                    ParseState::Token => {
+                        style_state.push_token(&cur);
+                        cur.clear();
+                    }
+                    ParseState::Var => match VarName::from_str(&cur) {
+                        Ok(v) => {
+                            let s = format!("[vb {v}] ");
+                            cstr_parse_into_job(&s, alpha, job, style);
+                            cur.clear();
+                        }
+                        Err(e) => error!("Failed to parse var \"{cur}\": {e}"),
+                    },
+                    ParseState::HexColor => {
+                        match Color32::from_hex(&cur) {
+                            Ok(c) => style_state.push(CstrStyle::Color(c)),
+                            Err(e) => error!("Failed to parse hex color \"{cur}\": {e:?}"),
+                        };
+                        cur.clear();
+                    }
+                    ParseState::Text => cur.push(c),
+                };
+                parse_state = ParseState::Text;
+            }
+            _ => cur.push(c),
+        }
+    }
+    if !cur.is_empty() {
+        style_state.append(&mut cur, alpha, job, style);
     }
 }
 
 impl ToCstr for String {
     fn cstr(&self) -> Cstr {
-        Cstr {
-            subs: vec![CstrSub {
-                text: self.clone().into(),
-                color: None,
-                style: default(),
-            }],
-        }
+        self.clone()
+    }
+}
+impl ToCstr for str {
+    fn cstr(&self) -> Cstr {
+        self.to_owned()
     }
 }
 impl ToCstr for VarName {
     fn cstr(&self) -> Cstr {
-        Cstr {
-            subs: vec![CstrSub {
-                text: (*self).into(),
-                color: None,
-                style: default(),
-            }],
-        }
+        self.as_ref().into()
     }
 }
 impl ToCstr for TBaseUnit {
@@ -427,41 +345,31 @@ impl ToCstr for FusedUnit {
 impl ToCstr for TTeam {
     fn cstr(&self) -> Cstr {
         let mut name = if self.name.len() > 20 {
-            self.name
-                .split_at(20)
-                .0
-                .cstr_c(VISIBLE_LIGHT)
-                .push("...".cstr_c(VISIBLE_DARK))
-                .style(CstrStyle::Small)
-                .take()
+            self.name.split_at(20).0.cstr_c(VISIBLE_LIGHT) + &"[s ...]"
         } else {
             self.name.cstr_cs(VISIBLE_LIGHT, CstrStyle::Small)
         };
         if self.units.is_empty() {
             return "_".cstr();
         }
-        let mut units = self
+        let units = self
             .units
             .iter()
             .map(|u| u.cstr_limit(1, false))
             .collect_vec();
-        let ind = units.len() - 1;
-        for unit in &mut units[0..ind] {
-            unit.push(" ".cstr());
-        }
-        name.push_wrapped(units.into(), ('(', ')')).take()
+        name += &format!("({})", units.join(" "));
+        name
     }
 }
 impl ToCstr for TPlayer {
     fn cstr(&self) -> Cstr {
         let supporter_lvl = self.get_supporter_level();
-        let mut c = if supporter_lvl > 0 {
+        let c = if supporter_lvl > 0 {
             "★ ".cstr_c(rarity_color(supporter_lvl - 1))
         } else {
             Cstr::default()
         };
-        c.push(self.name.cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold))
-            .take()
+        c + &self.name.cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold)
     }
 }
 impl ToCstr for GameMode {
@@ -492,104 +400,10 @@ impl ToCstr for i32 {
 }
 impl ToCstr for LootboxKind {
     fn cstr(&self) -> Cstr {
-        "lootbox "
-            .cstr_c(VISIBLE_LIGHT)
-            .push(match self {
+        "lootbox ".cstr_c(VISIBLE_LIGHT)
+            + &match self {
                 LootboxKind::Regular => "regular".cstr_c(VISIBLE_LIGHT),
                 LootboxKind::House(h) => format!("house {h}").cstr_c(name_color(h)),
-            })
-            .take()
-    }
-}
-
-impl From<Cstr> for String {
-    fn from(value: Cstr) -> Self {
-        value.get_text()
-    }
-}
-impl From<&str> for SubText {
-    fn from(value: &str) -> Self {
-        SubText::String(value.into())
-    }
-}
-impl From<String> for SubText {
-    fn from(value: String) -> Self {
-        SubText::String(value)
-    }
-}
-impl From<VarName> for SubText {
-    fn from(value: VarName) -> Self {
-        SubText::Var(value)
-    }
-}
-
-impl From<VarName> for CstrSub {
-    fn from(value: VarName) -> Self {
-        Self {
-            text: value.into(),
-            color: default(),
-            style: default(),
-        }
-    }
-}
-impl From<&str> for CstrSub {
-    fn from(value: &str) -> Self {
-        Self {
-            text: value.into(),
-            color: default(),
-            style: default(),
-        }
-    }
-}
-impl From<String> for CstrSub {
-    fn from(value: String) -> Self {
-        Self {
-            text: value.into(),
-            color: default(),
-            style: default(),
-        }
-    }
-}
-impl From<Vec<Cstr>> for Cstr {
-    fn from(value: Vec<Cstr>) -> Self {
-        Self {
-            subs: value.into_iter().flat_map(|v| v.subs).collect_vec(),
-        }
-    }
-}
-
-impl FusedUnit {
-    pub fn cstr_limit(&self, max_chars: usize, show_mutation: bool) -> Cstr {
-        let mut result =
-            UnitPlugin::name_from_bases(self.bases.iter().map(|s| s.as_str()).collect(), max_chars);
-        if show_mutation {
-            let mutation_str = self
-                .pwr_mutation
-                .cstr_expanded()
-                .push("/".cstr())
-                .push(self.hp_mutation.cstr_expanded())
-                .style(CstrStyle::Small)
-                .take();
-            result.push(" ".cstr()).push(mutation_str);
-        }
-        result
-    }
-}
-
-pub trait JoinCstr {
-    fn join(self, sep: Cstr) -> Cstr;
-}
-
-impl JoinCstr for Vec<Cstr> {
-    fn join(self, sep: Cstr) -> Cstr {
-        let mut res = Cstr::default();
-        let len = self.len();
-        for (i, c) in self.into_iter().enumerate() {
-            res.push(c);
-            if i < len - 1 {
-                res.push(sep.clone());
             }
-        }
-        res
     }
 }

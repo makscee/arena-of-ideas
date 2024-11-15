@@ -68,10 +68,7 @@ fn subscribed() -> MutexGuard<'static, HashMap<StdbTable, StdbCondition>> {
 
 impl ToCstr for StdbQuery {
     fn cstr(&self) -> Cstr {
-        self.table
-            .cstr()
-            .push_wrapped_circ(self.condition.cstr())
-            .take()
+        self.table.cstr() + &format!("({})", self.condition.cstr())
     }
 }
 impl ToCstr for StdbTable {
@@ -792,17 +789,12 @@ pub fn db_subscriptions() {
         } else {
             delta.to_string()
         };
-        Notification::new(
-            "Credits "
-                .cstr_c(YELLOW)
-                .push(delta_txt.cstr_c(VISIBLE_LIGHT))
-                .take(),
-        )
-        .sfx(SoundEffect::Coin)
-        .push_op();
+        Notification::new("Credits ".cstr_c(YELLOW) + &delta_txt.cstr_c(VISIBLE_LIGHT))
+            .sfx(SoundEffect::Coin)
+            .push_op();
     });
     db.quest().on_insert(|_, d| {
-        let text = "New Quest\n".cstr().push(d.cstr()).take();
+        let text = "New Quest\n".cstr() + &d.cstr();
         Notification::new(text).push_op();
     });
     db.quest().on_update(|_, before, after| {
@@ -814,19 +806,13 @@ pub fn db_subscriptions() {
             }
             if before.counter < after.counter {
                 ShopPlugin::maybe_queue_notification(
-                    "Quest Progress:\n"
-                        .cstr_c(VISIBLE_BRIGHT)
-                        .push(after.cstr())
-                        .take(),
+                    "Quest Progress:\n".cstr_c(VISIBLE_BRIGHT) + &after.cstr(),
                     world,
                 )
             }
             if !before.complete && after.complete {
                 ShopPlugin::maybe_queue_notification(
-                    "Quest Complete!\n"
-                        .cstr_c(VISIBLE_BRIGHT)
-                        .push(after.cstr())
-                        .take(),
+                    "Quest Complete!\n".cstr_c(VISIBLE_BRIGHT) + &after.cstr(),
                     world,
                 )
             }
@@ -843,9 +829,7 @@ pub fn db_subscriptions() {
     });
 
     fn receive_unit(unit: &FusedUnit) {
-        "Unit received: "
-            .cstr_c(VISIBLE_LIGHT)
-            .push(unit.cstr_expanded())
+        ("Unit received: ".cstr_c(VISIBLE_LIGHT) + &unit.cstr_expanded())
             .to_notification()
             .sfx(SoundEffect::Inventory)
             .push_op();
@@ -862,9 +846,7 @@ pub fn db_subscriptions() {
     });
     db.unit_item().on_delete(|_, row| {
         if row.owner == player_id() {
-            "Unit removed: "
-                .cstr_c(VISIBLE_LIGHT)
-                .push(row.unit.cstr_expanded())
+            ("Unit removed: ".cstr_c(VISIBLE_LIGHT) + &row.unit.cstr_expanded())
                 .to_notification()
                 .sfx(SoundEffect::Inventory)
                 .push_op();
@@ -872,10 +854,7 @@ pub fn db_subscriptions() {
     });
     fn notify_shard(delta: i32, unit: &str) {
         let delta = delta.cstr_expanded();
-        unit.base_unit()
-            .cstr()
-            .push(" shards ".cstr_c(VISIBLE_LIGHT))
-            .push(delta)
+        (unit.base_unit().cstr() + &" shards ".cstr_c(VISIBLE_LIGHT) + &delta)
             .to_notification()
             .sfx(SoundEffect::Inventory)
             .push_op();
@@ -892,9 +871,7 @@ pub fn db_subscriptions() {
     });
     fn notify_lootbox(delta: i32, kind: &LootboxKind) {
         let delta = delta.cstr_expanded();
-        kind.cstr()
-            .push(" ".cstr())
-            .push(delta)
+        (kind.cstr() + " " + &delta)
             .to_notification()
             .sfx(SoundEffect::Inventory)
             .push_op();
@@ -911,9 +888,8 @@ pub fn db_subscriptions() {
     });
     db.rainbow_shard_item().on_update(|_, before, after| {
         if after.owner == player_id() && before.count != after.count {
-            "Rainbow Shards "
-                .cstr_rainbow()
-                .push((after.count as i32 - before.count as i32).cstr_expanded())
+            ("Rainbow Shards ".cstr_rainbow()
+                + &(after.count as i32 - before.count as i32).cstr_expanded())
                 .to_notification()
                 .sfx(SoundEffect::Inventory)
                 .push_op();

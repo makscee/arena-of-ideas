@@ -34,17 +34,14 @@ impl UnitCard {
         Self::from_packed(unit.into(), world)
     }
     pub fn new(context: &Context, world: &World) -> Result<Self> {
-        debug!("new card");
         let mut effects = context
             .get_value(VarName::EffectsDescription, world)?
-            .get_cstr_list()?;
+            .get_string_list()?;
         for c in effects.iter_mut() {
-            c.inject_context(context, world);
+            *c = c.clone().inject_vars(|v| context.get_value(v, world).ok());
         }
         Ok(Self {
-            name: entity_name(context.owner())
-                .style(CstrStyle::Heading)
-                .take(),
+            name: entity_name(context.owner()).cstr_s(CstrStyle::Heading),
             houses: context
                 .get_value(VarName::Houses, world)?
                 .get_string_list()?,
@@ -65,10 +62,10 @@ impl UnitCard {
             pwr_mutation: context.get_int(VarName::PwrMutation, world)?,
             triggers: context
                 .get_value(VarName::TriggersDescription, world)?
-                .get_cstr_list()?,
+                .get_string_list()?,
             targets: context
                 .get_value(VarName::TargetsDescription, world)?
-                .get_cstr_list()?,
+                .get_string_list()?,
             effects,
             active_statuses: context.all_active_statuses(world),
             used_definitions: HashMap::from_iter(
@@ -77,15 +74,15 @@ impl UnitCard {
                     .get_string_list()?
                     .into_iter()
                     .map(|name| {
-                        (
-                            name.clone(),
+                        (name.clone(), {
+                            let context = context
+                                .clone()
+                                .set_ability_state(&name, world)
+                                .unwrap()
+                                .take();
                             definition(&name)
-                                .inject_ability_state(
-                                    &name,
-                                    context.clone().set_ability_state(&name, world).unwrap(),
-                                )
-                                .take(),
-                        )
+                                .inject_vars(|var| context.get_ability_var(&name, var).ok())
+                        })
                     }),
             ),
         })
@@ -93,10 +90,7 @@ impl UnitCard {
     pub fn ui(&self, ui: &mut Ui) {
         let fusible_lvl = self.houses.len() as i32 + 1;
         let fusible_str = if fusible_lvl > self.lvl {
-            "Fusible from lvl "
-                .cstr()
-                .push(fusible_lvl.to_string().cstr_cs(PURPLE, CstrStyle::Bold))
-                .take()
+            "Fusible from lvl ".cstr() + &fusible_lvl.to_string().cstr_cs(PURPLE, CstrStyle::Bold)
         } else {
             "Fusible".cstr_cs(YELLOW, CstrStyle::Bold)
         };
@@ -122,59 +116,75 @@ impl UnitCard {
             ui.horizontal_wrapped(|ui| {
                 let var = VarName::Pwr;
                 let color = YELLOW;
-                var.cstr_c(color)
-                    .push(": ".cstr_c(color))
-                    .push(self.pwr.to_string().cstr_c(VISIBLE_BRIGHT))
-                    .style(CstrStyle::Bold)
-                    .push(mutation_cstr(self.pwr_mutation))
-                    .label(ui);
+                format!(
+                    "{}: {} {}",
+                    var.cstr_c(color),
+                    self.pwr.to_string().cstr_c(VISIBLE_BRIGHT),
+                    mutation_cstr(self.pwr_mutation)
+                )
+                .cstr_s(CstrStyle::Bold)
+                .label(ui);
+
                 ui.add_space(2.0);
                 let var = VarName::Hp;
                 let color = RED;
-                var.cstr_c(color)
-                    .push(": ".cstr_c(color))
-                    .push(self.hp.to_string().cstr_c(VISIBLE_BRIGHT))
-                    .style(CstrStyle::Bold)
-                    .push(mutation_cstr(self.hp_mutation))
-                    .label(ui);
+                format!(
+                    "{}: {} {}",
+                    var.cstr_c(color),
+                    self.hp.to_string().cstr_c(VISIBLE_BRIGHT),
+                    mutation_cstr(self.hp_mutation)
+                )
+                .cstr_s(CstrStyle::Bold)
+                .label(ui);
+
                 ui.add_space(2.0);
                 let var = VarName::Lvl;
                 let color = PURPLE;
-                var.cstr_c(color)
-                    .push(": ".cstr_c(color))
-                    .push(self.lvl.to_string().cstr_c(VISIBLE_BRIGHT))
-                    .style(CstrStyle::Bold)
-                    .label(ui);
+                format!(
+                    "{}: {}",
+                    var.cstr_c(color),
+                    self.lvl.to_string().cstr_c(VISIBLE_BRIGHT),
+                )
+                .cstr_s(CstrStyle::Bold)
+                .label(ui);
+
                 ui.add_space(2.0);
                 let var = VarName::Xp;
                 let color = LIGHT_PURPLE;
-                var.cstr_c(color)
-                    .push(": ".cstr_c(color))
-                    .push(self.xp.to_string().cstr_c(VISIBLE_BRIGHT))
-                    .push("/".cstr())
-                    .push((self.lvl).to_string().cstr_c(VISIBLE_BRIGHT))
-                    .style(CstrStyle::Bold)
-                    .label(ui);
+                format!(
+                    "{}: {}/{}",
+                    var.cstr_c(color),
+                    self.xp.to_string().cstr_c(VISIBLE_BRIGHT),
+                    (self.lvl).to_string().cstr_c(VISIBLE_BRIGHT),
+                )
+                .cstr_s(CstrStyle::Bold)
+                .label(ui);
+
                 if self.deafness > 0.01 {
                     ui.add_space(2.0);
                     let var = VarName::Deafness;
                     let color = RED;
-                    var.cstr_c(color)
-                        .push(": ".cstr_c(color))
-                        .push(format!("{}%", (self.deafness * 100.0) as i32).cstr_c(RED))
-                        .style(CstrStyle::Bold)
-                        .label(ui);
+                    format!(
+                        "{}: {}",
+                        var.cstr_c(color),
+                        ((self.deafness * 100.0) as i32).to_string().cstr_c(RED),
+                    )
+                    .cstr_s(CstrStyle::Bold)
+                    .label(ui);
                 }
                 ui.add_space(2.0);
             });
 
             fusible_str.label(ui);
 
-            let mut houses_cstr = Cstr::default();
-            for (i, house) in self.houses.iter().enumerate() {
-                houses_cstr.push(house.cstr_c(self.house_colors[i]));
-            }
-            houses_cstr.join(&" + ".cstr()).as_label(ui).wrap().ui(ui);
+            self.houses
+                .iter()
+                .enumerate()
+                .map(|(i, h)| h.cstr_c(self.house_colors[i]))
+                .join(" + ")
+                .as_label(ui)
+                .wrap()
+                .ui(ui);
             ui.add_space(2.0);
         })
         .response
@@ -216,7 +226,7 @@ impl UnitCard {
             if !self.active_statuses.is_empty() {
                 ui.horizontal_wrapped(|ui| {
                     for (name, charges) in &self.active_statuses {
-                        format!("{name} ({charges})")
+                        format!("{name} ($Charges)")
                             .cstr_c(name_color(&name))
                             .label(ui);
                     }

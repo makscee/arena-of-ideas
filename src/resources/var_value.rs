@@ -8,7 +8,6 @@ pub enum VarValue {
     Float(f32),
     Vec2(Vec2),
     String(String),
-    Cstr(Cstr),
     Bool(bool),
     Faction(Faction),
     Color(Color),
@@ -187,25 +186,6 @@ impl VarValue {
         }
         Ok(vec![self.get_string()?])
     }
-    pub fn get_cstr(&self) -> Result<Cstr> {
-        match self {
-            VarValue::None => Ok(default()),
-            VarValue::Cstr(v) => Ok(v.clone()),
-            _ => Err(anyhow!("Cstr not supported by {self}")),
-        }
-    }
-    pub fn get_cstr_list(&self) -> Result<Vec<Cstr>> {
-        match self {
-            VarValue::List(list) => {
-                return Ok(list
-                    .into_iter()
-                    .filter_map(|v| v.get_cstr().ok())
-                    .collect_vec());
-            }
-            _ => {}
-        }
-        Ok(vec![self.get_cstr()?])
-    }
     pub fn get_faction(&self) -> Result<Faction> {
         match self {
             VarValue::Faction(v) => Ok(*v),
@@ -301,8 +281,7 @@ impl VarValue {
             (VarValue::Int(a), VarValue::Int(b)) => Ok(a.cmp(b)),
             (VarValue::U64(a), VarValue::U64(b)) => Ok(a.cmp(b)),
             (VarValue::Bool(a), VarValue::Bool(b)) => Ok(a.cmp(b)),
-            (VarValue::String(a), VarValue::String(b)) => Ok(a.cmp(b)),
-            (VarValue::Cstr(a), VarValue::Cstr(b)) => Ok(a.get_text().cmp(&b.get_text())),
+            (VarValue::String(a), VarValue::String(b)) => Ok(a.get_text().cmp(&b.get_text())),
             _ => Err(anyhow!("Comparing {a} and {b} not supported")),
         }
     }
@@ -357,7 +336,6 @@ impl std::hash::Hash for VarValue {
                 c.g().hash(state);
                 c.b().hash(state);
             }
-            VarValue::Cstr(v) => v.to_string().hash(state),
             VarValue::U64(v) => (*v).hash(state),
         };
     }
@@ -371,7 +349,6 @@ impl ToCstr for VarValue {
                 let c = c.c32();
                 c.to_hex().cstr_c(c)
             }
-            VarValue::Cstr(c) => c.clone(),
             _ => self.to_string().cstr(),
         }
     }
@@ -384,7 +361,6 @@ impl std::fmt::Display for VarValue {
             VarValue::Float(v) => write!(f, "{:.2}", v),
             VarValue::Vec2(v) => write!(f, "{:.2}, {:.2}", v.x, v.y),
             VarValue::String(v) => write!(f, "{}", v),
-            VarValue::Cstr(v) => write!(f, "{}", v),
             VarValue::Bool(v) => write!(f, "{}", v),
             VarValue::Faction(v) => write!(f, "{}", v),
             VarValue::Color(v) => write!(f, "{}", v.c32().to_hex()),
@@ -455,11 +431,6 @@ impl From<Faction> for VarValue {
         VarValue::Faction(value)
     }
 }
-impl From<Cstr> for VarValue {
-    fn from(value: Cstr) -> Self {
-        VarValue::Cstr(value)
-    }
-}
 impl From<u64> for VarValue {
     fn from(value: u64) -> Self {
         VarValue::U64(value)
@@ -481,16 +452,12 @@ impl PartialEq for VarValue {
             (Self::Float(l0), Self::Float(r0)) => l0 == r0,
             (Self::Vec2(l0), Self::Vec2(r0)) => l0 == r0,
             (Self::String(l0), Self::String(r0)) => l0 == r0,
-            (Self::Cstr(l0), Self::Cstr(r0)) => l0 == r0,
             (Self::Bool(l0), Self::Bool(r0)) => l0 == r0,
             (Self::Faction(l0), Self::Faction(r0)) => l0 == r0,
             (Self::Color(l0), Self::Color(r0)) => l0 == r0,
             (Self::Entity(l0), Self::Entity(r0)) => l0 == r0,
             (Self::U64(l0), Self::U64(r0)) => l0 == r0,
             (Self::List(l0), Self::List(r0)) => l0 == r0,
-            (Self::Cstr(a), Self::String(b)) | (Self::String(b), Self::Cstr(a)) => {
-                a.get_text().eq(b)
-            }
             _ => core::mem::discriminant(self) == core::mem::discriminant(other),
         }
     }

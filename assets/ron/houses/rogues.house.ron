@@ -5,7 +5,7 @@
     statuses: [
         (
             name: "Expose",
-            description: "Damage taken +{Charges}",
+            description: "Damage taken +$Charges",
             polarity: -1,
             trigger: Change(trigger: IncomingDamage, expr: Context(Charges)),
         ),
@@ -13,12 +13,12 @@
     abilities: [
         (
             name: "Expose",
-            description: "Increase taken damage by {1}",
+            description: "Increase taken damage by $Charges",
             effect: List([Vfx("apply_status"), ChangeStatus("Expose")]),
         ),
         (
             name: "Rob",
-            description: "Steal all positive statuses, limit max {Charges}",
+            description: "Steal all positive statuses, max $Charges",
             effect: List([WithVar(Polarity, I(1), StealAllStatuses), Vfx("apply_status")]),
         ),
     ],

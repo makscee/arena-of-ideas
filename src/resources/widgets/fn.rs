@@ -1,5 +1,3 @@
-use egui::ScrollArea;
-
 use super::*;
 
 pub fn br(ui: &mut Ui) {

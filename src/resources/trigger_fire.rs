@@ -317,51 +317,45 @@ impl ToCstr for FireTrigger {
     }
     fn cstr_expanded(&self) -> Cstr {
         match self {
-            FireTrigger::List(list) => {
-                Cstr::join_vec(list.iter().map(|t| t.cstr_c(VISIBLE_LIGHT)).collect_vec())
-                    .join(&" + ".cstr_c(VISIBLE_DARK))
-                    .take()
+            FireTrigger::List(list) => list
+                .iter()
+                .map(|t| t.cstr_c(VISIBLE_LIGHT))
+                .join(&" + ".cstr_c(VISIBLE_DARK)),
+            FireTrigger::Period(_, delay, trigger) => {
+                format!("Every {} ", delay + 1).cstr_c(VISIBLE_LIGHT) + &trigger.cstr_expanded()
             }
-            FireTrigger::Period(_, delay, trigger) => format!("Every {} ", delay + 1)
-                .cstr_c(VISIBLE_LIGHT)
-                .push(trigger.cstr_expanded())
-                .take(),
-            FireTrigger::OnceAfter(delay, trigger) => format!("Once in {delay} ")
-                .cstr_c(VISIBLE_LIGHT)
-                .push(trigger.cstr_expanded())
-                .take(),
-            FireTrigger::If(cond, trigger) => trigger
-                .cstr_expanded()
-                .push(" if ".cstr())
-                .push(cond.cstr_expanded())
-                .take(),
+            FireTrigger::OnceAfter(delay, trigger) => {
+                format!("Once in {delay} ").cstr_c(VISIBLE_LIGHT) + &trigger.cstr_expanded()
+            }
+            FireTrigger::If(cond, trigger) => {
+                trigger.cstr_expanded() + " if " + &cond.cstr_expanded()
+            }
             FireTrigger::UnitUsedAbility(name)
             | FireTrigger::AllyUsedAbility(name)
-            | FireTrigger::EnemyUsedAbility(name) => self
-                .as_ref()
-                .to_case(Case::Lower)
-                .cstr_c(VISIBLE_LIGHT)
-                .push(format!(" {name}").cstr_cs(name_color(name), CstrStyle::Bold))
-                .take(),
-            FireTrigger::StatusReceived(name, polarity) => self
-                .as_ref()
-                .to_case(Case::Lower)
-                .cstr_c(VISIBLE_LIGHT)
-                .push_wrapped_circ(if let Some(name) = name {
-                    format!("{name}").cstr_cs(name_color(name), CstrStyle::Bold)
-                } else {
-                    let mut c = "any".cstr_c(VISIBLE_LIGHT);
-                    if let Some(polarity) = polarity {
-                        c.push(match polarity {
-                            1 => " positive".cstr_c(GREEN),
-                            0 => " neutral".cstr_c(VISIBLE_LIGHT),
-                            -1 => " negative".cstr_c(RED),
-                            _ => panic!(),
-                        });
-                    }
-                    c
-                })
-                .take(),
+            | FireTrigger::EnemyUsedAbility(name) => {
+                self.as_ref().to_case(Case::Lower).cstr_c(VISIBLE_LIGHT)
+                    + &format!(" {name}").cstr_cs(name_color(name), CstrStyle::Bold)
+            }
+            FireTrigger::StatusReceived(name, polarity) => {
+                self.as_ref().to_case(Case::Lower).cstr_c(VISIBLE_LIGHT)
+                    + &format!(
+                        "({})",
+                        if let Some(name) = name {
+                            format!("{name}").cstr_cs(name_color(name), CstrStyle::Bold)
+                        } else {
+                            let mut c = "any".cstr_c(VISIBLE_LIGHT);
+                            if let Some(polarity) = polarity {
+                                c += &match polarity {
+                                    1 => " positive".cstr_c(GREEN),
+                                    0 => " neutral".cstr_c(VISIBLE_LIGHT),
+                                    -1 => " negative".cstr_c(RED),
+                                    _ => panic!(),
+                                };
+                            }
+                            c
+                        }
+                    )
+            }
             FireTrigger::None
             | FireTrigger::AfterIncomingDamage
             | FireTrigger::AfterDamageTaken

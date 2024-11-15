@@ -6,12 +6,12 @@
     abilities: [
         (
             name: "Amnesia",
-            description: "Reduce all statuses, limit max {Charges}",
+            description: "Reduce all statuses, limit max [vb Charges]",
             effect: List([ClearAllStatuses, Vfx("apply_status")]),
         ),
         (
             name: "Betray",
-            description: "Deal PWR DMG to adjacent allies",
+            description: "Deal $Pwr $Dmg to adjacent allies",
             effect: List(
                 [
                     Vfx("apply_status"),

@@ -521,12 +521,7 @@ impl ToCstr for Expression {
         let mut s = self.as_ref().to_case(Case::Lower).cstr_c(VISIBLE_LIGHT);
         match self {
             Expression::Value(v) => {
-                s.push(
-                    v.cstr()
-                        .wrap(("(".cstr(), ")".cstr()))
-                        .color(VISIBLE_LIGHT)
-                        .take(),
-                );
+                s += &format!("({})", v.cstr()).cstr_c(VISIBLE_LIGHT);
             }
             Expression::OwnerState(v)
             | Expression::TargetState(v)
@@ -534,54 +529,42 @@ impl ToCstr for Expression {
             | Expression::OwnerStateLast(v)
             | Expression::TargetStateLast(v)
             | Expression::CasterStateLast(v) => {
-                s.push(
-                    v.cstr()
-                        .wrap(("(".cstr(), ")".cstr()))
-                        .color(VISIBLE_LIGHT)
-                        .take(),
-                );
+                s += &format!("({})", v.cstr()).cstr_c(VISIBLE_LIGHT);
             }
             Expression::Context(v) => s = (*v).cstr_cs(VISIBLE_BRIGHT, CstrStyle::Bold),
             Expression::AbilityContext(name, v)
             | Expression::AbilityState(name, v)
             | Expression::StatusState(name, v)
             | Expression::StatusStateLast(name, v) => {
-                s.push(
-                    name.cstr_cs(name_color(name), CstrStyle::Bold)
-                        .push(format!(", {v}").cstr())
-                        .wrap(("(".cstr(), ")".cstr()))
-                        .take(),
+                s += &format!(
+                    "({}, {})",
+                    name.cstr_cs(name_color(name), CstrStyle::Bold),
+                    v.cstr_s(CstrStyle::Bold).cstr()
                 );
             }
             Expression::StatusCharges(v) => {
-                s.push(
-                    v.cstr_cs(name_color(v), CstrStyle::Bold)
-                        .wrap(("(".cstr(), ")".cstr()))
-                        .take(),
-                );
+                s += &format!("({})", v.cstr_cs(name_color(v), CstrStyle::Bold));
             }
             Expression::HexColor(v) => {
-                s.push(v.cstr().wrap(("(".cstr(), ")".cstr())).take());
+                s += &format!(
+                    "({})",
+                    v.cstr_c(Color32::from_hex(v).unwrap_or(MISSING_COLOR))
+                );
             }
             Expression::F(v) => {
-                s.push(v.to_string().cstr().wrap(("(".cstr(), ")".cstr())).take());
+                s += &format!("({v})");
             }
             Expression::I(v) => {
-                s.push(v.to_string().cstr().wrap(("(".cstr(), ")".cstr())).take());
+                s += &format!("({v})");
             }
             Expression::B(v) => {
-                s.push(v.to_string().cstr().wrap(("(".cstr(), ")".cstr())).take());
+                s += &format!("({v})");
             }
             Expression::S(v) => {
-                s.push(v.cstr().wrap(("(\"".cstr(), "\")".cstr())).take());
+                s += &format!("({v})");
             }
             Expression::V2(x, y) => {
-                s.push(
-                    format!("{x}, {y}")
-                        .cstr()
-                        .wrap(("(".cstr(), ")".cstr()))
-                        .take(),
-                );
+                s += &format!("({x}, {y})");
             }
             Expression::Vec2E(v)
             | Expression::ToI(v)
@@ -603,7 +586,7 @@ impl ToCstr for Expression {
             | Expression::Fract(v)
             | Expression::Ceil(v)
             | Expression::SlotUnit(v) => {
-                s.push(v.cstr_expanded().wrap(("(".cstr(), ")".cstr())).take());
+                s += &format!("({})", v.cstr_expanded());
             }
             Expression::Vec2EE(a, b)
             | Expression::Sum(a, b)
@@ -620,55 +603,28 @@ impl ToCstr for Expression {
             | Expression::Equals(a, b)
             | Expression::GreaterThen(a, b)
             | Expression::LessThen(a, b) => {
-                s.push(
-                    a.cstr_expanded()
-                        .push(", ".cstr())
-                        .push(b.cstr_expanded())
-                        .wrap(("(".cstr(), ")".cstr()))
-                        .take(),
-                );
+                s += &format!("({}, {})", a.cstr_expanded(), b.cstr_expanded());
             }
             Expression::If(i, t, e) => {
-                s.push(
-                    format!("if ")
-                        .cstr()
-                        .push(i.cstr_expanded().wrap(("(".cstr(), ")".cstr())).take())
-                        .take(),
-                )
-                .push(
-                    format!("then ")
-                        .cstr()
-                        .push(t.cstr_expanded().wrap(("(".cstr(), ")".cstr())).take())
-                        .take(),
-                )
-                .push(
-                    format!("else ")
-                        .cstr()
-                        .push(e.cstr_expanded().wrap(("(".cstr(), ")".cstr())).take())
-                        .take(),
+                s += &format!(
+                    "({}) then ({}) else ({})",
+                    i.cstr_expanded(),
+                    t.cstr_expanded(),
+                    e.cstr_expanded()
                 );
             }
             Expression::WithVar(var, val, e) => {
-                s.push(
-                    var.cstr()
-                        .push(val.cstr_expanded())
-                        .push(e.cstr_expanded())
-                        .join(&", ".cstr())
-                        .wrap(("(".cstr(), ")".cstr()))
-                        .take(),
+                s += &format!(
+                    "{} {}, ({})",
+                    var.cstr(),
+                    val.cstr_expanded(),
+                    e.cstr_expanded(),
                 );
             }
             Expression::FilterStatusUnits(status, u)
             | Expression::FilterNoStatusUnits(status, u)
             | Expression::StatusEntity(status, u) => {
-                s.push(
-                    status
-                        .cstr_c(name_color(status))
-                        .push(", ".cstr())
-                        .push(u.cstr_expanded())
-                        .wrap(("(".cstr(), ")".cstr()))
-                        .take(),
-                );
+                s += &format!("({status}, {})", u.cstr_expanded());
             }
 
             Expression::One
@@ -1015,12 +971,7 @@ fn show_value(value: Result<VarValue>, ui: &mut Ui) {
     let w = ui.available_width();
     ui.set_max_width(ui.min_size().x);
     match value {
-        Ok(v) => v
-            .cstr()
-            .style(CstrStyle::Small)
-            .as_label(ui)
-            .truncate()
-            .ui(ui),
+        Ok(v) => v.cstr_s(CstrStyle::Small).as_label(ui).truncate().ui(ui),
         Err(e) => e
             .to_string()
             .cstr_cs(RED, CstrStyle::Small)

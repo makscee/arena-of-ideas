@@ -42,11 +42,10 @@ impl EnumSwitcher {
         let mut clicked = false;
         fn modify_c(es: &EnumSwitcher, c: &mut Cstr) {
             if let Some(style) = es.style {
-                c.style(style);
+                *c = c.cstr_s(style);
             }
-            if let Some(mut prefix) = es.prefix.clone() {
-                mem::swap(c, &mut prefix);
-                c.push(prefix);
+            if let Some(prefix) = es.prefix.clone() {
+                *c = prefix + c;
             }
         }
         if self.columns {
@@ -60,13 +59,7 @@ impl EnumSwitcher {
                     let mut c = e.cstr();
                     modify_c(&self, &mut c);
                     let active = e.eq(value);
-                    if Button::click(c.get_text())
-                        .cstr(c)
-                        .active(active)
-                        .ui(&mut ui[i])
-                        .clicked()
-                        && !active
-                    {
+                    if Button::click(c).active(active).ui(&mut ui[i]).clicked() && !active {
                         clicked = true;
                         *value = e;
                     }

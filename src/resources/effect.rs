@@ -50,15 +50,11 @@ impl Effect {
             | Effect::StateAddVar(..)
             | Effect::StatusSetVar(..)
             | Effect::Vfx(..) => context.log(Some(
-                "Invoke: "
-                    .cstr_c(YELLOW)
-                    .push(
-                        self.cstr_expanded()
-                            .inject_context(context, world)
-                            .push("\n".cstr())
-                            .take(),
-                    )
-                    .take(),
+                "Invoke: ".cstr_c(YELLOW)
+                    + &self
+                        .cstr_expanded()
+                        .inject_vars(|v| context.get_value(v, world).ok())
+                    + "\n",
             )),
             Effect::WithTarget(..)
             | Effect::WithOwner(..)
@@ -169,7 +165,7 @@ impl Effect {
                 let charges = context.get_charges(world).unwrap_or(1);
                 let charges = charges.at_most(Status::get_charges(name, target, world)?);
                 if charges <= 0 {
-                    return Err(anyhow!("Status {name} is absent (c: {charges})"));
+                    return Err(anyhow!("Status {name} is absent (c: $Charges)"));
                 }
                 Status::change_charges_with_text(name, target, -charges, world);
             }
@@ -236,10 +232,7 @@ impl Effect {
                 };
                 TextColumnPlugin::add(
                     caster,
-                    "use "
-                        .cstr()
-                        .push(txt.cstr_cs(name_color(name), CstrStyle::Bold))
-                        .take(),
+                    "use ".cstr() + &txt.cstr_cs(name_color(name), CstrStyle::Bold),
                     world,
                 );
             }
@@ -254,11 +247,12 @@ impl Effect {
                 );
                 TextColumnPlugin::add(
                     owner,
-                    name.cstr_cs(name_color(name), CstrStyle::Bold)
-                        .push(var.cstr_c(VISIBLE_BRIGHT))
-                        .push(format!("+{delta}").cstr_c(VISIBLE_LIGHT))
-                        .join(&" ".cstr())
-                        .take(),
+                    format!(
+                        "{} {} {}",
+                        name.cstr_cs(name_color(name), CstrStyle::Bold),
+                        var.cstr_c(VISIBLE_BRIGHT),
+                        format!(" +{delta}").cstr_c(VISIBLE_LIGHT)
+                    ),
                     world,
                 );
             }
@@ -461,44 +455,40 @@ impl ToCstr for Effect {
     fn cstr_expanded(&self) -> Cstr {
         match self {
             Effect::UseAbility(name, base) => {
-                let mut c = "use "
-                    .cstr_c(VISIBLE_LIGHT)
-                    .push(name.cstr_cs(name_color(name), CstrStyle::Bold))
-                    .push(" lvl.".cstr_cs(VISIBLE_DARK, CstrStyle::Small))
-                    .push(VarName::Lvl.cstr_cs(VISIBLE_BRIGHT, CstrStyle::Bold))
-                    .take();
+                let mut c = "use ".cstr_c(VISIBLE_LIGHT)
+                    + &name.cstr_cs(name_color(name), CstrStyle::Bold)
+                    + " $Lvl";
                 if *base > 0 {
-                    c.push(format!(" +{base}").cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold));
+                    c += &format!(" +{base}").cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold);
                 }
                 c
             }
             Effect::Summon(name, after) => {
-                let mut c = "summon "
-                    .cstr_c(VISIBLE_LIGHT)
-                    .push(name.cstr_cs(name_color(name), CstrStyle::Bold))
-                    .take();
+                let mut c = "summon ".cstr_c(VISIBLE_LIGHT)
+                    + &name.cstr_cs(name_color(name), CstrStyle::Bold);
                 if let Some(after) = after {
-                    c.push(" then ".cstr().push(after.cstr_expanded()).take());
+                    c = format!("{c} then {}", after.cstr_expanded());
                 }
                 c
             }
-            Effect::AbilityStateAddVar(ability, var, value) => ability
-                .cstr_cs(name_color(ability), CstrStyle::Bold)
-                .push(var.to_string().cstr_c(VISIBLE_BRIGHT))
-                .push("add ".cstr_c(VISIBLE_LIGHT))
-                .join_char(' ')
-                .push(value.cstr_cs(VISIBLE_BRIGHT, CstrStyle::Bold))
-                .take(),
+            Effect::AbilityStateAddVar(ability, var, value) => {
+                format!(
+                    "{} {} add {}",
+                    ability.cstr_cs(name_color(ability), CstrStyle::Bold),
+                    var.cstr_c(VISIBLE_BRIGHT),
+                    value.cstr_cs(VISIBLE_BRIGHT, CstrStyle::Bold)
+                )
+            }
             Effect::Vfx(name) => format!("Vfx({name})").cstr_c(VISIBLE_LIGHT),
-            Effect::List(l) => "List"
-                .cstr()
-                .push_wrapped_circ(
+            Effect::List(l) => {
+                format!(
+                    "List({})",
                     l.into_iter()
                         .map(|l| l.cstr_expanded())
                         .collect_vec()
-                        .join(" + ".cstr()),
+                        .join(" + ")
                 )
-                .take(),
+            }
             _ => self.as_ref().cstr_c(VISIBLE_LIGHT),
         }
     }

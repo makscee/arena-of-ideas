@@ -10,8 +10,8 @@
         targets: [],
         effects: [
             (
-                AbilityStateAddVar("Magic Missile", Damage, Context(Lvl)),
-                Some("[Magic Missle] DMG increase by {Lvl}"),
+                AbilityStateAddVar("Magic_Missile", Damage, Context(Lvl)),
+                Some("[Magic_Missile] [vb Dmg] increase by $Lvl"),
             ),
         ],
     ),

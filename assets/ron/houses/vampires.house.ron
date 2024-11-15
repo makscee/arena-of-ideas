@@ -6,19 +6,19 @@
     statuses: [
         (
             name: "Siphoned Out",
-            description: "-{Charges} HP",
+            description: "-$Charges [vb Hp]",
             polarity: -1,
             trigger: Change(trigger: Var(Hp), expr: Sub(I(0), Context(Charges))),
         ),
         (
             name: "Siphon HP",
-            description: "+{Charges} Hp",
+            description: "+$Charges [vb Hp]",
             polarity: 1,
             trigger: Change(trigger: Var(Hp), expr: Context(Charges)),
         ),
         (
-            name: "Siphon PWR",
-            description: "+{Charges} Pwr",
+            name: "Siphon $Pwr",
+            description: "+$Charges [vb Pwr]",
             polarity: 1,
             trigger: Change(trigger: Var(Pwr), expr: Context(Charges)),
         ),
@@ -26,7 +26,7 @@
     abilities: [
         (
             name: "Siphon",
-            description: "Drain {1} HP from target{M1|, gain +1 PWR for each}",
+            description: "Drain [vb [b 1]] [vb Hp] from target{M1|, gain +1 $Pwr for each}",
             effect: List(
                 [
                     Vfx("apply_status"),
@@ -39,7 +39,7 @@
                                 WithTarget(Owner, ChangeStatus("Siphon HP")),
                                 If(
                                     AbilityContext("Siphon", M1),
-                                    WithTarget(Owner, ChangeStatus("Siphon PWR")),
+                                    WithTarget(Owner, ChangeStatus("Siphon $Pwr")),
                                     Noop,
                                 ),
                             ],

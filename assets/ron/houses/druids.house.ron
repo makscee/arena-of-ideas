@@ -5,7 +5,7 @@
     statuses: [
         (
             name: "Thorns",
-            description: "Deal {Charges} DMG to attacker",
+            description: "Deal $Charges $Dmg to attacker",
             polarity: 1,
             trigger: Fire(
                 triggers: [(AfterDamageTaken, None)],
@@ -17,12 +17,12 @@
     abilities: [
         (
             name: "Thorns",
-            description: "Deal {1} DMG to attacker",
+            description: "Deal [vb [b 1]] $Dmg to attacker",
             effect: List([Vfx("apply_status"), ChangeStatus("Thorns")]),
         ),
         (
-            name: "Summon Treant",
-            description: "Summon 0/3 unit with [Thorns] ({3})",
+            name: "Summon_Treant",
+            description: "Summon [vb [b 0/3]] unit with [Thorns] ([vb [b 3]])",
             effect: Summon("Treant", WithOwner(Target, WithVar(Charges, I(3), ChangeStatus("Thorns")))),
         ),
     ],

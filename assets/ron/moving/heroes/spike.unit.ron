@@ -8,7 +8,7 @@
     trigger: Fire(
         triggers: [(BattleStart, None)],
         targets: [],
-        effects: [(AbilityStateAddVar("Shield", M1, I(1)), "[Shield] reflects damage x{Lvl}")],
+        effects: [(AbilityStateAddVar("Shield", M1, I(1)), "[Shield] reflects damage x$Lvl")],
     ),
     representation: (
         material: Shape(

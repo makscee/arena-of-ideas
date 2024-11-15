@@ -142,12 +142,9 @@ impl SectionMenu {
                         IconMenu::default().show(ui, world);
                         if let Some(wallet) = cn().db.wallet().get_current() {
                             ui.add_space(20.0);
-                            wallet
-                                .amount
-                                .to_string()
-                                .cstr_c(VISIBLE_LIGHT)
-                                .push(format!(" {CREDITS_SYM}").cstr_c(YELLOW))
-                                .style(CstrStyle::Bold)
+                            (wallet.amount.to_string().cstr_c(VISIBLE_LIGHT)
+                                + &format!(" {CREDITS_SYM}").cstr_c(YELLOW))
+                                .cstr_s(CstrStyle::Bold)
                                 .label(ui);
                         }
                     }

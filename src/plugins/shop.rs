@@ -416,25 +416,17 @@ impl ShopPlugin {
                         && run.team.get_team().units.is_empty()
                         && run.mode == GameMode::ArenaNormal;
                     let text = if run.free_rerolls > 0 {
-                        "-0 G"
-                            .cstr_c(YELLOW)
-                            .push(if just_started {
+                        "-0 G".cstr_c(YELLOW)
+                            + &if just_started {
                                 " (∞)".cstr_c(GREEN)
                             } else {
                                 format!(" ({})", run.free_rerolls).cstr_c(VISIBLE_LIGHT)
-                            })
-                            .take()
+                            }
                     } else {
                         format!("-{} G", run.price_reroll).cstr_c(YELLOW)
                     };
                     if Button::click("reroll")
-                        .cstr(
-                            "Reroll "
-                                .cstr_c(VISIBLE_LIGHT)
-                                .push(text)
-                                .style(CstrStyle::Heading)
-                                .take(),
-                        )
+                        .cstr("Reroll ".cstr_c(VISIBLE_LIGHT) + &text.cstr_s(CstrStyle::Heading))
                         .enabled(g >= run.price_reroll || run.free_rerolls > 0)
                         .ui(ui)
                         .clicked()

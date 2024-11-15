@@ -34,7 +34,7 @@ impl Notification {
     }
     pub fn error(mut self) -> Self {
         self.r#type = NotificationType::Error;
-        self.text = "Error: ".cstr_c(RED).push(self.text).take();
+        self.text = "Error: ".cstr_c(RED) + &self.text;
         self
     }
     pub fn sfx(mut self, sfx: SoundEffect) -> Self {
@@ -140,12 +140,6 @@ impl NotificationPusher for String {
 impl NotificationPusher for str {
     fn to_notification(&self) -> Notification {
         Notification::new_string(self.into())
-    }
-}
-
-impl NotificationPusher for Cstr {
-    fn to_notification(&self) -> Notification {
-        Notification::new(self.clone())
     }
 }
 

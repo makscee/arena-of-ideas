@@ -8,7 +8,7 @@
     trigger: Fire(
         triggers: [(AllyUsedAbility("Charge"), None)],
         targets: [(RandomUnit(AllEnemyUnits), None)],
-        effects: [(Damage, "Damage {Pwr}")],
+        effects: [(Damage, "Damage $Pwr")],
     ),
     representation: (
         material: Shape(

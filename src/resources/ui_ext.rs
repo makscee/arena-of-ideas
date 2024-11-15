@@ -25,11 +25,7 @@ impl ShowTable<TTeam> for Vec<TTeam> {
             .title()
             .column_cstr("name", |d: &TTeam, _| d.name.cstr_c(VISIBLE_LIGHT))
             .column_cstr("units", |d, _| {
-                d.units
-                    .iter()
-                    .map(|u| u.cstr_limit(1, false))
-                    .collect_vec()
-                    .join(" ".cstr())
+                d.units.iter().map(|u| u.cstr_limit(1, false)).join(" ")
             });
         t = m(t);
         t.ui(self, ui, world)
@@ -49,7 +45,7 @@ impl ShowTable<TBaseUnit> for Vec<TBaseUnit> {
                 "name",
                 |d: &TBaseUnit, _| d.cstr().into(),
                 |d, name, ui, world| {
-                    let r = name.get_cstr().unwrap().button(ui);
+                    let r = name.get_string().unwrap().button(ui);
                     if r.hovered() {
                         cursor_window(ui.ctx(), |ui| match cached_base_card(d, ui, world) {
                             Ok(_) => {}
@@ -92,16 +88,9 @@ impl ShowTable<FusedUnit> for Vec<FusedUnit> {
     ) -> TableState {
         fn format_stat(value: i32, mutation: i32) -> Cstr {
             match mutation.signum() {
-                -1 => mutation
-                    .to_string()
-                    .cstr_c(RED)
-                    .push(format!(" ({value})").cstr())
-                    .take(),
-                1 => format!("+{mutation}")
-                    .cstr_c(GREEN)
-                    .push(format!(" ({value})").cstr())
-                    .take(),
-                _ => format!("{mutation} ({value})").cstr(),
+                -1 => mutation.to_string().cstr_c(RED) + &format!(" ({value})"),
+                1 => format!("+{mutation}").cstr_c(GREEN) + &format!(" ({value})"),
+                _ => format!("{mutation} ({value})"),
             }
         }
         let mut t = Table::new(name)

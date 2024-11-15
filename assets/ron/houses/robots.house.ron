@@ -6,7 +6,7 @@
     abilities: [
         (
             name: "Charge",
-            description: "Increase all status charges by {1}",
+            description: "Increase all status charges by $Charges",
             effect: List([Vfx("apply_status"), ChangeAllStatuses]),
         ),
     ],

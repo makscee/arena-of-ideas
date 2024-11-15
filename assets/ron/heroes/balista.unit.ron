@@ -8,7 +8,7 @@
     trigger: Fire(
         triggers: [(TurnEnd, None)],
         targets: [(FilterStatusUnits("Shield", AllEnemyUnits), Some("all enemies with [Shield]"))],
-        effects: [(WithVar(Value, Context(Lvl), Damage), Some("deal {Lvl} DMG"))],
+        effects: [(WithVar(Value, Context(Lvl), Damage), Some("deal $Lvl $Dmg"))],
     ),
     representation: (
         material: Shape(

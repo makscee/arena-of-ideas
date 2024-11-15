@@ -369,3 +369,15 @@ impl EventContext {
         }
     }
 }
+impl FusedUnit {
+    pub fn cstr_limit(&self, max_chars: usize, show_mutation: bool) -> Cstr {
+        let mut result =
+            UnitPlugin::name_from_bases(self.bases.iter().map(|s| s.as_str()).collect(), max_chars);
+        if show_mutation {
+            let mutation_str =
+                self.pwr_mutation.cstr_expanded() + "/" + &self.hp_mutation.cstr_expanded();
+            result = result + " " + &mutation_str.cstr_s(CstrStyle::Small);
+        }
+        result
+    }
+}

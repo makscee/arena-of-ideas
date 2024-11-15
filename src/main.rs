@@ -61,6 +61,7 @@ fn main() {
     };
     load_client_settings();
     load_client_state();
+    init_style_map();
     GameState::set_target(target);
     let default_plugins = DefaultPlugins.set(LogPlugin {
         level: bevy::log::Level::DEBUG,

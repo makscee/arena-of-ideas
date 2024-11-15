@@ -510,10 +510,7 @@ impl MetaPlugin {
                         let unit = d.unit.clone();
                         world.insert_resource(CraftResource::default());
                         Confirmation::new(
-                            "Craft "
-                                .cstr_c(VISIBLE_LIGHT)
-                                .push(unit.cstr_c(name_color(&unit)))
-                                .take(),
+                            "Craft ".cstr_c(VISIBLE_LIGHT) + &unit.cstr_c(name_color(&unit)),
                         )
                         .content(move |ui, world| {
                             if rs > 0 {

@@ -132,30 +132,20 @@ impl ToCstr for Event {
         match self {
             Event::BattleStart | Event::TurnStart | Event::TurnEnd => {}
             Event::BeforeStrike(a, b) | Event::AfterStrike(a, b) => {
-                s.push_wrapped_circ(
-                    entity_name_with_id(*a)
-                        .push(", ".cstr())
-                        .push(entity_name_with_id(*b))
-                        .take(),
-                );
+                s += &format!("({}, {})", entity_name_with_id(*a), entity_name_with_id(*b));
             }
             Event::Summon(a) | Event::Death(a) => {
-                s.push_wrapped_circ(entity_name_with_id(*a));
+                s += &format!("({})", entity_name_with_id(*a));
             }
             Event::Kill { owner, target } => {
-                s.push_wrapped_circ(
-                    entity_name_with_id(*owner)
-                        .push(" -> ".cstr())
-                        .push(entity_name_with_id(*target))
-                        .take(),
+                s += &format!(
+                    "({} -> {})",
+                    entity_name_with_id(*owner),
+                    entity_name_with_id(*target)
                 );
             }
             Event::IncomingDamage { owner, value } | Event::DamageTaken { owner, value } => {
-                s.push_wrapped_circ(
-                    entity_name_with_id(*owner)
-                        .push(format!(" {value}").cstr_c(VISIBLE_LIGHT))
-                        .take(),
-                );
+                s += &format!("({} [vl {value}])", entity_name_with_id(*owner));
             }
             Event::OutgoingDamage {
                 owner,
@@ -167,16 +157,14 @@ impl ToCstr for Event {
                 target,
                 value,
             } => {
-                s.push_wrapped_circ(
-                    entity_name_with_id(*owner)
-                        .push(" -> ".cstr())
-                        .push(entity_name_with_id(*target))
-                        .push(format!(" {value}").cstr_c(VISIBLE_LIGHT))
-                        .take(),
+                s += &format!(
+                    "({} -> {}: [vl {value}])",
+                    entity_name_with_id(*owner),
+                    entity_name_with_id(*target)
                 );
             }
             Event::UseAbility(name) | Event::ApplyStatus(name) => {
-                s.push_wrapped_circ(name.cstr_c(name_color(name)));
+                s += &name.cstr_c(name_color(name));
             }
         }
         s

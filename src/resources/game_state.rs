@@ -151,7 +151,7 @@ lazy_static! {
 pub fn save_entity_name(entity: Entity, name: Cstr) {
     ENTITY_NAMES.lock().unwrap().insert(entity, name);
 }
-pub fn entity_name(entity: Entity) -> Cstr {
+pub fn entity_name(entity: Entity) -> String {
     ENTITY_NAMES
         .lock()
         .unwrap()
@@ -160,7 +160,7 @@ pub fn entity_name(entity: Entity) -> Cstr {
         .unwrap_or(entity.to_string().cstr())
 }
 pub fn entity_name_with_id(entity: Entity) -> Cstr {
-    entity_name(entity).push(format!("#{entity}").cstr()).take()
+    entity_name(entity) + &format!("#{entity}")
 }
 pub fn clear_entity_names() {
     ENTITY_NAMES.lock().unwrap().clear();

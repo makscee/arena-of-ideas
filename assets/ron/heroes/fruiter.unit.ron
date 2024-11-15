@@ -11,9 +11,12 @@
         effects: [
             (
                 AbilityStateAddVar("Treant", Pwr, Context(Lvl)),
-                Some("[Treant] PWR increase by {Lvl}"),
+                Some("[Treant] [vb Pwr] increase by $Lvl"),
             ),
-            (AbilityStateAddVar("Treant", Hp, Context(Lvl)), Some("[Treant] HP increase by {Lvl}")),
+            (
+                AbilityStateAddVar("Treant", Hp, Context(Lvl)),
+                Some("[Treant] [vb Hp] increase by $Lvl"),
+            ),
         ],
     ),
     representation: (

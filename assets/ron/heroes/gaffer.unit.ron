@@ -8,7 +8,7 @@
     trigger: Fire(
         triggers: [(EnemySummon, None)],
         targets: [(Target, None)],
-        effects: [(UseAbility("Magic Missile", 1), None)],
+        effects: [(UseAbility("Magic_Missile", 1), None)],
     ),
     representation: (
         material: Shape(

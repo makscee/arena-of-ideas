@@ -7,7 +7,7 @@
     houses: ["Death Knights"],
     trigger: Fire(
         triggers: [(BattleStart, None)],
-        targets: [(RandomUnitSubset(I(2), AllEnemyUnits), None)],
+        targets: [(RandomUnitSubset(I(2), AllEnemyUnits), Some("[vb [b 2]] random enemies"))],
         effects: [(UseAbility("Plague", 0), None)],
     ),
     representation: (

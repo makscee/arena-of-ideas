@@ -11,7 +11,7 @@
         effects: [
             (
                 WithVar(Lvl, Mul(ListCount(AllAllyUnits), Context(Lvl)), UseAbility("Vitality", 0)),
-                "use [Vitality] ({Lvl}) per ally",
+                "use [Vitality] $Lvl per ally",
             ),
         ],
     ),

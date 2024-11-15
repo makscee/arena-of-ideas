@@ -190,7 +190,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
             TableColumn {
                 value: Box::new(move |d, w| s(d, w).into()),
                 show: Box::new(|_, v, ui, _| {
-                    v.get_cstr().unwrap().label(ui);
+                    v.get_string().unwrap().label(ui);
                 }),
                 sortable: true,
                 hide_name: false,
@@ -231,7 +231,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
             TableColumn {
                 value: Box::new(move |d, w| v(d, w).into()),
                 show: Box::new(move |d, v, ui, w| {
-                    if v.get_cstr().unwrap().clone().button(ui).clicked() {
+                    if v.get_string().unwrap().clone().button(ui).clicked() {
                         on_click(d, w);
                     }
                 }),
@@ -440,7 +440,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                     .into()
                 }),
                 show: Box::new(|_, v, ui, _| {
-                    v.get_cstr().unwrap().label(ui);
+                    v.get_string().unwrap().label(ui);
                 }),
                 sortable: true,
                 hide_name: false,

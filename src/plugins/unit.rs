@@ -196,7 +196,7 @@ impl UnitPlugin {
                 n.split_at(n.len() / 2).1
             };
             let n = n.split_at(n.len().min(max_chars)).0;
-            name.push(n.cstr_cs(c, CstrStyle::Bold));
+            name += &n.cstr_cs(c, CstrStyle::Bold);
         }
         name
     }

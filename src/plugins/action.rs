@@ -87,10 +87,9 @@ impl ActionPlugin {
                 if Self::deafness(owner, world) {
                     TextColumnPlugin::add(
                         owner,
-                        "Deafness! "
-                            .cstr_cs(RED, CstrStyle::Bold)
-                            .push("Skip ".cstr_c(VISIBLE_LIGHT).push(effect.cstr()).take())
-                            .take(),
+                        "Deafness! ".cstr_cs(RED, CstrStyle::Bold)
+                            + &"Skip ".cstr_c(VISIBLE_LIGHT)
+                            + &effect.cstr(),
                         world,
                     );
                     continue;

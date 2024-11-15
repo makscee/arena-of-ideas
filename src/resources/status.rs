@@ -68,11 +68,9 @@ impl Status {
         };
         TextColumnPlugin::add(
             entity,
-            "status "
-                .cstr()
-                .push(name.cstr_cs(name_color(name), CstrStyle::Bold))
-                .push(format!(" {delta_str} ({charges})").cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold))
-                .take(),
+            "status ".cstr()
+                + &name.cstr_cs(name_color(name), CstrStyle::Bold)
+                + &format!(" {delta_str} ($Charges)").cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold),
             world,
         );
         charges

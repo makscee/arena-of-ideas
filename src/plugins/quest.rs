@@ -82,40 +82,22 @@ impl QuestPlugin {
 
 impl ToCstr for TQuest {
     fn cstr(&self) -> Cstr {
-        let goal = self
+        let goal = &self
             .goal
             .to_string()
             .cstr_cs(VISIBLE_BRIGHT, CstrStyle::Bold);
         let progress =
             format!("{}/{}", self.counter, self.goal).cstr_cs(VISIBLE_BRIGHT, CstrStyle::Bold);
-        let mode = self.mode.cstr().style(CstrStyle::Normal).take();
-        let reward = " reward: "
-            .cstr()
-            .push(format!("{}{}", self.reward, CREDITS_SYM).cstr_cs(YELLOW, CstrStyle::Bold))
-            .take();
-        match &self.variant {
-            QuestVariant::Win => "Win ".cstr().push(goal).push(" battles in ".cstr()).take(),
-            QuestVariant::Streak => "Get a streak of  "
-                .cstr()
-                .push(goal)
-                .push(" wins in ".cstr())
-                .take(),
-            QuestVariant::Champion => "Become champion in  ".cstr(),
-            QuestVariant::FuseMany => "Fuse a hero "
-                .cstr()
-                .push(goal)
-                .push(" times in ".cstr())
-                .take(),
-            QuestVariant::FuseOne => "Fuse "
-                .cstr()
-                .push(goal)
-                .push(" heroes into one in ".cstr())
-                .take(),
-        }
-        .push(mode)
-        .push(" game mode. ".cstr())
-        .push(progress)
-        .push(reward)
-        .take()
+        let mode = &self.mode.to_string();
+        let reward = " reward: ".to_owned()
+            + &format!("{}{}", self.reward, CREDITS_SYM).cstr_cs(YELLOW, CstrStyle::Bold);
+        let prefix = match &self.variant {
+            QuestVariant::Win => "Win ".to_owned() + goal + " battles in ",
+            QuestVariant::Streak => "Get a streak of  ".to_owned() + goal + " wins in ",
+            QuestVariant::Champion => "Become champion in  ".to_owned(),
+            QuestVariant::FuseMany => "Fuse a hero ".to_owned() + goal + " times in ",
+            QuestVariant::FuseOne => "Fuse ".to_owned() + goal + " heroes into one in ",
+        };
+        prefix + mode + " game mode. " + &progress + &reward
     }
 }

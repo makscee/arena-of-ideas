@@ -11,7 +11,7 @@
         effects: [
             (
                 WithVar(Lvl, Mul(ListCount(AllEnemyUnits), Context(Lvl)), UseAbility("Blessing", 0)),
-                "use [Blessing] ({Lvl}) per enemy",
+                "use [Blessing] $Lvl per enemy",
             ),
         ],
     ),

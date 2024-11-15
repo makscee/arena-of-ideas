@@ -2,11 +2,11 @@
 (
     name: "Death Knights",
     color: ("#658D1B"),
-    defaults: {"Summon Skeleton": {M1: Int(0)}},
+    defaults: {"Summon_Skeleton": {M1: Int(0)}},
     statuses: [
         (
             name: "Plague",
-            description: "Take {Charges} DMG every turn, [Summon Skeleton] after death",
+            description: "Take $Charges $Dmg every turn, [Summon_Skeleton] after death",
             polarity: -1,
             trigger: List(
                 [
@@ -24,14 +24,14 @@
                     ),
                     Fire(
                         triggers: [(BeforeDeath, None)],
-                        effects: [(UseAbility("Summon Skeleton", 0), None)],
+                        effects: [(UseAbility("Summon_Skeleton", 0), None)],
                     ),
                 ],
             ),
         ),
         (
             name: "Decay",
-            description: "-{Charges} HP",
+            description: "-$Charges [vb Hp]",
             polarity: -1,
             trigger: Change(trigger: Var(Hp), expr: Sub(Zero, Context(Charges))),
         ),
@@ -39,17 +39,17 @@
     abilities: [
         (
             name: "Plague",
-            description: "Target takes {1} DMG every turn, [Summon Skeleton] after death",
+            description: "Target takes [vb [b 1]] $Dmg every turn, [Summon_Skeleton] after death",
             effect: List([Vfx("apply_status"), ChangeStatus("Plague")]),
         ),
         (
-            name: "Summon Skeleton",
-            description: "Summon unfriendly 1/4 unit{M1| that applies [Plague] on damage dealt}",
+            name: "Summon_Skeleton",
+            description: "Summon unfriendly [vb [b 1/4]] unit{M1| that applies [Plague] on damage dealt}",
             effect: WithVar(Faction, OppositeFaction, Summon("Skeleton", None)),
         ),
         (
             name: "Decay",
-            description: "Give -{1} HP",
+            description: "Give [vb [b-1]] [vb Hp]",
             effect: List([Vfx("apply_status"), ChangeStatus("Decay")]),
         ),
     ],
@@ -62,7 +62,7 @@
             trigger: Fire(
                 triggers: [(AfterDamageDealt, None)],
                 targets: [(Target, None)],
-                effects: [(If(AbilityContext("Summon Skeleton", M1), UseAbility("Plague", 0), Noop), None)],
+                effects: [(If(AbilityContext("Summon_Skeleton", M1), UseAbility("Plague", 0), Noop), None)],
             ),
             representation: (
                 material: Shape(
