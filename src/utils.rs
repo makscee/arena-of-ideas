@@ -151,6 +151,15 @@ pub fn get_children(entity: Entity, world: &World) -> Vec<Entity> {
         .map(|c| c.to_vec())
         .unwrap_or_default()
 }
+pub fn get_children_recursive(entity: Entity, world: &World) -> Vec<Entity> {
+    let mut children = get_children(entity, world);
+    let mut i = 0;
+    while i < children.len() {
+        children.extend(get_children(children[i], world));
+        i += 1;
+    }
+    children
+}
 pub fn copy_to_clipboard(text: &str, world: &mut World) {
     world
         .resource_mut::<bevy_egui::EguiClipboard>()

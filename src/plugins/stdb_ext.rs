@@ -381,3 +381,37 @@ impl FusedUnit {
         result
     }
 }
+impl Hash for TBaseUnit {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.name.hash(state);
+        self.pwr.hash(state);
+        self.hp.hash(state);
+        self.rarity.hash(state);
+        self.house.hash(state);
+        self.pool.hash(state);
+        self.triggers.hash(state);
+        self.targets.hash(state);
+        self.effects.hash(state);
+        self.representation.hash(state);
+    }
+}
+impl Hash for UnitPool {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        core::mem::discriminant(self).hash(state);
+    }
+}
+impl Hash for FusedUnit {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.id.hash(state);
+        self.bases.hash(state);
+        self.triggers.hash(state);
+        self.targets.hash(state);
+        self.effects.hash(state);
+        self.hp.hash(state);
+        self.pwr.hash(state);
+        self.hp_mutation.hash(state);
+        self.pwr_mutation.hash(state);
+        self.lvl.hash(state);
+        self.xp.hash(state);
+    }
+}

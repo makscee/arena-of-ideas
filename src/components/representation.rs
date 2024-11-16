@@ -62,6 +62,9 @@ impl Representation {
         rep
     }
     pub fn update(self, entity: Entity, context: Context, world: &mut World) {
+        if !gt().ticked(0.01, 0.0) {
+            return;
+        }
         let t = gt().play_head();
         {
             let visible = context.get_bool(VarName::Visible, world).unwrap_or(true);

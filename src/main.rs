@@ -134,6 +134,7 @@ fn main() {
             StatsPlugin,
             QueryPlugin,
             AdminPlugin,
+            TextureRenderPlugin,
         ))
         .init_state::<GameState>()
         .init_resource::<NotificationsResource>()

@@ -39,7 +39,7 @@ pub enum Event {
 impl Event {
     pub fn send_with_context(self, mut context: Context, world: &mut World) -> Self {
         if client_settings().dev_mode {
-            debug!("{} {}", "Send event".dimmed(), self.cstr());
+            debug!("{} {}", "Send event".dimmed(), self.cstr().to_colored());
         }
         context.set_event(self.clone());
         ActionPlugin::register_event(self.clone(), world);
