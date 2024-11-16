@@ -27,8 +27,7 @@ impl RewardsPlugin {
         {
             ui.columns(3, |ui| {
                 ui[0].vertical_centered_justified(|ui| {
-                    if Button::click("Claim")
-                        .style(CstrStyle::Bold)
+                    if Button::new("Claim".cstr_s(CstrStyle::Bold))
                         .ui(ui)
                         .clicked()
                     {

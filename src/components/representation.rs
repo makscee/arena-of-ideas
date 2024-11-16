@@ -127,13 +127,13 @@ impl ShowEditor for Representation {
         None.into_iter()
     }
     fn show_children(&mut self, context: &Context, world: &mut World, ui: &mut Ui) {
-        if Button::click("+").ui(ui).clicked() {
+        if Button::new("+").ui(ui).clicked() {
             self.children.push(default());
         }
         let mut to_remove = None;
         for (i, child) in self.children.iter_mut().enumerate() {
             ui.push_id(i, |ui| {
-                if Button::click("-").red(ui).ui(ui).clicked() {
+                if Button::new("-").red(ui).ui(ui).clicked() {
                     to_remove = Some(i);
                 }
                 child.show_node("", context, world, ui);
@@ -151,7 +151,7 @@ impl ShowEditor for Representation {
         CollapsingHeader::new(format!("Mapping ({})", self.mapping.len()))
             .id_source("mapping")
             .show(ui, |ui| {
-                if Button::click("+").ui(ui).clicked() {
+                if Button::new("+").ui(ui).clicked() {
                     self.mapping.insert_before(0, default(), default());
                 }
                 let mut move_var: Option<(VarName, VarName)> = None;
@@ -164,7 +164,7 @@ impl ShowEditor for Representation {
                                 if var_selector(&mut new_var, ui) {
                                     move_var = Some((*var, new_var));
                                 }
-                                if Button::click("-").red(ui).ui(ui).clicked() {
+                                if Button::new("-").red(ui).ui(ui).clicked() {
                                     remove_var = Some(*var);
                                 }
                             });

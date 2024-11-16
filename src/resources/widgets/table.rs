@@ -149,7 +149,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
             TableColumn {
                 value: Box::new(|_, _| name.to_string().into()),
                 show: Box::new(move |d, _, ui, w| {
-                    if modify(d, ui, Button::click(name.to_string()))
+                    if modify(d, ui, Button::new(name.to_string()))
                         .ui(ui)
                         .clicked()
                     {
@@ -529,7 +529,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
             ui.horizontal(|ui| {
                 for (i, (name, _, _)) in self.filters.iter().enumerate() {
                     let active = state.filter.is_some_and(|f| f == i);
-                    if Button::click(name.to_string())
+                    if Button::new(name.to_string())
                         .min_width(100.0)
                         .active(active)
                         .ui(ui)
@@ -564,7 +564,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                             for (i, (name, column)) in self.columns.iter().enumerate() {
                                 row.col(|ui| {
                                     let clicked = if column.sortable {
-                                        let mut btn = Button::click(name.to_string());
+                                        let mut btn = Button::new(name.to_string());
                                         btn = if state
                                             .sorting
                                             .as_ref()
@@ -578,7 +578,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                                     } else if column.hide_name {
                                         false
                                     } else {
-                                        Button::click(name.to_string())
+                                        Button::new(name.to_string())
                                             .enabled(false)
                                             .gray(ui)
                                             .ui(ui);

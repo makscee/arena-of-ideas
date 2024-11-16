@@ -156,7 +156,7 @@ pub trait ShowEditor: ToCstr + Default + Serialize + DeserializeOwned + Clone {
         };
         resp.context_menu(|ui| {
             ui.reset_style();
-            if Button::click("Copy").ui(ui).clicked() {
+            if Button::new("Copy").ui(ui).clicked() {
                 match ron::to_string(self) {
                     Ok(v) => {
                         copy_to_clipboard(&v, world);
@@ -165,7 +165,7 @@ pub trait ShowEditor: ToCstr + Default + Serialize + DeserializeOwned + Clone {
                 }
                 ui.close_menu();
             }
-            if Button::click("Paste").ui(ui).clicked() {
+            if Button::new("Paste").ui(ui).clicked() {
                 if let Some(v) = paste_from_clipboard(world) {
                     match ron::from_str::<Self>(&v) {
                         Ok(v) => *self = v,

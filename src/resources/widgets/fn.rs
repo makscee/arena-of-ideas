@@ -131,7 +131,7 @@ pub fn show_list_node<E: ShowEditor>(
     for (i, e) in l.into_iter().enumerate() {
         ui.push_id(i, |ui| {
             ui.horizontal(|ui| {
-                if Button::click("-").red(ui).ui(ui).clicked() {
+                if Button::new("-").red(ui).ui(ui).clicked() {
                     to_remove = Some(i);
                 }
                 e.show_node("", context, world, ui);
@@ -144,7 +144,7 @@ pub fn show_list_node<E: ShowEditor>(
 }
 pub fn season_switcher(value: &mut u32, ui: &mut Ui) -> bool {
     EnumSwitcher::new()
-        .prefix("Season ".cstr())
+        .prefix("Season ".cstr_c(VISIBLE_DARK))
         .show_iter(value, 0..=global_settings().season, ui)
 }
 pub fn game_mode_switcher(value: &mut GameMode, ui: &mut Ui) -> bool {

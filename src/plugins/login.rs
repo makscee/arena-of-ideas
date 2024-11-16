@@ -73,11 +73,11 @@ impl LoginPlugin {
                     format!("Login as {}", player.name)
                         .cstr_cs(VISIBLE_LIGHT, CstrStyle::Heading2)
                         .label(ui);
-                    if Button::click("Login").ui(ui).clicked() {
+                    if Button::new("Login").ui(ui).clicked() {
                         let _ = cn().reducers.login_by_identity();
                     }
                     br(ui);
-                    if Button::click("Logout").gray(ui).ui(ui).clicked() {
+                    if Button::new("Logout").gray(ui).ui(ui).clicked() {
                         ld.identity_player = None;
                     }
                 } else {
@@ -85,7 +85,7 @@ impl LoginPlugin {
                     "Register"
                         .cstr_cs(VISIBLE_LIGHT, CstrStyle::Heading)
                         .label(ui);
-                    if Button::click("New Player").ui(ui).clicked() {
+                    if Button::new("New Player").ui(ui).clicked() {
                         let _ = cn().reducers.register_empty();
                     }
                     br(ui);
@@ -94,7 +94,7 @@ impl LoginPlugin {
                     Input::new("password")
                         .password()
                         .ui_string(&mut ld.pass_field, ui);
-                    if Button::click("Submit").ui(ui).clicked() {
+                    if Button::new("Submit").ui(ui).clicked() {
                         let _ = crate::login::login(
                             &cn().reducers,
                             ld.name_field.clone(),

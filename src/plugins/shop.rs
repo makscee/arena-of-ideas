@@ -103,7 +103,7 @@ impl ShopPlugin {
                 cn().reducers.fuse_cancel().unwrap();
             })
             .content(|ui, world| {
-                if Button::click("Swap").ui(ui).clicked() {
+                if Button::new("Swap").ui(ui).clicked() {
                     Confirmation::close_current(world);
                     cn().reducers.fuse_swap().unwrap();
                 }
@@ -132,7 +132,7 @@ impl ShopPlugin {
                     let mut need_update = false;
                     for i in 0..3 {
                         ui[i as usize].vertical_centered_justified(|ui| {
-                            if Button::click("Trigger")
+                            if Button::new("Trigger")
                                 .active(r.fusion_choice[0] == i - 1)
                                 .ui(ui)
                                 .clicked()
@@ -145,7 +145,7 @@ impl ShopPlugin {
                                 }
                                 r.fusion_choice[0] = i - 1;
                             }
-                            if Button::click("Target")
+                            if Button::new("Target")
                                 .active(r.fusion_choice[1] == i - 1)
                                 .ui(ui)
                                 .clicked()
@@ -158,7 +158,7 @@ impl ShopPlugin {
                                 }
                                 r.fusion_choice[1] = i - 1;
                             }
-                            if Button::click("Effect")
+                            if Button::new("Effect")
                                 .active(r.fusion_choice[2] == i - 1)
                                 .ui(ui)
                                 .clicked()
@@ -338,7 +338,7 @@ impl ShopPlugin {
             ui.add_space(40.0);
             let run = cn().db.arena_run().current();
             ui.vertical_centered_justified(|ui| {
-                if Button::click("Start Battle").ui(ui).clicked() {
+                if Button::new("Start Battle").ui(ui).clicked() {
                     cn().reducers.shop_finish(false).unwrap();
                 }
                 if run.floor == run.boss_floor {
@@ -351,7 +351,7 @@ impl ShopPlugin {
                     }
                     ui.add_space(50.0);
                     if let Some(floor_boss) = run.current_floor_boss {
-                        if Button::click("Boss Battle").red(ui).ui(ui).clicked() {
+                        if Button::new("Boss Battle").red(ui).ui(ui).clicked() {
                             cn().reducers.shop_finish(true).unwrap();
                         }
                         "Challenge Floor Boss"
@@ -425,11 +425,13 @@ impl ShopPlugin {
                     } else {
                         format!("-{} G", run.price_reroll).cstr_c(YELLOW)
                     };
-                    if Button::click("reroll")
-                        .cstr("Reroll ".cstr_c(VISIBLE_LIGHT) + &text.cstr_s(CstrStyle::Heading))
-                        .enabled(g >= run.price_reroll || run.free_rerolls > 0)
-                        .ui(ui)
-                        .clicked()
+                    if Button::new(
+                        "Reroll ".cstr_cs(VISIBLE_LIGHT, CstrStyle::Heading2)
+                            + &text.cstr_s(CstrStyle::Heading2),
+                    )
+                    .enabled(g >= run.price_reroll || run.free_rerolls > 0)
+                    .ui(ui)
+                    .clicked()
                     {
                         cn().reducers.shop_reroll().unwrap();
                     }
@@ -441,12 +443,12 @@ impl ShopPlugin {
                 if ss.available {
                     if let Some((stack_source, faction)) = stack_source {
                         if slot == stack_source && faction.eq(&Faction::Shop) {
-                            if Button::click("Cancel").red(ui).ui(ui).clicked() {
+                            if Button::new("Cancel").red(ui).ui(ui).clicked() {
                                 Self::cancel_stack(world);
                             }
                         }
                     } else {
-                        if Button::click(format!("-{} G", ss.buy_price))
+                        if Button::new(format!("-{} G", ss.buy_price))
                             .title("buy".cstr())
                             .enabled(g >= ss.buy_price)
                             .ui(ui)
@@ -455,17 +457,17 @@ impl ShopPlugin {
                             cn().reducers.shop_buy(slot as u8).unwrap();
                         }
                         if ss.freeze {
-                            if Button::click("Unfreeze").set_bg(true, ui).ui(ui).clicked() {
+                            if Button::new("Unfreeze").set_bg(true, ui).ui(ui).clicked() {
                                 cn().reducers.shop_set_freeze(slot as u8, false).unwrap();
                             }
                         } else {
-                            if Button::click("Freeze").gray(ui).ui(ui).clicked() {
+                            if Button::new("Freeze").gray(ui).ui(ui).clicked() {
                                 cn().reducers.shop_set_freeze(slot as u8, true).unwrap();
                             }
                         }
                         if !ss.stack_targets.is_empty() {
                             let price = ss.stack_price;
-                            if Button::click(format!("-{} G", price))
+                            if Button::new(format!("-{} G", price))
                                 .title("stack".cstr())
                                 .enabled(g >= price)
                                 .ui(ui)
@@ -504,23 +506,23 @@ impl ShopPlugin {
                 if e.is_some() && run.fusion.is_none() {
                     if let Some((stack_source, faction)) = sd.stack_source {
                         if slot == stack_source && faction.eq(&Faction::Team) {
-                            if Button::click("Cancel").red(ui).ui(ui).clicked() {
+                            if Button::new("Cancel").red(ui).ui(ui).clicked() {
                                 Self::cancel_stack(world);
                             }
                         } else if sd.stack_targets.contains(&slot) {
-                            if Button::click("Stack").ui(ui).clicked() {
+                            if Button::new("Stack").ui(ui).clicked() {
                                 Self::do_stack(slot as u8, world);
                             }
                         }
                     } else if let Some(fuse_source) = sd.fuse_source {
                         if slot == fuse_source {
-                            if Button::click("Cancel").red(ui).ui(ui).clicked() {
+                            if Button::new("Cancel").red(ui).ui(ui).clicked() {
                                 let mut sd = rm(world);
                                 sd.fuse_source = None;
                                 sd.fuse_targets.clear();
                             }
                         } else if sd.fuse_targets.contains(&slot) {
-                            if Button::click("Choose").ui(ui).clicked() {
+                            if Button::new("Choose").ui(ui).clicked() {
                                 cn().reducers
                                     .fuse_start(fuse_source as u8, slot as u8)
                                     .unwrap();
@@ -528,7 +530,7 @@ impl ShopPlugin {
                         }
                     } else {
                         if let Some(ts) = run.team_slots.get(slot) {
-                            if Button::click(format!("+{} G", ts.sell_price))
+                            if Button::new(format!("+{} G", ts.sell_price))
                                 .title("Sell".cstr())
                                 .ui(ui)
                                 .clicked()
@@ -536,7 +538,7 @@ impl ShopPlugin {
                                 cn().reducers.shop_sell(slot as u8).unwrap();
                             }
                             if !ts.stack_targets.is_empty() {
-                                if Button::click("Stack").ui(ui).clicked() {
+                                if Button::new("Stack").ui(ui).clicked() {
                                     let mut sd = rm(world);
                                     sd.stack_source = Some((slot, Faction::Team));
                                     sd.stack_targets =
@@ -544,7 +546,7 @@ impl ShopPlugin {
                                 }
                             }
                             if !ts.fuse_targets.is_empty() {
-                                if Button::click("Fuse").ui(ui).clicked() {
+                                if Button::new("Fuse").ui(ui).clicked() {
                                     let mut sd = rm(world);
                                     sd.fuse_source = Some(slot);
                                     sd.fuse_targets =
@@ -606,7 +608,7 @@ impl ShopPlugin {
                     total.to_string().cstr_cs(YELLOW, CstrStyle::Bold),
                     ui,
                 );
-                if Button::click("Finish").ui(ui).clicked() {
+                if Button::new("Finish").ui(ui).clicked() {
                     cn().reducers.run_finish().unwrap();
                 }
             });

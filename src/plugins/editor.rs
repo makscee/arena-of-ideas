@@ -164,7 +164,7 @@ impl EditorPlugin {
         TeamContainer::new(faction)
             .top_content(move |ui, world| {
                 ui.horizontal(|ui| {
-                    if Button::click("Load own").ui(ui).clicked() {
+                    if Button::new("Load own").ui(ui).clicked() {
                         Confirmation::new("Open own team".cstr())
                             .content(move |ui, world| {
                                 cn().db
@@ -192,7 +192,7 @@ impl EditorPlugin {
                     }
 
                     ui.add_space(30.0);
-                    if Button::click("Paste").ui(ui).clicked() {
+                    if Button::new("Paste").ui(ui).clicked() {
                         if let Some(team) = paste_from_clipboard(world)
                             .and_then(|t| ron::from_str::<PackedTeam>(&t).ok())
                         {
@@ -208,7 +208,7 @@ impl EditorPlugin {
                             .unwrap_or_default()
                     }
                     ui.add_space(30.0);
-                    if Button::click("Load Champion").ui(ui).clicked() {
+                    if Button::new("Load Champion").ui(ui).clicked() {
                         Confirmation::new("Load Champion".cstr_c(VISIBLE_LIGHT))
                             .content(|ui, _| {
                                 let mut mode = selected_mode(ui.ctx());
@@ -253,7 +253,7 @@ impl EditorPlugin {
                 if e.is_none() {
                     return;
                 }
-                if Button::click("Edit").ui(ui).clicked() {
+                if Button::new("Edit").ui(ui).clicked() {
                     if let Some(unit) = Self::get_team_unit(slot, faction, world) {
                         let mut rm = rm(world);
                         rm.unit = unit;
@@ -266,7 +266,7 @@ impl EditorPlugin {
             .context_menu(move |slot, entity, ui, world| {
                 ui.reset_style();
                 ui.set_min_width(150.0);
-                if Button::click("Paste").ui(ui).clicked() {
+                if Button::new("Paste").ui(ui).clicked() {
                     if let Some(v) = paste_from_clipboard(world) {
                         match ron::from_str::<PackedUnit>(&v) {
                             Ok(v) => {
@@ -282,19 +282,19 @@ impl EditorPlugin {
                     ui.close_menu();
                 }
                 if entity.is_none() {
-                    if Button::click("Spawn default").ui(ui).clicked() {
+                    if Button::new("Spawn default").ui(ui).clicked() {
                         Self::set_team_unit(slot, faction, default(), world);
                         Self::refresh(world);
                         ui.close_menu();
                     }
                 } else {
-                    if Button::click("Copy").ui(ui).clicked() {
+                    if Button::new("Copy").ui(ui).clicked() {
                         if let Some(unit) = Self::get_team_unit(slot, faction, world) {
                             copy_to_clipboard(&unit.to_ron_str(), world);
                         }
                         ui.close_menu();
                     }
-                    if Button::click("Delete").red(ui).ui(ui).clicked() {
+                    if Button::new("Delete").red(ui).ui(ui).clicked() {
                         Self::remove_team_unit(slot, faction, world);
                         Self::refresh(world);
                         ui.close_menu();
@@ -347,7 +347,7 @@ impl EditorPlugin {
                 .push(world);
                 Tile::new(Side::Top, |ui, world| {
                     ui.horizontal(|ui| {
-                        if Button::click("Run battle").ui(ui).clicked() {
+                        if Button::new("Run battle").ui(ui).clicked() {
                             BattlePlugin::load_teams(
                                 rm(world).battle.0.clone(),
                                 rm(world).battle.1.clone(),
@@ -356,10 +356,10 @@ impl EditorPlugin {
                             BattlePlugin::set_next_state(GameState::Editor, world);
                             GameState::Battle.set_next(world);
                         }
-                        if Button::click("Send BattleStart").ui(ui).clicked() {
+                        if Button::new("Send BattleStart").ui(ui).clicked() {
                             Event::BattleStart.send(world);
                         }
-                        if Button::click("Strike").ui(ui).clicked() {
+                        if Button::new("Strike").ui(ui).clicked() {
                             if let Some((left, right)) = BattlePlugin::get_strikers(world) {
                                 let _ = BattlePlugin::run_strike(left, right, world);
                             }
@@ -382,14 +382,14 @@ impl EditorPlugin {
                                 match UnitCard::new(&Context::new(entity), world) {
                                     Ok(c) => {
                                         if rm(world).incubator_link.is_some()
-                                            && Button::click("Incubator Update")
+                                            && Button::new("Incubator Update")
                                                 .color(YELLOW, ui)
                                                 .ui(ui)
                                                 .clicked()
                                         {
                                             Self::incubator_update(world);
                                         }
-                                        if Button::click("Incubator Post")
+                                        if Button::new("Incubator Post")
                                             .color(YELLOW, ui)
                                             .ui(ui)
                                             .clicked()
@@ -397,13 +397,13 @@ impl EditorPlugin {
                                             Self::incubator_post(world);
                                         }
                                         ui.horizontal(|ui| {
-                                            if Button::click("Copy").ui(ui).clicked() {
+                                            if Button::new("Copy").ui(ui).clicked() {
                                                 copy_to_clipboard(
                                                     &rm(world).unit.clone().to_ron_str(),
                                                     world,
                                                 );
                                             }
-                                            if Button::click("Paste").ui(ui).clicked() {
+                                            if Button::new("Paste").ui(ui).clicked() {
                                                 let s = paste_from_clipboard(world);
                                                 match s {
                                                     Some(s) => {
@@ -455,7 +455,7 @@ impl EditorPlugin {
                             game_assets().heroes.keys().sorted(),
                             ui,
                         );
-                        if Button::click("load").ui(ui).clicked() {
+                        if Button::new("load").ui(ui).clicked() {
                             r.unit = game_assets().heroes.get(&r.unit_to_load).unwrap().clone();
                             Self::refresh(world);
                         }
@@ -464,7 +464,7 @@ impl EditorPlugin {
                             format!("editing {faction} team {slot} unit")
                                 .cstr_c(YELLOW)
                                 .label(ui);
-                            if Button::click("unlink").ui(ui).clicked() {
+                            if Button::new("unlink").ui(ui).clicked() {
                                 r.unit_source = None;
                             }
                         }
@@ -524,13 +524,13 @@ impl EditorPlugin {
                             game_assets().vfxs.keys(),
                             ui,
                         );
-                        if Button::click("Load").ui(ui).clicked() {
+                        if Button::new("Load").ui(ui).clicked() {
                             rm(world).vfx = Vfx::get(&rm(world).vfx_selected);
                         }
-                        if Button::click("Copy").ui(ui).clicked() {
+                        if Button::new("Copy").ui(ui).clicked() {
                             copy_to_clipboard(&ron::to_string(&rm(world).vfx).unwrap(), world);
                         }
-                        if Button::click("Paste").ui(ui).clicked() {
+                        if Button::new("Paste").ui(ui).clicked() {
                             if let Some(s) = paste_from_clipboard(world) {
                                 match ron::from_str(&s) {
                                     Ok(v) => {
@@ -593,10 +593,10 @@ impl EditorPlugin {
                     CameraPlugin::apply(world);
                     Self::load_mode(world);
                 }
-                if Button::click("Save state").ui(ui).clicked() {
+                if Button::new("Save state").ui(ui).clicked() {
                     Self::save_state(world);
                 }
-                if Button::click("Load state").ui(ui).clicked() {
+                if Button::new("Load state").ui(ui).clicked() {
                     Self::load_state(world);
                     Self::load_mode(world);
                 }

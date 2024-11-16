@@ -575,7 +575,7 @@ impl ShowEditor for Effect {
                 vfx_selector(vfx, ui);
             }
             Effect::List(l) => {
-                if Button::click("+").ui(ui).clicked() {
+                if Button::new("+").ui(ui).clicked() {
                     l.push(default());
                 }
             }

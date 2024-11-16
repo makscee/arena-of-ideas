@@ -6,6 +6,7 @@ pub type Cstr = String;
 
 pub trait CstrTrait {
     fn widget(&self, a: f32, ui: &mut Ui) -> WidgetText;
+    fn job(&self, a: f32, ui: &mut Ui) -> LayoutJob;
     fn label(&self, ui: &mut Ui) -> Response;
     fn label_alpha(&self, a: f32, ui: &mut Ui) -> Response;
     fn as_label(&self, ui: &mut Ui) -> Label;
@@ -23,6 +24,11 @@ pub trait CstrTrait {
 impl CstrTrait for Cstr {
     fn widget(&self, a: f32, ui: &mut Ui) -> WidgetText {
         cstr_parse(&self.to_string(), a, ui.style())
+    }
+    fn job(&self, a: f32, ui: &mut Ui) -> LayoutJob {
+        let mut job = LayoutJob::default();
+        cstr_parse_into_job(&self, a, &mut job, ui.style());
+        job
     }
     fn label(&self, ui: &mut Ui) -> Response {
         self.as_label(ui)
@@ -43,7 +49,7 @@ impl CstrTrait for Cstr {
         self.as_button().ui(ui)
     }
     fn as_button(self) -> Button {
-        Button::click(self.clone()).cstr(self)
+        Button::new(self.clone())
     }
     fn get_text(&self) -> String {
         let mut job: LayoutJob = default();
@@ -148,7 +154,7 @@ impl CstrStyle {
             _ => None,
         }
     }
-    pub fn get_font(&self, style: &Style) -> Option<FontId> {
+    pub fn get_style(&self) -> Option<TextStyle> {
         match self {
             Self::Small => Some(TextStyle::Small),
             Self::Bold => Some(TextStyle::Name("Bold".into())),
@@ -156,7 +162,10 @@ impl CstrStyle {
             Self::Heading2 => Some(TextStyle::Name("Heading2".into())),
             _ => None,
         }
-        .and_then(|s| style.text_styles.get(&s).cloned())
+    }
+    pub fn get_font(&self, style: &Style) -> Option<FontId> {
+        self.get_style()
+            .and_then(|s| style.text_styles.get(&s).cloned())
     }
 }
 
@@ -194,12 +203,15 @@ impl CstrStyle {
 
 impl StyleState {
     fn append(&self, text: &mut String, alpha: f32, job: &mut LayoutJob, style: &Style) {
+        if text.is_empty() {
+            return;
+        }
         let color = self
             .stack
             .iter()
             .rev()
             .find_map(|s| s.get_color())
-            .unwrap_or_else(|| style.visuals.widgets.noninteractive.fg_stroke.color)
+            .unwrap_or_else(|| style.visuals.widgets.inactive.fg_stroke.color)
             .gamma_multiply(alpha);
         let font_id = self
             .stack
@@ -375,9 +387,9 @@ impl ToCstr for TPlayer {
 impl ToCstr for GameMode {
     fn cstr(&self) -> Cstr {
         match self {
-            GameMode::ArenaNormal => "normal".cstr_cs(VISIBLE_DARK, CstrStyle::Small),
-            GameMode::ArenaRanked => "ranked".cstr_cs(YELLOW, CstrStyle::Small),
-            GameMode::ArenaConst => "const".cstr_cs(CYAN, CstrStyle::Small),
+            GameMode::ArenaNormal => "normal".cstr_c(VISIBLE_LIGHT),
+            GameMode::ArenaRanked => "ranked".cstr_c(YELLOW),
+            GameMode::ArenaConst => "const".cstr_c(CYAN),
         }
     }
 }

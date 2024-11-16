@@ -8,7 +8,7 @@ impl SettingsPlugin {
             title("Video Settings", ui);
             let mut cs = client_settings().clone();
             let vsync = if cs.vsync { "Enabled" } else { "Disabled" }.to_owned();
-            if Button::click(vsync)
+            if Button::new(vsync)
                 .title("Vsync".cstr())
                 .set_bg(cs.vsync, ui)
                 .ui(ui)

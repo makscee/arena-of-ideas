@@ -238,7 +238,7 @@ fn show_named_nodes<T: ShowEditor>(
             c += 1;
             ui.push_id(c, |ui| {
                 ui.horizontal(|ui| {
-                    if Button::click("-").red(ui).ui(ui).clicked() {
+                    if Button::new("-").red(ui).ui(ui).clicked() {
                         to_remove = Some(i);
                     }
                     if Checkbox::new(&mut name.is_some(), "").ui(ui).changed() {
@@ -255,7 +255,7 @@ fn show_named_nodes<T: ShowEditor>(
                 node.show_node("", context, world, ui);
             });
         }
-        if Button::click("+").ui(ui).clicked() {
+        if Button::new("+").ui(ui).clicked() {
             nodes.push((default(), None));
         }
         if let Some(i) = to_remove {

@@ -96,7 +96,7 @@ impl IncubatorPlugin {
                                         "^".cstr().label(ui);
                                         for i in (0..cards.len() - 1).rev() {
                                             let name = cards[i].name.get_text();
-                                            if Button::click(&name).ui(ui).clicked() {
+                                            if Button::new(&name).ui(ui).clicked() {
                                                 let card = cards[i].clone();
                                                 Tile::new(Side::Left, move |ui, _| {
                                                     card.ui(ui);
@@ -112,7 +112,7 @@ impl IncubatorPlugin {
                             }
                             if own {
                                 ui.horizontal(|ui| {
-                                    if Button::click("edit").ui(ui).clicked() {
+                                    if Button::new("edit").ui(ui).clicked() {
                                         EditorPlugin::load_from_incubator(
                                             i.id,
                                             i.unit.last().unwrap().clone(),
@@ -121,7 +121,7 @@ impl IncubatorPlugin {
                                         GameState::Editor.proceed_to_target(world);
                                         return;
                                     }
-                                    if Button::click("delete").red(ui).ui(ui).clicked() {
+                                    if Button::new("delete").red(ui).ui(ui).clicked() {
                                         let id = i.id;
                                         Confirmation::new("Delete Incubator unit".cstr_c(RED))
                                             .accept(move |_| {
@@ -132,7 +132,7 @@ impl IncubatorPlugin {
                                     }
                                 });
                             } else {
-                                if Button::click("open in editor").ui(ui).clicked() {
+                                if Button::new("open in editor").ui(ui).clicked() {
                                     EditorPlugin::load_unit(
                                         i.unit.last().unwrap().clone().into(),
                                         world,
@@ -141,7 +141,7 @@ impl IncubatorPlugin {
                                     return;
                                 }
                             }
-                            if Button::click("spawn").ui(ui).clicked() {
+                            if Button::new("spawn").ui(ui).clicked() {
                                 world.game_clear();
                                 let unit = PackedUnit::from(unit.clone()).unpack(
                                     TeamPlugin::entity(Faction::Team, world),

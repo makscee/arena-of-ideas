@@ -55,9 +55,7 @@ impl IconMenu {
                     set_ctx_bool_id(ui.ctx(), id, indicator(world));
                 }
             }
-            let resp = Button::click(i.name)
-                .color(i.color, ui)
-                .style(CstrStyle::Bold)
+            let resp = Button::new(i.name.to_string().cstr_cs(i.color, CstrStyle::Bold))
                 .ui(ui)
                 .on_hover_text(i.hint);
             if resp.clicked() {

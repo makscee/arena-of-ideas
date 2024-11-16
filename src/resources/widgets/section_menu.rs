@@ -110,7 +110,7 @@ impl SectionMenu {
                         } else {
                             VISIBLE_DARK
                         };
-                        let resp = Button::click(name.to_owned())
+                        let resp = Button::new(name.to_owned())
                             .enabled(enabled)
                             .color(color, ui)
                             .min_width(100.0)

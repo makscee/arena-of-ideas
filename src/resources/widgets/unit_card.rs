@@ -226,7 +226,7 @@ impl UnitCard {
             if !self.active_statuses.is_empty() {
                 ui.horizontal_wrapped(|ui| {
                     for (name, charges) in &self.active_statuses {
-                        format!("{name} ($Charges)")
+                        format!("{name} ([vb [b {charges}]])")
                             .cstr_c(name_color(&name))
                             .label(ui);
                     }

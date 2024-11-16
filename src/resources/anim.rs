@@ -86,7 +86,7 @@ impl ShowEditor for Anim {
     fn show_content(&mut self, context: &Context, world: &mut World, ui: &mut Ui) {
         match self {
             Anim::Sequence(l) | Anim::Run(l) => {
-                if Button::click("+").ui(ui).clicked() {
+                if Button::new("+").ui(ui).clicked() {
                     l.push(default());
                 }
             }

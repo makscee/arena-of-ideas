@@ -60,7 +60,7 @@ impl MetaPlugin {
         Tile::new(Side::Left, |ui, world| {
             ui.vertical_centered_justified(|ui| {
                 for m in MetaMode::iter() {
-                    if Button::click(m.as_ref()).ui(ui).clicked() {
+                    if Button::new(m.as_ref()).ui(ui).clicked() {
                         Self::load_mode(m, world);
                     }
                 }
@@ -200,7 +200,7 @@ impl MetaPlugin {
                         |_, _| default(),
                         |d: &TAuction, _, ui, _| {
                             let own = player_id() == d.owner;
-                            if Button::click(if own { "cancel" } else { "buy" })
+                            if Button::new(if own { "cancel" } else { "buy" })
                                 .enabled(own || can_afford(d.price))
                                 .ui(ui)
                                 .clicked()
@@ -294,24 +294,20 @@ impl MetaPlugin {
                     ui,
                     world,
                     |ui, world| {
-                        if Button::click("OK").ui(ui).clicked() {
+                        if Button::new("OK").ui(ui).clicked() {
                             brm(world).vote = Some(0);
                         }
-                        if Button::click("Skip").gray(ui).ui(ui).clicked() {
+                        if Button::new("Skip").gray(ui).ui(ui).clicked() {
                             Self::skip_balancing(world);
                         }
                     },
                     |ui, world| {
-                        if Button::click("Too Weak").color(CYAN, ui).ui(ui).clicked() {
+                        if Button::new("Too Weak").color(CYAN, ui).ui(ui).clicked() {
                             brm(world).vote = Some(-1);
                         }
                     },
                     |ui, world| {
-                        if Button::click("Too Strong")
-                            .color(YELLOW, ui)
-                            .ui(ui)
-                            .clicked()
-                        {
+                        if Button::new("Too Strong").color(YELLOW, ui).ui(ui).clicked() {
                             brm(world).vote = Some(1);
                         }
                     },
@@ -413,7 +409,7 @@ impl MetaPlugin {
                 .cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold),
             ui,
         );
-        if Button::click("Sell").enabled(rs.is_some()).ui(ui).clicked() {
+        if Button::new("Sell").enabled(rs.is_some()).ui(ui).clicked() {
             if !Confirmation::has_active(world) {
                 let item = rs.unwrap();
                 let item_id = item.id;
@@ -502,7 +498,7 @@ impl MetaPlugin {
                     } else {
                         0
                     };
-                    if Button::click("craft")
+                    if Button::new("craft")
                         .enabled(d.count + rs >= craft_cost)
                         .ui(ui)
                         .clicked()

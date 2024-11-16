@@ -153,7 +153,7 @@ impl TeamPlugin {
             title("Team Manager", ui);
             let cost = global_settings().create_team_cost;
             ui.vertical_centered_justified(|ui| {
-                if Button::click("New Team")
+                if Button::new("New Team")
                     .credits_cost(cost)
                     .ui(ui)
                     .clicked()
@@ -189,7 +189,7 @@ impl TeamPlugin {
                 .empty_slot_text("+1/+1\nto all".cstr_cs(VISIBLE_DARK, CstrStyle::Bold))
                 .top_content(|ui, world| {
                     ui.horizontal(|ui| {
-                        if Button::click("Rename").ui(ui).clicked() {
+                        if Button::new("Rename").ui(ui).clicked() {
                             Confirmation::new(
                                 "Rename team".cstr_cs(VISIBLE_LIGHT, CstrStyle::Heading2),
                             )
@@ -209,7 +209,7 @@ impl TeamPlugin {
                             })
                             .push(world);
                         }
-                        if Button::click("Disband").red(ui).ui(ui).clicked() {
+                        if Button::new("Disband").red(ui).ui(ui).clicked() {
                             Confirmation::new("Disband team?".cstr_c(VISIBLE_LIGHT))
                                 .accept(|world| {
                                     let tr = world.resource_mut::<TeamResource>();
@@ -248,7 +248,7 @@ impl TeamPlugin {
                         return;
                     }
                     ui.vertical_centered_justified(|ui| {
-                        if Button::click("Remove").ui(ui).clicked() {
+                        if Button::new("Remove").ui(ui).clicked() {
                             let tr = world.resource::<TeamResource>();
                             cn().reducers
                                 .team_remove_unit(tr.team, tr.team.get_team().units[slot].id)

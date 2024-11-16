@@ -186,7 +186,7 @@ impl ShowEditor for FireTrigger {
                 ability_selector(ability, ui);
             }
             FireTrigger::List(l) => {
-                if Button::click("+").ui(ui).clicked() {
+                if Button::new("+").ui(ui).clicked() {
                     l.push(default());
                 }
             }
@@ -211,7 +211,7 @@ impl ShowEditor for FireTrigger {
                     }
                 }
                 if let Some(polarity) = polarity {
-                    if Button::click("negative")
+                    if Button::new("negative")
                         .red(ui)
                         .active(*polarity == -1)
                         .ui(ui)
@@ -219,14 +219,14 @@ impl ShowEditor for FireTrigger {
                     {
                         *polarity = -1;
                     }
-                    if Button::click("neutral")
+                    if Button::new("neutral")
                         .active(*polarity == 0)
                         .ui(ui)
                         .clicked()
                     {
                         *polarity = 0;
                     }
-                    if Button::click("positive")
+                    if Button::new("positive")
                         .color(GREEN, ui)
                         .active(*polarity == 1)
                         .ui(ui)

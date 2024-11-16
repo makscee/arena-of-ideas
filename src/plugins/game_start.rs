@@ -191,8 +191,7 @@ impl GameStartPlugin {
                             let mut new_selected = None;
                             ui.horizontal_wrapped(|ui| {
                                 for (i, team) in r.teams.iter().enumerate() {
-                                    if Button::click(i.to_string())
-                                        .cstr(team.cstr())
+                                    if Button::new(team.cstr())
                                         .active(r.selected_team == i)
                                         .ui(ui)
                                         .clicked()
@@ -227,12 +226,12 @@ impl GameStartPlugin {
                         entry_fee = Some(cost);
                     }
                 };
-                let mut btn = Button::click("Play");
+                let mut btn = Button::new("Play".cstr_s(CstrStyle::Heading));
                 if let Some(cost) = entry_fee {
                     btn = btn.credits_cost(cost);
                     enabled = enabled && can_afford(cost);
                 }
-                if btn.big().enabled(enabled).ui(ui).clicked() {
+                if btn.enabled(enabled).ui(ui).clicked() {
                     let r = rm(world);
                     let mut cs = client_state().clone();
                     cs.last_played_mode = Some(r.selected_mode.clone().into());
@@ -255,14 +254,13 @@ impl GameStartPlugin {
             ui.add_space(13.0);
             if let Some(run) = run {
                 ui.vertical_centered(|ui| {
-                    if Button::click("Continue")
-                        .cstr("Continue".cstr_cs(VISIBLE_BRIGHT, CstrStyle::Heading))
+                    if Button::new("Continue".cstr_cs(VISIBLE_BRIGHT, CstrStyle::Heading))
                         .ui(ui)
                         .clicked()
                     {
                         GameState::Shop.proceed_to_target(world);
                     }
-                    if Button::click("Abandon run").red(ui).ui(ui).clicked() {
+                    if Button::new("Abandon run").red(ui).ui(ui).clicked() {
                         Confirmation::new("Abandon current run?".cstr_c(VISIBLE_BRIGHT))
                             .accept(|_| {
                                 cn().reducers.run_finish().unwrap();

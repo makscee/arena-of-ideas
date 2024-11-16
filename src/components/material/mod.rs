@@ -607,7 +607,7 @@ impl ShowEditor for RepresentationMaterial {
                         show_collapsing_node("gradient center", center, context, ui, world);
                         show_collapsing_node("gradient radius", radius, context, ui, world);
                         ui.collapsing("colors", |ui| {
-                            if Button::click("+").ui(ui).clicked() {
+                            if Button::new("+").ui(ui).clicked() {
                                 colors.push(default());
                                 parts.push(default());
                             }
@@ -615,7 +615,7 @@ impl ShowEditor for RepresentationMaterial {
                             for i in 0..parts.len() {
                                 ui.push_id(i, |ui| {
                                     ui.horizontal(|ui| {
-                                        if Button::click("-").red(ui).ui(ui).clicked() {
+                                        if Button::new("-").red(ui).ui(ui).clicked() {
                                             to_remove = Some(i);
                                         }
                                         parts[i].show_node("part", context, world, ui);
@@ -676,7 +676,7 @@ impl ShowEditor for RepresentationMaterial {
                 ui.collapsing("dilations", |ui| {
                     let mut to_remove = None;
                     for (i, (p, v)) in dilations.into_iter().enumerate() {
-                        if Button::click("-").red(ui).ui(ui).clicked() {
+                        if Button::new("-").red(ui).ui(ui).clicked() {
                             to_remove = Some(i);
                         }
                         p.show_node("p", context, world, ui);
@@ -685,7 +685,7 @@ impl ShowEditor for RepresentationMaterial {
                     if let Some(i) = to_remove {
                         dilations.remove(i);
                     }
-                    if Button::click("+").ui(ui).clicked() {
+                    if Button::new("+").ui(ui).clicked() {
                         dilations.push((default(), default()));
                     }
                 });

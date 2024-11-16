@@ -57,7 +57,7 @@ impl ProfilePlugin {
         let player = &LoginOption::get(world).player;
         let has_pass = player.pass_hash.is_some();
         Input::new("name").ui_string(&mut ped.name, ui);
-        if Button::click("Submit")
+        if Button::new("Submit")
             .enabled(!ped.name.eq(player_name()))
             .ui(ui)
             .clicked()
@@ -76,7 +76,7 @@ impl ProfilePlugin {
         Input::new("new password repeat")
             .password()
             .ui_string(&mut ped.pass_repeat, ui);
-        if Button::click("Submit")
+        if Button::new("Submit")
             .enabled(!ped.pass.is_empty() && ped.pass.eq(&ped.pass_repeat))
             .ui(ui)
             .clicked()

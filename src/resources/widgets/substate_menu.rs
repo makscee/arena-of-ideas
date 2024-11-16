@@ -11,7 +11,7 @@ impl SubstateMenu {
             for i in options {
                 let active = i.eq(&state);
                 let name = i.get_name().to_owned();
-                if Button::click(name).active(active).ui(ui).clicked() {
+                if Button::new(name).active(active).ui(ui).clicked() {
                     i.proceed_to_target(world);
                     clicked = true;
                 }

@@ -54,7 +54,7 @@ impl ShowTable<TBaseUnit> for Vec<TBaseUnit> {
                     }
                     r.context_menu(|ui| {
                         ui.reset_style();
-                        if Button::click("Copy").ui(ui).clicked() {
+                        if Button::new("Copy").ui(ui).clicked() {
                             match ron::to_string(&PackedUnit::from(d.clone())) {
                                 Ok(v) => {
                                     copy_to_clipboard(&v, world);
@@ -111,7 +111,7 @@ impl ShowTable<FusedUnit> for Vec<FusedUnit> {
                     }
                     r.context_menu(|ui| {
                         ui.reset_style();
-                        if Button::click("Copy").ui(ui).clicked() {
+                        if Button::new("Copy").ui(ui).clicked() {
                             match ron::to_string(&PackedUnit::from(d.clone())) {
                                 Ok(v) => {
                                     copy_to_clipboard(&v, world);
@@ -210,7 +210,7 @@ impl ShowTable<TMetaShop> for Vec<TMetaShop> {
                         } else {
                             1.0
                         }) as i64;
-                    if Button::click("buy")
+                    if Button::new("buy")
                         .enabled(can_afford(price))
                         .ui(ui)
                         .clicked()
