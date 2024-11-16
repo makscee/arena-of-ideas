@@ -41,9 +41,11 @@ impl ShowTable<TBaseUnit> for Vec<TBaseUnit> {
     ) -> TableState {
         let mut t = Table::new(name)
             .title()
+            .row_height(60.0)
+            .column_base_unit_texture(|d: &TBaseUnit| d)
             .column(
                 "name",
-                |d: &TBaseUnit, _| d.cstr().into(),
+                |d, _| d.cstr().into(),
                 |d, name, ui, world| {
                     let r = name.get_string().unwrap().button(ui);
                     if r.hovered() {

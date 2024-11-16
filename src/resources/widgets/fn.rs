@@ -71,9 +71,17 @@ pub fn title(text: &str, ui: &mut Ui) {
 }
 
 pub fn cursor_window(ctx: &egui::Context, content: impl FnOnce(&mut Ui)) {
-    let mut pos = ctx.pointer_latest_pos().unwrap_or_default();
     const WIDTH: f32 = 350.0;
-    let pivot = if pos.x > ctx.screen_rect().right() - WIDTH {
+    cursor_window_frame(ctx, Frame::none(), WIDTH, content);
+}
+pub fn cursor_window_frame(
+    ctx: &egui::Context,
+    frame: Frame,
+    width: f32,
+    content: impl FnOnce(&mut Ui),
+) {
+    let mut pos = ctx.pointer_latest_pos().unwrap_or_default();
+    let pivot = if pos.x > ctx.screen_rect().right() - width {
         pos.x -= 10.0;
         Align2::RIGHT_CENTER
     } else {
@@ -82,8 +90,8 @@ pub fn cursor_window(ctx: &egui::Context, content: impl FnOnce(&mut Ui)) {
     };
     Window::new("cursor_window")
         .title_bar(false)
-        .frame(Frame::none())
-        .max_width(WIDTH)
+        .frame(frame)
+        .max_width(width)
         .pivot(pivot)
         .fixed_pos(pos)
         .resizable(false)

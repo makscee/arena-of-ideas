@@ -60,12 +60,12 @@ enum UnitMode {
 
 impl ToCstr for Mode {
     fn cstr(&self) -> Cstr {
-        self.as_ref().cstr()
+        self.as_ref().into()
     }
 }
 impl ToCstr for UnitMode {
     fn cstr(&self) -> Cstr {
-        self.as_ref().cstr()
+        self.as_ref().into()
     }
 }
 
@@ -102,7 +102,10 @@ impl EditorPlugin {
         cs.save();
     }
     fn refresh(world: &mut World) {
-        world.game_clear();
+        // world.game_clear();
+        for unit in UnitPlugin::collect_faction(Faction::Team, world) {
+            world.entity_mut(unit).despawn_recursive();
+        }
         match rm(world).mode {
             Mode::Battle => {
                 rm(world).battle.0.clone().unpack(Faction::Left, world);
@@ -480,7 +483,7 @@ impl EditorPlugin {
                         .show(ui, |ui| match rm(world).unit_mode {
                             UnitMode::Unit => {
                                 let mut unit = rm(world).unit.clone();
-                                Self::unit_edit(&mut unit, ui);
+                                Self::unit_edit(&mut unit, ui, world);
                                 if rm(world).unit != unit {
                                     rm(world).unit = unit;
                                     Self::refresh(world);
@@ -609,7 +612,21 @@ impl EditorPlugin {
         .push(world);
         Self::load_mode(world);
     }
-    fn unit_edit(unit: &mut PackedUnit, ui: &mut Ui) {
+    fn unit_edit(unit: &mut PackedUnit, ui: &mut Ui, world: &mut World) {
+        let base_unit: TBaseUnit = unit.clone().into();
+        let texture = TextureRenderPlugin::texture_base_unit(&base_unit, world);
+        ui.image(egui::load::SizedTexture::new(
+            texture,
+            egui::vec2(256., 256.),
+        ));
+        ui.horizontal(|ui| {
+            for texture in TextureRenderPlugin::textures(world) {
+                ui.image(egui::load::SizedTexture::new(
+                    texture,
+                    egui::vec2(128., 128.),
+                ));
+            }
+        });
         Input::new("name:").ui_string(&mut unit.name, ui);
         ui.horizontal(|ui| {
             DragValue::new(&mut unit.pwr).prefix("pwr:").ui(ui);

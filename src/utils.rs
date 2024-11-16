@@ -2,6 +2,7 @@ use std::time::SystemTime;
 
 use bevy::{color::ColorToPacked, input::mouse::MouseButton};
 use chrono::Utc;
+use egui::TextureId;
 use humanize_duration::prelude::DurationExt;
 
 use super::*;
@@ -268,6 +269,12 @@ pub fn show_daily_refresh_timer(ui: &mut Ui) {
         format_duration(til_refresh as u64).cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold)
     )
     .label(ui);
+}
+pub fn show_texture(size: f32, texture: TextureId, ui: &mut Ui) -> Response {
+    ui.image(egui::load::SizedTexture::new(
+        texture,
+        egui::vec2(size, size),
+    ))
 }
 
 pub trait ToBVec2 {

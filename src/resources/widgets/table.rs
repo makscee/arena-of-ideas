@@ -5,6 +5,7 @@ use super::*;
 pub struct Table<T> {
     name: &'static str,
     columns: IndexMap<&'static str, TableColumn<T>>,
+    row_height: f32,
     title: bool,
     selectable: bool,
     filters: Vec<(&'static str, &'static str, VarValue)>,
@@ -88,6 +89,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
             title: default(),
             selectable: default(),
             filters: default(),
+            row_height: 22.0,
         }
     }
     pub fn title(mut self) -> Self {
@@ -100,6 +102,10 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
     }
     pub fn filter(mut self, name: &'static str, column: &'static str, value: VarValue) -> Self {
         self.filters.push((name, column, value));
+        self
+    }
+    pub fn row_height(mut self, value: f32) -> Self {
+        self.row_height = value;
         self
     }
     pub fn column(
@@ -422,6 +428,38 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
         );
         self
     }
+    pub fn column_base_unit_texture(mut self, unit: fn(&T) -> &TBaseUnit) -> Self {
+        self.columns.insert(
+            "texture",
+            TableColumn {
+                value: Box::new(|_, _| default()),
+                show: Box::new(move |d, _, ui, world| {
+                    let unit = unit(d);
+                    let tex = TextureRenderPlugin::texture_base_unit(unit, world);
+                    let size = ui.available_height();
+                    if show_texture(size, tex, ui).hovered() {
+                        const FRAME: Frame = Frame {
+                            inner_margin: Margin::ZERO,
+                            outer_margin: Margin::ZERO,
+                            rounding: Rounding::same(13.0),
+                            shadow: SHADOW,
+                            fill: BG_DARK,
+                            stroke: Stroke {
+                                width: 1.0,
+                                color: VISIBLE_LIGHT,
+                            },
+                        };
+                        cursor_window_frame(ui.ctx(), FRAME, 512.0, |ui| {
+                            show_texture(512.0, tex, ui);
+                        });
+                    }
+                }),
+                sortable: false,
+                hide_name: true,
+            },
+        );
+        self
+    }
     pub fn columns_item_kind(mut self, data: fn(&T) -> (ItemKind, u64)) -> Self {
         self.columns.insert(
             "type",
@@ -596,7 +634,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                             }
                         })
                         .body(|body| {
-                            body.rows(22.0, state.indices.len(), |mut row| {
+                            body.rows(self.row_height, state.indices.len(), |mut row| {
                                 let mut row_i = row.index();
                                 if let Some(i) = state.indices.get(row_i) {
                                     row_i = *i;

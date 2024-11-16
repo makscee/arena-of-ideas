@@ -17,12 +17,14 @@ pub struct TextureRenderPlugin;
 #[derive(Resource, Default)]
 struct TextureRenderResource {
     map: HashMap<u64, RenderData>,
+    next_x: f32,
 }
 
 struct RenderData {
     image: Handle<Image>,
     cam: Entity,
     unit: Entity,
+    ts: f32,
 }
 
 fn rm(world: &mut World) -> Mut<TextureRenderResource> {
@@ -31,16 +33,35 @@ fn rm(world: &mut World) -> Mut<TextureRenderResource> {
 
 impl Plugin for TextureRenderPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<TextureRenderResource>();
+        app.init_resource::<TextureRenderResource>()
+            .add_systems(Update, Self::update);
     }
 }
 
 impl TextureRenderPlugin {
-    fn add_unit(unit: PackedUnit, len: usize, world: &mut World) -> RenderData {
-        let x = len as f32 * 3.0;
+    fn update(world: &mut World) {
+        let mut r = rm(world);
+        let ph = gt().play_head();
+        let mut despawn: Vec<Entity> = default();
+        r.map.retain(|_, v| {
+            if ph - v.ts > 0.05 {
+                despawn.push(v.cam);
+                despawn.push(v.unit);
+                false
+            } else {
+                true
+            }
+        });
+        for entity in despawn {
+            if let Some(e) = world.get_entity_mut(entity) {
+                e.despawn_recursive();
+            }
+        }
+    }
+    fn add_unit(unit: PackedUnit, x: f32, world: &mut World) -> RenderData {
         let size = Extent3d {
-            width: 512,
-            height: 512,
+            width: 1024,
+            height: 1024,
             ..default()
         };
         let mut image = Image {
@@ -62,14 +83,13 @@ impl TextureRenderPlugin {
         let image = world.resource_mut::<Assets<Image>>().add(image);
 
         let layer = RenderLayers::layer(1);
-
         let cam = world
             .spawn((
                 Camera2dBundle {
                     camera: Camera {
                         order: -1,
                         target: bevy::render::camera::RenderTarget::Image(image.clone()),
-                        clear_color: Color::BLACK.into(),
+                        clear_color: TRANSPARENT.to_color().into(),
                         ..default()
                     },
                     projection: bevy::prelude::OrthographicProjection {
@@ -90,7 +110,12 @@ impl TextureRenderPlugin {
         for child in get_children_recursive(unit, world) {
             world.entity_mut(child).insert(layer.clone());
         }
-        RenderData { image, cam, unit }
+        RenderData {
+            image,
+            cam,
+            unit,
+            ts: gt().play_head(),
+        }
     }
     pub fn textures(world: &mut World) -> Vec<TextureId> {
         world
@@ -111,15 +136,21 @@ impl TextureRenderPlugin {
         let key = hasher.finish();
 
         world.resource_scope(|world, mut r: Mut<TextureRenderResource>| {
-            let len = r.map.len();
-            let data = r
-                .map
-                .entry(key)
-                .or_insert_with(|| Self::add_unit(unit.clone().into(), len, world));
-            world
+            let x = r.next_x;
+            let mut increase_x = false;
+            let data = r.map.entry(key).or_insert_with(|| {
+                increase_x = true;
+                Self::add_unit(unit.clone().into(), x, world)
+            });
+            data.ts = gt().play_head();
+            let image = world
                 .resource::<EguiUserTextures>()
                 .image_id(&data.image)
-                .unwrap()
+                .unwrap();
+            if increase_x {
+                r.next_x += 3.0;
+            }
+            image
         })
     }
 }
