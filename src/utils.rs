@@ -1,5 +1,8 @@
+use std::time::SystemTime;
+
 use bevy::{color::ColorToPacked, input::mouse::MouseButton};
 use chrono::Utc;
+use humanize_duration::prelude::DurationExt;
 
 use super::*;
 
@@ -197,17 +200,16 @@ pub fn format_timestamp(ts: u64) -> String {
     if ts == 0 {
         return "-".into();
     }
-    DateTime::<chrono::Local>::from(UNIX_EPOCH + Duration::from_micros(ts))
-        .format("%d/%m %H:%M")
-        .to_string()
+    let d = SystemTime::now().duration_since(UNIX_EPOCH).unwrap() - Duration::from_micros(ts);
+    format!(
+        "{} ago",
+        d.human(humanize_duration::Truncate::Minute).to_string()
+    )
 }
 pub fn format_duration(seconds: u64) -> String {
-    format!(
-        "{:02}:{:02}:{:02}",
-        seconds / 3600,
-        seconds / 60 % 60,
-        seconds % 60
-    )
+    Duration::from_secs(seconds)
+        .human(humanize_duration::Truncate::Second)
+        .to_string()
 }
 pub fn global_settings() -> GlobalSettings {
     if is_connected() {
