@@ -8,7 +8,6 @@ use daily_updater::daily_update;
 use global_data::global_data;
 use global_event::global_event;
 use house::house;
-use incubator::incubator;
 use meta_shop::meta_shop;
 use player::player;
 use player_stats::player_stats;
@@ -51,9 +50,6 @@ struct GameData {
     player_stats: Vec<TPlayerStats>,
     player_game_stats: Vec<TPlayerGameStats>,
     wallet: Vec<TWallet>,
-    incubator: Vec<TIncubator>,
-    incubator_vote: Vec<TIncubatorVote>,
-    incubator_favorite: Vec<TIncubatorFavorite>,
     global_event: Vec<TGlobalEvent>,
     player_tag: Vec<TPlayerTag>,
     reward: Vec<TReward>,
@@ -84,9 +80,6 @@ fn replace_assets(ctx: &ReducerContext, data: GameData) -> Result<(), String> {
         unit_shard_item,
         player,
         wallet,
-        incubator,
-        incubator_vote,
-        incubator_favorite,
         player_stats,
         player_game_stats,
         global_event,
@@ -266,30 +259,6 @@ fn replace_assets(ctx: &ReducerContext, data: GameData) -> Result<(), String> {
         }
         for d in wallet {
             ctx.db.wallet().insert(d);
-        }
-    }
-    if !incubator.is_empty() {
-        for d in ctx.db.incubator().iter() {
-            ctx.db.incubator().delete(d);
-        }
-        for d in incubator {
-            ctx.db.incubator().insert(d);
-        }
-    }
-    if !incubator_vote.is_empty() {
-        for d in ctx.db.incubator_vote().iter() {
-            ctx.db.incubator_vote().delete(d);
-        }
-        for d in incubator_vote {
-            ctx.db.incubator_vote().insert(d);
-        }
-    }
-    if !incubator_favorite.is_empty() {
-        for d in ctx.db.incubator_favorite().iter() {
-            ctx.db.incubator_favorite().delete(d);
-        }
-        for d in incubator_favorite {
-            ctx.db.incubator_favorite().insert(d);
         }
     }
     if !player_stats.is_empty() {

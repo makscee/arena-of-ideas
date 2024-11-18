@@ -46,7 +46,7 @@ impl PlayersPlugin {
                 let mode: u64 = r.mode.into();
                 let season = r.season;
                 Table::new("Players")
-                    .column_user_click("name", |d: &TPlayer| d.id)
+                    .column_player_click("name", |d: &TPlayer| d.id)
                     .column_cstr_value(
                         "online",
                         |d| d.last_login.into(),

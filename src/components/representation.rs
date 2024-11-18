@@ -147,6 +147,11 @@ impl ShowEditor for Representation {
         }
     }
     fn show_content(&mut self, context: &Context, world: &mut World, ui: &mut Ui) {
+        show_texture(
+            128.0,
+            TextureRenderPlugin::texture_representation(self, world),
+            ui,
+        );
         DragValue::new(&mut self.count)
             .range(0..=20)
             .prefix("count:")
@@ -197,5 +202,19 @@ impl ShowEditor for Representation {
 impl ToCstr for Representation {
     fn cstr(&self) -> Cstr {
         self.material.as_ref().into()
+    }
+}
+
+impl Hash for Representation {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.material.hash(state);
+        self.children.hash(state);
+        for (k, v) in &self.mapping {
+            k.hash(state);
+            v.hash(state);
+        }
+        self.count.hash(state);
+        self.entity.hash(state);
+        self.material_entities.hash(state);
     }
 }

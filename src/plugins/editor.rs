@@ -384,21 +384,6 @@ impl EditorPlugin {
                             if let Some(entity) = rm(world).unit_entity {
                                 match UnitCard::new(&Context::new(entity), world) {
                                     Ok(c) => {
-                                        if rm(world).incubator_link.is_some()
-                                            && Button::new("Incubator Update")
-                                                .color(YELLOW, ui)
-                                                .ui(ui)
-                                                .clicked()
-                                        {
-                                            Self::incubator_update(world);
-                                        }
-                                        if Button::new("Incubator Post")
-                                            .color(YELLOW, ui)
-                                            .ui(ui)
-                                            .clicked()
-                                        {
-                                            Self::incubator_post(world);
-                                        }
                                         ui.horizontal(|ui| {
                                             if Button::new("Copy").ui(ui).clicked() {
                                                 copy_to_clipboard(
@@ -668,64 +653,5 @@ impl EditorPlugin {
         r.incubator_link = None;
         r.unit = unit.into();
         r.mode = Mode::Unit;
-    }
-    pub fn load_from_incubator(id: u64, unit: TBaseUnit, world: &mut World) {
-        Self::load_unit(unit.into(), world);
-        rm(world).incubator_link = Some(id);
-    }
-    fn incubator_update(world: &mut World) {
-        let unit: TBaseUnit = rm(world).unit.clone().into();
-        let card = UnitCard::from_base(unit, world).unwrap();
-        let i = rm(world).incubator_link.unwrap();
-        let before_card = UnitCard::from_base(
-            cn().db
-                .incubator()
-                .id()
-                .find(&i)
-                .unwrap()
-                .unit
-                .last()
-                .unwrap()
-                .clone(),
-            world,
-        )
-        .unwrap();
-
-        Confirmation::new("Update Incubator".cstr_c(VISIBLE_LIGHT))
-            .content(move |ui, _| {
-                ui.set_width(600.0);
-                ui.columns(2, |ui| {
-                    "Before".cstr_c(VISIBLE_LIGHT).label(&mut ui[0]);
-                    "After".cstr_c(VISIBLE_LIGHT).label(&mut ui[1]);
-                    before_card.ui(&mut ui[0]);
-                    card.ui(&mut ui[1]);
-                });
-            })
-            .accept(|world| {
-                let r = rm(world);
-                let packed_unit = r.unit.clone();
-                let unit: TBaseUnit = packed_unit.clone().into();
-                let id = r.incubator_link.unwrap();
-                cn().reducers.incubator_update(id, unit).unwrap();
-            })
-            .cancel(|_| {})
-            .push(world);
-    }
-    fn incubator_post(world: &mut World) {
-        let unit: TBaseUnit = rm(world).unit.clone().into();
-        let card = UnitCard::from_packed(unit.into(), world).unwrap();
-
-        Confirmation::new("Post to Incubator".cstr_c(VISIBLE_LIGHT))
-            .content(move |ui, _| {
-                card.ui(ui);
-            })
-            .accept(|world| {
-                let r = rm(world);
-                let packed_unit = r.unit.clone();
-                let unit: TBaseUnit = packed_unit.clone().into();
-                cn().reducers.incubator_post(unit).unwrap();
-            })
-            .cancel(|_| {})
-            .push(world);
     }
 }

@@ -36,14 +36,20 @@ pub enum StdbTable {
     wallet,
     daily_state,
     unit_balance,
-    incubator,
-    incubator_vote,
-    incubator_favorite,
     player_stats,
     player_game_stats,
     global_event,
     player_tag,
     reward,
+    incubator_link,
+    incubator_vote,
+    incubator_unit,
+    incubator_trigger,
+    incubator_representation,
+    incubator_house,
+    incubator_ability,
+    incubator_effect,
+    incubator_status,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -51,7 +57,6 @@ enum StdbCondition {
     Full,
     Owner,
     OwnerOrZero,
-    Owners(Vec<u64>),
     OwnerMacro(String),
 }
 
@@ -82,9 +87,6 @@ impl ToCstr for StdbCondition {
             StdbCondition::Full => "full".cstr_c(YELLOW),
             StdbCondition::Owner => "owner".cstr_c(GREEN),
             StdbCondition::OwnerOrZero => "owner or 0".cstr_c(GREEN),
-            StdbCondition::Owners(l) => {
-                format!("owners [{}]", l.into_iter().join(", ")).cstr_c(RED)
-            }
             StdbCondition::OwnerMacro(q) => format!("owner macro {q}",).cstr_c(RED),
         }
     }
@@ -115,10 +117,6 @@ impl StdbQuery {
             StdbCondition::Full => {}
             StdbCondition::Owner => q.push_str(&format!("where owner = {uid}")),
             StdbCondition::OwnerOrZero => q.push_str(&format!("where owner = {uid} or owner = 0")),
-            StdbCondition::Owners(l) => {
-                let conditions = l.into_iter().map(|o| format!("owner = {o}")).join(" or ");
-                q.push_str(&format!("where {conditions}"));
-            }
             StdbCondition::OwnerMacro(m) => {
                 let m = m.replace("{uid}", &player_id().to_string());
                 q.push_str(&format!("where {m}"));
@@ -296,23 +294,6 @@ impl StdbTable {
                         .unwrap()
                         .0;
             }
-            StdbTable::incubator => {
-                data.incubator = serde_json::from_str::<DeserializeWrapper<Vec<TIncubator>>>(json)
-                    .unwrap()
-                    .0;
-            }
-            StdbTable::incubator_vote => {
-                data.incubator_vote =
-                    serde_json::from_str::<DeserializeWrapper<Vec<TIncubatorVote>>>(json)
-                        .unwrap()
-                        .0;
-            }
-            StdbTable::incubator_favorite => {
-                data.incubator_favorite =
-                    serde_json::from_str::<DeserializeWrapper<Vec<TIncubatorFavorite>>>(json)
-                        .unwrap()
-                        .0;
-            }
             StdbTable::player_stats => {
                 data.player_stats =
                     serde_json::from_str::<DeserializeWrapper<Vec<TPlayerStats>>>(json)
@@ -341,6 +322,15 @@ impl StdbTable {
                     .unwrap()
                     .0;
             }
+            StdbTable::incubator_link => todo!(),
+            StdbTable::incubator_vote => todo!(),
+            StdbTable::incubator_unit => todo!(),
+            StdbTable::incubator_trigger => todo!(),
+            StdbTable::incubator_representation => todo!(),
+            StdbTable::incubator_house => todo!(),
+            StdbTable::incubator_ability => todo!(),
+            StdbTable::incubator_effect => todo!(),
+            StdbTable::incubator_status => todo!(),
         }
     }
     pub fn get_json_data(self) -> String {
@@ -414,15 +404,6 @@ impl StdbTable {
             StdbTable::unit_balance => to_string_pretty(&SerializeWrapper::new(
                 cn().db.unit_balance().iter().collect_vec(),
             )),
-            StdbTable::incubator => to_string_pretty(&SerializeWrapper::new(
-                cn().db.incubator().iter().collect_vec(),
-            )),
-            StdbTable::incubator_vote => to_string_pretty(&SerializeWrapper::new(
-                cn().db.incubator_vote().iter().collect_vec(),
-            )),
-            StdbTable::incubator_favorite => to_string_pretty(&SerializeWrapper::new(
-                cn().db.incubator_favorite().iter().collect_vec(),
-            )),
             StdbTable::player_stats => to_string_pretty(&SerializeWrapper::new(
                 cn().db.player_stats().iter().collect_vec(),
             )),
@@ -437,6 +418,33 @@ impl StdbTable {
             )),
             StdbTable::reward => to_string_pretty(&SerializeWrapper::new(
                 cn().db.reward().iter().collect_vec(),
+            )),
+            StdbTable::incubator_link => to_string_pretty(&SerializeWrapper::new(
+                cn().db.incubator_link().iter().collect_vec(),
+            )),
+            StdbTable::incubator_vote => to_string_pretty(&SerializeWrapper::new(
+                cn().db.incubator_vote().iter().collect_vec(),
+            )),
+            StdbTable::incubator_unit => to_string_pretty(&SerializeWrapper::new(
+                cn().db.incubator_unit().iter().collect_vec(),
+            )),
+            StdbTable::incubator_trigger => to_string_pretty(&SerializeWrapper::new(
+                cn().db.incubator_trigger().iter().collect_vec(),
+            )),
+            StdbTable::incubator_representation => to_string_pretty(&SerializeWrapper::new(
+                cn().db.incubator_representation().iter().collect_vec(),
+            )),
+            StdbTable::incubator_house => to_string_pretty(&SerializeWrapper::new(
+                cn().db.incubator_house().iter().collect_vec(),
+            )),
+            StdbTable::incubator_ability => to_string_pretty(&SerializeWrapper::new(
+                cn().db.incubator_ability().iter().collect_vec(),
+            )),
+            StdbTable::incubator_effect => to_string_pretty(&SerializeWrapper::new(
+                cn().db.incubator_effect().iter().collect_vec(),
+            )),
+            StdbTable::incubator_status => to_string_pretty(&SerializeWrapper::new(
+                cn().db.incubator_status().iter().collect_vec(),
             )),
         }
         .unwrap()
@@ -461,12 +469,18 @@ impl StdbTable {
             | StdbTable::team
             | StdbTable::player
             | StdbTable::arena_run_archive
-            | StdbTable::incubator
-            | StdbTable::incubator_vote
-            | StdbTable::incubator_favorite
             | StdbTable::player_stats
             | StdbTable::player_game_stats
             | StdbTable::meta_shop
+            | StdbTable::incubator_link
+            | StdbTable::incubator_vote
+            | StdbTable::incubator_unit
+            | StdbTable::incubator_trigger
+            | StdbTable::incubator_representation
+            | StdbTable::incubator_house
+            | StdbTable::incubator_ability
+            | StdbTable::incubator_effect
+            | StdbTable::incubator_status
             | StdbTable::player_tag => Some(self.full()),
 
             StdbTable::trade => Some(StdbQuery {
@@ -503,28 +517,6 @@ impl StdbTable {
 
 pub fn reducers_subscriptions(dbc: &DbConnection) {
     let r = dbc.reducers();
-    r.on_incubator_post(|e, u| {
-        if !e.check_identity() {
-            return;
-        }
-        let unit = u.name.clone();
-        e.event.on_success(move |world| {
-            Notification::new(
-                format!("Unit {} submitted to Incubator", unit).cstr_c(VISIBLE_LIGHT),
-            )
-            .push(world);
-        });
-    });
-    r.on_incubator_update(|e, _, u| {
-        if !e.check_identity() {
-            return;
-        }
-        let unit = u.name.clone();
-        e.event.on_success(move |world| {
-            Notification::new(format!("Unit {} updated in Incubator", unit).cstr_c(VISIBLE_LIGHT))
-                .push(world);
-        });
-    });
     r.on_run_start_normal(|e| {
         if !e.check_identity() {
             return;
@@ -542,17 +534,6 @@ pub fn reducers_subscriptions(dbc: &DbConnection) {
             return;
         }
         e.event.on_success(|w| GameState::Shop.proceed_to_target(w))
-    });
-
-    r.on_incubator_delete(|e, id| {
-        if !e.check_identity() {
-            return;
-        }
-        let id = *id;
-        e.event.on_success(move |world| {
-            TilePlugin::close(&IncubatorPlugin::tile_id(id), world);
-            Notification::new_string(format!("Incubator entry#{id} deleted")).push(world)
-        });
     });
 
     r.on_login_by_identity(|e| {

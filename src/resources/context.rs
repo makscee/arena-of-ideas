@@ -34,12 +34,15 @@ impl Context {
     pub fn get_state<'a>(&self, world: &'a World) -> Option<&'a VarState> {
         self.layers.iter().rev().find_map(|l| l.get_state(world))
     }
-    pub fn owner(&self) -> Entity {
+    pub fn get_owner(&self) -> Result<Entity> {
         self.layers
             .iter()
             .rev()
             .find_map(|l| l.get_owner())
-            .expect("Context always supposed to have an owner")
+            .with_context(|| format!("Failed to get owner"))
+    }
+    pub fn owner(&self) -> Entity {
+        self.get_owner().expect("Owner not found")
     }
     pub fn set_target(&mut self, entity: Entity) -> &mut Self {
         self.layers.push(ContextLayer::Target(entity));

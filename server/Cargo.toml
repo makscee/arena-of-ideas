@@ -23,3 +23,4 @@ chrono = { version = "0.4.38", default-features = false, features = [
 rand_seeder = "0.2.3"
 rand_pcg = "0.3.1"
 bcrypt-no-getrandom = "0.16.0"
+ecolor = "0.29.1"

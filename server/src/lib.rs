@@ -56,8 +56,9 @@ pub use player_tag::*;
 pub use quest::*;
 pub use rand::{distributions::Alphanumeric, seq::IteratorRandom, Rng};
 pub use reward::*;
-pub use spacetimedb::{eprintln, println};
-pub use spacetimedb::{Identity, ReducerContext, SpacetimeType, Table, Timestamp};
+pub use spacetimedb::{
+    eprintln, println, reducer, table, Identity, ReducerContext, SpacetimeType, Table, Timestamp,
+};
 pub use status::*;
 pub use team::*;
 pub use trade::*;

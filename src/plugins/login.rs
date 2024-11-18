@@ -65,9 +65,6 @@ impl LoginPlugin {
     pub fn login_ui(ui: &mut Ui, world: &mut World) {
         center_window("login", ui.ctx(), |ui| {
             ui.vertical_centered_justified(|ui| {
-                "Test $Hp [red test [b te[green [s s]t]]] test"
-                    .to_owned()
-                    .label(ui);
                 let mut ld = world.resource_mut::<LoginData>();
                 if let Some(player) = ld.identity_player.clone() {
                     format!("Login as {}", player.name)

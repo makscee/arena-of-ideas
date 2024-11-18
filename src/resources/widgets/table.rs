@@ -311,7 +311,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
         );
         self
     }
-    pub fn column_user_click(mut self, name: &'static str, gid: fn(&T) -> u64) -> Self {
+    pub fn column_player_click(mut self, name: &'static str, gid: fn(&T) -> u64) -> Self {
         self.columns.insert(
             name,
             TableColumn {

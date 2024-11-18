@@ -7,7 +7,9 @@ use bevy::color::Alpha;
 pub use curve::*;
 pub use shape::*;
 
-#[derive(Serialize, Deserialize, Debug, Clone, Display, Default, EnumIter, PartialEq, AsRefStr)]
+#[derive(
+    Serialize, Deserialize, Debug, Clone, Display, Default, EnumIter, PartialEq, AsRefStr, Hash,
+)]
 #[serde(deny_unknown_fields)]
 pub enum RepresentationMaterial {
     #[default]
@@ -36,7 +38,7 @@ pub enum RepresentationMaterial {
         #[serde(default = "f32_one_e")]
         alpha: Expression,
         #[serde(default = "font_size")]
-        font_size: f32,
+        font_size: i32,
     },
     Curve {
         #[serde(default = "f32_one_e")]
@@ -54,8 +56,8 @@ pub enum RepresentationMaterial {
     },
 }
 
-fn font_size() -> f32 {
-    32.0
+fn font_size() -> i32 {
+    32
 }
 fn i32_one_e() -> Expression {
     Expression::Value(VarValue::Int(1))
@@ -93,7 +95,7 @@ fn text() -> Expression {
     Expression::S("Sample Text".into())
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, EnumIter, Display, AsRefStr)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, EnumIter, Display, AsRefStr, Hash)]
 pub enum RepShape {
     Circle {
         #[serde(default = "f32_one_e")]
@@ -105,7 +107,7 @@ pub enum RepShape {
     },
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, EnumIter, Display, AsRefStr)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, EnumIter, Display, AsRefStr, Hash)]
 pub enum RepFill {
     Solid {
         #[serde(default = "color_e")]
@@ -133,7 +135,9 @@ pub enum RepFill {
     },
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default, EnumIter, Display, AsRefStr)]
+#[derive(
+    Debug, Clone, Serialize, Deserialize, PartialEq, Default, EnumIter, Display, AsRefStr, Hash,
+)]
 pub enum RepShapeType {
     #[default]
     Opaque,
@@ -143,7 +147,7 @@ pub enum RepShapeType {
     },
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default, Hash)]
 pub struct RepFbm {
     #[serde(default = "i32_one_e")]
     pub octaves: Expression,
@@ -239,7 +243,7 @@ impl RepresentationMaterial {
                     text: Text::from_section(
                         "".to_owned(),
                         bevy::text::TextStyle {
-                            font_size: *font_size,
+                            font_size: *font_size as f32,
                             color: BEVY_MISSING_COLOR.into(),
                             ..default()
                         },
@@ -423,13 +427,14 @@ impl RepresentationMaterial {
                 let text = text.get_string(context, world).unwrap_or_default();
                 let text_comp = &mut world.get_mut::<Text>(entity).unwrap().sections[0];
                 text_comp.value = text;
+                let font_size = *font_size as f32;
                 text_comp.style = bevy::text::TextStyle {
-                    font_size: *font_size,
+                    font_size,
                     color: color.into(),
                     ..default()
                 };
                 world.get_mut::<Transform>(entity).unwrap().scale =
-                    vec3(1.0 / *font_size, 1.0 / *font_size, 1.0)
+                    vec3(1.0 / font_size, 1.0 / font_size, 1.0)
                         * size.get_float(context, world).unwrap();
             }
             RepresentationMaterial::Curve {

@@ -108,7 +108,7 @@ impl Expression {
             Expression::Value(v) => Ok(v.clone()),
             Expression::Context(var) => context.get_value(*var, world),
             Expression::OwnerState(var) => {
-                Context::new_play(context.owner()).get_value(*var, world)
+                Context::new_play(context.get_owner()?).get_value(*var, world)
             }
             Expression::TargetState(var) => {
                 Context::new_play(context.get_target()?).get_value(*var, world)
@@ -980,4 +980,110 @@ fn show_value(value: Result<VarValue>, ui: &mut Ui) {
             .ui(ui),
     };
     ui.set_max_width(w);
+}
+
+impl Hash for Expression {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        mem::discriminant(self).hash(state);
+        match self {
+            Expression::One
+            | Expression::Zero
+            | Expression::OppositeFaction
+            | Expression::SlotPosition
+            | Expression::GT
+            | Expression::Beat
+            | Expression::PI
+            | Expression::PI2
+            | Expression::Age
+            | Expression::Index
+            | Expression::T
+            | Expression::Owner
+            | Expression::Caster
+            | Expression::Target
+            | Expression::Status
+            | Expression::AllAllyUnits
+            | Expression::AllEnemyUnits
+            | Expression::AllUnits
+            | Expression::AllOtherUnits
+            | Expression::AdjacentUnits => {}
+            Expression::FilterStatusUnits(s, e)
+            | Expression::FilterNoStatusUnits(s, e)
+            | Expression::StatusEntity(s, e) => {
+                s.hash(state);
+                e.hash(state);
+            }
+            Expression::Value(v) => v.hash(state),
+            Expression::Context(v)
+            | Expression::OwnerState(v)
+            | Expression::TargetState(v)
+            | Expression::CasterState(v)
+            | Expression::OwnerStateLast(v)
+            | Expression::TargetStateLast(v)
+            | Expression::CasterStateLast(v) => v.hash(state),
+            Expression::StatusState(s, v)
+            | Expression::StatusStateLast(s, v)
+            | Expression::AbilityContext(s, v)
+            | Expression::AbilityState(s, v) => {
+                s.hash(state);
+                v.hash(state);
+            }
+            Expression::StatusCharges(s) | Expression::HexColor(s) => s.hash(state),
+            Expression::F(v) => v.to_bits().hash(state),
+            Expression::I(v) => v.hash(state),
+            Expression::B(v) => v.hash(state),
+            Expression::S(v) => v.hash(state),
+            Expression::V2(x, y) => {
+                x.to_bits().hash(state);
+                y.to_bits().hash(state);
+            }
+            Expression::Dbg(e)
+            | Expression::Ctx(e)
+            | Expression::ToI(e)
+            | Expression::ToF(e)
+            | Expression::Vec2E(e)
+            | Expression::UnitVec(e)
+            | Expression::VX(e)
+            | Expression::VY(e)
+            | Expression::Sin(e)
+            | Expression::Cos(e)
+            | Expression::Sqr(e)
+            | Expression::Even(e)
+            | Expression::Abs(e)
+            | Expression::Floor(e)
+            | Expression::Ceil(e)
+            | Expression::Fract(e)
+            | Expression::SlotUnit(e)
+            | Expression::RandomF(e)
+            | Expression::RandomUnit(e)
+            | Expression::ListCount(e) => e.hash(state),
+            Expression::MaxUnit(a, b)
+            | Expression::RandomUnitSubset(a, b)
+            | Expression::Vec2EE(a, b)
+            | Expression::Sum(a, b)
+            | Expression::Sub(a, b)
+            | Expression::Mul(a, b)
+            | Expression::Div(a, b)
+            | Expression::Max(a, b)
+            | Expression::Min(a, b)
+            | Expression::Mod(a, b)
+            | Expression::And(a, b)
+            | Expression::Or(a, b)
+            | Expression::Equals(a, b)
+            | Expression::GreaterThen(a, b)
+            | Expression::LessThen(a, b) => {
+                a.hash(state);
+                b.hash(state);
+            }
+            Expression::If(i, t, e) => {
+                i.hash(state);
+                t.hash(state);
+                e.hash(state);
+            }
+            Expression::WithVar(v, a, b) => {
+                v.hash(state);
+                a.hash(state);
+                b.hash(state);
+            }
+        }
+    }
 }

@@ -8,16 +8,15 @@ use spacetimedb_sdk::{
     lib as __lib, sats as __sats, ws_messages as __ws,
 };
 
-use super::t_base_unit_type::TBaseUnit;
-
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct TIncubator {
+pub struct TIncubatorRepresentation {
     pub id: u64,
     pub owner: u64,
-    pub unit: Vec<TBaseUnit>,
+    pub data: String,
+    pub description: String,
 }
 
-impl __sdk::spacetime_module::InModule for TIncubator {
+impl __sdk::spacetime_module::InModule for TIncubatorRepresentation {
     type Module = super::RemoteModule;
 }

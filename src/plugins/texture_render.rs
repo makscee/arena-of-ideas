@@ -23,7 +23,7 @@ struct TextureRenderResource {
 struct RenderData {
     image: Handle<Image>,
     cam: Entity,
-    unit: Entity,
+    entity: Entity,
     ts: f32,
 }
 
@@ -39,6 +39,9 @@ impl Plugin for TextureRenderPlugin {
 }
 
 impl TextureRenderPlugin {
+    fn layer() -> RenderLayers {
+        RenderLayers::layer(1)
+    }
     fn update(world: &mut World) {
         let mut r = rm(world);
         let ph = gt().play_head();
@@ -46,7 +49,7 @@ impl TextureRenderPlugin {
         r.map.retain(|_, v| {
             if ph - v.ts > 0.05 {
                 despawn.push(v.cam);
-                despawn.push(v.unit);
+                despawn.push(v.entity);
                 false
             } else {
                 true
@@ -58,7 +61,7 @@ impl TextureRenderPlugin {
             }
         }
     }
-    fn add_unit(unit: PackedUnit, x: f32, world: &mut World) -> RenderData {
+    fn spawn_camera(x: f32, entity: Entity, world: &mut World) -> RenderData {
         let size = Extent3d {
             width: 1024,
             height: 1024,
@@ -81,8 +84,6 @@ impl TextureRenderPlugin {
         };
         image.resize(size);
         let image = world.resource_mut::<Assets<Image>>().add(image);
-
-        let layer = RenderLayers::layer(1);
         let cam = world
             .spawn((
                 Camera2dBundle {
@@ -99,23 +100,35 @@ impl TextureRenderPlugin {
                     transform: Transform::from_xyz(x, 0.0, 900.0),
                     ..default()
                 },
-                layer.clone(),
+                Self::layer(),
             ))
             .id();
         world
             .resource_mut::<EguiUserTextures>()
             .add_image(image.clone());
-        let unit = unit.unpack(TeamPlugin::entity(Faction::Shop, world), None, None, world);
-        VarState::get_mut(unit, world).set_vec2(VarName::Position, vec2(x, 0.0).into());
-        for child in get_children_recursive(unit, world) {
-            world.entity_mut(child).insert(layer.clone());
-        }
         RenderData {
             image,
             cam,
-            unit,
+            entity,
             ts: gt().play_head(),
         }
+    }
+    fn spawn_unit(unit: PackedUnit, x: f32, world: &mut World) -> Entity {
+        let entity = unit.unpack(TeamPlugin::entity(Faction::Shop, world), None, None, world);
+        VarState::get_mut(entity, world).set_vec2(VarName::Position, vec2(x, 0.0).into());
+        for child in get_children_recursive(entity, world) {
+            world.entity_mut(child).insert(Self::layer());
+        }
+        entity
+    }
+    fn spawn_representation(rep: Representation, x: f32, world: &mut World) -> Entity {
+        let entity = world.spawn_empty().id();
+        VarState::new_with(VarName::Position, vec2(x, 0.0).into()).attach(entity, 0, world);
+        rep.unpack(entity, world);
+        for child in get_children_recursive(entity, world) {
+            world.entity_mut(child).insert(Self::layer());
+        }
+        entity
     }
     pub fn textures(world: &mut World) -> Vec<TextureId> {
         world
@@ -140,7 +153,32 @@ impl TextureRenderPlugin {
             let mut increase_x = false;
             let data = r.map.entry(key).or_insert_with(|| {
                 increase_x = true;
-                Self::add_unit(unit.clone().into(), x, world)
+                let entity = Self::spawn_unit(unit.clone().into(), x, world);
+                Self::spawn_camera(x, entity, world)
+            });
+            data.ts = gt().play_head();
+            let image = world
+                .resource::<EguiUserTextures>()
+                .image_id(&data.image)
+                .unwrap();
+            if increase_x {
+                r.next_x += 3.0;
+            }
+            image
+        })
+    }
+    pub fn texture_representation(rep: &Representation, world: &mut World) -> TextureId {
+        let mut hasher = DefaultHasher::new();
+        rep.hash(&mut hasher);
+        let key = hasher.finish();
+
+        world.resource_scope(|world, mut r: Mut<TextureRenderResource>| {
+            let x = r.next_x;
+            let mut increase_x = false;
+            let data = r.map.entry(key).or_insert_with(|| {
+                increase_x = true;
+                let entity = Self::spawn_representation(rep.clone(), x, world);
+                Self::spawn_camera(x, entity, world)
             });
             data.ts = gt().play_head();
             let image = world

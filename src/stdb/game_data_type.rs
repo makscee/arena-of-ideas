@@ -20,9 +20,6 @@ use super::t_battle_type::TBattle;
 use super::t_daily_state_type::TDailyState;
 use super::t_global_event_type::TGlobalEvent;
 use super::t_house_type::THouse;
-use super::t_incubator_favorite_type::TIncubatorFavorite;
-use super::t_incubator_type::TIncubator;
-use super::t_incubator_vote_type::TIncubatorVote;
 use super::t_lootbox_item_type::TLootboxItem;
 use super::t_meta_shop_type::TMetaShop;
 use super::t_player_game_stats_type::TPlayerGameStats;
@@ -68,9 +65,6 @@ pub struct GameData {
     pub player_stats: Vec<TPlayerStats>,
     pub player_game_stats: Vec<TPlayerGameStats>,
     pub wallet: Vec<TWallet>,
-    pub incubator: Vec<TIncubator>,
-    pub incubator_vote: Vec<TIncubatorVote>,
-    pub incubator_favorite: Vec<TIncubatorFavorite>,
     pub global_event: Vec<TGlobalEvent>,
     pub player_tag: Vec<TPlayerTag>,
     pub reward: Vec<TReward>,
