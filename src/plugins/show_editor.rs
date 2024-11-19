@@ -71,7 +71,7 @@ pub trait ShowEditor: ToCstr + Default + Serialize + DeserializeOwned + Clone {
                 ui.with_layout(Layout::left_to_right(Align::Min), |ui| {
                     ui.vertical(|ui| {
                         self.show_self(ui, world);
-                        ui.set_max_width(ui.min_size().x);
+                        // ui.set_max_width(ui.min_size().x);
                         self.show_content(context, world, ui);
                     });
                     ui.vertical(|ui| {

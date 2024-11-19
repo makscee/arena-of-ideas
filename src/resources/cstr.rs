@@ -68,11 +68,13 @@ impl CstrTrait for Cstr {
         {
             let text = &job.text[byte_range];
             let color = format.color;
-            s += &text.custom_color(CustomColor {
-                r: color.r(),
-                g: color.g(),
-                b: color.b(),
-            });
+            s += &text
+                .custom_color(CustomColor {
+                    r: color.r(),
+                    g: color.g(),
+                    b: color.b(),
+                })
+                .to_string();
         }
         s
     }

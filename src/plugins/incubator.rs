@@ -38,7 +38,7 @@ impl IncubatorTable {
     fn open_create_popup(self, world: &mut World) {
         match self {
             IncubatorTable::Unit => {
-                world.insert_resource(NewUnit::default());
+                world.init_resource::<NewUnit>();
                 Confirmation::new("New Unit".cstr_cs(VISIBLE_BRIGHT, CstrStyle::Heading2))
                     .accept(|world| {
                         if let Some(NewUnit {
@@ -68,7 +68,7 @@ impl IncubatorTable {
                     .push(world);
             }
             IncubatorTable::Trigger => {
-                world.insert_resource(NewTrigger::default());
+                world.init_resource::<NewTrigger>();
                 Confirmation::new("New Trigger".cstr_cs(VISIBLE_BRIGHT, CstrStyle::Heading2))
                     .accept(|world| {
                         if let Some(NewTrigger { description, data }) =
@@ -94,10 +94,11 @@ impl IncubatorTable {
                     .push(world);
             }
             IncubatorTable::Representation => {
-                world.insert_resource(NewRepresentation::default());
+                world.init_resource::<NewRepresentation>();
                 Confirmation::new(
                     "New Representation".cstr_cs(VISIBLE_BRIGHT, CstrStyle::Heading2),
                 )
+                .fullscreen()
                 .accept(|world| {
                     if let Some(NewRepresentation { description, data }) =
                         world.remove_resource::<NewRepresentation>()
@@ -108,6 +109,7 @@ impl IncubatorTable {
                                 description,
                             )
                             .unwrap();
+                        world.insert_resource(NewRepresentation::default());
                     } else {
                         "New representation data not found".notify_error(world);
                     }
@@ -165,12 +167,26 @@ impl IncubatorTable {
                 IncubatorTable::Representation => {
                     let data = cn().db.incubator_representation().iter().collect_vec();
                     Table::new("Representations")
-                        .column_player_click("owner", |d: &TIncubatorRepresentation| d.owner)
-                        .column_cstr("description", |d, _| d.description.clone())
-                        .column_cstr("data", |d, _| match ron::from_str::<Trigger>(&d.data) {
-                            Ok(v) => v.cstr_expanded(),
-                            Err(e) => format!("error: {e:?}").cstr_c(RED),
+                        .row_height(64.0)
+                        .column_representation_texture(|d: &TIncubatorRepresentation| {
+                            match ron::from_str::<Representation>(&d.data) {
+                                Ok(v) => v,
+                                Err(_) => default(),
+                            }
                         })
+                        .column_player_click("owner", |d| d.owner)
+                        .column_gid("id", |d| d.id)
+                        .column_cstr("description", |d, _| d.description.clone())
+                        .column_btn_dyn(
+                            "clone",
+                            Box::new(move |d, _, world| {
+                                world.insert_resource(NewRepresentation {
+                                    description: d.description.clone(),
+                                    data: ron::from_str(&d.data).unwrap(),
+                                });
+                                Self::open_create_popup(self, world);
+                            }),
+                        )
                         .ui(&data, ui, world);
                 }
                 IncubatorTable::House => todo!(),

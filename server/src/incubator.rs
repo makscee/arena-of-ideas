@@ -136,7 +136,7 @@ fn incubator_post_representation(
         .filter(&data)
         .next()
     {
-        return Err(format!("Identical representation exists: {}", r.id));
+        return Err(format!("Identical representation exists: id#{}", r.id));
     }
     ctx.db
         .incubator_representation()
@@ -182,7 +182,7 @@ fn incubator_post_trigger(
         return Err("Data can't be empty".into());
     }
     if let Some(r) = ctx.db.incubator_trigger().data().filter(&data).next() {
-        return Err(format!("Identical trigger exists: {}", r.id));
+        return Err(format!("Identical trigger exists: id#{}", r.id));
     }
     ctx.db.incubator_trigger().insert(TIncubatorTrigger {
         id: next_id(ctx),
@@ -226,7 +226,7 @@ fn incubator_post_effect(
         return Err("Data can't be empty".into());
     }
     if let Some(r) = ctx.db.incubator_effect().data().filter(&data).next() {
-        return Err(format!("Identical effect exists: {}", r.id));
+        return Err(format!("Identical effect exists: id#{}", r.id));
     }
     ctx.db.incubator_effect().insert(TIncubatorEffect {
         id: next_id(ctx),
@@ -271,7 +271,7 @@ fn incubator_post_house(ctx: &ReducerContext, name: String, color: String) -> Re
         .filter((&name, &color))
         .next()
     {
-        return Err(format!("Identical house exists: {}", r.id));
+        return Err(format!("Identical house exists: id#{}", r.id));
     }
     ctx.db.incubator_house().insert(TIncubatorHouse {
         id: next_id(ctx),
@@ -317,7 +317,7 @@ fn incubator_post_ability(
         .filter((&name, &description))
         .next()
     {
-        return Err(format!("Identical ability exists: {}", r.id));
+        return Err(format!("Identical ability exists: id#{}", r.id));
     }
     ctx.db.incubator_ability().insert(TIncubatorAbility {
         id: next_id(ctx),
@@ -365,7 +365,7 @@ fn incubator_post_status(
         .filter((&name, &description, polarity))
         .next()
     {
-        return Err(format!("Identical status exists: {}", r.id));
+        return Err(format!("Identical status exists: id#{}", r.id));
     }
     ctx.db.incubator_status().insert(TIncubatorStatus {
         id: next_id(ctx),

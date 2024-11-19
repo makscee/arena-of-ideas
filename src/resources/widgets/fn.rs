@@ -15,20 +15,41 @@ pub fn br(ui: &mut Ui) {
 pub fn space(ui: &mut Ui) {
     ui.add_space(13.0);
 }
+pub fn center_window_fullscreen(
+    name: &str,
+    ctx: &egui::Context,
+    add_contents: impl FnOnce(&mut Ui),
+) {
+    Window::new(name)
+        .pivot(Align2::CENTER_CENTER)
+        .fixed_pos(ctx.screen_rect().center())
+        .title_bar(false)
+        .order(Order::Foreground)
+        .fixed_size(ctx.screen_rect().shrink(30.0).size())
+        .resizable([false, false])
+        .show(ctx, |ui| {
+            add_contents(ui);
+        });
+}
 pub fn center_window(name: &str, ctx: &egui::Context, add_contents: impl FnOnce(&mut Ui)) {
     Window::new(name)
         .pivot(Align2::CENTER_CENTER)
         .fixed_pos(ctx.screen_rect().center())
         .title_bar(false)
         .order(Order::Foreground)
-        .default_width(300.0)
+        .max_width(600.0)
         .resizable([false, false])
         .show(ctx, |ui| {
             ui.set_max_height(ui.ctx().screen_rect().height() * 0.9);
             add_contents(ui);
         });
 }
-pub fn popup(name: &str, ctx: &egui::Context, add_contents: impl FnOnce(&mut Ui)) {
+pub fn popup(
+    name: &str,
+    fullscreen: bool,
+    ctx: &egui::Context,
+    add_contents: impl FnOnce(&mut Ui),
+) {
     let rect = ctx.screen_rect();
     Area::new(Id::new("black_bg"))
         .constrain_to(rect)
@@ -39,7 +60,11 @@ pub fn popup(name: &str, ctx: &egui::Context, add_contents: impl FnOnce(&mut Ui)
             ui.painter_at(rect)
                 .rect_filled(rect, Rounding::ZERO, Color32::from_black_alpha(200));
         });
-    center_window(name, ctx, add_contents);
+    if fullscreen {
+        center_window_fullscreen(name, ctx, add_contents);
+    } else {
+        center_window(name, ctx, add_contents);
+    }
 }
 pub fn text_dots_text(text1: Cstr, text2: Cstr, ui: &mut Ui) {
     ui.horizontal(|ui| {

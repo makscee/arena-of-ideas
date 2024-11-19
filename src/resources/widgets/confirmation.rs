@@ -14,6 +14,7 @@ pub struct Confirmation {
     cancel: Option<Box<dyn Fn(&mut World) + Send + Sync>>,
     cancel_name: String,
     content: Option<Box<dyn Fn(&mut Ui, &mut World) + Send + Sync>>,
+    fullscreen: bool,
 }
 
 #[derive(Resource, Default)]
@@ -36,6 +37,7 @@ impl Confirmation {
             cancel: None,
             cancel_name: "Cancel".into(),
             content: None,
+            fullscreen: false,
         }
     }
     #[must_use]
@@ -66,16 +68,21 @@ impl Confirmation {
         self.content = Some(Box::new(content));
         self
     }
+    #[must_use]
+    pub fn fullscreen(mut self) -> Self {
+        self.fullscreen = true;
+        self
+    }
     fn ui(&self, ctx: &egui::Context, world: &mut World) {
-        popup("Confirmation window", ctx, |ui| {
+        popup("Confirmation window", self.fullscreen, ctx, |ui| {
             ui.vertical_centered_justified(|ui| {
                 self.text.as_label(ui).wrap().ui(ui);
             });
-            ui.vertical(|ui| {
-                if let Some(content) = &self.content {
+            if let Some(content) = &self.content {
+                ui.vertical(|ui| {
                     (content)(ui, world);
-                }
-            });
+                });
+            }
             space(ui);
             ui.columns(2, |ui| {
                 ui[0].vertical_centered_justified(|ui| {

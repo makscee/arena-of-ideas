@@ -1,3 +1,4 @@
+use egui::TextureId;
 use egui_extras::{Column, TableBuilder};
 
 use super::*;
@@ -428,14 +429,13 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
         );
         self
     }
-    pub fn column_base_unit_texture(mut self, unit: fn(&T) -> &TBaseUnit) -> Self {
+    pub fn column_texture(mut self, tex: Box<dyn Fn(&T, &mut World) -> TextureId>) -> Self {
         self.columns.insert(
             "texture",
             TableColumn {
                 value: Box::new(|_, _| default()),
                 show: Box::new(move |d, _, ui, world| {
-                    let unit = unit(d);
-                    let tex = TextureRenderPlugin::texture_base_unit(unit, world);
+                    let tex = tex(d, world);
                     let size = ui.available_height();
                     if show_texture(size, tex, ui).hovered() {
                         const FRAME: Frame = Frame {
@@ -459,6 +459,18 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
             },
         );
         self
+    }
+    pub fn column_base_unit_texture(self, unit: fn(&T) -> &TBaseUnit) -> Self {
+        self.column_texture(Box::new(move |d, world| {
+            let unit = unit(d);
+            TextureRenderPlugin::texture_base_unit(unit, world)
+        }))
+    }
+    pub fn column_representation_texture(self, rep: fn(&T) -> Representation) -> Self {
+        self.column_texture(Box::new(move |d, world| {
+            let rep = rep(d);
+            TextureRenderPlugin::texture_representation(&rep, world)
+        }))
     }
     pub fn columns_item_kind(mut self, data: fn(&T) -> (ItemKind, u64)) -> Self {
         self.columns.insert(

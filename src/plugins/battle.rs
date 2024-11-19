@@ -423,7 +423,7 @@ impl BattlePlugin {
         if !gt().ended() {
             return;
         }
-        popup("end_panel", ui.ctx(), |ui| {
+        popup("end_panel", false, ui.ctx(), |ui| {
             ui.vertical_centered_justified(|ui| {
                 let bd = world.resource::<BattleResource>();
                 if bd.result.is_win().unwrap_or_default() {

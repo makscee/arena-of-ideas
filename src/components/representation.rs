@@ -147,52 +147,58 @@ impl ShowEditor for Representation {
         }
     }
     fn show_content(&mut self, context: &Context, world: &mut World, ui: &mut Ui) {
-        show_texture(
-            128.0,
-            TextureRenderPlugin::texture_representation(self, world),
-            ui,
-        );
-        DragValue::new(&mut self.count)
-            .range(0..=20)
-            .prefix("count:")
-            .ui(ui);
-        CollapsingHeader::new(format!("Mapping ({})", self.mapping.len()))
-            .id_source("mapping")
-            .show(ui, |ui| {
-                if Button::new("+").ui(ui).clicked() {
-                    self.mapping.insert_before(0, default(), default());
-                }
-                let mut move_var: Option<(VarName, VarName)> = None;
-                let mut remove_var = None;
-                for (var, value) in &mut self.mapping {
-                    ui.push_id(var, |ui| {
-                        ui.horizontal(|ui| {
-                            let mut new_var = *var;
-                            ui.vertical(|ui| {
-                                if var_selector(&mut new_var, ui) {
-                                    move_var = Some((*var, new_var));
-                                }
-                                if Button::new("-").red(ui).ui(ui).clicked() {
-                                    remove_var = Some(*var);
-                                }
+        ui.horizontal_top(|ui| {
+            ui.vertical(|ui| {
+                show_texture(
+                    128.0,
+                    TextureRenderPlugin::texture_representation(self, world),
+                    ui,
+                );
+                DragValue::new(&mut self.count)
+                    .range(0..=20)
+                    .prefix("count:")
+                    .ui(ui);
+                CollapsingHeader::new(format!("Mapping ({})", self.mapping.len()))
+                    .id_source("mapping")
+                    .show(ui, |ui| {
+                        if Button::new("+").ui(ui).clicked() {
+                            self.mapping.insert_before(0, default(), default());
+                        }
+                        let mut move_var: Option<(VarName, VarName)> = None;
+                        let mut remove_var = None;
+                        for (var, value) in &mut self.mapping {
+                            ui.push_id(var, |ui| {
+                                ui.horizontal(|ui| {
+                                    let mut new_var = *var;
+                                    ui.vertical(|ui| {
+                                        if var_selector(&mut new_var, ui) {
+                                            move_var = Some((*var, new_var));
+                                        }
+                                        if Button::new("-").red(ui).ui(ui).clicked() {
+                                            remove_var = Some(*var);
+                                        }
+                                    });
+                                    value.show_node("", context, world, ui)
+                                });
                             });
-                            value.show_node("", context, world, ui)
-                        });
+                        }
+                        if let Some((from, to)) = move_var {
+                            let index = self.mapping.get_index_of(&from).unwrap();
+                            let value = self.mapping.shift_remove(&from).unwrap();
+                            let (index, old) = self.mapping.insert_before(index, to, value);
+                            if let Some(old) = old {
+                                self.mapping.insert_before(index, from, old);
+                            }
+                        }
+                        if let Some(var) = remove_var {
+                            self.mapping.shift_remove(&var);
+                        }
                     });
-                }
-                if let Some((from, to)) = move_var {
-                    let index = self.mapping.get_index_of(&from).unwrap();
-                    let value = self.mapping.shift_remove(&from).unwrap();
-                    let (index, old) = self.mapping.insert_before(index, to, value);
-                    if let Some(old) = old {
-                        self.mapping.insert_before(index, from, old);
-                    }
-                }
-                if let Some(var) = remove_var {
-                    self.mapping.shift_remove(&var);
-                }
             });
-        self.material.show_node("", context, world, ui);
+            ScrollArea::both().show(ui, |ui| {
+                self.material.show_node("", context, world, ui);
+            });
+        });
     }
     fn get_inner_mut(&mut self) -> Vec<&mut Box<Self>> {
         default()

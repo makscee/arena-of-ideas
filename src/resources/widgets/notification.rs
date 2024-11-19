@@ -45,11 +45,7 @@ impl Notification {
         OperationsPlugin::add(|w| self.push(w));
     }
     pub fn push(self, world: &mut World) {
-        let prefix = match self.r#type {
-            NotificationType::Alert => "Notify: ".dimmed(),
-            NotificationType::Error => "Error: ".dimmed().red(),
-        };
-        info!("{prefix} {}", self.text);
+        self.text.info();
         if let Some(sfx) = self.sfx {
             AudioPlugin::queue_sound(sfx);
         }

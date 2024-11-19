@@ -123,8 +123,8 @@ impl TextureRenderPlugin {
     }
     fn spawn_representation(rep: Representation, x: f32, world: &mut World) -> Entity {
         let entity = world.spawn_empty().id();
-        VarState::new_with(VarName::Position, vec2(x, 0.0).into()).attach(entity, 0, world);
         rep.unpack(entity, world);
+        VarState::new_with(VarName::Position, vec2(x, 0.0).into()).attach(entity, 0, world);
         for child in get_children_recursive(entity, world) {
             world.entity_mut(child).insert(Self::layer());
         }
@@ -143,9 +143,13 @@ impl TextureRenderPlugin {
             })
             .collect_vec()
     }
-    pub fn texture_base_unit(unit: &TBaseUnit, world: &mut World) -> TextureId {
+    fn cached_texture(
+        h: impl Hash,
+        spawn: impl FnOnce(f32, &mut World) -> Entity,
+        world: &mut World,
+    ) -> TextureId {
         let mut hasher = DefaultHasher::new();
-        unit.hash(&mut hasher);
+        h.hash(&mut hasher);
         let key = hasher.finish();
 
         world.resource_scope(|world, mut r: Mut<TextureRenderResource>| {
@@ -153,7 +157,7 @@ impl TextureRenderPlugin {
             let mut increase_x = false;
             let data = r.map.entry(key).or_insert_with(|| {
                 increase_x = true;
-                let entity = Self::spawn_unit(unit.clone().into(), x, world);
+                let entity = spawn(x, world);
                 Self::spawn_camera(x, entity, world)
             });
             data.ts = gt().play_head();
@@ -162,33 +166,23 @@ impl TextureRenderPlugin {
                 .image_id(&data.image)
                 .unwrap();
             if increase_x {
-                r.next_x += 3.0;
+                r.next_x += 100.0;
             }
             image
         })
     }
+    pub fn texture_base_unit(unit: &TBaseUnit, world: &mut World) -> TextureId {
+        Self::cached_texture(
+            unit,
+            |x, world| Self::spawn_unit(unit.clone().into(), x, world),
+            world,
+        )
+    }
     pub fn texture_representation(rep: &Representation, world: &mut World) -> TextureId {
-        let mut hasher = DefaultHasher::new();
-        rep.hash(&mut hasher);
-        let key = hasher.finish();
-
-        world.resource_scope(|world, mut r: Mut<TextureRenderResource>| {
-            let x = r.next_x;
-            let mut increase_x = false;
-            let data = r.map.entry(key).or_insert_with(|| {
-                increase_x = true;
-                let entity = Self::spawn_representation(rep.clone(), x, world);
-                Self::spawn_camera(x, entity, world)
-            });
-            data.ts = gt().play_head();
-            let image = world
-                .resource::<EguiUserTextures>()
-                .image_id(&data.image)
-                .unwrap();
-            if increase_x {
-                r.next_x += 3.0;
-            }
-            image
-        })
+        Self::cached_texture(
+            rep,
+            |x, world| Self::spawn_representation(rep.clone(), x, world),
+            world,
+        )
     }
 }

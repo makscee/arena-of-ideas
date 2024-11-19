@@ -746,6 +746,15 @@ pub fn reducers_subscriptions(dbc: &DbConnection) {
         }
         e.event.notify_error();
     });
+
+    r.on_incubator_post_representation(|e, _, _| {
+        if !e.check_identity() {
+            return;
+        }
+        e.event.on_success(|w| {
+            "Representation posted".notify(w);
+        });
+    });
 }
 
 pub fn db_subscriptions() {
