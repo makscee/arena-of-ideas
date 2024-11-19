@@ -35,6 +35,49 @@ impl IncubatorTable {
     fn id(self) -> String {
         self.to_string()
     }
+    fn get_score(target: u64) -> i32 {
+        cn().db
+            .incubator_vote()
+            .iter()
+            .filter_map(|v| {
+                if v.target == target {
+                    Some(if v.vote { 1 } else { -1 })
+                } else {
+                    None
+                }
+            })
+            .sum::<i32>()
+    }
+    fn get_link_id(from: u64, to: u64) -> Option<u64> {
+        cn().db
+            .incubator_link()
+            .iter()
+            .find(|l| l.from == from && l.to == to)
+            .map(|l| l.id)
+    }
+    fn get_top_representation(from: u64) -> Option<String> {
+        cn().db
+            .incubator_link()
+            .iter()
+            .filter(|l| {
+                l.from == from
+                    && cn()
+                        .db
+                        .incubator_representation()
+                        .id()
+                        .find(&l.to)
+                        .is_some()
+            })
+            .map(|l| (l.to, Self::get_score(l.id)))
+            .max_by_key(|(_, score)| *score)
+            .and_then(|(id, _)| {
+                cn().db
+                    .incubator_representation()
+                    .id()
+                    .find(&id)
+                    .map(|d| d.data)
+            })
+    }
     fn open_create_popup(self, world: &mut World) {
         match self {
             IncubatorTable::Unit => {
@@ -144,13 +187,74 @@ impl IncubatorTable {
             });
             match self {
                 IncubatorTable::Unit => {
-                    let data = cn().db.incubator_unit().iter().collect_vec();
+                    let data = cn()
+                        .db
+                        .incubator_unit()
+                        .iter()
+                        .map(|d| {
+                            let unit = TBaseUnit {
+                                name: d.name.clone(),
+                                pwr: d.pwr,
+                                hp: d.hp,
+                                rarity: 0,
+                                house: "Default".into(),
+                                pool: UnitPool::default(),
+                                triggers: Vec::new(),
+                                targets: Vec::new(),
+                                effects: Vec::new(),
+                                representation: Self::get_top_representation(d.id).unwrap_or_else(
+                                    || ron::to_string(&Representation::default()).unwrap(),
+                                ),
+                            };
+                            (d, unit)
+                        })
+                        .collect_vec();
                     Table::new("Units")
-                        .column_player_click("owner", |d: &TIncubatorUnit| d.owner)
-                        .column_cstr("name", |d, _| d.name.clone())
-                        .column_cstr("description", |d, _| d.description.clone())
-                        .column_int("pwr", |d| d.pwr)
-                        .column_int("hp", |d| d.hp)
+                        .row_height(64.0)
+                        .column_base_unit_texture(|(_, u): &(TIncubatorUnit, TBaseUnit)| u)
+                        .column_player_click("owner", |(d, _)| d.owner)
+                        .column_cstr("name", |(d, _), _| d.name.clone())
+                        .column_cstr("description", |(d, _), _| d.description.clone())
+                        .column_int("pwr", |(d, _)| d.pwr)
+                        .column_int("hp", |(d, _)| d.hp)
+                        .column_btn("rep link", |d, ui, world| {
+                            let from = d.0.id;
+                            Confirmation::new(
+                                "Representation Links".cstr_cs(VISIBLE_BRIGHT, CstrStyle::Heading2),
+                            )
+                            .accept(|_| {})
+                            .accept_name("Close")
+                            .content(move |ui, world| {
+                                let data = cn()
+                                    .db
+                                    .incubator_representation()
+                                    .iter()
+                                    .map(|d| {
+                                        (
+                                            Self::get_score(
+                                                Self::get_link_id(from, d.id).unwrap_or_default(),
+                                            ),
+                                            d,
+                                        )
+                                    })
+                                    .collect_vec();
+                                Table::new("Representation Links")
+                                    .column_representation_texture(
+                                        |d: &(i32, TIncubatorRepresentation)| {
+                                            ron::from_str(&d.1.data).unwrap()
+                                        },
+                                    )
+                                    .column_int("score", |(c, _)| *c)
+                                    .column_btn_dyn(
+                                        "+",
+                                        Box::new(move |(_, d), _, _| {
+                                            cn().reducers.incubator_link_add(from, d.id).unwrap();
+                                        }),
+                                    )
+                                    .ui(&data, ui, world);
+                            })
+                            .push(world);
+                        })
                         .ui(&data, ui, world);
                 }
                 IncubatorTable::Trigger => {
@@ -166,18 +270,8 @@ impl IncubatorTable {
                 }
                 IncubatorTable::Representation => {
                     let data = cn().db.incubator_representation().iter().collect_vec();
-                    Table::new("Representations")
-                        .row_height(64.0)
-                        .column_representation_texture(|d: &TIncubatorRepresentation| {
-                            match ron::from_str::<Representation>(&d.data) {
-                                Ok(v) => v,
-                                Err(_) => default(),
-                            }
-                        })
-                        .column_player_click("owner", |d| d.owner)
-                        .column_gid("id", |d| d.id)
-                        .column_cstr("description", |d, _| d.description.clone())
-                        .column_btn_dyn(
+                    data.show_modified_table("Representations", ui, world, |t| {
+                        t.column_btn_dyn(
                             "clone",
                             Box::new(move |d, _, world| {
                                 world.insert_resource(NewRepresentation {
@@ -187,7 +281,7 @@ impl IncubatorTable {
                                 Self::open_create_popup(self, world);
                             }),
                         )
-                        .ui(&data, ui, world);
+                    });
                 }
                 IncubatorTable::House => todo!(),
                 IncubatorTable::Ability => todo!(),
