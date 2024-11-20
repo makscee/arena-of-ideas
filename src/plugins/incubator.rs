@@ -26,19 +26,19 @@ impl IncubatorPlugin {
         .pinned()
         .push(world);
     }
-}
-
-impl IncubatorType {
-    fn tile_id(&self) -> &str {
-        self.as_ref()
-    }
-    fn get_vote(owner: u64, target: String) -> i32 {
+    pub fn get_vote(owner: u64, target: &String) -> i32 {
         cn().db
             .incubator_vote()
             .id()
             .find(&format!("{owner}_{target}"))
             .map(|v| v.vote)
             .unwrap_or_default()
+    }
+}
+
+impl IncubatorType {
+    fn tile_id(&self) -> &str {
+        self.as_ref()
     }
     fn add_tile(self, world: &mut World) {
         Tile::new(Side::Left, move |ui, world| {
@@ -67,7 +67,16 @@ impl IncubatorType {
                         .column_player_click("owner", |d| d.owner)
                         .ui(&data, ui, world);
                 }
-                IncubatorType::UnitRepresentation => todo!(),
+                IncubatorType::UnitRepresentation => {
+                    let data = cn().db.incubator_unit_representation().iter().collect_vec();
+                    Table::new("Unit Representations")
+                        .row_height(64.0)
+                        .column_texture(Box::new(|d: &TIncubatorUnitRepresentation, world| {
+                            TextureRenderPlugin::texture_representation_serialized(&d.data, world)
+                        }))
+                        .column_player_click("owner", |d| d.owner)
+                        .ui(&data, ui, world);
+                }
                 IncubatorType::UnitTrigger => todo!(),
                 IncubatorType::House => todo!(),
                 IncubatorType::Ability => todo!(),
@@ -121,7 +130,27 @@ impl IncubatorType {
                     })
                     .push(world);
             }
-            IncubatorType::UnitRepresentation => todo!(),
+            IncubatorType::UnitRepresentation => {
+                #[derive(Resource, Default)]
+                struct NewData {
+                    rep: Representation,
+                }
+                world.init_resource::<NewData>();
+                Confirmation::new("New Unit stats")
+                    .content(move |ui, world| {
+                        world.resource_scope(|world, mut r: Mut<NewData>| {
+                            r.rep.show_node("", &Context::empty(), world, ui);
+                        });
+                    })
+                    .cancel(|_| {})
+                    .accept(|world| {
+                        let data = world.remove_resource::<NewData>().unwrap();
+                        cn().reducers
+                            .incubator_post_unit_representation(ron::to_string(&data.rep).unwrap())
+                            .unwrap();
+                    })
+                    .push(world);
+            }
             IncubatorType::UnitTrigger => todo!(),
             IncubatorType::House => todo!(),
             IncubatorType::Ability => todo!(),
@@ -129,6 +158,57 @@ impl IncubatorType {
             IncubatorType::Status => todo!(),
             IncubatorType::StatusTrigger => todo!(),
         }
+    }
+    fn open_unit_stats_links(id: u64, world: &mut World) {
+        Confirmation::new("Stats Links")
+            .accept(|_| {})
+            .accept_name("Close")
+            .content(move |ui, world| {
+                let data = cn()
+                    .db
+                    .incubator_unit_stats()
+                    .iter()
+                    .map(|d| (TIncubatorLink::find(id, d.id), d, id))
+                    .sorted_by_key(|(l, _, _)| -l.as_ref().map(|l| l.score).unwrap_or(i32::MIN + 1))
+                    .collect_vec();
+                Table::new("Unit Stats")
+                    .column_int(
+                        "pwr",
+                        |(_, d, _): &(Option<TIncubatorLink>, TIncubatorUnitStats, u64)| d.pwr,
+                    )
+                    .column_int("hp", |(_, d, _)| d.hp)
+                    .columns_incubator_vote_links(|(_, d, id)| format!("{id}_{}", d.id))
+                    .ui(&data, ui, world);
+            })
+            .push(world);
+    }
+    fn open_unit_representation_links(id: u64, world: &mut World) {
+        Confirmation::new("Representation Links")
+            .accept(|_| {})
+            .accept_name("Close")
+            .content(move |ui, world| {
+                let data = cn()
+                    .db
+                    .incubator_unit_representation()
+                    .iter()
+                    .map(|d| (TIncubatorLink::find(id, d.id), d, id))
+                    .sorted_by_key(|(l, _, _)| -l.as_ref().map(|l| l.score).unwrap_or(i32::MIN + 1))
+                    .collect_vec();
+                Table::new("Unit Representation")
+                    .column_texture(Box::new(
+                        |(_, d, _): &(
+                            Option<TIncubatorLink>,
+                            TIncubatorUnitRepresentation,
+                            u64,
+                        ),
+                         world| {
+                            TextureRenderPlugin::texture_representation_serialized(&d.data, world)
+                        },
+                    ))
+                    .columns_incubator_vote_links(|(_, d, id)| format!("{id}_{}", d.id))
+                    .ui(&data, ui, world);
+            })
+            .push(world);
     }
     fn open(self, id: u64, world: &mut World) {
         match self {
@@ -142,91 +222,10 @@ impl IncubatorType {
                                     .label(ui);
                             });
                             if "Stats Links".cstr().button(ui).clicked() {
-                                Confirmation::new("Stats Links")
-                                    .accept(|_| {})
-                                    .accept_name("Close")
-                                    .content(move |ui, world| {
-                                        let data = cn()
-                                            .db
-                                            .incubator_unit_stats()
-                                            .iter()
-                                            .map(|d| (TIncubatorLink::find(id, d.id), d))
-                                            .sorted_by_key(|(l, _)| {
-                                                -l.as_ref().map(|l| l.score).unwrap_or(i32::MIN + 1)
-                                            })
-                                            .collect_vec();
-                                        Table::new("Unit Stats")
-                                            .column_int(
-                                                "score",
-                                                |d: &(
-                                                    Option<TIncubatorLink>,
-                                                    TIncubatorUnitStats,
-                                                )| {
-                                                    d.0.as_ref()
-                                                        .map(|l| l.score)
-                                                        .unwrap_or_default()
-                                                },
-                                            )
-                                            .column_int("pwr", |(_, d)| d.pwr)
-                                            .column_int("hp", |(_, d)| d.hp)
-                                            .column_btn_mod_dyn(
-                                                "-",
-                                                Box::new(|(l, _), _, _| {
-                                                    cn().reducers
-                                                        .incubator_vote_set(
-                                                            l.as_ref().unwrap().id.clone(),
-                                                            -1,
-                                                        )
-                                                        .unwrap();
-                                                }),
-                                                Box::new(move |(l, _), ui, b| {
-                                                    if let Some(l) = l {
-                                                        b.active(
-                                                            Self::get_vote(
-                                                                player_id(),
-                                                                l.id.clone(),
-                                                            ) == -1,
-                                                        )
-                                                        .red(ui)
-                                                    } else {
-                                                        b.enabled(false)
-                                                    }
-                                                }),
-                                            )
-                                            .column_btn_mod_dyn(
-                                                "+",
-                                                Box::new(move |(l, d), _, _| {
-                                                    if let Some(l) = l {
-                                                        cn().reducers
-                                                            .incubator_vote_set(l.id.clone(), -1)
-                                                            .unwrap();
-                                                    } else {
-                                                        cn().reducers
-                                                            .incubator_link_add(
-                                                                id.to_string(),
-                                                                SIncubatorType::UnitName,
-                                                                d.id.to_string(),
-                                                                SIncubatorType::UnitStats,
-                                                            )
-                                                            .unwrap();
-                                                    }
-                                                }),
-                                                Box::new(move |(l, _), _, b| {
-                                                    if let Some(l) = l {
-                                                        b.active(
-                                                            Self::get_vote(
-                                                                player_id(),
-                                                                l.id.clone(),
-                                                            ) == 1,
-                                                        )
-                                                    } else {
-                                                        b
-                                                    }
-                                                }),
-                                            )
-                                            .ui(&data, ui, world);
-                                    })
-                                    .push(world);
+                                Self::open_unit_stats_links(id, world);
+                            }
+                            if "Representation Links".cstr().button(ui).clicked() {
+                                Self::open_unit_representation_links(id, world);
                             }
                             if data.owner == player_id() {
                                 if "Delete".to_owned().as_button().red(ui).ui(ui).clicked() {

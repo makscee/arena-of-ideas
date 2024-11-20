@@ -185,4 +185,11 @@ impl TextureRenderPlugin {
             world,
         )
     }
+    pub fn texture_representation_serialized(rep: &str, world: &mut World) -> TextureId {
+        Self::cached_texture(
+            rep,
+            |x, world| Self::spawn_representation(ron::from_str(rep).unwrap(), x, world),
+            world,
+        )
+    }
 }

@@ -2,7 +2,6 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN RUST INSTEAD.
 
 #![allow(unused)]
-use super::s_incubator_type_type::SIncubatorType;
 use super::t_incubator_link_type::TIncubatorLink;
 use spacetimedb_sdk::{
     self as __sdk,

@@ -124,10 +124,6 @@ fn incubator_delete(ctx: &ReducerContext, id: u64, t: SIncubatorType) -> Result<
 pub struct TIncubatorLink {
     #[primary_key]
     pub id: String,
-    #[index(btree)]
-    pub from: SIncubatorType,
-    #[index(btree)]
-    pub to: SIncubatorType,
     pub score: i32,
 }
 impl TIncubatorLink {
@@ -146,25 +142,13 @@ impl TIncubatorLink {
 }
 
 #[reducer]
-fn incubator_link_add(
-    ctx: &ReducerContext,
-    from: String,
-    from_type: SIncubatorType,
-    to: String,
-    to_type: SIncubatorType,
-) -> Result<(), String> {
+fn incubator_link_vote(ctx: &ReducerContext, id: String, value: i32) -> Result<(), String> {
     ctx.player()?;
-    let lid = format!("{from}_{to}");
-    if ctx.db.incubator_link().id().find(&lid).is_some() {
-        return Err("Link already exists".into());
-    }
-    ctx.db.incubator_link().insert(TIncubatorLink {
-        id: lid.clone(),
-        from: from_type,
-        to: to_type,
+    let _ = ctx.db.incubator_link().try_insert(TIncubatorLink {
+        id: id.clone(),
         score: 0,
     });
-    incubator_vote_set(ctx, lid, 1)
+    incubator_vote_set(ctx, id, value)
 }
 
 #[table(public, name = incubator_vote)]

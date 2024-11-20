@@ -53,8 +53,8 @@ pub mod incubator_ability_effect_table;
 pub mod incubator_ability_table;
 pub mod incubator_delete_reducer;
 pub mod incubator_house_table;
-pub mod incubator_link_add_reducer;
 pub mod incubator_link_table;
+pub mod incubator_link_vote_reducer;
 pub mod incubator_post_ability_effect_reducer;
 pub mod incubator_post_ability_reducer;
 pub mod incubator_post_house_reducer;
@@ -223,8 +223,8 @@ pub use incubator_ability_effect_table::*;
 pub use incubator_ability_table::*;
 pub use incubator_delete_reducer::*;
 pub use incubator_house_table::*;
-pub use incubator_link_add_reducer::*;
 pub use incubator_link_table::*;
+pub use incubator_link_vote_reducer::*;
 pub use incubator_post_ability_effect_reducer::*;
 pub use incubator_post_ability_reducer::*;
 pub use incubator_post_house_reducer::*;
@@ -376,7 +376,7 @@ pub enum Reducer {
     FuseSwap(fuse_swap_reducer::FuseSwap),
     GiveCredits(give_credits_reducer::GiveCredits),
     IncubatorDelete(incubator_delete_reducer::IncubatorDelete),
-    IncubatorLinkAdd(incubator_link_add_reducer::IncubatorLinkAdd),
+    IncubatorLinkVote(incubator_link_vote_reducer::IncubatorLinkVote),
     IncubatorPostAbility(incubator_post_ability_reducer::IncubatorPostAbility),
     IncubatorPostAbilityEffect(incubator_post_ability_effect_reducer::IncubatorPostAbilityEffect),
     IncubatorPostHouse(incubator_post_house_reducer::IncubatorPostHouse),
@@ -452,7 +452,7 @@ impl __sdk::spacetime_module::Reducer for Reducer {
             Reducer::FuseSwap(_) => "fuse_swap",
             Reducer::GiveCredits(_) => "give_credits",
             Reducer::IncubatorDelete(_) => "incubator_delete",
-            Reducer::IncubatorLinkAdd(_) => "incubator_link_add",
+            Reducer::IncubatorLinkVote(_) => "incubator_link_vote",
             Reducer::IncubatorPostAbility(_) => "incubator_post_ability",
             Reducer::IncubatorPostAbilityEffect(_) => "incubator_post_ability_effect",
             Reducer::IncubatorPostHouse(_) => "incubator_post_house",
@@ -521,7 +521,7 @@ impl __sdk::spacetime_module::Reducer for Reducer {
             Reducer::FuseSwap(args) => args,
             Reducer::GiveCredits(args) => args,
             Reducer::IncubatorDelete(args) => args,
-            Reducer::IncubatorLinkAdd(args) => args,
+            Reducer::IncubatorLinkVote(args) => args,
             Reducer::IncubatorPostAbility(args) => args,
             Reducer::IncubatorPostAbilityEffect(args) => args,
             Reducer::IncubatorPostHouse(args) => args,
@@ -635,8 +635,8 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
             "incubator_delete" => Ok(Reducer::IncubatorDelete(
                 __sdk::spacetime_module::parse_reducer_args("incubator_delete", &value.args)?,
             )),
-            "incubator_link_add" => Ok(Reducer::IncubatorLinkAdd(
-                __sdk::spacetime_module::parse_reducer_args("incubator_link_add", &value.args)?,
+            "incubator_link_vote" => Ok(Reducer::IncubatorLinkVote(
+                __sdk::spacetime_module::parse_reducer_args("incubator_link_vote", &value.args)?,
             )),
             "incubator_post_ability" => Ok(Reducer::IncubatorPostAbility(
                 __sdk::spacetime_module::parse_reducer_args("incubator_post_ability", &value.args)?,

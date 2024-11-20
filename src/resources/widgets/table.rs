@@ -449,8 +449,9 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                                 color: VISIBLE_LIGHT,
                             },
                         };
-                        cursor_window_frame(ui.ctx(), FRAME, 512.0, |ui| {
-                            show_texture(512.0, tex, ui);
+                        const SIZE: f32 = 256.0;
+                        cursor_window_frame(ui.ctx(), FRAME, SIZE, |ui| {
+                            show_texture(SIZE, tex, ui);
                         });
                     }
                 }),
@@ -554,6 +555,39 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
             },
         );
         self
+    }
+    pub fn columns_incubator_vote_links(self, data: fn(&T) -> String) -> Self {
+        self.column_int_dyn(
+            "score",
+            Box::new(move |d| {
+                let link = data(d);
+                cn().db
+                    .incubator_link()
+                    .id()
+                    .find(&link)
+                    .map(|l| l.score)
+                    .unwrap_or_default()
+            }),
+        )
+        .column_btn_mod_dyn(
+            "+",
+            Box::new(move |d, _, _| {
+                cn().reducers.incubator_link_vote(data(d), 1).unwrap();
+            }),
+            Box::new(move |d, _, b| {
+                b.active(IncubatorPlugin::get_vote(player_id(), &data(d)) == 1)
+            }),
+        )
+        .column_btn_mod_dyn(
+            "-",
+            Box::new(move |d, _, _| {
+                cn().reducers.incubator_link_vote(data(d), -1).unwrap();
+            }),
+            Box::new(move |d, ui, b| {
+                b.active(IncubatorPlugin::get_vote(player_id(), &data(d)) == -1)
+                    .red(ui)
+            }),
+        )
     }
     pub fn ui(&mut self, data: &[T], ui: &mut Ui, world: &mut World) -> TableState {
         let mut need_sort = false;
