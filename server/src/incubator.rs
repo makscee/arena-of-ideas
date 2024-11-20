@@ -120,24 +120,28 @@ fn incubator_delete(ctx: &ReducerContext, id: u64, t: SIncubatorType) -> Result<
     Ok(())
 }
 
-#[table(public, name = incubator_link, index(name = from_to, btree(columns = [from, to])))]
+#[table(public, name = incubator_link)]
 pub struct TIncubatorLink {
     #[primary_key]
-    pub id: u64,
+    pub id: String,
     #[index(btree)]
-    pub from: String,
+    pub from: SIncubatorType,
     #[index(btree)]
-    pub from_type: SIncubatorType,
-    #[index(btree)]
-    pub to: String,
-    #[index(btree)]
-    pub to_type: SIncubatorType,
+    pub to: SIncubatorType,
     pub score: i32,
 }
 impl TIncubatorLink {
     fn clear_id(ctx: &ReducerContext, id: &str) {
-        ctx.db.incubator_link().from().delete(id);
-        ctx.db.incubator_link().to().delete(id);
+        let start = format!("{id}_");
+        let end = format!("_{id}");
+        for l in ctx
+            .db
+            .incubator_link()
+            .iter()
+            .filter(|l| l.id.starts_with(&start) || l.id.ends_with(&end))
+        {
+            ctx.db.incubator_link().id().delete(l.id);
+        }
     }
 }
 
@@ -150,62 +154,51 @@ fn incubator_link_add(
     to_type: SIncubatorType,
 ) -> Result<(), String> {
     ctx.player()?;
-    let link_id = if let Some(link) = ctx
-        .db
-        .incubator_link()
-        .from_to()
-        .filter((&from, &to))
-        .next()
-    {
-        link.id
-    } else {
-        let id = next_id(ctx);
-        ctx.db.incubator_link().insert(TIncubatorLink {
-            id,
-            from: from.clone(),
-            to: to.clone(),
-            score: 0,
-            from_type,
-            to_type,
-        });
-        id
-    };
-    incubator_vote_set(ctx, link_id, 1)
+    let lid = format!("{from}_{to}");
+    if ctx.db.incubator_link().id().find(&lid).is_some() {
+        return Err("Link already exists".into());
+    }
+    ctx.db.incubator_link().insert(TIncubatorLink {
+        id: lid.clone(),
+        from: from_type,
+        to: to_type,
+        score: 0,
+    });
+    incubator_vote_set(ctx, lid, 1)
 }
 
-#[table(public, name = incubator_vote, index(name = owner_target, btree(columns = [owner, target])))]
+#[table(public, name = incubator_vote)]
 pub struct TIncubatorVote {
     #[primary_key]
-    pub id: u64,
-    #[index(btree)]
-    pub owner: u64,
-    #[index(btree)]
-    pub target: u64,
+    pub id: String,
     pub vote: i32,
 }
 
 #[reducer]
-fn incubator_vote_set(ctx: &ReducerContext, target: u64, value: i32) -> Result<(), String> {
-    let player = ctx.player()?;
-    if let Some(mut vote) = ctx
-        .db
-        .incubator_vote()
-        .owner_target()
-        .filter((player.id, target))
-        .next()
-    {
+fn incubator_vote_set(ctx: &ReducerContext, target: String, value: i32) -> Result<(), String> {
+    if value.abs() != 1 {
+        return Err("Vote value can only be 1 or -1".into());
+    }
+    let pid = ctx.player()?.id;
+    let vid = format!("{pid}_{target}");
+    let delta = if let Some(mut vote) = ctx.db.incubator_vote().id().find(&vid) {
         if vote.vote == value {
             return Err("Already voted".into());
         }
+        let delta = value - vote.vote;
         vote.vote = value;
         ctx.db.incubator_vote().id().update(vote);
+        delta
     } else {
         ctx.db.incubator_vote().insert(TIncubatorVote {
-            id: next_id(ctx),
-            owner: player.id,
-            target,
+            id: vid,
             vote: value,
         });
+        value
+    };
+    if let Some(mut link) = ctx.db.incubator_link().id().find(target) {
+        link.score += delta;
+        ctx.db.incubator_link().id().update(link);
     }
 
     Ok(())

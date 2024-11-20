@@ -11,9 +11,7 @@ use spacetimedb_sdk::{
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct TIncubatorVote {
-    pub id: u64,
-    pub owner: u64,
-    pub target: u64,
+    pub id: String,
     pub vote: i32,
 }
 

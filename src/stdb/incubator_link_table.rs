@@ -104,7 +104,7 @@ impl<'ctx> __sdk::table::TableWithPrimaryKey for IncubatorLinkTableHandle<'ctx> 
 pub(super) fn parse_table_update(
     raw_updates: __ws::TableUpdate<__ws::BsatnFormat>,
 ) -> __anyhow::Result<__sdk::spacetime_module::TableUpdate<TIncubatorLink>> {
-    __sdk::spacetime_module::TableUpdate::parse_table_update_with_primary_key::<u64>(
+    __sdk::spacetime_module::TableUpdate::parse_table_update_with_primary_key::<String>(
         raw_updates,
         |row: &TIncubatorLink| &row.id,
     )
@@ -119,7 +119,7 @@ pub(super) fn parse_table_update(
 /// but to directly chain method calls,
 /// like `ctx.db.incubator_link().id().find(...)`.
 pub struct IncubatorLinkIdUnique<'ctx> {
-    imp: __sdk::client_cache::UniqueConstraint<TIncubatorLink, u64>,
+    imp: __sdk::client_cache::UniqueConstraint<TIncubatorLink, String>,
     phantom: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
@@ -127,7 +127,9 @@ impl<'ctx> IncubatorLinkTableHandle<'ctx> {
     /// Get a handle on the `id` unique index on the table `incubator_link`.
     pub fn id(&self) -> IncubatorLinkIdUnique<'ctx> {
         IncubatorLinkIdUnique {
-            imp: self.imp.get_unique_constraint::<u64>("id", |row| &row.id),
+            imp: self
+                .imp
+                .get_unique_constraint::<String>("id", |row| &row.id),
             phantom: std::marker::PhantomData,
         }
     }
@@ -136,7 +138,7 @@ impl<'ctx> IncubatorLinkTableHandle<'ctx> {
 impl<'ctx> IncubatorLinkIdUnique<'ctx> {
     /// Find the subscribed row whose `id` column value is equal to `col_val`,
     /// if such a row is present in the client cache.
-    pub fn find(&self, col_val: &u64) -> Option<TIncubatorLink> {
+    pub fn find(&self, col_val: &String) -> Option<TIncubatorLink> {
         self.imp.find(col_val)
     }
 }

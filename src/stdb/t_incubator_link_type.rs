@@ -13,11 +13,9 @@ use super::s_incubator_type_type::SIncubatorType;
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct TIncubatorLink {
-    pub id: u64,
-    pub from: String,
-    pub from_type: SIncubatorType,
-    pub to: String,
-    pub to_type: SIncubatorType,
+    pub id: String,
+    pub from: SIncubatorType,
+    pub to: SIncubatorType,
     pub score: i32,
 }
 

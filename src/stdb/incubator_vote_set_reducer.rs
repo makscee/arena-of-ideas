@@ -11,7 +11,7 @@ use spacetimedb_sdk::{
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct IncubatorVoteSet {
-    pub target: u64,
+    pub target: String,
     pub value: i32,
 }
 
@@ -31,7 +31,7 @@ pub trait incubator_vote_set {
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed by listening for [`Self::on_incubator_vote_set`] callbacks.
-    fn incubator_vote_set(&self, target: u64, value: i32) -> __anyhow::Result<()>;
+    fn incubator_vote_set(&self, target: String, value: i32) -> __anyhow::Result<()>;
     /// Register a callback to run whenever we are notified of an invocation of the reducer `incubator_vote_set`.
     ///
     /// The [`super::EventContext`] passed to the `callback`
@@ -44,7 +44,7 @@ pub trait incubator_vote_set {
     /// to cancel the callback.
     fn on_incubator_vote_set(
         &self,
-        callback: impl FnMut(&super::EventContext, &u64, &i32) + Send + 'static,
+        callback: impl FnMut(&super::EventContext, &String, &i32) + Send + 'static,
     ) -> IncubatorVoteSetCallbackId;
     /// Cancel a callback previously registered by [`Self::on_incubator_vote_set`],
     /// causing it not to run in the future.
@@ -52,13 +52,13 @@ pub trait incubator_vote_set {
 }
 
 impl incubator_vote_set for super::RemoteReducers {
-    fn incubator_vote_set(&self, target: u64, value: i32) -> __anyhow::Result<()> {
+    fn incubator_vote_set(&self, target: String, value: i32) -> __anyhow::Result<()> {
         self.imp
             .call_reducer("incubator_vote_set", IncubatorVoteSet { target, value })
     }
     fn on_incubator_vote_set(
         &self,
-        mut callback: impl FnMut(&super::EventContext, &u64, &i32) + Send + 'static,
+        mut callback: impl FnMut(&super::EventContext, &String, &i32) + Send + 'static,
     ) -> IncubatorVoteSetCallbackId {
         IncubatorVoteSetCallbackId(self.imp.on_reducer::<IncubatorVoteSet>(
             "incubator_vote_set",
