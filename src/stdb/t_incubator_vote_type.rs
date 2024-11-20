@@ -14,7 +14,7 @@ pub struct TIncubatorVote {
     pub id: u64,
     pub owner: u64,
     pub target: u64,
-    pub vote: bool,
+    pub vote: i32,
 }
 
 impl __sdk::spacetime_module::InModule for TIncubatorVote {

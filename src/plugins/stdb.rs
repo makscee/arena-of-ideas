@@ -43,13 +43,15 @@ pub enum StdbTable {
     reward,
     incubator_link,
     incubator_vote,
-    incubator_unit,
-    incubator_trigger,
-    incubator_representation,
+    incubator_unit_name,
+    incubator_unit_stats,
+    incubator_unit_representation,
+    incubator_unit_trigger,
     incubator_house,
     incubator_ability,
-    incubator_effect,
+    incubator_ability_effect,
     incubator_status,
+    incubator_status_trigger,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -324,13 +326,15 @@ impl StdbTable {
             }
             StdbTable::incubator_link => todo!(),
             StdbTable::incubator_vote => todo!(),
-            StdbTable::incubator_unit => todo!(),
-            StdbTable::incubator_trigger => todo!(),
-            StdbTable::incubator_representation => todo!(),
+            StdbTable::incubator_unit_name => todo!(),
+            StdbTable::incubator_unit_stats => todo!(),
+            StdbTable::incubator_unit_representation => todo!(),
+            StdbTable::incubator_unit_trigger => todo!(),
             StdbTable::incubator_house => todo!(),
             StdbTable::incubator_ability => todo!(),
-            StdbTable::incubator_effect => todo!(),
+            StdbTable::incubator_ability_effect => todo!(),
             StdbTable::incubator_status => todo!(),
+            StdbTable::incubator_status_trigger => todo!(),
         }
     }
     pub fn get_json_data(self) -> String {
@@ -425,14 +429,17 @@ impl StdbTable {
             StdbTable::incubator_vote => to_string_pretty(&SerializeWrapper::new(
                 cn().db.incubator_vote().iter().collect_vec(),
             )),
-            StdbTable::incubator_unit => to_string_pretty(&SerializeWrapper::new(
-                cn().db.incubator_unit().iter().collect_vec(),
+            StdbTable::incubator_unit_name => to_string_pretty(&SerializeWrapper::new(
+                cn().db.incubator_unit_name().iter().collect_vec(),
             )),
-            StdbTable::incubator_trigger => to_string_pretty(&SerializeWrapper::new(
-                cn().db.incubator_trigger().iter().collect_vec(),
+            StdbTable::incubator_unit_stats => to_string_pretty(&SerializeWrapper::new(
+                cn().db.incubator_unit_stats().iter().collect_vec(),
             )),
-            StdbTable::incubator_representation => to_string_pretty(&SerializeWrapper::new(
-                cn().db.incubator_representation().iter().collect_vec(),
+            StdbTable::incubator_unit_representation => to_string_pretty(&SerializeWrapper::new(
+                cn().db.incubator_unit_representation().iter().collect_vec(),
+            )),
+            StdbTable::incubator_unit_trigger => to_string_pretty(&SerializeWrapper::new(
+                cn().db.incubator_unit_trigger().iter().collect_vec(),
             )),
             StdbTable::incubator_house => to_string_pretty(&SerializeWrapper::new(
                 cn().db.incubator_house().iter().collect_vec(),
@@ -440,11 +447,14 @@ impl StdbTable {
             StdbTable::incubator_ability => to_string_pretty(&SerializeWrapper::new(
                 cn().db.incubator_ability().iter().collect_vec(),
             )),
-            StdbTable::incubator_effect => to_string_pretty(&SerializeWrapper::new(
-                cn().db.incubator_effect().iter().collect_vec(),
+            StdbTable::incubator_ability_effect => to_string_pretty(&SerializeWrapper::new(
+                cn().db.incubator_ability_effect().iter().collect_vec(),
             )),
             StdbTable::incubator_status => to_string_pretty(&SerializeWrapper::new(
                 cn().db.incubator_status().iter().collect_vec(),
+            )),
+            StdbTable::incubator_status_trigger => to_string_pretty(&SerializeWrapper::new(
+                cn().db.incubator_status_trigger().iter().collect_vec(),
             )),
         }
         .unwrap()
@@ -474,13 +484,15 @@ impl StdbTable {
             | StdbTable::meta_shop
             | StdbTable::incubator_link
             | StdbTable::incubator_vote
-            | StdbTable::incubator_unit
-            | StdbTable::incubator_trigger
-            | StdbTable::incubator_representation
+            | StdbTable::incubator_unit_name
+            | StdbTable::incubator_unit_stats
+            | StdbTable::incubator_unit_representation
+            | StdbTable::incubator_unit_trigger
             | StdbTable::incubator_house
             | StdbTable::incubator_ability
-            | StdbTable::incubator_effect
+            | StdbTable::incubator_ability_effect
             | StdbTable::incubator_status
+            | StdbTable::incubator_status_trigger
             | StdbTable::player_tag => Some(self.full()),
 
             StdbTable::trade => Some(StdbQuery {
@@ -747,7 +759,7 @@ pub fn reducers_subscriptions(dbc: &DbConnection) {
         e.event.notify_error();
     });
 
-    r.on_incubator_post_representation(|e, _, _| {
+    r.on_incubator_post_unit_representation(|e, _| {
         if !e.check_identity() {
             return;
         }

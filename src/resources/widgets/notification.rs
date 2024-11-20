@@ -55,7 +55,7 @@ impl Notification {
         d.make_contiguous();
     }
     pub fn popup(world: &mut World) {
-        Confirmation::new("Notifications".cstr_cs(VISIBLE_BRIGHT, CstrStyle::Heading2))
+        Confirmation::new("Notifications")
             .cancel(|_| {})
             .cancel_name("Close")
             .content(|ui, world| {

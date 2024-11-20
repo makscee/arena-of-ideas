@@ -8,7 +8,7 @@ impl RewardsPlugin {
     }
 
     pub fn open_rewards(world: &mut World) {
-        Confirmation::new("Rewards".cstr_cs(VISIBLE_BRIGHT, CstrStyle::Heading2))
+        Confirmation::new("Rewards")
             .cancel(|_| {})
             .cancel_name("Close")
             .content(|ui, world| {
@@ -45,7 +45,7 @@ impl RewardsPlugin {
     }
     pub fn open_reward(id: u64, world: &mut World) {
         let open_ts = gt().play_head();
-        Confirmation::new("Reward".cstr_cs(VISIBLE_BRIGHT, CstrStyle::Heading2))
+        Confirmation::new("Reward")
             .accept(move |_| {
                 cn().reducers.reward_claim(id).unwrap();
             })

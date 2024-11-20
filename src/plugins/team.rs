@@ -126,7 +126,7 @@ impl TeamPlugin {
         TeamSyncPlugin::subscribe(id, Faction::Team, world);
     }
     fn open_new_team_popup(world: &mut World) {
-        Confirmation::new("New team".cstr_cs(VISIBLE_LIGHT, CstrStyle::Heading2))
+        Confirmation::new("New team")
             .accept(|world| {
                 let name = world.resource_mut::<TeamResource>().new_team_name.take();
                 if name.is_empty() {
@@ -153,11 +153,7 @@ impl TeamPlugin {
             title("Team Manager", ui);
             let cost = global_settings().create_team_cost;
             ui.vertical_centered_justified(|ui| {
-                if Button::new("New Team")
-                    .credits_cost(cost)
-                    .ui(ui)
-                    .clicked()
-                {
+                if Button::new("New Team").credits_cost(cost).ui(ui).clicked() {
                     Self::open_new_team_popup(world);
                 }
             });
@@ -190,27 +186,25 @@ impl TeamPlugin {
                 .top_content(|ui, world| {
                     ui.horizontal(|ui| {
                         if Button::new("Rename").ui(ui).clicked() {
-                            Confirmation::new(
-                                "Rename team".cstr_cs(VISIBLE_LIGHT, CstrStyle::Heading2),
-                            )
-                            .accept(|world| {
-                                let mut tr = world.resource_mut::<TeamResource>();
-                                let name = tr.new_team_name.take();
-                                cn().reducers.team_rename(tr.team, name).unwrap();
-                            })
-                            .cancel(|_| {})
-                            .content(|ui, world| {
-                                ui.vertical_centered_justified(|ui| {
-                                    Input::new("name").char_limit(20).ui_string(
-                                        &mut world.resource_mut::<TeamResource>().new_team_name,
-                                        ui,
-                                    );
-                                });
-                            })
-                            .push(world);
+                            Confirmation::new("Rename team")
+                                .accept(|world| {
+                                    let mut tr = world.resource_mut::<TeamResource>();
+                                    let name = tr.new_team_name.take();
+                                    cn().reducers.team_rename(tr.team, name).unwrap();
+                                })
+                                .cancel(|_| {})
+                                .content(|ui, world| {
+                                    ui.vertical_centered_justified(|ui| {
+                                        Input::new("name").char_limit(20).ui_string(
+                                            &mut world.resource_mut::<TeamResource>().new_team_name,
+                                            ui,
+                                        );
+                                    });
+                                })
+                                .push(world);
                         }
                         if Button::new("Disband").red(ui).ui(ui).clicked() {
-                            Confirmation::new("Disband team?".cstr_c(VISIBLE_LIGHT))
+                            Confirmation::new("Disband team?")
                                 .accept(|world| {
                                     let tr = world.resource_mut::<TeamResource>();
                                     cn().reducers.team_disband(tr.team).unwrap();
@@ -224,7 +218,7 @@ impl TeamPlugin {
                     if e.is_some() {
                         return;
                     }
-                    Confirmation::new("Add unit to team".cstr())
+                    Confirmation::new("Add unit to team")
                         .cancel(|_| {})
                         .content(|ui, world| {
                             let units = cn()

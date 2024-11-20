@@ -398,7 +398,7 @@ impl BattlePlugin {
                 if let Some(event) = ActionPlugin::get_event(t, world) {
                     if event.cstr().button(ui).clicked() {
                         let events = ActionPlugin::collect_events(t, world);
-                        Confirmation::new("Events".cstr())
+                        Confirmation::new("Events")
                             .content(move |ui, _| {
                                 ui.vertical(|ui| {
                                     for (t, event) in &events {

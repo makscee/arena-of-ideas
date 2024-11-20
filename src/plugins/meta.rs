@@ -351,7 +351,7 @@ impl MetaPlugin {
                         max_count: 1,
                         price: 1,
                     });
-                    Confirmation::new("Create Auction".cstr())
+                    Confirmation::new("Create Auction")
                         .accept(|world| {
                             AuctionResource::post(world);
                         })
@@ -375,19 +375,21 @@ impl MetaPlugin {
                         .unwrap();
                     let item_id = item.id;
                     let base = unit.base_unit();
-                    Confirmation::new(
-                        format!(
-                            "Dismantle {} to get {} Rainbow shards?",
-                            base.name,
-                            base.rarity + 1
-                        )
-                        .cstr_c(VISIBLE_LIGHT),
-                    )
-                    .accept(move |_| {
-                        let _ = cn().reducers.dismantle_hero(item_id);
-                    })
-                    .cancel(|_| {})
-                    .push(world);
+                    Confirmation::new("Dismantle")
+                        .content(move |ui, _| {
+                            format!(
+                                "Dismantle {} to get {} Rainbow shards?",
+                                base.name,
+                                base.rarity + 1
+                            )
+                            .cstr_c(VISIBLE_LIGHT)
+                            .label(ui);
+                        })
+                        .accept(move |_| {
+                            let _ = cn().reducers.dismantle_hero(item_id);
+                        })
+                        .cancel(|_| {})
+                        .push(world);
                 })
             });
     }
@@ -419,7 +421,7 @@ impl MetaPlugin {
                     max_count: item.count,
                     price: 1,
                 });
-                Confirmation::new("Create Auction".cstr())
+                Confirmation::new("Create Auction")
                     .accept(|world| {
                         AuctionResource::post(world);
                     })
@@ -472,7 +474,7 @@ impl MetaPlugin {
                         max_count: item.count,
                         price: 1,
                     });
-                    Confirmation::new("Create Auction".cstr())
+                    Confirmation::new("Create Auction")
                         .accept(|world| {
                             AuctionResource::post(world);
                         })
@@ -504,27 +506,28 @@ impl MetaPlugin {
                         .clicked()
                     {
                         let unit = d.unit.clone();
+                        let craft_cstr =
+                            "Craft ".cstr_c(VISIBLE_LIGHT) + &unit.cstr_c(name_color(&unit));
                         world.insert_resource(CraftResource::default());
-                        Confirmation::new(
-                            "Craft ".cstr_c(VISIBLE_LIGHT) + &unit.cstr_c(name_color(&unit)),
-                        )
-                        .content(move |ui, world| {
-                            if rs > 0 {
-                                Slider::new("Use Rainbow Shards").ui(
-                                    &mut world.resource_mut::<CraftResource>().use_rainbow,
-                                    needed..=rs.at_most(craft_cost - 1),
-                                    ui,
+                        Confirmation::new("Craft")
+                            .content(move |ui, world| {
+                                craft_cstr.label(ui);
+                                if rs > 0 {
+                                    Slider::new("Use Rainbow Shards").ui(
+                                        &mut world.resource_mut::<CraftResource>().use_rainbow,
+                                        needed..=rs.at_most(craft_cost - 1),
+                                        ui,
+                                    );
+                                }
+                            })
+                            .accept(move |world| {
+                                let _ = cn().reducers.craft_hero(
+                                    unit.clone(),
+                                    world.resource::<CraftResource>().use_rainbow,
                                 );
-                            }
-                        })
-                        .accept(move |world| {
-                            let _ = cn().reducers.craft_hero(
-                                unit.clone(),
-                                world.resource::<CraftResource>().use_rainbow,
-                            );
-                        })
-                        .cancel(|_| {})
-                        .push(world);
+                            })
+                            .cancel(|_| {})
+                            .push(world);
                     }
                 }),
                 false,
@@ -562,7 +565,7 @@ impl MetaPlugin {
                         max_count: item.count,
                         price: 1,
                     });
-                    Confirmation::new("Create Auction".cstr())
+                    Confirmation::new("Create Auction")
                         .accept(|world| {
                             AuctionResource::post(world);
                         })

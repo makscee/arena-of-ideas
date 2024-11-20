@@ -10,13 +10,26 @@ use spacetimedb_sdk::{
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct TIncubatorEffect {
-    pub id: u64,
-    pub owner: u64,
-    pub data: String,
-    pub description: String,
+pub enum SIncubatorType {
+    UnitName,
+
+    UnitStats,
+
+    UnitRepresentation,
+
+    UnitTrigger,
+
+    House,
+
+    Ability,
+
+    AbilityEffect,
+
+    Status,
+
+    StatusTrigger,
 }
 
-impl __sdk::spacetime_module::InModule for TIncubatorEffect {
+impl __sdk::spacetime_module::InModule for SIncubatorType {
     type Module = super::RemoteModule;
 }

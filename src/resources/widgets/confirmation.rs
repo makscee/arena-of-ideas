@@ -9,9 +9,9 @@ impl Plugin for ConfirmationPlugin {
 
 pub struct Confirmation {
     text: Cstr,
-    accept: Option<Box<dyn Fn(&mut World) + Send + Sync>>,
+    accept: Option<Box<dyn FnOnce(&mut World) + Send + Sync>>,
     accept_name: String,
-    cancel: Option<Box<dyn Fn(&mut World) + Send + Sync>>,
+    cancel: Option<Box<dyn FnOnce(&mut World) + Send + Sync>>,
     cancel_name: String,
     content: Option<Box<dyn Fn(&mut Ui, &mut World) + Send + Sync>>,
     fullscreen: bool,
@@ -29,9 +29,9 @@ fn rm(world: &mut World) -> Mut<ConfirmationResource> {
 
 impl Confirmation {
     #[must_use]
-    pub fn new(text: Cstr) -> Self {
+    pub fn new(text: &str) -> Self {
         Self {
-            text,
+            text: text.cstr_cs(VISIBLE_BRIGHT, CstrStyle::Heading2),
             accept: None,
             accept_name: "Accept".into(),
             cancel: None,
@@ -73,7 +73,7 @@ impl Confirmation {
         self.fullscreen = true;
         self
     }
-    fn ui(&self, ctx: &egui::Context, world: &mut World) {
+    fn ui(&mut self, ctx: &egui::Context, world: &mut World) {
         popup("Confirmation window", self.fullscreen, ctx, |ui| {
             ui.vertical_centered_justified(|ui| {
                 self.text.as_label(ui).wrap().ui(ui);
@@ -86,18 +86,18 @@ impl Confirmation {
             space(ui);
             ui.columns(2, |ui| {
                 ui[0].vertical_centered_justified(|ui| {
-                    if let Some(cancel) = &self.cancel {
+                    if self.cancel.is_some() {
                         if Button::new(&self.cancel_name).red(ui).ui(ui).clicked() {
                             Self::close_current(world);
-                            cancel(world);
+                            self.cancel.take().unwrap()(world);
                         }
                     }
                 });
                 ui[1].vertical_centered_justified(|ui| {
-                    if let Some(accept) = &self.accept {
+                    if self.accept.is_some() {
                         if Button::new(&self.accept_name).ui(ui).clicked() {
                             Self::close_current(world);
-                            accept(world);
+                            self.accept.take().unwrap()(world);
                         }
                     }
                 });
@@ -112,7 +112,7 @@ impl Confirmation {
         rm(world).close_requested = true;
     }
     pub fn show_current(ctx: &egui::Context, world: &mut World) {
-        if let Some(c) = rm(world).stack.pop() {
+        if let Some(mut c) = rm(world).stack.pop() {
             c.ui(ctx, world);
             let esc = c.cancel.is_some() && just_pressed(KeyCode::Escape, world);
             let mut r = rm(world);

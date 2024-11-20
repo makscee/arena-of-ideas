@@ -65,7 +65,7 @@ impl ConnectPlugin {
             save_identity(identity);
             StdbQuery::subscribe(StdbQuery::queries_login(), move |world| {
                 info!("On subscribe");
-                let server_version_str = &cn().db.global_data().current().game_version;
+                let server_version_str = cn().db.global_data().current().game_version;
                 let server_version = server_version_str.split('.').collect_vec();
                 let client_version = VERSION.split('.').collect_vec();
                 Self::save_credentials(identity, token.clone())
@@ -75,21 +75,26 @@ impl ConnectPlugin {
                     ConnectOption { identity, token }.save(world);
                     GameState::proceed(world);
                 } else {
-                    Confirmation::new(format!(
-                        "[vl Wrong game version: ][vb [b{} != {}]]",
-                        VERSION, server_version_str
-                    ))
-                    .accept(|world| {
-                        egui_context(world).unwrap().open_url(egui::OpenUrl {
-                            url: "https://github.com/makscee/arena-of-ideas/releases".to_owned(),
-                            new_tab: true,
-                        });
-                        app_exit(world);
-                    })
-                    .cancel(|world| app_exit(world))
-                    .accept_name("Update")
-                    .cancel_name("Exit")
-                    .push(world);
+                    Confirmation::new("Game Version Error")
+                        .content(move |ui, _| {
+                            format!(
+                                "[vl Wrong game version: ][vb [b{} != {}]]",
+                                VERSION, server_version_str
+                            )
+                            .label(ui);
+                        })
+                        .accept(|world| {
+                            egui_context(world).unwrap().open_url(egui::OpenUrl {
+                                url: "https://github.com/makscee/arena-of-ideas/releases"
+                                    .to_owned(),
+                                new_tab: true,
+                            });
+                            app_exit(world);
+                        })
+                        .cancel(|world| app_exit(world))
+                        .accept_name("Update")
+                        .cancel_name("Exit")
+                        .push(world);
                 }
             });
         });

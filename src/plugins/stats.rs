@@ -92,7 +92,7 @@ impl StatsPlugin {
         Tile::new(Side::Left, |ui, world| {
             world.resource_scope(|world, r: Mut<StatsResource>| {
                 Table::new("Player Stats")
-                    .column_gid("id", |d: &UserStat| d.id)
+                    .column_id("id", |d: &UserStat| d.id)
                     .column_cstr("name", |d, _| d.name.cstr_c(VISIBLE_LIGHT))
                     .column_int("cnt", |d| d.cnt)
                     .column_float("percent", |d| d.percent)

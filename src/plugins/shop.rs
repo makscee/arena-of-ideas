@@ -94,7 +94,7 @@ impl ShopPlugin {
         }
         update_result_card(world);
 
-        Confirmation::new("Fusion".cstr_c(YELLOW))
+        Confirmation::new("Fusion")
             .accept(|world| {
                 let fc = rm(world).fusion_choice.clone();
                 cn().reducers.fuse_choose(fc[0], fc[1], fc[2]).unwrap();

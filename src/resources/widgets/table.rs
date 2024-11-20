@@ -282,7 +282,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
     pub fn column_float(self, name: &'static str, value: fn(&T) -> f32) -> Self {
         self.column_float_dyn(name, Box::new(value))
     }
-    pub fn column_gid(mut self, name: &'static str, value: fn(&T) -> u64) -> Self {
+    pub fn column_id(mut self, name: &'static str, value: fn(&T) -> u64) -> Self {
         self.columns.insert(
             name,
             TableColumn {
@@ -312,25 +312,25 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
         );
         self
     }
-    pub fn column_player_click(mut self, name: &'static str, gid: fn(&T) -> u64) -> Self {
+    pub fn column_player_click(mut self, name: &'static str, id: fn(&T) -> u64) -> Self {
         self.columns.insert(
             name,
             TableColumn {
-                value: Box::new(move |d, _| gid(d).into()),
+                value: Box::new(move |d, _| id(d).into()),
                 show: Box::new(move |_, v, ui, w| {
-                    let gid = v.get_u64().unwrap_or_default();
-                    if gid == 0 {
+                    let id = v.get_u64().unwrap_or_default();
+                    if id == 0 {
                         "...".cstr().label(ui);
                     } else {
-                        if gid
+                        if id
                             .get_player()
                             .cstr()
                             .as_button()
-                            .active(gid == player_id())
+                            .active(id == player_id())
                             .ui(ui)
                             .clicked()
                         {
-                            TilePlugin::add_user(gid, w);
+                            TilePlugin::add_user(id, w);
                         }
                     }
                 }),
@@ -340,17 +340,17 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
         );
         self
     }
-    pub fn column_team(mut self, name: &'static str, gid: fn(&T) -> u64) -> Self {
+    pub fn column_team(mut self, name: &'static str, id: fn(&T) -> u64) -> Self {
         self.columns.insert(
             name,
             TableColumn {
-                value: Box::new(move |d, _| gid(d).into()),
-                show: Box::new(|_, gid: VarValue, ui: &mut Ui, w: &mut World| {
-                    let gid = gid.get_u64().unwrap_or_default();
-                    if gid == 0 {
+                value: Box::new(move |d, _| id(d).into()),
+                show: Box::new(|_, id: VarValue, ui: &mut Ui, w: &mut World| {
+                    let id = id.get_u64().unwrap_or_default();
+                    if id == 0 {
                         "...".cstr().label(ui);
                     } else {
-                        gid.get_team_cached().hover_label(ui, w);
+                        id.get_team_cached().hover_label(ui, w);
                     }
                 }),
                 sortable: true,

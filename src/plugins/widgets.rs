@@ -56,7 +56,7 @@ fn cmd_test(world: &mut World) {
         "test test test test test test test test test test test test test test test".notify(world);
     }
     if just_pressed(KeyCode::KeyC, world) {
-        Confirmation::new("Test".cstr())
+        Confirmation::new("Test")
             .accept(|_| {})
             .cancel(|_| {})
             .push(world);

@@ -16,7 +16,7 @@ impl QuestPlugin {
             > 0
     }
     pub fn popup(world: &mut World) {
-        Confirmation::new("Quests".cstr_cs(VISIBLE_BRIGHT, CstrStyle::Heading2))
+        Confirmation::new("Quests")
             .cancel(|_| {})
             .cancel_name("Close")
             .content(|ui, world| {

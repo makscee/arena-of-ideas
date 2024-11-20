@@ -412,3 +412,46 @@ impl Hash for FusedUnit {
         self.xp.hash(state);
     }
 }
+
+#[derive(Clone, Copy, Debug, EnumIter, PartialEq, Eq, AsRefStr, Display)]
+pub enum IncubatorType {
+    UnitName,
+    UnitStats,
+    UnitRepresentation,
+    UnitTrigger,
+    House,
+    Ability,
+    AbilityEffect,
+    Status,
+    StatusTrigger,
+}
+impl From<SIncubatorType> for IncubatorType {
+    fn from(value: SIncubatorType) -> Self {
+        match value {
+            SIncubatorType::UnitName => Self::UnitName,
+            SIncubatorType::UnitStats => Self::UnitStats,
+            SIncubatorType::UnitRepresentation => Self::UnitRepresentation,
+            SIncubatorType::UnitTrigger => Self::UnitTrigger,
+            SIncubatorType::House => Self::House,
+            SIncubatorType::Ability => Self::Ability,
+            SIncubatorType::AbilityEffect => Self::AbilityEffect,
+            SIncubatorType::Status => Self::Status,
+            SIncubatorType::StatusTrigger => Self::StatusTrigger,
+        }
+    }
+}
+impl From<IncubatorType> for SIncubatorType {
+    fn from(value: IncubatorType) -> Self {
+        match value {
+            IncubatorType::UnitName => Self::UnitName,
+            IncubatorType::UnitStats => Self::UnitStats,
+            IncubatorType::UnitRepresentation => Self::UnitRepresentation,
+            IncubatorType::UnitTrigger => Self::UnitTrigger,
+            IncubatorType::House => Self::House,
+            IncubatorType::Ability => Self::Ability,
+            IncubatorType::AbilityEffect => Self::AbilityEffect,
+            IncubatorType::Status => Self::Status,
+            IncubatorType::StatusTrigger => Self::StatusTrigger,
+        }
+    }
+}

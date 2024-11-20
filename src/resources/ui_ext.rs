@@ -177,7 +177,7 @@ impl ShowTable<TArenaRunArchive> for Vec<TArenaRunArchive> {
             .column_int("flr", |d: &TArenaRunArchive| d.floor as i32)
             .column_player_click("owner", |d| d.owner)
             .column_team("team", |d| d.team)
-            .column_gid("id", |d| d.id)
+            .column_id("id", |d| d.id)
             .column_ts("time", |d| d.ts)
             .column_cstr("mode", |d, _| d.mode.cstr_expanded());
         t = m(t);
@@ -301,29 +301,6 @@ impl ShowTable<TAuction> for Vec<TAuction> {
                 |_, v| format!("{} {CREDITS_SYM}", v.get_float().unwrap()).cstr_c(YELLOW),
             )
             .column_player_click("seller", |d| d.owner);
-        t = m(t);
-        t.ui(self, ui, world)
-    }
-}
-impl ShowTable<TIncubatorRepresentation> for Vec<TIncubatorRepresentation> {
-    fn show_modified_table(
-        &self,
-        name: &'static str,
-        ui: &mut Ui,
-        world: &mut World,
-        m: impl Fn(Table<TIncubatorRepresentation>) -> Table<TIncubatorRepresentation>,
-    ) -> TableState {
-        let mut t = Table::new(name)
-            .row_height(64.0)
-            .column_representation_texture(|d: &TIncubatorRepresentation| {
-                match ron::from_str::<Representation>(&d.data) {
-                    Ok(v) => v,
-                    Err(_) => default(),
-                }
-            })
-            .column_player_click("owner", |d| d.owner)
-            .column_gid("id", |d| d.id)
-            .column_cstr("description", |d, _| d.description.clone());
         t = m(t);
         t.ui(self, ui, world)
     }

@@ -49,29 +49,27 @@ pub mod global_settings_table;
 pub mod global_settings_type;
 pub mod house_table;
 pub mod identity_disconnected_reducer;
+pub mod incubator_ability_effect_table;
 pub mod incubator_ability_table;
-pub mod incubator_delete_ability_reducer;
-pub mod incubator_delete_effect_reducer;
-pub mod incubator_delete_house_reducer;
-pub mod incubator_delete_representation_reducer;
-pub mod incubator_delete_status_reducer;
-pub mod incubator_delete_trigger_reducer;
-pub mod incubator_delete_unit_reducer;
-pub mod incubator_effect_table;
+pub mod incubator_delete_reducer;
 pub mod incubator_house_table;
 pub mod incubator_link_add_reducer;
 pub mod incubator_link_table;
+pub mod incubator_post_ability_effect_reducer;
 pub mod incubator_post_ability_reducer;
-pub mod incubator_post_effect_reducer;
 pub mod incubator_post_house_reducer;
-pub mod incubator_post_representation_reducer;
 pub mod incubator_post_status_reducer;
-pub mod incubator_post_trigger_reducer;
-pub mod incubator_post_unit_reducer;
-pub mod incubator_representation_table;
+pub mod incubator_post_status_trigger_reducer;
+pub mod incubator_post_unit_name_reducer;
+pub mod incubator_post_unit_representation_reducer;
+pub mod incubator_post_unit_stats_reducer;
+pub mod incubator_post_unit_trigger_reducer;
 pub mod incubator_status_table;
-pub mod incubator_trigger_table;
-pub mod incubator_unit_table;
+pub mod incubator_status_trigger_table;
+pub mod incubator_unit_name_table;
+pub mod incubator_unit_representation_table;
+pub mod incubator_unit_stats_table;
+pub mod incubator_unit_trigger_table;
 pub mod incubator_vote_set_reducer;
 pub mod incubator_vote_table;
 pub mod inflating_int_type;
@@ -107,6 +105,7 @@ pub mod run_finish_reducer;
 pub mod run_start_const_reducer;
 pub mod run_start_normal_reducer;
 pub mod run_start_ranked_reducer;
+pub mod s_incubator_type_type;
 pub mod set_name_reducer;
 pub mod set_password_reducer;
 pub mod shop_buy_reducer;
@@ -133,14 +132,16 @@ pub mod t_battle_type;
 pub mod t_daily_state_type;
 pub mod t_global_event_type;
 pub mod t_house_type;
+pub mod t_incubator_ability_effect_type;
 pub mod t_incubator_ability_type;
-pub mod t_incubator_effect_type;
 pub mod t_incubator_house_type;
 pub mod t_incubator_link_type;
-pub mod t_incubator_representation_type;
+pub mod t_incubator_status_trigger_type;
 pub mod t_incubator_status_type;
-pub mod t_incubator_trigger_type;
-pub mod t_incubator_unit_type;
+pub mod t_incubator_unit_name_type;
+pub mod t_incubator_unit_representation_type;
+pub mod t_incubator_unit_stats_type;
+pub mod t_incubator_unit_trigger_type;
 pub mod t_incubator_vote_type;
 pub mod t_lootbox_item_type;
 pub mod t_meta_shop_type;
@@ -218,29 +219,27 @@ pub use global_settings_table::*;
 pub use global_settings_type::*;
 pub use house_table::*;
 pub use identity_disconnected_reducer::*;
+pub use incubator_ability_effect_table::*;
 pub use incubator_ability_table::*;
-pub use incubator_delete_ability_reducer::*;
-pub use incubator_delete_effect_reducer::*;
-pub use incubator_delete_house_reducer::*;
-pub use incubator_delete_representation_reducer::*;
-pub use incubator_delete_status_reducer::*;
-pub use incubator_delete_trigger_reducer::*;
-pub use incubator_delete_unit_reducer::*;
-pub use incubator_effect_table::*;
+pub use incubator_delete_reducer::*;
 pub use incubator_house_table::*;
 pub use incubator_link_add_reducer::*;
 pub use incubator_link_table::*;
+pub use incubator_post_ability_effect_reducer::*;
 pub use incubator_post_ability_reducer::*;
-pub use incubator_post_effect_reducer::*;
 pub use incubator_post_house_reducer::*;
-pub use incubator_post_representation_reducer::*;
 pub use incubator_post_status_reducer::*;
-pub use incubator_post_trigger_reducer::*;
-pub use incubator_post_unit_reducer::*;
-pub use incubator_representation_table::*;
+pub use incubator_post_status_trigger_reducer::*;
+pub use incubator_post_unit_name_reducer::*;
+pub use incubator_post_unit_representation_reducer::*;
+pub use incubator_post_unit_stats_reducer::*;
+pub use incubator_post_unit_trigger_reducer::*;
 pub use incubator_status_table::*;
-pub use incubator_trigger_table::*;
-pub use incubator_unit_table::*;
+pub use incubator_status_trigger_table::*;
+pub use incubator_unit_name_table::*;
+pub use incubator_unit_representation_table::*;
+pub use incubator_unit_stats_table::*;
+pub use incubator_unit_trigger_table::*;
 pub use incubator_vote_set_reducer::*;
 pub use incubator_vote_table::*;
 pub use inflating_int_type::*;
@@ -276,6 +275,7 @@ pub use run_finish_reducer::*;
 pub use run_start_const_reducer::*;
 pub use run_start_normal_reducer::*;
 pub use run_start_ranked_reducer::*;
+pub use s_incubator_type_type::*;
 pub use set_name_reducer::*;
 pub use set_password_reducer::*;
 pub use shop_buy_reducer::*;
@@ -302,14 +302,16 @@ pub use t_battle_type::*;
 pub use t_daily_state_type::*;
 pub use t_global_event_type::*;
 pub use t_house_type::*;
+pub use t_incubator_ability_effect_type::*;
 pub use t_incubator_ability_type::*;
-pub use t_incubator_effect_type::*;
 pub use t_incubator_house_type::*;
 pub use t_incubator_link_type::*;
-pub use t_incubator_representation_type::*;
+pub use t_incubator_status_trigger_type::*;
 pub use t_incubator_status_type::*;
-pub use t_incubator_trigger_type::*;
-pub use t_incubator_unit_type::*;
+pub use t_incubator_unit_name_type::*;
+pub use t_incubator_unit_representation_type::*;
+pub use t_incubator_unit_stats_type::*;
+pub use t_incubator_unit_trigger_type::*;
 pub use t_incubator_vote_type::*;
 pub use t_lootbox_item_type::*;
 pub use t_meta_shop_type::*;
@@ -373,23 +375,19 @@ pub enum Reducer {
     FuseStart(fuse_start_reducer::FuseStart),
     FuseSwap(fuse_swap_reducer::FuseSwap),
     GiveCredits(give_credits_reducer::GiveCredits),
-    IncubatorDeleteAbility(incubator_delete_ability_reducer::IncubatorDeleteAbility),
-    IncubatorDeleteEffect(incubator_delete_effect_reducer::IncubatorDeleteEffect),
-    IncubatorDeleteHouse(incubator_delete_house_reducer::IncubatorDeleteHouse),
-    IncubatorDeleteRepresentation(
-        incubator_delete_representation_reducer::IncubatorDeleteRepresentation,
-    ),
-    IncubatorDeleteStatus(incubator_delete_status_reducer::IncubatorDeleteStatus),
-    IncubatorDeleteTrigger(incubator_delete_trigger_reducer::IncubatorDeleteTrigger),
-    IncubatorDeleteUnit(incubator_delete_unit_reducer::IncubatorDeleteUnit),
+    IncubatorDelete(incubator_delete_reducer::IncubatorDelete),
     IncubatorLinkAdd(incubator_link_add_reducer::IncubatorLinkAdd),
     IncubatorPostAbility(incubator_post_ability_reducer::IncubatorPostAbility),
-    IncubatorPostEffect(incubator_post_effect_reducer::IncubatorPostEffect),
+    IncubatorPostAbilityEffect(incubator_post_ability_effect_reducer::IncubatorPostAbilityEffect),
     IncubatorPostHouse(incubator_post_house_reducer::IncubatorPostHouse),
-    IncubatorPostRepresentation(incubator_post_representation_reducer::IncubatorPostRepresentation),
     IncubatorPostStatus(incubator_post_status_reducer::IncubatorPostStatus),
-    IncubatorPostTrigger(incubator_post_trigger_reducer::IncubatorPostTrigger),
-    IncubatorPostUnit(incubator_post_unit_reducer::IncubatorPostUnit),
+    IncubatorPostStatusTrigger(incubator_post_status_trigger_reducer::IncubatorPostStatusTrigger),
+    IncubatorPostUnitName(incubator_post_unit_name_reducer::IncubatorPostUnitName),
+    IncubatorPostUnitRepresentation(
+        incubator_post_unit_representation_reducer::IncubatorPostUnitRepresentation,
+    ),
+    IncubatorPostUnitStats(incubator_post_unit_stats_reducer::IncubatorPostUnitStats),
+    IncubatorPostUnitTrigger(incubator_post_unit_trigger_reducer::IncubatorPostUnitTrigger),
     IncubatorVoteSet(incubator_vote_set_reducer::IncubatorVoteSet),
     Login(login_reducer::Login),
     LoginByIdentity(login_by_identity_reducer::LoginByIdentity),
@@ -453,21 +451,17 @@ impl __sdk::spacetime_module::Reducer for Reducer {
             Reducer::FuseStart(_) => "fuse_start",
             Reducer::FuseSwap(_) => "fuse_swap",
             Reducer::GiveCredits(_) => "give_credits",
-            Reducer::IncubatorDeleteAbility(_) => "incubator_delete_ability",
-            Reducer::IncubatorDeleteEffect(_) => "incubator_delete_effect",
-            Reducer::IncubatorDeleteHouse(_) => "incubator_delete_house",
-            Reducer::IncubatorDeleteRepresentation(_) => "incubator_delete_representation",
-            Reducer::IncubatorDeleteStatus(_) => "incubator_delete_status",
-            Reducer::IncubatorDeleteTrigger(_) => "incubator_delete_trigger",
-            Reducer::IncubatorDeleteUnit(_) => "incubator_delete_unit",
+            Reducer::IncubatorDelete(_) => "incubator_delete",
             Reducer::IncubatorLinkAdd(_) => "incubator_link_add",
             Reducer::IncubatorPostAbility(_) => "incubator_post_ability",
-            Reducer::IncubatorPostEffect(_) => "incubator_post_effect",
+            Reducer::IncubatorPostAbilityEffect(_) => "incubator_post_ability_effect",
             Reducer::IncubatorPostHouse(_) => "incubator_post_house",
-            Reducer::IncubatorPostRepresentation(_) => "incubator_post_representation",
             Reducer::IncubatorPostStatus(_) => "incubator_post_status",
-            Reducer::IncubatorPostTrigger(_) => "incubator_post_trigger",
-            Reducer::IncubatorPostUnit(_) => "incubator_post_unit",
+            Reducer::IncubatorPostStatusTrigger(_) => "incubator_post_status_trigger",
+            Reducer::IncubatorPostUnitName(_) => "incubator_post_unit_name",
+            Reducer::IncubatorPostUnitRepresentation(_) => "incubator_post_unit_representation",
+            Reducer::IncubatorPostUnitStats(_) => "incubator_post_unit_stats",
+            Reducer::IncubatorPostUnitTrigger(_) => "incubator_post_unit_trigger",
             Reducer::IncubatorVoteSet(_) => "incubator_vote_set",
             Reducer::Login(_) => "login",
             Reducer::LoginByIdentity(_) => "login_by_identity",
@@ -526,21 +520,17 @@ impl __sdk::spacetime_module::Reducer for Reducer {
             Reducer::FuseStart(args) => args,
             Reducer::FuseSwap(args) => args,
             Reducer::GiveCredits(args) => args,
-            Reducer::IncubatorDeleteAbility(args) => args,
-            Reducer::IncubatorDeleteEffect(args) => args,
-            Reducer::IncubatorDeleteHouse(args) => args,
-            Reducer::IncubatorDeleteRepresentation(args) => args,
-            Reducer::IncubatorDeleteStatus(args) => args,
-            Reducer::IncubatorDeleteTrigger(args) => args,
-            Reducer::IncubatorDeleteUnit(args) => args,
+            Reducer::IncubatorDelete(args) => args,
             Reducer::IncubatorLinkAdd(args) => args,
             Reducer::IncubatorPostAbility(args) => args,
-            Reducer::IncubatorPostEffect(args) => args,
+            Reducer::IncubatorPostAbilityEffect(args) => args,
             Reducer::IncubatorPostHouse(args) => args,
-            Reducer::IncubatorPostRepresentation(args) => args,
             Reducer::IncubatorPostStatus(args) => args,
-            Reducer::IncubatorPostTrigger(args) => args,
-            Reducer::IncubatorPostUnit(args) => args,
+            Reducer::IncubatorPostStatusTrigger(args) => args,
+            Reducer::IncubatorPostUnitName(args) => args,
+            Reducer::IncubatorPostUnitRepresentation(args) => args,
+            Reducer::IncubatorPostUnitStats(args) => args,
+            Reducer::IncubatorPostUnitTrigger(args) => args,
             Reducer::IncubatorVoteSet(args) => args,
             Reducer::Login(args) => args,
             Reducer::LoginByIdentity(args) => args,
@@ -642,41 +632,8 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
             "give_credits" => Ok(Reducer::GiveCredits(
                 __sdk::spacetime_module::parse_reducer_args("give_credits", &value.args)?,
             )),
-            "incubator_delete_ability" => Ok(Reducer::IncubatorDeleteAbility(
-                __sdk::spacetime_module::parse_reducer_args(
-                    "incubator_delete_ability",
-                    &value.args,
-                )?,
-            )),
-            "incubator_delete_effect" => Ok(Reducer::IncubatorDeleteEffect(
-                __sdk::spacetime_module::parse_reducer_args(
-                    "incubator_delete_effect",
-                    &value.args,
-                )?,
-            )),
-            "incubator_delete_house" => Ok(Reducer::IncubatorDeleteHouse(
-                __sdk::spacetime_module::parse_reducer_args("incubator_delete_house", &value.args)?,
-            )),
-            "incubator_delete_representation" => Ok(Reducer::IncubatorDeleteRepresentation(
-                __sdk::spacetime_module::parse_reducer_args(
-                    "incubator_delete_representation",
-                    &value.args,
-                )?,
-            )),
-            "incubator_delete_status" => Ok(Reducer::IncubatorDeleteStatus(
-                __sdk::spacetime_module::parse_reducer_args(
-                    "incubator_delete_status",
-                    &value.args,
-                )?,
-            )),
-            "incubator_delete_trigger" => Ok(Reducer::IncubatorDeleteTrigger(
-                __sdk::spacetime_module::parse_reducer_args(
-                    "incubator_delete_trigger",
-                    &value.args,
-                )?,
-            )),
-            "incubator_delete_unit" => Ok(Reducer::IncubatorDeleteUnit(
-                __sdk::spacetime_module::parse_reducer_args("incubator_delete_unit", &value.args)?,
+            "incubator_delete" => Ok(Reducer::IncubatorDelete(
+                __sdk::spacetime_module::parse_reducer_args("incubator_delete", &value.args)?,
             )),
             "incubator_link_add" => Ok(Reducer::IncubatorLinkAdd(
                 __sdk::spacetime_module::parse_reducer_args("incubator_link_add", &value.args)?,
@@ -684,26 +641,47 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
             "incubator_post_ability" => Ok(Reducer::IncubatorPostAbility(
                 __sdk::spacetime_module::parse_reducer_args("incubator_post_ability", &value.args)?,
             )),
-            "incubator_post_effect" => Ok(Reducer::IncubatorPostEffect(
-                __sdk::spacetime_module::parse_reducer_args("incubator_post_effect", &value.args)?,
+            "incubator_post_ability_effect" => Ok(Reducer::IncubatorPostAbilityEffect(
+                __sdk::spacetime_module::parse_reducer_args(
+                    "incubator_post_ability_effect",
+                    &value.args,
+                )?,
             )),
             "incubator_post_house" => Ok(Reducer::IncubatorPostHouse(
                 __sdk::spacetime_module::parse_reducer_args("incubator_post_house", &value.args)?,
             )),
-            "incubator_post_representation" => Ok(Reducer::IncubatorPostRepresentation(
-                __sdk::spacetime_module::parse_reducer_args(
-                    "incubator_post_representation",
-                    &value.args,
-                )?,
-            )),
             "incubator_post_status" => Ok(Reducer::IncubatorPostStatus(
                 __sdk::spacetime_module::parse_reducer_args("incubator_post_status", &value.args)?,
             )),
-            "incubator_post_trigger" => Ok(Reducer::IncubatorPostTrigger(
-                __sdk::spacetime_module::parse_reducer_args("incubator_post_trigger", &value.args)?,
+            "incubator_post_status_trigger" => Ok(Reducer::IncubatorPostStatusTrigger(
+                __sdk::spacetime_module::parse_reducer_args(
+                    "incubator_post_status_trigger",
+                    &value.args,
+                )?,
             )),
-            "incubator_post_unit" => Ok(Reducer::IncubatorPostUnit(
-                __sdk::spacetime_module::parse_reducer_args("incubator_post_unit", &value.args)?,
+            "incubator_post_unit_name" => Ok(Reducer::IncubatorPostUnitName(
+                __sdk::spacetime_module::parse_reducer_args(
+                    "incubator_post_unit_name",
+                    &value.args,
+                )?,
+            )),
+            "incubator_post_unit_representation" => Ok(Reducer::IncubatorPostUnitRepresentation(
+                __sdk::spacetime_module::parse_reducer_args(
+                    "incubator_post_unit_representation",
+                    &value.args,
+                )?,
+            )),
+            "incubator_post_unit_stats" => Ok(Reducer::IncubatorPostUnitStats(
+                __sdk::spacetime_module::parse_reducer_args(
+                    "incubator_post_unit_stats",
+                    &value.args,
+                )?,
+            )),
+            "incubator_post_unit_trigger" => Ok(Reducer::IncubatorPostUnitTrigger(
+                __sdk::spacetime_module::parse_reducer_args(
+                    "incubator_post_unit_trigger",
+                    &value.args,
+                )?,
             )),
             "incubator_vote_set" => Ok(Reducer::IncubatorVoteSet(
                 __sdk::spacetime_module::parse_reducer_args("incubator_vote_set", &value.args)?,
@@ -841,13 +819,16 @@ pub struct DbUpdate {
     global_settings: __sdk::spacetime_module::TableUpdate<GlobalSettings>,
     house: __sdk::spacetime_module::TableUpdate<THouse>,
     incubator_ability: __sdk::spacetime_module::TableUpdate<TIncubatorAbility>,
-    incubator_effect: __sdk::spacetime_module::TableUpdate<TIncubatorEffect>,
+    incubator_ability_effect: __sdk::spacetime_module::TableUpdate<TIncubatorAbilityEffect>,
     incubator_house: __sdk::spacetime_module::TableUpdate<TIncubatorHouse>,
     incubator_link: __sdk::spacetime_module::TableUpdate<TIncubatorLink>,
-    incubator_representation: __sdk::spacetime_module::TableUpdate<TIncubatorRepresentation>,
     incubator_status: __sdk::spacetime_module::TableUpdate<TIncubatorStatus>,
-    incubator_trigger: __sdk::spacetime_module::TableUpdate<TIncubatorTrigger>,
-    incubator_unit: __sdk::spacetime_module::TableUpdate<TIncubatorUnit>,
+    incubator_status_trigger: __sdk::spacetime_module::TableUpdate<TIncubatorStatusTrigger>,
+    incubator_unit_name: __sdk::spacetime_module::TableUpdate<TIncubatorUnitName>,
+    incubator_unit_representation:
+        __sdk::spacetime_module::TableUpdate<TIncubatorUnitRepresentation>,
+    incubator_unit_stats: __sdk::spacetime_module::TableUpdate<TIncubatorUnitStats>,
+    incubator_unit_trigger: __sdk::spacetime_module::TableUpdate<TIncubatorUnitTrigger>,
     incubator_vote: __sdk::spacetime_module::TableUpdate<TIncubatorVote>,
     lootbox_item: __sdk::spacetime_module::TableUpdate<TLootboxItem>,
     meta_shop: __sdk::spacetime_module::TableUpdate<TMetaShop>,
@@ -915,9 +896,9 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
                     db_update.incubator_ability =
                         incubator_ability_table::parse_table_update(table_update)?
                 }
-                "incubator_effect" => {
-                    db_update.incubator_effect =
-                        incubator_effect_table::parse_table_update(table_update)?
+                "incubator_ability_effect" => {
+                    db_update.incubator_ability_effect =
+                        incubator_ability_effect_table::parse_table_update(table_update)?
                 }
                 "incubator_house" => {
                     db_update.incubator_house =
@@ -927,21 +908,29 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
                     db_update.incubator_link =
                         incubator_link_table::parse_table_update(table_update)?
                 }
-                "incubator_representation" => {
-                    db_update.incubator_representation =
-                        incubator_representation_table::parse_table_update(table_update)?
-                }
                 "incubator_status" => {
                     db_update.incubator_status =
                         incubator_status_table::parse_table_update(table_update)?
                 }
-                "incubator_trigger" => {
-                    db_update.incubator_trigger =
-                        incubator_trigger_table::parse_table_update(table_update)?
+                "incubator_status_trigger" => {
+                    db_update.incubator_status_trigger =
+                        incubator_status_trigger_table::parse_table_update(table_update)?
                 }
-                "incubator_unit" => {
-                    db_update.incubator_unit =
-                        incubator_unit_table::parse_table_update(table_update)?
+                "incubator_unit_name" => {
+                    db_update.incubator_unit_name =
+                        incubator_unit_name_table::parse_table_update(table_update)?
+                }
+                "incubator_unit_representation" => {
+                    db_update.incubator_unit_representation =
+                        incubator_unit_representation_table::parse_table_update(table_update)?
+                }
+                "incubator_unit_stats" => {
+                    db_update.incubator_unit_stats =
+                        incubator_unit_stats_table::parse_table_update(table_update)?
+                }
+                "incubator_unit_trigger" => {
+                    db_update.incubator_unit_trigger =
+                        incubator_unit_trigger_table::parse_table_update(table_update)?
                 }
                 "incubator_vote" => {
                     db_update.incubator_vote =
@@ -1018,17 +1007,33 @@ impl __sdk::spacetime_module::DbUpdate for DbUpdate {
         cache.apply_diff_to_table::<THouse>("house", &self.house);
         cache
             .apply_diff_to_table::<TIncubatorAbility>("incubator_ability", &self.incubator_ability);
-        cache.apply_diff_to_table::<TIncubatorEffect>("incubator_effect", &self.incubator_effect);
+        cache.apply_diff_to_table::<TIncubatorAbilityEffect>(
+            "incubator_ability_effect",
+            &self.incubator_ability_effect,
+        );
         cache.apply_diff_to_table::<TIncubatorHouse>("incubator_house", &self.incubator_house);
         cache.apply_diff_to_table::<TIncubatorLink>("incubator_link", &self.incubator_link);
-        cache.apply_diff_to_table::<TIncubatorRepresentation>(
-            "incubator_representation",
-            &self.incubator_representation,
-        );
         cache.apply_diff_to_table::<TIncubatorStatus>("incubator_status", &self.incubator_status);
-        cache
-            .apply_diff_to_table::<TIncubatorTrigger>("incubator_trigger", &self.incubator_trigger);
-        cache.apply_diff_to_table::<TIncubatorUnit>("incubator_unit", &self.incubator_unit);
+        cache.apply_diff_to_table::<TIncubatorStatusTrigger>(
+            "incubator_status_trigger",
+            &self.incubator_status_trigger,
+        );
+        cache.apply_diff_to_table::<TIncubatorUnitName>(
+            "incubator_unit_name",
+            &self.incubator_unit_name,
+        );
+        cache.apply_diff_to_table::<TIncubatorUnitRepresentation>(
+            "incubator_unit_representation",
+            &self.incubator_unit_representation,
+        );
+        cache.apply_diff_to_table::<TIncubatorUnitStats>(
+            "incubator_unit_stats",
+            &self.incubator_unit_stats,
+        );
+        cache.apply_diff_to_table::<TIncubatorUnitTrigger>(
+            "incubator_unit_trigger",
+            &self.incubator_unit_trigger,
+        );
         cache.apply_diff_to_table::<TIncubatorVote>("incubator_vote", &self.incubator_vote);
         cache.apply_diff_to_table::<TLootboxItem>("lootbox_item", &self.lootbox_item);
         cache.apply_diff_to_table::<TMetaShop>("meta_shop", &self.meta_shop);
@@ -1098,9 +1103,9 @@ impl __sdk::spacetime_module::DbUpdate for DbUpdate {
             &self.incubator_ability,
             event,
         );
-        callbacks.invoke_table_row_callbacks::<TIncubatorEffect>(
-            "incubator_effect",
-            &self.incubator_effect,
+        callbacks.invoke_table_row_callbacks::<TIncubatorAbilityEffect>(
+            "incubator_ability_effect",
+            &self.incubator_ability_effect,
             event,
         );
         callbacks.invoke_table_row_callbacks::<TIncubatorHouse>(
@@ -1113,24 +1118,34 @@ impl __sdk::spacetime_module::DbUpdate for DbUpdate {
             &self.incubator_link,
             event,
         );
-        callbacks.invoke_table_row_callbacks::<TIncubatorRepresentation>(
-            "incubator_representation",
-            &self.incubator_representation,
-            event,
-        );
         callbacks.invoke_table_row_callbacks::<TIncubatorStatus>(
             "incubator_status",
             &self.incubator_status,
             event,
         );
-        callbacks.invoke_table_row_callbacks::<TIncubatorTrigger>(
-            "incubator_trigger",
-            &self.incubator_trigger,
+        callbacks.invoke_table_row_callbacks::<TIncubatorStatusTrigger>(
+            "incubator_status_trigger",
+            &self.incubator_status_trigger,
             event,
         );
-        callbacks.invoke_table_row_callbacks::<TIncubatorUnit>(
-            "incubator_unit",
-            &self.incubator_unit,
+        callbacks.invoke_table_row_callbacks::<TIncubatorUnitName>(
+            "incubator_unit_name",
+            &self.incubator_unit_name,
+            event,
+        );
+        callbacks.invoke_table_row_callbacks::<TIncubatorUnitRepresentation>(
+            "incubator_unit_representation",
+            &self.incubator_unit_representation,
+            event,
+        );
+        callbacks.invoke_table_row_callbacks::<TIncubatorUnitStats>(
+            "incubator_unit_stats",
+            &self.incubator_unit_stats,
+            event,
+        );
+        callbacks.invoke_table_row_callbacks::<TIncubatorUnitTrigger>(
+            "incubator_unit_trigger",
+            &self.incubator_unit_trigger,
             event,
         );
         callbacks.invoke_table_row_callbacks::<TIncubatorVote>(

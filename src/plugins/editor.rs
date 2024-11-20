@@ -168,7 +168,7 @@ impl EditorPlugin {
             .top_content(move |ui, world| {
                 ui.horizontal(|ui| {
                     if Button::new("Load own").ui(ui).clicked() {
-                        Confirmation::new("Open own team".cstr())
+                        Confirmation::new("Open own team")
                             .content(move |ui, world| {
                                 cn().db
                                     .team()
@@ -212,7 +212,7 @@ impl EditorPlugin {
                     }
                     ui.add_space(30.0);
                     if Button::new("Load Champion").ui(ui).clicked() {
-                        Confirmation::new("Load Champion".cstr_c(VISIBLE_LIGHT))
+                        Confirmation::new("Load Champion")
                             .content(|ui, _| {
                                 let mut mode = selected_mode(ui.ctx());
                                 if Selector::new("mode").ui_iter(

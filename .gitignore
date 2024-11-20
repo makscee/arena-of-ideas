@@ -1,11 +1,6 @@
 /target/
 /Cargo.lock
-/static/local_configs/
-/save/
 .DS_Store
-static/.DS_Store
-static/levels.json
 ArenaOfIdeas.*
 *.code-workspace
 flamegraph*
-*.bak

@@ -8,19 +8,14 @@ use spacetimedb_sdk::{
     lib as __lib, sats as __sats, ws_messages as __ws,
 };
 
-use super::s_incubator_type_type::SIncubatorType;
-
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct TIncubatorLink {
+pub struct TIncubatorUnitTrigger {
     pub id: u64,
-    pub from: String,
-    pub from_type: SIncubatorType,
-    pub to: String,
-    pub to_type: SIncubatorType,
-    pub score: i32,
+    pub owner: u64,
+    pub data: String,
 }
 
-impl __sdk::spacetime_module::InModule for TIncubatorLink {
+impl __sdk::spacetime_module::InModule for TIncubatorUnitTrigger {
     type Module = super::RemoteModule;
 }

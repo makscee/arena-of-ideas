@@ -8,11 +8,15 @@ use spacetimedb_sdk::{
     lib as __lib, sats as __sats, ws_messages as __ws,
 };
 
+use super::s_incubator_type_type::SIncubatorType;
+
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct IncubatorLinkAdd {
-    pub from: u64,
-    pub to: u64,
+    pub from: String,
+    pub from_type: SIncubatorType,
+    pub to: String,
+    pub to_type: SIncubatorType,
 }
 
 impl __sdk::spacetime_module::InModule for IncubatorLinkAdd {
@@ -31,7 +35,13 @@ pub trait incubator_link_add {
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed by listening for [`Self::on_incubator_link_add`] callbacks.
-    fn incubator_link_add(&self, from: u64, to: u64) -> __anyhow::Result<()>;
+    fn incubator_link_add(
+        &self,
+        from: String,
+        from_type: SIncubatorType,
+        to: String,
+        to_type: SIncubatorType,
+    ) -> __anyhow::Result<()>;
     /// Register a callback to run whenever we are notified of an invocation of the reducer `incubator_link_add`.
     ///
     /// The [`super::EventContext`] passed to the `callback`
@@ -44,7 +54,9 @@ pub trait incubator_link_add {
     /// to cancel the callback.
     fn on_incubator_link_add(
         &self,
-        callback: impl FnMut(&super::EventContext, &u64, &u64) + Send + 'static,
+        callback: impl FnMut(&super::EventContext, &String, &SIncubatorType, &String, &SIncubatorType)
+            + Send
+            + 'static,
     ) -> IncubatorLinkAddCallbackId;
     /// Cancel a callback previously registered by [`Self::on_incubator_link_add`],
     /// causing it not to run in the future.
@@ -52,18 +64,33 @@ pub trait incubator_link_add {
 }
 
 impl incubator_link_add for super::RemoteReducers {
-    fn incubator_link_add(&self, from: u64, to: u64) -> __anyhow::Result<()> {
-        self.imp
-            .call_reducer("incubator_link_add", IncubatorLinkAdd { from, to })
+    fn incubator_link_add(
+        &self,
+        from: String,
+        from_type: SIncubatorType,
+        to: String,
+        to_type: SIncubatorType,
+    ) -> __anyhow::Result<()> {
+        self.imp.call_reducer(
+            "incubator_link_add",
+            IncubatorLinkAdd {
+                from,
+                from_type,
+                to,
+                to_type,
+            },
+        )
     }
     fn on_incubator_link_add(
         &self,
-        mut callback: impl FnMut(&super::EventContext, &u64, &u64) + Send + 'static,
+        mut callback: impl FnMut(&super::EventContext, &String, &SIncubatorType, &String, &SIncubatorType)
+            + Send
+            + 'static,
     ) -> IncubatorLinkAddCallbackId {
         IncubatorLinkAddCallbackId(self.imp.on_reducer::<IncubatorLinkAdd>(
             "incubator_link_add",
             Box::new(move |ctx: &super::EventContext, args: &IncubatorLinkAdd| {
-                callback(ctx, &args.from, &args.to)
+                callback(ctx, &args.from, &args.from_type, &args.to, &args.to_type)
             }),
         ))
     }

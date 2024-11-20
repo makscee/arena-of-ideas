@@ -261,7 +261,7 @@ impl GameStartPlugin {
                         GameState::Shop.proceed_to_target(world);
                     }
                     if Button::new("Abandon run").red(ui).ui(ui).clicked() {
-                        Confirmation::new("Abandon current run?".cstr_c(VISIBLE_BRIGHT))
+                        Confirmation::new("Abandon current run?")
                             .accept(|_| {
                                 cn().reducers.run_finish().unwrap();
                             })
@@ -334,7 +334,7 @@ impl GameStartPlugin {
                                     .column_team("player >", |d| d.team_left)
                                     .column_team("< enemy", |d| d.team_right)
                                     .column_player_click("enemy", |d| d.team_right.get_team().owner)
-                                    .column_gid("id", |d| d.id)
+                                    .column_id("id", |d| d.id)
                                     .column_cstr("mode", |d, _| d.mode.cstr())
                                     .column_btn("copy", |d, _, world| {
                                         copy_to_clipboard(
