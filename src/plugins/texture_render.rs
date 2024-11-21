@@ -17,7 +17,6 @@ pub struct TextureRenderPlugin;
 #[derive(Resource, Default)]
 struct TextureRenderResource {
     map: HashMap<u64, RenderData>,
-    next_x: f32,
 }
 
 struct RenderData {
@@ -61,10 +60,10 @@ impl TextureRenderPlugin {
             }
         }
     }
-    fn spawn_camera(x: f32, entity: Entity, world: &mut World) -> RenderData {
+    fn spawn_camera(x: f32, y: f32, entity: Entity, world: &mut World) -> RenderData {
         let size = Extent3d {
-            width: 1024,
-            height: 1024,
+            width: 512,
+            height: 512,
             ..default()
         };
         let mut image = Image {
@@ -97,7 +96,7 @@ impl TextureRenderPlugin {
                         scaling_mode: bevy::render::camera::ScalingMode::FixedHorizontal(3.0),
                         ..default()
                     },
-                    transform: Transform::from_xyz(x, 0.0, 900.0),
+                    transform: Transform::from_xyz(x, y, 900.0),
                     ..default()
                 },
                 Self::layer(),
@@ -113,39 +112,26 @@ impl TextureRenderPlugin {
             ts: gt().play_head(),
         }
     }
-    fn spawn_unit(unit: PackedUnit, x: f32, world: &mut World) -> Entity {
+    fn spawn_unit(unit: PackedUnit, x: f32, y: f32, world: &mut World) -> Entity {
         let entity = unit.unpack(TeamPlugin::entity(Faction::Shop, world), None, None, world);
-        VarState::get_mut(entity, world).set_vec2(VarName::Position, vec2(x, 0.0).into());
+        VarState::get_mut(entity, world).set_vec2(VarName::Position, vec2(x, y).into());
         for child in get_children_recursive(entity, world) {
             world.entity_mut(child).insert(Self::layer());
         }
         entity
     }
-    fn spawn_representation(rep: Representation, x: f32, world: &mut World) -> Entity {
+    fn spawn_representation(rep: Representation, x: f32, y: f32, world: &mut World) -> Entity {
         let entity = world.spawn_empty().id();
         rep.unpack(entity, world);
-        VarState::new_with(VarName::Position, vec2(x, 0.0).into()).attach(entity, 0, world);
+        VarState::new_with(VarName::Position, vec2(x, y).into()).attach(entity, 0, world);
         for child in get_children_recursive(entity, world) {
             world.entity_mut(child).insert(Self::layer());
         }
         entity
-    }
-    pub fn textures(world: &mut World) -> Vec<TextureId> {
-        world
-            .resource::<TextureRenderResource>()
-            .map
-            .iter()
-            .map(|(_, d)| {
-                world
-                    .resource::<EguiUserTextures>()
-                    .image_id(&d.image)
-                    .unwrap()
-            })
-            .collect_vec()
     }
     fn cached_texture(
         h: impl Hash,
-        spawn: impl FnOnce(f32, &mut World) -> Entity,
+        spawn: impl FnOnce(f32, f32, &mut World) -> Entity,
         world: &mut World,
     ) -> TextureId {
         let mut hasher = DefaultHasher::new();
@@ -153,42 +139,39 @@ impl TextureRenderPlugin {
         let key = hasher.finish();
 
         world.resource_scope(|world, mut r: Mut<TextureRenderResource>| {
-            let x = r.next_x;
-            let mut increase_x = false;
             let data = r.map.entry(key).or_insert_with(|| {
-                increase_x = true;
-                let entity = spawn(x, world);
-                Self::spawn_camera(x, entity, world)
+                let mut rng = rng_seeded(key);
+                let x = rng.gen_range(-1.0e4..1.0e4);
+                let y = rng.gen_range(-1.0e4..1.0e4);
+                let entity = spawn(x, y, world);
+                Self::spawn_camera(x, y, entity, world)
             });
             data.ts = gt().play_head();
             let image = world
                 .resource::<EguiUserTextures>()
                 .image_id(&data.image)
                 .unwrap();
-            if increase_x {
-                r.next_x += 100.0;
-            }
             image
         })
     }
     pub fn texture_base_unit(unit: &TBaseUnit, world: &mut World) -> TextureId {
         Self::cached_texture(
             unit,
-            |x, world| Self::spawn_unit(unit.clone().into(), x, world),
+            |x, y, world| Self::spawn_unit(unit.clone().into(), x, y, world),
             world,
         )
     }
     pub fn texture_representation(rep: &Representation, world: &mut World) -> TextureId {
         Self::cached_texture(
             rep,
-            |x, world| Self::spawn_representation(rep.clone(), x, world),
+            |x, y, world| Self::spawn_representation(rep.clone(), x, y, world),
             world,
         )
     }
     pub fn texture_representation_serialized(rep: &str, world: &mut World) -> TextureId {
         Self::cached_texture(
             rep,
-            |x, world| Self::spawn_representation(ron::from_str(rep).unwrap(), x, world),
+            |x, y, world| Self::spawn_representation(ron::from_str(rep).unwrap(), x, y, world),
             world,
         )
     }

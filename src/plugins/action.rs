@@ -60,7 +60,7 @@ impl ActionPlugin {
         id.hash(&mut hasher);
         br.left.units.iter().for_each(|u| u.name.hash(&mut hasher));
         br.right.units.iter().for_each(|u| u.name.hash(&mut hasher));
-        let rng = ChaCha8Rng::seed_from_u64(hasher.finish());
+        let rng = rng_seeded(hasher.finish());
         rm(world).rng = Some(rng);
         loop {
             if limit == 0 {

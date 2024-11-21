@@ -604,14 +604,6 @@ impl EditorPlugin {
             texture,
             egui::vec2(256., 256.),
         ));
-        ui.horizontal(|ui| {
-            for texture in TextureRenderPlugin::textures(world) {
-                ui.image(egui::load::SizedTexture::new(
-                    texture,
-                    egui::vec2(128., 128.),
-                ));
-            }
-        });
         Input::new("name:").ui_string(&mut unit.name, ui);
         ui.horizontal(|ui| {
             DragValue::new(&mut unit.pwr).prefix("pwr:").ui(ui);

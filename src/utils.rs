@@ -276,6 +276,9 @@ pub fn show_texture(size: f32, texture: TextureId, ui: &mut Ui) -> Response {
         egui::vec2(size, size),
     ))
 }
+pub fn rng_seeded(seed: u64) -> ChaCha8Rng {
+    ChaCha8Rng::seed_from_u64(seed)
+}
 
 pub trait ToBVec2 {
     fn to_bvec2(&self) -> Vec2;

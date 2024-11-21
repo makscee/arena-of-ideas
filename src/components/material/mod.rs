@@ -400,7 +400,8 @@ impl RepresentationMaterial {
                             .unwrap()
                             .get_mut(&mesh.0)
                         {
-                            let size = material.data[10].xy() + vec2(padding, padding);
+                            let size = (material.data[10].xy() + vec2(padding, padding))
+                                .clamp_length_max(100.0);
                             if size.x > 0.0 && size.y >= 0.0 {
                                 *mesh = shape.shader_shape().mesh(size);
                             }
@@ -427,7 +428,7 @@ impl RepresentationMaterial {
                 let text = text.get_string(context, world).unwrap_or_default();
                 let text_comp = &mut world.get_mut::<Text>(entity).unwrap().sections[0];
                 text_comp.value = text;
-                let font_size = *font_size as f32;
+                let font_size = (*font_size).clamp(1, 100) as f32;
                 text_comp.style = bevy::text::TextStyle {
                     font_size,
                     color: color.into(),
@@ -435,7 +436,7 @@ impl RepresentationMaterial {
                 };
                 world.get_mut::<Transform>(entity).unwrap().scale =
                     vec3(1.0 / font_size, 1.0 / font_size, 1.0)
-                        * size.get_float(context, world).unwrap();
+                        * size.get_float(context, world).unwrap().at_most(100.0);
             }
             RepresentationMaterial::Curve {
                 thickness,
