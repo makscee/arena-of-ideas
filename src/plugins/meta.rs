@@ -161,12 +161,17 @@ impl MetaPlugin {
                 .cstr_cs(GREEN, CstrStyle::Bold)
                 .label(ui);
             }
-            cn().db
-                .meta_shop()
-                .iter()
-                .sorted_by_key(|d| d.id)
-                .collect_vec()
-                .show_table("Meta Shop", ui, world);
+            Table::new("Meta Shop", |_| {
+                cn().db
+                    .meta_shop()
+                    .iter()
+                    .sorted_by_key(|d| d.id)
+                    .collect_vec()
+            })
+            .title()
+            .add_item_kind_columns(|d| (d.item_kind.clone(), d.id))
+            .add_meta_shop_columns(|d| d)
+            .ui(ui, world);
         })
         .pinned()
         .push(world);
@@ -190,80 +195,85 @@ impl MetaPlugin {
     }
     fn open_auction(world: &mut World) {
         Tile::new(Side::Left, |ui, world| {
-            cn().db
-                .auction()
-                .iter()
-                .collect_vec()
-                .show_modified_table("Auction", ui, world, |t| {
-                    t.column(
-                        "buy",
-                        |_, _| default(),
-                        |d: &TAuction, _, ui, _| {
-                            let own = player_id() == d.owner;
-                            if Button::new(if own { "cancel" } else { "buy" })
-                                .enabled(own || can_afford(d.price))
-                                .ui(ui)
-                                .clicked()
-                            {
-                                let _ = cn().reducers.auction_buy(d.item_id);
-                            }
-                        },
-                        false,
-                    )
-                    .filter("Units", "type", "unit".into())
-                    .filter("Unit Shards", "type", "unit shard".into())
-                    .filter("Rainbow Shards", "type", "rainbow shard".into())
-                    .filter("Lootboxes", "type", "lootbox".into())
-                });
+            Table::new("Auction", |_| cn().db.auction().iter().collect_vec())
+                .title()
+                .add_auction_columns(|d| d)
+                .column(
+                    "buy",
+                    |_, _| default(),
+                    |d: &TAuction, _, ui, _| {
+                        let own = player_id() == d.owner;
+                        if Button::new(if own { "cancel" } else { "buy" })
+                            .enabled(own || can_afford(d.price))
+                            .ui(ui)
+                            .clicked()
+                        {
+                            let _ = cn().reducers.auction_buy(d.item_id);
+                        }
+                    },
+                    false,
+                )
+                .filter("Units", "type", "unit".into())
+                .filter("Unit Shards", "type", "unit shard".into())
+                .filter("Rainbow Shards", "type", "rainbow shard".into())
+                .filter("Lootboxes", "type", "lootbox".into())
+                .ui(ui, world);
         })
         .pinned()
         .push(world);
     }
     fn open_gallery(world: &mut World) {
         Tile::new(Side::Left, |ui, world| {
-            cn().db
-                .base_unit()
-                .iter()
-                .collect_vec()
-                .show_table("Base Units", ui, world);
+            Table::new("Base Units", |_| cn().db.base_unit().iter().collect_vec())
+                .title()
+                .add_base_unit_columns(|d| d)
+                .ui(ui, world);
         })
         .pinned()
         .push(world);
     }
     fn open_balancing(world: &mut World) {
         Self::on_enter_balancing(world);
+        let votes: HashMap<String, (u64, i32)> = HashMap::from_iter(
+            cn().db
+                .unit_balance()
+                .iter()
+                .filter(|b| b.owner == player_id())
+                .map(|u| (u.unit, (u.id, u.vote))),
+        );
+        #[derive(Resource)]
+        struct Votes {
+            votes: HashMap<String, (u64, i32)>,
+        }
+        world.insert_resource(Votes { votes });
         Tile::new(Side::Left, |ui, world| {
-            let votes: HashMap<String, (u64, i32)> = HashMap::from_iter(
+            Table::new("Base Units", |world| {
+                let votes = &world.resource::<Votes>().votes;
+                cn().db
+                    .base_unit()
+                    .iter()
+                    .filter(|u| votes.contains_key(&u.name))
+                    .sorted_by_key(|u| votes.get(&u.name).unwrap().0)
+                    .collect_vec()
+            })
+            .add_base_unit_columns(|d| d)
+            .column_int("vote", |u| {
                 cn().db
                     .unit_balance()
                     .iter()
-                    .filter(|b| b.owner == player_id())
-                    .map(|u| (u.unit, (u.id, u.vote))),
-            );
-            cn().db
-                .base_unit()
-                .iter()
-                .filter(|u| votes.contains_key(&u.name))
-                .sorted_by_key(|u| votes.get(&u.name).unwrap().0)
-                .collect_vec()
-                .show_modified_table("Base Units", ui, world, |t| {
-                    t.column_int("vote", |u| {
-                        cn().db
-                            .unit_balance()
-                            .iter()
-                            .filter(|b| b.unit == u.name)
-                            .map(|u| u.vote)
-                            .sum::<i32>()
-                    })
-                    .column_cstr_click(
-                        "action",
-                        |_, _| "vote".cstr_c(VISIBLE_LIGHT),
-                        |d, world| {
-                            brm(world).units.push(d.name.clone());
-                            Self::get_next_for_balancing(world);
-                        },
-                    )
-                });
+                    .filter(|b| b.unit == u.name)
+                    .map(|u| u.vote)
+                    .sum::<i32>()
+            })
+            .column_cstr_click(
+                "action",
+                |_, _| "vote".cstr_c(VISIBLE_LIGHT),
+                |d, world| {
+                    brm(world).units.push(d.name.clone());
+                    Self::get_next_for_balancing(world);
+                },
+            )
+            .ui(ui, world);
         })
         .pinned()
         .push(world);
@@ -326,72 +336,59 @@ impl MetaPlugin {
     }
 
     fn show_units(ui: &mut Ui, world: &mut World) {
-        cn().db
-            .unit_item()
-            .iter()
-            .filter(|u| u.owner == player_id())
-            .map(|u| u.unit)
-            .collect_vec()
-            .show_modified_table("Units", ui, world, |t| {
-                t.column_btn("sell", |unit, _, world| {
-                    if Confirmation::has_active(world) {
-                        return;
-                    }
-                    let item = cn()
-                        .db
-                        .unit_item()
-                        .iter()
-                        .filter(|u| u.owner == player_id())
-                        .find(|i| i.unit.id == unit.id)
-                        .unwrap();
-                    let item_id = item.id;
-                    world.insert_resource(AuctionResource {
-                        item_id,
-                        count: 1,
-                        max_count: 1,
-                        price: 1,
-                    });
-                    Confirmation::new("Create Auction")
-                        .accept(|world| {
-                            AuctionResource::post(world);
-                        })
-                        .cancel(|_| {})
-                        .content(|ui, world| {
-                            let mut ar = world.resource_mut::<AuctionResource>();
-                            Slider::new("price").ui(&mut ar.price, 1..=1000, ui);
-                        })
-                        .push(world);
-                })
-                .column_btn("dismantle", |unit, _, world| {
-                    if Confirmation::has_active(world) {
-                        return;
-                    }
-                    let item = cn()
-                        .db
-                        .unit_item()
-                        .iter()
-                        .filter(|u| u.owner == player_id())
-                        .find(|i| i.unit.id == unit.id)
-                        .unwrap();
-                    let item_id = item.id;
-                    let base = unit.base_unit();
-                    Confirmation::new("Dismantle")
-                        .content(move |ui, _| {
-                            format!(
-                                "Dismantle {} to get {} Rainbow shards?",
-                                base.name,
-                                base.rarity + 1
-                            )
-                            .cstr_c(VISIBLE_LIGHT)
-                            .label(ui);
-                        })
-                        .accept(move |_| {
-                            let _ = cn().reducers.dismantle_hero(item_id);
-                        })
-                        .cancel(|_| {})
-                        .push(world);
-                })
+        Table::new("Units", |_| {
+            cn().db
+                .unit_item()
+                .iter()
+                .filter(|u| u.owner == player_id())
+                .collect_vec()
+        })
+        .add_fused_unit_columns(|d| &d.unit)
+        .column_btn("sell", |item, _, world| {
+            if Confirmation::has_active(world) {
+                return;
+            }
+            let item_id = item.id;
+            world.insert_resource(AuctionResource {
+                item_id,
+                count: 1,
+                max_count: 1,
+                price: 1,
             });
+            Confirmation::new("Create Auction")
+                .accept(|world| {
+                    AuctionResource::post(world);
+                })
+                .cancel(|_| {})
+                .content(|ui, world| {
+                    let mut ar = world.resource_mut::<AuctionResource>();
+                    Slider::new("price").ui(&mut ar.price, 1..=1000, ui);
+                })
+                .push(world);
+        })
+        .column_btn("dismantle", |item, _, world| {
+            if Confirmation::has_active(world) {
+                return;
+            }
+            let item_id = item.id;
+            let base = item.unit.base_unit();
+            Confirmation::new("Dismantle")
+                .content(move |ui, _| {
+                    format!(
+                        "Dismantle {} to get {} Rainbow shards?",
+                        base.name,
+                        base.rarity + 1
+                    )
+                    .cstr_c(VISIBLE_LIGHT)
+                    .label(ui);
+                })
+                .accept(move |_| {
+                    let _ = cn().reducers.dismantle_hero(item_id);
+                })
+                .cancel(|_| {})
+                .push(world);
+        })
+        .ui(ui, world);
     }
 
     fn show_shards(ui: &mut Ui, world: &mut World) {
@@ -437,13 +434,6 @@ impl MetaPlugin {
                     .push(world);
             }
         }
-        let d = cn()
-            .db
-            .unit_shard_item()
-            .iter()
-            .filter(|u| u.owner == player_id())
-            .sorted_by_key(|d| -(d.count as i32))
-            .collect_vec();
         let rs = cn()
             .db
             .rainbow_shard_item()
@@ -452,138 +442,148 @@ impl MetaPlugin {
             .exactly_one()
             .map(|i| i.count)
             .unwrap_or_default();
-        d.show_modified_table("Hero Shards", ui, world, move |t| {
-            t.column_cstr_click(
-                "sell",
-                |_, _| "sell".cstr_c(VISIBLE_LIGHT),
-                |unit, world| {
-                    if Confirmation::has_active(world) {
-                        return;
-                    }
-                    let item = cn()
-                        .db
-                        .unit_shard_item()
-                        .iter()
-                        .filter(|u| u.owner == player_id())
-                        .find(|i| i.id == unit.id)
-                        .unwrap();
-                    let item_id = item.id;
-                    world.insert_resource(AuctionResource {
-                        item_id,
-                        count: 1,
-                        max_count: item.count,
-                        price: 1,
-                    });
-                    Confirmation::new("Create Auction")
-                        .accept(|world| {
-                            AuctionResource::post(world);
+        Table::new("Hero Shards", |_| {
+            cn().db
+                .unit_shard_item()
+                .iter()
+                .filter(|u| u.owner == player_id())
+                .sorted_by_key(|d| -(d.count as i32))
+                .collect_vec()
+        })
+        .add_unit_shard_item_columns(|d| d)
+        .column_cstr_click(
+            "sell",
+            |_, _| "sell".cstr_c(VISIBLE_LIGHT),
+            |unit, world| {
+                if Confirmation::has_active(world) {
+                    return;
+                }
+                let item = cn()
+                    .db
+                    .unit_shard_item()
+                    .iter()
+                    .filter(|u| u.owner == player_id())
+                    .find(|i| i.id == unit.id)
+                    .unwrap();
+                let item_id = item.id;
+                world.insert_resource(AuctionResource {
+                    item_id,
+                    count: 1,
+                    max_count: item.count,
+                    price: 1,
+                });
+                Confirmation::new("Create Auction")
+                    .accept(|world| {
+                        AuctionResource::post(world);
+                    })
+                    .cancel(|_| {})
+                    .content(|ui, world| {
+                        let mut ar = world.resource_mut::<AuctionResource>();
+                        let max = ar.max_count;
+                        if max > 1 {
+                            Slider::new("count").ui(&mut ar.count, 1..=max, ui);
+                        }
+                        Slider::new("price").ui(&mut ar.price, 1..=1000, ui);
+                    })
+                    .push(world);
+            },
+        )
+        .column_dyn(
+            "craft",
+            Box::new(|_, _| default()),
+            Box::new(move |d, _, ui, world| {
+                let craft_cost = game_assets().global_settings.craft_shards_cost;
+                let needed = if craft_cost > d.count {
+                    craft_cost - d.count
+                } else {
+                    0
+                };
+                if Button::new("craft")
+                    .enabled(d.count + rs >= craft_cost)
+                    .ui(ui)
+                    .clicked()
+                {
+                    let unit = d.unit.clone();
+                    let craft_cstr =
+                        "Craft ".cstr_c(VISIBLE_LIGHT) + &unit.cstr_c(name_color(&unit));
+                    world.insert_resource(CraftResource::default());
+                    Confirmation::new("Craft")
+                        .content(move |ui, world| {
+                            craft_cstr.label(ui);
+                            if rs > 0 {
+                                Slider::new("Use Rainbow Shards").ui(
+                                    &mut world.resource_mut::<CraftResource>().use_rainbow,
+                                    needed..=rs.at_most(craft_cost - 1),
+                                    ui,
+                                );
+                            }
+                        })
+                        .accept(move |world| {
+                            let _ = cn().reducers.craft_hero(
+                                unit.clone(),
+                                world.resource::<CraftResource>().use_rainbow,
+                            );
                         })
                         .cancel(|_| {})
-                        .content(|ui, world| {
-                            let mut ar = world.resource_mut::<AuctionResource>();
-                            let max = ar.max_count;
-                            if max > 1 {
-                                Slider::new("count").ui(&mut ar.count, 1..=max, ui);
-                            }
-                            Slider::new("price").ui(&mut ar.price, 1..=1000, ui);
-                        })
                         .push(world);
-                },
-            )
-            .column_dyn(
-                "craft",
-                Box::new(|_, _| default()),
-                Box::new(move |d, _, ui, world| {
-                    let craft_cost = game_assets().global_settings.craft_shards_cost;
-                    let needed = if craft_cost > d.count {
-                        craft_cost - d.count
-                    } else {
-                        0
-                    };
-                    if Button::new("craft")
-                        .enabled(d.count + rs >= craft_cost)
-                        .ui(ui)
-                        .clicked()
-                    {
-                        let unit = d.unit.clone();
-                        let craft_cstr =
-                            "Craft ".cstr_c(VISIBLE_LIGHT) + &unit.cstr_c(name_color(&unit));
-                        world.insert_resource(CraftResource::default());
-                        Confirmation::new("Craft")
-                            .content(move |ui, world| {
-                                craft_cstr.label(ui);
-                                if rs > 0 {
-                                    Slider::new("Use Rainbow Shards").ui(
-                                        &mut world.resource_mut::<CraftResource>().use_rainbow,
-                                        needed..=rs.at_most(craft_cost - 1),
-                                        ui,
-                                    );
-                                }
-                            })
-                            .accept(move |world| {
-                                let _ = cn().reducers.craft_hero(
-                                    unit.clone(),
-                                    world.resource::<CraftResource>().use_rainbow,
-                                );
-                            })
-                            .cancel(|_| {})
-                            .push(world);
-                    }
-                }),
-                false,
-            )
-        });
+                }
+            }),
+            false,
+        )
+        .ui(ui, world);
     }
 
     fn show_lootboxes(ui: &mut Ui, world: &mut World) {
-        let d = cn()
-            .db
-            .lootbox_item()
-            .iter()
-            .filter(|u| u.owner == player_id())
-            .sorted_by_key(|d| -(d.count as i32))
-            .collect_vec();
-        d.show_modified_table("Lootboxes", ui, world, |t| {
-            t.column_cstr_click(
-                "sell",
-                |_, _| "sell".cstr_c(VISIBLE_LIGHT),
-                |unit, world| {
-                    if Confirmation::has_active(world) {
-                        return;
-                    }
-                    let item = cn()
-                        .db
-                        .lootbox_item()
-                        .iter()
-                        .filter(|u| u.owner == player_id())
-                        .find(|i| i.id == unit.id)
-                        .unwrap();
-                    let item_id = item.id;
-                    world.insert_resource(AuctionResource {
-                        item_id,
-                        count: 1,
-                        max_count: item.count,
-                        price: 1,
-                    });
-                    Confirmation::new("Create Auction")
-                        .accept(|world| {
-                            AuctionResource::post(world);
-                        })
-                        .cancel(|_| {})
-                        .content(|ui, world| {
-                            let mut ar = world.resource_mut::<AuctionResource>();
-                            let max = ar.max_count;
-                            if max > 1 {
-                                Slider::new("count").ui(&mut ar.count, 1..=max, ui);
-                            }
-                            Slider::new("price").ui(&mut ar.price, 1..=1000, ui);
-                        })
-                        .push(world);
-                },
-            )
-            .column_btn("open", |d, _, _| {
-                let _ = cn().reducers.open_lootbox(d.id);
-            })
-        });
+        Table::new("Lootboxes", |_| {
+            cn().db
+                .lootbox_item()
+                .iter()
+                .filter(|u| u.owner == player_id())
+                .sorted_by_key(|d| -(d.count as i32))
+                .collect_vec()
+        })
+        .title()
+        .add_lootbox_item_columns(|d| d)
+        .column_cstr_click(
+            "sell",
+            |_, _| "sell".cstr_c(VISIBLE_LIGHT),
+            |unit, world| {
+                if Confirmation::has_active(world) {
+                    return;
+                }
+                let item = cn()
+                    .db
+                    .lootbox_item()
+                    .iter()
+                    .filter(|u| u.owner == player_id())
+                    .find(|i| i.id == unit.id)
+                    .unwrap();
+                let item_id = item.id;
+                world.insert_resource(AuctionResource {
+                    item_id,
+                    count: 1,
+                    max_count: item.count,
+                    price: 1,
+                });
+                Confirmation::new("Create Auction")
+                    .accept(|world| {
+                        AuctionResource::post(world);
+                    })
+                    .cancel(|_| {})
+                    .content(|ui, world| {
+                        let mut ar = world.resource_mut::<AuctionResource>();
+                        let max = ar.max_count;
+                        if max > 1 {
+                            Slider::new("count").ui(&mut ar.count, 1..=max, ui);
+                        }
+                        Slider::new("price").ui(&mut ar.price, 1..=1000, ui);
+                    })
+                    .push(world);
+            },
+        )
+        .column_btn("open", |d, _, _| {
+            let _ = cn().reducers.open_lootbox(d.id);
+        })
+        .ui(ui, world);
     }
 }

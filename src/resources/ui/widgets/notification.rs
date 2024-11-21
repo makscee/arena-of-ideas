@@ -59,12 +59,17 @@ impl Notification {
             .cancel(|_| {})
             .cancel_name("Close")
             .content(|ui, world| {
-                world.resource_scope(|world, nr: Mut<NotificationsResource>| {
-                    Table::new("Notifications")
-                        .column_cstr("text", |(_, n): &(i64, Notification), _| n.text.clone())
-                        .column_ts("time", |(t, _)| *t as u64)
-                        .ui(&nr.shown.as_slices().0, ui, world);
+                Table::new("Notifications", |world| {
+                    world
+                        .resource::<NotificationsResource>()
+                        .shown
+                        .as_slices()
+                        .0
+                        .to_vec()
                 })
+                .column_cstr("text", |(_, n): &(i64, Notification), _| n.text.clone())
+                .column_ts("time", |(t, _)| *t as u64)
+                .ui(ui, world);
             })
             .push(world);
     }

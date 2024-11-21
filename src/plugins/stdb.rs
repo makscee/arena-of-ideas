@@ -694,21 +694,6 @@ pub fn reducers_subscriptions(dbc: &DbConnection) {
         });
     });
 
-    r.on_team_create(|e, _| {
-        if !e.check_identity() {
-            return;
-        }
-        e.event
-            .on_success(|world| TeamPlugin::load_teams_table(world));
-    });
-    r.on_team_rename(|e, _, _| {
-        if !e.check_identity() {
-            return;
-        }
-        e.event
-            .on_success(|world| TeamPlugin::load_teams_table(world));
-    });
-
     r.on_team_disband(|e, id| {
         if !e.check_identity() {
             return;
@@ -719,24 +704,6 @@ pub fn reducers_subscriptions(dbc: &DbConnection) {
             MetaPlugin::clear(world);
             MetaPlugin::load_mode(MetaMode::Teams, world);
         })
-    });
-    r.on_team_add_unit(|e, _, _| {
-        if !e.check_identity() {
-            return;
-        }
-        e.event.on_success(|world| {
-            TeamPlugin::load_teams_table(world);
-            Confirmation::close_current(world);
-        })
-    });
-    r.on_team_remove_unit(|e, _, _| {
-        if !e.check_identity() {
-            return;
-        }
-        e.event.on_success(|w| {
-            "Unit removed".notify(w);
-            TeamPlugin::load_teams_table(w);
-        });
     });
     r.on_team_swap_units(|e, _, _, _| {
         if !e.check_identity() {

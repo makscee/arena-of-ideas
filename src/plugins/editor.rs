@@ -1,5 +1,3 @@
-use spacetimedb_sdk::Table;
-
 use super::*;
 
 pub struct EditorPlugin;
@@ -170,25 +168,27 @@ impl EditorPlugin {
                     if Button::new("Load own").ui(ui).clicked() {
                         Confirmation::new("Open own team")
                             .content(move |ui, world| {
-                                cn().db
-                                    .team()
-                                    .iter()
-                                    .filter(|t| {
-                                        t.pool.eq(&TeamPool::Owned) && t.owner == player_id()
-                                    })
-                                    .collect_vec()
-                                    .show_modified_table("Teams", ui, world, move |t| {
-                                        t.column_btn_dyn(
-                                            "select",
-                                            Box::new(move |t: &TTeam, _, world| {
-                                                let mut r = rm(world);
-                                                *Self::get_team_mut(faction, &mut r) =
-                                                    PackedTeam::from_id(t.id);
-                                                Confirmation::close_current(world);
-                                                Self::load_mode(world);
-                                            }),
-                                        )
-                                    });
+                                Table::new("Teams", |_| {
+                                    cn().db
+                                        .team()
+                                        .iter()
+                                        .filter(|t| {
+                                            t.pool.eq(&TeamPool::Owned) && t.owner == player_id()
+                                        })
+                                        .collect_vec()
+                                })
+                                .add_team_columns(|d| d)
+                                .column_btn_dyn(
+                                    "select",
+                                    Box::new(move |t: &TTeam, _, world| {
+                                        let mut r = rm(world);
+                                        *Self::get_team_mut(faction, &mut r) =
+                                            PackedTeam::from_id(t.id);
+                                        Confirmation::close_current(world);
+                                        Self::load_mode(world);
+                                    }),
+                                )
+                                .ui(ui, world);
                             })
                             .cancel(|_| {})
                             .push(world);

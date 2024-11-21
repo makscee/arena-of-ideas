@@ -74,30 +74,30 @@ impl StatsPlugin {
     }
     pub fn add_tiles(world: &mut World) {
         Tile::new(Side::Left, |ui, world| {
-            world.resource_scope(|world, r: Mut<StatsResource>| {
-                Table::new("Hero Stats")
-                    .column_base_unit_name("hero", |d: &HeroStat| d.name.clone())
-                    .column_rarity(|d| d.rarity as i32)
-                    .column_int("cnt", |d| d.cnt)
-                    .column_float("percent", |d| d.percent)
-                    .filter("Common", "rarity", 0.into())
-                    .filter("Rare", "rarity", 1.into())
-                    .filter("Epic", "rarity", 2.into())
-                    .filter("Legendary", "rarity", 3.into())
-                    .ui(&r.hero_stats, ui, world);
-            });
+            Table::new("Hero Stats", |world| {
+                world.resource::<StatsResource>().hero_stats.clone()
+            })
+            .column_base_unit_name("hero", |d: &HeroStat| d.name.clone())
+            .column_rarity(|d| d.rarity as i32)
+            .column_int("cnt", |d| d.cnt)
+            .column_float("percent", |d| d.percent)
+            .filter("Common", "rarity", 0.into())
+            .filter("Rare", "rarity", 1.into())
+            .filter("Epic", "rarity", 2.into())
+            .filter("Legendary", "rarity", 3.into())
+            .ui(ui, world);
         })
         .pinned()
         .push(world);
         Tile::new(Side::Left, |ui, world| {
-            world.resource_scope(|world, r: Mut<StatsResource>| {
-                Table::new("Player Stats")
-                    .column_id("id", |d: &UserStat| d.id)
-                    .column_cstr("name", |d, _| d.name.cstr_c(VISIBLE_LIGHT))
-                    .column_int("cnt", |d| d.cnt)
-                    .column_float("percent", |d| d.percent)
-                    .ui(&r.user_stats, ui, world);
-            });
+            Table::new("Player Stats", |world| {
+                world.resource::<StatsResource>().user_stats.clone()
+            })
+            .column_id("id", |d| d.id)
+            .column_cstr("name", |d, _| d.name.cstr_c(VISIBLE_LIGHT))
+            .column_int("cnt", |d| d.cnt)
+            .column_float("percent", |d| d.percent)
+            .ui(ui, world);
         })
         .pinned()
         .push(world);

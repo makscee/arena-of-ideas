@@ -451,7 +451,7 @@ impl PartialEq for VarValue {
             (Self::Int(l0), Self::Int(r0)) => l0 == r0,
             (Self::Float(l0), Self::Float(r0)) => l0 == r0,
             (Self::Vec2(l0), Self::Vec2(r0)) => l0 == r0,
-            (Self::String(l0), Self::String(r0)) => l0 == r0,
+            (Self::String(l0), Self::String(r0)) => l0.get_text() == r0.get_text(),
             (Self::Bool(l0), Self::Bool(r0)) => l0 == r0,
             (Self::Faction(l0), Self::Faction(r0)) => l0 == r0,
             (Self::Color(l0), Self::Color(r0)) => l0 == r0,

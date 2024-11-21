@@ -335,7 +335,6 @@ fn cache_packed_unit(
     world: &mut World,
 ) -> Result<()> {
     cache.insert(id, UnitCard::from_packed(unit, world)?);
-    debug!("cache inserted");
     Ok(())
 }
 pub fn cached_fused_card(unit: &FusedUnit, ui: &mut Ui, world: &mut World) -> Result<()> {

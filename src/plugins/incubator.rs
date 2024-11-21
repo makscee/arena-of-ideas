@@ -47,35 +47,38 @@ impl IncubatorType {
             }
             match self {
                 IncubatorType::UnitName => {
-                    let data = cn().db.incubator_unit_name().iter().collect_vec();
-                    Table::new("Unit Names")
-                        .column_cstr("name", |d: &TIncubatorUnitName, _| d.name.cstr())
-                        .column_player_click("owner", |d| d.owner)
-                        .column_btn_dyn(
-                            "open",
-                            Box::new(move |d, _, world| {
-                                self.open(d.id, world);
-                            }),
-                        )
-                        .ui(&data, ui, world);
+                    Table::new("Unit Names", |_| {
+                        cn().db.incubator_unit_name().iter().collect_vec()
+                    })
+                    .column_cstr("name", |d: &TIncubatorUnitName, _| d.name.cstr())
+                    .column_player_click("owner", |d| d.owner)
+                    .column_btn_dyn(
+                        "open",
+                        Box::new(move |d, _, world| {
+                            self.open(d.id, world);
+                        }),
+                    )
+                    .ui(ui, world);
                 }
                 IncubatorType::UnitStats => {
-                    let data = cn().db.incubator_unit_stats().iter().collect_vec();
-                    Table::new("Unit Stats")
-                        .column_int("pwr", |d: &TIncubatorUnitStats| d.pwr)
-                        .column_int("hp", |d| d.hp)
-                        .column_player_click("owner", |d| d.owner)
-                        .ui(&data, ui, world);
+                    Table::new("Unit Stats", |_| {
+                        cn().db.incubator_unit_stats().iter().collect_vec()
+                    })
+                    .column_int("pwr", |d: &TIncubatorUnitStats| d.pwr)
+                    .column_int("hp", |d| d.hp)
+                    .column_player_click("owner", |d| d.owner)
+                    .ui(ui, world);
                 }
                 IncubatorType::UnitRepresentation => {
-                    let data = cn().db.incubator_unit_representation().iter().collect_vec();
-                    Table::new("Unit Representations")
-                        .row_height(64.0)
-                        .column_texture(Box::new(|d: &TIncubatorUnitRepresentation, world| {
-                            TextureRenderPlugin::texture_representation_serialized(&d.data, world)
-                        }))
-                        .column_player_click("owner", |d| d.owner)
-                        .ui(&data, ui, world);
+                    Table::new("Unit Representations", |_| {
+                        cn().db.incubator_unit_representation().iter().collect_vec()
+                    })
+                    .row_height(64.0)
+                    .column_texture(Box::new(|d: &TIncubatorUnitRepresentation, world| {
+                        TextureRenderPlugin::texture_representation_serialized(&d.data, world)
+                    }))
+                    .column_player_click("owner", |d| d.owner)
+                    .ui(ui, world);
                 }
                 IncubatorType::UnitTrigger => todo!(),
                 IncubatorType::House => todo!(),
@@ -160,53 +163,65 @@ impl IncubatorType {
         }
     }
     fn open_unit_stats_links(id: u64, world: &mut World) {
+        #[derive(Resource)]
+        struct Data {
+            id: u64,
+        }
+        world.insert_resource(Data { id });
         Confirmation::new("Stats Links")
             .accept(|_| {})
             .accept_name("Close")
             .content(move |ui, world| {
-                let data = cn()
-                    .db
-                    .incubator_unit_stats()
-                    .iter()
-                    .map(|d| (TIncubatorLink::find(id, d.id), d, id))
-                    .sorted_by_key(|(l, _, _)| -l.as_ref().map(|l| l.score).unwrap_or(i32::MIN + 1))
-                    .collect_vec();
-                Table::new("Unit Stats")
-                    .column_int(
-                        "pwr",
-                        |(_, d, _): &(Option<TIncubatorLink>, TIncubatorUnitStats, u64)| d.pwr,
-                    )
-                    .column_int("hp", |(_, d, _)| d.hp)
-                    .columns_incubator_vote_links(|(_, d, id)| format!("{id}_{}", d.id))
-                    .ui(&data, ui, world);
+                Table::new("Unit Stats", |world| {
+                    let id = world.resource::<Data>().id;
+                    cn().db
+                        .incubator_unit_stats()
+                        .iter()
+                        .map(|d| (TIncubatorLink::find(id, d.id), d, id))
+                        .sorted_by_key(|(l, _, _)| {
+                            -l.as_ref().map(|l| l.score).unwrap_or(i32::MIN + 1)
+                        })
+                        .collect_vec()
+                })
+                .column_int(
+                    "pwr",
+                    |(_, d, _): &(Option<TIncubatorLink>, TIncubatorUnitStats, u64)| d.pwr,
+                )
+                .column_int("hp", |(_, d, _)| d.hp)
+                .columns_incubator_vote_links(|(_, d, id)| format!("{id}_{}", d.id))
+                .ui(ui, world);
             })
             .push(world);
     }
     fn open_unit_representation_links(id: u64, world: &mut World) {
+        #[derive(Resource)]
+        struct Data {
+            id: u64,
+        }
+        world.insert_resource(Data { id });
         Confirmation::new("Representation Links")
             .accept(|_| {})
             .accept_name("Close")
             .content(move |ui, world| {
-                let data = cn()
-                    .db
-                    .incubator_unit_representation()
-                    .iter()
-                    .map(|d| (TIncubatorLink::find(id, d.id), d, id))
-                    .sorted_by_key(|(l, _, _)| -l.as_ref().map(|l| l.score).unwrap_or(i32::MIN + 1))
-                    .collect_vec();
-                Table::new("Unit Representation")
-                    .column_texture(Box::new(
-                        |(_, d, _): &(
-                            Option<TIncubatorLink>,
-                            TIncubatorUnitRepresentation,
-                            u64,
-                        ),
-                         world| {
-                            TextureRenderPlugin::texture_representation_serialized(&d.data, world)
-                        },
-                    ))
-                    .columns_incubator_vote_links(|(_, d, id)| format!("{id}_{}", d.id))
-                    .ui(&data, ui, world);
+                Table::new("Unit Representation", |world| {
+                    let id = world.resource::<Data>().id;
+                    cn().db
+                        .incubator_unit_representation()
+                        .iter()
+                        .map(|d| (TIncubatorLink::find(id, d.id), d, id))
+                        .sorted_by_key(|(l, _, _)| {
+                            -l.as_ref().map(|l| l.score).unwrap_or(i32::MIN + 1)
+                        })
+                        .collect_vec()
+                })
+                .column_texture(Box::new(
+                    |(_, d, _): &(Option<TIncubatorLink>, TIncubatorUnitRepresentation, u64),
+                     world| {
+                        TextureRenderPlugin::texture_representation_serialized(&d.data, world)
+                    },
+                ))
+                .columns_incubator_vote_links(|(_, d, id)| format!("{id}_{}", d.id))
+                .ui(ui, world);
             })
             .push(world);
     }

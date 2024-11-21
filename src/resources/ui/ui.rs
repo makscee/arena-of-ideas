@@ -75,16 +75,20 @@ impl UiPlugin {
         fonts.font_data.insert(
             "regular".to_owned(),
             FontData::from_static(include_bytes!(
-                "../../assets/fonts/SometypeMono-Regular.ttf"
+                "../../../assets/fonts/SometypeMono-Regular.ttf"
             )),
         );
         fonts.font_data.insert(
             "medium".to_owned(),
-            FontData::from_static(include_bytes!("../../assets/fonts/SometypeMono-Medium.ttf")),
+            FontData::from_static(include_bytes!(
+                "../../../assets/fonts/SometypeMono-Medium.ttf"
+            )),
         );
         fonts.font_data.insert(
             "bold".to_owned(),
-            FontData::from_static(include_bytes!("../../assets/fonts/SometypeMono-Bold.ttf")),
+            FontData::from_static(include_bytes!(
+                "../../../assets/fonts/SometypeMono-Bold.ttf"
+            )),
         );
         fonts
             .families

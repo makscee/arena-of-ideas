@@ -7,7 +7,6 @@ pub struct TeamPlugin;
 #[derive(Resource)]
 struct TeamResource {
     entities: HashMap<Faction, Entity>,
-    table: Vec<TTeam>,
     new_team_name: String,
     team: u64,
 }
@@ -21,7 +20,6 @@ impl Plugin for TeamPlugin {
             HashMap::from_iter(Faction::iter().map(|f| (f, Self::spawn(f, &mut app.world_mut()))));
         app.insert_resource(TeamResource {
             entities: teams,
-            table: default(),
             new_team_name: default(),
             team: 0,
         });
@@ -106,15 +104,6 @@ impl TeamPlugin {
         }
         state.change_int(var, delta);
     }
-
-    pub fn load_teams_table(world: &mut World) {
-        world.resource_mut::<TeamResource>().table = cn()
-            .db
-            .team()
-            .iter()
-            .filter(|t| t.owner == player_id() && t.pool == TeamPool::Owned)
-            .collect_vec();
-    }
     fn load_editor_team(id: u64, world: &mut World) {
         Self::despawn(Faction::Team, world);
         if id == 0 {
@@ -148,7 +137,6 @@ impl TeamPlugin {
     }
 
     pub fn teams_tiles(world: &mut World) {
-        Self::load_teams_table(world);
         Tile::new(Side::Left, |ui, world| {
             title("Team Manager", ui);
             let cost = global_settings().create_team_cost;
@@ -157,13 +145,18 @@ impl TeamPlugin {
                     Self::open_new_team_popup(world);
                 }
             });
-            let data = mem::take(&mut world.resource_mut::<TeamResource>().table);
-            data.show_modified_table("Teams", ui, world, |t| {
-                t.column_btn("edit", |d, _, world| {
-                    Self::edit_team(d.id, world);
-                })
-            });
-            world.resource_mut::<TeamResource>().table = data;
+            Table::new("Teams", |_| {
+                cn().db
+                    .team()
+                    .iter()
+                    .filter(|t| t.owner == player_id() && t.pool == TeamPool::Owned)
+                    .collect_vec()
+            })
+            .add_team_columns(|d| d)
+            .column_btn("edit", |d, _, world| {
+                Self::edit_team(d.id, world);
+            })
+            .ui(ui, world);
         })
         .pinned()
         .push(world);
@@ -221,19 +214,20 @@ impl TeamPlugin {
                     Confirmation::new("Add unit to team")
                         .cancel(|_| {})
                         .content(|ui, world| {
-                            let units = cn()
-                                .db
-                                .unit_item()
-                                .iter()
-                                .filter(|i| i.owner == player_id())
-                                .map(|u| u.unit)
-                                .collect_vec();
-                            units.show_modified_table("Units", ui, world, |t| {
-                                t.column_btn("select", |u, _, world| {
-                                    let tr = world.resource::<TeamResource>();
-                                    cn().reducers.team_add_unit(tr.team, u.id).unwrap();
-                                })
-                            });
+                            Table::new("Units", |_| {
+                                cn().db
+                                    .unit_item()
+                                    .iter()
+                                    .filter(|i| i.owner == player_id())
+                                    .map(|u| u.unit)
+                                    .collect_vec()
+                            })
+                            .add_fused_unit_columns(|d| d)
+                            .column_btn("select", |u, _, world| {
+                                let tr = world.resource::<TeamResource>();
+                                cn().reducers.team_add_unit(tr.team, u.id).unwrap();
+                            })
+                            .ui(ui, world);
                         })
                         .push(world);
                 })

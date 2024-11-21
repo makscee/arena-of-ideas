@@ -31,37 +31,37 @@ impl QuestPlugin {
                             .cstr_cs(VISIBLE_BRIGHT, CstrStyle::Heading2)
                             .label(ui);
                     });
-                    Table::new("new quests")
-                        .column_cstr("quest", |d: &TQuest, _| d.cstr())
-                        .column_btn("accept", |d, _, _| {
-                            cn().reducers.quest_accept(d.id).unwrap();
-                        })
-                        .ui(
-                            &cn()
-                                .db
-                                .quest()
-                                .iter()
-                                .filter(|q| q.owner == 0 && !quests_taken.contains(&q.id))
-                                .into_iter()
-                                .collect_vec(),
-                            ui,
-                            world,
-                        );
+                    Table::new("new quests", |_| {
+                        cn().db
+                            .quest()
+                            .iter()
+                            .filter(|q| {
+                                q.owner == 0
+                                    && !cn().db.daily_state().current().quests_taken.contains(&q.id)
+                            })
+                            .into_iter()
+                            .collect_vec()
+                    })
+                    .column_cstr("quest", |d: &TQuest, _| d.cstr())
+                    .column_btn("accept", |d, _, _| {
+                        cn().reducers.quest_accept(d.id).unwrap();
+                    })
+                    .ui(ui, world);
                 }
-                let complete_quests = cn()
-                    .db
-                    .quest()
-                    .iter()
-                    .filter(|q| q.complete && q.owner == player_id())
-                    .collect_vec();
-                if !complete_quests.is_empty() {
-                    Table::new("Complete Quests")
-                        .title()
-                        .column_cstr("quest", |d: &TQuest, _| d.cstr())
-                        .column_btn("complete", |d, _, _| {
-                            cn().reducers.quest_finish(d.id).unwrap();
-                        })
-                        .ui(&complete_quests, ui, world);
+                if Self::have_completed() {
+                    Table::new("Complete Quests", |_| {
+                        cn().db
+                            .quest()
+                            .iter()
+                            .filter(|q| q.complete && q.owner == player_id())
+                            .collect_vec()
+                    })
+                    .title()
+                    .column_cstr("quest", |d: &TQuest, _| d.cstr())
+                    .column_btn("complete", |d, _, _| {
+                        cn().reducers.quest_finish(d.id).unwrap();
+                    })
+                    .ui(ui, world);
                 }
                 let current_quests = cn()
                     .db
