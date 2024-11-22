@@ -414,44 +414,59 @@ impl Hash for FusedUnit {
 }
 
 #[derive(Clone, Copy, Debug, EnumIter, PartialEq, Eq, AsRefStr, Display)]
-pub enum IncubatorType {
-    UnitName,
-    UnitStats,
-    UnitRepresentation,
-    UnitTrigger,
-    House,
-    Ability,
-    AbilityEffect,
-    Status,
-    StatusTrigger,
+pub enum ContentType {
+    Data,
+    CUnit,
+    CUnitDescription,
+    CUnitStats,
+    CUnitTrigger,
+    CUnitRepresentation,
+    CAbility,
+    CAbilityEffect,
+    CAbilityDescription,
+    CHouse,
+    CStatus,
+    CStatusDescription,
+    CStatusTrigger,
+    CSummon,
 }
-impl From<SIncubatorType> for IncubatorType {
-    fn from(value: SIncubatorType) -> Self {
+impl From<SContentType> for ContentType {
+    fn from(value: SContentType) -> Self {
         match value {
-            SIncubatorType::UnitName => Self::UnitName,
-            SIncubatorType::UnitStats => Self::UnitStats,
-            SIncubatorType::UnitRepresentation => Self::UnitRepresentation,
-            SIncubatorType::UnitTrigger => Self::UnitTrigger,
-            SIncubatorType::House => Self::House,
-            SIncubatorType::Ability => Self::Ability,
-            SIncubatorType::AbilityEffect => Self::AbilityEffect,
-            SIncubatorType::Status => Self::Status,
-            SIncubatorType::StatusTrigger => Self::StatusTrigger,
+            SContentType::Data => Self::Data,
+            SContentType::CUnit => Self::CUnit,
+            SContentType::CUnitDescription => Self::CUnitDescription,
+            SContentType::CUnitStats => Self::CUnitStats,
+            SContentType::CUnitTrigger => Self::CUnitTrigger,
+            SContentType::CUnitRepresentation => Self::CUnitRepresentation,
+            SContentType::CAbility => Self::CAbility,
+            SContentType::CAbilityEffect => Self::CAbilityEffect,
+            SContentType::CAbilityDescription => Self::CAbilityDescription,
+            SContentType::CHouse => Self::CHouse,
+            SContentType::CStatus => Self::CStatus,
+            SContentType::CStatusDescription => Self::CStatusDescription,
+            SContentType::CStatusTrigger => Self::CStatusTrigger,
+            SContentType::CSummon => Self::CSummon,
         }
     }
 }
-impl From<IncubatorType> for SIncubatorType {
-    fn from(value: IncubatorType) -> Self {
+impl From<ContentType> for SContentType {
+    fn from(value: ContentType) -> Self {
         match value {
-            IncubatorType::UnitName => Self::UnitName,
-            IncubatorType::UnitStats => Self::UnitStats,
-            IncubatorType::UnitRepresentation => Self::UnitRepresentation,
-            IncubatorType::UnitTrigger => Self::UnitTrigger,
-            IncubatorType::House => Self::House,
-            IncubatorType::Ability => Self::Ability,
-            IncubatorType::AbilityEffect => Self::AbilityEffect,
-            IncubatorType::Status => Self::Status,
-            IncubatorType::StatusTrigger => Self::StatusTrigger,
+            ContentType::Data => Self::Data,
+            ContentType::CUnit => Self::CUnit,
+            ContentType::CUnitDescription => Self::CUnitDescription,
+            ContentType::CUnitStats => Self::CUnitStats,
+            ContentType::CUnitTrigger => Self::CUnitTrigger,
+            ContentType::CUnitRepresentation => Self::CUnitRepresentation,
+            ContentType::CAbility => Self::CAbility,
+            ContentType::CAbilityEffect => Self::CAbilityEffect,
+            ContentType::CAbilityDescription => Self::CAbilityDescription,
+            ContentType::CHouse => Self::CHouse,
+            ContentType::CStatus => Self::CStatus,
+            ContentType::CStatusDescription => Self::CStatusDescription,
+            ContentType::CStatusTrigger => Self::CStatusTrigger,
+            ContentType::CSummon => Self::CSummon,
         }
     }
 }

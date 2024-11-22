@@ -43,7 +43,11 @@ impl GameOption {
         }
     }
     pub fn fulfill(&self, world: &mut World) {
-        info!("{} {}", "Start fulfill option:".dimmed(), self.cstr());
+        info!(
+            "{} {}",
+            "Start fulfill option:".dimmed(),
+            self.cstr().to_colored()
+        );
         *CURRENTLY_FULFILLING.lock().unwrap() = self.clone();
         match self {
             GameOption::Connect => ConnectOption::fulfill(world),

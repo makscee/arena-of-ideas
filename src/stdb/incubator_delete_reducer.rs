@@ -8,13 +8,10 @@ use spacetimedb_sdk::{
     lib as __lib, sats as __sats, ws_messages as __ws,
 };
 
-use super::s_incubator_type_type::SIncubatorType;
-
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct IncubatorDelete {
     pub id: u64,
-    pub t: SIncubatorType,
 }
 
 impl __sdk::spacetime_module::InModule for IncubatorDelete {
@@ -33,7 +30,7 @@ pub trait incubator_delete {
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed by listening for [`Self::on_incubator_delete`] callbacks.
-    fn incubator_delete(&self, id: u64, t: SIncubatorType) -> __anyhow::Result<()>;
+    fn incubator_delete(&self, id: u64) -> __anyhow::Result<()>;
     /// Register a callback to run whenever we are notified of an invocation of the reducer `incubator_delete`.
     ///
     /// The [`super::EventContext`] passed to the `callback`
@@ -46,7 +43,7 @@ pub trait incubator_delete {
     /// to cancel the callback.
     fn on_incubator_delete(
         &self,
-        callback: impl FnMut(&super::EventContext, &u64, &SIncubatorType) + Send + 'static,
+        callback: impl FnMut(&super::EventContext, &u64) + Send + 'static,
     ) -> IncubatorDeleteCallbackId;
     /// Cancel a callback previously registered by [`Self::on_incubator_delete`],
     /// causing it not to run in the future.
@@ -54,18 +51,18 @@ pub trait incubator_delete {
 }
 
 impl incubator_delete for super::RemoteReducers {
-    fn incubator_delete(&self, id: u64, t: SIncubatorType) -> __anyhow::Result<()> {
+    fn incubator_delete(&self, id: u64) -> __anyhow::Result<()> {
         self.imp
-            .call_reducer("incubator_delete", IncubatorDelete { id, t })
+            .call_reducer("incubator_delete", IncubatorDelete { id })
     }
     fn on_incubator_delete(
         &self,
-        mut callback: impl FnMut(&super::EventContext, &u64, &SIncubatorType) + Send + 'static,
+        mut callback: impl FnMut(&super::EventContext, &u64) + Send + 'static,
     ) -> IncubatorDeleteCallbackId {
         IncubatorDeleteCallbackId(self.imp.on_reducer::<IncubatorDelete>(
             "incubator_delete",
             Box::new(move |ctx: &super::EventContext, args: &IncubatorDelete| {
-                callback(ctx, &args.id, &args.t)
+                callback(ctx, &args.id)
             }),
         ))
     }

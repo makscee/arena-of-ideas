@@ -10,12 +10,11 @@ use spacetimedb_sdk::{
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct TIncubatorStatusTrigger {
-    pub id: u64,
-    pub owner: u64,
-    pub data: String,
+pub struct TContentLink {
+    pub from_to: String,
+    pub score: i32,
 }
 
-impl __sdk::spacetime_module::InModule for TIncubatorStatusTrigger {
+impl __sdk::spacetime_module::InModule for TContentLink {
     type Module = super::RemoteModule;
 }

@@ -8,16 +8,17 @@ use spacetimedb_sdk::{
     lib as __lib, sats as __sats, ws_messages as __ws,
 };
 
+use super::c_ability_description_type::CAbilityDescription;
+use super::c_house_type::CHouse;
+
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct TIncubatorStatus {
-    pub id: u64,
-    pub owner: u64,
+pub struct CAbility {
     pub name: String,
-    pub description: String,
-    pub polarity: i8,
+    pub description: CAbilityDescription,
+    pub house: CHouse,
 }
 
-impl __sdk::spacetime_module::InModule for TIncubatorStatus {
+impl __sdk::spacetime_module::InModule for CAbility {
     type Module = super::RemoteModule;
 }

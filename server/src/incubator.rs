@@ -1,466 +1,182 @@
-use ecolor::Color32;
+use strum_macros::Display;
 
 use super::*;
 
-#[derive(SpacetimeType, Clone, Copy)]
-pub enum SIncubatorType {
-    UnitName,
-    UnitStats,
-    UnitRepresentation,
-    UnitTrigger,
-    House,
-    Ability,
-    AbilityEffect,
-    Status,
-    StatusTrigger,
-}
-
-impl SIncubatorType {
-    fn check_owner(self, ctx: &ReducerContext, owner: u64, id: u64) -> Result<(), String> {
-        let entry_owner = match self {
-            SIncubatorType::UnitName => {
-                ctx.db
-                    .incubator_unit_name()
-                    .id()
-                    .find(id)
-                    .context_str("Entry not found")?
-                    .owner
-            }
-            SIncubatorType::UnitStats => {
-                ctx.db
-                    .incubator_unit_stats()
-                    .id()
-                    .find(id)
-                    .context_str("Entry not found")?
-                    .owner
-            }
-            SIncubatorType::UnitRepresentation => {
-                ctx.db
-                    .incubator_unit_representation()
-                    .id()
-                    .find(id)
-                    .context_str("Entry not found")?
-                    .owner
-            }
-            SIncubatorType::UnitTrigger => {
-                ctx.db
-                    .incubator_unit_trigger()
-                    .id()
-                    .find(id)
-                    .context_str("Entry not found")?
-                    .owner
-            }
-            SIncubatorType::House => {
-                ctx.db
-                    .incubator_house()
-                    .id()
-                    .find(id)
-                    .context_str("Entry not found")?
-                    .owner
-            }
-            SIncubatorType::Ability => {
-                ctx.db
-                    .incubator_ability()
-                    .id()
-                    .find(id)
-                    .context_str("Entry not found")?
-                    .owner
-            }
-            SIncubatorType::AbilityEffect => {
-                ctx.db
-                    .incubator_ability_effect()
-                    .id()
-                    .find(id)
-                    .context_str("Entry not found")?
-                    .owner
-            }
-            SIncubatorType::Status => {
-                ctx.db
-                    .incubator_status()
-                    .id()
-                    .find(id)
-                    .context_str("Entry not found")?
-                    .owner
-            }
-            SIncubatorType::StatusTrigger => {
-                ctx.db
-                    .incubator_status_trigger()
-                    .id()
-                    .find(id)
-                    .context_str("Entry not found")?
-                    .owner
-            }
-        };
-        if entry_owner != owner {
-            Err(format!("Entry#{id} not owned by {owner}"))
-        } else {
-            Ok(())
-        }
-    }
-}
-
-#[reducer]
-fn incubator_delete(ctx: &ReducerContext, id: u64, t: SIncubatorType) -> Result<(), String> {
-    let player = ctx.player()?;
-    t.check_owner(ctx, player.id, id)?;
-    match t {
-        SIncubatorType::UnitName => ctx.db.incubator_unit_name().id().delete(id),
-        SIncubatorType::UnitStats => ctx.db.incubator_unit_stats().id().delete(id),
-        SIncubatorType::UnitRepresentation => {
-            ctx.db.incubator_unit_representation().id().delete(id)
-        }
-        SIncubatorType::UnitTrigger => ctx.db.incubator_unit_trigger().id().delete(id),
-        SIncubatorType::House => ctx.db.incubator_house().id().delete(id),
-        SIncubatorType::Ability => ctx.db.incubator_ability().id().delete(id),
-        SIncubatorType::AbilityEffect => ctx.db.incubator_ability_effect().id().delete(id),
-        SIncubatorType::Status => ctx.db.incubator_status().id().delete(id),
-        SIncubatorType::StatusTrigger => ctx.db.incubator_status_trigger().id().delete(id),
-    };
-    TIncubatorLink::clear_id(ctx, &id.to_string());
-    Ok(())
-}
-
-#[table(public, name = incubator_link)]
-pub struct TIncubatorLink {
+#[table(public, name = content_piece)]
+struct TContentPiece {
     #[primary_key]
-    pub id: String,
-    pub score: i32,
-}
-impl TIncubatorLink {
-    fn clear_id(ctx: &ReducerContext, id: &str) {
-        let start = format!("{id}_");
-        let end = format!("_{id}");
-        for l in ctx
-            .db
-            .incubator_link()
-            .iter()
-            .filter(|l| l.id.starts_with(&start) || l.id.ends_with(&end))
-        {
-            ctx.db.incubator_link().id().delete(l.id);
-        }
-    }
+    id: u64,
+    owner: u64,
+    #[unique]
+    data: String,
+    #[index(btree)]
+    t: SContentType,
 }
 
-#[reducer]
-fn incubator_link_vote(ctx: &ReducerContext, id: String, value: i32) -> Result<(), String> {
-    ctx.player()?;
-    let _ = ctx.db.incubator_link().try_insert(TIncubatorLink {
-        id: id.clone(),
-        score: 0,
-    });
-    incubator_vote_set(ctx, id, value)
-}
-
-#[table(public, name = incubator_vote)]
-pub struct TIncubatorVote {
+#[table(public, name = content_link)]
+struct TContentLink {
     #[primary_key]
-    pub id: String,
-    pub vote: i32,
+    from_to: String,
+    score: i32,
+}
+
+#[table(public, name = content_vote)]
+struct TContentVotes {
+    #[primary_key]
+    id: String,
+    #[index(btree)]
+    owner: u64,
+    vote: i8,
 }
 
 #[reducer]
-fn incubator_vote_set(ctx: &ReducerContext, target: String, value: i32) -> Result<(), String> {
-    if value.abs() != 1 {
-        return Err("Vote value can only be 1 or -1".into());
-    }
-    let pid = ctx.player()?.id;
-    let vid = format!("{pid}_{target}");
-    let delta = if let Some(mut vote) = ctx.db.incubator_vote().id().find(&vid) {
-        if vote.vote == value {
+fn incubator_link_vote(ctx: &ReducerContext, from_to: String, vote: bool) -> Result<(), String> {
+    let player_id = ctx.player()?.id;
+    let vote: i8 = if vote { 1 } else { -1 };
+    let delta = if let Some(mut row) = ctx.db.content_vote().id().find(&from_to) {
+        if row.vote == vote {
             return Err("Already voted".into());
         }
-        let delta = value - vote.vote;
-        vote.vote = value;
-        ctx.db.incubator_vote().id().update(vote);
+        let delta = vote - row.vote;
+        row.vote = vote;
+        ctx.db.content_vote().id().update(row);
         delta
     } else {
-        ctx.db.incubator_vote().insert(TIncubatorVote {
-            id: vid,
-            vote: value,
+        ctx.db.content_vote().insert(TContentVotes {
+            id: from_to.clone(),
+            owner: player_id,
+            vote,
         });
-        value
+        vote
     };
-    if let Some(mut link) = ctx.db.incubator_link().id().find(target) {
-        link.score += delta;
-        ctx.db.incubator_link().id().update(link);
-    }
-
-    Ok(())
-}
-
-#[table(public, name = incubator_unit_name)]
-pub struct TIncubatorUnitName {
-    #[primary_key]
-    pub id: u64,
-    #[index(btree)]
-    pub owner: u64,
-    pub name: String,
-}
-
-#[reducer]
-fn incubator_post_unit_name(ctx: &ReducerContext, name: String) -> Result<(), String> {
-    let player = ctx.player()?;
-    ctx.db.incubator_unit_name().insert(TIncubatorUnitName {
-        id: next_id(ctx),
-        owner: player.id,
-        name,
-    });
-    Ok(())
-}
-
-#[table(public, name = incubator_unit_stats)]
-pub struct TIncubatorUnitStats {
-    #[primary_key]
-    pub id: u64,
-    #[index(btree)]
-    pub owner: u64,
-    pub pwr: i32,
-    pub hp: i32,
-}
-
-#[reducer]
-fn incubator_post_unit_stats(ctx: &ReducerContext, pwr: i32, hp: i32) -> Result<(), String> {
-    let player = ctx.player()?;
-    ctx.db.incubator_unit_stats().insert(TIncubatorUnitStats {
-        id: next_id(ctx),
-        owner: player.id,
-        pwr,
-        hp,
-    });
-    Ok(())
-}
-
-#[table(public, name = incubator_unit_representation)]
-pub struct TIncubatorUnitRepresentation {
-    #[primary_key]
-    pub id: u64,
-    #[index(btree)]
-    pub owner: u64,
-    #[index(btree)]
-    pub data: String,
-}
-
-#[reducer]
-fn incubator_post_unit_representation(ctx: &ReducerContext, data: String) -> Result<(), String> {
-    let player = ctx.player()?;
-    if data.is_empty() {
-        return Err("Data can't be empty".into());
-    }
-    if let Some(r) = ctx
-        .db
-        .incubator_unit_representation()
-        .data()
-        .filter(&data)
-        .next()
-    {
-        return Err(format!("Identical representation exists: id#{}", r.id));
-    }
-    ctx.db
-        .incubator_unit_representation()
-        .insert(TIncubatorUnitRepresentation {
-            id: next_id(ctx),
-            owner: player.id,
-            data,
+    if let Some(mut link) = ctx.db.content_link().from_to().find(&from_to) {
+        link.score += delta as i32;
+        ctx.db.content_link().from_to().update(link);
+    } else {
+        ctx.db.content_link().insert(TContentLink {
+            from_to,
+            score: vote as i32,
         });
+    }
     Ok(())
 }
 
-#[table(public, name = incubator_unit_trigger)]
-pub struct TIncubatorUnitTrigger {
-    #[primary_key]
-    pub id: u64,
-    #[index(btree)]
-    pub owner: u64,
-    #[index(btree)]
-    pub data: String,
-}
-
 #[reducer]
-fn incubator_post_unit_trigger(ctx: &ReducerContext, data: String) -> Result<(), String> {
-    let player = ctx.player()?;
-    if data.is_empty() {
-        return Err("Data can't be empty".into());
+fn incubator_post(ctx: &ReducerContext, t: SContentType, data: String) -> Result<(), String> {
+    let player_id = ctx.player()?.id;
+    if let Some(piece) = ctx.db.content_piece().data().find(&data) {
+        return Err(format!(
+            "Identical content piece exists: {t} id#{}",
+            piece.id
+        ));
     }
-    if let Some(r) = ctx.db.incubator_unit_trigger().data().filter(&data).next() {
-        return Err(format!("Identical trigger exists: id#{}", r.id));
-    }
-    ctx.db
-        .incubator_unit_trigger()
-        .insert(TIncubatorUnitTrigger {
-            id: next_id(ctx),
-            owner: player.id,
-            data,
-        });
-    Ok(())
-}
-
-#[table(public, name = incubator_house, index(name = name_color, btree(columns = [name, color])))]
-pub struct TIncubatorHouse {
-    #[primary_key]
-    pub id: u64,
-    #[index(btree)]
-    pub owner: u64,
-    pub name: String,
-    pub color: String,
-}
-
-#[reducer]
-fn incubator_post_house(ctx: &ReducerContext, name: String, color: String) -> Result<(), String> {
-    let player = ctx.player()?;
-    if let Some(e) = Color32::from_hex(&color).err() {
-        return Err(format!("Failed to parse color: {e:?}"));
-    }
-    if let Some(r) = ctx
-        .db
-        .incubator_house()
-        .name_color()
-        .filter((&name, &color))
-        .next()
-    {
-        return Err(format!("Identical house exists: id#{}", r.id));
-    }
-    ctx.db.incubator_house().insert(TIncubatorHouse {
+    ctx.db.content_piece().insert(TContentPiece {
         id: next_id(ctx),
-        owner: player.id,
-        name,
-        color,
+        data,
+        t,
+        owner: player_id,
     });
     Ok(())
 }
 
-#[table(public, name = incubator_ability, index(name = name_description, btree(columns = [name, description])))]
-pub struct TIncubatorAbility {
-    #[primary_key]
-    pub id: u64,
-    #[index(btree)]
-    pub owner: u64,
-    pub name: String,
-    pub description: String,
+#[reducer]
+fn incubator_delete(ctx: &ReducerContext, id: u64) -> Result<(), String> {
+    let player_id = ctx.player()?.id;
+    if let Some(piece) = ctx.db.content_piece().id().find(id) {
+        if piece.owner != player_id {
+            return Err(format!("Piece#{id} not owned by {player_id}"));
+        }
+        ctx.db.content_piece().id().delete(id);
+    } else {
+        return Err(format!("Piece#{id} not found"));
+    }
+    Ok(())
 }
 
-#[reducer]
-fn incubator_post_ability(
-    ctx: &ReducerContext,
+#[derive(SpacetimeType, Display)]
+pub enum SContentType {
+    Data,
+    CUnit,
+    CUnitDescription,
+    CUnitStats,
+    CUnitTrigger,
+    CUnitRepresentation,
+    CAbility,
+    CAbilityDescription,
+    CAbilityEffect,
+    CHouse,
+    CStatus,
+    CStatusDescription,
+    CStatusTrigger,
+    CSummon,
+}
+
+#[table(public, name = units)]
+struct TUnits {
+    unit: CUnit,
+}
+#[derive(SpacetimeType)]
+struct CUnit {
     name: String,
-    description: String,
-) -> Result<(), String> {
-    let player = ctx.player()?;
-    if let Some(r) = ctx
-        .db
-        .incubator_ability()
-        .name_description()
-        .filter((&name, &description))
-        .next()
-    {
-        return Err(format!("Identical ability exists: id#{}", r.id));
-    }
-    ctx.db.incubator_ability().insert(TIncubatorAbility {
-        id: next_id(ctx),
-        owner: player.id,
-        name,
-        description,
-    });
-    Ok(())
+    description: CUnitDescription,
+    stats: CUnitStats,
+    representation: CUnitRepresentation,
 }
-
-#[table(public, name = incubator_ability_effect)]
-pub struct TIncubatorAbilityEffect {
-    #[primary_key]
-    pub id: u64,
-    #[index(btree)]
-    pub owner: u64,
-    #[index(btree)]
-    pub data: String,
+#[derive(SpacetimeType)]
+struct CUnitDescription {
+    text: String,
+    trigger: CUnitTrigger,
 }
-
-#[reducer]
-fn incubator_post_ability_effect(ctx: &ReducerContext, data: String) -> Result<(), String> {
-    let player = ctx.player()?;
-    if let Some(r) = ctx
-        .db
-        .incubator_ability_effect()
-        .data()
-        .filter(&data)
-        .next()
-    {
-        return Err(format!("Identical ability effect exists: id#{}", r.id));
-    }
-    ctx.db
-        .incubator_ability_effect()
-        .insert(TIncubatorAbilityEffect {
-            id: next_id(ctx),
-            owner: player.id,
-            data,
-        });
-    Ok(())
+#[derive(SpacetimeType)]
+struct CUnitStats {
+    data: String,
 }
-
-#[table(public, name = incubator_status, index(name = name_description_polarity, btree(columns = [name, description, polarity])))]
-pub struct TIncubatorStatus {
-    #[primary_key]
-    pub id: u64,
-    #[index(btree)]
-    pub owner: u64,
-    pub name: String,
-    pub description: String,
-    pub polarity: i8,
+#[derive(SpacetimeType)]
+struct CUnitTrigger {
+    data: String,
+    ability: CAbility,
 }
-
-#[reducer]
-fn incubator_post_status(
-    ctx: &ReducerContext,
+#[derive(SpacetimeType)]
+struct CUnitRepresentation {
+    data: String,
+}
+#[derive(SpacetimeType)]
+struct CAbility {
     name: String,
-    description: String,
-    polarity: i8,
-) -> Result<(), String> {
-    let player = ctx.player()?;
-    if let Some(r) = ctx
-        .db
-        .incubator_status()
-        .name_description_polarity()
-        .filter((&name, &description, polarity))
-        .next()
-    {
-        return Err(format!("Identical status exists: id#{}", r.id));
-    }
-    ctx.db.incubator_status().insert(TIncubatorStatus {
-        id: next_id(ctx),
-        owner: player.id,
-        name,
-        description,
-        polarity,
-    });
-    Ok(())
+    description: CAbilityDescription,
+    house: CHouse,
 }
-
-#[table(public, name = incubator_status_trigger)]
-pub struct TIncubatorStatusTrigger {
-    #[primary_key]
-    pub id: u64,
-    #[index(btree)]
-    pub owner: u64,
-    #[index(btree)]
-    pub data: String,
+#[derive(SpacetimeType)]
+struct CAbilityDescription {
+    text: String,
+    effect: CAbilityEffect,
 }
-
-#[reducer]
-fn incubator_post_status_trigger(ctx: &ReducerContext, data: String) -> Result<(), String> {
-    let player = ctx.player()?;
-    if let Some(r) = ctx
-        .db
-        .incubator_status_trigger()
-        .data()
-        .filter(&data)
-        .next()
-    {
-        return Err(format!("Identical status trigger exists: id#{}", r.id));
-    }
-    ctx.db
-        .incubator_status_trigger()
-        .insert(TIncubatorStatusTrigger {
-            id: next_id(ctx),
-            owner: player.id,
-            data,
-        });
-    Ok(())
+#[derive(SpacetimeType)]
+struct CHouse {
+    data: String,
+}
+#[derive(SpacetimeType)]
+enum CAbilityEffect {
+    Status(CStatus),
+    Summon(CSummon),
+    Action(String),
+}
+#[derive(SpacetimeType)]
+struct CStatus {
+    name: String,
+    description: CStatusDescription,
+}
+#[derive(SpacetimeType)]
+struct CStatusDescription {
+    data: String,
+    trigger: CStatusTrigger,
+}
+#[derive(SpacetimeType)]
+struct CStatusTrigger {
+    data: String,
+}
+#[derive(SpacetimeType)]
+struct CSummon {
+    name: String,
+    stats: CUnitStats,
 }

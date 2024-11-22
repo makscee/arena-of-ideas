@@ -8,13 +8,14 @@ use spacetimedb_sdk::{
     lib as __lib, sats as __sats, ws_messages as __ws,
 };
 
+use super::c_unit_type::CUnit;
+
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct TIncubatorLink {
-    pub id: String,
-    pub score: i32,
+pub struct TUnits {
+    pub unit: CUnit,
 }
 
-impl __sdk::spacetime_module::InModule for TIncubatorLink {
+impl __sdk::spacetime_module::InModule for TUnits {
     type Module = super::RemoteModule;
 }

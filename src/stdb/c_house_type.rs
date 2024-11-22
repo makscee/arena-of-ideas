@@ -10,26 +10,10 @@ use spacetimedb_sdk::{
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub enum SIncubatorType {
-    UnitName,
-
-    UnitStats,
-
-    UnitRepresentation,
-
-    UnitTrigger,
-
-    House,
-
-    Ability,
-
-    AbilityEffect,
-
-    Status,
-
-    StatusTrigger,
+pub struct CHouse {
+    pub data: String,
 }
 
-impl __sdk::spacetime_module::InModule for SIncubatorType {
+impl __sdk::spacetime_module::InModule for CHouse {
     type Module = super::RemoteModule;
 }

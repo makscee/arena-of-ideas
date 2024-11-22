@@ -1,3 +1,5 @@
+use core::f32;
+
 use egui::TextureId;
 use egui_extras::{Column, TableBuilder};
 
@@ -7,7 +9,7 @@ use super::*;
 pub struct Table<T> {
     name: &'static str,
     rows_getter: fn(&mut World) -> Vec<T>,
-    persistant: bool,
+    rows_saved: Option<Vec<T>>,
     columns: IndexMap<&'static str, TableColumn<T>>,
     row_height: f32,
     title: bool,
@@ -17,8 +19,18 @@ pub struct Table<T> {
 
 #[derive(Resource)]
 struct TableCacheResource<T> {
+    map: HashMap<Id, TableCacheData<T>>,
+}
+
+struct TableCacheData<T> {
     data: Vec<T>,
     ts: f32,
+}
+
+impl<T> Default for TableCacheResource<T> {
+    fn default() -> Self {
+        Self { map: default() }
+    }
 }
 
 #[derive(Default, Clone, Debug)]
@@ -101,23 +113,19 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
             filters: default(),
             row_height: 22.0,
             rows_getter: rows,
-            persistant: false,
+            rows_saved: None,
         }
     }
-    pub fn new_persistant(name: &'static str, rows: Vec<T>, world: &mut World) -> Self {
-        world.insert_resource(TableCacheResource {
-            data: rows,
-            ts: 0.0,
-        });
+    pub fn new_persistant(name: &'static str, rows: Vec<T>) -> Self {
         Self {
             name,
             rows_getter: |_| default(),
+            rows_saved: Some(rows),
             columns: IndexMap::new(),
             row_height: 0.0,
             title: false,
             selectable: false,
             filters: Vec::new(),
-            persistant: true,
         }
     }
     pub fn title(mut self) -> Self {
@@ -533,8 +541,8 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
             Box::new(move |d| {
                 let link = data(d);
                 cn().db
-                    .incubator_link()
-                    .id()
+                    .content_link()
+                    .from_to()
                     .find(&link)
                     .map(|l| l.score)
                     .unwrap_or_default()
@@ -543,7 +551,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
         .column_btn_mod_dyn(
             "+",
             Box::new(move |d, _, _| {
-                cn().reducers.incubator_link_vote(data(d), 1).unwrap();
+                cn().reducers.incubator_link_vote(data(d), true).unwrap();
             }),
             Box::new(move |d, _, b| {
                 b.active(IncubatorPlugin::get_vote(player_id(), &data(d)) == 1)
@@ -552,7 +560,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
         .column_btn_mod_dyn(
             "-",
             Box::new(move |d, _, _| {
-                cn().reducers.incubator_link_vote(data(d), -1).unwrap();
+                cn().reducers.incubator_link_vote(data(d), false).unwrap();
             }),
             Box::new(move |d, ui, b| {
                 b.active(IncubatorPlugin::get_vote(player_id(), &data(d)) == -1)
@@ -560,33 +568,45 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
             }),
         )
     }
-    fn cache_rows(&self, world: &mut World) {
-        if self.persistant {
-            return;
-        }
+    fn cache_rows(&self, id: Id, world: &mut World) {
         let mut need_update = false;
-        if let Some(cache) = world.get_resource_mut::<TableCacheResource<T>>() {
-            if cache.ts < gt().play_head() - CACHE_LIFETIME {
+        world.init_resource::<TableCacheResource<T>>();
+        world.resource_scope(|world, mut r: Mut<TableCacheResource<T>>| {
+            if let Some(cache) = r.map.get(&id) {
+                if cache.ts < gt().play_head() - CACHE_LIFETIME {
+                    need_update = true;
+                }
+            } else {
                 need_update = true;
             }
-        } else {
-            need_update = true;
-        }
-        if need_update {
-            let rows = TableCacheResource {
-                data: (self.rows_getter)(world),
-                ts: gt().play_head(),
-            };
-            world.insert_resource(rows);
-        }
+            if need_update {
+                if let Some(rows) = self.rows_saved.clone() {
+                    r.map.insert(
+                        id,
+                        TableCacheData {
+                            data: rows,
+                            ts: f32::MAX,
+                        },
+                    );
+                } else {
+                    r.map.insert(
+                        id,
+                        TableCacheData {
+                            data: (self.rows_getter)(world),
+                            ts: gt().play_head(),
+                        },
+                    );
+                }
+            }
+        })
     }
-    pub fn ui(&mut self, ui: &mut Ui, world: &mut World) -> TableState {
+    pub fn ui(self, ui: &mut Ui, world: &mut World) -> TableState {
         let mut need_sort = false;
         let mut need_filter = false;
         let id = Id::new("table_").with(self.name).with(ui.id());
-        self.cache_rows(world);
+        self.cache_rows(id, world);
         world.resource_scope(|world, rows: Mut<TableCacheResource<T>>| {
-            let data = &rows.data;
+            let data = &rows.map.get(&id).unwrap().data;
             let mut state = ui
                 .ctx()
                 .data_mut(|w| w.get_temp::<TableState>(id))

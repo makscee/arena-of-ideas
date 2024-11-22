@@ -10,12 +10,12 @@ use spacetimedb_sdk::{
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct TIncubatorUnitRepresentation {
-    pub id: u64,
+pub struct TContentVotes {
+    pub id: String,
     pub owner: u64,
-    pub data: String,
+    pub vote: i8,
 }
 
-impl __sdk::spacetime_module::InModule for TIncubatorUnitRepresentation {
+impl __sdk::spacetime_module::InModule for TContentVotes {
     type Module = super::RemoteModule;
 }

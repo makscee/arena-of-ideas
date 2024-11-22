@@ -111,6 +111,9 @@ impl Confirmation {
     pub fn close_current(world: &mut World) {
         rm(world).close_requested = true;
     }
+    pub fn pop(world: &mut World) -> Option<Self> {
+        rm(world).stack.pop()
+    }
     pub fn show_current(ctx: &egui::Context, world: &mut World) {
         if let Some(mut c) = rm(world).stack.pop() {
             c.ui(ctx, world);

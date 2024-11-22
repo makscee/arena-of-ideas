@@ -43,7 +43,7 @@ impl Show for TTeam {
         text_dots_text("owner".cstr(), self.owner.get_player().cstr(), ui);
         text_dots_text("gid".cstr(), self.id.to_string().cstr_c(VISIBLE_LIGHT), ui);
         ui.push_id(self.id, |ui| {
-            Table::new_persistant("Units", self.units.clone(), world)
+            Table::new_persistant("Units", self.units.clone())
                 .add_fused_unit_columns(|d| d)
                 .ui(ui, world);
         });

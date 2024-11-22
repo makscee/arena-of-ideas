@@ -8,14 +8,19 @@ use spacetimedb_sdk::{
     lib as __lib, sats as __sats, ws_messages as __ws,
 };
 
+use super::c_status_type::CStatus;
+use super::c_summon_type::CSummon;
+
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct TIncubatorAbilityEffect {
-    pub id: u64,
-    pub owner: u64,
-    pub data: String,
+pub enum CAbilityEffect {
+    Status(CStatus),
+
+    Summon(CSummon),
+
+    Action(String),
 }
 
-impl __sdk::spacetime_module::InModule for TIncubatorAbilityEffect {
+impl __sdk::spacetime_module::InModule for CAbilityEffect {
     type Module = super::RemoteModule;
 }

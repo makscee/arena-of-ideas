@@ -8,15 +8,19 @@ use spacetimedb_sdk::{
     lib as __lib, sats as __sats, ws_messages as __ws,
 };
 
+use super::c_unit_description_type::CUnitDescription;
+use super::c_unit_representation_type::CUnitRepresentation;
+use super::c_unit_stats_type::CUnitStats;
+
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct TIncubatorHouse {
-    pub id: u64,
-    pub owner: u64,
+pub struct CUnit {
     pub name: String,
-    pub color: String,
+    pub description: CUnitDescription,
+    pub stats: CUnitStats,
+    pub representation: CUnitRepresentation,
 }
 
-impl __sdk::spacetime_module::InModule for TIncubatorHouse {
+impl __sdk::spacetime_module::InModule for CUnit {
     type Module = super::RemoteModule;
 }

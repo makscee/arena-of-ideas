@@ -8,15 +8,15 @@ use spacetimedb_sdk::{
     lib as __lib, sats as __sats, ws_messages as __ws,
 };
 
+use super::c_ability_type::CAbility;
+
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct TIncubatorUnitStats {
-    pub id: u64,
-    pub owner: u64,
-    pub pwr: i32,
-    pub hp: i32,
+pub struct CUnitTrigger {
+    pub data: String,
+    pub ability: CAbility,
 }
 
-impl __sdk::spacetime_module::InModule for TIncubatorUnitStats {
+impl __sdk::spacetime_module::InModule for CUnitTrigger {
     type Module = super::RemoteModule;
 }

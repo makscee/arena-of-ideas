@@ -8,13 +8,15 @@ use spacetimedb_sdk::{
     lib as __lib, sats as __sats, ws_messages as __ws,
 };
 
+use super::c_unit_stats_type::CUnitStats;
+
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct TIncubatorVote {
-    pub id: String,
-    pub vote: i32,
+pub struct CSummon {
+    pub name: String,
+    pub stats: CUnitStats,
 }
 
-impl __sdk::spacetime_module::InModule for TIncubatorVote {
+impl __sdk::spacetime_module::InModule for CSummon {
     type Module = super::RemoteModule;
 }

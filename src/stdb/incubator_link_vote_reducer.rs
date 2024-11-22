@@ -11,8 +11,8 @@ use spacetimedb_sdk::{
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct IncubatorLinkVote {
-    pub id: String,
-    pub value: i32,
+    pub from_to: String,
+    pub vote: bool,
 }
 
 impl __sdk::spacetime_module::InModule for IncubatorLinkVote {
@@ -31,7 +31,7 @@ pub trait incubator_link_vote {
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed by listening for [`Self::on_incubator_link_vote`] callbacks.
-    fn incubator_link_vote(&self, id: String, value: i32) -> __anyhow::Result<()>;
+    fn incubator_link_vote(&self, from_to: String, vote: bool) -> __anyhow::Result<()>;
     /// Register a callback to run whenever we are notified of an invocation of the reducer `incubator_link_vote`.
     ///
     /// The [`super::EventContext`] passed to the `callback`
@@ -44,7 +44,7 @@ pub trait incubator_link_vote {
     /// to cancel the callback.
     fn on_incubator_link_vote(
         &self,
-        callback: impl FnMut(&super::EventContext, &String, &i32) + Send + 'static,
+        callback: impl FnMut(&super::EventContext, &String, &bool) + Send + 'static,
     ) -> IncubatorLinkVoteCallbackId;
     /// Cancel a callback previously registered by [`Self::on_incubator_link_vote`],
     /// causing it not to run in the future.
@@ -52,18 +52,18 @@ pub trait incubator_link_vote {
 }
 
 impl incubator_link_vote for super::RemoteReducers {
-    fn incubator_link_vote(&self, id: String, value: i32) -> __anyhow::Result<()> {
+    fn incubator_link_vote(&self, from_to: String, vote: bool) -> __anyhow::Result<()> {
         self.imp
-            .call_reducer("incubator_link_vote", IncubatorLinkVote { id, value })
+            .call_reducer("incubator_link_vote", IncubatorLinkVote { from_to, vote })
     }
     fn on_incubator_link_vote(
         &self,
-        mut callback: impl FnMut(&super::EventContext, &String, &i32) + Send + 'static,
+        mut callback: impl FnMut(&super::EventContext, &String, &bool) + Send + 'static,
     ) -> IncubatorLinkVoteCallbackId {
         IncubatorLinkVoteCallbackId(self.imp.on_reducer::<IncubatorLinkVote>(
             "incubator_link_vote",
             Box::new(move |ctx: &super::EventContext, args: &IncubatorLinkVote| {
-                callback(ctx, &args.id, &args.value)
+                callback(ctx, &args.from_to, &args.vote)
             }),
         ))
     }
