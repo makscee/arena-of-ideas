@@ -72,6 +72,10 @@ lazy_static! {
         m.insert(GameState::MigrationUpload, [GameOption::Connect].into());
         m.insert(GameState::MigrationDownload, [GameOption::Connect].into());
         m.insert(GameState::Admin, [GameOption::Connect].into());
+        m.insert(
+            GameState::Incubator,
+            [GameOption::Connect, GameOption::ForceLogin].into(),
+        );
         m
     };
 }

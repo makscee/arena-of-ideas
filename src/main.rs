@@ -37,6 +37,7 @@ pub enum RunMode {
     MigrationUpload,
     Query,
     Admin,
+    Incubator,
 }
 
 fn main() {
@@ -58,6 +59,7 @@ fn main() {
         RunMode::MigrationUpload => GameState::MigrationUpload,
         RunMode::Query => GameState::Query,
         RunMode::Admin => GameState::Admin,
+        RunMode::Incubator => GameState::Incubator,
     };
     load_client_settings();
     load_client_state();
