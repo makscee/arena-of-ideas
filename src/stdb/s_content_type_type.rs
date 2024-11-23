@@ -11,8 +11,6 @@ use spacetimedb_sdk::{
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub enum SContentType {
-    Data,
-
     CUnit,
 
     CUnitDescription,

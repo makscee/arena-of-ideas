@@ -415,7 +415,6 @@ impl Hash for FusedUnit {
 
 #[derive(Clone, Copy, Debug, EnumIter, PartialEq, Eq, AsRefStr, Display)]
 pub enum ContentType {
-    Data,
     CUnit,
     CUnitDescription,
     CUnitStats,
@@ -433,7 +432,6 @@ pub enum ContentType {
 impl From<SContentType> for ContentType {
     fn from(value: SContentType) -> Self {
         match value {
-            SContentType::Data => Self::Data,
             SContentType::CUnit => Self::CUnit,
             SContentType::CUnitDescription => Self::CUnitDescription,
             SContentType::CUnitStats => Self::CUnitStats,
@@ -453,7 +451,6 @@ impl From<SContentType> for ContentType {
 impl From<ContentType> for SContentType {
     fn from(value: ContentType) -> Self {
         match value {
-            ContentType::Data => Self::Data,
             ContentType::CUnit => Self::CUnit,
             ContentType::CUnitDescription => Self::CUnitDescription,
             ContentType::CUnitStats => Self::CUnitStats,
@@ -468,5 +465,10 @@ impl From<ContentType> for SContentType {
             ContentType::CStatusTrigger => Self::CStatusTrigger,
             ContentType::CSummon => Self::CSummon,
         }
+    }
+}
+impl SContentType {
+    pub fn to_local(&self) -> ContentType {
+        self.clone().into()
     }
 }

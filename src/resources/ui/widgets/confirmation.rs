@@ -41,12 +41,12 @@ impl Confirmation {
         }
     }
     #[must_use]
-    pub fn accept(mut self, action: impl Fn(&mut World) + Send + Sync + 'static) -> Self {
+    pub fn accept(mut self, action: impl FnOnce(&mut World) + Send + Sync + 'static) -> Self {
         self.accept = Some(Box::new(action));
         self
     }
     #[must_use]
-    pub fn cancel(mut self, action: impl Fn(&mut World) + Send + Sync + 'static) -> Self {
+    pub fn cancel(mut self, action: impl FnOnce(&mut World) + Send + Sync + 'static) -> Self {
         self.cancel = Some(Box::new(action));
         self
     }

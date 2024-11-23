@@ -13,7 +13,7 @@ use super::c_status_trigger_type::CStatusTrigger;
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct CStatusDescription {
-    pub data: String,
+    pub text: String,
     pub trigger: CStatusTrigger,
 }
 

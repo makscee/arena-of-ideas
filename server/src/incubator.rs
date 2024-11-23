@@ -95,7 +95,6 @@ fn incubator_delete(ctx: &ReducerContext, id: u64) -> Result<(), String> {
 
 #[derive(SpacetimeType, Display)]
 pub enum SContentType {
-    Data,
     CUnit,
     CUnitDescription,
     CUnitStats,
@@ -168,7 +167,7 @@ struct CStatus {
 }
 #[derive(SpacetimeType)]
 struct CStatusDescription {
-    data: String,
+    text: String,
     trigger: CStatusTrigger,
 }
 #[derive(SpacetimeType)]
