@@ -102,7 +102,7 @@ pub enum SContentType {
     CUnitRepresentation,
     CAbility,
     CAbilityDescription,
-    CAbilityEffect,
+    CAction,
     CHouse,
     CStatus,
     CStatusDescription,
@@ -116,14 +116,14 @@ struct TUnits {
 }
 #[derive(SpacetimeType)]
 struct CUnit {
-    name: String,
+    data: String,
     description: CUnitDescription,
     stats: CUnitStats,
     representation: CUnitRepresentation,
 }
 #[derive(SpacetimeType)]
 struct CUnitDescription {
-    text: String,
+    data: String,
     trigger: CUnitTrigger,
 }
 #[derive(SpacetimeType)]
@@ -141,33 +141,33 @@ struct CUnitRepresentation {
 }
 #[derive(SpacetimeType)]
 struct CAbility {
-    name: String,
+    data: String,
     description: CAbilityDescription,
     house: CHouse,
 }
 #[derive(SpacetimeType)]
 struct CAbilityDescription {
-    text: String,
-    effect: CAbilityEffect,
+    data: String,
+    status: Option<CStatus>,
+    summon: Option<CSummon>,
+    action: Option<CAction>,
 }
 #[derive(SpacetimeType)]
 struct CHouse {
     data: String,
 }
 #[derive(SpacetimeType)]
-enum CAbilityEffect {
-    Status(CStatus),
-    Summon(CSummon),
-    Action(String),
+struct CAction {
+    data: String,
 }
 #[derive(SpacetimeType)]
 struct CStatus {
-    name: String,
+    data: String,
     description: CStatusDescription,
 }
 #[derive(SpacetimeType)]
 struct CStatusDescription {
-    text: String,
+    data: String,
     trigger: CStatusTrigger,
 }
 #[derive(SpacetimeType)]
@@ -176,6 +176,6 @@ struct CStatusTrigger {
 }
 #[derive(SpacetimeType)]
 struct CSummon {
-    name: String,
+    data: String,
     stats: CUnitStats,
 }

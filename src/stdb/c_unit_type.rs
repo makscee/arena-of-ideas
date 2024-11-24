@@ -15,7 +15,7 @@ use super::c_unit_stats_type::CUnitStats;
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct CUnit {
-    pub name: String,
+    pub data: String,
     pub description: CUnitDescription,
     pub stats: CUnitStats,
     pub representation: CUnitRepresentation,

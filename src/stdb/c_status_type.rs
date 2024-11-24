@@ -13,7 +13,7 @@ use super::c_status_description_type::CStatusDescription;
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct CStatus {
-    pub name: String,
+    pub data: String,
     pub description: CStatusDescription,
 }
 

@@ -25,7 +25,7 @@ pub enum SContentType {
 
     CAbilityDescription,
 
-    CAbilityEffect,
+    CAction,
 
     CHouse,
 

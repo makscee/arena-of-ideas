@@ -13,7 +13,7 @@ use super::c_unit_trigger_type::CUnitTrigger;
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct CUnitDescription {
-    pub text: String,
+    pub data: String,
     pub trigger: CUnitTrigger,
 }
 

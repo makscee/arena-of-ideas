@@ -8,13 +8,17 @@ use spacetimedb_sdk::{
     lib as __lib, sats as __sats, ws_messages as __ws,
 };
 
-use super::c_ability_effect_type::CAbilityEffect;
+use super::c_action_type::CAction;
+use super::c_status_type::CStatus;
+use super::c_summon_type::CSummon;
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct CAbilityDescription {
-    pub text: String,
-    pub effect: CAbilityEffect,
+    pub data: String,
+    pub status: Option<CStatus>,
+    pub summon: Option<CSummon>,
+    pub action: Option<CAction>,
 }
 
 impl __sdk::spacetime_module::InModule for CAbilityDescription {

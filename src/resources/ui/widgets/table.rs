@@ -98,6 +98,9 @@ impl TableState {
     pub fn reset_cache(ctx: &egui::Context) {
         ctx.data_mut(|w| w.remove_by_type::<Self>());
     }
+    pub fn reset_rows_cache<T: Send + Sync + 'static>(world: &mut World) {
+        world.remove_resource::<TableCacheResource<T>>();
+    }
     pub fn reset_cache_op() {
         OperationsPlugin::add(|w| Self::reset_cache(&egui_context(w).unwrap()));
     }

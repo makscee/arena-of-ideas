@@ -14,7 +14,7 @@ use super::c_house_type::CHouse;
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct CAbility {
-    pub name: String,
+    pub data: String,
     pub description: CAbilityDescription,
     pub house: CHouse,
 }
