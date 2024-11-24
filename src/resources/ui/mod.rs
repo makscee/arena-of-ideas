@@ -1,5 +1,5 @@
 mod show;
-mod show_table;
+mod table_ext;
 mod ui;
 mod widgets;
 

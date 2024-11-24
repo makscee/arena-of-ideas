@@ -472,3 +472,8 @@ impl SContentType {
         self.clone().into()
     }
 }
+impl ContentType {
+    pub fn to_server(self) -> SContentType {
+        self.into()
+    }
+}

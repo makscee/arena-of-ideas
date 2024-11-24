@@ -212,7 +212,7 @@ impl Expression {
                     .get_faction()?
                     .opposite(),
             )),
-            Expression::Owner => Ok(VarValue::Entity(context.owner())),
+            Expression::Owner => Ok(VarValue::Entity(context.get_owner()?)),
             Expression::Caster => Ok(VarValue::Entity(context.get_caster()?)),
             Expression::Target => Ok(VarValue::Entity(context.get_target()?)),
             Expression::Status => Ok(VarValue::Entity(context.get_status_entity(world)?)),

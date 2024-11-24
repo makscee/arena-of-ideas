@@ -27,7 +27,7 @@ pub mod battle_settings_type;
 pub mod battle_table;
 pub mod c_ability_description_type;
 pub mod c_ability_type;
-pub mod c_action_type;
+pub mod c_effect_type;
 pub mod c_house_type;
 pub mod c_status_description_type;
 pub mod c_status_trigger_type;
@@ -39,8 +39,8 @@ pub mod c_unit_stats_type;
 pub mod c_unit_trigger_type;
 pub mod c_unit_type;
 pub mod cleanup_reducer;
-pub mod content_link_table;
 pub mod content_piece_table;
+pub mod content_score_table;
 pub mod content_vote_table;
 pub mod craft_hero_reducer;
 pub mod daily_state_table;
@@ -66,8 +66,8 @@ pub mod global_settings_type;
 pub mod house_table;
 pub mod identity_disconnected_reducer;
 pub mod incubator_delete_reducer;
-pub mod incubator_link_vote_reducer;
 pub mod incubator_post_reducer;
+pub mod incubator_vote_reducer;
 pub mod inflating_int_type;
 pub mod init_reducer;
 pub mod item_bundle_type;
@@ -125,9 +125,9 @@ pub mod t_auction_type;
 pub mod t_base_unit_type;
 pub mod t_battle_result_type;
 pub mod t_battle_type;
-pub mod t_content_link_type;
 pub mod t_content_piece_type;
-pub mod t_content_votes_type;
+pub mod t_content_score_type;
+pub mod t_content_vote_type;
 pub mod t_daily_state_type;
 pub mod t_global_event_type;
 pub mod t_house_type;
@@ -187,7 +187,7 @@ pub use battle_settings_type::*;
 pub use battle_table::*;
 pub use c_ability_description_type::*;
 pub use c_ability_type::*;
-pub use c_action_type::*;
+pub use c_effect_type::*;
 pub use c_house_type::*;
 pub use c_status_description_type::*;
 pub use c_status_trigger_type::*;
@@ -199,8 +199,8 @@ pub use c_unit_stats_type::*;
 pub use c_unit_trigger_type::*;
 pub use c_unit_type::*;
 pub use cleanup_reducer::*;
-pub use content_link_table::*;
 pub use content_piece_table::*;
+pub use content_score_table::*;
 pub use content_vote_table::*;
 pub use craft_hero_reducer::*;
 pub use daily_state_table::*;
@@ -226,8 +226,8 @@ pub use global_settings_type::*;
 pub use house_table::*;
 pub use identity_disconnected_reducer::*;
 pub use incubator_delete_reducer::*;
-pub use incubator_link_vote_reducer::*;
 pub use incubator_post_reducer::*;
+pub use incubator_vote_reducer::*;
 pub use inflating_int_type::*;
 pub use init_reducer::*;
 pub use item_bundle_type::*;
@@ -285,9 +285,9 @@ pub use t_auction_type::*;
 pub use t_base_unit_type::*;
 pub use t_battle_result_type::*;
 pub use t_battle_type::*;
-pub use t_content_link_type::*;
 pub use t_content_piece_type::*;
-pub use t_content_votes_type::*;
+pub use t_content_score_type::*;
+pub use t_content_vote_type::*;
 pub use t_daily_state_type::*;
 pub use t_global_event_type::*;
 pub use t_house_type::*;
@@ -356,8 +356,8 @@ pub enum Reducer {
     FuseSwap(fuse_swap_reducer::FuseSwap),
     GiveCredits(give_credits_reducer::GiveCredits),
     IncubatorDelete(incubator_delete_reducer::IncubatorDelete),
-    IncubatorLinkVote(incubator_link_vote_reducer::IncubatorLinkVote),
     IncubatorPost(incubator_post_reducer::IncubatorPost),
+    IncubatorVote(incubator_vote_reducer::IncubatorVote),
     Login(login_reducer::Login),
     LoginByIdentity(login_by_identity_reducer::LoginByIdentity),
     Logout(logout_reducer::Logout),
@@ -421,8 +421,8 @@ impl __sdk::spacetime_module::Reducer for Reducer {
             Reducer::FuseSwap(_) => "fuse_swap",
             Reducer::GiveCredits(_) => "give_credits",
             Reducer::IncubatorDelete(_) => "incubator_delete",
-            Reducer::IncubatorLinkVote(_) => "incubator_link_vote",
             Reducer::IncubatorPost(_) => "incubator_post",
+            Reducer::IncubatorVote(_) => "incubator_vote",
             Reducer::Login(_) => "login",
             Reducer::LoginByIdentity(_) => "login_by_identity",
             Reducer::Logout(_) => "logout",
@@ -481,8 +481,8 @@ impl __sdk::spacetime_module::Reducer for Reducer {
             Reducer::FuseSwap(args) => args,
             Reducer::GiveCredits(args) => args,
             Reducer::IncubatorDelete(args) => args,
-            Reducer::IncubatorLinkVote(args) => args,
             Reducer::IncubatorPost(args) => args,
+            Reducer::IncubatorVote(args) => args,
             Reducer::Login(args) => args,
             Reducer::LoginByIdentity(args) => args,
             Reducer::Logout(args) => args,
@@ -586,11 +586,11 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
             "incubator_delete" => Ok(Reducer::IncubatorDelete(
                 __sdk::spacetime_module::parse_reducer_args("incubator_delete", &value.args)?,
             )),
-            "incubator_link_vote" => Ok(Reducer::IncubatorLinkVote(
-                __sdk::spacetime_module::parse_reducer_args("incubator_link_vote", &value.args)?,
-            )),
             "incubator_post" => Ok(Reducer::IncubatorPost(
                 __sdk::spacetime_module::parse_reducer_args("incubator_post", &value.args)?,
+            )),
+            "incubator_vote" => Ok(Reducer::IncubatorVote(
+                __sdk::spacetime_module::parse_reducer_args("incubator_vote", &value.args)?,
             )),
             "login" => Ok(Reducer::Login(__sdk::spacetime_module::parse_reducer_args(
                 "login",
@@ -718,9 +718,9 @@ pub struct DbUpdate {
     auction: __sdk::spacetime_module::TableUpdate<TAuction>,
     base_unit: __sdk::spacetime_module::TableUpdate<TBaseUnit>,
     battle: __sdk::spacetime_module::TableUpdate<TBattle>,
-    content_link: __sdk::spacetime_module::TableUpdate<TContentLink>,
     content_piece: __sdk::spacetime_module::TableUpdate<TContentPiece>,
-    content_vote: __sdk::spacetime_module::TableUpdate<TContentVotes>,
+    content_score: __sdk::spacetime_module::TableUpdate<TContentScore>,
+    content_vote: __sdk::spacetime_module::TableUpdate<TContentVote>,
     daily_state: __sdk::spacetime_module::TableUpdate<TDailyState>,
     daily_update_timer: __sdk::spacetime_module::TableUpdate<DailyUpdateTimer>,
     global_data: __sdk::spacetime_module::TableUpdate<GlobalData>,
@@ -772,11 +772,11 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
                     db_update.base_unit = base_unit_table::parse_table_update(table_update)?
                 }
                 "battle" => db_update.battle = battle_table::parse_table_update(table_update)?,
-                "content_link" => {
-                    db_update.content_link = content_link_table::parse_table_update(table_update)?
-                }
                 "content_piece" => {
                     db_update.content_piece = content_piece_table::parse_table_update(table_update)?
+                }
+                "content_score" => {
+                    db_update.content_score = content_score_table::parse_table_update(table_update)?
                 }
                 "content_vote" => {
                     db_update.content_vote = content_vote_table::parse_table_update(table_update)?
@@ -860,9 +860,9 @@ impl __sdk::spacetime_module::DbUpdate for DbUpdate {
         cache.apply_diff_to_table::<TAuction>("auction", &self.auction);
         cache.apply_diff_to_table::<TBaseUnit>("base_unit", &self.base_unit);
         cache.apply_diff_to_table::<TBattle>("battle", &self.battle);
-        cache.apply_diff_to_table::<TContentLink>("content_link", &self.content_link);
         cache.apply_diff_to_table::<TContentPiece>("content_piece", &self.content_piece);
-        cache.apply_diff_to_table::<TContentVotes>("content_vote", &self.content_vote);
+        cache.apply_diff_to_table::<TContentScore>("content_score", &self.content_score);
+        cache.apply_diff_to_table::<TContentVote>("content_vote", &self.content_vote);
         cache.apply_diff_to_table::<TDailyState>("daily_state", &self.daily_state);
         cache.apply_diff_to_table::<DailyUpdateTimer>(
             "daily_update_timer",
@@ -914,17 +914,17 @@ impl __sdk::spacetime_module::DbUpdate for DbUpdate {
         callbacks.invoke_table_row_callbacks::<TAuction>("auction", &self.auction, event);
         callbacks.invoke_table_row_callbacks::<TBaseUnit>("base_unit", &self.base_unit, event);
         callbacks.invoke_table_row_callbacks::<TBattle>("battle", &self.battle, event);
-        callbacks.invoke_table_row_callbacks::<TContentLink>(
-            "content_link",
-            &self.content_link,
-            event,
-        );
         callbacks.invoke_table_row_callbacks::<TContentPiece>(
             "content_piece",
             &self.content_piece,
             event,
         );
-        callbacks.invoke_table_row_callbacks::<TContentVotes>(
+        callbacks.invoke_table_row_callbacks::<TContentScore>(
+            "content_score",
+            &self.content_score,
+            event,
+        );
+        callbacks.invoke_table_row_callbacks::<TContentVote>(
             "content_vote",
             &self.content_vote,
             event,

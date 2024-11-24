@@ -538,39 +538,6 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
             TextureRenderPlugin::texture_representation(&rep, world)
         }))
     }
-    pub fn columns_incubator_vote_links(self, data: fn(&T) -> String) -> Self {
-        self.column_int_dyn(
-            "score",
-            Box::new(move |d| {
-                let link = data(d);
-                cn().db
-                    .content_link()
-                    .from_to()
-                    .find(&link)
-                    .map(|l| l.score)
-                    .unwrap_or_default()
-            }),
-        )
-        .column_btn_mod_dyn(
-            "+",
-            Box::new(move |d, _, _| {
-                cn().reducers.incubator_link_vote(data(d), true).unwrap();
-            }),
-            Box::new(move |d, _, b| {
-                b.active(IncubatorPlugin::get_vote(player_id(), &data(d)) == 1)
-            }),
-        )
-        .column_btn_mod_dyn(
-            "-",
-            Box::new(move |d, _, _| {
-                cn().reducers.incubator_link_vote(data(d), false).unwrap();
-            }),
-            Box::new(move |d, ui, b| {
-                b.active(IncubatorPlugin::get_vote(player_id(), &data(d)) == -1)
-                    .red(ui)
-            }),
-        )
-    }
     fn cache_rows(&self, id: Id, world: &mut World) {
         let mut need_update = false;
         world.init_resource::<TableCacheResource<T>>();

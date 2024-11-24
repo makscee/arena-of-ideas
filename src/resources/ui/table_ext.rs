@@ -292,4 +292,48 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
             )
             .column_player_click_dyn("seller", Box::new(move |d| f(d).owner))
     }
+    pub fn add_content_piece_columns(self, f: fn(&T) -> TContentPiece) -> Self {
+        self.column_id_dyn("id", Box::new(move |d| f(d).id))
+            .column_player_click_dyn("owner", Box::new(move |d| f(d).owner))
+            .column_dyn(
+                "data",
+                Box::new(|_, _| default()),
+                Box::new(move |d, _, ui, world| {
+                    let d = f(d);
+                    d.t.to_local().show(&d.data, ui, world);
+                }),
+                false,
+            )
+    }
+    pub fn add_content_vote_columns(self, f: fn(&T) -> String) -> Self {
+        self.column_int_dyn(
+            "score",
+            Box::new(move |d| {
+                let id = f(d);
+                cn().db
+                    .content_score()
+                    .id()
+                    .find(&id)
+                    .map(|l| l.score)
+                    .unwrap_or_default()
+            }),
+        )
+        .column_btn_mod_dyn(
+            "+",
+            Box::new(move |d, _, _| {
+                cn().reducers.incubator_vote(f(d), true).unwrap();
+            }),
+            Box::new(move |d, _, b| b.active(IncubatorPlugin::get_vote(player_id(), &f(d)) == 1)),
+        )
+        .column_btn_mod_dyn(
+            "-",
+            Box::new(move |d, _, _| {
+                cn().reducers.incubator_vote(f(d), false).unwrap();
+            }),
+            Box::new(move |d, ui, b| {
+                b.active(IncubatorPlugin::get_vote(player_id(), &f(d)) == -1)
+                    .red(ui)
+            }),
+        )
+    }
 }

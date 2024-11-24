@@ -1,5 +1,3 @@
-use std::collections::VecDeque;
-
 use super::*;
 
 pub struct IncubatorPlugin;
@@ -7,41 +5,6 @@ pub struct IncubatorPlugin;
 impl IncubatorPlugin {
     pub fn add_tiles(world: &mut World) {
         Tile::new(Side::Left, |ui, world| {
-            // CUnit::default().show_node(ui, world);
-            // CUnit {
-            //     name: "Unit_Name".into(),
-            //     description: CUnitDescription {
-            //         text: "Unit description bla bla".into(),
-            //         trigger: CUnitTrigger {
-            //             data: "Unit trigger data".into(),
-            //             ability: CAbility {
-            //                 name: "Ability_Name".into(),
-            //                 description: CAbilityDescription {
-            //                     text: "Ability description bla bla".into(),
-            //                     effect: CAbilityEffect::Status(CStatus {
-            //                         name: "Some_Status_Name".into(),
-            //                         description: CStatusDescription {
-            //                             text: "Status Description bla bla".into(),
-            //                             trigger: CStatusTrigger {
-            //                                 data: "Status trigger data".into(),
-            //                             },
-            //                         },
-            //                     }),
-            //                 },
-            //                 house: CHouse {
-            //                     data: "HouseName/#ff00ff".into(),
-            //                 },
-            //             },
-            //         },
-            //     },
-            //     stats: CUnitStats {
-            //         data: "13/9".into(),
-            //     },
-            //     representation: CUnitRepresentation {
-            //         data: r#"(material:Shape(shape:Circle(radius:Sum(Sum(F(0.81),Mul(Index,F(-0.17))),Mul(Beat,F(0.05)))),shape_type:Line(thickness:F(2.27)),fill:GradientLinear(point1:V2(0.0,-0.5),point2:V2(0.0,0.5),parts:[F(0.0),Sum(F(0.99),Mul(Index,F(0.0)))],colors:[OwnerState(Color),HexColor("00000000")]),fbm:None,alpha:F(1.0),padding:F(0.0)),children:[],mapping:{Offset:Vec2EE(Zero,Sum(Mul(Index,F(-0.04)),Mul(Sub(Zero,Abs(Beat)),Mul(F(0.1),Index))))},count:3)"#.into(),
-            //     },
-            // }
-            // .show_node(ui, world);
             ui.vertical(|ui| {
                 for p in ContentType::iter() {
                     if p.name()
@@ -52,6 +15,73 @@ impl IncubatorPlugin {
                     {
                         p.add_tile(world);
                     }
+                }
+                space(ui);
+                if "post test data".to_owned().button(ui).clicked() {
+                    CUnit {
+                        data: "TestUnit".into(),
+                        description: CUnitDescription {
+                            data: "Test unit description".into(),
+                            trigger: CUnitTrigger {
+                                data: ron::to_string(&Trigger::Fire {
+                                    triggers: vec![(FireTrigger::BattleStart, None)],
+                                    targets: default(),
+                                    effects: vec![(Effect::Kill, None)],
+                                })
+                                .unwrap(),
+                                ability: CAbility {
+                                    data: "AbilityName".into(),
+                                    description: CAbilityDescription {
+                                        data: "Ability description".into(),
+                                        status: Some(CStatus {
+                                            data: "Status_Name".into(),
+                                            description: CStatusDescription {
+                                                data: "Status description".into(),
+                                                trigger: CStatusTrigger {
+                                                    data: ron::to_string(&Trigger::Fire {
+                                                        triggers: vec![(
+                                                            FireTrigger::TurnEnd,
+                                                            None,
+                                                        )],
+                                                        targets: default(),
+                                                        effects: vec![(Effect::Kill, None)],
+                                                    })
+                                                    .unwrap(),
+                                                },
+                                            },
+                                        }),
+                                        summon: Some(CSummon {
+                                            data: "SummonName".into(),
+                                            stats: CUnitStats { data: "2/1".into() },
+                                        }),
+                                        action: Some(CEffect {
+                                            data: ron::to_string(&Effect::Damage).unwrap(),
+                                        }),
+                                    },
+                                    house: CHouse {
+                                        data: "TestHouse/#ff00ff".into(),
+                                    },
+                                },
+                            },
+                        },
+                        stats: CUnitStats { data: "1/1".into() },
+                        representation: CUnitRepresentation {
+                            data: ron::to_string(
+                                &game_assets()
+                                    .heroes
+                                    .values()
+                                    .choose(&mut thread_rng())
+                                    .unwrap()
+                                    .trigger,
+                            )
+                            .unwrap(),
+                        },
+                    }
+                    .visit(0, |_, t, data| {
+                        cn().reducers
+                            .incubator_post(t.to_server(), data.clone())
+                            .unwrap();
+                    });
                 }
             });
         })
@@ -72,7 +102,7 @@ impl IncubatorPlugin {
 }
 
 impl ContentType {
-    fn name(self) -> String {
+    pub fn name(self) -> String {
         self.as_ref().trim_start_matches('C').to_case(Case::Title)
     }
     fn tile_id(&self) -> &str {
@@ -83,7 +113,7 @@ impl ContentType {
         #[derive(Resource)]
         struct TableContentType(ContentType);
         world.insert_resource(TableContentType(self));
-        let table = Table::new("Content Table", |world| {
+        Table::new("Content Table", |world| {
             let t: SContentType = world.resource::<TableContentType>().0.into();
             cn().db
                 .content_piece()
@@ -91,23 +121,69 @@ impl ContentType {
                 .filter(|p| p.t == t)
                 .collect_vec()
         })
-        .column_id("id", |d| d.id)
-        .column_player_click("owner", |d| d.owner);
-        let table = table
-            .column(
-                "data",
-                |_, _| default(),
-                |d, _, ui, world| {
-                    d.t.to_local().show(&d.data, ui, world);
-                },
-                false,
-            )
-            .column_btn("open", |d, _, world| {
-                ContentType::from(d.t.clone()).open(d.id, world);
-            });
-        table.ui(ui, world);
+        .add_content_piece_columns(|d| d.clone())
+        .column_btn("open", |d, _, world| {
+            ContentType::from(d.t.clone()).open(d.id, world);
+        })
+        .ui(ui, world);
     }
-    fn add_tile(self, world: &mut World) {
+    pub fn open_links(self, id: u64, world: &mut World) {
+        Confirmation::new("Links")
+            .accept(|_| {})
+            .accept_name("Close")
+            .content(move |ui, world| {
+                Self::show_links(self, id, ui, world);
+            })
+            .push(world);
+    }
+    fn show_links(self, id: u64, ui: &mut Ui, world: &mut World) {
+        let cp = cn().db.content_piece().id().find(&id).unwrap();
+        ui.vertical_centered_justified(|ui| {
+            format!("Links from [b {}] to [b {self}]", cp.t.to_local()).label(ui);
+        });
+        cp.t.to_local().show(&cp.data, ui, world);
+        #[derive(Resource, Clone)]
+        struct LinkData {
+            id: u64,
+            t: ContentType,
+        }
+        world.insert_resource(LinkData { id, t: self });
+        Table::new("Active Links", |world| {
+            let LinkData { id, t } = world.resource::<LinkData>().clone();
+            TContentScore::collect_links(id, t)
+        })
+        .add_content_piece_columns(|s| {
+            cn().db
+                .content_piece()
+                .id()
+                .find(&s.link_to_u64().unwrap())
+                .unwrap()
+        })
+        .add_content_vote_columns(|d| d.id.clone())
+        .title()
+        .ui(ui, world);
+
+        Table::new("New Links", |world| {
+            let LinkData { id, t } = world.resource::<LinkData>().clone();
+            let links: HashSet<u64> = HashSet::from_iter(
+                TContentScore::collect_links(id, t)
+                    .into_iter()
+                    .filter_map(|l| l.link_to_u64()),
+            );
+            let t = t.to_server();
+            cn().db
+                .content_piece()
+                .iter()
+                .filter(|p| p.t == t && !links.contains(&p.id))
+                .map(|p| (format!("{id}_{}", p.id), p))
+                .collect_vec()
+        })
+        .add_content_piece_columns(|d| d.1.clone())
+        .add_content_vote_columns(|d| d.0.clone())
+        .title()
+        .ui(ui, world);
+    }
+    pub fn add_tile(self, world: &mut World) {
         Tile::new(Side::Left, move |ui, world| {
             if "Add New".cstr().button(ui).clicked() {
                 self.add_new(world);
@@ -310,7 +386,7 @@ impl ContentType {
                 p.visit(id, |parent, t, data| {
                     *data = t.find_data().unwrap_or_default();
                 });
-                p.show_node(ui, world);
+                p.show_node(id, ui, world);
             })
             .accept(|_| {})
             .accept_name("Close")
@@ -336,7 +412,7 @@ impl ContentType {
     fn show_error(e: &str, ui: &mut Ui) {
         Self::error_cstr(e).as_label(ui).truncate().ui(ui);
     }
-    fn show(self, data: &str, ui: &mut Ui, world: &mut World) {
+    pub fn show(self, data: &str, ui: &mut Ui, world: &mut World) {
         if data.is_empty() {
             "empty".cstr_cs(VISIBLE_DARK, CstrStyle::Small).label(ui);
             return;
@@ -406,25 +482,25 @@ impl ContentType {
     }
 }
 
-impl TContentLink {
-    fn to(&self) -> &str {
-        self.from_to.split_once('_').unwrap().1
+impl TContentScore {
+    fn link_to(&self) -> &str {
+        self.id.split_once('_').unwrap().1
     }
-    fn find(from: u64, to: u64) -> Option<Self> {
-        cn().db
-            .content_link()
-            .from_to()
-            .find(&format!("{from}_{to}"))
+    fn link_to_u64(&self) -> Option<u64> {
+        u64::from_str(self.link_to()).ok()
     }
-    fn collect(from: u64, to_type: ContentType) -> Vec<TContentLink> {
+    fn find_link(from: u64, to: u64) -> Option<Self> {
+        cn().db.content_score().id().find(&format!("{from}_{to}"))
+    }
+    fn collect_links(from: u64, to_type: ContentType) -> Vec<TContentScore> {
         let prefix = format!("{from}_");
         let t: SContentType = to_type.into();
         cn().db
-            .content_link()
+            .content_score()
             .iter()
             .filter(|l| {
-                l.from_to.starts_with(&prefix)
-                    && u64::from_str(l.to()).is_ok_and(|id| {
+                l.id.starts_with(&prefix)
+                    && u64::from_str(l.link_to()).is_ok_and(|id| {
                         cn().db
                             .content_piece()
                             .id()
@@ -433,442 +509,6 @@ impl TContentLink {
                     })
             })
             .collect_vec()
-    }
-}
-
-trait ContentPiece {
-    fn content_type(&self) -> ContentType;
-    fn inner(&self) -> Vec<Box<dyn ContentPiece>>;
-    fn visit(&mut self, parent: u64, f: fn(u64, ContentType, &mut String));
-    fn data(&self) -> &str;
-    fn data_mut(&mut self) -> &mut String;
-    fn show_node(&self, ui: &mut Ui, world: &mut World) {
-        const FRAME: Frame = Frame {
-            inner_margin: Margin::same(4.0),
-            outer_margin: Margin::ZERO,
-            rounding: Rounding::same(13.0),
-            shadow: Shadow::NONE,
-            fill: TRANSPARENT,
-            stroke: STROKE_DARK,
-        };
-        FRAME.show(ui, |ui| {
-            let ct = self.content_type();
-            ui.horizontal(|ui| {
-                if ct
-                    .name()
-                    .cstr_cs(CYAN, CstrStyle::Bold)
-                    .button(ui)
-                    .clicked()
-                {
-                    ct.add_tile(world);
-                }
-                ct.show(self.data(), ui, world);
-            });
-
-            ui.vertical(|ui| {
-                for i in self.inner() {
-                    i.show_node(ui, world);
-                }
-            })
-        });
-    }
-}
-
-fn id_by_data(data: &String) -> u64 {
-    cn().db
-        .content_piece()
-        .data()
-        .find(data)
-        .map(|d| d.id)
-        .unwrap_or_default()
-}
-
-impl ContentPiece for CUnit {
-    fn content_type(&self) -> ContentType {
-        ContentType::CUnit
-    }
-    fn inner(&self) -> Vec<Box<dyn ContentPiece>> {
-        let CUnit {
-            data: _,
-            description,
-            stats,
-            representation,
-        } = self;
-        vec![
-            Box::new(description.clone()),
-            Box::new(stats.clone()),
-            Box::new(representation.clone()),
-        ]
-    }
-    fn data(&self) -> &str {
-        &self.data
-    }
-    fn data_mut(&mut self) -> &mut String {
-        &mut self.data
-    }
-    fn visit(&mut self, _: u64, f: fn(u64, ContentType, &mut String)) {
-        let parent = id_by_data(&self.data);
-        self.description.visit(parent, f);
-        self.stats.visit(parent, f);
-    }
-}
-impl ContentPiece for CUnitDescription {
-    fn content_type(&self) -> ContentType {
-        ContentType::CUnitDescription
-    }
-    fn inner(&self) -> Vec<Box<dyn ContentPiece>> {
-        let CUnitDescription { data: _, trigger } = self;
-        vec![Box::new(trigger.clone())]
-    }
-    fn data(&self) -> &str {
-        &self.data
-    }
-    fn data_mut(&mut self) -> &mut String {
-        &mut self.data
-    }
-
-    fn visit(&mut self, parent: u64, f: fn(u64, ContentType, &mut String)) {
-        f(parent, self.content_type(), &mut self.data);
-        let parent = id_by_data(&self.data);
-        self.trigger.visit(parent, f);
-    }
-}
-impl ContentPiece for CUnitStats {
-    fn content_type(&self) -> ContentType {
-        ContentType::CUnitStats
-    }
-    fn inner(&self) -> Vec<Box<dyn ContentPiece>> {
-        default()
-    }
-    fn data(&self) -> &str {
-        &self.data
-    }
-    fn data_mut(&mut self) -> &mut String {
-        &mut self.data
-    }
-
-    fn visit(&mut self, parent: u64, f: fn(u64, ContentType, &mut String)) {
-        f(parent, self.content_type(), &mut self.data);
-    }
-}
-impl ContentPiece for CUnitRepresentation {
-    fn content_type(&self) -> ContentType {
-        ContentType::CUnitRepresentation
-    }
-    fn inner(&self) -> Vec<Box<dyn ContentPiece>> {
-        let CUnitRepresentation { data: _ } = self;
-        default()
-    }
-    fn data(&self) -> &str {
-        &self.data
-    }
-    fn data_mut(&mut self) -> &mut String {
-        &mut self.data
-    }
-
-    fn visit(&mut self, parent: u64, f: fn(u64, ContentType, &mut String)) {
-        f(parent, self.content_type(), &mut self.data);
-    }
-}
-impl ContentPiece for CUnitTrigger {
-    fn content_type(&self) -> ContentType {
-        ContentType::CUnitTrigger
-    }
-    fn inner(&self) -> Vec<Box<dyn ContentPiece>> {
-        let CUnitTrigger { data: _, ability } = self;
-        vec![Box::new(ability.clone())]
-    }
-    fn data(&self) -> &str {
-        &self.data
-    }
-    fn data_mut(&mut self) -> &mut String {
-        &mut self.data
-    }
-
-    fn visit(&mut self, parent: u64, f: fn(u64, ContentType, &mut String)) {
-        f(parent, self.content_type(), &mut self.data);
-        let parent = id_by_data(&self.data);
-        self.ability.visit(parent, f);
-    }
-}
-impl ContentPiece for CAbility {
-    fn content_type(&self) -> ContentType {
-        ContentType::CAbility
-    }
-    fn inner(&self) -> Vec<Box<dyn ContentPiece>> {
-        let CAbility {
-            data: _,
-            description,
-            house,
-        } = self;
-        vec![Box::new(description.clone()), Box::new(house.clone())]
-    }
-    fn data(&self) -> &str {
-        &self.data
-    }
-    fn data_mut(&mut self) -> &mut String {
-        &mut self.data
-    }
-
-    fn visit(&mut self, parent: u64, f: fn(u64, ContentType, &mut String)) {
-        f(parent, self.content_type(), &mut self.data);
-        let parent = id_by_data(&self.data);
-        self.description.visit(parent, f);
-        self.house.visit(parent, f);
-    }
-}
-impl ContentPiece for CAbilityDescription {
-    fn content_type(&self) -> ContentType {
-        ContentType::CAbilityDescription
-    }
-    fn inner(&self) -> Vec<Box<dyn ContentPiece>> {
-        let CAbilityDescription {
-            data: _,
-            status,
-            summon,
-            action,
-        } = self;
-        vec![
-            Box::new(status.clone().unwrap_or_default()),
-            Box::new(summon.clone().unwrap_or_default()),
-            Box::new(action.clone().unwrap_or_default()),
-        ]
-    }
-    fn data(&self) -> &str {
-        &self.data
-    }
-    fn data_mut(&mut self) -> &mut String {
-        &mut self.data
-    }
-
-    fn visit(&mut self, parent: u64, f: fn(u64, ContentType, &mut String)) {
-        f(parent, self.content_type(), &mut self.data);
-        let parent = id_by_data(&self.data);
-        if let Some(c) = &mut self.status {
-            c.visit(parent, f);
-        }
-        if let Some(c) = &mut self.summon {
-            c.visit(parent, f);
-        }
-        if let Some(c) = &mut self.action {
-            c.visit(parent, f);
-        }
-    }
-}
-impl ContentPiece for CEffect {
-    fn content_type(&self) -> ContentType {
-        ContentType::CEffect
-    }
-    fn inner(&self) -> Vec<Box<dyn ContentPiece>> {
-        let CEffect { data: _ } = self;
-        default()
-    }
-    fn data(&self) -> &str {
-        &self.data
-    }
-    fn data_mut(&mut self) -> &mut String {
-        &mut self.data
-    }
-
-    fn visit(&mut self, parent: u64, f: fn(u64, ContentType, &mut String)) {
-        f(parent, self.content_type(), &mut self.data);
-    }
-}
-impl ContentPiece for CStatus {
-    fn content_type(&self) -> ContentType {
-        ContentType::CStatus
-    }
-    fn inner(&self) -> Vec<Box<dyn ContentPiece>> {
-        let CStatus {
-            data: _,
-            description,
-        } = self;
-        vec![Box::new(description.clone())]
-    }
-    fn data(&self) -> &str {
-        &self.data
-    }
-    fn data_mut(&mut self) -> &mut String {
-        &mut self.data
-    }
-
-    fn visit(&mut self, parent: u64, f: fn(u64, ContentType, &mut String)) {
-        f(parent, self.content_type(), &mut self.data);
-        let parent = id_by_data(&self.data);
-        self.description.visit(parent, f);
-    }
-}
-impl ContentPiece for CSummon {
-    fn content_type(&self) -> ContentType {
-        ContentType::CSummon
-    }
-    fn inner(&self) -> Vec<Box<dyn ContentPiece>> {
-        let CSummon { data: _, stats } = self;
-        vec![Box::new(stats.clone())]
-    }
-    fn data(&self) -> &str {
-        &self.data
-    }
-    fn data_mut(&mut self) -> &mut String {
-        &mut self.data
-    }
-
-    fn visit(&mut self, parent: u64, f: fn(u64, ContentType, &mut String)) {
-        f(parent, self.content_type(), &mut self.data);
-        let parent = id_by_data(&self.data);
-        self.stats.visit(parent, f);
-    }
-}
-impl ContentPiece for CStatusDescription {
-    fn content_type(&self) -> ContentType {
-        ContentType::CStatusDescription
-    }
-    fn inner(&self) -> Vec<Box<dyn ContentPiece>> {
-        let CStatusDescription { data: _, trigger } = self;
-        vec![Box::new(trigger.clone())]
-    }
-    fn data(&self) -> &str {
-        &self.data
-    }
-    fn data_mut(&mut self) -> &mut String {
-        &mut self.data
-    }
-    fn visit(&mut self, parent: u64, f: fn(u64, ContentType, &mut String)) {
-        f(parent, self.content_type(), &mut self.data);
-        let parent = id_by_data(&self.data);
-        self.trigger.visit(parent, f);
-    }
-}
-impl ContentPiece for CStatusTrigger {
-    fn content_type(&self) -> ContentType {
-        ContentType::CStatusTrigger
-    }
-    fn inner(&self) -> Vec<Box<dyn ContentPiece>> {
-        let CStatusTrigger { data: _ } = self;
-        default()
-    }
-    fn data(&self) -> &str {
-        &self.data
-    }
-    fn data_mut(&mut self) -> &mut String {
-        &mut self.data
-    }
-
-    fn visit(&mut self, parent: u64, f: fn(u64, ContentType, &mut String)) {
-        f(parent, self.content_type(), &mut self.data);
-    }
-}
-impl ContentPiece for CHouse {
-    fn content_type(&self) -> ContentType {
-        ContentType::CHouse
-    }
-    fn inner(&self) -> Vec<Box<dyn ContentPiece>> {
-        let CHouse { data: _ } = self;
-        default()
-    }
-    fn data(&self) -> &str {
-        &self.data
-    }
-    fn data_mut(&mut self) -> &mut String {
-        &mut self.data
-    }
-
-    fn visit(&mut self, parent: u64, f: fn(u64, ContentType, &mut String)) {
-        f(parent, self.content_type(), &mut self.data);
-    }
-}
-impl Default for CUnit {
-    fn default() -> Self {
-        Self {
-            data: default(),
-            description: default(),
-            stats: default(),
-            representation: default(),
-        }
-    }
-}
-impl Default for CUnitDescription {
-    fn default() -> Self {
-        Self {
-            data: default(),
-            trigger: default(),
-        }
-    }
-}
-impl Default for CUnitStats {
-    fn default() -> Self {
-        Self { data: default() }
-    }
-}
-impl Default for CUnitRepresentation {
-    fn default() -> Self {
-        Self { data: default() }
-    }
-}
-impl Default for CUnitTrigger {
-    fn default() -> Self {
-        Self {
-            data: default(),
-            ability: default(),
-        }
-    }
-}
-impl Default for CAbility {
-    fn default() -> Self {
-        Self {
-            data: default(),
-            description: default(),
-            house: default(),
-        }
-    }
-}
-impl Default for CAbilityDescription {
-    fn default() -> Self {
-        Self {
-            data: default(),
-            status: Some(default()),
-            summon: Some(default()),
-            action: Some(default()),
-        }
-    }
-}
-impl Default for CEffect {
-    fn default() -> Self {
-        Self { data: default() }
-    }
-}
-impl Default for CStatusDescription {
-    fn default() -> Self {
-        Self {
-            data: default(),
-            trigger: default(),
-        }
-    }
-}
-impl Default for CStatus {
-    fn default() -> Self {
-        Self {
-            data: default(),
-            description: default(),
-        }
-    }
-}
-impl Default for CStatusTrigger {
-    fn default() -> Self {
-        Self { data: default() }
-    }
-}
-impl Default for CSummon {
-    fn default() -> Self {
-        Self {
-            data: default(),
-            stats: default(),
-        }
-    }
-}
-impl Default for CHouse {
-    fn default() -> Self {
-        Self { data: default() }
     }
 }
 

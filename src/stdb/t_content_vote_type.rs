@@ -12,7 +12,6 @@ use spacetimedb_sdk::{
 #[sats(crate = __lib)]
 pub struct TContentVote {
     pub id: String,
-    pub owner: u64,
     pub vote: i8,
 }
 

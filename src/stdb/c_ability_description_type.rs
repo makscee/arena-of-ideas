@@ -8,7 +8,7 @@ use spacetimedb_sdk::{
     lib as __lib, sats as __sats, ws_messages as __ws,
 };
 
-use super::c_action_type::CEffect;
+use super::c_effect_type::CEffect;
 use super::c_status_type::CStatus;
 use super::c_summon_type::CSummon;
 

@@ -13,27 +13,26 @@ struct TContentPiece {
     t: SContentType,
 }
 
-#[table(public, name = content_link)]
-struct TContentLink {
+#[table(public, name = content_score)]
+struct TContentScore {
     #[primary_key]
-    from_to: String,
+    id: String,
     score: i32,
 }
 
 #[table(public, name = content_vote)]
-struct TContentVotes {
+struct TContentVote {
     #[primary_key]
     id: String,
-    #[index(btree)]
-    owner: u64,
     vote: i8,
 }
 
 #[reducer]
-fn incubator_link_vote(ctx: &ReducerContext, from_to: String, vote: bool) -> Result<(), String> {
+fn incubator_vote(ctx: &ReducerContext, id: String, vote: bool) -> Result<(), String> {
     let player_id = ctx.player()?.id;
+    let vote_id = format!("{player_id}_{id}");
     let vote: i8 = if vote { 1 } else { -1 };
-    let delta = if let Some(mut row) = ctx.db.content_vote().id().find(&from_to) {
+    let delta = if let Some(mut row) = ctx.db.content_vote().id().find(&vote_id) {
         if row.vote == vote {
             return Err("Already voted".into());
         }
@@ -42,19 +41,17 @@ fn incubator_link_vote(ctx: &ReducerContext, from_to: String, vote: bool) -> Res
         ctx.db.content_vote().id().update(row);
         delta
     } else {
-        ctx.db.content_vote().insert(TContentVotes {
-            id: from_to.clone(),
-            owner: player_id,
-            vote,
-        });
+        ctx.db
+            .content_vote()
+            .insert(TContentVote { id: vote_id, vote });
         vote
     };
-    if let Some(mut link) = ctx.db.content_link().from_to().find(&from_to) {
+    if let Some(mut link) = ctx.db.content_score().id().find(&id) {
         link.score += delta as i32;
-        ctx.db.content_link().from_to().update(link);
+        ctx.db.content_score().id().update(link);
     } else {
-        ctx.db.content_link().insert(TContentLink {
-            from_to,
+        ctx.db.content_score().insert(TContentScore {
+            id,
             score: vote as i32,
         });
     }

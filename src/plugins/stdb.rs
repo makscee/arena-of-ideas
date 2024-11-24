@@ -42,7 +42,7 @@ pub enum StdbTable {
     player_tag,
     reward,
     content_piece,
-    content_link,
+    content_score,
     content_vote,
 }
 
@@ -317,7 +317,7 @@ impl StdbTable {
                     .0;
             }
             StdbTable::content_piece => todo!(),
-            StdbTable::content_link => todo!(),
+            StdbTable::content_score => todo!(),
             StdbTable::content_vote => todo!(),
         }
     }
@@ -408,7 +408,7 @@ impl StdbTable {
                 cn().db.reward().iter().collect_vec(),
             )),
             StdbTable::content_piece => todo!(),
-            StdbTable::content_link => todo!(),
+            StdbTable::content_score => todo!(),
             StdbTable::content_vote => todo!(),
         }
         .unwrap()
@@ -437,7 +437,7 @@ impl StdbTable {
             | StdbTable::player_game_stats
             | StdbTable::meta_shop
             | StdbTable::content_piece
-            | StdbTable::content_link
+            | StdbTable::content_score
             | StdbTable::content_vote
             | StdbTable::player_tag => Some(self.full()),
 
@@ -666,6 +666,13 @@ pub fn reducers_subscriptions(dbc: &DbConnection) {
     });
 
     r.on_accept_trade(|e, _| {
+        if !e.check_identity() {
+            return;
+        }
+        e.event.notify_error();
+    });
+
+    r.on_incubator_post(|e, _, _| {
         if !e.check_identity() {
             return;
         }

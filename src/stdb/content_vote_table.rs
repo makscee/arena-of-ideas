@@ -2,7 +2,7 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN RUST INSTEAD.
 
 #![allow(unused)]
-use super::t_content_votes_type::TContentVotes;
+use super::t_content_vote_type::TContentVote;
 use spacetimedb_sdk::{
     self as __sdk,
     anyhow::{self as __anyhow, Context as _},
@@ -18,7 +18,7 @@ use spacetimedb_sdk::{
 /// but to directly chain method calls,
 /// like `ctx.db.content_vote().on_insert(...)`.
 pub struct ContentVoteTableHandle<'ctx> {
-    imp: __sdk::db_connection::TableHandle<TContentVotes>,
+    imp: __sdk::db_connection::TableHandle<TContentVote>,
     ctx: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
@@ -35,7 +35,7 @@ pub trait ContentVoteTableAccess {
 impl ContentVoteTableAccess for super::RemoteTables {
     fn content_vote(&self) -> ContentVoteTableHandle<'_> {
         ContentVoteTableHandle {
-            imp: self.imp.get_table::<TContentVotes>("content_vote"),
+            imp: self.imp.get_table::<TContentVote>("content_vote"),
             ctx: std::marker::PhantomData,
         }
     }
@@ -45,13 +45,13 @@ pub struct ContentVoteInsertCallbackId(__sdk::callbacks::CallbackId);
 pub struct ContentVoteDeleteCallbackId(__sdk::callbacks::CallbackId);
 
 impl<'ctx> __sdk::table::Table for ContentVoteTableHandle<'ctx> {
-    type Row = TContentVotes;
+    type Row = TContentVote;
     type EventContext = super::EventContext;
 
     fn count(&self) -> u64 {
         self.imp.count()
     }
-    fn iter(&self) -> impl Iterator<Item = TContentVotes> + '_ {
+    fn iter(&self) -> impl Iterator<Item = TContentVote> + '_ {
         self.imp.iter()
     }
 
@@ -102,10 +102,10 @@ impl<'ctx> __sdk::table::TableWithPrimaryKey for ContentVoteTableHandle<'ctx> {
 #[doc(hidden)]
 pub(super) fn parse_table_update(
     raw_updates: __ws::TableUpdate<__ws::BsatnFormat>,
-) -> __anyhow::Result<__sdk::spacetime_module::TableUpdate<TContentVotes>> {
+) -> __anyhow::Result<__sdk::spacetime_module::TableUpdate<TContentVote>> {
     __sdk::spacetime_module::TableUpdate::parse_table_update_with_primary_key::<String>(
         raw_updates,
-        |row: &TContentVotes| &row.id,
+        |row: &TContentVote| &row.id,
     )
     .context("Failed to parse table update for table \"content_vote\"")
 }
@@ -118,7 +118,7 @@ pub(super) fn parse_table_update(
 /// but to directly chain method calls,
 /// like `ctx.db.content_vote().id().find(...)`.
 pub struct ContentVoteIdUnique<'ctx> {
-    imp: __sdk::client_cache::UniqueConstraint<TContentVotes, String>,
+    imp: __sdk::client_cache::UniqueConstraint<TContentVote, String>,
     phantom: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
@@ -137,7 +137,7 @@ impl<'ctx> ContentVoteTableHandle<'ctx> {
 impl<'ctx> ContentVoteIdUnique<'ctx> {
     /// Find the subscribed row whose `id` column value is equal to `col_val`,
     /// if such a row is present in the client cache.
-    pub fn find(&self, col_val: &String) -> Option<TContentVotes> {
+    pub fn find(&self, col_val: &String) -> Option<TContentVote> {
         self.imp.find(col_val)
     }
 }
