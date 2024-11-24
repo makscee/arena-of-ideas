@@ -10,10 +10,10 @@ use spacetimedb_sdk::{
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct CAction {
+pub struct CEffect {
     pub data: String,
 }
 
-impl __sdk::spacetime_module::InModule for CAction {
+impl __sdk::spacetime_module::InModule for CEffect {
     type Module = super::RemoteModule;
 }

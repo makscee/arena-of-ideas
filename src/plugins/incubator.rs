@@ -246,23 +246,45 @@ impl ContentType {
                 #[derive(Resource, Default)]
                 struct NewData {
                     name: String,
-                    color: Color32,
+                    color: [u8; 3],
                 }
                 world.init_resource::<NewData>();
                 add_new_popup(
                     move |ui, world| {
                         let mut r = world.resource_mut::<NewData>();
                         Input::new("name").ui_string(&mut r.name, ui);
-                        ui.color_edit_button_srgba(&mut r.color);
+                        ui.color_edit_button_srgb(&mut r.color);
                     },
                     move |world| {
-                        let NewData { name, color } = world.remove_resource::<NewData>().unwrap();
+                        let NewData { name, color: c } =
+                            world.remove_resource::<NewData>().unwrap();
+                        let color = Color32::from_rgb(c[0], c[1], c[2]);
                         Ok((self, format!("{name}/{}", color.to_hex())))
                     },
                     world,
                 );
             }
-            ContentType::CAction => todo!(),
+            ContentType::CEffect => {
+                #[derive(Resource, Default)]
+                struct NewData {
+                    data: Effect,
+                }
+                world.init_resource::<NewData>();
+                add_new_popup(
+                    move |ui, world| {
+                        world.resource_scope(|world, mut r: Mut<NewData>| {
+                            r.data.show_node("", &Context::empty(), world, ui);
+                        });
+                    },
+                    move |world| {
+                        let data = world.remove_resource::<NewData>().unwrap();
+                        ron::to_string(&data.data)
+                            .map(|v| (self, v))
+                            .map_err(|e| e.to_string())
+                    },
+                    world,
+                );
+            }
         }
     }
     fn find_data(self) -> Option<String> {
@@ -275,16 +297,6 @@ impl ContentType {
             .map(|p| p.data)
     }
     fn open(self, id: u64, world: &mut World) {
-        Tile::new(Side::Left, move |ui, world| {
-            let mut p = self.content_piece();
-            p.visit(id, |parent, t, data| {
-                *data = t.find_data().unwrap_or_default();
-            });
-            p.show_node(ui, world);
-        })
-        .transparent()
-        .push(world);
-        return;
         Confirmation::new("Content Piece")
             .content(move |ui, world| {
                 let Some(piece) = cn().db.content_piece().id().find(&id) else {
@@ -293,7 +305,12 @@ impl ContentType {
                 if piece.owner == player_id() && "Delete".cstr_c(RED).button(ui).clicked() {
                     Self::delete(self, id, world);
                 }
-                self.show(&piece.data, ui, world);
+                let mut p = self.content_piece();
+                *p.data_mut() = cn().db.content_piece().id().find(&id).unwrap().data;
+                p.visit(id, |parent, t, data| {
+                    *data = t.find_data().unwrap_or_default();
+                });
+                p.show_node(ui, world);
             })
             .accept(|_| {})
             .accept_name("Close")
@@ -320,6 +337,10 @@ impl ContentType {
         Self::error_cstr(e).as_label(ui).truncate().ui(ui);
     }
     fn show(self, data: &str, ui: &mut Ui, world: &mut World) {
+        if data.is_empty() {
+            "empty".cstr_cs(VISIBLE_DARK, CstrStyle::Small).label(ui);
+            return;
+        }
         match self {
             ContentType::CUnit
             | ContentType::CAbility
@@ -360,7 +381,7 @@ impl ContentType {
                 }
                 Err(e) => Self::show_error(&e, ui),
             },
-            ContentType::CAction => {
+            ContentType::CEffect => {
                 data.cstr().label(ui);
             }
         }
@@ -374,7 +395,7 @@ impl ContentType {
             ContentType::CUnitTrigger => Box::new(CUnitTrigger::default()),
             ContentType::CUnitRepresentation => Box::new(CUnitRepresentation::default()),
             ContentType::CAbility => Box::new(CAbility::default()),
-            ContentType::CAction => Box::new(CAction::default()),
+            ContentType::CEffect => Box::new(CEffect::default()),
             ContentType::CAbilityDescription => Box::new(CAbilityDescription::default()),
             ContentType::CHouse => Box::new(CHouse::default()),
             ContentType::CStatus => Box::new(CStatus::default()),
@@ -420,7 +441,7 @@ trait ContentPiece {
     fn inner(&self) -> Vec<Box<dyn ContentPiece>>;
     fn visit(&mut self, parent: u64, f: fn(u64, ContentType, &mut String));
     fn data(&self) -> &str;
-    fn inject_data(&mut self, data: String);
+    fn data_mut(&mut self) -> &mut String;
     fn show_node(&self, ui: &mut Ui, world: &mut World) {
         const FRAME: Frame = Frame {
             inner_margin: Margin::same(4.0),
@@ -482,8 +503,8 @@ impl ContentPiece for CUnit {
     fn data(&self) -> &str {
         &self.data
     }
-    fn inject_data(&mut self, data: String) {
-        self.data = data;
+    fn data_mut(&mut self) -> &mut String {
+        &mut self.data
     }
     fn visit(&mut self, _: u64, f: fn(u64, ContentType, &mut String)) {
         let parent = id_by_data(&self.data);
@@ -502,9 +523,10 @@ impl ContentPiece for CUnitDescription {
     fn data(&self) -> &str {
         &self.data
     }
-    fn inject_data(&mut self, data: String) {
-        self.data = data;
+    fn data_mut(&mut self) -> &mut String {
+        &mut self.data
     }
+
     fn visit(&mut self, parent: u64, f: fn(u64, ContentType, &mut String)) {
         f(parent, self.content_type(), &mut self.data);
         let parent = id_by_data(&self.data);
@@ -521,9 +543,10 @@ impl ContentPiece for CUnitStats {
     fn data(&self) -> &str {
         &self.data
     }
-    fn inject_data(&mut self, data: String) {
-        self.data = data;
+    fn data_mut(&mut self) -> &mut String {
+        &mut self.data
     }
+
     fn visit(&mut self, parent: u64, f: fn(u64, ContentType, &mut String)) {
         f(parent, self.content_type(), &mut self.data);
     }
@@ -539,9 +562,10 @@ impl ContentPiece for CUnitRepresentation {
     fn data(&self) -> &str {
         &self.data
     }
-    fn inject_data(&mut self, data: String) {
-        self.data = data;
+    fn data_mut(&mut self) -> &mut String {
+        &mut self.data
     }
+
     fn visit(&mut self, parent: u64, f: fn(u64, ContentType, &mut String)) {
         f(parent, self.content_type(), &mut self.data);
     }
@@ -557,9 +581,10 @@ impl ContentPiece for CUnitTrigger {
     fn data(&self) -> &str {
         &self.data
     }
-    fn inject_data(&mut self, data: String) {
-        self.data = data;
+    fn data_mut(&mut self) -> &mut String {
+        &mut self.data
     }
+
     fn visit(&mut self, parent: u64, f: fn(u64, ContentType, &mut String)) {
         f(parent, self.content_type(), &mut self.data);
         let parent = id_by_data(&self.data);
@@ -581,9 +606,10 @@ impl ContentPiece for CAbility {
     fn data(&self) -> &str {
         &self.data
     }
-    fn inject_data(&mut self, data: String) {
-        self.data = data;
+    fn data_mut(&mut self) -> &mut String {
+        &mut self.data
     }
+
     fn visit(&mut self, parent: u64, f: fn(u64, ContentType, &mut String)) {
         f(parent, self.content_type(), &mut self.data);
         let parent = id_by_data(&self.data);
@@ -611,9 +637,10 @@ impl ContentPiece for CAbilityDescription {
     fn data(&self) -> &str {
         &self.data
     }
-    fn inject_data(&mut self, data: String) {
-        self.data = data;
+    fn data_mut(&mut self) -> &mut String {
+        &mut self.data
     }
+
     fn visit(&mut self, parent: u64, f: fn(u64, ContentType, &mut String)) {
         f(parent, self.content_type(), &mut self.data);
         let parent = id_by_data(&self.data);
@@ -628,20 +655,21 @@ impl ContentPiece for CAbilityDescription {
         }
     }
 }
-impl ContentPiece for CAction {
+impl ContentPiece for CEffect {
     fn content_type(&self) -> ContentType {
-        ContentType::CAction
+        ContentType::CEffect
     }
     fn inner(&self) -> Vec<Box<dyn ContentPiece>> {
-        let CAction { data: _ } = self;
+        let CEffect { data: _ } = self;
         default()
     }
     fn data(&self) -> &str {
         &self.data
     }
-    fn inject_data(&mut self, data: String) {
-        self.data = data;
+    fn data_mut(&mut self) -> &mut String {
+        &mut self.data
     }
+
     fn visit(&mut self, parent: u64, f: fn(u64, ContentType, &mut String)) {
         f(parent, self.content_type(), &mut self.data);
     }
@@ -660,9 +688,10 @@ impl ContentPiece for CStatus {
     fn data(&self) -> &str {
         &self.data
     }
-    fn inject_data(&mut self, data: String) {
-        self.data = data;
+    fn data_mut(&mut self) -> &mut String {
+        &mut self.data
     }
+
     fn visit(&mut self, parent: u64, f: fn(u64, ContentType, &mut String)) {
         f(parent, self.content_type(), &mut self.data);
         let parent = id_by_data(&self.data);
@@ -680,9 +709,10 @@ impl ContentPiece for CSummon {
     fn data(&self) -> &str {
         &self.data
     }
-    fn inject_data(&mut self, data: String) {
-        self.data = data;
+    fn data_mut(&mut self) -> &mut String {
+        &mut self.data
     }
+
     fn visit(&mut self, parent: u64, f: fn(u64, ContentType, &mut String)) {
         f(parent, self.content_type(), &mut self.data);
         let parent = id_by_data(&self.data);
@@ -700,8 +730,8 @@ impl ContentPiece for CStatusDescription {
     fn data(&self) -> &str {
         &self.data
     }
-    fn inject_data(&mut self, data: String) {
-        self.data = data;
+    fn data_mut(&mut self) -> &mut String {
+        &mut self.data
     }
     fn visit(&mut self, parent: u64, f: fn(u64, ContentType, &mut String)) {
         f(parent, self.content_type(), &mut self.data);
@@ -720,9 +750,10 @@ impl ContentPiece for CStatusTrigger {
     fn data(&self) -> &str {
         &self.data
     }
-    fn inject_data(&mut self, data: String) {
-        self.data = data;
+    fn data_mut(&mut self) -> &mut String {
+        &mut self.data
     }
+
     fn visit(&mut self, parent: u64, f: fn(u64, ContentType, &mut String)) {
         f(parent, self.content_type(), &mut self.data);
     }
@@ -738,14 +769,14 @@ impl ContentPiece for CHouse {
     fn data(&self) -> &str {
         &self.data
     }
-    fn inject_data(&mut self, data: String) {
-        self.data = data;
+    fn data_mut(&mut self) -> &mut String {
+        &mut self.data
     }
+
     fn visit(&mut self, parent: u64, f: fn(u64, ContentType, &mut String)) {
         f(parent, self.content_type(), &mut self.data);
     }
 }
-
 impl Default for CUnit {
     fn default() -> Self {
         Self {
@@ -801,7 +832,7 @@ impl Default for CAbilityDescription {
         }
     }
 }
-impl Default for CAction {
+impl Default for CEffect {
     fn default() -> Self {
         Self { data: default() }
     }
@@ -898,6 +929,18 @@ impl ContentType {
             _ => Err(format!(
                 "Wrong content type. Expected: {} Got {self}",
                 ContentType::CHouse
+            )),
+        }
+    }
+    fn parse_effect(self, data: &str) -> Result<Effect, String> {
+        match self {
+            ContentType::CEffect => match ron::from_str::<Effect>(data) {
+                Ok(v) => Ok(v),
+                Err(e) => Err(format!("Failed to parse {self}: {e}")),
+            },
+            _ => Err(format!(
+                "Wrong content type. Expected: {} Got {self}",
+                ContentType::CEffect
             )),
         }
     }

@@ -102,7 +102,7 @@ pub enum SContentType {
     CUnitRepresentation,
     CAbility,
     CAbilityDescription,
-    CAction,
+    CEffect,
     CHouse,
     CStatus,
     CStatusDescription,
@@ -150,14 +150,14 @@ struct CAbilityDescription {
     data: String,
     status: Option<CStatus>,
     summon: Option<CSummon>,
-    action: Option<CAction>,
+    action: Option<CEffect>,
 }
 #[derive(SpacetimeType)]
 struct CHouse {
     data: String,
 }
 #[derive(SpacetimeType)]
-struct CAction {
+struct CEffect {
     data: String,
 }
 #[derive(SpacetimeType)]

@@ -183,7 +183,7 @@ impl ToCstr for Trigger {
                     })
                     .collect_vec();
                 let triggers = triggers.join("").cstr_s(CstrStyle::Small);
-                c = c + "\ntrg: " + &triggers;
+                c += &("\ntrg: ".cstr_cs(EVENT_COLOR, CstrStyle::Small) + &triggers);
 
                 let targets = targets
                     .iter()
@@ -195,7 +195,7 @@ impl ToCstr for Trigger {
                     })
                     .collect_vec();
                 let targets = targets.join("").cstr_s(CstrStyle::Small);
-                c = c + "\ntar: " + &targets;
+                c += &("\ntar: ".cstr_cs(TARGET_COLOR, CstrStyle::Small) + &targets);
 
                 let effects = effects
                     .iter()
@@ -207,7 +207,7 @@ impl ToCstr for Trigger {
                     })
                     .collect_vec();
                 let effects = effects.join("").cstr_s(CstrStyle::Small);
-                c = c + "\neff: " + &effects;
+                c += &("\neff: ".cstr_cs(EFFECT_COLOR, CstrStyle::Small) + &effects);
                 c
             }
             Trigger::Change { .. } => "Change".cstr(),
