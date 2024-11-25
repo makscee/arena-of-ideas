@@ -75,6 +75,7 @@ impl ContentPiece for CUnit {
         let parent = id_by_data(&self.data);
         self.description.visit(parent, f);
         self.stats.visit(parent, f);
+        self.representation.visit(parent, f);
     }
 }
 impl ContentPiece for CUnitDescription {
@@ -91,7 +92,6 @@ impl ContentPiece for CUnitDescription {
     fn data_mut(&mut self) -> &mut String {
         &mut self.data
     }
-
     fn visit(&mut self, parent: u64, f: fn(u64, ContentType, &mut String)) {
         f(parent, self.content_type(), &mut self.data);
         let parent = id_by_data(&self.data);
@@ -111,7 +111,6 @@ impl ContentPiece for CUnitStats {
     fn data_mut(&mut self) -> &mut String {
         &mut self.data
     }
-
     fn visit(&mut self, parent: u64, f: fn(u64, ContentType, &mut String)) {
         f(parent, self.content_type(), &mut self.data);
     }
@@ -130,7 +129,6 @@ impl ContentPiece for CUnitRepresentation {
     fn data_mut(&mut self) -> &mut String {
         &mut self.data
     }
-
     fn visit(&mut self, parent: u64, f: fn(u64, ContentType, &mut String)) {
         f(parent, self.content_type(), &mut self.data);
     }
@@ -149,7 +147,6 @@ impl ContentPiece for CUnitTrigger {
     fn data_mut(&mut self) -> &mut String {
         &mut self.data
     }
-
     fn visit(&mut self, parent: u64, f: fn(u64, ContentType, &mut String)) {
         f(parent, self.content_type(), &mut self.data);
         let parent = id_by_data(&self.data);
@@ -174,7 +171,6 @@ impl ContentPiece for CAbility {
     fn data_mut(&mut self) -> &mut String {
         &mut self.data
     }
-
     fn visit(&mut self, parent: u64, f: fn(u64, ContentType, &mut String)) {
         f(parent, self.content_type(), &mut self.data);
         let parent = id_by_data(&self.data);
@@ -205,7 +201,6 @@ impl ContentPiece for CAbilityDescription {
     fn data_mut(&mut self) -> &mut String {
         &mut self.data
     }
-
     fn visit(&mut self, parent: u64, f: fn(u64, ContentType, &mut String)) {
         f(parent, self.content_type(), &mut self.data);
         let parent = id_by_data(&self.data);
@@ -234,7 +229,6 @@ impl ContentPiece for CEffect {
     fn data_mut(&mut self) -> &mut String {
         &mut self.data
     }
-
     fn visit(&mut self, parent: u64, f: fn(u64, ContentType, &mut String)) {
         f(parent, self.content_type(), &mut self.data);
     }
@@ -256,7 +250,6 @@ impl ContentPiece for CStatus {
     fn data_mut(&mut self) -> &mut String {
         &mut self.data
     }
-
     fn visit(&mut self, parent: u64, f: fn(u64, ContentType, &mut String)) {
         f(parent, self.content_type(), &mut self.data);
         let parent = id_by_data(&self.data);
@@ -277,7 +270,6 @@ impl ContentPiece for CSummon {
     fn data_mut(&mut self) -> &mut String {
         &mut self.data
     }
-
     fn visit(&mut self, parent: u64, f: fn(u64, ContentType, &mut String)) {
         f(parent, self.content_type(), &mut self.data);
         let parent = id_by_data(&self.data);
@@ -318,7 +310,6 @@ impl ContentPiece for CStatusTrigger {
     fn data_mut(&mut self) -> &mut String {
         &mut self.data
     }
-
     fn visit(&mut self, parent: u64, f: fn(u64, ContentType, &mut String)) {
         f(parent, self.content_type(), &mut self.data);
     }
@@ -337,7 +328,6 @@ impl ContentPiece for CHouse {
     fn data_mut(&mut self) -> &mut String {
         &mut self.data
     }
-
     fn visit(&mut self, parent: u64, f: fn(u64, ContentType, &mut String)) {
         f(parent, self.content_type(), &mut self.data);
     }

@@ -388,12 +388,33 @@ impl ContentType {
                 if piece.owner == player_id() && "Delete".cstr_c(RED).button(ui).clicked() {
                     Self::delete(self, id, world);
                 }
-                let mut p = self.content_piece();
-                *p.data_mut() = cn().db.content_piece().id().find(&id).unwrap().data;
-                p.visit(id, |parent, t, data| {
-                    *data = t.find_data().unwrap_or_default();
-                });
-                p.show_node(id, ui, world);
+                fn fill_and_show(
+                    piece: &mut Box<impl ContentPiece + ?Sized>,
+                    id: u64,
+                    ui: &mut Ui,
+                    world: &mut World,
+                ) {
+                    *piece.data_mut() = cn().db.content_piece().id().find(&id).unwrap().data;
+                    piece.visit(id, |parent, t, data| {
+                        *data = t.find_data().unwrap_or_default();
+                    });
+                    piece.show_node(id, ui, world);
+                }
+                if matches!(self, ContentType::CUnit) {
+                    let mut unit = Box::new(CUnit::default());
+                    ui.horizontal(|ui| {
+                        fill_and_show(&mut unit, id, ui, world);
+                        ui.vertical(|ui| match unit.to_packed() {
+                            Ok(unit) => {
+                                cached_packed_card(&unit, ui, world).unwrap();
+                            }
+                            Err(e) => e.notify_error(world),
+                        });
+                    });
+                } else {
+                    let mut p = self.content_piece();
+                    fill_and_show(&mut p, id, ui, world);
+                }
             })
             .accept(|_| {})
             .accept_name("Close")
@@ -523,7 +544,7 @@ impl TContentVoteScore {
 }
 
 impl ContentType {
-    fn parse_stats(self, data: &str) -> Result<(i32, i32), String> {
+    pub fn parse_stats(self, data: &str) -> Result<(i32, i32), String> {
         match self {
             ContentType::CUnitStats => {
                 let Some((pwr, hp)) = data.split_once('/') else {
@@ -539,7 +560,7 @@ impl ContentType {
             )),
         }
     }
-    fn parse_trigger(self, data: &str) -> Result<Trigger, String> {
+    pub fn parse_trigger(self, data: &str) -> Result<Trigger, String> {
         match self {
             ContentType::CUnitTrigger | ContentType::CStatusTrigger => {
                 match ron::from_str::<Trigger>(data) {
@@ -554,7 +575,7 @@ impl ContentType {
             )),
         }
     }
-    fn parse_representation(self, data: &str) -> Result<Representation, String> {
+    pub fn parse_representation(self, data: &str) -> Result<Representation, String> {
         match self {
             ContentType::CUnitRepresentation => match ron::from_str::<Representation>(data) {
                 Ok(v) => Ok(v),
@@ -566,7 +587,7 @@ impl ContentType {
             )),
         }
     }
-    fn parse_house(self, data: &str) -> Result<(String, Color32), String> {
+    pub fn parse_house(self, data: &str) -> Result<(String, Color32), String> {
         match self {
             ContentType::CHouse => match data.split_once('/') {
                 Some((name, color)) => {
@@ -582,7 +603,7 @@ impl ContentType {
             )),
         }
     }
-    fn parse_effect(self, data: &str) -> Result<Effect, String> {
+    pub fn parse_effect(self, data: &str) -> Result<Effect, String> {
         match self {
             ContentType::CEffect => match ron::from_str::<Effect>(data) {
                 Ok(v) => Ok(v),

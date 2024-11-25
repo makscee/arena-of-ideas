@@ -308,26 +308,54 @@ impl From<FusedUnit> for PackedUnit {
     }
 }
 
-trait BaseUnitExtract {
-    fn triggers(&self) -> Vec<(FireTrigger, Option<String>)>;
-    fn targets(&self) -> Vec<(Expression, Option<String>)>;
-    fn effects(&self) -> Vec<(Effect, Option<String>)>;
+impl CUnit {
+    pub fn to_packed(self) -> Result<PackedUnit, String> {
+        let name = self.data;
+        let (pwr, hp) = self.stats.content_type().parse_stats(&self.stats.data)?;
+        let trigger = self.description.trigger;
+        let (house, _) = trigger
+            .ability
+            .house
+            .content_type()
+            .parse_house(&trigger.ability.house.data)?;
+        let trigger = trigger.content_type().parse_trigger(&trigger.data)?;
+        let representation = self
+            .representation
+            .content_type()
+            .parse_representation(&self.representation.data)?;
+
+        Ok(PackedUnit {
+            name,
+            pwr,
+            hp,
+            rarity: 0,
+            houses: vec![house],
+            representation,
+            trigger,
+            pwr_mutation: 0,
+            hp_mutation: 0,
+            lvl: 1,
+            xp: 0,
+            state: default(),
+            statuses: default(),
+        })
+    }
 }
 
-impl BaseUnitExtract for TBaseUnit {
-    fn triggers(&self) -> Vec<(FireTrigger, Option<String>)> {
+impl TBaseUnit {
+    pub fn triggers(&self) -> Vec<(FireTrigger, Option<String>)> {
         self.triggers
             .iter()
             .map(|t| ron::from_str::<(FireTrigger, Option<String>)>(t).unwrap())
             .collect_vec()
     }
-    fn targets(&self) -> Vec<(Expression, Option<String>)> {
+    pub fn targets(&self) -> Vec<(Expression, Option<String>)> {
         self.targets
             .iter()
             .map(|t| ron::from_str::<(Expression, Option<String>)>(t).unwrap())
             .collect_vec()
     }
-    fn effects(&self) -> Vec<(Effect, Option<String>)> {
+    pub fn effects(&self) -> Vec<(Effect, Option<String>)> {
         self.effects
             .iter()
             .map(|t| ron::from_str::<(Effect, Option<String>)>(t).unwrap())

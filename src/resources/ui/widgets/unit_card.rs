@@ -350,12 +350,24 @@ pub fn cached_fused_card(unit: &FusedUnit, ui: &mut Ui, world: &mut World) -> Re
         .ui(ui);
     Ok(())
 }
-
 pub fn cached_base_card(unit: &TBaseUnit, ui: &mut Ui, world: &mut World) -> Result<()> {
     let id = unit.name.to_string();
     let mut cache = UNIT_CARD_CACHE.get_or_init(|| default()).lock().unwrap();
     if !cache.contains_key(&id) {
         let unit: PackedUnit = unit.clone().into();
+        cache_packed_unit(id.clone(), unit, &mut cache, world)?;
+    }
+    cache
+        .get(&id)
+        .context("Failed to get cached card context")?
+        .ui(ui);
+    Ok(())
+}
+pub fn cached_packed_card(unit: &PackedUnit, ui: &mut Ui, world: &mut World) -> Result<()> {
+    let id = unit.name.to_string();
+    let mut cache = UNIT_CARD_CACHE.get_or_init(|| default()).lock().unwrap();
+    if !cache.contains_key(&id) {
+        let unit: PackedUnit = unit.clone();
         cache_packed_unit(id.clone(), unit, &mut cache, world)?;
     }
     cache
