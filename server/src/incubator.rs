@@ -13,8 +13,8 @@ struct TContentPiece {
     t: SContentType,
 }
 
-#[table(public, name = content_score)]
-struct TContentScore {
+#[table(public, name = content_vote_score)]
+struct TContentVoteScore {
     #[primary_key]
     id: String,
     score: i32,
@@ -25,6 +25,73 @@ struct TContentVote {
     #[primary_key]
     id: String,
     vote: i8,
+}
+
+#[table(public, name = content_favorite_score)]
+struct TContentFavoriteScore {
+    #[primary_key]
+    type_target: String,
+    score: u32,
+}
+
+#[table(public, name = content_favorite)]
+struct TContentFavorite {
+    #[primary_key]
+    owner_type: String,
+    target: String,
+}
+
+#[reducer]
+fn incubator_favorite(
+    ctx: &ReducerContext,
+    type_key: String,
+    target: String,
+) -> Result<(), String> {
+    let player_id = ctx.player()?.id;
+    let key = format!("{player_id}_{type_key}");
+    let score_key = format!("{type_key}_{target}");
+    if let Some(mut prev) = ctx.db.content_favorite().owner_type().find(&key) {
+        if prev.target == target {
+            return Err(format!("Favorite of {type_key} already set to {target}"));
+        }
+        let old_score_key = format!("{type_key}_{}", prev.target);
+        if let Some(mut old_score) = ctx
+            .db
+            .content_favorite_score()
+            .type_target()
+            .find(old_score_key)
+        {
+            old_score.score -= 1;
+            ctx.db
+                .content_favorite_score()
+                .type_target()
+                .update(old_score);
+        }
+        prev.target = target;
+        ctx.db.content_favorite().owner_type().update(prev);
+    } else {
+        ctx.db.content_favorite().insert(TContentFavorite {
+            owner_type: key,
+            target,
+        });
+    }
+    if let Some(mut row) = ctx
+        .db
+        .content_favorite_score()
+        .type_target()
+        .find(&score_key)
+    {
+        row.score += 1;
+        ctx.db.content_favorite_score().type_target().update(row);
+    } else {
+        ctx.db
+            .content_favorite_score()
+            .insert(TContentFavoriteScore {
+                type_target: score_key,
+                score: 1,
+            });
+    }
+    Ok(())
 }
 
 #[reducer]
@@ -46,11 +113,11 @@ fn incubator_vote(ctx: &ReducerContext, id: String, vote: bool) -> Result<(), St
             .insert(TContentVote { id: vote_id, vote });
         vote
     };
-    if let Some(mut link) = ctx.db.content_score().id().find(&id) {
+    if let Some(mut link) = ctx.db.content_vote_score().id().find(&id) {
         link.score += delta as i32;
-        ctx.db.content_score().id().update(link);
+        ctx.db.content_vote_score().id().update(link);
     } else {
-        ctx.db.content_score().insert(TContentScore {
+        ctx.db.content_vote_score().insert(TContentVoteScore {
             id,
             score: vote as i32,
         });

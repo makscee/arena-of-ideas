@@ -311,7 +311,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
             Box::new(move |d| {
                 let id = f(d);
                 cn().db
-                    .content_score()
+                    .content_vote_score()
                     .id()
                     .find(&id)
                     .map(|l| l.score)
@@ -333,6 +333,37 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
             Box::new(move |d, ui, b| {
                 b.active(IncubatorPlugin::get_vote(player_id(), &f(d)) == -1)
                     .red(ui)
+            }),
+        )
+    }
+    pub fn add_content_favorite_columns(self, f: fn(&T) -> (String, String)) -> Self {
+        self.column_int_dyn(
+            "fav",
+            Box::new(move |d| {
+                let (type_key, target) = f(d);
+                let key = format!("{type_key}_{target}");
+                cn().db
+                    .content_favorite_score()
+                    .type_target()
+                    .find(&key)
+                    .map(|d| d.score as i32)
+                    .unwrap_or_default()
+            }),
+        )
+        .column_btn_mod_dyn(
+            "♥",
+            Box::new(move |d, _, _| {
+                let (t, target) = f(d);
+                cn().reducers.incubator_favorite(t, target).unwrap();
+            }),
+            Box::new(move |d, _, b| {
+                let (type_key, target) = f(d);
+                let owner_type = format!("{}_{type_key}", player_id());
+                if let Some(fav) = cn().db.content_favorite().owner_type().find(&owner_type) {
+                    b.active(fav.target == target)
+                } else {
+                    b
+                }
             }),
         )
     }

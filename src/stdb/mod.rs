@@ -39,8 +39,10 @@ pub mod c_unit_stats_type;
 pub mod c_unit_trigger_type;
 pub mod c_unit_type;
 pub mod cleanup_reducer;
+pub mod content_favorite_score_table;
+pub mod content_favorite_table;
 pub mod content_piece_table;
-pub mod content_score_table;
+pub mod content_vote_score_table;
 pub mod content_vote_table;
 pub mod craft_hero_reducer;
 pub mod daily_state_table;
@@ -66,6 +68,7 @@ pub mod global_settings_type;
 pub mod house_table;
 pub mod identity_disconnected_reducer;
 pub mod incubator_delete_reducer;
+pub mod incubator_favorite_reducer;
 pub mod incubator_post_reducer;
 pub mod incubator_vote_reducer;
 pub mod inflating_int_type;
@@ -125,8 +128,10 @@ pub mod t_auction_type;
 pub mod t_base_unit_type;
 pub mod t_battle_result_type;
 pub mod t_battle_type;
+pub mod t_content_favorite_score_type;
+pub mod t_content_favorite_type;
 pub mod t_content_piece_type;
-pub mod t_content_score_type;
+pub mod t_content_vote_score_type;
 pub mod t_content_vote_type;
 pub mod t_daily_state_type;
 pub mod t_global_event_type;
@@ -199,8 +204,10 @@ pub use c_unit_stats_type::*;
 pub use c_unit_trigger_type::*;
 pub use c_unit_type::*;
 pub use cleanup_reducer::*;
+pub use content_favorite_score_table::*;
+pub use content_favorite_table::*;
 pub use content_piece_table::*;
-pub use content_score_table::*;
+pub use content_vote_score_table::*;
 pub use content_vote_table::*;
 pub use craft_hero_reducer::*;
 pub use daily_state_table::*;
@@ -226,6 +233,7 @@ pub use global_settings_type::*;
 pub use house_table::*;
 pub use identity_disconnected_reducer::*;
 pub use incubator_delete_reducer::*;
+pub use incubator_favorite_reducer::*;
 pub use incubator_post_reducer::*;
 pub use incubator_vote_reducer::*;
 pub use inflating_int_type::*;
@@ -285,8 +293,10 @@ pub use t_auction_type::*;
 pub use t_base_unit_type::*;
 pub use t_battle_result_type::*;
 pub use t_battle_type::*;
+pub use t_content_favorite_score_type::*;
+pub use t_content_favorite_type::*;
 pub use t_content_piece_type::*;
-pub use t_content_score_type::*;
+pub use t_content_vote_score_type::*;
 pub use t_content_vote_type::*;
 pub use t_daily_state_type::*;
 pub use t_global_event_type::*;
@@ -356,6 +366,7 @@ pub enum Reducer {
     FuseSwap(fuse_swap_reducer::FuseSwap),
     GiveCredits(give_credits_reducer::GiveCredits),
     IncubatorDelete(incubator_delete_reducer::IncubatorDelete),
+    IncubatorFavorite(incubator_favorite_reducer::IncubatorFavorite),
     IncubatorPost(incubator_post_reducer::IncubatorPost),
     IncubatorVote(incubator_vote_reducer::IncubatorVote),
     Login(login_reducer::Login),
@@ -421,6 +432,7 @@ impl __sdk::spacetime_module::Reducer for Reducer {
             Reducer::FuseSwap(_) => "fuse_swap",
             Reducer::GiveCredits(_) => "give_credits",
             Reducer::IncubatorDelete(_) => "incubator_delete",
+            Reducer::IncubatorFavorite(_) => "incubator_favorite",
             Reducer::IncubatorPost(_) => "incubator_post",
             Reducer::IncubatorVote(_) => "incubator_vote",
             Reducer::Login(_) => "login",
@@ -481,6 +493,7 @@ impl __sdk::spacetime_module::Reducer for Reducer {
             Reducer::FuseSwap(args) => args,
             Reducer::GiveCredits(args) => args,
             Reducer::IncubatorDelete(args) => args,
+            Reducer::IncubatorFavorite(args) => args,
             Reducer::IncubatorPost(args) => args,
             Reducer::IncubatorVote(args) => args,
             Reducer::Login(args) => args,
@@ -585,6 +598,9 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
             )),
             "incubator_delete" => Ok(Reducer::IncubatorDelete(
                 __sdk::spacetime_module::parse_reducer_args("incubator_delete", &value.args)?,
+            )),
+            "incubator_favorite" => Ok(Reducer::IncubatorFavorite(
+                __sdk::spacetime_module::parse_reducer_args("incubator_favorite", &value.args)?,
             )),
             "incubator_post" => Ok(Reducer::IncubatorPost(
                 __sdk::spacetime_module::parse_reducer_args("incubator_post", &value.args)?,
@@ -718,9 +734,11 @@ pub struct DbUpdate {
     auction: __sdk::spacetime_module::TableUpdate<TAuction>,
     base_unit: __sdk::spacetime_module::TableUpdate<TBaseUnit>,
     battle: __sdk::spacetime_module::TableUpdate<TBattle>,
+    content_favorite: __sdk::spacetime_module::TableUpdate<TContentFavorite>,
+    content_favorite_score: __sdk::spacetime_module::TableUpdate<TContentFavoriteScore>,
     content_piece: __sdk::spacetime_module::TableUpdate<TContentPiece>,
-    content_score: __sdk::spacetime_module::TableUpdate<TContentScore>,
     content_vote: __sdk::spacetime_module::TableUpdate<TContentVote>,
+    content_vote_score: __sdk::spacetime_module::TableUpdate<TContentVoteScore>,
     daily_state: __sdk::spacetime_module::TableUpdate<TDailyState>,
     daily_update_timer: __sdk::spacetime_module::TableUpdate<DailyUpdateTimer>,
     global_data: __sdk::spacetime_module::TableUpdate<GlobalData>,
@@ -772,14 +790,23 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
                     db_update.base_unit = base_unit_table::parse_table_update(table_update)?
                 }
                 "battle" => db_update.battle = battle_table::parse_table_update(table_update)?,
+                "content_favorite" => {
+                    db_update.content_favorite =
+                        content_favorite_table::parse_table_update(table_update)?
+                }
+                "content_favorite_score" => {
+                    db_update.content_favorite_score =
+                        content_favorite_score_table::parse_table_update(table_update)?
+                }
                 "content_piece" => {
                     db_update.content_piece = content_piece_table::parse_table_update(table_update)?
                 }
-                "content_score" => {
-                    db_update.content_score = content_score_table::parse_table_update(table_update)?
-                }
                 "content_vote" => {
                     db_update.content_vote = content_vote_table::parse_table_update(table_update)?
+                }
+                "content_vote_score" => {
+                    db_update.content_vote_score =
+                        content_vote_score_table::parse_table_update(table_update)?
                 }
                 "daily_state" => {
                     db_update.daily_state = daily_state_table::parse_table_update(table_update)?
@@ -860,9 +887,17 @@ impl __sdk::spacetime_module::DbUpdate for DbUpdate {
         cache.apply_diff_to_table::<TAuction>("auction", &self.auction);
         cache.apply_diff_to_table::<TBaseUnit>("base_unit", &self.base_unit);
         cache.apply_diff_to_table::<TBattle>("battle", &self.battle);
+        cache.apply_diff_to_table::<TContentFavorite>("content_favorite", &self.content_favorite);
+        cache.apply_diff_to_table::<TContentFavoriteScore>(
+            "content_favorite_score",
+            &self.content_favorite_score,
+        );
         cache.apply_diff_to_table::<TContentPiece>("content_piece", &self.content_piece);
-        cache.apply_diff_to_table::<TContentScore>("content_score", &self.content_score);
         cache.apply_diff_to_table::<TContentVote>("content_vote", &self.content_vote);
+        cache.apply_diff_to_table::<TContentVoteScore>(
+            "content_vote_score",
+            &self.content_vote_score,
+        );
         cache.apply_diff_to_table::<TDailyState>("daily_state", &self.daily_state);
         cache.apply_diff_to_table::<DailyUpdateTimer>(
             "daily_update_timer",
@@ -914,19 +949,29 @@ impl __sdk::spacetime_module::DbUpdate for DbUpdate {
         callbacks.invoke_table_row_callbacks::<TAuction>("auction", &self.auction, event);
         callbacks.invoke_table_row_callbacks::<TBaseUnit>("base_unit", &self.base_unit, event);
         callbacks.invoke_table_row_callbacks::<TBattle>("battle", &self.battle, event);
+        callbacks.invoke_table_row_callbacks::<TContentFavorite>(
+            "content_favorite",
+            &self.content_favorite,
+            event,
+        );
+        callbacks.invoke_table_row_callbacks::<TContentFavoriteScore>(
+            "content_favorite_score",
+            &self.content_favorite_score,
+            event,
+        );
         callbacks.invoke_table_row_callbacks::<TContentPiece>(
             "content_piece",
             &self.content_piece,
             event,
         );
-        callbacks.invoke_table_row_callbacks::<TContentScore>(
-            "content_score",
-            &self.content_score,
-            event,
-        );
         callbacks.invoke_table_row_callbacks::<TContentVote>(
             "content_vote",
             &self.content_vote,
+            event,
+        );
+        callbacks.invoke_table_row_callbacks::<TContentVoteScore>(
+            "content_vote_score",
+            &self.content_vote_score,
             event,
         );
         callbacks.invoke_table_row_callbacks::<TDailyState>(

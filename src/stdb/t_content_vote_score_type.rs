@@ -10,11 +10,11 @@ use spacetimedb_sdk::{
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct TContentScore {
+pub struct TContentVoteScore {
     pub id: String,
     pub score: i32,
 }
 
-impl __sdk::spacetime_module::InModule for TContentScore {
+impl __sdk::spacetime_module::InModule for TContentVoteScore {
     type Module = super::RemoteModule;
 }

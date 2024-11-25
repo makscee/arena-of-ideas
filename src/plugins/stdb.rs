@@ -42,8 +42,10 @@ pub enum StdbTable {
     player_tag,
     reward,
     content_piece,
-    content_score,
+    content_vote_score,
     content_vote,
+    content_favorite,
+    content_favorite_score,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -317,8 +319,10 @@ impl StdbTable {
                     .0;
             }
             StdbTable::content_piece => todo!(),
-            StdbTable::content_score => todo!(),
+            StdbTable::content_vote_score => todo!(),
             StdbTable::content_vote => todo!(),
+            StdbTable::content_favorite => todo!(),
+            StdbTable::content_favorite_score => todo!(),
         }
     }
     pub fn get_json_data(self) -> String {
@@ -408,8 +412,10 @@ impl StdbTable {
                 cn().db.reward().iter().collect_vec(),
             )),
             StdbTable::content_piece => todo!(),
-            StdbTable::content_score => todo!(),
+            StdbTable::content_vote_score => todo!(),
             StdbTable::content_vote => todo!(),
+            StdbTable::content_favorite => todo!(),
+            StdbTable::content_favorite_score => todo!(),
         }
         .unwrap()
     }
@@ -437,8 +443,10 @@ impl StdbTable {
             | StdbTable::player_game_stats
             | StdbTable::meta_shop
             | StdbTable::content_piece
-            | StdbTable::content_score
+            | StdbTable::content_vote_score
             | StdbTable::content_vote
+            | StdbTable::content_favorite
+            | StdbTable::content_favorite_score
             | StdbTable::player_tag => Some(self.full()),
 
             StdbTable::trade => Some(StdbQuery {

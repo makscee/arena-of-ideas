@@ -122,6 +122,8 @@ impl ContentType {
                 .collect_vec()
         })
         .add_content_piece_columns(|d| d.clone())
+        .add_content_vote_columns(|d| d.id.to_string())
+        .add_content_favorite_columns(|d| (d.t.to_local().to_string(), d.id.to_string()))
         .column_btn("open", |d, _, world| {
             ContentType::from(d.t.clone()).open(d.id, world);
         })
@@ -150,23 +152,28 @@ impl ContentType {
         world.insert_resource(LinkData { id, t: self });
         Table::new("Active Links", |world| {
             let LinkData { id, t } = world.resource::<LinkData>().clone();
-            TContentScore::collect_links(id, t)
+            let type_key = format!("{id}_{t}");
+            TContentVoteScore::collect_links(id, t)
+                .into_iter()
+                .map(|d| (d, type_key.clone()))
+                .collect_vec()
         })
-        .add_content_piece_columns(|s| {
+        .add_content_piece_columns(|(s, _)| {
             cn().db
                 .content_piece()
                 .id()
                 .find(&s.link_to_u64().unwrap())
                 .unwrap()
         })
-        .add_content_vote_columns(|d| d.id.clone())
+        .add_content_vote_columns(|(d, _)| d.id.clone())
+        .add_content_favorite_columns(|(d, type_key)| (type_key.clone(), d.id.clone()))
         .title()
         .ui(ui, world);
 
         Table::new("New Links", |world| {
             let LinkData { id, t } = world.resource::<LinkData>().clone();
             let links: HashSet<u64> = HashSet::from_iter(
-                TContentScore::collect_links(id, t)
+                TContentVoteScore::collect_links(id, t)
                     .into_iter()
                     .filter_map(|l| l.link_to_u64()),
             );
@@ -482,7 +489,7 @@ impl ContentType {
     }
 }
 
-impl TContentScore {
+impl TContentVoteScore {
     fn link_to(&self) -> &str {
         self.id.split_once('_').unwrap().1
     }
@@ -490,13 +497,16 @@ impl TContentScore {
         u64::from_str(self.link_to()).ok()
     }
     fn find_link(from: u64, to: u64) -> Option<Self> {
-        cn().db.content_score().id().find(&format!("{from}_{to}"))
+        cn().db
+            .content_vote_score()
+            .id()
+            .find(&format!("{from}_{to}"))
     }
-    fn collect_links(from: u64, to_type: ContentType) -> Vec<TContentScore> {
+    fn collect_links(from: u64, to_type: ContentType) -> Vec<TContentVoteScore> {
         let prefix = format!("{from}_");
         let t: SContentType = to_type.into();
         cn().db
-            .content_score()
+            .content_vote_score()
             .iter()
             .filter(|l| {
                 l.id.starts_with(&prefix)
