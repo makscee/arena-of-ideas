@@ -14,7 +14,7 @@ use super::c_status_description_type::CStatusDescription;
 #[sats(crate = __lib)]
 pub struct CStatus {
     pub data: String,
-    pub description: CStatusDescription,
+    pub description: Option<CStatusDescription>,
 }
 
 impl __sdk::spacetime_module::InModule for CStatus {

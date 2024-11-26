@@ -14,7 +14,7 @@ use super::c_unit_trigger_type::CUnitTrigger;
 #[sats(crate = __lib)]
 pub struct CUnitDescription {
     pub data: String,
-    pub trigger: CUnitTrigger,
+    pub trigger: Option<CUnitTrigger>,
 }
 
 impl __sdk::spacetime_module::InModule for CUnitDescription {

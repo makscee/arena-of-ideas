@@ -14,7 +14,7 @@ use super::c_status_trigger_type::CStatusTrigger;
 #[sats(crate = __lib)]
 pub struct CStatusDescription {
     pub data: String,
-    pub trigger: CStatusTrigger,
+    pub trigger: Option<CStatusTrigger>,
 }
 
 impl __sdk::spacetime_module::InModule for CStatusDescription {

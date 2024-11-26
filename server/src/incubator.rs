@@ -168,6 +168,7 @@ pub enum SContentType {
     CAbilityDescription,
     CEffect,
     CHouse,
+    CColor,
     CStatus,
     CStatusDescription,
     CStatusTrigger,
@@ -181,14 +182,14 @@ struct TUnits {
 #[derive(SpacetimeType)]
 struct CUnit {
     data: String,
-    description: CUnitDescription,
-    stats: CUnitStats,
-    representation: CUnitRepresentation,
+    description: Option<CUnitDescription>,
+    stats: Option<CUnitStats>,
+    representation: Option<CUnitRepresentation>,
 }
 #[derive(SpacetimeType)]
 struct CUnitDescription {
     data: String,
-    trigger: CUnitTrigger,
+    trigger: Option<CUnitTrigger>,
 }
 #[derive(SpacetimeType)]
 struct CUnitStats {
@@ -197,7 +198,7 @@ struct CUnitStats {
 #[derive(SpacetimeType)]
 struct CUnitTrigger {
     data: String,
-    ability: CAbility,
+    ability: Option<CAbility>,
 }
 #[derive(SpacetimeType)]
 struct CUnitRepresentation {
@@ -206,8 +207,8 @@ struct CUnitRepresentation {
 #[derive(SpacetimeType)]
 struct CAbility {
     data: String,
-    description: CAbilityDescription,
-    house: CHouse,
+    description: Option<CAbilityDescription>,
+    house: Option<CHouse>,
 }
 #[derive(SpacetimeType)]
 struct CAbilityDescription {
@@ -219,6 +220,11 @@ struct CAbilityDescription {
 #[derive(SpacetimeType)]
 struct CHouse {
     data: String,
+    color: Option<CColor>,
+}
+#[derive(SpacetimeType)]
+struct CColor {
+    data: String,
 }
 #[derive(SpacetimeType)]
 struct CEffect {
@@ -227,12 +233,12 @@ struct CEffect {
 #[derive(SpacetimeType)]
 struct CStatus {
     data: String,
-    description: CStatusDescription,
+    description: Option<CStatusDescription>,
 }
 #[derive(SpacetimeType)]
 struct CStatusDescription {
     data: String,
-    trigger: CStatusTrigger,
+    trigger: Option<CStatusTrigger>,
 }
 #[derive(SpacetimeType)]
 struct CStatusTrigger {
@@ -241,5 +247,5 @@ struct CStatusTrigger {
 #[derive(SpacetimeType)]
 struct CSummon {
     data: String,
-    stats: CUnitStats,
+    stats: Option<CUnitStats>,
 }

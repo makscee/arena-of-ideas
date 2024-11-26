@@ -14,7 +14,7 @@ use super::c_ability_type::CAbility;
 #[sats(crate = __lib)]
 pub struct CUnitTrigger {
     pub data: String,
-    pub ability: CAbility,
+    pub ability: Option<CAbility>,
 }
 
 impl __sdk::spacetime_module::InModule for CUnitTrigger {

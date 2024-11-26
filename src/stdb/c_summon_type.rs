@@ -14,7 +14,7 @@ use super::c_unit_stats_type::CUnitStats;
 #[sats(crate = __lib)]
 pub struct CSummon {
     pub data: String,
-    pub stats: CUnitStats,
+    pub stats: Option<CUnitStats>,
 }
 
 impl __sdk::spacetime_module::InModule for CSummon {

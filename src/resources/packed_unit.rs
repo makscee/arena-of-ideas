@@ -311,19 +311,25 @@ impl From<FusedUnit> for PackedUnit {
 impl CUnit {
     pub fn to_packed(self) -> Result<PackedUnit, String> {
         let name = self.data;
-        let (pwr, hp) = self.stats.content_type().parse_stats(&self.stats.data)?;
-        let trigger = self.description.trigger;
-        let (house, _) = trigger
-            .ability
-            .house
-            .content_type()
-            .parse_house(&trigger.ability.house.data)?;
-        let trigger = trigger.content_type().parse_trigger(&trigger.data)?;
-        let representation = self
-            .representation
-            .content_type()
-            .parse_representation(&self.representation.data)?;
-
+        let Some(stats) = self.stats else {
+            return Err("No stats".into());
+        };
+        let (pwr, hp) = stats.content_type().parse_stats(&stats.data)?;
+        let mut house = default();
+        let mut trigger = default();
+        if let Some(description) = self.description {
+            if let Some(t) = description.trigger {
+                trigger = t.content_type().parse_trigger(&t.data)?;
+                if let Some(h) = t.ability.and_then(|a| a.house) {
+                    house = h.data;
+                }
+            }
+        }
+        let representation = if let Some(r) = self.representation {
+            r.content_type().parse_representation(&r.data)?
+        } else {
+            default()
+        };
         Ok(PackedUnit {
             name,
             pwr,

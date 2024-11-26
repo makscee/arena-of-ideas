@@ -8,10 +8,13 @@ use spacetimedb_sdk::{
     lib as __lib, sats as __sats, ws_messages as __ws,
 };
 
+use super::c_color_type::CColor;
+
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct CHouse {
     pub data: String,
+    pub color: Option<CColor>,
 }
 
 impl __sdk::spacetime_module::InModule for CHouse {

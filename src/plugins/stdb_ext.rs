@@ -428,6 +428,7 @@ pub enum ContentType {
     CStatusDescription,
     CStatusTrigger,
     CSummon,
+    CColor,
 }
 impl From<SContentType> for ContentType {
     fn from(value: SContentType) -> Self {
@@ -445,6 +446,7 @@ impl From<SContentType> for ContentType {
             SContentType::CStatusDescription => Self::CStatusDescription,
             SContentType::CStatusTrigger => Self::CStatusTrigger,
             SContentType::CSummon => Self::CSummon,
+            SContentType::CColor => Self::CColor,
         }
     }
 }
@@ -464,6 +466,7 @@ impl From<ContentType> for SContentType {
             ContentType::CStatusDescription => Self::CStatusDescription,
             ContentType::CStatusTrigger => Self::CStatusTrigger,
             ContentType::CSummon => Self::CSummon,
+            ContentType::CColor => Self::CColor,
         }
     }
 }

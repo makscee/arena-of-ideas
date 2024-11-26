@@ -29,6 +29,8 @@ pub enum SContentType {
 
     CHouse,
 
+    CColor,
+
     CStatus,
 
     CStatusDescription,

@@ -15,8 +15,8 @@ use super::c_house_type::CHouse;
 #[sats(crate = __lib)]
 pub struct CAbility {
     pub data: String,
-    pub description: CAbilityDescription,
-    pub house: CHouse,
+    pub description: Option<CAbilityDescription>,
+    pub house: Option<CHouse>,
 }
 
 impl __sdk::spacetime_module::InModule for CAbility {

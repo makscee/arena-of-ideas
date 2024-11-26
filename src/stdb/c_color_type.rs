@@ -8,19 +8,12 @@ use spacetimedb_sdk::{
     lib as __lib, sats as __sats, ws_messages as __ws,
 };
 
-use super::c_unit_description_type::CUnitDescription;
-use super::c_unit_representation_type::CUnitRepresentation;
-use super::c_unit_stats_type::CUnitStats;
-
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct CUnit {
+pub struct CColor {
     pub data: String,
-    pub description: Option<CUnitDescription>,
-    pub stats: Option<CUnitStats>,
-    pub representation: Option<CUnitRepresentation>,
 }
 
-impl __sdk::spacetime_module::InModule for CUnit {
+impl __sdk::spacetime_module::InModule for CColor {
     type Module = super::RemoteModule;
 }

@@ -2,11 +2,11 @@ use super::*;
 
 pub trait ContentPiece {
     fn content_type(&self) -> ContentType;
-    fn inner(&self) -> Vec<Box<dyn ContentPiece>>;
-    fn visit(&mut self, parent: u64, f: fn(u64, ContentType, &mut String));
+    fn fill(&mut self, parent: &dyn ContentPiece, f: fn(&dyn ContentPiece, &mut dyn ContentPiece));
     fn data(&self) -> &String;
     fn data_mut(&mut self) -> &mut String;
-    fn show_node(&self, parent: u64, ui: &mut Ui, world: &mut World) {
+    fn show_children(&self, ui: &mut Ui, world: &mut World);
+    fn show_node(&self, _: &dyn ContentPiece, ui: &mut Ui, world: &mut World) {
         const FRAME: Frame = Frame {
             inner_margin: Margin::same(4.0),
             outer_margin: Margin::ZERO,
@@ -23,17 +23,13 @@ pub trait ContentPiece {
                     .cstr_cs(CYAN, CstrStyle::Bold)
                     .button(ui)
                     .clicked()
-                    && parent != 0
                 {
-                    ct.open_links(parent, world);
+                    // ct.open_links(parent, world);
                 }
                 ct.show(self.data(), ui, world);
             });
-            let id = id_by_data(self.data());
             ui.vertical(|ui| {
-                for i in self.inner() {
-                    i.show_node(id, ui, world);
-                }
+                self.show_children(ui, world);
             })
         });
     }
@@ -52,166 +48,226 @@ impl ContentPiece for CUnit {
     fn content_type(&self) -> ContentType {
         ContentType::CUnit
     }
-    fn inner(&self) -> Vec<Box<dyn ContentPiece>> {
-        let CUnit {
-            data: _,
-            description,
-            stats,
-            representation,
-        } = self;
-        vec![
-            Box::new(description.clone()),
-            Box::new(stats.clone()),
-            Box::new(representation.clone()),
-        ]
-    }
     fn data(&self) -> &String {
         &self.data
     }
     fn data_mut(&mut self) -> &mut String {
         &mut self.data
     }
-    fn visit(&mut self, _: u64, f: fn(u64, ContentType, &mut String)) {
-        let parent = id_by_data(&self.data);
-        self.description.visit(parent, f);
-        self.stats.visit(parent, f);
-        self.representation.visit(parent, f);
+    fn fill(&mut self, _: &dyn ContentPiece, f: fn(&dyn ContentPiece, &mut dyn ContentPiece)) {
+        let Self {
+            data,
+            description,
+            stats,
+            representation,
+        } = self;
+        let data = mem::take(data);
+        let mut description = description.take().unwrap_or_default();
+        let mut stats = stats.take().unwrap_or_default();
+        let mut representation = representation.take().unwrap_or_default();
+        description.fill(self, f);
+        stats.fill(self, f);
+        representation.fill(self, f);
+        *self = Self {
+            data,
+            description: Some(description),
+            stats: Some(stats),
+            representation: Some(representation),
+        }
+    }
+    fn show_children(&self, ui: &mut Ui, world: &mut World) {
+        let Self {
+            data: _,
+            description,
+            stats,
+            representation,
+        } = self;
+        if let Some(n) = description {
+            n.show_node(self, ui, world);
+        }
+        if let Some(n) = stats {
+            n.show_node(self, ui, world);
+        }
+        if let Some(n) = representation {
+            n.show_node(self, ui, world);
+        }
     }
 }
 impl ContentPiece for CUnitDescription {
     fn content_type(&self) -> ContentType {
         ContentType::CUnitDescription
     }
-    fn inner(&self) -> Vec<Box<dyn ContentPiece>> {
-        let CUnitDescription { data: _, trigger } = self;
-        vec![Box::new(trigger.clone())]
-    }
     fn data(&self) -> &String {
         &self.data
     }
     fn data_mut(&mut self) -> &mut String {
         &mut self.data
     }
-    fn visit(&mut self, parent: u64, f: fn(u64, ContentType, &mut String)) {
-        f(parent, self.content_type(), &mut self.data);
-        let parent = id_by_data(&self.data);
-        self.trigger.visit(parent, f);
+    fn fill(&mut self, parent: &dyn ContentPiece, f: fn(&dyn ContentPiece, &mut dyn ContentPiece)) {
+        f(parent, self);
+        let Self { data, trigger } = self;
+        let data = mem::take(data);
+        let mut trigger = trigger.take().unwrap_or_default();
+        trigger.fill(self, f);
+        *self = Self {
+            data,
+            trigger: Some(trigger),
+        }
+    }
+    fn show_children(&self, ui: &mut Ui, world: &mut World) {
+        let Self { data: _, trigger } = self;
+        if let Some(n) = trigger {
+            n.show_node(self, ui, world);
+        }
     }
 }
 impl ContentPiece for CUnitStats {
     fn content_type(&self) -> ContentType {
         ContentType::CUnitStats
     }
-    fn inner(&self) -> Vec<Box<dyn ContentPiece>> {
-        default()
-    }
     fn data(&self) -> &String {
         &self.data
     }
     fn data_mut(&mut self) -> &mut String {
         &mut self.data
     }
-    fn visit(&mut self, parent: u64, f: fn(u64, ContentType, &mut String)) {
-        f(parent, self.content_type(), &mut self.data);
+    fn fill(&mut self, parent: &dyn ContentPiece, f: fn(&dyn ContentPiece, &mut dyn ContentPiece)) {
+        f(parent, self);
     }
+    fn show_children(&self, _: &mut Ui, _: &mut World) {}
 }
 impl ContentPiece for CUnitRepresentation {
     fn content_type(&self) -> ContentType {
         ContentType::CUnitRepresentation
     }
-    fn inner(&self) -> Vec<Box<dyn ContentPiece>> {
-        let CUnitRepresentation { data: _ } = self;
-        default()
-    }
     fn data(&self) -> &String {
         &self.data
     }
     fn data_mut(&mut self) -> &mut String {
         &mut self.data
     }
-    fn visit(&mut self, parent: u64, f: fn(u64, ContentType, &mut String)) {
-        f(parent, self.content_type(), &mut self.data);
+    fn fill(&mut self, parent: &dyn ContentPiece, f: fn(&dyn ContentPiece, &mut dyn ContentPiece)) {
+        f(parent, self);
     }
+    fn show_children(&self, _: &mut Ui, _: &mut World) {}
 }
 impl ContentPiece for CUnitTrigger {
     fn content_type(&self) -> ContentType {
         ContentType::CUnitTrigger
     }
-    fn inner(&self) -> Vec<Box<dyn ContentPiece>> {
-        let CUnitTrigger { data: _, ability } = self;
-        vec![Box::new(ability.clone())]
-    }
     fn data(&self) -> &String {
         &self.data
     }
     fn data_mut(&mut self) -> &mut String {
         &mut self.data
     }
-    fn visit(&mut self, parent: u64, f: fn(u64, ContentType, &mut String)) {
-        f(parent, self.content_type(), &mut self.data);
-        let parent = id_by_data(&self.data);
-        self.ability.visit(parent, f);
+    fn fill(&mut self, parent: &dyn ContentPiece, f: fn(&dyn ContentPiece, &mut dyn ContentPiece)) {
+        f(parent, self);
+        let Self { data, ability } = self;
+        let data = mem::take(data);
+        let mut ability = ability.take().unwrap_or_default();
+        ability.fill(self, f);
+        *self = Self {
+            data,
+            ability: Some(ability),
+        }
+    }
+    fn show_children(&self, ui: &mut Ui, world: &mut World) {
+        let Self { data: _, ability } = self;
+        if let Some(n) = ability {
+            n.show_node(self, ui, world);
+        }
     }
 }
 impl ContentPiece for CAbility {
     fn content_type(&self) -> ContentType {
         ContentType::CAbility
     }
-    fn inner(&self) -> Vec<Box<dyn ContentPiece>> {
-        let CAbility {
-            data: _,
-            description,
-            house,
-        } = self;
-        vec![Box::new(description.clone()), Box::new(house.clone())]
-    }
     fn data(&self) -> &String {
         &self.data
     }
     fn data_mut(&mut self) -> &mut String {
         &mut self.data
     }
-    fn visit(&mut self, parent: u64, f: fn(u64, ContentType, &mut String)) {
-        f(parent, self.content_type(), &mut self.data);
-        let parent = id_by_data(&self.data);
-        self.description.visit(parent, f);
-        self.house.visit(parent, f);
+    fn fill(&mut self, parent: &dyn ContentPiece, f: fn(&dyn ContentPiece, &mut dyn ContentPiece)) {
+        f(parent, self);
+        let Self {
+            data,
+            description,
+            house,
+        } = self;
+        let data = mem::take(data);
+        let mut description = description.take().unwrap_or_default();
+        let mut house = house.take().unwrap_or_default();
+        description.fill(self, f);
+        house.fill(self, f);
+        *self = Self {
+            data,
+            description: Some(description),
+            house: Some(house),
+        }
+    }
+    fn show_children(&self, ui: &mut Ui, world: &mut World) {
+        let Self {
+            data: _,
+            description,
+            house,
+        } = self;
+        if let Some(n) = description {
+            n.show_node(self, ui, world);
+        }
+        if let Some(n) = house {
+            n.show_node(self, ui, world);
+        }
     }
 }
 impl ContentPiece for CAbilityDescription {
     fn content_type(&self) -> ContentType {
         ContentType::CAbilityDescription
     }
-    fn inner(&self) -> Vec<Box<dyn ContentPiece>> {
-        let CAbilityDescription {
-            data: _,
-            status,
-            summon,
-            action,
-        } = self;
-        vec![
-            Box::new(status.clone().unwrap_or_default()),
-            Box::new(summon.clone().unwrap_or_default()),
-            Box::new(action.clone().unwrap_or_default()),
-        ]
-    }
     fn data(&self) -> &String {
         &self.data
     }
     fn data_mut(&mut self) -> &mut String {
         &mut self.data
     }
-    fn visit(&mut self, parent: u64, f: fn(u64, ContentType, &mut String)) {
-        f(parent, self.content_type(), &mut self.data);
-        let parent = id_by_data(&self.data);
-        if let Some(c) = &mut self.status {
-            c.visit(parent, f);
+    fn fill(&mut self, parent: &dyn ContentPiece, f: fn(&dyn ContentPiece, &mut dyn ContentPiece)) {
+        f(parent, self);
+        let Self {
+            data,
+            status,
+            summon,
+            action,
+        } = self;
+        let data = mem::take(data);
+        let mut status = status.take().unwrap_or_default();
+        let mut summon = summon.take().unwrap_or_default();
+        let mut action = action.take().unwrap_or_default();
+        status.fill(self, f);
+        summon.fill(self, f);
+        action.fill(self, f);
+        *self = Self {
+            data,
+            status: Some(status),
+            summon: Some(summon),
+            action: Some(action),
         }
-        if let Some(c) = &mut self.summon {
-            c.visit(parent, f);
+    }
+    fn show_children(&self, ui: &mut Ui, world: &mut World) {
+        let Self {
+            data: _,
+            status,
+            summon,
+            action,
+        } = self;
+        if let Some(n) = status {
+            n.show_node(self, ui, world);
         }
-        if let Some(c) = &mut self.action {
-            c.visit(parent, f);
+        if let Some(n) = summon {
+            n.show_node(self, ui, world);
+        }
+        if let Some(n) = action {
+            n.show_node(self, ui, world);
         }
     }
 }
@@ -219,108 +275,150 @@ impl ContentPiece for CEffect {
     fn content_type(&self) -> ContentType {
         ContentType::CEffect
     }
-    fn inner(&self) -> Vec<Box<dyn ContentPiece>> {
-        let CEffect { data: _ } = self;
-        default()
-    }
     fn data(&self) -> &String {
         &self.data
     }
     fn data_mut(&mut self) -> &mut String {
         &mut self.data
     }
-    fn visit(&mut self, parent: u64, f: fn(u64, ContentType, &mut String)) {
-        f(parent, self.content_type(), &mut self.data);
+    fn fill(&mut self, parent: &dyn ContentPiece, f: fn(&dyn ContentPiece, &mut dyn ContentPiece)) {
+        f(parent, self);
     }
+    fn show_children(&self, _: &mut Ui, _: &mut World) {}
 }
 impl ContentPiece for CStatus {
     fn content_type(&self) -> ContentType {
         ContentType::CStatus
     }
-    fn inner(&self) -> Vec<Box<dyn ContentPiece>> {
-        let CStatus {
-            data: _,
-            description,
-        } = self;
-        vec![Box::new(description.clone())]
-    }
     fn data(&self) -> &String {
         &self.data
     }
     fn data_mut(&mut self) -> &mut String {
         &mut self.data
     }
-    fn visit(&mut self, parent: u64, f: fn(u64, ContentType, &mut String)) {
-        f(parent, self.content_type(), &mut self.data);
-        let parent = id_by_data(&self.data);
-        self.description.visit(parent, f);
+    fn fill(&mut self, parent: &dyn ContentPiece, f: fn(&dyn ContentPiece, &mut dyn ContentPiece)) {
+        f(parent, self);
+        let Self { data, description } = self;
+        let data = mem::take(data);
+        let mut description = description.take().unwrap_or_default();
+        description.fill(self, f);
+        *self = Self {
+            data,
+            description: Some(description),
+        }
+    }
+    fn show_children(&self, ui: &mut Ui, world: &mut World) {
+        let Self {
+            data: _,
+            description,
+        } = self;
+        if let Some(n) = description {
+            n.show_node(self, ui, world);
+        }
     }
 }
 impl ContentPiece for CSummon {
     fn content_type(&self) -> ContentType {
         ContentType::CSummon
     }
-    fn inner(&self) -> Vec<Box<dyn ContentPiece>> {
-        let CSummon { data: _, stats } = self;
-        vec![Box::new(stats.clone())]
-    }
     fn data(&self) -> &String {
         &self.data
     }
     fn data_mut(&mut self) -> &mut String {
         &mut self.data
     }
-    fn visit(&mut self, parent: u64, f: fn(u64, ContentType, &mut String)) {
-        f(parent, self.content_type(), &mut self.data);
-        let parent = id_by_data(&self.data);
-        self.stats.visit(parent, f);
+    fn fill(&mut self, parent: &dyn ContentPiece, f: fn(&dyn ContentPiece, &mut dyn ContentPiece)) {
+        f(parent, self);
+        let Self { data, stats } = self;
+        let data = mem::take(data);
+        let mut stats = stats.take().unwrap_or_default();
+        stats.fill(self, f);
+        *self = Self {
+            data,
+            stats: Some(stats),
+        }
+    }
+    fn show_children(&self, ui: &mut Ui, world: &mut World) {
+        let Self { data: _, stats } = self;
+        if let Some(n) = stats {
+            n.show_node(self, ui, world);
+        }
     }
 }
 impl ContentPiece for CStatusDescription {
     fn content_type(&self) -> ContentType {
         ContentType::CStatusDescription
     }
-    fn inner(&self) -> Vec<Box<dyn ContentPiece>> {
-        let CStatusDescription { data: _, trigger } = self;
-        vec![Box::new(trigger.clone())]
-    }
     fn data(&self) -> &String {
         &self.data
     }
     fn data_mut(&mut self) -> &mut String {
         &mut self.data
     }
-    fn visit(&mut self, parent: u64, f: fn(u64, ContentType, &mut String)) {
-        f(parent, self.content_type(), &mut self.data);
-        let parent = id_by_data(&self.data);
-        self.trigger.visit(parent, f);
+    fn fill(&mut self, parent: &dyn ContentPiece, f: fn(&dyn ContentPiece, &mut dyn ContentPiece)) {
+        f(parent, self);
+        let Self { data, trigger } = self;
+        let data = mem::take(data);
+        let mut trigger = trigger.take().unwrap_or_default();
+        trigger.fill(self, f);
+        *self = Self {
+            data,
+            trigger: Some(trigger),
+        }
+    }
+    fn show_children(&self, ui: &mut Ui, world: &mut World) {
+        let Self { data: _, trigger } = self;
+        if let Some(n) = trigger {
+            n.show_node(self, ui, world);
+        }
     }
 }
 impl ContentPiece for CStatusTrigger {
     fn content_type(&self) -> ContentType {
         ContentType::CStatusTrigger
     }
-    fn inner(&self) -> Vec<Box<dyn ContentPiece>> {
-        let CStatusTrigger { data: _ } = self;
-        default()
-    }
     fn data(&self) -> &String {
         &self.data
     }
     fn data_mut(&mut self) -> &mut String {
         &mut self.data
     }
-    fn visit(&mut self, parent: u64, f: fn(u64, ContentType, &mut String)) {
-        f(parent, self.content_type(), &mut self.data);
+    fn fill(&mut self, parent: &dyn ContentPiece, f: fn(&dyn ContentPiece, &mut dyn ContentPiece)) {
+        f(parent, self);
     }
+    fn show_children(&self, _: &mut Ui, _: &mut World) {}
 }
 impl ContentPiece for CHouse {
     fn content_type(&self) -> ContentType {
         ContentType::CHouse
     }
-    fn inner(&self) -> Vec<Box<dyn ContentPiece>> {
-        let CHouse { data: _ } = self;
-        default()
+    fn data(&self) -> &String {
+        &self.data
+    }
+    fn data_mut(&mut self) -> &mut String {
+        &mut self.data
+    }
+    fn fill(&mut self, parent: &dyn ContentPiece, f: fn(&dyn ContentPiece, &mut dyn ContentPiece)) {
+        f(parent, self);
+        let Self { data, color } = self;
+        let data = mem::take(data);
+        let mut color = color.take().unwrap_or_default();
+        color.fill(self, f);
+        *self = Self {
+            data,
+            color: Some(color),
+        }
+    }
+    fn show_children(&self, ui: &mut Ui, world: &mut World) {
+        let Self { data: _, color } = self;
+        if let Some(n) = color {
+            n.show_node(self, ui, world);
+        }
+    }
+}
+impl ContentPiece for CColor {
+    fn content_type(&self) -> ContentType {
+        ContentType::CColor
     }
     fn data(&self) -> &String {
         &self.data
@@ -328,9 +426,10 @@ impl ContentPiece for CHouse {
     fn data_mut(&mut self) -> &mut String {
         &mut self.data
     }
-    fn visit(&mut self, parent: u64, f: fn(u64, ContentType, &mut String)) {
-        f(parent, self.content_type(), &mut self.data);
+    fn fill(&mut self, parent: &dyn ContentPiece, f: fn(&dyn ContentPiece, &mut dyn ContentPiece)) {
+        f(parent, self);
     }
+    fn show_children(&self, _: &mut Ui, _: &mut World) {}
 }
 impl Default for CUnit {
     fn default() -> Self {
@@ -423,6 +522,16 @@ impl Default for CSummon {
 }
 impl Default for CHouse {
     fn default() -> Self {
-        Self { data: default() }
+        Self {
+            data: default(),
+            color: default(),
+        }
+    }
+}
+impl Default for CColor {
+    fn default() -> Self {
+        Self {
+            data: MISSING_COLOR.to_hex(),
+        }
     }
 }

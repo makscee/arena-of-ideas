@@ -1,3 +1,5 @@
+use egui::TextBuffer;
+
 use super::*;
 
 pub struct IncubatorPlugin;
@@ -20,24 +22,24 @@ impl IncubatorPlugin {
                 if "post test data".to_owned().button(ui).clicked() {
                     CUnit {
                         data: "TestUnit".into(),
-                        description: CUnitDescription {
+                        description: Some(CUnitDescription {
                             data: "Test unit description".into(),
-                            trigger: CUnitTrigger {
+                            trigger: Some(CUnitTrigger {
                                 data: ron::to_string(&Trigger::Fire {
                                     triggers: vec![(FireTrigger::BattleStart, None)],
                                     targets: default(),
                                     effects: vec![(Effect::Kill, None)],
                                 })
                                 .unwrap(),
-                                ability: CAbility {
+                                ability: Some(CAbility {
                                     data: "AbilityName".into(),
-                                    description: CAbilityDescription {
+                                    description: Some(CAbilityDescription {
                                         data: "Ability description".into(),
                                         status: Some(CStatus {
                                             data: "Status_Name".into(),
-                                            description: CStatusDescription {
+                                            description: Some(CStatusDescription {
                                                 data: "Status description".into(),
-                                                trigger: CStatusTrigger {
+                                                trigger: Some(CStatusTrigger {
                                                     data: ron::to_string(&Trigger::Fire {
                                                         triggers: vec![(
                                                             FireTrigger::TurnEnd,
@@ -47,39 +49,42 @@ impl IncubatorPlugin {
                                                         effects: vec![(Effect::Kill, None)],
                                                     })
                                                     .unwrap(),
-                                                },
-                                            },
+                                                }),
+                                            }),
                                         }),
                                         summon: Some(CSummon {
                                             data: "SummonName".into(),
-                                            stats: CUnitStats { data: "2/1".into() },
+                                            stats: Some(CUnitStats { data: "2/1".into() }),
                                         }),
                                         action: Some(CEffect {
                                             data: ron::to_string(&Effect::Damage).unwrap(),
                                         }),
-                                    },
-                                    house: CHouse {
-                                        data: "TestHouse/#ff00ff".into(),
-                                    },
-                                },
-                            },
-                        },
-                        stats: CUnitStats { data: "1/1".into() },
-                        representation: CUnitRepresentation {
+                                    }),
+                                    house: Some(CHouse {
+                                        data: "TestHouse".into(),
+                                        color: Some(CColor {
+                                            data: "#a04209".into(),
+                                        }),
+                                    }),
+                                }),
+                            }),
+                        }),
+                        stats: Some(CUnitStats { data: "1/1".into() }),
+                        representation: Some(CUnitRepresentation {
                             data: ron::to_string(
                                 &game_assets()
                                     .heroes
                                     .values()
                                     .choose(&mut thread_rng())
                                     .unwrap()
-                                    .trigger,
+                                    .representation,
                             )
                             .unwrap(),
-                        },
+                        }),
                     }
-                    .visit(0, |_, t, data| {
+                    .fill(&CColor::default(), |_, d| {
                         cn().reducers
-                            .incubator_post(t.to_server(), data.clone())
+                            .incubator_post(d.content_type().to_server(), d.data().clone())
                             .unwrap();
                     });
                 }
@@ -89,6 +94,7 @@ impl IncubatorPlugin {
         .transparent()
         .pinned()
         .no_frame()
+        .stretch_min()
         .push(world);
     }
     pub fn get_vote(owner: u64, target: &String) -> i8 {
@@ -103,7 +109,8 @@ impl IncubatorPlugin {
 
 impl ContentType {
     pub fn name(self) -> String {
-        self.as_ref().trim_start_matches('C').to_case(Case::Title)
+        let s = self.as_ref();
+        s.char_range(1..s.len()).to_case(Case::Title)
     }
     fn tile_id(&self) -> &str {
         self.as_ref()
@@ -225,7 +232,8 @@ impl ContentType {
             ContentType::CUnit
             | ContentType::CAbility
             | ContentType::CStatus
-            | ContentType::CSummon => {
+            | ContentType::CSummon
+            | ContentType::CHouse => {
                 #[derive(Resource, Default)]
                 struct NewData {
                     name: String,
@@ -325,24 +333,21 @@ impl ContentType {
                     world,
                 );
             }
-            ContentType::CHouse => {
+            ContentType::CColor => {
                 #[derive(Resource, Default)]
                 struct NewData {
-                    name: String,
                     color: [u8; 3],
                 }
                 world.init_resource::<NewData>();
                 add_new_popup(
                     move |ui, world| {
                         let mut r = world.resource_mut::<NewData>();
-                        Input::new("name").ui_string(&mut r.name, ui);
                         ui.color_edit_button_srgb(&mut r.color);
                     },
                     move |world| {
-                        let NewData { name, color: c } =
-                            world.remove_resource::<NewData>().unwrap();
+                        let NewData { color: c } = world.remove_resource::<NewData>().unwrap();
                         let color = Color32::from_rgb(c[0], c[1], c[2]);
-                        Ok((self, format!("{name}/{}", color.to_hex())))
+                        Ok((self, color.to_hex()))
                     },
                     world,
                 );
@@ -395,19 +400,18 @@ impl ContentType {
                     world: &mut World,
                 ) {
                     *piece.data_mut() = cn().db.content_piece().id().find(&id).unwrap().data;
-                    piece.visit(id, |parent, t, data| {
-                        *data = t.find_data().unwrap_or_default();
+                    let no_parent = CUnit::default();
+                    piece.fill(&no_parent, |parent, piece| {
+                        *piece.data_mut() = piece.content_type().find_data().unwrap_or_default();
                     });
-                    piece.show_node(id, ui, world);
+                    piece.show_node(&no_parent, ui, world);
                 }
                 if matches!(self, ContentType::CUnit) {
                     let mut unit = Box::new(CUnit::default());
                     ui.horizontal(|ui| {
                         fill_and_show(&mut unit, id, ui, world);
                         ui.vertical(|ui| match unit.to_packed() {
-                            Ok(unit) => {
-                                cached_packed_card(&unit, ui, world).unwrap();
-                            }
+                            Ok(unit) => cached_packed_card(&unit, ui, world).unwrap(),
                             Err(e) => e.notify_error(world),
                         });
                     });
@@ -449,7 +453,8 @@ impl ContentType {
             ContentType::CUnit
             | ContentType::CAbility
             | ContentType::CStatus
-            | ContentType::CSummon => {
+            | ContentType::CSummon
+            | ContentType::CHouse => {
                 ("name: ".to_owned() + &data.cstr_cs(name_color(data), CstrStyle::Bold)).label(ui);
             }
             ContentType::CUnitDescription
@@ -479,9 +484,9 @@ impl ContentType {
                 }
                 Err(e) => Self::show_error(&e, ui),
             },
-            ContentType::CHouse => match self.parse_house(data) {
-                Ok((name, color)) => {
-                    name.cstr_cs(color, CstrStyle::Bold).label(ui);
+            ContentType::CColor => match self.parse_color(data) {
+                Ok(color) => {
+                    color.to_hex().cstr_cs(color, CstrStyle::Bold).label(ui);
                 }
                 Err(e) => Self::show_error(&e, ui),
             },
@@ -502,6 +507,7 @@ impl ContentType {
             ContentType::CEffect => Box::new(CEffect::default()),
             ContentType::CAbilityDescription => Box::new(CAbilityDescription::default()),
             ContentType::CHouse => Box::new(CHouse::default()),
+            ContentType::CColor => Box::new(CHouse::default()),
             ContentType::CStatus => Box::new(CStatus::default()),
             ContentType::CStatusDescription => Box::new(CStatusDescription::default()),
             ContentType::CStatusTrigger => Box::new(CStatusTrigger::default()),
@@ -587,19 +593,15 @@ impl ContentType {
             )),
         }
     }
-    pub fn parse_house(self, data: &str) -> Result<(String, Color32), String> {
+    pub fn parse_color(self, data: &str) -> Result<Color32, String> {
         match self {
-            ContentType::CHouse => match data.split_once('/') {
-                Some((name, color)) => {
-                    let color = Color32::from_hex(color)
-                        .map_err(|e| format!("Failed to parse color: {e:?}"))?;
-                    Ok((name.to_owned(), color))
-                }
-                None => Err(format!("Failed to parse {self}")),
+            ContentType::CColor => match Color32::from_hex(data) {
+                Ok(v) => Ok(v),
+                Err(e) => Err(format!("Failed to parse {self}: {e:?}")),
             },
             _ => Err(format!(
                 "Wrong content type. Expected: {} Got {self}",
-                ContentType::CHouse
+                ContentType::CColor
             )),
         }
     }
