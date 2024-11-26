@@ -1,0 +1,5 @@
+Fire(
+    triggers: [(BattleStart, None)],
+    targets: [(AllAllyUnits, None)],
+    effects: [(UseAbility("Blessing", 0), None)],
+)
