@@ -1,6 +1,5 @@
-use itertools::Itertools;
 use proc_macro::TokenStream;
-use syn::{spanned::Spanned, Ident};
+use syn::Ident;
 #[macro_use]
 extern crate quote;
 
@@ -56,17 +55,17 @@ pub fn derive_content_node(item: TokenStream) -> TokenStream {
                         )*
                         #(
                             for d in &self.#vec_fields {
-                                f(d)
+                                f(d);
                             }
                         )*
                     }
                     fn walk(&self, f: fn(&dyn ContentNode)) {
                         f(self);
                         #(
-                            &self.#unit_fields.walk(f);
+                            self.#unit_fields.walk(f);
                         )*
                         #(
-                            for d in &self.#vec_fields {
+                            for d in self.#vec_fields.iter() {
                                 d.walk(f);
                             }
                         )*

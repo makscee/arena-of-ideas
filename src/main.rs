@@ -41,23 +41,6 @@ pub enum RunMode {
 }
 
 fn main() {
-    use extra::nodes::*;
-
-    let u = Unit {
-        name: "Unit Name".into(),
-        stats: UnitStats { data: "1/2".into() },
-        description: UnitDescription {
-            text: "Unit Description".into(),
-        },
-    };
-    let a = Ability {
-        description: "Ability Description".into(),
-        units: vec![u],
-    };
-    a.walk(|n| {
-        dbg!(n.data());
-    });
-    return;
     let mut app = App::new();
     let args = Args::try_parse().unwrap_or_default();
     ARGS.set(args.clone()).unwrap();
