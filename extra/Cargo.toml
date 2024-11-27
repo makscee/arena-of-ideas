@@ -1,0 +1,7 @@
+[package]
+name = "extra"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+extra-macros = { path = "../extra-macros" }

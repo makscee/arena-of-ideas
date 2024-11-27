@@ -1,5 +1,5 @@
 [workspace]
-members = ["server"]
+members = ["extra", "extra-macros", "server"]
 
 [workspace.package]
 version = "1.8.2"
@@ -15,8 +15,11 @@ edition.workspace = true
 spacetimedb = { version = "=1.0.0-rc1" }
 strum = "0.26.2"
 strum_macros = "0.26.2"
+itertools = "0.12.1"
 
 [dependencies]
+extra = { path = "extra" }
+extra-macros = { path = "extra-macros" }
 spacetimedb-sdk = "=1.0.0-rc1"
 spacetimedb-sats = "=1.0.0-rc1"
 spacetimedb-lib = "=1.0.0-rc1"
@@ -44,7 +47,7 @@ log = "0.4.19"
 serde = "1"
 serde_json = "1.0.104"
 ron = "0.8.0"
-itertools = "0.12.1"
+itertools = { workspace = true }
 anyhow = "1.0.75"
 strum = { workspace = true }
 strum_macros = { workspace = true }
