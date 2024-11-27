@@ -20,9 +20,7 @@ pub enum ContentKind {
 
 pub trait ContentNode {
     fn kind(&self) -> ContentKind;
-    fn data(&self) -> &String;
-    fn data_mut(&mut self) -> &mut String;
-    fn links(&self, f: fn(&dyn ContentNode));
+    fn get_var(&self, var: VarName) -> Option<VarValue>;
     fn walk(&self, f: fn(&dyn ContentNode));
 }
 
@@ -35,7 +33,7 @@ pub struct House {
 
 #[derive(ContentNode)]
 pub struct HouseColor {
-    pub hex: String,
+    pub color: String,
 }
 
 #[derive(ContentNode)]
@@ -65,7 +63,7 @@ pub struct Status {
 
 #[derive(ContentNode)]
 pub struct StatusDescription {
-    pub text: String,
+    pub description: String,
     pub trigger: StatusTrigger,
 }
 
@@ -91,12 +89,13 @@ pub struct Unit {
 
 #[derive(ContentNode)]
 pub struct UnitStats {
-    pub data: String,
+    pub hp: i32,
+    pub pwr: i32,
 }
 
 #[derive(ContentNode)]
 pub struct UnitDescription {
-    pub text: String,
+    pub description: String,
     pub trigger: UnitTrigger,
 }
 
@@ -108,4 +107,29 @@ pub struct UnitTrigger {
 #[derive(ContentNode)]
 pub struct UnitRepresentation {
     pub data: String,
+}
+
+#[allow(non_camel_case_types)]
+#[derive(Debug, Clone, Copy)]
+pub enum VarName {
+    hp,
+    pwr,
+    data,
+    name,
+    description,
+    color,
+}
+
+#[allow(non_camel_case_types)]
+#[derive(Debug, Clone)]
+pub enum VarValue {
+    i32(i32),
+    f32(f32),
+    String(String),
+}
+
+impl Default for VarValue {
+    fn default() -> Self {
+        Self::i32(0)
+    }
 }

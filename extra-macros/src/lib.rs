@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use proc_macro::TokenStream;
 use syn::Ident;
 #[macro_use]
@@ -15,49 +17,43 @@ pub fn derive_content_node(item: TokenStream) -> TokenStream {
         }) => {
             let mut unit_fields = Vec::default();
             let mut vec_fields = Vec::default();
-            let mut data: Option<Ident> = None;
+            let mut vars: Vec<proc_macro2::TokenStream> = Vec::default();
             for field in fields.into_iter() {
                 let ty = field.ty;
-                let ident = field.ident.unwrap();
+                let field_ident = field.ident.unwrap();
                 match ty {
                     syn::Type::Path(type_path) => {
-                        let field_ident = &type_path.path.segments.first().unwrap().ident;
-                        if field_ident == "String" {
-                            if data.is_none() {
-                                data = Some(ident);
-                            } else {
-                                panic!("There should be a single String data field");
-                            }
-                        } else if field_ident == "Vec" {
-                            vec_fields.push(ident);
+                        let type_ident = &type_path.path.segments.first().unwrap().ident;
+                        if type_ident == "Vec" {
+                            vec_fields.push(field_ident);
+                        } else if type_ident == "i32" || type_ident == "String" {
+                            vars.push(quote! {VarName::#field_ident => return Some(VarValue::#type_ident(self.#field_ident.clone()))}.into());
                         } else {
-                            unit_fields.push(ident);
+                            unit_fields.push(field_ident);
                         }
                     }
                     _ => unimplemented!(),
                 }
             }
-            let data = data.expect("String data field is missing");
             quote! {
                 impl ContentNode for #struct_identifier {
                     fn kind(&self) -> ContentKind {
                         ContentKind::#struct_identifier
                     }
-                    fn data(&self) -> &String {
-                        &self.#data
-                    }
-                    fn data_mut(&mut self) -> &mut String {
-                        &mut self.#data
-                    }
-                    fn links(&self, f: fn(&dyn ContentNode)) {
-                        #(
-                            f(&self.#unit_fields);
-                        )*
-                        #(
-                            for d in &self.#vec_fields {
-                                f(d);
+                    fn get_var(&self, var: VarName) -> Option<VarValue> {
+                        match var {
+                            #(
+                                #vars,
+                            )*
+                            _ => {
+                                #(
+                                    if let Some(v) = &self.#unit_fields.get_var(var) {
+                                        return Some(v.clone());
+                                    }
+                                )*
                             }
-                        )*
+                        };
+                        None
                     }
                     fn walk(&self, f: fn(&dyn ContentNode)) {
                         f(self);

@@ -134,7 +134,7 @@ fn on_change(world: &mut World) {
     }
     let to = cur_state(world);
     TilePlugin::change_state(to, world);
-    CameraPlugin::respawn_camera(world);
+    // CameraPlugin::respawn_camera(world);
 }
 
 lazy_static! {

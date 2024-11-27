@@ -243,7 +243,7 @@ impl TilePlugin {
         Self::clear_all(world);
         match to {
             GameState::Title => TitlePlugin::add_tiles(world),
-            GameState::Players => PlayersPlugin::add_tiles(world),
+            // GameState::Players => PlayersPlugin::add_tiles(world),
             _ => {}
         }
     }

@@ -41,6 +41,26 @@ pub enum RunMode {
 }
 
 fn main() {
+    {
+        use extra::*;
+        use nodes::*;
+        let unit = Unit {
+            name: "UnitName".into(),
+            stats: UnitStats { hp: 1, pwr: 2 },
+            description: UnitDescription {
+                description: "Unit Description".into(),
+                trigger: UnitTrigger {
+                    data: "Unit trigger data".into(),
+                },
+            },
+            representation: UnitRepresentation {
+                data: "Representation data".into(),
+            },
+        };
+        let val = unit.get_var(VarName::pwr);
+        dbg!(val);
+    }
+    return;
     let mut app = App::new();
     let args = Args::try_parse().unwrap_or_default();
     ARGS.set(args.clone()).unwrap();
@@ -89,10 +109,10 @@ fn main() {
         //         .continue_to_state(GameState::TestScenariosRun)
         //         .load_collection::<TestScenarios>(),
         // )
-        .add_plugins(Material2dPlugin::<ShapeMaterial>::default())
-        .add_plugins(Material2dPlugin::<CurveMaterial>::default())
+        // .add_plugins(Material2dPlugin::<ShapeMaterial>::default())
+        // .add_plugins(Material2dPlugin::<CurveMaterial>::default())
         .add_plugins((
-            RonAssetPlugin::<Representation>::new(&["rep.ron"]),
+            // RonAssetPlugin::<Representation>::new(&["rep.ron"]),
             RonAssetPlugin::<Vfx>::new(&["vfx.ron"]),
         ))
         .add_plugins(bevy_egui::EguiPlugin)
@@ -100,11 +120,11 @@ fn main() {
         .add_plugins((
             UiPlugin,
             LoginPlugin,
-            ActionPlugin,
+            // ActionPlugin,
             GameStatePlugin,
             WidgetsPlugin,
             RepresentationPlugin,
-            CameraPlugin,
+            // CameraPlugin,
             TextColumnPlugin,
         ))
         .add_plugins((
