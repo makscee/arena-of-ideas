@@ -112,14 +112,14 @@ impl TextureRenderPlugin {
             ts: gt().play_head(),
         }
     }
-    fn spawn_unit(unit: PackedUnit, x: f32, y: f32, world: &mut World) -> Entity {
-        let entity = unit.unpack(TeamPlugin::entity(Faction::Shop, world), None, None, world);
-        VarState::get_mut(entity, world).set_vec2(VarName::Position, vec2(x, y).into());
-        for child in get_children_recursive(entity, world) {
-            world.entity_mut(child).insert(Self::layer());
-        }
-        entity
-    }
+    // fn spawn_unit(unit: PackedUnit, x: f32, y: f32, world: &mut World) -> Entity {
+    //     let entity = unit.unpack(TeamPlugin::entity(Faction::Shop, world), None, None, world);
+    //     VarState::get_mut(entity, world).set_vec2(VarName::Position, vec2(x, y).into());
+    //     for child in get_children_recursive(entity, world) {
+    //         world.entity_mut(child).insert(Self::layer());
+    //     }
+    //     entity
+    // }
     fn spawn_representation(rep: Representation, x: f32, y: f32, world: &mut World) -> Entity {
         let entity = world.spawn_empty().id();
         rep.unpack(entity, world);
@@ -154,13 +154,13 @@ impl TextureRenderPlugin {
             image
         })
     }
-    pub fn texture_base_unit(unit: &TBaseUnit, world: &mut World) -> TextureId {
-        Self::cached_texture(
-            unit,
-            |x, y, world| Self::spawn_unit(unit.clone().into(), x, y, world),
-            world,
-        )
-    }
+    // pub fn texture_base_unit(unit: &TBaseUnit, world: &mut World) -> TextureId {
+    //     Self::cached_texture(
+    //         unit,
+    //         |x, y, world| Self::spawn_unit(unit.clone().into(), x, y, world),
+    //         world,
+    //     )
+    // }
     pub fn texture_representation(rep: &Representation, world: &mut World) -> TextureId {
         Self::cached_texture(
             rep,

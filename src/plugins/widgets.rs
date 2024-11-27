@@ -81,13 +81,10 @@ impl WidgetsPlugin {
             .show(ctx, |ui| match state {
                 GameState::Connect => ConnectPlugin::ui(ui),
                 GameState::Login => LoginPlugin::login_ui(ui, world),
-                GameState::Battle => BattlePlugin::ui(ui, world),
-                GameState::GameOver => ShopPlugin::game_over_ui(ui),
                 _ => {}
             });
 
         // Overlay
-        Trade::show_active(ctx, world);
         Confirmation::show_current(ctx, world);
         Notification::show_recent(ctx, world);
 

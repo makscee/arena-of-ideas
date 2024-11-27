@@ -226,27 +226,11 @@ impl TilePlugin {
     fn clear_all(world: &mut World) {
         rm(world).tiles.clear();
     }
-
-    pub fn add_team(gid: u64, world: &mut World) {
-        Tile::new(Side::Right, move |ui, world| {
-            gid.get_team().show(1.0, ui, world);
-        })
-        .with_id(format!("team_{gid}"))
-        .push(world)
-    }
     pub fn add_user(gid: u64, world: &mut World) {
         Tile::new(Side::Right, move |ui, world| {
             gid.get_player().show(1.0, ui, world);
         })
         .with_id(format!("user_{gid}"))
-        .push(world)
-    }
-    pub fn add_fused_unit(unit: FusedUnit, world: &mut World) {
-        let gid = unit.id;
-        Tile::new(Side::Right, move |ui, world| {
-            unit.show(1.0, ui, world);
-        })
-        .with_id(format!("unit_{gid}"))
         .push(world)
     }
     pub fn is_open(id: &str, world: &World) -> bool {
@@ -258,14 +242,7 @@ impl TilePlugin {
     pub fn change_state(to: GameState, world: &mut World) {
         Self::clear_all(world);
         match to {
-            GameState::Meta => MetaPlugin::add_tiles(world),
-            GameState::Shop => ShopPlugin::add_tiles(world),
-            GameState::Battle => BattlePlugin::add_tiles(world),
-            GameState::GameStart => GameStartPlugin::add_tiles(world),
             GameState::Title => TitlePlugin::add_tiles(world),
-            GameState::Editor => EditorPlugin::add_tiles(world),
-            GameState::Stats => StatsPlugin::add_tiles(world),
-            GameState::Incubator => IncubatorPlugin::add_tiles(world),
             GameState::Players => PlayersPlugin::add_tiles(world),
             _ => {}
         }

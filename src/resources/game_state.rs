@@ -61,14 +61,6 @@ lazy_static! {
             GameState::TestScenariosRun,
             [GameOption::TestScenariosLoad].into(),
         );
-        m.insert(
-            GameState::Stats,
-            [
-                GameOption::Connect,
-                GameOption::Table(StdbTable::battle.full()),
-            ]
-            .into(),
-        );
         m.insert(GameState::MigrationUpload, [GameOption::Connect].into());
         m.insert(GameState::MigrationDownload, [GameOption::Connect].into());
         m.insert(GameState::Admin, [GameOption::Connect].into());
@@ -141,11 +133,8 @@ fn on_change(world: &mut World) {
         ctx.data_mut(|w| w.clear());
     }
     let to = cur_state(world);
-    TeamSyncPlugin::unsubscribe_all(world);
     TilePlugin::change_state(to, world);
-    TeamContainerResource::clear_state(world);
     CameraPlugin::respawn_camera(world);
-    stdb_cache_reset();
 }
 
 lazy_static! {

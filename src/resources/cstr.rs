@@ -342,42 +342,10 @@ impl ToCstr for VarName {
         self.as_ref().into()
     }
 }
-impl ToCstr for TBaseUnit {
-    fn cstr(&self) -> Cstr {
-        let color = name_color(&self.house);
-        self.name.cstr_c(color)
-    }
-}
-impl ToCstr for FusedUnit {
-    fn cstr(&self) -> Cstr {
-        self.cstr_limit(3, false)
-    }
-    fn cstr_expanded(&self) -> Cstr {
-        self.cstr_limit(3, true)
-    }
-}
-impl ToCstr for TTeam {
-    fn cstr(&self) -> Cstr {
-        let mut name = if self.name.len() > 20 {
-            self.name.split_at(20).0.cstr_c(VISIBLE_LIGHT) + &"[s ...]"
-        } else {
-            self.name.cstr_cs(VISIBLE_LIGHT, CstrStyle::Small)
-        };
-        if self.units.is_empty() {
-            return "_".cstr();
-        }
-        let units = self
-            .units
-            .iter()
-            .map(|u| u.cstr_limit(1, false))
-            .collect_vec();
-        name += &format!("({})", units.join(" "));
-        name
-    }
-}
 impl ToCstr for TPlayer {
     fn cstr(&self) -> Cstr {
-        let supporter_lvl = self.get_supporter_level();
+        let supporter_lvl = 0;
+        todo!(); //self.get_supporter_level();
         let c = if supporter_lvl > 0 {
             "★ ".cstr_c(rarity_color(supporter_lvl - 1))
         } else {
@@ -410,14 +378,5 @@ impl ToCstr for i32 {
             -1 => format!("{self}").cstr_c(RED),
             _ => format!("{self}").cstr(),
         }
-    }
-}
-impl ToCstr for LootboxKind {
-    fn cstr(&self) -> Cstr {
-        "lootbox ".cstr_c(VISIBLE_LIGHT)
-            + &match self {
-                LootboxKind::Regular => "regular".cstr_c(VISIBLE_LIGHT),
-                LootboxKind::House(h) => format!("house {h}").cstr_c(name_color(h)),
-            }
     }
 }

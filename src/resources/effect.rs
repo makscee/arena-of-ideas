@@ -14,7 +14,6 @@ pub enum Effect {
     ClearAllStatuses,
     StealAllStatuses,
     UseAbility(String, i32),
-    AbilityStateAddVar(String, VarName, Expression),
     Summon(String, Option<Box<Effect>>),
     WithTarget(Expression, Box<Effect>),
     WithOwner(Expression, Box<Effect>),
@@ -44,7 +43,6 @@ impl Effect {
             | Effect::ClearAllStatuses
             | Effect::StealAllStatuses
             | Effect::UseAbility(..)
-            | Effect::AbilityStateAddVar(..)
             | Effect::Summon(..)
             | Effect::Text(..)
             | Effect::StateAddVar(..)
@@ -142,7 +140,7 @@ impl Effect {
                 if delta > 0 {
                     Event::ApplyStatus(name.into()).send_with_context(context.clone(), world);
                 }
-                Status::change_charges_with_text(name, context.get_target()?, delta, world);
+                // Status::change_charges_with_text(name, context.get_target()?, delta, world);
             }
             Effect::ChangeAllStatuses => {
                 let target = context.get_target()?;
@@ -163,11 +161,11 @@ impl Effect {
             Effect::ClearStatus(name) => {
                 let target = context.get_target()?;
                 let charges = context.get_charges(world).unwrap_or(1);
-                let charges = charges.at_most(Status::get_charges(name, target, world)?);
+                // let charges = charges.at_most(Status::get_charges(name, target, world)?);
                 if charges <= 0 {
                     return Err(anyhow!("Status {name} is absent (c: $Charges)"));
                 }
-                Status::change_charges_with_text(name, target, -charges, world);
+                // Status::change_charges_with_text(name, target, -charges, world);
             }
             Effect::ClearAllStatuses => {
                 let target = context.get_target()?;
@@ -187,111 +185,19 @@ impl Effect {
                 if charges <= 0 {
                     return Err(anyhow!("Can't steal nonpositive charges amount"));
                 }
-                let c = Status::get_charges(name, target, world)?;
-                let delta = c.at_most(charges);
-                Status::change_charges_with_text(name, target, -delta, world);
-                Status::change_charges_with_text(name, owner, delta, world);
+                // let c = Status::get_charges(name, target, world)?;
+                // let delta = c.at_most(charges);
+                // Status::change_charges_with_text(name, target, -delta, world);
+                // Status::change_charges_with_text(name, owner, delta, world);
             }
             Effect::StealAllStatuses => {
-                let target = context.get_target()?;
-                let polarity = context
-                    .get_value(VarName::Polarity, world)
-                    .and_then(|v| v.get_int())
-                    .ok();
-                for (s, _) in
-                    VarState::get(target, world).all_active_statuses_at(polarity, context.t())
-                {
-                    ActionPlugin::action_push_front(Effect::StealStatus(s), context.clone(), world);
-                }
+                todo!();
             }
             Effect::UseAbility(name, base) => {
-                let ability = game_assets()
-                    .abilities
-                    .get(name)
-                    .cloned()
-                    .with_context(|| format!("Ability not found {name}"))
-                    .unwrap();
-                let charges = context
-                    .get_value(VarName::Lvl, world)
-                    .map(|v| v.get_int().unwrap())
-                    .unwrap_or(0)
-                    + *base;
-                let caster = owner;
-                let context = context
-                    .clone()
-                    .set_ability_state(name, world)?
-                    .set_var(VarName::Charges, VarValue::Int(charges))
-                    .set_caster(caster)
-                    .set_var(VarName::Color, name_color(name).into())
-                    .take();
-                ActionPlugin::action_push_front(ability.effect, context.clone(), world);
-                let txt = if *base > 0 {
-                    format!("{name} +{base}")
-                } else {
-                    name.clone()
-                };
-                TextColumnPlugin::add(
-                    caster,
-                    "use ".cstr() + &txt.cstr_cs(name_color(name), CstrStyle::Bold),
-                    world,
-                );
-            }
-            Effect::AbilityStateAddVar(name, var, delta) => {
-                let delta = delta.get_int(context, world)?;
-                TeamPlugin::change_ability_var_int(
-                    name.clone(),
-                    *var,
-                    delta,
-                    context.get_faction(world)?,
-                    world,
-                );
-                TextColumnPlugin::add(
-                    owner,
-                    format!(
-                        "{} {} {}",
-                        name.cstr_cs(name_color(name), CstrStyle::Bold),
-                        var.cstr_c(VISIBLE_BRIGHT),
-                        format!(" +{delta}").cstr_c(VISIBLE_LIGHT)
-                    ),
-                    world,
-                );
+                todo!();
             }
             Effect::Summon(name, then) => {
-                let faction = context.get_faction(world)?;
-                if UnitPlugin::collect_faction(faction, world).len()
-                    >= global_settings().battle.summon_limit as usize
-                {
-                    return Err(anyhow!("Summon limit reached"));
-                }
-                let mut unit = game_assets()
-                    .summons
-                    .get(name)
-                    .with_context(|| format!("Summon {name} not found"))
-                    .unwrap()
-                    .clone();
-                context.set_ability_state(name, world)?;
-                let extra_pwr = context
-                    .get_ability_var(name, VarName::Pwr)
-                    .unwrap_or_default()
-                    .get_int()?;
-                let extra_hp = context
-                    .get_ability_var(name, VarName::Hp)
-                    .unwrap_or_default()
-                    .get_int()?;
-                unit.pwr += extra_pwr;
-                unit.hp += extra_hp;
-                UnitPlugin::make_slot_gap(faction, 0, world);
-                let unit = unit.unpack(TeamPlugin::entity(faction, world), Some(0), None, world);
-                UnitPlugin::fill_gaps_and_translate(world);
-                if let Some(then) = then {
-                    ActionPlugin::action_push_front(
-                        *then.clone(),
-                        context.clone().set_target(unit).take(),
-                        world,
-                    );
-                }
-                Event::Summon(unit)
-                    .send_with_context(context.clone().set_caster(owner).take(), world);
+                todo!();
             }
             Effect::WithTarget(target, effect) => {
                 let target = target.get_value(context, world)?;
@@ -392,34 +298,7 @@ impl Effect {
                 TextColumnPlugin::add(target, text.cstr_cs(color, CstrStyle::Bold), world);
             }
             Effect::FullCopy => {
-                let target = context.get_target()?;
-                let state = VarState::get(target, world);
-                let mut vars = state.all_own_values();
-                vars.remove(&VarName::Slot);
-                vars.remove(&VarName::Position);
-                let status_charges = state.all_active_statuses_at(None, context.t());
-                let status_components = Status::collect_statuses(target, world);
-                let mut state = VarState::get_mut(owner, world);
-                for (var, value) in vars {
-                    state.set_value(var, value);
-                }
-                if let Some((_, local_status)) = status_components
-                    .into_iter()
-                    .find(|(_, s)| s.name.eq(LOCAL_STATUS))
-                {
-                    if let Ok(own_local_status) =
-                        Status::find_status_entity(owner, LOCAL_STATUS, world)
-                    {
-                        world.entity_mut(own_local_status).insert(local_status);
-                    } else {
-                        local_status.spawn(owner, world);
-                    }
-                }
-                for (status, charges) in status_charges {
-                    let own_charges =
-                        Status::get_charges(&status, owner, world).unwrap_or_default();
-                    Status::change_charges(&status, owner, charges - own_charges, world);
-                }
+                todo!()
             }
         }
         Ok(())
@@ -439,7 +318,6 @@ impl ToCstr for Effect {
             Effect::Text(_)
             | Effect::FullCopy
             | Effect::UseAbility(_, _)
-            | Effect::AbilityStateAddVar(_, _, _)
             | Effect::Summon(_, _) => PURPLE,
             Effect::WithTarget(_, _)
             | Effect::WithOwner(_, _)
@@ -471,14 +349,6 @@ impl ToCstr for Effect {
                 }
                 c
             }
-            Effect::AbilityStateAddVar(ability, var, value) => {
-                format!(
-                    "{} {} add {}",
-                    ability.cstr_cs(name_color(ability), CstrStyle::Bold),
-                    var.cstr_c(VISIBLE_BRIGHT),
-                    value.cstr_cs(VISIBLE_BRIGHT, CstrStyle::Bold)
-                )
-            }
             Effect::Vfx(name) => format!("Vfx({name})").cstr_c(VISIBLE_LIGHT),
             Effect::List(l) => {
                 format!(
@@ -508,9 +378,7 @@ impl ShowEditor for Effect {
                 ex.show_node("value", context, world, ui);
                 ef.show_node("effect", context, world, ui);
             }
-            Effect::AbilityStateAddVar(_, _, e) | Effect::Text(e) => {
-                e.show_node("", context, world, ui)
-            }
+            Effect::Text(e) => e.show_node("", context, world, ui),
 
             Effect::Summon(_, e) => {
                 if let Some(e) = e {
@@ -556,10 +424,6 @@ impl ShowEditor for Effect {
             Effect::UseAbility(ability, base) => {
                 ability_selector(ability, ui);
                 DragValue::new(base).range(0..=10).ui(ui);
-            }
-            Effect::AbilityStateAddVar(ability, var, _) => {
-                ability_selector(ability, ui);
-                var_selector(var, ui);
             }
             Effect::StatusSetVar(_, status, var, _) => {
                 status_selector(status, ui);
@@ -616,7 +480,6 @@ impl ShowEditor for Effect {
             | Effect::ClearAllStatuses
             | Effect::StealAllStatuses
             | Effect::UseAbility(_, _)
-            | Effect::AbilityStateAddVar(_, _, _)
             | Effect::Vfx(_)
             | Effect::StateAddVar(_, _, _)
             | Effect::StatusSetVar(_, _, _, _)

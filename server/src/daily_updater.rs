@@ -25,11 +25,8 @@ fn daily_update_reducer(ctx: &ReducerContext, _timer: DailyUpdateTimer) -> Resul
 }
 
 pub fn daily_update(ctx: &ReducerContext) -> Result<(), String> {
-    TMetaShop::refresh(ctx)?;
     TDailyState::daily_refresh(ctx);
     quests_daily_refresh(ctx);
-    TReward::daily(ctx);
-    // TPlayer::cleanup(ctx);
     Ok(())
 }
 

@@ -2,8 +2,6 @@ use super::*;
 
 #[derive(Deserialize, Serialize, Debug, Clone, Default)]
 pub struct ClientState {
-    pub editor_teams: HashMap<Faction, PackedTeam>,
-    pub editor: EditorResource,
     pub last_played_mode: Option<u64>,
     pub last_played_team: Option<u64>,
 }

@@ -7,7 +7,6 @@ use super::*;
 pub trait EntityExt {
     fn get_parent(self, world: &World) -> Option<Entity>;
     fn get_parent_query(self, query: &Query<&Parent>) -> Option<Entity>;
-    fn faction(self, world: &World) -> Faction;
 }
 
 impl EntityExt for Entity {
@@ -16,13 +15,6 @@ impl EntityExt for Entity {
     }
     fn get_parent_query(self, query: &Query<&Parent>) -> Option<Entity> {
         query.get(self).ok().map(|p| p.get())
-    }
-    fn faction(self, world: &World) -> Faction {
-        Context::new(self)
-            .get_value(VarName::Faction, world)
-            .unwrap()
-            .get_faction()
-            .unwrap()
     }
 }
 pub trait TableSingletonExt: Table {
@@ -36,7 +28,6 @@ pub trait TableSingletonExt: Table {
 
 impl TableSingletonExt for GlobalDataTableHandle<'static> {}
 impl TableSingletonExt for GlobalSettingsTableHandle<'static> {}
-impl TableSingletonExt for ArenaRunTableHandle<'static> {}
 impl TableSingletonExt for WalletTableHandle<'static> {}
 impl TableSingletonExt for DailyStateTableHandle<'static> {
     fn current(&self) -> Self::Row {
@@ -90,157 +81,50 @@ impl<R> StdbStatusExt for Event<R> {
 }
 
 pub trait GIDExt {
-    fn get_team(self) -> TTeam;
-    fn try_get_team(self) -> Option<TTeam>;
-    fn get_team_cached(self) -> TTeam;
     fn get_player(self) -> TPlayer;
-    fn unit_item(self) -> TUnitItem;
-    fn unit_shard_item(self) -> TUnitShardItem;
-    fn rainbow_shard_item(self) -> TRainbowShardItem;
-    fn lootbox_item(self) -> TLootboxItem;
-}
-
-#[derive(Default)]
-struct StdbCache {
-    teams: HashMap<u64, TTeam>,
-}
-
-static STDB_CACHE: OnceCell<RwLock<StdbCache>> = OnceCell::new();
-fn stdb_cache_get_mut() -> RwLockWriteGuard<'static, StdbCache> {
-    STDB_CACHE.get_or_init(|| default()).write().unwrap()
-}
-
-pub fn stdb_cache_reset() {
-    *stdb_cache_get_mut() = default()
 }
 
 impl GIDExt for u64 {
-    fn get_team(self) -> TTeam {
-        if self == 0 {
-            return TTeam {
-                id: 0,
-                owner: 0,
-                units: default(),
-                name: default(),
-                pool: TeamPool::Owned,
-            };
-        }
-        self.try_get_team()
-            .with_context(|| format!("Failed to find Team#{self}"))
-            .unwrap()
-    }
-    fn try_get_team(self) -> Option<TTeam> {
-        cn().db.team().id().find(&self)
-    }
-    fn get_team_cached(self) -> TTeam {
-        let mut cache = stdb_cache_get_mut();
-        if let Some(team) = cache.teams.get(&self) {
-            return team.clone();
-        } else {
-            let team = self.get_team();
-            cache.teams.insert(self, team.clone());
-            team
-        }
-    }
     fn get_player(self) -> TPlayer {
         if self == 0 {
             return TPlayer::default();
         }
         cn().db.player().id().find(&self).unwrap_or_default()
     }
-    fn unit_item(self) -> TUnitItem {
-        cn().db
-            .unit_item()
-            .id()
-            .find(&self)
-            .with_context(|| format!("Failed to find UnitItem#{self}"))
-            .unwrap()
-    }
-    fn unit_shard_item(self) -> TUnitShardItem {
-        cn().db
-            .unit_shard_item()
-            .id()
-            .find(&self)
-            .with_context(|| format!("Failed to find UnitShardItem#{self}"))
-            .unwrap()
-    }
-    fn rainbow_shard_item(self) -> TRainbowShardItem {
-        cn().db
-            .rainbow_shard_item()
-            .id()
-            .find(&self)
-            .with_context(|| format!("Failed to find RainbowShardItem#{self}"))
-            .unwrap()
-    }
-    fn lootbox_item(self) -> TLootboxItem {
-        cn().db
-            .lootbox_item()
-            .id()
-            .find(&self)
-            .with_context(|| format!("Failed to find LootboxItem#{self}"))
-            .unwrap()
-    }
 }
 
-pub trait BaseUnitExt {
-    fn base(&self) -> &str;
-    fn base_unit(&self) -> TBaseUnit {
-        cn().db
-            .base_unit()
-            .name()
-            .find(&self.base().into())
-            .unwrap()
-    }
-}
-
-impl BaseUnitExt for FusedUnit {
-    fn base(&self) -> &str {
-        &self.bases[0]
-    }
-}
-impl BaseUnitExt for String {
-    fn base(&self) -> &str {
-        self
-    }
-}
-impl BaseUnitExt for str {
-    fn base(&self) -> &str {
-        self
-    }
-}
-
-impl TTeam {
-    pub fn hover_label(&self, ui: &mut Ui, world: &mut World) {
-        let resp = self
-            .cstr()
-            .as_label(ui)
-            .sense(Sense::click())
-            .selectable(false)
-            .ui(ui);
-        if resp.hovered() {
-            cursor_window(ui.ctx(), |ui| {
-                Frame {
-                    inner_margin: Margin::same(8.0),
-                    rounding: Rounding::same(13.0),
-                    fill: BG_TRANSPARENT,
-                    ..default()
-                }
-                .show(ui, |ui| {
-                    self.show(1.0, ui, world);
-                });
-            });
-            if resp.clicked() {
-                let packed = PackedTeam::from_id(self.id);
-                let s = ron::to_string(&packed).unwrap();
-                copy_to_clipboard(&s, world);
-                Notification::new(
-                    format!("Team#{} copied to clipboard", self.id).cstr_c(VISIBLE_LIGHT),
-                )
-                .push(world);
-            }
-        }
-    }
-}
+// impl TTeam {
+//     pub fn hover_label(&self, ui: &mut Ui, world: &mut World) {
+//         let resp = self
+//             .cstr()
+//             .as_label(ui)
+//             .sense(Sense::click())
+//             .selectable(false)
+//             .ui(ui);
+//         if resp.hovered() {
+//             cursor_window(ui.ctx(), |ui| {
+//                 Frame {
+//                     inner_margin: Margin::same(8.0),
+//                     rounding: Rounding::same(13.0),
+//                     fill: BG_TRANSPARENT,
+//                     ..default()
+//                 }
+//                 .show(ui, |ui| {
+//                     self.show(1.0, ui, world);
+//                 });
+//             });
+//             if resp.clicked() {
+//                 let packed = PackedTeam::from_id(self.id);
+//                 let s = ron::to_string(&packed).unwrap();
+//                 copy_to_clipboard(&s, world);
+//                 Notification::new(
+//                     format!("Team#{} copied to clipboard", self.id).cstr_c(VISIBLE_LIGHT),
+//                 )
+//                 .push(world);
+//             }
+//         }
+//     }
+// }
 
 impl Default for GameMode {
     fn default() -> Self {
@@ -284,46 +168,6 @@ impl Into<u64> for GameMode {
         }
     }
 }
-
-impl Default for GameData {
-    fn default() -> Self {
-        Self {
-            global_data: default(),
-            global_settings: default(),
-            ability: default(),
-            arena_leaderboard: default(),
-            arena_run: default(),
-            arena_run_archive: default(),
-            auction: default(),
-            base_unit: default(),
-            battle: default(),
-            daily_state: default(),
-            house: default(),
-            lootbox_item: default(),
-            meta_shop: default(),
-            quest: default(),
-            rainbow_shard_item: default(),
-            status: default(),
-            team: default(),
-            trade: default(),
-            unit_balance: default(),
-            unit_item: default(),
-            unit_shard_item: default(),
-            player: default(),
-            wallet: default(),
-            player_stats: default(),
-            player_game_stats: default(),
-            global_event: default(),
-            player_tag: default(),
-            reward: default(),
-        }
-    }
-}
-impl Default for UnitPool {
-    fn default() -> Self {
-        Self::Game
-    }
-}
 impl Default for TPlayer {
     fn default() -> Self {
         Self {
@@ -364,119 +208,5 @@ impl EventContext {
             Event::Reducer(r) => r.caller_identity == player_identity(),
             _ => true,
         }
-    }
-}
-impl FusedUnit {
-    pub fn cstr_limit(&self, max_chars: usize, show_mutation: bool) -> Cstr {
-        let mut result =
-            UnitPlugin::name_from_bases(self.bases.iter().map(|s| s.as_str()).collect(), max_chars);
-        if show_mutation {
-            let mutation_str =
-                self.pwr_mutation.cstr_expanded() + "/" + &self.hp_mutation.cstr_expanded();
-            result = result + " " + &mutation_str.cstr_s(CstrStyle::Small);
-        }
-        result
-    }
-}
-impl Hash for TBaseUnit {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.name.hash(state);
-        self.pwr.hash(state);
-        self.hp.hash(state);
-        self.rarity.hash(state);
-        self.house.hash(state);
-        self.pool.hash(state);
-        self.triggers.hash(state);
-        self.targets.hash(state);
-        self.effects.hash(state);
-        self.representation.hash(state);
-    }
-}
-impl Hash for UnitPool {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        core::mem::discriminant(self).hash(state);
-    }
-}
-impl Hash for FusedUnit {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.id.hash(state);
-        self.bases.hash(state);
-        self.triggers.hash(state);
-        self.targets.hash(state);
-        self.effects.hash(state);
-        self.hp.hash(state);
-        self.pwr.hash(state);
-        self.hp_mutation.hash(state);
-        self.pwr_mutation.hash(state);
-        self.lvl.hash(state);
-        self.xp.hash(state);
-    }
-}
-
-#[derive(Clone, Copy, Debug, EnumIter, PartialEq, Eq, AsRefStr, Display)]
-pub enum ContentType {
-    CUnit,
-    CUnitDescription,
-    CUnitStats,
-    CUnitTrigger,
-    CUnitRepresentation,
-    CAbility,
-    CEffect,
-    CAbilityDescription,
-    CHouse,
-    CStatus,
-    CStatusDescription,
-    CStatusTrigger,
-    CSummon,
-    CColor,
-}
-impl From<SContentType> for ContentType {
-    fn from(value: SContentType) -> Self {
-        match value {
-            SContentType::CUnit => Self::CUnit,
-            SContentType::CUnitDescription => Self::CUnitDescription,
-            SContentType::CUnitStats => Self::CUnitStats,
-            SContentType::CUnitTrigger => Self::CUnitTrigger,
-            SContentType::CUnitRepresentation => Self::CUnitRepresentation,
-            SContentType::CAbility => Self::CAbility,
-            SContentType::CEffect => Self::CEffect,
-            SContentType::CAbilityDescription => Self::CAbilityDescription,
-            SContentType::CHouse => Self::CHouse,
-            SContentType::CStatus => Self::CStatus,
-            SContentType::CStatusDescription => Self::CStatusDescription,
-            SContentType::CStatusTrigger => Self::CStatusTrigger,
-            SContentType::CSummon => Self::CSummon,
-            SContentType::CColor => Self::CColor,
-        }
-    }
-}
-impl From<ContentType> for SContentType {
-    fn from(value: ContentType) -> Self {
-        match value {
-            ContentType::CUnit => Self::CUnit,
-            ContentType::CUnitDescription => Self::CUnitDescription,
-            ContentType::CUnitStats => Self::CUnitStats,
-            ContentType::CUnitTrigger => Self::CUnitTrigger,
-            ContentType::CUnitRepresentation => Self::CUnitRepresentation,
-            ContentType::CAbility => Self::CAbility,
-            ContentType::CEffect => Self::CEffect,
-            ContentType::CAbilityDescription => Self::CAbilityDescription,
-            ContentType::CHouse => Self::CHouse,
-            ContentType::CStatus => Self::CStatus,
-            ContentType::CStatusDescription => Self::CStatusDescription,
-            ContentType::CStatusTrigger => Self::CStatusTrigger,
-            ContentType::CSummon => Self::CSummon,
-            ContentType::CColor => Self::CColor,
-        }
-    }
-}
-impl SContentType {
-    pub fn to_local(&self) -> ContentType {
-        self.clone().into()
-    }
-}
-impl ContentType {
-    pub fn to_server(self) -> SContentType {
-        self.into()
     }
 }

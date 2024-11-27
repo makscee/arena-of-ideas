@@ -83,15 +83,6 @@ impl VarState {
     pub fn try_get(entity: Entity, world: &World) -> Result<&Self> {
         world
             .get::<Self>(entity)
-            .or_else(|| {
-                world.get::<Status>(entity).and_then(|s| {
-                    entity.get_parent(world).and_then(|p| {
-                        Self::try_get(p, world)
-                            .ok()
-                            .and_then(|state| state.get_status(&s.name))
-                    })
-                })
-            })
             .with_context(|| format!("VarState not found for {entity}"))
     }
     pub fn get_mut(entity: Entity, world: &mut World) -> Mut<Self> {
@@ -133,9 +124,7 @@ impl VarState {
             self.statuses
                 .iter()
                 .filter_map(|(name, state)| {
-                    if LOCAL_STATUS.eq(name) {
-                        None
-                    } else if polarity.is_none()
+                    if polarity.is_none()
                         || polarity.is_some_and(|p| {
                             state
                                 .get_value_at(VarName::Polarity, t)

@@ -26,7 +26,7 @@ impl Rarity {
         RARITY_COLORS[self as usize]
     }
     pub fn from_base(name: &str) -> Self {
-        name.to_owned().base_unit().rarity.into()
+        todo!()
     }
 }
 

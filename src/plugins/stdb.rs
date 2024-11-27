@@ -11,41 +11,12 @@ use super::*;
 pub enum StdbTable {
     global_settings,
     global_data,
-
-    base_unit,
-    house,
-    ability,
-    status,
-
-    meta_shop,
-
-    trade,
-
     player,
     quest,
-    arena_run,
-    arena_run_archive,
     arena_leaderboard,
-    team,
-    battle,
-    auction,
-    unit_item,
-    unit_shard_item,
-    rainbow_shard_item,
-    lootbox_item,
     wallet,
     daily_state,
-    unit_balance,
-    player_stats,
-    player_game_stats,
-    global_event,
     player_tag,
-    reward,
-    content_piece,
-    content_vote_score,
-    content_vote,
-    content_favorite,
-    content_favorite_score,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -164,167 +135,6 @@ impl StdbQuery {
 }
 
 impl StdbTable {
-    pub fn fill_from_json_data(self, json: &str, data: &mut GameData) {
-        match self {
-            StdbTable::global_settings => {
-                data.global_settings =
-                    serde_json::from_str::<DeserializeWrapper<Vec<GlobalSettings>>>(json)
-                        .unwrap()
-                        .0;
-            }
-            StdbTable::global_data => {
-                data.global_data =
-                    serde_json::from_str::<DeserializeWrapper<Vec<GlobalData>>>(json)
-                        .unwrap()
-                        .0;
-            }
-            StdbTable::base_unit => {
-                data.base_unit = serde_json::from_str::<DeserializeWrapper<Vec<TBaseUnit>>>(json)
-                    .unwrap()
-                    .0;
-            }
-            StdbTable::house => {
-                data.house = serde_json::from_str::<DeserializeWrapper<Vec<THouse>>>(json)
-                    .unwrap()
-                    .0;
-            }
-            StdbTable::ability => {
-                data.ability = serde_json::from_str::<DeserializeWrapper<Vec<TAbility>>>(json)
-                    .unwrap()
-                    .0;
-            }
-            StdbTable::status => {
-                data.status = serde_json::from_str::<DeserializeWrapper<Vec<TStatus>>>(json)
-                    .unwrap()
-                    .0;
-            }
-            StdbTable::meta_shop => {
-                data.meta_shop = serde_json::from_str::<DeserializeWrapper<Vec<TMetaShop>>>(json)
-                    .unwrap()
-                    .0;
-            }
-            StdbTable::trade => {
-                data.trade = serde_json::from_str::<DeserializeWrapper<Vec<TTrade>>>(json)
-                    .unwrap()
-                    .0;
-            }
-            StdbTable::player => {
-                data.player = serde_json::from_str::<DeserializeWrapper<Vec<TPlayer>>>(json)
-                    .unwrap()
-                    .0;
-            }
-            StdbTable::quest => {
-                data.quest = serde_json::from_str::<DeserializeWrapper<Vec<TQuest>>>(json)
-                    .unwrap()
-                    .0;
-            }
-            StdbTable::arena_run => {
-                data.arena_run = serde_json::from_str::<DeserializeWrapper<Vec<TArenaRun>>>(json)
-                    .unwrap()
-                    .0;
-            }
-            StdbTable::arena_run_archive => {
-                data.arena_run_archive =
-                    serde_json::from_str::<DeserializeWrapper<Vec<TArenaRunArchive>>>(json)
-                        .unwrap()
-                        .0;
-            }
-            StdbTable::arena_leaderboard => {
-                data.arena_leaderboard =
-                    serde_json::from_str::<DeserializeWrapper<Vec<TArenaLeaderboard>>>(json)
-                        .unwrap()
-                        .0;
-            }
-            StdbTable::team => {
-                data.team = serde_json::from_str::<DeserializeWrapper<Vec<TTeam>>>(json)
-                    .unwrap()
-                    .0;
-            }
-            StdbTable::battle => {
-                data.battle = serde_json::from_str::<DeserializeWrapper<Vec<TBattle>>>(json)
-                    .unwrap()
-                    .0;
-            }
-            StdbTable::auction => {
-                data.auction = serde_json::from_str::<DeserializeWrapper<Vec<TAuction>>>(json)
-                    .unwrap()
-                    .0;
-            }
-            StdbTable::unit_item => {
-                data.unit_item = serde_json::from_str::<DeserializeWrapper<Vec<TUnitItem>>>(json)
-                    .unwrap()
-                    .0;
-            }
-            StdbTable::unit_shard_item => {
-                data.unit_shard_item =
-                    serde_json::from_str::<DeserializeWrapper<Vec<TUnitShardItem>>>(json)
-                        .unwrap()
-                        .0;
-            }
-            StdbTable::rainbow_shard_item => {
-                data.rainbow_shard_item =
-                    serde_json::from_str::<DeserializeWrapper<Vec<TRainbowShardItem>>>(json)
-                        .unwrap()
-                        .0;
-            }
-            StdbTable::lootbox_item => {
-                data.lootbox_item =
-                    serde_json::from_str::<DeserializeWrapper<Vec<TLootboxItem>>>(json)
-                        .unwrap()
-                        .0;
-            }
-            StdbTable::wallet => {
-                data.wallet = serde_json::from_str::<DeserializeWrapper<Vec<TWallet>>>(json)
-                    .unwrap()
-                    .0;
-            }
-            StdbTable::daily_state => {
-                data.daily_state =
-                    serde_json::from_str::<DeserializeWrapper<Vec<TDailyState>>>(json)
-                        .unwrap()
-                        .0;
-            }
-            StdbTable::unit_balance => {
-                data.unit_balance =
-                    serde_json::from_str::<DeserializeWrapper<Vec<TUnitBalance>>>(json)
-                        .unwrap()
-                        .0;
-            }
-            StdbTable::player_stats => {
-                data.player_stats =
-                    serde_json::from_str::<DeserializeWrapper<Vec<TPlayerStats>>>(json)
-                        .unwrap()
-                        .0;
-            }
-            StdbTable::player_game_stats => {
-                data.player_game_stats =
-                    serde_json::from_str::<DeserializeWrapper<Vec<TPlayerGameStats>>>(json)
-                        .unwrap()
-                        .0;
-            }
-            StdbTable::global_event => {
-                data.global_event =
-                    serde_json::from_str::<DeserializeWrapper<Vec<TGlobalEvent>>>(json)
-                        .unwrap()
-                        .0;
-            }
-            StdbTable::player_tag => {
-                data.player_tag = serde_json::from_str::<DeserializeWrapper<Vec<TPlayerTag>>>(json)
-                    .unwrap()
-                    .0;
-            }
-            StdbTable::reward => {
-                data.reward = serde_json::from_str::<DeserializeWrapper<Vec<TReward>>>(json)
-                    .unwrap()
-                    .0;
-            }
-            StdbTable::content_piece => todo!(),
-            StdbTable::content_vote_score => todo!(),
-            StdbTable::content_vote => todo!(),
-            StdbTable::content_favorite => todo!(),
-            StdbTable::content_favorite_score => todo!(),
-        }
-    }
     pub fn get_json_data(self) -> String {
         match self {
             StdbTable::global_settings => to_string_pretty(&SerializeWrapper::new(
@@ -333,59 +143,14 @@ impl StdbTable {
             StdbTable::global_data => to_string_pretty(&SerializeWrapper::new(
                 cn().db.global_data().iter().collect_vec(),
             )),
-            StdbTable::base_unit => to_string_pretty(&SerializeWrapper::new(
-                cn().db.base_unit().iter().collect_vec(),
-            )),
-            StdbTable::house => {
-                to_string_pretty(&SerializeWrapper::new(cn().db.house().iter().collect_vec()))
-            }
-            StdbTable::ability => to_string_pretty(&SerializeWrapper::new(
-                cn().db.ability().iter().collect_vec(),
-            )),
-            StdbTable::status => to_string_pretty(&SerializeWrapper::new(
-                cn().db.status().iter().collect_vec(),
-            )),
-            StdbTable::meta_shop => to_string_pretty(&SerializeWrapper::new(
-                cn().db.meta_shop().iter().collect_vec(),
-            )),
-            StdbTable::trade => {
-                to_string_pretty(&SerializeWrapper::new(cn().db.trade().iter().collect_vec()))
-            }
             StdbTable::player => to_string_pretty(&SerializeWrapper::new(
                 cn().db.player().iter().collect_vec(),
             )),
             StdbTable::quest => {
                 to_string_pretty(&SerializeWrapper::new(cn().db.quest().iter().collect_vec()))
             }
-            StdbTable::arena_run => to_string_pretty(&SerializeWrapper::new(
-                cn().db.arena_run().iter().collect_vec(),
-            )),
-            StdbTable::arena_run_archive => to_string_pretty(&SerializeWrapper::new(
-                cn().db.arena_run_archive().iter().collect_vec(),
-            )),
             StdbTable::arena_leaderboard => to_string_pretty(&SerializeWrapper::new(
                 cn().db.arena_leaderboard().iter().collect_vec(),
-            )),
-            StdbTable::team => {
-                to_string_pretty(&SerializeWrapper::new(cn().db.team().iter().collect_vec()))
-            }
-            StdbTable::battle => to_string_pretty(&SerializeWrapper::new(
-                cn().db.battle().iter().collect_vec(),
-            )),
-            StdbTable::auction => to_string_pretty(&SerializeWrapper::new(
-                cn().db.auction().iter().collect_vec(),
-            )),
-            StdbTable::unit_item => to_string_pretty(&SerializeWrapper::new(
-                cn().db.unit_item().iter().collect_vec(),
-            )),
-            StdbTable::unit_shard_item => to_string_pretty(&SerializeWrapper::new(
-                cn().db.unit_shard_item().iter().collect_vec(),
-            )),
-            StdbTable::rainbow_shard_item => to_string_pretty(&SerializeWrapper::new(
-                cn().db.rainbow_shard_item().iter().collect_vec(),
-            )),
-            StdbTable::lootbox_item => to_string_pretty(&SerializeWrapper::new(
-                cn().db.lootbox_item().iter().collect_vec(),
             )),
             StdbTable::wallet => to_string_pretty(&SerializeWrapper::new(
                 cn().db.wallet().iter().collect_vec(),
@@ -393,29 +158,9 @@ impl StdbTable {
             StdbTable::daily_state => to_string_pretty(&SerializeWrapper::new(
                 cn().db.daily_state().iter().collect_vec(),
             )),
-            StdbTable::unit_balance => to_string_pretty(&SerializeWrapper::new(
-                cn().db.unit_balance().iter().collect_vec(),
-            )),
-            StdbTable::player_stats => to_string_pretty(&SerializeWrapper::new(
-                cn().db.player_stats().iter().collect_vec(),
-            )),
-            StdbTable::player_game_stats => to_string_pretty(&SerializeWrapper::new(
-                cn().db.player_game_stats().iter().collect_vec(),
-            )),
-            StdbTable::global_event => to_string_pretty(&SerializeWrapper::new(
-                cn().db.global_event().iter().collect_vec(),
-            )),
             StdbTable::player_tag => to_string_pretty(&SerializeWrapper::new(
                 cn().db.player_tag().iter().collect_vec(),
             )),
-            StdbTable::reward => to_string_pretty(&SerializeWrapper::new(
-                cn().db.reward().iter().collect_vec(),
-            )),
-            StdbTable::content_piece => todo!(),
-            StdbTable::content_vote_score => todo!(),
-            StdbTable::content_vote => todo!(),
-            StdbTable::content_favorite => todo!(),
-            StdbTable::content_favorite_score => todo!(),
         }
         .unwrap()
     }
@@ -429,78 +174,25 @@ impl StdbTable {
         match self {
             StdbTable::global_settings
             | StdbTable::global_data
-            | StdbTable::base_unit
-            | StdbTable::house
-            | StdbTable::ability
-            | StdbTable::status
             | StdbTable::arena_leaderboard
-            | StdbTable::battle
-            | StdbTable::auction
-            | StdbTable::team
             | StdbTable::player
-            | StdbTable::arena_run_archive
-            | StdbTable::player_stats
-            | StdbTable::player_game_stats
-            | StdbTable::meta_shop
-            | StdbTable::content_piece
-            | StdbTable::content_vote_score
-            | StdbTable::content_vote
-            | StdbTable::content_favorite
-            | StdbTable::content_favorite_score
             | StdbTable::player_tag => Some(self.full()),
 
-            StdbTable::trade => Some(StdbQuery {
-                table: self,
-                condition: StdbCondition::OwnerMacro("a_player = {uid} or b_player = {uid}".into()),
-            }),
-
-            StdbTable::unit_item | StdbTable::quest => Some(StdbQuery {
+            StdbTable::quest => Some(StdbQuery {
                 table: self,
                 condition: StdbCondition::OwnerOrZero,
             }),
-            StdbTable::unit_shard_item
-            | StdbTable::rainbow_shard_item
-            | StdbTable::lootbox_item => Some(StdbQuery {
-                table: self,
-                condition: StdbCondition::OwnerMacro(
-                    "(owner = {uid} or owner = 0) and count > 0".into(),
-                ),
-            }),
 
-            StdbTable::arena_run
-            | StdbTable::wallet
-            | StdbTable::daily_state
-            | StdbTable::unit_balance
-            | StdbTable::reward => Some(StdbQuery {
+            StdbTable::wallet | StdbTable::daily_state => Some(StdbQuery {
                 table: self,
                 condition: StdbCondition::Owner,
             }),
-
-            StdbTable::global_event => None,
         }
     }
 }
 
 pub fn reducers_subscriptions(dbc: &DbConnection) {
     let r = dbc.reducers();
-    r.on_run_start_normal(|e| {
-        if !e.check_identity() {
-            return;
-        }
-        e.event.on_success(|w| GameState::Shop.proceed_to_target(w))
-    });
-    r.on_run_start_ranked(|e, _| {
-        if !e.check_identity() {
-            return;
-        }
-        e.event.on_success(|w| GameState::Shop.proceed_to_target(w))
-    });
-    r.on_run_start_const(|e| {
-        if !e.check_identity() {
-            return;
-        }
-        e.event.on_success(|w| GameState::Shop.proceed_to_target(w))
-    });
 
     r.on_login_by_identity(|e| {
         if !e.check_identity() {
@@ -537,59 +229,6 @@ pub fn reducers_subscriptions(dbc: &DbConnection) {
         })
     });
 
-    r.on_auction_create(|e, _, _, _| {
-        if !e.check_identity() {
-            return;
-        }
-        e.event.on_success(|w| "Auction created".notify(w))
-    });
-    r.on_auction_buy(|e, id| {
-        if !e.check_identity() {
-            return;
-        }
-        let id = *id;
-        e.event
-            .on_success(move |world| format!("Auction#{id} bought").notify(world));
-    });
-
-    r.on_unit_balance_vote(|e, unit, vote| {
-        if !e.check_identity() {
-            return;
-        }
-        let unit = unit.clone();
-        let vote = if *vote >= 0 {
-            format!("+{vote}")
-        } else {
-            vote.to_string()
-        };
-        e.event.on_success(move |w| {
-            format!("Vote accepted: {unit} {vote}").notify(w);
-            MetaPlugin::get_next_for_balancing(w);
-        });
-    });
-
-    r.on_dismantle_hero(|e, _| {
-        if !e.check_identity() {
-            return;
-        }
-        e.event.notify_error()
-    });
-    r.on_craft_hero(|e, u, _| {
-        if !e.check_identity() {
-            return;
-        }
-        let unit = u.clone();
-        e.event.on_success(move |world| {
-            format!("{unit} crafted").notify(world);
-        })
-    });
-    r.on_open_lootbox(|e, _| {
-        if !e.check_identity() {
-            return;
-        }
-        e.event.on_success(|world| "Lootbox opened".notify(world));
-    });
-
     r.on_set_name(|e, name| {
         if !e.check_identity() {
             return;
@@ -611,98 +250,10 @@ pub fn reducers_subscriptions(dbc: &DbConnection) {
             ProfilePlugin::clear_edit(world);
         })
     });
-
-    r.on_shop_finish(|e, _| {
-        if !e.check_identity() {
-            return;
-        }
-        e.event
-            .on_success(|w| GameState::ShopBattle.proceed_to_target(w))
-    });
-
-    r.on_stack_team(|e, _, _| {
-        if !e.check_identity() {
-            return;
-        }
-        e.event.notify_error()
-    });
-    r.on_stack_shop(|e, _, _| {
-        if !e.check_identity() {
-            return;
-        }
-        e.event.notify_error()
-    });
-    r.on_fuse_start(|e, _, _| {
-        if !e.check_identity() {
-            return;
-        }
-        e.event.notify_error()
-    });
-
-    r.on_run_finish(|e| {
-        if !e.check_identity() {
-            return;
-        }
-        e.event.on_success(|w| {
-            GameState::GameStart.proceed_to_target(w);
-        });
-    });
-
-    r.on_team_disband(|e, id| {
-        if !e.check_identity() {
-            return;
-        }
-        let id = *id;
-        e.event.on_success(move |world| {
-            format!("Team#{id} disbanded").notify(world);
-            MetaPlugin::clear(world);
-            MetaPlugin::load_mode(MetaMode::Teams, world);
-        })
-    });
-    r.on_team_swap_units(|e, _, _, _| {
-        if !e.check_identity() {
-            return;
-        }
-        e.event.notify_error()
-    });
-
-    r.on_meta_buy(|e, _| {
-        if !e.check_identity() {
-            return;
-        }
-        e.event.notify_error();
-    });
-
-    r.on_accept_trade(|e, _| {
-        if !e.check_identity() {
-            return;
-        }
-        e.event.notify_error();
-    });
-
-    r.on_incubator_post(|e, _, _| {
-        if !e.check_identity() {
-            return;
-        }
-        e.event.notify_error();
-    });
 }
 
 pub fn db_subscriptions() {
     let db = &cn().db;
-    db.trade().on_insert(|e, r| {
-        let id = r.id;
-        match &e.event {
-            spacetimedb_sdk::Event::Reducer(e) => {
-                if matches!(e.reducer, Reducer::OpenLootbox(..)) {
-                    OperationsPlugin::add(move |world| {
-                        Trade::open(id, &egui_context(world).unwrap());
-                    });
-                }
-            }
-            _ => {}
-        }
-    });
     db.wallet().on_update(|_, before, after| {
         let delta = after.amount - before.amount;
         let delta_txt = if delta > 0 {
@@ -725,95 +276,18 @@ pub fn db_subscriptions() {
             if before.complete && after.complete {
                 return;
             }
-            if before.counter < after.counter {
-                ShopPlugin::maybe_queue_notification(
-                    "Quest Progress:\n".cstr_c(VISIBLE_BRIGHT) + &after.cstr(),
-                    world,
-                )
-            }
-            if !before.complete && after.complete {
-                ShopPlugin::maybe_queue_notification(
-                    "Quest Complete!\n".cstr_c(VISIBLE_BRIGHT) + &after.cstr(),
-                    world,
-                )
-            }
+            // if before.counter < after.counter {
+            //     ShopPlugin::maybe_queue_notification(
+            //         "Quest Progress:\n".cstr_c(VISIBLE_BRIGHT) + &after.cstr(),
+            //         world,
+            //     )
+            // }
+            // if !before.complete && after.complete {
+            //     ShopPlugin::maybe_queue_notification(
+            //         "Quest Complete!\n".cstr_c(VISIBLE_BRIGHT) + &after.cstr(),
+            //         world,
+            //     )
+            // }
         });
-    });
-
-    db.reward().on_insert(|_, row| {
-        if row.owner == player_id() && row.force_open {
-            let id = row.id;
-            OperationsPlugin::add(move |world| {
-                RewardsPlugin::open_reward(id, world);
-            });
-        }
-    });
-
-    fn receive_unit(unit: &FusedUnit) {
-        ("Unit received: ".cstr_c(VISIBLE_LIGHT) + &unit.cstr_expanded())
-            .to_notification()
-            .sfx(SoundEffect::Inventory)
-            .push_op();
-    }
-    db.unit_item().on_update(|_, before, after| {
-        if before.owner != after.owner && after.owner == player_id() {
-            receive_unit(&after.unit);
-        }
-    });
-    db.unit_item().on_insert(|_, row| {
-        if row.owner == player_id() {
-            receive_unit(&row.unit);
-        }
-    });
-    db.unit_item().on_delete(|_, row| {
-        if row.owner == player_id() {
-            ("Unit removed: ".cstr_c(VISIBLE_LIGHT) + &row.unit.cstr_expanded())
-                .to_notification()
-                .sfx(SoundEffect::Inventory)
-                .push_op();
-        }
-    });
-    fn notify_shard(delta: i32, unit: &str) {
-        let delta = delta.cstr_expanded();
-        (unit.base_unit().cstr() + &" shards ".cstr_c(VISIBLE_LIGHT) + &delta)
-            .to_notification()
-            .sfx(SoundEffect::Inventory)
-            .push_op();
-    }
-    db.unit_shard_item().on_update(|_, before, after| {
-        if after.owner == player_id() && before.count != after.count {
-            notify_shard(after.count as i32 - before.count as i32, &after.unit);
-        }
-    });
-    db.unit_shard_item().on_insert(|_, row| {
-        if row.owner == player_id() {
-            notify_shard(row.count as i32, &row.unit);
-        }
-    });
-    fn notify_lootbox(delta: i32, kind: &LootboxKind) {
-        let delta = delta.cstr_expanded();
-        (kind.cstr() + " " + &delta)
-            .to_notification()
-            .sfx(SoundEffect::Inventory)
-            .push_op();
-    }
-    db.lootbox_item().on_update(|_, before, after| {
-        if after.owner == player_id() && before.count != after.count {
-            notify_lootbox(after.count as i32 - before.count as i32, &after.kind);
-        }
-    });
-    db.lootbox_item().on_insert(|_, row| {
-        if row.owner == player_id() {
-            notify_lootbox(row.count as i32, &row.kind);
-        }
-    });
-    db.rainbow_shard_item().on_update(|_, before, after| {
-        if after.owner == player_id() && before.count != after.count {
-            ("Rainbow Shards ".cstr_rainbow()
-                + &(after.count as i32 - before.count as i32).cstr_expanded())
-                .to_notification()
-                .sfx(SoundEffect::Inventory)
-                .push_op();
-        }
     });
 }

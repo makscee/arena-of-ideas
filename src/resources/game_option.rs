@@ -37,9 +37,9 @@ impl GameOption {
             GameOption::Login | GameOption::ForceLogin => {
                 world.get_resource::<LoginOption>().is_some()
             }
-            GameOption::TestScenariosLoad => world.get_resource::<TestScenarios>().is_some(),
+            GameOption::TestScenariosLoad => todo!(),
             GameOption::Table(query) => query.is_subscribed(),
-            GameOption::ActiveRun => cn().db.arena_run().get_current().is_some(),
+            GameOption::ActiveRun => todo!(),
         }
     }
     pub fn fulfill(&self, world: &mut World) {

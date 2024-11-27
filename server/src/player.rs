@@ -47,7 +47,6 @@ fn register(ctx: &ReducerContext, name: String, pass: String) -> Result<(), Stri
         online: false,
         last_login: Timestamp::UNIX_EPOCH,
     });
-    GlobalEvent::Register.post(ctx, id);
     Ok(())
 }
 
@@ -90,7 +89,6 @@ fn login_by_identity(ctx: &ReducerContext) -> Result<(), String> {
 fn logout(ctx: &ReducerContext) -> Result<(), String> {
     let mut player = ctx.player()?;
     player.logout(ctx);
-    GlobalEvent::LogOut.post(ctx, player.id);
     player.remove_identity(&ctx.sender);
     ctx.db.player().id().update(player);
     Ok(())
@@ -127,7 +125,6 @@ fn set_password(ctx: &ReducerContext, old_pass: String, new_pass: String) -> Res
 #[spacetimedb::reducer(client_disconnected)]
 fn identity_disconnected(ctx: &ReducerContext) {
     if let Ok(mut player) = ctx.player() {
-        GlobalEvent::LogOut.post(ctx, player.id);
         player.logout(ctx);
         ctx.db.player().id().update(player);
     }
@@ -183,21 +180,10 @@ impl TPlayer {
     fn login(mut self, ctx: &ReducerContext) {
         self.online = true;
         self.last_login = Timestamp::now();
-        GlobalEvent::LogIn.post(ctx, self.id);
         ctx.db.player().id().update(self);
     }
-    fn logout(&mut self, ctx: &ReducerContext) {
+    fn logout(&mut self, _: &ReducerContext) {
         self.online = false;
-        if self.last_login.into_micros_since_epoch() > 0 {
-            TPlayerStats::register_time_played(
-                ctx,
-                self.id,
-                Timestamp::now()
-                    .duration_since(self.last_login)
-                    .unwrap()
-                    .as_micros() as u64,
-            );
-        }
     }
     fn clear_identity(ctx: &ReducerContext, identity: &Identity) {
         if let Ok(mut player) = TPlayer::find_by_identity(ctx, identity) {

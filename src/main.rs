@@ -79,68 +79,47 @@ fn main() {
             LoadingState::new(GameState::Loading)
                 .continue_to_state(GameState::Loaded)
                 .on_failure_continue_to_state(GameState::Error)
-                .load_collection::<GameAssetsHandles>()
                 .load_collection::<AudioAssets>()
                 .with_dynamic_assets_file::<StandardDynamicAssetCollection>(
                     "ron/_dynamic.assets.ron",
                 ),
         )
-        .add_loading_state(
-            LoadingState::new(GameState::TestScenariosLoad)
-                .continue_to_state(GameState::TestScenariosRun)
-                .load_collection::<TestScenarios>(),
-        )
+        // .add_loading_state(
+        //     LoadingState::new(GameState::TestScenariosLoad)
+        //         .continue_to_state(GameState::TestScenariosRun)
+        //         .load_collection::<TestScenarios>(),
+        // )
         .add_plugins(Material2dPlugin::<ShapeMaterial>::default())
         .add_plugins(Material2dPlugin::<CurveMaterial>::default())
         .add_plugins((
-            RonAssetPlugin::<GlobalSettingsAsset>::new(&["global_settings.ron"]),
-            RonAssetPlugin::<BattleResource>::new(&["battle.ron"]),
-            RonAssetPlugin::<PackedUnit>::new(&["unit.ron"]),
-            RonAssetPlugin::<House>::new(&["house.ron"]),
-            RonAssetPlugin::<TestScenario>::new(&["scenario.ron"]),
             RonAssetPlugin::<Representation>::new(&["rep.ron"]),
-            RonAssetPlugin::<Animations>::new(&["anim.ron"]),
             RonAssetPlugin::<Vfx>::new(&["vfx.ron"]),
         ))
         .add_plugins(bevy_egui::EguiPlugin)
         .add_plugins(NoisyShaderPlugin)
         .add_plugins((
-            LoadingPlugin,
             UiPlugin,
             LoginPlugin,
             ActionPlugin,
-            BattlePlugin,
-            TeamPlugin,
             GameStatePlugin,
-            TestScenariosPlugin,
-            ServerSyncPlugin,
             WidgetsPlugin,
             RepresentationPlugin,
             CameraPlugin,
             TextColumnPlugin,
-            ShopPlugin,
-            UnitPlugin,
         ))
         .add_plugins((
             OperationsPlugin,
             ProfilePlugin,
             ConnectPlugin,
-            MigrationPlugin,
             ClientSettingsPlugin,
             TilePlugin,
-            TeamSyncPlugin,
             AudioPlugin,
-            MetaPlugin,
-            EditorPlugin,
             ConfirmationPlugin,
-            StatsPlugin,
-            QueryPlugin,
             AdminPlugin,
             TextureRenderPlugin,
         ))
         .init_state::<GameState>()
-        .init_resource::<NotificationsResource>()
-        .init_resource::<TeamContainerResource>();
+        .init_resource::<NotificationsResource>();
     if !cfg!(debug_assertions) {
         app.add_plugins(bevy_panic_handler::PanicHandler::new().build());
     }

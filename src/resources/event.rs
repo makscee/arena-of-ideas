@@ -55,7 +55,7 @@ impl Event {
             | Event::Summon(..)
             | Event::UseAbility(..)
             | Event::ApplyStatus(..) => {
-                let mut units = UnitPlugin::collect_alive(world);
+                let mut units: Vec<Entity> = todo!(); //UnitPlugin::collect_alive(world);
                 units.sort_by_key(|e| {
                     Context::new(*e)
                         .get_int(VarName::Slot, world)
@@ -71,7 +71,9 @@ impl Event {
             }
             Event::BeforeStrike(owner, target) | Event::AfterStrike(owner, target) => {
                 context.set_target(*target);
-                if !UnitPlugin::is_dead(*owner, world) {
+                if todo!()
+                // !UnitPlugin::is_dead(*owner, world)
+                {
                     [*owner].into()
                 } else {
                     default()
@@ -117,12 +119,14 @@ impl Event {
                 return self;
             }
         };
-        Status::map_var(&self, value, &context, world);
+        todo!();
+        // Status::map_var(&self, value, &context, world);
         self
     }
 
     pub fn process(self, context: Context, world: &mut World) -> bool {
-        Status::notify(&self, &context, world)
+        todo!()
+        // Status::notify(&self, &context, world)
     }
 }
 

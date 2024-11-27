@@ -8,83 +8,31 @@ use spacetimedb_sdk::{
     lib as __lib, sats as __sats, ws_messages as __ws,
 };
 
-pub mod ability_table;
-pub mod accept_trade_reducer;
 pub mod admin_daily_update_reducer;
 pub mod admin_give_tag_reducer;
 pub mod admin_set_temp_pass_reducer;
 pub mod arena_leaderboard_table;
 pub mod arena_pool_table;
-pub mod arena_run_archive_table;
-pub mod arena_run_table;
 pub mod arena_settings_type;
-pub mod auction_buy_reducer;
-pub mod auction_cancel_reducer;
-pub mod auction_create_reducer;
-pub mod auction_table;
-pub mod base_unit_table;
 pub mod battle_settings_type;
-pub mod battle_table;
-pub mod c_ability_description_type;
-pub mod c_ability_type;
-pub mod c_color_type;
-pub mod c_effect_type;
-pub mod c_house_type;
-pub mod c_status_description_type;
-pub mod c_status_trigger_type;
-pub mod c_status_type;
-pub mod c_summon_type;
-pub mod c_unit_description_type;
-pub mod c_unit_representation_type;
-pub mod c_unit_stats_type;
-pub mod c_unit_trigger_type;
-pub mod c_unit_type;
 pub mod cleanup_reducer;
-pub mod content_favorite_score_table;
-pub mod content_favorite_table;
-pub mod content_piece_table;
-pub mod content_vote_score_table;
-pub mod content_vote_table;
-pub mod craft_hero_reducer;
 pub mod daily_state_table;
 pub mod daily_update_reducer_reducer;
 pub mod daily_update_timer_table;
 pub mod daily_update_timer_type;
-pub mod dismantle_hero_reducer;
-pub mod fuse_cancel_reducer;
-pub mod fuse_choose_reducer;
-pub mod fuse_start_reducer;
-pub mod fuse_swap_reducer;
-pub mod fused_unit_type;
-pub mod fusion_type;
-pub mod game_data_type;
 pub mod game_mode_type;
 pub mod give_credits_reducer;
 pub mod global_data_table;
 pub mod global_data_type;
-pub mod global_event_table;
-pub mod global_event_type;
 pub mod global_settings_table;
 pub mod global_settings_type;
-pub mod house_table;
 pub mod identity_disconnected_reducer;
-pub mod incubator_delete_reducer;
-pub mod incubator_favorite_reducer;
-pub mod incubator_post_reducer;
-pub mod incubator_vote_reducer;
 pub mod inflating_int_type;
 pub mod init_reducer;
-pub mod item_bundle_type;
-pub mod item_kind_type;
 pub mod login_by_identity_reducer;
 pub mod login_reducer;
 pub mod logout_reducer;
-pub mod lootbox_item_table;
-pub mod lootbox_kind_type;
-pub mod meta_buy_reducer;
 pub mod meta_settings_type;
-pub mod meta_shop_table;
-pub mod open_lootbox_reducer;
 pub mod player_game_stats_table;
 pub mod player_stats_table;
 pub mod player_table;
@@ -94,163 +42,47 @@ pub mod quest_finish_reducer;
 pub mod quest_settings_type;
 pub mod quest_table;
 pub mod quest_variant_type;
-pub mod rainbow_shard_item_table;
 pub mod rarity_settings_type;
 pub mod register_empty_reducer;
 pub mod register_reducer;
-pub mod reward_claim_reducer;
-pub mod reward_table;
-pub mod reward_type;
-pub mod run_finish_reducer;
-pub mod run_start_const_reducer;
-pub mod run_start_normal_reducer;
-pub mod run_start_ranked_reducer;
-pub mod s_content_type_type;
 pub mod set_name_reducer;
 pub mod set_password_reducer;
-pub mod shop_buy_reducer;
-pub mod shop_change_g_reducer;
-pub mod shop_finish_reducer;
-pub mod shop_reorder_reducer;
-pub mod shop_reroll_reducer;
-pub mod shop_sell_reducer;
-pub mod shop_set_freeze_reducer;
-pub mod shop_slot_type;
-pub mod stack_shop_reducer;
-pub mod stack_team_reducer;
-pub mod status_table;
-pub mod submit_battle_result_reducer;
-pub mod t_ability_type;
 pub mod t_arena_leaderboard_type;
 pub mod t_arena_pool_type;
-pub mod t_arena_run_archive_type;
-pub mod t_arena_run_type;
-pub mod t_auction_type;
-pub mod t_base_unit_type;
-pub mod t_battle_result_type;
-pub mod t_battle_type;
-pub mod t_content_favorite_score_type;
-pub mod t_content_favorite_type;
-pub mod t_content_piece_type;
-pub mod t_content_vote_score_type;
-pub mod t_content_vote_type;
 pub mod t_daily_state_type;
-pub mod t_global_event_type;
-pub mod t_house_type;
-pub mod t_lootbox_item_type;
-pub mod t_meta_shop_type;
 pub mod t_player_game_stats_type;
 pub mod t_player_stats_type;
 pub mod t_player_tag_type;
 pub mod t_player_type;
 pub mod t_quest_type;
-pub mod t_rainbow_shard_item_type;
-pub mod t_reward_type;
-pub mod t_status_type;
-pub mod t_team_type;
-pub mod t_trade_type;
-pub mod t_unit_balance_type;
-pub mod t_unit_item_type;
-pub mod t_unit_shard_item_type;
-pub mod t_units_type;
 pub mod t_wallet_type;
-pub mod team_add_unit_reducer;
-pub mod team_create_reducer;
-pub mod team_disband_reducer;
-pub mod team_pool_type;
-pub mod team_remove_unit_reducer;
-pub mod team_rename_reducer;
-pub mod team_slot_type;
-pub mod team_swap_units_reducer;
-pub mod team_table;
-pub mod trade_table;
-pub mod unit_balance_table;
-pub mod unit_balance_vote_reducer;
-pub mod unit_item_table;
-pub mod unit_pool_type;
-pub mod unit_shard_item_table;
-pub mod units_table;
-pub mod upload_assets_reducer;
-pub mod upload_game_data_reducer;
 pub mod wallet_table;
 
-pub use ability_table::*;
-pub use accept_trade_reducer::*;
 pub use admin_daily_update_reducer::*;
 pub use admin_give_tag_reducer::*;
 pub use admin_set_temp_pass_reducer::*;
 pub use arena_leaderboard_table::*;
 pub use arena_pool_table::*;
-pub use arena_run_archive_table::*;
-pub use arena_run_table::*;
 pub use arena_settings_type::*;
-pub use auction_buy_reducer::*;
-pub use auction_cancel_reducer::*;
-pub use auction_create_reducer::*;
-pub use auction_table::*;
-pub use base_unit_table::*;
 pub use battle_settings_type::*;
-pub use battle_table::*;
-pub use c_ability_description_type::*;
-pub use c_ability_type::*;
-pub use c_color_type::*;
-pub use c_effect_type::*;
-pub use c_house_type::*;
-pub use c_status_description_type::*;
-pub use c_status_trigger_type::*;
-pub use c_status_type::*;
-pub use c_summon_type::*;
-pub use c_unit_description_type::*;
-pub use c_unit_representation_type::*;
-pub use c_unit_stats_type::*;
-pub use c_unit_trigger_type::*;
-pub use c_unit_type::*;
 pub use cleanup_reducer::*;
-pub use content_favorite_score_table::*;
-pub use content_favorite_table::*;
-pub use content_piece_table::*;
-pub use content_vote_score_table::*;
-pub use content_vote_table::*;
-pub use craft_hero_reducer::*;
 pub use daily_state_table::*;
 pub use daily_update_reducer_reducer::*;
 pub use daily_update_timer_table::*;
 pub use daily_update_timer_type::*;
-pub use dismantle_hero_reducer::*;
-pub use fuse_cancel_reducer::*;
-pub use fuse_choose_reducer::*;
-pub use fuse_start_reducer::*;
-pub use fuse_swap_reducer::*;
-pub use fused_unit_type::*;
-pub use fusion_type::*;
-pub use game_data_type::*;
 pub use game_mode_type::*;
 pub use give_credits_reducer::*;
 pub use global_data_table::*;
 pub use global_data_type::*;
-pub use global_event_table::*;
-pub use global_event_type::*;
 pub use global_settings_table::*;
 pub use global_settings_type::*;
-pub use house_table::*;
 pub use identity_disconnected_reducer::*;
-pub use incubator_delete_reducer::*;
-pub use incubator_favorite_reducer::*;
-pub use incubator_post_reducer::*;
-pub use incubator_vote_reducer::*;
 pub use inflating_int_type::*;
 pub use init_reducer::*;
-pub use item_bundle_type::*;
-pub use item_kind_type::*;
 pub use login_by_identity_reducer::*;
 pub use login_reducer::*;
 pub use logout_reducer::*;
-pub use lootbox_item_table::*;
-pub use lootbox_kind_type::*;
-pub use meta_buy_reducer::*;
 pub use meta_settings_type::*;
-pub use meta_shop_table::*;
-pub use open_lootbox_reducer::*;
 pub use player_game_stats_table::*;
 pub use player_stats_table::*;
 pub use player_table::*;
@@ -260,84 +92,20 @@ pub use quest_finish_reducer::*;
 pub use quest_settings_type::*;
 pub use quest_table::*;
 pub use quest_variant_type::*;
-pub use rainbow_shard_item_table::*;
 pub use rarity_settings_type::*;
 pub use register_empty_reducer::*;
 pub use register_reducer::*;
-pub use reward_claim_reducer::*;
-pub use reward_table::*;
-pub use reward_type::*;
-pub use run_finish_reducer::*;
-pub use run_start_const_reducer::*;
-pub use run_start_normal_reducer::*;
-pub use run_start_ranked_reducer::*;
-pub use s_content_type_type::*;
 pub use set_name_reducer::*;
 pub use set_password_reducer::*;
-pub use shop_buy_reducer::*;
-pub use shop_change_g_reducer::*;
-pub use shop_finish_reducer::*;
-pub use shop_reorder_reducer::*;
-pub use shop_reroll_reducer::*;
-pub use shop_sell_reducer::*;
-pub use shop_set_freeze_reducer::*;
-pub use shop_slot_type::*;
-pub use stack_shop_reducer::*;
-pub use stack_team_reducer::*;
-pub use status_table::*;
-pub use submit_battle_result_reducer::*;
-pub use t_ability_type::*;
 pub use t_arena_leaderboard_type::*;
 pub use t_arena_pool_type::*;
-pub use t_arena_run_archive_type::*;
-pub use t_arena_run_type::*;
-pub use t_auction_type::*;
-pub use t_base_unit_type::*;
-pub use t_battle_result_type::*;
-pub use t_battle_type::*;
-pub use t_content_favorite_score_type::*;
-pub use t_content_favorite_type::*;
-pub use t_content_piece_type::*;
-pub use t_content_vote_score_type::*;
-pub use t_content_vote_type::*;
 pub use t_daily_state_type::*;
-pub use t_global_event_type::*;
-pub use t_house_type::*;
-pub use t_lootbox_item_type::*;
-pub use t_meta_shop_type::*;
 pub use t_player_game_stats_type::*;
 pub use t_player_stats_type::*;
 pub use t_player_tag_type::*;
 pub use t_player_type::*;
 pub use t_quest_type::*;
-pub use t_rainbow_shard_item_type::*;
-pub use t_reward_type::*;
-pub use t_status_type::*;
-pub use t_team_type::*;
-pub use t_trade_type::*;
-pub use t_unit_balance_type::*;
-pub use t_unit_item_type::*;
-pub use t_unit_shard_item_type::*;
-pub use t_units_type::*;
 pub use t_wallet_type::*;
-pub use team_add_unit_reducer::*;
-pub use team_create_reducer::*;
-pub use team_disband_reducer::*;
-pub use team_pool_type::*;
-pub use team_remove_unit_reducer::*;
-pub use team_rename_reducer::*;
-pub use team_slot_type::*;
-pub use team_swap_units_reducer::*;
-pub use team_table::*;
-pub use trade_table::*;
-pub use unit_balance_table::*;
-pub use unit_balance_vote_reducer::*;
-pub use unit_item_table::*;
-pub use unit_pool_type::*;
-pub use unit_shard_item_table::*;
-pub use units_table::*;
-pub use upload_assets_reducer::*;
-pub use upload_game_data_reducer::*;
 pub use wallet_table::*;
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
@@ -351,61 +119,21 @@ pub use wallet_table::*;
 pub enum Reducer {
     IdentityDisconnected(identity_disconnected_reducer::IdentityDisconnected),
     Init(init_reducer::Init),
-    AcceptTrade(accept_trade_reducer::AcceptTrade),
     AdminDailyUpdate(admin_daily_update_reducer::AdminDailyUpdate),
     AdminGiveTag(admin_give_tag_reducer::AdminGiveTag),
     AdminSetTempPass(admin_set_temp_pass_reducer::AdminSetTempPass),
-    AuctionBuy(auction_buy_reducer::AuctionBuy),
-    AuctionCancel(auction_cancel_reducer::AuctionCancel),
-    AuctionCreate(auction_create_reducer::AuctionCreate),
     Cleanup(cleanup_reducer::Cleanup),
-    CraftHero(craft_hero_reducer::CraftHero),
     DailyUpdateReducer(daily_update_reducer_reducer::DailyUpdateReducer),
-    DismantleHero(dismantle_hero_reducer::DismantleHero),
-    FuseCancel(fuse_cancel_reducer::FuseCancel),
-    FuseChoose(fuse_choose_reducer::FuseChoose),
-    FuseStart(fuse_start_reducer::FuseStart),
-    FuseSwap(fuse_swap_reducer::FuseSwap),
     GiveCredits(give_credits_reducer::GiveCredits),
-    IncubatorDelete(incubator_delete_reducer::IncubatorDelete),
-    IncubatorFavorite(incubator_favorite_reducer::IncubatorFavorite),
-    IncubatorPost(incubator_post_reducer::IncubatorPost),
-    IncubatorVote(incubator_vote_reducer::IncubatorVote),
     Login(login_reducer::Login),
     LoginByIdentity(login_by_identity_reducer::LoginByIdentity),
     Logout(logout_reducer::Logout),
-    MetaBuy(meta_buy_reducer::MetaBuy),
-    OpenLootbox(open_lootbox_reducer::OpenLootbox),
     QuestAccept(quest_accept_reducer::QuestAccept),
     QuestFinish(quest_finish_reducer::QuestFinish),
     Register(register_reducer::Register),
     RegisterEmpty(register_empty_reducer::RegisterEmpty),
-    RewardClaim(reward_claim_reducer::RewardClaim),
-    RunFinish(run_finish_reducer::RunFinish),
-    RunStartConst(run_start_const_reducer::RunStartConst),
-    RunStartNormal(run_start_normal_reducer::RunStartNormal),
-    RunStartRanked(run_start_ranked_reducer::RunStartRanked),
     SetName(set_name_reducer::SetName),
     SetPassword(set_password_reducer::SetPassword),
-    ShopBuy(shop_buy_reducer::ShopBuy),
-    ShopChangeG(shop_change_g_reducer::ShopChangeG),
-    ShopFinish(shop_finish_reducer::ShopFinish),
-    ShopReorder(shop_reorder_reducer::ShopReorder),
-    ShopReroll(shop_reroll_reducer::ShopReroll),
-    ShopSell(shop_sell_reducer::ShopSell),
-    ShopSetFreeze(shop_set_freeze_reducer::ShopSetFreeze),
-    StackShop(stack_shop_reducer::StackShop),
-    StackTeam(stack_team_reducer::StackTeam),
-    SubmitBattleResult(submit_battle_result_reducer::SubmitBattleResult),
-    TeamAddUnit(team_add_unit_reducer::TeamAddUnit),
-    TeamCreate(team_create_reducer::TeamCreate),
-    TeamDisband(team_disband_reducer::TeamDisband),
-    TeamRemoveUnit(team_remove_unit_reducer::TeamRemoveUnit),
-    TeamRename(team_rename_reducer::TeamRename),
-    TeamSwapUnits(team_swap_units_reducer::TeamSwapUnits),
-    UnitBalanceVote(unit_balance_vote_reducer::UnitBalanceVote),
-    UploadAssets(upload_assets_reducer::UploadAssets),
-    UploadGameData(upload_game_data_reducer::UploadGameData),
 }
 
 impl __sdk::spacetime_module::InModule for Reducer {
@@ -417,122 +145,42 @@ impl __sdk::spacetime_module::Reducer for Reducer {
         match self {
             Reducer::IdentityDisconnected(_) => "__identity_disconnected__",
             Reducer::Init(_) => "__init__",
-            Reducer::AcceptTrade(_) => "accept_trade",
             Reducer::AdminDailyUpdate(_) => "admin_daily_update",
             Reducer::AdminGiveTag(_) => "admin_give_tag",
             Reducer::AdminSetTempPass(_) => "admin_set_temp_pass",
-            Reducer::AuctionBuy(_) => "auction_buy",
-            Reducer::AuctionCancel(_) => "auction_cancel",
-            Reducer::AuctionCreate(_) => "auction_create",
             Reducer::Cleanup(_) => "cleanup",
-            Reducer::CraftHero(_) => "craft_hero",
             Reducer::DailyUpdateReducer(_) => "daily_update_reducer",
-            Reducer::DismantleHero(_) => "dismantle_hero",
-            Reducer::FuseCancel(_) => "fuse_cancel",
-            Reducer::FuseChoose(_) => "fuse_choose",
-            Reducer::FuseStart(_) => "fuse_start",
-            Reducer::FuseSwap(_) => "fuse_swap",
             Reducer::GiveCredits(_) => "give_credits",
-            Reducer::IncubatorDelete(_) => "incubator_delete",
-            Reducer::IncubatorFavorite(_) => "incubator_favorite",
-            Reducer::IncubatorPost(_) => "incubator_post",
-            Reducer::IncubatorVote(_) => "incubator_vote",
             Reducer::Login(_) => "login",
             Reducer::LoginByIdentity(_) => "login_by_identity",
             Reducer::Logout(_) => "logout",
-            Reducer::MetaBuy(_) => "meta_buy",
-            Reducer::OpenLootbox(_) => "open_lootbox",
             Reducer::QuestAccept(_) => "quest_accept",
             Reducer::QuestFinish(_) => "quest_finish",
             Reducer::Register(_) => "register",
             Reducer::RegisterEmpty(_) => "register_empty",
-            Reducer::RewardClaim(_) => "reward_claim",
-            Reducer::RunFinish(_) => "run_finish",
-            Reducer::RunStartConst(_) => "run_start_const",
-            Reducer::RunStartNormal(_) => "run_start_normal",
-            Reducer::RunStartRanked(_) => "run_start_ranked",
             Reducer::SetName(_) => "set_name",
             Reducer::SetPassword(_) => "set_password",
-            Reducer::ShopBuy(_) => "shop_buy",
-            Reducer::ShopChangeG(_) => "shop_change_g",
-            Reducer::ShopFinish(_) => "shop_finish",
-            Reducer::ShopReorder(_) => "shop_reorder",
-            Reducer::ShopReroll(_) => "shop_reroll",
-            Reducer::ShopSell(_) => "shop_sell",
-            Reducer::ShopSetFreeze(_) => "shop_set_freeze",
-            Reducer::StackShop(_) => "stack_shop",
-            Reducer::StackTeam(_) => "stack_team",
-            Reducer::SubmitBattleResult(_) => "submit_battle_result",
-            Reducer::TeamAddUnit(_) => "team_add_unit",
-            Reducer::TeamCreate(_) => "team_create",
-            Reducer::TeamDisband(_) => "team_disband",
-            Reducer::TeamRemoveUnit(_) => "team_remove_unit",
-            Reducer::TeamRename(_) => "team_rename",
-            Reducer::TeamSwapUnits(_) => "team_swap_units",
-            Reducer::UnitBalanceVote(_) => "unit_balance_vote",
-            Reducer::UploadAssets(_) => "upload_assets",
-            Reducer::UploadGameData(_) => "upload_game_data",
         }
     }
     fn reducer_args(&self) -> &dyn std::any::Any {
         match self {
             Reducer::IdentityDisconnected(args) => args,
             Reducer::Init(args) => args,
-            Reducer::AcceptTrade(args) => args,
             Reducer::AdminDailyUpdate(args) => args,
             Reducer::AdminGiveTag(args) => args,
             Reducer::AdminSetTempPass(args) => args,
-            Reducer::AuctionBuy(args) => args,
-            Reducer::AuctionCancel(args) => args,
-            Reducer::AuctionCreate(args) => args,
             Reducer::Cleanup(args) => args,
-            Reducer::CraftHero(args) => args,
             Reducer::DailyUpdateReducer(args) => args,
-            Reducer::DismantleHero(args) => args,
-            Reducer::FuseCancel(args) => args,
-            Reducer::FuseChoose(args) => args,
-            Reducer::FuseStart(args) => args,
-            Reducer::FuseSwap(args) => args,
             Reducer::GiveCredits(args) => args,
-            Reducer::IncubatorDelete(args) => args,
-            Reducer::IncubatorFavorite(args) => args,
-            Reducer::IncubatorPost(args) => args,
-            Reducer::IncubatorVote(args) => args,
             Reducer::Login(args) => args,
             Reducer::LoginByIdentity(args) => args,
             Reducer::Logout(args) => args,
-            Reducer::MetaBuy(args) => args,
-            Reducer::OpenLootbox(args) => args,
             Reducer::QuestAccept(args) => args,
             Reducer::QuestFinish(args) => args,
             Reducer::Register(args) => args,
             Reducer::RegisterEmpty(args) => args,
-            Reducer::RewardClaim(args) => args,
-            Reducer::RunFinish(args) => args,
-            Reducer::RunStartConst(args) => args,
-            Reducer::RunStartNormal(args) => args,
-            Reducer::RunStartRanked(args) => args,
             Reducer::SetName(args) => args,
             Reducer::SetPassword(args) => args,
-            Reducer::ShopBuy(args) => args,
-            Reducer::ShopChangeG(args) => args,
-            Reducer::ShopFinish(args) => args,
-            Reducer::ShopReorder(args) => args,
-            Reducer::ShopReroll(args) => args,
-            Reducer::ShopSell(args) => args,
-            Reducer::ShopSetFreeze(args) => args,
-            Reducer::StackShop(args) => args,
-            Reducer::StackTeam(args) => args,
-            Reducer::SubmitBattleResult(args) => args,
-            Reducer::TeamAddUnit(args) => args,
-            Reducer::TeamCreate(args) => args,
-            Reducer::TeamDisband(args) => args,
-            Reducer::TeamRemoveUnit(args) => args,
-            Reducer::TeamRename(args) => args,
-            Reducer::TeamSwapUnits(args) => args,
-            Reducer::UnitBalanceVote(args) => args,
-            Reducer::UploadAssets(args) => args,
-            Reducer::UploadGameData(args) => args,
         }
     }
 }
@@ -550,9 +198,6 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
                 "__init__",
                 &value.args,
             )?)),
-            "accept_trade" => Ok(Reducer::AcceptTrade(
-                __sdk::spacetime_module::parse_reducer_args("accept_trade", &value.args)?,
-            )),
             "admin_daily_update" => Ok(Reducer::AdminDailyUpdate(
                 __sdk::spacetime_module::parse_reducer_args("admin_daily_update", &value.args)?,
             )),
@@ -562,53 +207,14 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
             "admin_set_temp_pass" => Ok(Reducer::AdminSetTempPass(
                 __sdk::spacetime_module::parse_reducer_args("admin_set_temp_pass", &value.args)?,
             )),
-            "auction_buy" => Ok(Reducer::AuctionBuy(
-                __sdk::spacetime_module::parse_reducer_args("auction_buy", &value.args)?,
-            )),
-            "auction_cancel" => Ok(Reducer::AuctionCancel(
-                __sdk::spacetime_module::parse_reducer_args("auction_cancel", &value.args)?,
-            )),
-            "auction_create" => Ok(Reducer::AuctionCreate(
-                __sdk::spacetime_module::parse_reducer_args("auction_create", &value.args)?,
-            )),
             "cleanup" => Ok(Reducer::Cleanup(
                 __sdk::spacetime_module::parse_reducer_args("cleanup", &value.args)?,
-            )),
-            "craft_hero" => Ok(Reducer::CraftHero(
-                __sdk::spacetime_module::parse_reducer_args("craft_hero", &value.args)?,
             )),
             "daily_update_reducer" => Ok(Reducer::DailyUpdateReducer(
                 __sdk::spacetime_module::parse_reducer_args("daily_update_reducer", &value.args)?,
             )),
-            "dismantle_hero" => Ok(Reducer::DismantleHero(
-                __sdk::spacetime_module::parse_reducer_args("dismantle_hero", &value.args)?,
-            )),
-            "fuse_cancel" => Ok(Reducer::FuseCancel(
-                __sdk::spacetime_module::parse_reducer_args("fuse_cancel", &value.args)?,
-            )),
-            "fuse_choose" => Ok(Reducer::FuseChoose(
-                __sdk::spacetime_module::parse_reducer_args("fuse_choose", &value.args)?,
-            )),
-            "fuse_start" => Ok(Reducer::FuseStart(
-                __sdk::spacetime_module::parse_reducer_args("fuse_start", &value.args)?,
-            )),
-            "fuse_swap" => Ok(Reducer::FuseSwap(
-                __sdk::spacetime_module::parse_reducer_args("fuse_swap", &value.args)?,
-            )),
             "give_credits" => Ok(Reducer::GiveCredits(
                 __sdk::spacetime_module::parse_reducer_args("give_credits", &value.args)?,
-            )),
-            "incubator_delete" => Ok(Reducer::IncubatorDelete(
-                __sdk::spacetime_module::parse_reducer_args("incubator_delete", &value.args)?,
-            )),
-            "incubator_favorite" => Ok(Reducer::IncubatorFavorite(
-                __sdk::spacetime_module::parse_reducer_args("incubator_favorite", &value.args)?,
-            )),
-            "incubator_post" => Ok(Reducer::IncubatorPost(
-                __sdk::spacetime_module::parse_reducer_args("incubator_post", &value.args)?,
-            )),
-            "incubator_vote" => Ok(Reducer::IncubatorVote(
-                __sdk::spacetime_module::parse_reducer_args("incubator_vote", &value.args)?,
             )),
             "login" => Ok(Reducer::Login(__sdk::spacetime_module::parse_reducer_args(
                 "login",
@@ -619,12 +225,6 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
             )),
             "logout" => Ok(Reducer::Logout(
                 __sdk::spacetime_module::parse_reducer_args("logout", &value.args)?,
-            )),
-            "meta_buy" => Ok(Reducer::MetaBuy(
-                __sdk::spacetime_module::parse_reducer_args("meta_buy", &value.args)?,
-            )),
-            "open_lootbox" => Ok(Reducer::OpenLootbox(
-                __sdk::spacetime_module::parse_reducer_args("open_lootbox", &value.args)?,
             )),
             "quest_accept" => Ok(Reducer::QuestAccept(
                 __sdk::spacetime_module::parse_reducer_args("quest_accept", &value.args)?,
@@ -638,83 +238,11 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
             "register_empty" => Ok(Reducer::RegisterEmpty(
                 __sdk::spacetime_module::parse_reducer_args("register_empty", &value.args)?,
             )),
-            "reward_claim" => Ok(Reducer::RewardClaim(
-                __sdk::spacetime_module::parse_reducer_args("reward_claim", &value.args)?,
-            )),
-            "run_finish" => Ok(Reducer::RunFinish(
-                __sdk::spacetime_module::parse_reducer_args("run_finish", &value.args)?,
-            )),
-            "run_start_const" => Ok(Reducer::RunStartConst(
-                __sdk::spacetime_module::parse_reducer_args("run_start_const", &value.args)?,
-            )),
-            "run_start_normal" => Ok(Reducer::RunStartNormal(
-                __sdk::spacetime_module::parse_reducer_args("run_start_normal", &value.args)?,
-            )),
-            "run_start_ranked" => Ok(Reducer::RunStartRanked(
-                __sdk::spacetime_module::parse_reducer_args("run_start_ranked", &value.args)?,
-            )),
             "set_name" => Ok(Reducer::SetName(
                 __sdk::spacetime_module::parse_reducer_args("set_name", &value.args)?,
             )),
             "set_password" => Ok(Reducer::SetPassword(
                 __sdk::spacetime_module::parse_reducer_args("set_password", &value.args)?,
-            )),
-            "shop_buy" => Ok(Reducer::ShopBuy(
-                __sdk::spacetime_module::parse_reducer_args("shop_buy", &value.args)?,
-            )),
-            "shop_change_g" => Ok(Reducer::ShopChangeG(
-                __sdk::spacetime_module::parse_reducer_args("shop_change_g", &value.args)?,
-            )),
-            "shop_finish" => Ok(Reducer::ShopFinish(
-                __sdk::spacetime_module::parse_reducer_args("shop_finish", &value.args)?,
-            )),
-            "shop_reorder" => Ok(Reducer::ShopReorder(
-                __sdk::spacetime_module::parse_reducer_args("shop_reorder", &value.args)?,
-            )),
-            "shop_reroll" => Ok(Reducer::ShopReroll(
-                __sdk::spacetime_module::parse_reducer_args("shop_reroll", &value.args)?,
-            )),
-            "shop_sell" => Ok(Reducer::ShopSell(
-                __sdk::spacetime_module::parse_reducer_args("shop_sell", &value.args)?,
-            )),
-            "shop_set_freeze" => Ok(Reducer::ShopSetFreeze(
-                __sdk::spacetime_module::parse_reducer_args("shop_set_freeze", &value.args)?,
-            )),
-            "stack_shop" => Ok(Reducer::StackShop(
-                __sdk::spacetime_module::parse_reducer_args("stack_shop", &value.args)?,
-            )),
-            "stack_team" => Ok(Reducer::StackTeam(
-                __sdk::spacetime_module::parse_reducer_args("stack_team", &value.args)?,
-            )),
-            "submit_battle_result" => Ok(Reducer::SubmitBattleResult(
-                __sdk::spacetime_module::parse_reducer_args("submit_battle_result", &value.args)?,
-            )),
-            "team_add_unit" => Ok(Reducer::TeamAddUnit(
-                __sdk::spacetime_module::parse_reducer_args("team_add_unit", &value.args)?,
-            )),
-            "team_create" => Ok(Reducer::TeamCreate(
-                __sdk::spacetime_module::parse_reducer_args("team_create", &value.args)?,
-            )),
-            "team_disband" => Ok(Reducer::TeamDisband(
-                __sdk::spacetime_module::parse_reducer_args("team_disband", &value.args)?,
-            )),
-            "team_remove_unit" => Ok(Reducer::TeamRemoveUnit(
-                __sdk::spacetime_module::parse_reducer_args("team_remove_unit", &value.args)?,
-            )),
-            "team_rename" => Ok(Reducer::TeamRename(
-                __sdk::spacetime_module::parse_reducer_args("team_rename", &value.args)?,
-            )),
-            "team_swap_units" => Ok(Reducer::TeamSwapUnits(
-                __sdk::spacetime_module::parse_reducer_args("team_swap_units", &value.args)?,
-            )),
-            "unit_balance_vote" => Ok(Reducer::UnitBalanceVote(
-                __sdk::spacetime_module::parse_reducer_args("unit_balance_vote", &value.args)?,
-            )),
-            "upload_assets" => Ok(Reducer::UploadAssets(
-                __sdk::spacetime_module::parse_reducer_args("upload_assets", &value.args)?,
-            )),
-            "upload_game_data" => Ok(Reducer::UploadGameData(
-                __sdk::spacetime_module::parse_reducer_args("upload_game_data", &value.args)?,
             )),
             _ => Err(__anyhow::anyhow!(
                 "Unknown reducer {:?}",
@@ -728,41 +256,17 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
 #[allow(non_snake_case)]
 #[doc(hidden)]
 pub struct DbUpdate {
-    ability: __sdk::spacetime_module::TableUpdate<TAbility>,
     arena_leaderboard: __sdk::spacetime_module::TableUpdate<TArenaLeaderboard>,
     arena_pool: __sdk::spacetime_module::TableUpdate<TArenaPool>,
-    arena_run: __sdk::spacetime_module::TableUpdate<TArenaRun>,
-    arena_run_archive: __sdk::spacetime_module::TableUpdate<TArenaRunArchive>,
-    auction: __sdk::spacetime_module::TableUpdate<TAuction>,
-    base_unit: __sdk::spacetime_module::TableUpdate<TBaseUnit>,
-    battle: __sdk::spacetime_module::TableUpdate<TBattle>,
-    content_favorite: __sdk::spacetime_module::TableUpdate<TContentFavorite>,
-    content_favorite_score: __sdk::spacetime_module::TableUpdate<TContentFavoriteScore>,
-    content_piece: __sdk::spacetime_module::TableUpdate<TContentPiece>,
-    content_vote: __sdk::spacetime_module::TableUpdate<TContentVote>,
-    content_vote_score: __sdk::spacetime_module::TableUpdate<TContentVoteScore>,
     daily_state: __sdk::spacetime_module::TableUpdate<TDailyState>,
     daily_update_timer: __sdk::spacetime_module::TableUpdate<DailyUpdateTimer>,
     global_data: __sdk::spacetime_module::TableUpdate<GlobalData>,
-    global_event: __sdk::spacetime_module::TableUpdate<TGlobalEvent>,
     global_settings: __sdk::spacetime_module::TableUpdate<GlobalSettings>,
-    house: __sdk::spacetime_module::TableUpdate<THouse>,
-    lootbox_item: __sdk::spacetime_module::TableUpdate<TLootboxItem>,
-    meta_shop: __sdk::spacetime_module::TableUpdate<TMetaShop>,
     player: __sdk::spacetime_module::TableUpdate<TPlayer>,
     player_game_stats: __sdk::spacetime_module::TableUpdate<TPlayerGameStats>,
     player_stats: __sdk::spacetime_module::TableUpdate<TPlayerStats>,
     player_tag: __sdk::spacetime_module::TableUpdate<TPlayerTag>,
     quest: __sdk::spacetime_module::TableUpdate<TQuest>,
-    rainbow_shard_item: __sdk::spacetime_module::TableUpdate<TRainbowShardItem>,
-    reward: __sdk::spacetime_module::TableUpdate<TReward>,
-    status: __sdk::spacetime_module::TableUpdate<TStatus>,
-    team: __sdk::spacetime_module::TableUpdate<TTeam>,
-    trade: __sdk::spacetime_module::TableUpdate<TTrade>,
-    unit_balance: __sdk::spacetime_module::TableUpdate<TUnitBalance>,
-    unit_item: __sdk::spacetime_module::TableUpdate<TUnitItem>,
-    unit_shard_item: __sdk::spacetime_module::TableUpdate<TUnitShardItem>,
-    units: __sdk::spacetime_module::TableUpdate<TUnits>,
     wallet: __sdk::spacetime_module::TableUpdate<TWallet>,
 }
 
@@ -772,43 +276,12 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
         let mut db_update = DbUpdate::default();
         for table_update in raw.tables {
             match &table_update.table_name[..] {
-                "ability" => db_update.ability = ability_table::parse_table_update(table_update)?,
                 "arena_leaderboard" => {
                     db_update.arena_leaderboard =
                         arena_leaderboard_table::parse_table_update(table_update)?
                 }
                 "arena_pool" => {
                     db_update.arena_pool = arena_pool_table::parse_table_update(table_update)?
-                }
-                "arena_run" => {
-                    db_update.arena_run = arena_run_table::parse_table_update(table_update)?
-                }
-                "arena_run_archive" => {
-                    db_update.arena_run_archive =
-                        arena_run_archive_table::parse_table_update(table_update)?
-                }
-                "auction" => db_update.auction = auction_table::parse_table_update(table_update)?,
-                "base_unit" => {
-                    db_update.base_unit = base_unit_table::parse_table_update(table_update)?
-                }
-                "battle" => db_update.battle = battle_table::parse_table_update(table_update)?,
-                "content_favorite" => {
-                    db_update.content_favorite =
-                        content_favorite_table::parse_table_update(table_update)?
-                }
-                "content_favorite_score" => {
-                    db_update.content_favorite_score =
-                        content_favorite_score_table::parse_table_update(table_update)?
-                }
-                "content_piece" => {
-                    db_update.content_piece = content_piece_table::parse_table_update(table_update)?
-                }
-                "content_vote" => {
-                    db_update.content_vote = content_vote_table::parse_table_update(table_update)?
-                }
-                "content_vote_score" => {
-                    db_update.content_vote_score =
-                        content_vote_score_table::parse_table_update(table_update)?
                 }
                 "daily_state" => {
                     db_update.daily_state = daily_state_table::parse_table_update(table_update)?
@@ -820,19 +293,9 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
                 "global_data" => {
                     db_update.global_data = global_data_table::parse_table_update(table_update)?
                 }
-                "global_event" => {
-                    db_update.global_event = global_event_table::parse_table_update(table_update)?
-                }
                 "global_settings" => {
                     db_update.global_settings =
                         global_settings_table::parse_table_update(table_update)?
-                }
-                "house" => db_update.house = house_table::parse_table_update(table_update)?,
-                "lootbox_item" => {
-                    db_update.lootbox_item = lootbox_item_table::parse_table_update(table_update)?
-                }
-                "meta_shop" => {
-                    db_update.meta_shop = meta_shop_table::parse_table_update(table_update)?
                 }
                 "player" => db_update.player = player_table::parse_table_update(table_update)?,
                 "player_game_stats" => {
@@ -846,25 +309,6 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
                     db_update.player_tag = player_tag_table::parse_table_update(table_update)?
                 }
                 "quest" => db_update.quest = quest_table::parse_table_update(table_update)?,
-                "rainbow_shard_item" => {
-                    db_update.rainbow_shard_item =
-                        rainbow_shard_item_table::parse_table_update(table_update)?
-                }
-                "reward" => db_update.reward = reward_table::parse_table_update(table_update)?,
-                "status" => db_update.status = status_table::parse_table_update(table_update)?,
-                "team" => db_update.team = team_table::parse_table_update(table_update)?,
-                "trade" => db_update.trade = trade_table::parse_table_update(table_update)?,
-                "unit_balance" => {
-                    db_update.unit_balance = unit_balance_table::parse_table_update(table_update)?
-                }
-                "unit_item" => {
-                    db_update.unit_item = unit_item_table::parse_table_update(table_update)?
-                }
-                "unit_shard_item" => {
-                    db_update.unit_shard_item =
-                        unit_shard_item_table::parse_table_update(table_update)?
-                }
-                "units" => db_update.units = units_table::parse_table_update(table_update)?,
                 "wallet" => db_update.wallet = wallet_table::parse_table_update(table_update)?,
 
                 unknown => __anyhow::bail!("Unknown table {unknown:?} in DatabaseUpdate"),
@@ -880,54 +324,21 @@ impl __sdk::spacetime_module::InModule for DbUpdate {
 
 impl __sdk::spacetime_module::DbUpdate for DbUpdate {
     fn apply_to_client_cache(&self, cache: &mut __sdk::client_cache::ClientCache<RemoteModule>) {
-        cache.apply_diff_to_table::<TAbility>("ability", &self.ability);
         cache
             .apply_diff_to_table::<TArenaLeaderboard>("arena_leaderboard", &self.arena_leaderboard);
         cache.apply_diff_to_table::<TArenaPool>("arena_pool", &self.arena_pool);
-        cache.apply_diff_to_table::<TArenaRun>("arena_run", &self.arena_run);
-        cache.apply_diff_to_table::<TArenaRunArchive>("arena_run_archive", &self.arena_run_archive);
-        cache.apply_diff_to_table::<TAuction>("auction", &self.auction);
-        cache.apply_diff_to_table::<TBaseUnit>("base_unit", &self.base_unit);
-        cache.apply_diff_to_table::<TBattle>("battle", &self.battle);
-        cache.apply_diff_to_table::<TContentFavorite>("content_favorite", &self.content_favorite);
-        cache.apply_diff_to_table::<TContentFavoriteScore>(
-            "content_favorite_score",
-            &self.content_favorite_score,
-        );
-        cache.apply_diff_to_table::<TContentPiece>("content_piece", &self.content_piece);
-        cache.apply_diff_to_table::<TContentVote>("content_vote", &self.content_vote);
-        cache.apply_diff_to_table::<TContentVoteScore>(
-            "content_vote_score",
-            &self.content_vote_score,
-        );
         cache.apply_diff_to_table::<TDailyState>("daily_state", &self.daily_state);
         cache.apply_diff_to_table::<DailyUpdateTimer>(
             "daily_update_timer",
             &self.daily_update_timer,
         );
         cache.apply_diff_to_table::<GlobalData>("global_data", &self.global_data);
-        cache.apply_diff_to_table::<TGlobalEvent>("global_event", &self.global_event);
         cache.apply_diff_to_table::<GlobalSettings>("global_settings", &self.global_settings);
-        cache.apply_diff_to_table::<THouse>("house", &self.house);
-        cache.apply_diff_to_table::<TLootboxItem>("lootbox_item", &self.lootbox_item);
-        cache.apply_diff_to_table::<TMetaShop>("meta_shop", &self.meta_shop);
         cache.apply_diff_to_table::<TPlayer>("player", &self.player);
         cache.apply_diff_to_table::<TPlayerGameStats>("player_game_stats", &self.player_game_stats);
         cache.apply_diff_to_table::<TPlayerStats>("player_stats", &self.player_stats);
         cache.apply_diff_to_table::<TPlayerTag>("player_tag", &self.player_tag);
         cache.apply_diff_to_table::<TQuest>("quest", &self.quest);
-        cache.apply_diff_to_table::<TRainbowShardItem>(
-            "rainbow_shard_item",
-            &self.rainbow_shard_item,
-        );
-        cache.apply_diff_to_table::<TReward>("reward", &self.reward);
-        cache.apply_diff_to_table::<TStatus>("status", &self.status);
-        cache.apply_diff_to_table::<TTeam>("team", &self.team);
-        cache.apply_diff_to_table::<TTrade>("trade", &self.trade);
-        cache.apply_diff_to_table::<TUnitBalance>("unit_balance", &self.unit_balance);
-        cache.apply_diff_to_table::<TUnitItem>("unit_item", &self.unit_item);
-        cache.apply_diff_to_table::<TUnitShardItem>("unit_shard_item", &self.unit_shard_item);
-        cache.apply_diff_to_table::<TUnits>("units", &self.units);
         cache.apply_diff_to_table::<TWallet>("wallet", &self.wallet);
     }
     fn invoke_row_callbacks(
@@ -935,47 +346,12 @@ impl __sdk::spacetime_module::DbUpdate for DbUpdate {
         event: &EventContext,
         callbacks: &mut __sdk::callbacks::DbCallbacks<RemoteModule>,
     ) {
-        callbacks.invoke_table_row_callbacks::<TAbility>("ability", &self.ability, event);
         callbacks.invoke_table_row_callbacks::<TArenaLeaderboard>(
             "arena_leaderboard",
             &self.arena_leaderboard,
             event,
         );
         callbacks.invoke_table_row_callbacks::<TArenaPool>("arena_pool", &self.arena_pool, event);
-        callbacks.invoke_table_row_callbacks::<TArenaRun>("arena_run", &self.arena_run, event);
-        callbacks.invoke_table_row_callbacks::<TArenaRunArchive>(
-            "arena_run_archive",
-            &self.arena_run_archive,
-            event,
-        );
-        callbacks.invoke_table_row_callbacks::<TAuction>("auction", &self.auction, event);
-        callbacks.invoke_table_row_callbacks::<TBaseUnit>("base_unit", &self.base_unit, event);
-        callbacks.invoke_table_row_callbacks::<TBattle>("battle", &self.battle, event);
-        callbacks.invoke_table_row_callbacks::<TContentFavorite>(
-            "content_favorite",
-            &self.content_favorite,
-            event,
-        );
-        callbacks.invoke_table_row_callbacks::<TContentFavoriteScore>(
-            "content_favorite_score",
-            &self.content_favorite_score,
-            event,
-        );
-        callbacks.invoke_table_row_callbacks::<TContentPiece>(
-            "content_piece",
-            &self.content_piece,
-            event,
-        );
-        callbacks.invoke_table_row_callbacks::<TContentVote>(
-            "content_vote",
-            &self.content_vote,
-            event,
-        );
-        callbacks.invoke_table_row_callbacks::<TContentVoteScore>(
-            "content_vote_score",
-            &self.content_vote_score,
-            event,
-        );
         callbacks.invoke_table_row_callbacks::<TDailyState>(
             "daily_state",
             &self.daily_state,
@@ -987,23 +363,11 @@ impl __sdk::spacetime_module::DbUpdate for DbUpdate {
             event,
         );
         callbacks.invoke_table_row_callbacks::<GlobalData>("global_data", &self.global_data, event);
-        callbacks.invoke_table_row_callbacks::<TGlobalEvent>(
-            "global_event",
-            &self.global_event,
-            event,
-        );
         callbacks.invoke_table_row_callbacks::<GlobalSettings>(
             "global_settings",
             &self.global_settings,
             event,
         );
-        callbacks.invoke_table_row_callbacks::<THouse>("house", &self.house, event);
-        callbacks.invoke_table_row_callbacks::<TLootboxItem>(
-            "lootbox_item",
-            &self.lootbox_item,
-            event,
-        );
-        callbacks.invoke_table_row_callbacks::<TMetaShop>("meta_shop", &self.meta_shop, event);
         callbacks.invoke_table_row_callbacks::<TPlayer>("player", &self.player, event);
         callbacks.invoke_table_row_callbacks::<TPlayerGameStats>(
             "player_game_stats",
@@ -1017,27 +381,6 @@ impl __sdk::spacetime_module::DbUpdate for DbUpdate {
         );
         callbacks.invoke_table_row_callbacks::<TPlayerTag>("player_tag", &self.player_tag, event);
         callbacks.invoke_table_row_callbacks::<TQuest>("quest", &self.quest, event);
-        callbacks.invoke_table_row_callbacks::<TRainbowShardItem>(
-            "rainbow_shard_item",
-            &self.rainbow_shard_item,
-            event,
-        );
-        callbacks.invoke_table_row_callbacks::<TReward>("reward", &self.reward, event);
-        callbacks.invoke_table_row_callbacks::<TStatus>("status", &self.status, event);
-        callbacks.invoke_table_row_callbacks::<TTeam>("team", &self.team, event);
-        callbacks.invoke_table_row_callbacks::<TTrade>("trade", &self.trade, event);
-        callbacks.invoke_table_row_callbacks::<TUnitBalance>(
-            "unit_balance",
-            &self.unit_balance,
-            event,
-        );
-        callbacks.invoke_table_row_callbacks::<TUnitItem>("unit_item", &self.unit_item, event);
-        callbacks.invoke_table_row_callbacks::<TUnitShardItem>(
-            "unit_shard_item",
-            &self.unit_shard_item,
-            event,
-        );
-        callbacks.invoke_table_row_callbacks::<TUnits>("units", &self.units, event);
         callbacks.invoke_table_row_callbacks::<TWallet>("wallet", &self.wallet, event);
     }
 }

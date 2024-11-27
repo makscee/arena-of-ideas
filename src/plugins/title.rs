@@ -36,15 +36,6 @@ impl TitlePlugin {
                 {
                     GameState::Quests.proceed_to_target(world);
                 }
-                if MetaPlugin::can_balance_vote()
-                    && Button::new("Vote to earn credits")
-                        .color(YELLOW, ui)
-                        .ui(ui)
-                        .clicked()
-                {
-                    MetaPlugin::set_mode(MetaMode::Balancing, world);
-                    GameState::Meta.proceed_to_target(world);
-                }
             });
         })
         .min_space(egui::vec2(200.0, 0.0))

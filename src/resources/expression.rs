@@ -43,8 +43,6 @@ pub enum Expression {
     TargetStateLast(VarName),
     CasterStateLast(VarName),
     StatusStateLast(String, VarName),
-    AbilityContext(String, VarName),
-    AbilityState(String, VarName),
     StatusCharges(String),
     HexColor(String),
     F(f32),
@@ -116,9 +114,7 @@ impl Expression {
             Expression::CasterState(var) => {
                 Context::new_play(context.get_caster()?).get_value(*var, world)
             }
-            Expression::StatusState(status, var) => Context::new_play(context.owner())
-                .set_status(status.clone())
-                .get_value(*var, world),
+            Expression::StatusState(status, var) => todo!(),
             Expression::OwnerStateLast(var) => Context::new(context.owner()).get_value(*var, world),
             Expression::TargetStateLast(var) => {
                 Context::new(context.get_target()?).get_value(*var, world)
@@ -126,26 +122,14 @@ impl Expression {
             Expression::CasterStateLast(var) => {
                 Context::new(context.get_caster()?).get_value(*var, world)
             }
-            Expression::StatusStateLast(status, var) => Context::new(context.owner())
-                .set_status(status.clone())
-                .get_value(*var, world),
-            Expression::AbilityContext(ability, var) => context.get_ability_var(ability, *var),
-            Expression::AbilityState(ability, var) => {
-                Ok(
-                    TeamPlugin::get_ability_state(ability, context.get_faction(world)?, world)
-                        .and_then(|s| s.get_value_at(*var, gt().play_head()).ok())
-                        .unwrap_or_else(|| GameAssets::ability_default(&ability, *var)),
-                )
-            }
+            Expression::StatusStateLast(status, var) => todo!(),
             Expression::WithVar(var, value, e) => e.get_value(
                 context
                     .clone()
                     .set_var(*var, value.get_value(context, world)?),
                 world,
             ),
-            Expression::StatusCharges(name) => {
-                Ok(Status::get_charges(name, context.owner(), world)?.into())
-            }
+            Expression::StatusCharges(name) => todo!(),
             Expression::HexColor(s) => Ok(VarValue::Color({
                 let s = s.strip_prefix('#').unwrap_or(s);
                 HexColor::from_str_without_hash(s)
@@ -206,24 +190,12 @@ impl Expression {
                 VarValue::compare(&a.get_value(context, world)?, &b.get_value(context, world)?,)?,
                 std::cmp::Ordering::Less
             ))),
-            Expression::OppositeFaction => Ok(VarValue::Faction(
-                context
-                    .get_value(VarName::Faction, world)?
-                    .get_faction()?
-                    .opposite(),
-            )),
+            Expression::OppositeFaction => todo!(),
             Expression::Owner => Ok(VarValue::Entity(context.get_owner()?)),
             Expression::Caster => Ok(VarValue::Entity(context.get_caster()?)),
             Expression::Target => Ok(VarValue::Entity(context.get_target()?)),
-            Expression::Status => Ok(VarValue::Entity(context.get_status_entity(world)?)),
-            Expression::SlotUnit(index) => Ok(VarValue::Entity(
-                UnitPlugin::find_unit(
-                    context.get_value(VarName::Faction, world)?.get_faction()?,
-                    index.get_int(context, world)?,
-                    world,
-                )
-                .context("No unit in slot")?,
-            )),
+            Expression::Status => Ok(VarValue::Entity(todo!())),
+            Expression::SlotUnit(index) => todo!(),
             Expression::If(cond, th, el) => {
                 if cond.get_bool(context, world)? {
                     th.get_value(context, world)
@@ -246,10 +218,7 @@ impl Expression {
                 x.get_float(context, world)?,
                 y.get_float(context, world)?,
             ))),
-            Expression::SlotPosition => Ok(VarValue::Vec2(UnitPlugin::get_entity_slot_position(
-                context.owner(),
-                world,
-            )?)),
+            Expression::SlotPosition => Ok(VarValue::Vec2(todo!())),
             Expression::F(v) => Ok((*v).into()),
             Expression::I(v) => Ok((*v).into()),
             Expression::ToI(v) => Ok(v.get_int(context, world).unwrap_or_default().into()),
@@ -263,79 +232,20 @@ impl Expression {
             Expression::PI => Ok(VarValue::Float(PI)),
             Expression::PI2 => Ok(VarValue::Float(PI * 2.0)),
             Expression::AdjacentUnits => {
-                let own_slot = context.get_value(VarName::Slot, world)?.get_int()?;
-                let faction = context.get_value(VarName::Faction, world)?.get_faction()?;
-                let mut left: (i32, Option<Entity>) = (-i32::MAX, None);
-                let mut right: (i32, Option<Entity>) = (i32::MAX, None);
-                for unit in UnitPlugin::collect_faction(faction, world) {
-                    let slot = Context::new(unit).get_int(VarName::Slot, world)?;
-                    let delta = slot - own_slot;
-                    if delta == 0 {
-                        continue;
-                    }
-                    if delta < 0 && left.0 < delta {
-                        left.0 = delta;
-                        left.1 = Some(unit);
-                    }
-                    if delta > 0 && right.0 > delta {
-                        right.0 = delta;
-                        right.1 = Some(unit);
-                    }
-                }
-                Ok(VarValue::List(
-                    left.1
-                        .into_iter()
-                        .chain(right.1.into_iter())
-                        .map(|e| e.into())
-                        .collect_vec(),
-                ))
+                todo!()
             }
-            Expression::AllAllyUnits => Ok(VarValue::List(
-                UnitPlugin::collect_faction(context.get_faction(world)?, world)
-                    .into_iter()
-                    .map(|e| e.into())
-                    .collect_vec(),
-            )),
-            Expression::AllEnemyUnits => Ok(VarValue::List(
-                UnitPlugin::collect_faction(context.get_faction(world)?.opposite(), world)
-                    .into_iter()
-                    .map(|e| e.into())
-                    .collect_vec(),
-            )),
-            Expression::AllUnits => Ok(VarValue::List(
-                UnitPlugin::collect_alive(world)
-                    .into_iter()
-                    .map(|e| e.into())
-                    .collect_vec(),
-            )),
-            Expression::AllOtherUnits => Ok(VarValue::List(
-                UnitPlugin::collect_alive(world)
-                    .into_iter()
-                    .filter_map(|e| match e.eq(&context.owner()) {
-                        true => None,
-                        false => Some(e.into()),
-                    })
-                    .collect_vec(),
-            )),
+            Expression::AllAllyUnits => todo!(),
+            Expression::AllEnemyUnits => todo!(),
+            Expression::AllUnits => todo!(),
+            Expression::AllOtherUnits => todo!(),
             Expression::FilterStatusUnits(status, units) => {
-                let units = units.get_value(context, world)?.get_entity_list()?;
-                Ok(units
-                    .into_iter()
-                    .filter(|u| Status::get_charges(&status, *u, world).unwrap_or_default() > 0)
-                    .collect_vec()
-                    .into())
+                todo!()
             }
             Expression::FilterNoStatusUnits(status, units) => {
-                let units = units.get_value(context, world)?.get_entity_list()?;
-                Ok(units
-                    .into_iter()
-                    .filter(|u| Status::get_charges(&status, *u, world).unwrap_or_default() == 0)
-                    .collect_vec()
-                    .into())
+                todo!()
             }
             Expression::StatusEntity(status, owner) => {
-                Status::find_status_entity(owner.get_entity(context, world)?, status, world)
-                    .map(|e| e.into())
+                todo!()
             }
             Expression::Age => {
                 Ok((gt().play_head() - VarState::get(context.owner(), world).birth()).into())
@@ -423,9 +333,6 @@ impl Expression {
     pub fn get_entity(&self, context: &Context, world: &mut World) -> Result<Entity> {
         self.get_value(context, world)?.get_entity()
     }
-    pub fn get_faction(&self, context: &Context, world: &mut World) -> Result<Faction> {
-        self.get_value(context, world)?.get_faction()
-    }
     pub fn get_color(&self, context: &Context, world: &mut World) -> Result<Color> {
         self.get_value(context, world)?.get_color()
     }
@@ -467,8 +374,6 @@ impl ToCstr for Expression {
             | Expression::TargetStateLast(_)
             | Expression::CasterStateLast(_)
             | Expression::StatusStateLast(_, _)
-            | Expression::AbilityContext(_, _)
-            | Expression::AbilityState(_, _)
             | Expression::StatusCharges(_)
             | Expression::HexColor(_)
             | Expression::F(_)
@@ -532,10 +437,7 @@ impl ToCstr for Expression {
                 s += &format!("({})", v.cstr()).cstr_c(VISIBLE_LIGHT);
             }
             Expression::Context(v) => s = (*v).cstr_cs(VISIBLE_BRIGHT, CstrStyle::Bold),
-            Expression::AbilityContext(name, v)
-            | Expression::AbilityState(name, v)
-            | Expression::StatusState(name, v)
-            | Expression::StatusStateLast(name, v) => {
+            Expression::StatusState(name, v) | Expression::StatusStateLast(name, v) => {
                 s += &format!(
                     "({}, {})",
                     name.cstr_cs(name_color(name), CstrStyle::Bold),
@@ -688,8 +590,6 @@ impl ShowEditor for Expression {
             | Expression::CasterStateLast(..)
             | Expression::StatusState(_, _)
             | Expression::StatusStateLast(_, _)
-            | Expression::AbilityContext(_, _)
-            | Expression::AbilityState(_, _)
             | Expression::StatusCharges(_)
             | Expression::HexColor(_)
             | Expression::F(_)
@@ -784,10 +684,6 @@ impl ShowEditor for Expression {
             }
             Expression::StatusState(status, var) | Expression::StatusStateLast(status, var) => {
                 status_selector(status, ui);
-                var_selector(var, ui);
-            }
-            Expression::AbilityContext(ability, var) | Expression::AbilityState(ability, var) => {
-                ability_selector(ability, ui);
                 var_selector(var, ui);
             }
             Expression::StatusCharges(status) => {
@@ -950,8 +846,6 @@ impl ShowEditor for Expression {
             | Expression::TargetStateLast(_)
             | Expression::CasterStateLast(_)
             | Expression::StatusStateLast(_, _)
-            | Expression::AbilityContext(_, _)
-            | Expression::AbilityState(_, _)
             | Expression::StatusCharges(_)
             | Expression::HexColor(_)
             | Expression::F(_)
@@ -1020,10 +914,7 @@ impl Hash for Expression {
             | Expression::OwnerStateLast(v)
             | Expression::TargetStateLast(v)
             | Expression::CasterStateLast(v) => v.hash(state),
-            Expression::StatusState(s, v)
-            | Expression::StatusStateLast(s, v)
-            | Expression::AbilityContext(s, v)
-            | Expression::AbilityState(s, v) => {
+            Expression::StatusState(s, v) | Expression::StatusStateLast(s, v) => {
                 s.hash(state);
                 v.hash(state);
             }

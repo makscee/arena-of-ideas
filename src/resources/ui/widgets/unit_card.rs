@@ -21,18 +21,6 @@ pub struct UnitCard {
 }
 
 impl UnitCard {
-    pub fn from_packed(unit: PackedUnit, world: &mut World) -> Result<Self> {
-        let unit = unit.unpack(TeamPlugin::entity(Faction::Team, world), None, None, world);
-        let context = Context::new(unit).detach(world).take();
-        UnitPlugin::despawn(unit, world);
-        UnitCard::new(&context, world)
-    }
-    pub fn from_fused(unit: FusedUnit, world: &mut World) -> Result<Self> {
-        Self::from_packed(unit.into(), world)
-    }
-    pub fn from_base(unit: TBaseUnit, world: &mut World) -> Result<Self> {
-        Self::from_packed(unit.into(), world)
-    }
     pub fn new(context: &Context, world: &World) -> Result<Self> {
         let mut effects = context
             .get_value(VarName::EffectsDescription, world)?
@@ -68,23 +56,7 @@ impl UnitCard {
                 .get_string_list()?,
             effects,
             active_statuses: context.all_active_statuses(world),
-            used_definitions: HashMap::from_iter(
-                context
-                    .get_value(VarName::UsedDefinitions, world)?
-                    .get_string_list()?
-                    .into_iter()
-                    .map(|name| {
-                        (name.clone(), {
-                            let context = context
-                                .clone()
-                                .set_ability_state(&name, world)
-                                .unwrap()
-                                .take();
-                            definition(&name)
-                                .inject_vars(|var| context.get_ability_var(&name, var).ok())
-                        })
-                    }),
-            ),
+            used_definitions: default(),
         })
     }
     pub fn ui(&self, ui: &mut Ui) {
@@ -328,51 +300,3 @@ fn point_on_rect(t: f32, rect: &Rect) -> egui::Pos2 {
 }
 
 static UNIT_CARD_CACHE: OnceCell<Mutex<HashMap<String, UnitCard>>> = OnceCell::new();
-fn cache_packed_unit(
-    id: String,
-    unit: PackedUnit,
-    cache: &mut MutexGuard<HashMap<String, UnitCard>>,
-    world: &mut World,
-) -> Result<()> {
-    cache.insert(id, UnitCard::from_packed(unit, world)?);
-    Ok(())
-}
-pub fn cached_fused_card(unit: &FusedUnit, ui: &mut Ui, world: &mut World) -> Result<()> {
-    let id = unit.id.to_string();
-    let mut cache = UNIT_CARD_CACHE.get_or_init(|| default()).lock().unwrap();
-    if !cache.contains_key(&id) {
-        let unit: PackedUnit = unit.clone().into();
-        cache_packed_unit(id.clone(), unit, &mut cache, world)?;
-    }
-    cache
-        .get(&id)
-        .context("Failed to get cached card context")?
-        .ui(ui);
-    Ok(())
-}
-pub fn cached_base_card(unit: &TBaseUnit, ui: &mut Ui, world: &mut World) -> Result<()> {
-    let id = unit.name.to_string();
-    let mut cache = UNIT_CARD_CACHE.get_or_init(|| default()).lock().unwrap();
-    if !cache.contains_key(&id) {
-        let unit: PackedUnit = unit.clone().into();
-        cache_packed_unit(id.clone(), unit, &mut cache, world)?;
-    }
-    cache
-        .get(&id)
-        .context("Failed to get cached card context")?
-        .ui(ui);
-    Ok(())
-}
-pub fn cached_packed_card(unit: &PackedUnit, ui: &mut Ui, world: &mut World) -> Result<()> {
-    let id = unit.name.to_string();
-    let mut cache = UNIT_CARD_CACHE.get_or_init(|| default()).lock().unwrap();
-    if !cache.contains_key(&id) {
-        let unit: PackedUnit = unit.clone();
-        cache_packed_unit(id.clone(), unit, &mut cache, world)?;
-    }
-    cache
-        .get(&id)
-        .context("Failed to get cached card context")?
-        .ui(ui);
-    Ok(())
-}

@@ -198,7 +198,6 @@ fn quest_accept(ctx: &ReducerContext, id: u64) -> Result<(), String> {
     TDailyState::get(ctx, player.id).take_quest(ctx, id)?;
     quest.id = next_id(ctx);
     quest.owner = player.id;
-    GlobalEvent::QuestAccepted(quest.clone()).post(ctx, player.id);
     ctx.db.quest().insert(quest);
     Ok(())
 }
@@ -216,8 +215,6 @@ fn quest_finish(ctx: &ReducerContext, id: u64) -> Result<(), String> {
         return Err(format!("Quest#{id} not owned by {}", player.id));
     }
     TWallet::change(ctx, player.id, quest.reward)?;
-    GlobalEvent::QuestComplete(quest.clone()).post(ctx, player.id);
     ctx.db.quest().id().delete(quest.id);
-    TPlayerStats::register_completed_quest(ctx, player.id);
     Ok(())
 }

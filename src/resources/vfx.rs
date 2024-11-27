@@ -15,12 +15,7 @@ pub struct Vfx {
 
 impl Vfx {
     pub fn get(name: &str) -> Self {
-        game_assets()
-            .vfxs
-            .get(name)
-            .with_context(|| format!("Vfx {name} not loaded"))
-            .unwrap()
-            .clone()
+        todo!()
     }
     pub fn unpack(self, world: &mut World) -> Result<Entity> {
         let entity = world.spawn_empty().id();
@@ -56,15 +51,6 @@ impl Vfx {
         self
     }
     pub fn attach_context(mut self, context: &Context, world: &World) -> Self {
-        if let Ok(owner_pos) = UnitPlugin::get_unit_position(context.owner(), world) {
-            if let Ok(target_pos) = context
-                .get_target()
-                .and_then(|t| UnitPlugin::get_unit_position(t, world))
-            {
-                let delta = target_pos - owner_pos;
-                self = self.set_var(VarName::Delta, VarValue::Vec2(delta));
-            }
-        }
         self = self.set_parent(context.owner());
         for (var, value) in context.get_all_vars() {
             self = self.set_var(var, value);

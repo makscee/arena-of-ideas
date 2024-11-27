@@ -95,40 +95,6 @@ impl Context {
         self.layers.push(ContextLayer::Var(var, value));
         self
     }
-    pub fn get_ability_var(&self, ability: &str, var: VarName) -> Result<VarValue> {
-        self.layers
-            .iter()
-            .rev()
-            .find_map(|l| l.get_ability_var(ability, var))
-            .with_context(|| format!("Failed to find ability var {var}"))
-    }
-    pub fn set_ability_var(&mut self, ability: String, var: VarName, value: VarValue) -> &mut Self {
-        self.layers
-            .push(ContextLayer::AbilityVar(ability, var, value));
-        self
-    }
-    pub fn set_status(&mut self, name: String) -> &mut Self {
-        self.layers.push(ContextLayer::Status(self.owner(), name));
-        self
-    }
-    pub fn status(&self) -> (Entity, String) {
-        self.get_status().expect("Status not found")
-    }
-    pub fn get_status(&self) -> Result<(Entity, String)> {
-        self.layers
-            .iter()
-            .rev()
-            .find_map(|l| l.get_status())
-            .with_context(|| format!("Failed to get status"))
-    }
-    pub fn get_status_entity(&self, world: &World) -> Result<Entity> {
-        let (owner, status) = self.get_status()?;
-        Status::find_status_entity(owner, &status, world)
-    }
-    pub fn has_status(&self, owner: Entity, name: String) -> bool {
-        let layer = ContextLayer::Status(owner, name);
-        self.layers.iter().any(|l| layer.eq(l))
-    }
     pub fn set_event(&mut self, event: Event) -> &mut Self {
         self.layers.push(ContextLayer::Event(event));
         self
@@ -139,27 +105,6 @@ impl Context {
     pub fn set_effect(&mut self, effect: Cstr) -> &mut Self {
         self.layers.push(ContextLayer::Effect(effect));
         self
-    }
-    pub fn get_faction(&self, world: &World) -> Result<Faction> {
-        self.get_value(VarName::Faction, world)?.get_faction()
-    }
-
-    pub fn set_ability_state(&mut self, ability: &str, world: &World) -> Result<&mut Self> {
-        let team = TeamPlugin::entity(self.get_faction(world)?, world);
-        let mut values = game_assets()
-            .ability_defaults
-            .get(ability)
-            .cloned()
-            .unwrap_or_default();
-        if let Some(state) = world.get::<AbilityStates>(team).unwrap().0.get(ability) {
-            for (var, value) in state.all_values(self.t, world) {
-                values.insert(var, value);
-            }
-        }
-        for (var, value) in values {
-            self.set_ability_var(ability.into(), var, value);
-        }
-        Ok(self)
     }
     pub fn apply_transform(&self, vars: &[VarName], world: &mut World) {
         let entity = self.owner();
@@ -274,9 +219,7 @@ pub enum ContextLayer {
     Caster(Entity),
     Target(Entity),
     Owner(Entity),
-    Status(Entity, String),
     Var(VarName, VarValue),
-    AbilityVar(String, VarName, VarValue),
     Event(Event),
     Effect(Cstr),
 }
@@ -301,24 +244,6 @@ impl ContextLayer {
     fn get_target(&self) -> Option<Entity> {
         match self {
             ContextLayer::Target(entity) => Some(*entity),
-            _ => None,
-        }
-    }
-    fn get_status(&self) -> Option<(Entity, String)> {
-        match self {
-            ContextLayer::Status(entity, name) => Some((*entity, name.clone())),
-            _ => None,
-        }
-    }
-    fn get_ability_var(&self, ability: &str, var: VarName) -> Option<VarValue> {
-        match self {
-            ContextLayer::AbilityVar(a, v, val) => {
-                if a.eq(ability) && var.eq(v) {
-                    Some(val.clone())
-                } else {
-                    None
-                }
-            }
             _ => None,
         }
     }
@@ -347,11 +272,6 @@ impl ContextLayer {
                 true => Some(value.clone()),
                 false => None,
             },
-            ContextLayer::Status(owner, name) => VarState::try_get(*owner, world)
-                .ok()?
-                .get_status(&name)?
-                .get_value_at(var, t)
-                .ok(),
             _ => None,
         }
     }
@@ -366,13 +286,9 @@ impl ToCstr for ContextLayer {
                     ContextLayer::Caster(e) | ContextLayer::Target(e) | ContextLayer::Owner(e) => {
                         entity_name_with_id(*e)
                     }
-                    ContextLayer::Status(e, name) =>
-                        entity_name_with_id(*e) + " " + &name.cstr_c(name_color(name)),
                     ContextLayer::Var(var, value) => {
                         var.cstr() + " " + &value.cstr()
                     }
-                    ContextLayer::AbilityVar(name, var, value) =>
-                        name.cstr_c(name_color(name)) + &var.cstr() + &value.cstr(),
                     ContextLayer::Event(e) => e.cstr(),
                     ContextLayer::Effect(e) => e.clone(),
                 }

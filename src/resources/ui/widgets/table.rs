@@ -409,7 +409,8 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                     if id == 0 {
                         "...".cstr().label(ui);
                     } else {
-                        id.get_team_cached().hover_label(ui, w);
+                        todo!();
+                        // id.get_team_cached().hover_label(ui, w);
                     }
                 }),
                 sortable: true,
@@ -438,61 +439,6 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
     }
     pub fn column_rarity(self, value: fn(&T) -> i32) -> Self {
         self.column_rarity_dyn(Box::new(value))
-    }
-    pub fn column_base_unit_name_dyn(
-        mut self,
-        name: &'static str,
-        unit: Box<dyn Fn(&T) -> String>,
-    ) -> Self {
-        self.columns.insert(
-            name,
-            TableColumn {
-                value: Box::new(move |d, _| unit(d).into()),
-                show: Box::new(|_, v, ui, world| {
-                    let name = v.get_string().unwrap();
-                    if let Some(unit) = cn().db.base_unit().name().find(&name) {
-                        let color = name_color(&unit.house);
-                        if name.cstr_c(color).label(ui).hovered() {
-                            cursor_window(ui.ctx(), |ui| {
-                                match cached_base_card(&name.base_unit(), ui, world) {
-                                    Ok(_) => {}
-                                    Err(e) => error!("{e}"),
-                                }
-                            });
-                        }
-                    } else {
-                        name.cstr_c(VISIBLE_LIGHT).label(ui);
-                    }
-                }),
-                sortable: true,
-                hide_name: false,
-            },
-        );
-        self
-    }
-    pub fn column_base_unit_name(self, name: &'static str, unit: fn(&T) -> String) -> Self {
-        self.column_base_unit_name_dyn(name, Box::new(unit))
-    }
-    pub fn column_base_unit(mut self, name: &'static str, unit: fn(&T) -> TBaseUnit) -> Self {
-        self.columns.insert(
-            name,
-            TableColumn {
-                value: Box::new(move |d, _| unit(d).name.into()),
-                show: Box::new(move |d, _, ui, world| {
-                    let unit = unit(d);
-                    let resp = unit.name.cstr_c(name_color(&unit.house)).label(ui);
-                    if resp.hovered() {
-                        cursor_window(ui.ctx(), |ui| match cached_base_card(&unit, ui, world) {
-                            Ok(_) => {}
-                            Err(e) => error!("{e}"),
-                        });
-                    }
-                }),
-                sortable: true,
-                hide_name: false,
-            },
-        );
-        self
     }
     pub fn column_texture(mut self, tex: Box<dyn Fn(&T, &mut World) -> TextureId>) -> Self {
         self.columns.insert(
@@ -525,12 +471,6 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
             },
         );
         self
-    }
-    pub fn column_base_unit_texture(self, unit: fn(&T) -> &TBaseUnit) -> Self {
-        self.column_texture(Box::new(move |d, world| {
-            let unit = unit(d);
-            TextureRenderPlugin::texture_base_unit(unit, world)
-        }))
     }
     pub fn column_representation_texture(self, rep: fn(&T) -> Representation) -> Self {
         self.column_texture(Box::new(move |d, world| {

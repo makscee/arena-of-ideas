@@ -129,19 +129,19 @@ pub fn cursor_window_frame(
         });
 }
 pub fn status_selector(status: &mut String, ui: &mut Ui) -> bool {
-    Selector::new("status").ui_iter(status, game_assets().statuses.keys(), ui)
+    todo!()
 }
 pub fn ability_selector(ability: &mut String, ui: &mut Ui) -> bool {
-    Selector::new("ability").ui_iter(ability, game_assets().abilities.keys(), ui)
+    todo!()
 }
 pub fn summon_selector(summon: &mut String, ui: &mut Ui) -> bool {
-    Selector::new("summon").ui_iter(summon, game_assets().summons.keys(), ui)
+    todo!()
 }
 pub fn vfx_selector(vfx: &mut String, ui: &mut Ui) -> bool {
-    Selector::new("vfx").ui_iter(vfx, game_assets().vfxs.keys(), ui)
+    todo!()
 }
 pub fn var_selector(var: &mut VarName, ui: &mut Ui) -> bool {
-    Selector::new("var").ui_enum(var, ui)
+    todo!()
 }
 pub fn show_collapsing_node<T: ShowEditor>(
     name: &str,

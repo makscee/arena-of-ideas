@@ -223,13 +223,9 @@ pub fn format_duration(seconds: u64) -> String {
 }
 pub fn global_settings() -> GlobalSettings {
     if is_connected() {
-        cn().db
-            .global_settings()
-            .always_zero()
-            .find(&0)
-            .unwrap_or_else(|| game_assets().global_settings.clone())
+        todo!()
     } else {
-        game_assets().global_settings.clone()
+        todo!()
     }
 }
 pub fn app_exit(world: &mut World) {
@@ -344,36 +340,6 @@ impl WorldExt for World {
     }
 }
 
-pub trait StrExtensions {
-    fn split_by_brackets(self, left: char, right: char) -> Vec<(String, bool)>;
-    fn extract_bracketed(self, left: char, right: char) -> Vec<String>;
-}
-
-impl<'a> StrExtensions for &'a str {
-    fn split_by_brackets(mut self, left: char, right: char) -> Vec<(String, bool)> {
-        let mut lines: Vec<(String, bool)> = default();
-        while let Some(opening) = self.find(left) {
-            let left = &self[..opening];
-            if let Some(closing) = self.find(right) {
-                let mid = &self[opening + 1..closing];
-                lines.push((left.to_owned(), false));
-                lines.push((mid.to_owned(), true));
-                self = &self[closing + 1..];
-            } else {
-                break;
-            }
-        }
-        lines.push((self.to_owned(), false));
-        lines
-    }
-
-    fn extract_bracketed(self, left: char, right: char) -> Vec<String> {
-        self.split_by_brackets(left, right)
-            .into_iter()
-            .filter_map(|(s, v)| match v {
-                true => Some(s),
-                false => None,
-            })
-            .collect_vec()
-    }
+pub fn name_color(_: &str) -> Color32 {
+    MISSING_COLOR
 }

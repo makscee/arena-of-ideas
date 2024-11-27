@@ -26,8 +26,8 @@ impl Default for IconMenu {
                 Icon {
                     name: 'R',
                     color: CYAN,
-                    on_click: RewardsPlugin::open_rewards,
-                    indicator: Some(|_| RewardsPlugin::have_unclaimed()),
+                    on_click: todo!(),
+                    indicator: None,
                     hint: "Rewards",
                 },
                 Icon {

@@ -57,7 +57,7 @@ impl LoginPlugin {
         });
         LoginOption { player }.save(world);
         StdbQuery::subscribe(StdbQuery::queries_game(), move |world| {
-            GameAssets::cache_tables();
+            // GameAssets::cache_tables();
             GameState::proceed(world);
             db_subscriptions();
         });

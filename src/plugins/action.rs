@@ -1,7 +1,5 @@
 use std::collections::VecDeque;
 
-use rand::RngCore;
-
 use super::*;
 
 pub struct ActionPlugin;
@@ -51,15 +49,15 @@ impl ActionPlugin {
         let mut limit = 100000;
         let mut hasher = DefaultHasher::new();
         rm(world).turns.len().hash(&mut hasher);
-        let br = world.resource::<BattleResource>();
-        let id = if br.id > 0 {
-            br.id
-        } else {
-            thread_rng().next_u64()
-        };
-        id.hash(&mut hasher);
-        br.left.units.iter().for_each(|u| u.name.hash(&mut hasher));
-        br.right.units.iter().for_each(|u| u.name.hash(&mut hasher));
+        // let br = world.resource::<BattleResource>();
+        // let id = if br.id > 0 {
+        //     br.id
+        // } else {
+        //     thread_rng().next_u64()
+        // };
+        // id.hash(&mut hasher);
+        // br.left.units.iter().for_each(|u| u.name.hash(&mut hasher));
+        // br.right.units.iter().for_each(|u| u.name.hash(&mut hasher));
         let rng = rng_seeded(hasher.finish());
         rm(world).rng = Some(rng);
         loop {
@@ -75,14 +73,14 @@ impl ActionPlugin {
             {
                 context.t_to_insert();
                 let owner = context.owner();
-                if world.get::<Corpse>(owner).is_some() {
-                    error!(
-                        "{} is dead, drop effect {}",
-                        entity_name_with_id(owner),
-                        effect.cstr()
-                    );
-                    continue;
-                }
+                // if world.get::<Corpse>(owner).is_some() {
+                //     error!(
+                //         "{} is dead, drop effect {}",
+                //         entity_name_with_id(owner),
+                //         effect.cstr()
+                //     );
+                //     continue;
+                // }
                 Self::calculate_deafness(owner, world);
                 if Self::deafness(owner, world) {
                     TextColumnPlugin::add(
@@ -99,9 +97,9 @@ impl ActionPlugin {
                         processed = true;
                         *rm(world).chain.entry(owner).or_default() += 1;
                         gt().advance_insert(delay);
-                        for unit in UnitPlugin::collect_alive(world) {
-                            Status::refresh_mappings(unit, world);
-                        }
+                        // for unit in UnitPlugin::collect_alive(world) {
+                        //     Status::refresh_mappings(unit, world);
+                        // }
                     }
                     Err(e) => error!("Effect process error: {e}"),
                 }
@@ -147,22 +145,23 @@ impl ActionPlugin {
         }
     }
     pub fn clear_dead(world: &mut World) -> bool {
-        let dead = UnitPlugin::run_death_check(world);
-        let died = !dead.is_empty();
-        if died {
-            let _ = Self::spin(world);
-        }
-        for unit in dead {
-            UnitPlugin::turn_into_corpse(unit, world);
-        }
-        if died {
-            gt().advance_insert(0.5);
-            UnitPlugin::fill_gaps_and_translate(world);
-            gt().insert_to_end();
-        } else {
-            gt().advance_insert(0.3);
-        }
-        died
+        // let dead = UnitPlugin::run_death_check(world);
+        // let died = !dead.is_empty();
+        // if died {
+        //     let _ = Self::spin(world);
+        // }
+        // for unit in dead {
+        //     UnitPlugin::turn_into_corpse(unit, world);
+        // }
+        // if died {
+        //     gt().advance_insert(0.5);
+        //     UnitPlugin::fill_gaps_and_translate(world);
+        //     gt().insert_to_end();
+        // } else {
+        //     gt().advance_insert(0.3);
+        // }
+        // died
+        false
     }
     pub fn action_push_back(effect: Effect, context: Context, world: &mut World) {
         world.resource_mut::<ActionQueue>().0.push_back(Action {
