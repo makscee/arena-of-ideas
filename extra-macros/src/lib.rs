@@ -1,75 +1,104 @@
-use std::collections::HashMap;
-
+use parse::Parser;
 use proc_macro::TokenStream;
-use syn::Ident;
+use syn::*;
 #[macro_use]
 extern crate quote;
 
-#[proc_macro_derive(ContentNode)]
-pub fn derive_content_node(item: TokenStream) -> TokenStream {
-    let input = syn::parse_macro_input!(item as syn::DeriveInput);
-    let struct_identifier = &input.ident;
-    match input.data {
+#[proc_macro_attribute]
+pub fn content_node(args: TokenStream, item: TokenStream) -> TokenStream {
+    let _ = parse_macro_input!(args as parse::Nothing);
+    let mut input = parse_macro_input!(item as syn::DeriveInput);
+    let struct_ident = &input.ident;
+    let mut unit_link_fields = Vec::default();
+    let mut vec_link_fields = Vec::default();
+    let mut var_fields: Vec<proc_macro2::TokenStream> = Vec::default();
+    let mut data_fields = Vec::default();
+    let mut data_types = Vec::default();
+    let mut data_type_ident: proc_macro2::TokenStream = proc_macro2::TokenStream::new();
+    match &mut input.data {
         syn::Data::Struct(syn::DataStruct {
-            struct_token: _,
+            struct_token,
             fields,
             semi_token: _,
         }) => {
-            let mut unit_fields = Vec::default();
-            let mut vec_fields = Vec::default();
-            let mut vars: Vec<proc_macro2::TokenStream> = Vec::default();
-            for field in fields.into_iter() {
-                let ty = field.ty;
-                let field_ident = field.ident.unwrap();
+            for field in fields.iter_mut() {
+                let ty = &field.ty;
+                let field_ident = field.ident.clone().unwrap();
                 match ty {
                     syn::Type::Path(type_path) => {
                         let type_ident = &type_path.path.segments.first().unwrap().ident;
                         if type_ident == "Vec" {
-                            vec_fields.push(field_ident);
-                        } else if type_ident == "i32" || type_ident == "String" {
-                            vars.push(quote! {VarName::#field_ident => return Some(VarValue::#type_ident(self.#field_ident.clone()))}.into());
+                            vec_link_fields.push(field_ident);
+                        } else if type_ident == "Option" {
+                            unit_link_fields.push(field_ident);
+                        } else if type_ident == "i32"
+                            || type_ident == "f32"
+                            || type_ident == "String"
+                        {
+                            var_fields.push(quote! {VarName::#field_ident => return Some(VarValue::#type_ident(self.#field_ident.clone()))}.into());
+                            data_fields.push(field_ident);
+                            data_types.push(ty.clone());
                         } else {
-                            unit_fields.push(field_ident);
+                            data_fields.push(field_ident);
+                            data_types.push(ty.clone());
                         }
                     }
                     _ => unimplemented!(),
                 }
             }
-            quote! {
-                impl ContentNode for #struct_identifier {
-                    fn kind(&self) -> ContentKind {
-                        ContentKind::#struct_identifier
-                    }
-                    fn get_var(&self, var: VarName) -> Option<VarValue> {
-                        match var {
-                            #(
-                                #vars,
-                            )*
-                            _ => {
-                                #(
-                                    if let Some(v) = &self.#unit_fields.get_var(var) {
-                                        return Some(v.clone());
-                                    }
-                                )*
-                            }
-                        };
-                        None
-                    }
-                    fn walk(&self, f: fn(&dyn ContentNode)) {
-                        f(self);
-                        #(
-                            self.#unit_fields.walk(f);
-                        )*
-                        #(
-                            for d in self.#vec_fields.iter() {
-                                d.walk(f);
-                            }
-                        )*
-                    }
-                }
+            if data_types.is_empty() {
+                panic!("No data fields found");
             }
-            .into()
+            data_type_ident = quote! { (#(#data_types),*) };
+            // if let Fields::Named(ref mut fields) = fields {
+            //     fields.named.push(
+            //         Field::parse_named
+            //             .parse2(quote! { pub data: String })
+            //             .unwrap(),
+            //     );
+            // }
         }
         _ => unimplemented!(),
+    };
+
+    quote! {
+        #[derive(Component, Clone, Default, Debug)]
+        #input
+
+        impl ContentNode for #struct_ident {
+            fn kind(&self) -> ContentKind {
+                ContentKind::#struct_ident
+            }
+            fn get_var(&self, var: VarName) -> Option<VarValue> {
+                match var {
+                    #(
+                        #var_fields,
+                    )*
+                    _ => {
+                        #(
+                            if let Some(v) = self.#unit_link_fields.as_ref().and_then(|l| l.get_var(var)).clone() {
+                                return Some(v);
+                            }
+                        )*
+                    }
+                };
+                None
+            }
+            fn get_data(&self) -> String {
+                ron::to_string(&(#(&self.#data_fields),*)).unwrap()
+            }
+            fn inject_data(&mut self, data: &str) {
+                match ron::from_str::<#data_type_ident>(data) {
+                    Ok(v) => (#(self.#data_fields),*) = v,
+                    Err(e) => panic!("{e}"),
+                }
+            }
+        }
+        impl From<&str> for #struct_ident {
+            fn from(value: &str) -> Self {
+                Self::from_data(value)
+            }
+        }
     }
+    .into()
 }

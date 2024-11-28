@@ -5,3 +5,6 @@ edition.workspace = true
 
 [dependencies]
 extra-macros = { path = "../extra-macros" }
+bevy = { workspace = true }
+ron = { workspace = true }
+serde = { workspace = true }

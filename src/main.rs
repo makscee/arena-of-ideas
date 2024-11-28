@@ -44,21 +44,22 @@ fn main() {
     {
         use extra::*;
         use nodes::*;
-        let unit = Unit {
+        let mut unit = Unit {
             name: "UnitName".into(),
-            stats: UnitStats { hp: 1, pwr: 2 },
-            description: UnitDescription {
-                description: "Unit Description".into(),
-                trigger: UnitTrigger {
-                    data: "Unit trigger data".into(),
-                },
-            },
-            representation: UnitRepresentation {
-                data: "Representation data".into(),
-            },
+            ..default()
         };
+        let mut stats = UnitStats::default();
+        stats.inject_data("(3,6)");
+        dbg!(stats.get_data());
+        unit.stats = Some(stats);
+        unit.description = Some(UnitDescription {
+            description: "Test Description".into(),
+            trigger: Some("TurnEnd".into()),
+        });
+
         let val = unit.get_var(VarName::pwr);
         dbg!(val);
+        dbg!(&unit);
     }
     return;
     let mut app = App::new();

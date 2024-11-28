@@ -16,13 +16,8 @@ spacetimedb = { version = "=1.0.0-rc1" }
 strum = "0.26.2"
 strum_macros = "0.26.2"
 itertools = "0.12.1"
-
-[dependencies]
-extra = { path = "extra" }
-extra-macros = { path = "extra-macros" }
-spacetimedb-sdk = "=1.0.0-rc1"
-spacetimedb-sats = "=1.0.0-rc1"
-spacetimedb-lib = "=1.0.0-rc1"
+ron = "0.8.0"
+serde = "1"
 bevy = { version = "0.14.1", default-features = false, features = [
     "bevy_core_pipeline",
     "bevy_render",
@@ -36,6 +31,22 @@ bevy = { version = "0.14.1", default-features = false, features = [
     "default_font",
     "x11",
 ] }
+
+[dependencies]
+extra = { path = "extra" }
+extra-macros = { path = "extra-macros" }
+
+bevy = { workspace = true }
+strum = { workspace = true }
+strum_macros = { workspace = true }
+itertools = { workspace = true }
+ron = { workspace = true }
+serde = { workspace = true }
+
+spacetimedb-sdk = "=1.0.0-rc1"
+spacetimedb-sats = "=1.0.0-rc1"
+spacetimedb-lib = "=1.0.0-rc1"
+
 bevy_asset_loader = { version = "0.21.0", features = [
     "standard_dynamic_assets",
 ] }
@@ -44,13 +55,8 @@ bevy_egui = { version = "0.29.0", features = ["serde"] }
 egui_extras = { version = "0.28.1", features = ["svg"] }
 ecolor = { version = "0.28.1", features = ["color-hex"] }
 log = "0.4.19"
-serde = "1"
 serde_json = "1.0.104"
-ron = "0.8.0"
-itertools = { workspace = true }
 anyhow = "1.0.75"
-strum = { workspace = true }
-strum_macros = { workspace = true }
 tween = "2.0.1"
 rand = "0.8.5"
 color-hex = "0.2.0"
