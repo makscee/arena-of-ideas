@@ -1,5 +1,8 @@
+use std::path::PathBuf;
+
 use super::*;
 use bevy::{ecs::component::*, log::error};
+use include_dir::{include_dir, Dir, DirEntry};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy)]
@@ -20,6 +23,16 @@ pub enum ContentKind {
     UnitTrigger,
 }
 
+// trait DirExt {
+//     fn dir_name(&self) -> &str;
+// }
+
+// impl DirExt for Dir {
+//     fn dir_name(&self) -> &str {
+//         self.path().
+//     }
+// }
+
 pub trait ContentNode: Default {
     fn kind(&self) -> ContentKind;
     fn get_var(&self, var: VarName) -> Option<VarValue>;
@@ -30,6 +43,8 @@ pub trait ContentNode: Default {
         s.inject_data(data);
         s
     }
+    fn from_entry(dir: Option<&DirEntry>) -> Option<Self>;
+    // fn from_dir(dir: &Dir) -> Self;
 }
 
 // #[content_node]
@@ -95,6 +110,20 @@ pub struct Unit {
     // pub representation: Option<UnitRepresentation>,
 }
 
+// impl Unit {
+//     pub fn from_entry(dir: Option<&DirEntry>) -> Option<Self> {
+//         let Some(dir) = dir.and_then(|d| d.as_dir()) else {
+//             return None;
+//         };
+//         let dir_name = dir.path().file_name().unwrap().to_string_lossy();
+//         Some(Self {
+//             name: dir_name.into(),
+//             stats: default(),
+//             description: UnitDescription::from_entry(dir.get_entry(dir.path().join("description"))),
+//         })
+//     }
+// }
+
 #[content_node]
 pub struct UnitStats {
     pub pwr: i32,
@@ -107,10 +136,33 @@ pub struct UnitDescription {
     pub trigger: Option<UnitTrigger>,
 }
 
+// impl UnitDescription {
+//     pub fn from_entry(dir: Option<&DirEntry>) -> Option<Self> {
+//         let Some(dir) = dir.and_then(|d| d.as_dir()) else {
+//             return None;
+//         };
+//         dir.get_file(dir.path().join("data.ron"))
+//             .and_then(|f| f.contents_utf8())
+//             .map(|c| {
+//                 let mut s = Self::from_data(c);
+//                 s.trigger = UnitTrigger::from_entry(dir.get_entry(dir.path().join("trigger.ron")));
+//                 s
+//             })
+//     }
+// }
+
 #[content_node]
 pub struct UnitTrigger {
     pub trigger: Trigger,
 }
+
+// impl UnitTrigger {
+//     pub fn from_entry(dir: Option<&DirEntry>) -> Option<Self> {
+//         dir.and_then(|d| d.as_file())
+//             .and_then(|f| f.contents_utf8())
+//             .map(|f| Self::from_data(f))
+//     }
+// }
 
 // #[derive(ContentNode)]
 // pub struct UnitRepresentation {

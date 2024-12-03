@@ -8,3 +8,4 @@ extra-macros = { path = "../extra-macros" }
 bevy = { workspace = true }
 ron = { workspace = true }
 serde = { workspace = true }
+include_dir = { workspace = true }

@@ -5,11 +5,14 @@ mod resources;
 mod stdb;
 mod utils;
 
+use std::fs::read_dir;
+
 use bevy::{
     diagnostic::FrameTimeDiagnosticsPlugin, log::LogPlugin, render::camera::ClearColor,
     sprite::Material2dPlugin, state::app::AppExtStates,
 };
 use clap::{command, Parser, ValueEnum};
+use include_dir::{include_dir, Dir};
 use noisy_bevy::NoisyShaderPlugin;
 pub use prelude::*;
 
@@ -40,6 +43,7 @@ pub enum RunMode {
     Incubator,
 }
 
+static CONTENT_DIR: Dir = include_dir!("./assets/ron/modular/houses/holy/abilities/blessing/");
 fn main() {
     {
         use extra::*;
@@ -60,6 +64,13 @@ fn main() {
         let val = unit.get_var(VarName::pwr);
         dbg!(val);
         dbg!(&unit);
+
+        dbg!(&CONTENT_DIR);
+        for dir in CONTENT_DIR.get_dir("units").unwrap().dirs() {
+            dbg!(Unit::from_entry(Some(&include_dir::DirEntry::Dir(
+                dir.clone()
+            ))));
+        }
     }
     return;
     let mut app = App::new();
