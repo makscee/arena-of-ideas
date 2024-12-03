@@ -1,0 +1,18 @@
+use super::*;
+
+static CONTENT_DIR: Dir = include_dir!("./assets/ron/modular/houses/");
+static HOUSES: OnceCell<HashMap<String, House>> = OnceCell::new();
+
+pub fn houses() -> &'static HashMap<String, House> {
+    HOUSES.get().unwrap()
+}
+
+pub fn parse_content_tree() {
+    let mut houses: HashMap<String, House> = default();
+    for dir in CONTENT_DIR.dirs() {
+        let house = House::from_dir(dir.path().to_str().unwrap().to_string(), dir).unwrap();
+        let name = house.get_var(VarName::name).unwrap().get_string().unwrap();
+        houses.insert(name, house);
+    }
+    HOUSES.set(houses).unwrap();
+}

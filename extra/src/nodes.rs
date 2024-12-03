@@ -1,9 +1,6 @@
 use super::*;
 use bevy::ecs::component::*;
 use include_dir::Dir;
-use itertools::Itertools;
-use serde::{Deserialize, Serialize};
-use strum_macros::Display;
 
 #[derive(Debug, Clone, Copy, Display)]
 pub enum ContentKind {
@@ -161,36 +158,3 @@ pub struct UnitTrigger {
 // pub struct UnitRepresentation {
 //     pub data: String,
 // }
-
-#[allow(non_camel_case_types)]
-#[derive(Debug, Clone, Copy)]
-pub enum VarName {
-    hp,
-    pwr,
-    data,
-    name,
-    description,
-    color,
-    lvl,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub enum Trigger {
-    #[default]
-    BattleStart,
-    TurnEnd,
-}
-
-#[allow(non_camel_case_types)]
-#[derive(Debug, Clone)]
-pub enum VarValue {
-    i32(i32),
-    f32(f32),
-    String(String),
-}
-
-impl Default for VarValue {
-    fn default() -> Self {
-        Self::i32(0)
-    }
-}

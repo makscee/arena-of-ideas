@@ -19,6 +19,7 @@ itertools = "0.12.1"
 ron = "0.8.0"
 serde = "1"
 include_dir = "0.7.4"
+thiserror = "2.0.3"
 bevy = { version = "0.14.1", default-features = false, features = [
     "bevy_core_pipeline",
     "bevy_render",
@@ -43,7 +44,8 @@ strum_macros = { workspace = true }
 itertools = { workspace = true }
 ron = { workspace = true }
 serde = { workspace = true }
-include_dir ={ workspace = true}
+include_dir = { workspace = true }
+thiserror = { workspace = true }
 
 spacetimedb-sdk = "=1.0.0-rc1"
 spacetimedb-sats = "=1.0.0-rc1"

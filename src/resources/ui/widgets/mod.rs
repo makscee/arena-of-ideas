@@ -12,7 +12,6 @@ mod slider;
 mod substate_menu;
 mod table;
 mod tile;
-mod unit_card;
 
 use super::*;
 pub use button::*;
@@ -29,4 +28,3 @@ pub use slider::*;
 pub use substate_menu::*;
 pub use table::*;
 pub use tile::*;
-pub use unit_card::*;

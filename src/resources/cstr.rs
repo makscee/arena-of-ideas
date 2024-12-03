@@ -380,3 +380,10 @@ impl ToCstr for i32 {
         }
     }
 }
+impl ToCstr for VarValue {
+    fn cstr(&self) -> Cstr {
+        match self {
+            _ => self.to_string().cstr(),
+        }
+    }
+}

@@ -41,20 +41,7 @@ pub enum RunMode {
     Incubator,
 }
 
-static CONTENT_DIR: Dir = include_dir!("./assets/ron/modular/houses/");
 fn main() {
-    {
-        use extra::*;
-        use nodes::*;
-        dbg!(&CONTENT_DIR);
-        for dir in CONTENT_DIR.dirs() {
-            dbg!(House::from_dir(
-                dir.path().to_str().unwrap().to_string(),
-                dir
-            ));
-        }
-    }
-    return;
     let mut app = App::new();
     let args = Args::try_parse().unwrap_or_default();
     ARGS.set(args.clone()).unwrap();
@@ -98,27 +85,13 @@ fn main() {
                     "ron/_dynamic.assets.ron",
                 ),
         )
-        // .add_loading_state(
-        //     LoadingState::new(GameState::TestScenariosLoad)
-        //         .continue_to_state(GameState::TestScenariosRun)
-        //         .load_collection::<TestScenarios>(),
-        // )
-        // .add_plugins(Material2dPlugin::<ShapeMaterial>::default())
-        // .add_plugins(Material2dPlugin::<CurveMaterial>::default())
-        .add_plugins((
-            // RonAssetPlugin::<Representation>::new(&["rep.ron"]),
-            RonAssetPlugin::<Vfx>::new(&["vfx.ron"]),
-        ))
         .add_plugins(bevy_egui::EguiPlugin)
         .add_plugins(NoisyShaderPlugin)
         .add_plugins((
             UiPlugin,
             LoginPlugin,
-            // ActionPlugin,
             GameStatePlugin,
             WidgetsPlugin,
-            RepresentationPlugin,
-            // CameraPlugin,
             TextColumnPlugin,
         ))
         .add_plugins((
@@ -130,7 +103,6 @@ fn main() {
             AudioPlugin,
             ConfirmationPlugin,
             AdminPlugin,
-            TextureRenderPlugin,
         ))
         .init_state::<GameState>()
         .init_resource::<NotificationsResource>();
@@ -146,6 +118,9 @@ fn setup(world: &mut World) {
     if let Some(ctx) = egui_context(world) {
         egui_extras::install_image_loaders(&ctx);
     }
+    parse_content_tree();
+    let house = houses().get("holy").unwrap().clone();
+    world.spawn(house);
 }
 
 fn update(time: Res<Time>) {

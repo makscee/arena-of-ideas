@@ -143,38 +143,6 @@ pub fn vfx_selector(vfx: &mut String, ui: &mut Ui) -> bool {
 pub fn var_selector(var: &mut VarName, ui: &mut Ui) -> bool {
     todo!()
 }
-pub fn show_collapsing_node<T: ShowEditor>(
-    name: &str,
-    node: &mut T,
-    context: &Context,
-    ui: &mut Ui,
-    world: &mut World,
-) {
-    ui.collapsing(name, |ui| {
-        node.show_node(name, context, world, ui);
-    });
-}
-pub fn show_list_node<E: ShowEditor>(
-    l: &mut Vec<Box<E>>,
-    context: &Context,
-    ui: &mut Ui,
-    world: &mut World,
-) {
-    let mut to_remove = None;
-    for (i, e) in l.into_iter().enumerate() {
-        ui.push_id(i, |ui| {
-            ui.horizontal(|ui| {
-                if Button::new("-").red(ui).ui(ui).clicked() {
-                    to_remove = Some(i);
-                }
-                e.show_node("", context, world, ui);
-            });
-        });
-    }
-    if let Some(i) = to_remove {
-        l.remove(i);
-    }
-}
 pub fn season_switcher(value: &mut u32, ui: &mut Ui) -> bool {
     EnumSwitcher::new()
         .prefix("Season ".cstr_c(VISIBLE_DARK))

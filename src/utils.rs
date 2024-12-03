@@ -335,7 +335,6 @@ pub trait WorldExt {
 
 impl WorldExt for World {
     fn game_clear(&mut self) {
-        Representation::despawn_all(self);
         clear_entity_names();
     }
 }

@@ -12,3 +12,4 @@ include_dir = { workspace = true }
 itertools = { workspace = true }
 strum = { workspace = true }
 strum_macros = { workspace = true }
+thiserror = { workspace = true }

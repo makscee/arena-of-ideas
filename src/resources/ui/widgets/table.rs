@@ -428,7 +428,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
             TableColumn {
                 value: Box::new(move |d, _| value(d).into()),
                 show: Box::new(|_, v, ui, _| {
-                    let r = v.get_int().unwrap() as u8;
+                    let r = v.get_i32().unwrap() as u8;
                     Rarity::from(r).cstr().label(ui);
                 }),
                 sortable: true,
@@ -472,12 +472,12 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
         );
         self
     }
-    pub fn column_representation_texture(self, rep: fn(&T) -> Representation) -> Self {
-        self.column_texture(Box::new(move |d, world| {
-            let rep = rep(d);
-            TextureRenderPlugin::texture_representation(&rep, world)
-        }))
-    }
+    // pub fn column_representation_texture(self, rep: fn(&T) -> Representation) -> Self {
+    //     self.column_texture(Box::new(move |d, world| {
+    //         let rep = rep(d);
+    //         TextureRenderPlugin::texture_representation(&rep, world)
+    //     }))
+    // }
     fn cache_rows(&self, id: Id, world: &mut World) {
         let mut need_update = false;
         world.init_resource::<TableCacheResource<T>>();
