@@ -1,5 +1,4 @@
 use darling::FromMeta;
-use parse::Parser;
 use proc_macro::TokenStream;
 use quote::ToTokens;
 use syn::*;
@@ -28,9 +27,19 @@ pub fn content_node(args: TokenStream, item: TokenStream) -> TokenStream {
             let mut unit_link_fields_str = Vec::default();
             let mut unit_link_types: Vec<proc_macro2::TokenStream> = Vec::default();
             let mut vec_link_fields = Vec::default();
+            let mut vec_link_fields_str = Vec::default();
+            let mut vec_link_types: Vec<proc_macro2::TokenStream> = Vec::default();
             let mut var_fields: Vec<proc_macro2::TokenStream> = Vec::default();
             let mut data_fields = Vec::default();
             let mut data_types = Vec::default();
+            fn inner_type(type_path: &TypePath) -> proc_macro2::TokenStream {
+                match &type_path.path.segments.first().unwrap().arguments {
+                    PathArguments::AngleBracketed(arg) => {
+                        arg.args.first().unwrap().to_token_stream()
+                    }
+                    _ => unimplemented!(),
+                }
+            }
             for field in fields.iter_mut() {
                 let ty = &field.ty;
                 let field_ident = field.ident.clone().unwrap();
@@ -38,18 +47,13 @@ pub fn content_node(args: TokenStream, item: TokenStream) -> TokenStream {
                     syn::Type::Path(type_path) => {
                         let type_ident = &type_path.path.segments.first().unwrap().ident;
                         if type_ident == "Vec" {
+                            vec_link_fields_str.push(field_ident.to_string());
                             vec_link_fields.push(field_ident);
+                            vec_link_types.push(inner_type(type_path).into());
                         } else if type_ident == "Option" {
                             unit_link_fields_str.push(field_ident.to_string());
                             unit_link_fields.push(field_ident);
-                            let inner_type =
-                                match &type_path.path.segments.first().unwrap().arguments {
-                                    PathArguments::AngleBracketed(arg) => {
-                                        arg.args.first().unwrap().to_token_stream()
-                                    }
-                                    _ => unimplemented!(),
-                                };
-                            unit_link_types.push(inner_type.into());
+                            unit_link_types.push(inner_type(type_path).into());
                         } else if type_ident == "i32"
                             || type_ident == "f32"
                             || type_ident == "String"
@@ -75,41 +79,31 @@ pub fn content_node(args: TokenStream, item: TokenStream) -> TokenStream {
             } else {
                 NodeType::OnlyData
             };
-            let from_entry = match nt {
-                NodeType::Name => {
-                    quote! {
-                        let Some(dir) = dir.and_then(|d| d.as_dir()) else {
-                            return None;
-                        };
-                        let dir_name = dir.path().file_name().unwrap().to_string_lossy();
-                        Some(Self {
-                            name: dir_name.into(),
-                            #(#unit_link_fields: #unit_link_types::from_entry(dir.get_entry(dir.path().join(#unit_link_fields_str))),)*
-                        })
-                    }
-                }
-                NodeType::Data => {
-                    quote! {
-                        let Some(dir) = dir.and_then(|d| d.as_dir()) else {
-                            return None;
-                        };
-                        dir.get_file(dir.path().join("data.ron"))
-                            .and_then(|f| f.contents_utf8())
-                            .map(|c| {
-                                let mut s = Self::from_data(c);
-                                #(s.#unit_link_fields = #unit_link_types::from_entry(dir.get_entry(dir.path().join(&(#unit_link_fields_str.to_owned() + ".ron"))));)*;
-                                s
-                            })
-                    }
-                }
-                NodeType::OnlyData => {
-                    quote! {
-                        dir.and_then(|d| d.as_file())
-                            .and_then(|f| f.contents_utf8())
-                            .map(|f| Self::from_data(f))
-                    }
-                }
-            };
+            let data_from_dir = match nt {
+                NodeType::Name => quote! {
+                    let data = &format!("\"{}\"", dir.path().file_name()?.to_str()?);
+                },
+                NodeType::Data => quote! {
+                    let data = dir.get_file(dir.path().join("data.ron"))?.contents_utf8()?;
+                },
+                NodeType::OnlyData => quote! {
+                    let data = dir.get_file(format!("{path}.ron"))?.contents_utf8()?;
+                },
+            }
+            .into_token_stream();
+            let inner_data_from_dir = match nt {
+                NodeType::Name |
+                NodeType::Data => quote! {
+                    #(s.#unit_link_fields = #unit_link_types::from_dir(format!("{path}/{}", #unit_link_fields_str), dir);)*
+                    #(s.#vec_link_fields = dir
+                        .get_dir(format!("{path}/{}", #vec_link_fields_str))
+                        .into_iter()
+                        .flat_map(|d| d.dirs())
+                        .filter_map(|d| #vec_link_types::from_dir(d.path().to_string_lossy().to_string(), d))
+                        .collect_vec();)*
+                },
+                NodeType::OnlyData => quote! {},
+            }.into_token_stream();
             let data_type_ident = quote! { (#(#data_types),*) };
             // if let Fields::Named(ref mut fields) = fields {
             //     fields.named.push(
@@ -147,12 +141,15 @@ pub fn content_node(args: TokenStream, item: TokenStream) -> TokenStream {
                     fn inject_data(&mut self, data: &str) {
                         match ron::from_str::<#data_type_ident>(data) {
                             Ok(v) => (#(self.#data_fields),*) = v,
-                            Err(e) => panic!("{e}"),
+                            Err(e) => panic!("{} parsing error from {data}: {e}", self.kind()),
                         }
                     }
-                    fn from_entry(dir: Option<&DirEntry>) -> Option<Self> {
+                    fn from_dir(path: String, dir: &Dir) -> Option<Self> {
                         dbg!(dir);
-                        #from_entry
+                        #data_from_dir
+                        let mut s = Self::from_data(data);
+                        #inner_data_from_dir
+                        Some(s)
                     }
                 }
                 impl From<&str> for #struct_ident {

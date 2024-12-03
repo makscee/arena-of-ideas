@@ -5,8 +5,6 @@ mod resources;
 mod stdb;
 mod utils;
 
-use std::fs::read_dir;
-
 use bevy::{
     diagnostic::FrameTimeDiagnosticsPlugin, log::LogPlugin, render::camera::ClearColor,
     sprite::Material2dPlugin, state::app::AppExtStates,
@@ -43,33 +41,17 @@ pub enum RunMode {
     Incubator,
 }
 
-static CONTENT_DIR: Dir = include_dir!("./assets/ron/modular/houses/holy/abilities/blessing/");
+static CONTENT_DIR: Dir = include_dir!("./assets/ron/modular/houses/");
 fn main() {
     {
         use extra::*;
         use nodes::*;
-        let mut unit = Unit {
-            name: "UnitName".into(),
-            ..default()
-        };
-        let mut stats = UnitStats::default();
-        stats.inject_data("(3,6)");
-        dbg!(stats.get_data());
-        unit.stats = Some(stats);
-        unit.description = Some(UnitDescription {
-            description: "Test Description".into(),
-            trigger: Some("TurnEnd".into()),
-        });
-
-        let val = unit.get_var(VarName::pwr);
-        dbg!(val);
-        dbg!(&unit);
-
         dbg!(&CONTENT_DIR);
-        for dir in CONTENT_DIR.get_dir("units").unwrap().dirs() {
-            dbg!(Unit::from_entry(Some(&include_dir::DirEntry::Dir(
-                dir.clone()
-            ))));
+        for dir in CONTENT_DIR.dirs() {
+            dbg!(House::from_dir(
+                dir.path().to_str().unwrap().to_string(),
+                dir
+            ));
         }
     }
     return;

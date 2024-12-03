@@ -1,11 +1,11 @@
-use std::path::PathBuf;
-
 use super::*;
-use bevy::{ecs::component::*, log::error};
-use include_dir::{include_dir, Dir, DirEntry};
+use bevy::ecs::component::*;
+use include_dir::Dir;
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
+use strum_macros::Display;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Display)]
 pub enum ContentKind {
     House,
     HouseColor,
@@ -23,16 +23,6 @@ pub enum ContentKind {
     UnitTrigger,
 }
 
-// trait DirExt {
-//     fn dir_name(&self) -> &str;
-// }
-
-// impl DirExt for Dir {
-//     fn dir_name(&self) -> &str {
-//         self.path().
-//     }
-// }
-
 pub trait ContentNode: Default {
     fn kind(&self) -> ContentKind;
     fn get_var(&self, var: VarName) -> Option<VarValue>;
@@ -43,59 +33,72 @@ pub trait ContentNode: Default {
         s.inject_data(data);
         s
     }
-    fn from_entry(dir: Option<&DirEntry>) -> Option<Self>;
-    // fn from_dir(dir: &Dir) -> Self;
+    fn from_dir(path: String, dir: &Dir) -> Option<Self>;
+}
+
+#[content_node]
+pub struct House {
+    name: String,
+    color: Option<HouseColor>,
+    abilities: Vec<Ability>,
+}
+
+#[content_node]
+pub struct HouseColor {
+    pub color: String,
+}
+
+#[content_node]
+pub struct Ability {
+    pub name: String,
+    pub description: Option<AbilityDescription>,
+    // pub actions: Vec<AbilityEffect>,
+    // pub statuses: Vec<Status>,
+    pub units: Vec<Unit>,
+}
+
+// impl Ability {
+//     pub fn from_dir(path: String, dir: &Dir) -> Option<Self> {
+//         let mut s = Self::default();
+
+//         s.units = dir
+//             .get_dir(format!("{path}/units"))
+//             .into_iter()
+//             .flat_map(|d| d.dirs())
+//             .filter_map(|d| Unit::from_dir(d.path().to_string_lossy().to_string(), d))
+//             .collect_vec();
+//         Some(s)
+//     }
+// }
+
+#[content_node]
+pub struct AbilityDescription {
+    pub data: String,
+}
+
+#[content_node]
+pub struct AbilityEffect {
+    pub data: String,
 }
 
 // #[content_node]
-// pub struct House {
-//     name: String,
-//     color: Option<HouseColor>,
-//     abilities: Vec<Ability>,
-// }
-
-// #[content_node]
-// pub struct HouseColor {
-//     pub color: String,
-// }
-
-// #[derive(ContentNode)]
-// pub struct Ability {
-//     pub name: String,
-//     pub description: Option<AbilityDescription>,
-//     pub actions: Vec<AbilityEffect>,
-//     pub statuses: Vec<Status>,
-//     pub units: Vec<Unit>,
-// }
-
-// #[derive(ContentNode)]
-// pub struct AbilityDescription {
-//     pub data: String,
-// }
-
-// #[derive(ContentNode)]
-// pub struct AbilityEffect {
-//     pub data: String,
-// }
-
-// #[derive(ContentNode)]
 // pub struct Status {
 //     pub name: String,
 //     pub description: Option<StatusDescription>,
 // }
 
-// #[derive(ContentNode)]
+// #[content_node]
 // pub struct StatusDescription {
 //     pub description: String,
 //     pub trigger: Option<StatusTrigger>,
 // }
 
-// #[derive(ContentNode)]
+// #[content_node]
 // pub struct StatusTrigger {
 //     pub data: String,
 // }
 
-// #[derive(ContentNode)]
+// #[content_node]
 // pub struct Summon {
 //     pub name: String,
 //     pub stats: Option<UnitStats>,
@@ -111,16 +114,11 @@ pub struct Unit {
 }
 
 // impl Unit {
-//     pub fn from_entry(dir: Option<&DirEntry>) -> Option<Self> {
-//         let Some(dir) = dir.and_then(|d| d.as_dir()) else {
-//             return None;
-//         };
-//         let dir_name = dir.path().file_name().unwrap().to_string_lossy();
-//         Some(Self {
-//             name: dir_name.into(),
-//             stats: default(),
-//             description: UnitDescription::from_entry(dir.get_entry(dir.path().join("description"))),
-//         })
+//     pub fn from_dir(path: String, dir: &Dir) -> Option<Self> {
+//         let data = &format!("\"{}\"", dir.path().file_name()?.to_str()?);
+//         let mut s = Self::from_data(data);
+//         s.description = UnitDescription::from_dir(format!("{path}/description"), dir);
+//         Some(s)
 //     }
 // }
 
@@ -137,17 +135,12 @@ pub struct UnitDescription {
 }
 
 // impl UnitDescription {
-//     pub fn from_entry(dir: Option<&DirEntry>) -> Option<Self> {
-//         let Some(dir) = dir.and_then(|d| d.as_dir()) else {
-//             return None;
-//         };
-//         dir.get_file(dir.path().join("data.ron"))
-//             .and_then(|f| f.contents_utf8())
-//             .map(|c| {
-//                 let mut s = Self::from_data(c);
-//                 s.trigger = UnitTrigger::from_entry(dir.get_entry(dir.path().join("trigger.ron")));
-//                 s
-//             })
+//     pub fn from_dir(path: String, dir: &Dir) -> Option<Self> {
+//         let dir = dir.get_dir(&path)?;
+//         let data = dir.get_file(format!("{path}/data.ron"))?.contents_utf8()?;
+//         let mut s = Self::from_data(data);
+//         s.trigger = UnitTrigger::from_dir(format!("{path}/trigger"), dir);
+//         Some(s)
 //     }
 // }
 
@@ -157,14 +150,14 @@ pub struct UnitTrigger {
 }
 
 // impl UnitTrigger {
-//     pub fn from_entry(dir: Option<&DirEntry>) -> Option<Self> {
-//         dir.and_then(|d| d.as_file())
-//             .and_then(|f| f.contents_utf8())
-//             .map(|f| Self::from_data(f))
+//     pub fn from_dir(path: String, dir: &Dir) -> Option<Self> {
+//         let data = dir.get_file(format!("{path}.ron"))?.contents_utf8()?;
+//         let mut s = Self::from_data(data);
+//         Some(s)
 //     }
 // }
 
-// #[derive(ContentNode)]
+// #[content_node]
 // pub struct UnitRepresentation {
 //     pub data: String,
 // }
