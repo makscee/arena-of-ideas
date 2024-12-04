@@ -116,8 +116,15 @@ pub fn content_node(args: TokenStream, item: TokenStream) -> TokenStream {
             quote! {
                 #[derive(Component, Clone, Default, Debug)]
                 #input
-
+                impl std::fmt::Display for #struct_ident {
+                    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        write!(f, "{}", self.kind())
+                    }
+                }
                 impl ContentNode for #struct_ident {
+                    fn entity(&self) -> Option<Entity> {
+                        self.entity
+                    }
                     fn kind(&self) -> ContentKind {
                         ContentKind::#struct_ident
                     }
@@ -153,7 +160,8 @@ pub fn content_node(args: TokenStream, item: TokenStream) -> TokenStream {
                         Some(s)
                     }
                     fn unpack(mut self, entity: Entity, commands: &mut Commands) {
-                        debug!("Unpack {} into {entity}", self.kind());
+                        debug!("Unpack {self} into {entity}");
+                        self.entity = Some(entity);
                         #(
                             if let Some(d) = self.#unit_link_fields.take() {
                                 d.unpack(entity, commands);

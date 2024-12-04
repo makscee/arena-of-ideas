@@ -3,7 +3,7 @@ use std::cmp::Ordering;
 use super::*;
 
 #[allow(non_camel_case_types)]
-#[derive(Clone, Serialize, Deserialize, Debug, AsRefStr, Display)]
+#[derive(Clone, Serialize, Deserialize, Debug, AsRefStr)]
 pub enum VarValue {
     i32(i32),
     f32(f32),
@@ -91,6 +91,18 @@ impl PartialEq for VarValue {
             (VarValue::bool(a), VarValue::bool(b)) => a == b,
             (VarValue::String(a), VarValue::String(b)) => a == b,
             _ => core::mem::discriminant(self) == core::mem::discriminant(other),
+        }
+    }
+}
+
+impl std::fmt::Display for VarValue {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            VarValue::i32(v) => write!(f, "{}", v),
+            VarValue::u64(v) => write!(f, "{}", v),
+            VarValue::f32(v) => write!(f, "{:.2}", v),
+            VarValue::String(v) => write!(f, "{}", v),
+            VarValue::bool(v) => write!(f, "{}", v),
         }
     }
 }

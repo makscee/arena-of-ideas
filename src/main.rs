@@ -122,6 +122,17 @@ fn setup(world: &mut World) {
     let house = houses().get("holy").unwrap().clone();
     dbg!(&house);
     house.unpack(world.spawn_empty().id(), &mut world.commands());
+    world.flush();
+    for u in world.query::<&Unit>().iter(world) {
+        debug!("Unit {}", u.name);
+        debug!(
+            "House {}",
+            u.find_up::<House>(world)
+                .unwrap()
+                .get_var(VarName::name)
+                .unwrap()
+        );
+    }
     app_exit(world);
 }
 
