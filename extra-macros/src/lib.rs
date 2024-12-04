@@ -1,4 +1,5 @@
 use darling::FromMeta;
+use parse::Parser;
 use proc_macro::TokenStream;
 use quote::ToTokens;
 use syn::*;
@@ -105,13 +106,13 @@ pub fn content_node(args: TokenStream, item: TokenStream) -> TokenStream {
                 NodeType::OnlyData => quote! {},
             }.into_token_stream();
             let data_type_ident = quote! { (#(#data_types),*) };
-            // if let Fields::Named(ref mut fields) = fields {
-            //     fields.named.push(
-            //         Field::parse_named
-            //             .parse2(quote! { pub data: String })
-            //             .unwrap(),
-            //     );
-            // }
+            if let Fields::Named(ref mut fields) = fields {
+                fields.named.push(
+                    Field::parse_named
+                        .parse2(quote! { pub entity: Option<Entity> })
+                        .unwrap(),
+                );
+            }
             quote! {
                 #[derive(Component, Clone, Default, Debug)]
                 #input
@@ -150,6 +151,21 @@ pub fn content_node(args: TokenStream, item: TokenStream) -> TokenStream {
                         let mut s = Self::from_data(data);
                         #inner_data_from_dir
                         Some(s)
+                    }
+                    fn unpack(mut self, entity: Entity, commands: &mut Commands) {
+                        debug!("Unpack {} into {entity}", self.kind());
+                        #(
+                            if let Some(d) = self.#unit_link_fields.take() {
+                                d.unpack(entity, commands);
+                            }
+                        )*
+                        #(
+                            for d in std::mem::take(&mut self.#vec_link_fields) {
+                                let entity = commands.spawn_empty().set_parent(entity).id();
+                                d.unpack(entity, commands);
+                            }
+                        )*
+                        commands.entity(entity).insert(self);
                     }
                 }
                 impl From<&str> for #struct_ident {

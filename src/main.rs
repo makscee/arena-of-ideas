@@ -120,7 +120,9 @@ fn setup(world: &mut World) {
     }
     parse_content_tree();
     let house = houses().get("holy").unwrap().clone();
-    world.spawn(house);
+    dbg!(&house);
+    house.unpack(world.spawn_empty().id(), &mut world.commands());
+    app_exit(world);
 }
 
 fn update(time: Res<Time>) {
