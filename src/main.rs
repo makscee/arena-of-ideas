@@ -50,7 +50,7 @@ fn main() {
         std::env::set_var("RUST_LIB_BACKTRACE", "0");
     }
     let target = match args.mode {
-        RunMode::Regular => GameState::Title,
+        RunMode::Regular => GameState::Admin,
         RunMode::Custom => GameState::CustomBattle,
         RunMode::Shop => GameState::Shop,
         RunMode::Editor => GameState::Editor,
@@ -85,7 +85,10 @@ fn main() {
                     "ron/_dynamic.assets.ron",
                 ),
         )
+        .add_plugins(Material2dPlugin::<ShapeMaterial>::default())
+        .add_plugins(Material2dPlugin::<CurveMaterial>::default())
         .add_plugins(bevy_egui::EguiPlugin)
+        .add_plugins(bevy_inspector_egui::quick::WorldInspectorPlugin::new())
         .add_plugins(NoisyShaderPlugin)
         .add_plugins((
             UiPlugin,
@@ -93,6 +96,7 @@ fn main() {
             GameStatePlugin,
             WidgetsPlugin,
             TextColumnPlugin,
+            CameraPlugin,
         ))
         .add_plugins((
             OperationsPlugin,
@@ -119,21 +123,7 @@ fn setup(world: &mut World) {
         egui_extras::install_image_loaders(&ctx);
     }
     parse_content_tree();
-    let house = houses().get("holy").unwrap().clone();
-    dbg!(&house);
-    house.unpack(world.spawn_empty().id(), &mut world.commands());
-    world.flush();
-    for u in world.query::<&Unit>().iter(world) {
-        debug!("Unit {}", u.name);
-        debug!(
-            "House {}",
-            u.find_up::<House>(world)
-                .unwrap()
-                .get_var(VarName::name)
-                .unwrap()
-        );
-    }
-    app_exit(world);
+    CameraPlugin::respawn_camera(world);
 }
 
 fn update(time: Res<Time>) {

@@ -4,46 +4,62 @@ pub struct AdminPlugin;
 
 impl Plugin for AdminPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::Admin), Self::on_enter);
+        app.add_systems(OnEnter(GameState::Admin), Self::on_enter)
+            .add_systems(Update, Self::update);
     }
 }
 
 impl AdminPlugin {
-    fn on_enter() {
-        let extra = ARGS.get().unwrap().extra.clone().unwrap();
-        let mut parts = extra.split('/').collect_vec();
-        let command = parts.remove(0);
-        if command == "pass" {
-            let id = u64::from_str(parts[0]).unwrap();
-            cn().reducers.admin_set_temp_pass(id).unwrap();
-            cn().reducers.on_admin_set_temp_pass(|e, id| {
-                let id = *id;
-                info!("Set temp password for player#{id}");
-                e.event.on_success(move |w| {
-                    info!("Password successfully set for {id}");
-                    app_exit(w);
+    fn on_enter(world: &mut World) {
+        let house = houses().get("holy").unwrap().clone();
+        dbg!(&house);
+        house.unpack(world.spawn_empty().id(), &mut world.commands());
+        world.flush();
+        for u in world.query::<&Unit>().iter(world) {
+            debug!("Unit {}", u.name);
+            debug!(
+                "House {}",
+                u.find_up::<House>(world)
+                    .unwrap()
+                    .get_var(VarName::name)
+                    .unwrap()
+            );
+        }
+        for r in world.query::<&Representation>().iter(world) {
+            dbg!(r);
+        }
+        Tile::new(Side::Left, |ui, world| {})
+            .pinned()
+            .transparent()
+            .no_expand()
+            .push(world);
+    }
+
+    fn update(world: &mut World) {
+        let egui_context = world
+            .query_filtered::<&mut EguiContext, With<bevy::window::PrimaryWindow>>()
+            .get_single(world);
+
+        let Ok(egui_context) = egui_context else {
+            return;
+        };
+        let mut egui_context = egui_context.clone();
+
+        egui::Window::new("World Inspector")
+            .default_size(egui::vec2(300.0, 300.0))
+            .show(egui_context.get_mut(), |ui| {
+                egui::ScrollArea::both().show(ui, |ui| {
+                    bevy_inspector_egui::bevy_inspector::ui_for_world(world, ui);
+                    ui.allocate_space(ui.available_size());
                 });
             });
-        } else if command == "tag" {
-            let owner = u64::from_str(parts[0]).unwrap();
-            let tag = parts[1];
-            cn().reducers.admin_give_tag(owner, tag.into()).unwrap();
-            cn().reducers.on_admin_give_tag(|e, owner, tag| {
-                let owner = *owner;
-                info!("Add tag {tag} to {owner}");
-                e.event.on_success(move |w| {
-                    info!("{}", "Success".green());
-                    app_exit(w);
-                });
-            });
-        } else if command == "daily_refresh" {
-            cn().reducers.admin_daily_update().unwrap();
-            cn().reducers.on_admin_daily_update(|e| {
-                e.event.on_success(move |w| {
-                    info!("{}", "Success".green());
-                    app_exit(w);
-                });
-            });
+        for r in world
+            .query::<&mut Representation>()
+            .iter(world)
+            .cloned()
+            .collect_vec()
+        {
+            r.material.update(r.entity.unwrap(), world);
         }
     }
 }

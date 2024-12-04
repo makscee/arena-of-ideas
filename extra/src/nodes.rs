@@ -1,7 +1,7 @@
 use super::*;
 use bevy::{
     ecs::component::*,
-    prelude::{debug, BuildChildren, Commands, Parent, World},
+    prelude::{debug, BuildChildren, Commands, Parent, TransformBundle, VisibilityBundle, World},
 };
 use include_dir::Dir;
 
@@ -19,7 +19,7 @@ pub enum ContentKind {
     Unit,
     UnitDescription,
     UnitStats,
-    UnitRepresentation,
+    Representation,
     UnitTrigger,
 }
 
@@ -115,7 +115,7 @@ pub struct Unit {
     pub name: String,
     pub stats: Option<UnitStats>,
     pub description: Option<UnitDescription>,
-    // pub representation: Option<UnitRepresentation>,
+    pub representation: Option<Representation>,
 }
 
 #[content_node]
@@ -135,7 +135,16 @@ pub struct UnitTrigger {
     pub trigger: Trigger,
 }
 
-// #[content_node]
-// pub struct UnitRepresentation {
-//     pub data: String,
-// }
+#[content_node(OnUnpack)]
+pub struct Representation {
+    pub material: RepresentationMaterial,
+    pub count: u32,
+    pub child: Option<Box<Representation>>,
+}
+
+impl Representation {
+    fn on_unpack(&self, entity: Entity, commands: &mut Commands) {
+        debug!("on unpack called");
+        self.material.unpack(entity, commands);
+    }
+}

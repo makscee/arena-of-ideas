@@ -12,14 +12,6 @@ edition.workspace = true
 
 
 [workspace.dependencies]
-spacetimedb = { version = "=1.0.0-rc1" }
-strum = "0.26.2"
-strum_macros = "0.26.2"
-itertools = "0.12.1"
-ron = "0.8.0"
-serde = "1"
-include_dir = "0.7.4"
-thiserror = "2.0.3"
 bevy = { version = "0.14.1", default-features = false, features = [
     "bevy_core_pipeline",
     "bevy_render",
@@ -33,6 +25,15 @@ bevy = { version = "0.14.1", default-features = false, features = [
     "default_font",
     "x11",
 ] }
+spacetimedb = { version = "=1.0.0-rc1" }
+strum = "0.26.2"
+strum_macros = "0.26.2"
+itertools = "0.12.1"
+ron = "0.8.0"
+serde = "1"
+include_dir = "0.7.4"
+thiserror = "2.0.3"
+convert_case = "0.6.0"
 
 [dependencies]
 extra = { path = "extra" }
@@ -46,6 +47,7 @@ ron = { workspace = true }
 serde = { workspace = true }
 include_dir = { workspace = true }
 thiserror = { workspace = true }
+convert_case = { workspace = true }
 
 spacetimedb-sdk = "=1.0.0-rc1"
 spacetimedb-sats = "=1.0.0-rc1"
@@ -70,7 +72,6 @@ clap = { version = "4.4.5", features = ["derive"] }
 hex = "0.4.3"
 home = "0.5.5"
 lazy_static = "1.4.0"
-convert_case = "0.6.0"
 indexmap = { version = "2.6.0", features = ["serde"] }
 noisy_bevy = "0.7.0"
 chrono = "0.4.38"
@@ -82,6 +83,7 @@ bevy_dylib = "0.14.1"
 bevy-panic-handler = "3.0.0"
 lerp = "0.5.0"
 humanize-duration = "0.0.6"
+bevy-inspector-egui = "0.25.0"
 
 [dependencies.winit]
 version = "0.30.5"

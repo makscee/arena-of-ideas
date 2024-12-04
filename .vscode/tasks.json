@@ -170,31 +170,11 @@
       "problemMatcher": [
         "$rustc"
       ],
-      "label": "Admin: Set temp pass",
+      "label": "Admin",
       "args": [
         "--",
         "--mode",
-        "admin",
-        "--extra",
-        "pass/572319"
-      ],
-      "group": {
-        "kind": "build"
-      }
-    },
-    {
-      "type": "cargo",
-      "command": "run",
-      "problemMatcher": [
-        "$rustc"
-      ],
-      "label": "Admin: daily refresh",
-      "args": [
-        "--",
-        "--mode",
-        "admin",
-        "--extra",
-        "daily_refresh"
+        "admin"
       ],
       "group": {
         "kind": "build"

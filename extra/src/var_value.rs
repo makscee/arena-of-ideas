@@ -1,5 +1,7 @@
 use std::cmp::Ordering;
 
+use bevy::math::Vec2;
+
 use super::*;
 
 #[allow(non_camel_case_types)]
@@ -10,6 +12,7 @@ pub enum VarValue {
     u64(u64),
     bool(bool),
     String(String),
+    Vec2(Vec2),
 }
 
 #[derive(Error, Debug)]
@@ -28,6 +31,7 @@ impl VarValue {
             VarValue::u64(v) => Ok(v.to_string()),
             VarValue::bool(v) => Ok(v.to_string()),
             VarValue::String(v) => Ok(v.to_string()),
+            VarValue::Vec2(v) => Ok(v.to_string()),
         }
     }
     pub fn get_i32(&self) -> Result<i32, VarValueError> {
@@ -79,6 +83,10 @@ impl std::hash::Hash for VarValue {
             VarValue::u64(v) => v.hash(state),
             VarValue::bool(v) => v.hash(state),
             VarValue::String(v) => v.hash(state),
+            VarValue::Vec2(v) => {
+                v.x.to_bits().hash(state);
+                v.y.to_bits().hash(state);
+            }
         };
     }
 }
@@ -90,6 +98,7 @@ impl PartialEq for VarValue {
             (VarValue::u64(a), VarValue::u64(b)) => a == b,
             (VarValue::bool(a), VarValue::bool(b)) => a == b,
             (VarValue::String(a), VarValue::String(b)) => a == b,
+            (VarValue::Vec2(a), VarValue::Vec2(b)) => a == b,
             _ => core::mem::discriminant(self) == core::mem::discriminant(other),
         }
     }
@@ -101,8 +110,9 @@ impl std::fmt::Display for VarValue {
             VarValue::i32(v) => write!(f, "{}", v),
             VarValue::u64(v) => write!(f, "{}", v),
             VarValue::f32(v) => write!(f, "{:.2}", v),
-            VarValue::String(v) => write!(f, "{}", v),
             VarValue::bool(v) => write!(f, "{}", v),
+            VarValue::String(v) => write!(f, "{}", v),
+            VarValue::Vec2(v) => write!(f, "{:.2}, {:.2}", v.x, v.y),
         }
     }
 }

@@ -1,6 +1,7 @@
 use darling::FromMeta;
 use parse::Parser;
 use proc_macro::TokenStream;
+use punctuated::Punctuated;
 use quote::ToTokens;
 use syn::*;
 #[macro_use]
@@ -8,7 +9,18 @@ extern crate quote;
 
 #[proc_macro_attribute]
 pub fn content_node(args: TokenStream, item: TokenStream) -> TokenStream {
-    let _ = parse_macro_input!(args as parse::Nothing);
+    let a = parse_macro_input!(args with Punctuated<Path, Token![,]>::parse_terminated);
+    let mut on_unpack = proc_macro2::TokenStream::new();
+    for i in a.iter() {
+        let i = i.get_ident().unwrap().to_string();
+        match i.as_str() {
+            "OnUnpack" => {
+                on_unpack =
+                    quote! { Self::on_unpack(&self, entity, commands); }.into_token_stream();
+            }
+            _ => unimplemented!(),
+        }
+    }
     let mut input = parse_macro_input!(item as syn::DeriveInput);
     let struct_ident = &input.ident;
 
@@ -18,26 +30,30 @@ pub fn content_node(args: TokenStream, item: TokenStream) -> TokenStream {
         OnlyData,
     }
 
-    match &mut input.data {
+    let result = match &mut input.data {
         syn::Data::Struct(syn::DataStruct {
             struct_token: _,
             fields,
             semi_token: _,
         }) => {
-            let mut unit_link_fields = Vec::default();
-            let mut unit_link_fields_str = Vec::default();
-            let mut unit_link_types: Vec<proc_macro2::TokenStream> = Vec::default();
+            let mut option_link_fields = Vec::default();
+            let mut option_link_fields_str = Vec::default();
+            let mut option_link_types: Vec<proc_macro2::TokenStream> = Vec::default();
+            let mut option_box_link_fields = Vec::default();
+            let mut option_box_link_fields_str = Vec::default();
+            let mut option_box_link_types: Vec<proc_macro2::TokenStream> = Vec::default();
             let mut vec_link_fields = Vec::default();
             let mut vec_link_fields_str = Vec::default();
             let mut vec_link_types: Vec<proc_macro2::TokenStream> = Vec::default();
             let mut var_fields: Vec<proc_macro2::TokenStream> = Vec::default();
             let mut data_fields = Vec::default();
             let mut data_types = Vec::default();
-            fn inner_type(type_path: &TypePath) -> proc_macro2::TokenStream {
+            fn inner_type(type_path: &TypePath) -> Type {
                 match &type_path.path.segments.first().unwrap().arguments {
-                    PathArguments::AngleBracketed(arg) => {
-                        arg.args.first().unwrap().to_token_stream()
-                    }
+                    PathArguments::AngleBracketed(arg) => match arg.args.first().unwrap() {
+                        GenericArgument::Type(t) => t.clone(),
+                        _ => unimplemented!(),
+                    },
                     _ => unimplemented!(),
                 }
             }
@@ -50,11 +66,29 @@ pub fn content_node(args: TokenStream, item: TokenStream) -> TokenStream {
                         if type_ident == "Vec" {
                             vec_link_fields_str.push(field_ident.to_string());
                             vec_link_fields.push(field_ident);
-                            vec_link_types.push(inner_type(type_path).into());
+                            vec_link_types.push(inner_type(type_path).to_token_stream());
                         } else if type_ident == "Option" {
-                            unit_link_fields_str.push(field_ident.to_string());
-                            unit_link_fields.push(field_ident);
-                            unit_link_types.push(inner_type(type_path).into());
+                            let it = inner_type(type_path);
+                            match &it {
+                                Type::Path(type_path) => {
+                                    if type_path
+                                        .path
+                                        .segments
+                                        .first()
+                                        .is_some_and(|t| t.ident == "Box")
+                                    {
+                                        let it = inner_type(&type_path);
+                                        option_box_link_fields_str.push(field_ident.to_string());
+                                        option_box_link_fields.push(field_ident);
+                                        option_box_link_types.push(it.to_token_stream());
+                                    } else {
+                                        option_link_fields_str.push(field_ident.to_string());
+                                        option_link_fields.push(field_ident);
+                                        option_link_types.push(it.to_token_stream());
+                                    }
+                                }
+                                _ => {}
+                            }
                         } else if type_ident == "i32"
                             || type_ident == "f32"
                             || type_ident == "String"
@@ -75,7 +109,7 @@ pub fn content_node(args: TokenStream, item: TokenStream) -> TokenStream {
             }
             let nt = if data_fields.contains(&Ident::from_string("name").unwrap()) {
                 NodeType::Name
-            } else if !unit_link_fields.is_empty() {
+            } else if !option_link_fields.is_empty() || !option_box_link_fields.is_empty() {
                 NodeType::Data
             } else {
                 NodeType::OnlyData
@@ -85,7 +119,7 @@ pub fn content_node(args: TokenStream, item: TokenStream) -> TokenStream {
                     let data = &format!("\"{}\"", dir.path().file_name()?.to_str()?);
                 },
                 NodeType::Data => quote! {
-                    let data = dir.get_file(dir.path().join("data.ron"))?.contents_utf8()?;
+                    let data = dir.get_file(format!("{path}/data.ron"))?.contents_utf8()?;
                 },
                 NodeType::OnlyData => quote! {
                     let data = dir.get_file(format!("{path}.ron"))?.contents_utf8()?;
@@ -95,7 +129,8 @@ pub fn content_node(args: TokenStream, item: TokenStream) -> TokenStream {
             let inner_data_from_dir = match nt {
                 NodeType::Name |
                 NodeType::Data => quote! {
-                    #(s.#unit_link_fields = #unit_link_types::from_dir(format!("{path}/{}", #unit_link_fields_str), dir);)*
+                    #(s.#option_link_fields = #option_link_types::from_dir(format!("{path}/{}", #option_link_fields_str), dir);)*
+                    #(s.#option_box_link_fields = #option_box_link_types::from_dir(format!("{path}/{}", #option_box_link_fields_str), dir).map(|d| Box::new(d));)*
                     #(s.#vec_link_fields = dir
                         .get_dir(format!("{path}/{}", #vec_link_fields_str))
                         .into_iter()
@@ -135,7 +170,7 @@ pub fn content_node(args: TokenStream, item: TokenStream) -> TokenStream {
                             )*
                             _ => {
                                 #(
-                                    if let Some(v) = self.#unit_link_fields.as_ref().and_then(|l| l.get_var(var)).clone() {
+                                    if let Some(v) = self.#option_link_fields.as_ref().and_then(|l| l.get_var(var)).clone() {
                                         return Some(v);
                                     }
                                 )*
@@ -153,7 +188,7 @@ pub fn content_node(args: TokenStream, item: TokenStream) -> TokenStream {
                         }
                     }
                     fn from_dir(path: String, dir: &Dir) -> Option<Self> {
-                        dbg!(dir);
+                        dbg!(&path);
                         #data_from_dir
                         let mut s = Self::from_data(data);
                         #inner_data_from_dir
@@ -161,9 +196,10 @@ pub fn content_node(args: TokenStream, item: TokenStream) -> TokenStream {
                     }
                     fn unpack(mut self, entity: Entity, commands: &mut Commands) {
                         debug!("Unpack {self} into {entity}");
+                        #on_unpack
                         self.entity = Some(entity);
                         #(
-                            if let Some(d) = self.#unit_link_fields.take() {
+                            if let Some(d) = self.#option_link_fields.take() {
                                 d.unpack(entity, commands);
                             }
                         )*
@@ -173,7 +209,7 @@ pub fn content_node(args: TokenStream, item: TokenStream) -> TokenStream {
                                 d.unpack(entity, commands);
                             }
                         )*
-                        commands.entity(entity).insert(self);
+                        commands.entity(entity).insert((TransformBundle::default(), VisibilityBundle::default(), self));
                     }
                 }
                 impl From<&str> for #struct_ident {
@@ -182,8 +218,9 @@ pub fn content_node(args: TokenStream, item: TokenStream) -> TokenStream {
                     }
                 }
             }
-            .into()
         }
         _ => unimplemented!(),
-    }
+    };
+    // println!("{}\n", result.to_string());
+    result.into()
 }
