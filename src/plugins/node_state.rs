@@ -12,7 +12,7 @@ impl Plugin for NodeStatePlugin {
 }
 
 impl NodeStatePlugin {
-    fn collect_vars(mut nodes: Query<(Entity, &dyn GetVar)>, mut commands: Commands) {
+    pub fn collect_vars(mut nodes: Query<(Entity, &dyn GetVar)>, mut commands: Commands) {
         for (e, gv) in &mut nodes {
             let mut vars: HashMap<VarName, VarValue> = default();
             for v in gv {

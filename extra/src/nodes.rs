@@ -1,11 +1,4 @@
 use super::*;
-use bevy::{
-    app::App,
-    ecs::component::*,
-    prelude::{debug, BuildChildren, Commands, Parent, TransformBundle, VisibilityBundle, World},
-    reflect::Reflect,
-    utils::hashbrown::HashMap,
-};
 use include_dir::Dir;
 
 #[derive(Debug, Clone, Copy, Display, EnumIter)]
@@ -53,6 +46,23 @@ pub struct NodeState {
     pub vars: HashMap<VarName, VarValue>,
 }
 
+impl NodeState {
+    pub fn get_var_e(var: VarName, entity: Entity, world: &World) -> Option<VarValue> {
+        let v = world
+            .get::<Self>(entity)
+            .and_then(|s| s.vars.get(&var).cloned());
+        if v.is_some() {
+            v
+        } else {
+            if let Some(p) = world.get::<Parent>(entity) {
+                Self::get_var_e(var, p.get(), world)
+            } else {
+                None
+            }
+        }
+    }
+}
+
 pub trait Node: Default + Component + Sized + GetVar {
     fn kind(&self) -> NodeKind;
     fn entity(&self) -> Option<Entity>;
@@ -80,20 +90,6 @@ pub trait Node: Default + Component + Sized + GetVar {
     fn find_up<'a, T: Component>(&self, world: &'a World) -> Option<&'a T> {
         let entity = self.entity().expect("Node not linked to world");
         Self::find_up_entity::<T>(entity, world)
-    }
-    fn get_var_e(var: VarName, entity: Entity, world: &World) -> Option<VarValue> {
-        let v = world
-            .get::<NodeState>(entity)
-            .and_then(|s| s.vars.get(&var).cloned());
-        if v.is_some() {
-            v
-        } else {
-            if let Some(p) = world.get::<Parent>(entity) {
-                Self::get_var_e(var, p.get(), world)
-            } else {
-                None
-            }
-        }
     }
 }
 

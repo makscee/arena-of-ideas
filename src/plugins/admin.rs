@@ -5,7 +5,7 @@ pub struct AdminPlugin;
 impl Plugin for AdminPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(GameState::Admin), Self::on_enter)
-            .add_systems(Update, Self::update);
+            .add_systems(Update, Self::update.after(NodeStatePlugin::collect_vars));
     }
 }
 
@@ -24,9 +24,6 @@ impl AdminPlugin {
                     .get_var(VarName::name)
                     .unwrap()
             );
-        }
-        for r in world.query::<&Representation>().iter(world) {
-            dbg!(r);
         }
         Tile::new(Side::Left, |ui, world| {})
             .pinned()
@@ -53,13 +50,5 @@ impl AdminPlugin {
                     ui.allocate_space(ui.available_size());
                 });
             });
-        for r in world
-            .query::<&mut Representation>()
-            .iter(world)
-            .cloned()
-            .collect_vec()
-        {
-            r.material.update(r.entity.unwrap(), world);
-        }
     }
 }

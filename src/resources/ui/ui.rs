@@ -32,7 +32,6 @@ pub const TARGET_COLOR: Color32 = hex_color_noa!("#DC6814");
 pub const EFFECT_COLOR: Color32 = hex_color_noa!("#DE1C1C");
 
 pub const MISSING_COLOR: Color32 = hex_color_noa!("#FF00FF");
-pub const BEVY_MISSING_COLOR: LinearRgba = LinearRgba::new(1.0, 0.0, 1.0, 1.0);
 
 pub const TRANSPARENT: Color32 = Color32::TRANSPARENT;
 

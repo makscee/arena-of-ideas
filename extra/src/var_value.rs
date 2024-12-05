@@ -1,6 +1,6 @@
 use std::cmp::Ordering;
 
-use bevy::math::Vec2;
+use bevy::color::Srgba;
 
 use super::*;
 
@@ -13,6 +13,7 @@ pub enum VarValue {
     bool(bool),
     String(String),
     Vec2(Vec2),
+    Color(Color),
 }
 
 #[derive(Error, Debug)]
@@ -32,6 +33,7 @@ impl VarValue {
             VarValue::bool(v) => Ok(v.to_string()),
             VarValue::String(v) => Ok(v.to_string()),
             VarValue::Vec2(v) => Ok(v.to_string()),
+            VarValue::Color(color) => Ok(color.to_srgba().to_hex()),
         }
     }
     pub fn get_i32(&self) -> Result<i32, VarValueError> {
@@ -51,6 +53,16 @@ impl VarValue {
             _ => Err(VarValueError::CastNotSupported {
                 value: self.clone(),
                 t: "u64",
+            }),
+        }
+    }
+    pub fn get_color(&self) -> Result<Color, VarValueError> {
+        match self {
+            VarValue::Color(v) => Ok(*v),
+            VarValue::String(v) => Ok(Srgba::hex(v).unwrap_or(BEVY_MISSING_COLOR.into()).into()),
+            _ => Err(VarValueError::CastNotSupported {
+                value: self.clone(),
+                t: "Color",
             }),
         }
     }
@@ -87,6 +99,7 @@ impl std::hash::Hash for VarValue {
                 v.x.to_bits().hash(state);
                 v.y.to_bits().hash(state);
             }
+            VarValue::Color(color) => color.reflect_hash().unwrap().hash(state),
         };
     }
 }
@@ -113,6 +126,7 @@ impl std::fmt::Display for VarValue {
             VarValue::bool(v) => write!(f, "{}", v),
             VarValue::String(v) => write!(f, "{}", v),
             VarValue::Vec2(v) => write!(f, "{:.2}, {:.2}", v.x, v.y),
+            VarValue::Color(color) => write!(f, "{}", color.to_srgba().to_hex()),
         }
     }
 }
@@ -135,5 +149,10 @@ impl From<u64> for VarValue {
 impl From<String> for VarValue {
     fn from(value: String) -> Self {
         VarValue::String(value)
+    }
+}
+impl From<Color> for VarValue {
+    fn from(value: Color) -> Self {
+        VarValue::Color(value)
     }
 }

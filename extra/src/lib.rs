@@ -1,7 +1,13 @@
-pub use bevy::prelude::Entity;
 pub use bevy::{
+    app::App,
+    color::Color,
+    ecs::component::*,
     math::Vec2,
-    prelude::{Circle, Mesh, Rectangle},
+    prelude::{
+        debug, error, info, BuildChildren, Circle, Commands, Entity, Mesh, Parent, Rectangle,
+        Reflect, TransformBundle, VisibilityBundle, World,
+    },
+    utils::hashbrown::HashMap,
 };
 pub use convert_case::Casing;
 pub use itertools::Itertools;
@@ -9,7 +15,6 @@ pub use serde::{Deserialize, Serialize};
 pub use std::error::Error;
 pub use strum_macros::{AsRefStr, Display, EnumIter, EnumString};
 pub use thiserror::Error;
-pub use bevy::prelude::Reflect;
 
 pub mod effect;
 pub mod event;
@@ -24,6 +29,7 @@ pub use effect::*;
 pub use event::*;
 pub use expression::*;
 pub use material::*;
+pub use nodes::*;
 pub use trigger::*;
 pub use var_name::*;
 pub use var_value::*;

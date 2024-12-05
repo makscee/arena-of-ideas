@@ -98,6 +98,7 @@ fn main() {
             TextColumnPlugin,
             CameraPlugin,
             NodeStatePlugin,
+            RepresentationPlugin,
         ))
         .add_plugins((
             OperationsPlugin,

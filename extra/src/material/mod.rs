@@ -100,12 +100,12 @@ fn vec2_one_e() -> Expression {
     Expression::Value(VarValue::Vec2(vec2(1.0, 1.0)))
 }
 fn color_e() -> Expression {
-    Expression::OwnerState(VarName::color)
+    Expression::Var(VarName::color)
 }
 fn color_arr_e() -> Vec<Box<Expression>> {
     [
-        Box::new(Expression::OwnerState(VarName::color)),
-        Box::new(Expression::HexColor("#ffffff".to_owned())),
+        Box::new(Expression::Var(VarName::color)),
+        Box::new(Expression::Var(VarName::color)),
     ]
     .into()
 }
@@ -154,7 +154,7 @@ pub enum RepFill {
 }
 
 #[derive(
-    Debug, Clone, Serialize, Deserialize, PartialEq, Default, EnumIter, Display, AsRefStr, Hash
+    Debug, Clone, Serialize, Deserialize, PartialEq, Default, EnumIter, Display, AsRefStr, Hash,
 )]
 pub enum RepShapeType {
     #[default]
@@ -190,7 +190,7 @@ impl Default for RepShape {
 impl Default for RepFill {
     fn default() -> Self {
         Self::Solid {
-            color: Expression::OwnerState(VarName::color),
+            color: Expression::Var(VarName::color),
         }
     }
 }
@@ -289,6 +289,7 @@ impl RepresentationMaterial {
         });
     }
     pub fn update(&self, entity: Entity, world: &mut World) {
+        world.flush();
         match self {
             RepresentationMaterial::None => {}
             RepresentationMaterial::Shape {
@@ -327,7 +328,14 @@ impl RepresentationMaterial {
                         }
                     }
                     match fill {
-                        RepFill::Solid { color } => material.colors[0] = BEVY_MISSING_COLOR,
+                        RepFill::Solid { color } => {
+                            material.colors[0] = color
+                                .get_value(entity, world)
+                                .unwrap()
+                                .get_color()
+                                .unwrap()
+                                .to_linear()
+                        }
                         RepFill::GradientLinear {
                             point1,
                             point2,
