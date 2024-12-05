@@ -39,12 +39,12 @@ pub fn content_node(args: TokenStream, item: TokenStream) -> TokenStream {
             let mut option_link_fields = Vec::default();
             let mut option_link_fields_str = Vec::default();
             let mut option_link_types: Vec<proc_macro2::TokenStream> = Vec::default();
-            let mut option_box_link_fields = Vec::default();
-            let mut option_box_link_fields_str = Vec::default();
-            let mut option_box_link_types: Vec<proc_macro2::TokenStream> = Vec::default();
             let mut vec_link_fields = Vec::default();
             let mut vec_link_fields_str = Vec::default();
             let mut vec_link_types: Vec<proc_macro2::TokenStream> = Vec::default();
+            let mut vec_box_link_fields = Vec::default();
+            let mut vec_box_link_fields_str = Vec::default();
+            let mut vec_box_link_types: Vec<proc_macro2::TokenStream> = Vec::default();
             let mut var_fields: Vec<proc_macro2::TokenStream> = Vec::default();
             let mut data_fields = Vec::default();
             let mut data_types = Vec::default();
@@ -64,10 +64,6 @@ pub fn content_node(args: TokenStream, item: TokenStream) -> TokenStream {
                     syn::Type::Path(type_path) => {
                         let type_ident = &type_path.path.segments.first().unwrap().ident;
                         if type_ident == "Vec" {
-                            vec_link_fields_str.push(field_ident.to_string());
-                            vec_link_fields.push(field_ident);
-                            vec_link_types.push(inner_type(type_path).to_token_stream());
-                        } else if type_ident == "Option" {
                             let it = inner_type(type_path);
                             match &it {
                                 Type::Path(type_path) => {
@@ -78,17 +74,21 @@ pub fn content_node(args: TokenStream, item: TokenStream) -> TokenStream {
                                         .is_some_and(|t| t.ident == "Box")
                                     {
                                         let it = inner_type(&type_path);
-                                        option_box_link_fields_str.push(field_ident.to_string());
-                                        option_box_link_fields.push(field_ident);
-                                        option_box_link_types.push(it.to_token_stream());
+                                        vec_box_link_fields_str.push(field_ident.to_string());
+                                        vec_box_link_fields.push(field_ident);
+                                        vec_box_link_types.push(it.to_token_stream());
                                     } else {
-                                        option_link_fields_str.push(field_ident.to_string());
-                                        option_link_fields.push(field_ident);
-                                        option_link_types.push(it.to_token_stream());
+                                        vec_link_fields_str.push(field_ident.to_string());
+                                        vec_link_fields.push(field_ident);
+                                        vec_link_types.push(it.to_token_stream());
                                     }
                                 }
                                 _ => {}
                             }
+                        } else if type_ident == "Option" {
+                            option_link_fields_str.push(field_ident.to_string());
+                            option_link_fields.push(field_ident);
+                            option_link_types.push(inner_type(type_path).to_token_stream());
                         } else if type_ident == "i32"
                             || type_ident == "f32"
                             || type_ident == "String"
@@ -109,7 +109,7 @@ pub fn content_node(args: TokenStream, item: TokenStream) -> TokenStream {
             }
             let nt = if data_fields.contains(&Ident::from_string("name").unwrap()) {
                 NodeType::Name
-            } else if !option_link_fields.is_empty() || !option_box_link_fields.is_empty() {
+            } else if !option_link_fields.is_empty() || !vec_box_link_fields.is_empty() {
                 NodeType::Data
             } else {
                 NodeType::OnlyData
@@ -130,7 +130,13 @@ pub fn content_node(args: TokenStream, item: TokenStream) -> TokenStream {
                 NodeType::Name |
                 NodeType::Data => quote! {
                     #(s.#option_link_fields = #option_link_types::from_dir(format!("{path}/{}", #option_link_fields_str), dir);)*
-                    #(s.#option_box_link_fields = #option_box_link_types::from_dir(format!("{path}/{}", #option_box_link_fields_str), dir).map(|d| Box::new(d));)*
+                    #(s.#vec_box_link_fields = dir
+                        .get_dir(format!("{path}/{}", #vec_box_link_fields_str))
+                        .into_iter()
+                        .flat_map(|d| d.dirs())
+                        .filter_map(|d| #vec_box_link_types::from_dir(d.path().to_string_lossy().to_string(), d))
+                        .map(|d| Box::new(d))
+                        .collect_vec();)*
                     #(s.#vec_link_fields = dir
                         .get_dir(format!("{path}/{}", #vec_link_fields_str))
                         .into_iter()
@@ -205,6 +211,12 @@ pub fn content_node(args: TokenStream, item: TokenStream) -> TokenStream {
                         )*
                         #(
                             for d in std::mem::take(&mut self.#vec_link_fields) {
+                                let entity = commands.spawn_empty().set_parent(entity).id();
+                                d.unpack(entity, commands);
+                            }
+                        )*
+                        #(
+                            for d in std::mem::take(&mut self.#vec_box_link_fields) {
                                 let entity = commands.spawn_empty().set_parent(entity).id();
                                 d.unpack(entity, commands);
                             }

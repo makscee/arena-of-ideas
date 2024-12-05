@@ -139,7 +139,7 @@ pub struct UnitTrigger {
 pub struct Representation {
     pub material: RepresentationMaterial,
     pub count: u32,
-    pub child: Option<Box<Representation>>,
+    pub children: Vec<Box<Representation>>,
 }
 
 impl Representation {
