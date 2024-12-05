@@ -8,13 +8,13 @@ use syn::*;
 extern crate quote;
 
 #[proc_macro_attribute]
-pub fn content_node(args: TokenStream, item: TokenStream) -> TokenStream {
+pub fn node(args: TokenStream, item: TokenStream) -> TokenStream {
     let a = parse_macro_input!(args with Punctuated<Path, Token![,]>::parse_terminated);
     let mut on_unpack = proc_macro2::TokenStream::new();
     for i in a.iter() {
         let i = i.get_ident().unwrap().to_string();
         match i.as_str() {
-            "OnUnpack" => {
+            "on_unpack" => {
                 on_unpack =
                     quote! { Self::on_unpack(&self, entity, commands); }.into_token_stream();
             }
@@ -162,12 +162,12 @@ pub fn content_node(args: TokenStream, item: TokenStream) -> TokenStream {
                         write!(f, "{}", self.kind())
                     }
                 }
-                impl ContentNode for #struct_ident {
+                impl Node for #struct_ident {
                     fn entity(&self) -> Option<Entity> {
                         self.entity
                     }
-                    fn kind(&self) -> ContentKind {
-                        ContentKind::#struct_ident
+                    fn kind(&self) -> NodeKind {
+                        NodeKind::#struct_ident
                     }
                     fn get_var(&self, var: VarName) -> Option<VarValue> {
                         match var {

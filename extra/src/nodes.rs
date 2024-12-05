@@ -6,7 +6,7 @@ use bevy::{
 use include_dir::Dir;
 
 #[derive(Debug, Clone, Copy, Display)]
-pub enum ContentKind {
+pub enum NodeKind {
     House,
     HouseColor,
     Ability,
@@ -23,8 +23,8 @@ pub enum ContentKind {
     UnitTrigger,
 }
 
-pub trait ContentNode: Default + Component + Sized {
-    fn kind(&self) -> ContentKind;
+pub trait Node: Default + Component + Sized {
+    fn kind(&self) -> NodeKind;
     fn entity(&self) -> Option<Entity>;
     fn get_var(&self, var: VarName) -> Option<VarValue>;
     fn inject_data(&mut self, data: &str);
@@ -36,7 +36,7 @@ pub trait ContentNode: Default + Component + Sized {
     }
     fn from_dir(path: String, dir: &Dir) -> Option<Self>;
     fn unpack(self, entity: Entity, commands: &mut Commands);
-    fn find_up_entity<T: ContentNode>(entity: Entity, world: &World) -> Option<&T> {
+    fn find_up_entity<T: Node>(entity: Entity, world: &World) -> Option<&T> {
         let r = world.get::<T>(entity);
         if r.is_some() {
             r
@@ -49,25 +49,25 @@ pub trait ContentNode: Default + Component + Sized {
             }
         }
     }
-    fn find_up<'a, T: ContentNode>(&self, world: &'a World) -> Option<&'a T> {
+    fn find_up<'a, T: Node>(&self, world: &'a World) -> Option<&'a T> {
         let entity = self.entity().expect("Node not linked to world");
         Self::find_up_entity::<T>(entity, world)
     }
 }
 
-#[content_node]
+#[node]
 pub struct House {
     name: String,
     color: Option<HouseColor>,
     abilities: Vec<Ability>,
 }
 
-#[content_node]
+#[node]
 pub struct HouseColor {
     pub color: String,
 }
 
-#[content_node]
+#[node]
 pub struct Ability {
     pub name: String,
     pub description: Option<AbilityDescription>,
@@ -76,12 +76,12 @@ pub struct Ability {
     pub units: Vec<Unit>,
 }
 
-#[content_node]
+#[node]
 pub struct AbilityDescription {
     pub data: String,
 }
 
-#[content_node]
+#[node]
 pub struct AbilityEffect {
     pub data: String,
 }
@@ -110,7 +110,7 @@ pub struct AbilityEffect {
 //     pub representation: Option<UnitRepresentation>,
 // }
 
-#[content_node]
+#[node]
 pub struct Unit {
     pub name: String,
     pub stats: Option<UnitStats>,
@@ -118,24 +118,24 @@ pub struct Unit {
     pub representation: Option<Representation>,
 }
 
-#[content_node]
+#[node]
 pub struct UnitStats {
     pub pwr: i32,
     pub hp: i32,
 }
 
-#[content_node]
+#[node]
 pub struct UnitDescription {
     pub description: String,
     pub trigger: Option<UnitTrigger>,
 }
 
-#[content_node]
+#[node]
 pub struct UnitTrigger {
     pub trigger: Trigger,
 }
 
-#[content_node(OnUnpack)]
+#[node(on_unpack)]
 pub struct Representation {
     pub material: RepresentationMaterial,
     pub count: u32,
