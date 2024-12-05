@@ -34,6 +34,7 @@ serde = "1"
 include_dir = "0.7.4"
 thiserror = "2.0.3"
 convert_case = "0.6.0"
+bevy-trait-query = "0.6.0"
 
 [dependencies]
 extra = { path = "extra" }
@@ -48,6 +49,7 @@ serde = { workspace = true }
 include_dir = { workspace = true }
 thiserror = { workspace = true }
 convert_case = { workspace = true }
+bevy-trait-query = { workspace = true }
 
 spacetimedb-sdk = "=1.0.0-rc1"
 spacetimedb-sats = "=1.0.0-rc1"

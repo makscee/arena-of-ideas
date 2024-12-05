@@ -18,8 +18,7 @@ fn sdf(uv: vec2<f32>, size: vec2<f32>) -> f32 {
     var d = abs(uv) - size;
     return length(max(d,vec2(0.0))) + min(max(d.x,d.y),0.0);
 }
-#endif
-#ifdef CIRCLE
+#else ifdef CIRCLE
 fn sdf(uv: vec2<f32>, size: vec2<f32>) -> f32 {
     let d = length(uv) - size.x;
     return d;

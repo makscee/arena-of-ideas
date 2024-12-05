@@ -9,6 +9,7 @@ pub use serde::{Deserialize, Serialize};
 pub use std::error::Error;
 pub use strum_macros::{AsRefStr, Display, EnumIter, EnumString};
 pub use thiserror::Error;
+pub use bevy::prelude::Reflect;
 
 pub mod effect;
 pub mod event;

@@ -97,6 +97,7 @@ fn main() {
             WidgetsPlugin,
             TextColumnPlugin,
             CameraPlugin,
+            NodeStatePlugin,
         ))
         .add_plugins((
             OperationsPlugin,
@@ -110,6 +111,9 @@ fn main() {
         ))
         .init_state::<GameState>()
         .init_resource::<NotificationsResource>();
+    for n in NodeKind::iter() {
+        n.register(&mut app);
+    }
     if !cfg!(debug_assertions) {
         app.add_plugins(bevy_panic_handler::PanicHandler::new().build());
     }

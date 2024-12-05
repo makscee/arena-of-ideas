@@ -1,5 +1,3 @@
-
-
 use super::*;
 
 #[derive(Asset, AsBindGroup, TypePath, Debug, Clone)]

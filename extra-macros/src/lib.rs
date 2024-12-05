@@ -45,7 +45,8 @@ pub fn node(args: TokenStream, item: TokenStream) -> TokenStream {
             let mut vec_box_link_fields = Vec::default();
             let mut vec_box_link_fields_str = Vec::default();
             let mut vec_box_link_types: Vec<proc_macro2::TokenStream> = Vec::default();
-            let mut var_fields: Vec<proc_macro2::TokenStream> = Vec::default();
+            let mut var_fields = Vec::default();
+            let mut var_types = Vec::default();
             let mut data_fields = Vec::default();
             let mut data_types = Vec::default();
             fn inner_type(type_path: &TypePath) -> Type {
@@ -93,7 +94,8 @@ pub fn node(args: TokenStream, item: TokenStream) -> TokenStream {
                             || type_ident == "f32"
                             || type_ident == "String"
                         {
-                            var_fields.push(quote! {VarName::#field_ident => return Some(VarValue::#type_ident(self.#field_ident.clone()))}.into());
+                            var_fields.push(field_ident.clone());
+                            var_types.push(ty.clone());
                             data_fields.push(field_ident);
                             data_types.push(ty.clone());
                         } else {
@@ -162,17 +164,11 @@ pub fn node(args: TokenStream, item: TokenStream) -> TokenStream {
                         write!(f, "{}", self.kind())
                     }
                 }
-                impl Node for #struct_ident {
-                    fn entity(&self) -> Option<Entity> {
-                        self.entity
-                    }
-                    fn kind(&self) -> NodeKind {
-                        NodeKind::#struct_ident
-                    }
+                impl GetVar for #struct_ident {
                     fn get_var(&self, var: VarName) -> Option<VarValue> {
                         match var {
                             #(
-                                #var_fields,
+                                VarName::#var_fields => return Some(VarValue::#var_types(self.#var_fields.clone())),
                             )*
                             _ => {
                                 #(
@@ -183,6 +179,19 @@ pub fn node(args: TokenStream, item: TokenStream) -> TokenStream {
                             }
                         };
                         None
+                    }
+                    fn get_all_vars(&self) -> Vec<(VarName, VarValue)> {
+                        vec![#(
+                            (VarName::#var_fields, VarValue::#var_types(self.#var_fields.clone()))
+                        ),*]
+                    }
+                }
+                impl Node for #struct_ident {
+                    fn entity(&self) -> Option<Entity> {
+                        self.entity
+                    }
+                    fn kind(&self) -> NodeKind {
+                        NodeKind::#struct_ident
                     }
                     fn get_data(&self) -> String {
                         ron::to_string(&(#(&self.#data_fields),*)).unwrap()

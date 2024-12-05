@@ -5,7 +5,7 @@ use bevy::math::Vec2;
 use super::*;
 
 #[allow(non_camel_case_types)]
-#[derive(Clone, Serialize, Deserialize, Debug, AsRefStr)]
+#[derive(Clone, Serialize, Deserialize, Debug, AsRefStr, Reflect)]
 pub enum VarValue {
     i32(i32),
     f32(f32),

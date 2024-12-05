@@ -154,7 +154,7 @@ pub enum RepFill {
 }
 
 #[derive(
-    Debug, Clone, Serialize, Deserialize, PartialEq, Default, EnumIter, Display, AsRefStr, Hash,
+    Debug, Clone, Serialize, Deserialize, PartialEq, Default, EnumIter, Display, AsRefStr, Hash
 )]
 pub enum RepShapeType {
     #[default]
