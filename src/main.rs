@@ -9,6 +9,7 @@ use bevy::{
     diagnostic::FrameTimeDiagnosticsPlugin, log::LogPlugin, render::camera::ClearColor,
     sprite::Material2dPlugin, state::app::AppExtStates,
 };
+use bevy_vector_shapes::{shapes, Shape2dPlugin};
 use clap::{command, Parser, ValueEnum};
 use include_dir::{include_dir, Dir};
 use noisy_bevy::NoisyShaderPlugin;
@@ -85,11 +86,16 @@ fn main() {
                     "ron/_dynamic.assets.ron",
                 ),
         )
-        .add_plugins(Material2dPlugin::<ShapeMaterial>::default())
-        .add_plugins(Material2dPlugin::<CurveMaterial>::default())
-        .add_plugins(bevy_egui::EguiPlugin)
-        .add_plugins(bevy_inspector_egui::quick::WorldInspectorPlugin::new())
-        .add_plugins(NoisyShaderPlugin)
+        .register_type::<ShapeFill>()
+        .register_type::<FillType>()
+        .register_type::<ThicknessType>()
+        .register_type::<shapes::ShapeMaterial>()
+        .add_plugins((
+            bevy_egui::EguiPlugin,
+            bevy_inspector_egui::quick::WorldInspectorPlugin::new(),
+            NoisyShaderPlugin,
+            Shape2dPlugin::default(),
+        ))
         .add_plugins((
             UiPlugin,
             LoginPlugin,

@@ -14,11 +14,16 @@ pub enum Expression {
 }
 
 impl Expression {
-    pub fn get_value(&self, entity: Entity, world: &World) -> Option<VarValue> {
+    pub fn get_value(
+        &self,
+        entity: Entity,
+        states: &Query<&NodeState>,
+        parents: &Query<&Parent>,
+    ) -> Option<VarValue> {
         match self {
             Expression::One => Some(1.into()),
             Expression::Zero => Some(0.into()),
-            Expression::Var(var) => NodeState::get_var_e(*var, entity, world),
+            Expression::Var(var) => NodeState::get_var_e(*var, entity, states, parents),
             Expression::Value(v) => Some(v.clone()),
             Expression::S(s) => Some(s.clone().into()),
         }

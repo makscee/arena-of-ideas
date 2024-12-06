@@ -4,10 +4,10 @@ pub use crate::{components::*, plugins::*, resources::*, utils::*};
 pub use anyhow::{anyhow, Context as _, Result};
 
 pub use crate::stdb::*;
-pub use bevy::audio::{AudioBundle, AudioSource, PlaybackSettings};
 pub use bevy::{
     app::{prelude::PluginGroup, App, Plugin, Startup, Update},
     asset::{Asset, Assets, Handle},
+    audio::{AudioBundle, AudioSource, PlaybackSettings},
     color::{Color, LinearRgba},
     core::Name,
     diagnostic::DiagnosticsStore,
@@ -21,12 +21,13 @@ pub use bevy::{
     },
     hierarchy::{BuildWorldChildren, Children, DespawnRecursiveExt, Parent},
     input::{keyboard::KeyCode, ButtonInput},
+    log::{debug, error, info},
     math::{
         cubic_splines::{CubicBezier, CubicGenerator},
         primitives::{Circle, Rectangle},
         vec2, vec3, vec4, Vec2, Vec3, Vec4, Vec4Swizzles,
     },
-    prelude::default,
+    prelude::{default, Commands},
     reflect::TypePath,
     render::{
         camera::Camera,
@@ -59,6 +60,7 @@ pub use bevy_egui::{
     EguiContext,
 };
 pub use bevy_tasks::IoTaskPool;
+pub use bevy_vector_shapes::prelude::*;
 pub use chrono::DateTime;
 pub use colored::{Colorize, CustomColor};
 pub use convert_case::{Case, Casing};

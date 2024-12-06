@@ -1,1 +1,1 @@
-(Shape(shape: Rectangle()), 2)
+(t: Shape(shape: Rectangle(size: Value(Vec2((3.0, 1.0))))))

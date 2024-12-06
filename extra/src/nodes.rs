@@ -1,4 +1,5 @@
 use super::*;
+use bevy::{math::vec2, prelude::Query};
 use include_dir::Dir;
 
 #[derive(Debug, Clone, Copy, Display, EnumIter)]
@@ -47,15 +48,21 @@ pub struct NodeState {
 }
 
 impl NodeState {
-    pub fn get_var_e(var: VarName, entity: Entity, world: &World) -> Option<VarValue> {
-        let v = world
-            .get::<Self>(entity)
+    pub fn get_var_e(
+        var: VarName,
+        entity: Entity,
+        states: &Query<&NodeState>,
+        parents: &Query<&Parent>,
+    ) -> Option<VarValue> {
+        let v = states
+            .get(entity)
+            .ok()
             .and_then(|s| s.vars.get(&var).cloned());
         if v.is_some() {
             v
         } else {
-            if let Some(p) = world.get::<Parent>(entity) {
-                Self::get_var_e(var, p.get(), world)
+            if let Some(p) = parents.get(entity).ok() {
+                Self::get_var_e(var, p.get(), states, parents)
             } else {
                 None
             }
@@ -173,16 +180,59 @@ pub struct UnitTrigger {
     pub trigger: Trigger,
 }
 
-#[node(on_unpack)]
+#[node]
 pub struct Representation {
-    pub material: RepresentationMaterial,
-    pub count: u32,
+    pub material: RMaterial,
     pub children: Vec<Box<Representation>>,
 }
 
-impl Representation {
-    fn on_unpack(&self, entity: Entity, commands: &mut Commands) {
-        debug!("on unpack called");
-        self.material.unpack(entity, commands);
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct RMaterial {
+    pub t: MaterialType,
+    #[serde(default)]
+    pub count: u32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum MaterialType {
+    Shape {
+        shape: Shape,
+        #[serde(default)]
+        modifiers: Vec<ShapeModifier>,
+    },
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum Shape {
+    Rectangle { size: Expression },
+    Circle { radius: Expression },
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum ShapeModifier {
+    Rotation { value: Expression },
+    Scale { value: Expression },
+}
+
+impl Default for Shape {
+    fn default() -> Self {
+        Shape::Rectangle {
+            size: Expression::Value(vec2(1.0, 1.0).into()),
+        }
+    }
+}
+impl Default for MaterialType {
+    fn default() -> Self {
+        Self::Shape {
+            shape: default(),
+            modifiers: default(),
+        }
+    }
+}
+impl Default for ShapeModifier {
+    fn default() -> Self {
+        Self::Rotation {
+            value: Expression::Zero,
+        }
     }
 }

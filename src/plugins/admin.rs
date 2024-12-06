@@ -4,16 +4,13 @@ pub struct AdminPlugin;
 
 impl Plugin for AdminPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::Admin), Self::on_enter)
-            .add_systems(Update, Self::update.after(NodeStatePlugin::collect_vars));
+        app.add_systems(OnEnter(GameState::Admin), (Self::setup, Self::on_enter))
+            .add_systems(Update, Self::update);
     }
 }
 
 impl AdminPlugin {
     fn on_enter(world: &mut World) {
-        let house = houses().get("holy").unwrap().clone();
-        dbg!(&house);
-        house.unpack(world.spawn_empty().id(), &mut world.commands());
         world.flush();
         for u in world.query::<&Unit>().iter(world) {
             debug!("Unit {}", u.name);
@@ -31,7 +28,11 @@ impl AdminPlugin {
             .no_expand()
             .push(world);
     }
-
+    fn setup(mut commands: Commands) {
+        let house = houses().get("holy").unwrap().clone();
+        dbg!(&house);
+        house.unpack(commands.spawn_empty().id(), &mut commands);
+    }
     fn update(world: &mut World) {
         let egui_context = world
             .query_filtered::<&mut EguiContext, With<bevy::window::PrimaryWindow>>()

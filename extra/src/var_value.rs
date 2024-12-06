@@ -56,6 +56,15 @@ impl VarValue {
             }),
         }
     }
+    pub fn get_vec2(&self) -> Result<Vec2, VarValueError> {
+        match self {
+            VarValue::Vec2(v) => Ok(*v),
+            _ => Err(VarValueError::CastNotSupported {
+                value: self.clone(),
+                t: "Vec2",
+            }),
+        }
+    }
     pub fn get_color(&self) -> Result<Color, VarValueError> {
         match self {
             VarValue::Color(v) => Ok(*v),
@@ -154,5 +163,10 @@ impl From<String> for VarValue {
 impl From<Color> for VarValue {
     fn from(value: Color) -> Self {
         VarValue::Color(value)
+    }
+}
+impl From<Vec2> for VarValue {
+    fn from(value: Vec2) -> Self {
+        VarValue::Vec2(value)
     }
 }

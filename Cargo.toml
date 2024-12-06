@@ -86,6 +86,7 @@ bevy-panic-handler = "3.0.0"
 lerp = "0.5.0"
 humanize-duration = "0.0.6"
 bevy-inspector-egui = "0.25.0"
+bevy_vector_shapes = "0.8.2"
 
 [dependencies.winit]
 version = "0.30.5"

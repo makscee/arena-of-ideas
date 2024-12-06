@@ -9,12 +9,26 @@ impl Plugin for RepresentationPlugin {
 }
 
 impl RepresentationPlugin {
-    fn update(reps: Query<(Entity, &Representation), With<NodeState>>, mut commands: Commands) {
-        for (e, r) in &reps {
-            let r = r.clone();
-            commands.add(move |world: &mut World| {
-                r.material.update(e, world);
-            });
+    fn update(
+        reps: Query<(Entity, &Representation, &Transform), With<NodeState>>,
+        states: Query<&NodeState>,
+        parents: Query<&Parent>,
+        mut painter: ShapePainter,
+    ) {
+        for (entity, r, t) in &reps {
+            match &r.material.t {
+                MaterialType::Shape { shape, modifiers } => match shape {
+                    Shape::Rectangle { size } => {
+                        let size = size
+                            .get_value(entity, &states, &parents)
+                            .unwrap()
+                            .get_vec2()
+                            .unwrap();
+                        painter.rect(size);
+                    }
+                    Shape::Circle { radius } => todo!(),
+                },
+            }
         }
     }
 }
