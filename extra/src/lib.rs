@@ -17,6 +17,7 @@ use strum_macros::{AsRefStr, Display, EnumIter, EnumString};
 use thiserror::Error;
 
 pub mod effect;
+pub mod error;
 pub mod event;
 pub mod expression;
 pub mod nodes;
@@ -25,6 +26,7 @@ pub mod var_name;
 pub mod var_value;
 
 pub use effect::*;
+pub use error::*;
 pub use event::*;
 pub use expression::*;
 pub use nodes::*;
