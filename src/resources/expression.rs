@@ -19,12 +19,24 @@ pub trait ExpressionImpl {
         s: &Query<&NodeState>,
         p: &Query<&Parent>,
     ) -> Result<i32, ExpressionError>;
+    fn get_vec2(
+        &self,
+        e: Entity,
+        s: &Query<&NodeState>,
+        p: &Query<&Parent>,
+    ) -> Result<Vec2, ExpressionError>;
     fn get_bool(
         &self,
         e: Entity,
         s: &Query<&NodeState>,
         p: &Query<&Parent>,
     ) -> Result<bool, ExpressionError>;
+    fn get_color(
+        &self,
+        e: Entity,
+        s: &Query<&NodeState>,
+        p: &Query<&Parent>,
+    ) -> Result<Color, ExpressionError>;
 }
 
 impl ExpressionImpl for Expression {
@@ -88,6 +100,14 @@ impl ExpressionImpl for Expression {
     ) -> Result<i32, ExpressionError> {
         self.get_value(e, s, p)?.get_i32()
     }
+    fn get_vec2(
+        &self,
+        e: Entity,
+        s: &Query<&NodeState>,
+        p: &Query<&Parent>,
+    ) -> Result<Vec2, ExpressionError> {
+        self.get_value(e, s, p)?.get_vec2()
+    }
     fn get_bool(
         &self,
         e: Entity,
@@ -95,5 +115,13 @@ impl ExpressionImpl for Expression {
         p: &Query<&Parent>,
     ) -> Result<bool, ExpressionError> {
         self.get_value(e, s, p)?.get_bool()
+    }
+    fn get_color(
+        &self,
+        e: Entity,
+        s: &Query<&NodeState>,
+        p: &Query<&Parent>,
+    ) -> Result<Color, ExpressionError> {
+        self.get_value(e, s, p)?.get_color()
     }
 }

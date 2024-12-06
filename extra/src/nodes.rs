@@ -210,8 +210,9 @@ pub enum Shape {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ShapeModifier {
-    Rotation { value: Expression },
-    Scale { value: Expression },
+    Rotation(Expression),
+    Scale(Expression),
+    Color(Expression),
 }
 
 impl Default for Shape {
@@ -231,8 +232,6 @@ impl Default for MaterialType {
 }
 impl Default for ShapeModifier {
     fn default() -> Self {
-        Self::Rotation {
-            value: Expression::Zero,
-        }
+        Self::Rotation(Expression::Zero)
     }
 }

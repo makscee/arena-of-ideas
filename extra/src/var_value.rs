@@ -1,6 +1,4 @@
-use std::{cmp::Ordering, ops::Add};
-
-use bevy::color::Srgba;
+use std::cmp::Ordering;
 
 use super::*;
 
@@ -75,6 +73,7 @@ impl VarValue {
     pub fn get_vec2(&self) -> Result<Vec2, ExpressionError> {
         match self {
             VarValue::Vec2(v) => Ok(*v),
+            VarValue::f32(v) => Ok(vec2(*v, *v)),
             _ => Err(ExpressionError::OperationNotSupported {
                 values: vec![self.clone()],
                 op: "Cast to Vec2",

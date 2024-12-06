@@ -1,1 +1,6 @@
-(t: Shape(shape: Rectangle(size: Value(Vec2((3.0, 1.0))))))
+(
+    t: Shape(
+        shape: Rectangle(size: Sum(Value(f32(3.0)), Sin(GT))),
+        modifiers: [Rotation(GT), Color(Var(color))],
+    ),
+)
