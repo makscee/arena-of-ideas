@@ -1,6 +1,13 @@
 (
+    count: 1000,
     t: Shape(
-        shape: Rectangle(size: Sum(F(3.0), Sin(GT))),
-        modifiers: [Rotation(GT), Color(Var(color)), Hollow(B(true)), Thickness(F(0.02)), Roundness(F(1.0))],
+        shape: Rectangle(size: Sum(Mul(F(0.01), Var(index)), Sin(GT))),
+        modifiers: [
+            Rotation(Mul(F(0.001), GT)),
+            Color(Var(color)),
+            Hollow(B(true)),
+            Thickness(F(0.01)),
+            Alpha(F(0.1)),
+        ],
     ),
 )

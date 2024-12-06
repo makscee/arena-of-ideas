@@ -1,3 +1,4 @@
+use bevy::color::HexColorError;
 use itertools::join;
 
 use super::*;
@@ -11,6 +12,8 @@ pub enum ExpressionError {
     },
     #[error("Value not found")]
     ValueNotFound,
+    #[error("Hex parse error: {0}")]
+    HexColorError(#[from] HexColorError),
 }
 
 pub trait OptionExpressionError<T> {

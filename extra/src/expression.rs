@@ -17,6 +17,7 @@ pub enum Expression {
     I(i32),
     B(bool),
     V2(f32, f32),
+    C(String),
 
     Sin(Box<Expression>),
     Cos(Box<Expression>),
@@ -48,7 +49,7 @@ impl std::hash::Hash for Expression {
             Expression::One | Expression::Zero | Expression::GT => {}
             Expression::Var(v) => v.hash(state),
             Expression::V(v) => v.hash(state),
-            Expression::S(v) => v.hash(state),
+            Expression::S(v) | Expression::C(v) => v.hash(state),
             Expression::F(v) => v.to_bits().hash(state),
             Expression::I(v) => v.hash(state),
             Expression::B(v) => v.hash(state),

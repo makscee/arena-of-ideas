@@ -48,21 +48,15 @@ pub struct NodeState {
 }
 
 impl NodeState {
-    pub fn get_var_e(
-        var: VarName,
-        entity: Entity,
-        states: &Query<&NodeState>,
-        parents: &Query<&Parent>,
-    ) -> Option<VarValue> {
-        let v = states
-            .get(entity)
-            .ok()
+    pub fn get_var_e(var: VarName, entity: Entity, state: &StateQuery) -> Option<VarValue> {
+        let v = state
+            .get_state(entity)
             .and_then(|s| s.vars.get(&var).cloned());
         if v.is_some() {
             v
         } else {
-            if let Some(p) = parents.get(entity).ok() {
-                Self::get_var_e(var, p.get(), states, parents)
+            if let Some(p) = state.get_parent(entity) {
+                Self::get_var_e(var, p.get(), state)
             } else {
                 None
             }
@@ -216,6 +210,7 @@ pub enum ShapeModifier {
     Hollow(Expression),
     Thickness(Expression),
     Roundness(Expression),
+    Alpha(Expression),
 }
 
 impl Default for Shape {

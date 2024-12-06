@@ -27,4 +27,5 @@ pub enum VarName {
     description,
     color,
     lvl,
+    index,
 }
