@@ -73,6 +73,9 @@ impl ShapeModifierApply for ShapeModifier {
             ShapeModifier::Rotation(v) => painter.rotate_z(v.get_f32(e, s, p)?),
             ShapeModifier::Scale(v) => painter.scale(v.get_vec2(e, s, p)?.extend(1.0)),
             ShapeModifier::Color(v) => painter.set_color(v.get_color(e, s, p)?),
+            ShapeModifier::Hollow(v) => painter.hollow = v.get_bool(e, s, p)?,
+            ShapeModifier::Thickness(v) => painter.thickness = v.get_f32(e, s, p)?,
+            ShapeModifier::Roundness(v) => painter.roundness = v.get_f32(e, s, p)?,
         };
         Ok(())
     }

@@ -213,12 +213,15 @@ pub enum ShapeModifier {
     Rotation(Expression),
     Scale(Expression),
     Color(Expression),
+    Hollow(Expression),
+    Thickness(Expression),
+    Roundness(Expression),
 }
 
 impl Default for Shape {
     fn default() -> Self {
         Shape::Rectangle {
-            size: Expression::Value(vec2(1.0, 1.0).into()),
+            size: Expression::V(vec2(1.0, 1.0).into()),
         }
     }
 }

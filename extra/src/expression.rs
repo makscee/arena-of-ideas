@@ -10,9 +10,13 @@ pub enum Expression {
     GT,
 
     Var(VarName),
-    Value(VarValue),
+    V(VarValue),
 
     S(String),
+    F(f32),
+    I(i32),
+    B(bool),
+    V2(f32, f32),
 
     Sin(Box<Expression>),
     Cos(Box<Expression>),
@@ -43,8 +47,15 @@ impl std::hash::Hash for Expression {
         match self {
             Expression::One | Expression::Zero | Expression::GT => {}
             Expression::Var(v) => v.hash(state),
-            Expression::Value(v) => v.hash(state),
+            Expression::V(v) => v.hash(state),
             Expression::S(v) => v.hash(state),
+            Expression::F(v) => v.to_bits().hash(state),
+            Expression::I(v) => v.hash(state),
+            Expression::B(v) => v.hash(state),
+            Expression::V2(x, y) => {
+                x.to_bits().hash(state);
+                y.to_bits().hash(state);
+            }
 
             Expression::Sin(e)
             | Expression::Cos(e)
