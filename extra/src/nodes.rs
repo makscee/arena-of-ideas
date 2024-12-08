@@ -149,12 +149,19 @@ pub struct AbilityEffect {
 //     pub representation: Option<UnitRepresentation>,
 // }
 
-#[node]
+#[node(on_unpack)]
 pub struct Unit {
     pub name: String,
     pub stats: Option<UnitStats>,
     pub description: Option<UnitDescription>,
     pub representation: Option<Representation>,
+}
+
+impl Unit {
+    fn on_unpack(&self, entity: Entity, commands: &mut Commands) {
+        let entity = commands.spawn_empty().set_parent(entity).id();
+        UNIT_REP.get().unwrap().clone().unpack(entity, commands);
+    }
 }
 
 #[node]

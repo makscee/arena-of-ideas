@@ -18,6 +18,7 @@ use serde::{Deserialize, Serialize};
 use strum_macros::{AsRefStr, Display, EnumIter, EnumString};
 use thiserror::Error;
 
+pub mod assets;
 pub mod effect;
 pub mod error;
 pub mod event;
@@ -27,6 +28,7 @@ pub mod trigger;
 pub mod var_name;
 pub mod var_value;
 
+pub use assets::*;
 pub use effect::*;
 pub use error::*;
 pub use event::*;

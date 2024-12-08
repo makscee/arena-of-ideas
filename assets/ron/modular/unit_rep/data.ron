@@ -1,0 +1,1 @@
+(t: Shape(shape: Circle(radius: F(1.0)), modifiers: [Hollow(B(true)), Thickness(F(0.03))]))

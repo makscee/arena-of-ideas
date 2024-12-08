@@ -15,8 +15,7 @@ pub fn node(args: TokenStream, item: TokenStream) -> TokenStream {
         let i = i.get_ident().unwrap().to_string();
         match i.as_str() {
             "on_unpack" => {
-                on_unpack =
-                    quote! { Self::on_unpack(&self, entity, commands); }.into_token_stream();
+                on_unpack = quote! { self.on_unpack(entity, commands); }.into_token_stream();
             }
             _ => unimplemented!(),
         }

@@ -35,6 +35,7 @@ include_dir = "0.7.4"
 thiserror = "2.0.3"
 convert_case = "0.6.0"
 bevy-trait-query = "0.6.0"
+once_cell = "1.19.0"
 
 [dependencies]
 extra = { path = "extra" }
@@ -50,6 +51,7 @@ include_dir = { workspace = true }
 thiserror = { workspace = true }
 convert_case = { workspace = true }
 bevy-trait-query = { workspace = true }
+once_cell = { workspace = true }
 
 spacetimedb-sdk = "=1.0.0-rc1"
 spacetimedb-sats = "=1.0.0-rc1"
@@ -80,7 +82,6 @@ chrono = "0.4.38"
 egui_commonmark = "0.17.0"
 bevy_tasks = "0.14.1"
 regex = "1.10.5"
-once_cell = "1.19.0"
 bevy_dylib = "0.14.1"
 bevy-panic-handler = "3.0.0"
 lerp = "0.5.0"

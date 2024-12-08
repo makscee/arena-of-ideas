@@ -15,3 +15,4 @@ strum_macros = { workspace = true }
 thiserror = { workspace = true }
 convert_case = { workspace = true }
 bevy-trait-query = { workspace = true }
+once_cell = { workspace = true }
