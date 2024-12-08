@@ -240,7 +240,7 @@
       "group": {
         "kind": "build"
       },
-      "command": "find ./assets/ron/. -iname '*.ron' -exec ronfmt -w 100 \"{}\" \\;; rm ./assets/ron/**/*.bak;"
+      "command": "find ./assets/ron/. -iname '*.ron' -exec ronfmt -w 80 \"{}\" \\;; rm ./assets/ron/**/*.bak;"
     },
     {
       "label": "STDB: Publish",

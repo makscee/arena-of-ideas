@@ -1,5 +1,6 @@
 use super::*;
-use bevy::{math::vec2, prelude::Query};
+use bevy::math::vec2;
+use bevy_egui::egui::Ui;
 use include_dir::Dir;
 
 #[derive(Debug, Clone, Copy, Display, EnumIter)]
@@ -162,6 +163,7 @@ impl Unit {
         let entity = commands.spawn_empty().set_parent(entity).id();
         UNIT_REP.get().unwrap().clone().unpack(entity, commands);
     }
+    fn ui(&self, ui: &mut Ui) {}
 }
 
 #[node]

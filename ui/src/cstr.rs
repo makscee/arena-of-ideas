@@ -1,4 +1,14 @@
+use std::str::FromStr;
+
+use bevy::{
+    log::{debug, error, info},
+    utils::hashbrown::HashMap,
+};
+use colored::{Colorize, CustomColor};
 use ecolor::Hsva;
+use egui::{text::LayoutJob, Label, Response, Style, TextFormat, Widget, WidgetText};
+use itertools::Itertools;
+use once_cell::sync::OnceCell;
 
 use super::*;
 
@@ -253,7 +263,6 @@ impl StyleState {
 #[derive(PartialEq, Clone, Copy)]
 enum ParseState {
     Token,
-    Var,
     Text,
     HexColor,
 }
@@ -275,7 +284,7 @@ fn cstr_parse_into_job(s: &str, alpha: f32, job: &mut LayoutJob, style: &Style) 
             }
             ']' => {
                 if parse_state == ParseState::Token {
-                    let s = cur.cstr_cs(name_color(&cur), CstrStyle::Bold);
+                    let s = cur.cstr_s(CstrStyle::Bold);
                     cstr_parse_into_job(&s, alpha, job, style);
                     parse_state = ParseState::Text;
                     cur.clear();
@@ -283,10 +292,6 @@ fn cstr_parse_into_job(s: &str, alpha: f32, job: &mut LayoutJob, style: &Style) 
                     style_state.append(&mut cur, alpha, job, style);
                     style_state.pop();
                 }
-            }
-            '$' => {
-                style_state.append(&mut cur, alpha, job, style);
-                parse_state = ParseState::Var;
             }
             '#' => {
                 if parse_state == ParseState::Token {
@@ -300,14 +305,6 @@ fn cstr_parse_into_job(s: &str, alpha: f32, job: &mut LayoutJob, style: &Style) 
                         style_state.push_token(&cur);
                         cur.clear();
                     }
-                    ParseState::Var => match VarName::from_str(&cur) {
-                        Ok(v) => {
-                            let s = format!("[vb {v}] ");
-                            cstr_parse_into_job(&s, alpha, job, style);
-                            cur.clear();
-                        }
-                        Err(e) => error!("Failed to parse var \"{cur}\": {e}"),
-                    },
                     ParseState::HexColor => {
                         match Color32::from_hex(&cur) {
                             Ok(c) => style_state.push(CstrStyle::Color(c)),
@@ -337,32 +334,6 @@ impl ToCstr for str {
         self.to_owned()
     }
 }
-impl ToCstr for VarName {
-    fn cstr(&self) -> Cstr {
-        self.as_ref().into()
-    }
-}
-impl ToCstr for TPlayer {
-    fn cstr(&self) -> Cstr {
-        let supporter_lvl = 0;
-        todo!(); //self.get_supporter_level();
-        let c = if supporter_lvl > 0 {
-            "★ ".cstr_c(rarity_color(supporter_lvl - 1))
-        } else {
-            Cstr::default()
-        };
-        c + &self.name.cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold)
-    }
-}
-impl ToCstr for GameMode {
-    fn cstr(&self) -> Cstr {
-        match self {
-            GameMode::ArenaNormal => "normal".cstr_c(VISIBLE_LIGHT),
-            GameMode::ArenaRanked => "ranked".cstr_c(YELLOW),
-            GameMode::ArenaConst => "const".cstr_c(CYAN),
-        }
-    }
-}
 impl ToCstr for u32 {
     fn cstr(&self) -> Cstr {
         self.to_string().cstr_c(VISIBLE_LIGHT)
@@ -378,6 +349,11 @@ impl ToCstr for i32 {
             -1 => format!("{self}").cstr_c(RED),
             _ => format!("{self}").cstr(),
         }
+    }
+}
+impl ToCstr for VarName {
+    fn cstr(&self) -> Cstr {
+        self.as_ref().into()
     }
 }
 impl ToCstr for VarValue {

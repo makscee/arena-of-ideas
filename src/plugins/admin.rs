@@ -22,11 +22,6 @@ impl AdminPlugin {
                     .unwrap()
             );
         }
-        Tile::new(Side::Left, |ui, world| {})
-            .pinned()
-            .transparent()
-            .no_expand()
-            .push(world);
     }
     fn setup(mut commands: Commands) {
         let house = houses().get("holy").unwrap().clone();

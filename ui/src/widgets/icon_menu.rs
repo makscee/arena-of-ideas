@@ -1,5 +1,8 @@
+use egui::{Id, Rounding, Stroke};
+
 use super::*;
 
+#[derive(Default)]
 pub struct IconMenu {
     icons: Vec<Icon>,
 }
@@ -10,37 +13,6 @@ struct Icon {
     on_click: fn(&mut World),
     indicator: Option<fn(&World) -> bool>,
     hint: &'static str,
-}
-
-impl Default for IconMenu {
-    fn default() -> Self {
-        Self {
-            icons: [
-                Icon {
-                    name: 'Q',
-                    color: YELLOW,
-                    on_click: QuestPlugin::popup,
-                    indicator: Some(|_| QuestPlugin::new_available()),
-                    hint: "Quests",
-                },
-                Icon {
-                    name: 'R',
-                    color: CYAN,
-                    on_click: todo!(),
-                    indicator: None,
-                    hint: "Rewards",
-                },
-                Icon {
-                    name: 'N',
-                    color: LIGHT_PURPLE,
-                    on_click: Notification::popup,
-                    indicator: None,
-                    hint: "Notification history",
-                },
-            ]
-            .into(),
-        }
-    }
 }
 
 impl IconMenu {

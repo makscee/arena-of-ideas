@@ -262,7 +262,7 @@ pub fn db_subscriptions() {
             delta.to_string()
         };
         Notification::new("Credits ".cstr_c(YELLOW) + &delta_txt.cstr_c(VISIBLE_LIGHT))
-            .sfx(SoundEffect::Coin)
+            // .sfx(SoundEffect::Coin)
             .push_op();
     });
     db.quest().on_insert(|_, d| {

@@ -1,5 +1,3 @@
-use egui::Sense;
-
 use super::*;
 
 pub struct Button {
@@ -14,8 +12,8 @@ pub struct Button {
 impl Default for Button {
     fn default() -> Self {
         Self {
-            name: default(),
-            title: default(),
+            name: Default::default(),
+            title: Default::default(),
             enabled: true,
             active: false,
             icon: None,
@@ -28,7 +26,7 @@ impl Button {
     pub fn new(name: impl Into<String>) -> Self {
         Self {
             name: name.into(),
-            ..default()
+            ..Default::default()
         }
     }
     pub fn color(self, color: Color32, ui: &mut Ui) -> Self {
@@ -60,19 +58,6 @@ impl Button {
     }
     pub fn title(mut self, text: String) -> Self {
         self.title = Some(text);
-        self
-    }
-    pub fn credits_cost(mut self, cost: i64) -> Self {
-        self.enabled = can_afford(cost);
-        self.title = Some(self.name.clone());
-        self.name = {
-            let mut c = cost.to_string().cstr_c(VISIBLE_LIGHT)
-                + &format!(" {CREDITS_SYM}").cstr_cs(YELLOW, CstrStyle::Bold);
-            if !self.enabled {
-                c = c.cstr_c(VISIBLE_DARK);
-            }
-            c
-        };
         self
     }
     pub fn icon(mut self, icon: Icon) -> Self {
@@ -128,7 +113,7 @@ impl Button {
                 .ui(ui)
         };
         if r.clicked() {
-            AudioPlugin::queue_sound(SoundEffect::Click);
+            // AudioPlugin::queue_sound(SoundEffect::Click);
         }
         ui.reset_style();
         r

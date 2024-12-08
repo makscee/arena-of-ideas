@@ -1,5 +1,3 @@
-use std::sync::RwLockWriteGuard;
-
 use spacetimedb_sdk::{Event, Table};
 
 use super::*;

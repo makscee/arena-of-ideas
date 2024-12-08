@@ -1,6 +1,7 @@
 use core::f32;
 
-use egui::TextureId;
+use bevy::utils::hashbrown::HashMap;
+use egui::{NumExt, TextureId};
 use egui_extras::{Column, TableBuilder};
 
 use super::*;
@@ -378,16 +379,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                     if id == 0 {
                         "...".cstr().label(ui);
                     } else {
-                        if id
-                            .get_player()
-                            .cstr()
-                            .as_button()
-                            .active(id == player_id())
-                            .ui(ui)
-                            .clicked()
-                        {
-                            TilePlugin::add_user(id, w);
-                        }
+                        if todo!("get player name and draw button") {}
                     }
                 }),
                 sortable: true,
@@ -421,24 +413,6 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
     }
     pub fn column_team(self, name: &'static str, id: fn(&T) -> u64) -> Self {
         self.column_team_dyn(name, Box::new(id))
-    }
-    pub fn column_rarity_dyn(mut self, value: Box<dyn Fn(&T) -> i32>) -> Self {
-        self.columns.insert(
-            "rarity",
-            TableColumn {
-                value: Box::new(move |d, _| value(d).into()),
-                show: Box::new(|_, v, ui, _| {
-                    let r = v.get_i32().unwrap() as u8;
-                    Rarity::from(r).cstr().label(ui);
-                }),
-                sortable: true,
-                hide_name: false,
-            },
-        );
-        self
-    }
-    pub fn column_rarity(self, value: fn(&T) -> i32) -> Self {
-        self.column_rarity_dyn(Box::new(value))
     }
     pub fn column_texture(mut self, tex: Box<dyn Fn(&T, &mut World) -> TextureId>) -> Self {
         self.columns.insert(

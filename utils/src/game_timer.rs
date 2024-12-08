@@ -1,8 +1,10 @@
+use std::sync::{Mutex, MutexGuard};
+
+use once_cell::sync::OnceCell;
+
 use super::*;
 
-lazy_static! {
-    static ref GAME_TIMER: Mutex<GameTimer> = Mutex::new(default());
-}
+static GAME_TIMER: OnceCell<Mutex<GameTimer>> = OnceCell::new();
 
 #[derive(Debug)]
 pub struct GameTimer {
@@ -13,6 +15,16 @@ pub struct GameTimer {
     batches: Vec<f32>,
     paused: bool,
     last_delta: f32,
+}
+
+pub struct GameTimerPlugin;
+impl Plugin for GameTimerPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(Startup, || {
+            GAME_TIMER.set(default()).unwrap();
+        })
+        .add_systems(Update, GameTimer::update);
+    }
 }
 
 impl Default for GameTimer {
@@ -30,7 +42,7 @@ impl Default for GameTimer {
 }
 
 pub fn gt() -> MutexGuard<'static, GameTimer> {
-    GAME_TIMER.lock().unwrap()
+    GAME_TIMER.get().unwrap().lock().unwrap()
 }
 
 impl GameTimer {
@@ -38,8 +50,12 @@ impl GameTimer {
         let t = self.play_head + offset;
         (t / period).floor() != ((t - self.last_delta) / period).floor()
     }
-    pub fn update(&mut self, delta: f32) {
-        self.advance_play(delta * self.playback_speed * (!self.paused as i32 as f32));
+    fn update(time: Res<Time>) {
+        let delta = time.delta_seconds();
+        let mut gt = gt();
+        let ps = gt.playback_speed;
+        let paused = gt.paused;
+        gt.advance_play(delta * ps * (!paused as i32 as f32));
     }
     pub fn pause(&mut self, value: bool) -> &mut Self {
         self.paused = value;

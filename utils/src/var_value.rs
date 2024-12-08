@@ -1,5 +1,3 @@
-use std::cmp::Ordering;
-
 use super::*;
 
 #[allow(non_camel_case_types)]

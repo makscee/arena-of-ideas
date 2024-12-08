@@ -64,7 +64,7 @@ impl CameraPlugin {
         let entity = world.spawn_empty().id();
         let data = CameraData {
             entity,
-            cur_scale: 30.0,
+            cur_scale: 15.0,
             need_scale: default(),
         };
         data.apply(&mut camera.projection);

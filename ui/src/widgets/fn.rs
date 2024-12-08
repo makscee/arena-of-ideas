@@ -128,37 +128,3 @@ pub fn cursor_window_frame(
             });
         });
 }
-pub fn status_selector(status: &mut String, ui: &mut Ui) -> bool {
-    todo!()
-}
-pub fn ability_selector(ability: &mut String, ui: &mut Ui) -> bool {
-    todo!()
-}
-pub fn summon_selector(summon: &mut String, ui: &mut Ui) -> bool {
-    todo!()
-}
-pub fn vfx_selector(vfx: &mut String, ui: &mut Ui) -> bool {
-    todo!()
-}
-pub fn var_selector(var: &mut VarName, ui: &mut Ui) -> bool {
-    todo!()
-}
-pub fn season_switcher(value: &mut u32, ui: &mut Ui) -> bool {
-    EnumSwitcher::new()
-        .prefix("Season ".cstr_c(VISIBLE_DARK))
-        .show_iter(value, 0..=global_settings().season, ui)
-}
-pub fn game_mode_switcher(value: &mut GameMode, ui: &mut Ui) -> bool {
-    EnumSwitcher::new()
-        .style(CstrStyle::Bold)
-        .columns()
-        .show_iter(
-            value,
-            [
-                GameMode::ArenaNormal,
-                GameMode::ArenaRanked,
-                GameMode::ArenaConst,
-            ],
-            ui,
-        )
-}

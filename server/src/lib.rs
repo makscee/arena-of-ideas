@@ -28,6 +28,7 @@ pub use rand::{distributions::Alphanumeric, seq::IteratorRandom, Rng};
 pub use spacetimedb::{
     eprintln, println, reducer, table, Identity, ReducerContext, SpacetimeType, Table, Timestamp,
 };
+use utils::*;
 pub use wallet::*;
 
 trait StrContext<T> {
@@ -87,11 +88,6 @@ impl AdminCheck for &ReducerContext {
 fn init(ctx: &ReducerContext) -> Result<(), String> {
     GlobalData::init(ctx);
     Ok(())
-}
-
-#[inline]
-pub fn default<T: Default>() -> T {
-    Default::default()
 }
 
 #[spacetimedb::reducer]

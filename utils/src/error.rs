@@ -1,5 +1,6 @@
 use bevy::color::HexColorError;
 use itertools::join;
+use thiserror::Error;
 
 use super::*;
 

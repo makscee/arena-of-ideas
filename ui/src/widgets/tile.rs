@@ -1,5 +1,3 @@
-use lerp::Lerp;
-
 use super::*;
 
 pub struct TilePlugin;
@@ -226,26 +224,11 @@ impl TilePlugin {
     fn clear_all(world: &mut World) {
         rm(world).tiles.clear();
     }
-    pub fn add_user(gid: u64, world: &mut World) {
-        Tile::new(Side::Right, move |ui, world| {
-            gid.get_player().show(1.0, ui, world);
-        })
-        .with_id(format!("user_{gid}"))
-        .push(world)
-    }
     pub fn is_open(id: &str, world: &World) -> bool {
         r(world).tiles.contains_key(id)
     }
     pub fn close(id: &str, world: &mut World) {
         rm(world).close_tiles.push(id.into());
-    }
-    pub fn change_state(to: GameState, world: &mut World) {
-        Self::clear_all(world);
-        match to {
-            GameState::Title => TitlePlugin::add_tiles(world),
-            // GameState::Players => PlayersPlugin::add_tiles(world),
-            _ => {}
-        }
     }
 }
 

@@ -1,4 +1,3 @@
-mod components;
 mod plugins;
 pub mod prelude;
 mod resources;
@@ -7,7 +6,7 @@ mod utils;
 
 use bevy::{
     diagnostic::FrameTimeDiagnosticsPlugin, log::LogPlugin, render::camera::ClearColor,
-    sprite::Material2dPlugin, state::app::AppExtStates,
+    state::app::AppExtStates,
 };
 use bevy_vector_shapes::{shapes, Shape2dPlugin};
 use clap::{command, Parser, ValueEnum};
@@ -74,7 +73,6 @@ fn main() {
     });
     app.insert_resource(ClearColor(EMPTINESS.to_color()))
         .add_systems(Startup, setup)
-        .add_systems(Update, update)
         .add_systems(OnEnter(GameState::Error), on_error_state)
         .add_plugins((default_plugins, FrameTimeDiagnosticsPlugin))
         .add_loading_state(
@@ -105,6 +103,7 @@ fn main() {
             CameraPlugin,
             NodeStatePlugin,
             RepresentationPlugin,
+            GameTimerPlugin,
         ))
         .add_plugins((
             OperationsPlugin,
@@ -135,10 +134,6 @@ fn setup(world: &mut World) {
     }
     parse_content_tree();
     CameraPlugin::respawn_camera(world);
-}
-
-fn update(time: Res<Time>) {
-    gt().update(time.delta_seconds())
 }
 
 fn on_error_state(world: &mut World) {

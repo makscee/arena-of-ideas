@@ -133,7 +133,7 @@ fn on_change(world: &mut World) {
         ctx.data_mut(|w| w.clear());
     }
     let to = cur_state(world);
-    TilePlugin::change_state(to, world);
+    // TilePlugin::change_state(to, world);
     // CameraPlugin::respawn_camera(world);
 }
 

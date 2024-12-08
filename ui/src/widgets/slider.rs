@@ -1,6 +1,6 @@
 use std::ops::RangeInclusive;
 
-use egui::emath::Numeric;
+use egui::{emath::Numeric, style::HandleShape};
 
 use super::*;
 

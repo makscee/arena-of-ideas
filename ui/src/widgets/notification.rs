@@ -6,7 +6,6 @@ use super::*;
 pub struct Notification {
     text: Cstr,
     r#type: NotificationType,
-    sfx: Option<SoundEffect>,
 }
 
 #[derive(Default, Clone, Debug)]
@@ -29,7 +28,6 @@ impl Notification {
         Self {
             text,
             r#type: default(),
-            sfx: None,
         }
     }
     pub fn error(mut self) -> Self {
@@ -37,18 +35,11 @@ impl Notification {
         self.text = "Error: ".cstr_c(RED) + &self.text;
         self
     }
-    pub fn sfx(mut self, sfx: SoundEffect) -> Self {
-        self.sfx = Some(sfx);
-        self
-    }
     pub fn push_op(self) {
         OperationsPlugin::add(|w| self.push(w));
     }
     pub fn push(self, world: &mut World) {
         self.text.info();
-        if let Some(sfx) = self.sfx {
-            AudioPlugin::queue_sound(sfx);
-        }
         let t = now_micros();
         let d = &mut world.resource_mut::<NotificationsResource>().shown;
         d.push_front((t, self));
