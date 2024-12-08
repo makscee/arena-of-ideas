@@ -1,5 +1,1 @@
-(
-    count: 1,
-    t: Text(text: Macro(S("[s hp: ][b [red %s]]"), Var(hp))),
-    modifiers: [Color(C("#37474F"))],
-)
+(t: Shape(shape: Circle(radius: F(1.0)), modifiers: [Hollow(B(true)), Thickness(F(0.03))]))

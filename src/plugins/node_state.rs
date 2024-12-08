@@ -12,7 +12,7 @@ impl Plugin for NodeStatePlugin {
 }
 
 impl NodeStatePlugin {
-    pub fn collect_vars(
+    fn collect_vars(
         mut nodes: Query<(Entity, &dyn GetVar, &GlobalTransform)>,
         mut commands: Commands,
     ) {

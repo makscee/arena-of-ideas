@@ -21,6 +21,7 @@ pub enum VarName {
     #[default]
     none,
     position,
+    offset,
     hp,
     pwr,
     data,

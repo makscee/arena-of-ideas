@@ -194,6 +194,7 @@ pub struct RMaterial {
 #[serde(deny_unknown_fields)]
 pub enum RModifier {
     Color(Expression),
+    Offset(Expression),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

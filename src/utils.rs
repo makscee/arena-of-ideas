@@ -291,11 +291,15 @@ impl ToBVec2 for Pos2 {
 
 pub trait ToPos2 {
     fn to_pos2(&self) -> Pos2;
+    fn to_evec2(&self) -> egui::Vec2;
 }
 
 impl ToPos2 for Vec2 {
     fn to_pos2(&self) -> Pos2 {
         pos2(self.x, self.y)
+    }
+    fn to_evec2(&self) -> egui::Vec2 {
+        egui::vec2(self.x, self.y)
     }
 }
 

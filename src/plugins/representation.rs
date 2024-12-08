@@ -1,4 +1,4 @@
-use bevy::{color::Alpha, math::Vec2Swizzles};
+use bevy::color::Alpha;
 
 use super::*;
 
@@ -38,6 +38,7 @@ impl RepresentationPlugin {
                 }
             }
             context.clear();
+            painter.reset();
         }
     }
     fn paint(
@@ -48,6 +49,11 @@ impl RepresentationPlugin {
         cam: (&Camera, &GlobalTransform),
         painter: &mut ShapePainter,
     ) -> Result<(), ExpressionError> {
+        let pos = context.get_var(VarName::position).to_e()?.get_vec2()?
+            + context
+                .get_var(VarName::offset)
+                .and_then(|v| v.get_vec2().ok())
+                .unwrap_or_default();
         match &m.t {
             MaterialType::Shape { shape, modifiers } => {
                 for m in modifiers {
@@ -56,6 +62,7 @@ impl RepresentationPlugin {
                         Err(e) => error!("Modifier error: {e}"),
                     }
                 }
+                painter.set_translation(pos.extend(0.0));
                 match shape {
                     Shape::Rectangle { size } => {
                         painter.rect(size.get_vec2(e, context)?);
@@ -67,13 +74,12 @@ impl RepresentationPlugin {
             }
             MaterialType::Text { text } => {
                 let index = context.get_var(VarName::index).to_e()?;
-                let pos = context.get_var(VarName::position).to_e()?.get_vec2()?;
                 let pos = world_to_screen_cam(pos.extend(0.0), &cam.0, &cam.1);
                 let text = text.get_string(e, context)?;
                 let color = context.get_var(VarName::color).to_e()?.get_color()?.c32();
                 Area::new(Id::new(e).with(index))
+                    .pivot(Align2::CENTER_CENTER)
                     .fixed_pos(pos.to_pos2())
-                    .anchor(Align2::CENTER_CENTER, egui::Vec2::ZERO)
                     .show(ctx, |ui| {
                         text.cstr_c(color).label(ui);
                     });
@@ -90,9 +96,8 @@ trait RModifierApply {
 impl RModifierApply for RModifier {
     fn apply(&self, e: Entity, context: &mut Context) -> Result<(), ExpressionError> {
         match self {
-            RModifier::Color(x) => {
-                context.set_var(VarName::color, x.get_value(e, context)?);
-            }
+            RModifier::Color(x) => context.set_var(VarName::color, x.get_value(e, context)?),
+            RModifier::Offset(x) => context.set_var(VarName::offset, x.get_value(e, context)?),
         }
         Ok(())
     }
