@@ -28,6 +28,7 @@ pub enum Expression {
     Fract(Box<Expression>),
     Sqr(Box<Expression>),
 
+    Macro(Box<Expression>, Box<Expression>),
     Sum(Box<Expression>, Box<Expression>),
     Sub(Box<Expression>, Box<Expression>),
     Mul(Box<Expression>, Box<Expression>),
@@ -40,6 +41,8 @@ pub enum Expression {
     Equals(Box<Expression>, Box<Expression>),
     GreaterThen(Box<Expression>, Box<Expression>),
     LessThen(Box<Expression>, Box<Expression>),
+
+    If(Box<Expression>, Box<Expression>, Box<Expression>),
 }
 
 impl std::hash::Hash for Expression {
@@ -66,7 +69,8 @@ impl std::hash::Hash for Expression {
             | Expression::Floor(e)
             | Expression::Ceil(e)
             | Expression::Fract(e) => e.hash(state),
-            Expression::Sum(a, b)
+            Expression::Macro(a, b)
+            | Expression::Sum(a, b)
             | Expression::Sub(a, b)
             | Expression::Mul(a, b)
             | Expression::Div(a, b)
@@ -80,6 +84,11 @@ impl std::hash::Hash for Expression {
             | Expression::LessThen(a, b) => {
                 a.hash(state);
                 b.hash(state);
+            }
+            Expression::If(i, t, e) => {
+                i.hash(state);
+                t.hash(state);
+                e.hash(state);
             }
         }
     }

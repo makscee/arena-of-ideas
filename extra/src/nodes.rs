@@ -181,28 +181,43 @@ pub struct Representation {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(deny_unknown_fields)]
 pub struct RMaterial {
     pub t: MaterialType,
     #[serde(default)]
     pub count: u32,
+    #[serde(default)]
+    pub modifiers: Vec<RModifier>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub enum RModifier {
+    Color(Expression),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub enum MaterialType {
     Shape {
         shape: Shape,
         #[serde(default)]
         modifiers: Vec<ShapeModifier>,
     },
+    Text {
+        text: Expression,
+    },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub enum Shape {
     Rectangle { size: Expression },
     Circle { radius: Expression },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub enum ShapeModifier {
     Rotation(Expression),
     Scale(Expression),

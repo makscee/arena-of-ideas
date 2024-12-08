@@ -9,6 +9,7 @@ pub trait ExpressionImpl {
     fn get_vec2(&self, e: Entity, context: &Context) -> Result<Vec2, ExpressionError>;
     fn get_bool(&self, e: Entity, context: &Context) -> Result<bool, ExpressionError>;
     fn get_color(&self, e: Entity, context: &Context) -> Result<Color, ExpressionError>;
+    fn get_string(&self, e: Entity, context: &Context) -> Result<String, ExpressionError>;
 }
 
 impl ExpressionImpl for Expression {
@@ -38,6 +39,11 @@ impl ExpressionImpl for Expression {
                 let x = x.get_f32(e, context)?;
                 (x * x).into()
             }),
+            Expression::Macro(s, v) => {
+                let s = s.get_string(e, context)?;
+                let v = v.get_string(e, context)?;
+                Ok(s.replace("%s", &v).into())
+            }
             Expression::Sum(a, b) => a.get_value(e, context)?.add(&b.get_value(e, context)?),
             Expression::Sub(a, b) => a.get_value(e, context)?.sub(&b.get_value(e, context)?),
             Expression::Mul(a, b) => a.get_value(e, context)?.mul(&b.get_value(e, context)?),
@@ -60,6 +66,13 @@ impl ExpressionImpl for Expression {
                 VarValue::compare(&a.get_value(e, context)?, &b.get_value(e, context)?)?,
                 std::cmp::Ordering::Less
             ))),
+            Expression::If(i, t, el) => {
+                if i.get_bool(e, context)? {
+                    t.get_value(e, context)
+                } else {
+                    el.get_value(e, context)
+                }
+            }
         }
     }
     fn get_f32(&self, e: Entity, context: &Context) -> Result<f32, ExpressionError> {
@@ -76,5 +89,8 @@ impl ExpressionImpl for Expression {
     }
     fn get_color(&self, e: Entity, context: &Context) -> Result<Color, ExpressionError> {
         self.get_value(e, context)?.get_color()
+    }
+    fn get_string(&self, e: Entity, context: &Context) -> Result<String, ExpressionError> {
+        self.get_value(e, context)?.get_string()
     }
 }

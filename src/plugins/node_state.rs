@@ -1,4 +1,4 @@
-use bevy::{app::PreUpdate, prelude::Commands};
+use bevy::{app::PreUpdate, math::Vec3Swizzles, prelude::Commands};
 
 use super::*;
 
@@ -12,9 +12,13 @@ impl Plugin for NodeStatePlugin {
 }
 
 impl NodeStatePlugin {
-    pub fn collect_vars(mut nodes: Query<(Entity, &dyn GetVar)>, mut commands: Commands) {
-        for (e, gv) in &mut nodes {
+    pub fn collect_vars(
+        mut nodes: Query<(Entity, &dyn GetVar, &GlobalTransform)>,
+        mut commands: Commands,
+    ) {
+        for (e, gv, t) in &mut nodes {
             let mut vars: HashMap<VarName, VarValue> = default();
+            vars.insert(VarName::position, t.translation().xy().into());
             for v in gv {
                 vars.extend(v.get_all_vars());
             }

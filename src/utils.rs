@@ -128,15 +128,18 @@ pub fn world_to_screen(pos: Vec3, world: &World) -> Vec2 {
     let transform = entity.get::<GlobalTransform>().unwrap();
     camera.world_to_viewport(transform, pos).unwrap_or_default()
 }
+pub fn world_to_screen_cam(pos: Vec3, cam: &Camera, cam_transform: &GlobalTransform) -> Vec2 {
+    cam.world_to_viewport(cam_transform, pos)
+        .unwrap_or_default()
+}
 pub fn screen_to_world(pos: Vec2, world: &World) -> Vec2 {
     let entity = CameraPlugin::entity(world);
     let camera = world.get::<Camera>(entity).unwrap();
     let transform = world.get::<GlobalTransform>(entity).unwrap();
     screen_to_world_cam(pos, camera, transform)
 }
-pub fn screen_to_world_cam(pos: Vec2, camera: &Camera, transform: &GlobalTransform) -> Vec2 {
-    camera
-        .viewport_to_world_2d(transform, pos)
+pub fn screen_to_world_cam(pos: Vec2, cam: &Camera, cam_transform: &GlobalTransform) -> Vec2 {
+    cam.viewport_to_world_2d(cam_transform, pos)
         .unwrap_or_default()
 }
 pub fn cursor_pos(world: &mut World) -> Option<Vec2> {

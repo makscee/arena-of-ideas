@@ -45,7 +45,7 @@ pub fn default<T: Default>() -> T {
     Default::default()
 }
 
-#[derive(SystemParam)]
+#[derive(SystemParam, Debug)]
 pub struct StateQuery<'w, 's> {
     states: Query<'w, 's, (Entity, &'static NodeState, Option<&'static Parent>)>,
 }

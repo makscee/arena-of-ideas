@@ -20,6 +20,7 @@ use super::*;
 pub enum VarName {
     #[default]
     none,
+    position,
     hp,
     pwr,
     data,

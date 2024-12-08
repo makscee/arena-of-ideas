@@ -1,13 +1,5 @@
 (
-    count: 1000,
-    t: Shape(
-        shape: Rectangle(size: Sum(Mul(F(0.01), Var(index)), Sin(GT))),
-        modifiers: [
-            Rotation(Mul(F(0.001), GT)),
-            Color(Var(color)),
-            Hollow(B(true)),
-            Thickness(F(0.01)),
-            Alpha(F(0.1)),
-        ],
-    ),
+    count: 1,
+    t: Text(text: Macro(S("[s hp: ][b [red %s]]"), Var(hp))),
+    modifiers: [Color(C("#37474F"))],
 )

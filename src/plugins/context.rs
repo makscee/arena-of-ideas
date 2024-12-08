@@ -1,10 +1,12 @@
 use super::*;
 
+#[derive(Debug)]
 pub struct Context<'w, 's> {
     state: StateQuery<'w, 's>,
     layers: Vec<ContextLayer>,
 }
 
+#[derive(Debug)]
 enum ContextLayer {
     Owner(Entity),
     Var(VarName, VarValue),
