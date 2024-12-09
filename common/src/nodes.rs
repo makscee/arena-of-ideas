@@ -2,6 +2,7 @@ use super::*;
 use bevy::math::vec2;
 use bevy_egui::egui::Ui;
 use include_dir::Dir;
+use ui::Show;
 
 #[derive(Debug, Clone, Copy, Display, EnumIter)]
 pub enum NodeKind {
@@ -40,6 +41,7 @@ impl NodeKind {
 #[bevy_trait_query::queryable]
 pub trait GetVar {
     fn get_var(&self, var: VarName) -> Option<VarValue>;
+    fn set_var(&mut self, var: VarName, value: VarValue);
     fn get_all_vars(&self) -> Vec<(VarName, VarValue)>;
 }
 
@@ -92,6 +94,23 @@ pub trait Node: Default + Component + Sized + GetVar {
     fn find_up<'a, T: Component>(&self, world: &'a World) -> Option<&'a T> {
         let entity = self.entity().expect("Node not linked to world");
         Self::find_up_entity::<T>(entity, world)
+    }
+    fn find_child_entity<T: Component>(entity: Entity, world: &World) -> Option<&T> {
+        for c in get_children(entity, world) {
+            if let Some(t) = world.get::<T>(c) {
+                return Some(t);
+            }
+        }
+        None
+    }
+    fn find_child<'a, T: Component>(&self, world: &'a World) -> Option<&'a T> {
+        let entity = self.entity().expect("Node not linked to world");
+        Self::find_child_entity(entity, world)
+    }
+    fn show(&self, ui: &mut Ui) {
+        for (var, value) in self.get_all_vars() {
+            value.show(Some(&var.to_string()), ui);
+        }
     }
 }
 
@@ -163,7 +182,6 @@ impl Unit {
         let entity = commands.spawn_empty().set_parent(entity).id();
         UNIT_REP.get().unwrap().clone().unpack(entity, commands);
     }
-    fn ui(&self, ui: &mut Ui) {}
 }
 
 #[node]

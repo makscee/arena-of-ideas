@@ -179,6 +179,16 @@ pub fn node(args: TokenStream, item: TokenStream) -> TokenStream {
                         };
                         None
                     }
+                    fn set_var(&mut self, var: VarName, value: VarValue) {
+                        match var {
+                            #(
+                                VarName::#var_fields => {
+                                    self.#var_fields = value.into();
+                                }
+                            )*
+                            _ => {error!("Var {var} not present in {}", self.kind())}
+                        }
+                    }
                     fn get_all_vars(&self) -> Vec<(VarName, VarValue)> {
                         vec![#(
                             (VarName::#var_fields, VarValue::#var_types(self.#var_fields.clone()))

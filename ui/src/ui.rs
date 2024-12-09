@@ -1,9 +1,8 @@
 use bevy::{app::Startup, prelude::Query};
 use bevy_egui::EguiContext;
-use color_hex::color_from_hex;
 use egui::{
     style::{HandleShape, Spacing, WidgetVisuals, Widgets},
-    FontData, FontDefinitions, FontFamily, Id, Margin, Pos2, Rect, Rounding, Shadow, Stroke,
+    FontData, FontDefinitions, FontFamily, Margin, Rounding, Shadow, Stroke,
 };
 
 use super::*;

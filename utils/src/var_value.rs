@@ -263,9 +263,19 @@ impl From<i32> for VarValue {
         VarValue::i32(value)
     }
 }
+impl Into<i32> for VarValue {
+    fn into(self) -> i32 {
+        self.get_i32().unwrap()
+    }
+}
 impl From<f32> for VarValue {
     fn from(value: f32) -> Self {
         VarValue::f32(value)
+    }
+}
+impl Into<f32> for VarValue {
+    fn into(self) -> f32 {
+        self.get_f32().unwrap()
     }
 }
 impl From<u64> for VarValue {
@@ -273,9 +283,19 @@ impl From<u64> for VarValue {
         VarValue::u64(value)
     }
 }
+impl Into<u64> for VarValue {
+    fn into(self) -> u64 {
+        self.get_u64().unwrap()
+    }
+}
 impl From<bool> for VarValue {
     fn from(value: bool) -> Self {
         VarValue::bool(value)
+    }
+}
+impl Into<bool> for VarValue {
+    fn into(self) -> bool {
+        self.get_bool().unwrap()
     }
 }
 impl From<String> for VarValue {
@@ -283,13 +303,28 @@ impl From<String> for VarValue {
         VarValue::String(value)
     }
 }
+impl Into<String> for VarValue {
+    fn into(self) -> String {
+        self.get_string().unwrap()
+    }
+}
 impl From<Color> for VarValue {
     fn from(value: Color) -> Self {
         VarValue::Color(value)
     }
 }
+impl Into<Color> for VarValue {
+    fn into(self) -> Color {
+        self.get_color().unwrap()
+    }
+}
 impl From<Vec2> for VarValue {
     fn from(value: Vec2) -> Self {
         VarValue::Vec2(value)
+    }
+}
+impl Into<Vec2> for VarValue {
+    fn into(self) -> Vec2 {
+        self.get_vec2().unwrap()
     }
 }

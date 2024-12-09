@@ -1,5 +1,5 @@
 use bevy::ecs::system::SystemParam;
-use bevy::prelude::Query;
+use bevy::prelude::{Children, Query};
 use bevy::{
     app::App,
     ecs::component::*,
@@ -38,14 +38,23 @@ pub fn default<T: Default>() -> T {
 
 #[derive(SystemParam, Debug)]
 pub struct StateQuery<'w, 's> {
-    states: Query<'w, 's, (Entity, &'static NodeState, Option<&'static Parent>)>,
+    states: Query<
+        'w,
+        's,
+        (
+            Entity,
+            &'static NodeState,
+            Option<&'static Parent>,
+            Option<&'static Children>,
+        ),
+    >,
 }
 
 impl<'w, 's> StateQuery<'w, 's> {
     pub fn get_state(&self, entity: Entity) -> Option<&NodeState> {
-        self.states.get(entity).map(|(_, s, _)| s).ok()
+        self.states.get(entity).map(|(_, s, _, _)| s).ok()
     }
     pub fn get_parent(&self, entity: Entity) -> Option<&Parent> {
-        self.states.get(entity).ok().and_then(|(_, _, p)| p)
+        self.states.get(entity).ok().and_then(|(_, _, p, _)| p)
     }
 }

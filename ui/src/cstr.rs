@@ -59,7 +59,7 @@ impl CstrTrait for Cstr {
         self.as_button().ui(ui)
     }
     fn as_button(self) -> Button {
-        Button::new(self.clone())
+        Button::new(self)
     }
     fn get_text(&self) -> String {
         let mut job: LayoutJob = default();

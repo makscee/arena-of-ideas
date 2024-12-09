@@ -6,7 +6,7 @@ mod var_value;
 
 use bevy::prelude::*;
 use bevy_egui::{
-    egui::{self, Color32, Id, Response, TextureId, Ui},
+    egui::{self, pos2, Color32, Id, Pos2, Response, TextureId, Ui},
     EguiContext,
 };
 use humanize_duration::prelude::DurationExt;
@@ -209,4 +209,50 @@ pub fn show_texture(size: f32, texture: TextureId, ui: &mut Ui) -> Response {
         texture,
         egui::vec2(size, size),
     ))
+}
+
+pub trait ToBVec2 {
+    fn to_bvec2(&self) -> Vec2;
+}
+
+impl ToBVec2 for Pos2 {
+    fn to_bvec2(&self) -> Vec2 {
+        vec2(self.x, self.y)
+    }
+}
+
+pub trait ToPos2 {
+    fn to_pos2(&self) -> Pos2;
+    fn to_evec2(&self) -> egui::Vec2;
+}
+
+impl ToPos2 for Vec2 {
+    fn to_pos2(&self) -> Pos2 {
+        pos2(self.x, self.y)
+    }
+    fn to_evec2(&self) -> egui::Vec2 {
+        egui::vec2(self.x, self.y)
+    }
+}
+
+pub trait ToColor {
+    fn to_color(&self) -> Color;
+}
+
+impl ToColor for Color32 {
+    fn to_color(&self) -> Color {
+        let a = self.to_array();
+        Color::srgba_u8(a[0], a[1], a[2], a[3])
+    }
+}
+
+pub trait ToC32 {
+    fn c32(&self) -> Color32;
+}
+
+impl ToC32 for Color {
+    fn c32(&self) -> Color32 {
+        let c = self.to_srgba().to_u8_array();
+        Color32::from_rgba_unmultiplied(c[0], c[1], c[2], c[3])
+    }
 }

@@ -25,9 +25,6 @@ impl Rarity {
     pub fn color(self) -> Color32 {
         RARITY_COLORS[self as usize]
     }
-    pub fn from_base(name: &str) -> Self {
-        todo!()
-    }
 }
 
 impl ToCstr for Rarity {
