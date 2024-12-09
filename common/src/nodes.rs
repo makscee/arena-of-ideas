@@ -1,10 +1,11 @@
 use super::*;
-use bevy::math::vec2;
+use bevy::{color::Color, math::vec2};
 use bevy_egui::egui::Ui;
 use include_dir::Dir;
 use ui::Show;
 
-#[derive(Debug, Clone, Copy, Display, EnumIter)]
+#[derive(Debug, Clone, Copy, Display, EnumIter, Reflect)]
+#[node_kinds]
 pub enum NodeKind {
     House,
     HouseColor,
@@ -18,36 +19,21 @@ pub enum NodeKind {
     UnitTrigger,
 }
 
-impl NodeKind {
-    pub fn register(self, app: &mut App) {
-        use bevy_trait_query::RegisterExt;
-        match self {
-            NodeKind::House => app.register_component_as::<dyn GetVar, House>(),
-            NodeKind::HouseColor => app.register_component_as::<dyn GetVar, HouseColor>(),
-            NodeKind::Ability => app.register_component_as::<dyn GetVar, Ability>(),
-            NodeKind::AbilityDescription => {
-                app.register_component_as::<dyn GetVar, AbilityDescription>()
-            }
-            NodeKind::AbilityEffect => app.register_component_as::<dyn GetVar, AbilityEffect>(),
-            NodeKind::Unit => app.register_component_as::<dyn GetVar, Unit>(),
-            NodeKind::UnitDescription => app.register_component_as::<dyn GetVar, UnitDescription>(),
-            NodeKind::UnitStats => app.register_component_as::<dyn GetVar, UnitStats>(),
-            NodeKind::Representation => app.register_component_as::<dyn GetVar, Representation>(),
-            NodeKind::UnitTrigger => app.register_component_as::<dyn GetVar, UnitTrigger>(),
-        };
-    }
-}
-
 #[bevy_trait_query::queryable]
-pub trait GetVar {
+pub trait GetVar: GetNodeKind {
     fn get_var(&self, var: VarName) -> Option<VarValue>;
     fn set_var(&mut self, var: VarName, value: VarValue);
     fn get_all_vars(&self) -> Vec<(VarName, VarValue)>;
 }
 
+pub trait GetNodeKind {
+    fn kind(&self) -> NodeKind;
+}
+
 #[derive(Component, Reflect)]
 pub struct NodeState {
     pub vars: HashMap<VarName, VarValue>,
+    pub source: HashMap<VarName, NodeKind>,
 }
 
 impl NodeState {
@@ -68,7 +54,6 @@ impl NodeState {
 }
 
 pub trait Node: Default + Component + Sized + GetVar {
-    fn kind(&self) -> NodeKind;
     fn entity(&self) -> Option<Entity>;
     fn inject_data(&mut self, data: &str);
     fn get_data(&self) -> String;
@@ -95,23 +80,22 @@ pub trait Node: Default + Component + Sized + GetVar {
         let entity = self.entity().expect("Node not linked to world");
         Self::find_up_entity::<T>(entity, world)
     }
-    fn find_child_entity<T: Component>(entity: Entity, world: &World) -> Option<&T> {
-        for c in get_children(entity, world) {
-            if let Some(t) = world.get::<T>(c) {
-                return Some(t);
-            }
-        }
-        None
+    fn collect_children_entity<T: Component>(entity: Entity, world: &World) -> Vec<&T> {
+        get_children(entity, world)
+            .into_iter()
+            .filter_map(|c| world.get::<T>(c))
+            .collect_vec()
     }
-    fn find_child<'a, T: Component>(&self, world: &'a World) -> Option<&'a T> {
+    fn collect_children<'a, T: Component>(&self, world: &'a World) -> Vec<&'a T> {
         let entity = self.entity().expect("Node not linked to world");
-        Self::find_child_entity(entity, world)
+        Self::collect_children_entity(entity, world)
     }
-    fn show(&self, ui: &mut Ui) {
+    fn show_self(&self, ui: &mut Ui) {
         for (var, value) in self.get_all_vars() {
             value.show(Some(&var.to_string()), ui);
         }
     }
+    fn show(&self, ui: &mut Ui, world: &World);
 }
 
 #[node]

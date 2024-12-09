@@ -28,11 +28,11 @@ impl AdminPlugin {
         dbg!(&house);
         house.unpack(commands.spawn_empty().id(), &mut commands);
     }
-    fn ui(query: Query<&Unit>, mut ctx: Query<&mut EguiContext>) {
-        let ctx = ctx.single_mut().into_inner().get_mut();
-        for unit in query.iter() {
-            Window::new("Unit").show(ctx, |ui| {
-                unit.show(ui);
+    fn ui(world: &mut World) {
+        let ctx = &egui_context(world).unwrap();
+        for n in world.query::<&House>().iter(world) {
+            Window::new("Inspector").show(ctx, |ui| {
+                n.show(ui, world);
             });
         }
     }

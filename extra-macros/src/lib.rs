@@ -1,4 +1,5 @@
 use darling::FromMeta;
+use itertools::Itertools;
 use parse::Parser;
 use proc_macro::TokenStream;
 use punctuated::Punctuated;
@@ -92,6 +93,7 @@ pub fn node(args: TokenStream, item: TokenStream) -> TokenStream {
                         } else if type_ident == "i32"
                             || type_ident == "f32"
                             || type_ident == "String"
+                            || type_ident == "Color"
                         {
                             var_fields.push(field_ident.clone());
                             var_types.push(ty.clone());
@@ -163,6 +165,11 @@ pub fn node(args: TokenStream, item: TokenStream) -> TokenStream {
                         write!(f, "{}", self.kind())
                     }
                 }
+                impl GetNodeKind for #struct_ident {
+                    fn kind(&self) -> NodeKind {
+                        NodeKind::#struct_ident
+                    }
+                }
                 impl GetVar for #struct_ident {
                     fn get_var(&self, var: VarName) -> Option<VarValue> {
                         match var {
@@ -198,9 +205,6 @@ pub fn node(args: TokenStream, item: TokenStream) -> TokenStream {
                 impl Node for #struct_ident {
                     fn entity(&self) -> Option<Entity> {
                         self.entity
-                    }
-                    fn kind(&self) -> NodeKind {
-                        NodeKind::#struct_ident
                     }
                     fn get_data(&self) -> String {
                         ron::to_string(&(#(&self.#data_fields),*)).unwrap()
@@ -241,6 +245,28 @@ pub fn node(args: TokenStream, item: TokenStream) -> TokenStream {
                         )*
                         commands.entity(entity).insert((TransformBundle::default(), VisibilityBundle::default(), self));
                     }
+                    fn show(&self, ui: &mut Ui, world: &World) {
+                        self.show_self(ui);
+                        #(
+                            if let Some(d) = &self.#option_link_fields {
+                                d.show(ui, world);
+                            } else {
+                                if let Some(c) = world.get::<#option_link_types>(self.entity.unwrap()) {
+                                    c.show(ui, world);
+                                }
+                            }
+                        )*
+                        #(
+                            ui.collapsing(#vec_link_fields_str, |ui| {
+                                for c in &self.#vec_link_fields {
+                                    c.show(ui, world);
+                                }
+                                for c in self.collect_children::<#vec_link_types>(world) {
+                                    c.show(ui, world);
+                                }
+                            });
+                        )*
+                    }
                 }
                 impl From<&str> for #struct_ident {
                     fn from(value: &str) -> Self {
@@ -253,4 +279,38 @@ pub fn node(args: TokenStream, item: TokenStream) -> TokenStream {
     };
     // println!("{}\n", result.to_string());
     result.into()
+}
+
+#[proc_macro_attribute]
+pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
+    let mut input = parse_macro_input!(item as syn::DeriveInput);
+    let struct_ident = &input.ident;
+    match &mut input.data {
+        Data::Enum(DataEnum {
+            enum_token: _,
+            brace_token: _,
+            variants,
+        }) => {
+            let variants = variants.iter().map(|v| v.ident.clone()).collect_vec();
+            quote! {
+                #input
+                impl NodeKind {
+                    pub fn register(self, app: &mut App) {
+                        use bevy_trait_query::RegisterExt;
+                        match self {
+                            #(#struct_ident::#variants => app.register_component_as::<dyn GetVar, #variants>(),)*
+                        };
+                    }
+                    pub fn set_var(self, entity: Entity, var: VarName, value: VarValue, world: &mut World) {
+                        match self {
+                            #(#struct_ident::#variants => {
+                                world.get_mut::<#variants>(entity).unwrap().set_var(var, value);
+                            })*
+                        }
+                    }
+                }
+            }.into()
+        }
+        _ => unimplemented!(),
+    }
 }
