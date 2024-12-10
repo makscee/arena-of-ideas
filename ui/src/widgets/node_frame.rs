@@ -1,4 +1,4 @@
-use egui::Shadow;
+use egui::{CollapsingHeader, Shadow};
 
 use super::*;
 
@@ -45,7 +45,7 @@ impl NodeFrame {
             let mut trounding = Rounding {
                 nw: 13.0,
                 ne: 0.0,
-                sw: 0.0,
+                sw: 13.0,
                 se: 13.0,
             };
             const MARGIN: Margin = Margin {
@@ -71,19 +71,30 @@ impl NodeFrame {
                     });
                 trounding.nw = 0.0;
             }
-            Frame::none()
-                .fill(self.color)
-                .inner_margin(MARGIN)
-                .rounding(trounding)
-                .show(ui, |ui| {
-                    self.type_name.cstr_cs(fill, CstrStyle::Small).label(ui);
-                });
-            ui.set_min_width(ui.available_width());
-            Frame::none()
-                .inner_margin(Margin::same(8.0))
-                .show(ui, |ui| {
-                    content(ui);
-                });
+            let visuals = &mut ui.visuals_mut().widgets;
+            visuals.inactive.rounding = trounding;
+            visuals.hovered.rounding = trounding;
+            visuals.active.rounding = trounding;
+            visuals.inactive.weak_bg_fill = self.color;
+            visuals.hovered.weak_bg_fill = YELLOW;
+            visuals.active.weak_bg_fill = VISIBLE_BRIGHT;
+            visuals.inactive.bg_stroke = Stroke::NONE;
+            visuals.hovered.weak_bg_fill = YELLOW;
+            CollapsingHeader::new(
+                self.type_name
+                    .cstr_cs(fill, CstrStyle::Small)
+                    .widget(1.0, ui),
+            )
+            .show_background(true)
+            .default_open(true)
+            .show_unindented(ui, |ui| {
+                ui.set_min_width(ui.available_width());
+                Frame::none()
+                    .inner_margin(Margin::same(8.0))
+                    .show(ui, |ui| {
+                        content(ui);
+                    });
+            });
         });
     }
 }

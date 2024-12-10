@@ -34,6 +34,7 @@ impl AdminPlugin {
             Window::new("Inspector")
                 .title_bar(false)
                 .frame(Frame::none())
+                .resizable([true, false])
                 .show(ctx, |ui| {
                     n.ui(0, ui, world);
                 });
