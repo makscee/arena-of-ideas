@@ -3,12 +3,14 @@ use egui::ComboBox;
 use super::*;
 
 pub struct Selector {
-    name: &'static str,
+    name: String,
 }
 
 impl Selector {
-    pub fn new(name: &'static str) -> Self {
-        Self { name }
+    pub fn new(name: impl ToString) -> Self {
+        Self {
+            name: name.to_string(),
+        }
     }
     pub fn ui_enum<E: ToCstr + IntoEnumIterator + Clone + PartialEq>(
         self,

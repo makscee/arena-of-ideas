@@ -1,8 +1,7 @@
 use super::*;
-use bevy::{color::Color, math::vec2};
-use bevy_egui::egui::Ui;
+use ::ui::{NodeFrame, Show, VISIBLE_LIGHT};
+use bevy_egui::egui::{Color32, Ui};
 use include_dir::Dir;
-use ui::Show;
 
 #[derive(Debug, Clone, Copy, Display, EnumIter, Reflect)]
 #[node_kinds]
@@ -37,7 +36,7 @@ pub struct NodeState {
 }
 
 impl NodeState {
-    pub fn get_var_e(var: VarName, entity: Entity, state: &StateQuery) -> Option<VarValue> {
+    pub fn get_var_state(var: VarName, entity: Entity, state: &StateQuery) -> Option<VarValue> {
         let v = state
             .get_state(entity)
             .and_then(|s| s.vars.get(&var).cloned());
@@ -45,7 +44,21 @@ impl NodeState {
             v
         } else {
             if let Some(p) = state.get_parent(entity) {
-                Self::get_var_e(var, p.get(), state)
+                Self::get_var_state(var, p, state)
+            } else {
+                None
+            }
+        }
+    }
+    pub fn get_var_world(var: VarName, entity: Entity, world: &World) -> Option<VarValue> {
+        let v = world
+            .get::<NodeState>(entity)
+            .and_then(|s| s.vars.get(&var).cloned());
+        if v.is_some() {
+            v
+        } else {
+            if let Some(p) = get_parent(entity, world) {
+                Self::get_var_world(var, p, world)
             } else {
                 None
             }
@@ -53,7 +66,7 @@ impl NodeState {
     }
 }
 
-pub trait Node: Default + Component + Sized + GetVar {
+pub trait Node: Default + Component + Sized + GetVar + Show {
     fn entity(&self) -> Option<Entity>;
     fn inject_data(&mut self, data: &str);
     fn get_data(&self) -> String;
@@ -90,12 +103,31 @@ pub trait Node: Default + Component + Sized + GetVar {
         let entity = self.entity().expect("Node not linked to world");
         Self::collect_children_entity(entity, world)
     }
-    fn show_self(&self, ui: &mut Ui) {
-        for (var, value) in self.get_all_vars() {
-            value.show(Some(&var.to_string()), ui);
+    fn ui_self(
+        &self,
+        depth: usize,
+        color: Option<Color32>,
+        ui: &mut Ui,
+        inner: impl FnOnce(&mut Ui),
+    ) {
+        NodeFrame::new(self.kind().to_string(), color.unwrap_or(VISIBLE_LIGHT))
+            .title(
+                self.get_var(VarName::name)
+                    .and_then(|v| v.get_string().ok()),
+            )
+            .depth(depth)
+            .ui(ui, |ui| {
+                inner(ui);
+            });
+    }
+    fn ui_self_mut(&mut self, ui: &mut Ui) {
+        for (var, mut value) in self.get_all_vars() {
+            if value.show_mut(Some(&var.to_string()), ui) {
+                self.set_var(var, value);
+            }
         }
     }
-    fn show(&self, ui: &mut Ui, world: &World);
+    fn ui(&self, depth: usize, ui: &mut Ui, world: &World);
 }
 
 #[node]
@@ -191,72 +223,9 @@ pub struct Representation {
     pub children: Vec<Box<Representation>>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
-#[serde(deny_unknown_fields)]
-pub struct RMaterial {
-    pub t: MaterialType,
-    #[serde(default)]
-    pub count: u32,
-    #[serde(default)]
-    pub modifiers: Vec<RModifier>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub enum RModifier {
-    Color(Expression),
-    Offset(Expression),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub enum MaterialType {
-    Shape {
-        shape: Shape,
-        #[serde(default)]
-        modifiers: Vec<ShapeModifier>,
-    },
-    Text {
-        text: Expression,
-    },
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub enum Shape {
-    Rectangle { size: Expression },
-    Circle { radius: Expression },
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub enum ShapeModifier {
-    Rotation(Expression),
-    Scale(Expression),
-    Color(Expression),
-    Hollow(Expression),
-    Thickness(Expression),
-    Roundness(Expression),
-    Alpha(Expression),
-}
-
-impl Default for Shape {
-    fn default() -> Self {
-        Shape::Rectangle {
-            size: Expression::V(vec2(1.0, 1.0).into()),
-        }
-    }
-}
-impl Default for MaterialType {
-    fn default() -> Self {
-        Self::Shape {
-            shape: default(),
-            modifiers: default(),
-        }
-    }
-}
-impl Default for ShapeModifier {
-    fn default() -> Self {
-        Self::Rotation(Expression::Zero)
+impl Representation {
+    fn f(&self, world: &World) {
+        let mut children = self.collect_children::<Self>(world);
+        children.extend(self.children.iter().map(Box::as_ref));
     }
 }

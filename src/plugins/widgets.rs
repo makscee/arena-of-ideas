@@ -103,7 +103,7 @@ impl WidgetsPlugin {
                     .get(&FrameTimeDiagnosticsPlugin::FPS)
                 {
                     if let Some(fps) = fps.smoothed() {
-                        ui.label(format!("fps: {fps:.0}"));
+                        Label::new(format!("fps: {fps:.0}")).extend().ui(ui);
                     }
                 }
                 VERSION.cstr().label(ui);

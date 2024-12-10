@@ -97,8 +97,6 @@ pub fn node(args: TokenStream, item: TokenStream) -> TokenStream {
                         {
                             var_fields.push(field_ident.clone());
                             var_types.push(ty.clone());
-                            data_fields.push(field_ident);
-                            data_types.push(ty.clone());
                         } else {
                             data_fields.push(field_ident);
                             data_types.push(ty.clone());
@@ -107,10 +105,15 @@ pub fn node(args: TokenStream, item: TokenStream) -> TokenStream {
                     _ => unimplemented!(),
                 }
             }
-            if data_types.is_empty() {
+            let mut all_data_fields = var_fields.clone();
+            all_data_fields.append(&mut data_fields.clone());
+            let mut all_data_types = var_types.clone();
+            all_data_types.append(&mut data_types.clone());
+
+            if all_data_types.is_empty() {
                 panic!("No data fields found");
             }
-            let nt = if data_fields.contains(&Ident::from_string("name").unwrap()) {
+            let nt = if all_data_fields.contains(&Ident::from_string("name").unwrap()) {
                 NodeType::Name
             } else if !option_link_fields.is_empty() || !vec_box_link_fields.is_empty() {
                 NodeType::Data
@@ -149,7 +152,7 @@ pub fn node(args: TokenStream, item: TokenStream) -> TokenStream {
                 },
                 NodeType::OnlyData => quote! {},
             }.into_token_stream();
-            let data_type_ident = quote! { (#(#data_types),*) };
+            let data_type_ident = quote! { (#(#all_data_types),*) };
             if let Fields::Named(ref mut fields) = fields {
                 fields.named.push(
                     Field::parse_named
@@ -168,6 +171,30 @@ pub fn node(args: TokenStream, item: TokenStream) -> TokenStream {
                 impl GetNodeKind for #struct_ident {
                     fn kind(&self) -> NodeKind {
                         NodeKind::#struct_ident
+                    }
+                }
+                impl Show for #struct_ident {
+                    fn show(&self, prefix: Option<&str>, ui: &mut Ui) {
+                        ui.horizontal(|ui| {
+                            for (var, value) in self.get_all_vars() {
+                                if var != VarName::name {
+                                    value.show(Some(&var.cstr()), ui);
+                                }
+                            }
+                        });
+                        #(
+                            self.#data_fields.show(None, ui);
+                        )*
+                    }
+                    fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
+                        let mut changed = false;
+                        for (var, mut value) in self.get_all_vars() {
+                            changed |= value.show_mut(Some(&var.cstr()), ui);
+                        }
+                        #(
+                            changed |= self.#data_fields.show_mut(None, ui);
+                        )*
+                        changed
                     }
                 }
                 impl GetVar for #struct_ident {
@@ -207,11 +234,11 @@ pub fn node(args: TokenStream, item: TokenStream) -> TokenStream {
                         self.entity
                     }
                     fn get_data(&self) -> String {
-                        ron::to_string(&(#(&self.#data_fields),*)).unwrap()
+                        ron::to_string(&(#(&self.#all_data_fields),*)).unwrap()
                     }
                     fn inject_data(&mut self, data: &str) {
                         match ron::from_str::<#data_type_ident>(data) {
-                            Ok(v) => (#(self.#data_fields),*) = v,
+                            Ok(v) => (#(self.#all_data_fields),*) = v,
                             Err(e) => panic!("{} parsing error from {data}: {e}", self.kind()),
                         }
                     }
@@ -245,27 +272,48 @@ pub fn node(args: TokenStream, item: TokenStream) -> TokenStream {
                         )*
                         commands.entity(entity).insert((TransformBundle::default(), VisibilityBundle::default(), self));
                     }
-                    fn show(&self, ui: &mut Ui, world: &World) {
-                        self.show_self(ui);
-                        #(
-                            if let Some(d) = &self.#option_link_fields {
-                                d.show(ui, world);
-                            } else {
-                                if let Some(c) = world.get::<#option_link_types>(self.entity.unwrap()) {
-                                    c.show(ui, world);
+                    fn ui(&self, depth: usize, ui: &mut Ui, world: &World) {
+                        let entity = self.entity.unwrap();
+                        let color = NodeState::get_var_world(VarName::color, entity, world)
+                            .and_then(|c| c.get_color().ok().map(|c| c.c32()));
+                        self.ui_self(depth, color, ui, |ui| {
+                            self.show(None, ui);
+                            #(
+                                if let Some(d) = &self.#option_link_fields {
+                                    d.ui(depth + 1, ui, world);
+                                } else {
+                                    if let Some(c) = world.get::<#option_link_types>(self.entity.unwrap()) {
+                                        c.ui(depth + 1, ui, world);
+                                    }
                                 }
-                            }
-                        )*
-                        #(
-                            ui.collapsing(#vec_link_fields_str, |ui| {
-                                for c in &self.#vec_link_fields {
-                                    c.show(ui, world);
+                            )*
+                            #(
+                                let mut children = self.collect_children::<#vec_link_types>(world);
+                                children.extend(self.#vec_link_fields.iter());
+                                if !children.is_empty() {
+                                    ui.collapsing(#vec_link_fields_str, |ui| {
+                                        for (i, c) in children.into_iter().enumerate() {
+                                            ui.push_id(i, |ui| {
+                                                c.ui(depth + 1, ui, world);
+                                            });
+                                        }
+                                    });
                                 }
-                                for c in self.collect_children::<#vec_link_types>(world) {
-                                    c.show(ui, world);
+                            )*
+                            #(
+                                let mut children = self.collect_children::<#vec_box_link_types>(world);
+                                children.extend(self.#vec_box_link_fields.iter().map(Box::as_ref));
+                                if !children.is_empty() {
+                                    ui.collapsing(#vec_box_link_fields_str, |ui| {
+                                        for (i, c) in children.into_iter().enumerate() {
+                                            ui.push_id(i, |ui| {
+                                                c.ui(depth + 1, ui, world);
+                                            });
+                                        }
+                                    });
                                 }
-                            });
-                        )*
+                            )*
+                        });
                     }
                 }
                 impl From<&str> for #struct_ident {
@@ -277,7 +325,6 @@ pub fn node(args: TokenStream, item: TokenStream) -> TokenStream {
         }
         _ => unimplemented!(),
     };
-    // println!("{}\n", result.to_string());
     result.into()
 }
 

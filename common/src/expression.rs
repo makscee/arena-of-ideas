@@ -1,4 +1,7 @@
-use std::{hash::Hasher, mem};
+use std::{fmt::Display, hash::Hasher, mem};
+
+use bevy::math::vec2;
+use bevy_egui::egui::Color32;
 
 use super::*;
 
@@ -90,6 +93,59 @@ impl std::hash::Hash for Expression {
                 t.hash(state);
                 e.hash(state);
             }
+        }
+    }
+}
+impl Display for Expression {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.cstr_expanded())
+    }
+}
+impl ToCstr for Expression {
+    fn cstr(&self) -> Cstr {
+        self.as_ref().cstr_c(YELLOW)
+    }
+    fn cstr_expanded(&self) -> Cstr {
+        let inner = match self {
+            Expression::One | Expression::Zero | Expression::GT => String::default(),
+            Expression::Var(v) => v.cstr(),
+            Expression::V(v) => v.cstr(),
+            Expression::S(v) => v.to_owned(),
+            Expression::F(v) => v.cstr(),
+            Expression::I(v) => v.cstr(),
+            Expression::B(v) => v.cstr(),
+            Expression::V2(x, y) => vec2(*x, *y).cstr(),
+            Expression::C(c) => match Color32::from_hex(c) {
+                Ok(color) => c.cstr_c(color),
+                Err(e) => format!("{c} [s {e:?}]",).cstr_c(RED),
+            },
+            Expression::Sin(x)
+            | Expression::Cos(x)
+            | Expression::Even(x)
+            | Expression::Abs(x)
+            | Expression::Floor(x)
+            | Expression::Ceil(x)
+            | Expression::Fract(x)
+            | Expression::Sqr(x) => x.cstr(),
+            Expression::Macro(a, b)
+            | Expression::Sum(a, b)
+            | Expression::Sub(a, b)
+            | Expression::Mul(a, b)
+            | Expression::Div(a, b)
+            | Expression::Max(a, b)
+            | Expression::Min(a, b)
+            | Expression::Mod(a, b)
+            | Expression::And(a, b)
+            | Expression::Or(a, b)
+            | Expression::Equals(a, b)
+            | Expression::GreaterThen(a, b)
+            | Expression::LessThen(a, b) => format!("{a}, {b}"),
+            Expression::If(a, b, c) => format!("{a}, {b}, {c}"),
+        };
+        if inner.is_empty() {
+            self.cstr()
+        } else {
+            format!("{}({inner})", self.cstr())
         }
     }
 }

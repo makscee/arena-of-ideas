@@ -4,12 +4,12 @@ use egui::{Checkbox, DragValue};
 use super::*;
 
 pub trait Show {
-    fn show(&self, prefix: Option<&str>, ui: &mut Ui) -> Response;
-    fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui);
+    fn show(&self, prefix: Option<&str>, ui: &mut Ui);
+    fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool;
 }
 
 impl Show for VarValue {
-    fn show(&self, prefix: Option<&str>, ui: &mut Ui) -> Response {
+    fn show(&self, prefix: Option<&str>, ui: &mut Ui) {
         ui.horizontal(|ui| {
             if let Some(prefix) = prefix {
                 prefix.cstr_c(VISIBLE_DARK).label(ui);
@@ -24,10 +24,9 @@ impl Show for VarValue {
                 VarValue::Color(v) => v.to_srgba().to_hex().cstr_cs(v.c32(), CstrStyle::Bold),
             }
             .label(ui)
-        })
-        .inner
+        });
     }
-    fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) {
+    fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
         let prefix = prefix.unwrap_or_default();
         match self {
             VarValue::i32(v) => DragValue::new(v).prefix(prefix).ui(ui),
@@ -51,6 +50,7 @@ impl Show for VarValue {
                 *color = Color::hsva(hsva.h, hsva.s, hsva.v, hsva.a);
                 r
             }
-        };
+        }
+        .changed()
     }
 }

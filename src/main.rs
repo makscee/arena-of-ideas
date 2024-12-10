@@ -8,7 +8,7 @@ use bevy::{
     diagnostic::FrameTimeDiagnosticsPlugin, log::LogPlugin, render::camera::ClearColor,
     state::app::AppExtStates,
 };
-use bevy_vector_shapes::{shapes, Shape2dPlugin};
+use bevy_vector_shapes::shapes;
 use clap::{command, Parser, ValueEnum};
 use include_dir::{include_dir, Dir};
 use noisy_bevy::NoisyShaderPlugin;

@@ -50,7 +50,7 @@ impl ContextLayer {
     }
     fn get_var(&self, var: VarName, state: &StateQuery) -> Option<VarValue> {
         match self {
-            ContextLayer::Owner(entity) => NodeState::get_var_e(var, *entity, state),
+            ContextLayer::Owner(entity) => NodeState::get_var_state(var, *entity, state),
             ContextLayer::Var(v, value) => {
                 if var.eq(v) {
                     Some(value.clone())

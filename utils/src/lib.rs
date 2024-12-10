@@ -173,6 +173,9 @@ pub fn get_children_recursive(entity: Entity, world: &World) -> Vec<Entity> {
     }
     children
 }
+pub fn get_parent(entity: Entity, world: &World) -> Option<Entity> {
+    world.get::<Parent>(entity).map(|p| p.get())
+}
 pub fn copy_to_clipboard(text: &str, world: &mut World) {
     world
         .resource_mut::<bevy_egui::EguiClipboard>()

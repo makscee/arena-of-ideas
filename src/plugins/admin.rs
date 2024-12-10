@@ -31,9 +31,12 @@ impl AdminPlugin {
     fn ui(world: &mut World) {
         let ctx = &egui_context(world).unwrap();
         for n in world.query::<&House>().iter(world) {
-            Window::new("Inspector").show(ctx, |ui| {
-                n.show(ui, world);
-            });
+            Window::new("Inspector")
+                .title_bar(false)
+                .frame(Frame::none())
+                .show(ctx, |ui| {
+                    n.ui(0, ui, world);
+                });
         }
     }
     fn update(world: &mut World) {

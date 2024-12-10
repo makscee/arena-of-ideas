@@ -2,6 +2,7 @@ use std::str::FromStr;
 
 use bevy::{
     log::{debug, error, info},
+    math::Vec2,
     utils::hashbrown::HashMap,
 };
 use colored::{Colorize, CustomColor};
@@ -41,10 +42,7 @@ impl CstrTrait for Cstr {
         job
     }
     fn label(&self, ui: &mut Ui) -> Response {
-        self.as_label(ui)
-            .selectable(false)
-            .wrap_mode(egui::TextWrapMode::Extend)
-            .ui(ui)
+        self.as_label(ui).selectable(false).ui(ui)
     }
     fn label_alpha(&self, a: f32, ui: &mut Ui) -> Response {
         self.as_label_alpha(a, ui).ui(ui)
@@ -339,21 +337,44 @@ impl ToCstr for u32 {
         self.to_string().cstr_c(VISIBLE_LIGHT)
     }
 }
+impl ToCstr for f32 {
+    fn cstr(&self) -> Cstr {
+        format!("{self:.2}")
+    }
+}
 impl ToCstr for i32 {
     fn cstr(&self) -> Cstr {
-        self.to_string().cstr()
+        self.to_string()
     }
     fn cstr_expanded(&self) -> Cstr {
         match self.signum() {
             1 => format!("+{self}").cstr_c(GREEN),
             -1 => format!("{self}").cstr_c(RED),
-            _ => format!("{self}").cstr(),
+            _ => format!("{self}"),
         }
+    }
+}
+impl ToCstr for bool {
+    fn cstr(&self) -> Cstr {
+        self.to_string()
+    }
+}
+impl ToCstr for Vec2 {
+    fn cstr(&self) -> Cstr {
+        format!("({}, {})", self.x.cstr(), self.y.cstr())
     }
 }
 impl ToCstr for VarName {
     fn cstr(&self) -> Cstr {
-        self.as_ref().into()
+        self.as_ref().cstr_cs(
+            match self {
+                VarName::hp => RED,
+                VarName::pwr => YELLOW,
+                VarName::lvl => PURPLE,
+                _ => VISIBLE_DARK,
+            },
+            CstrStyle::Small,
+        )
     }
 }
 impl ToCstr for VarValue {
