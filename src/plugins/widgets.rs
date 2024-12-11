@@ -104,11 +104,14 @@ impl WidgetsPlugin {
                     .get(&FrameTimeDiagnosticsPlugin::FPS)
                 {
                     if let Some(fps) = fps.smoothed() {
-                        Label::new(format!("fps: {fps:.0}")).extend().ui(ui);
+                        format!("[vd fps:] {fps:.0}").label_e(ui);
                     }
                 }
-                VERSION.cstr().label(ui);
-                current_server().1.cstr_s(CstrStyle::Bold).label(ui);
+                VERSION.cstr().label_e(ui);
+                current_server()
+                    .1
+                    .cstr_cs(VISIBLE_DARK, CstrStyle::Bold)
+                    .label_e(ui);
             });
     }
 }

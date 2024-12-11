@@ -222,10 +222,3 @@ pub struct Representation {
     pub material: RMaterial,
     pub children: Vec<Box<Representation>>,
 }
-
-impl Representation {
-    fn f(&self, world: &World) {
-        let mut children = self.collect_children::<Self>(world);
-        children.extend(self.children.iter().map(Box::as_ref));
-    }
-}

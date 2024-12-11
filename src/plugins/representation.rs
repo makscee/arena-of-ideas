@@ -6,11 +6,49 @@ pub struct RepresentationPlugin;
 
 impl Plugin for RepresentationPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, Self::update);
+        app.add_systems(Update, (Self::update, Self::hover));
     }
 }
 
 impl RepresentationPlugin {
+    fn hover(world: &mut World) {
+        let Some(ctx) = &egui_context(world) else {
+            return;
+        };
+        let p = CameraPlugin::pixel_unit(ctx, world) * 2.0;
+        let mut open_window = None;
+        let mut close_window = None;
+        for (unit, t) in world.query::<(&Unit, &GlobalTransform)>().iter(world) {
+            let pos = world_to_screen(t.translation(), world).to_pos2();
+            if ctx.rect_contains_pointer(
+                egui::LayerId::background(),
+                Rect::from_center_size(pos, egui::vec2(p, p)),
+            ) {
+                if left_mouse_just_pressed(world) {
+                    if WindowPlugin::is_open(&unit.name, world) {
+                        close_window = Some(unit.name.clone());
+                    } else {
+                        open_window = Some((unit.entity.unwrap(), unit.name.clone()));
+                    }
+                }
+                cursor_window(ctx, |ui| {
+                    unit.ui(0, ui, world);
+                });
+            }
+        }
+        if let Some(name) = close_window {
+            WindowPlugin::close(&name, world);
+        }
+        if let Some((entity, name)) = open_window {
+            Window::new(name, move |ui, world| {
+                if let Some(unit) = world.get::<Unit>(entity) {
+                    unit.ui(0, ui, world);
+                }
+            })
+            .no_frame()
+            .push(world);
+        }
+    }
     fn update(
         reps: Query<(Entity, &Representation), With<NodeState>>,
         context: StateQuery,

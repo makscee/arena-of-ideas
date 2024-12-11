@@ -23,6 +23,9 @@ struct WindowResource {
 fn rm(world: &mut World) -> Mut<WindowResource> {
     world.resource_mut::<WindowResource>()
 }
+fn r(world: &World) -> &WindowResource {
+    world.resource::<WindowResource>()
+}
 
 impl Window {
     #[must_use]
@@ -63,5 +66,11 @@ impl WindowPlugin {
         let mut r = rm(world);
         windows.extend(r.windows.drain());
         r.windows = windows;
+    }
+    pub fn is_open(key: &str, world: &World) -> bool {
+        r(world).windows.contains_key(key)
+    }
+    pub fn close(key: &str, world: &mut World) {
+        rm(world).windows.remove(key);
     }
 }

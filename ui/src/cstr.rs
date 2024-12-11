@@ -19,6 +19,7 @@ pub trait CstrTrait {
     fn widget(&self, a: f32, ui: &mut Ui) -> WidgetText;
     fn job(&self, a: f32, ui: &mut Ui) -> LayoutJob;
     fn label(&self, ui: &mut Ui) -> Response;
+    fn label_e(&self, ui: &mut Ui) -> Response;
     fn label_alpha(&self, a: f32, ui: &mut Ui) -> Response;
     fn as_label(&self, ui: &mut Ui) -> Label;
     fn as_label_alpha(&self, a: f32, ui: &mut Ui) -> Label;
@@ -43,6 +44,9 @@ impl CstrTrait for Cstr {
     }
     fn label(&self, ui: &mut Ui) -> Response {
         self.as_label(ui).selectable(false).ui(ui)
+    }
+    fn label_e(&self, ui: &mut Ui) -> Response {
+        self.as_label(ui).selectable(false).extend().ui(ui)
     }
     fn label_alpha(&self, a: f32, ui: &mut Ui) -> Response {
         self.as_label_alpha(a, ui).ui(ui)
