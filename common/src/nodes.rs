@@ -1,9 +1,6 @@
 use super::*;
-use ::ui::{NodeFrame, Show, VISIBLE_LIGHT};
-use bevy_egui::egui::{Color32, Ui};
-use include_dir::Dir;
 
-#[derive(Debug, Clone, Copy, Display, EnumIter, Reflect)]
+#[derive(Debug, Clone, Copy, Display, EnumIter, Reflect, PartialEq, Eq)]
 #[node_kinds]
 pub enum NodeKind {
     House,
@@ -102,30 +99,6 @@ pub trait Node: Default + Component + Sized + GetVar + Show {
     fn collect_children<'a, T: Component>(&self, world: &'a World) -> Vec<&'a T> {
         let entity = self.entity().expect("Node not linked to world");
         Self::collect_children_entity(entity, world)
-    }
-    fn ui_self(
-        &self,
-        depth: usize,
-        color: Option<Color32>,
-        ui: &mut Ui,
-        inner: impl FnOnce(&mut Ui),
-    ) {
-        NodeFrame::new(self.kind().to_string(), color.unwrap_or(VISIBLE_LIGHT))
-            .title(
-                self.get_var(VarName::name)
-                    .and_then(|v| v.get_string().ok()),
-            )
-            .depth(depth)
-            .ui(ui, |ui| {
-                inner(ui);
-            });
-    }
-    fn ui_self_mut(&mut self, ui: &mut Ui) {
-        for (var, mut value) in self.get_all_vars() {
-            if value.show_mut(Some(&var.to_string()), ui) {
-                self.set_var(var, value);
-            }
-        }
     }
     fn ui(&self, depth: usize, ui: &mut Ui, world: &World);
 }

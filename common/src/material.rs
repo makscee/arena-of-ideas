@@ -154,7 +154,7 @@ impl ToCstr for Shape {
 
 impl Show for RMaterial {
     fn show(&self, prefix: Option<&str>, ui: &mut Ui) {
-        format!("{}{}", prefix.unwrap_or_default(), self.cstr_expanded()).label(ui);
+        format!("{}{}", prefix.unwrap_or_default(), self.cstr_expanded()).label_w(ui);
     }
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
         if let Some(prefix) = prefix {
@@ -180,33 +180,61 @@ impl Show for RMaterial {
 }
 impl Show for RModifier {
     fn show(&self, prefix: Option<&str>, ui: &mut Ui) {
-        format!("{}{}", prefix.unwrap_or_default(), self.cstr_expanded()).label(ui);
+        format!("{}{}", prefix.unwrap_or_default(), self.cstr_expanded()).label_w(ui);
     }
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
         Selector::new(prefix.unwrap_or_default()).ui_enum(self, ui)
+            || match self {
+                RModifier::Color(x) | RModifier::Offset(x) => x.show_mut(None, ui),
+            }
     }
 }
 impl Show for MaterialType {
     fn show(&self, prefix: Option<&str>, ui: &mut Ui) {
-        format!("{}{}", prefix.unwrap_or_default(), self.cstr_expanded()).label(ui);
+        format!("{}{}", prefix.unwrap_or_default(), self.cstr_expanded()).label_w(ui);
     }
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
         Selector::new(prefix.unwrap_or_default()).ui_enum(self, ui)
+            || match self {
+                MaterialType::Shape { shape, modifiers } => {
+                    let mut c = shape.show_mut(Some("shape:"), ui);
+                    for (i, m) in modifiers.iter_mut().enumerate() {
+                        ui.push_id(i, |ui| {
+                            c |= m.show_mut(None, ui);
+                        });
+                    }
+                    c
+                }
+                MaterialType::Text { text } => todo!(),
+            }
     }
 }
 impl Show for ShapeModifier {
     fn show(&self, prefix: Option<&str>, ui: &mut Ui) {
-        format!("{}{}", prefix.unwrap_or_default(), self.cstr_expanded()).label(ui);
+        format!("{}{}", prefix.unwrap_or_default(), self.cstr_expanded()).label_w(ui);
     }
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
         Selector::new(prefix.unwrap_or_default()).ui_enum(self, ui)
+            || match self {
+                ShapeModifier::Scale(x)
+                | ShapeModifier::Rotation(x)
+                | ShapeModifier::Color(x)
+                | ShapeModifier::Hollow(x)
+                | ShapeModifier::Thickness(x)
+                | ShapeModifier::Roundness(x)
+                | ShapeModifier::Alpha(x) => x.show_mut(None, ui),
+            }
     }
 }
 impl Show for Shape {
     fn show(&self, prefix: Option<&str>, ui: &mut Ui) {
-        format!("{}{}", prefix.unwrap_or_default(), self.cstr_expanded()).label(ui);
+        format!("{}{}", prefix.unwrap_or_default(), self.cstr_expanded()).label_w(ui);
     }
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
         Selector::new(prefix.unwrap_or_default()).ui_enum(self, ui)
+            || match self {
+                Shape::Rectangle { size } => size.show_mut(Some("size:"), ui),
+                Shape::Circle { radius } => radius.show_mut(Some("radius:"), ui),
+            }
     }
 }

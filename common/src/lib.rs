@@ -1,3 +1,5 @@
+use ::ui::*;
+use ::ui::{Show, VISIBLE_LIGHT};
 use bevy::ecs::system::SystemParam;
 use bevy::prelude::{Children, Query};
 use bevy::{
@@ -9,25 +11,28 @@ use bevy::{
     },
     utils::hashbrown::HashMap,
 };
-
-use ::ui::*;
+use bevy_egui::egui::{self, Color32, Frame, Margin, Rounding, Stroke, Ui};
+use egui::{CollapsingHeader, Shadow};
+use include_dir::Dir;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use strum_macros::{AsRefStr, Display, EnumIter, EnumString};
 
-pub mod assets;
-pub mod effect;
-pub mod event;
-pub mod expression;
-pub mod material;
-pub mod nodes;
-pub mod trigger;
+mod assets;
+mod effect;
+mod event;
+mod expression;
+mod material;
+mod node_frame;
+mod nodes;
+mod trigger;
 
 pub use assets::*;
 pub use effect::*;
 pub use event::*;
 pub use expression::*;
 pub use material::*;
+pub use node_frame::*;
 pub use nodes::*;
 pub use trigger::*;
 use utils::*;

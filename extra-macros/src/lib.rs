@@ -189,7 +189,10 @@ pub fn node(args: TokenStream, item: TokenStream) -> TokenStream {
                     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
                         let mut changed = false;
                         for (var, mut value) in self.get_all_vars() {
-                            changed |= value.show_mut(Some(&var.cstr()), ui);
+                            if value.show_mut(Some(&var.cstr()), ui) {
+                                self.set_var(var, value);
+                                changed |= true;
+                            }
                         }
                         #(
                             changed |= self.#data_fields.show_mut(None, ui);
@@ -273,11 +276,9 @@ pub fn node(args: TokenStream, item: TokenStream) -> TokenStream {
                         commands.entity(entity).insert((TransformBundle::default(), VisibilityBundle::default(), self));
                     }
                     fn ui(&self, depth: usize, ui: &mut Ui, world: &World) {
-                        let entity = self.entity.unwrap();
-                        let color = NodeState::get_var_world(VarName::color, entity, world)
+                        let color = NodeState::get_var_world(VarName::color, self.entity.unwrap(), world)
                             .and_then(|c| c.get_color().ok().map(|c| c.c32()));
-                        self.ui_self(depth, color, ui, |ui| {
-                            self.show(None, ui);
+                        NodeFrame::show(self, depth, color, ui, |ui| {
                             #(
                                 if let Some(d) = &self.#option_link_fields {
                                     d.ui(depth + 1, ui, world);
@@ -355,6 +356,21 @@ pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
                             })*
                         }
                     }
+                    pub fn show(self, entity: Entity, ui: &mut Ui, world: &World) {
+                        match self {
+                            #(#struct_ident::#variants => {
+                                world.get::<#variants>(entity).unwrap().show(None, ui);
+                            })*
+                        };
+                    }
+                    pub fn show_mut(self, entity: Entity, ui: &mut Ui, world: &mut World) {
+                        match self {
+                            #(#struct_ident::#variants => {
+                                world.get_mut::<#variants>(entity).unwrap().show_mut(None, ui);
+                            })*
+                        };
+                    }
+
                 }
             }.into()
         }

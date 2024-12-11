@@ -13,6 +13,7 @@ impl Plugin for WindowPlugin {
 pub struct Window {
     id: String,
     no_frame: bool,
+    order: Order,
     content: Box<dyn Fn(&mut Ui, &mut World) + Send + Sync>,
 }
 
@@ -37,17 +38,26 @@ impl Window {
             id: id.to_string(),
             content: Box::new(content),
             no_frame: false,
+            order: Order::Middle,
         }
     }
+    #[must_use]
     pub fn no_frame(mut self) -> Self {
         self.no_frame = true;
+        self
+    }
+    #[must_use]
+    pub fn order(mut self, order: Order) -> Self {
+        self.order = order;
         self
     }
     pub fn push(self, world: &mut World) {
         rm(world).windows.insert(self.id.clone(), self);
     }
-    fn show(&self, ctx: &egui::Context, world: &mut World) {
-        let mut w = egui::Window::new(&self.id).title_bar(false);
+    pub fn show(&self, ctx: &egui::Context, world: &mut World) {
+        let mut w = egui::Window::new(&self.id)
+            .title_bar(false)
+            .order(self.order);
         if self.no_frame {
             w = w.frame(Frame::none());
         };

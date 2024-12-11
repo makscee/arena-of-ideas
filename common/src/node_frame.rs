@@ -1,32 +1,38 @@
-use egui::{CollapsingHeader, Shadow};
+use egui::Layout;
+use parking_lot::{const_mutex, Mutex};
 
 use super::*;
 
-pub struct NodeFrame {
-    type_name: String,
-    color: Color32,
-    title: Option<String>,
-    depth: usize,
+pub struct NodeFrame;
+
+static EDITING_WINDOW: Mutex<Option<(Entity, NodeKind)>> = const_mutex(None);
+
+pub fn set_editing_node(entity: Entity, kind: NodeKind) {
+    let mut d = EDITING_WINDOW.lock();
+    if d.as_ref().is_some_and(|(e, k)| *e == entity && *k == kind) {
+        *d = None;
+    } else {
+        *d = Some((entity, kind));
+    }
+}
+pub fn get_editing_node() -> Option<(Entity, NodeKind)> {
+    EDITING_WINDOW.lock().clone()
 }
 
 impl NodeFrame {
-    pub fn new(type_name: String, color: Color32) -> Self {
-        Self {
-            type_name,
-            color,
-            title: None,
-            depth: 0,
-        }
-    }
-    pub fn title(mut self, title: Option<String>) -> Self {
-        self.title = title;
-        self
-    }
-    pub fn depth(mut self, value: usize) -> Self {
-        self.depth = value;
-        self
-    }
-    pub fn ui(self, ui: &mut Ui, content: impl FnOnce(&mut Ui)) {
+    pub fn show(
+        node: &impl Node,
+        depth: usize,
+        color: Option<Color32>,
+        ui: &mut Ui,
+        content: impl FnOnce(&mut Ui),
+    ) {
+        let kind = node.kind();
+        let name = node
+            .get_var(VarName::name)
+            .and_then(|v| v.get_string().ok());
+        let color = color.unwrap_or(VISIBLE_LIGHT);
+
         const FRAME: Frame = Frame {
             inner_margin: Margin::same(0.0),
             outer_margin: Margin::same(4.0),
@@ -35,11 +41,7 @@ impl NodeFrame {
             fill: BG_DARK,
             stroke: Stroke::NONE,
         };
-        let fill = if self.depth % 2 == 0 {
-            BG_LIGHT
-        } else {
-            BG_DARK
-        };
+        let fill = if depth % 2 == 0 { BG_LIGHT } else { BG_DARK };
         ui.style_mut().spacing.item_spacing.y = 0.0;
         FRAME.fill(fill).show(ui, |ui| {
             let mut trounding = Rounding {
@@ -54,9 +56,9 @@ impl NodeFrame {
                 top: 0.0,
                 bottom: 0.0,
             };
-            if let Some(title) = self.title {
+            if let Some(name) = name {
                 Frame::none()
-                    .stroke(Stroke::new(1.0, self.color))
+                    .stroke(Stroke::new(1.0, color))
                     .rounding(Rounding {
                         nw: 13.0,
                         ne: 13.0,
@@ -66,7 +68,7 @@ impl NodeFrame {
                     .inner_margin(MARGIN)
                     .show(ui, |ui| {
                         ui.vertical_centered_justified(|ui| {
-                            title.cstr_cs(self.color, CstrStyle::Bold).label(ui);
+                            name.cstr_cs(color, CstrStyle::Bold).label(ui);
                         });
                     });
                 trounding.nw = 0.0;
@@ -75,13 +77,13 @@ impl NodeFrame {
             visuals.inactive.rounding = trounding;
             visuals.hovered.rounding = trounding;
             visuals.active.rounding = trounding;
-            visuals.inactive.weak_bg_fill = self.color;
+            visuals.inactive.weak_bg_fill = color;
             visuals.hovered.weak_bg_fill = YELLOW;
             visuals.active.weak_bg_fill = VISIBLE_BRIGHT;
             visuals.inactive.bg_stroke = Stroke::NONE;
             visuals.hovered.weak_bg_fill = YELLOW;
-            CollapsingHeader::new(
-                self.type_name
+            let rect = CollapsingHeader::new(
+                kind.to_string()
                     .cstr_cs(fill, CstrStyle::Small)
                     .widget(1.0, ui),
             )
@@ -92,9 +94,19 @@ impl NodeFrame {
                 Frame::none()
                     .inner_margin(Margin::same(8.0))
                     .show(ui, |ui| {
+                        node.show(None, ui);
                         content(ui);
                     });
-            });
+            })
+            .header_response
+            .rect;
+            let min_rect = ui.min_rect();
+            let rect = rect.with_max_x(min_rect.max.x).with_min_x(rect.max.x);
+            ui.reset_style();
+            let ui = &mut ui.child_ui(rect, Layout::left_to_right(egui::Align::Center), None);
+            if "e".cstr().button(ui).clicked() {
+                set_editing_node(node.entity().unwrap(), kind);
+            }
         });
     }
 }

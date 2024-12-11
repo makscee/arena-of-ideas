@@ -149,3 +149,63 @@ impl ToCstr for Expression {
         }
     }
 }
+
+impl Show for Expression {
+    fn show(&self, prefix: Option<&str>, ui: &mut Ui) {
+        format!("{}{}", prefix.unwrap_or_default(), self.cstr_expanded()).label(ui);
+    }
+    fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
+        ui.horizontal(|ui| {
+            Selector::new(prefix.unwrap_or_default()).ui_enum(self, ui)
+                || match self {
+                    Expression::One | Expression::Zero | Expression::GT => false,
+                    Expression::Var(v) => v.show_mut(None, ui),
+                    Expression::V(v) => v.show_mut(None, ui),
+                    Expression::S(v) => v.show_mut(None, ui),
+                    Expression::F(v) => v.show_mut(None, ui),
+                    Expression::I(v) => v.show_mut(None, ui),
+                    Expression::B(v) => v.show_mut(None, ui),
+                    Expression::C(v) => v.show_mut(None, ui),
+                    Expression::V2(x, y) => {
+                        let mut v = vec2(*x, *y);
+                        if v.show_mut(None, ui) {
+                            *x = v.x;
+                            *y = v.y;
+                            true
+                        } else {
+                            false
+                        }
+                    }
+                    Expression::Sin(x)
+                    | Expression::Cos(x)
+                    | Expression::Even(x)
+                    | Expression::Abs(x)
+                    | Expression::Floor(x)
+                    | Expression::Ceil(x)
+                    | Expression::Fract(x)
+                    | Expression::Sqr(x) => x.show_mut(None, ui),
+                    Expression::Macro(a, b)
+                    | Expression::Sum(a, b)
+                    | Expression::Sub(a, b)
+                    | Expression::Mul(a, b)
+                    | Expression::Div(a, b)
+                    | Expression::Max(a, b)
+                    | Expression::Min(a, b)
+                    | Expression::Mod(a, b)
+                    | Expression::And(a, b)
+                    | Expression::Or(a, b)
+                    | Expression::Equals(a, b)
+                    | Expression::GreaterThen(a, b)
+                    | Expression::LessThen(a, b) => {
+                        a.show_mut(Some("a:".into()), ui) || b.show_mut(Some("b:".into()), ui)
+                    }
+                    Expression::If(i, t, e) => {
+                        i.show_mut(Some("if:".into()), ui)
+                            || t.show_mut(Some("then:".into()), ui)
+                            || e.show_mut(Some("else:".into()), ui)
+                    }
+                }
+        })
+        .inner
+    }
+}

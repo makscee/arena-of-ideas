@@ -1,6 +1,7 @@
 use std::str::FromStr;
 
 use bevy::{
+    color::Color,
     log::{debug, error, info},
     math::Vec2,
     utils::hashbrown::HashMap,
@@ -19,7 +20,7 @@ pub trait CstrTrait {
     fn widget(&self, a: f32, ui: &mut Ui) -> WidgetText;
     fn job(&self, a: f32, ui: &mut Ui) -> LayoutJob;
     fn label(&self, ui: &mut Ui) -> Response;
-    fn label_e(&self, ui: &mut Ui) -> Response;
+    fn label_w(&self, ui: &mut Ui) -> Response;
     fn label_alpha(&self, a: f32, ui: &mut Ui) -> Response;
     fn as_label(&self, ui: &mut Ui) -> Label;
     fn as_label_alpha(&self, a: f32, ui: &mut Ui) -> Label;
@@ -45,8 +46,8 @@ impl CstrTrait for Cstr {
     fn label(&self, ui: &mut Ui) -> Response {
         self.as_label(ui).selectable(false).ui(ui)
     }
-    fn label_e(&self, ui: &mut Ui) -> Response {
-        self.as_label(ui).selectable(false).extend().ui(ui)
+    fn label_w(&self, ui: &mut Ui) -> Response {
+        self.as_label(ui).selectable(false).wrap().ui(ui)
     }
     fn label_alpha(&self, a: f32, ui: &mut Ui) -> Response {
         self.as_label_alpha(a, ui).ui(ui)
@@ -341,6 +342,11 @@ impl ToCstr for u32 {
         self.to_string().cstr_c(VISIBLE_LIGHT)
     }
 }
+impl ToCstr for u64 {
+    fn cstr(&self) -> Cstr {
+        self.to_string().cstr_c(VISIBLE_LIGHT)
+    }
+}
 impl ToCstr for f32 {
     fn cstr(&self) -> Cstr {
         format!("{self:.2}")
@@ -366,6 +372,16 @@ impl ToCstr for bool {
 impl ToCstr for Vec2 {
     fn cstr(&self) -> Cstr {
         format!("({}, {})", self.x.cstr(), self.y.cstr())
+    }
+}
+impl ToCstr for Color {
+    fn cstr(&self) -> Cstr {
+        self.c32().cstr()
+    }
+}
+impl ToCstr for Color32 {
+    fn cstr(&self) -> Cstr {
+        self.to_hex().cstr_c(*self)
     }
 }
 impl ToCstr for VarName {
