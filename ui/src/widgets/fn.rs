@@ -20,7 +20,7 @@ pub fn center_window_fullscreen(
     ctx: &egui::Context,
     add_contents: impl FnOnce(&mut Ui),
 ) {
-    Window::new(name)
+    egui::Window::new(name)
         .pivot(Align2::CENTER_CENTER)
         .fixed_pos(ctx.screen_rect().center())
         .title_bar(false)
@@ -32,7 +32,7 @@ pub fn center_window_fullscreen(
         });
 }
 pub fn center_window(name: &str, ctx: &egui::Context, add_contents: impl FnOnce(&mut Ui)) {
-    Window::new(name)
+    egui::Window::new(name)
         .pivot(Align2::CENTER_CENTER)
         .fixed_pos(ctx.screen_rect().center())
         .title_bar(false)
@@ -113,7 +113,7 @@ pub fn cursor_window_frame(
         pos.x += 10.0;
         Align2::LEFT_CENTER
     };
-    Window::new("cursor_window")
+    egui::Window::new("cursor_window")
         .title_bar(false)
         .frame(frame)
         .max_width(width)

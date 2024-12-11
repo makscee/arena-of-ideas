@@ -1,9 +1,9 @@
-pub mod cstr;
+mod cstr;
 mod rarity;
-pub mod show;
-pub mod table_ext;
-pub mod ui;
-pub mod widgets;
+mod show;
+mod table_ext;
+mod ui;
+mod widgets;
 
 use bevy::prelude::KeyCode;
 use bevy::prelude::World;
@@ -16,7 +16,7 @@ use colored::CustomColor;
 pub use cstr::*;
 use egui::NumExt;
 use egui::{include_image, pos2, Image, Ui};
-use egui::{Align, Align2, Area, Id, Layout, Order, Window};
+use egui::{Align, Align2, Area, Id, Layout, Order};
 use egui::{Color32, FontId, TextStyle};
 use egui::{Frame, Margin, Rect, Rounding, Stroke};
 use egui::{Response, Sense, Widget, WidgetText};

@@ -5,7 +5,7 @@ pub struct AdminPlugin;
 impl Plugin for AdminPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(GameState::Admin), (Self::setup, Self::on_enter))
-            .add_systems(Update, (Self::update, Self::ui));
+            .add_systems(Update, Self::update);
     }
 }
 
@@ -27,18 +27,19 @@ impl AdminPlugin {
         let house = houses().get("holy").unwrap().clone();
         dbg!(&house);
         house.unpack(commands.spawn_empty().id(), &mut commands);
-    }
-    fn ui(world: &mut World) {
-        let ctx = &egui_context(world).unwrap();
-        for n in world.query::<&House>().iter(world) {
-            Window::new("Inspector")
-                .title_bar(false)
-                .frame(Frame::none())
-                .resizable([true, false])
-                .show(ctx, |ui| {
-                    n.ui(0, ui, world);
-                });
-        }
+        commands.add(|world: &mut World| {
+            for e in world
+                .query_filtered::<Entity, With<House>>()
+                .iter(world)
+                .collect_vec()
+            {
+                Window::new("Inspector", move |ui, world| {
+                    world.get::<House>(e).unwrap().ui(0, ui, world);
+                })
+                .no_frame()
+                .push(world);
+            }
+        });
     }
     fn update(world: &mut World) {
         let egui_context = world

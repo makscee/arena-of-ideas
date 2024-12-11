@@ -14,6 +14,7 @@ mod selector;
 mod slider;
 mod table;
 mod tile;
+mod window;
 
 use super::*;
 pub use button::*;
@@ -30,3 +31,4 @@ pub use selector::*;
 pub use slider::*;
 pub use table::*;
 pub use tile::*;
+pub use window::*;

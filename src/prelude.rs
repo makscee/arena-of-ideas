@@ -75,7 +75,7 @@ pub use egui::{
     text::LayoutJob,
     Align, Area, CentralPanel, FontData, FontDefinitions, FontFamily, FontId, Frame, Image, Label,
     Layout, Margin, NumExt, Order, Rect, Response, RichText, Rounding, Sense, SidePanel, Style,
-    TextFormat, TextStyle, TopBottomPanel, Widget, WidgetText, Window,
+    TextFormat, TextStyle, TopBottomPanel, Widget, WidgetText,
 };
 pub use egui::{Checkbox, DragValue, Key, ScrollArea};
 pub use indexmap::IndexMap;

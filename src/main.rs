@@ -104,6 +104,7 @@ fn main() {
             NodeStatePlugin,
             RepresentationPlugin,
             GameTimerPlugin,
+            WindowPlugin,
         ))
         .add_plugins((
             OperationsPlugin,

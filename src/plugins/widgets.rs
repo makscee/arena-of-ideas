@@ -74,6 +74,7 @@ impl WidgetsPlugin {
         let state = cur_state(world);
 
         TilePlugin::show_all(ctx, world);
+        WindowPlugin::show_all(ctx, world);
 
         // Content
         CentralPanel::default()
