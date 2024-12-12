@@ -9,7 +9,6 @@ pub struct GlobalData {
     next_id: u64,
     pub game_version: String,
     pub last_sync: Timestamp,
-    pub initial_enemies: Vec<u64>,
 }
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -20,7 +19,6 @@ impl GlobalData {
             next_id: 1,
             game_version: VERSION.to_owned(),
             last_sync: Timestamp::UNIX_EPOCH,
-            initial_enemies: Vec::new(),
         });
     }
 
@@ -43,11 +41,6 @@ impl GlobalData {
     pub fn register_sync(ctx: &ReducerContext) {
         let mut gd = Self::get(ctx);
         gd.last_sync = Timestamp::now();
-        ctx.db.global_data().always_zero().update(gd);
-    }
-    pub fn set_initial_enemies(ctx: &ReducerContext, teams: Vec<u64>) {
-        let mut gd = Self::get(ctx);
-        gd.initial_enemies = teams;
         ctx.db.global_data().always_zero().update(gd);
     }
 }

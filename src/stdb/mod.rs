@@ -11,100 +11,56 @@ use spacetimedb_sdk::{
 pub mod admin_daily_update_reducer;
 pub mod admin_give_tag_reducer;
 pub mod admin_set_temp_pass_reducer;
-pub mod arena_leaderboard_table;
-pub mod arena_pool_table;
-pub mod arena_settings_type;
-pub mod battle_settings_type;
 pub mod cleanup_reducer;
-pub mod daily_state_table;
 pub mod daily_update_reducer_reducer;
 pub mod daily_update_timer_table;
 pub mod daily_update_timer_type;
-pub mod game_mode_type;
 pub mod give_credits_reducer;
 pub mod global_data_table;
 pub mod global_data_type;
 pub mod global_settings_table;
 pub mod global_settings_type;
 pub mod identity_disconnected_reducer;
-pub mod inflating_int_type;
 pub mod init_reducer;
 pub mod login_by_identity_reducer;
 pub mod login_reducer;
 pub mod logout_reducer;
-pub mod meta_settings_type;
-pub mod player_game_stats_table;
-pub mod player_stats_table;
 pub mod player_table;
 pub mod player_tag_table;
-pub mod quest_accept_reducer;
-pub mod quest_finish_reducer;
-pub mod quest_settings_type;
-pub mod quest_table;
-pub mod quest_variant_type;
-pub mod rarity_settings_type;
 pub mod register_empty_reducer;
 pub mod register_reducer;
 pub mod set_name_reducer;
 pub mod set_password_reducer;
-pub mod t_arena_leaderboard_type;
-pub mod t_arena_pool_type;
-pub mod t_daily_state_type;
-pub mod t_player_game_stats_type;
-pub mod t_player_stats_type;
 pub mod t_player_tag_type;
 pub mod t_player_type;
-pub mod t_quest_type;
 pub mod t_wallet_type;
 pub mod wallet_table;
 
 pub use admin_daily_update_reducer::*;
 pub use admin_give_tag_reducer::*;
 pub use admin_set_temp_pass_reducer::*;
-pub use arena_leaderboard_table::*;
-pub use arena_pool_table::*;
-pub use arena_settings_type::*;
-pub use battle_settings_type::*;
 pub use cleanup_reducer::*;
-pub use daily_state_table::*;
 pub use daily_update_reducer_reducer::*;
 pub use daily_update_timer_table::*;
 pub use daily_update_timer_type::*;
-pub use game_mode_type::*;
 pub use give_credits_reducer::*;
 pub use global_data_table::*;
 pub use global_data_type::*;
 pub use global_settings_table::*;
 pub use global_settings_type::*;
 pub use identity_disconnected_reducer::*;
-pub use inflating_int_type::*;
 pub use init_reducer::*;
 pub use login_by_identity_reducer::*;
 pub use login_reducer::*;
 pub use logout_reducer::*;
-pub use meta_settings_type::*;
-pub use player_game_stats_table::*;
-pub use player_stats_table::*;
 pub use player_table::*;
 pub use player_tag_table::*;
-pub use quest_accept_reducer::*;
-pub use quest_finish_reducer::*;
-pub use quest_settings_type::*;
-pub use quest_table::*;
-pub use quest_variant_type::*;
-pub use rarity_settings_type::*;
 pub use register_empty_reducer::*;
 pub use register_reducer::*;
 pub use set_name_reducer::*;
 pub use set_password_reducer::*;
-pub use t_arena_leaderboard_type::*;
-pub use t_arena_pool_type::*;
-pub use t_daily_state_type::*;
-pub use t_player_game_stats_type::*;
-pub use t_player_stats_type::*;
 pub use t_player_tag_type::*;
 pub use t_player_type::*;
-pub use t_quest_type::*;
 pub use t_wallet_type::*;
 pub use wallet_table::*;
 
@@ -128,8 +84,6 @@ pub enum Reducer {
     Login(login_reducer::Login),
     LoginByIdentity(login_by_identity_reducer::LoginByIdentity),
     Logout(logout_reducer::Logout),
-    QuestAccept(quest_accept_reducer::QuestAccept),
-    QuestFinish(quest_finish_reducer::QuestFinish),
     Register(register_reducer::Register),
     RegisterEmpty(register_empty_reducer::RegisterEmpty),
     SetName(set_name_reducer::SetName),
@@ -154,8 +108,6 @@ impl __sdk::spacetime_module::Reducer for Reducer {
             Reducer::Login(_) => "login",
             Reducer::LoginByIdentity(_) => "login_by_identity",
             Reducer::Logout(_) => "logout",
-            Reducer::QuestAccept(_) => "quest_accept",
-            Reducer::QuestFinish(_) => "quest_finish",
             Reducer::Register(_) => "register",
             Reducer::RegisterEmpty(_) => "register_empty",
             Reducer::SetName(_) => "set_name",
@@ -175,8 +127,6 @@ impl __sdk::spacetime_module::Reducer for Reducer {
             Reducer::Login(args) => args,
             Reducer::LoginByIdentity(args) => args,
             Reducer::Logout(args) => args,
-            Reducer::QuestAccept(args) => args,
-            Reducer::QuestFinish(args) => args,
             Reducer::Register(args) => args,
             Reducer::RegisterEmpty(args) => args,
             Reducer::SetName(args) => args,
@@ -226,12 +176,6 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
             "logout" => Ok(Reducer::Logout(
                 __sdk::spacetime_module::parse_reducer_args("logout", &value.args)?,
             )),
-            "quest_accept" => Ok(Reducer::QuestAccept(
-                __sdk::spacetime_module::parse_reducer_args("quest_accept", &value.args)?,
-            )),
-            "quest_finish" => Ok(Reducer::QuestFinish(
-                __sdk::spacetime_module::parse_reducer_args("quest_finish", &value.args)?,
-            )),
             "register" => Ok(Reducer::Register(
                 __sdk::spacetime_module::parse_reducer_args("register", &value.args)?,
             )),
@@ -256,17 +200,11 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
 #[allow(non_snake_case)]
 #[doc(hidden)]
 pub struct DbUpdate {
-    arena_leaderboard: __sdk::spacetime_module::TableUpdate<TArenaLeaderboard>,
-    arena_pool: __sdk::spacetime_module::TableUpdate<TArenaPool>,
-    daily_state: __sdk::spacetime_module::TableUpdate<TDailyState>,
     daily_update_timer: __sdk::spacetime_module::TableUpdate<DailyUpdateTimer>,
     global_data: __sdk::spacetime_module::TableUpdate<GlobalData>,
     global_settings: __sdk::spacetime_module::TableUpdate<GlobalSettings>,
     player: __sdk::spacetime_module::TableUpdate<TPlayer>,
-    player_game_stats: __sdk::spacetime_module::TableUpdate<TPlayerGameStats>,
-    player_stats: __sdk::spacetime_module::TableUpdate<TPlayerStats>,
     player_tag: __sdk::spacetime_module::TableUpdate<TPlayerTag>,
-    quest: __sdk::spacetime_module::TableUpdate<TQuest>,
     wallet: __sdk::spacetime_module::TableUpdate<TWallet>,
 }
 
@@ -276,16 +214,6 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
         let mut db_update = DbUpdate::default();
         for table_update in raw.tables {
             match &table_update.table_name[..] {
-                "arena_leaderboard" => {
-                    db_update.arena_leaderboard =
-                        arena_leaderboard_table::parse_table_update(table_update)?
-                }
-                "arena_pool" => {
-                    db_update.arena_pool = arena_pool_table::parse_table_update(table_update)?
-                }
-                "daily_state" => {
-                    db_update.daily_state = daily_state_table::parse_table_update(table_update)?
-                }
                 "daily_update_timer" => {
                     db_update.daily_update_timer =
                         daily_update_timer_table::parse_table_update(table_update)?
@@ -298,17 +226,9 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
                         global_settings_table::parse_table_update(table_update)?
                 }
                 "player" => db_update.player = player_table::parse_table_update(table_update)?,
-                "player_game_stats" => {
-                    db_update.player_game_stats =
-                        player_game_stats_table::parse_table_update(table_update)?
-                }
-                "player_stats" => {
-                    db_update.player_stats = player_stats_table::parse_table_update(table_update)?
-                }
                 "player_tag" => {
                     db_update.player_tag = player_tag_table::parse_table_update(table_update)?
                 }
-                "quest" => db_update.quest = quest_table::parse_table_update(table_update)?,
                 "wallet" => db_update.wallet = wallet_table::parse_table_update(table_update)?,
 
                 unknown => __anyhow::bail!("Unknown table {unknown:?} in DatabaseUpdate"),
@@ -324,10 +244,6 @@ impl __sdk::spacetime_module::InModule for DbUpdate {
 
 impl __sdk::spacetime_module::DbUpdate for DbUpdate {
     fn apply_to_client_cache(&self, cache: &mut __sdk::client_cache::ClientCache<RemoteModule>) {
-        cache
-            .apply_diff_to_table::<TArenaLeaderboard>("arena_leaderboard", &self.arena_leaderboard);
-        cache.apply_diff_to_table::<TArenaPool>("arena_pool", &self.arena_pool);
-        cache.apply_diff_to_table::<TDailyState>("daily_state", &self.daily_state);
         cache.apply_diff_to_table::<DailyUpdateTimer>(
             "daily_update_timer",
             &self.daily_update_timer,
@@ -335,10 +251,7 @@ impl __sdk::spacetime_module::DbUpdate for DbUpdate {
         cache.apply_diff_to_table::<GlobalData>("global_data", &self.global_data);
         cache.apply_diff_to_table::<GlobalSettings>("global_settings", &self.global_settings);
         cache.apply_diff_to_table::<TPlayer>("player", &self.player);
-        cache.apply_diff_to_table::<TPlayerGameStats>("player_game_stats", &self.player_game_stats);
-        cache.apply_diff_to_table::<TPlayerStats>("player_stats", &self.player_stats);
         cache.apply_diff_to_table::<TPlayerTag>("player_tag", &self.player_tag);
-        cache.apply_diff_to_table::<TQuest>("quest", &self.quest);
         cache.apply_diff_to_table::<TWallet>("wallet", &self.wallet);
     }
     fn invoke_row_callbacks(
@@ -346,17 +259,6 @@ impl __sdk::spacetime_module::DbUpdate for DbUpdate {
         event: &EventContext,
         callbacks: &mut __sdk::callbacks::DbCallbacks<RemoteModule>,
     ) {
-        callbacks.invoke_table_row_callbacks::<TArenaLeaderboard>(
-            "arena_leaderboard",
-            &self.arena_leaderboard,
-            event,
-        );
-        callbacks.invoke_table_row_callbacks::<TArenaPool>("arena_pool", &self.arena_pool, event);
-        callbacks.invoke_table_row_callbacks::<TDailyState>(
-            "daily_state",
-            &self.daily_state,
-            event,
-        );
         callbacks.invoke_table_row_callbacks::<DailyUpdateTimer>(
             "daily_update_timer",
             &self.daily_update_timer,
@@ -369,18 +271,7 @@ impl __sdk::spacetime_module::DbUpdate for DbUpdate {
             event,
         );
         callbacks.invoke_table_row_callbacks::<TPlayer>("player", &self.player, event);
-        callbacks.invoke_table_row_callbacks::<TPlayerGameStats>(
-            "player_game_stats",
-            &self.player_game_stats,
-            event,
-        );
-        callbacks.invoke_table_row_callbacks::<TPlayerStats>(
-            "player_stats",
-            &self.player_stats,
-            event,
-        );
         callbacks.invoke_table_row_callbacks::<TPlayerTag>("player_tag", &self.player_tag, event);
-        callbacks.invoke_table_row_callbacks::<TQuest>("quest", &self.quest, event);
         callbacks.invoke_table_row_callbacks::<TWallet>("wallet", &self.wallet, event);
     }
 }

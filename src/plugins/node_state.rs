@@ -6,8 +6,7 @@ pub struct NodeStatePlugin;
 
 impl Plugin for NodeStatePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(PreUpdate, Self::collect_vars)
-            .register_type::<NodeState>();
+        app.add_systems(PreUpdate, Self::collect_vars);
     }
 }
 

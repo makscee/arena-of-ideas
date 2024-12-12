@@ -3,17 +3,17 @@ use super::*;
 #[derive(Debug, Clone, Copy, Display, EnumIter, Reflect, PartialEq, Eq)]
 #[node_kinds]
 pub enum NodeKind {
-    Hero,
-    House,
-    HouseColor,
-    Ability,
-    AbilityDescription,
-    AbilityEffect,
-    Unit,
-    UnitDescription,
-    UnitStats,
-    Representation,
-    UnitTrigger,
+    Hero = 0,
+    House = 1,
+    HouseColor = 2,
+    Ability = 3,
+    AbilityDescription = 4,
+    AbilityEffect = 5,
+    Unit = 6,
+    UnitDescription = 7,
+    UnitStats = 8,
+    Representation = 9,
+    UnitTrigger = 10,
 }
 
 #[bevy_trait_query::queryable]
@@ -27,7 +27,7 @@ pub trait GetNodeKind {
     fn kind(&self) -> NodeKind;
 }
 
-#[derive(Component, Reflect)]
+#[derive(Component)]
 pub struct NodeState {
     pub vars: HashMap<VarName, VarValue>,
     pub source: HashMap<VarName, NodeKind>,
@@ -165,6 +165,12 @@ pub struct Unit {
     pub stats: Option<UnitStats>,
     pub description: Option<UnitDescription>,
     pub representation: Option<Representation>,
+}
+
+#[derive(Component)]
+pub struct UnitComponent {
+    pub entity: Option<Entity>,
+    pub name: String,
 }
 
 impl Unit {

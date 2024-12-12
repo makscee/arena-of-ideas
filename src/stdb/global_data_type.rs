@@ -15,7 +15,6 @@ pub struct GlobalData {
     pub next_id: u64,
     pub game_version: String,
     pub last_sync: u64,
-    pub initial_enemies: Vec<u64>,
 }
 
 impl __sdk::spacetime_module::InModule for GlobalData {

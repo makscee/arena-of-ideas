@@ -27,23 +27,6 @@ pub trait TableSingletonExt: Table {
 impl TableSingletonExt for GlobalDataTableHandle<'static> {}
 impl TableSingletonExt for GlobalSettingsTableHandle<'static> {}
 impl TableSingletonExt for WalletTableHandle<'static> {}
-impl TableSingletonExt for DailyStateTableHandle<'static> {
-    fn current(&self) -> Self::Row {
-        *Self::get_current(self).unwrap_or_else(|| {
-            Box::new(Self::Row {
-                owner: player_id(),
-                ranked_cost: 0,
-                const_cost: 0,
-                quests_taken: default(),
-                meta_shop_discount_spent: false,
-            })
-        })
-    }
-
-    fn get_current(&self) -> Option<Box<Self::Row>> {
-        Self::iter(self).exactly_one().ok().map(|d| Box::new(d))
-    }
-}
 
 pub trait StdbStatusExt {
     fn on_success(&self, f: impl FnOnce(&mut World) + Send + Sync + 'static);
@@ -124,48 +107,6 @@ impl GIDExt for u64 {
 //     }
 // }
 
-impl Default for GameMode {
-    fn default() -> Self {
-        Self::ArenaNormal
-    }
-}
-
-impl ToString for GameMode {
-    fn to_string(&self) -> String {
-        match self {
-            GameMode::ArenaNormal => "Normal".into(),
-            GameMode::ArenaRanked => "Ranked".into(),
-            GameMode::ArenaConst => "Const".into(),
-        }
-    }
-}
-impl Eq for GameMode {}
-impl Hash for GameMode {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        core::mem::discriminant(self).hash(state);
-    }
-}
-impl Copy for GameMode {}
-
-impl From<u64> for GameMode {
-    fn from(value: u64) -> Self {
-        match value {
-            0 => GameMode::ArenaNormal,
-            1 => GameMode::ArenaRanked,
-            2 => GameMode::ArenaConst,
-            _ => panic!(),
-        }
-    }
-}
-impl Into<u64> for GameMode {
-    fn into(self) -> u64 {
-        match self {
-            GameMode::ArenaNormal => 0,
-            GameMode::ArenaRanked => 1,
-            GameMode::ArenaConst => 2,
-        }
-    }
-}
 impl Default for TPlayer {
     fn default() -> Self {
         Self {

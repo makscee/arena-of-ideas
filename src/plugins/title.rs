@@ -28,14 +28,6 @@ impl TitlePlugin {
                     .with_id("Settings".into())
                     .push(world);
                 }
-                if QuestPlugin::new_available()
-                    && Button::new("New Quests".cstr_rainbow())
-                        .color(CYAN, ui)
-                        .ui(ui)
-                        .clicked()
-                {
-                    GameState::Quests.proceed_to_target(world);
-                }
             });
         })
         .min_space(egui::vec2(200.0, 0.0))

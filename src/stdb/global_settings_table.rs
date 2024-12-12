@@ -2,12 +2,7 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN RUST INSTEAD.
 
 #![allow(unused)]
-use super::arena_settings_type::ArenaSettings;
-use super::battle_settings_type::BattleSettings;
 use super::global_settings_type::GlobalSettings;
-use super::meta_settings_type::MetaSettings;
-use super::quest_settings_type::QuestSettings;
-use super::rarity_settings_type::RaritySettings;
 use spacetimedb_sdk::{
     self as __sdk,
     anyhow::{self as __anyhow, Context as _},

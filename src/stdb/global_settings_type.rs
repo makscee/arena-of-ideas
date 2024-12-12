@@ -8,25 +8,11 @@ use spacetimedb_sdk::{
     lib as __lib, sats as __sats, ws_messages as __ws,
 };
 
-use super::arena_settings_type::ArenaSettings;
-use super::battle_settings_type::BattleSettings;
-use super::meta_settings_type::MetaSettings;
-use super::quest_settings_type::QuestSettings;
-use super::rarity_settings_type::RaritySettings;
-
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct GlobalSettings {
     pub always_zero: u32,
     pub season: u32,
-    pub arena: ArenaSettings,
-    pub rarities: RaritySettings,
-    pub battle: BattleSettings,
-    pub craft_shards_cost: u32,
-    pub create_team_cost: i64,
-    pub meta: MetaSettings,
-    pub ghost_unit: String,
-    pub quest: QuestSettings,
 }
 
 impl __sdk::spacetime_module::InModule for GlobalSettings {

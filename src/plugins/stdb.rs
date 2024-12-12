@@ -12,10 +12,7 @@ pub enum StdbTable {
     global_settings,
     global_data,
     player,
-    quest,
-    arena_leaderboard,
     wallet,
-    daily_state,
     player_tag,
 }
 
@@ -146,17 +143,8 @@ impl StdbTable {
             StdbTable::player => to_string_pretty(&SerializeWrapper::new(
                 cn().db.player().iter().collect_vec(),
             )),
-            StdbTable::quest => {
-                to_string_pretty(&SerializeWrapper::new(cn().db.quest().iter().collect_vec()))
-            }
-            StdbTable::arena_leaderboard => to_string_pretty(&SerializeWrapper::new(
-                cn().db.arena_leaderboard().iter().collect_vec(),
-            )),
             StdbTable::wallet => to_string_pretty(&SerializeWrapper::new(
                 cn().db.wallet().iter().collect_vec(),
-            )),
-            StdbTable::daily_state => to_string_pretty(&SerializeWrapper::new(
-                cn().db.daily_state().iter().collect_vec(),
             )),
             StdbTable::player_tag => to_string_pretty(&SerializeWrapper::new(
                 cn().db.player_tag().iter().collect_vec(),
@@ -174,16 +162,10 @@ impl StdbTable {
         match self {
             StdbTable::global_settings
             | StdbTable::global_data
-            | StdbTable::arena_leaderboard
             | StdbTable::player
             | StdbTable::player_tag => Some(self.full()),
 
-            StdbTable::quest => Some(StdbQuery {
-                table: self,
-                condition: StdbCondition::OwnerOrZero,
-            }),
-
-            StdbTable::wallet | StdbTable::daily_state => Some(StdbQuery {
+            StdbTable::wallet => Some(StdbQuery {
                 table: self,
                 condition: StdbCondition::Owner,
             }),
@@ -264,30 +246,5 @@ pub fn db_subscriptions() {
         Notification::new("Credits ".cstr_c(YELLOW) + &delta_txt.cstr_c(VISIBLE_LIGHT))
             // .sfx(SoundEffect::Coin)
             .push_op();
-    });
-    db.quest().on_insert(|_, d| {
-        let text = "New Quest\n".cstr() + &d.cstr();
-        Notification::new(text).push_op();
-    });
-    db.quest().on_update(|_, before, after| {
-        let before = before.clone();
-        let after = after.clone();
-        OperationsPlugin::add(move |world| {
-            if before.complete && after.complete {
-                return;
-            }
-            // if before.counter < after.counter {
-            //     ShopPlugin::maybe_queue_notification(
-            //         "Quest Progress:\n".cstr_c(VISIBLE_BRIGHT) + &after.cstr(),
-            //         world,
-            //     )
-            // }
-            // if !before.complete && after.complete {
-            //     ShopPlugin::maybe_queue_notification(
-            //         "Quest Complete!\n".cstr_c(VISIBLE_BRIGHT) + &after.cstr(),
-            //         world,
-            //     )
-            // }
-        });
     });
 }
