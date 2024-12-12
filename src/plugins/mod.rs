@@ -1,5 +1,6 @@
 mod admin;
 mod audio;
+mod background;
 mod camera;
 mod connect;
 mod context;
@@ -18,6 +19,7 @@ mod widgets;
 use super::*;
 pub use admin::*;
 pub use audio::*;
+pub use background::*;
 pub use camera::*;
 pub use connect::*;
 pub use context::*;

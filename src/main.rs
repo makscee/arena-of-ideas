@@ -105,6 +105,7 @@ fn main() {
             RepresentationPlugin,
             GameTimerPlugin,
             WindowPlugin,
+            BackgroundPlugin,
         ))
         .add_plugins((
             OperationsPlugin,
