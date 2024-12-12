@@ -17,5 +17,8 @@ pub fn parse_content_tree() {
     UNIT_REP
         .set(Representation::from_dir("unit_rep".to_owned(), &CONTENT_DIR).unwrap())
         .unwrap();
+    HERO_REP
+        .set(Representation::from_dir("hero_rep".to_owned(), &CONTENT_DIR).unwrap())
+        .unwrap();
     HOUSES.set(houses).unwrap();
 }

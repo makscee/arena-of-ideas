@@ -65,6 +65,7 @@ fn main() {
     load_client_settings();
     load_client_state();
     init_style_map();
+    parse_content_tree();
     GameState::set_target(target);
     let default_plugins = DefaultPlugins.set(LogPlugin {
         level: bevy::log::Level::DEBUG,
@@ -106,6 +107,7 @@ fn main() {
             GameTimerPlugin,
             WindowPlugin,
             BackgroundPlugin,
+            HeroPlugin,
         ))
         .add_plugins((
             OperationsPlugin,
@@ -134,7 +136,6 @@ fn setup(world: &mut World) {
     if let Some(ctx) = egui_context(world) {
         egui_extras::install_image_loaders(&ctx);
     }
-    parse_content_tree();
     CameraPlugin::respawn_camera(world);
 }
 

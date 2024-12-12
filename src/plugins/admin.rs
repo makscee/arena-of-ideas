@@ -24,22 +24,22 @@ impl AdminPlugin {
         }
     }
     fn setup(mut commands: Commands) {
-        let house = houses().get("holy").unwrap().clone();
-        dbg!(&house);
-        house.unpack(commands.spawn_empty().id(), &mut commands);
-        commands.add(|world: &mut World| {
-            for e in world
-                .query_filtered::<Entity, With<House>>()
-                .iter(world)
-                .collect_vec()
-            {
-                Window::new("Inspector", move |ui, world| {
-                    world.get::<House>(e).unwrap().ui(0, ui, world);
-                })
-                .no_frame()
-                .push(world);
-            }
-        });
+        // let house = houses().get("holy").unwrap().clone();
+        // dbg!(&house);
+        // house.unpack(commands.spawn_empty().id(), &mut commands);
+        // commands.add(|world: &mut World| {
+        //     for e in world
+        //         .query_filtered::<Entity, With<House>>()
+        //         .iter(world)
+        //         .collect_vec()
+        //     {
+        //         Window::new("Inspector", move |ui, world| {
+        //             world.get::<House>(e).unwrap().ui(0, ui, world);
+        //         })
+        //         .no_frame()
+        //         .push(world);
+        //     }
+        // });
     }
     fn update(world: &mut World) {
         let egui_context = world
@@ -51,13 +51,13 @@ impl AdminPlugin {
         };
         let mut egui_context = egui_context.clone();
 
-        // egui::Window::new("World Inspector")
-        //     .default_size(egui::vec2(300.0, 300.0))
-        //     .show(egui_context.get_mut(), |ui| {
-        //         egui::ScrollArea::both().show(ui, |ui| {
-        //             bevy_inspector_egui::bevy_inspector::ui_for_world(world, ui);
-        //             ui.allocate_space(ui.available_size());
-        //         });
-        //     });
+        egui::Window::new("World Inspector")
+            .default_size(egui::vec2(300.0, 300.0))
+            .show(egui_context.get_mut(), |ui| {
+                egui::ScrollArea::both().show(ui, |ui| {
+                    bevy_inspector_egui::bevy_inspector::ui_for_world(world, ui);
+                    ui.allocate_space(ui.available_size());
+                });
+            });
     }
 }

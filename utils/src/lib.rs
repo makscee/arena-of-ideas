@@ -6,7 +6,7 @@ mod var_value;
 
 use bevy::prelude::*;
 use bevy_egui::{
-    egui::{self, pos2, Color32, Id, Pos2, Response, TextureId, Ui},
+    egui::{self, pos2, Color32, Id, Order, Pos2, Response, TextureId, Ui},
     EguiContext,
 };
 use humanize_duration::prelude::DurationExt;
@@ -257,5 +257,30 @@ impl ToC32 for Color {
     fn c32(&self) -> Color32 {
         let c = self.to_srgba().to_u8_array();
         Color32::from_rgba_unmultiplied(c[0], c[1], c[2], c[3])
+    }
+}
+
+pub trait CtxExt {
+    fn bg_clicked(&self) -> Option<Pos2>;
+}
+
+impl CtxExt for egui::Context {
+    fn bg_clicked(&self) -> Option<Pos2> {
+        if !self.input(|r| r.pointer.primary_clicked()) {
+            return None;
+        }
+        let Some(pos) = self.pointer_interact_pos() else {
+            return None;
+        };
+        if self.available_rect().contains(pos)
+            && self
+                .layer_id_at(pos)
+                .map(|l| l.order == Order::Background)
+                .unwrap_or(true)
+        {
+            Some(pos)
+        } else {
+            None
+        }
     }
 }

@@ -5,6 +5,7 @@ pub use anyhow::{anyhow, Context as _, Result};
 
 pub use crate::stdb::*;
 pub use ::ui::*;
+pub use bevy::math::Vec3Swizzles;
 pub use bevy::{
     app::{prelude::PluginGroup, App, Plugin, Startup, Update},
     asset::{Asset, Assets, Handle},

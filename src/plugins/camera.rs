@@ -1,5 +1,6 @@
 use bevy::{
     core_pipeline::core_2d::Camera2dBundle,
+    prelude::Without,
     render::{
         camera::{OrthographicProjection, ScalingMode},
         view::InheritedVisibility,
@@ -15,7 +16,8 @@ impl Plugin for CameraPlugin {
         app.add_systems(
             Update,
             Self::adjust_to_fit_units.run_if(in_state(GameState::Battle)),
-        );
+        )
+        .add_systems(Update, Self::update);
     }
 }
 
@@ -36,6 +38,12 @@ impl CameraData {
 }
 
 impl CameraPlugin {
+    fn update(
+        mut cam: Query<&mut Transform, (With<Camera>, Without<Hero>)>,
+        hero: Query<&Transform, With<Hero>>,
+    ) {
+        cam.single_mut().translation = hero.single().translation;
+    }
     pub fn apply(world: &mut World) {
         let cd = *world.resource::<CameraData>();
         if let Some(mut proj) = world.get_mut::<OrthographicProjection>(Self::entity(world)) {
@@ -64,7 +72,7 @@ impl CameraPlugin {
         let entity = world.spawn_empty().id();
         let data = CameraData {
             entity,
-            cur_scale: 15.0,
+            cur_scale: 25.0,
             need_scale: default(),
         };
         data.apply(&mut camera.projection);

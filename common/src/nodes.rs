@@ -3,6 +3,7 @@ use super::*;
 #[derive(Debug, Clone, Copy, Display, EnumIter, Reflect, PartialEq, Eq)]
 #[node_kinds]
 pub enum NodeKind {
+    Hero,
     House,
     HouseColor,
     Ability,
@@ -194,4 +195,17 @@ pub struct UnitTrigger {
 pub struct Representation {
     pub material: RMaterial,
     pub children: Vec<Box<Representation>>,
+}
+
+#[node(on_unpack)]
+pub struct Hero {
+    pub name: String,
+    pub representation: Option<Representation>,
+}
+
+impl Hero {
+    fn on_unpack(&self, entity: Entity, commands: &mut Commands) {
+        let entity = commands.spawn_empty().set_parent(entity).id();
+        HERO_REP.get().unwrap().clone().unpack(entity, commands);
+    }
 }
