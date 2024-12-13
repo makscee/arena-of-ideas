@@ -1,0 +1,16 @@
+[package]
+name = "schema"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+strum = { workspace = true }
+strum_macros = { workspace = true }
+thiserror = { workspace = true }
+itertools = { workspace = true }
+syn = { workspace = true }
+proc-macro2 = { workspace = true }
+quote = { workspace = true }
+ecolor = { version = "0.28.1", features = ["serde"] }
+glam = { version = "0.27.0", features = ["serde"] }

@@ -13,6 +13,7 @@ pub use global_data::*;
 pub use global_settings::*;
 pub use inflating_number::*;
 pub use itertools::Itertools;
+use nodes_server::{House, Node};
 pub use player::*;
 pub use player_tag::*;
 use rand::{distributions::Alphanumeric, seq::IteratorRandom, Rng};
@@ -85,4 +86,13 @@ fn cleanup(ctx: &ReducerContext) -> Result<(), String> {
     ctx.is_admin()?;
     TPlayer::cleanup(ctx);
     Ok(())
+}
+
+fn f() {
+    let h = House {
+        name: String::new(),
+        color: None,
+        abilities: Vec::new(),
+    };
+    let s = h.get_data();
 }

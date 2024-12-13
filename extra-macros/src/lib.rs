@@ -58,7 +58,7 @@ pub fn node(args: TokenStream, item: TokenStream) -> TokenStream {
                     _ => unimplemented!(),
                 }
             }
-            for field in fields.iter_mut() {
+            for field in fields.iter() {
                 let ty = &field.ty;
                 let field_ident = field.ident.clone().unwrap();
                 match ty {
