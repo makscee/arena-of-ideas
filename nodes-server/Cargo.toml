@@ -14,7 +14,3 @@ itertools = { workspace = true }
 ron = { workspace = true }
 strum = { workspace = true }
 strum_macros = { workspace = true }
-darling = "0.20.10"
-proc-macro2 = "1.0.92"
-quote = "1.0.37"
-syn = "2.0.89"

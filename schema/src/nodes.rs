@@ -28,6 +28,7 @@ struct Unit {
     pub name: String,
     pub stats: Option<UnitStats>,
     pub description: Option<UnitDescription>,
+    pub representation: Option<Representation>,
 }
 
 struct UnitStats {
@@ -37,8 +38,19 @@ struct UnitStats {
 
 struct UnitDescription {
     pub description: String,
+    pub trigger: Option<UnitTrigger>,
+}
+
+struct UnitTrigger {
+    pub trigger: Trigger,
 }
 
 struct Hero {
     pub name: String,
+    pub representation: Option<Representation>,
+}
+
+struct Representation {
+    pub material: RMaterial,
+    pub children: Vec<Box<Representation>>,
 }

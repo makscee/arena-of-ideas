@@ -1,0 +1,8 @@
+[package]
+name = "utils-client"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+once_cell = { workspace = true }
+bevy = { workspace = true }

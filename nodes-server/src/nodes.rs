@@ -1,4 +1,5 @@
-use macro_server::node;
+use macro_server::*;
+use schema::*;
 use strum_macros::{Display, EnumIter};
 
 macro_schema::nodes!();

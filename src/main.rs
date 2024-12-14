@@ -11,8 +11,10 @@ use bevy::{
 use bevy_vector_shapes::shapes;
 use clap::{command, Parser, ValueEnum};
 use include_dir::{include_dir, Dir};
+use nodes_client::NodeKind;
 use noisy_bevy::NoisyShaderPlugin;
 pub use prelude::*;
+use utils_client::operations::OperationsPlugin;
 
 #[derive(Parser, Debug, Default, Clone)]
 #[command(author, version, about, long_about = None)]

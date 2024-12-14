@@ -1,5 +1,3 @@
-use bevy::color::Srgba;
-
 use super::*;
 
 pub trait ExpressionImpl {
@@ -8,7 +6,7 @@ pub trait ExpressionImpl {
     fn get_i32(&self, e: Entity, context: &Context) -> Result<i32, ExpressionError>;
     fn get_vec2(&self, e: Entity, context: &Context) -> Result<Vec2, ExpressionError>;
     fn get_bool(&self, e: Entity, context: &Context) -> Result<bool, ExpressionError>;
-    fn get_color(&self, e: Entity, context: &Context) -> Result<Color, ExpressionError>;
+    fn get_color(&self, e: Entity, context: &Context) -> Result<Color32, ExpressionError>;
     fn get_string(&self, e: Entity, context: &Context) -> Result<String, ExpressionError>;
 }
 
@@ -24,9 +22,12 @@ impl ExpressionImpl for Expression {
             Expression::B(v) => Ok((*v).into()),
             Expression::V2(x, y) => Ok(vec2(*x, *y).into()),
             Expression::S(s) => Ok(s.clone().into()),
-            Expression::C(s) => Srgba::hex(s)
-                .map_err(|e| ExpressionError::HexColorError(e))
-                .map(|v| VarValue::Color(v.into())),
+            Expression::C(s) => Color32::from_hex(s)
+                .map_err(|e| ExpressionError::OperationNotSupported {
+                    values: default(),
+                    op: "Hex conversion err",
+                })
+                .map(|v| v.into()),
             Expression::GT => Ok(gt().play_head().into()),
             Expression::Sin(x) => Ok(x.get_f32(e, context)?.sin().into()),
             Expression::Cos(x) => Ok(x.get_f32(e, context)?.cos().into()),
@@ -87,7 +88,7 @@ impl ExpressionImpl for Expression {
     fn get_bool(&self, e: Entity, context: &Context) -> Result<bool, ExpressionError> {
         self.get_value(e, context)?.get_bool()
     }
-    fn get_color(&self, e: Entity, context: &Context) -> Result<Color, ExpressionError> {
+    fn get_color(&self, e: Entity, context: &Context) -> Result<Color32, ExpressionError> {
         self.get_value(e, context)?.get_color()
     }
     fn get_string(&self, e: Entity, context: &Context) -> Result<String, ExpressionError> {

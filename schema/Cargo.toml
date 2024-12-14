@@ -4,6 +4,7 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
+utils = { path = "../utils" }
 serde = { workspace = true }
 strum = { workspace = true }
 strum_macros = { workspace = true }

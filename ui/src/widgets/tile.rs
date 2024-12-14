@@ -1,3 +1,5 @@
+use utils_client::game_timer::gt;
+
 use super::*;
 
 pub struct TilePlugin;
@@ -100,7 +102,7 @@ impl Default for ScreenResource {
 impl TilePlugin {
     pub fn show_all(ctx: &egui::Context, world: &mut World) {
         Self::reset(world);
-        let dt = delta_time(world) * 13.0;
+        let dt = gt().last_delta() * 13.0;
         let mut sr = world.remove_resource::<ScreenResource>().unwrap();
         let mood = sr.screen_mood;
         let mut tr = rm(world);

@@ -3,7 +3,7 @@ use std::str::FromStr;
 use bevy::{
     color::Color,
     log::{debug, error, info},
-    math::Vec2,
+    math::{vec2, Vec2},
     utils::hashbrown::HashMap,
 };
 use colored::{Colorize, CustomColor};
@@ -11,6 +11,8 @@ use ecolor::Hsva;
 use egui::{text::LayoutJob, Label, Response, Style, TextFormat, Widget, WidgetText};
 use itertools::Itertools;
 use once_cell::sync::OnceCell;
+use schema::{expression::Expression, var_name::VarName, var_value::VarValue, *};
+use utils_client::game_timer::gt;
 
 use super::*;
 
@@ -402,5 +404,137 @@ impl ToCstr for VarValue {
         match self {
             _ => self.to_string().cstr(),
         }
+    }
+}
+impl ToCstr for Expression {
+    fn cstr(&self) -> Cstr {
+        self.as_ref().cstr_c(YELLOW)
+    }
+    fn cstr_expanded(&self) -> Cstr {
+        let inner = match self {
+            Expression::One | Expression::Zero | Expression::GT => String::default(),
+            Expression::Var(v) => v.cstr(),
+            Expression::V(v) => v.cstr(),
+            Expression::S(v) => v.to_owned(),
+            Expression::F(v) => v.cstr(),
+            Expression::I(v) => v.cstr(),
+            Expression::B(v) => v.cstr(),
+            Expression::V2(x, y) => vec2(*x, *y).cstr(),
+            Expression::C(c) => match Color32::from_hex(c) {
+                Ok(color) => c.cstr_c(color),
+                Err(e) => format!("{c} [s {e:?}]",).cstr_c(RED),
+            },
+            Expression::Sin(x)
+            | Expression::Cos(x)
+            | Expression::Even(x)
+            | Expression::Abs(x)
+            | Expression::Floor(x)
+            | Expression::Ceil(x)
+            | Expression::Fract(x)
+            | Expression::Sqr(x) => x.cstr(),
+            Expression::Macro(a, b)
+            | Expression::Sum(a, b)
+            | Expression::Sub(a, b)
+            | Expression::Mul(a, b)
+            | Expression::Div(a, b)
+            | Expression::Max(a, b)
+            | Expression::Min(a, b)
+            | Expression::Mod(a, b)
+            | Expression::And(a, b)
+            | Expression::Or(a, b)
+            | Expression::Equals(a, b)
+            | Expression::GreaterThen(a, b)
+            | Expression::LessThen(a, b) => format!("{}, {}", a.cstr_expanded(), b.cstr_expanded()),
+            Expression::If(a, b, c) => format!(
+                "{}, {}, {}",
+                a.cstr_expanded(),
+                b.cstr_expanded(),
+                c.cstr_expanded()
+            ),
+        };
+        if inner.is_empty() {
+            self.cstr()
+        } else {
+            format!("{}({inner})", self.cstr())
+        }
+    }
+}
+
+impl ToCstr for RMaterial {
+    fn cstr(&self) -> Cstr {
+        format!(
+            "[b [vb x{}]]\n{}\n({})",
+            self.count,
+            self.t.cstr(),
+            self.modifiers.iter().map(|x| x.cstr()).join(", ")
+        )
+    }
+    fn cstr_expanded(&self) -> Cstr {
+        format!(
+            "[b [vb x{}]]\n{}\n({})",
+            self.count,
+            self.t.cstr_expanded(),
+            self.modifiers.iter().map(|x| x.cstr_expanded()).join(", ")
+        )
+    }
+}
+impl ToCstr for RModifier {
+    fn cstr(&self) -> Cstr {
+        self.as_ref().cstr_c(CYAN)
+    }
+    fn cstr_expanded(&self) -> Cstr {
+        let inner = match self {
+            RModifier::Color(x) | RModifier::Offset(x) => x.cstr_expanded(),
+        };
+        format!("{}({inner})", self.cstr())
+    }
+}
+impl ToCstr for MaterialType {
+    fn cstr(&self) -> Cstr {
+        self.as_ref().cstr_c(CYAN)
+    }
+    fn cstr_expanded(&self) -> Cstr {
+        let inner = match self {
+            MaterialType::Shape { shape, modifiers } => format!(
+                "{}, ({})",
+                shape.cstr_expanded(),
+                modifiers.into_iter().map(|m| m.cstr_expanded()).join(", ")
+            ),
+            MaterialType::Text { text } => text.cstr_expanded(),
+        };
+        format!("{}({inner})", self.cstr())
+    }
+}
+impl ToCstr for ShapeModifier {
+    fn cstr(&self) -> Cstr {
+        self.as_ref().cstr_c(CYAN)
+    }
+    fn cstr_expanded(&self) -> Cstr {
+        let inner = match self {
+            ShapeModifier::Rotation(x)
+            | ShapeModifier::Scale(x)
+            | ShapeModifier::Color(x)
+            | ShapeModifier::Hollow(x)
+            | ShapeModifier::Thickness(x)
+            | ShapeModifier::Roundness(x)
+            | ShapeModifier::Alpha(x) => x.cstr_expanded(),
+        };
+        format!("{}({inner})", self.cstr())
+    }
+}
+impl ToCstr for Shape {
+    fn cstr(&self) -> Cstr {
+        self.as_ref().cstr_c(CYAN)
+    }
+    fn cstr_expanded(&self) -> Cstr {
+        let inner = match self {
+            Shape::Rectangle { size: x } | Shape::Circle { radius: x } => x.cstr_expanded(),
+        };
+        format!("{}({inner})", self.cstr())
+    }
+}
+impl ToCstr for Trigger {
+    fn cstr(&self) -> Cstr {
+        self.as_ref().to_owned()
     }
 }

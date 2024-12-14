@@ -1,3 +1,6 @@
+use expression::Expression;
+use var_name::VarName;
+
 use super::*;
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, AsRefStr, EnumIter)]

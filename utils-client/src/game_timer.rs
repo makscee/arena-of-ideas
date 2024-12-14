@@ -4,7 +4,7 @@ use once_cell::sync::OnceCell;
 
 use super::*;
 
-static GAME_TIMER: OnceCell<Mutex<GameTimer>> = OnceCell::new();
+pub static GAME_TIMER: OnceCell<Mutex<GameTimer>> = OnceCell::new();
 
 #[derive(Debug)]
 pub struct GameTimer {
@@ -15,16 +15,6 @@ pub struct GameTimer {
     batches: Vec<f32>,
     paused: bool,
     last_delta: f32,
-}
-
-pub struct GameTimerPlugin;
-impl Plugin for GameTimerPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_systems(Startup, || {
-            GAME_TIMER.set(default()).unwrap();
-        })
-        .add_systems(Update, GameTimer::update);
-    }
 }
 
 impl Default for GameTimer {
@@ -50,8 +40,7 @@ impl GameTimer {
         let t = self.play_head + offset;
         (t / period).floor() != ((t - self.last_delta) / period).floor()
     }
-    fn update(time: Res<Time>) {
-        let delta = time.delta_seconds();
+    fn update(delta: f32) {
         let mut gt = gt();
         let ps = gt.playback_speed;
         let paused = gt.paused;

@@ -1,6 +1,5 @@
 [workspace]
 members = [
-    "common",
     "extra-macros",
     "macro-schema",
     "macro-server",
@@ -9,6 +8,7 @@ members = [
     "server",
     "ui",
     "utils",
+    "utils-client",
 ]
 
 [workspace.package]
@@ -46,18 +46,16 @@ thiserror = "2.0.3"
 convert_case = "0.6.0"
 bevy-trait-query = "0.6.0"
 once_cell = "1.19.0"
-bevy_egui = { version = "0.29.0", default-features = false, features = [
-    "immutable_ctx",
-    "open_url",
-    "default_fonts",
-    "render",
-    "serde",
-] }
+bevy_egui = { version = "0.29.0", features = ["serde"] }
 ecolor = { version = "0.28.1", features = ["color-hex"] }
 lerp = "0.5.0"
 indexmap = { version = "2.6.0", features = ["serde"] }
 colored = "2.0.0"
-chrono = "0.4.38"
+chrono = { version = "0.4.38", default-features = false, features = [
+    "alloc",
+    "std",
+    "now",
+] }
 egui_extras = { version = "0.28.1", features = ["svg"] }
 humanize-duration = "0.0.6"
 parking_lot = "0.12.3"
@@ -67,10 +65,11 @@ proc-macro2 = "1.0.92"
 quote = "1.0.37"
 
 [dependencies]
-common = { path = "common" }
-extra-macros = { path = "extra-macros" }
 ui = { path = "ui" }
 utils = { path = "utils" }
+schema = { path = "schema" }
+utils-client = { path = "utils-client" }
+nodes-client = { path = "nodes-client" }
 
 bevy = { workspace = true }
 strum = { workspace = true }

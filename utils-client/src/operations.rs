@@ -1,5 +1,6 @@
 use std::{collections::VecDeque, sync::Mutex};
 
+use bevy::prelude::*;
 use once_cell::sync::OnceCell;
 
 use super::*;

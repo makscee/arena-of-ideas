@@ -1,9 +1,10 @@
 use bevy::{
-    color::{Color, ColorToPacked},
-    math::Vec2,
+    color::Color,
+    math::{vec2, Vec2},
 };
 use ecolor::Hsva;
 use egui::{Checkbox, DragValue};
+use schema::{expression::Expression, var_name::VarName, var_value::VarValue, *};
 
 use super::*;
 
@@ -29,7 +30,7 @@ impl Show for VarValue {
             VarValue::u64(v) => v.show(prefix, ui),
             VarValue::bool(v) => v.show(prefix, ui),
             VarValue::Vec2(v) => v.show(prefix, ui),
-            VarValue::Color(v) => v.show(prefix, ui),
+            VarValue::Color32(v) => v.show(prefix, ui),
         });
     }
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
@@ -40,7 +41,7 @@ impl Show for VarValue {
             VarValue::bool(v) => v.show_mut(prefix, ui),
             VarValue::String(v) => v.show_mut(prefix, ui),
             VarValue::Vec2(v) => v.show_mut(prefix, ui),
-            VarValue::Color(v) => v.show_mut(prefix, ui),
+            VarValue::Color32(v) => v.show_mut(prefix, ui),
         })
         .inner
     }
@@ -163,5 +164,163 @@ impl Show for Color32 {
             }
         })
         .inner
+    }
+}
+
+impl Show for Expression {
+    fn show(&self, prefix: Option<&str>, ui: &mut Ui) {
+        format!("{}{}", prefix.unwrap_or_default(), self.cstr_expanded()).label(ui);
+    }
+    fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
+        ui.horizontal(|ui| {
+            Selector::new(prefix.unwrap_or_default()).ui_enum(self, ui)
+                || match self {
+                    Expression::One | Expression::Zero | Expression::GT => false,
+                    Expression::Var(v) => v.show_mut(None, ui),
+                    Expression::V(v) => v.show_mut(None, ui),
+                    Expression::S(v) => v.show_mut(None, ui),
+                    Expression::F(v) => v.show_mut(None, ui),
+                    Expression::I(v) => v.show_mut(None, ui),
+                    Expression::B(v) => v.show_mut(None, ui),
+                    Expression::C(v) => v.show_mut(None, ui),
+                    Expression::V2(x, y) => {
+                        let mut v = vec2(*x, *y);
+                        if v.show_mut(None, ui) {
+                            *x = v.x;
+                            *y = v.y;
+                            true
+                        } else {
+                            false
+                        }
+                    }
+                    Expression::Sin(x)
+                    | Expression::Cos(x)
+                    | Expression::Even(x)
+                    | Expression::Abs(x)
+                    | Expression::Floor(x)
+                    | Expression::Ceil(x)
+                    | Expression::Fract(x)
+                    | Expression::Sqr(x) => x.show_mut(None, ui),
+                    Expression::Macro(a, b)
+                    | Expression::Sum(a, b)
+                    | Expression::Sub(a, b)
+                    | Expression::Mul(a, b)
+                    | Expression::Div(a, b)
+                    | Expression::Max(a, b)
+                    | Expression::Min(a, b)
+                    | Expression::Mod(a, b)
+                    | Expression::And(a, b)
+                    | Expression::Or(a, b)
+                    | Expression::Equals(a, b)
+                    | Expression::GreaterThen(a, b)
+                    | Expression::LessThen(a, b) => {
+                        a.show_mut(Some("a:".into()), ui) || b.show_mut(Some("b:".into()), ui)
+                    }
+                    Expression::If(i, t, e) => {
+                        i.show_mut(Some("if:".into()), ui)
+                            || t.show_mut(Some("then:".into()), ui)
+                            || e.show_mut(Some("else:".into()), ui)
+                    }
+                }
+        })
+        .inner
+    }
+}
+
+impl Show for RMaterial {
+    fn show(&self, prefix: Option<&str>, ui: &mut Ui) {
+        format!("{}{}", prefix.unwrap_or_default(), self.cstr_expanded()).label_w(ui);
+    }
+    fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
+        if let Some(prefix) = prefix {
+            prefix.cstr().label(ui);
+        }
+        let mut changed = self.t.show_mut(Some("type:"), ui);
+        changed |= DragValue::new(&mut self.count)
+            .prefix("count:")
+            .ui(ui)
+            .changed();
+        for m in &mut self.modifiers {
+            changed |= m.show_mut(None, ui);
+        }
+        if "+"
+            .cstr_cs(VISIBLE_BRIGHT, CstrStyle::Bold)
+            .button(ui)
+            .clicked()
+        {
+            self.modifiers.push(default());
+        }
+        changed
+    }
+}
+impl Show for RModifier {
+    fn show(&self, prefix: Option<&str>, ui: &mut Ui) {
+        format!("{}{}", prefix.unwrap_or_default(), self.cstr_expanded()).label_w(ui);
+    }
+    fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
+        Selector::new(prefix.unwrap_or_default()).ui_enum(self, ui)
+            || match self {
+                RModifier::Color(x) | RModifier::Offset(x) => x.show_mut(None, ui),
+            }
+    }
+}
+impl Show for MaterialType {
+    fn show(&self, prefix: Option<&str>, ui: &mut Ui) {
+        format!("{}{}", prefix.unwrap_or_default(), self.cstr_expanded()).label_w(ui);
+    }
+    fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
+        Selector::new(prefix.unwrap_or_default()).ui_enum(self, ui)
+            || match self {
+                MaterialType::Shape { shape, modifiers } => {
+                    let mut c = shape.show_mut(Some("shape:"), ui);
+                    for (i, m) in modifiers.iter_mut().enumerate() {
+                        ui.push_id(i, |ui| {
+                            c |= m.show_mut(None, ui);
+                        });
+                    }
+                    c
+                }
+                MaterialType::Text { text } => todo!(),
+            }
+    }
+}
+impl Show for ShapeModifier {
+    fn show(&self, prefix: Option<&str>, ui: &mut Ui) {
+        format!("{}{}", prefix.unwrap_or_default(), self.cstr_expanded()).label_w(ui);
+    }
+    fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
+        Selector::new(prefix.unwrap_or_default()).ui_enum(self, ui)
+            || match self {
+                ShapeModifier::Scale(x)
+                | ShapeModifier::Rotation(x)
+                | ShapeModifier::Color(x)
+                | ShapeModifier::Hollow(x)
+                | ShapeModifier::Thickness(x)
+                | ShapeModifier::Roundness(x)
+                | ShapeModifier::Alpha(x) => x.show_mut(None, ui),
+            }
+    }
+}
+impl Show for Shape {
+    fn show(&self, prefix: Option<&str>, ui: &mut Ui) {
+        format!("{}{}", prefix.unwrap_or_default(), self.cstr_expanded()).label_w(ui);
+    }
+    fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
+        Selector::new(prefix.unwrap_or_default()).ui_enum(self, ui)
+            || match self {
+                Shape::Rectangle { size } => size.show_mut(Some("size:"), ui),
+                Shape::Circle { radius } => radius.show_mut(Some("radius:"), ui),
+            }
+    }
+}
+impl Show for Trigger {
+    fn show(&self, prefix: Option<&str>, ui: &mut bevy_egui::egui::Ui) {
+        if let Some(prefix) = prefix {
+            prefix.cstr_c(VISIBLE_DARK).label(ui);
+        }
+        self.cstr_cs(CYAN, CstrStyle::Bold).label(ui);
+    }
+    fn show_mut(&mut self, prefix: Option<&str>, ui: &mut bevy_egui::egui::Ui) -> bool {
+        Selector::new(prefix.unwrap_or_default()).ui_enum(self, ui)
     }
 }

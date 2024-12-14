@@ -1,3 +1,5 @@
+use assets::{HERO_REP, UNIT_REP};
+
 use super::*;
 
 static CONTENT_DIR: Dir = include_dir!("./assets/ron/modular/");

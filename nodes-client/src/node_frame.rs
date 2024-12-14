@@ -1,5 +1,9 @@
-use egui::Layout;
+use bevy_egui::egui::{
+    Align, CollapsingHeader, Color32, Frame, Layout, Margin, Rounding, Shadow, Stroke, Ui,
+};
 use parking_lot::{const_mutex, Mutex};
+use schema::var_name::VarName;
+use ui::*;
 
 use super::*;
 
@@ -103,7 +107,7 @@ impl NodeFrame {
             let min_rect = ui.min_rect();
             let rect = rect.with_max_x(min_rect.max.x).with_min_x(rect.max.x);
             ui.reset_style();
-            let ui = &mut ui.child_ui(rect, Layout::left_to_right(egui::Align::Center), None);
+            let ui = &mut ui.child_ui(rect, Layout::left_to_right(Align::Center), None);
             if "e".cstr().button(ui).clicked() {
                 set_editing_node(node.entity().unwrap(), kind);
             }

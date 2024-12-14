@@ -1,5 +1,7 @@
 use std::collections::VecDeque;
 
+use utils_client::operations::OperationsPlugin;
+
 use super::*;
 
 #[derive(Clone, Debug)]

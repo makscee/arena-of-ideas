@@ -114,7 +114,7 @@ impl RepresentationPlugin {
                 let index = context.get_var(VarName::index).to_e()?;
                 let pos = world_to_screen_cam(pos.extend(0.0), &cam.0, &cam.1);
                 let text = text.get_string(e, context)?;
-                let color = context.get_var(VarName::color).to_e()?.get_color()?.c32();
+                let color = context.get_var(VarName::color).to_e()?.get_color()?;
                 Area::new(Id::new(e).with(index))
                     .pivot(Align2::CENTER_CENTER)
                     .fixed_pos(pos.to_pos2())
@@ -160,7 +160,7 @@ impl ShapeModifierApply for ShapeModifier {
         match self {
             ShapeModifier::Rotation(v) => painter.rotate_z(v.get_f32(e, context)?),
             ShapeModifier::Scale(v) => painter.scale(v.get_vec2(e, context)?.extend(1.0)),
-            ShapeModifier::Color(v) => painter.set_color(v.get_color(e, context)?),
+            ShapeModifier::Color(v) => painter.set_color(v.get_color(e, context)?.to_color()),
             ShapeModifier::Hollow(v) => painter.hollow = v.get_bool(e, context)?,
             ShapeModifier::Thickness(v) => painter.thickness = v.get_f32(e, context)?,
             ShapeModifier::Roundness(v) => painter.roundness = v.get_f32(e, context)?,

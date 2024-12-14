@@ -3,8 +3,10 @@ mod rarity;
 mod show;
 mod table_ext;
 mod ui;
+mod utils;
 mod widgets;
 
+use ::utils::*;
 use bevy::prelude::KeyCode;
 use bevy::prelude::World;
 use bevy::{
@@ -30,7 +32,7 @@ use std::sync::Mutex;
 use strum::IntoEnumIterator;
 use strum_macros::{AsRefStr, Display, EnumIter, FromRepr};
 pub use ui::*;
-use utils::*;
+pub use utils::*;
 pub use widgets::*;
 
 pub trait ToCustomColor {

@@ -9,20 +9,15 @@ crate-type = ["cdylib"]
 [dependencies]
 schema = { path = "../schema" }
 nodes-server = { path = "../nodes-server" }
-# utils = { path = "../utils" }
 spacetimedb = { workspace = true }
 strum = { workspace = true }
 strum_macros = { workspace = true }
+chrono = { workspace = true }
 log = "0.4"
 itertools = "0.12.0"
 anyhow = "1.0.75"
 hex = "0.4.3"
 rand = { version = "0.8.5", default-features = false }
-chrono = { version = "0.4.38", default-features = false, features = [
-    "alloc",
-    "std",
-    "now",
-] }
 rand_seeder = "0.2.3"
 rand_pcg = "0.3.1"
 bcrypt-no-getrandom = "0.16.0"

@@ -8,52 +8,20 @@ pub fn world_to_screen(pos: Vec3, world: &World) -> Vec2 {
     let transform = entity.get::<GlobalTransform>().unwrap();
     camera.world_to_viewport(transform, pos).unwrap_or_default()
 }
-pub fn world_to_screen_cam(pos: Vec3, cam: &Camera, cam_transform: &GlobalTransform) -> Vec2 {
-    cam.world_to_viewport(cam_transform, pos)
-        .unwrap_or_default()
-}
 pub fn screen_to_world(pos: Vec2, world: &World) -> Vec2 {
     let entity = CameraPlugin::entity(world);
     let camera = world.get::<Camera>(entity).unwrap();
     let transform = world.get::<GlobalTransform>(entity).unwrap();
     screen_to_world_cam(pos, camera, transform)
 }
-pub fn screen_to_world_cam(pos: Vec2, cam: &Camera, cam_transform: &GlobalTransform) -> Vec2 {
-    cam.viewport_to_world_2d(cam_transform, pos)
-        .unwrap_or_default()
-}
 pub fn cursor_world_pos(world: &mut World) -> Option<Vec2> {
     cursor_pos(world).map(|p| screen_to_world(p, world))
 }
-pub fn draw_curve(
-    p1: Pos2,
-    p2: Pos2,
-    p3: Pos2,
-    p4: Pos2,
-    width: f32,
-    color: Color32,
-    arrow: bool,
-    ui: &mut Ui,
-) {
-    let points = [p1, p2, p3, p4];
-    let stroke = Stroke { width, color };
-    let curve = egui::Shape::CubicBezier(egui::epaint::CubicBezierShape::from_points_stroke(
-        points,
-        false,
-        Color32::TRANSPARENT,
-        stroke,
-    ));
-    ui.painter().add(curve);
-    if !arrow {
-        return;
-    }
-    let t = p4.to_vec2();
-    let t1 = (p3.to_vec2() - t).normalized() * 15.0;
-    let p1 = (t + t1 + t1.rot90()).to_pos2();
-    let p2 = (t + t1 - t1.rot90()).to_pos2();
-    let points = [p1, p4, p2];
-    let arrow = egui::Shape::Path(PathShape::line(points.into(), stroke));
-    ui.painter().add(arrow);
+pub fn delta_time(world: &World) -> f32 {
+    world.resource::<Time>().delta_seconds()
+}
+pub fn elapsed_seconds(world: &World) -> f32 {
+    world.resource::<Time>().elapsed_seconds()
 }
 pub fn global_settings() -> GlobalSettings {
     if is_connected() {
@@ -74,22 +42,11 @@ pub fn app_exit_op() {
 pub fn cur_state(world: &World) -> GameState {
     *world.resource::<State<GameState>>().get()
 }
-pub fn debug_rect(rect: Rect, ctx: &egui::Context) {
-    ctx.debug_painter().rect(
-        rect,
-        Rounding::ZERO,
-        YELLOW_DARK.gamma_multiply(0.5),
-        Stroke {
-            width: 1.0,
-            color: YELLOW,
-        },
-    );
-}
-pub fn debug_available_rect(ui: &mut Ui) {
-    debug_rect(ui.available_rect_before_wrap(), ui.ctx());
-}
 pub fn can_afford(cost: i64) -> bool {
     cn().db.wallet().current().amount >= cost
+}
+pub fn rng_seeded(seed: u64) -> ChaCha8Rng {
+    ChaCha8Rng::seed_from_u64(seed)
 }
 pub fn show_daily_refresh_timer(ui: &mut Ui) {
     let now = Utc::now().timestamp();
@@ -99,9 +56,6 @@ pub fn show_daily_refresh_timer(ui: &mut Ui) {
         format_duration(til_refresh as u64).cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold)
     )
     .label(ui);
-}
-pub fn rng_seeded(seed: u64) -> ChaCha8Rng {
-    ChaCha8Rng::seed_from_u64(seed)
 }
 
 pub trait WorldExt {
@@ -113,4 +67,3 @@ impl WorldExt for World {
         clear_entity_names();
     }
 }
-
