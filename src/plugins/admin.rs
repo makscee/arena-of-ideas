@@ -1,3 +1,5 @@
+use egui::emath::Rot2;
+
 use super::*;
 
 pub struct AdminPlugin;
@@ -50,14 +52,26 @@ impl AdminPlugin {
             return;
         };
         let mut egui_context = egui_context.clone();
+        Window::new("test", |ui, _| {
+            let rect = ui.available_rect_before_wrap();
+            ui.expand_to_include_rect(rect);
+            let mut mesh = egui::Mesh::default();
+            mesh.add_colored_rect(
+                Rect::from_center_size(rect.center(), egui::vec2(50.0, 5.0)),
+                YELLOW,
+            );
+            mesh.rotate(Rot2::from_angle(gt().play_head()), rect.center());
+            ui.painter().add(egui::Shape::mesh(mesh));
+        })
+        .show(egui_context.get_mut(), world);
 
-        egui::Window::new("World Inspector")
-            .default_size(egui::vec2(300.0, 300.0))
-            .show(egui_context.get_mut(), |ui| {
-                egui::ScrollArea::both().show(ui, |ui| {
-                    bevy_inspector_egui::bevy_inspector::ui_for_world(world, ui);
-                    ui.allocate_space(ui.available_size());
-                });
-            });
+        // egui::Window::new("World Inspector")
+        //     .default_size(egui::vec2(300.0, 300.0))
+        //     .show(egui_context.get_mut(), |ui| {
+        //         egui::ScrollArea::both().show(ui, |ui| {
+        //             bevy_inspector_egui::bevy_inspector::ui_for_world(world, ui);
+        //             ui.allocate_space(ui.available_size());
+        //         });
+        //     });
     }
 }

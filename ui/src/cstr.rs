@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{str::FromStr, sync::Arc};
 
 use bevy::{
     color::Color,
@@ -8,7 +8,10 @@ use bevy::{
 };
 use colored::{Colorize, CustomColor};
 use ecolor::Hsva;
-use egui::{text::LayoutJob, Label, Response, Style, TextFormat, Widget, WidgetText};
+use egui::{
+    text::{Fonts, LayoutJob},
+    Galley, Label, Response, Style, TextFormat, Widget, WidgetText,
+};
 use itertools::Itertools;
 use once_cell::sync::OnceCell;
 use schema::{expression::Expression, var_name::VarName, var_value::VarValue, *};
@@ -34,6 +37,7 @@ pub trait CstrTrait {
     fn info(&self);
     fn debug(&self);
     fn inject_vars(self, f: impl Fn(VarName) -> Option<VarValue>) -> Self;
+    fn galley(self, ui: &mut Ui) -> Arc<Galley>;
 }
 
 impl CstrTrait for Cstr {
@@ -121,6 +125,11 @@ impl CstrTrait for Cstr {
             self.replace_range(p..(p + var.len() + 1), &replace);
         }
         self
+    }
+    fn galley(self, ui: &mut Ui) -> Arc<Galley> {
+        let mut job = LayoutJob::default();
+        cstr_parse_into_job(&self, 1.0, &mut job, ui.style());
+        ui.fonts(|r| r.layout_job(job))
     }
 }
 
@@ -460,77 +469,33 @@ impl ToCstr for Expression {
     }
 }
 
+impl ToCstr for PainterAction {
+    fn cstr(&self) -> Cstr {
+        self.as_ref().cstr_c(CYAN)
+    }
+    fn cstr_expanded(&self) -> Cstr {
+        let inner = match self {
+            PainterAction::Circle(x)
+            | PainterAction::Rectangle(x)
+            | PainterAction::Text(x)
+            | PainterAction::Hollow(x)
+            | PainterAction::Translate(x)
+            | PainterAction::Scale(x)
+            | PainterAction::Color(x) => x.cstr_expanded(),
+            PainterAction::Repeat(x, a) => format!("{}, {}", x.cstr_expanded(), a.cstr_expanded()),
+        };
+        format!("{}({inner})", self.cstr())
+    }
+}
 impl ToCstr for RMaterial {
     fn cstr(&self) -> Cstr {
-        format!(
-            "[b [vb x{}]]\n{}\n({})",
-            self.count,
-            self.t.cstr(),
-            self.modifiers.iter().map(|x| x.cstr()).join(", ")
-        )
+        format!("({})", self.actions.iter().map(|a| a.cstr()).join(", "))
     }
     fn cstr_expanded(&self) -> Cstr {
         format!(
-            "[b [vb x{}]]\n{}\n({})",
-            self.count,
-            self.t.cstr_expanded(),
-            self.modifiers.iter().map(|x| x.cstr_expanded()).join(", ")
+            "({})",
+            self.actions.iter().map(|a| a.cstr_expanded()).join(", ")
         )
-    }
-}
-impl ToCstr for RModifier {
-    fn cstr(&self) -> Cstr {
-        self.as_ref().cstr_c(CYAN)
-    }
-    fn cstr_expanded(&self) -> Cstr {
-        let inner = match self {
-            RModifier::Color(x) | RModifier::Offset(x) => x.cstr_expanded(),
-        };
-        format!("{}({inner})", self.cstr())
-    }
-}
-impl ToCstr for MaterialType {
-    fn cstr(&self) -> Cstr {
-        self.as_ref().cstr_c(CYAN)
-    }
-    fn cstr_expanded(&self) -> Cstr {
-        let inner = match self {
-            MaterialType::Shape { shape, modifiers } => format!(
-                "{}, ({})",
-                shape.cstr_expanded(),
-                modifiers.into_iter().map(|m| m.cstr_expanded()).join(", ")
-            ),
-            MaterialType::Text { text } => text.cstr_expanded(),
-        };
-        format!("{}({inner})", self.cstr())
-    }
-}
-impl ToCstr for ShapeModifier {
-    fn cstr(&self) -> Cstr {
-        self.as_ref().cstr_c(CYAN)
-    }
-    fn cstr_expanded(&self) -> Cstr {
-        let inner = match self {
-            ShapeModifier::Rotation(x)
-            | ShapeModifier::Scale(x)
-            | ShapeModifier::Color(x)
-            | ShapeModifier::Hollow(x)
-            | ShapeModifier::Thickness(x)
-            | ShapeModifier::Roundness(x)
-            | ShapeModifier::Alpha(x) => x.cstr_expanded(),
-        };
-        format!("{}({inner})", self.cstr())
-    }
-}
-impl ToCstr for Shape {
-    fn cstr(&self) -> Cstr {
-        self.as_ref().cstr_c(CYAN)
-    }
-    fn cstr_expanded(&self) -> Cstr {
-        let inner = match self {
-            Shape::Rectangle { size: x } | Shape::Circle { radius: x } => x.cstr_expanded(),
-        };
-        format!("{}({inner})", self.cstr())
     }
 }
 impl ToCstr for Trigger {

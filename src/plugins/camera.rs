@@ -9,6 +9,11 @@ use bevy::{
 
 use super::*;
 
+static UNIT_PIXELS: Mutex<f32> = Mutex::new(100.0);
+pub fn unit_pixels() -> f32 {
+    *UNIT_PIXELS.lock().unwrap()
+}
+
 pub struct CameraPlugin;
 
 impl Plugin for CameraPlugin {
@@ -39,10 +44,15 @@ impl CameraData {
 
 impl CameraPlugin {
     fn update(
-        mut cam: Query<&mut Transform, (With<Camera>, Without<Hero>)>,
+        mut cam: Query<(&mut Transform, &Camera), Without<Hero>>,
+        mut ctx: Query<&mut EguiContext>,
         hero: Query<&Transform, With<Hero>>,
+        data: Res<CameraData>,
     ) {
-        cam.single_mut().translation = hero.single().translation;
+        let ctx = ctx.single_mut().into_inner().get_mut();
+        let mut cam = cam.single_mut();
+        cam.0.translation = hero.single().translation;
+        *UNIT_PIXELS.lock().unwrap() = ctx.screen_rect().width() / data.cur_scale;
     }
     pub fn apply(world: &mut World) {
         let cd = *world.resource::<CameraData>();
