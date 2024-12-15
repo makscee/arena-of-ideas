@@ -24,22 +24,22 @@ impl AdminPlugin {
         }
     }
     fn setup(mut commands: Commands) {
-        // let house = houses().get("holy").unwrap().clone();
-        // dbg!(&house);
-        // house.unpack(commands.spawn_empty().id(), &mut commands);
-        // commands.add(|world: &mut World| {
-        //     for e in world
-        //         .query_filtered::<Entity, With<House>>()
-        //         .iter(world)
-        //         .collect_vec()
-        //     {
-        //         Window::new("Inspector", move |ui, world| {
-        //             world.get::<House>(e).unwrap().ui(0, ui, world);
-        //         })
-        //         .no_frame()
-        //         .push(world);
-        //     }
-        // });
+        let house = houses().get("holy").unwrap().clone();
+        dbg!(&house);
+        house.unpack(commands.spawn_empty().id(), &mut commands);
+        commands.add(|world: &mut World| {
+            for e in world
+                .query_filtered::<Entity, With<House>>()
+                .iter(world)
+                .collect_vec()
+            {
+                Window::new("Inspector", move |ui, world| {
+                    world.get::<House>(e).unwrap().ui(0, ui, world);
+                })
+                .no_frame()
+                .push(world);
+            }
+        });
     }
     fn update(world: &mut World) {
         let egui_context = world

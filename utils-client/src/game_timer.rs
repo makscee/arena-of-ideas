@@ -40,11 +40,10 @@ impl GameTimer {
         let t = self.play_head + offset;
         (t / period).floor() != ((t - self.last_delta) / period).floor()
     }
-    fn update(delta: f32) {
-        let mut gt = gt();
-        let ps = gt.playback_speed;
-        let paused = gt.paused;
-        gt.advance_play(delta * ps * (!paused as i32 as f32));
+    pub fn update(&mut self, delta: f32) {
+        let ps = self.playback_speed;
+        let paused = self.paused;
+        self.advance_play(delta * ps * (!paused as i32 as f32));
     }
     pub fn pause(&mut self, value: bool) -> &mut Self {
         self.paused = value;

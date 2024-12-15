@@ -20,20 +20,25 @@ impl RepresentationPlugin {
         let mut close_window = None;
         for (unit, t) in world.query::<(&Unit, &GlobalTransform)>().iter(world) {
             let pos = world_to_screen(t.translation(), world).to_pos2();
-            if ctx.rect_contains_pointer(
-                egui::LayerId::background(),
-                Rect::from_center_size(pos, egui::vec2(p, p)),
-            ) {
-                if left_mouse_just_pressed(world) {
-                    if WindowPlugin::is_open(&unit.name, world) {
-                        close_window = Some(unit.name.clone());
-                    } else {
-                        open_window = Some((unit.entity.unwrap(), unit.name.clone()));
-                    }
-                }
+            let rect = Rect::from_center_size(pos, egui::vec2(p, p));
+            let resp = Area::new(Id::new(&unit.entity))
+                .constrain_to(rect)
+                .sense(Sense::click())
+                .show(ctx, |ui| {
+                    ui.expand_to_include_rect(rect);
+                })
+                .response;
+            if resp.hovered() {
                 cursor_window(ctx, |ui| {
                     unit.ui(0, ui, world);
                 });
+            }
+            if resp.clicked() {
+                if WindowPlugin::is_open(&unit.name, world) {
+                    close_window = Some(unit.name.clone());
+                } else {
+                    open_window = Some((unit.entity.unwrap(), unit.name.clone()));
+                }
             }
         }
         if let Some(name) = close_window {

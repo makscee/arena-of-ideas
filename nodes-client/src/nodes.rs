@@ -1,3 +1,4 @@
+use assets::{hero_rep, unit_rep};
 use bevy::{
     log::*,
     prelude::{App, BuildChildren, Commands, Component, TransformBundle, VisibilityBundle, World},
@@ -59,6 +60,21 @@ pub trait Node: Default + Component + Sized + GetVar + Show {
         Self::collect_children_entity(entity, world)
     }
     fn ui(&self, depth: usize, ui: &mut Ui, world: &World);
+}
+
+trait OnUnpack {
+    fn on_unpack(self, entity: Entity, commands: &mut Commands);
+}
+
+impl OnUnpack for NodeKind {
+    fn on_unpack(self, entity: Entity, commands: &mut Commands) {
+        let entity = commands.spawn_empty().set_parent(entity).id();
+        match self {
+            NodeKind::Hero => hero_rep().clone().unpack(entity, commands),
+            NodeKind::Unit => unit_rep().clone().unpack(entity, commands),
+            _ => {}
+        }
+    }
 }
 
 #[derive(Component)]

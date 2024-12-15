@@ -2,7 +2,6 @@ use darling::FromMeta;
 use itertools::Itertools;
 use parse::Parser;
 use proc_macro::TokenStream;
-use punctuated::Punctuated;
 use quote::ToTokens;
 use schema::macro_fn::parse_node_fields;
 use syn::*;
@@ -10,18 +9,7 @@ use syn::*;
 extern crate quote;
 
 #[proc_macro_attribute]
-pub fn node(args: TokenStream, item: TokenStream) -> TokenStream {
-    let a = parse_macro_input!(args with Punctuated<Path, Token![,]>::parse_terminated);
-    let mut on_unpack = proc_macro2::TokenStream::new();
-    for i in a.iter() {
-        let i = i.get_ident().unwrap().to_string();
-        match i.as_str() {
-            "on_unpack" => {
-                on_unpack = quote! { self.on_unpack(entity, commands); }.into_token_stream();
-            }
-            _ => unimplemented!(),
-        }
-    }
+pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
     let mut input = parse_macro_input!(item as syn::DeriveInput);
     let struct_ident = &input.ident;
 
@@ -192,7 +180,7 @@ pub fn node(args: TokenStream, item: TokenStream) -> TokenStream {
                     }
                     fn unpack(mut self, entity: Entity, commands: &mut Commands) {
                         debug!("Unpack {self} into {entity}");
-                        #on_unpack
+                        self.kind().on_unpack(entity, commands);
                         self.entity = Some(entity);
                         #(
                             if let Some(d) = self.#option_link_fields.take() {

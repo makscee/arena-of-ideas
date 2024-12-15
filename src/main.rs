@@ -76,6 +76,7 @@ fn main() {
     });
     app.insert_resource(ClearColor(EMPTINESS.to_color()))
         .add_systems(Startup, setup)
+        .add_systems(Update, global_update)
         .add_systems(OnEnter(GameState::Error), on_error_state)
         .add_plugins((default_plugins, FrameTimeDiagnosticsPlugin))
         .add_loading_state(
@@ -143,4 +144,8 @@ fn setup(world: &mut World) {
 
 fn on_error_state(world: &mut World) {
     app_exit(world)
+}
+
+fn global_update(time: Res<Time>) {
+    gt().update(time.delta_seconds());
 }
