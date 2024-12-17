@@ -1,6 +1,18 @@
 (
-    t: Shape(
-        shape: Rectangle(size: V2(0.5, 0.3)),
-        modifiers: [Hollow(B(true)), Thickness(F(0.03)), Color(Var(color)), Rotation(GT)],
-    ),
+    [
+        Hollow(F(1.0)),
+        Color(C("#2979FF")),
+        Alpha(F(0.1)),
+        Repeat(
+            I(1000),
+            List(
+                [
+                    Rectangle(F(1.5)),
+                    Rotate(Sum(GT, Var(index))),
+                    Translate(Mul(F(2.0), Cos(Sum(GT, Var(index))))),
+                    Paint,
+                ],
+            ),
+        ),
+    ],
 )

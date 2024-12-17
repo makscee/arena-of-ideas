@@ -1,5 +1,3 @@
-use egui::emath::Rot2;
-
 use super::*;
 
 pub struct AdminPlugin;
@@ -26,22 +24,31 @@ impl AdminPlugin {
         }
     }
     fn setup(mut commands: Commands) {
+        commands.add(|world: &mut World| {
+            Tile::new(Side::Left, |ui, world| {
+                let scale = &mut world.resource_mut::<CameraData>().need_scale;
+                Slider::new("Cam Scale").ui(scale, 1.0..=50.0, ui);
+            })
+            .transparent()
+            .pinned()
+            .push(world);
+        });
         let house = houses().get("holy").unwrap().clone();
         dbg!(&house);
         house.unpack(commands.spawn_empty().id(), &mut commands);
-        commands.add(|world: &mut World| {
-            for e in world
-                .query_filtered::<Entity, With<House>>()
-                .iter(world)
-                .collect_vec()
-            {
-                Window::new("Inspector", move |ui, world| {
-                    world.get::<House>(e).unwrap().ui(0, ui, world);
-                })
-                .no_frame()
-                .push(world);
-            }
-        });
+        // commands.add(|world: &mut World| {
+        //     for e in world
+        //         .query_filtered::<Entity, With<House>>()
+        //         .iter(world)
+        //         .collect_vec()
+        //     {
+        //         Window::new("Inspector", move |ui, world| {
+        //             world.get::<House>(e).unwrap().ui(0, ui, world);
+        //         })
+        //         .no_frame()
+        //         .push(world);
+        //     }
+        // });
     }
     fn update(world: &mut World) {
         let egui_context = world
@@ -52,18 +59,6 @@ impl AdminPlugin {
             return;
         };
         let mut egui_context = egui_context.clone();
-        Window::new("test", |ui, _| {
-            let rect = ui.available_rect_before_wrap();
-            ui.expand_to_include_rect(rect);
-            let mut mesh = egui::Mesh::default();
-            mesh.add_colored_rect(
-                Rect::from_center_size(rect.center(), egui::vec2(50.0, 5.0)),
-                YELLOW,
-            );
-            mesh.rotate(Rot2::from_angle(gt().play_head()), rect.center());
-            ui.painter().add(egui::Shape::mesh(mesh));
-        })
-        .show(egui_context.get_mut(), world);
 
         // egui::Window::new("World Inspector")
         //     .default_size(egui::vec2(300.0, 300.0))

@@ -61,7 +61,6 @@ pub use bevy_egui::{
     EguiContext,
 };
 pub use bevy_tasks::IoTaskPool;
-pub use bevy_vector_shapes::prelude::*;
 pub use chrono::DateTime;
 pub use colored::{Colorize, CustomColor};
 pub use convert_case::{Case, Casing};

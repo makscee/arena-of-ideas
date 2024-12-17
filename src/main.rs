@@ -8,10 +8,8 @@ use bevy::{
     diagnostic::FrameTimeDiagnosticsPlugin, log::LogPlugin, render::camera::ClearColor,
     state::app::AppExtStates,
 };
-use bevy_vector_shapes::shapes;
 use clap::{command, Parser, ValueEnum};
 use include_dir::{include_dir, Dir};
-use nodes_client::NodeKind;
 use noisy_bevy::NoisyShaderPlugin;
 pub use prelude::*;
 use utils_client::operations::OperationsPlugin;
@@ -76,7 +74,6 @@ fn main() {
     });
     app.insert_resource(ClearColor(EMPTINESS.to_color()))
         .add_systems(Startup, setup)
-        .add_systems(Update, global_update)
         .add_systems(OnEnter(GameState::Error), on_error_state)
         .add_plugins((default_plugins, FrameTimeDiagnosticsPlugin))
         .add_loading_state(
@@ -88,15 +85,10 @@ fn main() {
                     "ron/_dynamic.assets.ron",
                 ),
         )
-        .register_type::<ShapeFill>()
-        .register_type::<FillType>()
-        .register_type::<ThicknessType>()
-        .register_type::<shapes::ShapeMaterial>()
         .add_plugins((
             bevy_egui::EguiPlugin,
             bevy_inspector_egui::quick::WorldInspectorPlugin::new(),
             NoisyShaderPlugin,
-            Shape2dPlugin::default(),
         ))
         .add_plugins((
             UiPlugin,
@@ -144,8 +136,4 @@ fn setup(world: &mut World) {
 
 fn on_error_state(world: &mut World) {
     app_exit(world)
-}
-
-fn global_update(time: Res<Time>) {
-    gt().update(time.delta_seconds());
 }

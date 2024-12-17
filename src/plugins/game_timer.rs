@@ -12,4 +12,6 @@ impl Plugin for GameTimerPlugin {
     }
 }
 
-fn update(time: Res<Time>) {}
+fn update(time: Res<Time>) {
+    gt().update(time.delta_seconds());
+}

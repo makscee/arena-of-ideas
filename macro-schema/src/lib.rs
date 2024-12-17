@@ -1,9 +1,7 @@
 use darling::FromMeta;
 use itertools::Itertools;
-use parse::Parser;
 use proc_macro::TokenStream;
-use punctuated::Punctuated;
-use quote::{quote, ToTokens};
+use quote::quote;
 use syn::*;
 
 #[proc_macro]

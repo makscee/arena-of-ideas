@@ -1,7 +1,3 @@
-use bevy::color::Alpha;
-use egui::{paint_texture_at, Mesh};
-use epaint::{TessellationOptions, Tessellator};
-
 use super::*;
 
 pub struct RepresentationPlugin;
@@ -17,14 +13,19 @@ impl RepresentationPlugin {
         let Some(ctx) = &egui_context(world) else {
             return;
         };
-        let p = CameraPlugin::pixel_unit(ctx, world) * 2.0;
         let mut open_window = None;
         let mut close_window = None;
+        let up = unit_pixels();
         for (unit, t) in world.query::<(&Unit, &GlobalTransform)>().iter(world) {
             let pos = world_to_screen(t.translation(), world).to_pos2();
-            let rect = Rect::from_center_size(pos, egui::vec2(p, p));
+            if !ctx.screen_rect().contains(pos) {
+                continue;
+            }
+            let rect = Rect::from_center_size(pos, egui::vec2(up, up));
             let resp = Area::new(Id::new(&unit.entity))
-                .constrain_to(rect)
+                .fixed_pos(rect.center())
+                .pivot(Align2::CENTER_CENTER)
+                .constrain(false)
                 .sense(Sense::click())
                 .show(ctx, |ui| {
                     ui.expand_to_include_rect(rect);
@@ -67,7 +68,7 @@ impl RepresentationPlugin {
         let mut context = Context::new(context);
         for (e, r) in &reps {
             context.set_owner(e);
-            match Self::paint(&r.material, &context, ctx, cam) {
+            match Self::paint(&r.material, &mut context, ctx, cam) {
                 Ok(_) => {}
                 Err(e) => error!("Paint error: {e}"),
             };
@@ -75,8 +76,8 @@ impl RepresentationPlugin {
         }
     }
     fn paint(
-        m: &RMaterial,
-        context: &Context,
+        m: &Material,
+        context: &mut Context,
         ctx: &egui::Context,
         cam: (&Camera, &GlobalTransform),
     ) -> Result<(), ExpressionError> {
@@ -85,26 +86,23 @@ impl RepresentationPlugin {
                 .get_var(VarName::offset)
                 .and_then(|v| v.get_vec2().ok())
                 .unwrap_or_default();
-        let pos = world_to_screen_cam(pos.extend(0.0), &cam.0, &cam.1);
-        let size = unit_pixels() * 2.0;
+        let pos = world_to_screen_cam(pos.extend(0.0), &cam.0, &cam.1).to_pos2();
+        let size = unit_pixels() * 2.1;
         let size = egui::vec2(size, size);
-        let fonts_size = ctx.fonts(|r| r.texture_atlas().lock().size());
-        let mut p = Painter {
-            rect: Rect::from_center_size(pos.to_pos2(), size),
-            color: VISIBLE_LIGHT,
-            mesh: Mesh::default(),
-            tesselator: Tessellator::new(
-                unit_pixels(),
-                TessellationOptions::default(),
-                fonts_size,
-                default(),
-            ),
-        };
+        let rect = Rect::from_center_size(pos, size);
+        if !ctx.screen_rect().intersects(rect) {
+            return Ok(());
+        }
+        let mut p = Painter::new(rect, ctx);
         let owner = context.get_owner().unwrap();
         Area::new(Id::new(owner))
-            .constrain_to(p.rect)
+            .constrain(false)
+            .fixed_pos(p.rect.center())
+            .pivot(Align2::CENTER_CENTER)
+            .order(Order::Background)
             .show(ctx, |ui| {
-                for a in &m.actions {
+                ui.expand_to_include_rect(p.rect);
+                for a in &m.0 {
                     match a.paint(context, &mut p, ui) {
                         Ok(_) => {}
                         Err(e) => {
@@ -112,6 +110,7 @@ impl RepresentationPlugin {
                         }
                     }
                 }
+                PainterAction::Paint.paint(context, &mut p, ui)?;
                 Ok(())
             })
             .inner

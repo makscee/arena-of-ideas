@@ -16,11 +16,11 @@ pub fn parse_content_tree() {
         let name = house.get_var(VarName::name).unwrap().get_string().unwrap();
         houses.insert(name, house);
     }
+    HOUSES.set(houses).unwrap();
     UNIT_REP
         .set(Representation::from_dir("unit_rep".to_owned(), &CONTENT_DIR).unwrap())
         .unwrap();
     HERO_REP
         .set(Representation::from_dir("hero_rep".to_owned(), &CONTENT_DIR).unwrap())
         .unwrap();
-    HOUSES.set(houses).unwrap();
 }

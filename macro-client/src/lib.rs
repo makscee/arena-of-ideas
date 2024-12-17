@@ -38,8 +38,8 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 var_fields,
                 var_types,
                 data_fields,
-                data_types,
-                data_type_ident,
+                data_types: _,
+                data_type_ident: _,
                 all_data_fields,
                 all_data_types,
             } = parse_node_fields(fields);

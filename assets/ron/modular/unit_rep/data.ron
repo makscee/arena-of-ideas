@@ -1,6 +1,20 @@
 (
-    t: Shape(
-        shape: Circle(radius: F(1.0)),
-        modifiers: [Hollow(B(true)), Thickness(F(0.03))],
-    ),
+    [
+        Color(C("#ffffff")),
+        Hollow(F(2.0)),
+        Circle(One),
+        Paint,
+        Hollow(F(1.0)),
+        Color(C("#D50000")),
+        Circle(F(0.3)),
+        Text(Macro(S("[b %s]"), Var(hp))),
+        Translate(V2(0.93, 0.93)),
+        Paint,
+        Color(C("#FF9100")),
+        Paint,
+        Circle(F(0.3)),
+        Text(Macro(S("[b %s]"), Var(pwr))),
+        Translate(V2(-0.93, 0.93)),
+        Paint,
+    ],
 )

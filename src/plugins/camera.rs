@@ -9,7 +9,7 @@ use bevy::{
 
 use super::*;
 
-static UNIT_PIXELS: Mutex<f32> = Mutex::new(100.0);
+static UNIT_PIXELS: Mutex<f32> = Mutex::new(10.0);
 pub fn unit_pixels() -> f32 {
     *UNIT_PIXELS.lock().unwrap()
 }
@@ -44,14 +44,17 @@ impl CameraData {
 
 impl CameraPlugin {
     fn update(
-        mut cam: Query<(&mut Transform, &Camera), Without<Hero>>,
+        mut cam: Query<(&mut Transform, &mut OrthographicProjection, &Camera), Without<Hero>>,
         mut ctx: Query<&mut EguiContext>,
         hero: Query<&Transform, With<Hero>>,
-        data: Res<CameraData>,
+        mut data: ResMut<CameraData>,
     ) {
         let ctx = ctx.single_mut().into_inner().get_mut();
         let mut cam = cam.single_mut();
         cam.0.translation = hero.single().translation;
+        data.cur_scale +=
+            (data.need_scale - data.cur_scale) * gt().last_delta() * SCALE_CHANGE_SPEED;
+        data.apply(&mut cam.1);
         *UNIT_PIXELS.lock().unwrap() = ctx.screen_rect().width() / data.cur_scale;
     }
     pub fn apply(world: &mut World) {
@@ -59,10 +62,6 @@ impl CameraPlugin {
         if let Some(mut proj) = world.get_mut::<OrthographicProjection>(Self::entity(world)) {
             cd.apply(&mut proj);
         }
-    }
-    pub fn pixel_unit(ctx: &egui::Context, world: &World) -> f32 {
-        let width = ctx.screen_rect().width();
-        width / world.resource::<CameraData>().cur_scale
     }
     pub fn entity(world: &World) -> Entity {
         world.resource::<CameraData>().entity
@@ -83,7 +82,7 @@ impl CameraPlugin {
         let data = CameraData {
             entity,
             cur_scale: 25.0,
-            need_scale: default(),
+            need_scale: 25.0,
         };
         data.apply(&mut camera.projection);
         if let Some(data) = world.get_resource::<CameraData>() {
@@ -96,9 +95,8 @@ impl CameraPlugin {
         visible: Query<(&Transform, &InheritedVisibility)>,
         mut projection: Query<(&mut OrthographicProjection, &Camera)>,
         mut data: ResMut<CameraData>,
-        time: Res<Time>,
     ) {
-        let (mut projection, camera) = projection.single_mut();
+        let (projection, camera) = projection.single_mut();
         let mut width: f32 = 28.0;
         let aspect_ratio = camera
             .logical_target_size()
@@ -112,8 +110,5 @@ impl CameraPlugin {
             }
         }
         data.need_scale = width;
-        data.cur_scale +=
-            (data.need_scale - data.cur_scale) * time.delta_seconds() * SCALE_CHANGE_SPEED;
-        data.apply(&mut projection);
     }
 }

@@ -51,6 +51,6 @@ struct Hero {
 }
 
 struct Representation {
-    pub material: RMaterial,
+    pub material: Material,
     pub children: Vec<Box<Representation>>,
 }

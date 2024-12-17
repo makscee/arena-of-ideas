@@ -1,1 +1,0 @@
-(t: Text(text: Macro(S("[s %s]"), Var(name))), modifiers: [Offset(V2(0.0, -1.1))])

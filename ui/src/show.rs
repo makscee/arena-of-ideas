@@ -239,13 +239,25 @@ impl Show for PainterAction {
                 | PainterAction::Text(x)
                 | PainterAction::Hollow(x)
                 | PainterAction::Translate(x)
+                | PainterAction::Rotate(x)
                 | PainterAction::Scale(x)
+                | PainterAction::Alpha(x)
                 | PainterAction::Color(x) => x.show_mut(None, ui),
                 PainterAction::Repeat(x, a) => x.show_mut(None, ui) || a.show_mut(None, ui),
+                PainterAction::List(l) => {
+                    let mut r = false;
+                    for (i, a) in l.iter_mut().enumerate() {
+                        ui.push_id(i, |ui| {
+                            r |= a.show_mut(None, ui);
+                        });
+                    }
+                    r
+                }
+                PainterAction::Paint => false,
             }
     }
 }
-impl Show for RMaterial {
+impl Show for Material {
     fn show(&self, prefix: Option<&str>, ui: &mut Ui) {
         format!("{}{}", prefix.unwrap_or_default(), self.cstr_expanded()).label_w(ui);
     }
@@ -254,7 +266,7 @@ impl Show for RMaterial {
             prefix.cstr().label(ui);
         }
         let mut changed = false;
-        for a in &mut self.actions {
+        for a in &mut self.0 {
             changed |= a.show_mut(None, ui);
         }
         if "+"
@@ -262,7 +274,7 @@ impl Show for RMaterial {
             .button(ui)
             .clicked()
         {
-            self.actions.push(default());
+            self.0.push(default());
         }
         changed
     }

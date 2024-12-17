@@ -8,10 +8,7 @@ use bevy::{
 };
 use colored::{Colorize, CustomColor};
 use ecolor::Hsva;
-use egui::{
-    text::{Fonts, LayoutJob},
-    Galley, Label, Response, Style, TextFormat, Widget, WidgetText,
-};
+use egui::{text::LayoutJob, Galley, Label, Response, Style, TextFormat, Widget, WidgetText};
 use itertools::Itertools;
 use once_cell::sync::OnceCell;
 use schema::{expression::Expression, var_name::VarName, var_value::VarValue, *};
@@ -480,22 +477,23 @@ impl ToCstr for PainterAction {
             | PainterAction::Text(x)
             | PainterAction::Hollow(x)
             | PainterAction::Translate(x)
+            | PainterAction::Rotate(x)
             | PainterAction::Scale(x)
+            | PainterAction::Alpha(x)
             | PainterAction::Color(x) => x.cstr_expanded(),
             PainterAction::Repeat(x, a) => format!("{}, {}", x.cstr_expanded(), a.cstr_expanded()),
+            PainterAction::List(vec) => vec.into_iter().map(|a| a.cstr_expanded()).join(", "),
+            PainterAction::Paint => default(),
         };
         format!("{}({inner})", self.cstr())
     }
 }
-impl ToCstr for RMaterial {
+impl ToCstr for Material {
     fn cstr(&self) -> Cstr {
-        format!("({})", self.actions.iter().map(|a| a.cstr()).join(", "))
+        format!("({})", self.0.iter().map(|a| a.cstr()).join(", "))
     }
     fn cstr_expanded(&self) -> Cstr {
-        format!(
-            "({})",
-            self.actions.iter().map(|a| a.cstr_expanded()).join(", ")
-        )
+        format!("({})", self.0.iter().map(|a| a.cstr_expanded()).join(", "))
     }
 }
 impl ToCstr for Trigger {

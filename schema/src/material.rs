@@ -10,9 +10,13 @@ pub enum PainterAction {
     Text(Expression),
     Hollow(Expression),
     Translate(Expression),
+    Rotate(Expression),
     Scale(Expression),
     Color(Expression),
+    Alpha(Expression),
     Repeat(Expression, Box<PainterAction>),
+    List(Vec<PainterAction>),
+    Paint,
 }
 
 impl Default for PainterAction {
@@ -23,7 +27,4 @@ impl Default for PainterAction {
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(deny_unknown_fields)]
-pub struct RMaterial {
-    #[serde(default)]
-    pub actions: Vec<PainterAction>,
-}
+pub struct Material(pub Vec<PainterAction>);
