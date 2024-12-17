@@ -11,7 +11,6 @@ use ecolor::Hsva;
 use egui::{text::LayoutJob, Galley, Label, Response, Style, TextFormat, Widget, WidgetText};
 use itertools::Itertools;
 use once_cell::sync::OnceCell;
-use schema::{expression::Expression, var_name::VarName, var_value::VarValue, *};
 use utils_client::game_timer::gt;
 
 use super::*;

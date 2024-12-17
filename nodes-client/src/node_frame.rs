@@ -2,7 +2,6 @@ use bevy_egui::egui::{
     Align, CollapsingHeader, Color32, Frame, Layout, Margin, Rounding, Shadow, Stroke, Ui,
 };
 use parking_lot::{const_mutex, Mutex};
-use schema::var_name::VarName;
 use ui::*;
 
 use super::*;
@@ -19,8 +18,8 @@ pub fn set_editing_node(entity: Entity, kind: NodeKind) {
         *d = Some((entity, kind));
     }
 }
-pub fn get_editing_node() -> Option<(Entity, NodeKind)> {
-    EDITING_WINDOW.lock().clone()
+pub fn take_editing_node() -> Option<(Entity, NodeKind)> {
+    EDITING_WINDOW.lock().take()
 }
 
 impl NodeFrame {

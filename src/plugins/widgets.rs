@@ -75,12 +75,16 @@ impl WidgetsPlugin {
 
         TilePlugin::show_all(ctx, world);
         WindowPlugin::show_all(ctx, world);
-        if let Some((entity, kind)) = get_editing_node() {
-            Window::new("Node Editor", move |ui, world| {
-                kind.show_mut(entity, ui, world);
+        if let Some((entity, kind)) = take_editing_node() {
+            Tile::new(Side::Right, move |ui, world| {
+                ScrollArea::both().auto_shrink(false).show(ui, |ui| {
+                    kind.show_mut(entity, ui, world);
+                });
             })
-            .order(Order::Foreground)
-            .show(ctx, world);
+            .with_id(format!("node editor {kind}"))
+            .transparent()
+            .min_space(egui::vec2(300.0, 0.0))
+            .push(world);
         }
 
         // Content

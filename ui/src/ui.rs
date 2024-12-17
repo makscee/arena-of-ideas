@@ -135,6 +135,7 @@ fn setup_ui(mut ctx: Query<&mut EguiContext>) {
         style.spacing = Spacing {
             item_spacing: egui::vec2(8.0, 6.0),
             button_padding: egui::vec2(3.0, 3.0),
+            combo_width: 10.0,
             ..Default::default()
         };
         style.wrap_mode = Some(egui::TextWrapMode::Extend);

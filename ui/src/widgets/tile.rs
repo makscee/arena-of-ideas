@@ -1,3 +1,4 @@
+use egui::SidePanel;
 use utils_client::game_timer::gt;
 
 use super::*;
@@ -15,6 +16,7 @@ pub struct Tile {
     side: Side,
     content: Box<dyn Fn(&mut Ui, &mut World) + Send + Sync>,
     content_space: egui::Vec2,
+    content_space_override: Option<egui::Vec2>,
     allocated_space: egui::Vec2,
     min_space: egui::Vec2,
     pinned: bool,
@@ -24,6 +26,7 @@ pub struct Tile {
     open: bool,
     no_margin: bool,
     no_expand: bool,
+    resizable: bool,
     keep: bool,
     extension: f32,
     stretch_mode: StretchMode,
@@ -254,6 +257,8 @@ impl Tile {
             extension: 0.0,
             stretch_mode: default(),
             allocated_space: default(),
+            resizable: true,
+            content_space_override: None,
         }
     }
     #[must_use]
@@ -319,6 +324,11 @@ impl Tile {
         self.keep = true;
         self
     }
+    #[must_use]
+    pub fn non_resizable(mut self) -> Self {
+        self.resizable = false;
+        self
+    }
     pub fn push(self, world: &mut World) {
         let mut tr = rm(world);
         tr.new_tiles.push(self);
@@ -345,12 +355,13 @@ impl Tile {
             StretchMode::Min | StretchMode::Part(..) => self.extension.lerp_to(1.0, dt),
             StretchMode::Max => {}
         }
+        let content_space = self.content_space_override.unwrap_or(self.content_space);
         self.allocated_space = match self.stretch_mode {
             StretchMode::Min | StretchMode::Floating => {
                 if self.side.is_x() {
-                    egui::vec2(self.content_space.x * self.extension, 0.0)
+                    egui::vec2(content_space.x * self.extension, 0.0)
                 } else {
-                    egui::vec2(0.0, self.content_space.y * self.extension)
+                    egui::vec2(0.0, content_space.y * self.extension)
                 }
             }
             StretchMode::Max => sr.screen_space,
@@ -443,6 +454,40 @@ impl Tile {
             return response;
         }
         let area_response = area.sense(Sense::click()).show(ctx, |ui| {
+            if self.resizable {
+                let line = match self.side {
+                    Side::Right => rect.with_max_x(rect.min.x + 2.0),
+                    Side::Left => rect.with_min_x(rect.max.x - 2.0),
+                    Side::Top => todo!(),
+                    Side::Bottom => todo!(),
+                };
+                let resp = ui
+                    .allocate_rect(line.expand2(egui::vec2(3.0, 0.0)), Sense::drag())
+                    .on_hover_and_drag_cursor(if self.side.is_x() {
+                        egui::CursorIcon::ResizeHorizontal
+                    } else {
+                        egui::CursorIcon::ResizeVertical
+                    });
+                let color = if resp.hovered() || resp.dragged() {
+                    YELLOW
+                } else {
+                    BG_LIGHT
+                };
+                ui.painter().rect_filled(line, Rounding::ZERO, color);
+                if resp.dragged() {
+                    let delta = resp.drag_delta().x;
+                    if let Some(cs) = &mut self.content_space_override {
+                        match self.side {
+                            Side::Right => cs.x -= delta,
+                            Side::Left => cs.x += delta,
+                            Side::Top => cs.y += delta,
+                            Side::Bottom => cs.y -= delta,
+                        }
+                    } else {
+                        self.content_space_override = Some(self.content_space);
+                    }
+                }
+            }
             let mut content_rect = rect.shrink2(frame.total_margin().sum() * 0.5);
             if self.no_expand {
                 match self.side {

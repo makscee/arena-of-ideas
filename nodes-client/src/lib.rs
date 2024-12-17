@@ -7,6 +7,7 @@ use bevy::{
 };
 pub use node_frame::*;
 pub use nodes::*;
+use schema::*;
 
 #[derive(SystemParam, Debug)]
 pub struct StateQuery<'w, 's> {

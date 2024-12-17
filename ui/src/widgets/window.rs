@@ -12,8 +12,9 @@ impl Plugin for WindowPlugin {
 
 pub struct Window {
     id: String,
-    no_frame: bool,
     order: Order,
+    no_frame: bool,
+    transparent: bool,
     content: Box<dyn Fn(&mut Ui, &mut World) + Send + Sync>,
 }
 
@@ -37,9 +38,15 @@ impl Window {
         Self {
             id: id.to_string(),
             content: Box::new(content),
-            no_frame: false,
             order: Order::Middle,
+            no_frame: false,
+            transparent: false,
         }
+    }
+    #[must_use]
+    pub fn order(mut self, order: Order) -> Self {
+        self.order = order;
+        self
     }
     #[must_use]
     pub fn no_frame(mut self) -> Self {
@@ -47,8 +54,8 @@ impl Window {
         self
     }
     #[must_use]
-    pub fn order(mut self, order: Order) -> Self {
-        self.order = order;
+    pub fn transparent(mut self) -> Self {
+        self.transparent = true;
         self
     }
     pub fn push(self, world: &mut World) {
@@ -60,7 +67,7 @@ impl Window {
             .order(self.order);
         if self.no_frame {
             w = w.frame(Frame::none());
-        };
+        }
         w.show(ctx, |ui| {
             (self.content)(ui, world);
         });

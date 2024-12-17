@@ -26,6 +26,7 @@ use indexmap::IndexMap;
 use itertools::Itertools;
 use lerp::Lerp;
 pub use rarity::*;
+use schema::*;
 pub use show::*;
 use std::mem;
 use std::sync::Mutex;

@@ -76,7 +76,6 @@ pub use egui::{
     TextFormat, TextStyle, TopBottomPanel, Widget, WidgetText,
 };
 pub use egui::{Checkbox, DragValue, Key, ScrollArea};
-pub use error::*;
 pub use indexmap::IndexMap;
 pub use itertools::Itertools;
 pub use lazy_static::lazy_static;
@@ -88,7 +87,7 @@ pub use ron::{
     extensions::Extensions,
     ser::{to_string_pretty, PrettyConfig},
 };
-pub use schema::{expression::*, var_name::*, var_value::*, *};
+pub use schema::*;
 pub use serde::{Deserialize, Serialize};
 pub use spacetimedb_sdk::Table as SdkTable;
 pub use std::sync::RwLock;

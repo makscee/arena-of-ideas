@@ -3,7 +3,6 @@ use core::f32;
 use bevy::utils::hashbrown::HashMap;
 use egui::{NumExt, TextureId};
 use egui_extras::{Column, TableBuilder};
-use schema::var_value::VarValue;
 use utils_client::{game_timer::gt, operations::OperationsPlugin};
 
 use super::*;

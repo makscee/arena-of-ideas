@@ -2,9 +2,7 @@ use bevy::{
     color::Color,
     math::{vec2, Vec2},
 };
-use ecolor::Hsva;
 use egui::{Checkbox, DragValue};
-use schema::{expression::Expression, var_name::VarName, var_value::VarValue, *};
 
 use super::*;
 
@@ -172,58 +170,68 @@ impl Show for Expression {
         format!("{}{}", prefix.unwrap_or_default(), self.cstr_expanded()).label(ui);
     }
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
-        ui.horizontal(|ui| {
-            Selector::new(prefix.unwrap_or_default()).ui_enum(self, ui)
-                || match self {
-                    Expression::One | Expression::Zero | Expression::GT => false,
-                    Expression::Var(v) => v.show_mut(None, ui),
-                    Expression::V(v) => v.show_mut(None, ui),
-                    Expression::S(v) => v.show_mut(None, ui),
-                    Expression::F(v) => v.show_mut(None, ui),
-                    Expression::I(v) => v.show_mut(None, ui),
-                    Expression::B(v) => v.show_mut(None, ui),
-                    Expression::C(v) => v.show_mut(None, ui),
-                    Expression::V2(x, y) => {
-                        let mut v = vec2(*x, *y);
-                        if v.show_mut(None, ui) {
-                            *x = v.x;
-                            *y = v.y;
-                            true
-                        } else {
-                            false
-                        }
+        CollapsingSelector::ui(
+            self,
+            prefix,
+            ui,
+            |from, to| {
+                <Expression as Injector<Expression>>::inject_inner(to, from);
+            },
+            |v, ui| match v {
+                Expression::One | Expression::Zero | Expression::GT => false,
+                Expression::Var(v) => v.show_mut(Some("v:"), ui),
+                Expression::V(v) => v.show_mut(Some("v:"), ui),
+                Expression::S(v) => v.show_mut(Some("v:"), ui),
+                Expression::F(v) => v.show_mut(Some("v:"), ui),
+                Expression::I(v) => v.show_mut(Some("v:"), ui),
+                Expression::B(v) => v.show_mut(Some("v:"), ui),
+                Expression::C(v) => v.show_mut(Some("v:"), ui),
+                Expression::V2(x, y) => {
+                    let mut v = vec2(*x, *y);
+                    if v.show_mut(Some("v:"), ui) {
+                        *x = v.x;
+                        *y = v.y;
+                        true
+                    } else {
+                        false
                     }
-                    Expression::Sin(x)
-                    | Expression::Cos(x)
-                    | Expression::Even(x)
-                    | Expression::Abs(x)
-                    | Expression::Floor(x)
-                    | Expression::Ceil(x)
-                    | Expression::Fract(x)
-                    | Expression::Sqr(x) => x.show_mut(None, ui),
-                    Expression::Macro(a, b)
-                    | Expression::Sum(a, b)
-                    | Expression::Sub(a, b)
-                    | Expression::Mul(a, b)
-                    | Expression::Div(a, b)
-                    | Expression::Max(a, b)
-                    | Expression::Min(a, b)
-                    | Expression::Mod(a, b)
-                    | Expression::And(a, b)
-                    | Expression::Or(a, b)
-                    | Expression::Equals(a, b)
-                    | Expression::GreaterThen(a, b)
-                    | Expression::LessThen(a, b) => {
+                }
+                Expression::Sin(x)
+                | Expression::Cos(x)
+                | Expression::Even(x)
+                | Expression::Abs(x)
+                | Expression::Floor(x)
+                | Expression::Ceil(x)
+                | Expression::Fract(x)
+                | Expression::Sqr(x) => x.show_mut(Some("x:"), ui),
+                Expression::Macro(a, b)
+                | Expression::Sum(a, b)
+                | Expression::Sub(a, b)
+                | Expression::Mul(a, b)
+                | Expression::Div(a, b)
+                | Expression::Max(a, b)
+                | Expression::Min(a, b)
+                | Expression::Mod(a, b)
+                | Expression::And(a, b)
+                | Expression::Or(a, b)
+                | Expression::Equals(a, b)
+                | Expression::GreaterThen(a, b)
+                | Expression::LessThen(a, b) => {
+                    ui.vertical(|ui| {
                         a.show_mut(Some("a:".into()), ui) || b.show_mut(Some("b:".into()), ui)
-                    }
-                    Expression::If(i, t, e) => {
+                    })
+                    .inner
+                }
+                Expression::If(i, t, e) => {
+                    ui.vertical(|ui| {
                         i.show_mut(Some("if:".into()), ui)
                             || t.show_mut(Some("then:".into()), ui)
                             || e.show_mut(Some("else:".into()), ui)
-                    }
+                    })
+                    .inner
                 }
-        })
-        .inner
+            },
+        )
     }
 }
 
@@ -232,8 +240,15 @@ impl Show for PainterAction {
         format!("{}{}", prefix.unwrap_or_default(), self.cstr_expanded()).label_w(ui);
     }
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
-        Selector::new(prefix.unwrap_or_default()).ui_enum(self, ui)
-            || match self {
+        CollapsingSelector::ui(
+            self,
+            prefix,
+            ui,
+            |from, to| {
+                <Self as Injector<Self>>::inject_inner(to, from);
+                <Self as Injector<Expression>>::inject_inner(to, from);
+            },
+            |v, ui| match v {
                 PainterAction::Circle(x)
                 | PainterAction::Rectangle(x)
                 | PainterAction::Text(x)
@@ -243,18 +258,24 @@ impl Show for PainterAction {
                 | PainterAction::Scale(x)
                 | PainterAction::Alpha(x)
                 | PainterAction::Color(x) => x.show_mut(None, ui),
-                PainterAction::Repeat(x, a) => x.show_mut(None, ui) || a.show_mut(None, ui),
+                PainterAction::Repeat(x, a) => {
+                    ui.vertical(|ui| x.show_mut(None, ui) || a.show_mut(None, ui))
+                        .inner
+                }
                 PainterAction::List(l) => {
                     let mut r = false;
-                    for (i, a) in l.iter_mut().enumerate() {
-                        ui.push_id(i, |ui| {
-                            r |= a.show_mut(None, ui);
-                        });
-                    }
+                    ui.vertical(|ui| {
+                        for (i, a) in l.iter_mut().enumerate() {
+                            ui.push_id(i, |ui| {
+                                r |= a.show_mut(None, ui);
+                            });
+                        }
+                    });
                     r
                 }
                 PainterAction::Paint => false,
-            }
+            },
+        )
     }
 }
 impl Show for Material {

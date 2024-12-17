@@ -8,7 +8,6 @@ use bevy_egui::egui::Ui;
 use include_dir::Dir;
 use itertools::Itertools;
 use macro_client::*;
-use schema::{var_name::VarName, var_value::VarValue, *};
 use strum_macros::{Display, EnumIter};
 use ui::*;
 use utils_client::{get_children, get_parent};

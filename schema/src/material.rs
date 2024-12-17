@@ -5,23 +5,23 @@ use super::*;
 #[derive(Debug, Clone, Serialize, Deserialize, AsRefStr, EnumIter, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub enum PainterAction {
-    Circle(Expression),
-    Rectangle(Expression),
-    Text(Expression),
-    Hollow(Expression),
-    Translate(Expression),
-    Rotate(Expression),
-    Scale(Expression),
-    Color(Expression),
-    Alpha(Expression),
-    Repeat(Expression, Box<PainterAction>),
-    List(Vec<PainterAction>),
     Paint,
+    Circle(Box<Expression>),
+    Rectangle(Box<Expression>),
+    Text(Box<Expression>),
+    Hollow(Box<Expression>),
+    Translate(Box<Expression>),
+    Rotate(Box<Expression>),
+    Scale(Box<Expression>),
+    Color(Box<Expression>),
+    Alpha(Box<Expression>),
+    Repeat(Box<Expression>, Box<PainterAction>),
+    List(Vec<Box<PainterAction>>),
 }
 
 impl Default for PainterAction {
     fn default() -> Self {
-        Self::Rectangle(Expression::V2(1.0, 1.0))
+        Self::Rectangle(Box::new(Expression::V2(1.0, 1.0)))
     }
 }
 

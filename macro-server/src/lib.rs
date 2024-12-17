@@ -1,5 +1,5 @@
 use proc_macro::TokenStream;
-use schema::macro_fn::parse_node_fields;
+use schema::*;
 use syn::*;
 #[macro_use]
 extern crate quote;
@@ -14,7 +14,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
             fields,
             semi_token: _,
         }) => {
-            let schema::macro_fn::ParsedNodeFields {
+            let ParsedNodeFields {
                 option_link_fields: _,
                 option_link_fields_str: _,
                 option_link_types: _,

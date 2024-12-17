@@ -101,7 +101,7 @@ impl Paint for PainterAction {
                 p.color = x.get_color(context)?;
             }
             PainterAction::Alpha(x) => {
-                p.color = p.color.gamma_multiply(x.get_f32(context)?);
+                p.color = p.color.gamma_multiply(x.get_f32(context)?.clamp(0.0, 1.0));
             }
             PainterAction::Repeat(x, action) => {
                 for i in 0..x.get_i32(context)? {

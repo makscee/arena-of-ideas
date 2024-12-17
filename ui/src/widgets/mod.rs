@@ -1,6 +1,7 @@
 use super::*;
 
 mod button;
+mod collapsing_selector;
 mod confirmation;
 mod enum_switcher;
 mod r#fn;
@@ -17,6 +18,7 @@ mod window;
 
 use super::*;
 pub use button::*;
+pub use collapsing_selector::*;
 pub use confirmation::*;
 pub use enum_switcher::*;
 pub use icon::*;

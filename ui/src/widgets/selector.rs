@@ -3,14 +3,12 @@ use egui::ComboBox;
 use super::*;
 
 pub struct Selector {
-    name: String,
+    name: WidgetText,
 }
 
 impl Selector {
-    pub fn new(name: impl ToString) -> Self {
-        Self {
-            name: name.to_string(),
-        }
+    pub fn new(name: impl Into<WidgetText>) -> Self {
+        Self { name: name.into() }
     }
     pub fn ui_enum<E: ToCstr + IntoEnumIterator + Clone + PartialEq>(
         self,
@@ -18,7 +16,7 @@ impl Selector {
         ui: &mut Ui,
     ) -> bool {
         let mut changed = false;
-        self.name.cstr().label(ui);
+        ui.label(self.name);
         ComboBox::from_id_source(ui.next_auto_id())
             .selected_text(value.cstr().widget(1.0, ui))
             .show_ui(ui, |ui| {
@@ -39,8 +37,8 @@ impl Selector {
         I: IntoIterator<Item = &'a E>,
     {
         let mut changed = false;
-        self.name.cstr().label(ui);
-        ComboBox::from_id_source(self.name)
+        ui.label(self.name.clone());
+        ComboBox::from_id_source(self.name.text())
             .selected_text(value.cstr_c(name_color(&value.to_string())).widget(1.0, ui))
             .show_ui(ui, |ui| {
                 for e in values {
