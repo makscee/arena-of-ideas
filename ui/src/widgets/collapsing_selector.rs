@@ -10,7 +10,7 @@ impl CollapsingSelector {
     pub fn new(name: impl Into<WidgetText>) -> Self {
         Self { name: name.into() }
     }
-    pub fn ui<T: ToCstr + IntoEnumIterator + Clone + PartialEq + Inject + Default>(
+    pub fn ui<T: ToCstr + IntoEnumIterator + Clone + PartialEq + Inject + Default + AsRef<str>>(
         value: &mut T,
         prefix: Option<&str>,
         ui: &mut Ui,
