@@ -170,71 +170,63 @@ impl Show for Expression {
         format!("{}{}", prefix.unwrap_or_default(), self.cstr_expanded()).label(ui);
     }
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
-        CollapsingSelector::ui(
-            self,
-            prefix,
-            ui,
-            |from, to| {
-                <Expression as Injector<Expression>>::inject_inner(to, from);
-            },
-            |v, ui| match v {
-                Expression::One | Expression::Zero | Expression::GT => false,
-                Expression::Var(v) => v.show_mut(Some("v:"), ui),
-                Expression::V(v) => v.show_mut(Some("v:"), ui),
-                Expression::S(v) => v.show_mut(Some("v:"), ui),
-                Expression::F(v) => v.show_mut(Some("v:"), ui),
-                Expression::I(v) => v.show_mut(Some("v:"), ui),
-                Expression::B(v) => v.show_mut(Some("v:"), ui),
-                Expression::C(v) => v.show_mut(Some("v:"), ui),
-                Expression::V2(x, y) => {
-                    let mut v = vec2(*x, *y);
-                    if v.show_mut(Some("v:"), ui) {
-                        *x = v.x;
-                        *y = v.y;
-                        true
-                    } else {
-                        false
-                    }
+        CollapsingSelector::ui(self, prefix, ui, |v, ui| match v {
+            Expression::One | Expression::Zero | Expression::GT => false,
+            Expression::Var(v) => v.show_mut(Some("v:"), ui),
+            Expression::V(v) => v.show_mut(Some("v:"), ui),
+            Expression::S(v) => v.show_mut(Some("v:"), ui),
+            Expression::F(v) => v.show_mut(Some("v:"), ui),
+            Expression::I(v) => v.show_mut(Some("v:"), ui),
+            Expression::B(v) => v.show_mut(Some("v:"), ui),
+            Expression::C(v) => v.show_mut(Some("v:"), ui),
+            Expression::V2(x, y) => {
+                let mut v = vec2(*x, *y);
+                if v.show_mut(Some("v:"), ui) {
+                    *x = v.x;
+                    *y = v.y;
+                    true
+                } else {
+                    false
                 }
-                Expression::Sin(x)
-                | Expression::Cos(x)
-                | Expression::Even(x)
-                | Expression::Abs(x)
-                | Expression::Floor(x)
-                | Expression::Ceil(x)
-                | Expression::Fract(x)
-                | Expression::Sqr(x) => x.show_mut(Some("x:"), ui),
-                Expression::Macro(a, b)
-                | Expression::Sum(a, b)
-                | Expression::Sub(a, b)
-                | Expression::Mul(a, b)
-                | Expression::Div(a, b)
-                | Expression::Max(a, b)
-                | Expression::Min(a, b)
-                | Expression::Mod(a, b)
-                | Expression::And(a, b)
-                | Expression::Or(a, b)
-                | Expression::Equals(a, b)
-                | Expression::GreaterThen(a, b)
-                | Expression::LessThen(a, b) => {
-                    let mut r = false;
-                    ui.vertical(|ui| {
-                        r |= a.show_mut(Some("a:".into()), ui);
-                        r |= b.show_mut(Some("b:".into()), ui);
-                    });
-                    r
-                }
-                Expression::If(i, t, e) => {
-                    let mut r = false;
-                    ui.vertical(|ui| {
-                        r |= i.show_mut(Some("if:".into()), ui);
-                        r |= t.show_mut(Some("then:".into()), ui);
-                        r |= e.show_mut(Some("else:".into()), ui);
-                    });
-                    r
-                }
-            },
-        )
+            }
+            Expression::Sin(x)
+            | Expression::Cos(x)
+            | Expression::Even(x)
+            | Expression::Abs(x)
+            | Expression::Floor(x)
+            | Expression::Ceil(x)
+            | Expression::Fract(x)
+            | Expression::Sqr(x) => x.show_mut(Some("x:"), ui),
+            Expression::Macro(a, b)
+            | Expression::Sum(a, b)
+            | Expression::Sub(a, b)
+            | Expression::Mul(a, b)
+            | Expression::Div(a, b)
+            | Expression::Max(a, b)
+            | Expression::Min(a, b)
+            | Expression::Mod(a, b)
+            | Expression::And(a, b)
+            | Expression::Or(a, b)
+            | Expression::Equals(a, b)
+            | Expression::GreaterThen(a, b)
+            | Expression::LessThen(a, b) => {
+                let mut r = false;
+                ui.vertical(|ui| {
+                    r |= a.show_mut(Some("a:".into()), ui);
+                    r |= b.show_mut(Some("b:".into()), ui);
+                });
+                r
+            }
+            Expression::If(i, t, e) => {
+                let mut r = false;
+                ui.vertical(|ui| {
+                    r |= i.show_mut(Some("if:".into()), ui);
+                    r |= t.show_mut(Some("then:".into()), ui);
+                    r |= e.show_mut(Some("else:".into()), ui);
+                });
+                r
+            }
+        })
     }
 }
 
@@ -243,46 +235,37 @@ impl Show for PainterAction {
         format!("{}{}", prefix.unwrap_or_default(), self.cstr_expanded()).label_w(ui);
     }
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
-        CollapsingSelector::ui(
-            self,
-            prefix,
-            ui,
-            |from, to| {
-                <Self as Injector<Self>>::inject_inner(to, from);
-                <Self as Injector<Expression>>::inject_inner(to, from);
-            },
-            |v, ui| match v {
-                PainterAction::Circle(x)
-                | PainterAction::Rectangle(x)
-                | PainterAction::Text(x)
-                | PainterAction::Hollow(x)
-                | PainterAction::Translate(x)
-                | PainterAction::Rotate(x)
-                | PainterAction::Scale(x)
-                | PainterAction::Alpha(x)
-                | PainterAction::Color(x) => x.show_mut(Some("x:"), ui),
-                PainterAction::Repeat(x, a) => {
-                    let mut r = false;
-                    ui.vertical(|ui| {
-                        r |= x.show_mut(Some("cnt:"), ui);
-                        r |= a.show_mut(Some("a:"), ui);
-                    });
-                    r
-                }
-                PainterAction::List(l) => {
-                    let mut r = false;
-                    ui.vertical(|ui| {
-                        for (i, a) in l.iter_mut().enumerate() {
-                            ui.push_id(i, |ui| {
-                                r |= a.show_mut(None, ui);
-                            });
-                        }
-                    });
-                    r
-                }
-                PainterAction::Paint => false,
-            },
-        )
+        CollapsingSelector::ui(self, prefix, ui, |v, ui| match v {
+            PainterAction::Circle(x)
+            | PainterAction::Rectangle(x)
+            | PainterAction::Text(x)
+            | PainterAction::Hollow(x)
+            | PainterAction::Translate(x)
+            | PainterAction::Rotate(x)
+            | PainterAction::Scale(x)
+            | PainterAction::Alpha(x)
+            | PainterAction::Color(x) => x.show_mut(Some("x:"), ui),
+            PainterAction::Repeat(x, a) => {
+                let mut r = false;
+                ui.vertical(|ui| {
+                    r |= x.show_mut(Some("cnt:"), ui);
+                    r |= a.show_mut(Some("a:"), ui);
+                });
+                r
+            }
+            PainterAction::List(l) => {
+                let mut r = false;
+                ui.vertical(|ui| {
+                    for (i, a) in l.iter_mut().enumerate() {
+                        ui.push_id(i, |ui| {
+                            r |= a.show_mut(None, ui);
+                        });
+                    }
+                });
+                r
+            }
+            PainterAction::Paint => false,
+        })
     }
 }
 impl Show for Material {

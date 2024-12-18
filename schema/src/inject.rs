@@ -4,7 +4,17 @@ use itertools::Itertools;
 
 use super::*;
 
-pub trait Injector<T> {
+pub trait Inject: Injector<Self> {
+    fn move_inner(&mut self, source: &mut Self);
+    fn wrapper() -> Self;
+    fn wrap(&mut self) {
+        let mut wrapper = Self::wrapper();
+        mem::swap(wrapper.get_inner_mut()[0].as_mut(), self);
+        *self = wrapper;
+    }
+}
+
+pub trait Injector<T>: Sized {
     fn get_inner_mut(&mut self) -> Vec<&mut Box<T>>;
     fn inject_inner(&mut self, source: &mut Self) {
         let mut source_inner = source.get_inner_mut();
@@ -16,8 +26,27 @@ pub trait Injector<T> {
     }
 }
 
-impl Injector<Expression> for Expression {
-    fn get_inner_mut(&mut self) -> Vec<&mut Box<Expression>> {
+impl Inject for Expression {
+    fn move_inner(&mut self, source: &mut Self) {
+        <Expression as Injector<Expression>>::inject_inner(self, source);
+    }
+    fn wrapper() -> Self {
+        Self::Abs(default())
+    }
+}
+
+impl Inject for PainterAction {
+    fn move_inner(&mut self, source: &mut Self) {
+        <Self as Injector<Self>>::inject_inner(self, source);
+        <Self as Injector<Expression>>::inject_inner(self, source);
+    }
+    fn wrapper() -> Self {
+        Self::Repeat(Box::new(Expression::I(1)), default())
+    }
+}
+
+impl Injector<Self> for Expression {
+    fn get_inner_mut(&mut self) -> Vec<&mut Box<Self>> {
         match self {
             Expression::One
             | Expression::Zero
