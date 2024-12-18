@@ -1,6 +1,5 @@
 mod cstr;
 mod rarity;
-mod show;
 mod table_ext;
 mod ui;
 mod utils;
@@ -27,7 +26,6 @@ use itertools::Itertools;
 use lerp::Lerp;
 pub use rarity::*;
 use schema::*;
-pub use show::*;
 use std::mem;
 use std::sync::Mutex;
 use strum::IntoEnumIterator;

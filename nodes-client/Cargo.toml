@@ -10,6 +10,7 @@ path = "src/lib.rs"
 macro-schema = { path = "../macro-schema" }
 macro-client = { path = "../macro-client" }
 schema = { path = "../schema" }
+utils = { path = "../utils" }
 ui = { path = "../ui" }
 utils-client = { path = "../utils-client" }
 bevy = { workspace = true }

@@ -48,17 +48,21 @@ pub trait Node: Default + Component + Sized + GetVar + Show {
         let entity = self.entity().expect("Node not linked to world");
         Self::find_up_entity::<T>(entity, world)
     }
-    fn collect_children_entity<T: Component>(entity: Entity, world: &World) -> Vec<&T> {
-        get_children(entity, world)
+    fn collect_children_entity<'a, T: Component>(
+        entity: Entity,
+        context: &'a Context,
+    ) -> Vec<&'a T> {
+        context
+            .get_children(entity)
             .into_iter()
-            .filter_map(|c| world.get::<T>(c))
+            .filter_map(|c| context.get_component::<T>(c))
             .collect_vec()
     }
-    fn collect_children<'a, T: Component>(&self, world: &'a World) -> Vec<&'a T> {
+    fn collect_children<'a, T: Component>(&self, context: &'a Context) -> Vec<&'a T> {
         let entity = self.entity().expect("Node not linked to world");
-        Self::collect_children_entity(entity, world)
+        Self::collect_children_entity(entity, context)
     }
-    fn ui(&self, depth: usize, ui: &mut Ui, world: &World);
+    fn ui(&self, depth: usize, context: &Context, ui: &mut Ui);
 }
 
 trait OnUnpack {

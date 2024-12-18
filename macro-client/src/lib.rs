@@ -100,16 +100,16 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     }
                 }
                 impl Show for #struct_ident {
-                    fn show(&self, prefix: Option<&str>, ui: &mut Ui) {
+                    fn show(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) {
                         ui.horizontal(|ui| {
                             for (var, value) in self.get_all_vars() {
                                 if var != VarName::name {
-                                    value.show(Some(&var.cstr()), ui);
+                                    value.show(Some(&var.cstr()), context, ui);
                                 }
                             }
                         });
                         #(
-                            self.#data_fields.show(None, ui);
+                            self.#data_fields.show(None, context, ui);
                         )*
                     }
                     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
@@ -201,40 +201,41 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         )*
                         commands.entity(entity).insert((TransformBundle::default(), VisibilityBundle::default(), self));
                     }
-                    fn ui(&self, depth: usize, ui: &mut Ui, world: &World) {
-                        let color = NodeState::get_var_world(VarName::color, self.entity.unwrap(), world)
+                    fn ui(&self, depth: usize, context: &Context, ui: &mut Ui) {
+                        let color = context.get_var(VarName::color)
                             .and_then(|c| c.get_color().ok());
                         NodeFrame::show(self, depth, color, ui, |ui| {
+                            self.show(None, context, ui);
                             #(
                                 if let Some(d) = &self.#option_link_fields {
-                                    d.ui(depth + 1, ui, world);
+                                    d.ui(depth + 1, context, ui);
                                 } else {
-                                    if let Some(c) = world.get::<#option_link_types>(self.entity.unwrap()) {
-                                        c.ui(depth + 1, ui, world);
+                                    if let Some(c) = context.get_component::<#option_link_types>(self.entity.unwrap()) {
+                                        c.ui(depth + 1, context, ui);
                                     }
                                 }
                             )*
                             #(
-                                let mut children = self.collect_children::<#vec_link_types>(world);
+                                let mut children = self.collect_children::<#vec_link_types>(context);
                                 children.extend(self.#vec_link_fields.iter());
                                 if !children.is_empty() {
                                     ui.collapsing(#vec_link_fields_str, |ui| {
                                         for (i, c) in children.into_iter().enumerate() {
                                             ui.push_id(i, |ui| {
-                                                c.ui(depth + 1, ui, world);
+                                                c.ui(depth + 1, context, ui);
                                             });
                                         }
                                     });
                                 }
                             )*
                             #(
-                                let mut children = self.collect_children::<#vec_box_link_types>(world);
+                                let mut children = self.collect_children::<#vec_box_link_types>(context);
                                 children.extend(self.#vec_box_link_fields.iter().map(Box::as_ref));
                                 if !children.is_empty() {
                                     ui.collapsing(#vec_box_link_fields_str, |ui| {
                                         for (i, c) in children.into_iter().enumerate() {
                                             ui.push_id(i, |ui| {
-                                                c.ui(depth + 1, ui, world);
+                                                c.ui(depth + 1, context, ui);
                                             });
                                         }
                                     });
@@ -283,9 +284,10 @@ pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
                         }
                     }
                     pub fn show(self, entity: Entity, ui: &mut Ui, world: &World) {
+                        let context = Context::new_world(world).set_owner(entity).take();
                         match self {
                             #(#struct_ident::#variants => {
-                                world.get::<#variants>(entity).unwrap().show(None, ui);
+                                context.get_component::<#variants>(entity).unwrap().show(None, &context, ui);
                             })*
                         };
                     }

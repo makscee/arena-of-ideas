@@ -16,6 +16,7 @@ pub trait Inject: Injector<Self> {
 
 pub trait Injector<T>: Sized {
     fn get_inner_mut(&mut self) -> Vec<&mut Box<T>>;
+    fn get_inner(&self) -> Vec<&Box<T>>;
     fn inject_inner(&mut self, source: &mut Self) {
         let mut source_inner = source.get_inner_mut();
         for (ind, i) in self.get_inner_mut().iter_mut().enumerate() {
@@ -83,6 +84,43 @@ impl Injector<Self> for Expression {
             Expression::If(a, b, c) => [a, b, c].into(),
         }
     }
+    fn get_inner(&self) -> Vec<&Box<Self>> {
+        match self {
+            Expression::One
+            | Expression::Zero
+            | Expression::GT
+            | Expression::Var(..)
+            | Expression::V(..)
+            | Expression::S(..)
+            | Expression::F(..)
+            | Expression::I(..)
+            | Expression::B(..)
+            | Expression::V2(..)
+            | Expression::C(..) => default(),
+            Expression::Sin(x)
+            | Expression::Cos(x)
+            | Expression::Even(x)
+            | Expression::Abs(x)
+            | Expression::Floor(x)
+            | Expression::Ceil(x)
+            | Expression::Fract(x)
+            | Expression::Sqr(x) => [x].into(),
+            Expression::Macro(a, b)
+            | Expression::Sum(a, b)
+            | Expression::Sub(a, b)
+            | Expression::Mul(a, b)
+            | Expression::Div(a, b)
+            | Expression::Max(a, b)
+            | Expression::Min(a, b)
+            | Expression::Mod(a, b)
+            | Expression::And(a, b)
+            | Expression::Or(a, b)
+            | Expression::Equals(a, b)
+            | Expression::GreaterThen(a, b)
+            | Expression::LessThen(a, b) => [a, b].into(),
+            Expression::If(a, b, c) => [a, b, c].into(),
+        }
+    }
 }
 
 impl Injector<Expression> for PainterAction {
@@ -101,9 +139,40 @@ impl Injector<Expression> for PainterAction {
             | PainterAction::Repeat(x, ..) => [x].into(),
         }
     }
+    fn get_inner(&self) -> Vec<&Box<Expression>> {
+        match self {
+            PainterAction::List(..) | PainterAction::Paint => default(),
+            PainterAction::Circle(x)
+            | PainterAction::Rectangle(x)
+            | PainterAction::Text(x)
+            | PainterAction::Hollow(x)
+            | PainterAction::Translate(x)
+            | PainterAction::Rotate(x)
+            | PainterAction::Scale(x)
+            | PainterAction::Color(x)
+            | PainterAction::Alpha(x)
+            | PainterAction::Repeat(x, ..) => [x].into(),
+        }
+    }
 }
 impl Injector<Self> for PainterAction {
     fn get_inner_mut(&mut self) -> Vec<&mut Box<Self>> {
+        match self {
+            PainterAction::Paint
+            | PainterAction::Circle(..)
+            | PainterAction::Rectangle(..)
+            | PainterAction::Text(..)
+            | PainterAction::Hollow(..)
+            | PainterAction::Translate(..)
+            | PainterAction::Rotate(..)
+            | PainterAction::Scale(..)
+            | PainterAction::Color(..)
+            | PainterAction::Alpha(..) => default(),
+            PainterAction::Repeat(_x, p) => [p].into(),
+            PainterAction::List(vec) => vec.into_iter().collect_vec(),
+        }
+    }
+    fn get_inner(&self) -> Vec<&Box<Self>> {
         match self {
             PainterAction::Paint
             | PainterAction::Circle(..)

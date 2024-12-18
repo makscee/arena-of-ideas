@@ -2,17 +2,19 @@ use bevy::{
     color::Color,
     math::{vec2, Vec2},
 };
-use egui::{Checkbox, DragValue};
+use bevy_egui::egui::{self, Checkbox, Color32, DragValue, Ui, Widget};
+use ui::*;
+use utils::default;
 
 use super::*;
 
 pub trait Show {
-    fn show(&self, prefix: Option<&str>, ui: &mut Ui);
+    fn show(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui);
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool;
 }
 
 impl Show for VarName {
-    fn show(&self, prefix: Option<&str>, ui: &mut Ui) {
+    fn show(&self, prefix: Option<&str>, _: &Context, ui: &mut Ui) {
         format!("{}{}", prefix.unwrap_or_default(), self.cstr_expanded()).label(ui);
     }
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
@@ -20,15 +22,15 @@ impl Show for VarName {
     }
 }
 impl Show for VarValue {
-    fn show(&self, prefix: Option<&str>, ui: &mut Ui) {
+    fn show(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) {
         ui.horizontal(|ui| match self {
-            VarValue::String(v) => v.show(prefix, ui),
-            VarValue::i32(v) => v.show(prefix, ui),
-            VarValue::f32(v) => v.show(prefix, ui),
-            VarValue::u64(v) => v.show(prefix, ui),
-            VarValue::bool(v) => v.show(prefix, ui),
-            VarValue::Vec2(v) => v.show(prefix, ui),
-            VarValue::Color32(v) => v.show(prefix, ui),
+            VarValue::String(v) => v.show(prefix, context, ui),
+            VarValue::i32(v) => v.show(prefix, context, ui),
+            VarValue::f32(v) => v.show(prefix, context, ui),
+            VarValue::u64(v) => v.show(prefix, context, ui),
+            VarValue::bool(v) => v.show(prefix, context, ui),
+            VarValue::Vec2(v) => v.show(prefix, context, ui),
+            VarValue::Color32(v) => v.show(prefix, context, ui),
         });
     }
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
@@ -46,7 +48,7 @@ impl Show for VarValue {
 }
 
 impl Show for i32 {
-    fn show(&self, prefix: Option<&str>, ui: &mut Ui) {
+    fn show(&self, prefix: Option<&str>, _: &Context, ui: &mut Ui) {
         format!("{}{}", prefix.unwrap_or_default(), self.cstr_expanded()).label(ui);
     }
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
@@ -60,7 +62,7 @@ impl Show for i32 {
     }
 }
 impl Show for f32 {
-    fn show(&self, prefix: Option<&str>, ui: &mut Ui) {
+    fn show(&self, prefix: Option<&str>, _: &Context, ui: &mut Ui) {
         format!("{}{}", prefix.unwrap_or_default(), self.cstr_expanded()).label(ui);
     }
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
@@ -74,7 +76,7 @@ impl Show for f32 {
     }
 }
 impl Show for u64 {
-    fn show(&self, prefix: Option<&str>, ui: &mut Ui) {
+    fn show(&self, prefix: Option<&str>, _: &Context, ui: &mut Ui) {
         format!("{}{}", prefix.unwrap_or_default(), self.cstr_expanded()).label(ui);
     }
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
@@ -88,7 +90,7 @@ impl Show for u64 {
     }
 }
 impl Show for bool {
-    fn show(&self, prefix: Option<&str>, ui: &mut Ui) {
+    fn show(&self, prefix: Option<&str>, _: &Context, ui: &mut Ui) {
         format!("{}{}", prefix.unwrap_or_default(), self.cstr_expanded()).label(ui);
     }
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
@@ -101,7 +103,7 @@ impl Show for bool {
     }
 }
 impl Show for Vec2 {
-    fn show(&self, prefix: Option<&str>, ui: &mut Ui) {
+    fn show(&self, prefix: Option<&str>, _: &Context, ui: &mut Ui) {
         format!("{}{}", prefix.unwrap_or_default(), self.cstr_expanded()).label(ui);
     }
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
@@ -118,7 +120,7 @@ impl Show for Vec2 {
     }
 }
 impl Show for String {
-    fn show(&self, prefix: Option<&str>, ui: &mut Ui) {
+    fn show(&self, prefix: Option<&str>, _: &Context, ui: &mut Ui) {
         format!("{}{self}", prefix.unwrap_or_default()).label(ui);
     }
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
@@ -128,7 +130,7 @@ impl Show for String {
     }
 }
 impl Show for Color {
-    fn show(&self, prefix: Option<&str>, ui: &mut Ui) {
+    fn show(&self, prefix: Option<&str>, _: &Context, ui: &mut Ui) {
         format!("{}{}", prefix.unwrap_or_default(), self.cstr_expanded()).label(ui);
     }
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
@@ -145,7 +147,7 @@ impl Show for Color {
     }
 }
 impl Show for Color32 {
-    fn show(&self, prefix: Option<&str>, ui: &mut Ui) {
+    fn show(&self, prefix: Option<&str>, _: &Context, ui: &mut Ui) {
         format!("{}{}", prefix.unwrap_or_default(), self.cstr_expanded()).label(ui);
     }
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
@@ -166,8 +168,14 @@ impl Show for Color32 {
 }
 
 impl Show for Expression {
-    fn show(&self, prefix: Option<&str>, ui: &mut Ui) {
-        format!("{}{}", prefix.unwrap_or_default(), self.cstr_expanded()).label(ui);
+    fn show(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) {
+        format!(
+            "{}{}{}",
+            prefix.unwrap_or_default(),
+            self.cstr_expanded(),
+            self.get_value(context).unwrap_or_default()
+        )
+        .label(ui);
     }
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
         CollapsingSelector::ui(self, prefix, ui, |v, ui| match v {
@@ -231,8 +239,15 @@ impl Show for Expression {
 }
 
 impl Show for PainterAction {
-    fn show(&self, prefix: Option<&str>, ui: &mut Ui) {
-        format!("{}{}", prefix.unwrap_or_default(), self.cstr_expanded()).label_w(ui);
+    fn show(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) {
+        let mut s = String::new();
+        for i in <Self as Injector<Expression>>::get_inner(self) {
+            match i.get_value(context) {
+                Ok(v) => s += &v.cstr(),
+                Err(e) => s += &e.to_string(),
+            }
+        }
+        format!("{s}{}{}", prefix.unwrap_or_default(), self.cstr_expanded()).label_w(ui);
     }
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
         CollapsingSelector::ui(self, prefix, ui, |v, ui| match v {
@@ -269,8 +284,13 @@ impl Show for PainterAction {
     }
 }
 impl Show for Material {
-    fn show(&self, prefix: Option<&str>, ui: &mut Ui) {
-        format!("{}{}", prefix.unwrap_or_default(), self.cstr_expanded()).label_w(ui);
+    fn show(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) {
+        if let Some(prefix) = prefix {
+            prefix.cstr().label(ui);
+        }
+        for i in &self.0 {
+            i.show(None, context, ui);
+        }
     }
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
         if let Some(prefix) = prefix {
@@ -291,13 +311,13 @@ impl Show for Material {
     }
 }
 impl Show for Trigger {
-    fn show(&self, prefix: Option<&str>, ui: &mut bevy_egui::egui::Ui) {
+    fn show(&self, prefix: Option<&str>, _: &Context, ui: &mut Ui) {
         if let Some(prefix) = prefix {
             prefix.cstr_c(VISIBLE_DARK).label(ui);
         }
         self.cstr_cs(CYAN, CstrStyle::Bold).label(ui);
     }
-    fn show_mut(&mut self, prefix: Option<&str>, ui: &mut bevy_egui::egui::Ui) -> bool {
+    fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
         Selector::new(prefix.unwrap_or_default()).ui_enum(self, ui)
     }
 }

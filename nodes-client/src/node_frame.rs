@@ -97,7 +97,6 @@ impl NodeFrame {
                 Frame::none()
                     .inner_margin(Margin::same(8.0))
                     .show(ui, |ui| {
-                        node.show(None, ui);
                         content(ui);
                     });
             })

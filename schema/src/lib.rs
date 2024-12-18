@@ -4,6 +4,7 @@ mod expression;
 mod inject;
 mod macro_fn;
 mod material;
+#[allow(dead_code)]
 mod nodes;
 mod trigger;
 mod var_name;

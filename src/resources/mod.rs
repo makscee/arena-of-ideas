@@ -1,6 +1,5 @@
 mod client_settings;
 mod client_state;
-mod expression;
 mod game_assets;
 mod game_option;
 mod game_state;
@@ -10,7 +9,6 @@ use super::*;
 
 pub use client_settings::*;
 pub use client_state::*;
-pub use expression::*;
 pub use game_assets::*;
 pub use game_option::*;
 pub use game_state::*;
