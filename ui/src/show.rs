@@ -217,18 +217,21 @@ impl Show for Expression {
                 | Expression::Equals(a, b)
                 | Expression::GreaterThen(a, b)
                 | Expression::LessThen(a, b) => {
+                    let mut r = false;
                     ui.vertical(|ui| {
-                        a.show_mut(Some("a:".into()), ui) || b.show_mut(Some("b:".into()), ui)
-                    })
-                    .inner
+                        r |= a.show_mut(Some("a:".into()), ui);
+                        r |= b.show_mut(Some("b:".into()), ui);
+                    });
+                    r
                 }
                 Expression::If(i, t, e) => {
+                    let mut r = false;
                     ui.vertical(|ui| {
-                        i.show_mut(Some("if:".into()), ui)
-                            || t.show_mut(Some("then:".into()), ui)
-                            || e.show_mut(Some("else:".into()), ui)
-                    })
-                    .inner
+                        r |= i.show_mut(Some("if:".into()), ui);
+                        r |= t.show_mut(Some("then:".into()), ui);
+                        r |= e.show_mut(Some("else:".into()), ui);
+                    });
+                    r
                 }
             },
         )
@@ -257,10 +260,14 @@ impl Show for PainterAction {
                 | PainterAction::Rotate(x)
                 | PainterAction::Scale(x)
                 | PainterAction::Alpha(x)
-                | PainterAction::Color(x) => x.show_mut(None, ui),
+                | PainterAction::Color(x) => x.show_mut(Some("x:"), ui),
                 PainterAction::Repeat(x, a) => {
-                    ui.vertical(|ui| x.show_mut(None, ui) || a.show_mut(None, ui))
-                        .inner
+                    let mut r = false;
+                    ui.vertical(|ui| {
+                        r |= x.show_mut(Some("cnt:"), ui);
+                        r |= a.show_mut(Some("a:"), ui);
+                    });
+                    r
                 }
                 PainterAction::List(l) => {
                     let mut r = false;
@@ -287,8 +294,8 @@ impl Show for Material {
             prefix.cstr().label(ui);
         }
         let mut changed = false;
-        for a in &mut self.0 {
-            changed |= a.show_mut(None, ui);
+        for (i, a) in self.0.iter_mut().enumerate() {
+            changed |= a.show_mut(Some(&i.to_string()), ui);
         }
         if "+"
             .cstr_cs(VISIBLE_BRIGHT, CstrStyle::Bold)

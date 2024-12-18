@@ -18,8 +18,8 @@ impl CollapsingSelector {
         content: impl FnOnce(&mut T, &mut Ui) -> bool,
     ) -> bool {
         const FRAME: Frame = Frame {
-            inner_margin: Margin::same(4.0),
-            outer_margin: Margin::same(4.0),
+            inner_margin: Margin::same(2.0),
+            outer_margin: Margin::same(2.0),
             rounding: Rounding::same(13.0),
             shadow: Shadow::NONE,
             fill: TRANSPARENT,
@@ -34,12 +34,13 @@ impl CollapsingSelector {
                         replacer(value, &mut new_value);
                         *value = new_value;
                     }
-                    r || CollapsingHeader::new("")
+                    CollapsingHeader::new("")
                         .id_source(ui.next_auto_id())
                         .default_open(true)
                         .show_unindented(ui, |ui| content(value, ui))
                         .body_returned
                         .unwrap_or_default()
+                        || r
                 })
                 .inner
             })

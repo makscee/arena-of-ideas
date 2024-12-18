@@ -16,15 +16,17 @@ impl Selector {
         ui: &mut Ui,
     ) -> bool {
         let mut changed = false;
-        ui.label(self.name);
-        ComboBox::from_id_source(ui.next_auto_id())
-            .selected_text(value.cstr().widget(1.0, ui))
-            .show_ui(ui, |ui| {
-                for e in E::iter() {
-                    let text = e.cstr().widget(1.0, ui);
-                    changed |= ui.selectable_value(value, e.clone(), text).changed();
-                }
-            });
+        ui.horizontal(|ui| {
+            ui.label(self.name);
+            ComboBox::from_id_source(ui.next_auto_id())
+                .selected_text(value.cstr().widget(1.0, ui))
+                .show_ui(ui, |ui| {
+                    for e in E::iter() {
+                        let text = e.cstr().widget(1.0, ui);
+                        changed |= ui.selectable_value(value, e.clone(), text).changed();
+                    }
+                });
+        });
         changed
     }
     pub fn ui_iter<'a, E: PartialEq + Clone + ToString + ToCstr + 'a, I>(

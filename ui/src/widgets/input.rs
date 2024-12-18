@@ -25,16 +25,19 @@ impl Input {
         self
     }
     pub fn ui_string(self, value: &mut String, ui: &mut Ui) -> Response {
-        self.name.label(ui);
-        ui.style_mut().visuals.widgets.inactive.bg_stroke = STROKE_DARK;
-        let mut te = TextEdit::singleline(value)
-            .password(self.password)
-            .desired_width(100.0);
-        if self.char_limit > 0 {
-            te = te.char_limit(self.char_limit);
-        }
-        let r = te.ui(ui);
-        ui.reset_style();
-        r
+        ui.horizontal(|ui| {
+            self.name.label(ui);
+            ui.style_mut().visuals.widgets.inactive.bg_stroke = STROKE_DARK;
+            let mut te = TextEdit::singleline(value)
+                .password(self.password)
+                .desired_width(100.0);
+            if self.char_limit > 0 {
+                te = te.char_limit(self.char_limit);
+            }
+            let r = te.ui(ui);
+            ui.reset_style();
+            r
+        })
+        .inner
     }
 }
