@@ -341,6 +341,11 @@ impl Show for Material {
         if let Some(prefix) = prefix {
             prefix.cstr().label(ui);
         }
+        let rect = ui.available_rect_before_wrap();
+        let mut p = Painter::new(rect, ui.ctx());
+        for i in &self.0 {
+            let _ = i.paint(context, &mut p, ui);
+        }
         for i in &self.0 {
             i.show(None, context, ui);
         }

@@ -67,16 +67,16 @@ impl RepresentationPlugin {
     }
     fn update(
         reps: Query<(Entity, &Representation), With<NodeState>>,
-        context: StateQuery,
+        state: StateQuery,
         mut egui_context: Query<&mut EguiContext>,
         camera: Query<(&Camera, &GlobalTransform)>,
     ) {
         let ctx = egui_context.single_mut().into_inner().get_mut();
         let cam = camera.single();
-        let mut context = Context::new(context);
+        let mut context = Context::new(&state);
         for (e, r) in &reps {
             context.set_owner(e);
-            match Self::paint(&r.material, &mut context, ctx, cam) {
+            match Self::paint(&r.material, &context, ctx, cam) {
                 Ok(_) => {}
                 Err(e) => error!("Paint error: {e}"),
             };
@@ -85,7 +85,7 @@ impl RepresentationPlugin {
     }
     fn paint(
         m: &Material,
-        context: &mut Context,
+        context: &Context,
         ctx: &egui::Context,
         cam: (&Camera, &GlobalTransform),
     ) -> Result<(), ExpressionError> {

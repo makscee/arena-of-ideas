@@ -6,26 +6,26 @@ use utils_client::get_children;
 
 use super::*;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Context<'w, 's> {
     layers: Vec<ContextLayer>,
     sources: Vec<ContextSource<'w, 's>>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 enum ContextSource<'w, 's> {
-    Query(StateQuery<'w, 's>),
+    Query(&'w StateQuery<'w, 's>),
     World(&'w World),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 enum ContextLayer {
     Owner(Entity),
     Var(VarName, VarValue),
 }
 
 impl<'w, 's> Context<'w, 's> {
-    pub fn new(state: StateQuery<'w, 's>) -> Self {
+    pub fn new(state: &'w StateQuery<'w, 's>) -> Self {
         Self {
             layers: default(),
             sources: vec![ContextSource::Query(state)],

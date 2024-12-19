@@ -36,18 +36,14 @@ impl Painter {
 }
 
 pub trait Paint {
-    fn paint(
-        &self,
-        context: &mut Context,
-        p: &mut Painter,
-        ui: &mut Ui,
-    ) -> Result<(), ExpressionError>;
+    fn paint(&self, context: &Context, p: &mut Painter, ui: &mut Ui)
+        -> Result<(), ExpressionError>;
 }
 
 impl Paint for PainterAction {
     fn paint(
         &self,
-        context: &mut Context,
+        context: &Context,
         p: &mut Painter,
         ui: &mut Ui,
     ) -> Result<(), ExpressionError> {
@@ -108,8 +104,7 @@ impl Paint for PainterAction {
             }
             PainterAction::Repeat(x, action) => {
                 for i in 0..x.get_i32(context)? {
-                    context.set_var(VarName::index, i.into());
-                    action.paint(context, p, ui)?;
+                    action.paint(context.clone().set_var(VarName::index, i.into()), p, ui)?;
                 }
             }
             PainterAction::Paint => {
