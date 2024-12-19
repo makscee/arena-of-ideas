@@ -15,7 +15,14 @@ impl ExpressionImpl for Expression {
         match self {
             Expression::One => Ok(1.into()),
             Expression::Zero => Ok(0.into()),
-            Expression::Var(var) => context.get_var(*var).to_e(),
+            Expression::Var(var) => {
+                let v = context.get_var(*var).to_e();
+                if v.is_err() && *var == VarName::index {
+                    Ok(1.into())
+                } else {
+                    v
+                }
+            }
             Expression::V(v) => Ok(v.clone()),
             Expression::F(v) => Ok((*v).into()),
             Expression::I(v) => Ok((*v).into()),

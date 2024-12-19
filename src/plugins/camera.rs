@@ -9,11 +9,6 @@ use bevy::{
 
 use super::*;
 
-static UNIT_PIXELS: Mutex<f32> = Mutex::new(10.0);
-pub fn unit_pixels() -> f32 {
-    *UNIT_PIXELS.lock().unwrap()
-}
-
 pub struct CameraPlugin;
 
 impl Plugin for CameraPlugin {
@@ -55,7 +50,7 @@ impl CameraPlugin {
         data.cur_scale +=
             (data.need_scale - data.cur_scale) * gt().last_delta() * SCALE_CHANGE_SPEED;
         data.apply(&mut cam.1);
-        *UNIT_PIXELS.lock().unwrap() = ctx.screen_rect().width() / data.cur_scale;
+        set_unit_pixels(ctx.screen_rect().width() / data.cur_scale);
     }
     pub fn apply(world: &mut World) {
         let cd = *world.resource::<CameraData>();

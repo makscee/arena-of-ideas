@@ -121,7 +121,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
             rows_saved: None,
         }
     }
-    pub fn new_persistant(name: &'static str, rows: Vec<T>) -> Self {
+    pub fn new_persistent(name: &'static str, rows: Vec<T>) -> Self {
         Self {
             name,
             rows_getter: |_| default(),

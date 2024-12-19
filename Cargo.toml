@@ -72,6 +72,8 @@ utils-client = { path = "utils-client" }
 nodes-client = { path = "nodes-client" }
 
 bevy = { workspace = true }
+bevy-trait-query = { workspace = true }
+bevy_egui = { workspace = true }
 strum = { workspace = true }
 strum_macros = { workspace = true }
 itertools = { workspace = true }
@@ -80,9 +82,7 @@ serde = { workspace = true }
 include_dir = { workspace = true }
 thiserror = { workspace = true }
 convert_case = { workspace = true }
-bevy-trait-query = { workspace = true }
 once_cell = { workspace = true }
-bevy_egui = { workspace = true }
 ecolor = { workspace = true }
 lerp = { workspace = true }
 indexmap = { workspace = true }

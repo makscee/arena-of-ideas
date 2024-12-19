@@ -62,6 +62,13 @@ pub const SHADOW: Shadow = Shadow {
     color: Color32::from_rgba_premultiplied(20, 20, 20, 25),
 };
 
+pub const ROUNDING: Rounding = Rounding {
+    nw: 13.0,
+    ne: 13.0,
+    sw: 13.0,
+    se: 13.0,
+};
+
 pub struct UiPlugin;
 
 impl Plugin for UiPlugin {

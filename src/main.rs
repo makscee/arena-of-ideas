@@ -12,7 +12,7 @@ use clap::{command, Parser, ValueEnum};
 use include_dir::{include_dir, Dir};
 use noisy_bevy::NoisyShaderPlugin;
 pub use prelude::*;
-use utils_client::operations::OperationsPlugin;
+use utils_client::{operations::*, *};
 
 #[derive(Parser, Debug, Default, Clone)]
 #[command(author, version, about, long_about = None)]

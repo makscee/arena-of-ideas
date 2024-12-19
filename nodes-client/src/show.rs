@@ -2,9 +2,10 @@ use bevy::{
     color::Color,
     math::{vec2, Vec2},
 };
-use bevy_egui::egui::{self, Checkbox, Color32, DragValue, Ui, Widget};
-use ui::*;
-use utils::default;
+use bevy_egui::egui::{
+    self, epaint::TextShape, Checkbox, Color32, DragValue, Frame, Margin, Rounding, Sense, Shape,
+    Stroke, Ui, Widget,
+};
 
 use super::*;
 
@@ -169,13 +170,41 @@ impl Show for Color32 {
 
 impl Show for Expression {
     fn show(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) {
-        format!(
-            "{}{}{}",
-            prefix.unwrap_or_default(),
-            self.cstr_expanded(),
-            self.get_value(context).unwrap_or_default()
-        )
-        .label(ui);
+        if let Some(prefix) = prefix {
+            prefix.cstr_cs(VISIBLE_DARK, CstrStyle::Small).label(ui);
+        }
+        let l = self.cstr().as_label(ui).selectable(true);
+        let (pos, galley, response) = l.layout_in_ui(ui);
+        let mut text_shape = TextShape::new(pos, galley, MISSING_COLOR);
+        let color = if response.hovered() {
+            text_shape.override_text_color = Some(VISIBLE_BRIGHT);
+            VISIBLE_BRIGHT
+        } else {
+            VISIBLE_DARK
+        };
+        ui.painter().add(Shape::Text(text_shape));
+        response.on_hover_ui(|ui| match self.get_value(context) {
+            Ok(v) => {
+                v.show(None, context, ui);
+            }
+            Err(e) => {
+                e.cstr().label(ui);
+            }
+        });
+        let inner = <Self as Injector<Self>>::get_inner(self);
+        if !inner.is_empty() {
+            Frame::none()
+                .inner_margin(Margin::symmetric(4.0, 4.0))
+                .stroke(Stroke::new(1.0, color))
+                .rounding(ROUNDING)
+                .show(ui, |ui| {
+                    ui.vertical(|ui| {
+                        for i in inner {
+                            i.show(None, context, ui);
+                        }
+                    });
+                });
+        }
     }
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
         CollapsingSelector::ui(self, prefix, ui, |v, ui| match v {
@@ -240,14 +269,38 @@ impl Show for Expression {
 
 impl Show for PainterAction {
     fn show(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) {
-        let mut s = String::new();
-        for i in <Self as Injector<Expression>>::get_inner(self) {
-            match i.get_value(context) {
-                Ok(v) => s += &v.cstr(),
-                Err(e) => s += &e.to_string(),
+        ui.vertical(|ui| {
+            let hovered = ui
+                .horizontal_wrapped(|ui| {
+                    let r = format!("{}{}", prefix.unwrap_or_default(), self.cstr())
+                        .label(ui)
+                        .hovered();
+                    for i in <Self as Injector<Expression>>::get_inner(self) {
+                        i.show(None, context, ui);
+                    }
+                    r
+                })
+                .inner;
+            let inner = <Self as Injector<Self>>::get_inner(self);
+            if !inner.is_empty() {
+                Frame::none()
+                    .inner_margin(Margin::same(8.0))
+                    .rounding(ROUNDING)
+                    .stroke(Stroke::new(
+                        1.0,
+                        if hovered {
+                            VISIBLE_BRIGHT
+                        } else {
+                            VISIBLE_DARK
+                        },
+                    ))
+                    .show(ui, |ui| {
+                        for i in inner {
+                            i.show(None, context, ui);
+                        }
+                    });
             }
-        }
-        format!("{s}{}{}", prefix.unwrap_or_default(), self.cstr_expanded()).label_w(ui);
+        });
     }
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
         CollapsingSelector::ui(self, prefix, ui, |v, ui| match v {
