@@ -84,7 +84,7 @@ impl Selector {
                 .clicked()
             {
                 ui.ctx()
-                    .data_mut(|w| w.insert_temp(dbg!(lookup_id), String::new()));
+                    .data_mut(|w| w.insert_temp(lookup_id, String::new()));
             };
         });
         changed

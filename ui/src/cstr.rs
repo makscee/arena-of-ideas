@@ -11,7 +11,7 @@ use ecolor::Hsva;
 use egui::{text::LayoutJob, Galley, Label, Response, Style, TextFormat, Widget, WidgetText};
 use itertools::Itertools;
 use once_cell::sync::OnceCell;
-use utils_client::{game_timer::gt, ToC32};
+use utils_client::ToC32;
 
 use super::*;
 

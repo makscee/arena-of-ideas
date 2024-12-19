@@ -1,5 +1,3 @@
-use utils_client::game_timer::GAME_TIMER;
-
 use super::*;
 
 pub struct GameTimerPlugin;

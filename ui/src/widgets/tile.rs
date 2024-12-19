@@ -1,6 +1,3 @@
-use egui::SidePanel;
-use utils_client::game_timer::gt;
-
 use super::*;
 
 pub struct TilePlugin;

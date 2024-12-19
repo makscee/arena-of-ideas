@@ -1,5 +1,10 @@
-pub mod game_timer;
-pub mod operations;
+mod game_timer;
+mod nid;
+mod operations;
+
+pub use game_timer::*;
+pub use nid::*;
+pub use operations::*;
 
 use bevy::{math::vec2, prelude::*};
 use bevy_egui::{

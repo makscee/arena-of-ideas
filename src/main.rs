@@ -12,7 +12,6 @@ use clap::{command, Parser, ValueEnum};
 use include_dir::{include_dir, Dir};
 use noisy_bevy::NoisyShaderPlugin;
 pub use prelude::*;
-use utils_client::{operations::*, *};
 
 #[derive(Parser, Debug, Default, Clone)]
 #[command(author, version, about, long_about = None)]
@@ -72,6 +71,34 @@ fn main() {
         filter: "info,debug,wgpu_core=warn,wgpu_hal=warn,naga=warn".into(),
         ..default()
     });
+    let b = Battle {
+        left: [Unit {
+            name: "Left 1".into(),
+            stats: Some(UnitStats {
+                pwr: 1,
+                hp: 3,
+                ..default()
+            }),
+            ..default()
+        }]
+        .into(),
+        right: [Unit {
+            name: "Right 1".into(),
+            stats: Some(UnitStats {
+                pwr: 1,
+                hp: 4,
+                ..default()
+            }),
+            ..default()
+        }]
+        .into(),
+    };
+    let a = b.run();
+    dbg!(&a);
+    for a in a {
+        a.cstr().print();
+    }
+    return;
     app.insert_resource(ClearColor(EMPTINESS.to_color()))
         .add_systems(Startup, setup)
         .add_systems(OnEnter(GameState::Error), on_error_state)

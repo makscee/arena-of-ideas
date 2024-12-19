@@ -1,8 +1,6 @@
 use std::mem;
 
 use bevy::prelude::{Component, World};
-use utils::default;
-use utils_client::get_children;
 
 use super::*;
 
