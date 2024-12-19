@@ -355,15 +355,45 @@ impl Show for Material {
             prefix.cstr().label(ui);
         }
         let mut changed = false;
+        let mut swap = None;
+        let mut delete = None;
+        let mut insert = None;
+        let len = self.0.len();
         for (i, a) in self.0.iter_mut().enumerate() {
-            changed |= a.show_mut(Some(&i.to_string()), ui);
+            ui.horizontal(|ui| {
+                ui.vertical(|ui| {
+                    ui.horizontal(|ui| {
+                        if i > 0 && "<".cstr_s(CstrStyle::Bold).button(ui).clicked() {
+                            swap = Some((i, i - 1));
+                        }
+                        if i < len && ">".cstr_s(CstrStyle::Bold).button(ui).clicked() {
+                            swap = Some((i, i + 1));
+                        }
+                    });
+                    ui.horizontal(|ui| {
+                        if "-".cstr_cs(RED, CstrStyle::Bold).button(ui).clicked() {
+                            delete = Some(i);
+                        }
+                        if "+"
+                            .cstr_cs(VISIBLE_BRIGHT, CstrStyle::Bold)
+                            .button(ui)
+                            .clicked()
+                        {
+                            insert = Some(i + 1);
+                        }
+                    });
+                });
+                changed |= a.show_mut(Some(&i.to_string()), ui);
+            });
         }
-        if "+"
-            .cstr_cs(VISIBLE_BRIGHT, CstrStyle::Bold)
-            .button(ui)
-            .clicked()
-        {
-            self.0.push(default());
+        if let Some(delete) = delete {
+            self.0.remove(delete);
+        }
+        if let Some(index) = insert {
+            self.0.insert(index, default());
+        }
+        if let Some((a, b)) = swap {
+            self.0.swap(a, b);
         }
         changed
     }
