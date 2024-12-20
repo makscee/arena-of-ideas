@@ -66,39 +66,57 @@ fn main() {
     init_style_map();
     parse_content_tree();
     GameState::set_target(target);
+    let b = Battle {
+        left: [
+            Unit {
+                stats: Some(UnitStats {
+                    pwr: 1,
+                    hp: 3,
+                    ..default()
+                }),
+                ..default()
+            },
+            Unit {
+                stats: Some(UnitStats {
+                    pwr: 1,
+                    hp: 3,
+                    ..default()
+                }),
+                ..default()
+            },
+        ]
+        .into(),
+        right: [
+            Unit {
+                stats: Some(UnitStats {
+                    pwr: 1,
+                    hp: 4,
+                    ..default()
+                }),
+                ..default()
+            },
+            Unit {
+                stats: Some(UnitStats {
+                    pwr: 1,
+                    hp: 4,
+                    ..default()
+                }),
+                ..default()
+            },
+        ]
+        .into(),
+    };
+    let a = BattleSimulation::new(&b).run();
+    dbg!(&a);
+    for a in a.actions {
+        a.cstr().print();
+    }
+    return;
     let default_plugins = DefaultPlugins.set(LogPlugin {
         level: bevy::log::Level::DEBUG,
         filter: "info,debug,wgpu_core=warn,wgpu_hal=warn,naga=warn".into(),
         ..default()
     });
-    let b = Battle {
-        left: [Unit {
-            name: "Left 1".into(),
-            stats: Some(UnitStats {
-                pwr: 1,
-                hp: 3,
-                ..default()
-            }),
-            ..default()
-        }]
-        .into(),
-        right: [Unit {
-            name: "Right 1".into(),
-            stats: Some(UnitStats {
-                pwr: 1,
-                hp: 4,
-                ..default()
-            }),
-            ..default()
-        }]
-        .into(),
-    };
-    let a = b.run();
-    dbg!(&a);
-    for a in a {
-        a.cstr().print();
-    }
-    return;
     app.insert_resource(ClearColor(EMPTINESS.to_color()))
         .add_systems(Startup, setup)
         .add_systems(OnEnter(GameState::Error), on_error_state)

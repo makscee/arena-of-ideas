@@ -149,7 +149,13 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                                     self.#var_fields = value.into();
                                 }
                             )*
-                            _ => {error!("Var {var} not present in {}", self.kind())}
+                            _ => {
+                                #(
+                                    if let Some(n) = &mut self.#option_link_fields {
+                                        n.set_var(var, value.clone());
+                                    }
+                                )*
+                            }
                         }
                     }
                     fn get_all_vars(&self) -> Vec<(VarName, VarValue)> {

@@ -29,4 +29,6 @@ pub enum VarName {
     color,
     lvl,
     index,
+    visible,
+    slot,
 }

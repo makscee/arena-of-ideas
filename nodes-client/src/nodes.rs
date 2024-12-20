@@ -10,7 +10,7 @@ use itertools::Itertools;
 use macro_client::*;
 use strum_macros::{Display, EnumIter};
 use ui::*;
-use utils_client::{get_children, get_parent};
+use utils_client::get_parent;
 
 macro_schema::nodes!();
 
