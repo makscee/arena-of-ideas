@@ -106,9 +106,10 @@ fn main() {
         ]
         .into(),
     };
-    let a = BattleSimulation::new(&b).run();
-    dbg!(&a);
-    for a in a.actions {
+    let (log, history) = BattleSimulation::new(&b).run();
+    dbg!(&log);
+    dbg!(&history);
+    for a in log.actions {
         a.cstr().print();
     }
     return;

@@ -222,7 +222,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                                 }
                             )*
                             #(
-                                let mut children = self.collect_children::<#vec_link_types>(context);
+                                let mut children = self.collect_children::<#vec_link_types>(context).into_iter().map(|(_,c)| c).collect_vec();
                                 children.extend(self.#vec_link_fields.iter());
                                 if !children.is_empty() {
                                     ui.collapsing(#vec_link_fields_str, |ui| {
@@ -235,7 +235,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                                 }
                             )*
                             #(
-                                let mut children = self.collect_children::<#vec_box_link_types>(context);
+                                let mut children = self.collect_children::<#vec_box_link_types>(context).into_iter().map(|(_,c)| c).collect_vec();
                                 children.extend(self.#vec_box_link_fields.iter().map(Box::as_ref));
                                 if !children.is_empty() {
                                     ui.collapsing(#vec_box_link_fields_str, |ui| {
@@ -280,6 +280,12 @@ pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
                         use bevy_trait_query::RegisterExt;
                         match self {
                             #(#struct_ident::#variants => app.register_component_as::<dyn GetVar, #variants>(),)*
+                        };
+                    }
+                    pub fn register_world(self, world: &mut World) {
+                        use bevy_trait_query::RegisterExt;
+                        match self {
+                            #(#struct_ident::#variants => world.register_component_as::<dyn GetVar, #variants>(),)*
                         };
                     }
                     pub fn set_var(self, entity: Entity, var: VarName, value: VarValue, world: &mut World) {

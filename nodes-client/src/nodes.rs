@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 use assets::{hero_rep, unit_rep};
 use bevy::{
     log::*,
@@ -21,7 +23,7 @@ pub trait GetVar: GetNodeKind {
     fn get_all_vars(&self) -> Vec<(VarName, VarValue)>;
 }
 
-pub trait Node: Default + Component + Sized + GetVar + Show {
+pub trait Node: Default + Component + Sized + GetVar + Show + Debug {
     fn entity(&self) -> Option<Entity>;
     fn inject_data(&mut self, data: &str);
     fn get_data(&self) -> String;
@@ -51,14 +53,14 @@ pub trait Node: Default + Component + Sized + GetVar + Show {
     fn collect_children_entity<'a, T: Component>(
         entity: Entity,
         context: &'a Context,
-    ) -> Vec<&'a T> {
+    ) -> Vec<(Entity, &'a T)> {
         context
             .get_children(entity)
             .into_iter()
-            .filter_map(|c| context.get_component::<T>(c))
+            .filter_map(|e| context.get_component::<T>(e).map(|c| (e, c)))
             .collect_vec()
     }
-    fn collect_children<'a, T: Component>(&self, context: &'a Context) -> Vec<&'a T> {
+    fn collect_children<'a, T: Component>(&self, context: &'a Context) -> Vec<(Entity, &'a T)> {
         let entity = self.entity().expect("Node not linked to world");
         Self::collect_children_entity(entity, context)
     }
@@ -80,13 +82,20 @@ impl OnUnpack for NodeKind {
     }
 }
 
-#[derive(Component)]
+#[derive(Component, Debug, Default)]
 pub struct NodeState {
     pub vars: HashMap<VarName, VarValue>,
     pub source: HashMap<VarName, NodeKind>,
 }
 
 impl NodeState {
+    pub fn contains(&self, var: VarName) -> bool {
+        self.vars.contains_key(&var)
+    }
+    pub fn insert(&mut self, source: NodeKind, var: VarName, value: VarValue) {
+        self.vars.insert(var, value);
+        self.source.insert(var, source);
+    }
     pub fn get_var_state(var: VarName, entity: Entity, state: &StateQuery) -> Option<VarValue> {
         let v = state
             .get_state(entity)

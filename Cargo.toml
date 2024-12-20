@@ -1,6 +1,5 @@
 [workspace]
 members = [
-    "extra-macros",
     "macro-schema",
     "macro-server",
     "nodes-server",
