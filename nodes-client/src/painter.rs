@@ -1,14 +1,4 @@
-use std::mem;
-
 use super::*;
-
-use bevy_egui::egui::{self, Rect, Rounding, Stroke, Ui};
-use egui::{
-    emath::{Rot2, TSTransform},
-    epaint::{self, TessellationOptions},
-    Mesh,
-};
-use epaint::{CircleShape, RectShape, Tessellator, TextShape};
 
 pub struct Painter {
     pub rect: Rect,

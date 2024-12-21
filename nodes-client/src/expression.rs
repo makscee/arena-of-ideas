@@ -32,7 +32,8 @@ impl ExpressionImpl for Expression {
             Expression::C(s) => Color32::from_hex(s)
                 .map_err(|e| ExpressionError::OperationNotSupported {
                     values: default(),
-                    op: "Hex conversion err",
+                    op: "Hex color parse",
+                    msg: Some(format!("{e:?}")),
                 })
                 .map(|v| v.into()),
             Expression::GT => Ok(gt().play_head().into()),

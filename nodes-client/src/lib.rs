@@ -2,6 +2,7 @@ pub mod assets;
 mod context;
 mod expression;
 mod node_frame;
+mod node_state;
 mod nodes;
 mod painter;
 mod show;
@@ -9,20 +10,43 @@ mod show;
 pub use context::*;
 pub use expression::*;
 pub use node_frame::*;
+pub use node_state::*;
 pub use nodes::*;
 pub use painter::*;
 pub use schema::*;
 pub use show::*;
 
+use bevy::color::Color;
 use bevy::math::{vec2, Vec2};
 use bevy::{
     ecs::system::SystemParam,
-    prelude::{Children, Entity, Parent, Query},
+    log::*,
+    prelude::{
+        App, BuildChildren, Children, Commands, Component, Entity, Parent, Query, TransformBundle,
+        VisibilityBundle, World,
+    },
+    utils::hashbrown::HashMap,
 };
-use bevy_egui::egui::Color32;
+use bevy_egui::egui::{
+    self, epaint::TextShape, Align, CollapsingHeader, Color32, Frame, Layout, Margin, Rect,
+    Rounding, Shadow, Stroke, Ui,
+};
+use egui::{
+    emath::{Rot2, TSTransform},
+    epaint::{self, TessellationOptions},
+    Checkbox, DragValue, Mesh, Shape, Widget,
+};
+use epaint::{CircleShape, RectShape, Tessellator};
+use include_dir::Dir;
+use itertools::Itertools;
+use macro_client::*;
+
+use parking_lot::{const_mutex, Mutex};
+use std::mem;
+use strum_macros::{Display, EnumIter};
 use ui::*;
 use utils::*;
-use utils_client::*;
+use utils_client::{get_parent, *};
 
 #[derive(SystemParam, Debug)]
 pub struct StateQuery<'w, 's> {

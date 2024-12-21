@@ -1,12 +1,3 @@
-use bevy::{
-    color::Color,
-    math::{vec2, Vec2},
-};
-use bevy_egui::egui::{
-    self, epaint::TextShape, Checkbox, Color32, DragValue, Frame, Margin, Rounding, Sense, Shape,
-    Stroke, Ui, Widget,
-};
-
 use super::*;
 
 pub trait Show {

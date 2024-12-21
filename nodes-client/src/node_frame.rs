@@ -1,9 +1,3 @@
-use bevy_egui::egui::{
-    Align, CollapsingHeader, Color32, Frame, Layout, Margin, Rounding, Shadow, Stroke, Ui,
-};
-use parking_lot::{const_mutex, Mutex};
-use ui::*;
-
 use super::*;
 
 pub struct NodeFrame;
