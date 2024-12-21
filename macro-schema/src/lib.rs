@@ -35,6 +35,7 @@ pub fn nodes(_: TokenStream) -> TokenStream {
         #[derive(Debug, Clone, Copy, Display, EnumIter, PartialEq, Eq)]
         #[node_kinds]
         pub enum NodeKind {
+            None,
             #(#names,)*
         }
         #(

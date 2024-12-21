@@ -1,37 +1,29 @@
-use bevy::ecs::system::RunSystemOnce;
+use std::fmt::Display;
+
+use bevy::{ecs::system::RunSystemOnce, prelude::Without};
 use itertools::EitherOrBoth;
 
 use super::*;
 
 pub struct BattlePlugin;
 
+const ANIMATION: f32 = 0.1;
+
 pub struct Battle {
     pub left: Vec<Unit>,
     pub right: Vec<Unit>,
 }
 pub struct BattleSimulation {
+    pub t: f32,
     pub world: World,
     pub left: Vec<Entity>,
     pub right: Vec<Entity>,
+    pub log: BattleLog,
 }
 #[derive(Default, Debug)]
 pub struct BattleLog {
     pub states: HashMap<Entity, NodeState>,
     pub actions: Vec<BattleAction>,
-}
-#[derive(Default, Debug)]
-pub struct BattleHistory {
-    pub t: f32,
-    pub reps: HashMap<Entity, Representation>,
-    pub history: HashMap<Entity, StateHistory>,
-}
-#[derive(Default, Debug)]
-pub struct StateHistory {
-    pub vars: HashMap<VarName, VarHistory>,
-}
-#[derive(Default, Debug)]
-pub struct VarHistory {
-    changes: Vec<(f32, VarValue)>,
 }
 #[derive(Clone, Debug)]
 pub enum BattleAction {
@@ -41,13 +33,13 @@ pub enum BattleAction {
     Death(Entity),
     Spawn(Entity),
 }
+#[derive(Component)]
+struct Corpse;
 impl BattleAction {
-    fn apply(
-        &self,
-        battle: &mut BattleSimulation,
-        log: &mut BattleLog,
-        history: &mut BattleHistory,
-    ) -> Vec<Self> {
+    fn apply(&self, battle: &mut BattleSimulation) -> Vec<Self> {
+        println!("Action {self}");
+        battle.t += ANIMATION;
+        battle.log.actions.push(self.clone());
         match self {
             BattleAction::Strike(a, b) => {
                 let pwr = battle.world.get::<UnitStats>(*a).unwrap().pwr;
@@ -72,77 +64,28 @@ impl BattleAction {
             }
             BattleAction::VarSet(entity, kind, var, value) => {
                 kind.set_var(*entity, *var, value.clone(), &mut battle.world);
+                battle.world.get_mut::<NodeState>(*entity).unwrap().insert(
+                    battle.t,
+                    *var,
+                    value.clone(),
+                    *kind,
+                );
                 default()
             }
             BattleAction::Spawn(entity) => {
-                let reps = <Unit as Node>::collect_children_entity::<Representation>(
-                    *entity,
-                    &Context::new_world(&battle.world),
-                )
-                .into_iter()
-                .map(|(e, r)| (e, r.clone()))
-                .collect_vec();
-                for (e, r) in reps {
-                    let state = battle
-                        .world
-                        .run_system_once_with(e, NodeStatePlugin::collect_full_state);
-                    history.reps.insert(e, r.clone());
-                    history.history.insert(e, StateHistory::from_state(&state));
-                }
-                let state = battle
-                    .world
-                    .run_system_once_with(*entity, NodeStatePlugin::collect_full_state);
-                log.states.insert(*entity, state);
+                battle.log.take_state(*entity, &mut battle.world);
                 default()
             }
-        }
-    }
-    fn apply_hist(&self, history: &mut BattleHistory) {
-        const ANIMATION: f32 = 0.1;
-        match self {
-            BattleAction::Strike(a, b) => {}
-            BattleAction::VarSet(entity, _, var, value) => {
-                history.set_var(*entity, *var, value.clone());
-                history.t += ANIMATION;
-            }
-            BattleAction::Death(entity) => {
-                history.set_var(*entity, VarName::visible, false.into());
-            }
-            BattleAction::Damage(a, b, x) => {}
-            BattleAction::Spawn(entity) => history.set_var(*entity, VarName::visible, true.into()),
         }
     }
 }
 
-impl VarHistory {
-    fn new(value: VarValue) -> Self {
-        Self {
-            changes: vec![(0.0, value)],
-        }
-    }
-}
-impl StateHistory {
-    fn from_state(state: &NodeState) -> Self {
-        Self {
-            vars: HashMap::from_iter(
-                state
-                    .vars
-                    .iter()
-                    .map(|(k, v)| (*k, VarHistory::new(v.clone()))),
-            ),
-        }
-    }
-    fn set(&mut self, t: f32, var: VarName, value: VarValue) {
-        let h = &mut self.vars.entry(var).or_default().changes;
-        h.push((t, value));
-    }
-}
-impl BattleHistory {
-    fn set_var(&mut self, entity: Entity, var: VarName, value: VarValue) {
-        self.history
-            .get_mut(&entity)
-            .unwrap()
-            .set(self.t, var, value);
+impl BattleLog {
+    fn take_state(&mut self, entity: Entity, world: &mut World) {
+        self.states.insert(
+            entity,
+            world.run_system_once_with(entity, NodeStatePlugin::collect_full_state),
+        );
     }
 }
 impl BattleSimulation {
@@ -153,32 +96,34 @@ impl BattleSimulation {
         }
         let mut left: Vec<Entity> = default();
         let mut right: Vec<Entity> = default();
+        let mut log = BattleLog::default();
         for (_, u) in battle.left.iter().enumerate() {
             let entity = world.spawn_empty().id();
             u.clone().unpack(entity, &mut world.commands());
             left.push(entity);
+            log.take_state(entity, &mut world);
         }
         for (_, u) in battle.right.iter().enumerate() {
             let entity = world.spawn_empty().id();
             u.clone().unpack(entity, &mut world.commands());
             right.push(entity);
+            log.take_state(entity, &mut world);
         }
-        Self { world, left, right }
+        world.flush();
+        Self {
+            t: 0.0,
+            world,
+            left,
+            right,
+            log,
+        }
     }
-    fn process_actions(
-        &mut self,
-        log: &mut BattleLog,
-        history: &mut BattleHistory,
-        mut actions: Vec<BattleAction>,
-    ) {
+    fn process_actions(&mut self, mut actions: Vec<BattleAction>) {
         while let Some(a) = actions.pop() {
-            log.actions.push(a.clone());
-            actions.extend(a.apply(self, log, history));
+            actions.extend(a.apply(self));
         }
     }
-    pub fn run(mut self) -> (BattleLog, BattleHistory) {
-        let log = &mut BattleLog::default();
-        let history = &mut BattleHistory::default();
+    pub fn run(mut self) -> Self {
         let spawn_actions = self
             .left
             .iter()
@@ -192,18 +137,22 @@ impl BattleSimulation {
                 }
             })
             .collect_vec();
-        self.process_actions(log, history, spawn_actions);
+        self.process_actions(spawn_actions);
         while !self.left.is_empty() && !self.right.is_empty() {
             let a = BattleAction::Strike(self.left[0], self.right[0]);
-            self.process_actions(log, history, [a].into());
+            self.process_actions([a].into());
             let a = self.death_check();
-            self.process_actions(log, history, a);
+            self.process_actions(a);
         }
-        (mem::take(log), mem::take(history))
+        self
     }
     fn death_check(&mut self) -> Vec<BattleAction> {
         let mut actions: Vec<BattleAction> = default();
-        for (entity, stats) in self.world.query::<(Entity, &UnitStats)>().iter(&self.world) {
+        for (entity, stats) in self
+            .world
+            .query_filtered::<(Entity, &UnitStats), Without<Corpse>>()
+            .iter(&self.world)
+        {
             if stats.hp <= 0 {
                 actions.push(BattleAction::Death(entity));
             }
@@ -211,7 +160,7 @@ impl BattleSimulation {
         actions
     }
     fn die(&mut self, entity: Entity) {
-        self.world.entity_mut(entity).despawn_recursive();
+        self.world.entity_mut(entity).insert(Corpse);
         if let Some(p) = self.left.iter().position(|u| *u == entity) {
             self.left.remove(p);
         }
@@ -226,9 +175,14 @@ impl ToCstr for BattleAction {
         match self {
             BattleAction::Strike(a, b) => format!("{a}|{b}"),
             BattleAction::Damage(a, b, x) => format!("{a}>{b}-{x}"),
-            BattleAction::Death(a) => format!("{a}x"),
+            BattleAction::Death(a) => format!("x{a}"),
             BattleAction::VarSet(a, b, var, value) => format!("{a}>{b}${var}>{value}"),
             BattleAction::Spawn(a) => format!("*{a}"),
         }
+    }
+}
+impl Display for BattleAction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.cstr().to_colored())
     }
 }

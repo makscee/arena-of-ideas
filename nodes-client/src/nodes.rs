@@ -61,6 +61,12 @@ trait OnUnpack {
 
 impl OnUnpack for NodeKind {
     fn on_unpack(self, entity: Entity, commands: &mut Commands) {
+        commands.entity(entity).insert((
+            TransformBundle::default(),
+            VisibilityBundle::default(),
+            NodeState::default(),
+        ));
+
         let entity = commands.spawn_empty().set_parent(entity).id();
         match self {
             NodeKind::Hero => hero_rep().clone().unpack(entity, commands),

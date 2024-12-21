@@ -205,7 +205,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                                 d.unpack(entity, commands);
                             }
                         )*
-                        commands.entity(entity).insert((TransformBundle::default(), VisibilityBundle::default(), self));
+                        commands.entity(entity).insert(self);
                     }
                     fn ui(&self, depth: usize, context: &Context, ui: &mut Ui) {
                         let color = context.get_var(VarName::color)
@@ -272,24 +272,31 @@ pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
             brace_token: _,
             variants,
         }) => {
-            let variants = variants.iter().map(|v| v.ident.clone()).collect_vec();
+            let variants = variants
+                .iter()
+                .map(|v| v.ident.clone())
+                .filter(|v| v != "None")
+                .collect_vec();
             quote! {
                 #input
                 impl NodeKind {
                     pub fn register(self, app: &mut App) {
                         use bevy_trait_query::RegisterExt;
                         match self {
-                            #(#struct_ident::#variants => app.register_component_as::<dyn GetVar, #variants>(),)*
+                            Self::None => {}
+                            #(#struct_ident::#variants => {app.register_component_as::<dyn GetVar, #variants>();})*
                         };
                     }
                     pub fn register_world(self, world: &mut World) {
                         use bevy_trait_query::RegisterExt;
                         match self {
-                            #(#struct_ident::#variants => world.register_component_as::<dyn GetVar, #variants>(),)*
+                            Self::None => {}
+                            #(#struct_ident::#variants => {world.register_component_as::<dyn GetVar, #variants>();})*
                         };
                     }
                     pub fn set_var(self, entity: Entity, var: VarName, value: VarValue, world: &mut World) {
                         match self {
+                            Self::None => {}
                             #(#struct_ident::#variants => {
                                 world.get_mut::<#variants>(entity).unwrap().set_var(var, value);
                             })*
@@ -298,6 +305,7 @@ pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
                     pub fn show(self, entity: Entity, ui: &mut Ui, world: &World) {
                         let context = Context::new_world(world).set_owner(entity).take();
                         match self {
+                            Self::None => {}
                             #(#struct_ident::#variants => {
                                 context.get_component::<#variants>(entity).unwrap().show(None, &context, ui);
                             })*
@@ -305,6 +313,7 @@ pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
                     }
                     pub fn show_mut(self, entity: Entity, ui: &mut Ui, world: &mut World) {
                         match self {
+                            Self::None => {}
                             #(#struct_ident::#variants => {
                                 world.get_mut::<#variants>(entity).unwrap().show_mut(None, ui);
                             })*

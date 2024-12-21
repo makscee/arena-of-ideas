@@ -106,10 +106,12 @@ fn main() {
         ]
         .into(),
     };
-    let (log, history) = BattleSimulation::new(&b).run();
-    dbg!(&log);
-    dbg!(&history);
-    for a in log.actions {
+    let mut bs = BattleSimulation::new(&b).run();
+    dbg!(&bs.log.states);
+    for a in bs.world.query::<&NodeState>().iter(&bs.world) {
+        dbg!(&a.history);
+    }
+    for a in bs.log.actions {
         a.cstr().print();
     }
     return;
