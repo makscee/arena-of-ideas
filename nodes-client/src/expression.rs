@@ -16,7 +16,7 @@ impl ExpressionImpl for Expression {
             Expression::One => Ok(1.into()),
             Expression::Zero => Ok(0.into()),
             Expression::Var(var) => {
-                let v = context.get_var(*var).to_e();
+                let v = context.get_var(*var);
                 if v.is_err() && *var == VarName::index {
                     Ok(1.into())
                 } else {

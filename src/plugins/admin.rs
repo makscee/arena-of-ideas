@@ -23,19 +23,71 @@ impl AdminPlugin {
             );
         }
     }
+    fn show_battle(world: &mut World) {
+        let b = Battle {
+            left: [
+                Unit {
+                    stats: Some(UnitStats {
+                        pwr: 1,
+                        hp: 3,
+                        ..default()
+                    }),
+                    ..default()
+                },
+                Unit {
+                    stats: Some(UnitStats {
+                        pwr: 1,
+                        hp: 3,
+                        ..default()
+                    }),
+                    ..default()
+                },
+            ]
+            .into(),
+            right: [
+                Unit {
+                    stats: Some(UnitStats {
+                        pwr: 1,
+                        hp: 4,
+                        ..default()
+                    }),
+                    ..default()
+                },
+                Unit {
+                    stats: Some(UnitStats {
+                        pwr: 1,
+                        hp: 4,
+                        ..default()
+                    }),
+                    ..default()
+                },
+            ]
+            .into(),
+        };
+        let mut bs = BattleSimulation::new(&b).run();
+        Window::new("Battle", move |ui, world| {
+            ui.set_min_size(egui::vec2(800.0, 400.0));
+            bs.show_at(0.1, ui);
+        })
+        .push(world);
+    }
     fn setup(mut commands: Commands) {
         commands.add(|world: &mut World| {
             Tile::new(Side::Left, |ui, world| {
                 let scale = &mut world.resource_mut::<CameraData>().need_scale;
                 Slider::new("Cam Scale").ui(scale, 1.0..=50.0, ui);
+                if "Open Battle".cstr().button(ui).clicked() {
+                    Self::show_battle(world);
+                }
             })
             .transparent()
             .pinned()
             .push(world);
         });
         let house = houses().get("holy").unwrap().clone();
-        dbg!(&house);
-        house.unpack(commands.spawn_empty().id(), &mut commands);
+        // dbg!(&house);
+        // house.unpack(commands.spawn_empty().id(), &mut commands);
+
         // commands.add(|world: &mut World| {
         //     for e in world
         //         .query_filtered::<Entity, With<House>>()

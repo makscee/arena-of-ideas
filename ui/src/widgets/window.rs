@@ -15,7 +15,7 @@ pub struct Window {
     order: Order,
     no_frame: bool,
     transparent: bool,
-    content: Box<dyn Fn(&mut Ui, &mut World) + Send + Sync>,
+    content: Box<dyn FnMut(&mut Ui, &mut World) + Send + Sync>,
 }
 
 #[derive(Resource, Default)]
@@ -33,7 +33,7 @@ impl Window {
     #[must_use]
     pub fn new(
         id: impl ToString,
-        content: impl Fn(&mut Ui, &mut World) + Send + Sync + 'static,
+        content: impl FnMut(&mut Ui, &mut World) + Send + Sync + 'static,
     ) -> Self {
         Self {
             id: id.to_string(),
@@ -61,7 +61,7 @@ impl Window {
     pub fn push(self, world: &mut World) {
         rm(world).windows.insert(self.id.clone(), self);
     }
-    pub fn show(&self, ctx: &egui::Context, world: &mut World) {
+    pub fn show(&mut self, ctx: &egui::Context, world: &mut World) {
         let mut w = egui::Window::new(&self.id)
             .title_bar(false)
             .order(self.order);
@@ -77,7 +77,7 @@ impl Window {
 impl WindowPlugin {
     pub fn show_all(ctx: &egui::Context, world: &mut World) {
         let mut windows = mem::take(&mut rm(world).windows);
-        for window in windows.values() {
+        for window in windows.values_mut() {
             window.show(ctx, world);
         }
         let mut r = rm(world);

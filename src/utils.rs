@@ -67,3 +67,21 @@ impl WorldExt for World {
         clear_entity_names();
     }
 }
+
+// pub trait CstrExt {
+//     fn print(&self);
+//     fn info(&self);
+//     fn debug(&self);
+// }
+
+// impl CstrExt for Cstr {
+//     fn print(&self) {
+//         println!("{}", self.to_colored())
+//     }
+//     fn info(&self) {
+//         info!("{}", self.to_colored())
+//     }
+//     fn debug(&self) {
+//         debug!("{}", self.to_colored())
+//     }
+// }

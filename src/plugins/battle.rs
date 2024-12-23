@@ -37,51 +37,64 @@ pub enum BattleAction {
 struct Corpse;
 impl BattleAction {
     fn apply(&self, battle: &mut BattleSimulation) -> Vec<Self> {
-        println!("Action {self}");
-        battle.t += ANIMATION;
-        battle.log.actions.push(self.clone());
-        match self {
+        let mut add_actions = Vec::default();
+        let applied = match self {
             BattleAction::Strike(a, b) => {
                 let pwr = battle.world.get::<UnitStats>(*a).unwrap().pwr;
                 let action_a = Self::Damage(*a, *b, pwr);
                 let pwr = battle.world.get::<UnitStats>(*b).unwrap().pwr;
                 let action_b = Self::Damage(*b, *a, pwr);
-                [action_a, action_b].into()
+                add_actions.extend_from_slice(&[action_a, action_b]);
+                true
             }
             BattleAction::Death(a) => {
                 battle.die(*a);
-                default()
+                true
             }
             BattleAction::Damage(_, b, x) => {
                 let hp = battle.world.get::<UnitStats>(*b).unwrap().hp - x;
-                [Self::VarSet(
+                add_actions.push(Self::VarSet(
                     *b,
                     NodeKind::UnitStats,
                     VarName::hp,
                     hp.into(),
-                )]
-                .into()
+                ));
+                true
             }
             BattleAction::VarSet(entity, kind, var, value) => {
-                kind.set_var(*entity, *var, value.clone(), &mut battle.world);
-                battle.world.get_mut::<NodeState>(*entity).unwrap().insert(
+                if battle.world.get_mut::<NodeState>(*entity).unwrap().insert(
                     battle.t,
                     *var,
                     value.clone(),
                     *kind,
-                );
-                default()
+                ) {
+                    kind.set_var(*entity, *var, value.clone(), &mut battle.world);
+                    true
+                } else {
+                    false
+                }
             }
             BattleAction::Spawn(entity) => {
-                battle.log.take_state(*entity, &mut battle.world);
-                default()
+                battle
+                    .world
+                    .run_system_once_with((*entity, battle.t), NodeStatePlugin::inject_entity_vars);
+                battle.log.add_state(*entity, &mut battle.world);
+                true
             }
+        };
+        if applied {
+            info!("{} {self}", "+".green().dimmed());
+            battle.t += ANIMATION;
+            battle.log.actions.push(self.clone());
+        } else {
+            info!("{} {self}", "-".dimmed());
         }
+        add_actions
     }
 }
 
 impl BattleLog {
-    fn take_state(&mut self, entity: Entity, world: &mut World) {
+    fn add_state(&mut self, entity: Entity, world: &mut World) {
         self.states.insert(
             entity,
             world.run_system_once_with(entity, NodeStatePlugin::collect_full_state),
@@ -101,13 +114,13 @@ impl BattleSimulation {
             let entity = world.spawn_empty().id();
             u.clone().unpack(entity, &mut world.commands());
             left.push(entity);
-            log.take_state(entity, &mut world);
+            log.add_state(entity, &mut world);
         }
         for (_, u) in battle.right.iter().enumerate() {
             let entity = world.spawn_empty().id();
             u.clone().unpack(entity, &mut world.commands());
             right.push(entity);
-            log.take_state(entity, &mut world);
+            log.add_state(entity, &mut world);
         }
         world.flush();
         Self {
@@ -138,11 +151,16 @@ impl BattleSimulation {
             })
             .collect_vec();
         self.process_actions(spawn_actions);
+        self.process_actions(self.slots_sync());
         while !self.left.is_empty() && !self.right.is_empty() {
             let a = BattleAction::Strike(self.left[0], self.right[0]);
             self.process_actions([a].into());
             let a = self.death_check();
             self.process_actions(a);
+            self.process_actions(self.slots_sync());
+        }
+        for i in self.world.query::<&NodeState>().iter(&self.world) {
+            dbg!(i);
         }
         self
     }
@@ -168,6 +186,53 @@ impl BattleSimulation {
             self.right.remove(p);
         }
     }
+    fn slots_sync(&self) -> Vec<BattleAction> {
+        let mut actions = Vec::default();
+        for (i, e) in self
+            .left
+            .iter()
+            .enumerate()
+            .chain(self.right.iter().enumerate())
+        {
+            actions.push(BattleAction::VarSet(
+                *e,
+                NodeKind::None,
+                VarName::slot,
+                i.into(),
+            ));
+        }
+        actions
+    }
+    pub fn show_at(&mut self, t: f32, ui: &mut Ui) {
+        for (e, rep, state) in self
+            .world
+            .query::<(Entity, &Representation, &NodeState)>()
+            .iter(&self.world)
+        {
+            if !state
+                .get_at(t, VarName::visible)
+                .and_then(|v| v.get_bool().ok())
+                .unwrap_or(true)
+            {
+                continue;
+            }
+            let context = Context::new_world(&self.world).set_owner(e).set_t(t).take();
+            let slot = context
+                .get_var(VarName::slot)
+                .unwrap_or_default()
+                .get_i32()
+                .unwrap();
+            let rect = ui.available_rect_before_wrap();
+            let width = rect.width() / 5.0;
+            let rect = rect
+                .with_max_x(rect.min.x + width)
+                .translate(egui::vec2(width * (slot as f32), 0.0));
+            match RepresentationPlugin::paint_rect(rect, &context, &rep.material, ui) {
+                Ok(_) => {}
+                Err(e) => error!("Rep paint error: {e}"),
+            }
+        }
+    }
 }
 
 impl ToCstr for BattleAction {
@@ -176,7 +241,7 @@ impl ToCstr for BattleAction {
             BattleAction::Strike(a, b) => format!("{a}|{b}"),
             BattleAction::Damage(a, b, x) => format!("{a}>{b}-{x}"),
             BattleAction::Death(a) => format!("x{a}"),
-            BattleAction::VarSet(a, b, var, value) => format!("{a}>{b}${var}>{value}"),
+            BattleAction::VarSet(a, _, var, value) => format!("{a}>${var}>{value}"),
             BattleAction::Spawn(a) => format!("*{a}"),
         }
     }

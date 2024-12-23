@@ -28,6 +28,19 @@ impl NodeStatePlugin {
             }
         }
     }
+    pub fn inject_entity_vars(
+        In((entity, t)): In<(Entity, f32)>,
+        mut nodes: Query<(&dyn GetVar, &mut NodeState)>,
+    ) {
+        if let Ok((gv, mut state)) = nodes.get_mut(entity) {
+            for v in gv {
+                let kind = v.kind();
+                for (var, value) in v.get_all_vars() {
+                    state.insert(t, var, value, kind);
+                }
+            }
+        }
+    }
     pub fn collect_full_state(
         In(entity): In<Entity>,
         nodes: Query<(&dyn GetVar, Option<&Parent>)>,

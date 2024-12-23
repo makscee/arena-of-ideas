@@ -66,55 +66,6 @@ fn main() {
     init_style_map();
     parse_content_tree();
     GameState::set_target(target);
-    let b = Battle {
-        left: [
-            Unit {
-                stats: Some(UnitStats {
-                    pwr: 1,
-                    hp: 3,
-                    ..default()
-                }),
-                ..default()
-            },
-            Unit {
-                stats: Some(UnitStats {
-                    pwr: 1,
-                    hp: 3,
-                    ..default()
-                }),
-                ..default()
-            },
-        ]
-        .into(),
-        right: [
-            Unit {
-                stats: Some(UnitStats {
-                    pwr: 1,
-                    hp: 4,
-                    ..default()
-                }),
-                ..default()
-            },
-            Unit {
-                stats: Some(UnitStats {
-                    pwr: 1,
-                    hp: 4,
-                    ..default()
-                }),
-                ..default()
-            },
-        ]
-        .into(),
-    };
-    let mut bs = BattleSimulation::new(&b).run();
-    dbg!(&bs.log.states);
-    for a in bs.world.query::<&NodeState>().iter(&bs.world) {
-        dbg!(&a.history);
-    }
-    for a in bs.log.actions {
-        a.cstr().print();
-    }
-    return;
     let default_plugins = DefaultPlugins.set(LogPlugin {
         level: bevy::log::Level::DEBUG,
         filter: "info,debug,wgpu_core=warn,wgpu_hal=warn,naga=warn".into(),

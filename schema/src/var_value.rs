@@ -273,6 +273,16 @@ impl Into<i32> for VarValue {
         self.get_i32().unwrap()
     }
 }
+impl From<usize> for VarValue {
+    fn from(value: usize) -> Self {
+        VarValue::i32(value as i32)
+    }
+}
+impl Into<usize> for VarValue {
+    fn into(self) -> usize {
+        self.get_i32().unwrap() as usize
+    }
+}
 impl From<f32> for VarValue {
     fn from(value: f32) -> Self {
         VarValue::f32(value)

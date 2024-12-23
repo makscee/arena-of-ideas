@@ -2,12 +2,13 @@ use super::*;
 
 #[derive(Debug, Default, Clone)]
 pub struct Context<'w, 's> {
+    t: Option<f32>,
     layers: Vec<ContextLayer>,
     sources: Vec<ContextSource<'w, 's>>,
 }
 
 #[derive(Debug, Clone)]
-enum ContextSource<'w, 's> {
+pub enum ContextSource<'w, 's> {
     Query(&'w StateQuery<'w, 's>),
     World(&'w World),
 }
@@ -23,13 +24,19 @@ impl<'w, 's> Context<'w, 's> {
         Self {
             layers: default(),
             sources: vec![ContextSource::Query(state)],
+            t: None,
         }
     }
     pub fn new_world(world: &'w World) -> Self {
         Self {
             layers: default(),
             sources: vec![ContextSource::World(world)],
+            t: None,
         }
+    }
+    pub fn set_t(&mut self, t: f32) -> &mut Self {
+        self.t = Some(t);
+        self
     }
     pub fn set_owner(&mut self, owner: Entity) -> &mut Self {
         self.layers.push(ContextLayer::Owner(owner));
@@ -43,11 +50,12 @@ impl<'w, 's> Context<'w, 's> {
     pub fn get_owner(&self) -> Option<Entity> {
         self.layers.iter().rev().find_map(|l| l.get_owner())
     }
-    pub fn get_var(&self, var: VarName) -> Option<VarValue> {
+    pub fn get_var(&self, var: VarName) -> Result<VarValue, ExpressionError> {
         self.layers
             .iter()
             .rev()
-            .find_map(|l| l.get_var(var, &self.sources))
+            .find_map(|l| l.get_var(var, &self.sources, self.t))
+            .to_e(var)
     }
     pub fn get_children(&self, entity: Entity) -> Vec<Entity> {
         for s in self.sources.iter().rev() {
@@ -76,16 +84,22 @@ impl<'w, 's> Context<'w, 's> {
 }
 
 impl ContextSource<'_, '_> {
-    fn get_var(&self, entity: Entity, var: VarName) -> Option<VarValue> {
+    pub fn get_state(&self, entity: Entity) -> Option<&NodeState> {
         match self {
-            ContextSource::Query(state) => NodeState::get_var_state(var, entity, state),
-            ContextSource::World(world) => NodeState::get_var_world(var, entity, world),
+            ContextSource::Query(q) => NodeState::from_query(entity, q),
+            ContextSource::World(w) => NodeState::from_world(entity, w),
         }
     }
-    fn get_children(&self, entity: Entity) -> Vec<Entity> {
+    pub fn get_children(&self, entity: Entity) -> Vec<Entity> {
         match self {
-            ContextSource::Query(state) => state.get_children(entity),
-            ContextSource::World(world) => get_children(entity, world),
+            ContextSource::Query(q) => q.get_children(entity),
+            ContextSource::World(w) => get_children(entity, w),
+        }
+    }
+    pub fn get_parent(&self, entity: Entity) -> Option<Entity> {
+        match self {
+            ContextSource::Query(q) => q.get_parent(entity),
+            ContextSource::World(w) => get_parent(entity, w),
         }
     }
     fn get_component<T: Component>(&self, entity: Entity) -> Option<&T> {
@@ -103,12 +117,17 @@ impl ContextLayer {
             _ => None,
         }
     }
-    fn get_var(&self, var: VarName, sources: &Vec<ContextSource>) -> Option<VarValue> {
+    fn get_var(
+        &self,
+        var: VarName,
+        sources: &Vec<ContextSource>,
+        t: Option<f32>,
+    ) -> Option<VarValue> {
         match self {
             ContextLayer::Owner(entity) => sources
                 .into_iter()
                 .rev()
-                .find_map(|s| s.get_var(*entity, var)),
+                .find_map(|s| NodeState::find_var(var, *entity, t, s)),
             ContextLayer::Var(v, value) => {
                 if var.eq(v) {
                     Some(value.clone())

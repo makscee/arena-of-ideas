@@ -37,7 +37,7 @@ impl Paint for PainterAction {
         p: &mut Painter,
         ui: &mut Ui,
     ) -> Result<(), ExpressionError> {
-        let r = ui.available_rect_before_wrap();
+        let r = p.rect;
         let up = unit_pixels();
         match self {
             PainterAction::Circle(x) => {

@@ -209,7 +209,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     }
                     fn ui(&self, depth: usize, context: &Context, ui: &mut Ui) {
                         let color = context.get_var(VarName::color)
-                            .and_then(|c| c.get_color().ok());
+                            .and_then(|c| c.get_color()).ok();
                         NodeFrame::show(self, depth, color, ui, |ui| {
                             self.show(None, context, ui);
                             #(

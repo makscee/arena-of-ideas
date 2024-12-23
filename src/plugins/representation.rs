@@ -89,10 +89,10 @@ impl RepresentationPlugin {
         ctx: &egui::Context,
         cam: (&Camera, &GlobalTransform),
     ) -> Result<(), ExpressionError> {
-        let pos = context.get_var(VarName::position).to_e()?.get_vec2()?
+        let pos = context.get_var(VarName::position)?.get_vec2()?
             + context
                 .get_var(VarName::offset)
-                .and_then(|v| v.get_vec2().ok())
+                .and_then(|v| v.get_vec2())
                 .unwrap_or_default();
         let pos = world_to_screen_cam(pos.extend(0.0), &cam.0, &cam.1).to_pos2();
         let size = unit_pixels() * 2.1;
@@ -101,26 +101,32 @@ impl RepresentationPlugin {
         if !ctx.screen_rect().intersects(rect) {
             return Ok(());
         }
-        let mut p = Painter::new(rect, ctx);
         let owner = context.get_owner().unwrap();
         Area::new(Id::new(owner))
             .constrain(false)
-            .fixed_pos(p.rect.center())
+            .fixed_pos(rect.center())
             .pivot(Align2::CENTER_CENTER)
             .order(Order::Background)
-            .show(ctx, |ui| {
-                ui.expand_to_include_rect(p.rect);
-                for a in &m.0 {
-                    match a.paint(context, &mut p, ui) {
-                        Ok(_) => {}
-                        Err(e) => {
-                            return Err(e);
-                        }
-                    }
-                }
-                PainterAction::Paint.paint(context, &mut p, ui)?;
-                Ok(())
-            })
+            .show(ctx, |ui| Self::paint_rect(rect, context, m, ui))
             .inner
+    }
+    pub fn paint_rect(
+        rect: Rect,
+        context: &Context,
+        m: &Material,
+        ui: &mut Ui,
+    ) -> Result<(), ExpressionError> {
+        ui.expand_to_include_rect(rect);
+        let mut p = Painter::new(rect, ui.ctx());
+        for a in &m.0 {
+            match a.paint(context, &mut p, ui) {
+                Ok(_) => {}
+                Err(e) => {
+                    return Err(e);
+                }
+            }
+        }
+        PainterAction::Paint.paint(context, &mut p, ui)?;
+        Ok(())
     }
 }

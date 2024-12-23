@@ -12,19 +12,19 @@ pub enum ExpressionError {
         op: &'static str,
         msg: Option<String>,
     },
-    #[error("Value not found")]
-    ValueNotFound,
+    #[error("Value not found for {0}")]
+    ValueNotFound(VarName),
 }
 
 pub trait OptionExpressionError<T> {
-    fn to_e(self) -> Result<T, ExpressionError>;
+    fn to_e(self, var: VarName) -> Result<T, ExpressionError>;
 }
 
 impl<T> OptionExpressionError<T> for Option<T> {
-    fn to_e(self) -> Result<T, ExpressionError> {
+    fn to_e(self, var: VarName) -> Result<T, ExpressionError> {
         match self {
             Some(v) => Ok(v),
-            None => Err(ExpressionError::ValueNotFound),
+            None => Err(ExpressionError::ValueNotFound(var)),
         }
     }
 }

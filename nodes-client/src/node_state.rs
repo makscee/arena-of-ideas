@@ -17,6 +17,12 @@ impl NodeState {
     pub fn contains(&self, var: VarName) -> bool {
         self.vars.contains_key(&var)
     }
+    pub fn from_world(entity: Entity, world: &World) -> Option<&Self> {
+        world.get::<Self>(entity)
+    }
+    pub fn from_query<'a>(entity: Entity, query: &'a StateQuery) -> Option<&'a Self> {
+        query.get_state(entity)
+    }
     pub fn get(&self, var: VarName) -> Option<VarValue> {
         self.vars.get(&var).cloned()
     }
@@ -30,16 +36,16 @@ impl NodeState {
             self.vars.get(&var).cloned()
         }
     }
-    pub fn insert(&mut self, t: f32, var: VarName, value: VarValue, source: NodeKind) {
-        let mut update_history = false;
+    pub fn insert(&mut self, t: f32, var: VarName, value: VarValue, source: NodeKind) -> bool {
+        let mut updated = false;
         if let Some(prev) = self.vars.insert(var, value.clone()) {
             if prev != value {
-                update_history = true;
+                updated = true;
             }
         } else {
-            update_history = true;
+            updated = true;
         }
-        if update_history {
+        if updated {
             self.history
                 .entry(var)
                 .or_default()
@@ -47,30 +53,26 @@ impl NodeState {
                 .push((t, value));
         }
         self.source.insert(var, source);
+        updated
     }
-    pub fn get_var_state(var: VarName, entity: Entity, state: &StateQuery) -> Option<VarValue> {
-        let v = state
-            .get_state(entity)
-            .and_then(|s| s.vars.get(&var).cloned());
-        if v.is_some() {
-            v
-        } else {
-            if let Some(p) = state.get_parent(entity) {
-                Self::get_var_state(var, p, state)
+    pub fn find_var(
+        var: VarName,
+        entity: Entity,
+        t: Option<f32>,
+        source: &ContextSource,
+    ) -> Option<VarValue> {
+        let v = source.get_state(entity).and_then(|s| {
+            if let Some(t) = t {
+                s.get_at(t, var)
             } else {
-                None
+                s.get(var)
             }
-        }
-    }
-    pub fn get_var_world(var: VarName, entity: Entity, world: &World) -> Option<VarValue> {
-        let v = world
-            .get::<NodeState>(entity)
-            .and_then(|s| s.vars.get(&var).cloned());
+        });
         if v.is_some() {
             v
         } else {
-            if let Some(p) = get_parent(entity, world) {
-                Self::get_var_world(var, p, world)
+            if let Some(p) = source.get_parent(entity) {
+                Self::find_var(var, p, t, source)
             } else {
                 None
             }
