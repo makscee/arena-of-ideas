@@ -38,7 +38,7 @@ impl Paint for PainterAction {
         ui: &mut Ui,
     ) -> Result<(), ExpressionError> {
         let r = p.rect;
-        let up = unit_pixels();
+        let up = r.width().min(r.height()) * 0.5 - 12.0;
         match self {
             PainterAction::Circle(x) => {
                 let radius = x.get_f32(context)? * up;

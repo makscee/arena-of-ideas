@@ -19,6 +19,7 @@ pub struct BattleSimulation {
     pub left: Vec<Entity>,
     pub right: Vec<Entity>,
     pub log: BattleLog,
+    pub slots: usize,
 }
 #[derive(Default, Debug)]
 pub struct BattleLog {
@@ -48,7 +49,7 @@ impl BattleAction {
                 true
             }
             BattleAction::Death(a) => {
-                battle.die(*a);
+                add_actions.extend(battle.die(*a));
                 true
             }
             BattleAction::Damage(_, b, x) => {
@@ -79,6 +80,12 @@ impl BattleAction {
                     .world
                     .run_system_once_with((*entity, battle.t), NodeStatePlugin::inject_entity_vars);
                 battle.log.add_state(*entity, &mut battle.world);
+                add_actions.extend_from_slice(&[BattleAction::VarSet(
+                    *entity,
+                    NodeKind::None,
+                    VarName::visible,
+                    true.into(),
+                )]);
                 true
             }
         };
@@ -129,6 +136,7 @@ impl BattleSimulation {
             left,
             right,
             log,
+            slots: 5,
         }
     }
     fn process_actions(&mut self, mut actions: Vec<BattleAction>) {
@@ -177,22 +185,37 @@ impl BattleSimulation {
         }
         actions
     }
-    fn die(&mut self, entity: Entity) {
+    fn die(&mut self, entity: Entity) -> Vec<BattleAction> {
         self.world.entity_mut(entity).insert(Corpse);
+        let mut died = false;
         if let Some(p) = self.left.iter().position(|u| *u == entity) {
             self.left.remove(p);
+            died = true;
         }
         if let Some(p) = self.right.iter().position(|u| *u == entity) {
             self.right.remove(p);
+            died = true;
+        }
+        if died {
+            [BattleAction::VarSet(
+                entity,
+                NodeKind::None,
+                VarName::visible,
+                false.into(),
+            )]
+            .into()
+        } else {
+            default()
         }
     }
     fn slots_sync(&self) -> Vec<BattleAction> {
         let mut actions = Vec::default();
-        for (i, e) in self
+        for (i, (e, side)) in self
             .left
             .iter()
+            .map(|e| (e, true))
             .enumerate()
-            .chain(self.right.iter().enumerate())
+            .chain(self.right.iter().map(|e| (e, false)).enumerate())
         {
             actions.push(BattleAction::VarSet(
                 *e,
@@ -200,33 +223,67 @@ impl BattleSimulation {
                 VarName::slot,
                 i.into(),
             ));
+            actions.push(BattleAction::VarSet(
+                *e,
+                NodeKind::None,
+                VarName::side,
+                side.into(),
+            ));
         }
         actions
     }
+    fn show_slot(&self, i: usize, side: bool, ui: &mut Ui) -> Response {
+        let full_rect = ui.available_rect_before_wrap();
+        let size = full_rect.width() / (self.slots as f32 * 2.0);
+        let size = size.at_most(full_rect.height());
+        const FRAME: Frame = Frame {
+            inner_margin: Margin::same(0.0),
+            outer_margin: Margin::same(0.0),
+            rounding: ROUNDING,
+            shadow: Shadow::NONE,
+            fill: TRANSPARENT,
+            stroke: STROKE_DARK,
+        };
+        let pos_i = if side {
+            self.slots as i32 - i as i32 - 1
+        } else {
+            (self.slots + i) as i32
+        } as f32;
+        let mut rect = full_rect;
+        rect.set_height(size);
+        rect.set_width(size);
+        let rect = rect.translate(egui::vec2(size * pos_i, 0.0));
+        ui.expand_to_include_rect(rect);
+        let mut cui = ui.child_ui(rect, *ui.layout(), None);
+        let r = cui.allocate_rect(rect, Sense::hover());
+        let stroke = if r.hovered() {
+            STROKE_YELLOW
+        } else {
+            STROKE_DARK
+        };
+        cui.painter()
+            .add(FRAME.stroke(stroke).paint(r.rect.shrink(4.0)));
+        r
+    }
     pub fn show_at(&mut self, t: f32, ui: &mut Ui) {
-        for (e, rep, state) in self
+        let mut slots: HashMap<(i32, bool), Rect> = default();
+        for (slot, side) in (0..self.slots).cartesian_product([true, false]) {
+            let rect = self.show_slot(slot, side, ui).rect;
+            slots.insert((slot as i32, side), rect);
+        }
+        for (e, rep) in self
             .world
-            .query::<(Entity, &Representation, &NodeState)>()
+            .query::<(Entity, &Representation)>()
             .iter(&self.world)
         {
-            if !state
-                .get_at(t, VarName::visible)
-                .and_then(|v| v.get_bool().ok())
-                .unwrap_or(true)
-            {
-                continue;
-            }
             let context = Context::new_world(&self.world).set_owner(e).set_t(t).take();
             let slot = context
                 .get_var(VarName::slot)
                 .unwrap_or_default()
                 .get_i32()
                 .unwrap();
-            let rect = ui.available_rect_before_wrap();
-            let width = rect.width() / 5.0;
-            let rect = rect
-                .with_max_x(rect.min.x + width)
-                .translate(egui::vec2(width * (slot as f32), 0.0));
+            let side = context.get_var(VarName::side).unwrap().get_bool().unwrap();
+            let rect = *slots.get(&(slot, side)).unwrap();
             match RepresentationPlugin::paint_rect(rect, &context, &rep.material, ui) {
                 Ok(_) => {}
                 Err(e) => error!("Rep paint error: {e}"),

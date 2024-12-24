@@ -31,4 +31,5 @@ pub enum VarName {
     index,
     visible,
     slot,
+    side,
 }

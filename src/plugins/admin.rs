@@ -65,9 +65,11 @@ impl AdminPlugin {
             .into(),
         };
         let mut bs = BattleSimulation::new(&b).run();
+        let mut t = 0.0;
         Window::new("Battle", move |ui, world| {
             ui.set_min_size(egui::vec2(800.0, 400.0));
-            bs.show_at(0.1, ui);
+            Slider::new("ts").full_width().ui(&mut t, 0.0..=bs.t, ui);
+            bs.show_at(t, ui);
         })
         .push(world);
     }
