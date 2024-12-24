@@ -427,6 +427,8 @@ impl ToCstr for Expression {
             Expression::One
             | Expression::Zero
             | Expression::GT
+            | Expression::Owner
+            | Expression::Target
             | Expression::Sin(..)
             | Expression::Cos(..)
             | Expression::Even(..)
@@ -457,7 +459,11 @@ impl ToCstr for Expression {
     }
     fn cstr_expanded(&self) -> Cstr {
         let inner = match self {
-            Expression::One | Expression::Zero | Expression::GT => String::default(),
+            Expression::One
+            | Expression::Zero
+            | Expression::GT
+            | Expression::Owner
+            | Expression::Target => String::default(),
             Expression::Var(v) => v.cstr(),
             Expression::V(v) => v.cstr(),
             Expression::S(v) => v.to_owned(),

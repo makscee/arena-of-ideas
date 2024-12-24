@@ -52,6 +52,8 @@ impl Injector<Self> for Expression {
             Expression::One
             | Expression::Zero
             | Expression::GT
+            | Expression::Owner
+            | Expression::Target
             | Expression::Var(..)
             | Expression::V(..)
             | Expression::S(..)
@@ -89,6 +91,8 @@ impl Injector<Self> for Expression {
             Expression::One
             | Expression::Zero
             | Expression::GT
+            | Expression::Owner
+            | Expression::Target
             | Expression::Var(..)
             | Expression::V(..)
             | Expression::S(..)

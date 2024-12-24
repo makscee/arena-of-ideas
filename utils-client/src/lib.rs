@@ -9,12 +9,12 @@ pub use operations::*;
 use bevy::{math::vec2, prelude::*};
 use bevy_egui::{
     egui::{
-        self, epaint::PathShape, pos2, Color32, Id, Order, Pos2, Response, Rounding, Stroke,
-        TextureId, Ui,
+        self, epaint::PathShape, pos2, Color32, Id, Order, Pos2, Response, Stroke, TextureId, Ui,
     },
     EguiContext,
 };
 use parking_lot::Mutex;
+use schema::{ExpressionError, VarValue};
 
 pub fn get_children(entity: Entity, world: &World) -> Vec<Entity> {
     world
@@ -279,6 +279,40 @@ impl CtxExt for egui::Context {
             Some(pos)
         } else {
             None
+        }
+    }
+}
+
+pub trait EntityExt {
+    fn get_parent(self, world: &World) -> Option<Entity>;
+    fn get_parent_query(self, query: &Query<&Parent>) -> Option<Entity>;
+    fn to_value(self) -> VarValue;
+}
+
+impl EntityExt for Entity {
+    fn get_parent(self, world: &World) -> Option<Entity> {
+        world.get::<Parent>(self).map(|p| p.get())
+    }
+    fn get_parent_query(self, query: &Query<&Parent>) -> Option<Entity> {
+        query.get(self).ok().map(|p| p.get())
+    }
+    fn to_value(self) -> VarValue {
+        VarValue::Entity(self.to_bits())
+    }
+}
+
+pub trait VarValueExt {
+    fn get_entity(&self) -> Result<Entity, ExpressionError>;
+}
+
+impl VarValueExt for VarValue {
+    fn get_entity(&self) -> Result<Entity, ExpressionError> {
+        match self {
+            VarValue::Entity(v) => Ok(Entity::from_bits(*v)),
+            _ => Err(ExpressionError::not_supported_single(
+                "Cast to Entity",
+                self.clone(),
+            )),
         }
     }
 }

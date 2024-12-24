@@ -16,6 +16,7 @@ pub enum VarValue {
     String(String),
     Vec2(Vec2),
     Color32(Color32),
+    Entity(u64),
 }
 
 impl VarValue {
@@ -27,7 +28,8 @@ impl VarValue {
             VarValue::bool(v) => Ok(v.to_string()),
             VarValue::String(v) => Ok(v.to_string()),
             VarValue::Vec2(v) => Ok(v.to_string()),
-            VarValue::Color32(color) => Ok(color.to_hex()),
+            VarValue::Color32(v) => Ok(v.to_hex()),
+            VarValue::Entity(v) => Ok(v.to_string()),
         }
     }
     pub fn get_i32(&self) -> Result<i32, ExpressionError> {
@@ -231,7 +233,8 @@ impl std::hash::Hash for VarValue {
                 v.x.to_bits().hash(state);
                 v.y.to_bits().hash(state);
             }
-            VarValue::Color32(color) => color.hash(state),
+            VarValue::Color32(v) => v.hash(state),
+            VarValue::Entity(v) => v.hash(state),
         };
     }
 }
@@ -252,13 +255,14 @@ impl PartialEq for VarValue {
 impl std::fmt::Display for VarValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            VarValue::i32(v) => write!(f, "{}", v),
-            VarValue::u64(v) => write!(f, "{}", v),
-            VarValue::f32(v) => write!(f, "{:.2}", v),
-            VarValue::bool(v) => write!(f, "{}", v),
-            VarValue::String(v) => write!(f, "{}", v),
+            VarValue::i32(v) => write!(f, "{v}"),
+            VarValue::u64(v) => write!(f, "{v}"),
+            VarValue::f32(v) => write!(f, "{v:.2}"),
+            VarValue::bool(v) => write!(f, "{v}"),
+            VarValue::String(v) => write!(f, "{v}"),
             VarValue::Vec2(v) => write!(f, "{:.2}, {:.2}", v.x, v.y),
-            VarValue::Color32(color) => write!(f, "{}", color.to_hex()),
+            VarValue::Color32(v) => write!(f, "{}", v.to_hex()),
+            VarValue::Entity(v) => write!(f, "{v}"),
         }
     }
 }

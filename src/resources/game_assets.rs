@@ -1,4 +1,4 @@
-use assets::{HERO_REP, UNIT_REP};
+use assets::{ANIMATIONS, HERO_REP, UNIT_REP};
 
 use super::*;
 
@@ -23,4 +23,14 @@ pub fn parse_content_tree() {
     HERO_REP
         .set(Representation::from_dir("hero_rep".to_owned(), &CONTENT_DIR).unwrap())
         .unwrap();
+    let mut animations = HashMap::default();
+    for f in CONTENT_DIR.get_dir("animations").unwrap().files() {
+        let a: Vec<AnimAction> = ron::from_str(f.contents_utf8().unwrap()).unwrap();
+        animations.insert(
+            f.path().file_name().unwrap().to_str().unwrap().to_owned(),
+            a,
+        );
+    }
+    dbg!(&animations);
+    ANIMATIONS.set(animations).unwrap();
 }

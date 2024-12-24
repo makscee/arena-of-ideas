@@ -23,6 +23,7 @@ impl Show for VarValue {
             VarValue::bool(v) => v.show(prefix, context, ui),
             VarValue::Vec2(v) => v.show(prefix, context, ui),
             VarValue::Color32(v) => v.show(prefix, context, ui),
+            VarValue::Entity(v) => Entity::from_bits(*v).show(prefix, context, ui),
         });
     }
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
@@ -34,6 +35,7 @@ impl Show for VarValue {
             VarValue::String(v) => v.show_mut(prefix, ui),
             VarValue::Vec2(v) => v.show_mut(prefix, ui),
             VarValue::Color32(v) => v.show_mut(prefix, ui),
+            VarValue::Entity(v) => Entity::from_bits(*v).show_mut(prefix, ui),
         })
         .inner
     }
@@ -158,6 +160,15 @@ impl Show for Color32 {
         .inner
     }
 }
+impl Show for Entity {
+    fn show(&self, prefix: Option<&str>, _: &Context, ui: &mut Ui) {
+        format!("{}{self}", prefix.unwrap_or_default()).label(ui);
+    }
+    fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
+        self.show(prefix, &Context::default(), ui);
+        false
+    }
+}
 
 impl Show for Expression {
     fn show(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) {
@@ -199,7 +210,11 @@ impl Show for Expression {
     }
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
         CollapsingSelector::ui(self, prefix, ui, |v, ui| match v {
-            Expression::One | Expression::Zero | Expression::GT => false,
+            Expression::One
+            | Expression::Zero
+            | Expression::GT
+            | Expression::Owner
+            | Expression::Target => false,
             Expression::Var(v) => v.show_mut(Some("v:"), ui),
             Expression::V(v) => v.show_mut(Some("v:"), ui),
             Expression::S(v) => v.show_mut(Some("v:"), ui),

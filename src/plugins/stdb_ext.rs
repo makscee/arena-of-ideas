@@ -2,19 +2,6 @@ use spacetimedb_sdk::{Event, Table};
 
 use super::*;
 
-pub trait EntityExt {
-    fn get_parent(self, world: &World) -> Option<Entity>;
-    fn get_parent_query(self, query: &Query<&Parent>) -> Option<Entity>;
-}
-
-impl EntityExt for Entity {
-    fn get_parent(self, world: &World) -> Option<Entity> {
-        world.get::<Parent>(self).map(|p| p.get())
-    }
-    fn get_parent_query(self, query: &Query<&Parent>) -> Option<Entity> {
-        query.get(self).ok().map(|p| p.get())
-    }
-}
 pub trait TableSingletonExt: Table {
     fn current(&self) -> Self::Row {
         *Self::get_current(self).unwrap()

@@ -16,6 +16,7 @@ pub enum ContextSource<'w, 's> {
 #[derive(Debug, Clone)]
 enum ContextLayer {
     Owner(Entity),
+    Target(Entity),
     Var(VarName, VarValue),
 }
 
@@ -48,6 +49,9 @@ impl<'w, 's> Context<'w, 's> {
     }
 
     pub fn get_owner(&self) -> Option<Entity> {
+        self.layers.iter().rev().find_map(|l| l.get_owner())
+    }
+    pub fn get_target(&self) -> Option<Entity> {
         self.layers.iter().rev().find_map(|l| l.get_owner())
     }
     pub fn get_var(&self, var: VarName) -> Result<VarValue, ExpressionError> {
@@ -117,6 +121,12 @@ impl ContextLayer {
             _ => None,
         }
     }
+    fn get_target(&self) -> Option<Entity> {
+        match self {
+            ContextLayer::Target(entity) => Some(*entity),
+            _ => None,
+        }
+    }
     fn get_var(
         &self,
         var: VarName,
@@ -135,6 +145,7 @@ impl ContextLayer {
                     None
                 }
             }
+            ContextLayer::Target(..) => None,
         }
     }
 }

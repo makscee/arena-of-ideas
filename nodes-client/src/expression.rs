@@ -8,6 +8,7 @@ pub trait ExpressionImpl {
     fn get_bool(&self, context: &Context) -> Result<bool, ExpressionError>;
     fn get_color(&self, context: &Context) -> Result<Color32, ExpressionError>;
     fn get_string(&self, context: &Context) -> Result<String, ExpressionError>;
+    fn get_entity(&self, context: &Context) -> Result<Entity, ExpressionError>;
 }
 
 impl ExpressionImpl for Expression {
@@ -15,6 +16,8 @@ impl ExpressionImpl for Expression {
         match self {
             Expression::One => Ok(1.into()),
             Expression::Zero => Ok(0.into()),
+            Expression::Owner => Ok(context.get_owner().to_e(VarName::none)?.to_value()),
+            Expression::Target => Ok(context.get_target().to_e(VarName::none)?.to_value()),
             Expression::Var(var) => {
                 let v = context.get_var(*var);
                 if v.is_err() && *var == VarName::index {
@@ -97,5 +100,8 @@ impl ExpressionImpl for Expression {
     }
     fn get_string(&self, context: &Context) -> Result<String, ExpressionError> {
         self.get_value(context)?.get_string()
+    }
+    fn get_entity(&self, context: &Context) -> Result<Entity, ExpressionError> {
+        self.get_value(context)?.get_entity()
     }
 }

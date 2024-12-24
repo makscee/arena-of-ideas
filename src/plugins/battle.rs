@@ -167,9 +167,6 @@ impl BattleSimulation {
             self.process_actions(a);
             self.process_actions(self.slots_sync());
         }
-        for i in self.world.query::<&NodeState>().iter(&self.world) {
-            dbg!(i);
-        }
         self
     }
     fn death_check(&mut self) -> Vec<BattleAction> {

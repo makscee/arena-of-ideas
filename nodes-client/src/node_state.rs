@@ -20,6 +20,9 @@ impl NodeState {
     pub fn from_world(entity: Entity, world: &World) -> Option<&Self> {
         world.get::<Self>(entity)
     }
+    pub fn from_world_mut(entity: Entity, world: &mut World) -> Option<Mut<Self>> {
+        world.get_mut::<Self>(entity)
+    }
     pub fn from_query<'a>(entity: Entity, query: &'a StateQuery) -> Option<&'a Self> {
         query.get_state(entity)
     }

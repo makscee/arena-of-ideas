@@ -11,6 +11,8 @@ pub enum Expression {
     One,
     Zero,
     GT,
+    Owner,
+    Target,
 
     Var(VarName),
     V(VarValue),
@@ -52,7 +54,11 @@ impl std::hash::Hash for Expression {
     fn hash<H: Hasher>(&self, state: &mut H) {
         mem::discriminant(self).hash(state);
         match self {
-            Expression::One | Expression::Zero | Expression::GT => {}
+            Expression::One
+            | Expression::Zero
+            | Expression::GT
+            | Expression::Owner
+            | Expression::Target => {}
             Expression::Var(v) => v.hash(state),
             Expression::V(v) => v.hash(state),
             Expression::S(v) | Expression::C(v) => v.hash(state),

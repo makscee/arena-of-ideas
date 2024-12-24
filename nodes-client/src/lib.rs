@@ -1,3 +1,4 @@
+mod anim;
 pub mod assets;
 mod context;
 mod expression;
@@ -7,6 +8,7 @@ mod nodes;
 mod painter;
 mod show;
 
+pub use anim::*;
 pub use context::*;
 pub use expression::*;
 pub use node_frame::*;
@@ -18,6 +20,7 @@ pub use show::*;
 
 use bevy::color::Color;
 use bevy::math::{vec2, Vec2};
+use bevy::prelude::Mut;
 use bevy::{
     ecs::system::SystemParam,
     log::*,
