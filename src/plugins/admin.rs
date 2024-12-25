@@ -66,9 +66,15 @@ impl AdminPlugin {
         };
         let mut bs = BattleSimulation::new(&b).run();
         let mut t = 0.0;
+        let mut playing = false;
         Window::new("Battle", move |ui, world| {
             ui.set_min_size(egui::vec2(800.0, 400.0));
             Slider::new("ts").full_width().ui(&mut t, 0.0..=bs.t, ui);
+            Checkbox::new(&mut playing, "play").ui(ui);
+            if playing {
+                t += gt().last_delta();
+                t = t.at_most(bs.t);
+            }
             bs.show_at(t, ui);
         })
         .push(world);
