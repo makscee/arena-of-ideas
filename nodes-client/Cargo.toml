@@ -24,6 +24,7 @@ strum_macros = { workspace = true }
 once_cell = { workspace = true }
 parking_lot = { workspace = true }
 serde = { workspace = true }
+tween = { workspace = true }
 darling = "0.20.10"
 proc-macro2 = "1.0.92"
 quote = "1.0.37"

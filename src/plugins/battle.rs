@@ -79,6 +79,7 @@ impl BattleAction {
             BattleAction::VarSet(entity, kind, var, value) => {
                 if battle.world.get_mut::<NodeState>(*entity).unwrap().insert(
                     battle.t,
+                    0.1,
                     *var,
                     value.clone(),
                     *kind,

@@ -16,6 +16,7 @@ impl NodeStatePlugin {
         for (mut state, gv, transform) in &mut nodes {
             state.insert(
                 t,
+                0.1,
                 VarName::position,
                 transform.translation().xy().into(),
                 NodeKind::None,
@@ -23,7 +24,7 @@ impl NodeStatePlugin {
             for v in gv {
                 let kind = v.kind();
                 for (var, value) in v.get_all_vars() {
-                    state.insert(t, var, value, kind);
+                    state.insert(t, 0.0, var, value, kind);
                 }
             }
         }
@@ -36,7 +37,7 @@ impl NodeStatePlugin {
             for v in gv {
                 let kind = v.kind();
                 for (var, value) in v.get_all_vars() {
-                    state.insert(t, var, value, kind);
+                    state.insert(t, 0.0, var, value, kind);
                 }
             }
         }
@@ -51,7 +52,7 @@ impl NodeStatePlugin {
             for v in gv {
                 for (var, value) in v.get_all_vars() {
                     if !state.contains(var) {
-                        state.insert(0.0, var, value, v.kind());
+                        state.insert(0.0, 0.0, var, value, v.kind());
                     }
                 }
             }

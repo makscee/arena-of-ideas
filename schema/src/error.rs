@@ -14,6 +14,8 @@ pub enum ExpressionError {
     },
     #[error("Value not found for {0}")]
     ValueNotFound(VarName),
+    #[error("{0}")]
+    Custom(String),
 }
 
 pub trait OptionExpressionError<T> {

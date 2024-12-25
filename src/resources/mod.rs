@@ -13,4 +13,3 @@ pub use game_assets::*;
 pub use game_option::*;
 pub use game_state::*;
 pub use section_menu::*;
-pub use tween::*;

@@ -57,6 +57,7 @@ impl AnimChange {
         for (var, value) in vars {
             NodeState::from_world_mut(entity, world).unwrap().insert(
                 *t,
+                duration,
                 var,
                 value,
                 NodeKind::None,

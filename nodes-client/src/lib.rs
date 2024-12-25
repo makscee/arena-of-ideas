@@ -7,6 +7,7 @@ mod node_state;
 mod nodes;
 mod painter;
 mod show;
+mod tween;
 
 pub use anim::*;
 pub use context::*;
@@ -17,16 +18,16 @@ pub use nodes::*;
 pub use painter::*;
 pub use schema::*;
 pub use show::*;
+pub use tween::*;
 
-use bevy::color::Color;
-use bevy::math::{vec2, Vec2};
-use bevy::prelude::Mut;
 use bevy::{
+    color::{Color, Mix},
     ecs::system::SystemParam,
     log::*,
+    math::{vec2, Vec2},
     prelude::{
-        App, BuildChildren, Children, Commands, Component, Entity, Parent, Query, TransformBundle,
-        VisibilityBundle, World,
+        App, BuildChildren, Children, Commands, Component, Entity, Mut, Parent, Query,
+        TransformBundle, VisibilityBundle, World,
     },
     utils::hashbrown::HashMap,
 };
@@ -43,10 +44,13 @@ use epaint::{CircleShape, RectShape, Tessellator};
 use include_dir::Dir;
 use itertools::Itertools;
 use macro_client::*;
+use serde::{Deserialize, Serialize};
+use strum_macros::{AsRefStr, EnumIter};
+use utils_client::{ToC32, ToColor};
 
 use parking_lot::{const_mutex, Mutex};
 use std::mem;
-use strum_macros::{Display, EnumIter};
+use strum_macros::Display;
 use ui::*;
 use utils::*;
 use utils_client::{get_parent, *};

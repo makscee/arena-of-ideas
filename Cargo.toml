@@ -62,6 +62,7 @@ syn = "2.0.89"
 darling = "0.20.10"
 proc-macro2 = "1.0.92"
 quote = "1.0.37"
+tween = "2.0.1"
 
 [dependencies]
 ui = { path = "ui" }
@@ -100,7 +101,6 @@ bevy_common_assets = { version = "0.11.0", features = ["ron"] }
 log = "0.4.19"
 serde_json = "1.0.104"
 anyhow = "1.0.75"
-tween = "2.0.1"
 rand = "0.8.5"
 rand_chacha = "0.3.1"
 clap = { version = "4.4.5", features = ["derive"] }

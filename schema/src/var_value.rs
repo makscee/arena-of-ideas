@@ -1,8 +1,7 @@
-use std::cmp::Ordering;
-
 use ecolor::Color32;
 use error::ExpressionError;
 use glam::{vec2, Vec2};
+use std::cmp::Ordering;
 
 use super::*;
 
