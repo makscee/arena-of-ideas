@@ -116,7 +116,6 @@ impl RepresentationPlugin {
         m: &Material,
         ui: &mut Ui,
     ) -> Result<(), ExpressionError> {
-        ui.expand_to_include_rect(rect);
         if !context
             .get_var(VarName::visible)
             .and_then(|v| v.get_bool())

@@ -52,6 +52,7 @@ impl Injector<Self> for Expression {
             Expression::One
             | Expression::Zero
             | Expression::GT
+            | Expression::UnitSize
             | Expression::Owner
             | Expression::Target
             | Expression::Var(..)
@@ -71,6 +72,7 @@ impl Injector<Self> for Expression {
             | Expression::Fract(x)
             | Expression::Sqr(x) => [x].into(),
             Expression::Macro(a, b)
+            | Expression::V2EE(a, b)
             | Expression::Sum(a, b)
             | Expression::Sub(a, b)
             | Expression::Mul(a, b)
@@ -91,6 +93,7 @@ impl Injector<Self> for Expression {
             Expression::One
             | Expression::Zero
             | Expression::GT
+            | Expression::UnitSize
             | Expression::Owner
             | Expression::Target
             | Expression::Var(..)
@@ -110,6 +113,7 @@ impl Injector<Self> for Expression {
             | Expression::Fract(x)
             | Expression::Sqr(x) => [x].into(),
             Expression::Macro(a, b)
+            | Expression::V2EE(a, b)
             | Expression::Sum(a, b)
             | Expression::Sub(a, b)
             | Expression::Mul(a, b)

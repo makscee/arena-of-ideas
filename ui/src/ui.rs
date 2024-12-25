@@ -69,6 +69,8 @@ pub const ROUNDING: Rounding = Rounding {
     se: 13.0,
 };
 
+pub const UNIT_SIZE: f32 = 0.8;
+
 pub struct UiPlugin;
 
 impl Plugin for UiPlugin {

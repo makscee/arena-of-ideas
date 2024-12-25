@@ -213,6 +213,7 @@ impl Show for Expression {
             Expression::One
             | Expression::Zero
             | Expression::GT
+            | Expression::UnitSize
             | Expression::Owner
             | Expression::Target => false,
             Expression::Var(v) => v.show_mut(Some("v:"), ui),
@@ -241,6 +242,7 @@ impl Show for Expression {
             | Expression::Fract(x)
             | Expression::Sqr(x) => x.show_mut(Some("x:"), ui),
             Expression::Macro(a, b)
+            | Expression::V2EE(a, b)
             | Expression::Sum(a, b)
             | Expression::Sub(a, b)
             | Expression::Mul(a, b)

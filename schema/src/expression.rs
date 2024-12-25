@@ -13,6 +13,7 @@ pub enum Expression {
     GT,
     Owner,
     Target,
+    UnitSize,
 
     Var(VarName),
     V(VarValue),
@@ -33,6 +34,7 @@ pub enum Expression {
     Fract(Box<Expression>),
     Sqr(Box<Expression>),
 
+    V2EE(Box<Expression>, Box<Expression>),
     Macro(Box<Expression>, Box<Expression>),
     Sum(Box<Expression>, Box<Expression>),
     Sub(Box<Expression>, Box<Expression>),
@@ -57,6 +59,7 @@ impl std::hash::Hash for Expression {
             Expression::One
             | Expression::Zero
             | Expression::GT
+            | Expression::UnitSize
             | Expression::Owner
             | Expression::Target => {}
             Expression::Var(v) => v.hash(state),
@@ -79,6 +82,7 @@ impl std::hash::Hash for Expression {
             | Expression::Ceil(e)
             | Expression::Fract(e) => e.hash(state),
             Expression::Macro(a, b)
+            | Expression::V2EE(a, b)
             | Expression::Sum(a, b)
             | Expression::Sub(a, b)
             | Expression::Mul(a, b)

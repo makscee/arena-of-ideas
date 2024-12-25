@@ -35,12 +35,20 @@ impl<'w, 's> Context<'w, 's> {
             t: None,
         }
     }
+    pub fn set_world(&mut self, world: &'w World) -> &mut Self {
+        self.sources.push(ContextSource::World(world));
+        self
+    }
     pub fn set_t(&mut self, t: f32) -> &mut Self {
         self.t = Some(t);
         self
     }
     pub fn set_owner(&mut self, owner: Entity) -> &mut Self {
         self.layers.push(ContextLayer::Owner(owner));
+        self
+    }
+    pub fn set_target(&mut self, owner: Entity) -> &mut Self {
+        self.layers.push(ContextLayer::Target(owner));
         self
     }
     pub fn set_var(&mut self, var: VarName, value: VarValue) -> &mut Self {
@@ -52,7 +60,7 @@ impl<'w, 's> Context<'w, 's> {
         self.layers.iter().rev().find_map(|l| l.get_owner())
     }
     pub fn get_target(&self) -> Option<Entity> {
-        self.layers.iter().rev().find_map(|l| l.get_owner())
+        self.layers.iter().rev().find_map(|l| l.get_target())
     }
     pub fn get_var(&self, var: VarName) -> Result<VarValue, ExpressionError> {
         self.layers

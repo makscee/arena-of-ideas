@@ -1,0 +1,7 @@
+[
+    Timeframe(F(0.2)),
+    SetTarget(Owner),
+    Translate(Sum(Var(position), V2EE(Sub(Zero, UnitSize), Zero))),
+    SetTarget(Target),
+    Translate(Sum(Var(position), V2EE(UnitSize, Zero))),
+]

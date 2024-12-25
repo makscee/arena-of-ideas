@@ -40,6 +40,7 @@ impl ExpressionImpl for Expression {
                 })
                 .map(|v| v.into()),
             Expression::GT => Ok(gt().play_head().into()),
+            Expression::UnitSize => Ok(UNIT_SIZE.into()),
             Expression::Sin(x) => Ok(x.get_f32(context)?.sin().into()),
             Expression::Cos(x) => Ok(x.get_f32(context)?.cos().into()),
             Expression::Even(x) => Ok((x.get_i32(context)? % 2 == 0).into()),
@@ -56,6 +57,7 @@ impl ExpressionImpl for Expression {
                 let v = v.get_string(context)?;
                 Ok(s.replace("%s", &v).into())
             }
+            Expression::V2EE(a, b) => Ok(vec2(a.get_f32(context)?, b.get_f32(context)?).into()),
             Expression::Sum(a, b) => a.get_value(context)?.add(&b.get_value(context)?),
             Expression::Sub(a, b) => a.get_value(context)?.sub(&b.get_value(context)?),
             Expression::Mul(a, b) => a.get_value(context)?.mul(&b.get_value(context)?),

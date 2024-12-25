@@ -1,5 +1,6 @@
 use std::fmt::Display;
 
+use assets::animations;
 use bevy::{ecs::system::RunSystemOnce, prelude::Without};
 use itertools::EitherOrBoth;
 
@@ -41,11 +42,24 @@ impl BattleAction {
         let mut add_actions = Vec::default();
         let applied = match self {
             BattleAction::Strike(a, b) => {
+                let strike_anim = animations().get("strike").unwrap();
+                match battle.apply_animation(
+                    Context::default()
+                        .set_owner(*a)
+                        .set_target(*b)
+                        .set_var(VarName::position, vec2(0.0, 0.0).into())
+                        .take(),
+                    strike_anim,
+                ) {
+                    Ok(_) => {}
+                    Err(e) => error!("Animation error: {e}"),
+                }
                 let pwr = battle.world.get::<UnitStats>(*a).unwrap().pwr;
                 let action_a = Self::Damage(*a, *b, pwr);
                 let pwr = battle.world.get::<UnitStats>(*b).unwrap().pwr;
                 let action_b = Self::Damage(*b, *a, pwr);
                 add_actions.extend_from_slice(&[action_a, action_b]);
+                add_actions.extend(battle.slots_sync());
                 true
             }
             BattleAction::Death(a) => {
@@ -139,6 +153,14 @@ impl BattleSimulation {
             slots: 5,
         }
     }
+    fn apply_animation(&mut self, context: Context, anim: &Anim) -> Result<(), ExpressionError> {
+        let context = context.clone().set_world(&self.world).take();
+        let c = anim.get_changes(context)?;
+        for c in c {
+            c.apply(&mut self.t, &mut self.world);
+        }
+        Ok(())
+    }
     fn process_actions(&mut self, mut actions: Vec<BattleAction>) {
         while let Some(a) = actions.pop() {
             actions.extend(a.apply(self));
@@ -226,30 +248,40 @@ impl BattleSimulation {
                 VarName::side,
                 side.into(),
             ));
+            let position = vec2((i + 1) as f32 * if side { -1.0 } else { 1.0 } * 2.0, 0.0);
+            actions.push(BattleAction::VarSet(
+                *e,
+                NodeKind::None,
+                VarName::position,
+                position.into(),
+            ));
         }
         actions
     }
+    fn slot_rect(i: usize, side: bool, full_rect: Rect, team_slots: usize) -> Rect {
+        let total_slots = team_slots * 2 + 1;
+        let pos_i = if side {
+            (team_slots - i) as i32
+        } else {
+            (team_slots + i) as i32
+        } as f32;
+        let size = (full_rect.width() / total_slots as f32).at_most(full_rect.height());
+        let mut rect = full_rect;
+        rect.set_height(size);
+        rect.set_width(size);
+        rect.translate(egui::vec2(size * pos_i, 0.0))
+    }
     fn show_slot(&self, i: usize, side: bool, ui: &mut Ui) -> Response {
         let full_rect = ui.available_rect_before_wrap();
-        let size = full_rect.width() / (self.slots as f32 * 2.0);
-        let size = size.at_most(full_rect.height());
         const FRAME: Frame = Frame {
             inner_margin: Margin::same(0.0),
             outer_margin: Margin::same(0.0),
-            rounding: ROUNDING,
+            rounding: Rounding::ZERO,
             shadow: Shadow::NONE,
             fill: TRANSPARENT,
             stroke: STROKE_DARK,
         };
-        let pos_i = if side {
-            self.slots as i32 - i as i32 - 1
-        } else {
-            (self.slots + i) as i32
-        } as f32;
-        let mut rect = full_rect;
-        rect.set_height(size);
-        rect.set_width(size);
-        let rect = rect.translate(egui::vec2(size * pos_i, 0.0));
+        let rect = Self::slot_rect(i, side, full_rect, self.slots);
         ui.expand_to_include_rect(rect);
         let mut cui = ui.child_ui(rect, *ui.layout(), None);
         let r = cui.allocate_rect(rect, Sense::hover());
@@ -258,29 +290,31 @@ impl BattleSimulation {
         } else {
             STROKE_DARK
         };
-        cui.painter()
-            .add(FRAME.stroke(stroke).paint(r.rect.shrink(4.0)));
+        cui.painter().add(FRAME.stroke(stroke).paint(r.rect));
         r
     }
     pub fn show_at(&mut self, t: f32, ui: &mut Ui) {
-        let mut slots: HashMap<(i32, bool), Rect> = default();
-        for (slot, side) in (0..self.slots).cartesian_product([true, false]) {
-            let rect = self.show_slot(slot, side, ui).rect;
-            slots.insert((slot as i32, side), rect);
+        let center_rect = Self::slot_rect(0, true, ui.available_rect_before_wrap(), self.slots);
+        let up = center_rect.width() * 0.5;
+        for (slot, side) in (1..=self.slots).cartesian_product([true, false]) {
+            self.show_slot(slot, side, ui);
         }
-        for (e, rep) in self
-            .world
-            .query::<(Entity, &Representation)>()
-            .iter(&self.world)
-        {
-            let context = Context::new_world(&self.world).set_owner(e).set_t(t).take();
-            let slot = context
-                .get_var(VarName::slot)
+        let unit_size = center_rect.width() * UNIT_SIZE;
+        let mut q = self.world.query::<(Entity, &Representation)>();
+        let context = Context::new_world(&self.world).set_t(t).take();
+        for (e, rep) in q.iter(&self.world) {
+            let context = context.clone().set_owner(e).take();
+            let position = context
+                .get_var(VarName::position)
                 .unwrap_or_default()
-                .get_i32()
-                .unwrap();
-            let side = context.get_var(VarName::side).unwrap().get_bool().unwrap();
-            let rect = *slots.get(&(slot, side)).unwrap();
+                .get_vec2()
+                .unwrap()
+                .to_evec2()
+                * up;
+            let rect = Rect::from_center_size(
+                center_rect.center() + position,
+                egui::Vec2::splat(unit_size),
+            );
             match RepresentationPlugin::paint_rect(rect, &context, &rep.material, ui) {
                 Ok(_) => {}
                 Err(e) => error!("Rep paint error: {e}"),

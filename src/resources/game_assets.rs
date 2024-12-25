@@ -27,8 +27,14 @@ pub fn parse_content_tree() {
     for f in CONTENT_DIR.get_dir("animations").unwrap().files() {
         let a: Vec<AnimAction> = ron::from_str(f.contents_utf8().unwrap()).unwrap();
         animations.insert(
-            f.path().file_name().unwrap().to_str().unwrap().to_owned(),
-            a,
+            f.path()
+                .file_name()
+                .unwrap()
+                .to_str()
+                .unwrap()
+                .trim_end_matches(".ron")
+                .to_owned(),
+            Anim::new(a),
         );
     }
     dbg!(&animations);

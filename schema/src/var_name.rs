@@ -32,4 +32,5 @@ pub enum VarName {
     visible,
     slot,
     side,
+    unit_size,
 }

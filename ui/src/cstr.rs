@@ -427,6 +427,7 @@ impl ToCstr for Expression {
             Expression::One
             | Expression::Zero
             | Expression::GT
+            | Expression::UnitSize
             | Expression::Owner
             | Expression::Target
             | Expression::Sin(..)
@@ -438,6 +439,7 @@ impl ToCstr for Expression {
             | Expression::Fract(..)
             | Expression::Sqr(..)
             | Expression::Macro(..)
+            | Expression::V2EE(..)
             | Expression::Sum(..)
             | Expression::Sub(..)
             | Expression::Mul(..)
@@ -462,6 +464,7 @@ impl ToCstr for Expression {
             Expression::One
             | Expression::Zero
             | Expression::GT
+            | Expression::UnitSize
             | Expression::Owner
             | Expression::Target => String::default(),
             Expression::Var(v) => v.cstr(),
@@ -484,6 +487,7 @@ impl ToCstr for Expression {
             | Expression::Fract(x)
             | Expression::Sqr(x) => x.cstr(),
             Expression::Macro(a, b)
+            | Expression::V2EE(a, b)
             | Expression::Sum(a, b)
             | Expression::Sub(a, b)
             | Expression::Mul(a, b)
