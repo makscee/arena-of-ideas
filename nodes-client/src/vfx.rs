@@ -2,22 +2,42 @@ use super::*;
 
 #[derive(Default)]
 pub struct Vfx {
+    pub duration: f32,
+    pub timeframe: f32,
     pub representation: Representation,
     pub anim: Anim,
 }
 
 impl Vfx {
-    pub fn spawn(&self, t: &mut f32, world: &mut World) -> Result<(), ExpressionError> {
+    pub fn spawn(&self, t: &mut f32, world: &mut World) -> Result<Entity, ExpressionError> {
         let entity = world.spawn_empty().id();
         self.representation
             .clone()
             .unpack(entity, &mut world.commands());
-        let context = Context::new_world(world).set_owner(entity).take();
+        world.flush_commands();
+        AnimChange::new_set(entity, VarName::visible, true.into()).apply(t, world);
+        AnimChange::new_set(entity, VarName::visible, false.into())
+            .apply(&mut (*t + self.duration), world);
+        let context = Context::new_world(world).set_owner(entity).set_t(*t).take();
         self.anim
             .get_changes(context)?
             .into_iter()
             .for_each(|c| c.apply(t, world));
-        Ok(())
+        AnimChange {
+            entity,
+            duration: 0.0,
+            timeframe: 0.0,
+            vars: [(VarName::t, 0.0.into())].into(),
+        }
+        .apply(t, world);
+        AnimChange {
+            entity,
+            duration: self.duration,
+            timeframe: self.timeframe,
+            vars: [(VarName::t, 1.0.into())].into(),
+        }
+        .apply(t, world);
+        Ok(entity)
     }
 }
 

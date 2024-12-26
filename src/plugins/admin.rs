@@ -88,30 +88,56 @@ impl AdminPlugin {
             children: Vec::new(),
             entity: None,
         };
+        vfx.duration = 1.0;
+        vfx.timeframe = 1.0;
+        let mut t = 0.0;
         let mut world = World::new();
-        let entity = world.spawn_empty().id();
-        vfx.representation
-            .clone()
-            .unpack(entity, &mut world.commands());
+        fn respawn(vfx: &Vfx, world: &mut World) -> Result<Entity, ExpressionError> {
+            world.clear_all();
+            match vfx.spawn(&mut 0.0, world) {
+                Ok(e) => Ok(e),
+                Err(e) => Err(e),
+            }
+        }
+        let mut entity = respawn(&vfx, &mut world).unwrap();
         let mut size = 100.0;
         Window::new("Vfx Editor", move |ui, _| {
-            DragValue::new(&mut size).ui(ui);
-            let context = Context::new_world(&world).set_owner(entity).take();
+            let mut reload = false;
+            ui.horizontal(|ui| {
+                DragValue::new(&mut size).prefix("size: ").ui(ui);
+                reload |= DragValue::new(&mut vfx.duration)
+                    .prefix("duration: ")
+                    .ui(ui)
+                    .changed();
+                reload |= DragValue::new(&mut vfx.timeframe)
+                    .prefix("timeframe: ")
+                    .ui(ui)
+                    .changed();
+            });
+            let mut query = world.query::<&Representation>();
+            let context = Context::new_world(&world).set_owner(entity).set_t(t).take();
             ui.horizontal(|ui| {
                 let (_, rect) = ui.allocate_space(egui::Vec2::splat(size));
-                match RepresentationPlugin::paint_rect(
-                    rect,
-                    &context,
-                    &vfx.representation.material,
-                    ui,
-                ) {
-                    Ok(_) => {}
-                    Err(e) => error!("Paint error: {e}"),
+                t += gt().last_delta();
+                for r in query.iter(&world) {
+                    match RepresentationPlugin::paint_rect(rect, &context, &r.material, ui) {
+                        Ok(_) => {}
+                        Err(e) => error!("Paint error: {e}"),
+                    }
                 }
                 ui.vertical(|ui| {
-                    vfx.show_mut(None, ui);
+                    if vfx.show_mut(None, ui) {
+                        reload = true;
+                    }
                 });
             });
+            reload |= t >= vfx.duration;
+            if reload {
+                if let Ok(e) = respawn(&vfx, &mut world) {
+                    t = 0.0;
+                    entity = e;
+                }
+            }
         })
         .push(w);
     }

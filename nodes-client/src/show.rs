@@ -398,17 +398,7 @@ impl Show for PainterAction {
                 });
                 r
             }
-            PainterAction::List(l) => {
-                let mut r = false;
-                ui.vertical(|ui| {
-                    for (i, a) in l.iter_mut().enumerate() {
-                        ui.push_id(i, |ui| {
-                            r |= a.show_mut(None, ui);
-                        });
-                    }
-                });
-                r
-            }
+            PainterAction::List(l) => l.show_mut(Some("list:"), ui),
             PainterAction::Paint => false,
         })
     }

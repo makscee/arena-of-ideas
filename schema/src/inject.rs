@@ -17,8 +17,10 @@ pub trait Inject: Injector<Self> {
 pub trait Injector<T>: Sized {
     fn get_inner_mut(&mut self) -> Vec<&mut Box<T>>;
     fn get_inner(&self) -> Vec<&Box<T>>;
+    fn resize_inner(&mut self, _size: usize) {}
     fn inject_inner(&mut self, source: &mut Self) {
         let mut source_inner = source.get_inner_mut();
+        self.resize_inner(source_inner.len());
         for (ind, i) in self.get_inner_mut().iter_mut().enumerate() {
             if let Some(d) = source_inner.get_mut(ind) {
                 mem::swap(*i, *d);
@@ -164,6 +166,12 @@ impl Injector<Expression> for PainterAction {
     }
 }
 impl Injector<Self> for PainterAction {
+    fn resize_inner(&mut self, size: usize) {
+        match self {
+            PainterAction::List(vec) => vec.resize(size, default()),
+            _ => {}
+        }
+    }
     fn get_inner_mut(&mut self) -> Vec<&mut Box<Self>> {
         match self {
             PainterAction::Paint

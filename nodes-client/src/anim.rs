@@ -68,6 +68,14 @@ impl AnimChange {
             *t += timeframe;
         }
     }
+    pub fn new_set(entity: Entity, var: VarName, value: VarValue) -> Self {
+        Self {
+            entity,
+            duration: 0.0,
+            timeframe: 0.0,
+            vars: [(var, value)].into(),
+        }
+    }
 }
 
 impl AnimAction {
