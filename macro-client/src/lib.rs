@@ -100,8 +100,8 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     }
                 }
                 impl Show for #struct_ident {
-                    fn show(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) {
-                        prefix.show(None, context, ui);
+                    fn show_self(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) -> Response {
+                        let mut r = prefix.show(ui);
                         ui.horizontal(|ui| {
                             for (var, value) in self.get_all_vars() {
                                 if var != VarName::name {
@@ -112,20 +112,22 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         #(
                             self.#data_fields.show(None, context, ui);
                         )*
+                        r
                     }
-                    fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
-                        prefix.show(None, &default(), ui);
-                        let mut changed = false;
+                    fn show_self_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> Response {
+                        let mut r = prefix.show( ui);
                         for (var, mut value) in self.get_all_vars() {
-                            if value.show_mut(Some(&var.cstr()), ui) {
+                            let vr = value.show_mut(Some(&var.cstr()), ui);
+                            if vr.changed() {
                                 self.set_var(var, value);
-                                changed |= true;
+                                r.changed |= true;
                             }
                         }
                         #(
-                            changed |= self.#data_fields.show_mut(None, ui);
+                            let dr = self.#data_fields.show_mut(None, ui);
+                            r.changed |= dr.changed();
                         )*
-                        changed
+                        r
                     }
                 }
                 impl GetVar for #struct_ident {
@@ -166,10 +168,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         ),*]
                     }
                 }
-                impl Node for #struct_ident {
-                    fn entity(&self) -> Option<Entity> {
-                        self.entity
-                    }
+                impl StringData for #struct_ident {
                     fn get_data(&self) -> String {
                         ron::to_string(&(#(&self.#all_data_fields),*)).unwrap()
                     }
@@ -179,10 +178,16 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                             Err(e) => panic!("{} parsing error from {data}: {e}", self.kind()),
                         }
                     }
+                }
+                impl Node for #struct_ident {
+                    fn entity(&self) -> Option<Entity> {
+                        self.entity
+                    }
                     fn from_dir(path: String, dir: &Dir) -> Option<Self> {
                         dbg!(&path);
                         #data_from_dir
-                        let mut s = Self::from_data(data);
+                        let mut s = Self::default();
+                        s.inject_data(data);
                         #inner_data_from_dir
                         Some(s)
                     }
@@ -254,7 +259,9 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 }
                 impl From<&str> for #struct_ident {
                     fn from(value: &str) -> Self {
-                        Self::from_data(value)
+                        let mut d = Self::default();
+                        d.inject_data(value);
+                        d
                     }
                 }
             }

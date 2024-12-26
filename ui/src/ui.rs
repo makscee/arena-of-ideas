@@ -2,7 +2,7 @@ use bevy::{app::Startup, prelude::Query};
 use bevy_egui::EguiContext;
 use egui::{
     style::{HandleShape, Spacing, WidgetVisuals, Widgets},
-    FontData, FontDefinitions, FontFamily, Margin, Rounding, Shadow, Stroke,
+    FontData, FontDefinitions, FontFamily, LayerId, Margin, Rounding, Shadow, Stroke,
 };
 
 use super::*;
@@ -76,6 +76,30 @@ pub const ROUNDING: Rounding = Rounding {
 };
 
 pub const UNIT_SIZE: f32 = 0.8;
+
+pub fn empty_response(ctx: egui::Context) -> Response {
+    Response {
+        ctx,
+        layer_id: LayerId::background(),
+        id: Id::new(0),
+        rect: Rect::ZERO,
+        interact_rect: Rect::ZERO,
+        sense: Sense::hover(),
+        enabled: false,
+        contains_pointer: false,
+        hovered: false,
+        highlighted: false,
+        clicked: false,
+        fake_primary_click: false,
+        long_touched: false,
+        drag_started: false,
+        dragged: false,
+        drag_stopped: false,
+        is_pointer_button_down_on: false,
+        interact_pointer_pos: None,
+        changed: false,
+    }
+}
 
 pub struct UiPlugin;
 

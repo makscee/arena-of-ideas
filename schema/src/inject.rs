@@ -1,6 +1,7 @@
 use std::mem;
 
 use itertools::Itertools;
+use serde::de::DeserializeOwned;
 
 use super::*;
 

@@ -1,4 +1,4 @@
-use egui::NumExt;
+use egui::{NumExt, Response};
 use serde::{Deserialize, Serialize};
 
 use super::*;
@@ -191,32 +191,35 @@ impl ToCstr for AnimAction {
     }
 }
 impl Show for AnimAction {
-    fn show(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) {
-        format!("{}{}", prefix.unwrap_or_default(), self.cstr()).label(ui);
+    fn show_self(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) -> Response {
+        let mut r = prefix.show(ui);
         let inner = <Self as Injector<Expression>>::get_inner(self);
         if !inner.is_empty() {
             for i in inner {
-                i.show(None, context, ui);
+                r |= i.show(None, context, ui);
             }
         };
+        r
     }
-    fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
-        CollapsingSelector::ui(self, prefix, ui, |v, ui| match v {
-            AnimAction::Translate(x)
-            | AnimAction::SetTarget(x)
-            | AnimAction::AddTarget(x)
-            | AnimAction::Duration(x)
-            | AnimAction::Timeframe(x) => x.show_mut(Some("v:"), ui),
-            AnimAction::List(vec) => vec.show_mut(prefix, ui),
+    fn show_self_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> Response {
+        CollapsingSelector::ui(self, prefix, ui, |v, ui| {
+            match v {
+                AnimAction::Translate(x)
+                | AnimAction::SetTarget(x)
+                | AnimAction::AddTarget(x)
+                | AnimAction::Duration(x)
+                | AnimAction::Timeframe(x) => x.show_mut(Some("v:"), ui),
+                AnimAction::List(vec) => vec.show_mut(prefix, ui),
+            }
+            .changed()
         })
     }
 }
 impl Show for Anim {
-    fn show(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) {
-        prefix.show(None, context, ui);
-        self.actions.show(None, context, ui);
+    fn show_self(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) -> Response {
+        prefix.show(ui) | self.actions.show(None, context, ui)
     }
-    fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
+    fn show_self_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> Response {
         self.actions.show_mut(prefix, ui)
     }
 }

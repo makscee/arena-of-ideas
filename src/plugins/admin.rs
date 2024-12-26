@@ -142,7 +142,7 @@ impl AdminPlugin {
                     .auto_shrink([false, false])
                     .show(ui, |ui| {
                         ui.vertical(|ui| {
-                            if vfx.show_mut(None, ui) {
+                            if vfx.show_mut(None, ui).changed() {
                                 reload = true;
                             }
                         });

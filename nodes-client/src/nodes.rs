@@ -1,6 +1,8 @@
 use std::fmt::Debug;
 
 use assets::{hero_rep, unit_rep};
+use egui::Response;
+use serde::de::DeserializeOwned;
 
 macro_schema::nodes!();
 
@@ -13,13 +15,6 @@ pub trait GetVar: GetNodeKind {
 
 pub trait Node: Default + Component + Sized + GetVar + Show + Debug {
     fn entity(&self) -> Option<Entity>;
-    fn inject_data(&mut self, data: &str);
-    fn get_data(&self) -> String;
-    fn from_data(data: &str) -> Self {
-        let mut s = Self::default();
-        s.inject_data(data);
-        s
-    }
     fn from_dir(path: String, dir: &Dir) -> Option<Self>;
     fn unpack(self, entity: Entity, commands: &mut Commands);
     fn find_up_entity<T: Component>(entity: Entity, world: &World) -> Option<&T> {
@@ -73,5 +68,24 @@ impl OnUnpack for NodeKind {
             NodeKind::Unit => unit_rep().clone().unpack(entity, commands),
             _ => {}
         }
+    }
+}
+
+pub trait StringData: Sized {
+    fn inject_data(&mut self, data: &str);
+    fn get_data(&self) -> String;
+}
+impl<T> StringData for T
+where
+    T: Serialize + DeserializeOwned,
+{
+    fn inject_data(&mut self, data: &str) {
+        match ron::from_str(data) {
+            Ok(v) => *self = v,
+            Err(e) => error!("Deserialize error: {e}"),
+        }
+    }
+    fn get_data(&self) -> String {
+        ron::to_string(self).unwrap()
     }
 }

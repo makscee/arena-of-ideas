@@ -1,3 +1,5 @@
+use egui::Response;
+
 use super::*;
 
 #[derive(Default)]
@@ -41,12 +43,30 @@ impl Vfx {
     }
 }
 
-impl Show for Vfx {
-    fn show(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) {
-        self.representation.show(prefix, context, ui);
+impl StringData for Vfx {
+    fn inject_data(&mut self, data: &str) {}
+    fn get_data(&self) -> String {
+        let Vfx {
+            duration,
+            timeframe,
+            representation,
+            anim,
+        } = self;
+        ron::to_string(&(
+            *duration,
+            *timeframe,
+            representation.get_data(),
+            anim.get_data(),
+        ))
+        .unwrap()
     }
-    fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
-        prefix.show(None, &default(), ui);
+}
+impl Show for Vfx {
+    fn show_self(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) -> Response {
+        prefix.show(ui) | self.representation.show(prefix, context, ui)
+    }
+    fn show_self_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> Response {
+        prefix.show(ui);
         let mut r = self.anim.show_mut(Some("anim:"), ui);
         r |= self.representation.show_mut(Some("rep:"), ui);
         r
