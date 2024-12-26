@@ -5,6 +5,77 @@ pub trait Show {
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool;
 }
 
+impl<T> Show for Vec<Box<T>>
+where
+    T: Show + Default,
+{
+    fn show(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) {
+        prefix.show(prefix, context, ui);
+        for (i, v) in self.into_iter().enumerate() {
+            v.show(Some(&format!("[vd {i}:]")), context, ui);
+        }
+    }
+    fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
+        prefix.show(None, &default(), ui);
+        let mut changed = false;
+        let mut swap = None;
+        let mut delete = None;
+        let mut insert = None;
+        let len = self.len();
+        fn plus_btn(ui: &mut Ui) -> bool {
+            "+".cstr_cs(VISIBLE_BRIGHT, CstrStyle::Bold)
+                .button(ui)
+                .clicked()
+        }
+        for (i, a) in self.iter_mut().enumerate() {
+            ui.horizontal(|ui| {
+                ui.vertical(|ui| {
+                    ui.horizontal(|ui| {
+                        if i > 0 && "<".cstr_s(CstrStyle::Bold).button(ui).clicked() {
+                            swap = Some((i, i - 1));
+                        }
+                        if i < len && ">".cstr_s(CstrStyle::Bold).button(ui).clicked() {
+                            swap = Some((i, i + 1));
+                        }
+                    });
+                    ui.horizontal(|ui| {
+                        if "-".cstr_cs(RED, CstrStyle::Bold).button(ui).clicked() {
+                            delete = Some(i);
+                        }
+                        if plus_btn(ui) {
+                            insert = Some(i + 1);
+                        }
+                    });
+                });
+                changed |= a.show_mut(Some(&i.to_string()), ui);
+            });
+        }
+        if self.is_empty() && plus_btn(ui) {
+            insert = Some(0);
+        }
+        if let Some(delete) = delete {
+            self.remove(delete);
+        }
+        if let Some(index) = insert {
+            self.insert(index, default());
+        }
+        if let Some((a, b)) = swap {
+            self.swap(a, b);
+        }
+        changed
+    }
+}
+impl Show for Option<&str> {
+    fn show(&self, _: Option<&str>, _: &Context, ui: &mut Ui) {
+        if let Some(s) = self {
+            s.cstr_cs(VISIBLE_DARK, CstrStyle::Small).label(ui);
+        }
+    }
+    fn show_mut(&mut self, _: Option<&str>, ui: &mut Ui) -> bool {
+        self.show(None, &default(), ui);
+        false
+    }
+}
 impl Show for VarName {
     fn show(&self, prefix: Option<&str>, _: &Context, ui: &mut Ui) {
         format!("{}{}", prefix.unwrap_or_default(), self.cstr_expanded()).label(ui);
@@ -43,7 +114,7 @@ impl Show for VarValue {
 
 impl Show for i32 {
     fn show(&self, prefix: Option<&str>, _: &Context, ui: &mut Ui) {
-        format!("{}{}", prefix.unwrap_or_default(), self.cstr_expanded()).label(ui);
+        format!("{}{}", prefix.unwrap_or_default(), self.cstr()).label(ui);
     }
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
         ui.horizontal(|ui| {
@@ -172,9 +243,7 @@ impl Show for Entity {
 
 impl Show for Expression {
     fn show(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) {
-        if let Some(prefix) = prefix {
-            prefix.cstr_cs(VISIBLE_DARK, CstrStyle::Small).label(ui);
-        }
+        prefix.show(None, context, ui);
         let l = self.cstr().as_label(ui).selectable(true);
         let (pos, galley, response) = l.layout_in_ui(ui);
         let mut text_shape = TextShape::new(pos, galley, MISSING_COLOR);
@@ -359,58 +428,12 @@ impl Show for Material {
         }
     }
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
-        if let Some(prefix) = prefix {
-            prefix.cstr().label(ui);
-        }
-        let mut changed = false;
-        let mut swap = None;
-        let mut delete = None;
-        let mut insert = None;
-        let len = self.0.len();
-        for (i, a) in self.0.iter_mut().enumerate() {
-            ui.horizontal(|ui| {
-                ui.vertical(|ui| {
-                    ui.horizontal(|ui| {
-                        if i > 0 && "<".cstr_s(CstrStyle::Bold).button(ui).clicked() {
-                            swap = Some((i, i - 1));
-                        }
-                        if i < len && ">".cstr_s(CstrStyle::Bold).button(ui).clicked() {
-                            swap = Some((i, i + 1));
-                        }
-                    });
-                    ui.horizontal(|ui| {
-                        if "-".cstr_cs(RED, CstrStyle::Bold).button(ui).clicked() {
-                            delete = Some(i);
-                        }
-                        if "+"
-                            .cstr_cs(VISIBLE_BRIGHT, CstrStyle::Bold)
-                            .button(ui)
-                            .clicked()
-                        {
-                            insert = Some(i + 1);
-                        }
-                    });
-                });
-                changed |= a.show_mut(Some(&i.to_string()), ui);
-            });
-        }
-        if let Some(delete) = delete {
-            self.0.remove(delete);
-        }
-        if let Some(index) = insert {
-            self.0.insert(index, default());
-        }
-        if let Some((a, b)) = swap {
-            self.0.swap(a, b);
-        }
-        changed
+        self.0.show_mut(prefix, ui)
     }
 }
 impl Show for Trigger {
-    fn show(&self, prefix: Option<&str>, _: &Context, ui: &mut Ui) {
-        if let Some(prefix) = prefix {
-            prefix.cstr_c(VISIBLE_DARK).label(ui);
-        }
+    fn show(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) {
+        prefix.show(None, context, ui);
         self.cstr_cs(CYAN, CstrStyle::Bold).label(ui);
     }
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {

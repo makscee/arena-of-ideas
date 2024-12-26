@@ -413,51 +413,7 @@ impl ToCstr for VarValue {
 }
 impl ToCstr for Expression {
     fn cstr(&self) -> Cstr {
-        let mut s = self.as_ref().cstr_c(YELLOW);
-        let inner = match self {
-            Expression::Var(v) => v.cstr(),
-            Expression::V(v) => v.cstr(),
-            Expression::S(v) => v.cstr(),
-            Expression::F(v) => v.cstr(),
-            Expression::I(v) => v.cstr(),
-            Expression::B(v) => v.cstr(),
-            Expression::C(v) => v.cstr(),
-            Expression::V2(x, y) => vec2(*x, *y).cstr(),
-
-            Expression::One
-            | Expression::Zero
-            | Expression::GT
-            | Expression::UnitSize
-            | Expression::Owner
-            | Expression::Target
-            | Expression::Sin(..)
-            | Expression::Cos(..)
-            | Expression::Even(..)
-            | Expression::Abs(..)
-            | Expression::Floor(..)
-            | Expression::Ceil(..)
-            | Expression::Fract(..)
-            | Expression::Sqr(..)
-            | Expression::Macro(..)
-            | Expression::V2EE(..)
-            | Expression::Sum(..)
-            | Expression::Sub(..)
-            | Expression::Mul(..)
-            | Expression::Div(..)
-            | Expression::Max(..)
-            | Expression::Min(..)
-            | Expression::Mod(..)
-            | Expression::And(..)
-            | Expression::Or(..)
-            | Expression::Equals(..)
-            | Expression::GreaterThen(..)
-            | Expression::LessThen(..)
-            | Expression::If(..) => default(),
-        };
-        if !inner.is_empty() {
-            s += &format!("({inner})");
-        }
-        s
+        self.as_ref().cstr_c(YELLOW)
     }
     fn cstr_expanded(&self) -> Cstr {
         let inner = match self {

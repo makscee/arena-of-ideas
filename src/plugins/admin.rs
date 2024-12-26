@@ -79,6 +79,42 @@ impl AdminPlugin {
         })
         .push(world);
     }
+    fn show_vfx_editor(w: &mut World) {
+        let mut vfx = Vfx::default();
+        vfx.representation = Representation {
+            material: Material(vec![Box::new(PainterAction::Rectangle(Box::new(
+                Expression::V2(1.0, 0.7),
+            )))]),
+            children: Vec::new(),
+            entity: None,
+        };
+        let mut world = World::new();
+        let entity = world.spawn_empty().id();
+        vfx.representation
+            .clone()
+            .unpack(entity, &mut world.commands());
+        let mut size = 100.0;
+        Window::new("Vfx Editor", move |ui, _| {
+            DragValue::new(&mut size).ui(ui);
+            let context = Context::new_world(&world).set_owner(entity).take();
+            ui.horizontal(|ui| {
+                let (_, rect) = ui.allocate_space(egui::Vec2::splat(size));
+                match RepresentationPlugin::paint_rect(
+                    rect,
+                    &context,
+                    &vfx.representation.material,
+                    ui,
+                ) {
+                    Ok(_) => {}
+                    Err(e) => error!("Paint error: {e}"),
+                }
+                ui.vertical(|ui| {
+                    vfx.show_mut(None, ui);
+                });
+            });
+        })
+        .push(w);
+    }
     fn setup(mut commands: Commands) {
         commands.add(|world: &mut World| {
             Tile::new(Side::Left, |ui, world| {
@@ -86,6 +122,9 @@ impl AdminPlugin {
                 Slider::new("Cam Scale").ui(scale, 1.0..=50.0, ui);
                 if "Open Battle".cstr().button(ui).clicked() {
                     Self::show_battle(world);
+                }
+                if "Vfx Editor".cstr().button(ui).clicked() {
+                    Self::show_vfx_editor(world);
                 }
             })
             .transparent()

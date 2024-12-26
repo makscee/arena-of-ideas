@@ -101,6 +101,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 }
                 impl Show for #struct_ident {
                     fn show(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) {
+                        prefix.show(None, context, ui);
                         ui.horizontal(|ui| {
                             for (var, value) in self.get_all_vars() {
                                 if var != VarName::name {
@@ -113,6 +114,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         )*
                     }
                     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
+                        prefix.show(None, &default(), ui);
                         let mut changed = false;
                         for (var, mut value) in self.get_all_vars() {
                             if value.show_mut(Some(&var.cstr()), ui) {

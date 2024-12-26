@@ -10,18 +10,19 @@ pub struct Animator<'w, 's> {
     timeframe: f32,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct Anim {
-    actions: Vec<AnimAction>,
+    actions: Vec<Box<AnimAction>>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, AsRefStr, EnumIter, PartialEq)]
 pub enum AnimAction {
-    Translate(Expression),
-    SetTarget(Expression),
-    AddTarget(Expression),
-    Duration(Expression),
-    Timeframe(Expression),
+    Translate(Box<Expression>),
+    SetTarget(Box<Expression>),
+    AddTarget(Box<Expression>),
+    Duration(Box<Expression>),
+    Timeframe(Box<Expression>),
+    List(Vec<Box<Self>>),
 }
 
 #[derive(Debug)]
@@ -34,7 +35,9 @@ pub struct AnimChange {
 
 impl Anim {
     pub fn new(actions: Vec<AnimAction>) -> Self {
-        Self { actions }
+        Self {
+            actions: actions.into_iter().map(|a| Box::new(a)).collect(),
+        }
     }
     pub fn get_changes(&self, context: Context) -> Result<Vec<AnimChange>, ExpressionError> {
         let mut a = Animator::new(context);
@@ -95,6 +98,11 @@ impl AnimAction {
                 a.timeframe = x.get_f32(&a.context)?;
                 a.duration = a.duration.at_least(a.timeframe);
             }
+            AnimAction::List(vec) => {
+                for aa in vec {
+                    aa.apply(a)?;
+                }
+            }
         };
         Ok(changes)
     }
@@ -108,5 +116,99 @@ impl<'w, 's> Animator<'w, 's> {
             duration: 0.0,
             timeframe: 0.0,
         }
+    }
+}
+
+impl Default for AnimAction {
+    fn default() -> Self {
+        Self::Translate(Box::new(Expression::V2(0.0, 0.0)))
+    }
+}
+impl Inject for AnimAction {
+    fn move_inner(&mut self, source: &mut Self) {
+        <Self as Injector<Self>>::inject_inner(self, source);
+        <Self as Injector<Expression>>::inject_inner(self, source);
+    }
+    fn wrapper() -> Self {
+        Self::List(vec![default()])
+    }
+}
+impl Injector<Self> for AnimAction {
+    fn get_inner_mut(&mut self) -> Vec<&mut Box<Self>> {
+        match self {
+            AnimAction::Translate(..)
+            | AnimAction::SetTarget(..)
+            | AnimAction::AddTarget(..)
+            | AnimAction::Duration(..)
+            | AnimAction::Timeframe(..) => default(),
+            AnimAction::List(vec) => vec.into_iter().collect_vec(),
+        }
+    }
+    fn get_inner(&self) -> Vec<&Box<Self>> {
+        match self {
+            AnimAction::Translate(..)
+            | AnimAction::SetTarget(..)
+            | AnimAction::AddTarget(..)
+            | AnimAction::Duration(..)
+            | AnimAction::Timeframe(..) => default(),
+            AnimAction::List(vec) => vec.into_iter().collect_vec(),
+        }
+    }
+}
+impl Injector<Expression> for AnimAction {
+    fn get_inner_mut(&mut self) -> Vec<&mut Box<Expression>> {
+        match self {
+            AnimAction::Translate(x)
+            | AnimAction::SetTarget(x)
+            | AnimAction::AddTarget(x)
+            | AnimAction::Duration(x)
+            | AnimAction::Timeframe(x) => [x].into(),
+            AnimAction::List(..) => default(),
+        }
+    }
+    fn get_inner(&self) -> Vec<&Box<Expression>> {
+        match self {
+            AnimAction::Translate(x)
+            | AnimAction::SetTarget(x)
+            | AnimAction::AddTarget(x)
+            | AnimAction::Duration(x)
+            | AnimAction::Timeframe(x) => [x].into(),
+            AnimAction::List(..) => default(),
+        }
+    }
+}
+impl ToCstr for AnimAction {
+    fn cstr(&self) -> Cstr {
+        self.as_ref().cstr_c(PURPLE)
+    }
+}
+impl Show for AnimAction {
+    fn show(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) {
+        format!("{}{}", prefix.unwrap_or_default(), self.cstr()).label(ui);
+        let inner = <Self as Injector<Expression>>::get_inner(self);
+        if !inner.is_empty() {
+            for i in inner {
+                i.show(None, context, ui);
+            }
+        };
+    }
+    fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
+        CollapsingSelector::ui(self, prefix, ui, |v, ui| match v {
+            AnimAction::Translate(x)
+            | AnimAction::SetTarget(x)
+            | AnimAction::AddTarget(x)
+            | AnimAction::Duration(x)
+            | AnimAction::Timeframe(x) => x.show_mut(Some("v:"), ui),
+            AnimAction::List(vec) => vec.show_mut(prefix, ui),
+        })
+    }
+}
+impl Show for Anim {
+    fn show(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) {
+        prefix.show(None, context, ui);
+        self.actions.show(None, context, ui);
+    }
+    fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
+        self.actions.show_mut(prefix, ui)
     }
 }
