@@ -1,4 +1,5 @@
 use bevy::utils::hashbrown::HashMap;
+use egui::CollapsingHeader;
 
 use super::*;
 
@@ -15,7 +16,14 @@ pub struct Window {
     order: Order,
     no_frame: bool,
     transparent: bool,
+    expand: bool,
     content: Box<dyn FnMut(&mut Ui, &mut World) + Send + Sync>,
+}
+
+enum WindowResponse {
+    None,
+    Tile(Side),
+    Close,
 }
 
 #[derive(Resource, Default)]
@@ -41,6 +49,7 @@ impl Window {
             order: Order::Middle,
             no_frame: false,
             transparent: false,
+            expand: false,
         }
     }
     #[must_use]
@@ -61,24 +70,80 @@ impl Window {
     pub fn push(self, world: &mut World) {
         rm(world).windows.insert(self.id.clone(), self);
     }
-    pub fn show(&mut self, ctx: &egui::Context, world: &mut World) {
+    fn show(&mut self, ctx: &egui::Context, world: &mut World) -> WindowResponse {
+        const FRAME: Frame = Frame {
+            inner_margin: MARGIN,
+            outer_margin: Margin::ZERO,
+            rounding: ROUNDING,
+            shadow: SHADOW,
+            fill: BG_DARK,
+            stroke: STROKE_DARK,
+        };
+        let mut r = WindowResponse::None;
         let mut w = egui::Window::new(&self.id)
             .title_bar(false)
+            .frame(FRAME)
+            .scroll([self.expand, self.expand])
+            .movable(!self.expand)
             .order(self.order);
-        if self.no_frame {
-            w = w.frame(Frame::none());
+        if self.no_frame {}
+        if self.expand {
+            w = w.fixed_rect(ctx.screen_rect().shrink(13.0));
         }
         w.show(ctx, |ui| {
-            (self.content)(ui, world);
+            ui.expand_to_include_rect(ui.available_rect_before_wrap());
+            let rect = CollapsingHeader::new(&self.id)
+                .default_open(true)
+                .show_unindented(ui, |ui| {
+                    (self.content)(ui, world);
+                })
+                .header_response
+                .rect;
+            let rect = {
+                let rect = rect.with_min_x(rect.max.x);
+                let ui = &mut ui.child_ui(rect, Layout::left_to_right(Align::Max), None);
+                if "o"
+                    .cstr_c(if self.expand { YELLOW } else { VISIBLE_LIGHT })
+                    .button(ui)
+                    .clicked()
+                {
+                    self.expand = !self.expand
+                }
+                if "<".cstr().button(ui).clicked() {
+                    r = WindowResponse::Tile(Side::Left);
+                }
+                if ">".cstr().button(ui).clicked() {
+                    r = WindowResponse::Tile(Side::Right);
+                }
+                if "x".cstr().button(ui).clicked() {
+                    r = WindowResponse::Close;
+                }
+                ui.min_rect()
+            };
+            ui.expand_to_include_rect(rect);
         });
+        r
     }
 }
 
 impl WindowPlugin {
     pub fn show_all(ctx: &egui::Context, world: &mut World) {
         let mut windows = mem::take(&mut rm(world).windows);
-        for window in windows.values_mut() {
-            window.show(ctx, world);
+        let mut close = None;
+        let mut tile = None;
+        for (id, window) in windows.iter_mut() {
+            match window.show(ctx, world) {
+                WindowResponse::None => {}
+                WindowResponse::Close => close = Some(id.clone()),
+                WindowResponse::Tile(side) => tile = Some((side, id.clone())),
+            }
+        }
+        if let Some(close) = close {
+            windows.remove(&close);
+        }
+        if let Some((side, tile)) = tile {
+            let w = windows.remove(&tile).unwrap();
+            Tile::new(side, w.content).push(world);
         }
         let mut r = rm(world);
         windows.extend(r.windows.drain());

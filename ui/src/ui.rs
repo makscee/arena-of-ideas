@@ -56,10 +56,16 @@ pub const STROKE_YELLOW: Stroke = Stroke {
 };
 
 pub const SHADOW: Shadow = Shadow {
-    offset: egui::vec2(10.0, 20.0),
+    offset: egui::vec2(8.0, 8.0),
     blur: 15.0,
     spread: 0.0,
-    color: Color32::from_rgba_premultiplied(20, 20, 20, 25),
+    color: Color32::from_rgba_premultiplied(20, 20, 20, 35),
+};
+pub const MARGIN: Margin = Margin {
+    left: 4.0,
+    right: 4.0,
+    top: 4.0,
+    bottom: 4.0,
 };
 
 pub const ROUNDING: Rounding = Rounding {

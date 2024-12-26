@@ -116,20 +116,37 @@ impl AdminPlugin {
             });
             let mut query = world.query::<&Representation>();
             let context = Context::new_world(&world).set_owner(entity).set_t(t).take();
-            ui.horizontal(|ui| {
-                let (_, rect) = ui.allocate_space(egui::Vec2::splat(size));
+            ui.vertical_centered_justified(|ui| {
+                let (rect, resp) = ui.allocate_exact_size(egui::Vec2::splat(size), Sense::hover());
+                gt().pause(resp.hovered());
                 t += gt().last_delta();
+                ui.painter().add(
+                    Frame::none()
+                        .stroke(if resp.hovered() {
+                            STROKE_YELLOW
+                        } else {
+                            STROKE_DARK
+                        })
+                        .paint(rect),
+                );
+                let cr = ui.clip_rect();
+                ui.set_clip_rect(rect.expand(6.0).intersect(cr));
                 for r in query.iter(&world) {
                     match RepresentationPlugin::paint_rect(rect, &context, &r.material, ui) {
                         Ok(_) => {}
                         Err(e) => error!("Paint error: {e}"),
                     }
                 }
-                ui.vertical(|ui| {
-                    if vfx.show_mut(None, ui) {
-                        reload = true;
-                    }
-                });
+                ui.set_clip_rect(cr);
+                ScrollArea::both()
+                    .auto_shrink([false, false])
+                    .show(ui, |ui| {
+                        ui.vertical(|ui| {
+                            if vfx.show_mut(None, ui) {
+                                reload = true;
+                            }
+                        });
+                    });
             });
             reload |= t >= vfx.duration;
             if reload {

@@ -11,7 +11,7 @@ impl Plugin for TilePlugin {
 pub struct Tile {
     id: String,
     side: Side,
-    content: Box<dyn Fn(&mut Ui, &mut World) + Send + Sync>,
+    content: Box<dyn FnMut(&mut Ui, &mut World) + Send + Sync>,
     content_space: egui::Vec2,
     content_space_override: Option<egui::Vec2>,
     allocated_space: egui::Vec2,
@@ -236,7 +236,10 @@ impl TilePlugin {
 
 impl Tile {
     #[must_use]
-    pub fn new(side: Side, content: impl Fn(&mut Ui, &mut World) + Send + Sync + 'static) -> Self {
+    pub fn new(
+        side: Side,
+        content: impl FnMut(&mut Ui, &mut World) + Send + Sync + 'static,
+    ) -> Self {
         Self {
             id: next_id().to_string(),
             content: Box::new(content),
