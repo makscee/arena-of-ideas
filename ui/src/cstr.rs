@@ -46,10 +46,10 @@ impl CstrTrait for Cstr {
         job
     }
     fn label(&self, ui: &mut Ui) -> Response {
-        self.as_label(ui).selectable(false).ui(ui)
+        self.as_label(ui).ui(ui)
     }
     fn label_w(&self, ui: &mut Ui) -> Response {
-        self.as_label(ui).selectable(false).wrap().ui(ui)
+        self.as_label(ui).wrap().ui(ui)
     }
     fn label_alpha(&self, a: f32, ui: &mut Ui) -> Response {
         self.as_label_alpha(a, ui).ui(ui)
@@ -58,7 +58,7 @@ impl CstrTrait for Cstr {
         self.as_label_alpha(1.0, ui)
     }
     fn as_label_alpha(&self, a: f32, ui: &mut Ui) -> Label {
-        Label::new(self.widget(a, ui))
+        Label::new(self.widget(a, ui)).selectable(false)
     }
     fn button(self, ui: &mut Ui) -> Response {
         self.as_button().ui(ui)

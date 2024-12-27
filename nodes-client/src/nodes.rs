@@ -1,7 +1,6 @@
 use std::fmt::Debug;
 
 use assets::{hero_rep, unit_rep};
-use egui::Response;
 use serde::de::DeserializeOwned;
 
 macro_schema::nodes!();

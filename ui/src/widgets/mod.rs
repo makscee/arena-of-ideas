@@ -1,6 +1,7 @@
 use super::*;
 
 mod button;
+mod collapsing_frame;
 mod collapsing_selector;
 mod confirmation;
 mod enum_switcher;
@@ -17,6 +18,7 @@ mod tile;
 mod window;
 
 pub use button::*;
+pub use collapsing_frame::*;
 pub use collapsing_selector::*;
 pub use confirmation::*;
 pub use enum_switcher::*;

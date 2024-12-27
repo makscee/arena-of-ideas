@@ -116,6 +116,9 @@ pub fn draw_curve(
     let arrow = egui::Shape::Path(PathShape::line(points.into(), stroke));
     ui.painter().add(arrow);
 }
+pub fn copy_to_clipboard_op(text: String) {
+    OperationsPlugin::add(move |world| copy_to_clipboard(&text, world));
+}
 pub fn copy_to_clipboard(text: &str, world: &mut World) {
     world
         .resource_mut::<bevy_egui::EguiClipboard>()
@@ -314,5 +317,20 @@ impl VarValueExt for VarValue {
                 self.clone(),
             )),
         }
+    }
+}
+
+pub struct ClipboardPlugin;
+static CLIPBOARD_CACHE: Mutex<Option<String>> = Mutex::new(None);
+impl Plugin for ClipboardPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(PreUpdate, |mut c: ResMut<bevy_egui::EguiClipboard>| {
+            *CLIPBOARD_CACHE.lock() = c.get_contents();
+        });
+    }
+}
+impl ClipboardPlugin {
+    pub fn get() -> Option<String> {
+        CLIPBOARD_CACHE.lock().clone()
     }
 }

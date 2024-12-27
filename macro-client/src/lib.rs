@@ -100,8 +100,8 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     }
                 }
                 impl Show for #struct_ident {
-                    fn show_self(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) -> Response {
-                        let mut r = prefix.show(ui);
+                    fn show(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) {
+                        prefix.show(ui);
                         ui.horizontal(|ui| {
                             for (var, value) in self.get_all_vars() {
                                 if var != VarName::name {
@@ -112,22 +112,20 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         #(
                             self.#data_fields.show(None, context, ui);
                         )*
-                        r
                     }
-                    fn show_self_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> Response {
-                        let mut r = prefix.show( ui);
+                    fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
+                        prefix.show(ui);
+                        let mut changed = false;
                         for (var, mut value) in self.get_all_vars() {
-                            let vr = value.show_mut(Some(&var.cstr()), ui);
-                            if vr.changed() {
+                            if value.show_mut(Some(&var.cstr()), ui) {
+                                changed = true;
                                 self.set_var(var, value);
-                                r.changed |= true;
                             }
                         }
                         #(
-                            let dr = self.#data_fields.show_mut(None, ui);
-                            r.changed |= dr.changed();
+                            changed |= self.#data_fields.show_mut(None, ui);
                         )*
-                        r
+                        changed
                     }
                 }
                 impl GetVar for #struct_ident {

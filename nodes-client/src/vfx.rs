@@ -1,5 +1,3 @@
-use egui::Response;
-
 use super::*;
 
 #[derive(Default)]
@@ -62,13 +60,13 @@ impl StringData for Vfx {
     }
 }
 impl Show for Vfx {
-    fn show_self(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) -> Response {
-        prefix.show(ui) | self.representation.show(prefix, context, ui)
-    }
-    fn show_self_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> Response {
+    fn show(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) {
         prefix.show(ui);
-        let mut r = self.anim.show_mut(Some("anim:"), ui);
-        r |= self.representation.show_mut(Some("rep:"), ui);
-        r
+        self.representation.show(prefix, context, ui);
+    }
+    fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
+        prefix.show(ui);
+        let a = self.anim.show_mut(Some("anim:"), ui);
+        self.representation.show_mut(Some("rep:"), ui) || a
     }
 }

@@ -12,7 +12,7 @@ impl Selector {
         self,
         value: &mut E,
         ui: &mut Ui,
-    ) -> Response {
+    ) -> bool {
         let mut changed = false;
         ui.horizontal(|ui| {
             ui.label(self.name);
@@ -81,7 +81,7 @@ impl Selector {
                 ui.ctx()
                     .data_mut(|w| w.insert_temp(lookup_id, String::new()));
             };
-            r
+            changed
         })
         .inner
     }

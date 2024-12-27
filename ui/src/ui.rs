@@ -24,7 +24,7 @@ pub const VISIBLE_LIGHT: Color32 = hex_color_noa!("#B4B4B4");
 pub const VISIBLE_BRIGHT: Color32 = hex_color_noa!("#FFFFFF");
 
 pub const YELLOW: Color32 = hex_color_noa!("#D98F00");
-pub const YELLOW_DARK: Color32 = hex_color_noa!("#493501");
+pub const YELLOW_DARK: Color32 = hex_color_noa!("#996600");
 pub const RED: Color32 = hex_color_noa!("#DC143C");
 pub const DARK_RED: Color32 = hex_color_noa!("#9D0E2B");
 pub const GREEN: Color32 = hex_color_noa!("#64DD17");
@@ -53,6 +53,10 @@ pub const STROKE_DARK: Stroke = Stroke {
 pub const STROKE_YELLOW: Stroke = Stroke {
     width: 1.0,
     color: YELLOW,
+};
+pub const STROKE_YELLOW_DARK: Stroke = Stroke {
+    width: 1.0,
+    color: YELLOW_DARK,
 };
 
 pub const SHADOW: Shadow = Shadow {
@@ -166,7 +170,7 @@ fn setup_ui(mut ctx: Query<&mut EguiContext>) {
                 TextStyle::Monospace,
                 FontId::new(14.0, FontFamily::Monospace),
             ),
-            (TextStyle::Button, FontId::new(16.0, FontFamily::Monospace)),
+            (TextStyle::Button, FontId::new(14.0, FontFamily::Monospace)),
             (TextStyle::Small, FontId::new(10.0, FontFamily::Monospace)),
         ]
         .into();
@@ -175,6 +179,7 @@ fn setup_ui(mut ctx: Query<&mut EguiContext>) {
             item_spacing: egui::vec2(8.0, 6.0),
             button_padding: egui::vec2(3.0, 3.0),
             combo_width: 10.0,
+            interact_size: egui::vec2(20.0, 20.0),
             ..Default::default()
         };
         style.wrap_mode = Some(egui::TextWrapMode::Extend);
