@@ -1,7 +1,3 @@
-use std::ops::RangeInclusive;
-
-use egui::{emath::Numeric, style::HandleShape};
-
 use super::*;
 
 pub struct Slider {

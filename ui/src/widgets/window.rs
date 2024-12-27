@@ -1,6 +1,3 @@
-use bevy::utils::hashbrown::HashMap;
-use egui::CollapsingHeader;
-
 use super::*;
 
 pub struct WindowPlugin;

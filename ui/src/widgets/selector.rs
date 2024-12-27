@@ -1,7 +1,3 @@
-use std::cmp::Ordering;
-
-use egui::{ComboBox, Key};
-
 use super::*;
 
 pub struct Selector {

@@ -1,13 +1,3 @@
-use bevy::{
-    color::{Color, ColorToPacked, LinearRgba},
-    input::ButtonInput,
-    log::debug,
-    math::{vec2, Vec2, Vec3},
-    prelude::{Camera, GlobalTransform, MouseButton},
-};
-use bevy_egui::EguiContext;
-use egui::{epaint::PathShape, Pos2, TextureId};
-
 use super::*;
 
 pub fn debug_rect(rect: Rect, ctx: &egui::Context) {

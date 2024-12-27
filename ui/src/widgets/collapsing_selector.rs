@@ -1,5 +1,3 @@
-use egui::{CollapsingHeader, Shadow};
-
 use super::*;
 
 pub struct CollapsingSelector;

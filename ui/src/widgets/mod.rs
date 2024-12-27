@@ -16,7 +16,6 @@ mod table;
 mod tile;
 mod window;
 
-use super::*;
 pub use button::*;
 pub use collapsing_selector::*;
 pub use confirmation::*;
