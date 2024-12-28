@@ -1,9 +1,4 @@
-use egui::{emath, remap};
-use std::{
-    cell::RefCell,
-    f32::consts::TAU,
-    ops::{Deref, DerefMut},
-};
+use std::fmt::Debug;
 
 use super::*;
 
@@ -19,9 +14,9 @@ pub struct DataFrameMut<'a, T> {
 pub struct DataFrame<'a, T> {
     data: &'a T,
     prefix: Option<&'a str>,
-    header: Option<Box<dyn FnOnce(&T, &mut Ui) -> bool + 'a>>,
-    body: Option<Box<dyn FnOnce(&T, &mut Ui) -> bool + 'a>>,
-    context_actions: HashMap<&'static str, Box<dyn FnOnce(&T) -> bool + 'a>>,
+    header: Option<Box<dyn FnOnce(&T, &mut Ui) + 'a>>,
+    body: Option<Box<dyn FnOnce(&T, &mut Ui) + 'a>>,
+    context_actions: HashMap<&'static str, Box<dyn FnOnce(&T) + 'a>>,
 }
 
 const FRAME: Frame = Frame {
@@ -35,56 +30,55 @@ const FRAME: Frame = Frame {
 
 impl<'a, T> DataFrame<'a, T>
 where
-    T: ToCstr + Clone + std::fmt::Debug,
+    T: ToCstr + Clone + std::fmt::Debug + StringData,
 {
     pub fn new(data: &'a T) -> Self {
+        let mut context_actions: HashMap<&str, Box<dyn FnOnce(&T)>> = default();
+        context_actions.insert("Copy", Box::new(|d: &T| clipboard_set(d.get_data())));
         Self {
             data,
             header: None,
             body: None,
             prefix: None,
-            context_actions: default(),
+            context_actions,
         }
     }
     pub fn prefix(mut self, prefix: Option<&'a str>) -> Self {
         self.prefix = prefix;
         self
     }
-    pub fn header(mut self, f: impl FnOnce(&T, &mut Ui) -> bool + 'a) -> Self {
+    pub fn header(mut self, f: impl FnOnce(&T, &mut Ui) + 'a) -> Self {
         self.header = Some(Box::new(f));
         self
     }
-    pub fn body(mut self, f: impl FnOnce(&T, &mut Ui) -> bool + 'a) -> Self {
+    pub fn body(mut self, f: impl FnOnce(&T, &mut Ui) + 'a) -> Self {
         self.body = Some(Box::new(f));
-        self
-    }
-    pub fn copy(mut self, f: impl FnOnce(&T) + 'a) -> Self {
-        self.context_actions.insert(
-            "Copy",
-            Box::new(move |d| {
-                f(d);
-                false
-            }),
-        );
         self
     }
     pub fn ui(self, ui: &mut Ui) -> bool {
         let data = RefCell::new(self.data.clone());
-        let header = self
-            .header
-            .map(|f| |ui: &mut Ui| f(data.borrow().deref(), ui));
-        let body = self
-            .body
-            .map(|f| |ui: &mut Ui| f(data.borrow().deref(), ui));
+        let header = self.header.map(|f| {
+            |ui: &mut Ui| {
+                f(data.borrow().deref(), ui);
+                false
+            }
+        });
+        let body = self.body.map(|f| {
+            |ui: &mut Ui| {
+                f(data.borrow().deref(), ui);
+                false
+            }
+        });
         let name = |ui: &mut Ui| {
             self.data.cstr_s(CstrStyle::Bold).label(ui);
             false
         };
-        let context_actions = HashMap::from_iter(
-            self.context_actions
-                .into_iter()
-                .map(|(k, v)| (k, || v(data.borrow().deref()))),
-        );
+        let context_actions = HashMap::from_iter(self.context_actions.into_iter().map(|(k, v)| {
+            (k, || {
+                v(data.borrow().deref());
+                false
+            })
+        }));
         let r = compose_ui(self.prefix, header, body, name, context_actions, ui);
         r
     }
@@ -92,16 +86,42 @@ where
 
 impl<'a, T> DataFrameMut<'a, T>
 where
-    T: ToCstr + Clone + std::fmt::Debug,
+    T: ToCstr + Clone + std::fmt::Debug + StringData + Inject,
 {
     pub fn new(data: &'a mut T) -> Self {
+        let mut context_actions: HashMap<&str, Box<dyn FnOnce(&mut T) -> bool>> = default();
+        context_actions.insert(
+            "Copy",
+            Box::new(|d| {
+                clipboard_set(d.get_data());
+                false
+            }),
+        );
+        context_actions.insert(
+            "Paste",
+            Box::new(move |d| {
+                if let Some(c) = clipboard_get() {
+                    d.inject_data(&c);
+                    true
+                } else {
+                    false
+                }
+            }),
+        );
+        context_actions.insert(
+            "Wrap",
+            Box::new(move |d| {
+                d.wrap();
+                true
+            }),
+        );
         Self {
             data,
             header: None,
             body: None,
             prefix: None,
             name: None,
-            context_actions: default(),
+            context_actions,
         }
     }
     pub fn new_selector(data: &'a mut T) -> Self
@@ -136,26 +156,6 @@ where
     pub fn wrapper(mut self, f: impl FnOnce(&mut T) + 'static) -> Self {
         self.context_actions.insert(
             "Wrap",
-            Box::new(move |d| {
-                f(d);
-                true
-            }),
-        );
-        self
-    }
-    pub fn copy(mut self, f: impl FnOnce(&mut T) + 'static) -> Self {
-        self.context_actions.insert(
-            "Copy",
-            Box::new(move |d| {
-                f(d);
-                false
-            }),
-        );
-        self
-    }
-    pub fn paste(mut self, f: impl FnOnce(&mut T) + 'static) -> Self {
-        self.context_actions.insert(
-            "Paste",
             Box::new(move |d| {
                 f(d);
                 true
@@ -300,12 +300,59 @@ fn show_triangle(openness: f32, resp: &Response, ui: &mut Ui) {
     ));
 }
 
-pub trait DataFramed {
+impl<T> Show for T
+where
+    T: DataFramed,
+{
+    fn show(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) {
+        let has_header = self.has_header();
+        let has_body = self.has_body();
+        let mut df = DataFrame::new(self).prefix(prefix);
+        if has_header {
+            let context = context.clone();
+            df = df.header(move |d, ui| d.show_header(&context, ui));
+        }
+        if has_body {
+            let context = context.clone();
+            df = df.body(move |d, ui| d.show_body(&context, ui));
+        }
+        df.ui(ui);
+    }
+    fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
+        let has_header = self.has_header();
+        let has_body = self.has_body();
+        let mut df = DataFrameMut::new(self).prefix(prefix);
+        df.name = Some(Box::new(|d, ui| d.show_name_mut(ui)));
+        if has_header {
+            df = df.header(move |d, ui| d.show_header_mut(ui));
+        }
+        if has_body {
+            df = df.body(move |d, ui| d.show_body_mut(ui));
+        }
+        df.ui(ui)
+    }
+}
+
+pub trait DataFramed: ToCstr + Clone + Debug + StringData + Inject {
     fn has_header(&self) -> bool;
     fn has_body(&self) -> bool;
+    fn show_header(&self, context: &Context, ui: &mut Ui);
+    fn show_header_mut(&mut self, ui: &mut Ui) -> bool;
+    fn show_body(&self, context: &Context, ui: &mut Ui);
+    fn show_body_mut(&mut self, ui: &mut Ui) -> bool;
+    fn show_name(&self, ui: &mut Ui) {
+        self.cstr_s(CstrStyle::Bold).label(ui);
+    }
+    fn show_name_mut(&mut self, ui: &mut Ui) -> bool {
+        self.show_name(ui);
+        false
+    }
 }
 
 impl DataFramed for Expression {
+    fn show_name_mut(&mut self, ui: &mut Ui) -> bool {
+        Selector::from_mut(self, ui)
+    }
     fn has_header(&self) -> bool {
         match self {
             Expression::Var(_)
@@ -386,6 +433,175 @@ impl DataFramed for Expression {
             | Expression::GreaterThen(..)
             | Expression::LessThen(..)
             | Expression::If(..) => true,
+        }
+    }
+    fn show_header(&self, context: &Context, ui: &mut Ui) {
+        match self {
+            Expression::Var(v) => v.show(Some("x:"), &context, ui),
+            Expression::V(v) => v.show(Some("x:"), &context, ui),
+            Expression::S(v) => v.show(Some("x:"), &context, ui),
+            Expression::F(v) => v.show(Some("x:"), &context, ui),
+            Expression::I(v) => v.show(Some("x:"), &context, ui),
+            Expression::B(v) => v.show(Some("x:"), &context, ui),
+            Expression::V2(x, y) => {
+                x.show(Some("x:"), &context, ui);
+                y.show(Some("y:"), &context, ui);
+            }
+            Expression::C(v) => v.show(Some("c:"), &context, ui),
+            _ => {}
+        }
+    }
+    fn show_header_mut(&mut self, ui: &mut Ui) -> bool {
+        match self {
+            Expression::Var(v) => v.show_mut(Some("x:"), ui),
+            Expression::V(v) => v.show_mut(Some("x:"), ui),
+            Expression::S(v) => v.show_mut(Some("x:"), ui),
+            Expression::F(v) => v.show_mut(Some("x:"), ui),
+            Expression::I(v) => v.show_mut(Some("x:"), ui),
+            Expression::B(v) => v.show_mut(Some("x:"), ui),
+            Expression::C(v) => v.show_mut(Some("c:"), ui),
+            Expression::V2(x, y) => {
+                let x = x.show_mut(Some("x:"), ui);
+                y.show_mut(Some("y:"), ui) || x
+            }
+            _ => false,
+        }
+    }
+    fn show_body(&self, context: &Context, ui: &mut Ui) {
+        match self {
+            Expression::Sin(x)
+            | Expression::Cos(x)
+            | Expression::Even(x)
+            | Expression::Abs(x)
+            | Expression::Floor(x)
+            | Expression::Ceil(x)
+            | Expression::Fract(x)
+            | Expression::Sqr(x) => x.show(Some("x:"), &context, ui),
+            Expression::V2EE(a, b)
+            | Expression::Macro(a, b)
+            | Expression::Sum(a, b)
+            | Expression::Sub(a, b)
+            | Expression::Mul(a, b)
+            | Expression::Div(a, b)
+            | Expression::Max(a, b)
+            | Expression::Min(a, b)
+            | Expression::Mod(a, b)
+            | Expression::And(a, b)
+            | Expression::Or(a, b)
+            | Expression::Equals(a, b)
+            | Expression::GreaterThen(a, b)
+            | Expression::LessThen(a, b) => {
+                a.show(Some("a:"), &context, ui);
+                b.show(Some("b:"), &context, ui);
+            }
+            Expression::If(a, b, c) => {
+                a.show(Some("if:"), &context, ui);
+                b.show(Some("then:"), &context, ui);
+                c.show(Some("else:"), &context, ui);
+            }
+            _ => {}
+        };
+    }
+    fn show_body_mut(&mut self, ui: &mut Ui) -> bool {
+        match self {
+            Expression::Sin(x)
+            | Expression::Cos(x)
+            | Expression::Even(x)
+            | Expression::Abs(x)
+            | Expression::Floor(x)
+            | Expression::Ceil(x)
+            | Expression::Fract(x)
+            | Expression::Sqr(x) => x.show_mut(Some("x:"), ui),
+            Expression::V2EE(a, b)
+            | Expression::Macro(a, b)
+            | Expression::Sum(a, b)
+            | Expression::Sub(a, b)
+            | Expression::Mul(a, b)
+            | Expression::Div(a, b)
+            | Expression::Max(a, b)
+            | Expression::Min(a, b)
+            | Expression::Mod(a, b)
+            | Expression::And(a, b)
+            | Expression::Or(a, b)
+            | Expression::Equals(a, b)
+            | Expression::GreaterThen(a, b)
+            | Expression::LessThen(a, b) => {
+                let a = a.show_mut(Some("a:"), ui);
+                b.show_mut(Some("b:"), ui) || a
+            }
+            Expression::If(a, b, c) => {
+                let a = a.show_mut(Some("if:"), ui);
+                let b = b.show_mut(Some("then:"), ui);
+                c.show_mut(Some("else:"), ui) || a || b
+            }
+            _ => false,
+        }
+    }
+}
+
+impl DataFramed for PainterAction {
+    fn show_name_mut(&mut self, ui: &mut Ui) -> bool {
+        Selector::from_mut(self, ui)
+    }
+    fn has_header(&self) -> bool {
+        false
+    }
+    fn has_body(&self) -> bool {
+        match self {
+            PainterAction::Paint => false,
+            PainterAction::Circle(..)
+            | PainterAction::Rectangle(..)
+            | PainterAction::Text(..)
+            | PainterAction::Hollow(..)
+            | PainterAction::Translate(..)
+            | PainterAction::Rotate(..)
+            | PainterAction::Scale(..)
+            | PainterAction::Color(..)
+            | PainterAction::Alpha(..)
+            | PainterAction::Repeat(..)
+            | PainterAction::List(..) => true,
+        }
+    }
+    fn show_header(&self, _: &Context, _: &mut Ui) {}
+    fn show_header_mut(&mut self, ui: &mut Ui) -> bool {
+        false
+    }
+    fn show_body(&self, context: &Context, ui: &mut Ui) {
+        match self {
+            PainterAction::Paint => {}
+            PainterAction::Circle(x)
+            | PainterAction::Rectangle(x)
+            | PainterAction::Text(x)
+            | PainterAction::Hollow(x)
+            | PainterAction::Translate(x)
+            | PainterAction::Rotate(x)
+            | PainterAction::Scale(x)
+            | PainterAction::Color(x)
+            | PainterAction::Alpha(x) => x.show(Some("x:"), context, ui),
+            PainterAction::Repeat(x, painter_action) => {
+                x.show(Some("cnt:"), context, ui);
+                painter_action.show(Some("action:"), context, ui);
+            }
+            PainterAction::List(vec) => vec.show(None, context, ui),
+        }
+    }
+    fn show_body_mut(&mut self, ui: &mut Ui) -> bool {
+        match self {
+            PainterAction::Paint => false,
+            PainterAction::Circle(x)
+            | PainterAction::Rectangle(x)
+            | PainterAction::Text(x)
+            | PainterAction::Hollow(x)
+            | PainterAction::Translate(x)
+            | PainterAction::Rotate(x)
+            | PainterAction::Scale(x)
+            | PainterAction::Color(x)
+            | PainterAction::Alpha(x) => x.show_mut(Some("x:"), ui),
+            PainterAction::Repeat(x, painter_action) => {
+                let x = x.show_mut(Some("cnt:"), ui);
+                painter_action.show_mut(Some("action:"), ui) || x
+            }
+            PainterAction::List(vec) => vec.show_mut(None, ui),
         }
     }
 }

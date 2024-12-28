@@ -1,7 +1,6 @@
 use std::fmt::Debug;
 
 use assets::{hero_rep, unit_rep};
-use serde::de::DeserializeOwned;
 
 macro_schema::nodes!();
 
@@ -67,24 +66,5 @@ impl OnUnpack for NodeKind {
             NodeKind::Unit => unit_rep().clone().unpack(entity, commands),
             _ => {}
         }
-    }
-}
-
-pub trait StringData: Sized {
-    fn inject_data(&mut self, data: &str);
-    fn get_data(&self) -> String;
-}
-impl<T> StringData for T
-where
-    T: Serialize + DeserializeOwned,
-{
-    fn inject_data(&mut self, data: &str) {
-        match ron::from_str(data) {
-            Ok(v) => *self = v,
-            Err(e) => error!("Deserialize error: {e}"),
-        }
-    }
-    fn get_data(&self) -> String {
-        ron::to_string(self).unwrap()
     }
 }

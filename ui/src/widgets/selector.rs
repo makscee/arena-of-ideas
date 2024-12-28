@@ -5,6 +5,19 @@ pub struct Selector {
 }
 
 impl Selector {
+    pub fn from_mut<E: ToCstr + AsRef<str> + IntoEnumIterator + Clone + PartialEq + Inject>(
+        data: &mut E,
+        ui: &mut Ui,
+    ) -> bool {
+        let mut new_value = data.clone();
+        if Selector::new("").ui_enum(&mut new_value, ui) {
+            new_value.move_inner(data);
+            *data = new_value;
+            true
+        } else {
+            false
+        }
+    }
     pub fn new(name: impl Into<WidgetText>) -> Self {
         Self { name: name.into() }
     }

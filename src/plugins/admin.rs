@@ -116,7 +116,7 @@ impl AdminPlugin {
             });
             let mut query = world.query::<&Representation>();
             let context = Context::new_world(&world).set_owner(entity).set_t(t).take();
-            ui.vertical_centered_justified(|ui| {
+            ui.horizontal_centered(|ui| {
                 let (rect, resp) = ui.allocate_exact_size(egui::Vec2::splat(size), Sense::hover());
                 gt().pause(resp.hovered());
                 t += gt().last_delta();

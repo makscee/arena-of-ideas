@@ -68,6 +68,7 @@ proc-macro2 = "1.0.92"
 quote = "1.0.37"
 tween = "2.0.1"
 arboard = "3.4.1"
+log = "0.4.19"
 
 [dependencies]
 ui = { path = "ui" }
@@ -94,6 +95,7 @@ indexmap = { workspace = true }
 colored = { workspace = true }
 chrono = { workspace = true }
 egui_extras = { workspace = true }
+log = { workspace = true }
 
 spacetimedb-sdk = "=1.0.0-rc1"
 spacetimedb-sats = "=1.0.0-rc1"
@@ -103,7 +105,6 @@ bevy_asset_loader = { version = "0.21.0", features = [
     "standard_dynamic_assets",
 ] }
 bevy_common_assets = { version = "0.11.0", features = ["ron"] }
-log = "0.4.19"
 serde_json = "1.0.104"
 anyhow = "1.0.75"
 rand = "0.8.5"
