@@ -259,7 +259,7 @@ impl Show for Expression {
         let header_enabled = self.has_header();
         let body_enabled = self.has_body();
         let mut cf = DataFrame::new(self).prefix(prefix).copy(|d| {
-            copy_to_clipboard_op(d.get_data());
+            clipboard_set(d.get_data());
         });
         if header_enabled {
             let context = context.clone();
@@ -329,9 +329,9 @@ impl Show for Expression {
             .prefix(prefix)
             .wrapper(|d| d.wrap())
             .copy(|d| {
-                copy_to_clipboard_op(d.get_data());
+                clipboard_set(d.get_data());
             })
-            .paste(|d| match ClipboardPlugin::get() {
+            .paste(|d| match clipboard_get() {
                 Some(v) => d.inject_data(&v),
                 None => error!("Clipboard is empty"),
             });

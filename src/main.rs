@@ -102,7 +102,6 @@ fn main() {
             WindowPlugin,
             BackgroundPlugin,
             HeroPlugin,
-            ClipboardPlugin,
         ))
         .add_plugins((
             OperationsPlugin,

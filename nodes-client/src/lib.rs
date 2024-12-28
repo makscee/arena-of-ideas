@@ -40,7 +40,7 @@ use bevy_egui::egui::{
 use egui::{
     emath::{Rot2, TSTransform},
     epaint::{self, TessellationOptions},
-    Checkbox, DragValue, Mesh, Shape, Widget,
+    Checkbox, DragValue, Mesh, Widget,
 };
 use epaint::{CircleShape, RectShape, Tessellator};
 use include_dir::Dir;

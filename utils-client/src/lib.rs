@@ -2,6 +2,7 @@ mod game_timer;
 mod nid;
 mod operations;
 
+use arboard::Clipboard;
 pub use game_timer::*;
 pub use nid::*;
 pub use operations::*;
@@ -115,20 +116,6 @@ pub fn draw_curve(
     let points = [p1, p4, p2];
     let arrow = egui::Shape::Path(PathShape::line(points.into(), stroke));
     ui.painter().add(arrow);
-}
-pub fn copy_to_clipboard_op(text: String) {
-    OperationsPlugin::add(move |world| copy_to_clipboard(&text, world));
-}
-pub fn copy_to_clipboard(text: &str, world: &mut World) {
-    world
-        .resource_mut::<bevy_egui::EguiClipboard>()
-        .set_contents(text);
-    debug!("Saved to clipboard:\n{text}");
-}
-pub fn paste_from_clipboard(world: &mut World) -> Option<String> {
-    world
-        .resource_mut::<bevy_egui::EguiClipboard>()
-        .get_contents()
 }
 pub fn show_texture(size: f32, texture: TextureId, ui: &mut Ui) -> Response {
     ui.image(egui::load::SizedTexture::new(
@@ -320,17 +307,10 @@ impl VarValueExt for VarValue {
     }
 }
 
-pub struct ClipboardPlugin;
-static CLIPBOARD_CACHE: Mutex<Option<String>> = Mutex::new(None);
-impl Plugin for ClipboardPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_systems(PreUpdate, |mut c: ResMut<bevy_egui::EguiClipboard>| {
-            *CLIPBOARD_CACHE.lock() = c.get_contents();
-        });
-    }
+pub fn clipboard_get() -> Option<String> {
+    Clipboard::new().and_then(|mut c| c.get_text()).ok()
 }
-impl ClipboardPlugin {
-    pub fn get() -> Option<String> {
-        CLIPBOARD_CACHE.lock().clone()
-    }
+pub fn clipboard_set(text: String) {
+    info!("Clipboard set:\n{text}");
+    Clipboard::new().unwrap().set_text(text).unwrap()
 }
