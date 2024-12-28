@@ -256,120 +256,76 @@ impl Show for Entity {
 
 impl Show for Expression {
     fn show(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) {
-        prefix.show(ui);
-        let l = self.cstr().as_label(ui).selectable(true);
-        let (pos, galley, response) = l.layout_in_ui(ui);
-        let mut text_shape = TextShape::new(pos, galley, MISSING_COLOR);
-        let color = if response.hovered() {
-            text_shape.override_text_color = Some(VISIBLE_BRIGHT);
-            VISIBLE_BRIGHT
-        } else {
-            VISIBLE_DARK
-        };
-        ui.painter().add(Shape::Text(text_shape));
-        response.on_hover_ui(|ui| match self.get_value(context) {
-            Ok(v) => {
-                v.show(None, context, ui);
-            }
-            Err(e) => {
-                e.cstr().label(ui);
-            }
+        let header_enabled = self.has_header();
+        let body_enabled = self.has_body();
+        let mut cf = DataFrame::new(self).prefix(prefix).copy(|d| {
+            copy_to_clipboard_op(d.get_data());
         });
-        let inner = <Self as Injector<Self>>::get_inner(self);
-        if !inner.is_empty() {
-            Frame::none()
-                .inner_margin(Margin::symmetric(4.0, 4.0))
-                .stroke(Stroke::new(1.0, color))
-                .rounding(ROUNDING)
-                .show(ui, |ui| {
-                    ui.vertical(|ui| {
-                        for i in inner {
-                            i.show(None, context, ui);
-                        }
-                    });
-                });
+        if header_enabled {
+            let context = context.clone();
+            cf = cf.header(move |d, ui| {
+                match d {
+                    Expression::Var(v) => v.show(Some("x:"), &context, ui),
+                    Expression::V(v) => v.show(Some("x:"), &context, ui),
+                    Expression::S(v) => v.show(Some("x:"), &context, ui),
+                    Expression::F(v) => v.show(Some("x:"), &context, ui),
+                    Expression::I(v) => v.show(Some("x:"), &context, ui),
+                    Expression::B(v) => v.show(Some("x:"), &context, ui),
+                    Expression::V2(x, y) => {
+                        x.show(Some("x:"), &context, ui);
+                        y.show(Some("y:"), &context, ui);
+                    }
+                    Expression::C(v) => v.show(Some("c:"), &context, ui),
+                    _ => {}
+                };
+                false
+            });
         }
+        if body_enabled {
+            let context = context.clone();
+            cf = cf.body(move |d, ui| {
+                match d {
+                    Expression::Sin(x)
+                    | Expression::Cos(x)
+                    | Expression::Even(x)
+                    | Expression::Abs(x)
+                    | Expression::Floor(x)
+                    | Expression::Ceil(x)
+                    | Expression::Fract(x)
+                    | Expression::Sqr(x) => x.show(Some("x:"), &context, ui),
+                    Expression::V2EE(a, b)
+                    | Expression::Macro(a, b)
+                    | Expression::Sum(a, b)
+                    | Expression::Sub(a, b)
+                    | Expression::Mul(a, b)
+                    | Expression::Div(a, b)
+                    | Expression::Max(a, b)
+                    | Expression::Min(a, b)
+                    | Expression::Mod(a, b)
+                    | Expression::And(a, b)
+                    | Expression::Or(a, b)
+                    | Expression::Equals(a, b)
+                    | Expression::GreaterThen(a, b)
+                    | Expression::LessThen(a, b) => {
+                        a.show(Some("a:"), &context, ui);
+                        b.show(Some("b:"), &context, ui);
+                    }
+                    Expression::If(a, b, c) => {
+                        a.show(Some("if:"), &context, ui);
+                        b.show(Some("then:"), &context, ui);
+                        c.show(Some("else:"), &context, ui);
+                    }
+                    _ => {}
+                };
+                false
+            });
+        }
+        cf.ui(ui);
     }
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
-        let header_enabled = match self {
-            Expression::Var(_)
-            | Expression::V(_)
-            | Expression::S(_)
-            | Expression::F(_)
-            | Expression::I(_)
-            | Expression::B(_)
-            | Expression::V2(_, _)
-            | Expression::C(_) => true,
-            Expression::One
-            | Expression::Zero
-            | Expression::GT
-            | Expression::Owner
-            | Expression::Target
-            | Expression::UnitSize
-            | Expression::Sin(..)
-            | Expression::Cos(..)
-            | Expression::Even(..)
-            | Expression::Abs(..)
-            | Expression::Floor(..)
-            | Expression::Ceil(..)
-            | Expression::Fract(..)
-            | Expression::Sqr(..)
-            | Expression::V2EE(..)
-            | Expression::Macro(..)
-            | Expression::Sum(..)
-            | Expression::Sub(..)
-            | Expression::Mul(..)
-            | Expression::Div(..)
-            | Expression::Max(..)
-            | Expression::Min(..)
-            | Expression::Mod(..)
-            | Expression::And(..)
-            | Expression::Or(..)
-            | Expression::Equals(..)
-            | Expression::GreaterThen(..)
-            | Expression::LessThen(..)
-            | Expression::If(..) => false,
-        };
-        let body_enabled = match self {
-            Expression::One
-            | Expression::Zero
-            | Expression::GT
-            | Expression::Owner
-            | Expression::Target
-            | Expression::UnitSize
-            | Expression::Var(..)
-            | Expression::V(..)
-            | Expression::S(..)
-            | Expression::F(..)
-            | Expression::I(..)
-            | Expression::B(..)
-            | Expression::V2(..)
-            | Expression::C(..) => false,
-            Expression::Sin(..)
-            | Expression::Cos(..)
-            | Expression::Even(..)
-            | Expression::Abs(..)
-            | Expression::Floor(..)
-            | Expression::Ceil(..)
-            | Expression::Fract(..)
-            | Expression::Sqr(..)
-            | Expression::V2EE(..)
-            | Expression::Macro(..)
-            | Expression::Sum(..)
-            | Expression::Sub(..)
-            | Expression::Mul(..)
-            | Expression::Div(..)
-            | Expression::Max(..)
-            | Expression::Min(..)
-            | Expression::Mod(..)
-            | Expression::And(..)
-            | Expression::Or(..)
-            | Expression::Equals(..)
-            | Expression::GreaterThen(..)
-            | Expression::LessThen(..)
-            | Expression::If(..) => true,
-        };
-        let mut cf = CollapsingFrame::new_selector(self)
+        let header_enabled = self.has_header();
+        let body_enabled = self.has_body();
+        let mut cf = DataFrameMut::new_selector(self)
             .prefix(prefix)
             .wrapper(|d| d.wrap())
             .copy(|d| {

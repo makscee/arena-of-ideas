@@ -161,7 +161,10 @@ impl AdminPlugin {
     fn setup(mut commands: Commands) {
         commands.add(|world: &mut World| {
             let mut e = Expression::F(1.0);
-            e.inject_data("Abs(Equals(F(51.0),Abs(Equals(F(1.0),Or(Equals(F(1.0),One),Abs(Or(Target,Abs(One))))))))");
+            e.inject_data(
+                r#"
+Abs(Equals(F(51.0),Abs(Equals(F(1.0),Or(Equals(F(1.0),One),Abs(Or(Target,Abs(One))))))))"#,
+            );
             Tile::new(Side::Left, move |ui, world| {
                 let scale = &mut world.resource_mut::<CameraData>().need_scale;
                 Slider::new("Cam Scale").ui(scale, 1.0..=50.0, ui);
@@ -171,8 +174,10 @@ impl AdminPlugin {
                 if "Vfx Editor".cstr().button(ui).clicked() {
                     Self::show_vfx_editor(world);
                 }
-                e.show_mut(Some("Expr"), ui);
-                e.show(Some("Prefix"), &Context::default(), ui);
+                ui.horizontal(|ui| {
+                    e.show_mut(Some("Expr"), ui);
+                    e.show(Some("Prefix"), &Context::default(), ui);
+                });
             })
             .transparent()
             .pinned()
