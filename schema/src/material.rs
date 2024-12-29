@@ -25,6 +25,6 @@ impl Default for PainterAction {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct Material(pub Vec<Box<PainterAction>>);

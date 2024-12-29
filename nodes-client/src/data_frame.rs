@@ -86,7 +86,7 @@ where
 
 impl<'a, T> DataFrameMut<'a, T>
 where
-    T: ToCstr + Clone + std::fmt::Debug + StringData + Inject,
+    T: ToCstr + Clone + std::fmt::Debug + StringData,
 {
     pub fn new(data: &'a mut T) -> Self {
         let mut context_actions: HashMap<&str, Box<dyn FnOnce(&mut T) -> bool>> = default();
@@ -108,13 +108,6 @@ where
                 }
             }),
         );
-        context_actions.insert(
-            "Wrap",
-            Box::new(move |d| {
-                d.wrap();
-                true
-            }),
-        );
         Self {
             data,
             header: None,
@@ -124,11 +117,25 @@ where
             context_actions,
         }
     }
+    pub fn new_inject(data: &'a mut T) -> Self
+    where
+        T: Inject,
+    {
+        let mut r = Self::new(data);
+        r.context_actions.insert(
+            "Wrap",
+            Box::new(move |d| {
+                d.wrap();
+                true
+            }),
+        );
+        r
+    }
     pub fn new_selector(data: &'a mut T) -> Self
     where
         T: AsRef<str> + IntoEnumIterator + PartialEq + Inject,
     {
-        let mut r = Self::new(data);
+        let mut r = Self::new_inject(data);
         r.name = Some(Box::new(|d, ui| {
             let mut new_value = d.clone();
             if Selector::new("").ui_enum(&mut new_value, ui) {
@@ -321,7 +328,7 @@ where
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
         let has_header = self.has_header();
         let has_body = self.has_body();
-        let mut df = DataFrameMut::new(self).prefix(prefix);
+        let mut df = DataFrameMut::new_inject(self).prefix(prefix);
         df.name = Some(Box::new(|d, ui| d.show_name_mut(ui)));
         if has_header {
             df = df.header(move |d, ui| d.show_header_mut(ui));

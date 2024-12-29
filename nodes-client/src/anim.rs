@@ -22,15 +22,8 @@ pub enum AnimAction {
     AddTarget(Box<Expression>),
     Duration(Box<Expression>),
     Timeframe(Box<Expression>),
+    Spawn(Box<Material>),
     List(Vec<Box<Self>>),
-}
-
-#[derive(Debug)]
-pub struct AnimChange {
-    pub entity: Entity,
-    pub duration: f32,
-    pub timeframe: f32,
-    pub vars: Vec<(VarName, VarValue)>,
 }
 
 impl Anim {
@@ -39,80 +32,119 @@ impl Anim {
             actions: actions.into_iter().map(|a| Box::new(a)).collect(),
         }
     }
-    pub fn get_changes(&self, context: Context) -> Result<Vec<AnimChange>, ExpressionError> {
-        let mut a = Animator::new(context);
-        let mut changes = Vec::default();
+    pub fn apply(
+        &self,
+        t: &mut f32,
+        context: Context,
+        world: &mut World,
+    ) -> Result<f32, ExpressionError> {
+        let a = &mut Animator::new(context);
+        let mut end_t = *t;
         for action in &self.actions {
-            changes.extend(action.apply(&mut a)?);
+            end_t = end_t.max(action.apply(t, a, world)?);
         }
-        Ok(changes)
+        Ok(end_t)
     }
-}
-
-impl AnimChange {
-    pub fn apply(self, t: &mut f32, world: &mut World) {
-        let AnimChange {
-            entity,
-            duration,
-            timeframe,
-            vars,
-        } = self;
-        for (var, value) in vars {
-            NodeState::from_world_mut(entity, world).unwrap().insert(
-                *t,
-                duration,
-                var,
-                value,
-                NodeKind::None,
-            );
-            *t += timeframe;
-        }
-    }
-    pub fn new_set(entity: Entity, var: VarName, value: VarValue) -> Self {
-        Self {
-            entity,
-            duration: 0.0,
-            timeframe: 0.0,
-            vars: [(var, value)].into(),
-        }
+    pub fn push(&mut self, action: AnimAction) -> &mut Self {
+        self.actions.push(Box::new(action));
+        self
     }
 }
 
 impl AnimAction {
-    fn apply(&self, a: &mut Animator) -> Result<Vec<AnimChange>, ExpressionError> {
-        let mut changes = Vec::default();
+    fn apply(
+        &self,
+        t: &mut f32,
+        a: &mut Animator,
+        world: &mut World,
+    ) -> Result<f32, ExpressionError> {
+        let mut end_t = 0.0;
         match self {
             AnimAction::Translate(x) => {
-                let pos = x.get_vec2(&a.context)?;
+                let pos = x.get_vec2(&a.context.with_world(world))?;
                 for target in a.targets.iter().copied() {
-                    changes.push(AnimChange {
-                        entity: target,
-                        duration: a.duration,
-                        timeframe: a.timeframe,
-                        vars: [(VarName::position, pos.into())].into(),
-                    });
+                    NodeState::from_world_mut(target, world).unwrap().insert(
+                        *t,
+                        a.duration,
+                        VarName::position,
+                        pos.into(),
+                        NodeKind::None,
+                    );
+                    end_t = *t + a.duration;
+                    *t += a.timeframe;
                 }
             }
             AnimAction::SetTarget(x) => {
-                a.targets = [x.get_entity(&a.context)?].into();
+                a.targets = [x.get_entity(&a.context.with_world(world))?].into();
             }
             AnimAction::AddTarget(x) => {
-                a.targets.push(x.get_entity(&a.context)?);
+                a.targets.push(x.get_entity(&a.context.with_world(world))?);
             }
             AnimAction::Duration(x) => {
-                a.duration = x.get_f32(&a.context)?;
+                a.duration = x.get_f32(&a.context.with_world(world))?;
             }
             AnimAction::Timeframe(x) => {
-                a.timeframe = x.get_f32(&a.context)?;
+                a.timeframe = x.get_f32(&a.context.with_world(world))?;
                 a.duration = a.duration.at_least(a.timeframe);
             }
             AnimAction::List(vec) => {
                 for aa in vec {
-                    aa.apply(a)?;
+                    end_t = end_t.max(aa.apply(t, a, world)?);
                 }
             }
+            AnimAction::Spawn(material) => {
+                let entity = world.spawn_empty().id();
+                Representation {
+                    material: *material.clone(),
+                    children: default(),
+                    entity: None,
+                }
+                .unpack(entity, &mut world.commands());
+                world.flush_commands();
+                NodeState::from_world_mut(entity, world).unwrap().insert(
+                    *t,
+                    0.0,
+                    VarName::visible,
+                    true.into(),
+                    NodeKind::None,
+                );
+                NodeState::from_world_mut(entity, world).unwrap().insert(
+                    *t + a.duration,
+                    0.0,
+                    VarName::visible,
+                    false.into(),
+                    NodeKind::None,
+                );
+                NodeState::from_world_mut(entity, world).unwrap().insert(
+                    *t,
+                    0.0,
+                    VarName::t,
+                    0.0.into(),
+                    NodeKind::None,
+                );
+                NodeState::from_world_mut(entity, world).unwrap().insert(
+                    *t + 0.1,
+                    a.duration,
+                    VarName::t,
+                    1.0.into(),
+                    NodeKind::None,
+                );
+                a.targets = vec![entity];
+                end_t = *t + a.duration;
+            } // AnimAction::Var(var, value) => {
+              //     for target in &a.targets {
+              //         NodeState::from_world_mut(*target, world).unwrap().insert(
+              //             *t,
+              //             a.duration,
+              //             *var,
+              //             value.clone(),
+              //             NodeKind::None,
+              //         );
+              //     }
+              //     *t += a.timeframe;
+              // }
         };
-        Ok(changes)
+        Ok(end_t)
     }
 }
 
@@ -121,7 +153,7 @@ impl<'w, 's> Animator<'w, 's> {
         Self {
             targets: Vec::new(),
             context,
-            duration: 0.0,
+            duration: 1.0,
             timeframe: 0.0,
         }
     }
@@ -148,7 +180,8 @@ impl Injector<Self> for AnimAction {
             | AnimAction::SetTarget(..)
             | AnimAction::AddTarget(..)
             | AnimAction::Duration(..)
-            | AnimAction::Timeframe(..) => default(),
+            | AnimAction::Timeframe(..)
+            | AnimAction::Spawn(..) => default(),
             AnimAction::List(vec) => vec.into_iter().collect_vec(),
         }
     }
@@ -158,7 +191,8 @@ impl Injector<Self> for AnimAction {
             | AnimAction::SetTarget(..)
             | AnimAction::AddTarget(..)
             | AnimAction::Duration(..)
-            | AnimAction::Timeframe(..) => default(),
+            | AnimAction::Timeframe(..)
+            | AnimAction::Spawn(..) => default(),
             AnimAction::List(vec) => vec.into_iter().collect_vec(),
         }
     }
@@ -171,7 +205,7 @@ impl Injector<Expression> for AnimAction {
             | AnimAction::AddTarget(x)
             | AnimAction::Duration(x)
             | AnimAction::Timeframe(x) => [x].into(),
-            AnimAction::List(..) => default(),
+            AnimAction::List(..) | AnimAction::Spawn(..) => default(),
         }
     }
     fn get_inner(&self) -> Vec<&Box<Expression>> {
@@ -181,7 +215,7 @@ impl Injector<Expression> for AnimAction {
             | AnimAction::AddTarget(x)
             | AnimAction::Duration(x)
             | AnimAction::Timeframe(x) => [x].into(),
-            AnimAction::List(..) => default(),
+            AnimAction::List(..) | AnimAction::Spawn(..) => default(),
         }
     }
 }
@@ -190,25 +224,9 @@ impl ToCstr for AnimAction {
         self.as_ref().cstr_c(PURPLE)
     }
 }
-impl Show for AnimAction {
-    fn show(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) {
-        prefix.show(ui);
-        let inner = <Self as Injector<Expression>>::get_inner(self);
-        if !inner.is_empty() {
-            for i in inner {
-                i.show(None, context, ui);
-            }
-        };
-    }
-    fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
-        CollapsingSelector::ui(self, prefix, ui, |v, ui| match v {
-            AnimAction::Translate(x)
-            | AnimAction::SetTarget(x)
-            | AnimAction::AddTarget(x)
-            | AnimAction::Duration(x)
-            | AnimAction::Timeframe(x) => x.show_mut(Some("v:"), ui),
-            AnimAction::List(vec) => vec.show_mut(prefix, ui),
-        })
+impl ToCstr for Anim {
+    fn cstr(&self) -> Cstr {
+        self.actions.iter().map(|a| a.cstr()).join(" ")
     }
 }
 impl Show for Anim {
@@ -217,6 +235,63 @@ impl Show for Anim {
         self.actions.show(None, context, ui)
     }
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
-        self.actions.show_mut(prefix, ui)
+        DataFrameMut::new(self)
+            .prefix(prefix)
+            .body(|d, ui| d.actions.show_mut(None, ui))
+            .ui(ui)
+    }
+}
+
+impl DataFramed for AnimAction {
+    fn show_name_mut(&mut self, ui: &mut Ui) -> bool {
+        Selector::from_mut(self, ui)
+    }
+    fn has_header(&self) -> bool {
+        match self {
+            AnimAction::Translate(..)
+            | AnimAction::SetTarget(..)
+            | AnimAction::AddTarget(..)
+            | AnimAction::Duration(..)
+            | AnimAction::Timeframe(..)
+            | AnimAction::Spawn(..)
+            | AnimAction::List(..) => false,
+        }
+    }
+    fn has_body(&self) -> bool {
+        match self {
+            AnimAction::Translate(..)
+            | AnimAction::SetTarget(..)
+            | AnimAction::AddTarget(..)
+            | AnimAction::Duration(..)
+            | AnimAction::Timeframe(..)
+            | AnimAction::Spawn(..)
+            | AnimAction::List(..) => true,
+        }
+    }
+    fn show_header(&self, _: &Context, _: &mut Ui) {}
+    fn show_header_mut(&mut self, _: &mut Ui) -> bool {
+        false
+    }
+    fn show_body(&self, context: &Context, ui: &mut Ui) {
+        match self {
+            AnimAction::Translate(x)
+            | AnimAction::SetTarget(x)
+            | AnimAction::AddTarget(x)
+            | AnimAction::Duration(x)
+            | AnimAction::Timeframe(x) => x.show(Some("x:"), context, ui),
+            AnimAction::Spawn(m) => m.show(Some("material:"), context, ui),
+            AnimAction::List(vec) => vec.show(Some("list:"), context, ui),
+        }
+    }
+    fn show_body_mut(&mut self, ui: &mut Ui) -> bool {
+        match self {
+            AnimAction::Translate(x)
+            | AnimAction::SetTarget(x)
+            | AnimAction::AddTarget(x)
+            | AnimAction::Duration(x)
+            | AnimAction::Timeframe(x) => x.show_mut(Some("x:"), ui),
+            AnimAction::Spawn(m) => m.show_mut(Some("material:"), ui),
+            AnimAction::List(vec) => vec.show_mut(Some("list:"), ui),
+        }
     }
 }

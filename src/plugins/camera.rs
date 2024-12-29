@@ -46,7 +46,9 @@ impl CameraPlugin {
     ) {
         let ctx = ctx.single_mut().into_inner().get_mut();
         let mut cam = cam.single_mut();
-        cam.0.translation = hero.single().translation;
+        if let Ok(hero) = hero.get_single() {
+            cam.0.translation = hero.translation;
+        }
         data.cur_scale +=
             (data.need_scale - data.cur_scale) * gt().last_delta() * SCALE_CHANGE_SPEED;
         data.apply(&mut cam.1);

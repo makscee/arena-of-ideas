@@ -81,25 +81,23 @@ impl AdminPlugin {
     }
     fn show_vfx_editor(w: &mut World) {
         let mut vfx = Vfx::default();
-        vfx.representation = Representation {
-            material: Material(vec![Box::new(PainterAction::Rectangle(Box::new(
-                Expression::V2(1.0, 0.7),
-            )))]),
-            children: Vec::new(),
-            entity: None,
-        };
         vfx.duration = 1.0;
         vfx.timeframe = 1.0;
+        vfx.anim.push(AnimAction::Spawn(Box::new(Material(
+            [
+                Box::new(PainterAction::Rectangle(Box::new(Expression::V2(0.5, 0.3)))),
+                Box::new(PainterAction::Rotate(Box::new(Expression::Var(VarName::t)))),
+            ]
+            .into(),
+        ))));
+
         let mut t = 0.0;
         let mut world = World::new();
-        fn respawn(vfx: &Vfx, world: &mut World) -> Result<Entity, ExpressionError> {
+        fn respawn(vfx: &Vfx, world: &mut World) -> Result<f32, ExpressionError> {
             world.clear_all();
-            match vfx.spawn(&mut 0.0, world) {
-                Ok(e) => Ok(e),
-                Err(e) => Err(e),
-            }
+            vfx.spawn(&mut 0.0, world)
         }
-        let mut entity = respawn(&vfx, &mut world).unwrap();
+        let mut end_t = respawn(&vfx, &mut world).unwrap();
         let mut size = 100.0;
         Window::new("Vfx Editor", move |ui, _| {
             let mut reload = false;
@@ -114,8 +112,8 @@ impl AdminPlugin {
                     .ui(ui)
                     .changed();
             });
-            let mut query = world.query::<&Representation>();
-            let context = Context::new_world(&world).set_owner(entity).set_t(t).take();
+            let mut query = world.query::<(Entity, &Representation)>();
+            let context = Context::new_world(&world).set_t(t).take();
             ui.horizontal_centered(|ui| {
                 let (rect, resp) = ui.allocate_exact_size(egui::Vec2::splat(size), Sense::hover());
                 gt().pause(resp.hovered());
@@ -131,10 +129,15 @@ impl AdminPlugin {
                 );
                 let cr = ui.clip_rect();
                 ui.set_clip_rect(rect.expand(6.0).intersect(cr));
-                for r in query.iter(&world) {
-                    match RepresentationPlugin::paint_rect(rect, &context, &r.material, ui) {
+                for (entity, r) in query.iter(&world) {
+                    match RepresentationPlugin::paint_rect(
+                        rect,
+                        context.clone().set_owner(entity),
+                        &r.material,
+                        ui,
+                    ) {
                         Ok(_) => {}
-                        Err(e) => error!("Paint error: {e}"),
+                        Err(e) => error!("Paint error: {e} {context:?}"),
                     }
                 }
                 ui.set_clip_rect(cr);
@@ -148,11 +151,11 @@ impl AdminPlugin {
                         });
                     });
             });
-            reload |= t >= vfx.duration;
+            reload |= t > end_t;
             if reload {
-                if let Ok(e) = respawn(&vfx, &mut world) {
+                if let Ok(end) = respawn(&vfx, &mut world) {
                     t = 0.0;
-                    entity = e;
+                    end_t = end;
                 }
             }
         })
@@ -183,7 +186,7 @@ Abs(Equals(F(51.0),Abs(Equals(F(1.0),Or(Equals(F(1.0),One),Abs(Or(Target,Abs(One
             .pinned()
             .push(world);
         });
-        let house = houses().get("holy").unwrap().clone();
+        // let house = houses().get("holy").unwrap().clone();
         // dbg!(&house);
         // house.unpack(commands.spawn_empty().id(), &mut commands);
 

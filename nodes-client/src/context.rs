@@ -35,6 +35,9 @@ impl<'w, 's> Context<'w, 's> {
             t: None,
         }
     }
+    pub fn with_world(&self, world: &'w World) -> Self {
+        self.clone().set_world(world).take()
+    }
     pub fn set_world(&mut self, world: &'w World) -> &mut Self {
         self.sources.push(ContextSource::World(world));
         self

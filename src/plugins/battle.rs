@@ -155,11 +155,7 @@ impl BattleSimulation {
         }
     }
     fn apply_animation(&mut self, context: Context, anim: &Anim) -> Result<(), ExpressionError> {
-        let context = context.clone().set_world(&self.world).take();
-        let c = anim.get_changes(context)?;
-        for c in c {
-            c.apply(&mut self.t, &mut self.world);
-        }
+        anim.apply(&mut self.t, context, &mut self.world)?;
         Ok(())
     }
     fn process_actions(&mut self, mut actions: Vec<BattleAction>) {

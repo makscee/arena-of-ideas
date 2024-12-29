@@ -116,11 +116,11 @@ impl RepresentationPlugin {
         m: &Material,
         ui: &mut Ui,
     ) -> Result<(), ExpressionError> {
-        if !context
+        let visible = context
             .get_var(VarName::visible)
             .and_then(|v| v.get_bool())
-            .unwrap_or(true)
-        {
+            .unwrap_or(true);
+        if !visible {
             return Ok(());
         }
         let mut p = Painter::new(rect, ui.ctx());

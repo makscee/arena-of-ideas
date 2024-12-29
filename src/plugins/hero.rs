@@ -11,6 +11,7 @@ impl Plugin for HeroPlugin {
 
 impl HeroPlugin {
     fn setup(mut commands: Commands) {
+        return;
         let entity = commands.spawn_empty().id();
         Hero {
             name: "HeroName".into(),
