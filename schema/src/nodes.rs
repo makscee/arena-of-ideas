@@ -62,10 +62,12 @@ impl Mover {
         if self.start_ts == 0.0 {
             return Vec2::ZERO;
         }
+        self.from.lerp(self.target, self.t(speed))
+    }
+    pub fn t(&self, speed: f32) -> f32 {
         let elapsed = (now_seconds() - self.start_ts) as f32;
         let t = (self.target - self.from).length() / speed;
-        let t = elapsed / t;
-        self.from.lerp(self.target, t.min(1.0))
+        (elapsed / t).clamp(0.0, 1.0)
     }
 }
 
