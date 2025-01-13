@@ -1,39 +1,5 @@
 #![enable(implicit_some)]
 (
-    settings: (
-        always_zero: 0,
-        season: 2,
-        craft_shards_cost: 10,
-        create_team_cost: 10,
-        meta: (
-            price_lootbox: 200,
-            price_shard: 10,
-            shop_shard_slots: 3,
-            balance_vote_reward: 1,
-            daily_discount: 0.5,
-        ),
-        ghost_unit: "Ghost",
-        arena: (
-            shop_slots: (start: 3, max: 6, inflation: 0.34),
-            g_income: (start: 5, max: 7, inflation: 0.34),
-            ranked_cost: 100,
-            const_cost: 100,
-            price_reroll: 1,
-            sell_discount: 2,
-            stack_discount: 1,
-            team_slots: 5,
-            lives_initial: 4,
-            free_rerolls_initial: 2,
-            free_rerolls_income: 1,
-            initial_enemies_count: [3, 1, 3],
-        ),
-        rarities: (
-            prices: [4, 5, 6, 7],
-            weights_initial: [100, 5, -10, -20],
-            weights_per_floor: [0, 5, 5, 5],
-            lootbox_weights: [100, 15, 5, 1],
-        ),
-        battle: (fatigue_start: 20, deafness_start: 500, deafness_per_turn: 0.0001, summon_limit: 30),
-        quest: (daily_options: 5, daily_limit: 2),
-    ),
+    always_zero: 0,
+    hero_speed: 10.0,
 )

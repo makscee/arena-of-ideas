@@ -359,6 +359,11 @@ impl ToCstr for f32 {
         format!("{self:.2}")
     }
 }
+impl ToCstr for f64 {
+    fn cstr(&self) -> Cstr {
+        format!("{self:.2}")
+    }
+}
 impl ToCstr for i32 {
     fn cstr(&self) -> Cstr {
         self.to_string()

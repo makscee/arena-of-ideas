@@ -20,9 +20,10 @@ pub use trigger::*;
 pub use var_name::*;
 pub use var_value::*;
 
+pub use glam::Vec2;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use strum_macros::{AsRefStr, Display, EnumIter, EnumString};
-use utils::default;
+pub use utils::*;
 
 pub trait StringData: Sized {
     fn inject_data(&mut self, data: &str);

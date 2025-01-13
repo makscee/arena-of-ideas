@@ -23,11 +23,11 @@ pub fn delta_time(world: &World) -> f32 {
 pub fn elapsed_seconds(world: &World) -> f32 {
     world.resource::<Time>().elapsed_seconds()
 }
-pub fn global_settings() -> GlobalSettings {
+pub fn global_settings() -> &'static GlobalSettings {
     if is_connected() {
-        todo!()
+        global_settings_local()
     } else {
-        todo!()
+        global_settings_local()
     }
 }
 pub fn app_exit(world: &mut World) {

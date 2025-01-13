@@ -12,7 +12,7 @@ use spacetimedb_sdk::{
 #[sats(crate = __lib)]
 pub struct GlobalSettings {
     pub always_zero: u32,
-    pub season: u32,
+    pub hero_speed: f32,
 }
 
 impl __sdk::spacetime_module::InModule for GlobalSettings {

@@ -12,7 +12,7 @@ pub fn now_micros() -> i64 {
     Utc::now().timestamp_micros()
 }
 pub fn now_seconds() -> f64 {
-    Utc::now().timestamp_millis() as f64 * 1000.0
+    Utc::now().timestamp_millis() as f64 / 1000.0
 }
 
 pub fn smoothstep(edge0: f32, edge1: f32, x: f32) -> f32 {

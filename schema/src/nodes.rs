@@ -48,6 +48,25 @@ struct UnitTrigger {
 struct Hero {
     pub name: String,
     pub representation: Option<Representation>,
+    pub mover: Option<Mover>,
+}
+
+struct Mover {
+    pub target: Vec2,
+    pub from: Vec2,
+    pub start_ts: f64,
+}
+
+impl Mover {
+    pub fn pos(&self, speed: f32) -> Vec2 {
+        if self.start_ts == 0.0 {
+            return Vec2::ZERO;
+        }
+        let elapsed = (now_seconds() - self.start_ts) as f32;
+        let t = (self.target - self.from).length() / speed;
+        let t = elapsed / t;
+        self.from.lerp(self.target, t.min(1.0))
+    }
 }
 
 struct Representation {

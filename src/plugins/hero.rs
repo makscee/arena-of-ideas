@@ -11,7 +11,6 @@ impl Plugin for HeroPlugin {
 
 impl HeroPlugin {
     fn setup(mut commands: Commands) {
-        return;
         let entity = commands.spawn_empty().id();
         Hero {
             name: "HeroName".into(),
@@ -29,18 +28,16 @@ impl HeroPlugin {
         if let Some(pos) = ctx.bg_clicked() {
             let (cam, cam_transform) = cam.single();
             let pos = screen_to_world_cam(pos.to_bvec2(), cam, cam_transform);
-            mover.single_mut().need_pos = pos;
+            let mut mover = mover.single_mut();
+            mover.from = mover.pos(global_settings().hero_speed);
+            mover.start_ts = now_seconds();
+            mover.target = pos;
         }
     }
     fn update_mover(mut q: Query<(&mut Transform, &Mover)>) {
-        for (mut t, m) in q.iter_mut() {
-            let delta = (m.need_pos - t.translation.xy()) * gt().last_delta() * 5.0;
-            t.translation += delta.extend(0.0);
+        let speed = global_settings().hero_speed;
+        for (mut transform, m) in q.iter_mut() {
+            transform.translation = m.pos(speed).extend(transform.translation.z);
         }
     }
-}
-
-#[derive(Component, Default)]
-struct Mover {
-    need_pos: Vec2,
 }
