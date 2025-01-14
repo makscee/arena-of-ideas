@@ -63,39 +63,10 @@ impl ConnectPlugin {
             info!("Connected {identity}");
             let token = token.to_owned();
             save_identity(identity);
-            StdbQuery::subscribe(StdbQuery::queries_login(), move |world| {
-                info!("On subscribe");
-                let server_version_str = cn().db.global_data().current().game_version;
-                let server_version = server_version_str.split('.').collect_vec();
-                let client_version = VERSION.split('.').collect_vec();
-                Self::save_credentials(identity, token.clone())
-                    .expect("Failed to save credentials");
-                if server_version[0] == client_version[0] && server_version[1] == client_version[1]
-                {
-                    ConnectOption { identity, token }.save(world);
-                    GameState::proceed(world);
-                } else {
-                    Confirmation::new("Game Version Error")
-                        .content(move |ui, _| {
-                            format!(
-                                "[vl Wrong game version: ][vb [b{} != {}]]",
-                                VERSION, server_version_str
-                            )
-                            .label(ui);
-                        })
-                        .accept(|world| {
-                            egui_context(world).unwrap().open_url(egui::OpenUrl {
-                                url: "https://github.com/makscee/arena-of-ideas/releases"
-                                    .to_owned(),
-                                new_tab: true,
-                            });
-                            app_exit(world);
-                        })
-                        .cancel(|world| app_exit(world))
-                        .accept_name("Update")
-                        .cancel_name("Exit")
-                        .push(world);
-                }
+            db_subscriptions();
+            OperationsPlugin::add(move |world| {
+                ConnectOption { identity, token }.save(world);
+                GameState::proceed(world);
             });
         });
     }
@@ -118,7 +89,6 @@ impl ConnectPlugin {
             .build()
             .unwrap();
         c.run_threaded();
-        reducers_subscriptions(&c);
         CONNECTION.set(c).ok().unwrap();
     }
 }

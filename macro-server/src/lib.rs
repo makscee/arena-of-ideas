@@ -55,5 +55,9 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
 #[proc_macro_attribute]
 pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
     let input = parse_macro_input!(item as syn::DeriveInput);
-    quote! {#input}.into()
+    quote! {
+        #[derive(spacetimedb::SpacetimeType)]
+        #input
+    }
+    .into()
 }

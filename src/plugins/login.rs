@@ -56,11 +56,6 @@ impl LoginPlugin {
                 .unwrap()
         });
         LoginOption { player }.save(world);
-        StdbQuery::subscribe(StdbQuery::queries_game(), move |world| {
-            // GameAssets::cache_tables();
-            GameState::proceed(world);
-            db_subscriptions();
-        });
     }
     pub fn login_ui(ui: &mut Ui, world: &mut World) {
         center_window("login", ui.ctx(), |ui| {

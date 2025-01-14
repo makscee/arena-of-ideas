@@ -326,7 +326,16 @@ pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
                             })*
                         };
                     }
-
+                    pub fn unpack(self, entity: Entity, data: &str, commands: &mut Commands) {
+                        match self {
+                            Self::None => {}
+                            #(#struct_ident::#variants => {
+                                let mut n = #variants::default();
+                                n.inject_data(data);
+                                n.unpack(entity, commands);
+                            })*
+                        };
+                    }
                 }
             }.into()
         }

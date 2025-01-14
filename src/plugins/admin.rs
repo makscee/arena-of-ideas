@@ -177,6 +177,25 @@ Abs(Equals(F(51.0),Abs(Equals(F(1.0),Or(Equals(F(1.0),One),Abs(Or(Target,Abs(One
                 if "Vfx Editor".cstr().button(ui).clicked() {
                     Self::show_vfx_editor(world);
                 }
+                if "Spawn".cstr().button(ui).clicked() {
+                    match cn().reducers.r_spawn(
+                        NodeKind::Hero.to_string(),
+                        Hero {
+                            name: "SpawnedHero".to_owned(),
+                            representation: None,
+                            mover: None,
+                            entity: None,
+                        }
+                        .get_data(),
+                    ) {
+                        Ok(_) => {
+                            info!("Hero spawned")
+                        }
+                        Err(e) => {
+                            error!("{e}")
+                        }
+                    };
+                }
                 // ui.horizontal(|ui| {
                 //     e.show_mut(Some("Expr"), ui);
                 //     e.show(Some("Prefix"), &Context::default(), ui);

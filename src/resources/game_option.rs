@@ -8,7 +8,6 @@ pub enum GameOption {
     Login,
     ForceLogin,
     TestScenariosLoad,
-    Table(StdbQuery),
     ActiveRun,
 }
 
@@ -20,7 +19,6 @@ impl ToCstr for GameOption {
             | GameOption::ForceLogin
             | GameOption::TestScenariosLoad
             | GameOption::ActiveRun => self.as_ref().cstr_c(GREEN),
-            GameOption::Table(q) => self.as_ref().cstr_c(GREEN) + &q.cstr(),
         }
     }
 }
@@ -38,7 +36,6 @@ impl GameOption {
                 world.get_resource::<LoginOption>().is_some()
             }
             GameOption::TestScenariosLoad => todo!(),
-            GameOption::Table(query) => query.is_subscribed(),
             GameOption::ActiveRun => todo!(),
         }
     }
@@ -53,9 +50,6 @@ impl GameOption {
             GameOption::Connect => ConnectOption::fulfill(world),
             GameOption::Login | GameOption::ForceLogin => LoginOption::fulfill(world),
             GameOption::TestScenariosLoad => GameState::TestScenariosLoad.set_next(world),
-            GameOption::Table(query) => {
-                StdbQuery::subscribe([query.clone()], |world| GameState::proceed(world));
-            }
             GameOption::ActiveRun => {
                 GameState::Title.proceed_to_target(world);
             }

@@ -25,8 +25,11 @@ pub mod init_reducer;
 pub mod login_by_identity_reducer;
 pub mod login_reducer;
 pub mod logout_reducer;
+pub mod nodes_table;
+pub mod nodes_type;
 pub mod player_table;
 pub mod player_tag_table;
+pub mod r_spawn_reducer;
 pub mod register_empty_reducer;
 pub mod register_reducer;
 pub mod set_name_reducer;
@@ -53,8 +56,11 @@ pub use init_reducer::*;
 pub use login_by_identity_reducer::*;
 pub use login_reducer::*;
 pub use logout_reducer::*;
+pub use nodes_table::*;
+pub use nodes_type::*;
 pub use player_table::*;
 pub use player_tag_table::*;
+pub use r_spawn_reducer::*;
 pub use register_empty_reducer::*;
 pub use register_reducer::*;
 pub use set_name_reducer::*;
@@ -84,6 +90,7 @@ pub enum Reducer {
     Login(login_reducer::Login),
     LoginByIdentity(login_by_identity_reducer::LoginByIdentity),
     Logout(logout_reducer::Logout),
+    RSpawn(r_spawn_reducer::RSpawn),
     Register(register_reducer::Register),
     RegisterEmpty(register_empty_reducer::RegisterEmpty),
     SetName(set_name_reducer::SetName),
@@ -108,6 +115,7 @@ impl __sdk::spacetime_module::Reducer for Reducer {
             Reducer::Login(_) => "login",
             Reducer::LoginByIdentity(_) => "login_by_identity",
             Reducer::Logout(_) => "logout",
+            Reducer::RSpawn(_) => "r_spawn",
             Reducer::Register(_) => "register",
             Reducer::RegisterEmpty(_) => "register_empty",
             Reducer::SetName(_) => "set_name",
@@ -127,6 +135,7 @@ impl __sdk::spacetime_module::Reducer for Reducer {
             Reducer::Login(args) => args,
             Reducer::LoginByIdentity(args) => args,
             Reducer::Logout(args) => args,
+            Reducer::RSpawn(args) => args,
             Reducer::Register(args) => args,
             Reducer::RegisterEmpty(args) => args,
             Reducer::SetName(args) => args,
@@ -176,6 +185,9 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
             "logout" => Ok(Reducer::Logout(
                 __sdk::spacetime_module::parse_reducer_args("logout", &value.args)?,
             )),
+            "r_spawn" => Ok(Reducer::RSpawn(
+                __sdk::spacetime_module::parse_reducer_args("r_spawn", &value.args)?,
+            )),
             "register" => Ok(Reducer::Register(
                 __sdk::spacetime_module::parse_reducer_args("register", &value.args)?,
             )),
@@ -203,6 +215,7 @@ pub struct DbUpdate {
     daily_update_timer: __sdk::spacetime_module::TableUpdate<DailyUpdateTimer>,
     global_data: __sdk::spacetime_module::TableUpdate<GlobalData>,
     global_settings: __sdk::spacetime_module::TableUpdate<GlobalSettings>,
+    nodes: __sdk::spacetime_module::TableUpdate<Nodes>,
     player: __sdk::spacetime_module::TableUpdate<TPlayer>,
     player_tag: __sdk::spacetime_module::TableUpdate<TPlayerTag>,
     wallet: __sdk::spacetime_module::TableUpdate<TWallet>,
@@ -225,6 +238,7 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
                     db_update.global_settings =
                         global_settings_table::parse_table_update(table_update)?
                 }
+                "nodes" => db_update.nodes = nodes_table::parse_table_update(table_update)?,
                 "player" => db_update.player = player_table::parse_table_update(table_update)?,
                 "player_tag" => {
                     db_update.player_tag = player_tag_table::parse_table_update(table_update)?
@@ -250,6 +264,7 @@ impl __sdk::spacetime_module::DbUpdate for DbUpdate {
         );
         cache.apply_diff_to_table::<GlobalData>("global_data", &self.global_data);
         cache.apply_diff_to_table::<GlobalSettings>("global_settings", &self.global_settings);
+        cache.apply_diff_to_table::<Nodes>("nodes", &self.nodes);
         cache.apply_diff_to_table::<TPlayer>("player", &self.player);
         cache.apply_diff_to_table::<TPlayerTag>("player_tag", &self.player_tag);
         cache.apply_diff_to_table::<TWallet>("wallet", &self.wallet);
@@ -270,6 +285,7 @@ impl __sdk::spacetime_module::DbUpdate for DbUpdate {
             &self.global_settings,
             event,
         );
+        callbacks.invoke_table_row_callbacks::<Nodes>("nodes", &self.nodes, event);
         callbacks.invoke_table_row_callbacks::<TPlayer>("player", &self.player, event);
         callbacks.invoke_table_row_callbacks::<TPlayerTag>("player_tag", &self.player_tag, event);
         callbacks.invoke_table_row_callbacks::<TWallet>("wallet", &self.wallet, event);
