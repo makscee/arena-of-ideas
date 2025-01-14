@@ -178,16 +178,7 @@ Abs(Equals(F(51.0),Abs(Equals(F(1.0),Or(Equals(F(1.0),One),Abs(Or(Target,Abs(One
                     Self::show_vfx_editor(world);
                 }
                 if "Spawn".cstr().button(ui).clicked() {
-                    match cn().reducers.r_spawn(
-                        NodeKind::Hero.to_string(),
-                        Hero {
-                            name: "SpawnedHero".to_owned(),
-                            representation: None,
-                            mover: None,
-                            entity: None,
-                        }
-                        .get_data(),
-                    ) {
+                    match cn().reducers.node_spawn_hero("SpawnedHero".into()) {
                         Ok(_) => {
                             info!("Hero spawned")
                         }

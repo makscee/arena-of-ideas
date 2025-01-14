@@ -69,6 +69,7 @@ quote = "1.0.37"
 tween = "2.0.1"
 arboard = "3.4.1"
 log = "0.4.19"
+glam = { version = "0.27.0", features = ["serde"] }
 
 [dependencies]
 ui = { path = "ui" }
@@ -96,6 +97,7 @@ colored = { workspace = true }
 chrono = { workspace = true }
 egui_extras = { workspace = true }
 log = { workspace = true }
+glam = { workspace = true }
 
 spacetimedb-sdk = "=1.0.0-rc1"
 spacetimedb-sats = "=1.0.0-rc1"

@@ -103,39 +103,41 @@ impl<'ctx> __sdk::table::TableWithPrimaryKey for NodesTableHandle<'ctx> {
 pub(super) fn parse_table_update(
     raw_updates: __ws::TableUpdate<__ws::BsatnFormat>,
 ) -> __anyhow::Result<__sdk::spacetime_module::TableUpdate<Nodes>> {
-    __sdk::spacetime_module::TableUpdate::parse_table_update_with_primary_key::<u64>(
+    __sdk::spacetime_module::TableUpdate::parse_table_update_with_primary_key::<String>(
         raw_updates,
-        |row: &Nodes| &row.id,
+        |row: &Nodes| &row.key,
     )
     .context("Failed to parse table update for table \"nodes\"")
 }
 
-/// Access to the `id` unique index on the table `nodes`,
+/// Access to the `key` unique index on the table `nodes`,
 /// which allows point queries on the field of the same name
-/// via the [`NodesIdUnique::find`] method.
+/// via the [`NodesKeyUnique::find`] method.
 ///
 /// Users are encouraged not to explicitly reference this type,
 /// but to directly chain method calls,
-/// like `ctx.db.nodes().id().find(...)`.
-pub struct NodesIdUnique<'ctx> {
-    imp: __sdk::client_cache::UniqueConstraint<Nodes, u64>,
+/// like `ctx.db.nodes().key().find(...)`.
+pub struct NodesKeyUnique<'ctx> {
+    imp: __sdk::client_cache::UniqueConstraint<Nodes, String>,
     phantom: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
 impl<'ctx> NodesTableHandle<'ctx> {
-    /// Get a handle on the `id` unique index on the table `nodes`.
-    pub fn id(&self) -> NodesIdUnique<'ctx> {
-        NodesIdUnique {
-            imp: self.imp.get_unique_constraint::<u64>("id", |row| &row.id),
+    /// Get a handle on the `key` unique index on the table `nodes`.
+    pub fn key(&self) -> NodesKeyUnique<'ctx> {
+        NodesKeyUnique {
+            imp: self
+                .imp
+                .get_unique_constraint::<String>("key", |row| &row.key),
             phantom: std::marker::PhantomData,
         }
     }
 }
 
-impl<'ctx> NodesIdUnique<'ctx> {
-    /// Find the subscribed row whose `id` column value is equal to `col_val`,
+impl<'ctx> NodesKeyUnique<'ctx> {
+    /// Find the subscribed row whose `key` column value is equal to `col_val`,
     /// if such a row is present in the client cache.
-    pub fn find(&self, col_val: &u64) -> Option<Nodes> {
+    pub fn find(&self, col_val: &String) -> Option<Nodes> {
         self.imp.find(col_val)
     }
 }

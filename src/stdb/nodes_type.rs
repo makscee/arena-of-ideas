@@ -11,10 +11,11 @@ use spacetimedb_sdk::{
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct Nodes {
+    pub key: String,
     pub id: u64,
+    pub kind: String,
     pub parent: u64,
     pub data: String,
-    pub kind: String,
 }
 
 impl __sdk::spacetime_module::InModule for Nodes {

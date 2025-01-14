@@ -3,6 +3,9 @@ name = "utils"
 version.workspace = true
 edition.workspace = true
 
+[features]
+server = []
+
 [dependencies]
 chrono = { workspace = true }
 serde = { workspace = true }
@@ -10,3 +13,4 @@ strum = { workspace = true }
 strum_macros = { workspace = true }
 itertools = { workspace = true }
 humanize-duration = { workspace = true }
+spacetimedb = { workspace = true }

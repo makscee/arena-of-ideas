@@ -570,7 +570,7 @@ impl DataFramed for PainterAction {
         }
     }
     fn show_header(&self, _: &Context, _: &mut Ui) {}
-    fn show_header_mut(&mut self, ui: &mut Ui) -> bool {
+    fn show_header_mut(&mut self, _: &mut Ui) -> bool {
         false
     }
     fn show_body(&self, context: &Context, ui: &mut Ui) {

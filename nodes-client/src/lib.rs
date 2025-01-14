@@ -28,7 +28,7 @@ use bevy::{
     color::{Color, Mix},
     ecs::system::SystemParam,
     log::*,
-    math::{vec2, Vec2},
+    math::vec2,
     prelude::{
         App, BuildChildren, Children, Commands, Component, Entity, Mut, Parent, Query,
         TransformBundle, VisibilityBundle, World,

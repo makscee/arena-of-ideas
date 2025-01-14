@@ -25,11 +25,13 @@ pub mod init_reducer;
 pub mod login_by_identity_reducer;
 pub mod login_reducer;
 pub mod logout_reducer;
+pub mod node_move_reducer;
+pub mod node_spawn_hero_reducer;
+pub mod node_spawn_reducer;
 pub mod nodes_table;
 pub mod nodes_type;
 pub mod player_table;
 pub mod player_tag_table;
-pub mod r_spawn_reducer;
 pub mod register_empty_reducer;
 pub mod register_reducer;
 pub mod set_name_reducer;
@@ -56,11 +58,13 @@ pub use init_reducer::*;
 pub use login_by_identity_reducer::*;
 pub use login_reducer::*;
 pub use logout_reducer::*;
+pub use node_move_reducer::*;
+pub use node_spawn_hero_reducer::*;
+pub use node_spawn_reducer::*;
 pub use nodes_table::*;
 pub use nodes_type::*;
 pub use player_table::*;
 pub use player_tag_table::*;
-pub use r_spawn_reducer::*;
 pub use register_empty_reducer::*;
 pub use register_reducer::*;
 pub use set_name_reducer::*;
@@ -90,7 +94,9 @@ pub enum Reducer {
     Login(login_reducer::Login),
     LoginByIdentity(login_by_identity_reducer::LoginByIdentity),
     Logout(logout_reducer::Logout),
-    RSpawn(r_spawn_reducer::RSpawn),
+    NodeMove(node_move_reducer::NodeMove),
+    NodeSpawn(node_spawn_reducer::NodeSpawn),
+    NodeSpawnHero(node_spawn_hero_reducer::NodeSpawnHero),
     Register(register_reducer::Register),
     RegisterEmpty(register_empty_reducer::RegisterEmpty),
     SetName(set_name_reducer::SetName),
@@ -115,7 +121,9 @@ impl __sdk::spacetime_module::Reducer for Reducer {
             Reducer::Login(_) => "login",
             Reducer::LoginByIdentity(_) => "login_by_identity",
             Reducer::Logout(_) => "logout",
-            Reducer::RSpawn(_) => "r_spawn",
+            Reducer::NodeMove(_) => "node_move",
+            Reducer::NodeSpawn(_) => "node_spawn",
+            Reducer::NodeSpawnHero(_) => "node_spawn_hero",
             Reducer::Register(_) => "register",
             Reducer::RegisterEmpty(_) => "register_empty",
             Reducer::SetName(_) => "set_name",
@@ -135,7 +143,9 @@ impl __sdk::spacetime_module::Reducer for Reducer {
             Reducer::Login(args) => args,
             Reducer::LoginByIdentity(args) => args,
             Reducer::Logout(args) => args,
-            Reducer::RSpawn(args) => args,
+            Reducer::NodeMove(args) => args,
+            Reducer::NodeSpawn(args) => args,
+            Reducer::NodeSpawnHero(args) => args,
             Reducer::Register(args) => args,
             Reducer::RegisterEmpty(args) => args,
             Reducer::SetName(args) => args,
@@ -185,8 +195,14 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
             "logout" => Ok(Reducer::Logout(
                 __sdk::spacetime_module::parse_reducer_args("logout", &value.args)?,
             )),
-            "r_spawn" => Ok(Reducer::RSpawn(
-                __sdk::spacetime_module::parse_reducer_args("r_spawn", &value.args)?,
+            "node_move" => Ok(Reducer::NodeMove(
+                __sdk::spacetime_module::parse_reducer_args("node_move", &value.args)?,
+            )),
+            "node_spawn" => Ok(Reducer::NodeSpawn(
+                __sdk::spacetime_module::parse_reducer_args("node_spawn", &value.args)?,
+            )),
+            "node_spawn_hero" => Ok(Reducer::NodeSpawnHero(
+                __sdk::spacetime_module::parse_reducer_args("node_spawn_hero", &value.args)?,
             )),
             "register" => Ok(Reducer::Register(
                 __sdk::spacetime_module::parse_reducer_args("register", &value.args)?,

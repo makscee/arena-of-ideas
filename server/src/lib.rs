@@ -9,6 +9,7 @@ pub mod wallet;
 
 use std::str::FromStr;
 
+use glam::vec2;
 use global_data::*;
 use global_settings::*;
 use inflating_number::*;

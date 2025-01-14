@@ -1,4 +1,4 @@
-use spacetimedb_sdk::DbContext;
+use spacetimedb_sdk::{DbContext, TableWithPrimaryKey};
 
 use super::*;
 
@@ -17,10 +17,37 @@ pub fn db_subscriptions() {
     let db = cn().db();
     db.nodes().on_insert(|_, row| {
         let kind = NodeKind::from_str(&row.kind).unwrap();
-        info!("Node insert {kind}");
+        let id = row.id;
+        info!("Node inserted {kind}");
         let data = row.data.clone();
         OperationsPlugin::add(move |world| {
-            kind.unpack(world.spawn_empty().id(), &data, &mut world.commands());
+            let entity = if let Some(entity) = nid_entity(id) {
+                entity
+            } else {
+                let entity = world.spawn_empty().id();
+                entity_nid_link(entity, id);
+                entity
+            };
+            kind.unpack(entity, &data, &mut world.commands());
+        });
+    });
+    db.nodes().on_update(|_, _before, row| {
+        let kind = NodeKind::from_str(&row.kind).unwrap();
+        let id = row.id;
+        info!("Node updated {kind}");
+        let data = row.data.clone();
+        OperationsPlugin::add(move |world| {
+            let Some(entity) = nid_entity(id) else {
+                return;
+            };
+            match kind {
+                NodeKind::Mover => {
+                    let mut mover = Mover::default();
+                    mover.inject_data(&data);
+                    world.entity_mut(entity).insert(mover);
+                }
+                _ => {}
+            }
         });
     });
 }

@@ -1,4 +1,5 @@
 use humanize_duration::prelude::DurationExt;
+use spacetimedb::Timestamp;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use chrono::Utc;
@@ -12,7 +13,11 @@ pub fn now_micros() -> i64 {
     Utc::now().timestamp_micros()
 }
 pub fn now_seconds() -> f64 {
-    Utc::now().timestamp_millis() as f64 / 1000.0
+    if cfg!(feature = "server") {
+        Timestamp::now().into_micros_since_epoch() as f64 / 1000000.0
+    } else {
+        Utc::now().timestamp_millis() as f64 / 1000.0
+    }
 }
 
 pub fn smoothstep(edge0: f32, edge1: f32, x: f32) -> f32 {
