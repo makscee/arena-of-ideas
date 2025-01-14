@@ -70,7 +70,7 @@ impl<'w, 's> Context<'w, 's> {
             .iter()
             .rev()
             .find_map(|l| l.get_var(var, &self.sources, self.t))
-            .to_e(var)
+            .to_e_var(var)
     }
     pub fn get_children(&self, entity: Entity) -> Vec<Entity> {
         for s in self.sources.iter().rev() {

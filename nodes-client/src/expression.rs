@@ -16,8 +16,8 @@ impl ExpressionImpl for Expression {
         match self {
             Expression::One => Ok(1.into()),
             Expression::Zero => Ok(0.into()),
-            Expression::Owner => Ok(context.get_owner().to_e(VarName::none)?.to_value()),
-            Expression::Target => Ok(context.get_target().to_e(VarName::none)?.to_value()),
+            Expression::Owner => Ok(context.get_owner().to_e_var(VarName::none)?.to_value()),
+            Expression::Target => Ok(context.get_target().to_e_var(VarName::none)?.to_value()),
             Expression::Var(var) => {
                 let v = context.get_var(*var);
                 if v.is_err() && *var == VarName::index {

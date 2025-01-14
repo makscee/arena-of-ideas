@@ -1,5 +1,6 @@
 use bcrypt_no_getrandom::{hash_with_salt, verify};
 use rand::RngCore;
+use schema::OptionExpressionError;
 use spacetimedb::Timestamp;
 
 use super::*;
@@ -57,7 +58,7 @@ fn login(ctx: &ReducerContext, name: String, pass: String) -> Result<(), String>
         .player()
         .name()
         .find(&name)
-        .context_str("Wrong name or password")?;
+        .to_e_s("player not found")?;
     if player.pass_hash.is_none() {
         return Err("No password set for player".to_owned());
     }
@@ -175,7 +176,7 @@ impl TPlayer {
             .player()
             .iter()
             .find(|u| u.identities.contains(identity))
-            .context_str("Player not found")
+            .to_e_s("Player not found")
     }
     fn login(mut self, ctx: &ReducerContext) {
         self.online = true;
@@ -216,12 +217,7 @@ impl GetPlayer for ReducerContext {
 #[spacetimedb::reducer]
 fn admin_set_temp_pass(ctx: &ReducerContext, id: u64) -> Result<(), String> {
     ctx.is_admin()?;
-    let player = ctx
-        .db
-        .player()
-        .id()
-        .find(id)
-        .context_str("Player not found")?;
+    let player = ctx.db.player().id().find(id).to_e_s("Player not found")?;
     let pass: String = ctx
         .rng()
         .sample_iter(&Alphanumeric)

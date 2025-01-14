@@ -2,13 +2,13 @@ pub mod daily_updater;
 pub mod global_data;
 pub mod global_settings;
 pub mod inflating_number;
+mod nodes;
 pub mod player;
 pub mod player_tag;
 pub mod wallet;
 
 use std::str::FromStr;
 
-use anyhow::Context;
 pub use global_data::*;
 pub use global_settings::*;
 pub use inflating_number::*;
@@ -17,41 +17,14 @@ use nodes_server::{House, Node};
 pub use player::*;
 pub use player_tag::*;
 use rand::{distributions::Alphanumeric, seq::IteratorRandom, Rng};
+use schema::ExpressionError;
 use spacetimedb::{
     eprintln, println, reducer, table, Identity, ReducerContext, SpacetimeType, Table, Timestamp,
 };
 pub use wallet::*;
 
-trait StrContext<T> {
-    fn context_str(self, str: &'static str) -> Result<T, String>;
-    fn with_context_str<F>(self, f: F) -> Result<T, String>
-    where
-        F: FnOnce() -> String;
-}
-
-impl<T> StrContext<T> for Option<T> {
-    fn context_str(self, str: &'static str) -> Result<T, String> {
-        self.context(str).map_err(|e| e.to_string())
-    }
-
-    fn with_context_str<F>(self, f: F) -> Result<T, String>
-    where
-        F: FnOnce() -> String,
-    {
-        self.with_context(f).map_err(|e| e.to_string())
-    }
-}
-
 pub fn next_id(ctx: &ReducerContext) -> u64 {
     GlobalData::next_id(ctx)
-}
-
-#[derive(SpacetimeType, Clone, Copy, Default, PartialEq, Eq, Hash)]
-pub enum GameMode {
-    #[default]
-    ArenaNormal = 0,
-    ArenaRanked = 1,
-    ArenaConst = 2,
 }
 
 const ADMIN_IDENTITY_HEX: &str = "c2000d3d36c3162dd302f78b29d2e3b78af2e0d9310cbe8fe9d75af5e9c393d0";
@@ -75,13 +48,13 @@ impl AdminCheck for &ReducerContext {
     }
 }
 
-#[spacetimedb::reducer(init)]
+#[reducer(init)]
 fn init(ctx: &ReducerContext) -> Result<(), String> {
     GlobalData::init(ctx);
     Ok(())
 }
 
-#[spacetimedb::reducer]
+#[reducer]
 fn cleanup(ctx: &ReducerContext) -> Result<(), String> {
     ctx.is_admin()?;
     TPlayer::cleanup(ctx);

@@ -27,7 +27,7 @@ impl TWallet {
             .wallet()
             .owner()
             .find(owner)
-            .context_str("Wallet not found")
+            .to_e_s("Wallet not found")
     }
     pub fn save(self, ctx: &ReducerContext) {
         ctx.db.wallet().owner().update(self);

@@ -19,11 +19,25 @@ pub enum ExpressionError {
 }
 
 pub trait OptionExpressionError<T> {
-    fn to_e(self, var: VarName) -> Result<T, ExpressionError>;
+    fn to_e(self, s: impl Into<String>) -> Result<T, ExpressionError>;
+    fn to_e_s(self, s: impl Into<String>) -> Result<T, String>;
+    fn to_e_var(self, var: VarName) -> Result<T, ExpressionError>;
 }
 
 impl<T> OptionExpressionError<T> for Option<T> {
-    fn to_e(self, var: VarName) -> Result<T, ExpressionError> {
+    fn to_e(self, s: impl Into<String>) -> Result<T, ExpressionError> {
+        match self {
+            Some(v) => Ok(v),
+            None => Err(ExpressionError::Custom(s.into())),
+        }
+    }
+    fn to_e_s(self, s: impl Into<String>) -> Result<T, String> {
+        match self {
+            Some(v) => Ok(v),
+            None => Err(s.into()),
+        }
+    }
+    fn to_e_var(self, var: VarName) -> Result<T, ExpressionError> {
         match self {
             Some(v) => Ok(v),
             None => Err(ExpressionError::ValueNotFound(var)),
@@ -45,5 +59,11 @@ impl ExpressionError {
             op,
             msg: None,
         }
+    }
+}
+
+impl Into<String> for ExpressionError {
+    fn into(self) -> String {
+        self.to_string()
     }
 }
