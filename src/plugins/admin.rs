@@ -80,15 +80,19 @@ impl AdminPlugin {
         .push(world);
     }
     fn show_anim_editor(w: &mut World) {
-        let mut anim = Anim::default();
-        anim.push(AnimAction::Spawn(Box::new(Material(
-            [
-                Box::new(PainterAction::Rectangle(Box::new(Expression::V2(0.5, 0.3)))),
-                Box::new(PainterAction::Rotate(Box::new(Expression::Var(VarName::t)))),
-            ]
-            .into(),
-        ))));
-
+        let mut cs = client_state().clone();
+        if cs.edit_anim.is_none() {
+            let mut anim = Anim::default();
+            anim.push(AnimAction::Spawn(Box::new(Material(
+                [
+                    Box::new(PainterAction::Rectangle(Box::new(Expression::V2(0.5, 0.3)))),
+                    Box::new(PainterAction::Rotate(Box::new(Expression::Var(VarName::t)))),
+                ]
+                .into(),
+            ))));
+            cs.edit_anim = Some(anim);
+        }
+        let mut anim = cs.edit_anim.clone().unwrap();
         let mut t = 0.0;
         let mut world = World::new();
         fn respawn(anim: &Anim, world: &mut World) -> Result<f32, ExpressionError> {
@@ -96,7 +100,7 @@ impl AdminPlugin {
             anim.apply(&mut 0.0, Context::default().set_t(0.0).take(), world)
         }
         let mut end_t = respawn(&anim, &mut world).unwrap();
-        let mut size = 100.0;
+        let mut size = 300.0;
         Window::new("Anim Editor", move |ui, _| {
             let mut reload = false;
             ui.horizontal(|ui| {
@@ -137,6 +141,9 @@ impl AdminPlugin {
                         ui.vertical(|ui| {
                             if anim.show_mut(None, ui) {
                                 reload = true;
+                                let mut cs = client_state().clone();
+                                cs.edit_anim = Some(anim.clone());
+                                cs.save();
                             }
                         });
                     });
