@@ -22,6 +22,7 @@ pub enum AnimAction {
     AddTarget(Box<Expression>),
     Duration(Box<Expression>),
     Timeframe(Box<Expression>),
+    Wait(Box<Expression>),
     Spawn(Box<Material>),
     List(Vec<Box<Self>>),
 }
@@ -131,18 +132,10 @@ impl AnimAction {
                 );
                 a.targets = vec![entity];
                 end_t = *t + a.duration;
-            } // AnimAction::Var(var, value) => {
-              //     for target in &a.targets {
-              //         NodeState::from_world_mut(*target, world).unwrap().insert(
-              //             *t,
-              //             a.duration,
-              //             *var,
-              //             value.clone(),
-              //             NodeKind::None,
-              //         );
-              //     }
-              //     *t += a.timeframe;
-              // }
+            }
+            AnimAction::Wait(expression) => {
+                *t += expression.get_f32(&a.context)?;
+            }
         };
         Ok(end_t)
     }
@@ -181,6 +174,7 @@ impl Injector<Self> for AnimAction {
             | AnimAction::AddTarget(..)
             | AnimAction::Duration(..)
             | AnimAction::Timeframe(..)
+            | AnimAction::Wait(..)
             | AnimAction::Spawn(..) => default(),
             AnimAction::List(vec) => vec.into_iter().collect_vec(),
         }
@@ -192,6 +186,7 @@ impl Injector<Self> for AnimAction {
             | AnimAction::AddTarget(..)
             | AnimAction::Duration(..)
             | AnimAction::Timeframe(..)
+            | AnimAction::Wait(..)
             | AnimAction::Spawn(..) => default(),
             AnimAction::List(vec) => vec.into_iter().collect_vec(),
         }
@@ -204,6 +199,7 @@ impl Injector<Expression> for AnimAction {
             | AnimAction::SetTarget(x)
             | AnimAction::AddTarget(x)
             | AnimAction::Duration(x)
+            | AnimAction::Wait(x)
             | AnimAction::Timeframe(x) => [x].into(),
             AnimAction::List(..) | AnimAction::Spawn(..) => default(),
         }
@@ -214,6 +210,7 @@ impl Injector<Expression> for AnimAction {
             | AnimAction::SetTarget(x)
             | AnimAction::AddTarget(x)
             | AnimAction::Duration(x)
+            | AnimAction::Wait(x)
             | AnimAction::Timeframe(x) => [x].into(),
             AnimAction::List(..) | AnimAction::Spawn(..) => default(),
         }
@@ -253,6 +250,7 @@ impl DataFramed for AnimAction {
             | AnimAction::AddTarget(..)
             | AnimAction::Duration(..)
             | AnimAction::Timeframe(..)
+            | AnimAction::Wait(..)
             | AnimAction::Spawn(..)
             | AnimAction::List(..) => false,
         }
@@ -264,6 +262,7 @@ impl DataFramed for AnimAction {
             | AnimAction::AddTarget(..)
             | AnimAction::Duration(..)
             | AnimAction::Timeframe(..)
+            | AnimAction::Wait(..)
             | AnimAction::Spawn(..)
             | AnimAction::List(..) => true,
         }
@@ -278,6 +277,7 @@ impl DataFramed for AnimAction {
             | AnimAction::SetTarget(x)
             | AnimAction::AddTarget(x)
             | AnimAction::Duration(x)
+            | AnimAction::Wait(x)
             | AnimAction::Timeframe(x) => x.show(Some("x:"), context, ui),
             AnimAction::Spawn(m) => m.show(Some("material:"), context, ui),
             AnimAction::List(vec) => vec.show(Some("list:"), context, ui),
@@ -289,6 +289,7 @@ impl DataFramed for AnimAction {
             | AnimAction::SetTarget(x)
             | AnimAction::AddTarget(x)
             | AnimAction::Duration(x)
+            | AnimAction::Wait(x)
             | AnimAction::Timeframe(x) => x.show_mut(Some("x:"), ui),
             AnimAction::Spawn(m) => m.show_mut(Some("material:"), ui),
             AnimAction::List(vec) => vec.show_mut(Some("list:"), ui),

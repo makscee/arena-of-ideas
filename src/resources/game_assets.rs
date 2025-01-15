@@ -15,7 +15,7 @@ pub fn global_settings_local() -> &'static GlobalSettings {
 
 pub fn parse_content_tree() {
     let mut houses: HashMap<String, House> = default();
-    const CONTENT_DIR: Dir = include_dir!("./assets/ron/modular/");
+    const CONTENT_DIR: Dir = include_dir!("./assets/ron/");
     const GLOBAL_SETTINGS_STR: &str = include_str!("../.././assets/ron/_.global_settings.ron");
 
     GLOBAL_SETTINGS
@@ -26,7 +26,7 @@ pub fn parse_content_tree() {
         )
         .unwrap();
 
-    for dir in include_dir!("./assets/ron/modular/")
+    for dir in include_dir!("./assets/ron/")
         .get_dir("houses")
         .unwrap()
         .dirs()

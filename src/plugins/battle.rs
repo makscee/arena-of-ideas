@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{collections::VecDeque, fmt::Display};
 
 use assets::animations;
 use bevy::{ecs::system::RunSystemOnce, prelude::Without};
@@ -34,6 +34,7 @@ pub enum BattleAction {
     Damage(Entity, Entity, i32),
     Death(Entity),
     Spawn(Entity),
+    Wait(f32),
 }
 #[derive(Component)]
 struct Corpse;
@@ -103,10 +104,13 @@ impl BattleAction {
                 )]);
                 true
             }
+            BattleAction::Wait(t) => {
+                battle.t += *t;
+                false
+            }
         };
         if applied {
             info!("{} {self}", "+".green().dimmed());
-            battle.t += ANIMATION;
             battle.log.actions.push(self.clone());
         } else {
             info!("{} {self}", "-".dimmed());
@@ -158,8 +162,8 @@ impl BattleSimulation {
         anim.apply(&mut self.t, context, &mut self.world)?;
         Ok(())
     }
-    fn process_actions(&mut self, mut actions: Vec<BattleAction>) {
-        while let Some(a) = actions.pop() {
+    fn process_actions(&mut self, mut actions: VecDeque<BattleAction>) {
+        while let Some(a) = actions.pop_front() {
             actions.extend(a.apply(self));
         }
     }
@@ -176,7 +180,7 @@ impl BattleSimulation {
                     vec![BattleAction::Spawn(*e)]
                 }
             })
-            .collect_vec();
+            .collect();
         self.process_actions(spawn_actions);
         self.process_actions(self.slots_sync());
         while !self.left.is_empty() && !self.right.is_empty() {
@@ -188,15 +192,15 @@ impl BattleSimulation {
         }
         self
     }
-    fn death_check(&mut self) -> Vec<BattleAction> {
-        let mut actions: Vec<BattleAction> = default();
+    fn death_check(&mut self) -> VecDeque<BattleAction> {
+        let mut actions: VecDeque<BattleAction> = default();
         for (entity, stats) in self
             .world
             .query_filtered::<(Entity, &UnitStats), Without<Corpse>>()
             .iter(&self.world)
         {
             if stats.hp <= 0 {
-                actions.push(BattleAction::Death(entity));
+                actions.push_back(BattleAction::Death(entity));
             }
         }
         actions
@@ -213,19 +217,17 @@ impl BattleSimulation {
             died = true;
         }
         if died {
-            [BattleAction::VarSet(
-                entity,
-                NodeKind::None,
-                VarName::visible,
-                false.into(),
-            )]
+            [
+                BattleAction::VarSet(entity, NodeKind::None, VarName::visible, false.into()),
+                BattleAction::Wait(ANIMATION),
+            ]
             .into()
         } else {
             default()
         }
     }
-    fn slots_sync(&self) -> Vec<BattleAction> {
-        let mut actions = Vec::default();
+    fn slots_sync(&self) -> VecDeque<BattleAction> {
+        let mut actions = VecDeque::default();
         for (i, (e, side)) in self
             .left
             .iter()
@@ -233,26 +235,27 @@ impl BattleSimulation {
             .enumerate()
             .chain(self.right.iter().map(|e| (e, false)).enumerate())
         {
-            actions.push(BattleAction::VarSet(
+            actions.push_back(BattleAction::VarSet(
                 *e,
                 NodeKind::None,
                 VarName::slot,
                 i.into(),
             ));
-            actions.push(BattleAction::VarSet(
+            actions.push_back(BattleAction::VarSet(
                 *e,
                 NodeKind::None,
                 VarName::side,
                 side.into(),
             ));
             let position = vec2((i + 1) as f32 * if side { -1.0 } else { 1.0 } * 2.0, 0.0);
-            actions.push(BattleAction::VarSet(
+            actions.push_back(BattleAction::VarSet(
                 *e,
                 NodeKind::None,
                 VarName::position,
                 position.into(),
             ));
         }
+        actions.push_back(BattleAction::Wait(ANIMATION * 3.0));
         actions
     }
     fn slot_rect(i: usize, side: bool, full_rect: Rect, team_slots: usize) -> Rect {
@@ -328,6 +331,7 @@ impl ToCstr for BattleAction {
             BattleAction::Death(a) => format!("x{a}"),
             BattleAction::VarSet(a, _, var, value) => format!("{a}>${var}>{value}"),
             BattleAction::Spawn(a) => format!("*{a}"),
+            BattleAction::Wait(t) => format!("~{t}"),
         }
     }
 }
