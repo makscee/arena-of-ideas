@@ -1,5 +1,2 @@
 #![enable(implicit_some)]
-(
-    always_zero: 0,
-    hero_speed: 10.0,
-)
+(always_zero: 0, hero_speed: 10.0)

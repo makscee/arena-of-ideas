@@ -70,6 +70,8 @@ tween = "2.0.1"
 arboard = "3.4.1"
 log = "0.4.19"
 glam = { version = "0.27.0", features = ["serde"] }
+rand = "0.8.5"
+rand_chacha = "0.3.1"
 
 [dependencies]
 ui = { path = "ui" }
@@ -98,6 +100,8 @@ chrono = { workspace = true }
 egui_extras = { workspace = true }
 log = { workspace = true }
 glam = { workspace = true }
+rand = { workspace = true }
+rand_chacha = { workspace = true }
 
 spacetimedb-sdk = "=1.0.0-rc1"
 spacetimedb-sats = "=1.0.0-rc1"
@@ -109,8 +113,6 @@ bevy_asset_loader = { version = "0.21.0", features = [
 bevy_common_assets = { version = "0.11.0", features = ["ron"] }
 serde_json = "1.0.104"
 anyhow = "1.0.75"
-rand = "0.8.5"
-rand_chacha = "0.3.1"
 clap = { version = "4.4.5", features = ["derive"] }
 hex = "0.4.3"
 home = "0.5.5"

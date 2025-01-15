@@ -1,3 +1,5 @@
+use std::f32::consts::PI;
+
 use super::*;
 
 pub trait ExpressionImpl {
@@ -16,6 +18,8 @@ impl ExpressionImpl for Expression {
         match self {
             Expression::One => Ok(1.into()),
             Expression::Zero => Ok(0.into()),
+            Expression::PI => Ok(PI.into()),
+            Expression::PI2 => Ok((PI * 2.0).into()),
             Expression::Owner => Ok(context.get_owner().to_e_var(VarName::none)?.to_value()),
             Expression::Target => Ok(context.get_target().to_e_var(VarName::none)?.to_value()),
             Expression::Var(var) => {
@@ -52,6 +56,18 @@ impl ExpressionImpl for Expression {
                 let x = x.get_f32(context)?;
                 (x * x).into()
             }),
+            Expression::UnitVec(x) => {
+                let x = x.get_f32(context)?;
+                let x = vec2(x.cos(), x.sin());
+                Ok(x.into())
+            }
+            Expression::Rand(x) => {
+                let x = x.get_value(context)?;
+                let mut hasher = DefaultHasher::new();
+                x.hash(&mut hasher);
+                let mut rng = ChaCha8Rng::seed_from_u64(hasher.finish());
+                Ok(rng.gen_range(0.0..1.0).into())
+            }
             Expression::Macro(s, v) => {
                 let s = s.get_string(context)?;
                 let v = v.get_string(context)?;

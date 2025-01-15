@@ -55,6 +55,11 @@ impl BattleAction {
                     Ok(_) => {}
                     Err(e) => error!("Animation error: {e}"),
                 }
+                let strike_vfx = animations().get("strike_vfx").unwrap();
+                match battle.apply_animation(Context::default(), strike_vfx) {
+                    Ok(_) => {}
+                    Err(e) => error!("Animation error: {e}"),
+                }
                 let pwr = battle.world.get::<UnitStats>(*a).unwrap().pwr;
                 let action_a = Self::Damage(*a, *b, pwr);
                 let pwr = battle.world.get::<UnitStats>(*b).unwrap().pwr;

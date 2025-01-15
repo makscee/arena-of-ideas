@@ -79,6 +79,7 @@ impl VarValue {
         match self {
             VarValue::Vec2(v) => Ok(*v),
             VarValue::f32(v) => Ok(vec2(*v, *v)),
+            VarValue::i32(v) => Ok(vec2(*v as f32, *v as f32)),
             _ => Err(ExpressionError::not_supported_single(
                 "Cast to Vec2",
                 self.clone(),

@@ -1,0 +1,35 @@
+[
+    Spawn(
+        (
+            [
+                Color(C("#a70101ab")),
+                Alpha(Sub(F(4.0), Mul(Var(t), F(4.0)))),
+                Repeat(
+                    I(30),
+                    List(
+                        [
+                            Circle(F(0.2)),
+                            Scale(Mul(Var(t), F(1.0))),
+                            Translate(
+                                Mul(
+                                    UnitVec(Mul(Rand(Var(index)), PI2)),
+                                    Min(
+                                        Mul(
+                                            Var(t),
+                                            Sum(
+                                                Rand(Sub(Var(index), F(10.0))),
+                                                One,
+                                            ),
+                                        ),
+                                        F(0.9),
+                                    ),
+                                ),
+                            ),
+                            Paint,
+                        ],
+                    ),
+                ),
+            ],
+        ),
+    ),
+]

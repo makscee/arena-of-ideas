@@ -424,6 +424,8 @@ impl ToCstr for Expression {
         let inner = match self {
             Expression::One
             | Expression::Zero
+            | Expression::PI
+            | Expression::PI2
             | Expression::GT
             | Expression::UnitSize
             | Expression::Owner
@@ -446,6 +448,8 @@ impl ToCstr for Expression {
             | Expression::Floor(x)
             | Expression::Ceil(x)
             | Expression::Fract(x)
+            | Expression::UnitVec(x)
+            | Expression::Rand(x)
             | Expression::Sqr(x) => x.cstr(),
             Expression::Macro(a, b)
             | Expression::V2EE(a, b)

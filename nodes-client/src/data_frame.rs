@@ -1,8 +1,5 @@
 use std::fmt::Debug;
 
-use egui::color_picker::{color_edit_button_hsva, color_picker_hsva_2d};
-use epaint::Hsva;
-
 use super::*;
 
 pub struct DataFrameMut<'a, T> {
@@ -375,6 +372,8 @@ impl DataFramed for Expression {
             | Expression::C(_) => true,
             Expression::One
             | Expression::Zero
+            | Expression::PI
+            | Expression::PI2
             | Expression::GT
             | Expression::Owner
             | Expression::Target
@@ -386,6 +385,8 @@ impl DataFramed for Expression {
             | Expression::Floor(..)
             | Expression::Ceil(..)
             | Expression::Fract(..)
+            | Expression::UnitVec(..)
+            | Expression::Rand(..)
             | Expression::Sqr(..)
             | Expression::V2EE(..)
             | Expression::Macro(..)
@@ -408,6 +409,8 @@ impl DataFramed for Expression {
         match self {
             Expression::One
             | Expression::Zero
+            | Expression::PI
+            | Expression::PI2
             | Expression::GT
             | Expression::Owner
             | Expression::Target
@@ -427,6 +430,8 @@ impl DataFramed for Expression {
             | Expression::Floor(..)
             | Expression::Ceil(..)
             | Expression::Fract(..)
+            | Expression::UnitVec(..)
+            | Expression::Rand(..)
             | Expression::Sqr(..)
             | Expression::V2EE(..)
             | Expression::Macro(..)
@@ -471,7 +476,8 @@ impl DataFramed for Expression {
             Expression::B(v) => v.show_mut(Some("x:"), ui),
             Expression::C(v) => match Color32::from_hex(v) {
                 Ok(mut c) => {
-                    let changed = c.show_mut(Some("c:"), ui);
+                    v.cstr_cs(c, CstrStyle::Bold).label(ui);
+                    let changed = c.show_mut(None, ui);
                     if changed {
                         *v = c.to_hex();
                     }
@@ -479,7 +485,8 @@ impl DataFramed for Expression {
                 }
                 Err(e) => {
                     error!("Hex color parse error: {e:?}");
-                    false
+                    *v = "#ffffff".into();
+                    true
                 }
             },
             Expression::V2(x, y) => {
@@ -498,6 +505,8 @@ impl DataFramed for Expression {
             | Expression::Floor(x)
             | Expression::Ceil(x)
             | Expression::Fract(x)
+            | Expression::UnitVec(x)
+            | Expression::Rand(x)
             | Expression::Sqr(x) => x.show(Some("x:"), &context, ui),
             Expression::V2EE(a, b)
             | Expression::Macro(a, b)
@@ -533,6 +542,8 @@ impl DataFramed for Expression {
             | Expression::Floor(x)
             | Expression::Ceil(x)
             | Expression::Fract(x)
+            | Expression::UnitVec(x)
+            | Expression::Rand(x)
             | Expression::Sqr(x) => x.show_mut(Some("x:"), ui),
             Expression::V2EE(a, b)
             | Expression::Macro(a, b)
