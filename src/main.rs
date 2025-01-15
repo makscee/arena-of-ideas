@@ -102,6 +102,7 @@ fn main() {
             WindowPlugin,
             BackgroundPlugin,
             HeroPlugin,
+            StdbSyncPlugin,
         ))
         .add_plugins((
             OperationsPlugin,

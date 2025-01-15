@@ -50,4 +50,10 @@ pub fn db_subscriptions() {
             }
         });
     });
+
+    cn().reducers.on_sync_assets(|e, _| {
+        e.event.notify_error();
+        info!("{}", "Assets sync done".blue());
+        app_exit_op();
+    });
 }

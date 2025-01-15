@@ -1,11 +1,12 @@
-pub mod daily_updater;
-pub mod global_data;
-pub mod global_settings;
-pub mod inflating_number;
+mod daily_updater;
+mod global_data;
+mod global_settings;
+mod inflating_number;
 mod nodes;
-pub mod player;
-pub mod player_tag;
-pub mod wallet;
+mod player;
+mod player_tag;
+mod sync;
+mod wallet;
 
 use std::str::FromStr;
 

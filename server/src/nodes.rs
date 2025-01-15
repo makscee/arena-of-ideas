@@ -90,8 +90,7 @@ fn node_move(ctx: &ReducerContext, id: u64, x: f32, y: f32) -> Result<(), String
         .data;
     let mut mover = Mover::default();
     mover.inject_data(&data);
-    // mover.from = mover.pos(GlobalSettings::get(ctx).hero_speed);
-    mover.from = mover.pos(10.0);
+    mover.from = mover.pos(GlobalSettings::get(ctx).hero_speed);
     mover.start_ts = now_seconds();
     mover.target = vec2(x, y);
     mover.update(ctx, id);

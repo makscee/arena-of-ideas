@@ -36,6 +36,7 @@ pub mod register_empty_reducer;
 pub mod register_reducer;
 pub mod set_name_reducer;
 pub mod set_password_reducer;
+pub mod sync_assets_reducer;
 pub mod t_player_tag_type;
 pub mod t_player_type;
 pub mod t_wallet_type;
@@ -69,6 +70,7 @@ pub use register_empty_reducer::*;
 pub use register_reducer::*;
 pub use set_name_reducer::*;
 pub use set_password_reducer::*;
+pub use sync_assets_reducer::*;
 pub use t_player_tag_type::*;
 pub use t_player_type::*;
 pub use t_wallet_type::*;
@@ -101,6 +103,7 @@ pub enum Reducer {
     RegisterEmpty(register_empty_reducer::RegisterEmpty),
     SetName(set_name_reducer::SetName),
     SetPassword(set_password_reducer::SetPassword),
+    SyncAssets(sync_assets_reducer::SyncAssets),
 }
 
 impl __sdk::spacetime_module::InModule for Reducer {
@@ -128,6 +131,7 @@ impl __sdk::spacetime_module::Reducer for Reducer {
             Reducer::RegisterEmpty(_) => "register_empty",
             Reducer::SetName(_) => "set_name",
             Reducer::SetPassword(_) => "set_password",
+            Reducer::SyncAssets(_) => "sync_assets",
         }
     }
     fn reducer_args(&self) -> &dyn std::any::Any {
@@ -150,6 +154,7 @@ impl __sdk::spacetime_module::Reducer for Reducer {
             Reducer::RegisterEmpty(args) => args,
             Reducer::SetName(args) => args,
             Reducer::SetPassword(args) => args,
+            Reducer::SyncAssets(args) => args,
         }
     }
 }
@@ -215,6 +220,9 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
             )),
             "set_password" => Ok(Reducer::SetPassword(
                 __sdk::spacetime_module::parse_reducer_args("set_password", &value.args)?,
+            )),
+            "sync_assets" => Ok(Reducer::SyncAssets(
+                __sdk::spacetime_module::parse_reducer_args("sync_assets", &value.args)?,
             )),
             _ => Err(__anyhow::anyhow!(
                 "Unknown reducer {:?}",
