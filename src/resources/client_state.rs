@@ -4,6 +4,7 @@ use super::*;
 pub struct ClientState {
     pub last_played_mode: Option<u64>,
     pub last_played_team: Option<u64>,
+    pub edit_anim: Option<Anim>,
 }
 
 static CLIENT_STATE: OnceCell<RwLock<ClientState>> = OnceCell::new();

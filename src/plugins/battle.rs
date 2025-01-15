@@ -8,7 +8,7 @@ use super::*;
 
 pub struct BattlePlugin;
 
-const ANIMATION: f32 = 0.1;
+const ANIMATION: f32 = 0.2;
 
 pub struct Battle {
     pub left: Vec<Unit>,

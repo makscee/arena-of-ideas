@@ -9,7 +9,6 @@ mod nodes;
 mod painter;
 mod show;
 mod tween;
-mod vfx;
 
 pub use anim::*;
 pub use context::*;
@@ -22,7 +21,6 @@ pub use painter::*;
 pub use schema::*;
 pub use show::*;
 pub use tween::*;
-pub use vfx::*;
 
 use bevy::{
     color::{Color, Mix},

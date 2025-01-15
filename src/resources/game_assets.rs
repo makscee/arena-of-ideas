@@ -43,7 +43,7 @@ pub fn parse_content_tree() {
         .set(Representation::from_dir("hero_rep".to_owned(), &CONTENT_DIR).unwrap())
         .unwrap();
     let mut animations = HashMap::default();
-    for f in CONTENT_DIR.get_dir("animations").unwrap().files() {
+    for f in CONTENT_DIR.get_dir("animation").unwrap().files() {
         let a: Vec<AnimAction> = ron::from_str(f.contents_utf8().unwrap()).unwrap();
         animations.insert(
             f.path()

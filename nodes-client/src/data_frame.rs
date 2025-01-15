@@ -1,5 +1,8 @@
 use std::fmt::Debug;
 
+use egui::color_picker::{color_edit_button_hsva, color_picker_hsva_2d};
+use epaint::Hsva;
+
 use super::*;
 
 pub struct DataFrameMut<'a, T> {
@@ -466,7 +469,19 @@ impl DataFramed for Expression {
             Expression::F(v) => v.show_mut(Some("x:"), ui),
             Expression::I(v) => v.show_mut(Some("x:"), ui),
             Expression::B(v) => v.show_mut(Some("x:"), ui),
-            Expression::C(v) => v.show_mut(Some("c:"), ui),
+            Expression::C(v) => match Color32::from_hex(v) {
+                Ok(mut c) => {
+                    let changed = c.show_mut(Some("c:"), ui);
+                    if changed {
+                        *v = c.to_hex();
+                    }
+                    changed
+                }
+                Err(e) => {
+                    error!("Hex color parse error: {e:?}");
+                    false
+                }
+            },
             Expression::V2(x, y) => {
                 let x = x.show_mut(Some("x:"), ui);
                 y.show_mut(Some("y:"), ui) || x

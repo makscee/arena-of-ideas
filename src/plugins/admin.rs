@@ -79,11 +79,9 @@ impl AdminPlugin {
         })
         .push(world);
     }
-    fn show_vfx_editor(w: &mut World) {
-        let mut vfx = Vfx::default();
-        vfx.duration = 1.0;
-        vfx.timeframe = 1.0;
-        vfx.anim.push(AnimAction::Spawn(Box::new(Material(
+    fn show_anim_editor(w: &mut World) {
+        let mut anim = Anim::default();
+        anim.push(AnimAction::Spawn(Box::new(Material(
             [
                 Box::new(PainterAction::Rectangle(Box::new(Expression::V2(0.5, 0.3)))),
                 Box::new(PainterAction::Rotate(Box::new(Expression::Var(VarName::t)))),
@@ -93,24 +91,16 @@ impl AdminPlugin {
 
         let mut t = 0.0;
         let mut world = World::new();
-        fn respawn(vfx: &Vfx, world: &mut World) -> Result<f32, ExpressionError> {
+        fn respawn(anim: &Anim, world: &mut World) -> Result<f32, ExpressionError> {
             world.clear_all();
-            vfx.spawn(&mut 0.0, world)
+            anim.apply(&mut 0.0, Context::default().set_t(0.0).take(), world)
         }
-        let mut end_t = respawn(&vfx, &mut world).unwrap();
+        let mut end_t = respawn(&anim, &mut world).unwrap();
         let mut size = 100.0;
-        Window::new("Vfx Editor", move |ui, _| {
+        Window::new("Anim Editor", move |ui, _| {
             let mut reload = false;
             ui.horizontal(|ui| {
                 DragValue::new(&mut size).prefix("size: ").ui(ui);
-                reload |= DragValue::new(&mut vfx.duration)
-                    .prefix("duration: ")
-                    .ui(ui)
-                    .changed();
-                reload |= DragValue::new(&mut vfx.timeframe)
-                    .prefix("timeframe: ")
-                    .ui(ui)
-                    .changed();
             });
             let mut query = world.query::<(Entity, &Representation)>();
             let context = Context::new_world(&world).set_t(t).take();
@@ -145,7 +135,7 @@ impl AdminPlugin {
                     .auto_shrink([false, false])
                     .show(ui, |ui| {
                         ui.vertical(|ui| {
-                            if vfx.show_mut(None, ui) {
+                            if anim.show_mut(None, ui) {
                                 reload = true;
                             }
                         });
@@ -153,7 +143,7 @@ impl AdminPlugin {
             });
             reload |= t > end_t;
             if reload {
-                if let Ok(end) = respawn(&vfx, &mut world) {
+                if let Ok(end) = respawn(&anim, &mut world) {
                     t = 0.0;
                     end_t = end;
                 }
@@ -174,8 +164,8 @@ Abs(Equals(F(51.0),Abs(Equals(F(1.0),Or(Equals(F(1.0),One),Abs(Or(Target,Abs(One
                 if "Open Battle".cstr().button(ui).clicked() {
                     Self::show_battle(world);
                 }
-                if "Vfx Editor".cstr().button(ui).clicked() {
-                    Self::show_vfx_editor(world);
+                if "Anim Editor".cstr().button(ui).clicked() {
+                    Self::show_anim_editor(world);
                 }
                 if "Spawn Hero".cstr().button(ui).clicked() {
                     match cn().reducers.node_spawn_hero("SpawnedHero".into()) {
