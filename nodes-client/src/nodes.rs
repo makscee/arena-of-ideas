@@ -48,6 +48,12 @@ pub trait Node: Default + Component + Sized + GetVar + Show + Debug {
     fn ui(&self, depth: usize, context: &Context, ui: &mut Ui);
 }
 
+impl ToCstr for NodeKind {
+    fn cstr(&self) -> Cstr {
+        self.to_string()
+    }
+}
+
 trait OnUnpack {
     fn on_unpack(self, entity: Entity, commands: &mut Commands);
 }

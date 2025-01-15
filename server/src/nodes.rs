@@ -61,10 +61,17 @@ where
 }
 
 #[reducer]
-fn node_spawn(ctx: &ReducerContext, kind: String, data: String) -> Result<(), String> {
-    let id = next_id(ctx);
-    let kind = NodeKind::from_str(&kind).map_err(|e| e.to_string())?;
-    ctx.db.nodes().insert(Nodes::new(id, kind, data));
+fn node_spawn(
+    ctx: &ReducerContext,
+    id: Option<u64>,
+    kinds: Vec<String>,
+    datas: Vec<String>,
+) -> Result<(), String> {
+    let id = id.unwrap_or_else(|| next_id(ctx));
+    for (kind, data) in kinds.into_iter().zip(datas.into_iter()) {
+        let kind = NodeKind::from_str(&kind).map_err(|e| e.to_string())?;
+        ctx.db.nodes().insert(Nodes::new(id, kind, data));
+    }
     Ok(())
 }
 

@@ -177,7 +177,7 @@ Abs(Equals(F(51.0),Abs(Equals(F(1.0),Or(Equals(F(1.0),One),Abs(Or(Target,Abs(One
                 if "Vfx Editor".cstr().button(ui).clicked() {
                     Self::show_vfx_editor(world);
                 }
-                if "Spawn".cstr().button(ui).clicked() {
+                if "Spawn Hero".cstr().button(ui).clicked() {
                     match cn().reducers.node_spawn_hero("SpawnedHero".into()) {
                         Ok(_) => {
                             info!("Hero spawned")

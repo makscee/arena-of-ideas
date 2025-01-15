@@ -11,8 +11,9 @@ use spacetimedb_sdk::{
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct NodeSpawn {
-    pub kind: String,
-    pub data: String,
+    pub id: Option<u64>,
+    pub kinds: Vec<String>,
+    pub datas: Vec<String>,
 }
 
 impl __sdk::spacetime_module::InModule for NodeSpawn {
@@ -31,7 +32,12 @@ pub trait node_spawn {
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed by listening for [`Self::on_node_spawn`] callbacks.
-    fn node_spawn(&self, kind: String, data: String) -> __anyhow::Result<()>;
+    fn node_spawn(
+        &self,
+        id: Option<u64>,
+        kinds: Vec<String>,
+        datas: Vec<String>,
+    ) -> __anyhow::Result<()>;
     /// Register a callback to run whenever we are notified of an invocation of the reducer `node_spawn`.
     ///
     /// The [`super::EventContext`] passed to the `callback`
@@ -44,7 +50,9 @@ pub trait node_spawn {
     /// to cancel the callback.
     fn on_node_spawn(
         &self,
-        callback: impl FnMut(&super::EventContext, &String, &String) + Send + 'static,
+        callback: impl FnMut(&super::EventContext, &Option<u64>, &Vec<String>, &Vec<String>)
+            + Send
+            + 'static,
     ) -> NodeSpawnCallbackId;
     /// Cancel a callback previously registered by [`Self::on_node_spawn`],
     /// causing it not to run in the future.
@@ -52,18 +60,25 @@ pub trait node_spawn {
 }
 
 impl node_spawn for super::RemoteReducers {
-    fn node_spawn(&self, kind: String, data: String) -> __anyhow::Result<()> {
+    fn node_spawn(
+        &self,
+        id: Option<u64>,
+        kinds: Vec<String>,
+        datas: Vec<String>,
+    ) -> __anyhow::Result<()> {
         self.imp
-            .call_reducer("node_spawn", NodeSpawn { kind, data })
+            .call_reducer("node_spawn", NodeSpawn { id, kinds, datas })
     }
     fn on_node_spawn(
         &self,
-        mut callback: impl FnMut(&super::EventContext, &String, &String) + Send + 'static,
+        mut callback: impl FnMut(&super::EventContext, &Option<u64>, &Vec<String>, &Vec<String>)
+            + Send
+            + 'static,
     ) -> NodeSpawnCallbackId {
         NodeSpawnCallbackId(self.imp.on_reducer::<NodeSpawn>(
             "node_spawn",
             Box::new(move |ctx: &super::EventContext, args: &NodeSpawn| {
-                callback(ctx, &args.kind, &args.data)
+                callback(ctx, &args.id, &args.kinds, &args.datas)
             }),
         ))
     }
