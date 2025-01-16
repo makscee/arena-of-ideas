@@ -1,5 +1,7 @@
 use std::f32::consts::PI;
 
+use rand::{seq::SliceRandom, thread_rng};
+
 use super::*;
 
 pub trait ExpressionImpl {
@@ -11,6 +13,7 @@ pub trait ExpressionImpl {
     fn get_color(&self, context: &Context) -> Result<Color32, ExpressionError>;
     fn get_string(&self, context: &Context) -> Result<String, ExpressionError>;
     fn get_entity(&self, context: &Context) -> Result<Entity, ExpressionError>;
+    fn get_entity_list(&self, context: &Context) -> Result<Vec<Entity>, ExpressionError>;
 }
 
 impl ExpressionImpl for Expression {
@@ -20,8 +23,8 @@ impl ExpressionImpl for Expression {
             Expression::Zero => Ok(0.into()),
             Expression::PI => Ok(PI.into()),
             Expression::PI2 => Ok((PI * 2.0).into()),
-            Expression::Owner => Ok(context.get_owner().to_e_var(VarName::none)?.to_value()),
-            Expression::Target => Ok(context.get_target().to_e_var(VarName::none)?.to_value()),
+            Expression::Owner => Ok(context.get_owner()?.to_value()),
+            Expression::Target => Ok(context.get_target()?.to_value()),
             Expression::Var(var) => {
                 let v = context.get_var(*var);
                 if v.is_err() && *var == VarName::index {
@@ -45,6 +48,7 @@ impl ExpressionImpl for Expression {
                 .map(|v| v.into()),
             Expression::GT => Ok(gt().play_head().into()),
             Expression::UnitSize => Ok(UNIT_SIZE.into()),
+            Expression::AllUnits => Ok(context.get_all_units().into()),
             Expression::Sin(x) => Ok(x.get_f32(context)?.sin().into()),
             Expression::Cos(x) => Ok(x.get_f32(context)?.cos().into()),
             Expression::Even(x) => Ok((x.get_i32(context)? % 2 == 0).into()),
@@ -68,6 +72,11 @@ impl ExpressionImpl for Expression {
                 let mut rng = ChaCha8Rng::seed_from_u64(hasher.finish());
                 Ok(rng.gen_range(0.0..1.0).into())
             }
+            Expression::RandomUnit(x) => x
+                .get_entity_list(context)?
+                .choose(&mut thread_rng())
+                .map(|e| e.to_value())
+                .to_e("No units found"),
             Expression::Macro(s, v) => {
                 let s = s.get_string(context)?;
                 let v = v.get_string(context)?;
@@ -121,5 +130,8 @@ impl ExpressionImpl for Expression {
     }
     fn get_entity(&self, context: &Context) -> Result<Entity, ExpressionError> {
         self.get_value(context)?.get_entity()
+    }
+    fn get_entity_list(&self, context: &Context) -> Result<Vec<Entity>, ExpressionError> {
+        self.get_value(context)?.get_entity_list()
     }
 }

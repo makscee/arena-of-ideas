@@ -11,6 +11,7 @@ pub struct Context<'w, 's> {
 pub enum ContextSource<'w, 's> {
     Query(&'w StateQuery<'w, 's>),
     World(&'w World),
+    BattleSimulation(&'w BattleSimulation),
 }
 
 #[derive(Debug, Clone)]
@@ -35,6 +36,13 @@ impl<'w, 's> Context<'w, 's> {
             t: None,
         }
     }
+    pub fn new_battle_simulation(bs: &'w BattleSimulation) -> Self {
+        Self {
+            layers: default(),
+            sources: vec![ContextSource::BattleSimulation(bs)],
+            t: None,
+        }
+    }
     pub fn with_world(&self, world: &'w World) -> Self {
         self.clone().set_world(world).take()
     }
@@ -50,8 +58,8 @@ impl<'w, 's> Context<'w, 's> {
         self.layers.push(ContextLayer::Owner(owner));
         self
     }
-    pub fn set_target(&mut self, owner: Entity) -> &mut Self {
-        self.layers.push(ContextLayer::Target(owner));
+    pub fn set_target(&mut self, target: Entity) -> &mut Self {
+        self.layers.push(ContextLayer::Target(target));
         self
     }
     pub fn set_var(&mut self, var: VarName, value: VarValue) -> &mut Self {
@@ -59,11 +67,19 @@ impl<'w, 's> Context<'w, 's> {
         self
     }
 
-    pub fn get_owner(&self) -> Option<Entity> {
-        self.layers.iter().rev().find_map(|l| l.get_owner())
+    pub fn get_owner(&self) -> Result<Entity, ExpressionError> {
+        self.layers
+            .iter()
+            .rev()
+            .find_map(|l| l.get_owner())
+            .to_e("Owner not found")
     }
-    pub fn get_target(&self) -> Option<Entity> {
-        self.layers.iter().rev().find_map(|l| l.get_target())
+    pub fn get_target(&self) -> Result<Entity, ExpressionError> {
+        self.layers
+            .iter()
+            .rev()
+            .find_map(|l| l.get_target())
+            .to_e("Target not found")
     }
     pub fn get_var(&self, var: VarName) -> Result<VarValue, ExpressionError> {
         self.layers
@@ -87,6 +103,13 @@ impl<'w, 's> Context<'w, 's> {
         }
         default()
     }
+    pub fn get_all_units(&self) -> Vec<VarValue> {
+        self.sources
+            .iter()
+            .flat_map(|s| s.get_all_units())
+            .map(|e| e.to_value())
+            .collect()
+    }
     pub fn get_component<T: Component>(&self, entity: Entity) -> Option<&T> {
         for s in self.sources.iter().rev() {
             if let Some(c) = s.get_component::<T>(entity) {
@@ -109,23 +132,35 @@ impl ContextSource<'_, '_> {
         match self {
             ContextSource::Query(q) => NodeState::from_query(entity, q),
             ContextSource::World(w) => NodeState::from_world(entity, w),
+            ContextSource::BattleSimulation(bs) => NodeState::from_world(entity, &bs.world),
         }
     }
     pub fn get_children(&self, entity: Entity) -> Vec<Entity> {
         match self {
             ContextSource::Query(q) => q.get_children(entity),
             ContextSource::World(w) => get_children(entity, w),
+            ContextSource::BattleSimulation(bs) => get_children(entity, &bs.world),
         }
     }
     pub fn get_parent(&self, entity: Entity) -> Option<Entity> {
         match self {
             ContextSource::Query(q) => q.get_parent(entity),
             ContextSource::World(w) => get_parent(entity, w),
+            ContextSource::BattleSimulation(bs) => get_parent(entity, &bs.world),
+        }
+    }
+    fn get_all_units(&self) -> Vec<Entity> {
+        match self {
+            ContextSource::BattleSimulation(bs) => {
+                bs.left.iter().chain(bs.right.iter()).copied().collect()
+            }
+            _ => default(),
         }
     }
     fn get_component<T: Component>(&self, entity: Entity) -> Option<&T> {
         match self {
             ContextSource::World(world) => world.get::<T>(entity),
+            ContextSource::BattleSimulation(bs) => bs.world.get::<T>(entity),
             ContextSource::Query(..) => None,
         }
     }

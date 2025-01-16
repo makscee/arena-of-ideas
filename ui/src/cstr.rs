@@ -428,6 +428,7 @@ impl ToCstr for Expression {
             | Expression::PI2
             | Expression::GT
             | Expression::UnitSize
+            | Expression::AllUnits
             | Expression::Owner
             | Expression::Target => String::default(),
             Expression::Var(v) => v.cstr(),
@@ -450,6 +451,7 @@ impl ToCstr for Expression {
             | Expression::Fract(x)
             | Expression::UnitVec(x)
             | Expression::Rand(x)
+            | Expression::RandomUnit(x)
             | Expression::Sqr(x) => x.cstr(),
             Expression::Macro(a, b)
             | Expression::V2EE(a, b)
@@ -511,6 +513,16 @@ impl ToCstr for Material {
     }
 }
 impl ToCstr for Trigger {
+    fn cstr(&self) -> Cstr {
+        self.as_ref().to_owned()
+    }
+}
+impl ToCstr for Effect {
+    fn cstr(&self) -> Cstr {
+        self.as_ref().to_owned()
+    }
+}
+impl ToCstr for Event {
     fn cstr(&self) -> Cstr {
         self.as_ref().to_owned()
     }

@@ -293,6 +293,7 @@ impl EntityExt for Entity {
 
 pub trait VarValueExt {
     fn get_entity(&self) -> Result<Entity, ExpressionError>;
+    fn get_entity_list(&self) -> Result<Vec<Entity>, ExpressionError>;
 }
 
 impl VarValueExt for VarValue {
@@ -301,6 +302,15 @@ impl VarValueExt for VarValue {
             VarValue::Entity(v) => Ok(Entity::from_bits(*v)),
             _ => Err(ExpressionError::not_supported_single(
                 "Cast to Entity",
+                self.clone(),
+            )),
+        }
+    }
+    fn get_entity_list(&self) -> Result<Vec<Entity>, ExpressionError> {
+        match self {
+            VarValue::List(v) => Ok(v.into_iter().filter_map(|v| v.get_entity().ok()).collect()),
+            _ => Err(ExpressionError::not_supported_single(
+                "Cast to List of Entities",
                 self.clone(),
             )),
         }

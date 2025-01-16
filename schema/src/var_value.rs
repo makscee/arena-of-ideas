@@ -1,6 +1,7 @@
 use ecolor::Color32;
 use error::ExpressionError;
 use glam::{vec2, Vec2};
+use itertools::Itertools;
 use std::cmp::Ordering;
 
 use super::*;
@@ -16,6 +17,7 @@ pub enum VarValue {
     Vec2(Vec2),
     Color32(Color32),
     Entity(u64),
+    List(Vec<Box<VarValue>>),
 }
 
 impl VarValue {
@@ -29,6 +31,10 @@ impl VarValue {
             VarValue::Vec2(v) => Ok(v.to_string()),
             VarValue::Color32(v) => Ok(v.to_hex()),
             VarValue::Entity(v) => Ok(v.to_string()),
+            VarValue::List(v) => Ok(v
+                .iter()
+                .map(|v| v.get_string().unwrap_or("_".to_owned()))
+                .join(", ")),
         }
     }
     pub fn get_i32(&self) -> Result<i32, ExpressionError> {
@@ -235,6 +241,7 @@ impl std::hash::Hash for VarValue {
             }
             VarValue::Color32(v) => v.hash(state),
             VarValue::Entity(v) => v.hash(state),
+            VarValue::List(v) => v.iter().for_each(|v| v.hash(state)),
         };
     }
 }
@@ -263,6 +270,7 @@ impl std::fmt::Display for VarValue {
             VarValue::Vec2(v) => write!(f, "{:.2}, {:.2}", v.x, v.y),
             VarValue::Color32(v) => write!(f, "{}", v.to_hex()),
             VarValue::Entity(v) => write!(f, "{v}"),
+            VarValue::List(v) => write!(f, "{}", v.iter().join(", ")),
         }
     }
 }
@@ -345,5 +353,13 @@ impl From<Vec2> for VarValue {
 impl Into<Vec2> for VarValue {
     fn into(self) -> Vec2 {
         self.get_vec2().unwrap()
+    }
+}
+impl<T> From<Vec<T>> for VarValue
+where
+    T: Into<VarValue>,
+{
+    fn from(value: Vec<T>) -> Self {
+        VarValue::List(value.into_iter().map(|v| Box::new(v.into())).collect())
     }
 }

@@ -17,6 +17,8 @@ pub enum Expression {
     PI,
     PI2,
 
+    AllUnits,
+
     Var(VarName),
     V(VarValue),
 
@@ -37,6 +39,7 @@ pub enum Expression {
     Sqr(Box<Expression>),
     UnitVec(Box<Expression>),
     Rand(Box<Expression>),
+    RandomUnit(Box<Expression>),
 
     V2EE(Box<Expression>, Box<Expression>),
     Macro(Box<Expression>, Box<Expression>),
@@ -66,6 +69,7 @@ impl std::hash::Hash for Expression {
             | Expression::PI2
             | Expression::GT
             | Expression::UnitSize
+            | Expression::AllUnits
             | Expression::Owner
             | Expression::Target => {}
             Expression::Var(v) => v.hash(state),
@@ -84,6 +88,7 @@ impl std::hash::Hash for Expression {
             | Expression::Sqr(e)
             | Expression::UnitVec(e)
             | Expression::Rand(e)
+            | Expression::RandomUnit(e)
             | Expression::Even(e)
             | Expression::Abs(e)
             | Expression::Floor(e)

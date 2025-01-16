@@ -43,6 +43,8 @@ struct UnitDescription {
 
 struct UnitTrigger {
     pub trigger: Trigger,
+    pub target: Expression,
+    pub effect: Effect,
 }
 
 struct Hero {

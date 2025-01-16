@@ -1,4 +1,8 @@
-use bevy::{app::PreUpdate, math::Vec3Swizzles, prelude::In};
+use bevy::{
+    app::{Plugin, PreUpdate},
+    math::Vec3Swizzles,
+    prelude::{GlobalTransform, In},
+};
 
 use super::*;
 

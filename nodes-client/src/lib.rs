@@ -1,21 +1,29 @@
 mod anim;
 pub mod assets;
+mod battle;
+mod battle_action;
 mod context;
 mod data_frame;
+mod effect;
 mod expression;
 mod node_frame;
 mod node_state;
+mod node_state_plugin;
 mod nodes;
 mod painter;
 mod show;
 mod tween;
 
 pub use anim::*;
+pub use battle::*;
+pub use battle_action::*;
 pub use context::*;
 pub use data_frame::*;
+pub use effect::*;
 pub use expression::*;
 pub use node_frame::*;
 pub use node_state::*;
+pub use node_state_plugin::*;
 pub use nodes::*;
 pub use painter::*;
 pub use schema::*;
@@ -94,5 +102,15 @@ impl<'w, 's> StateQuery<'w, 's> {
             .ok()
             .and_then(|(_, _, _, c)| c.map(|c| c.to_vec()))
             .unwrap_or_default()
+    }
+}
+
+pub trait EntityConverter {
+    fn to_e(&self) -> Entity;
+}
+
+impl EntityConverter for u64 {
+    fn to_e(&self) -> Entity {
+        Entity::from_bits(*self)
     }
 }

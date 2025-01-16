@@ -24,45 +24,28 @@ impl AdminPlugin {
         }
     }
     fn show_battle(world: &mut World) {
+        let unit = Unit {
+            name: String::new(),
+            stats: Some(UnitStats {
+                pwr: 1,
+                hp: 3,
+                ..default()
+            }),
+            description: Some(UnitDescription {
+                description: "battle start test".into(),
+                trigger: Some(UnitTrigger {
+                    trigger: Trigger::BattleStart,
+                    target: Expression::RandomUnit(Box::new(Expression::AllUnits)),
+                    effect: Effect::Damage,
+                    ..default()
+                }),
+                ..default()
+            }),
+            ..default()
+        };
         let b = Battle {
-            left: [
-                Unit {
-                    stats: Some(UnitStats {
-                        pwr: 1,
-                        hp: 3,
-                        ..default()
-                    }),
-                    ..default()
-                },
-                Unit {
-                    stats: Some(UnitStats {
-                        pwr: 1,
-                        hp: 3,
-                        ..default()
-                    }),
-                    ..default()
-                },
-            ]
-            .into(),
-            right: [
-                Unit {
-                    stats: Some(UnitStats {
-                        pwr: 1,
-                        hp: 4,
-                        ..default()
-                    }),
-                    ..default()
-                },
-                Unit {
-                    stats: Some(UnitStats {
-                        pwr: 1,
-                        hp: 4,
-                        ..default()
-                    }),
-                    ..default()
-                },
-            ]
-            .into(),
+            left: [unit.clone(), unit.clone()].into(),
+            right: [unit.clone(), unit.clone()].into(),
         };
         let mut bs = BattleSimulation::new(&b).start();
         let mut t = 0.0;
@@ -71,6 +54,16 @@ impl AdminPlugin {
             ui.set_min_size(egui::vec2(800.0, 400.0));
             Slider::new("ts").full_width().ui(&mut t, 0.0..=bs.t, ui);
             Checkbox::new(&mut playing, "play").ui(ui);
+            if "+100".cstr().button(ui).clicked() {
+                for _ in 0..100 {
+                    bs.run();
+                }
+            }
+            if "+1000".cstr().button(ui).clicked() {
+                for _ in 0..1000 {
+                    bs.run();
+                }
+            }
             if playing {
                 t += gt().last_delta();
                 t = t.at_most(bs.t);

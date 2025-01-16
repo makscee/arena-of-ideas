@@ -378,6 +378,7 @@ impl DataFramed for Expression {
             | Expression::Owner
             | Expression::Target
             | Expression::UnitSize
+            | Expression::AllUnits
             | Expression::Sin(..)
             | Expression::Cos(..)
             | Expression::Even(..)
@@ -387,6 +388,7 @@ impl DataFramed for Expression {
             | Expression::Fract(..)
             | Expression::UnitVec(..)
             | Expression::Rand(..)
+            | Expression::RandomUnit(..)
             | Expression::Sqr(..)
             | Expression::V2EE(..)
             | Expression::Macro(..)
@@ -415,6 +417,7 @@ impl DataFramed for Expression {
             | Expression::Owner
             | Expression::Target
             | Expression::UnitSize
+            | Expression::AllUnits
             | Expression::Var(..)
             | Expression::V(..)
             | Expression::S(..)
@@ -432,6 +435,7 @@ impl DataFramed for Expression {
             | Expression::Fract(..)
             | Expression::UnitVec(..)
             | Expression::Rand(..)
+            | Expression::RandomUnit(..)
             | Expression::Sqr(..)
             | Expression::V2EE(..)
             | Expression::Macro(..)
@@ -507,6 +511,7 @@ impl DataFramed for Expression {
             | Expression::Fract(x)
             | Expression::UnitVec(x)
             | Expression::Rand(x)
+            | Expression::RandomUnit(x)
             | Expression::Sqr(x) => x.show(Some("x:"), &context, ui),
             Expression::V2EE(a, b)
             | Expression::Macro(a, b)
@@ -544,6 +549,7 @@ impl DataFramed for Expression {
             | Expression::Fract(x)
             | Expression::UnitVec(x)
             | Expression::Rand(x)
+            | Expression::RandomUnit(x)
             | Expression::Sqr(x) => x.show_mut(Some("x:"), ui),
             Expression::V2EE(a, b)
             | Expression::Macro(a, b)

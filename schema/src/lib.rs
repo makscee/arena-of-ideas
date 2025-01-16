@@ -1,5 +1,6 @@
 mod effect;
 mod error;
+mod event;
 mod expression;
 mod inject;
 mod macro_fn;
@@ -12,6 +13,7 @@ mod var_value;
 
 pub use effect::*;
 pub use error::*;
+pub use event::*;
 pub use expression::*;
 pub use inject::*;
 pub use macro_fn::*;

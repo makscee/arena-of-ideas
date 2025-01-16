@@ -100,6 +100,7 @@ impl Show for VarValue {
             VarValue::Vec2(v) => v.show(prefix, context, ui),
             VarValue::Color32(v) => v.show(prefix, context, ui),
             VarValue::Entity(v) => Entity::from_bits(*v).show(prefix, context, ui),
+            VarValue::List(v) => v.show(prefix, context, ui),
         })
         .inner
     }
@@ -113,6 +114,7 @@ impl Show for VarValue {
             VarValue::Vec2(v) => v.show_mut(prefix, ui),
             VarValue::Color32(v) => v.show_mut(prefix, ui),
             VarValue::Entity(v) => Entity::from_bits(*v).show_mut(prefix, ui),
+            VarValue::List(v) => v.show_mut(prefix, ui),
         })
         .inner
     }
@@ -288,7 +290,25 @@ impl Show for Material {
 impl Show for Trigger {
     fn show(&self, prefix: Option<&str>, _: &Context, ui: &mut Ui) {
         prefix.show(ui);
-        self.cstr_cs(CYAN, CstrStyle::Bold).label(ui);
+        self.cstr_cs(EVENT_COLOR, CstrStyle::Bold).label(ui);
+    }
+    fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
+        Selector::new(prefix.unwrap_or_default()).ui_enum(self, ui)
+    }
+}
+impl Show for Effect {
+    fn show(&self, prefix: Option<&str>, _: &Context, ui: &mut Ui) {
+        prefix.show(ui);
+        self.cstr_cs(EFFECT_COLOR, CstrStyle::Bold).label(ui);
+    }
+    fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
+        Selector::new(prefix.unwrap_or_default()).ui_enum(self, ui)
+    }
+}
+impl Show for Event {
+    fn show(&self, prefix: Option<&str>, _: &Context, ui: &mut Ui) {
+        prefix.show(ui);
+        self.cstr_cs(EVENT_COLOR, CstrStyle::Bold).label(ui);
     }
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
         Selector::new(prefix.unwrap_or_default()).ui_enum(self, ui)
