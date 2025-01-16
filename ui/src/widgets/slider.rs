@@ -48,7 +48,7 @@ impl Slider {
             .handle_shape(HandleShape::Circle)
             .logarithmic(self.log)
             .trailing_fill(true)
-            .smallest_positive(0.1)
+            .smallest_positive(0.01)
             .ui(ui)
             .changed();
         ui.reset_style();

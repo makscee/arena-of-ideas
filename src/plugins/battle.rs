@@ -188,7 +188,7 @@ impl BattleSimulation {
             actions.extend(a.apply(self));
         }
     }
-    pub fn run(mut self) -> Self {
+    pub fn start(mut self) -> Self {
         let spawn_actions = self
             .left
             .iter()
@@ -204,14 +204,20 @@ impl BattleSimulation {
             .collect();
         self.process_actions(spawn_actions);
         self.process_actions(self.slots_sync());
-        while !self.left.is_empty() && !self.right.is_empty() {
-            let a = BattleAction::Strike(self.left[0], self.right[0]);
-            self.process_actions([a].into());
-            let a = self.death_check();
-            self.process_actions(a);
-            self.process_actions(self.slots_sync());
-        }
         self
+    }
+    pub fn run(&mut self) {
+        if self.ended() {
+            return;
+        }
+        let a = BattleAction::Strike(self.left[0], self.right[0]);
+        self.process_actions([a].into());
+        let a = self.death_check();
+        self.process_actions(a);
+        self.process_actions(self.slots_sync());
+    }
+    pub fn ended(&self) -> bool {
+        self.left.is_empty() || self.right.is_empty()
     }
     fn death_check(&mut self) -> VecDeque<BattleAction> {
         let mut actions: VecDeque<BattleAction> = default();
