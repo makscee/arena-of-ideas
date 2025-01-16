@@ -73,6 +73,22 @@ impl BattleAction {
                 true
             }
             BattleAction::Damage(_, b, x) => {
+                let text = animations().get("text").unwrap();
+                let pos = Context::new_world(&battle.world)
+                    .set_owner(*b)
+                    .get_var(VarName::position)
+                    .unwrap();
+                match battle.apply_animation(
+                    Context::default()
+                        .set_var(VarName::text, (-*x).to_string().into())
+                        .set_var(VarName::color, RED.into())
+                        .set_var(VarName::position, pos)
+                        .take(),
+                    text,
+                ) {
+                    Ok(_) => {}
+                    Err(e) => error!("Animation error: {e}"),
+                }
                 let hp = battle.world.get::<UnitStats>(*b).unwrap().hp - x;
                 add_actions.push(Self::VarSet(
                     *b,

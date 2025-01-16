@@ -34,4 +34,5 @@ pub enum VarName {
     side,
     unit_size,
     t,
+    text,
 }

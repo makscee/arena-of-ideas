@@ -1,0 +1,14 @@
+[
+    Duration(F(3.0)),
+    Spawn(
+        (
+            [
+                Color(Var(color)),
+                Alpha(Sub(F(4.0), Mul(Var(t), F(4.0)))),
+                Text(Macro(S("[b %s]"), Var(text))),
+                Scale(F(2.5)),
+                Translate(V2EE(Zero, Sub(Zero, Mul(Var(t), F(1.0))))),
+            ],
+        ),
+    ),
+]

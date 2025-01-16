@@ -72,6 +72,12 @@ impl<'w, 's> Context<'w, 's> {
             .find_map(|l| l.get_var(var, &self.sources, self.t))
             .to_e_var(var)
     }
+    pub fn get_vars(&self) -> HashMap<VarName, VarValue> {
+        HashMap::from_iter(self.layers.iter().filter_map(|l| match l {
+            ContextLayer::Var(var, value) => Some((*var, value.clone())),
+            _ => None,
+        }))
+    }
     pub fn get_children(&self, entity: Entity) -> Vec<Entity> {
         for s in self.sources.iter().rev() {
             let c = s.get_children(entity);

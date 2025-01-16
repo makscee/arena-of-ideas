@@ -102,34 +102,27 @@ impl AnimAction {
                 }
                 .unpack(entity, &mut world.commands());
                 world.flush_commands();
-                NodeState::from_world_mut(entity, world).unwrap().insert(
-                    *t,
-                    0.0,
-                    VarName::visible,
-                    true.into(),
-                    NodeKind::None,
-                );
-                NodeState::from_world_mut(entity, world).unwrap().insert(
+                let mut state = NodeState::from_world_mut(entity, world).unwrap();
+                state.insert(0.0, 0.0, VarName::visible, false.into(), NodeKind::None);
+                state.insert(*t, 0.0, VarName::visible, true.into(), NodeKind::None);
+                state.insert(
                     *t + a.duration,
                     0.0,
                     VarName::visible,
                     false.into(),
                     NodeKind::None,
                 );
-                NodeState::from_world_mut(entity, world).unwrap().insert(
-                    *t,
-                    0.0,
-                    VarName::t,
-                    0.0.into(),
-                    NodeKind::None,
-                );
-                NodeState::from_world_mut(entity, world).unwrap().insert(
-                    *t + 0.1,
+                state.insert(*t, 0.0, VarName::t, 0.0.into(), NodeKind::None);
+                state.insert(
+                    *t + 0.0001,
                     a.duration,
                     VarName::t,
                     1.0.into(),
                     NodeKind::None,
                 );
+                for (var, value) in a.context.get_vars() {
+                    state.insert(0.0, 0.0, var, value, NodeKind::None);
+                }
                 a.targets = vec![entity];
                 end_t = *t + a.duration;
             }
