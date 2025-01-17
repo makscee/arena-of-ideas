@@ -592,7 +592,8 @@ impl DataFramed for PainterAction {
             | PainterAction::Hollow(..)
             | PainterAction::Translate(..)
             | PainterAction::Rotate(..)
-            | PainterAction::Scale(..)
+            | PainterAction::ScaleMesh(..)
+            | PainterAction::ScaleRect(..)
             | PainterAction::Color(..)
             | PainterAction::Alpha(..)
             | PainterAction::Repeat(..)
@@ -612,7 +613,8 @@ impl DataFramed for PainterAction {
             | PainterAction::Hollow(x)
             | PainterAction::Translate(x)
             | PainterAction::Rotate(x)
-            | PainterAction::Scale(x)
+            | PainterAction::ScaleMesh(x)
+            | PainterAction::ScaleRect(x)
             | PainterAction::Color(x)
             | PainterAction::Alpha(x) => x.show(Some("x:"), context, ui),
             PainterAction::Repeat(x, painter_action) => {
@@ -631,7 +633,8 @@ impl DataFramed for PainterAction {
             | PainterAction::Hollow(x)
             | PainterAction::Translate(x)
             | PainterAction::Rotate(x)
-            | PainterAction::Scale(x)
+            | PainterAction::ScaleMesh(x)
+            | PainterAction::ScaleRect(x)
             | PainterAction::Color(x)
             | PainterAction::Alpha(x) => x.show_mut(Some("x:"), ui),
             PainterAction::Repeat(x, painter_action) => {

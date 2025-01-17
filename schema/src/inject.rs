@@ -155,7 +155,8 @@ impl Injector<Expression> for PainterAction {
             | PainterAction::Hollow(x)
             | PainterAction::Translate(x)
             | PainterAction::Rotate(x)
-            | PainterAction::Scale(x)
+            | PainterAction::ScaleMesh(x)
+            | PainterAction::ScaleRect(x)
             | PainterAction::Color(x)
             | PainterAction::Alpha(x)
             | PainterAction::Repeat(x, ..) => [x].into(),
@@ -170,7 +171,8 @@ impl Injector<Expression> for PainterAction {
             | PainterAction::Hollow(x)
             | PainterAction::Translate(x)
             | PainterAction::Rotate(x)
-            | PainterAction::Scale(x)
+            | PainterAction::ScaleMesh(x)
+            | PainterAction::ScaleRect(x)
             | PainterAction::Color(x)
             | PainterAction::Alpha(x)
             | PainterAction::Repeat(x, ..) => [x].into(),
@@ -193,7 +195,8 @@ impl Injector<Self> for PainterAction {
             | PainterAction::Hollow(..)
             | PainterAction::Translate(..)
             | PainterAction::Rotate(..)
-            | PainterAction::Scale(..)
+            | PainterAction::ScaleMesh(..)
+            | PainterAction::ScaleRect(..)
             | PainterAction::Color(..)
             | PainterAction::Alpha(..) => default(),
             PainterAction::Repeat(_x, p) => [p].into(),
@@ -209,7 +212,8 @@ impl Injector<Self> for PainterAction {
             | PainterAction::Hollow(..)
             | PainterAction::Translate(..)
             | PainterAction::Rotate(..)
-            | PainterAction::Scale(..)
+            | PainterAction::ScaleMesh(..)
+            | PainterAction::ScaleRect(..)
             | PainterAction::Color(..)
             | PainterAction::Alpha(..) => default(),
             PainterAction::Repeat(_x, p) => [p].into(),

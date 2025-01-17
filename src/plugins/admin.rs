@@ -218,7 +218,7 @@ Abs(Equals(F(51.0),Abs(Equals(F(1.0),Or(Equals(F(1.0),One),Abs(Or(Target,Abs(One
         let Ok(egui_context) = egui_context else {
             return;
         };
-        let mut egui_context = egui_context.clone();
+        // let mut egui_context = egui_context.clone();
 
         // egui::Window::new("World Inspector")
         //     .default_size(egui::vec2(300.0, 300.0))

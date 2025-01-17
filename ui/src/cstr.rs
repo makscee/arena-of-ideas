@@ -494,7 +494,8 @@ impl ToCstr for PainterAction {
             | PainterAction::Hollow(x)
             | PainterAction::Translate(x)
             | PainterAction::Rotate(x)
-            | PainterAction::Scale(x)
+            | PainterAction::ScaleMesh(x)
+            | PainterAction::ScaleRect(x)
             | PainterAction::Alpha(x)
             | PainterAction::Color(x) => x.cstr_expanded(),
             PainterAction::Repeat(x, a) => format!("{}, {}", x.cstr_expanded(), a.cstr_expanded()),

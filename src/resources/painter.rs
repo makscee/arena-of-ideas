@@ -85,9 +85,13 @@ impl Paint for PainterAction {
                 p.mesh
                     .rotate(Rot2::from_angle(x.get_f32(context)?), default());
             }
-            PainterAction::Scale(x) => {
+            PainterAction::ScaleMesh(x) => {
                 p.mesh
                     .transform(TSTransform::from_scaling(x.get_f32(context)?));
+            }
+            PainterAction::ScaleRect(x) => {
+                let size = p.rect.size() * x.get_f32(context)? - p.rect.size();
+                p.rect = p.rect.expand2(size * 0.5);
             }
             PainterAction::Color(x) => {
                 p.color = x.get_color(context)?;

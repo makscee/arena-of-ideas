@@ -2,6 +2,7 @@
     Spawn(
         (
             [
+                ScaleRect(F(2.0)),
                 Color(C("#a70101ab")),
                 Alpha(Sub(F(4.0), Mul(Var(t), F(4.0)))),
                 Repeat(
@@ -9,7 +10,7 @@
                     List(
                         [
                             Circle(F(0.2)),
-                            Scale(Mul(Var(t), F(1.0))),
+                            ScaleMesh(Mul(Var(t), F(1.0))),
                             Translate(
                                 Mul(
                                     UnitVec(Mul(Rand(Var(index)), PI2)),
