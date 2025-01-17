@@ -35,4 +35,5 @@ pub enum VarName {
     unit_size,
     t,
     text,
+    charges,
 }

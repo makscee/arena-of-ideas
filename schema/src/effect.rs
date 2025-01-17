@@ -1,14 +1,12 @@
-use expression::Expression;
-use var_name::VarName;
-
 use super::*;
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, AsRefStr, EnumIter, Display)]
 pub enum Effect {
     #[default]
     Noop,
-    // Text(Expression),
     Damage,
+    ChangeStatus,
+    // Text(Expression),
     // Kill,
     // Heal,
     // ChangeStatus(String),

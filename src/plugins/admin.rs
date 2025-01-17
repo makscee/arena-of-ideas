@@ -28,15 +28,15 @@ impl AdminPlugin {
             name: String::new(),
             stats: Some(UnitStats {
                 pwr: 1,
-                hp: 3,
+                hp: 10,
                 ..default()
             }),
             description: Some(UnitDescription {
                 description: "battle start test".into(),
                 trigger: Some(UnitTrigger {
                     trigger: Trigger::BattleStart,
-                    target: Expression::RandomUnit(Box::new(Expression::AllUnits)),
-                    effect: Effect::Damage,
+                    target: Expression::Owner,
+                    effect: Effect::ChangeStatus,
                     ..default()
                 }),
                 ..default()
@@ -54,13 +54,16 @@ impl AdminPlugin {
             ui.set_min_size(egui::vec2(800.0, 400.0));
             Slider::new("ts").full_width().ui(&mut t, 0.0..=bs.t, ui);
             Checkbox::new(&mut playing, "play").ui(ui);
-            if "+100".cstr().button(ui).clicked() {
-                for _ in 0..100 {
+            if "+1".cstr().button(ui).clicked() {
+                bs.run();
+            }
+            if "+10".cstr().button(ui).clicked() {
+                for _ in 0..10 {
                     bs.run();
                 }
             }
-            if "+1000".cstr().button(ui).clicked() {
-                for _ in 0..1000 {
+            if "+100".cstr().button(ui).clicked() {
+                for _ in 0..100 {
                     bs.run();
                 }
             }

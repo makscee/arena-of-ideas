@@ -17,6 +17,13 @@ impl EffectImpl for Effect {
                 ));
                 actions.push(BattleAction::Wait(0.1));
             }
+            Effect::ChangeStatus => {
+                let charges = context
+                    .get_var(VarName::charges)
+                    .and_then(|v| v.get_i32())
+                    .unwrap_or(1);
+                actions.push(BattleAction::ApplyStatus(context.get_target()?));
+            }
         }
         Ok(actions)
     }

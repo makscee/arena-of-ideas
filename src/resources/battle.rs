@@ -37,6 +37,7 @@ pub enum BattleAction {
     Damage(Entity, Entity, i32),
     Death(Entity),
     Spawn(Entity),
+    ApplyStatus(Entity),
     Wait(f32),
 }
 
@@ -48,6 +49,7 @@ impl ToCstr for BattleAction {
             BattleAction::Death(a) => format!("x{a}"),
             BattleAction::VarSet(a, _, var, value) => format!("{a}>${var}>{value}"),
             BattleAction::Spawn(a) => format!("*{a}"),
+            BattleAction::ApplyStatus(a) => format!("+{a}"),
             BattleAction::Wait(t) => format!("~{t}"),
         }
     }
@@ -145,6 +147,10 @@ impl BattleAction {
                 )]);
                 true
             }
+            BattleAction::ApplyStatus(entity) => {
+                battle.apply_status(*entity);
+                true
+            }
             BattleAction::Wait(t) => {
                 battle.t += *t;
                 false
@@ -210,39 +216,94 @@ impl BattleSimulation {
             }
         }
     }
+    fn apply_status(&mut self, target: Entity) {
+        let status = Status {
+            name: "Test Status".into(),
+            description: Some(StatusDescription {
+                description: "Test status desc".into(),
+                trigger: Some(StatusTrigger {
+                    trigger: Trigger::TurnEnd,
+                    target: Expression::RandomUnit(Box::new(Expression::AllUnits)),
+                    effect: Effect::Damage,
+                    ..default()
+                }),
+                ..default()
+            }),
+            ..default()
+        };
+        status.unpack(
+            self.world.spawn_empty().set_parent(target).id(),
+            &mut self.world.commands(),
+        );
+    }
     fn send_event(&mut self, event: Event) {
         let mut actions = Vec::default();
+        fn trigger_fire(
+            entity: Entity,
+            actions: &mut Vec<BattleAction>,
+            bs: &BattleSimulation,
+            event: &Event,
+            trigger: &Trigger,
+            target: &Expression,
+            effect: &Effect,
+        ) {
+            if match event {
+                Event::BattleStart => matches!(trigger, Trigger::BattleStart),
+                Event::TurnEnd => matches!(trigger, Trigger::TurnEnd),
+            } {
+                let mut context = Context::new_battle_simulation(bs).set_owner(entity).take();
+                match target.get_entity(&context) {
+                    Ok(target) => {
+                        context.set_target(target);
+                    }
+                    Err(e) => {
+                        error!("Get target error: {e}")
+                    }
+                }
+                match effect.process(&context) {
+                    Ok(a) => {
+                        actions.extend(a);
+                    }
+                    Err(e) => {
+                        error!("Effect process error: {e}")
+                    }
+                }
+            }
+        }
+        let mut alive_units: HashSet<Entity> = default();
         for (entity, ut) in self
             .world
             .query_filtered::<(Entity, &UnitTrigger), Without<Corpse>>()
             .iter(&self.world)
         {
-            match event {
-                Event::BattleStart => match ut.trigger {
-                    Trigger::BattleStart => {
-                        let mut context = Context::new_battle_simulation(self)
-                            .set_owner(entity)
-                            .take();
-                        match ut.target.get_entity(&context) {
-                            Ok(target) => {
-                                context.set_target(target);
-                            }
-                            Err(e) => {
-                                error!("Get target error: {e}")
-                            }
-                        }
-                        match ut.effect.process(&context) {
-                            Ok(a) => {
-                                actions.extend(a);
-                            }
-                            Err(e) => {
-                                error!("Effect process error: {e}")
-                            }
-                        }
-                    }
-                    Trigger::TurnEnd => todo!(),
-                },
+            alive_units.insert(entity);
+            trigger_fire(
+                entity,
+                &mut actions,
+                self,
+                &event,
+                &ut.trigger,
+                &ut.target,
+                &ut.effect,
+            );
+        }
+        for (entity, parent, st) in self
+            .world
+            .query::<(Entity, &Parent, &StatusTrigger)>()
+            .iter(&self.world)
+        {
+            if !alive_units.contains(&parent.get()) {
+                continue;
             }
+            trigger_fire(
+                entity,
+                &mut actions,
+                self,
+                &event,
+                &st.trigger,
+                &st.target,
+                &st.effect,
+            );
         }
         self.process_actions(actions.into());
     }
@@ -274,6 +335,7 @@ impl BattleSimulation {
         let a = self.death_check();
         self.process_actions(a);
         self.process_actions(self.slots_sync());
+        self.send_event(Event::TurnEnd);
     }
     pub fn ended(&self) -> bool {
         self.left.is_empty() || self.right.is_empty()

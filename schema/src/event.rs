@@ -4,4 +4,5 @@ use super::*;
 pub enum Event {
     #[default]
     BattleStart,
+    TurnEnd,
 }

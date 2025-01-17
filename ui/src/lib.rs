@@ -1,6 +1,5 @@
 mod cstr;
 mod rarity;
-mod table_ext;
 mod ui;
 mod utils;
 mod widgets;
