@@ -66,22 +66,16 @@ impl BattleAction {
         let applied = match self {
             BattleAction::Strike(a, b) => {
                 let strike_anim = animations().get("strike").unwrap();
-                match battle.apply_animation(
+                battle.apply_animation(
                     Context::default()
                         .set_owner(*a)
                         .set_target(*b)
                         .set_var(VarName::position, vec2(0.0, 0.0).into())
                         .take(),
                     strike_anim,
-                ) {
-                    Ok(_) => {}
-                    Err(e) => error!("Animation error: {e}"),
-                }
+                );
                 let strike_vfx = animations().get("strike_vfx").unwrap();
-                match battle.apply_animation(Context::default(), strike_vfx) {
-                    Ok(_) => {}
-                    Err(e) => error!("Animation error: {e}"),
-                }
+                battle.apply_animation(Context::default(), strike_vfx);
                 let pwr = battle.world.get::<UnitStats>(*a).unwrap().pwr;
                 let action_a = Self::Damage(*a, *b, pwr);
                 let pwr = battle.world.get::<UnitStats>(*b).unwrap().pwr;
@@ -95,29 +89,33 @@ impl BattleAction {
                 true
             }
             BattleAction::Damage(_, b, x) => {
-                let text = animations().get("text").unwrap();
                 let pos = Context::new_battle_simulation(&battle)
                     .set_owner(*b)
                     .get_var(VarName::position)
                     .unwrap();
-                match battle.apply_animation(
+                let text = animations().get("text").unwrap();
+                battle.apply_animation(
                     Context::default()
                         .set_var(VarName::text, (-*x).to_string().into())
                         .set_var(VarName::color, RED.into())
-                        .set_var(VarName::position, pos)
+                        .set_var(VarName::position, pos.clone())
                         .take(),
                     text,
-                ) {
-                    Ok(_) => {}
-                    Err(e) => error!("Animation error: {e}"),
+                );
+                if *x > 0 {
+                    let pain = animations().get("pain_vfx").unwrap();
+                    battle.apply_animation(
+                        Context::default().set_var(VarName::position, pos).take(),
+                        pain,
+                    );
+                    let hp = battle.world.get::<UnitStats>(*b).unwrap().hp - x;
+                    add_actions.push(Self::VarSet(
+                        *b,
+                        NodeKind::UnitStats,
+                        VarName::hp,
+                        hp.into(),
+                    ));
                 }
-                let hp = battle.world.get::<UnitStats>(*b).unwrap().hp - x;
-                add_actions.push(Self::VarSet(
-                    *b,
-                    NodeKind::UnitStats,
-                    VarName::hp,
-                    hp.into(),
-                ));
                 true
             }
             BattleAction::VarSet(entity, kind, var, value) => {
@@ -205,9 +203,11 @@ impl BattleSimulation {
             slots: 5,
         }
     }
-    fn apply_animation(&mut self, context: Context, anim: &Anim) -> Result<(), ExpressionError> {
-        anim.apply(&mut self.t, context, &mut self.world)?;
-        Ok(())
+    fn apply_animation(&mut self, context: Context, anim: &Anim) {
+        match anim.apply(&mut self.t, context, &mut self.world) {
+            Ok(_) => {}
+            Err(e) => error!("Animation error: {e}"),
+        }
     }
     fn process_actions(&mut self, mut actions: VecDeque<BattleAction>) {
         while let Some(a) = actions.pop_front() {

@@ -1,0 +1,5 @@
+[
+    Spawn(
+        ([Alpha(Sub(One, Var(t))), ScaleRect(Sum(Var(t), One)), Circle(F(1.0))]),
+    ),
+]
