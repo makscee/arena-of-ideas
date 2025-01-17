@@ -1,8 +1,6 @@
 use macro_client::*;
 use std::fmt::Debug;
 
-use assets::{hero_rep, unit_rep};
-
 macro_schema::nodes!();
 
 #[bevy_trait_query::queryable]

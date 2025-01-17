@@ -6,11 +6,10 @@ mod stdb;
 mod utils;
 
 use bevy::{
-    diagnostic::FrameTimeDiagnosticsPlugin, log::LogPlugin, render::camera::ClearColor,
-    state::app::AppExtStates,
+    diagnostic::FrameTimeDiagnosticsPlugin, render::camera::ClearColor, state::app::AppExtStates,
 };
 use clap::{command, Parser, ValueEnum};
-use include_dir::{include_dir, Dir};
+use include_dir::include_dir;
 use noisy_bevy::NoisyShaderPlugin;
 pub use prelude::*;
 

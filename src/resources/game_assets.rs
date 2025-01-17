@@ -2,9 +2,22 @@ use spacetimedb_lib::de::serde::DeserializeWrapper;
 
 use super::*;
 
+static UNIT_REP: OnceCell<Representation> = OnceCell::new();
+static HERO_REP: OnceCell<Representation> = OnceCell::new();
+static ANIMATIONS: OnceCell<HashMap<String, Anim>> = OnceCell::new();
+
 static HOUSES: OnceCell<HashMap<String, House>> = OnceCell::new();
 static GLOBAL_SETTINGS: OnceCell<GlobalSettings> = OnceCell::new();
 
+pub fn unit_rep() -> &'static Representation {
+    UNIT_REP.get().unwrap()
+}
+pub fn hero_rep() -> &'static Representation {
+    HERO_REP.get().unwrap()
+}
+pub fn animations() -> &'static HashMap<String, Anim> {
+    ANIMATIONS.get().unwrap()
+}
 pub fn houses() -> &'static HashMap<String, House> {
     HOUSES.get().unwrap()
 }
