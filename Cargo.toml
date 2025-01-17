@@ -2,7 +2,6 @@
 members = [
     "macro-schema",
     "macro-server",
-    "nodes-server",
     "schema",
     "server",
     "ui",
