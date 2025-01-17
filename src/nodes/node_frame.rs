@@ -1,3 +1,5 @@
+use egui::CollapsingHeader;
+
 use super::*;
 
 pub struct NodeFrame;

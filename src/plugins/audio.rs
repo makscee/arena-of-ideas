@@ -76,7 +76,7 @@ impl AudioPlugin {
         }
     }
     pub fn queue_sound(sfx: SoundEffect) {
-        FX_QUEUE.lock().unwrap().push(sfx);
+        FX_QUEUE.lock().push(sfx);
     }
     fn play(source: Handle<AudioSource>, world: &mut World) {
         world.spawn(AudioBundle {
@@ -121,7 +121,7 @@ impl AudioPlugin {
         world.insert_resource(ar);
     }
     fn update(world: &mut World) {
-        for q in FX_QUEUE.lock().unwrap().drain(..) {
+        for q in FX_QUEUE.lock().drain(..) {
             let aa = world.resource::<AudioAssets>();
             let sound = match q {
                 SoundEffect::Click => aa.audio_click.clone(),

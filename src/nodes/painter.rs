@@ -1,3 +1,6 @@
+use emath::{Rot2, TSTransform};
+use epaint::{CircleShape, RectShape, TessellationOptions, Tessellator, TextShape};
+
 use super::*;
 
 pub struct Painter {
@@ -13,7 +16,7 @@ impl Painter {
         Self {
             rect,
             color: VISIBLE_LIGHT,
-            mesh: Mesh::default(),
+            mesh: egui::Mesh::default(),
             tesselator: Tessellator::new(
                 ctx.pixels_per_point(),
                 TessellationOptions::default(),
@@ -66,7 +69,7 @@ impl Paint for PainterAction {
             }
             PainterAction::Text(x) => {
                 let text = x.get_string(context)?.cstr_c(p.color).galley(ui);
-                let mut mesh = Mesh::default();
+                let mut mesh = egui::Mesh::default();
                 p.tesselator.tessellate_text(
                     &TextShape::new(text.rect.size().to_pos2() * -0.5, text, MISSING_COLOR),
                     &mut mesh,

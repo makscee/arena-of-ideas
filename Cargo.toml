@@ -77,8 +77,9 @@ rand_chacha = "0.3.1"
 ui = { path = "ui" }
 utils = { path = "utils" }
 schema = { path = "schema" }
+macro-schema = { path = "macro-schema" }
+macro-client = { path = "macro-client" }
 utils-client = { path = "utils-client" }
-nodes-client = { path = "nodes-client" }
 
 bevy = { workspace = true }
 bevy-trait-query = { workspace = true }
@@ -102,6 +103,8 @@ log = { workspace = true }
 glam = { workspace = true }
 rand = { workspace = true }
 rand_chacha = { workspace = true }
+parking_lot = { workspace = true }
+tween = { workspace = true }
 
 spacetimedb-sdk = "=1.0.0-rc1"
 spacetimedb-sats = "=1.0.0-rc1"

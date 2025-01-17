@@ -47,6 +47,23 @@ struct UnitTrigger {
     pub effect: Effect,
 }
 
+struct Status {
+    pub name: String,
+    pub description: Option<StatusDescription>,
+    pub representation: Option<Representation>,
+}
+
+struct StatusDescription {
+    pub description: String,
+    pub trigger: Option<StatusTrigger>,
+}
+
+struct StatusTrigger {
+    pub trigger: Trigger,
+    pub target: Expression,
+    pub effect: Effect,
+}
+
 struct Hero {
     pub name: String,
     pub representation: Option<Representation>,

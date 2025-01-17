@@ -1,3 +1,4 @@
+mod nodes;
 mod plugins;
 pub mod prelude;
 mod resources;

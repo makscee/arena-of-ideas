@@ -1,5 +1,6 @@
 use super::*;
 use ::tween::*;
+use bevy::color::Mix;
 
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, Default, PartialEq, AsRefStr, EnumIter)]
 pub enum Tween {

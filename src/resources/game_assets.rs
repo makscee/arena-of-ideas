@@ -1,4 +1,3 @@
-use assets::{ANIMATIONS, HERO_REP, UNIT_REP};
 use spacetimedb_lib::de::serde::DeserializeWrapper;
 
 use super::*;

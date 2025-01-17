@@ -1,3 +1,4 @@
+use macro_client::*;
 use std::fmt::Debug;
 
 use assets::{hero_rep, unit_rep};

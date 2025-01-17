@@ -1,5 +1,5 @@
 mod anim;
-pub mod assets;
+mod assets;
 mod battle;
 mod battle_action;
 mod context;
@@ -14,7 +14,9 @@ mod painter;
 mod show;
 mod tween;
 
+use super::*;
 pub use anim::*;
+pub use assets::*;
 pub use battle::*;
 pub use battle_action::*;
 pub use context::*;
@@ -29,48 +31,6 @@ pub use painter::*;
 pub use schema::*;
 pub use show::*;
 pub use tween::*;
-
-use bevy::{
-    color::{Color, Mix},
-    ecs::system::SystemParam,
-    log::*,
-    math::vec2,
-    prelude::{
-        App, BuildChildren, Children, Commands, Component, Entity, Mut, Parent, Query,
-        TransformBundle, VisibilityBundle, World,
-    },
-    utils::hashbrown::HashMap,
-};
-use bevy_egui::egui::{
-    self, epaint::TextShape, Align, CollapsingHeader, Color32, Frame, Layout, Margin, Rect,
-    Rounding, Shadow, Stroke, Ui,
-};
-use egui::{
-    emath::{self, Rot2, TSTransform},
-    epaint::{self, TessellationOptions},
-    remap, Checkbox, DragValue, Mesh, Response, Sense, Widget,
-};
-use epaint::{CircleShape, RectShape, Tessellator};
-use include_dir::Dir;
-use itertools::Itertools;
-use macro_client::*;
-use parking_lot::{const_mutex, Mutex};
-use rand::{Rng, SeedableRng};
-use rand_chacha::ChaCha8Rng;
-use serde::{Deserialize, Serialize};
-use std::hash::{DefaultHasher, Hash, Hasher};
-use std::mem;
-use std::{
-    cell::RefCell,
-    f32::consts::TAU,
-    ops::{Deref, DerefMut},
-};
-use strum::IntoEnumIterator;
-use strum_macros::Display;
-use strum_macros::{AsRefStr, EnumIter};
-use ui::*;
-use utils_client::{get_parent, *};
-use utils_client::{ToC32, ToColor};
 
 #[derive(SystemParam, Debug)]
 pub struct StateQuery<'w, 's> {

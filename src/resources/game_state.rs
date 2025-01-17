@@ -74,10 +74,10 @@ lazy_static! {
 
 impl GameState {
     pub fn get_target() -> Self {
-        *TARGET_STATE.lock().unwrap()
+        *TARGET_STATE.lock()
     }
     pub fn set_target(self) {
-        *TARGET_STATE.lock().unwrap() = self;
+        *TARGET_STATE.lock() = self;
     }
     pub fn set_next(self, world: &mut World) {
         info!(
@@ -91,7 +91,7 @@ impl GameState {
         OperationsPlugin::add(move |world| self.set_next(world));
     }
     pub fn proceed(world: &mut World) {
-        let target = *TARGET_STATE.lock().unwrap();
+        let target = *TARGET_STATE.lock();
         if let Some(options) = STATE_OPTIONS.get(&target) {
             for option in options {
                 if !option.is_fulfilled(world) {
@@ -142,12 +142,11 @@ lazy_static! {
 }
 
 pub fn save_entity_name(entity: Entity, name: Cstr) {
-    ENTITY_NAMES.lock().unwrap().insert(entity, name);
+    ENTITY_NAMES.lock().insert(entity, name);
 }
 pub fn entity_name(entity: Entity) -> String {
     ENTITY_NAMES
         .lock()
-        .unwrap()
         .get(&entity)
         .cloned()
         .unwrap_or(entity.to_string().cstr())
@@ -156,5 +155,5 @@ pub fn entity_name_with_id(entity: Entity) -> Cstr {
     entity_name(entity) + &format!("#{entity}")
 }
 pub fn clear_entity_names() {
-    ENTITY_NAMES.lock().unwrap().clear();
+    ENTITY_NAMES.lock().clear();
 }

@@ -25,7 +25,7 @@ impl ToCstr for GameOption {
 
 static CURRENTLY_FULFILLING: Mutex<GameOption> = Mutex::new(GameOption::Connect);
 pub fn currently_fulfilling() -> GameOption {
-    CURRENTLY_FULFILLING.lock().unwrap().clone()
+    CURRENTLY_FULFILLING.lock().clone()
 }
 
 impl GameOption {
@@ -45,7 +45,7 @@ impl GameOption {
             "Start fulfill option:".dimmed(),
             self.cstr().to_colored()
         );
-        *CURRENTLY_FULFILLING.lock().unwrap() = self.clone();
+        *CURRENTLY_FULFILLING.lock() = self.clone();
         match self {
             GameOption::Connect => ConnectOption::fulfill(world),
             GameOption::Login | GameOption::ForceLogin => LoginOption::fulfill(world),
@@ -88,24 +88,24 @@ static PLAYER_NAME: Mutex<&'static str> = Mutex::new("");
 static PLAYER_ID: Mutex<u64> = Mutex::new(0);
 static PLAYER_IDENTITY: Mutex<Identity> = Mutex::new(Identity::ZERO);
 pub fn player_id() -> u64 {
-    *PLAYER_ID.lock().unwrap()
+    *PLAYER_ID.lock()
 }
 pub fn player_name() -> &'static str {
-    *PLAYER_NAME.lock().unwrap()
+    *PLAYER_NAME.lock()
 }
 pub fn player_identity() -> Identity {
-    *PLAYER_IDENTITY.lock().unwrap()
+    *PLAYER_IDENTITY.lock()
 }
 pub fn save_identity(identity: Identity) {
-    *PLAYER_IDENTITY.lock().unwrap() = identity;
+    *PLAYER_IDENTITY.lock() = identity;
 }
 impl OptionResource for LoginOption {
     fn fulfill(world: &mut World) {
         GameState::Login.set_next(world);
     }
     fn save(self, world: &mut World) {
-        *PLAYER_NAME.lock().unwrap() = self.player.name.clone().leak();
-        *PLAYER_ID.lock().unwrap() = self.player.id;
+        *PLAYER_NAME.lock() = self.player.name.clone().leak();
+        *PLAYER_ID.lock() = self.player.id;
         world.insert_resource(self);
     }
 }
