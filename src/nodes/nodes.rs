@@ -69,6 +69,7 @@ impl OnUnpack for NodeKind {
         match self {
             NodeKind::Hero => hero_rep().clone().unpack(entity, commands),
             NodeKind::Unit => unit_rep().clone().unpack(entity, commands),
+            NodeKind::Status => status_rep().clone().unpack(entity, commands),
             _ => {}
         }
     }

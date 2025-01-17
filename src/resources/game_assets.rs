@@ -3,6 +3,7 @@ use spacetimedb_lib::de::serde::DeserializeWrapper;
 use super::*;
 
 static UNIT_REP: OnceCell<Representation> = OnceCell::new();
+static STATUS_REP: OnceCell<Representation> = OnceCell::new();
 static HERO_REP: OnceCell<Representation> = OnceCell::new();
 static ANIMATIONS: OnceCell<HashMap<String, Anim>> = OnceCell::new();
 
@@ -11,6 +12,9 @@ static GLOBAL_SETTINGS: OnceCell<GlobalSettings> = OnceCell::new();
 
 pub fn unit_rep() -> &'static Representation {
     UNIT_REP.get().unwrap()
+}
+pub fn status_rep() -> &'static Representation {
+    STATUS_REP.get().unwrap()
 }
 pub fn hero_rep() -> &'static Representation {
     HERO_REP.get().unwrap()
@@ -50,6 +54,9 @@ pub fn parse_content_tree() {
     HOUSES.set(houses).unwrap();
     UNIT_REP
         .set(Representation::from_dir("unit_rep".to_owned(), &CONTENT_DIR).unwrap())
+        .unwrap();
+    STATUS_REP
+        .set(Representation::from_dir("status_rep".to_owned(), &CONTENT_DIR).unwrap())
         .unwrap();
     HERO_REP
         .set(Representation::from_dir("hero_rep".to_owned(), &CONTENT_DIR).unwrap())

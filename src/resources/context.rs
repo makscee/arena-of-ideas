@@ -88,6 +88,9 @@ impl<'w, 's> Context<'w, 's> {
             .find_map(|l| l.get_var(var, &self.sources, self.t))
             .to_e_var(var)
     }
+    pub fn get_bool(&self, var: VarName) -> Result<bool, ExpressionError> {
+        self.get_var(var)?.get_bool()
+    }
     pub fn get_vars(&self) -> HashMap<VarName, VarValue> {
         HashMap::from_iter(self.layers.iter().filter_map(|l| match l {
             ContextLayer::Var(var, value) => Some((*var, value.clone())),
@@ -102,6 +105,13 @@ impl<'w, 's> Context<'w, 's> {
             }
         }
         default()
+    }
+    pub fn get_parent(&self, entity: Entity) -> Result<Entity, ExpressionError> {
+        self.sources
+            .iter()
+            .rev()
+            .find_map(|s| s.get_parent(entity))
+            .to_e("Parent not found")
     }
     pub fn get_all_units(&self) -> Vec<VarValue> {
         self.sources

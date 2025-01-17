@@ -231,10 +231,12 @@ impl BattleSimulation {
             }),
             ..default()
         };
-        status.unpack(
-            self.world.spawn_empty().set_parent(target).id(),
-            &mut self.world.commands(),
-        );
+        let entity = self.world.spawn_empty().set_parent(target).id();
+        status.unpack(entity, &mut self.world.commands());
+        self.world.flush_commands();
+        let mut state = NodeState::from_world_mut(entity, &mut self.world).unwrap();
+        state.insert(0.0, 0.0, VarName::visible, false.into(), default());
+        state.insert(self.t, 0.0, VarName::visible, true.into(), default());
     }
     fn send_event(&mut self, event: Event) {
         let mut actions = Vec::default();
@@ -435,24 +437,34 @@ impl BattleSimulation {
             self.show_slot(slot, side, ui);
         }
         let unit_size = center_rect.width() * UNIT_SIZE;
-        let mut q = self.world.query::<(Entity, &Representation)>();
+
+        let mut entities: VecDeque<Entity> = self
+            .world
+            .query_filtered::<Entity, Without<Parent>>()
+            .iter(&self.world)
+            .collect();
         let context = Context::new_world(&self.world).set_t(t).take();
-        for (e, rep) in q.iter(&self.world) {
-            let context = context.clone().set_owner(e).take();
-            let position = context
-                .get_var(VarName::position)
-                .unwrap_or_default()
-                .get_vec2()
-                .unwrap()
-                .to_evec2()
-                * up;
-            let rect = Rect::from_center_size(
-                center_rect.center() + position,
-                egui::Vec2::splat(unit_size),
-            );
-            match RepresentationPlugin::paint_rect(rect, &context, &rep.material, ui) {
-                Ok(_) => {}
-                Err(e) => error!("Rep paint error: {e}"),
+        while let Some(entity) = entities.pop_front() {
+            let context = context.clone().set_owner(entity).take();
+            if context.get_bool(VarName::visible).unwrap_or(true) {
+                entities.extend(context.get_children(entity));
+                if let Some(rep) = self.world.get::<Representation>(entity) {
+                    let position = context
+                        .get_var(VarName::position)
+                        .unwrap_or_default()
+                        .get_vec2()
+                        .unwrap()
+                        .to_evec2()
+                        * up;
+                    let rect = Rect::from_center_size(
+                        center_rect.center() + position,
+                        egui::Vec2::splat(unit_size),
+                    );
+                    match RepresentationPlugin::paint_rect(rect, &context, &rep.material, ui) {
+                        Ok(_) => {}
+                        Err(e) => error!("Rep paint error: {e}"),
+                    }
+                }
             }
         }
     }
