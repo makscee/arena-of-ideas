@@ -2,7 +2,7 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN RUST INSTEAD.
 
 #![allow(unused)]
-use super::nodes_type::Nodes;
+use super::t_node_type::TNode;
 use spacetimedb_sdk::{
     self as __sdk,
     anyhow::{self as __anyhow, Context as _},
@@ -18,7 +18,7 @@ use spacetimedb_sdk::{
 /// but to directly chain method calls,
 /// like `ctx.db.nodes().on_insert(...)`.
 pub struct NodesTableHandle<'ctx> {
-    imp: __sdk::db_connection::TableHandle<Nodes>,
+    imp: __sdk::db_connection::TableHandle<TNode>,
     ctx: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
@@ -35,7 +35,7 @@ pub trait NodesTableAccess {
 impl NodesTableAccess for super::RemoteTables {
     fn nodes(&self) -> NodesTableHandle<'_> {
         NodesTableHandle {
-            imp: self.imp.get_table::<Nodes>("nodes"),
+            imp: self.imp.get_table::<TNode>("nodes"),
             ctx: std::marker::PhantomData,
         }
     }
@@ -45,13 +45,13 @@ pub struct NodesInsertCallbackId(__sdk::callbacks::CallbackId);
 pub struct NodesDeleteCallbackId(__sdk::callbacks::CallbackId);
 
 impl<'ctx> __sdk::table::Table for NodesTableHandle<'ctx> {
-    type Row = Nodes;
+    type Row = TNode;
     type EventContext = super::EventContext;
 
     fn count(&self) -> u64 {
         self.imp.count()
     }
-    fn iter(&self) -> impl Iterator<Item = Nodes> + '_ {
+    fn iter(&self) -> impl Iterator<Item = TNode> + '_ {
         self.imp.iter()
     }
 
@@ -102,10 +102,10 @@ impl<'ctx> __sdk::table::TableWithPrimaryKey for NodesTableHandle<'ctx> {
 #[doc(hidden)]
 pub(super) fn parse_table_update(
     raw_updates: __ws::TableUpdate<__ws::BsatnFormat>,
-) -> __anyhow::Result<__sdk::spacetime_module::TableUpdate<Nodes>> {
+) -> __anyhow::Result<__sdk::spacetime_module::TableUpdate<TNode>> {
     __sdk::spacetime_module::TableUpdate::parse_table_update_with_primary_key::<String>(
         raw_updates,
-        |row: &Nodes| &row.key,
+        |row: &TNode| &row.key,
     )
     .context("Failed to parse table update for table \"nodes\"")
 }
@@ -118,7 +118,7 @@ pub(super) fn parse_table_update(
 /// but to directly chain method calls,
 /// like `ctx.db.nodes().key().find(...)`.
 pub struct NodesKeyUnique<'ctx> {
-    imp: __sdk::client_cache::UniqueConstraint<Nodes, String>,
+    imp: __sdk::client_cache::UniqueConstraint<TNode, String>,
     phantom: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
@@ -137,7 +137,7 @@ impl<'ctx> NodesTableHandle<'ctx> {
 impl<'ctx> NodesKeyUnique<'ctx> {
     /// Find the subscribed row whose `key` column value is equal to `col_val`,
     /// if such a row is present in the client cache.
-    pub fn find(&self, col_val: &String) -> Option<Nodes> {
+    pub fn find(&self, col_val: &String) -> Option<TNode> {
         self.imp.find(col_val)
     }
 }

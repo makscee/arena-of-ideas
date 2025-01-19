@@ -11,6 +11,8 @@ use spacetimedb_sdk::{
 pub mod admin_daily_update_reducer;
 pub mod admin_give_tag_reducer;
 pub mod admin_set_temp_pass_reducer;
+pub mod battle_insert_reducer;
+pub mod battle_table;
 pub mod cleanup_reducer;
 pub mod daily_update_reducer_reducer;
 pub mod daily_update_timer_table;
@@ -28,8 +30,8 @@ pub mod logout_reducer;
 pub mod node_move_reducer;
 pub mod node_spawn_hero_reducer;
 pub mod node_spawn_reducer;
+pub mod nodes_relations_table;
 pub mod nodes_table;
-pub mod nodes_type;
 pub mod player_table;
 pub mod player_tag_table;
 pub mod register_empty_reducer;
@@ -37,6 +39,9 @@ pub mod register_reducer;
 pub mod set_name_reducer;
 pub mod set_password_reducer;
 pub mod sync_assets_reducer;
+pub mod t_battle_type;
+pub mod t_node_relation_type;
+pub mod t_node_type;
 pub mod t_player_tag_type;
 pub mod t_player_type;
 pub mod t_wallet_type;
@@ -45,6 +50,8 @@ pub mod wallet_table;
 pub use admin_daily_update_reducer::*;
 pub use admin_give_tag_reducer::*;
 pub use admin_set_temp_pass_reducer::*;
+pub use battle_insert_reducer::*;
+pub use battle_table::*;
 pub use cleanup_reducer::*;
 pub use daily_update_reducer_reducer::*;
 pub use daily_update_timer_table::*;
@@ -62,8 +69,8 @@ pub use logout_reducer::*;
 pub use node_move_reducer::*;
 pub use node_spawn_hero_reducer::*;
 pub use node_spawn_reducer::*;
+pub use nodes_relations_table::*;
 pub use nodes_table::*;
-pub use nodes_type::*;
 pub use player_table::*;
 pub use player_tag_table::*;
 pub use register_empty_reducer::*;
@@ -71,6 +78,9 @@ pub use register_reducer::*;
 pub use set_name_reducer::*;
 pub use set_password_reducer::*;
 pub use sync_assets_reducer::*;
+pub use t_battle_type::*;
+pub use t_node_relation_type::*;
+pub use t_node_type::*;
 pub use t_player_tag_type::*;
 pub use t_player_type::*;
 pub use t_wallet_type::*;
@@ -90,6 +100,7 @@ pub enum Reducer {
     AdminDailyUpdate(admin_daily_update_reducer::AdminDailyUpdate),
     AdminGiveTag(admin_give_tag_reducer::AdminGiveTag),
     AdminSetTempPass(admin_set_temp_pass_reducer::AdminSetTempPass),
+    BattleInsert(battle_insert_reducer::BattleInsert),
     Cleanup(cleanup_reducer::Cleanup),
     DailyUpdateReducer(daily_update_reducer_reducer::DailyUpdateReducer),
     GiveCredits(give_credits_reducer::GiveCredits),
@@ -118,6 +129,7 @@ impl __sdk::spacetime_module::Reducer for Reducer {
             Reducer::AdminDailyUpdate(_) => "admin_daily_update",
             Reducer::AdminGiveTag(_) => "admin_give_tag",
             Reducer::AdminSetTempPass(_) => "admin_set_temp_pass",
+            Reducer::BattleInsert(_) => "battle_insert",
             Reducer::Cleanup(_) => "cleanup",
             Reducer::DailyUpdateReducer(_) => "daily_update_reducer",
             Reducer::GiveCredits(_) => "give_credits",
@@ -141,6 +153,7 @@ impl __sdk::spacetime_module::Reducer for Reducer {
             Reducer::AdminDailyUpdate(args) => args,
             Reducer::AdminGiveTag(args) => args,
             Reducer::AdminSetTempPass(args) => args,
+            Reducer::BattleInsert(args) => args,
             Reducer::Cleanup(args) => args,
             Reducer::DailyUpdateReducer(args) => args,
             Reducer::GiveCredits(args) => args,
@@ -180,6 +193,9 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
             )),
             "admin_set_temp_pass" => Ok(Reducer::AdminSetTempPass(
                 __sdk::spacetime_module::parse_reducer_args("admin_set_temp_pass", &value.args)?,
+            )),
+            "battle_insert" => Ok(Reducer::BattleInsert(
+                __sdk::spacetime_module::parse_reducer_args("battle_insert", &value.args)?,
             )),
             "cleanup" => Ok(Reducer::Cleanup(
                 __sdk::spacetime_module::parse_reducer_args("cleanup", &value.args)?,
@@ -236,10 +252,12 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
 #[allow(non_snake_case)]
 #[doc(hidden)]
 pub struct DbUpdate {
+    battle: __sdk::spacetime_module::TableUpdate<TBattle>,
     daily_update_timer: __sdk::spacetime_module::TableUpdate<DailyUpdateTimer>,
     global_data: __sdk::spacetime_module::TableUpdate<GlobalData>,
     global_settings: __sdk::spacetime_module::TableUpdate<GlobalSettings>,
-    nodes: __sdk::spacetime_module::TableUpdate<Nodes>,
+    nodes: __sdk::spacetime_module::TableUpdate<TNode>,
+    nodes_relations: __sdk::spacetime_module::TableUpdate<TNodeRelation>,
     player: __sdk::spacetime_module::TableUpdate<TPlayer>,
     player_tag: __sdk::spacetime_module::TableUpdate<TPlayerTag>,
     wallet: __sdk::spacetime_module::TableUpdate<TWallet>,
@@ -251,6 +269,7 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
         let mut db_update = DbUpdate::default();
         for table_update in raw.tables {
             match &table_update.table_name[..] {
+                "battle" => db_update.battle = battle_table::parse_table_update(table_update)?,
                 "daily_update_timer" => {
                     db_update.daily_update_timer =
                         daily_update_timer_table::parse_table_update(table_update)?
@@ -263,6 +282,10 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
                         global_settings_table::parse_table_update(table_update)?
                 }
                 "nodes" => db_update.nodes = nodes_table::parse_table_update(table_update)?,
+                "nodes_relations" => {
+                    db_update.nodes_relations =
+                        nodes_relations_table::parse_table_update(table_update)?
+                }
                 "player" => db_update.player = player_table::parse_table_update(table_update)?,
                 "player_tag" => {
                     db_update.player_tag = player_tag_table::parse_table_update(table_update)?
@@ -282,13 +305,15 @@ impl __sdk::spacetime_module::InModule for DbUpdate {
 
 impl __sdk::spacetime_module::DbUpdate for DbUpdate {
     fn apply_to_client_cache(&self, cache: &mut __sdk::client_cache::ClientCache<RemoteModule>) {
+        cache.apply_diff_to_table::<TBattle>("battle", &self.battle);
         cache.apply_diff_to_table::<DailyUpdateTimer>(
             "daily_update_timer",
             &self.daily_update_timer,
         );
         cache.apply_diff_to_table::<GlobalData>("global_data", &self.global_data);
         cache.apply_diff_to_table::<GlobalSettings>("global_settings", &self.global_settings);
-        cache.apply_diff_to_table::<Nodes>("nodes", &self.nodes);
+        cache.apply_diff_to_table::<TNode>("nodes", &self.nodes);
+        cache.apply_diff_to_table::<TNodeRelation>("nodes_relations", &self.nodes_relations);
         cache.apply_diff_to_table::<TPlayer>("player", &self.player);
         cache.apply_diff_to_table::<TPlayerTag>("player_tag", &self.player_tag);
         cache.apply_diff_to_table::<TWallet>("wallet", &self.wallet);
@@ -298,6 +323,7 @@ impl __sdk::spacetime_module::DbUpdate for DbUpdate {
         event: &EventContext,
         callbacks: &mut __sdk::callbacks::DbCallbacks<RemoteModule>,
     ) {
+        callbacks.invoke_table_row_callbacks::<TBattle>("battle", &self.battle, event);
         callbacks.invoke_table_row_callbacks::<DailyUpdateTimer>(
             "daily_update_timer",
             &self.daily_update_timer,
@@ -309,7 +335,12 @@ impl __sdk::spacetime_module::DbUpdate for DbUpdate {
             &self.global_settings,
             event,
         );
-        callbacks.invoke_table_row_callbacks::<Nodes>("nodes", &self.nodes, event);
+        callbacks.invoke_table_row_callbacks::<TNode>("nodes", &self.nodes, event);
+        callbacks.invoke_table_row_callbacks::<TNodeRelation>(
+            "nodes_relations",
+            &self.nodes_relations,
+            event,
+        );
         callbacks.invoke_table_row_callbacks::<TPlayer>("player", &self.player, event);
         callbacks.invoke_table_row_callbacks::<TPlayerTag>("player_tag", &self.player_tag, event);
         callbacks.invoke_table_row_callbacks::<TWallet>("wallet", &self.wallet, event);

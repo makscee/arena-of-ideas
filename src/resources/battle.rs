@@ -3,8 +3,8 @@ use super::*;
 const ANIMATION: f32 = 0.2;
 
 pub struct Battle {
-    pub left: Vec<Unit>,
-    pub right: Vec<Unit>,
+    pub left: Team,
+    pub right: Team,
 }
 #[derive(Debug)]
 pub struct BattleSimulation {
@@ -50,6 +50,41 @@ impl ToCstr for BattleAction {
 impl std::fmt::Display for BattleAction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(&self.cstr().to_colored())
+    }
+}
+
+impl Battle {
+    pub fn open_window(&self, world: &mut World) {
+        let mut bs = BattleSimulation::new(self).start();
+        let mut t = 0.0;
+        let mut playing = false;
+        Window::new("Battle", move |ui, _| {
+            ui.set_min_size(egui::vec2(800.0, 400.0));
+            Slider::new("ts").full_width().ui(&mut t, 0.0..=bs.t, ui);
+            Checkbox::new(&mut playing, "play").ui(ui);
+            if "+1".cstr().button(ui).clicked() {
+                bs.run();
+            }
+            if "+10".cstr().button(ui).clicked() {
+                for _ in 0..10 {
+                    bs.run();
+                }
+            }
+            if "+100".cstr().button(ui).clicked() {
+                for _ in 0..100 {
+                    bs.run();
+                }
+            }
+            if playing {
+                t += gt().last_delta();
+                t = t.at_most(bs.t);
+            }
+            bs.show_at(t, ui);
+            if t >= bs.t && !bs.ended() {
+                bs.run();
+            }
+        })
+        .push(world);
     }
 }
 
@@ -174,13 +209,13 @@ impl BattleSimulation {
         let mut left: Vec<Entity> = default();
         let mut right: Vec<Entity> = default();
         let mut log = BattleLog::default();
-        for (_, u) in battle.left.iter().enumerate() {
+        for (_, u) in battle.left.units.iter().enumerate() {
             let entity = world.spawn_empty().id();
             u.clone().unpack(entity, &mut world.commands());
             left.push(entity);
             log.add_state(entity, &mut world);
         }
-        for (_, u) in battle.right.iter().enumerate() {
+        for (_, u) in battle.right.units.iter().enumerate() {
             let entity = world.spawn_empty().id();
             u.clone().unpack(entity, &mut world.commands());
             right.push(entity);

@@ -15,6 +15,11 @@ pub trait Node: Default + Component + Sized + GetVar + Show + Debug {
     fn from_dir(path: String, dir: &Dir) -> Option<Self>;
     fn from_strings(i: usize, strings: &Vec<String>) -> Option<Self>;
     fn to_strings(&self, parent: usize, field: &str, strings: &mut Vec<String>);
+    fn to_strings_root(&self) -> Vec<String> {
+        let mut strings = Vec::default();
+        self.to_strings(0, "_", &mut strings);
+        strings
+    }
     fn unpack(self, entity: Entity, commands: &mut Commands);
     fn find_up_entity<T: Component>(entity: Entity, world: &World) -> Option<&T> {
         let r = world.get::<T>(entity);

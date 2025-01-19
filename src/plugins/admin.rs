@@ -43,40 +43,18 @@ impl AdminPlugin {
             }),
             ..default()
         };
-        let b = Battle {
-            left: [unit.clone(), unit.clone()].into(),
-            right: [unit.clone(), unit.clone()].into(),
+        let team = Team {
+            name: "TestTeam".into(),
+            units: [unit.clone()].into(),
+            ..default()
         };
-        let mut bs = BattleSimulation::new(&b).start();
-        let mut t = 0.0;
-        let mut playing = false;
-        Window::new("Battle", move |ui, _| {
-            ui.set_min_size(egui::vec2(800.0, 400.0));
-            Slider::new("ts").full_width().ui(&mut t, 0.0..=bs.t, ui);
-            Checkbox::new(&mut playing, "play").ui(ui);
-            if "+1".cstr().button(ui).clicked() {
-                bs.run();
-            }
-            if "+10".cstr().button(ui).clicked() {
-                for _ in 0..10 {
-                    bs.run();
-                }
-            }
-            if "+100".cstr().button(ui).clicked() {
-                for _ in 0..100 {
-                    bs.run();
-                }
-            }
-            if playing {
-                t += gt().last_delta();
-                t = t.at_most(bs.t);
-            }
-            bs.show_at(t, ui);
-            if t >= bs.t && !bs.ended() {
-                bs.run();
-            }
-        })
-        .push(world);
+        let s = team.to_strings_root();
+        dbg!(Team::from_strings(0, &s));
+        let b = Battle {
+            left: team.clone(),
+            right: team,
+        };
+        b.open_window(world);
     }
     fn show_anim_editor(w: &mut World) {
         let mut cs = client_state().clone();
@@ -182,6 +160,34 @@ Abs(Equals(F(51.0),Abs(Equals(F(1.0),Or(Equals(F(1.0),One),Abs(Or(Target,Abs(One
                             error!("{e}")
                         }
                     };
+                }
+                if "Push Battle".cstr().button(ui).clicked() {
+                    let unit = Unit {
+                        name: String::new(),
+                        stats: Some(UnitStats {
+                            pwr: 1,
+                            hp: 10,
+                            ..default()
+                        }),
+                        description: Some(UnitDescription {
+                            description: "battle start test".into(),
+                            trigger: Some(UnitTrigger {
+                                trigger: Trigger::BattleStart,
+                                target: Expression::Owner,
+                                effect: Effect::ChangeStatus,
+                                ..default()
+                            }),
+                            ..default()
+                        }),
+                        ..default()
+                    };
+                    let team = Team {
+                        name: "TestTeam".into(),
+                        units: [unit.clone(), unit.clone()].into(),
+                        ..default()
+                    }
+                    .to_strings_root();
+                    cn().reducers.battle_insert(team.clone(), team).unwrap();
                 }
                 // ui.horizontal(|ui| {
                 //     e.show_mut(Some("Expr"), ui);

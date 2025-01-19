@@ -43,7 +43,17 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 all_data_fields,
                 all_data_types,
             } = parse_node_fields(fields);
-
+            let strings_conversions = strings_conversions(
+                &option_link_fields,
+                &option_link_fields_str,
+                &option_link_types,
+                &vec_link_fields,
+                &vec_link_fields_str,
+                &vec_link_types,
+                &vec_box_link_fields,
+                &vec_box_link_fields_str,
+                &vec_box_link_types,
+            );
             let nt = if all_data_fields.contains(&Ident::from_string("name").unwrap()) {
                 NodeType::Name
             } else if !option_link_fields.is_empty() || !vec_box_link_fields.is_empty() {
@@ -178,6 +188,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     }
                 }
                 impl Node for #struct_ident {
+                    #strings_conversions
                     fn entity(&self) -> Option<Entity> {
                         self.entity
                     }
@@ -211,63 +222,6 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                             }
                         )*
                         commands.entity(entity).insert(self);
-                    }
-                    fn to_strings(&self, parent: usize, field: &str, strings: &mut Vec<String>) {
-                        let entry = format!("{parent} {field} {}", self.get_data());
-                        let i = strings.len();
-                        strings.push(entry);
-                        #(
-                            if let Some(d) = &self.#option_link_fields {
-                                d.to_strings(i, #option_link_fields_str, strings);
-                            }
-                        )*
-                        #(
-                            for d in &self.#vec_link_fields {
-                                d.to_strings(i, #vec_link_fields_str, strings);
-                            }
-                        )*
-                        #(
-                            for d in &self.#vec_box_link_fields {
-                                d.to_strings(i, #vec_box_link_fields_str, strings);
-                            }
-                        )*
-                    }
-                    fn from_strings(i: usize, strings: &Vec<String>) -> Option<Self> {
-                        let (_, _, data) = strings[i].splitn(3, ' ').collect_tuple()?;
-                        let mut d = Self::default();
-                        d.inject_data(data);
-                        let i_str = i.to_string();
-                        #(
-                            d.#option_link_fields = strings.iter().skip(i).enumerate().find_map(|(i, s)| {
-                                let (parent, field, _) = s.splitn(3, ' ').collect_tuple()?;
-                                if i_str.eq(parent) && field.eq(#option_link_fields_str) {
-                                    #option_link_types::from_strings(i, strings)
-                                } else {
-                                    None
-                                }
-                            });
-                        )*
-                        #(
-                            d.#vec_link_fields = strings.iter().skip(i).enumerate().filter_map(|(i, s)| {
-                                let (parent, field, _) = s.splitn(3, ' ').collect_tuple()?;
-                                if i_str.eq(parent) && field.eq(#vec_link_fields_str) {
-                                    #vec_link_types::from_strings(i, strings)
-                                } else {
-                                    None
-                                }
-                            }).collect();
-                        )*
-                        #(
-                            d.#vec_box_link_fields = strings.iter().skip(i).enumerate().filter_map(|(i, s)| {
-                                let (parent, field, _) = s.splitn(3, ' ').collect_tuple()?;
-                                if i_str.eq(parent) && field.eq(#vec_box_link_fields_str) {
-                                    #vec_box_link_types::from_strings(i, strings).map(|v| Box::new(v))
-                                } else {
-                                    None
-                                }
-                            }).collect();
-                        )*
-                        Some(d)
                     }
                     fn ui(&self, depth: usize, context: &Context, ui: &mut Ui) {
                         let color = context.get_var(VarName::color)

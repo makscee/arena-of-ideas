@@ -4,20 +4,21 @@ use super::*;
 struct TBattle {
     #[primary_key]
     id: u64,
-    team_left: Vec<TNode>,
-    team_right: Vec<TNode>,
-}
-
-impl TBattle {
-    pub fn init(ctx: &ReducerContext) {}
+    team_left: Vec<String>,
+    team_right: Vec<String>,
 }
 
 #[reducer]
-fn battle_insert(ctx: &ReducerContext, team_left: u64, team_right: u64) -> Result<(), String> {
-    TBattle {
+fn battle_insert(
+    ctx: &ReducerContext,
+    team_left: Vec<String>,
+    team_right: Vec<String>,
+) -> Result<(), String> {
+    let battle = TBattle {
         id: next_id(ctx),
-        team_left: TNode::gather(ctx, team_left),
-        team_right: TNode::gather(ctx, team_right),
+        team_left,
+        team_right,
     };
+    ctx.db.battle().insert(battle);
     Ok(())
 }

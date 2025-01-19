@@ -48,8 +48,7 @@ pub fn parse_content_tree() {
         .dirs()
     {
         let house = House::from_dir(dir.path().to_str().unwrap().to_string(), dir).unwrap();
-        let mut strings = Vec::default();
-        house.to_strings(0, "_".into(), &mut strings);
+        let strings = house.to_strings_root();
         dbg!(&strings);
         let d = House::from_strings(0, &strings);
         dbg!(d);
