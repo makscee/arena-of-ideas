@@ -31,10 +31,7 @@ pub trait StringData: Sized {
     fn inject_data(&mut self, data: &str);
     fn get_data(&self) -> String;
 }
-impl<T> StringData for T
-where
-    T: Serialize + DeserializeOwned,
-{
+impl<T: Serialize + DeserializeOwned> StringData for T {
     fn inject_data(&mut self, data: &str) {
         match ron::from_str(data) {
             Ok(v) => *self = v,

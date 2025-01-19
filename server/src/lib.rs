@@ -1,3 +1,4 @@
+mod battle;
 mod daily_updater;
 mod global_data;
 mod global_settings;
@@ -11,12 +12,14 @@ mod wallet;
 
 use std::str::FromStr;
 
+use battle::*;
 use glam::vec2;
 use global_data::*;
 use global_settings::*;
 use inflating_number::*;
 use itertools::Itertools;
 use nodes::*;
+use nodes_table::*;
 use player::*;
 use player_tag::*;
 use rand::{distributions::Alphanumeric, seq::IteratorRandom, Rng};

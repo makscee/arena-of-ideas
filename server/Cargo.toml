@@ -17,6 +17,7 @@ strum_macros = { workspace = true }
 chrono = { workspace = true }
 glam = { workspace = true }
 ron = { workspace = true }
+serde = { workspace = true }
 log = "0.4"
 itertools = "0.12.0"
 hex = "0.4.3"

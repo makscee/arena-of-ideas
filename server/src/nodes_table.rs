@@ -1,44 +1,67 @@
+use std::collections::{HashSet, VecDeque};
+
 use super::*;
 
 #[table(public, name = nodes)]
-pub struct Nodes {
+pub struct TNode {
     #[primary_key]
     pub key: String,
+    #[index(btree)]
     pub id: u64,
+    #[index(btree)]
     pub kind: String,
-    pub parent: u64,
     pub data: String,
 }
 
-impl Nodes {
+#[table(public, name = nodes_relations)]
+pub struct TNodeRelation {
+    #[primary_key]
+    pub id: u64,
+    #[index(btree)]
+    pub parent: u64,
+}
+
+impl TNode {
     fn new(id: u64, kind: NodeKind, data: String) -> Self {
         Self {
             key: kind.key(id),
             id,
             kind: kind.to_string(),
-            parent: 0,
             data,
         }
     }
+    pub fn gather(ctx: &ReducerContext, id: u64) -> Vec<Self> {
+        let mut result: Vec<TNode> = default();
+        let mut processed: HashSet<u64> = default();
+        let mut queue: VecDeque<u64> = VecDeque::from([id]);
+        while let Some(id) = queue.pop_front() {
+            processed.insert(id);
+            result.extend(ctx.db.nodes().id().filter(id));
+            for node in ctx.db.nodes_relations().parent().filter(id) {
+                let id = node.id;
+                if !processed.contains(&id) {
+                    queue.push_back(id);
+                }
+            }
+        }
+        result
+    }
 }
 
-trait KeyFromKind {
-    fn key_next(self, ctx: &ReducerContext) -> String;
-    fn key(self, id: u64) -> String;
-}
-impl KeyFromKind for NodeKind {
-    fn key_next(self, ctx: &ReducerContext) -> String {
-        format!("{}_{self}", next_id(ctx))
-    }
-    fn key(self, id: u64) -> String {
+impl NodeKind {
+    pub fn key(self, id: u64) -> String {
         format!("{id}_{self}")
+    }
+    pub fn find(self, ctx: &ReducerContext, id: u64) -> Option<String> {
+        let key = self.key(id);
+        ctx.db.nodes().key().find(key).map(|r| r.data)
     }
 }
 
 trait NodeExt {
     fn insert(&self, ctx: &ReducerContext, id: u64);
     fn update(&self, ctx: &ReducerContext, id: u64);
-    fn to_node(&self, id: u64) -> Nodes;
+    fn to_tnode(&self, id: u64) -> TNode;
 }
 
 impl<T> NodeExt for T
@@ -48,13 +71,13 @@ where
     fn insert(&self, ctx: &ReducerContext, id: u64) {
         ctx.db
             .nodes()
-            .insert(Nodes::new(id, self.kind(), self.get_data()));
+            .insert(TNode::new(id, self.kind(), self.get_data()));
     }
     fn update(&self, ctx: &ReducerContext, id: u64) {
-        ctx.db.nodes().key().update(self.to_node(id));
+        ctx.db.nodes().key().update(self.to_tnode(id));
     }
-    fn to_node(&self, id: u64) -> Nodes {
-        Nodes::new(id, self.kind(), self.get_data())
+    fn to_tnode(&self, id: u64) -> TNode {
+        TNode::new(id, self.kind(), self.get_data())
     }
 }
 
@@ -68,7 +91,7 @@ fn node_spawn(
     let id = id.unwrap_or_else(|| next_id(ctx));
     for (kind, data) in kinds.into_iter().zip(datas.into_iter()) {
         let kind = NodeKind::from_str(&kind).map_err(|e| e.to_string())?;
-        ctx.db.nodes().insert(Nodes::new(id, kind, data));
+        ctx.db.nodes().insert(TNode::new(id, kind, data));
     }
     Ok(())
 }

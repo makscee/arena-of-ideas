@@ -24,6 +24,11 @@ struct AbilityEffect {
     pub data: String,
 }
 
+struct Team {
+    pub name: String,
+    pub units: Vec<Unit>,
+}
+
 struct Unit {
     pub name: String,
     pub stats: Option<UnitStats>,

@@ -13,6 +13,8 @@ pub trait GetVar: GetNodeKind {
 pub trait Node: Default + Component + Sized + GetVar + Show + Debug {
     fn entity(&self) -> Option<Entity>;
     fn from_dir(path: String, dir: &Dir) -> Option<Self>;
+    fn from_strings(i: usize, strings: &Vec<String>) -> Option<Self>;
+    fn to_strings(&self, parent: usize, field: &str, strings: &mut Vec<String>);
     fn unpack(self, entity: Entity, commands: &mut Commands);
     fn find_up_entity<T: Component>(entity: Entity, world: &World) -> Option<&T> {
         let r = world.get::<T>(entity);
@@ -46,6 +48,30 @@ pub trait Node: Default + Component + Sized + GetVar + Show + Debug {
     }
     fn ui(&self, depth: usize, context: &Context, ui: &mut Ui);
 }
+
+// impl Unit {
+//     fn from_strings(i: usize, strings: &Vec<String>) -> Option<Self> {
+//         let (parent, field, data) = strings[i].splitn(3, ' ').collect_tuple()?;
+//         let mut d = Self::default();
+//         d.inject_data(data);
+//         let i_str = i.to_string();
+//         d.description = strings.iter().skip(i).enumerate().find_map(|(i, s)| {
+//             let (parent, field, data) = s.splitn(3, ' ').collect_tuple()?;
+//             if i_str.eq(parent) && field.eq("description") {
+//                 UnitDescription::from_strings(i, strings)
+//             } else {
+//                 None
+//             }
+//         });
+//         Some(d)
+//     }
+// }
+
+// impl UnitDescription {
+//     fn from_strings(i: usize, strings: &Vec<String>) -> Option<Self> {
+//         None
+//     }
+// }
 
 impl ToCstr for NodeKind {
     fn cstr(&self) -> Cstr {

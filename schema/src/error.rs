@@ -21,6 +21,7 @@ pub enum ExpressionError {
 pub trait OptionExpressionError<T> {
     fn to_e(self, s: impl Into<String>) -> Result<T, ExpressionError>;
     fn to_e_s(self, s: impl Into<String>) -> Result<T, String>;
+    fn to_e_s_fn(self, s: impl FnOnce() -> String) -> Result<T, String>;
     fn to_e_var(self, var: VarName) -> Result<T, ExpressionError>;
 }
 
@@ -35,6 +36,12 @@ impl<T> OptionExpressionError<T> for Option<T> {
         match self {
             Some(v) => Ok(v),
             None => Err(s.into()),
+        }
+    }
+    fn to_e_s_fn(self, s: impl FnOnce() -> String) -> Result<T, String> {
+        match self {
+            Some(v) => Ok(v),
+            None => Err(s()),
         }
     }
     fn to_e_var(self, var: VarName) -> Result<T, ExpressionError> {
