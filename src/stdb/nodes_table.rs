@@ -3,10 +3,9 @@
 
 #![allow(unused)]
 use super::t_node_type::TNode;
-use spacetimedb_sdk::{
-    self as __sdk,
+use spacetimedb_sdk::__codegen::{
+    self as __sdk, __lib, __sats, __ws,
     anyhow::{self as __anyhow, Context as _},
-    lib as __lib, sats as __sats, ws_messages as __ws,
 };
 
 /// Table handle for the table `nodes`.
@@ -18,7 +17,7 @@ use spacetimedb_sdk::{
 /// but to directly chain method calls,
 /// like `ctx.db.nodes().on_insert(...)`.
 pub struct NodesTableHandle<'ctx> {
-    imp: __sdk::db_connection::TableHandle<TNode>,
+    imp: __sdk::TableHandle<TNode>,
     ctx: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
@@ -41,10 +40,10 @@ impl NodesTableAccess for super::RemoteTables {
     }
 }
 
-pub struct NodesInsertCallbackId(__sdk::callbacks::CallbackId);
-pub struct NodesDeleteCallbackId(__sdk::callbacks::CallbackId);
+pub struct NodesInsertCallbackId(__sdk::CallbackId);
+pub struct NodesDeleteCallbackId(__sdk::CallbackId);
 
-impl<'ctx> __sdk::table::Table for NodesTableHandle<'ctx> {
+impl<'ctx> __sdk::Table for NodesTableHandle<'ctx> {
     type Row = TNode;
     type EventContext = super::EventContext;
 
@@ -82,9 +81,14 @@ impl<'ctx> __sdk::table::Table for NodesTableHandle<'ctx> {
     }
 }
 
-pub struct NodesUpdateCallbackId(__sdk::callbacks::CallbackId);
+#[doc(hidden)]
+pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
+    let _table = client_cache.get_or_make_table::<TNode>("nodes");
+    _table.add_unique_constraint::<String>("key", |row| &row.key);
+}
+pub struct NodesUpdateCallbackId(__sdk::CallbackId);
 
-impl<'ctx> __sdk::table::TableWithPrimaryKey for NodesTableHandle<'ctx> {
+impl<'ctx> __sdk::TableWithPrimaryKey for NodesTableHandle<'ctx> {
     type UpdateCallbackId = NodesUpdateCallbackId;
 
     fn on_update(
@@ -102,11 +106,10 @@ impl<'ctx> __sdk::table::TableWithPrimaryKey for NodesTableHandle<'ctx> {
 #[doc(hidden)]
 pub(super) fn parse_table_update(
     raw_updates: __ws::TableUpdate<__ws::BsatnFormat>,
-) -> __anyhow::Result<__sdk::spacetime_module::TableUpdate<TNode>> {
-    __sdk::spacetime_module::TableUpdate::parse_table_update_with_primary_key::<String>(
-        raw_updates,
-        |row: &TNode| &row.key,
-    )
+) -> __anyhow::Result<__sdk::TableUpdate<TNode>> {
+    __sdk::TableUpdate::parse_table_update_with_primary_key::<String>(raw_updates, |row: &TNode| {
+        &row.key
+    })
     .context("Failed to parse table update for table \"nodes\"")
 }
 
@@ -118,7 +121,7 @@ pub(super) fn parse_table_update(
 /// but to directly chain method calls,
 /// like `ctx.db.nodes().key().find(...)`.
 pub struct NodesKeyUnique<'ctx> {
-    imp: __sdk::client_cache::UniqueConstraint<TNode, String>,
+    imp: __sdk::UniqueConstraintHandle<TNode, String>,
     phantom: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
@@ -126,9 +129,7 @@ impl<'ctx> NodesTableHandle<'ctx> {
     /// Get a handle on the `key` unique index on the table `nodes`.
     pub fn key(&self) -> NodesKeyUnique<'ctx> {
         NodesKeyUnique {
-            imp: self
-                .imp
-                .get_unique_constraint::<String>("key", |row| &row.key),
+            imp: self.imp.get_unique_constraint::<String>("key"),
             phantom: std::marker::PhantomData,
         }
     }

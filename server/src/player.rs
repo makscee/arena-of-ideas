@@ -155,7 +155,7 @@ impl TPlayer {
             match verify(pass, hash) {
                 Ok(v) => v,
                 Err(e) => {
-                    self::eprintln!("Password verify error: {e}");
+                    log::error!("Password verify error: {e}");
                     false
                 }
             }
@@ -224,7 +224,7 @@ fn admin_set_temp_pass(ctx: &ReducerContext, id: u64) -> Result<(), String> {
         .take(8)
         .map(char::from)
         .collect();
-    spacetimedb::println!("Temp pass: {id} {} {pass}", player.name);
+    log::info!("Temp pass: {id} {} {pass}", player.name);
     let pass_hash = Some(TPlayer::hash_pass(ctx, pass)?);
     ctx.db.player().id().update(TPlayer {
         pass_hash,

@@ -3,10 +3,9 @@
 
 #![allow(unused)]
 use super::daily_update_timer_type::DailyUpdateTimer;
-use spacetimedb_sdk::{
-    self as __sdk,
+use spacetimedb_sdk::__codegen::{
+    self as __sdk, __lib, __sats, __ws,
     anyhow::{self as __anyhow, Context as _},
-    lib as __lib, sats as __sats, ws_messages as __ws,
 };
 
 /// Table handle for the table `daily_update_timer`.
@@ -18,7 +17,7 @@ use spacetimedb_sdk::{
 /// but to directly chain method calls,
 /// like `ctx.db.daily_update_timer().on_insert(...)`.
 pub struct DailyUpdateTimerTableHandle<'ctx> {
-    imp: __sdk::db_connection::TableHandle<DailyUpdateTimer>,
+    imp: __sdk::TableHandle<DailyUpdateTimer>,
     ctx: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
@@ -41,10 +40,10 @@ impl DailyUpdateTimerTableAccess for super::RemoteTables {
     }
 }
 
-pub struct DailyUpdateTimerInsertCallbackId(__sdk::callbacks::CallbackId);
-pub struct DailyUpdateTimerDeleteCallbackId(__sdk::callbacks::CallbackId);
+pub struct DailyUpdateTimerInsertCallbackId(__sdk::CallbackId);
+pub struct DailyUpdateTimerDeleteCallbackId(__sdk::CallbackId);
 
-impl<'ctx> __sdk::table::Table for DailyUpdateTimerTableHandle<'ctx> {
+impl<'ctx> __sdk::Table for DailyUpdateTimerTableHandle<'ctx> {
     type Row = DailyUpdateTimer;
     type EventContext = super::EventContext;
 
@@ -82,9 +81,14 @@ impl<'ctx> __sdk::table::Table for DailyUpdateTimerTableHandle<'ctx> {
     }
 }
 
-pub struct DailyUpdateTimerUpdateCallbackId(__sdk::callbacks::CallbackId);
+#[doc(hidden)]
+pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
+    let _table = client_cache.get_or_make_table::<DailyUpdateTimer>("daily_update_timer");
+    _table.add_unique_constraint::<u64>("scheduled_id", |row| &row.scheduled_id);
+}
+pub struct DailyUpdateTimerUpdateCallbackId(__sdk::CallbackId);
 
-impl<'ctx> __sdk::table::TableWithPrimaryKey for DailyUpdateTimerTableHandle<'ctx> {
+impl<'ctx> __sdk::TableWithPrimaryKey for DailyUpdateTimerTableHandle<'ctx> {
     type UpdateCallbackId = DailyUpdateTimerUpdateCallbackId;
 
     fn on_update(
@@ -102,8 +106,8 @@ impl<'ctx> __sdk::table::TableWithPrimaryKey for DailyUpdateTimerTableHandle<'ct
 #[doc(hidden)]
 pub(super) fn parse_table_update(
     raw_updates: __ws::TableUpdate<__ws::BsatnFormat>,
-) -> __anyhow::Result<__sdk::spacetime_module::TableUpdate<DailyUpdateTimer>> {
-    __sdk::spacetime_module::TableUpdate::parse_table_update_with_primary_key::<u64>(
+) -> __anyhow::Result<__sdk::TableUpdate<DailyUpdateTimer>> {
+    __sdk::TableUpdate::parse_table_update_with_primary_key::<u64>(
         raw_updates,
         |row: &DailyUpdateTimer| &row.scheduled_id,
     )
@@ -118,7 +122,7 @@ pub(super) fn parse_table_update(
 /// but to directly chain method calls,
 /// like `ctx.db.daily_update_timer().scheduled_id().find(...)`.
 pub struct DailyUpdateTimerScheduledIdUnique<'ctx> {
-    imp: __sdk::client_cache::UniqueConstraint<DailyUpdateTimer, u64>,
+    imp: __sdk::UniqueConstraintHandle<DailyUpdateTimer, u64>,
     phantom: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
@@ -126,9 +130,7 @@ impl<'ctx> DailyUpdateTimerTableHandle<'ctx> {
     /// Get a handle on the `scheduled_id` unique index on the table `daily_update_timer`.
     pub fn scheduled_id(&self) -> DailyUpdateTimerScheduledIdUnique<'ctx> {
         DailyUpdateTimerScheduledIdUnique {
-            imp: self
-                .imp
-                .get_unique_constraint::<u64>("scheduled_id", |row| &row.scheduled_id),
+            imp: self.imp.get_unique_constraint::<u64>("scheduled_id"),
             phantom: std::marker::PhantomData,
         }
     }

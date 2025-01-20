@@ -3,10 +3,9 @@
 
 #![allow(unused)]
 use super::t_player_tag_type::TPlayerTag;
-use spacetimedb_sdk::{
-    self as __sdk,
+use spacetimedb_sdk::__codegen::{
+    self as __sdk, __lib, __sats, __ws,
     anyhow::{self as __anyhow, Context as _},
-    lib as __lib, sats as __sats, ws_messages as __ws,
 };
 
 /// Table handle for the table `player_tag`.
@@ -18,7 +17,7 @@ use spacetimedb_sdk::{
 /// but to directly chain method calls,
 /// like `ctx.db.player_tag().on_insert(...)`.
 pub struct PlayerTagTableHandle<'ctx> {
-    imp: __sdk::db_connection::TableHandle<TPlayerTag>,
+    imp: __sdk::TableHandle<TPlayerTag>,
     ctx: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
@@ -41,10 +40,10 @@ impl PlayerTagTableAccess for super::RemoteTables {
     }
 }
 
-pub struct PlayerTagInsertCallbackId(__sdk::callbacks::CallbackId);
-pub struct PlayerTagDeleteCallbackId(__sdk::callbacks::CallbackId);
+pub struct PlayerTagInsertCallbackId(__sdk::CallbackId);
+pub struct PlayerTagDeleteCallbackId(__sdk::CallbackId);
 
-impl<'ctx> __sdk::table::Table for PlayerTagTableHandle<'ctx> {
+impl<'ctx> __sdk::Table for PlayerTagTableHandle<'ctx> {
     type Row = TPlayerTag;
     type EventContext = super::EventContext;
 
@@ -82,9 +81,14 @@ impl<'ctx> __sdk::table::Table for PlayerTagTableHandle<'ctx> {
     }
 }
 
-pub struct PlayerTagUpdateCallbackId(__sdk::callbacks::CallbackId);
+#[doc(hidden)]
+pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
+    let _table = client_cache.get_or_make_table::<TPlayerTag>("player_tag");
+    _table.add_unique_constraint::<u64>("id", |row| &row.id);
+}
+pub struct PlayerTagUpdateCallbackId(__sdk::CallbackId);
 
-impl<'ctx> __sdk::table::TableWithPrimaryKey for PlayerTagTableHandle<'ctx> {
+impl<'ctx> __sdk::TableWithPrimaryKey for PlayerTagTableHandle<'ctx> {
     type UpdateCallbackId = PlayerTagUpdateCallbackId;
 
     fn on_update(
@@ -102,8 +106,8 @@ impl<'ctx> __sdk::table::TableWithPrimaryKey for PlayerTagTableHandle<'ctx> {
 #[doc(hidden)]
 pub(super) fn parse_table_update(
     raw_updates: __ws::TableUpdate<__ws::BsatnFormat>,
-) -> __anyhow::Result<__sdk::spacetime_module::TableUpdate<TPlayerTag>> {
-    __sdk::spacetime_module::TableUpdate::parse_table_update_with_primary_key::<u64>(
+) -> __anyhow::Result<__sdk::TableUpdate<TPlayerTag>> {
+    __sdk::TableUpdate::parse_table_update_with_primary_key::<u64>(
         raw_updates,
         |row: &TPlayerTag| &row.id,
     )
@@ -118,7 +122,7 @@ pub(super) fn parse_table_update(
 /// but to directly chain method calls,
 /// like `ctx.db.player_tag().id().find(...)`.
 pub struct PlayerTagIdUnique<'ctx> {
-    imp: __sdk::client_cache::UniqueConstraint<TPlayerTag, u64>,
+    imp: __sdk::UniqueConstraintHandle<TPlayerTag, u64>,
     phantom: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
@@ -126,7 +130,7 @@ impl<'ctx> PlayerTagTableHandle<'ctx> {
     /// Get a handle on the `id` unique index on the table `player_tag`.
     pub fn id(&self) -> PlayerTagIdUnique<'ctx> {
         PlayerTagIdUnique {
-            imp: self.imp.get_unique_constraint::<u64>("id", |row| &row.id),
+            imp: self.imp.get_unique_constraint::<u64>("id"),
             phantom: std::marker::PhantomData,
         }
     }

@@ -2,25 +2,30 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN RUST INSTEAD.
 
 #![allow(unused)]
-use spacetimedb_sdk::{
-    self as __sdk,
+use spacetimedb_sdk::__codegen::{
+    self as __sdk, __lib, __sats, __ws,
     anyhow::{self as __anyhow, Context as _},
-    lib as __lib, sats as __sats, ws_messages as __ws,
 };
 
 use super::daily_update_timer_type::DailyUpdateTimer;
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct DailyUpdateReducer {
+pub(super) struct DailyUpdateReducerArgs {
     pub timer: DailyUpdateTimer,
 }
 
-impl __sdk::spacetime_module::InModule for DailyUpdateReducer {
+impl From<DailyUpdateReducerArgs> for super::Reducer {
+    fn from(args: DailyUpdateReducerArgs) -> Self {
+        Self::DailyUpdateReducer { timer: args.timer }
+    }
+}
+
+impl __sdk::InModule for DailyUpdateReducerArgs {
     type Module = super::RemoteModule;
 }
 
-pub struct DailyUpdateReducerCallbackId(__sdk::callbacks::CallbackId);
+pub struct DailyUpdateReducerCallbackId(__sdk::CallbackId);
 
 #[allow(non_camel_case_types)]
 /// Extension trait for access to the reducer `daily_update_reducer`.
@@ -55,24 +60,33 @@ pub trait daily_update_reducer {
 impl daily_update_reducer for super::RemoteReducers {
     fn daily_update_reducer(&self, timer: DailyUpdateTimer) -> __anyhow::Result<()> {
         self.imp
-            .call_reducer("daily_update_reducer", DailyUpdateReducer { timer })
+            .call_reducer("daily_update_reducer", DailyUpdateReducerArgs { timer })
     }
     fn on_daily_update_reducer(
         &self,
         mut callback: impl FnMut(&super::EventContext, &DailyUpdateTimer) + Send + 'static,
     ) -> DailyUpdateReducerCallbackId {
-        DailyUpdateReducerCallbackId(self.imp.on_reducer::<DailyUpdateReducer>(
+        DailyUpdateReducerCallbackId(self.imp.on_reducer(
             "daily_update_reducer",
-            Box::new(
-                move |ctx: &super::EventContext, args: &DailyUpdateReducer| {
-                    callback(ctx, &args.timer)
-                },
-            ),
+            Box::new(move |ctx: &super::EventContext| {
+                let super::EventContext {
+                    event:
+                        __sdk::Event::Reducer(__sdk::ReducerEvent {
+                            reducer: super::Reducer::DailyUpdateReducer { timer },
+                            ..
+                        }),
+                    ..
+                } = ctx
+                else {
+                    unreachable!()
+                };
+                callback(ctx, timer)
+            }),
         ))
     }
     fn remove_on_daily_update_reducer(&self, callback: DailyUpdateReducerCallbackId) {
         self.imp
-            .remove_on_reducer::<DailyUpdateReducer>("daily_update_reducer", callback.0)
+            .remove_on_reducer("daily_update_reducer", callback.0)
     }
 }
 

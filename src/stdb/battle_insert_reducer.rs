@@ -2,24 +2,32 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN RUST INSTEAD.
 
 #![allow(unused)]
-use spacetimedb_sdk::{
-    self as __sdk,
+use spacetimedb_sdk::__codegen::{
+    self as __sdk, __lib, __sats, __ws,
     anyhow::{self as __anyhow, Context as _},
-    lib as __lib, sats as __sats, ws_messages as __ws,
 };
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct BattleInsert {
+pub(super) struct BattleInsertArgs {
     pub team_left: Vec<String>,
     pub team_right: Vec<String>,
 }
 
-impl __sdk::spacetime_module::InModule for BattleInsert {
+impl From<BattleInsertArgs> for super::Reducer {
+    fn from(args: BattleInsertArgs) -> Self {
+        Self::BattleInsert {
+            team_left: args.team_left,
+            team_right: args.team_right,
+        }
+    }
+}
+
+impl __sdk::InModule for BattleInsertArgs {
     type Module = super::RemoteModule;
 }
 
-pub struct BattleInsertCallbackId(__sdk::callbacks::CallbackId);
+pub struct BattleInsertCallbackId(__sdk::CallbackId);
 
 #[allow(non_camel_case_types)]
 /// Extension trait for access to the reducer `battle_insert`.
@@ -63,7 +71,7 @@ impl battle_insert for super::RemoteReducers {
     ) -> __anyhow::Result<()> {
         self.imp.call_reducer(
             "battle_insert",
-            BattleInsert {
+            BattleInsertArgs {
                 team_left,
                 team_right,
             },
@@ -73,16 +81,30 @@ impl battle_insert for super::RemoteReducers {
         &self,
         mut callback: impl FnMut(&super::EventContext, &Vec<String>, &Vec<String>) + Send + 'static,
     ) -> BattleInsertCallbackId {
-        BattleInsertCallbackId(self.imp.on_reducer::<BattleInsert>(
+        BattleInsertCallbackId(self.imp.on_reducer(
             "battle_insert",
-            Box::new(move |ctx: &super::EventContext, args: &BattleInsert| {
-                callback(ctx, &args.team_left, &args.team_right)
+            Box::new(move |ctx: &super::EventContext| {
+                let super::EventContext {
+                    event:
+                        __sdk::Event::Reducer(__sdk::ReducerEvent {
+                            reducer:
+                                super::Reducer::BattleInsert {
+                                    team_left,
+                                    team_right,
+                                },
+                            ..
+                        }),
+                    ..
+                } = ctx
+                else {
+                    unreachable!()
+                };
+                callback(ctx, team_left, team_right)
             }),
         ))
     }
     fn remove_on_battle_insert(&self, callback: BattleInsertCallbackId) {
-        self.imp
-            .remove_on_reducer::<BattleInsert>("battle_insert", callback.0)
+        self.imp.remove_on_reducer("battle_insert", callback.0)
     }
 }
 

@@ -3,10 +3,9 @@
 
 #![allow(unused)]
 use super::global_settings_type::GlobalSettings;
-use spacetimedb_sdk::{
-    self as __sdk,
+use spacetimedb_sdk::__codegen::{
+    self as __sdk, __lib, __sats, __ws,
     anyhow::{self as __anyhow, Context as _},
-    lib as __lib, sats as __sats, ws_messages as __ws,
 };
 
 /// Table handle for the table `global_settings`.
@@ -18,7 +17,7 @@ use spacetimedb_sdk::{
 /// but to directly chain method calls,
 /// like `ctx.db.global_settings().on_insert(...)`.
 pub struct GlobalSettingsTableHandle<'ctx> {
-    imp: __sdk::db_connection::TableHandle<GlobalSettings>,
+    imp: __sdk::TableHandle<GlobalSettings>,
     ctx: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
@@ -41,10 +40,10 @@ impl GlobalSettingsTableAccess for super::RemoteTables {
     }
 }
 
-pub struct GlobalSettingsInsertCallbackId(__sdk::callbacks::CallbackId);
-pub struct GlobalSettingsDeleteCallbackId(__sdk::callbacks::CallbackId);
+pub struct GlobalSettingsInsertCallbackId(__sdk::CallbackId);
+pub struct GlobalSettingsDeleteCallbackId(__sdk::CallbackId);
 
-impl<'ctx> __sdk::table::Table for GlobalSettingsTableHandle<'ctx> {
+impl<'ctx> __sdk::Table for GlobalSettingsTableHandle<'ctx> {
     type Row = GlobalSettings;
     type EventContext = super::EventContext;
 
@@ -83,10 +82,15 @@ impl<'ctx> __sdk::table::Table for GlobalSettingsTableHandle<'ctx> {
 }
 
 #[doc(hidden)]
+pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
+    let _table = client_cache.get_or_make_table::<GlobalSettings>("global_settings");
+    _table.add_unique_constraint::<u32>("always_zero", |row| &row.always_zero);
+}
+#[doc(hidden)]
 pub(super) fn parse_table_update(
     raw_updates: __ws::TableUpdate<__ws::BsatnFormat>,
-) -> __anyhow::Result<__sdk::spacetime_module::TableUpdate<GlobalSettings>> {
-    __sdk::spacetime_module::TableUpdate::parse_table_update_no_primary_key(raw_updates)
+) -> __anyhow::Result<__sdk::TableUpdate<GlobalSettings>> {
+    __sdk::TableUpdate::parse_table_update_no_primary_key(raw_updates)
         .context("Failed to parse table update for table \"global_settings\"")
 }
 
@@ -98,7 +102,7 @@ pub(super) fn parse_table_update(
 /// but to directly chain method calls,
 /// like `ctx.db.global_settings().always_zero().find(...)`.
 pub struct GlobalSettingsAlwaysZeroUnique<'ctx> {
-    imp: __sdk::client_cache::UniqueConstraint<GlobalSettings, u32>,
+    imp: __sdk::UniqueConstraintHandle<GlobalSettings, u32>,
     phantom: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
@@ -106,9 +110,7 @@ impl<'ctx> GlobalSettingsTableHandle<'ctx> {
     /// Get a handle on the `always_zero` unique index on the table `global_settings`.
     pub fn always_zero(&self) -> GlobalSettingsAlwaysZeroUnique<'ctx> {
         GlobalSettingsAlwaysZeroUnique {
-            imp: self
-                .imp
-                .get_unique_constraint::<u32>("always_zero", |row| &row.always_zero),
+            imp: self.imp.get_unique_constraint::<u32>("always_zero"),
             phantom: std::marker::PhantomData,
         }
     }

@@ -1,13 +1,18 @@
-use spacetimedb::Table;
+use spacetimedb::{ScheduleAt, Table};
 
 use super::*;
 
 #[spacetimedb::table(public, name = daily_update_timer, scheduled(daily_update_reducer))]
-pub struct DailyUpdateTimer {}
+pub struct DailyUpdateTimer {
+    #[primary_key]
+    #[auto_inc]
+    scheduled_id: u64,
+    scheduled_at: ScheduleAt,
+}
 
 #[spacetimedb::reducer]
 fn daily_update_reducer(ctx: &ReducerContext, _timer: DailyUpdateTimer) -> Result<(), String> {
-    self::println!("Daily update called");
+    log::info!("Daily update called");
     daily_update(ctx)?;
     let next_day = (Timestamp::now()
         .duration_since(Timestamp::UNIX_EPOCH)

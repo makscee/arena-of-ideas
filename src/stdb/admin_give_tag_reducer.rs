@@ -2,24 +2,32 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN RUST INSTEAD.
 
 #![allow(unused)]
-use spacetimedb_sdk::{
-    self as __sdk,
+use spacetimedb_sdk::__codegen::{
+    self as __sdk, __lib, __sats, __ws,
     anyhow::{self as __anyhow, Context as _},
-    lib as __lib, sats as __sats, ws_messages as __ws,
 };
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct AdminGiveTag {
+pub(super) struct AdminGiveTagArgs {
     pub owner: u64,
     pub tag: String,
 }
 
-impl __sdk::spacetime_module::InModule for AdminGiveTag {
+impl From<AdminGiveTagArgs> for super::Reducer {
+    fn from(args: AdminGiveTagArgs) -> Self {
+        Self::AdminGiveTag {
+            owner: args.owner,
+            tag: args.tag,
+        }
+    }
+}
+
+impl __sdk::InModule for AdminGiveTagArgs {
     type Module = super::RemoteModule;
 }
 
-pub struct AdminGiveTagCallbackId(__sdk::callbacks::CallbackId);
+pub struct AdminGiveTagCallbackId(__sdk::CallbackId);
 
 #[allow(non_camel_case_types)]
 /// Extension trait for access to the reducer `admin_give_tag`.
@@ -54,22 +62,32 @@ pub trait admin_give_tag {
 impl admin_give_tag for super::RemoteReducers {
     fn admin_give_tag(&self, owner: u64, tag: String) -> __anyhow::Result<()> {
         self.imp
-            .call_reducer("admin_give_tag", AdminGiveTag { owner, tag })
+            .call_reducer("admin_give_tag", AdminGiveTagArgs { owner, tag })
     }
     fn on_admin_give_tag(
         &self,
         mut callback: impl FnMut(&super::EventContext, &u64, &String) + Send + 'static,
     ) -> AdminGiveTagCallbackId {
-        AdminGiveTagCallbackId(self.imp.on_reducer::<AdminGiveTag>(
+        AdminGiveTagCallbackId(self.imp.on_reducer(
             "admin_give_tag",
-            Box::new(move |ctx: &super::EventContext, args: &AdminGiveTag| {
-                callback(ctx, &args.owner, &args.tag)
+            Box::new(move |ctx: &super::EventContext| {
+                let super::EventContext {
+                    event:
+                        __sdk::Event::Reducer(__sdk::ReducerEvent {
+                            reducer: super::Reducer::AdminGiveTag { owner, tag },
+                            ..
+                        }),
+                    ..
+                } = ctx
+                else {
+                    unreachable!()
+                };
+                callback(ctx, owner, tag)
             }),
         ))
     }
     fn remove_on_admin_give_tag(&self, callback: AdminGiveTagCallbackId) {
-        self.imp
-            .remove_on_reducer::<AdminGiveTag>("admin_give_tag", callback.0)
+        self.imp.remove_on_reducer("admin_give_tag", callback.0)
     }
 }
 

@@ -2,21 +2,26 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN RUST INSTEAD.
 
 #![allow(unused)]
-use spacetimedb_sdk::{
-    self as __sdk,
+use spacetimedb_sdk::__codegen::{
+    self as __sdk, __lib, __sats, __ws,
     anyhow::{self as __anyhow, Context as _},
-    lib as __lib, sats as __sats, ws_messages as __ws,
 };
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct GiveCredits {}
+pub(super) struct GiveCreditsArgs {}
 
-impl __sdk::spacetime_module::InModule for GiveCredits {
+impl From<GiveCreditsArgs> for super::Reducer {
+    fn from(args: GiveCreditsArgs) -> Self {
+        Self::GiveCredits
+    }
+}
+
+impl __sdk::InModule for GiveCreditsArgs {
     type Module = super::RemoteModule;
 }
 
-pub struct GiveCreditsCallbackId(__sdk::callbacks::CallbackId);
+pub struct GiveCreditsCallbackId(__sdk::CallbackId);
 
 #[allow(non_camel_case_types)]
 /// Extension trait for access to the reducer `give_credits`.
@@ -50,20 +55,32 @@ pub trait give_credits {
 
 impl give_credits for super::RemoteReducers {
     fn give_credits(&self) -> __anyhow::Result<()> {
-        self.imp.call_reducer("give_credits", GiveCredits {})
+        self.imp.call_reducer("give_credits", GiveCreditsArgs {})
     }
     fn on_give_credits(
         &self,
         mut callback: impl FnMut(&super::EventContext) + Send + 'static,
     ) -> GiveCreditsCallbackId {
-        GiveCreditsCallbackId(self.imp.on_reducer::<GiveCredits>(
+        GiveCreditsCallbackId(self.imp.on_reducer(
             "give_credits",
-            Box::new(move |ctx: &super::EventContext, args: &GiveCredits| callback(ctx)),
+            Box::new(move |ctx: &super::EventContext| {
+                let super::EventContext {
+                    event:
+                        __sdk::Event::Reducer(__sdk::ReducerEvent {
+                            reducer: super::Reducer::GiveCredits {},
+                            ..
+                        }),
+                    ..
+                } = ctx
+                else {
+                    unreachable!()
+                };
+                callback(ctx)
+            }),
         ))
     }
     fn remove_on_give_credits(&self, callback: GiveCreditsCallbackId) {
-        self.imp
-            .remove_on_reducer::<GiveCredits>("give_credits", callback.0)
+        self.imp.remove_on_reducer("give_credits", callback.0)
     }
 }
 

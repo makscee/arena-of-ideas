@@ -2,24 +2,32 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN RUST INSTEAD.
 
 #![allow(unused)]
-use spacetimedb_sdk::{
-    self as __sdk,
+use spacetimedb_sdk::__codegen::{
+    self as __sdk, __lib, __sats, __ws,
     anyhow::{self as __anyhow, Context as _},
-    lib as __lib, sats as __sats, ws_messages as __ws,
 };
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct SetPassword {
+pub(super) struct SetPasswordArgs {
     pub old_pass: String,
     pub new_pass: String,
 }
 
-impl __sdk::spacetime_module::InModule for SetPassword {
+impl From<SetPasswordArgs> for super::Reducer {
+    fn from(args: SetPasswordArgs) -> Self {
+        Self::SetPassword {
+            old_pass: args.old_pass,
+            new_pass: args.new_pass,
+        }
+    }
+}
+
+impl __sdk::InModule for SetPasswordArgs {
     type Module = super::RemoteModule;
 }
 
-pub struct SetPasswordCallbackId(__sdk::callbacks::CallbackId);
+pub struct SetPasswordCallbackId(__sdk::CallbackId);
 
 #[allow(non_camel_case_types)]
 /// Extension trait for access to the reducer `set_password`.
@@ -54,22 +62,32 @@ pub trait set_password {
 impl set_password for super::RemoteReducers {
     fn set_password(&self, old_pass: String, new_pass: String) -> __anyhow::Result<()> {
         self.imp
-            .call_reducer("set_password", SetPassword { old_pass, new_pass })
+            .call_reducer("set_password", SetPasswordArgs { old_pass, new_pass })
     }
     fn on_set_password(
         &self,
         mut callback: impl FnMut(&super::EventContext, &String, &String) + Send + 'static,
     ) -> SetPasswordCallbackId {
-        SetPasswordCallbackId(self.imp.on_reducer::<SetPassword>(
+        SetPasswordCallbackId(self.imp.on_reducer(
             "set_password",
-            Box::new(move |ctx: &super::EventContext, args: &SetPassword| {
-                callback(ctx, &args.old_pass, &args.new_pass)
+            Box::new(move |ctx: &super::EventContext| {
+                let super::EventContext {
+                    event:
+                        __sdk::Event::Reducer(__sdk::ReducerEvent {
+                            reducer: super::Reducer::SetPassword { old_pass, new_pass },
+                            ..
+                        }),
+                    ..
+                } = ctx
+                else {
+                    unreachable!()
+                };
+                callback(ctx, old_pass, new_pass)
             }),
         ))
     }
     fn remove_on_set_password(&self, callback: SetPasswordCallbackId) {
-        self.imp
-            .remove_on_reducer::<SetPassword>("set_password", callback.0)
+        self.imp.remove_on_reducer("set_password", callback.0)
     }
 }
 

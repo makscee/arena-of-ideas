@@ -2,21 +2,26 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN RUST INSTEAD.
 
 #![allow(unused)]
-use spacetimedb_sdk::{
-    self as __sdk,
+use spacetimedb_sdk::__codegen::{
+    self as __sdk, __lib, __sats, __ws,
     anyhow::{self as __anyhow, Context as _},
-    lib as __lib, sats as __sats, ws_messages as __ws,
 };
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct LoginByIdentity {}
+pub(super) struct LoginByIdentityArgs {}
 
-impl __sdk::spacetime_module::InModule for LoginByIdentity {
+impl From<LoginByIdentityArgs> for super::Reducer {
+    fn from(args: LoginByIdentityArgs) -> Self {
+        Self::LoginByIdentity
+    }
+}
+
+impl __sdk::InModule for LoginByIdentityArgs {
     type Module = super::RemoteModule;
 }
 
-pub struct LoginByIdentityCallbackId(__sdk::callbacks::CallbackId);
+pub struct LoginByIdentityCallbackId(__sdk::CallbackId);
 
 #[allow(non_camel_case_types)]
 /// Extension trait for access to the reducer `login_by_identity`.
@@ -51,20 +56,32 @@ pub trait login_by_identity {
 impl login_by_identity for super::RemoteReducers {
     fn login_by_identity(&self) -> __anyhow::Result<()> {
         self.imp
-            .call_reducer("login_by_identity", LoginByIdentity {})
+            .call_reducer("login_by_identity", LoginByIdentityArgs {})
     }
     fn on_login_by_identity(
         &self,
         mut callback: impl FnMut(&super::EventContext) + Send + 'static,
     ) -> LoginByIdentityCallbackId {
-        LoginByIdentityCallbackId(self.imp.on_reducer::<LoginByIdentity>(
+        LoginByIdentityCallbackId(self.imp.on_reducer(
             "login_by_identity",
-            Box::new(move |ctx: &super::EventContext, args: &LoginByIdentity| callback(ctx)),
+            Box::new(move |ctx: &super::EventContext| {
+                let super::EventContext {
+                    event:
+                        __sdk::Event::Reducer(__sdk::ReducerEvent {
+                            reducer: super::Reducer::LoginByIdentity {},
+                            ..
+                        }),
+                    ..
+                } = ctx
+                else {
+                    unreachable!()
+                };
+                callback(ctx)
+            }),
         ))
     }
     fn remove_on_login_by_identity(&self, callback: LoginByIdentityCallbackId) {
-        self.imp
-            .remove_on_reducer::<LoginByIdentity>("login_by_identity", callback.0)
+        self.imp.remove_on_reducer("login_by_identity", callback.0)
     }
 }
 

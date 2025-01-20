@@ -2,25 +2,32 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN RUST INSTEAD.
 
 #![allow(unused)]
-use spacetimedb_sdk::{
-    self as __sdk,
+use spacetimedb_sdk::__codegen::{
+    self as __sdk, __lib, __sats, __ws,
     anyhow::{self as __anyhow, Context as _},
-    lib as __lib, sats as __sats, ws_messages as __ws,
 };
 
 use super::global_settings_type::GlobalSettings;
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct SyncAssets {
+pub(super) struct SyncAssetsArgs {
     pub global_settings: GlobalSettings,
 }
 
-impl __sdk::spacetime_module::InModule for SyncAssets {
+impl From<SyncAssetsArgs> for super::Reducer {
+    fn from(args: SyncAssetsArgs) -> Self {
+        Self::SyncAssets {
+            global_settings: args.global_settings,
+        }
+    }
+}
+
+impl __sdk::InModule for SyncAssetsArgs {
     type Module = super::RemoteModule;
 }
 
-pub struct SyncAssetsCallbackId(__sdk::callbacks::CallbackId);
+pub struct SyncAssetsCallbackId(__sdk::CallbackId);
 
 #[allow(non_camel_case_types)]
 /// Extension trait for access to the reducer `sync_assets`.
@@ -55,22 +62,32 @@ pub trait sync_assets {
 impl sync_assets for super::RemoteReducers {
     fn sync_assets(&self, global_settings: GlobalSettings) -> __anyhow::Result<()> {
         self.imp
-            .call_reducer("sync_assets", SyncAssets { global_settings })
+            .call_reducer("sync_assets", SyncAssetsArgs { global_settings })
     }
     fn on_sync_assets(
         &self,
         mut callback: impl FnMut(&super::EventContext, &GlobalSettings) + Send + 'static,
     ) -> SyncAssetsCallbackId {
-        SyncAssetsCallbackId(self.imp.on_reducer::<SyncAssets>(
+        SyncAssetsCallbackId(self.imp.on_reducer(
             "sync_assets",
-            Box::new(move |ctx: &super::EventContext, args: &SyncAssets| {
-                callback(ctx, &args.global_settings)
+            Box::new(move |ctx: &super::EventContext| {
+                let super::EventContext {
+                    event:
+                        __sdk::Event::Reducer(__sdk::ReducerEvent {
+                            reducer: super::Reducer::SyncAssets { global_settings },
+                            ..
+                        }),
+                    ..
+                } = ctx
+                else {
+                    unreachable!()
+                };
+                callback(ctx, global_settings)
             }),
         ))
     }
     fn remove_on_sync_assets(&self, callback: SyncAssetsCallbackId) {
-        self.imp
-            .remove_on_reducer::<SyncAssets>("sync_assets", callback.0)
+        self.imp.remove_on_reducer("sync_assets", callback.0)
     }
 }
 

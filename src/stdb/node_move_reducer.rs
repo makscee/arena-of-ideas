@@ -2,25 +2,34 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN RUST INSTEAD.
 
 #![allow(unused)]
-use spacetimedb_sdk::{
-    self as __sdk,
+use spacetimedb_sdk::__codegen::{
+    self as __sdk, __lib, __sats, __ws,
     anyhow::{self as __anyhow, Context as _},
-    lib as __lib, sats as __sats, ws_messages as __ws,
 };
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct NodeMove {
+pub(super) struct NodeMoveArgs {
     pub id: u64,
     pub x: f32,
     pub y: f32,
 }
 
-impl __sdk::spacetime_module::InModule for NodeMove {
+impl From<NodeMoveArgs> for super::Reducer {
+    fn from(args: NodeMoveArgs) -> Self {
+        Self::NodeMove {
+            id: args.id,
+            x: args.x,
+            y: args.y,
+        }
+    }
+}
+
+impl __sdk::InModule for NodeMoveArgs {
     type Module = super::RemoteModule;
 }
 
-pub struct NodeMoveCallbackId(__sdk::callbacks::CallbackId);
+pub struct NodeMoveCallbackId(__sdk::CallbackId);
 
 #[allow(non_camel_case_types)]
 /// Extension trait for access to the reducer `node_move`.
@@ -54,22 +63,33 @@ pub trait node_move {
 
 impl node_move for super::RemoteReducers {
     fn node_move(&self, id: u64, x: f32, y: f32) -> __anyhow::Result<()> {
-        self.imp.call_reducer("node_move", NodeMove { id, x, y })
+        self.imp
+            .call_reducer("node_move", NodeMoveArgs { id, x, y })
     }
     fn on_node_move(
         &self,
         mut callback: impl FnMut(&super::EventContext, &u64, &f32, &f32) + Send + 'static,
     ) -> NodeMoveCallbackId {
-        NodeMoveCallbackId(self.imp.on_reducer::<NodeMove>(
+        NodeMoveCallbackId(self.imp.on_reducer(
             "node_move",
-            Box::new(move |ctx: &super::EventContext, args: &NodeMove| {
-                callback(ctx, &args.id, &args.x, &args.y)
+            Box::new(move |ctx: &super::EventContext| {
+                let super::EventContext {
+                    event:
+                        __sdk::Event::Reducer(__sdk::ReducerEvent {
+                            reducer: super::Reducer::NodeMove { id, x, y },
+                            ..
+                        }),
+                    ..
+                } = ctx
+                else {
+                    unreachable!()
+                };
+                callback(ctx, id, x, y)
             }),
         ))
     }
     fn remove_on_node_move(&self, callback: NodeMoveCallbackId) {
-        self.imp
-            .remove_on_reducer::<NodeMove>("node_move", callback.0)
+        self.imp.remove_on_reducer("node_move", callback.0)
     }
 }
 

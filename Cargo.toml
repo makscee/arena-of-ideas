@@ -33,7 +33,7 @@ bevy = { version = "0.14.1", default-features = false, features = [
     "default_font",
     "x11",
 ] }
-spacetimedb = { version = "=1.0.0-rc1" }
+spacetimedb = { version = "=1.0.0-rc3" }
 strum = "0.26.2"
 strum_macros = "0.26.2"
 itertools = "0.12.1"
@@ -105,9 +105,9 @@ rand_chacha = { workspace = true }
 parking_lot = { workspace = true }
 tween = { workspace = true }
 
-spacetimedb-sdk = "=1.0.0-rc1"
-spacetimedb-sats = "=1.0.0-rc1"
-spacetimedb-lib = "=1.0.0-rc1"
+spacetimedb-sdk = "=1.0.0-rc3"
+spacetimedb-sats = "=1.0.0-rc3"
+spacetimedb-lib = "=1.0.0-rc3"
 
 bevy_asset_loader = { version = "0.21.0", features = [
     "standard_dynamic_assets",

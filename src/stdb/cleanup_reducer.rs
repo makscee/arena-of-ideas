@@ -2,21 +2,26 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN RUST INSTEAD.
 
 #![allow(unused)]
-use spacetimedb_sdk::{
-    self as __sdk,
+use spacetimedb_sdk::__codegen::{
+    self as __sdk, __lib, __sats, __ws,
     anyhow::{self as __anyhow, Context as _},
-    lib as __lib, sats as __sats, ws_messages as __ws,
 };
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct Cleanup {}
+pub(super) struct CleanupArgs {}
 
-impl __sdk::spacetime_module::InModule for Cleanup {
+impl From<CleanupArgs> for super::Reducer {
+    fn from(args: CleanupArgs) -> Self {
+        Self::Cleanup
+    }
+}
+
+impl __sdk::InModule for CleanupArgs {
     type Module = super::RemoteModule;
 }
 
-pub struct CleanupCallbackId(__sdk::callbacks::CallbackId);
+pub struct CleanupCallbackId(__sdk::CallbackId);
 
 #[allow(non_camel_case_types)]
 /// Extension trait for access to the reducer `cleanup`.
@@ -50,19 +55,32 @@ pub trait cleanup {
 
 impl cleanup for super::RemoteReducers {
     fn cleanup(&self) -> __anyhow::Result<()> {
-        self.imp.call_reducer("cleanup", Cleanup {})
+        self.imp.call_reducer("cleanup", CleanupArgs {})
     }
     fn on_cleanup(
         &self,
         mut callback: impl FnMut(&super::EventContext) + Send + 'static,
     ) -> CleanupCallbackId {
-        CleanupCallbackId(self.imp.on_reducer::<Cleanup>(
+        CleanupCallbackId(self.imp.on_reducer(
             "cleanup",
-            Box::new(move |ctx: &super::EventContext, args: &Cleanup| callback(ctx)),
+            Box::new(move |ctx: &super::EventContext| {
+                let super::EventContext {
+                    event:
+                        __sdk::Event::Reducer(__sdk::ReducerEvent {
+                            reducer: super::Reducer::Cleanup {},
+                            ..
+                        }),
+                    ..
+                } = ctx
+                else {
+                    unreachable!()
+                };
+                callback(ctx)
+            }),
         ))
     }
     fn remove_on_cleanup(&self, callback: CleanupCallbackId) {
-        self.imp.remove_on_reducer::<Cleanup>("cleanup", callback.0)
+        self.imp.remove_on_reducer("cleanup", callback.0)
     }
 }
 

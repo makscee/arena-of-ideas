@@ -47,11 +47,8 @@ impl ConnectPlugin {
     fn save_credentials(identity: Identity, token: String) -> Result<()> {
         let mut path = home_dir_path();
         path.push(CREDENTIALS_FILE);
-        let creds = bsatn::to_vec(&Credentials {
-            identity,
-            token: token.to_string(),
-        })
-        .context("Error serializing credentials for storage in file")?;
+        let creds = bsatn::to_vec(&Credentials { identity, token })
+            .context("Error serializing credentials for storage in file")?;
         std::fs::write(&path, creds).with_context(|| {
             format!("Error writing BSATN-serialized credentials to file {path:?}")
         })?;
@@ -63,6 +60,8 @@ impl ConnectPlugin {
             info!("Connected {identity}");
             let token = token.to_owned();
             save_identity(identity);
+            Self::save_credentials(identity.clone(), token.clone())
+                .expect("Failed to save credentials");
             db_subscriptions();
             OperationsPlugin::add(move |world| {
                 ConnectOption { identity, token }.save(world);

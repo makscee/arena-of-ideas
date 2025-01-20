@@ -3,10 +3,9 @@
 
 #![allow(unused)]
 use super::t_node_relation_type::TNodeRelation;
-use spacetimedb_sdk::{
-    self as __sdk,
+use spacetimedb_sdk::__codegen::{
+    self as __sdk, __lib, __sats, __ws,
     anyhow::{self as __anyhow, Context as _},
-    lib as __lib, sats as __sats, ws_messages as __ws,
 };
 
 /// Table handle for the table `nodes_relations`.
@@ -18,7 +17,7 @@ use spacetimedb_sdk::{
 /// but to directly chain method calls,
 /// like `ctx.db.nodes_relations().on_insert(...)`.
 pub struct NodesRelationsTableHandle<'ctx> {
-    imp: __sdk::db_connection::TableHandle<TNodeRelation>,
+    imp: __sdk::TableHandle<TNodeRelation>,
     ctx: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
@@ -41,10 +40,10 @@ impl NodesRelationsTableAccess for super::RemoteTables {
     }
 }
 
-pub struct NodesRelationsInsertCallbackId(__sdk::callbacks::CallbackId);
-pub struct NodesRelationsDeleteCallbackId(__sdk::callbacks::CallbackId);
+pub struct NodesRelationsInsertCallbackId(__sdk::CallbackId);
+pub struct NodesRelationsDeleteCallbackId(__sdk::CallbackId);
 
-impl<'ctx> __sdk::table::Table for NodesRelationsTableHandle<'ctx> {
+impl<'ctx> __sdk::Table for NodesRelationsTableHandle<'ctx> {
     type Row = TNodeRelation;
     type EventContext = super::EventContext;
 
@@ -82,9 +81,14 @@ impl<'ctx> __sdk::table::Table for NodesRelationsTableHandle<'ctx> {
     }
 }
 
-pub struct NodesRelationsUpdateCallbackId(__sdk::callbacks::CallbackId);
+#[doc(hidden)]
+pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
+    let _table = client_cache.get_or_make_table::<TNodeRelation>("nodes_relations");
+    _table.add_unique_constraint::<u64>("id", |row| &row.id);
+}
+pub struct NodesRelationsUpdateCallbackId(__sdk::CallbackId);
 
-impl<'ctx> __sdk::table::TableWithPrimaryKey for NodesRelationsTableHandle<'ctx> {
+impl<'ctx> __sdk::TableWithPrimaryKey for NodesRelationsTableHandle<'ctx> {
     type UpdateCallbackId = NodesRelationsUpdateCallbackId;
 
     fn on_update(
@@ -102,8 +106,8 @@ impl<'ctx> __sdk::table::TableWithPrimaryKey for NodesRelationsTableHandle<'ctx>
 #[doc(hidden)]
 pub(super) fn parse_table_update(
     raw_updates: __ws::TableUpdate<__ws::BsatnFormat>,
-) -> __anyhow::Result<__sdk::spacetime_module::TableUpdate<TNodeRelation>> {
-    __sdk::spacetime_module::TableUpdate::parse_table_update_with_primary_key::<u64>(
+) -> __anyhow::Result<__sdk::TableUpdate<TNodeRelation>> {
+    __sdk::TableUpdate::parse_table_update_with_primary_key::<u64>(
         raw_updates,
         |row: &TNodeRelation| &row.id,
     )
@@ -118,7 +122,7 @@ pub(super) fn parse_table_update(
 /// but to directly chain method calls,
 /// like `ctx.db.nodes_relations().id().find(...)`.
 pub struct NodesRelationsIdUnique<'ctx> {
-    imp: __sdk::client_cache::UniqueConstraint<TNodeRelation, u64>,
+    imp: __sdk::UniqueConstraintHandle<TNodeRelation, u64>,
     phantom: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
@@ -126,7 +130,7 @@ impl<'ctx> NodesRelationsTableHandle<'ctx> {
     /// Get a handle on the `id` unique index on the table `nodes_relations`.
     pub fn id(&self) -> NodesRelationsIdUnique<'ctx> {
         NodesRelationsIdUnique {
-            imp: self.imp.get_unique_constraint::<u64>("id", |row| &row.id),
+            imp: self.imp.get_unique_constraint::<u64>("id"),
             phantom: std::marker::PhantomData,
         }
     }

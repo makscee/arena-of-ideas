@@ -3,10 +3,9 @@
 
 #![allow(unused)]
 use super::t_player_type::TPlayer;
-use spacetimedb_sdk::{
-    self as __sdk,
+use spacetimedb_sdk::__codegen::{
+    self as __sdk, __lib, __sats, __ws,
     anyhow::{self as __anyhow, Context as _},
-    lib as __lib, sats as __sats, ws_messages as __ws,
 };
 
 /// Table handle for the table `player`.
@@ -18,7 +17,7 @@ use spacetimedb_sdk::{
 /// but to directly chain method calls,
 /// like `ctx.db.player().on_insert(...)`.
 pub struct PlayerTableHandle<'ctx> {
-    imp: __sdk::db_connection::TableHandle<TPlayer>,
+    imp: __sdk::TableHandle<TPlayer>,
     ctx: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
@@ -41,10 +40,10 @@ impl PlayerTableAccess for super::RemoteTables {
     }
 }
 
-pub struct PlayerInsertCallbackId(__sdk::callbacks::CallbackId);
-pub struct PlayerDeleteCallbackId(__sdk::callbacks::CallbackId);
+pub struct PlayerInsertCallbackId(__sdk::CallbackId);
+pub struct PlayerDeleteCallbackId(__sdk::CallbackId);
 
-impl<'ctx> __sdk::table::Table for PlayerTableHandle<'ctx> {
+impl<'ctx> __sdk::Table for PlayerTableHandle<'ctx> {
     type Row = TPlayer;
     type EventContext = super::EventContext;
 
@@ -82,9 +81,15 @@ impl<'ctx> __sdk::table::Table for PlayerTableHandle<'ctx> {
     }
 }
 
-pub struct PlayerUpdateCallbackId(__sdk::callbacks::CallbackId);
+#[doc(hidden)]
+pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
+    let _table = client_cache.get_or_make_table::<TPlayer>("player");
+    _table.add_unique_constraint::<u64>("id", |row| &row.id);
+    _table.add_unique_constraint::<String>("name", |row| &row.name);
+}
+pub struct PlayerUpdateCallbackId(__sdk::CallbackId);
 
-impl<'ctx> __sdk::table::TableWithPrimaryKey for PlayerTableHandle<'ctx> {
+impl<'ctx> __sdk::TableWithPrimaryKey for PlayerTableHandle<'ctx> {
     type UpdateCallbackId = PlayerUpdateCallbackId;
 
     fn on_update(
@@ -102,11 +107,10 @@ impl<'ctx> __sdk::table::TableWithPrimaryKey for PlayerTableHandle<'ctx> {
 #[doc(hidden)]
 pub(super) fn parse_table_update(
     raw_updates: __ws::TableUpdate<__ws::BsatnFormat>,
-) -> __anyhow::Result<__sdk::spacetime_module::TableUpdate<TPlayer>> {
-    __sdk::spacetime_module::TableUpdate::parse_table_update_with_primary_key::<u64>(
-        raw_updates,
-        |row: &TPlayer| &row.id,
-    )
+) -> __anyhow::Result<__sdk::TableUpdate<TPlayer>> {
+    __sdk::TableUpdate::parse_table_update_with_primary_key::<u64>(raw_updates, |row: &TPlayer| {
+        &row.id
+    })
     .context("Failed to parse table update for table \"player\"")
 }
 
@@ -118,7 +122,7 @@ pub(super) fn parse_table_update(
 /// but to directly chain method calls,
 /// like `ctx.db.player().id().find(...)`.
 pub struct PlayerIdUnique<'ctx> {
-    imp: __sdk::client_cache::UniqueConstraint<TPlayer, u64>,
+    imp: __sdk::UniqueConstraintHandle<TPlayer, u64>,
     phantom: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
@@ -126,7 +130,7 @@ impl<'ctx> PlayerTableHandle<'ctx> {
     /// Get a handle on the `id` unique index on the table `player`.
     pub fn id(&self) -> PlayerIdUnique<'ctx> {
         PlayerIdUnique {
-            imp: self.imp.get_unique_constraint::<u64>("id", |row| &row.id),
+            imp: self.imp.get_unique_constraint::<u64>("id"),
             phantom: std::marker::PhantomData,
         }
     }
@@ -148,7 +152,7 @@ impl<'ctx> PlayerIdUnique<'ctx> {
 /// but to directly chain method calls,
 /// like `ctx.db.player().name().find(...)`.
 pub struct PlayerNameUnique<'ctx> {
-    imp: __sdk::client_cache::UniqueConstraint<TPlayer, String>,
+    imp: __sdk::UniqueConstraintHandle<TPlayer, String>,
     phantom: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
@@ -156,9 +160,7 @@ impl<'ctx> PlayerTableHandle<'ctx> {
     /// Get a handle on the `name` unique index on the table `player`.
     pub fn name(&self) -> PlayerNameUnique<'ctx> {
         PlayerNameUnique {
-            imp: self
-                .imp
-                .get_unique_constraint::<String>("name", |row| &row.name),
+            imp: self.imp.get_unique_constraint::<String>("name"),
             phantom: std::marker::PhantomData,
         }
     }

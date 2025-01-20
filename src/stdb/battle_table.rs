@@ -3,10 +3,9 @@
 
 #![allow(unused)]
 use super::t_battle_type::TBattle;
-use spacetimedb_sdk::{
-    self as __sdk,
+use spacetimedb_sdk::__codegen::{
+    self as __sdk, __lib, __sats, __ws,
     anyhow::{self as __anyhow, Context as _},
-    lib as __lib, sats as __sats, ws_messages as __ws,
 };
 
 /// Table handle for the table `battle`.
@@ -18,7 +17,7 @@ use spacetimedb_sdk::{
 /// but to directly chain method calls,
 /// like `ctx.db.battle().on_insert(...)`.
 pub struct BattleTableHandle<'ctx> {
-    imp: __sdk::db_connection::TableHandle<TBattle>,
+    imp: __sdk::TableHandle<TBattle>,
     ctx: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
@@ -41,10 +40,10 @@ impl BattleTableAccess for super::RemoteTables {
     }
 }
 
-pub struct BattleInsertCallbackId(__sdk::callbacks::CallbackId);
-pub struct BattleDeleteCallbackId(__sdk::callbacks::CallbackId);
+pub struct BattleInsertCallbackId(__sdk::CallbackId);
+pub struct BattleDeleteCallbackId(__sdk::CallbackId);
 
-impl<'ctx> __sdk::table::Table for BattleTableHandle<'ctx> {
+impl<'ctx> __sdk::Table for BattleTableHandle<'ctx> {
     type Row = TBattle;
     type EventContext = super::EventContext;
 
@@ -82,9 +81,14 @@ impl<'ctx> __sdk::table::Table for BattleTableHandle<'ctx> {
     }
 }
 
-pub struct BattleUpdateCallbackId(__sdk::callbacks::CallbackId);
+#[doc(hidden)]
+pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
+    let _table = client_cache.get_or_make_table::<TBattle>("battle");
+    _table.add_unique_constraint::<u64>("id", |row| &row.id);
+}
+pub struct BattleUpdateCallbackId(__sdk::CallbackId);
 
-impl<'ctx> __sdk::table::TableWithPrimaryKey for BattleTableHandle<'ctx> {
+impl<'ctx> __sdk::TableWithPrimaryKey for BattleTableHandle<'ctx> {
     type UpdateCallbackId = BattleUpdateCallbackId;
 
     fn on_update(
@@ -102,11 +106,10 @@ impl<'ctx> __sdk::table::TableWithPrimaryKey for BattleTableHandle<'ctx> {
 #[doc(hidden)]
 pub(super) fn parse_table_update(
     raw_updates: __ws::TableUpdate<__ws::BsatnFormat>,
-) -> __anyhow::Result<__sdk::spacetime_module::TableUpdate<TBattle>> {
-    __sdk::spacetime_module::TableUpdate::parse_table_update_with_primary_key::<u64>(
-        raw_updates,
-        |row: &TBattle| &row.id,
-    )
+) -> __anyhow::Result<__sdk::TableUpdate<TBattle>> {
+    __sdk::TableUpdate::parse_table_update_with_primary_key::<u64>(raw_updates, |row: &TBattle| {
+        &row.id
+    })
     .context("Failed to parse table update for table \"battle\"")
 }
 
@@ -118,7 +121,7 @@ pub(super) fn parse_table_update(
 /// but to directly chain method calls,
 /// like `ctx.db.battle().id().find(...)`.
 pub struct BattleIdUnique<'ctx> {
-    imp: __sdk::client_cache::UniqueConstraint<TBattle, u64>,
+    imp: __sdk::UniqueConstraintHandle<TBattle, u64>,
     phantom: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
@@ -126,7 +129,7 @@ impl<'ctx> BattleTableHandle<'ctx> {
     /// Get a handle on the `id` unique index on the table `battle`.
     pub fn id(&self) -> BattleIdUnique<'ctx> {
         BattleIdUnique {
-            imp: self.imp.get_unique_constraint::<u64>("id", |row| &row.id),
+            imp: self.imp.get_unique_constraint::<u64>("id"),
             phantom: std::marker::PhantomData,
         }
     }

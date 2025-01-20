@@ -2,23 +2,28 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN RUST INSTEAD.
 
 #![allow(unused)]
-use spacetimedb_sdk::{
-    self as __sdk,
+use spacetimedb_sdk::__codegen::{
+    self as __sdk, __lib, __sats, __ws,
     anyhow::{self as __anyhow, Context as _},
-    lib as __lib, sats as __sats, ws_messages as __ws,
 };
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct NodeSpawnHero {
+pub(super) struct NodeSpawnHeroArgs {
     pub name: String,
 }
 
-impl __sdk::spacetime_module::InModule for NodeSpawnHero {
+impl From<NodeSpawnHeroArgs> for super::Reducer {
+    fn from(args: NodeSpawnHeroArgs) -> Self {
+        Self::NodeSpawnHero { name: args.name }
+    }
+}
+
+impl __sdk::InModule for NodeSpawnHeroArgs {
     type Module = super::RemoteModule;
 }
 
-pub struct NodeSpawnHeroCallbackId(__sdk::callbacks::CallbackId);
+pub struct NodeSpawnHeroCallbackId(__sdk::CallbackId);
 
 #[allow(non_camel_case_types)]
 /// Extension trait for access to the reducer `node_spawn_hero`.
@@ -53,22 +58,32 @@ pub trait node_spawn_hero {
 impl node_spawn_hero for super::RemoteReducers {
     fn node_spawn_hero(&self, name: String) -> __anyhow::Result<()> {
         self.imp
-            .call_reducer("node_spawn_hero", NodeSpawnHero { name })
+            .call_reducer("node_spawn_hero", NodeSpawnHeroArgs { name })
     }
     fn on_node_spawn_hero(
         &self,
         mut callback: impl FnMut(&super::EventContext, &String) + Send + 'static,
     ) -> NodeSpawnHeroCallbackId {
-        NodeSpawnHeroCallbackId(self.imp.on_reducer::<NodeSpawnHero>(
+        NodeSpawnHeroCallbackId(self.imp.on_reducer(
             "node_spawn_hero",
-            Box::new(move |ctx: &super::EventContext, args: &NodeSpawnHero| {
-                callback(ctx, &args.name)
+            Box::new(move |ctx: &super::EventContext| {
+                let super::EventContext {
+                    event:
+                        __sdk::Event::Reducer(__sdk::ReducerEvent {
+                            reducer: super::Reducer::NodeSpawnHero { name },
+                            ..
+                        }),
+                    ..
+                } = ctx
+                else {
+                    unreachable!()
+                };
+                callback(ctx, name)
             }),
         ))
     }
     fn remove_on_node_spawn_hero(&self, callback: NodeSpawnHeroCallbackId) {
-        self.imp
-            .remove_on_reducer::<NodeSpawnHero>("node_spawn_hero", callback.0)
+        self.imp.remove_on_reducer("node_spawn_hero", callback.0)
     }
 }
 

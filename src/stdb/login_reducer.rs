@@ -2,24 +2,32 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN RUST INSTEAD.
 
 #![allow(unused)]
-use spacetimedb_sdk::{
-    self as __sdk,
+use spacetimedb_sdk::__codegen::{
+    self as __sdk, __lib, __sats, __ws,
     anyhow::{self as __anyhow, Context as _},
-    lib as __lib, sats as __sats, ws_messages as __ws,
 };
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct Login {
+pub(super) struct LoginArgs {
     pub name: String,
     pub pass: String,
 }
 
-impl __sdk::spacetime_module::InModule for Login {
+impl From<LoginArgs> for super::Reducer {
+    fn from(args: LoginArgs) -> Self {
+        Self::Login {
+            name: args.name,
+            pass: args.pass,
+        }
+    }
+}
+
+impl __sdk::InModule for LoginArgs {
     type Module = super::RemoteModule;
 }
 
-pub struct LoginCallbackId(__sdk::callbacks::CallbackId);
+pub struct LoginCallbackId(__sdk::CallbackId);
 
 #[allow(non_camel_case_types)]
 /// Extension trait for access to the reducer `login`.
@@ -53,21 +61,32 @@ pub trait login {
 
 impl login for super::RemoteReducers {
     fn login(&self, name: String, pass: String) -> __anyhow::Result<()> {
-        self.imp.call_reducer("login", Login { name, pass })
+        self.imp.call_reducer("login", LoginArgs { name, pass })
     }
     fn on_login(
         &self,
         mut callback: impl FnMut(&super::EventContext, &String, &String) + Send + 'static,
     ) -> LoginCallbackId {
-        LoginCallbackId(self.imp.on_reducer::<Login>(
+        LoginCallbackId(self.imp.on_reducer(
             "login",
-            Box::new(move |ctx: &super::EventContext, args: &Login| {
-                callback(ctx, &args.name, &args.pass)
+            Box::new(move |ctx: &super::EventContext| {
+                let super::EventContext {
+                    event:
+                        __sdk::Event::Reducer(__sdk::ReducerEvent {
+                            reducer: super::Reducer::Login { name, pass },
+                            ..
+                        }),
+                    ..
+                } = ctx
+                else {
+                    unreachable!()
+                };
+                callback(ctx, name, pass)
             }),
         ))
     }
     fn remove_on_login(&self, callback: LoginCallbackId) {
-        self.imp.remove_on_reducer::<Login>("login", callback.0)
+        self.imp.remove_on_reducer("login", callback.0)
     }
 }
 

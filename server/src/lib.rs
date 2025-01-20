@@ -24,16 +24,14 @@ use player::*;
 use player_tag::*;
 use rand::{distributions::Alphanumeric, seq::IteratorRandom, Rng};
 use schema::*;
-use spacetimedb::{
-    eprintln, println, reducer, table, Identity, ReducerContext, SpacetimeType, Table, Timestamp,
-};
+use spacetimedb::{reducer, table, Identity, ReducerContext, SpacetimeType, Table, Timestamp};
 use wallet::*;
 
 pub fn next_id(ctx: &ReducerContext) -> u64 {
     GlobalData::next_id(ctx)
 }
 
-const ADMIN_IDENTITY_HEX: &str = "c2000d3d36c3162dd302f78b29d2e3b78af2e0d9310cbe8fe9d75af5e9c393d0";
+const ADMIN_IDENTITY_HEX: &str = "c2001163ad8e10b2ded86f06ca44cba4a68680e015b37a7a97783c73876bbded";
 pub fn is_admin(identity: &Identity) -> Result<bool, String> {
     Ok(Identity::from_str(ADMIN_IDENTITY_HEX)
         .map_err(|e| e.to_string())?

@@ -3,10 +3,9 @@
 
 #![allow(unused)]
 use super::global_data_type::GlobalData;
-use spacetimedb_sdk::{
-    self as __sdk,
+use spacetimedb_sdk::__codegen::{
+    self as __sdk, __lib, __sats, __ws,
     anyhow::{self as __anyhow, Context as _},
-    lib as __lib, sats as __sats, ws_messages as __ws,
 };
 
 /// Table handle for the table `global_data`.
@@ -18,7 +17,7 @@ use spacetimedb_sdk::{
 /// but to directly chain method calls,
 /// like `ctx.db.global_data().on_insert(...)`.
 pub struct GlobalDataTableHandle<'ctx> {
-    imp: __sdk::db_connection::TableHandle<GlobalData>,
+    imp: __sdk::TableHandle<GlobalData>,
     ctx: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
@@ -41,10 +40,10 @@ impl GlobalDataTableAccess for super::RemoteTables {
     }
 }
 
-pub struct GlobalDataInsertCallbackId(__sdk::callbacks::CallbackId);
-pub struct GlobalDataDeleteCallbackId(__sdk::callbacks::CallbackId);
+pub struct GlobalDataInsertCallbackId(__sdk::CallbackId);
+pub struct GlobalDataDeleteCallbackId(__sdk::CallbackId);
 
-impl<'ctx> __sdk::table::Table for GlobalDataTableHandle<'ctx> {
+impl<'ctx> __sdk::Table for GlobalDataTableHandle<'ctx> {
     type Row = GlobalData;
     type EventContext = super::EventContext;
 
@@ -83,10 +82,15 @@ impl<'ctx> __sdk::table::Table for GlobalDataTableHandle<'ctx> {
 }
 
 #[doc(hidden)]
+pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
+    let _table = client_cache.get_or_make_table::<GlobalData>("global_data");
+    _table.add_unique_constraint::<u32>("always_zero", |row| &row.always_zero);
+}
+#[doc(hidden)]
 pub(super) fn parse_table_update(
     raw_updates: __ws::TableUpdate<__ws::BsatnFormat>,
-) -> __anyhow::Result<__sdk::spacetime_module::TableUpdate<GlobalData>> {
-    __sdk::spacetime_module::TableUpdate::parse_table_update_no_primary_key(raw_updates)
+) -> __anyhow::Result<__sdk::TableUpdate<GlobalData>> {
+    __sdk::TableUpdate::parse_table_update_no_primary_key(raw_updates)
         .context("Failed to parse table update for table \"global_data\"")
 }
 
@@ -98,7 +102,7 @@ pub(super) fn parse_table_update(
 /// but to directly chain method calls,
 /// like `ctx.db.global_data().always_zero().find(...)`.
 pub struct GlobalDataAlwaysZeroUnique<'ctx> {
-    imp: __sdk::client_cache::UniqueConstraint<GlobalData, u32>,
+    imp: __sdk::UniqueConstraintHandle<GlobalData, u32>,
     phantom: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
@@ -106,9 +110,7 @@ impl<'ctx> GlobalDataTableHandle<'ctx> {
     /// Get a handle on the `always_zero` unique index on the table `global_data`.
     pub fn always_zero(&self) -> GlobalDataAlwaysZeroUnique<'ctx> {
         GlobalDataAlwaysZeroUnique {
-            imp: self
-                .imp
-                .get_unique_constraint::<u32>("always_zero", |row| &row.always_zero),
+            imp: self.imp.get_unique_constraint::<u32>("always_zero"),
             phantom: std::marker::PhantomData,
         }
     }

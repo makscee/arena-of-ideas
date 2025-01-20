@@ -2,23 +2,28 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN RUST INSTEAD.
 
 #![allow(unused)]
-use spacetimedb_sdk::{
-    self as __sdk,
+use spacetimedb_sdk::__codegen::{
+    self as __sdk, __lib, __sats, __ws,
     anyhow::{self as __anyhow, Context as _},
-    lib as __lib, sats as __sats, ws_messages as __ws,
 };
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct AdminSetTempPass {
+pub(super) struct AdminSetTempPassArgs {
     pub id: u64,
 }
 
-impl __sdk::spacetime_module::InModule for AdminSetTempPass {
+impl From<AdminSetTempPassArgs> for super::Reducer {
+    fn from(args: AdminSetTempPassArgs) -> Self {
+        Self::AdminSetTempPass { id: args.id }
+    }
+}
+
+impl __sdk::InModule for AdminSetTempPassArgs {
     type Module = super::RemoteModule;
 }
 
-pub struct AdminSetTempPassCallbackId(__sdk::callbacks::CallbackId);
+pub struct AdminSetTempPassCallbackId(__sdk::CallbackId);
 
 #[allow(non_camel_case_types)]
 /// Extension trait for access to the reducer `admin_set_temp_pass`.
@@ -53,22 +58,33 @@ pub trait admin_set_temp_pass {
 impl admin_set_temp_pass for super::RemoteReducers {
     fn admin_set_temp_pass(&self, id: u64) -> __anyhow::Result<()> {
         self.imp
-            .call_reducer("admin_set_temp_pass", AdminSetTempPass { id })
+            .call_reducer("admin_set_temp_pass", AdminSetTempPassArgs { id })
     }
     fn on_admin_set_temp_pass(
         &self,
         mut callback: impl FnMut(&super::EventContext, &u64) + Send + 'static,
     ) -> AdminSetTempPassCallbackId {
-        AdminSetTempPassCallbackId(self.imp.on_reducer::<AdminSetTempPass>(
+        AdminSetTempPassCallbackId(self.imp.on_reducer(
             "admin_set_temp_pass",
-            Box::new(move |ctx: &super::EventContext, args: &AdminSetTempPass| {
-                callback(ctx, &args.id)
+            Box::new(move |ctx: &super::EventContext| {
+                let super::EventContext {
+                    event:
+                        __sdk::Event::Reducer(__sdk::ReducerEvent {
+                            reducer: super::Reducer::AdminSetTempPass { id },
+                            ..
+                        }),
+                    ..
+                } = ctx
+                else {
+                    unreachable!()
+                };
+                callback(ctx, id)
             }),
         ))
     }
     fn remove_on_admin_set_temp_pass(&self, callback: AdminSetTempPassCallbackId) {
         self.imp
-            .remove_on_reducer::<AdminSetTempPass>("admin_set_temp_pass", callback.0)
+            .remove_on_reducer("admin_set_temp_pass", callback.0)
     }
 }
 

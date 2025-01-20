@@ -2,21 +2,26 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN RUST INSTEAD.
 
 #![allow(unused)]
-use spacetimedb_sdk::{
-    self as __sdk,
+use spacetimedb_sdk::__codegen::{
+    self as __sdk, __lib, __sats, __ws,
     anyhow::{self as __anyhow, Context as _},
-    lib as __lib, sats as __sats, ws_messages as __ws,
 };
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct RegisterEmpty {}
+pub(super) struct RegisterEmptyArgs {}
 
-impl __sdk::spacetime_module::InModule for RegisterEmpty {
+impl From<RegisterEmptyArgs> for super::Reducer {
+    fn from(args: RegisterEmptyArgs) -> Self {
+        Self::RegisterEmpty
+    }
+}
+
+impl __sdk::InModule for RegisterEmptyArgs {
     type Module = super::RemoteModule;
 }
 
-pub struct RegisterEmptyCallbackId(__sdk::callbacks::CallbackId);
+pub struct RegisterEmptyCallbackId(__sdk::CallbackId);
 
 #[allow(non_camel_case_types)]
 /// Extension trait for access to the reducer `register_empty`.
@@ -50,20 +55,33 @@ pub trait register_empty {
 
 impl register_empty for super::RemoteReducers {
     fn register_empty(&self) -> __anyhow::Result<()> {
-        self.imp.call_reducer("register_empty", RegisterEmpty {})
+        self.imp
+            .call_reducer("register_empty", RegisterEmptyArgs {})
     }
     fn on_register_empty(
         &self,
         mut callback: impl FnMut(&super::EventContext) + Send + 'static,
     ) -> RegisterEmptyCallbackId {
-        RegisterEmptyCallbackId(self.imp.on_reducer::<RegisterEmpty>(
+        RegisterEmptyCallbackId(self.imp.on_reducer(
             "register_empty",
-            Box::new(move |ctx: &super::EventContext, args: &RegisterEmpty| callback(ctx)),
+            Box::new(move |ctx: &super::EventContext| {
+                let super::EventContext {
+                    event:
+                        __sdk::Event::Reducer(__sdk::ReducerEvent {
+                            reducer: super::Reducer::RegisterEmpty {},
+                            ..
+                        }),
+                    ..
+                } = ctx
+                else {
+                    unreachable!()
+                };
+                callback(ctx)
+            }),
         ))
     }
     fn remove_on_register_empty(&self, callback: RegisterEmptyCallbackId) {
-        self.imp
-            .remove_on_reducer::<RegisterEmpty>("register_empty", callback.0)
+        self.imp.remove_on_reducer("register_empty", callback.0)
     }
 }
 

@@ -2,25 +2,34 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN RUST INSTEAD.
 
 #![allow(unused)]
-use spacetimedb_sdk::{
-    self as __sdk,
+use spacetimedb_sdk::__codegen::{
+    self as __sdk, __lib, __sats, __ws,
     anyhow::{self as __anyhow, Context as _},
-    lib as __lib, sats as __sats, ws_messages as __ws,
 };
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct NodeSpawn {
+pub(super) struct NodeSpawnArgs {
     pub id: Option<u64>,
     pub kinds: Vec<String>,
     pub datas: Vec<String>,
 }
 
-impl __sdk::spacetime_module::InModule for NodeSpawn {
+impl From<NodeSpawnArgs> for super::Reducer {
+    fn from(args: NodeSpawnArgs) -> Self {
+        Self::NodeSpawn {
+            id: args.id,
+            kinds: args.kinds,
+            datas: args.datas,
+        }
+    }
+}
+
+impl __sdk::InModule for NodeSpawnArgs {
     type Module = super::RemoteModule;
 }
 
-pub struct NodeSpawnCallbackId(__sdk::callbacks::CallbackId);
+pub struct NodeSpawnCallbackId(__sdk::CallbackId);
 
 #[allow(non_camel_case_types)]
 /// Extension trait for access to the reducer `node_spawn`.
@@ -67,7 +76,7 @@ impl node_spawn for super::RemoteReducers {
         datas: Vec<String>,
     ) -> __anyhow::Result<()> {
         self.imp
-            .call_reducer("node_spawn", NodeSpawn { id, kinds, datas })
+            .call_reducer("node_spawn", NodeSpawnArgs { id, kinds, datas })
     }
     fn on_node_spawn(
         &self,
@@ -75,16 +84,26 @@ impl node_spawn for super::RemoteReducers {
             + Send
             + 'static,
     ) -> NodeSpawnCallbackId {
-        NodeSpawnCallbackId(self.imp.on_reducer::<NodeSpawn>(
+        NodeSpawnCallbackId(self.imp.on_reducer(
             "node_spawn",
-            Box::new(move |ctx: &super::EventContext, args: &NodeSpawn| {
-                callback(ctx, &args.id, &args.kinds, &args.datas)
+            Box::new(move |ctx: &super::EventContext| {
+                let super::EventContext {
+                    event:
+                        __sdk::Event::Reducer(__sdk::ReducerEvent {
+                            reducer: super::Reducer::NodeSpawn { id, kinds, datas },
+                            ..
+                        }),
+                    ..
+                } = ctx
+                else {
+                    unreachable!()
+                };
+                callback(ctx, id, kinds, datas)
             }),
         ))
     }
     fn remove_on_node_spawn(&self, callback: NodeSpawnCallbackId) {
-        self.imp
-            .remove_on_reducer::<NodeSpawn>("node_spawn", callback.0)
+        self.imp.remove_on_reducer("node_spawn", callback.0)
     }
 }
 

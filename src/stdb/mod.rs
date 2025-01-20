@@ -2,10 +2,9 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN RUST INSTEAD.
 
 #![allow(unused)]
-use spacetimedb_sdk::{
-    self as __sdk,
+use spacetimedb_sdk::__codegen::{
+    self as __sdk, __lib, __sats, __ws,
     anyhow::{self as __anyhow, Context as _},
-    lib as __lib, sats as __sats, ws_messages as __ws,
 };
 
 pub mod admin_daily_update_reducer;
@@ -47,47 +46,64 @@ pub mod t_player_type;
 pub mod t_wallet_type;
 pub mod wallet_table;
 
-pub use admin_daily_update_reducer::*;
-pub use admin_give_tag_reducer::*;
-pub use admin_set_temp_pass_reducer::*;
-pub use battle_insert_reducer::*;
+pub use admin_daily_update_reducer::{
+    admin_daily_update, set_flags_for_admin_daily_update, AdminDailyUpdateCallbackId,
+};
+pub use admin_give_tag_reducer::{
+    admin_give_tag, set_flags_for_admin_give_tag, AdminGiveTagCallbackId,
+};
+pub use admin_set_temp_pass_reducer::{
+    admin_set_temp_pass, set_flags_for_admin_set_temp_pass, AdminSetTempPassCallbackId,
+};
+pub use battle_insert_reducer::{
+    battle_insert, set_flags_for_battle_insert, BattleInsertCallbackId,
+};
 pub use battle_table::*;
-pub use cleanup_reducer::*;
-pub use daily_update_reducer_reducer::*;
+pub use cleanup_reducer::{cleanup, set_flags_for_cleanup, CleanupCallbackId};
+pub use daily_update_reducer_reducer::{
+    daily_update_reducer, set_flags_for_daily_update_reducer, DailyUpdateReducerCallbackId,
+};
 pub use daily_update_timer_table::*;
-pub use daily_update_timer_type::*;
-pub use give_credits_reducer::*;
+pub use daily_update_timer_type::DailyUpdateTimer;
+pub use give_credits_reducer::{give_credits, set_flags_for_give_credits, GiveCreditsCallbackId};
 pub use global_data_table::*;
-pub use global_data_type::*;
+pub use global_data_type::GlobalData;
 pub use global_settings_table::*;
-pub use global_settings_type::*;
-pub use identity_disconnected_reducer::*;
-pub use init_reducer::*;
-pub use login_by_identity_reducer::*;
-pub use login_reducer::*;
-pub use logout_reducer::*;
-pub use node_move_reducer::*;
-pub use node_spawn_hero_reducer::*;
-pub use node_spawn_reducer::*;
+pub use global_settings_type::GlobalSettings;
+pub use identity_disconnected_reducer::{
+    identity_disconnected, set_flags_for_identity_disconnected, IdentityDisconnectedCallbackId,
+};
+pub use init_reducer::{init, set_flags_for_init, InitCallbackId};
+pub use login_by_identity_reducer::{
+    login_by_identity, set_flags_for_login_by_identity, LoginByIdentityCallbackId,
+};
+pub use login_reducer::{login, set_flags_for_login, LoginCallbackId};
+pub use logout_reducer::{logout, set_flags_for_logout, LogoutCallbackId};
+pub use node_move_reducer::{node_move, set_flags_for_node_move, NodeMoveCallbackId};
+pub use node_spawn_hero_reducer::{
+    node_spawn_hero, set_flags_for_node_spawn_hero, NodeSpawnHeroCallbackId,
+};
+pub use node_spawn_reducer::{node_spawn, set_flags_for_node_spawn, NodeSpawnCallbackId};
 pub use nodes_relations_table::*;
 pub use nodes_table::*;
 pub use player_table::*;
 pub use player_tag_table::*;
-pub use register_empty_reducer::*;
-pub use register_reducer::*;
-pub use set_name_reducer::*;
-pub use set_password_reducer::*;
-pub use sync_assets_reducer::*;
-pub use t_battle_type::*;
-pub use t_node_relation_type::*;
-pub use t_node_type::*;
-pub use t_player_tag_type::*;
-pub use t_player_type::*;
-pub use t_wallet_type::*;
+pub use register_empty_reducer::{
+    register_empty, set_flags_for_register_empty, RegisterEmptyCallbackId,
+};
+pub use register_reducer::{register, set_flags_for_register, RegisterCallbackId};
+pub use set_name_reducer::{set_flags_for_set_name, set_name, SetNameCallbackId};
+pub use set_password_reducer::{set_flags_for_set_password, set_password, SetPasswordCallbackId};
+pub use sync_assets_reducer::{set_flags_for_sync_assets, sync_assets, SyncAssetsCallbackId};
+pub use t_battle_type::TBattle;
+pub use t_node_relation_type::TNodeRelation;
+pub use t_node_type::TNode;
+pub use t_player_tag_type::TPlayerTag;
+pub use t_player_type::TPlayer;
+pub use t_wallet_type::TWallet;
 pub use wallet_table::*;
 
-#[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
-#[sats(crate = __lib)]
+#[derive(Clone, PartialEq, Debug)]
 
 /// One of the reducers defined by this module.
 ///
@@ -95,79 +111,88 @@ pub use wallet_table::*;
 /// to indicate which reducer caused the event.
 
 pub enum Reducer {
-    IdentityDisconnected(identity_disconnected_reducer::IdentityDisconnected),
-    Init(init_reducer::Init),
-    AdminDailyUpdate(admin_daily_update_reducer::AdminDailyUpdate),
-    AdminGiveTag(admin_give_tag_reducer::AdminGiveTag),
-    AdminSetTempPass(admin_set_temp_pass_reducer::AdminSetTempPass),
-    BattleInsert(battle_insert_reducer::BattleInsert),
-    Cleanup(cleanup_reducer::Cleanup),
-    DailyUpdateReducer(daily_update_reducer_reducer::DailyUpdateReducer),
-    GiveCredits(give_credits_reducer::GiveCredits),
-    Login(login_reducer::Login),
-    LoginByIdentity(login_by_identity_reducer::LoginByIdentity),
-    Logout(logout_reducer::Logout),
-    NodeMove(node_move_reducer::NodeMove),
-    NodeSpawn(node_spawn_reducer::NodeSpawn),
-    NodeSpawnHero(node_spawn_hero_reducer::NodeSpawnHero),
-    Register(register_reducer::Register),
-    RegisterEmpty(register_empty_reducer::RegisterEmpty),
-    SetName(set_name_reducer::SetName),
-    SetPassword(set_password_reducer::SetPassword),
-    SyncAssets(sync_assets_reducer::SyncAssets),
+    IdentityDisconnected,
+    Init,
+    AdminDailyUpdate,
+    AdminGiveTag {
+        owner: u64,
+        tag: String,
+    },
+    AdminSetTempPass {
+        id: u64,
+    },
+    BattleInsert {
+        team_left: Vec<String>,
+        team_right: Vec<String>,
+    },
+    Cleanup,
+    DailyUpdateReducer {
+        timer: DailyUpdateTimer,
+    },
+    GiveCredits,
+    Login {
+        name: String,
+        pass: String,
+    },
+    LoginByIdentity,
+    Logout,
+    NodeMove {
+        id: u64,
+        x: f32,
+        y: f32,
+    },
+    NodeSpawn {
+        id: Option<u64>,
+        kinds: Vec<String>,
+        datas: Vec<String>,
+    },
+    NodeSpawnHero {
+        name: String,
+    },
+    Register {
+        name: String,
+        pass: String,
+    },
+    RegisterEmpty,
+    SetName {
+        name: String,
+    },
+    SetPassword {
+        old_pass: String,
+        new_pass: String,
+    },
+    SyncAssets {
+        global_settings: GlobalSettings,
+    },
 }
 
-impl __sdk::spacetime_module::InModule for Reducer {
+impl __sdk::InModule for Reducer {
     type Module = RemoteModule;
 }
 
-impl __sdk::spacetime_module::Reducer for Reducer {
+impl __sdk::Reducer for Reducer {
     fn reducer_name(&self) -> &'static str {
         match self {
-            Reducer::IdentityDisconnected(_) => "__identity_disconnected__",
-            Reducer::Init(_) => "__init__",
-            Reducer::AdminDailyUpdate(_) => "admin_daily_update",
-            Reducer::AdminGiveTag(_) => "admin_give_tag",
-            Reducer::AdminSetTempPass(_) => "admin_set_temp_pass",
-            Reducer::BattleInsert(_) => "battle_insert",
-            Reducer::Cleanup(_) => "cleanup",
-            Reducer::DailyUpdateReducer(_) => "daily_update_reducer",
-            Reducer::GiveCredits(_) => "give_credits",
-            Reducer::Login(_) => "login",
-            Reducer::LoginByIdentity(_) => "login_by_identity",
-            Reducer::Logout(_) => "logout",
-            Reducer::NodeMove(_) => "node_move",
-            Reducer::NodeSpawn(_) => "node_spawn",
-            Reducer::NodeSpawnHero(_) => "node_spawn_hero",
-            Reducer::Register(_) => "register",
-            Reducer::RegisterEmpty(_) => "register_empty",
-            Reducer::SetName(_) => "set_name",
-            Reducer::SetPassword(_) => "set_password",
-            Reducer::SyncAssets(_) => "sync_assets",
-        }
-    }
-    fn reducer_args(&self) -> &dyn std::any::Any {
-        match self {
-            Reducer::IdentityDisconnected(args) => args,
-            Reducer::Init(args) => args,
-            Reducer::AdminDailyUpdate(args) => args,
-            Reducer::AdminGiveTag(args) => args,
-            Reducer::AdminSetTempPass(args) => args,
-            Reducer::BattleInsert(args) => args,
-            Reducer::Cleanup(args) => args,
-            Reducer::DailyUpdateReducer(args) => args,
-            Reducer::GiveCredits(args) => args,
-            Reducer::Login(args) => args,
-            Reducer::LoginByIdentity(args) => args,
-            Reducer::Logout(args) => args,
-            Reducer::NodeMove(args) => args,
-            Reducer::NodeSpawn(args) => args,
-            Reducer::NodeSpawnHero(args) => args,
-            Reducer::Register(args) => args,
-            Reducer::RegisterEmpty(args) => args,
-            Reducer::SetName(args) => args,
-            Reducer::SetPassword(args) => args,
-            Reducer::SyncAssets(args) => args,
+            Reducer::IdentityDisconnected => "__identity_disconnected__",
+            Reducer::Init => "__init__",
+            Reducer::AdminDailyUpdate => "admin_daily_update",
+            Reducer::AdminGiveTag { .. } => "admin_give_tag",
+            Reducer::AdminSetTempPass { .. } => "admin_set_temp_pass",
+            Reducer::BattleInsert { .. } => "battle_insert",
+            Reducer::Cleanup => "cleanup",
+            Reducer::DailyUpdateReducer { .. } => "daily_update_reducer",
+            Reducer::GiveCredits => "give_credits",
+            Reducer::Login { .. } => "login",
+            Reducer::LoginByIdentity => "login_by_identity",
+            Reducer::Logout => "logout",
+            Reducer::NodeMove { .. } => "node_move",
+            Reducer::NodeSpawn { .. } => "node_spawn",
+            Reducer::NodeSpawnHero { .. } => "node_spawn_hero",
+            Reducer::Register { .. } => "register",
+            Reducer::RegisterEmpty => "register_empty",
+            Reducer::SetName { .. } => "set_name",
+            Reducer::SetPassword { .. } => "set_password",
+            Reducer::SyncAssets { .. } => "sync_assets",
         }
     }
 }
@@ -175,71 +200,109 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
     type Error = __anyhow::Error;
     fn try_from(value: __ws::ReducerCallInfo<__ws::BsatnFormat>) -> __anyhow::Result<Self> {
         match &value.reducer_name[..] {
-            "__identity_disconnected__" => Ok(Reducer::IdentityDisconnected(
-                __sdk::spacetime_module::parse_reducer_args(
-                    "__identity_disconnected__",
-                    &value.args,
-                )?,
-            )),
-            "__init__" => Ok(Reducer::Init(__sdk::spacetime_module::parse_reducer_args(
+            "__identity_disconnected__" => {
+                Ok(__sdk::parse_reducer_args::<
+                    identity_disconnected_reducer::IdentityDisconnectedArgs,
+                >("__identity_disconnected__", &value.args)?
+                .into())
+            }
+            "__init__" => Ok(__sdk::parse_reducer_args::<init_reducer::InitArgs>(
                 "__init__",
                 &value.args,
-            )?)),
-            "admin_daily_update" => Ok(Reducer::AdminDailyUpdate(
-                __sdk::spacetime_module::parse_reducer_args("admin_daily_update", &value.args)?,
-            )),
-            "admin_give_tag" => Ok(Reducer::AdminGiveTag(
-                __sdk::spacetime_module::parse_reducer_args("admin_give_tag", &value.args)?,
-            )),
-            "admin_set_temp_pass" => Ok(Reducer::AdminSetTempPass(
-                __sdk::spacetime_module::parse_reducer_args("admin_set_temp_pass", &value.args)?,
-            )),
-            "battle_insert" => Ok(Reducer::BattleInsert(
-                __sdk::spacetime_module::parse_reducer_args("battle_insert", &value.args)?,
-            )),
-            "cleanup" => Ok(Reducer::Cleanup(
-                __sdk::spacetime_module::parse_reducer_args("cleanup", &value.args)?,
-            )),
-            "daily_update_reducer" => Ok(Reducer::DailyUpdateReducer(
-                __sdk::spacetime_module::parse_reducer_args("daily_update_reducer", &value.args)?,
-            )),
-            "give_credits" => Ok(Reducer::GiveCredits(
-                __sdk::spacetime_module::parse_reducer_args("give_credits", &value.args)?,
-            )),
-            "login" => Ok(Reducer::Login(__sdk::spacetime_module::parse_reducer_args(
+            )?
+            .into()),
+            "admin_daily_update" => Ok(__sdk::parse_reducer_args::<
+                admin_daily_update_reducer::AdminDailyUpdateArgs,
+            >("admin_daily_update", &value.args)?
+            .into()),
+            "admin_give_tag" => Ok(__sdk::parse_reducer_args::<
+                admin_give_tag_reducer::AdminGiveTagArgs,
+            >("admin_give_tag", &value.args)?
+            .into()),
+            "admin_set_temp_pass" => Ok(__sdk::parse_reducer_args::<
+                admin_set_temp_pass_reducer::AdminSetTempPassArgs,
+            >("admin_set_temp_pass", &value.args)?
+            .into()),
+            "battle_insert" => Ok(__sdk::parse_reducer_args::<
+                battle_insert_reducer::BattleInsertArgs,
+            >("battle_insert", &value.args)?
+            .into()),
+            "cleanup" => Ok(__sdk::parse_reducer_args::<cleanup_reducer::CleanupArgs>(
+                "cleanup",
+                &value.args,
+            )?
+            .into()),
+            "daily_update_reducer" => Ok(__sdk::parse_reducer_args::<
+                daily_update_reducer_reducer::DailyUpdateReducerArgs,
+            >("daily_update_reducer", &value.args)?
+            .into()),
+            "give_credits" => Ok(
+                __sdk::parse_reducer_args::<give_credits_reducer::GiveCreditsArgs>(
+                    "give_credits",
+                    &value.args,
+                )?
+                .into(),
+            ),
+            "login" => Ok(__sdk::parse_reducer_args::<login_reducer::LoginArgs>(
                 "login",
                 &value.args,
-            )?)),
-            "login_by_identity" => Ok(Reducer::LoginByIdentity(
-                __sdk::spacetime_module::parse_reducer_args("login_by_identity", &value.args)?,
-            )),
-            "logout" => Ok(Reducer::Logout(
-                __sdk::spacetime_module::parse_reducer_args("logout", &value.args)?,
-            )),
-            "node_move" => Ok(Reducer::NodeMove(
-                __sdk::spacetime_module::parse_reducer_args("node_move", &value.args)?,
-            )),
-            "node_spawn" => Ok(Reducer::NodeSpawn(
-                __sdk::spacetime_module::parse_reducer_args("node_spawn", &value.args)?,
-            )),
-            "node_spawn_hero" => Ok(Reducer::NodeSpawnHero(
-                __sdk::spacetime_module::parse_reducer_args("node_spawn_hero", &value.args)?,
-            )),
-            "register" => Ok(Reducer::Register(
-                __sdk::spacetime_module::parse_reducer_args("register", &value.args)?,
-            )),
-            "register_empty" => Ok(Reducer::RegisterEmpty(
-                __sdk::spacetime_module::parse_reducer_args("register_empty", &value.args)?,
-            )),
-            "set_name" => Ok(Reducer::SetName(
-                __sdk::spacetime_module::parse_reducer_args("set_name", &value.args)?,
-            )),
-            "set_password" => Ok(Reducer::SetPassword(
-                __sdk::spacetime_module::parse_reducer_args("set_password", &value.args)?,
-            )),
-            "sync_assets" => Ok(Reducer::SyncAssets(
-                __sdk::spacetime_module::parse_reducer_args("sync_assets", &value.args)?,
-            )),
+            )?
+            .into()),
+            "login_by_identity" => Ok(__sdk::parse_reducer_args::<
+                login_by_identity_reducer::LoginByIdentityArgs,
+            >("login_by_identity", &value.args)?
+            .into()),
+            "logout" => Ok(__sdk::parse_reducer_args::<logout_reducer::LogoutArgs>(
+                "logout",
+                &value.args,
+            )?
+            .into()),
+            "node_move" => Ok(
+                __sdk::parse_reducer_args::<node_move_reducer::NodeMoveArgs>(
+                    "node_move",
+                    &value.args,
+                )?
+                .into(),
+            ),
+            "node_spawn" => Ok(
+                __sdk::parse_reducer_args::<node_spawn_reducer::NodeSpawnArgs>(
+                    "node_spawn",
+                    &value.args,
+                )?
+                .into(),
+            ),
+            "node_spawn_hero" => Ok(__sdk::parse_reducer_args::<
+                node_spawn_hero_reducer::NodeSpawnHeroArgs,
+            >("node_spawn_hero", &value.args)?
+            .into()),
+            "register" => Ok(__sdk::parse_reducer_args::<register_reducer::RegisterArgs>(
+                "register",
+                &value.args,
+            )?
+            .into()),
+            "register_empty" => Ok(__sdk::parse_reducer_args::<
+                register_empty_reducer::RegisterEmptyArgs,
+            >("register_empty", &value.args)?
+            .into()),
+            "set_name" => Ok(__sdk::parse_reducer_args::<set_name_reducer::SetNameArgs>(
+                "set_name",
+                &value.args,
+            )?
+            .into()),
+            "set_password" => Ok(
+                __sdk::parse_reducer_args::<set_password_reducer::SetPasswordArgs>(
+                    "set_password",
+                    &value.args,
+                )?
+                .into(),
+            ),
+            "sync_assets" => Ok(
+                __sdk::parse_reducer_args::<sync_assets_reducer::SyncAssetsArgs>(
+                    "sync_assets",
+                    &value.args,
+                )?
+                .into(),
+            ),
             _ => Err(__anyhow::anyhow!(
                 "Unknown reducer {:?}",
                 value.reducer_name
@@ -252,15 +315,15 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
 #[allow(non_snake_case)]
 #[doc(hidden)]
 pub struct DbUpdate {
-    battle: __sdk::spacetime_module::TableUpdate<TBattle>,
-    daily_update_timer: __sdk::spacetime_module::TableUpdate<DailyUpdateTimer>,
-    global_data: __sdk::spacetime_module::TableUpdate<GlobalData>,
-    global_settings: __sdk::spacetime_module::TableUpdate<GlobalSettings>,
-    nodes: __sdk::spacetime_module::TableUpdate<TNode>,
-    nodes_relations: __sdk::spacetime_module::TableUpdate<TNodeRelation>,
-    player: __sdk::spacetime_module::TableUpdate<TPlayer>,
-    player_tag: __sdk::spacetime_module::TableUpdate<TPlayerTag>,
-    wallet: __sdk::spacetime_module::TableUpdate<TWallet>,
+    battle: __sdk::TableUpdate<TBattle>,
+    daily_update_timer: __sdk::TableUpdate<DailyUpdateTimer>,
+    global_data: __sdk::TableUpdate<GlobalData>,
+    global_settings: __sdk::TableUpdate<GlobalSettings>,
+    nodes: __sdk::TableUpdate<TNode>,
+    nodes_relations: __sdk::TableUpdate<TNodeRelation>,
+    player: __sdk::TableUpdate<TPlayer>,
+    player_tag: __sdk::TableUpdate<TPlayerTag>,
+    wallet: __sdk::TableUpdate<TWallet>,
 }
 
 impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
@@ -299,12 +362,12 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
     }
 }
 
-impl __sdk::spacetime_module::InModule for DbUpdate {
+impl __sdk::InModule for DbUpdate {
     type Module = RemoteModule;
 }
 
-impl __sdk::spacetime_module::DbUpdate for DbUpdate {
-    fn apply_to_client_cache(&self, cache: &mut __sdk::client_cache::ClientCache<RemoteModule>) {
+impl __sdk::DbUpdate for DbUpdate {
+    fn apply_to_client_cache(&self, cache: &mut __sdk::ClientCache<RemoteModule>) {
         cache.apply_diff_to_table::<TBattle>("battle", &self.battle);
         cache.apply_diff_to_table::<DailyUpdateTimer>(
             "daily_update_timer",
@@ -321,7 +384,7 @@ impl __sdk::spacetime_module::DbUpdate for DbUpdate {
     fn invoke_row_callbacks(
         &self,
         event: &EventContext,
-        callbacks: &mut __sdk::callbacks::DbCallbacks<RemoteModule>,
+        callbacks: &mut __sdk::DbCallbacks<RemoteModule>,
     ) {
         callbacks.invoke_table_row_callbacks::<TBattle>("battle", &self.battle, event);
         callbacks.invoke_table_row_callbacks::<DailyUpdateTimer>(
@@ -350,28 +413,17 @@ impl __sdk::spacetime_module::DbUpdate for DbUpdate {
 #[doc(hidden)]
 pub struct RemoteModule;
 
-impl __sdk::spacetime_module::InModule for RemoteModule {
+impl __sdk::InModule for RemoteModule {
     type Module = Self;
-}
-
-impl __sdk::spacetime_module::SpacetimeModule for RemoteModule {
-    type DbConnection = DbConnection;
-    type EventContext = EventContext;
-    type Reducer = Reducer;
-    type DbView = RemoteTables;
-    type Reducers = RemoteReducers;
-    type SetReducerFlags = SetReducerFlags;
-    type DbUpdate = DbUpdate;
-    type SubscriptionHandle = SubscriptionHandle;
 }
 
 /// The `reducers` field of [`EventContext`] and [`DbConnection`],
 /// with methods provided by extension traits for each reducer defined by the module.
 pub struct RemoteReducers {
-    imp: __sdk::db_connection::DbContextImpl<RemoteModule>,
+    imp: __sdk::DbContextImpl<RemoteModule>,
 }
 
-impl __sdk::spacetime_module::InModule for RemoteReducers {
+impl __sdk::InModule for RemoteReducers {
     type Module = RemoteModule;
 }
 
@@ -382,20 +434,20 @@ impl __sdk::spacetime_module::InModule for RemoteReducers {
 ///
 /// This type is currently unstable and may be removed without a major version bump.
 pub struct SetReducerFlags {
-    imp: __sdk::db_connection::DbContextImpl<RemoteModule>,
+    imp: __sdk::DbContextImpl<RemoteModule>,
 }
 
-impl __sdk::spacetime_module::InModule for SetReducerFlags {
+impl __sdk::InModule for SetReducerFlags {
     type Module = RemoteModule;
 }
 
 /// The `db` field of [`EventContext`] and [`DbConnection`],
 /// with methods provided by extension traits for each table defined by the module.
 pub struct RemoteTables {
-    imp: __sdk::db_connection::DbContextImpl<RemoteModule>,
+    imp: __sdk::DbContextImpl<RemoteModule>,
 }
 
-impl __sdk::spacetime_module::InModule for RemoteTables {
+impl __sdk::InModule for RemoteTables {
     type Module = RemoteModule;
 }
 
@@ -427,14 +479,14 @@ pub struct DbConnection {
     /// This type is currently unstable and may be removed without a major version bump.
     pub set_reducer_flags: SetReducerFlags,
 
-    imp: __sdk::db_connection::DbContextImpl<RemoteModule>,
+    imp: __sdk::DbContextImpl<RemoteModule>,
 }
 
-impl __sdk::spacetime_module::InModule for DbConnection {
+impl __sdk::InModule for DbConnection {
     type Module = RemoteModule;
 }
 
-impl __sdk::db_context::DbContext for DbConnection {
+impl __sdk::DbContext for DbConnection {
     type DbView = RemoteTables;
     type Reducers = RemoteReducers;
     type SetReducerFlags = SetReducerFlags;
@@ -457,10 +509,10 @@ impl __sdk::db_context::DbContext for DbConnection {
         self.imp.disconnect()
     }
 
-    type SubscriptionBuilder = __sdk::subscription::SubscriptionBuilder<RemoteModule>;
+    type SubscriptionBuilder = __sdk::SubscriptionBuilder<RemoteModule>;
 
     fn subscription_builder(&self) -> Self::SubscriptionBuilder {
-        __sdk::subscription::SubscriptionBuilder::new(&self.imp)
+        __sdk::SubscriptionBuilder::new(&self.imp)
     }
 
     fn try_identity(&self) -> Option<__sdk::Identity> {
@@ -476,7 +528,7 @@ impl DbConnection {
     ///
     /// See [`__sdk::DbConnectionBuilder`] for required and optional configuration for the new connection.
     pub fn builder() -> __sdk::DbConnectionBuilder<RemoteModule> {
-        __sdk::db_connection::DbConnectionBuilder::new()
+        __sdk::DbConnectionBuilder::new()
     }
 
     /// If any WebSocket messages are waiting, process one of them.
@@ -542,8 +594,8 @@ impl DbConnection {
     }
 }
 
-impl __sdk::spacetime_module::DbConnection for DbConnection {
-    fn new(imp: __sdk::db_connection::DbContextImpl<RemoteModule>) -> Self {
+impl __sdk::DbConnection for DbConnection {
+    fn new(imp: __sdk::DbContextImpl<RemoteModule>) -> Self {
         Self {
             db: RemoteTables { imp: imp.clone() },
             reducers: RemoteReducers { imp: imp.clone() },
@@ -566,15 +618,15 @@ pub struct EventContext {
     /// This type is currently unstable and may be removed without a major version bump.
     pub set_reducer_flags: SetReducerFlags,
     /// The event which caused these callbacks to run.
-    pub event: __sdk::event::Event<Reducer>,
-    imp: __sdk::db_connection::DbContextImpl<RemoteModule>,
+    pub event: __sdk::Event<Reducer>,
+    imp: __sdk::DbContextImpl<RemoteModule>,
 }
 
-impl __sdk::spacetime_module::InModule for EventContext {
+impl __sdk::InModule for EventContext {
     type Module = RemoteModule;
 }
 
-impl __sdk::db_context::DbContext for EventContext {
+impl __sdk::DbContext for EventContext {
     type DbView = RemoteTables;
     type Reducers = RemoteReducers;
     type SetReducerFlags = SetReducerFlags;
@@ -593,14 +645,14 @@ impl __sdk::db_context::DbContext for EventContext {
         self.imp.is_active()
     }
 
-    fn disconnect(&self) -> spacetimedb_sdk::anyhow::Result<()> {
+    fn disconnect(&self) -> __anyhow::Result<()> {
         self.imp.disconnect()
     }
 
-    type SubscriptionBuilder = __sdk::subscription::SubscriptionBuilder<RemoteModule>;
+    type SubscriptionBuilder = __sdk::SubscriptionBuilder<RemoteModule>;
 
     fn subscription_builder(&self) -> Self::SubscriptionBuilder {
-        __sdk::subscription::SubscriptionBuilder::new(&self.imp)
+        __sdk::SubscriptionBuilder::new(&self.imp)
     }
 
     fn try_identity(&self) -> Option<__sdk::Identity> {
@@ -611,14 +663,11 @@ impl __sdk::db_context::DbContext for EventContext {
     }
 }
 
-impl __sdk::spacetime_module::EventContext for EventContext {
-    fn event(&self) -> &__sdk::event::Event<Reducer> {
+impl __sdk::EventContext for EventContext {
+    fn event(&self) -> &__sdk::Event<Reducer> {
         &self.event
     }
-    fn new(
-        imp: __sdk::db_connection::DbContextImpl<RemoteModule>,
-        event: __sdk::event::Event<Reducer>,
-    ) -> Self {
+    fn new(imp: __sdk::DbContextImpl<RemoteModule>, event: __sdk::Event<Reducer>) -> Self {
         Self {
             db: RemoteTables { imp: imp.clone() },
             reducers: RemoteReducers { imp: imp.clone() },
@@ -632,15 +681,15 @@ impl __sdk::spacetime_module::EventContext for EventContext {
 /// A handle on a subscribed query.
 // TODO: Document this better after implementing the new subscription API.
 pub struct SubscriptionHandle {
-    imp: __sdk::subscription::SubscriptionHandleImpl<RemoteModule>,
+    imp: __sdk::SubscriptionHandleImpl<RemoteModule>,
 }
 
-impl __sdk::spacetime_module::InModule for SubscriptionHandle {
+impl __sdk::InModule for SubscriptionHandle {
     type Module = RemoteModule;
 }
 
-impl __sdk::spacetime_module::SubscriptionHandle for SubscriptionHandle {
-    fn new(imp: __sdk::subscription::SubscriptionHandleImpl<RemoteModule>) -> Self {
+impl __sdk::SubscriptionHandle for SubscriptionHandle {
+    fn new(imp: __sdk::SubscriptionHandleImpl<RemoteModule>) -> Self {
         Self { imp }
     }
 }
@@ -655,7 +704,7 @@ pub trait RemoteDbContext:
     DbView = RemoteTables,
     Reducers = RemoteReducers,
     SetReducerFlags = SetReducerFlags,
-    SubscriptionBuilder = __sdk::subscription::SubscriptionBuilder<RemoteModule>,
+    SubscriptionBuilder = __sdk::SubscriptionBuilder<RemoteModule>,
 >
 {
 }
@@ -664,8 +713,31 @@ impl<
             DbView = RemoteTables,
             Reducers = RemoteReducers,
             SetReducerFlags = SetReducerFlags,
-            SubscriptionBuilder = __sdk::subscription::SubscriptionBuilder<RemoteModule>,
+            SubscriptionBuilder = __sdk::SubscriptionBuilder<RemoteModule>,
         >,
     > RemoteDbContext for Ctx
 {
+}
+
+impl __sdk::SpacetimeModule for RemoteModule {
+    type DbConnection = DbConnection;
+    type EventContext = EventContext;
+    type Reducer = Reducer;
+    type DbView = RemoteTables;
+    type Reducers = RemoteReducers;
+    type SetReducerFlags = SetReducerFlags;
+    type DbUpdate = DbUpdate;
+    type SubscriptionHandle = SubscriptionHandle;
+
+    fn register_tables(client_cache: &mut __sdk::ClientCache<Self>) {
+        battle_table::register_table(client_cache);
+        daily_update_timer_table::register_table(client_cache);
+        global_data_table::register_table(client_cache);
+        global_settings_table::register_table(client_cache);
+        nodes_table::register_table(client_cache);
+        nodes_relations_table::register_table(client_cache);
+        player_table::register_table(client_cache);
+        player_tag_table::register_table(client_cache);
+        wallet_table::register_table(client_cache);
+    }
 }

@@ -2,21 +2,26 @@
 // WILL NOT BE SAVED. MODIFY TABLES IN RUST INSTEAD.
 
 #![allow(unused)]
-use spacetimedb_sdk::{
-    self as __sdk,
+use spacetimedb_sdk::__codegen::{
+    self as __sdk, __lib, __sats, __ws,
     anyhow::{self as __anyhow, Context as _},
-    lib as __lib, sats as __sats, ws_messages as __ws,
 };
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct AdminDailyUpdate {}
+pub(super) struct AdminDailyUpdateArgs {}
 
-impl __sdk::spacetime_module::InModule for AdminDailyUpdate {
+impl From<AdminDailyUpdateArgs> for super::Reducer {
+    fn from(args: AdminDailyUpdateArgs) -> Self {
+        Self::AdminDailyUpdate
+    }
+}
+
+impl __sdk::InModule for AdminDailyUpdateArgs {
     type Module = super::RemoteModule;
 }
 
-pub struct AdminDailyUpdateCallbackId(__sdk::callbacks::CallbackId);
+pub struct AdminDailyUpdateCallbackId(__sdk::CallbackId);
 
 #[allow(non_camel_case_types)]
 /// Extension trait for access to the reducer `admin_daily_update`.
@@ -51,20 +56,32 @@ pub trait admin_daily_update {
 impl admin_daily_update for super::RemoteReducers {
     fn admin_daily_update(&self) -> __anyhow::Result<()> {
         self.imp
-            .call_reducer("admin_daily_update", AdminDailyUpdate {})
+            .call_reducer("admin_daily_update", AdminDailyUpdateArgs {})
     }
     fn on_admin_daily_update(
         &self,
         mut callback: impl FnMut(&super::EventContext) + Send + 'static,
     ) -> AdminDailyUpdateCallbackId {
-        AdminDailyUpdateCallbackId(self.imp.on_reducer::<AdminDailyUpdate>(
+        AdminDailyUpdateCallbackId(self.imp.on_reducer(
             "admin_daily_update",
-            Box::new(move |ctx: &super::EventContext, args: &AdminDailyUpdate| callback(ctx)),
+            Box::new(move |ctx: &super::EventContext| {
+                let super::EventContext {
+                    event:
+                        __sdk::Event::Reducer(__sdk::ReducerEvent {
+                            reducer: super::Reducer::AdminDailyUpdate {},
+                            ..
+                        }),
+                    ..
+                } = ctx
+                else {
+                    unreachable!()
+                };
+                callback(ctx)
+            }),
         ))
     }
     fn remove_on_admin_daily_update(&self, callback: AdminDailyUpdateCallbackId) {
-        self.imp
-            .remove_on_reducer::<AdminDailyUpdate>("admin_daily_update", callback.0)
+        self.imp.remove_on_reducer("admin_daily_update", callback.0)
     }
 }
 
