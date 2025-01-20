@@ -8,42 +8,42 @@ use spacetimedb_sdk::__codegen::{
     anyhow::{self as __anyhow, Context as _},
 };
 
-/// Table handle for the table `nodes`.
+/// Table handle for the table `nodes_match`.
 ///
-/// Obtain a handle from the [`NodesTableAccess::nodes`] method on [`super::RemoteTables`],
-/// like `ctx.db.nodes()`.
+/// Obtain a handle from the [`NodesMatchTableAccess::nodes_match`] method on [`super::RemoteTables`],
+/// like `ctx.db.nodes_match()`.
 ///
 /// Users are encouraged not to explicitly reference this type,
 /// but to directly chain method calls,
-/// like `ctx.db.nodes().on_insert(...)`.
-pub struct NodesTableHandle<'ctx> {
+/// like `ctx.db.nodes_match().on_insert(...)`.
+pub struct NodesMatchTableHandle<'ctx> {
     imp: __sdk::TableHandle<TNode>,
     ctx: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
 #[allow(non_camel_case_types)]
-/// Extension trait for access to the table `nodes`.
+/// Extension trait for access to the table `nodes_match`.
 ///
 /// Implemented for [`super::RemoteTables`].
-pub trait NodesTableAccess {
+pub trait NodesMatchTableAccess {
     #[allow(non_snake_case)]
-    /// Obtain a [`NodesTableHandle`], which mediates access to the table `nodes`.
-    fn nodes(&self) -> NodesTableHandle<'_>;
+    /// Obtain a [`NodesMatchTableHandle`], which mediates access to the table `nodes_match`.
+    fn nodes_match(&self) -> NodesMatchTableHandle<'_>;
 }
 
-impl NodesTableAccess for super::RemoteTables {
-    fn nodes(&self) -> NodesTableHandle<'_> {
-        NodesTableHandle {
-            imp: self.imp.get_table::<TNode>("nodes"),
+impl NodesMatchTableAccess for super::RemoteTables {
+    fn nodes_match(&self) -> NodesMatchTableHandle<'_> {
+        NodesMatchTableHandle {
+            imp: self.imp.get_table::<TNode>("nodes_match"),
             ctx: std::marker::PhantomData,
         }
     }
 }
 
-pub struct NodesInsertCallbackId(__sdk::CallbackId);
-pub struct NodesDeleteCallbackId(__sdk::CallbackId);
+pub struct NodesMatchInsertCallbackId(__sdk::CallbackId);
+pub struct NodesMatchDeleteCallbackId(__sdk::CallbackId);
 
-impl<'ctx> __sdk::Table for NodesTableHandle<'ctx> {
+impl<'ctx> __sdk::Table for NodesMatchTableHandle<'ctx> {
     type Row = TNode;
     type EventContext = super::EventContext;
 
@@ -54,51 +54,51 @@ impl<'ctx> __sdk::Table for NodesTableHandle<'ctx> {
         self.imp.iter()
     }
 
-    type InsertCallbackId = NodesInsertCallbackId;
+    type InsertCallbackId = NodesMatchInsertCallbackId;
 
     fn on_insert(
         &self,
         callback: impl FnMut(&Self::EventContext, &Self::Row) + Send + 'static,
-    ) -> NodesInsertCallbackId {
-        NodesInsertCallbackId(self.imp.on_insert(Box::new(callback)))
+    ) -> NodesMatchInsertCallbackId {
+        NodesMatchInsertCallbackId(self.imp.on_insert(Box::new(callback)))
     }
 
-    fn remove_on_insert(&self, callback: NodesInsertCallbackId) {
+    fn remove_on_insert(&self, callback: NodesMatchInsertCallbackId) {
         self.imp.remove_on_insert(callback.0)
     }
 
-    type DeleteCallbackId = NodesDeleteCallbackId;
+    type DeleteCallbackId = NodesMatchDeleteCallbackId;
 
     fn on_delete(
         &self,
         callback: impl FnMut(&Self::EventContext, &Self::Row) + Send + 'static,
-    ) -> NodesDeleteCallbackId {
-        NodesDeleteCallbackId(self.imp.on_delete(Box::new(callback)))
+    ) -> NodesMatchDeleteCallbackId {
+        NodesMatchDeleteCallbackId(self.imp.on_delete(Box::new(callback)))
     }
 
-    fn remove_on_delete(&self, callback: NodesDeleteCallbackId) {
+    fn remove_on_delete(&self, callback: NodesMatchDeleteCallbackId) {
         self.imp.remove_on_delete(callback.0)
     }
 }
 
 #[doc(hidden)]
 pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
-    let _table = client_cache.get_or_make_table::<TNode>("nodes");
+    let _table = client_cache.get_or_make_table::<TNode>("nodes_match");
     _table.add_unique_constraint::<String>("key", |row| &row.key);
 }
-pub struct NodesUpdateCallbackId(__sdk::CallbackId);
+pub struct NodesMatchUpdateCallbackId(__sdk::CallbackId);
 
-impl<'ctx> __sdk::TableWithPrimaryKey for NodesTableHandle<'ctx> {
-    type UpdateCallbackId = NodesUpdateCallbackId;
+impl<'ctx> __sdk::TableWithPrimaryKey for NodesMatchTableHandle<'ctx> {
+    type UpdateCallbackId = NodesMatchUpdateCallbackId;
 
     fn on_update(
         &self,
         callback: impl FnMut(&Self::EventContext, &Self::Row, &Self::Row) + Send + 'static,
-    ) -> NodesUpdateCallbackId {
-        NodesUpdateCallbackId(self.imp.on_update(Box::new(callback)))
+    ) -> NodesMatchUpdateCallbackId {
+        NodesMatchUpdateCallbackId(self.imp.on_update(Box::new(callback)))
     }
 
-    fn remove_on_update(&self, callback: NodesUpdateCallbackId) {
+    fn remove_on_update(&self, callback: NodesMatchUpdateCallbackId) {
         self.imp.remove_on_update(callback.0)
     }
 }
@@ -110,32 +110,32 @@ pub(super) fn parse_table_update(
     __sdk::TableUpdate::parse_table_update_with_primary_key::<String>(raw_updates, |row: &TNode| {
         &row.key
     })
-    .context("Failed to parse table update for table \"nodes\"")
+    .context("Failed to parse table update for table \"nodes_match\"")
 }
 
-/// Access to the `key` unique index on the table `nodes`,
+/// Access to the `key` unique index on the table `nodes_match`,
 /// which allows point queries on the field of the same name
-/// via the [`NodesKeyUnique::find`] method.
+/// via the [`NodesMatchKeyUnique::find`] method.
 ///
 /// Users are encouraged not to explicitly reference this type,
 /// but to directly chain method calls,
-/// like `ctx.db.nodes().key().find(...)`.
-pub struct NodesKeyUnique<'ctx> {
+/// like `ctx.db.nodes_match().key().find(...)`.
+pub struct NodesMatchKeyUnique<'ctx> {
     imp: __sdk::UniqueConstraintHandle<TNode, String>,
     phantom: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
-impl<'ctx> NodesTableHandle<'ctx> {
-    /// Get a handle on the `key` unique index on the table `nodes`.
-    pub fn key(&self) -> NodesKeyUnique<'ctx> {
-        NodesKeyUnique {
+impl<'ctx> NodesMatchTableHandle<'ctx> {
+    /// Get a handle on the `key` unique index on the table `nodes_match`.
+    pub fn key(&self) -> NodesMatchKeyUnique<'ctx> {
+        NodesMatchKeyUnique {
             imp: self.imp.get_unique_constraint::<String>("key"),
             phantom: std::marker::PhantomData,
         }
     }
 }
 
-impl<'ctx> NodesKeyUnique<'ctx> {
+impl<'ctx> NodesMatchKeyUnique<'ctx> {
     /// Find the subscribed row whose `key` column value is equal to `col_val`,
     /// if such a row is present in the client cache.
     pub fn find(&self, col_val: &String) -> Option<TNode> {

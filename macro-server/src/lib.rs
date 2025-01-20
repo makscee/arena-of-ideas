@@ -43,11 +43,20 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 &vec_box_link_fields_str,
                 &vec_box_link_types,
             );
+            let table_conversions = table_conversions(
+                &option_link_fields,
+                &option_link_types,
+                &vec_link_fields,
+                &vec_link_types,
+                &vec_box_link_fields,
+                &vec_box_link_types,
+            );
             quote! {
                 #[derive(Default)]
                 #input
                 impl Node for #struct_ident {
                     #strings_conversions
+                    #table_conversions
                     fn get_data(&self) -> String {
                         ron::to_string(&(#(&self.#all_data_fields),*)).unwrap()
                     }

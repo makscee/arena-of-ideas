@@ -29,6 +29,18 @@ struct Team {
     pub units: Vec<Unit>,
 }
 
+struct Match {
+    pub g: u32,
+    pub shop_case: Vec<ShopCaseUnit>,
+    pub team: Option<Team>,
+}
+
+struct ShopCaseUnit {
+    pub unit_id: u64,
+    pub price: u32,
+    pub sold: bool,
+}
+
 struct Unit {
     pub name: String,
     pub stats: Option<UnitStats>,

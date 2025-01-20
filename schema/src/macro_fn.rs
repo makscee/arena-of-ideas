@@ -192,3 +192,49 @@ pub fn strings_conversions(
         }
     }
 }
+
+pub fn table_conversions(
+    option_link_fields: &Vec<Ident>,
+    option_link_types: &Vec<TokenStream>,
+    vec_link_fields: &Vec<Ident>,
+    vec_link_types: &Vec<TokenStream>,
+    vec_box_link_fields: &Vec<Ident>,
+    vec_box_link_types: &Vec<TokenStream>,
+) -> TokenStream {
+    quote! {
+        fn from_table(ctx: &ReducerContext, id: u64) -> Option<Self> {
+            let data = ctx
+                .db
+                .nodes_match()
+                .key()
+                .find(Self::kind_s().key(id))?
+                .data;
+            let mut d = Self::default();
+            d.inject_data(&data);
+            let children = ctx
+                .db
+                .nodes_relations()
+                .parent()
+                .filter(id)
+                .map(|r| r.id)
+                .collect_vec();
+            #(
+                d.#option_link_fields = #option_link_types::from_table(ctx, id);
+            )*
+            #(
+                d.#vec_link_fields = children
+                    .iter()
+                    .filter_map(|id| #vec_link_types::from_table(ctx, *id))
+                    .collect();
+            )*
+            #(
+                d.#vec_box_link_fields = children
+                    .iter()
+                    .filter_map(|id| #vec_box_link_types::from_table(ctx, *id))
+                    .map(|d| Box::new(d))
+                    .collect();
+            )*
+            Some(d)
+        }
+    }
+}

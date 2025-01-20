@@ -2,7 +2,8 @@ use std::collections::{HashSet, VecDeque};
 
 use super::*;
 
-#[table(public, name = nodes)]
+#[table(public, name = nodes_world)]
+#[table(public, name = nodes_match)]
 pub struct TNode {
     #[primary_key]
     pub key: String,
@@ -36,7 +37,7 @@ impl TNode {
         let mut queue: VecDeque<u64> = VecDeque::from([id]);
         while let Some(id) = queue.pop_front() {
             processed.insert(id);
-            result.extend(ctx.db.nodes().id().filter(id));
+            result.extend(ctx.db.nodes_world().id().filter(id));
             for node in ctx.db.nodes_relations().parent().filter(id) {
                 let id = node.id;
                 if !processed.contains(&id) {
@@ -54,7 +55,7 @@ impl NodeKind {
     }
     pub fn find(self, ctx: &ReducerContext, id: u64) -> Option<String> {
         let key = self.key(id);
-        ctx.db.nodes().key().find(key).map(|r| r.data)
+        ctx.db.nodes_world().key().find(key).map(|r| r.data)
     }
 }
 
@@ -70,11 +71,11 @@ where
 {
     fn insert(&self, ctx: &ReducerContext, id: u64) {
         ctx.db
-            .nodes()
+            .nodes_world()
             .insert(TNode::new(id, self.kind(), self.get_data()));
     }
     fn update(&self, ctx: &ReducerContext, id: u64) {
-        ctx.db.nodes().key().update(self.to_tnode(id));
+        ctx.db.nodes_world().key().update(self.to_tnode(id));
     }
     fn to_tnode(&self, id: u64) -> TNode {
         TNode::new(id, self.kind(), self.get_data())
@@ -91,7 +92,7 @@ fn node_spawn(
     let id = id.unwrap_or_else(|| next_id(ctx));
     for (kind, data) in kinds.into_iter().zip(datas.into_iter()) {
         let kind = NodeKind::from_str(&kind).map_err(|e| e.to_string())?;
-        ctx.db.nodes().insert(TNode::new(id, kind, data));
+        ctx.db.nodes_world().insert(TNode::new(id, kind, data));
     }
     Ok(())
 }
@@ -111,7 +112,7 @@ fn node_move(ctx: &ReducerContext, id: u64, x: f32, y: f32) -> Result<(), String
     let key = NodeKind::Mover.key(id);
     let data = ctx
         .db
-        .nodes()
+        .nodes_world()
         .key()
         .find(&key)
         .to_e_s("Mover node not found")?

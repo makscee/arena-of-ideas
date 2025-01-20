@@ -26,11 +26,13 @@ pub mod init_reducer;
 pub mod login_by_identity_reducer;
 pub mod login_reducer;
 pub mod logout_reducer;
+pub mod match_buy_reducer;
 pub mod node_move_reducer;
 pub mod node_spawn_hero_reducer;
 pub mod node_spawn_reducer;
+pub mod nodes_match_table;
 pub mod nodes_relations_table;
-pub mod nodes_table;
+pub mod nodes_world_table;
 pub mod player_table;
 pub mod player_tag_table;
 pub mod register_empty_reducer;
@@ -79,13 +81,15 @@ pub use login_by_identity_reducer::{
 };
 pub use login_reducer::{login, set_flags_for_login, LoginCallbackId};
 pub use logout_reducer::{logout, set_flags_for_logout, LogoutCallbackId};
+pub use match_buy_reducer::{match_buy, set_flags_for_match_buy, MatchBuyCallbackId};
 pub use node_move_reducer::{node_move, set_flags_for_node_move, NodeMoveCallbackId};
 pub use node_spawn_hero_reducer::{
     node_spawn_hero, set_flags_for_node_spawn_hero, NodeSpawnHeroCallbackId,
 };
 pub use node_spawn_reducer::{node_spawn, set_flags_for_node_spawn, NodeSpawnCallbackId};
+pub use nodes_match_table::*;
 pub use nodes_relations_table::*;
-pub use nodes_table::*;
+pub use nodes_world_table::*;
 pub use player_table::*;
 pub use player_tag_table::*;
 pub use register_empty_reducer::{
@@ -136,6 +140,9 @@ pub enum Reducer {
     },
     LoginByIdentity,
     Logout,
+    MatchBuy {
+        slot: u8,
+    },
     NodeMove {
         id: u64,
         x: f32,
@@ -185,6 +192,7 @@ impl __sdk::Reducer for Reducer {
             Reducer::Login { .. } => "login",
             Reducer::LoginByIdentity => "login_by_identity",
             Reducer::Logout => "logout",
+            Reducer::MatchBuy { .. } => "match_buy",
             Reducer::NodeMove { .. } => "node_move",
             Reducer::NodeSpawn { .. } => "node_spawn",
             Reducer::NodeSpawnHero { .. } => "node_spawn_hero",
@@ -257,6 +265,13 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
                 &value.args,
             )?
             .into()),
+            "match_buy" => Ok(
+                __sdk::parse_reducer_args::<match_buy_reducer::MatchBuyArgs>(
+                    "match_buy",
+                    &value.args,
+                )?
+                .into(),
+            ),
             "node_move" => Ok(
                 __sdk::parse_reducer_args::<node_move_reducer::NodeMoveArgs>(
                     "node_move",
@@ -319,8 +334,9 @@ pub struct DbUpdate {
     daily_update_timer: __sdk::TableUpdate<DailyUpdateTimer>,
     global_data: __sdk::TableUpdate<GlobalData>,
     global_settings: __sdk::TableUpdate<GlobalSettings>,
-    nodes: __sdk::TableUpdate<TNode>,
+    nodes_match: __sdk::TableUpdate<TNode>,
     nodes_relations: __sdk::TableUpdate<TNodeRelation>,
+    nodes_world: __sdk::TableUpdate<TNode>,
     player: __sdk::TableUpdate<TPlayer>,
     player_tag: __sdk::TableUpdate<TPlayerTag>,
     wallet: __sdk::TableUpdate<TWallet>,
@@ -344,10 +360,15 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
                     db_update.global_settings =
                         global_settings_table::parse_table_update(table_update)?
                 }
-                "nodes" => db_update.nodes = nodes_table::parse_table_update(table_update)?,
+                "nodes_match" => {
+                    db_update.nodes_match = nodes_match_table::parse_table_update(table_update)?
+                }
                 "nodes_relations" => {
                     db_update.nodes_relations =
                         nodes_relations_table::parse_table_update(table_update)?
+                }
+                "nodes_world" => {
+                    db_update.nodes_world = nodes_world_table::parse_table_update(table_update)?
                 }
                 "player" => db_update.player = player_table::parse_table_update(table_update)?,
                 "player_tag" => {
@@ -375,8 +396,9 @@ impl __sdk::DbUpdate for DbUpdate {
         );
         cache.apply_diff_to_table::<GlobalData>("global_data", &self.global_data);
         cache.apply_diff_to_table::<GlobalSettings>("global_settings", &self.global_settings);
-        cache.apply_diff_to_table::<TNode>("nodes", &self.nodes);
+        cache.apply_diff_to_table::<TNode>("nodes_match", &self.nodes_match);
         cache.apply_diff_to_table::<TNodeRelation>("nodes_relations", &self.nodes_relations);
+        cache.apply_diff_to_table::<TNode>("nodes_world", &self.nodes_world);
         cache.apply_diff_to_table::<TPlayer>("player", &self.player);
         cache.apply_diff_to_table::<TPlayerTag>("player_tag", &self.player_tag);
         cache.apply_diff_to_table::<TWallet>("wallet", &self.wallet);
@@ -398,12 +420,13 @@ impl __sdk::DbUpdate for DbUpdate {
             &self.global_settings,
             event,
         );
-        callbacks.invoke_table_row_callbacks::<TNode>("nodes", &self.nodes, event);
+        callbacks.invoke_table_row_callbacks::<TNode>("nodes_match", &self.nodes_match, event);
         callbacks.invoke_table_row_callbacks::<TNodeRelation>(
             "nodes_relations",
             &self.nodes_relations,
             event,
         );
+        callbacks.invoke_table_row_callbacks::<TNode>("nodes_world", &self.nodes_world, event);
         callbacks.invoke_table_row_callbacks::<TPlayer>("player", &self.player, event);
         callbacks.invoke_table_row_callbacks::<TPlayerTag>("player_tag", &self.player_tag, event);
         callbacks.invoke_table_row_callbacks::<TWallet>("wallet", &self.wallet, event);
@@ -734,8 +757,9 @@ impl __sdk::SpacetimeModule for RemoteModule {
         daily_update_timer_table::register_table(client_cache);
         global_data_table::register_table(client_cache);
         global_settings_table::register_table(client_cache);
-        nodes_table::register_table(client_cache);
+        nodes_match_table::register_table(client_cache);
         nodes_relations_table::register_table(client_cache);
+        nodes_world_table::register_table(client_cache);
         player_table::register_table(client_cache);
         player_tag_table::register_table(client_cache);
         wallet_table::register_table(client_cache);

@@ -180,6 +180,22 @@ impl Show for u64 {
         .changed()
     }
 }
+impl Show for u32 {
+    fn show(&self, prefix: Option<&str>, _: &Context, ui: &mut Ui) {
+        prefix.show(ui);
+        self.cstr().label(ui);
+    }
+    fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
+        ui.horizontal(|ui| {
+            if let Some(prefix) = prefix {
+                prefix.cstr().label(ui);
+            }
+            DragValue::new(self).ui(ui)
+        })
+        .inner
+        .changed()
+    }
+}
 impl Show for bool {
     fn show(&self, prefix: Option<&str>, _: &Context, ui: &mut Ui) {
         prefix.show(ui);

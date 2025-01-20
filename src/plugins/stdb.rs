@@ -4,7 +4,7 @@ use super::*;
 
 pub fn db_subscriptions() {
     info!("Apply stdb subscriptions");
-    let queries = ["select * from nodes", "select * from battle"];
+    let queries = ["select * from nodes_world", "select * from battle"];
     cn().subscription_builder()
         .on_error(|e| e.event.notify_error())
         .on_applied(move |e| {
@@ -15,7 +15,7 @@ pub fn db_subscriptions() {
         .subscribe(queries);
 
     let db = cn().db();
-    db.nodes().on_insert(|_, row| {
+    db.nodes_world().on_insert(|_, row| {
         let kind = NodeKind::from_str(&row.kind).unwrap();
         let id = row.id;
         info!("Node inserted {kind}");
@@ -31,7 +31,7 @@ pub fn db_subscriptions() {
             kind.unpack(entity, &data, &mut world.commands());
         });
     });
-    db.nodes().on_update(|_, _before, row| {
+    db.nodes_world().on_update(|_, _before, row| {
         let kind = NodeKind::from_str(&row.kind).unwrap();
         let id = row.id;
         info!("Node updated {kind}");
