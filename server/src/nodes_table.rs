@@ -4,6 +4,7 @@ use super::*;
 
 #[table(public, name = nodes_world)]
 #[table(public, name = nodes_match)]
+#[table(public, name = nodes_alpha)]
 pub struct TNode {
     #[primary_key]
     pub key: String,
@@ -18,6 +19,7 @@ pub struct TNode {
 pub enum NodeDomain {
     World,
     Match,
+    Alpha,
 }
 
 #[table(public, name = nodes_relations)]
@@ -33,12 +35,21 @@ impl NodeDomain {
         match self {
             NodeDomain::World => ctx.db.nodes_world().insert(TNode::new(id, kind, data)),
             NodeDomain::Match => ctx.db.nodes_match().insert(TNode::new(id, kind, data)),
+            NodeDomain::Alpha => ctx.db.nodes_alpha().insert(TNode::new(id, kind, data)),
         };
     }
     pub fn find_by_key(self, ctx: &ReducerContext, key: &String) -> Option<TNode> {
         match self {
             NodeDomain::World => ctx.db.nodes_world().key().find(key),
             NodeDomain::Match => ctx.db.nodes_match().key().find(key),
+            NodeDomain::Alpha => ctx.db.nodes_alpha().key().find(key),
+        }
+    }
+    pub fn filter_by_kind(self, ctx: &ReducerContext, kind: NodeKind) -> Vec<TNode> {
+        match self {
+            NodeDomain::World => ctx.db.nodes_world().kind().filter(kind.as_ref()).collect(),
+            NodeDomain::Match => ctx.db.nodes_match().kind().filter(kind.as_ref()).collect(),
+            NodeDomain::Alpha => ctx.db.nodes_alpha().kind().filter(kind.as_ref()).collect(),
         }
     }
 }
