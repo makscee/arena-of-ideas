@@ -51,7 +51,7 @@ fn main() {
     let target = match args.mode {
         RunMode::Regular => GameState::Admin,
         RunMode::Custom => GameState::CustomBattle,
-        RunMode::Shop => GameState::Shop,
+        RunMode::Shop => GameState::Match,
         RunMode::Editor => GameState::Editor,
         RunMode::Test => GameState::TestScenariosRun,
         RunMode::Sync => GameState::ServerSync,
@@ -103,6 +103,7 @@ fn main() {
             BackgroundPlugin,
             HeroPlugin,
             StdbSyncPlugin,
+            MatchPlugin,
         ))
         .add_plugins((
             OperationsPlugin,

@@ -195,6 +195,13 @@ Abs(Equals(F(51.0),Abs(Equals(F(1.0),Or(Equals(F(1.0),One),Abs(Or(Target,Abs(One
                 if "Get Match".cstr().button(ui).clicked() {
                     cn().reducers.match_get(3).unwrap();
                 }
+                if "Open Match".cstr().button(ui).clicked() {
+                    if let Some(m) = NodeDomain::Match.filter_by_kind(NodeKind::Match).get(0) {
+                        MatchPlugin::open_shop_window(m.id, world);
+                    } else {
+                        error!("No matches found");
+                    }
+                }
                 // ui.horizontal(|ui| {
                 //     e.show_mut(Some("Expr"), ui);
                 //     e.show(Some("Prefix"), &Context::default(), ui);

@@ -37,7 +37,7 @@ impl Default for SectionMenu {
                 GameSection {
                     name: "GAME",
                     target_state: GameState::GameStart,
-                    inner_states: [GameState::Battle, GameState::Shop].into(),
+                    inner_states: [GameState::Battle, GameState::Match].into(),
                     options: [GameOption::Login].into(),
                     ..default()
                 },

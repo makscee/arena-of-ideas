@@ -200,6 +200,35 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         #inner_data_from_dir
                         Some(s)
                     }
+                    fn from_table(domain: NodeDomain, id: u64) -> Option<Self> {
+                        let data = domain.find_by_key(&Self::kind_s().key(id))?.data;
+                        let mut d = Self::default();
+                        d.inject_data(&data);
+                        let children = cn()
+                            .db
+                            .nodes_relations()
+                            .iter()
+                            .filter(|r| r.parent == id)
+                            .map(|r| r.id)
+                            .collect_vec();
+                        #(
+                            d.#option_link_fields = #option_link_types::from_table(domain, id);
+                        )*
+                        #(
+                            d.#vec_link_fields = children
+                                .iter()
+                                .filter_map(|id| #vec_link_types::from_table(domain, *id))
+                                .collect();
+                        )*
+                        #(
+                            d.#vec_box_link_fields = children
+                                .iter()
+                                .filter_map(|id| #vec_box_link_types::from_table(domain, *id))
+                                .map(|d| Box::new(d))
+                                .collect();
+                        )*
+                        Some(d)
+                    }
                     fn unpack(mut self, entity: Entity, commands: &mut Commands) {
                         debug!("Unpack {self} into {entity}");
                         self.kind().on_unpack(entity, commands);

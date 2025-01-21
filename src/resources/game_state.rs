@@ -13,9 +13,8 @@ pub enum GameState {
     Connect,
     Login,
     CustomBattle,
-    ShopBattle,
     Battle,
-    Shop,
+    Match,
     GameStart,
     GameOver,
     TestScenariosLoad,
@@ -48,7 +47,7 @@ lazy_static! {
             [GameOption::Connect, GameOption::Login].into(),
         );
         m.insert(
-            GameState::Shop,
+            GameState::Match,
             [
                 GameOption::Connect,
                 GameOption::ForceLogin,

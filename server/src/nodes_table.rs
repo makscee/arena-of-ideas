@@ -15,13 +15,6 @@ pub struct TNode {
     pub data: String,
 }
 
-#[derive(Clone, Copy)]
-pub enum NodeDomain {
-    World,
-    Match,
-    Alpha,
-}
-
 #[table(public, name = nodes_relations)]
 pub struct TNodeRelation {
     #[primary_key]
@@ -30,22 +23,27 @@ pub struct TNodeRelation {
     pub parent: u64,
 }
 
-impl NodeDomain {
-    pub fn insert(self, ctx: &ReducerContext, id: u64, kind: NodeKind, data: String) {
+pub trait NodeDomainExt {
+    fn insert(self, ctx: &ReducerContext, id: u64, kind: NodeKind, data: String);
+    fn find_by_key(self, ctx: &ReducerContext, key: &String) -> Option<TNode>;
+    fn filter_by_kind(self, ctx: &ReducerContext, kind: NodeKind) -> Vec<TNode>;
+}
+impl NodeDomainExt for NodeDomain {
+    fn insert(self, ctx: &ReducerContext, id: u64, kind: NodeKind, data: String) {
         match self {
             NodeDomain::World => ctx.db.nodes_world().insert(TNode::new(id, kind, data)),
             NodeDomain::Match => ctx.db.nodes_match().insert(TNode::new(id, kind, data)),
             NodeDomain::Alpha => ctx.db.nodes_alpha().insert(TNode::new(id, kind, data)),
         };
     }
-    pub fn find_by_key(self, ctx: &ReducerContext, key: &String) -> Option<TNode> {
+    fn find_by_key(self, ctx: &ReducerContext, key: &String) -> Option<TNode> {
         match self {
             NodeDomain::World => ctx.db.nodes_world().key().find(key),
             NodeDomain::Match => ctx.db.nodes_match().key().find(key),
             NodeDomain::Alpha => ctx.db.nodes_alpha().key().find(key),
         }
     }
-    pub fn filter_by_kind(self, ctx: &ReducerContext, kind: NodeKind) -> Vec<TNode> {
+    fn filter_by_kind(self, ctx: &ReducerContext, kind: NodeKind) -> Vec<TNode> {
         match self {
             NodeDomain::World => ctx.db.nodes_world().kind().filter(kind.as_ref()).collect(),
             NodeDomain::Match => ctx.db.nodes_match().kind().filter(kind.as_ref()).collect(),
@@ -78,16 +76,6 @@ impl TNode {
             }
         }
         result
-    }
-}
-
-impl NodeKind {
-    pub fn key(self, id: u64) -> String {
-        format!("{id}_{self}")
-    }
-    pub fn find(self, ctx: &ReducerContext, id: u64) -> Option<String> {
-        let key = self.key(id);
-        ctx.db.nodes_world().key().find(key).map(|r| r.data)
     }
 }
 

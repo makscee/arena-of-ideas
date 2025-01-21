@@ -4,7 +4,13 @@ use super::*;
 
 pub fn db_subscriptions() {
     info!("Apply stdb subscriptions");
-    let queries = ["select * from nodes_world", "select * from battle"];
+    let queries = [
+        "select * from nodes_world",
+        "select * from nodes_match",
+        "select * from nodes_alpha",
+        "select * from battle",
+        "select * from nodes_relations",
+    ];
     cn().subscription_builder()
         .on_error(|e| e.event.notify_error())
         .on_applied(move |e| {

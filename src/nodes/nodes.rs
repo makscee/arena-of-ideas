@@ -15,6 +15,7 @@ pub trait Node: Default + Component + Sized + GetVar + Show + Debug {
     fn from_dir(path: String, dir: &Dir) -> Option<Self>;
     fn from_strings(i: usize, strings: &Vec<String>) -> Option<Self>;
     fn to_strings(&self, parent: usize, field: &str, strings: &mut Vec<String>);
+    fn from_table(domain: NodeDomain, id: u64) -> Option<Self>;
     fn to_strings_root(&self) -> Vec<String> {
         let mut strings = Vec::default();
         self.to_strings(0, "_", &mut strings);
@@ -54,29 +55,43 @@ pub trait Node: Default + Component + Sized + GetVar + Show + Debug {
     fn ui(&self, depth: usize, context: &Context, ui: &mut Ui);
 }
 
-// impl Unit {
-//     fn from_strings(i: usize, strings: &Vec<String>) -> Option<Self> {
-//         let (parent, field, data) = strings[i].splitn(3, ' ').collect_tuple()?;
-//         let mut d = Self::default();
-//         d.inject_data(data);
-//         let i_str = i.to_string();
-//         d.description = strings.iter().skip(i).enumerate().find_map(|(i, s)| {
-//             let (parent, field, data) = s.splitn(3, ' ').collect_tuple()?;
-//             if i_str.eq(parent) && field.eq("description") {
-//                 UnitDescription::from_strings(i, strings)
-//             } else {
-//                 None
-//             }
-//         });
-//         Some(d)
-//     }
-// }
+pub trait NodeDomainExt {
+    fn find_by_key(self, key: &String) -> Option<TNode>;
+    fn filter_by_kind(self, kind: NodeKind) -> Vec<TNode>;
+}
 
-// impl UnitDescription {
-//     fn from_strings(i: usize, strings: &Vec<String>) -> Option<Self> {
-//         None
-//     }
-// }
+impl NodeDomainExt for NodeDomain {
+    fn find_by_key(self, key: &String) -> Option<TNode> {
+        match self {
+            NodeDomain::World => cn().db.nodes_world().key().find(key),
+            NodeDomain::Match => cn().db.nodes_match().key().find(key),
+            NodeDomain::Alpha => cn().db.nodes_alpha().key().find(key),
+        }
+    }
+    fn filter_by_kind(self, kind: NodeKind) -> Vec<TNode> {
+        let kind = kind.to_string();
+        match self {
+            NodeDomain::World => cn()
+                .db
+                .nodes_world()
+                .iter()
+                .filter(|d| d.kind == kind)
+                .collect(),
+            NodeDomain::Match => cn()
+                .db
+                .nodes_match()
+                .iter()
+                .filter(|d| d.kind == kind)
+                .collect(),
+            NodeDomain::Alpha => cn()
+                .db
+                .nodes_alpha()
+                .iter()
+                .filter(|d| d.kind == kind)
+                .collect(),
+        }
+    }
+}
 
 impl ToCstr for NodeKind {
     fn cstr(&self) -> Cstr {
