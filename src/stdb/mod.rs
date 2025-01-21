@@ -26,7 +26,8 @@ pub mod init_reducer;
 pub mod login_by_identity_reducer;
 pub mod login_reducer;
 pub mod logout_reducer;
-pub mod match_buy_reducer;
+pub mod match_get_reducer;
+pub mod match_insert_reducer;
 pub mod node_move_reducer;
 pub mod node_spawn_hero_reducer;
 pub mod node_spawn_reducer;
@@ -81,7 +82,8 @@ pub use login_by_identity_reducer::{
 };
 pub use login_reducer::{login, set_flags_for_login, LoginCallbackId};
 pub use logout_reducer::{logout, set_flags_for_logout, LogoutCallbackId};
-pub use match_buy_reducer::{match_buy, set_flags_for_match_buy, MatchBuyCallbackId};
+pub use match_get_reducer::{match_get, set_flags_for_match_get, MatchGetCallbackId};
+pub use match_insert_reducer::{match_insert, set_flags_for_match_insert, MatchInsertCallbackId};
 pub use node_move_reducer::{node_move, set_flags_for_node_move, NodeMoveCallbackId};
 pub use node_spawn_hero_reducer::{
     node_spawn_hero, set_flags_for_node_spawn_hero, NodeSpawnHeroCallbackId,
@@ -140,9 +142,10 @@ pub enum Reducer {
     },
     LoginByIdentity,
     Logout,
-    MatchBuy {
-        slot: u8,
+    MatchGet {
+        id: u64,
     },
+    MatchInsert,
     NodeMove {
         id: u64,
         x: f32,
@@ -192,7 +195,8 @@ impl __sdk::Reducer for Reducer {
             Reducer::Login { .. } => "login",
             Reducer::LoginByIdentity => "login_by_identity",
             Reducer::Logout => "logout",
-            Reducer::MatchBuy { .. } => "match_buy",
+            Reducer::MatchGet { .. } => "match_get",
+            Reducer::MatchInsert => "match_insert",
             Reducer::NodeMove { .. } => "node_move",
             Reducer::NodeSpawn { .. } => "node_spawn",
             Reducer::NodeSpawnHero { .. } => "node_spawn_hero",
@@ -265,9 +269,16 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
                 &value.args,
             )?
             .into()),
-            "match_buy" => Ok(
-                __sdk::parse_reducer_args::<match_buy_reducer::MatchBuyArgs>(
-                    "match_buy",
+            "match_get" => Ok(
+                __sdk::parse_reducer_args::<match_get_reducer::MatchGetArgs>(
+                    "match_get",
+                    &value.args,
+                )?
+                .into(),
+            ),
+            "match_insert" => Ok(
+                __sdk::parse_reducer_args::<match_insert_reducer::MatchInsertArgs>(
+                    "match_insert",
                     &value.args,
                 )?
                 .into(),

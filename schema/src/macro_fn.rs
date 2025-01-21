@@ -211,6 +211,7 @@ pub fn table_conversions(
                 .data;
             let mut d = Self::default();
             d.inject_data(&data);
+            d.id = Some(id);
             let children = ctx
                 .db
                 .nodes_relations()
@@ -235,6 +236,32 @@ pub fn table_conversions(
                     .collect();
             )*
             Some(d)
+        }
+        fn to_table(mut self, ctx: &ReducerContext, parent: u64) {
+            let id = self.id().unwrap_or(next_id(ctx));
+            let data = self.get_data();
+            let kind = self.kind();
+            ctx.db.nodes_match().insert(TNode::new(id, kind, data));
+            if id != parent {
+                ctx.db
+                    .nodes_relations()
+                    .insert(TNodeRelation { id, parent });
+            }
+            #(
+                if let Some(d) = self.#option_link_fields.take() {
+                    d.to_table(ctx, id);
+                }
+            )*
+            #(
+                for d in std::mem::take(&mut self.#vec_link_fields) {
+                    d.to_table(ctx, id);
+                }
+            )*
+            #(
+                for d in std::mem::take(&mut self.#vec_box_link_fields) {
+                    d.to_table(ctx, id);
+                }
+            )*
         }
     }
 }

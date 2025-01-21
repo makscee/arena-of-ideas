@@ -1,7 +1,38 @@
 use super::*;
 
 #[reducer]
-fn match_buy(ctx: &ReducerContext, slot: u8) -> Result<(), String> {
-    let m = Match::from_table(ctx, 0);
+fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
+    let d = Match {
+        g: 13,
+        shop_case: [
+            ShopCaseUnit::default(),
+            ShopCaseUnit::default(),
+            ShopCaseUnit::default(),
+        ]
+        .into(),
+        team: Some(Team {
+            name: "Test Team".into(),
+            units: [Unit {
+                name: "Test Unit".into(),
+                stats: Some(UnitStats {
+                    pwr: 1,
+                    hp: 3,
+                    ..default()
+                }),
+                ..default()
+            }]
+            .into(),
+            id: None,
+        }),
+        id: None,
+    };
+    d.to_table(ctx, 0);
+    Ok(())
+}
+
+#[reducer]
+fn match_get(ctx: &ReducerContext, id: u64) -> Result<(), String> {
+    let d = Match::from_table(ctx, id);
+    log::info!("{d:?}");
     Ok(())
 }

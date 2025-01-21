@@ -23,7 +23,7 @@ pub struct TNodeRelation {
 }
 
 impl TNode {
-    fn new(id: u64, kind: NodeKind, data: String) -> Self {
+    pub fn new(id: u64, kind: NodeKind, data: String) -> Self {
         Self {
             key: kind.key(id),
             id,

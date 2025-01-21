@@ -1,3 +1,4 @@
+use parse::Parser;
 use proc_macro::TokenStream;
 use schema::*;
 use syn::*;
@@ -51,12 +52,22 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 &vec_box_link_fields,
                 &vec_box_link_types,
             );
+            if let Fields::Named(ref mut fields) = fields {
+                fields.named.push(
+                    Field::parse_named
+                        .parse2(quote! { pub id: Option<u64> })
+                        .unwrap(),
+                );
+            }
             quote! {
-                #[derive(Default)]
+                #[derive(Default, Debug)]
                 #input
                 impl Node for #struct_ident {
                     #strings_conversions
                     #table_conversions
+                    fn id(&self) -> Option<u64> {
+                        self.id
+                    }
                     fn get_data(&self) -> String {
                         ron::to_string(&(#(&self.#all_data_fields),*)).unwrap()
                     }
