@@ -26,11 +26,14 @@ pub mod init_reducer;
 pub mod login_by_identity_reducer;
 pub mod login_reducer;
 pub mod logout_reducer;
+pub mod match_buy_reducer;
 pub mod match_get_reducer;
 pub mod match_insert_reducer;
+pub mod match_sell_reducer;
 pub mod node_move_reducer;
 pub mod node_spawn_hero_reducer;
 pub mod node_spawn_reducer;
+pub mod nodes_alpha_table;
 pub mod nodes_match_table;
 pub mod nodes_relations_table;
 pub mod nodes_world_table;
@@ -82,13 +85,16 @@ pub use login_by_identity_reducer::{
 };
 pub use login_reducer::{login, set_flags_for_login, LoginCallbackId};
 pub use logout_reducer::{logout, set_flags_for_logout, LogoutCallbackId};
+pub use match_buy_reducer::{match_buy, set_flags_for_match_buy, MatchBuyCallbackId};
 pub use match_get_reducer::{match_get, set_flags_for_match_get, MatchGetCallbackId};
 pub use match_insert_reducer::{match_insert, set_flags_for_match_insert, MatchInsertCallbackId};
+pub use match_sell_reducer::{match_sell, set_flags_for_match_sell, MatchSellCallbackId};
 pub use node_move_reducer::{node_move, set_flags_for_node_move, NodeMoveCallbackId};
 pub use node_spawn_hero_reducer::{
     node_spawn_hero, set_flags_for_node_spawn_hero, NodeSpawnHeroCallbackId,
 };
 pub use node_spawn_reducer::{node_spawn, set_flags_for_node_spawn, NodeSpawnCallbackId};
+pub use nodes_alpha_table::*;
 pub use nodes_match_table::*;
 pub use nodes_relations_table::*;
 pub use nodes_world_table::*;
@@ -142,10 +148,16 @@ pub enum Reducer {
     },
     LoginByIdentity,
     Logout,
+    MatchBuy {
+        slot: u8,
+    },
     MatchGet {
         id: u64,
     },
     MatchInsert,
+    MatchSell {
+        slot: u8,
+    },
     NodeMove {
         id: u64,
         x: f32,
@@ -173,6 +185,7 @@ pub enum Reducer {
     },
     SyncAssets {
         global_settings: GlobalSettings,
+        houses: Vec<Vec<String>>,
     },
 }
 
@@ -195,8 +208,10 @@ impl __sdk::Reducer for Reducer {
             Reducer::Login { .. } => "login",
             Reducer::LoginByIdentity => "login_by_identity",
             Reducer::Logout => "logout",
+            Reducer::MatchBuy { .. } => "match_buy",
             Reducer::MatchGet { .. } => "match_get",
             Reducer::MatchInsert => "match_insert",
+            Reducer::MatchSell { .. } => "match_sell",
             Reducer::NodeMove { .. } => "node_move",
             Reducer::NodeSpawn { .. } => "node_spawn",
             Reducer::NodeSpawnHero { .. } => "node_spawn_hero",
@@ -269,6 +284,13 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
                 &value.args,
             )?
             .into()),
+            "match_buy" => Ok(
+                __sdk::parse_reducer_args::<match_buy_reducer::MatchBuyArgs>(
+                    "match_buy",
+                    &value.args,
+                )?
+                .into(),
+            ),
             "match_get" => Ok(
                 __sdk::parse_reducer_args::<match_get_reducer::MatchGetArgs>(
                     "match_get",
@@ -279,6 +301,13 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
             "match_insert" => Ok(
                 __sdk::parse_reducer_args::<match_insert_reducer::MatchInsertArgs>(
                     "match_insert",
+                    &value.args,
+                )?
+                .into(),
+            ),
+            "match_sell" => Ok(
+                __sdk::parse_reducer_args::<match_sell_reducer::MatchSellArgs>(
+                    "match_sell",
                     &value.args,
                 )?
                 .into(),
@@ -345,6 +374,7 @@ pub struct DbUpdate {
     daily_update_timer: __sdk::TableUpdate<DailyUpdateTimer>,
     global_data: __sdk::TableUpdate<GlobalData>,
     global_settings: __sdk::TableUpdate<GlobalSettings>,
+    nodes_alpha: __sdk::TableUpdate<TNode>,
     nodes_match: __sdk::TableUpdate<TNode>,
     nodes_relations: __sdk::TableUpdate<TNodeRelation>,
     nodes_world: __sdk::TableUpdate<TNode>,
@@ -370,6 +400,9 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
                 "global_settings" => {
                     db_update.global_settings =
                         global_settings_table::parse_table_update(table_update)?
+                }
+                "nodes_alpha" => {
+                    db_update.nodes_alpha = nodes_alpha_table::parse_table_update(table_update)?
                 }
                 "nodes_match" => {
                     db_update.nodes_match = nodes_match_table::parse_table_update(table_update)?
@@ -407,6 +440,7 @@ impl __sdk::DbUpdate for DbUpdate {
         );
         cache.apply_diff_to_table::<GlobalData>("global_data", &self.global_data);
         cache.apply_diff_to_table::<GlobalSettings>("global_settings", &self.global_settings);
+        cache.apply_diff_to_table::<TNode>("nodes_alpha", &self.nodes_alpha);
         cache.apply_diff_to_table::<TNode>("nodes_match", &self.nodes_match);
         cache.apply_diff_to_table::<TNodeRelation>("nodes_relations", &self.nodes_relations);
         cache.apply_diff_to_table::<TNode>("nodes_world", &self.nodes_world);
@@ -431,6 +465,7 @@ impl __sdk::DbUpdate for DbUpdate {
             &self.global_settings,
             event,
         );
+        callbacks.invoke_table_row_callbacks::<TNode>("nodes_alpha", &self.nodes_alpha, event);
         callbacks.invoke_table_row_callbacks::<TNode>("nodes_match", &self.nodes_match, event);
         callbacks.invoke_table_row_callbacks::<TNodeRelation>(
             "nodes_relations",
@@ -768,6 +803,7 @@ impl __sdk::SpacetimeModule for RemoteModule {
         daily_update_timer_table::register_table(client_cache);
         global_data_table::register_table(client_cache);
         global_settings_table::register_table(client_cache);
+        nodes_alpha_table::register_table(client_cache);
         nodes_match_table::register_table(client_cache);
         nodes_relations_table::register_table(client_cache);
         nodes_world_table::register_table(client_cache);

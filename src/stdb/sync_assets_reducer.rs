@@ -13,12 +13,14 @@ use super::global_settings_type::GlobalSettings;
 #[sats(crate = __lib)]
 pub(super) struct SyncAssetsArgs {
     pub global_settings: GlobalSettings,
+    pub houses: Vec<Vec<String>>,
 }
 
 impl From<SyncAssetsArgs> for super::Reducer {
     fn from(args: SyncAssetsArgs) -> Self {
         Self::SyncAssets {
             global_settings: args.global_settings,
+            houses: args.houses,
         }
     }
 }
@@ -39,7 +41,11 @@ pub trait sync_assets {
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed by listening for [`Self::on_sync_assets`] callbacks.
-    fn sync_assets(&self, global_settings: GlobalSettings) -> __anyhow::Result<()>;
+    fn sync_assets(
+        &self,
+        global_settings: GlobalSettings,
+        houses: Vec<Vec<String>>,
+    ) -> __anyhow::Result<()>;
     /// Register a callback to run whenever we are notified of an invocation of the reducer `sync_assets`.
     ///
     /// The [`super::EventContext`] passed to the `callback`
@@ -52,7 +58,7 @@ pub trait sync_assets {
     /// to cancel the callback.
     fn on_sync_assets(
         &self,
-        callback: impl FnMut(&super::EventContext, &GlobalSettings) + Send + 'static,
+        callback: impl FnMut(&super::EventContext, &GlobalSettings, &Vec<Vec<String>>) + Send + 'static,
     ) -> SyncAssetsCallbackId;
     /// Cancel a callback previously registered by [`Self::on_sync_assets`],
     /// causing it not to run in the future.
@@ -60,13 +66,24 @@ pub trait sync_assets {
 }
 
 impl sync_assets for super::RemoteReducers {
-    fn sync_assets(&self, global_settings: GlobalSettings) -> __anyhow::Result<()> {
-        self.imp
-            .call_reducer("sync_assets", SyncAssetsArgs { global_settings })
+    fn sync_assets(
+        &self,
+        global_settings: GlobalSettings,
+        houses: Vec<Vec<String>>,
+    ) -> __anyhow::Result<()> {
+        self.imp.call_reducer(
+            "sync_assets",
+            SyncAssetsArgs {
+                global_settings,
+                houses,
+            },
+        )
     }
     fn on_sync_assets(
         &self,
-        mut callback: impl FnMut(&super::EventContext, &GlobalSettings) + Send + 'static,
+        mut callback: impl FnMut(&super::EventContext, &GlobalSettings, &Vec<Vec<String>>)
+            + Send
+            + 'static,
     ) -> SyncAssetsCallbackId {
         SyncAssetsCallbackId(self.imp.on_reducer(
             "sync_assets",
@@ -74,7 +91,11 @@ impl sync_assets for super::RemoteReducers {
                 let super::EventContext {
                     event:
                         __sdk::Event::Reducer(__sdk::ReducerEvent {
-                            reducer: super::Reducer::SyncAssets { global_settings },
+                            reducer:
+                                super::Reducer::SyncAssets {
+                                    global_settings,
+                                    houses,
+                                },
                             ..
                         }),
                     ..
@@ -82,7 +103,7 @@ impl sync_assets for super::RemoteReducers {
                 else {
                     unreachable!()
                 };
-                callback(ctx, global_settings)
+                callback(ctx, global_settings, houses)
             }),
         ))
     }
