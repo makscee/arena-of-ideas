@@ -14,12 +14,33 @@ pub struct TNode {
     pub data: String,
 }
 
+#[derive(Clone, Copy)]
+pub enum NodeDomain {
+    World,
+    Match,
+}
+
 #[table(public, name = nodes_relations)]
 pub struct TNodeRelation {
     #[primary_key]
     pub id: u64,
     #[index(btree)]
     pub parent: u64,
+}
+
+impl NodeDomain {
+    pub fn insert(self, ctx: &ReducerContext, id: u64, kind: NodeKind, data: String) {
+        match self {
+            NodeDomain::World => ctx.db.nodes_world().insert(TNode::new(id, kind, data)),
+            NodeDomain::Match => ctx.db.nodes_match().insert(TNode::new(id, kind, data)),
+        };
+    }
+    pub fn find_by_key(self, ctx: &ReducerContext, key: &String) -> Option<TNode> {
+        match self {
+            NodeDomain::World => ctx.db.nodes_world().key().find(key),
+            NodeDomain::Match => ctx.db.nodes_match().key().find(key),
+        }
+    }
 }
 
 impl TNode {

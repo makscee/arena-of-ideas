@@ -26,13 +26,13 @@ fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
         }),
         id: None,
     };
-    d.to_table(ctx, 0);
+    d.to_table(ctx, NodeDomain::Match, 0);
     Ok(())
 }
 
 #[reducer]
 fn match_get(ctx: &ReducerContext, id: u64) -> Result<(), String> {
-    let d = Match::from_table(ctx, id);
+    let d = Match::from_table(ctx, NodeDomain::Match, id);
     log::info!("{d:?}");
     Ok(())
 }

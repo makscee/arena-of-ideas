@@ -202,13 +202,8 @@ pub fn table_conversions(
     vec_box_link_types: &Vec<TokenStream>,
 ) -> TokenStream {
     quote! {
-        fn from_table(ctx: &ReducerContext, id: u64) -> Option<Self> {
-            let data = ctx
-                .db
-                .nodes_match()
-                .key()
-                .find(Self::kind_s().key(id))?
-                .data;
+        fn from_table(ctx: &ReducerContext, domain: NodeDomain, id: u64) -> Option<Self> {
+            let data = domain.find_by_key(ctx, &Self::kind_s().key(id))?.data;
             let mut d = Self::default();
             d.inject_data(&data);
             d.id = Some(id);
@@ -220,28 +215,28 @@ pub fn table_conversions(
                 .map(|r| r.id)
                 .collect_vec();
             #(
-                d.#option_link_fields = #option_link_types::from_table(ctx, id);
+                d.#option_link_fields = #option_link_types::from_table(ctx, domain, id);
             )*
             #(
                 d.#vec_link_fields = children
                     .iter()
-                    .filter_map(|id| #vec_link_types::from_table(ctx, *id))
+                    .filter_map(|id| #vec_link_types::from_table(ctx, domain, *id))
                     .collect();
             )*
             #(
                 d.#vec_box_link_fields = children
                     .iter()
-                    .filter_map(|id| #vec_box_link_types::from_table(ctx, *id))
+                    .filter_map(|id| #vec_box_link_types::from_table(ctx, domain, *id))
                     .map(|d| Box::new(d))
                     .collect();
             )*
             Some(d)
         }
-        fn to_table(mut self, ctx: &ReducerContext, parent: u64) {
+        fn to_table(mut self, ctx: &ReducerContext, domain: NodeDomain, parent: u64) {
             let id = self.id().unwrap_or(next_id(ctx));
             let data = self.get_data();
             let kind = self.kind();
-            ctx.db.nodes_match().insert(TNode::new(id, kind, data));
+            domain.insert(ctx, id, kind, data);
             if id != parent {
                 ctx.db
                     .nodes_relations()
@@ -249,17 +244,17 @@ pub fn table_conversions(
             }
             #(
                 if let Some(d) = self.#option_link_fields.take() {
-                    d.to_table(ctx, id);
+                    d.to_table(ctx, domain, id);
                 }
             )*
             #(
                 for d in std::mem::take(&mut self.#vec_link_fields) {
-                    d.to_table(ctx, id);
+                    d.to_table(ctx, domain, id);
                 }
             )*
             #(
                 for d in std::mem::take(&mut self.#vec_box_link_fields) {
-                    d.to_table(ctx, id);
+                    d.to_table(ctx, domain, id);
                 }
             )*
         }
