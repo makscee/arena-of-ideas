@@ -230,7 +230,7 @@ impl Show for Vec2 {
 impl Show for String {
     fn show(&self, prefix: Option<&str>, _: &Context, ui: &mut Ui) {
         prefix.show(ui);
-        self.cstr().label(ui);
+        self.cstr().label_w(ui);
     }
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
         Input::new(prefix.unwrap_or_default())
@@ -309,7 +309,8 @@ impl Show for Trigger {
         self.cstr_cs(EVENT_COLOR, CstrStyle::Bold).label(ui);
     }
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
-        Selector::new(prefix.unwrap_or_default()).ui_enum(self, ui)
+        prefix.show(ui);
+        Selector::new("").ui_enum(self, ui)
     }
 }
 impl Show for Effect {
@@ -318,7 +319,8 @@ impl Show for Effect {
         self.cstr_cs(EFFECT_COLOR, CstrStyle::Bold).label(ui);
     }
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
-        Selector::new(prefix.unwrap_or_default()).ui_enum(self, ui)
+        prefix.show(ui);
+        Selector::new("").ui_enum(self, ui)
     }
 }
 impl Show for Event {
@@ -327,6 +329,7 @@ impl Show for Event {
         self.cstr_cs(EVENT_COLOR, CstrStyle::Bold).label(ui);
     }
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
-        Selector::new(prefix.unwrap_or_default()).ui_enum(self, ui)
+        prefix.show(ui);
+        Selector::new("").ui_enum(self, ui)
     }
 }

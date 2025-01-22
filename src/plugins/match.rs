@@ -35,8 +35,8 @@ impl MatchPlugin {
             g: m.g,
         });
     }
-    fn shop_slot_rect(i: usize, max: usize, rect: Rect, ui: &mut Ui) -> Rect {
-        let mut rect = rect.with_max_y(rect.max.y / 2.0);
+    fn shop_slot_rect(i: usize, max: usize, mut rect: Rect) -> Rect {
+        rect.set_height(rect.height() * 0.5);
         let w = rect.width() / max as f32;
         rect.set_width(w.at_most(rect.height()));
         rect.translate(egui::vec2(w * i as f32, 0.0))
@@ -68,7 +68,7 @@ impl MatchPlugin {
                 };
                 let rep = unit.representation.as_ref().unwrap();
                 let context = Context::default().set_owner_node(unit).take();
-                let rect = Self::shop_slot_rect(i, shop_units.len(), rect, ui);
+                let rect = Self::shop_slot_rect(i, shop_units.len(), rect);
                 if ui.allocate_rect(rect, Sense::click()).clicked() {
                     ui.painter().rect_stroke(rect, ROUNDING, STROKE_YELLOW);
                     let unit = unit.clone();

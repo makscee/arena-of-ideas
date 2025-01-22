@@ -38,6 +38,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 var_fields,
                 var_types,
                 data_fields,
+                data_fields_str,
                 data_types: _,
                 data_type_ident: _,
                 all_data_fields,
@@ -54,6 +55,14 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 &vec_box_link_fields_str,
                 &vec_box_link_types,
             );
+            let no_children = option_link_fields.is_empty()
+                && vec_link_fields.is_empty()
+                && vec_box_link_fields.is_empty();
+            let has_body = if no_children && data_fields.is_empty() {
+                quote! {false}
+            } else {
+                quote! {true}
+            };
             let nt = if all_data_fields.contains(&Ident::from_string("name").unwrap()) {
                 NodeType::Name
             } else if !option_link_fields.is_empty() || !vec_box_link_fields.is_empty() {
@@ -111,7 +120,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 }
                 impl ToCstr for #struct_ident {
                     fn cstr(&self) -> Cstr {
-                        self.to_string()
+                        format!("[vd [s {self}]]")
                     }
                 }
                 impl GetVar for #struct_ident {
@@ -146,10 +155,31 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                             }
                         }
                     }
-                    fn get_all_vars(&self) -> Vec<(VarName, VarValue)> {
-                        vec![#(
+                    fn get_vars(&self) -> Vec<(VarName, VarValue)> {
+                        vec![
+                        #(
                             (VarName::#var_fields, VarValue::#var_types(self.#var_fields.clone()))
-                        ),*]
+                        ),*
+                        ]
+                    }
+                    fn get_all_vars(&self) -> Vec<(VarName, VarValue)> {
+                        let mut vars = self.get_vars();
+                        #(
+                            if let Some(d) = &self.#option_link_fields {
+                                vars.extend(d.get_all_vars());
+                            }
+                        )*
+                        #(
+                            for d in &self.#vec_link_fields {
+                                vars.extend(d.get_all_vars());
+                            }
+                        )*
+                        #(
+                            for d in &self.#vec_box_link_fields {
+                                vars.extend(d.get_all_vars());
+                            }
+                        )*
+                        vars
                     }
                 }
                 impl StringData for #struct_ident {
@@ -182,27 +212,36 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         true
                     }
                     fn has_body(&self) -> bool {
-                        true
+                        #has_body
                     }
                     fn show_header(&self, context: &Context, ui: &mut Ui) {
-                        ui.horizontal(|ui| {
-                            for (var, value) in self.get_all_vars() {
-                                if var != VarName::name {
+                        if !#has_body {
+                            ui.horizontal(|ui| {
+                                for (var, value) in self.get_vars() {
                                     value.show(Some(&var.cstr()), context, ui);
                                 }
-                            }
-                        });
+                            });
+                        }
                     }
                     fn show_header_mut(&mut self, ui: &mut Ui) -> bool {
+                        if #has_body {
+                            return false;
+                        }
                         let mut changed = false;
                         #(
-                            changed |= self.#data_fields.show_mut(None, ui);
+                            VarName::#var_fields.cstr().label(ui);
+                            changed |= self.#var_fields.show_mut(None, ui);
                         )*
                         changed
                     }
                     fn show_body(&self, context: &Context, ui: &mut Ui) {
+                        for (var, value) in self.get_vars() {
+                            ui.horizontal(|ui| {
+                                value.show(Some(&var.cstr()), context, ui);
+                            });
+                        }
                         #(
-                            self.#data_fields.show(None, context, ui);
+                            self.#data_fields.show(Some(#data_fields_str), context, ui);
                         )*
                         #(
                             if let Some(d) = &self.#option_link_fields {
@@ -212,6 +251,13 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     }
                     fn show_body_mut(&mut self, ui: &mut Ui) -> bool {
                         let mut changed = false;
+                        #(
+                            VarName::#var_fields.cstr().label(ui);
+                            changed |= self.#var_fields.show_mut(None, ui);
+                        )*
+                        #(
+                            changed |= self.#data_fields.show_mut(Some(#data_fields_str), ui);
+                        )*
                         #(
                             if let Some(d) = &mut self.#option_link_fields {
                                 changed |= d.show_mut(None, ui);

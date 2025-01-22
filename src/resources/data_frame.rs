@@ -7,6 +7,7 @@ pub struct DataFrameMut<'a, T> {
     body: Option<Box<dyn FnOnce(&mut T, &mut Ui) -> bool>>,
     name: Option<Box<dyn FnOnce(&mut T, &mut Ui) -> bool>>,
     context_actions: HashMap<&'static str, Box<dyn FnOnce(&mut T) -> bool>>,
+    default_open: bool,
 }
 
 pub struct DataFrame<'a, T> {
@@ -15,6 +16,7 @@ pub struct DataFrame<'a, T> {
     header: Option<Box<dyn FnOnce(&T, &mut Ui) + 'a>>,
     body: Option<Box<dyn FnOnce(&T, &mut Ui) + 'a>>,
     context_actions: HashMap<&'static str, Box<dyn FnOnce(&T) + 'a>>,
+    default_open: bool,
 }
 
 const FRAME: Frame = Frame {
@@ -39,10 +41,15 @@ where
             body: None,
             prefix: None,
             context_actions,
+            default_open: true,
         }
     }
     pub fn prefix(mut self, prefix: Option<&'a str>) -> Self {
         self.prefix = prefix;
+        self
+    }
+    pub fn default_open(mut self, value: bool) -> Self {
+        self.default_open = value;
         self
     }
     pub fn header(mut self, f: impl FnOnce(&T, &mut Ui) + 'a) -> Self {
@@ -77,7 +84,15 @@ where
                 false
             })
         }));
-        let r = compose_ui(self.prefix, header, body, name, context_actions, ui);
+        let r = compose_ui(
+            self.prefix,
+            header,
+            body,
+            name,
+            context_actions,
+            self.default_open,
+            ui,
+        );
         r
     }
 }
@@ -113,6 +128,7 @@ where
             prefix: None,
             name: None,
             context_actions,
+            default_open: true,
         }
     }
     pub fn new_inject(data: &'a mut T) -> Self
@@ -148,6 +164,10 @@ where
     }
     pub fn prefix(mut self, prefix: Option<&'a str>) -> Self {
         self.prefix = prefix;
+        self
+    }
+    pub fn default_open(mut self, value: bool) -> Self {
+        self.default_open = value;
         self
     }
     pub fn header(mut self, f: impl FnOnce(&mut T, &mut Ui) -> bool + 'static) -> Self {
@@ -189,7 +209,15 @@ where
                 .into_iter()
                 .map(|(k, v)| (k, || v(data.borrow_mut().deref_mut()))),
         );
-        let r = compose_ui(self.prefix, header, body, name, context_actions, ui);
+        let r = compose_ui(
+            self.prefix,
+            header,
+            body,
+            name,
+            context_actions,
+            self.default_open,
+            ui,
+        );
         *self.data = data.into_inner();
         r
     }
@@ -201,13 +229,14 @@ fn compose_ui(
     body: Option<impl FnOnce(&mut Ui) -> bool>,
     name: impl FnOnce(&mut Ui) -> bool,
     context_actions: HashMap<&'static str, impl FnOnce() -> bool>,
+    default_open: bool,
     ui: &mut Ui,
 ) -> bool {
     let mut changed = false;
     let id = ui.next_auto_id();
     let collapsed_id = id.with("collapsed");
     let hovered_id = id.with("hovered");
-    let collapsed = get_ctx_bool_id(ui.ctx(), collapsed_id);
+    let collapsed = get_ctx_bool_id_default(ui.ctx(), collapsed_id, !default_open);
     let openness = ui.ctx().animate_bool(id, collapsed);
     let hovered = get_ctx_bool_id(ui.ctx(), hovered_id);
 
@@ -233,7 +262,7 @@ fn compose_ui(
                         .rounding(header_rounding)
                         .show(ui, |ui| {
                             if let Some(prefix) = prefix {
-                                format!("[vd {prefix}]").label(ui);
+                                format!("[vd [s {prefix}]]").label(ui);
                             }
                             changed |= name(ui);
                             if !context_actions.is_empty() {
@@ -312,7 +341,9 @@ where
     fn show(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) {
         let has_header = self.has_header();
         let has_body = self.has_body();
-        let mut df = DataFrame::new(self).prefix(prefix);
+        let mut df = DataFrame::new(self)
+            .prefix(prefix)
+            .default_open(self.default_open());
         if has_header {
             let context = context.clone();
             df = df.header(move |d, ui| d.show_header(&context, ui));
@@ -326,7 +357,10 @@ where
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
         let has_header = self.has_header();
         let has_body = self.has_body();
-        let mut df = DataFrameMut::new_inject(self).prefix(prefix);
+        let default_open = self.default_open();
+        let mut df = DataFrameMut::new_inject(self)
+            .prefix(prefix)
+            .default_open(default_open);
         df.name = Some(Box::new(|d, ui| d.show_name_mut(ui)));
         if has_header {
             df = df.header(move |d, ui| d.show_header_mut(ui));
@@ -339,6 +373,9 @@ where
 }
 
 pub trait DataFramed: ToCstr + Clone + Debug + StringData + Inject {
+    fn default_open(&self) -> bool {
+        true
+    }
     fn has_header(&self) -> bool;
     fn has_body(&self) -> bool;
     fn show_header(&self, context: &Context, ui: &mut Ui);
@@ -355,6 +392,9 @@ pub trait DataFramed: ToCstr + Clone + Debug + StringData + Inject {
 }
 
 impl DataFramed for Expression {
+    fn default_open(&self) -> bool {
+        !self.has_body()
+    }
     fn show_name_mut(&mut self, ui: &mut Ui) -> bool {
         Selector::from_mut(self, ui)
     }
@@ -577,6 +617,9 @@ impl DataFramed for Expression {
 }
 
 impl DataFramed for PainterAction {
+    fn default_open(&self) -> bool {
+        false
+    }
     fn show_name_mut(&mut self, ui: &mut Ui) -> bool {
         Selector::from_mut(self, ui)
     }

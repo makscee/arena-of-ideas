@@ -134,6 +134,9 @@ pub fn screen_to_world_cam(pos: Vec2, cam: &Camera, cam_transform: &GlobalTransf
 pub fn get_ctx_bool_id(ctx: &egui::Context, id: Id) -> bool {
     ctx.data(|r| r.get_temp::<bool>(id).unwrap_or_default())
 }
+pub fn get_ctx_bool_id_default(ctx: &egui::Context, id: Id, d: bool) -> bool {
+    ctx.data(|r| r.get_temp::<bool>(id).unwrap_or(d))
+}
 pub fn set_ctx_bool_id(ctx: &egui::Context, id: Id, value: bool) {
     ctx.data_mut(|w| w.insert_temp(id, value))
 }

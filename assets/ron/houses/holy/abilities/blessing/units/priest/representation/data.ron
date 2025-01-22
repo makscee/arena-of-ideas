@@ -1,10 +1,10 @@
 (
     [
-        Hollow(F(1.0)),
+        Hollow(F(2.0)),
         Color(C("#2979FF")),
-        Alpha(F(0.1)),
+        Alpha(F(0.6)),
         Repeat(
-            I(1000),
+            I(10),
             List(
                 [
                     Rectangle(F(0.5)),

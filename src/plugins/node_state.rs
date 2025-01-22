@@ -40,7 +40,7 @@ impl NodeStatePlugin {
             );
             for v in gv {
                 let kind = v.kind();
-                for (var, value) in v.get_all_vars() {
+                for (var, value) in v.get_vars() {
                     state.insert(t, 0.0, var, value, kind);
                 }
             }
@@ -53,7 +53,7 @@ impl NodeStatePlugin {
         if let Ok((gv, mut state)) = nodes.get_mut(entity) {
             for v in gv {
                 let kind = v.kind();
-                for (var, value) in v.get_all_vars() {
+                for (var, value) in v.get_vars() {
                     state.insert(t, 0.0, var, value, kind);
                 }
             }
@@ -67,7 +67,7 @@ impl NodeStatePlugin {
         let mut entity = Some(entity);
         while let Some((gv, p)) = entity.and_then(|e| nodes.get(e).ok()) {
             for v in gv {
-                for (var, value) in v.get_all_vars() {
+                for (var, value) in v.get_vars() {
                     if !state.contains(var) {
                         state.insert(0.0, 0.0, var, value, v.kind());
                     }

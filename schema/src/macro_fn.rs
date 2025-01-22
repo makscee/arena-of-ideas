@@ -16,6 +16,7 @@ pub struct ParsedNodeFields {
     pub var_fields: Vec<Ident>,
     pub var_types: Vec<Type>,
     pub data_fields: Vec<Ident>,
+    pub data_fields_str: Vec<String>,
     pub data_types: Vec<Type>,
     pub data_type_ident: proc_macro2::TokenStream,
     pub all_data_fields: Vec<Ident>,
@@ -35,6 +36,7 @@ pub fn parse_node_fields(fields: &Fields) -> ParsedNodeFields {
     let mut var_fields = Vec::default();
     let mut var_types = Vec::default();
     let mut data_fields = Vec::default();
+    let mut data_fields_str = Vec::default();
     let mut data_types = Vec::default();
     fn inner_type(type_path: &TypePath) -> Type {
         match &type_path.path.segments.first().unwrap().arguments {
@@ -85,6 +87,7 @@ pub fn parse_node_fields(fields: &Fields) -> ParsedNodeFields {
                     var_fields.push(field_ident.clone());
                     var_types.push(ty.clone());
                 } else {
+                    data_fields_str.push(field_ident.to_string());
                     data_fields.push(field_ident);
                     data_types.push(ty.clone());
                 }
@@ -114,6 +117,7 @@ pub fn parse_node_fields(fields: &Fields) -> ParsedNodeFields {
         var_fields,
         var_types,
         data_fields,
+        data_fields_str,
         data_types,
         data_type_ident,
         all_data_fields,

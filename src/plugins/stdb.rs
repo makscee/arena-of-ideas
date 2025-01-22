@@ -2,6 +2,25 @@ use spacetimedb_sdk::{DbContext, TableWithPrimaryKey};
 
 use super::*;
 
+fn on_subscription_applied() {
+    OperationsPlugin::add(|world| {
+        let mut unit = Unit::from_table(
+            NodeDomain::Alpha,
+            NodeDomain::Alpha.filter_by_kind(NodeKind::Unit)[0].id,
+        )
+        .unwrap();
+        for (var, value) in unit.get_all_vars() {
+            dbg!(var, value);
+        }
+        Window::new("Unit df", move |ui, _| {
+            ui.columns(2, |ui| {
+                unit.show(None, &Context::default().set_owner_node(&unit), &mut ui[0]);
+                unit.show_mut(None, &mut ui[1]);
+            });
+        })
+        .push(world);
+    });
+}
 pub fn db_subscriptions() {
     info!("Apply stdb subscriptions");
     let queries = [
@@ -17,6 +36,7 @@ pub fn db_subscriptions() {
             e.event.on_success(|_| {
                 info!("Subscription applied");
             });
+            on_subscription_applied();
         })
         .subscribe(queries);
 

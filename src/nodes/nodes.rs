@@ -7,6 +7,7 @@ macro_schema::nodes!();
 pub trait GetVar: GetNodeKind + Debug {
     fn get_var(&self, var: VarName) -> Option<VarValue>;
     fn set_var(&mut self, var: VarName, value: VarValue);
+    fn get_vars(&self) -> Vec<(VarName, VarValue)>;
     fn get_all_vars(&self) -> Vec<(VarName, VarValue)>;
 }
 

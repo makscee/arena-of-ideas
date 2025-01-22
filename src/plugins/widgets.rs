@@ -20,7 +20,12 @@ impl Plugin for WidgetsPlugin {
                         .and_then(in_state(GameState::Title).or_else(in_state(GameState::Meta))),
                 ),
             )
-            .add_systems(Update, cmd_test.run_if(input_pressed(KeyCode::SuperLeft)));
+            .add_systems(
+                Update,
+                cmd_test.run_if(
+                    input_pressed(KeyCode::SuperLeft).and_then(input_pressed(KeyCode::ShiftLeft)),
+                ),
+            );
         }
     }
 }

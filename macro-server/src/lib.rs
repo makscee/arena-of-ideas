@@ -28,6 +28,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 var_fields: _,
                 var_types: _,
                 data_fields: _,
+                data_fields_str: _,
                 data_types: _,
                 data_type_ident,
                 all_data_fields,
