@@ -7,9 +7,9 @@
             I(1000),
             List(
                 [
-                    Rectangle(F(1.5)),
+                    Rectangle(F(0.5)),
                     Rotate(Sum(GT, Var(index))),
-                    Translate(Mul(F(2.0), Cos(Sum(GT, Var(index))))),
+                    Translate(Mul(F(0.2), Cos(Sum(GT, Var(index))))),
                     Paint,
                 ],
             ),

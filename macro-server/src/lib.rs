@@ -60,7 +60,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 );
             }
             quote! {
-                #[derive(Default, Debug)]
+                #[derive(Default, Debug, Clone)]
                 #input
                 impl Node for #struct_ident {
                     #strings_conversions

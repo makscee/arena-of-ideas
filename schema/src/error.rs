@@ -18,6 +18,18 @@ pub enum ExpressionError {
     Custom(String),
 }
 
+pub trait ExpressionErrorResultExt {
+    fn log(self);
+}
+impl<T> ExpressionErrorResultExt for Result<T, ExpressionError> {
+    fn log(self) {
+        match self {
+            Ok(_) => {}
+            Err(e) => log::error!("{e}"),
+        }
+    }
+}
+
 pub trait OptionExpressionError<T> {
     fn to_e(self, s: impl Into<String>) -> Result<T, ExpressionError>;
     fn to_e_s(self, s: impl Into<String>) -> Result<T, String>;

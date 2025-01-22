@@ -4,7 +4,7 @@ use std::fmt::Debug;
 macro_schema::nodes!();
 
 #[bevy_trait_query::queryable]
-pub trait GetVar: GetNodeKind {
+pub trait GetVar: GetNodeKind + Debug {
     fn get_var(&self, var: VarName) -> Option<VarValue>;
     fn set_var(&mut self, var: VarName, value: VarValue);
     fn get_all_vars(&self) -> Vec<(VarName, VarValue)>;

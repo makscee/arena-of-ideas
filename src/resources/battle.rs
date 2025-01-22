@@ -506,7 +506,7 @@ fn slot_rect(i: usize, side: bool, full_rect: Rect, team_slots: usize) -> Rect {
         (team_slots + i) as i32
     } as f32;
     let size = (full_rect.width() / total_slots as f32).at_most(full_rect.height());
-    let mut rect = full_rect;
+    let mut rect = full_rect.shrink(3.0);
     rect.set_height(size);
     rect.set_width(size);
     rect.translate(egui::vec2(size * pos_i, 0.0))

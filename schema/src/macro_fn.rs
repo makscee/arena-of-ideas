@@ -233,7 +233,7 @@ pub fn table_conversions(
             Some(d)
         }
         fn to_table(mut self, ctx: &ReducerContext, domain: NodeDomain, parent: u64) {
-            let id = self.id().unwrap_or(next_id(ctx));
+            let id = self.id().unwrap_or_else(|| next_id(ctx));
             let data = self.get_data();
             let kind = self.kind();
             domain.insert(ctx, id, kind, data);
@@ -243,7 +243,8 @@ pub fn table_conversions(
                     .insert(TNodeRelation { id, parent });
             }
             #(
-                if let Some(d) = self.#option_link_fields.take() {
+                if let Some(mut d) = self.#option_link_fields.take() {
+                    d.id = Some(id);
                     d.to_table(ctx, domain, id);
                 }
             )*

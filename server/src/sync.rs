@@ -8,6 +8,9 @@ fn sync_assets(
 ) -> Result<(), String> {
     ctx.is_admin()?;
     global_settings.replace(ctx);
+    for n in ctx.db.nodes_alpha().iter() {
+        ctx.db.nodes_alpha().delete(n);
+    }
     for house in houses {
         let house = House::from_strings(0, &house).to_e_s("Failed to parse House")?;
         house.to_table(ctx, NodeDomain::Alpha, 0);

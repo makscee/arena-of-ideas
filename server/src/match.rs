@@ -1,3 +1,5 @@
+use rand::seq::SliceRandom;
+
 use super::*;
 
 fn get_match(ctx: &ReducerContext) -> Result<Match, String> {
@@ -38,14 +40,19 @@ fn match_sell(ctx: &ReducerContext, slot: u8) -> Result<(), String> {
 
 #[reducer]
 fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
+    let unit_id = NodeDomain::Alpha
+        .filter_by_kind(ctx, NodeKind::Unit)
+        .choose(&mut ctx.rng())
+        .to_e_s("No Alpha units found")?
+        .id;
+    let scu = ShopCaseUnit {
+        unit_id,
+        price: 3,
+        ..default()
+    };
     let d = Match {
         g: 13,
-        shop_case: [
-            ShopCaseUnit::default(),
-            ShopCaseUnit::default(),
-            ShopCaseUnit::default(),
-        ]
-        .into(),
+        shop_case: [scu.clone(), scu.clone(), scu.clone()].into(),
         team: Some(Team {
             name: "Test Team".into(),
             units: [Unit {

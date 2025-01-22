@@ -3,7 +3,7 @@ use super::*;
 #[derive(Debug, Default, Clone)]
 pub struct Context<'w, 's> {
     t: Option<f32>,
-    layers: Vec<ContextLayer>,
+    layers: Vec<ContextLayer<'w>>,
     sources: Vec<ContextSource<'w, 's>>,
 }
 
@@ -15,7 +15,8 @@ pub enum ContextSource<'w, 's> {
 }
 
 #[derive(Debug, Clone)]
-enum ContextLayer {
+enum ContextLayer<'w> {
+    OwnerNode(&'w dyn GetVar),
     Owner(Entity),
     Target(Entity),
     Var(VarName, VarValue),
@@ -64,6 +65,10 @@ impl<'w, 's> Context<'w, 's> {
     }
     pub fn set_var(&mut self, var: VarName, value: VarValue) -> &mut Self {
         self.layers.push(ContextLayer::Var(var, value));
+        self
+    }
+    pub fn set_owner_node(&mut self, node: &'w dyn GetVar) -> &mut Self {
+        self.layers.push(ContextLayer::OwnerNode(node));
         self
     }
 
@@ -171,12 +176,12 @@ impl ContextSource<'_, '_> {
         match self {
             ContextSource::World(world) => world.get::<T>(entity),
             ContextSource::BattleSimulation(bs) => bs.world.get::<T>(entity),
-            ContextSource::Query(..) => None,
+            _ => None,
         }
     }
 }
 
-impl ContextLayer {
+impl ContextLayer<'_> {
     fn get_owner(&self) -> Option<Entity> {
         match self {
             ContextLayer::Owner(entity) => Some(*entity),
@@ -207,6 +212,7 @@ impl ContextLayer {
                     None
                 }
             }
+            ContextLayer::OwnerNode(node) => node.get_var(var),
             ContextLayer::Target(..) => None,
         }
     }

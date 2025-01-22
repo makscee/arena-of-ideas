@@ -197,7 +197,8 @@ Abs(Equals(F(51.0),Abs(Equals(F(1.0),Or(Equals(F(1.0),One),Abs(Or(Target,Abs(One
                 }
                 if "Open Match".cstr().button(ui).clicked() {
                     if let Some(m) = NodeDomain::Match.filter_by_kind(NodeKind::Match).get(0) {
-                        MatchPlugin::open_shop_window(m.id, world);
+                        MatchPlugin::load_match_data(m.id, world);
+                        MatchPlugin::open_shop_window(world);
                     } else {
                         error!("No matches found");
                     }
