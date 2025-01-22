@@ -109,33 +109,9 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         write!(f, "{}", self.kind())
                     }
                 }
-                impl Show for #struct_ident {
-                    fn show(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) {
-                        prefix.show(ui);
-                        ui.horizontal(|ui| {
-                            for (var, value) in self.get_all_vars() {
-                                if var != VarName::name {
-                                    value.show(Some(&var.cstr()), context, ui);
-                                }
-                            }
-                        });
-                        #(
-                            self.#data_fields.show(None, context, ui);
-                        )*
-                    }
-                    fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
-                        prefix.show(ui);
-                        let mut changed = false;
-                        for (var, mut value) in self.get_all_vars() {
-                            if value.show_mut(Some(&var.cstr()), ui) {
-                                changed = true;
-                                self.set_var(var, value);
-                            }
-                        }
-                        #(
-                            changed |= self.#data_fields.show_mut(None, ui);
-                        )*
-                        changed
+                impl ToCstr for #struct_ident {
+                    fn cstr(&self) -> Cstr {
+                        self.to_string()
                     }
                 }
                 impl GetVar for #struct_ident {
@@ -185,6 +161,63 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                             Ok(v) => (#(self.#all_data_fields),*) = v,
                             Err(e) => panic!("{} parsing error from {data}: {e}", self.kind()),
                         }
+                    }
+                }
+                impl Inject for #struct_ident {
+                    fn move_inner(&mut self, source: &mut Self) {}
+                    fn wrapper() -> Self {
+                        Self::default()
+                    }
+                }
+                impl Injector<Self> for #struct_ident {
+                    fn get_inner_mut(&mut self) -> Vec<&mut Box<Self>> {
+                        default()
+                    }
+                    fn get_inner(&self) -> Vec<&Box<Self>> {
+                        default()
+                    }
+                }
+                impl DataFramed for #struct_ident {
+                    fn has_header(&self) -> bool {
+                        true
+                    }
+                    fn has_body(&self) -> bool {
+                        true
+                    }
+                    fn show_header(&self, context: &Context, ui: &mut Ui) {
+                        ui.horizontal(|ui| {
+                            for (var, value) in self.get_all_vars() {
+                                if var != VarName::name {
+                                    value.show(Some(&var.cstr()), context, ui);
+                                }
+                            }
+                        });
+                    }
+                    fn show_header_mut(&mut self, ui: &mut Ui) -> bool {
+                        let mut changed = false;
+                        #(
+                            changed |= self.#data_fields.show_mut(None, ui);
+                        )*
+                        changed
+                    }
+                    fn show_body(&self, context: &Context, ui: &mut Ui) {
+                        #(
+                            self.#data_fields.show(None, context, ui);
+                        )*
+                        #(
+                            if let Some(d) = &self.#option_link_fields {
+                                d.show(None, context, ui);
+                            }
+                        )*
+                    }
+                    fn show_body_mut(&mut self, ui: &mut Ui) -> bool {
+                        let mut changed = false;
+                        #(
+                            if let Some(d) = &mut self.#option_link_fields {
+                                changed |= d.show_mut(None, ui);
+                            }
+                        )*
+                        changed
                     }
                 }
                 impl Node for #struct_ident {
