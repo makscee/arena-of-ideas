@@ -14,6 +14,7 @@ pub struct Window {
     no_frame: bool,
     transparent: bool,
     expand: bool,
+    default_width: f32,
     content: Box<dyn FnMut(&mut Ui, &mut World) + Send + Sync>,
 }
 
@@ -47,6 +48,7 @@ impl Window {
             no_frame: false,
             transparent: false,
             expand: false,
+            default_width: 150.0,
         }
     }
     #[must_use]
@@ -64,6 +66,11 @@ impl Window {
         self.transparent = true;
         self
     }
+    #[must_use]
+    pub fn default_width(mut self, value: f32) -> Self {
+        self.default_width = value;
+        self
+    }
     pub fn push(self, world: &mut World) {
         rm(world).windows.insert(self.id.clone(), self);
     }
@@ -78,6 +85,7 @@ impl Window {
         };
         let mut r = WindowResponse::None;
         let mut w = egui::Window::new(&self.id)
+            .default_width(self.default_width)
             .title_bar(false)
             .frame(FRAME)
             .scroll([self.expand, self.expand])

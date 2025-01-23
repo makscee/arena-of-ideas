@@ -19,9 +19,9 @@ fn match_buy(ctx: &ReducerContext, slot: u8) -> Result<(), String> {
     let unit =
         Unit::from_table(ctx, NodeDomain::Alpha, sc.unit_id).to_e_s("Failed to find Alpha unit")?;
     sc.sold = true;
+    NodeDomain::Match.update(ctx, sc);
     m.g -= sc.price;
-    m.team.as_mut().to_e_s("Team not set")?.units.push(unit);
-    m.to_table(ctx, NodeDomain::Match, 0);
+    NodeDomain::Match.update(ctx, &m);
     Ok(())
 }
 

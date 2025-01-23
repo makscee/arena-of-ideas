@@ -3,6 +3,9 @@ use spacetimedb_sdk::{DbContext, TableWithPrimaryKey};
 use super::*;
 
 fn on_subscription_applied() {
+    if !RunMode::Regular.eq(run_mode()) || true {
+        return;
+    }
     OperationsPlugin::add(|world| {
         let mut unit = Unit::from_table(
             NodeDomain::Alpha,

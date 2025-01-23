@@ -25,6 +25,7 @@ pub struct TNodeRelation {
 
 pub trait NodeDomainExt {
     fn insert(self, ctx: &ReducerContext, id: u64, kind: NodeKind, data: String);
+    fn update(self, ctx: &ReducerContext, node: &(impl Node + GetNodeKind));
     fn find_by_key(self, ctx: &ReducerContext, key: &String) -> Option<TNode>;
     fn filter_by_kind(self, ctx: &ReducerContext, kind: NodeKind) -> Vec<TNode>;
 }
@@ -34,6 +35,25 @@ impl NodeDomainExt for NodeDomain {
             NodeDomain::World => ctx.db.nodes_world().insert(TNode::new(id, kind, data)),
             NodeDomain::Match => ctx.db.nodes_match().insert(TNode::new(id, kind, data)),
             NodeDomain::Alpha => ctx.db.nodes_alpha().insert(TNode::new(id, kind, data)),
+        };
+    }
+    fn update(self, ctx: &ReducerContext, node: &(impl Node + GetNodeKind)) {
+        match self {
+            NodeDomain::World => ctx.db.nodes_world().key().update(TNode::new(
+                node.id().unwrap(),
+                node.kind(),
+                node.get_data(),
+            )),
+            NodeDomain::Match => ctx.db.nodes_match().key().update(TNode::new(
+                node.id().unwrap(),
+                node.kind(),
+                node.get_data(),
+            )),
+            NodeDomain::Alpha => ctx.db.nodes_alpha().key().update(TNode::new(
+                node.id().unwrap(),
+                node.kind(),
+                node.get_data(),
+            )),
         };
     }
     fn find_by_key(self, ctx: &ReducerContext, key: &String) -> Option<TNode> {

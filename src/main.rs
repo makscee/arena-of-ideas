@@ -22,9 +22,12 @@ pub struct Args {
     extra: Option<String>,
 }
 
-pub static ARGS: OnceCell<Args> = OnceCell::new();
+static ARGS: OnceCell<Args> = OnceCell::new();
+pub fn run_mode() -> &'static RunMode {
+    &ARGS.get().unwrap().mode
+}
 
-#[derive(Debug, Clone, ValueEnum, Default)]
+#[derive(Debug, Clone, ValueEnum, Default, PartialEq, Eq)]
 pub enum RunMode {
     #[default]
     Regular,
