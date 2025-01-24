@@ -7,17 +7,15 @@ use spacetimedb_sdk::__codegen::{
     anyhow::{self as __anyhow, Context as _},
 };
 
-use super::match_g_type::MatchG;
-
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct GlobalSettings {
-    pub always_zero: u32,
-    pub hero_speed: f32,
-    pub team_slots: u8,
-    pub match_g: MatchG,
+pub struct MatchG {
+    pub unit_buy: i32,
+    pub unit_sell: i32,
+    pub reroll: i32,
+    pub initial: i32,
 }
 
-impl __sdk::InModule for GlobalSettings {
+impl __sdk::InModule for MatchG {
     type Module = super::RemoteModule;
 }

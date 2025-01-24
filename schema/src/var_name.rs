@@ -36,4 +36,6 @@ pub enum VarName {
     t,
     text,
     charges,
+    g,
+    price,
 }

@@ -8,7 +8,7 @@ impl Plugin for MatchPlugin {
 
 #[derive(Resource)]
 struct MatchData {
-    g: u32,
+    g: i32,
     shop_units: Vec<Option<Unit>>,
     team_units: Vec<Unit>,
 }
@@ -98,7 +98,15 @@ impl MatchPlugin {
         }
         Window::new("Match", move |ui, world| {
             let md = world.remove_resource::<MatchData>().unwrap();
-            md.g.cstr().label(ui);
+            ui.horizontal(|ui| {
+                format!("[yellow [b {}g]]", md.g).label(ui);
+                if format!("Reroll [yellow [b {}g]]", global_settings().match_g.reroll)
+                    .button(ui)
+                    .clicked()
+                {
+                    cn().reducers.match_reroll().unwrap();
+                }
+            });
             let shop_units = &md.shop_units;
             let team_units = &md.team_units;
             let full_rect = ui.available_rect_before_wrap();

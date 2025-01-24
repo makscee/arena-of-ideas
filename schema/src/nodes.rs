@@ -30,14 +30,15 @@ struct Team {
 }
 
 struct Match {
-    pub g: u32,
+    pub g: i32,
+    pub last_update: u64,
     pub shop_case: Vec<ShopCaseUnit>,
     pub team: Option<Team>,
 }
 
 struct ShopCaseUnit {
     pub unit_id: u64,
-    pub price: u32,
+    pub price: i32,
     pub sold: bool,
 }
 

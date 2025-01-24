@@ -28,6 +28,7 @@ pub trait NodeDomainExt {
     fn update(self, ctx: &ReducerContext, node: &(impl Node + GetNodeKind));
     fn find_by_key(self, ctx: &ReducerContext, key: &String) -> Option<TNode>;
     fn filter_by_kind(self, ctx: &ReducerContext, kind: NodeKind) -> Vec<TNode>;
+    fn delete(self, ctx: &ReducerContext, node: &impl Node);
 }
 impl NodeDomainExt for NodeDomain {
     fn insert(self, ctx: &ReducerContext, id: u64, kind: NodeKind, data: String) {
@@ -68,6 +69,30 @@ impl NodeDomainExt for NodeDomain {
             NodeDomain::World => ctx.db.nodes_world().kind().filter(kind.as_ref()).collect(),
             NodeDomain::Match => ctx.db.nodes_match().kind().filter(kind.as_ref()).collect(),
             NodeDomain::Alpha => ctx.db.nodes_alpha().kind().filter(kind.as_ref()).collect(),
+        }
+    }
+    fn delete(self, ctx: &ReducerContext, node: &impl Node) {
+        let mut ids = HashSet::new();
+        node.gather_ids(&mut ids);
+        match self {
+            NodeDomain::World => {
+                for id in &ids {
+                    ctx.db.nodes_world().id().delete(id);
+                }
+            }
+            NodeDomain::Match => {
+                for id in &ids {
+                    ctx.db.nodes_match().id().delete(id);
+                }
+            }
+            NodeDomain::Alpha => {
+                for id in &ids {
+                    ctx.db.nodes_alpha().id().delete(id);
+                }
+            }
+        }
+        for id in ids {
+            ctx.db.nodes_relations().id().delete(id);
         }
     }
 }

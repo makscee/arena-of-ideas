@@ -3,6 +3,7 @@
 
 #![allow(unused)]
 use super::global_settings_type::GlobalSettings;
+use super::match_g_type::MatchG;
 use spacetimedb_sdk::__codegen::{
     self as __sdk, __lib, __sats, __ws,
     anyhow::{self as __anyhow, Context as _},

@@ -7,6 +7,16 @@ pub struct GlobalSettings {
     #[unique]
     always_zero: u32,
     pub hero_speed: f32,
+    pub team_slots: u8,
+    pub match_g: MatchG,
+}
+
+#[derive(SpacetimeType)]
+pub struct MatchG {
+    pub unit_buy: i32,
+    pub unit_sell: i32,
+    pub reroll: i32,
+    pub initial: i32,
 }
 
 impl GlobalSettings {
