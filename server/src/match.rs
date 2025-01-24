@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use rand::seq::SliceRandom;
 
 use super::*;
@@ -14,18 +16,15 @@ fn get_match(ctx: &ReducerContext) -> Result<Match, String> {
 #[reducer]
 fn match_buy(ctx: &ReducerContext, slot: u8) -> Result<(), String> {
     let mut m = get_match(ctx)?;
+    log::info!("{slot} {m:?}");
     let slot = slot as usize;
-    let sc = &mut m.shop_case[slot as usize];
-    let unit =
+    let sc = &mut m.shop_case[slot];
+    let mut unit =
         Unit::from_table(ctx, NodeDomain::Alpha, sc.unit_id).to_e_s("Failed to find Alpha unit")?;
+    unit.clear_ids();
     sc.sold = true;
     m.g -= sc.price;
-    unit.to_table(
-        ctx,
-        NodeDomain::Match,
-        None,
-        m.team.as_ref().unwrap().id.unwrap(),
-    );
+    unit.to_table(ctx, NodeDomain::Match, m.team.as_ref().unwrap().id.unwrap());
     NodeDomain::Match.update(ctx, sc);
     NodeDomain::Match.update(ctx, &m);
     Ok(())
@@ -39,8 +38,15 @@ fn match_sell(ctx: &ReducerContext, slot: u8) -> Result<(), String> {
     if slot >= team.units.len() {
         return Err("Slot index outside of team bounds".into());
     }
-    team.units.remove(slot);
-    m.to_table(ctx, NodeDomain::Match, None, 0);
+    let unit = team.units.remove(slot);
+    let mut ids = HashSet::default();
+    unit.gather_ids(&mut ids);
+    for id in ids {
+        ctx.db.nodes_match().id().delete(id);
+        ctx.db.nodes_relations().id().delete(id);
+    }
+    m.g += 2;
+    NodeDomain::Match.update(ctx, &m);
     Ok(())
 }
 
@@ -68,7 +74,7 @@ fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
     for d in ctx.db.nodes_match().iter() {
         ctx.db.nodes_match().key().delete(d.key);
     }
-    d.to_table(ctx, NodeDomain::Match, None, 0);
+    d.to_table(ctx, NodeDomain::Match, 0);
     Ok(())
 }
 

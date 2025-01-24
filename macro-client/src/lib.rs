@@ -289,6 +289,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                             .iter()
                             .filter(|r| r.parent == id)
                             .map(|r| r.id)
+                            .sorted()
                             .collect_vec();
                         #(
                             d.#option_link_fields = #option_link_types::from_table(domain, id);

@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use proc_macro2::TokenStream;
 use quote::quote;
 use quote::ToTokens;
@@ -236,8 +237,8 @@ pub fn table_conversions(
             )*
             Some(d)
         }
-        fn to_table(mut self, ctx: &ReducerContext, domain: NodeDomain, id: Option<u64>, parent: u64) {
-            let id = id.unwrap_or_else(|| next_id(ctx));
+        fn to_table(mut self, ctx: &ReducerContext, domain: NodeDomain, parent: u64) {
+            let id = self.id.unwrap_or_else(|| next_id(ctx));
             let data = self.get_data();
             let kind = self.kind();
             domain.insert(ctx, id, kind, data);
@@ -248,17 +249,18 @@ pub fn table_conversions(
             }
             #(
                 if let Some(mut d) = self.#option_link_fields.take() {
-                    d.to_table(ctx, domain, Some(id), id);
+                    d.id = Some(id);
+                    d.to_table(ctx, domain, id);
                 }
             )*
             #(
                 for d in std::mem::take(&mut self.#vec_link_fields) {
-                    d.to_table(ctx, domain, None, id);
+                    d.to_table(ctx, domain, id);
                 }
             )*
             #(
                 for d in std::mem::take(&mut self.#vec_box_link_fields) {
-                    d.to_table(ctx, domain, None, id);
+                    d.to_table(ctx, domain, id);
                 }
             )*
         }

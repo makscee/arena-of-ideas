@@ -69,6 +69,42 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     fn id(&self) -> Option<u64> {
                         self.id
                     }
+                    fn clear_ids(&mut self) {
+                        self.id = None;
+                        #(
+                            if let Some(d) = &mut self.#option_link_fields {
+                                d.clear_ids();
+                            }
+                        )*
+                        #(
+                            for d in self.#vec_link_fields.iter_mut() {
+                                d.clear_ids();
+                            }
+                        )*
+                        #(
+                            for d in self.#vec_box_link_fields.iter_mut() {
+                                d.clear_ids();
+                            }
+                        )*
+                    }
+                    fn gather_ids(&self, data: &mut HashSet<u64>) {
+                        data.extend(self.id.iter().copied());
+                        #(
+                            if let Some(d) = &self.#option_link_fields {
+                                d.gather_ids(data);
+                            }
+                        )*
+                        #(
+                            for d in self.#vec_link_fields.iter() {
+                                d.gather_ids(data);
+                            }
+                        )*
+                        #(
+                            for d in self.#vec_box_link_fields.iter() {
+                                d.gather_ids(data);
+                            }
+                        )*
+                    }
                     fn get_data(&self) -> String {
                         ron::to_string(&(#(&self.#all_data_fields),*)).unwrap()
                     }
