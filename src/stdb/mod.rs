@@ -30,6 +30,7 @@ pub mod match_buy_reducer;
 pub mod match_g_type;
 pub mod match_get_reducer;
 pub mod match_insert_reducer;
+pub mod match_reorder_reducer;
 pub mod match_reroll_reducer;
 pub mod match_sell_reducer;
 pub mod node_move_reducer;
@@ -91,6 +92,9 @@ pub use match_buy_reducer::{match_buy, set_flags_for_match_buy, MatchBuyCallback
 pub use match_g_type::MatchG;
 pub use match_get_reducer::{match_get, set_flags_for_match_get, MatchGetCallbackId};
 pub use match_insert_reducer::{match_insert, set_flags_for_match_insert, MatchInsertCallbackId};
+pub use match_reorder_reducer::{
+    match_reorder, set_flags_for_match_reorder, MatchReorderCallbackId,
+};
 pub use match_reroll_reducer::{match_reroll, set_flags_for_match_reroll, MatchRerollCallbackId};
 pub use match_sell_reducer::{match_sell, set_flags_for_match_sell, MatchSellCallbackId};
 pub use node_move_reducer::{node_move, set_flags_for_node_move, NodeMoveCallbackId};
@@ -159,6 +163,10 @@ pub enum Reducer {
         id: u64,
     },
     MatchInsert,
+    MatchReorder {
+        slot: u8,
+        target: u8,
+    },
     MatchReroll,
     MatchSell {
         slot: u8,
@@ -216,6 +224,7 @@ impl __sdk::Reducer for Reducer {
             Reducer::MatchBuy { .. } => "match_buy",
             Reducer::MatchGet { .. } => "match_get",
             Reducer::MatchInsert => "match_insert",
+            Reducer::MatchReorder { .. } => "match_reorder",
             Reducer::MatchReroll => "match_reroll",
             Reducer::MatchSell { .. } => "match_sell",
             Reducer::NodeMove { .. } => "node_move",
@@ -311,6 +320,10 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
                 )?
                 .into(),
             ),
+            "match_reorder" => Ok(__sdk::parse_reducer_args::<
+                match_reorder_reducer::MatchReorderArgs,
+            >("match_reorder", &value.args)?
+            .into()),
             "match_reroll" => Ok(
                 __sdk::parse_reducer_args::<match_reroll_reducer::MatchRerollArgs>(
                     "match_reroll",

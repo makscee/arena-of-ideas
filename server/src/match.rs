@@ -10,6 +10,9 @@ impl Match {
             .to_e_s("No matches found")?
             .id;
         let mut m = Match::from_table(ctx, NodeDomain::Match, id).to_e_s("Match not found")?;
+        m.team_mut()?
+            .units
+            .sort_by_key(|u| u.slot.as_ref().unwrap().slot);
         m.last_update = Timestamp::now().into_micros_since_epoch();
         Ok(m)
     }
@@ -26,19 +29,52 @@ impl Match {
         }
         Ok(())
     }
+    fn team(&self) -> Result<&Team, String> {
+        self.team.as_ref().to_e_s("Team not set")
+    }
+    fn team_mut(&mut self) -> Result<&mut Team, String> {
+        self.team.as_mut().to_e_s("Team not set")
+    }
+    fn update_team_slots(&mut self, ctx: &ReducerContext) -> Result<(), String> {
+        for (slot, unit) in self.team_mut()?.units.iter_mut().enumerate() {
+            let node = unit.slot.as_mut().unwrap();
+            node.slot = slot as i32;
+            NodeDomain::Match.update(ctx, node);
+        }
+        Ok(())
+    }
+    fn reorder(&mut self, ctx: &ReducerContext, slot: usize, target: usize) -> Result<(), String> {
+        let team = self.team_mut()?;
+        if slot >= team.units.len() {
+            return Err("Slot outside of team length".into());
+        }
+        let target = target.min(team.units.len() - 1);
+        let unit = team.units.remove(slot);
+        team.units.insert(target, unit);
+        self.update_team_slots(ctx)
+    }
+    fn save(&self, ctx: &ReducerContext) {
+        NodeDomain::Match.update(ctx, self);
+    }
 }
 
 #[reducer]
 fn match_buy(ctx: &ReducerContext, slot: u8) -> Result<(), String> {
     let mut m = Match::get(ctx)?;
+    let team = m.team()?;
+    let unit_slot = team.units.len();
+    if unit_slot >= GlobalSettings::get(ctx).team_slots as usize {
+        return Err("Team already full".into());
+    }
     let slot = slot as usize;
     let sc = &mut m.shop_case[slot];
     let mut unit =
         Unit::from_table(ctx, NodeDomain::Alpha, sc.unit_id).to_e_s("Failed to find Alpha unit")?;
+    unit.slot = Some(UnitSlot {
+        slot: unit_slot as i32,
+        ..default()
+    });
     unit.clear_ids();
-    if m.team.as_ref().unwrap().units.len() >= GlobalSettings::get(ctx).team_slots as usize {
-        return Err("Team already full".into());
-    }
     if sc.sold {
         return Err("Unit already sold".into());
     }
@@ -49,7 +85,7 @@ fn match_buy(ctx: &ReducerContext, slot: u8) -> Result<(), String> {
     m.g -= sc.price;
     unit.to_table(ctx, NodeDomain::Match, m.team.as_ref().unwrap().id.unwrap());
     NodeDomain::Match.update(ctx, sc);
-    NodeDomain::Match.update(ctx, &m);
+    m.save(ctx);
     Ok(())
 }
 
@@ -57,14 +93,15 @@ fn match_buy(ctx: &ReducerContext, slot: u8) -> Result<(), String> {
 fn match_sell(ctx: &ReducerContext, slot: u8) -> Result<(), String> {
     let mut m = Match::get(ctx)?;
     let slot = slot as usize;
-    let team = m.team.as_mut().to_e_s("Team not set")?;
+    let team = m.team_mut()?;
     if slot >= team.units.len() {
         return Err("Slot index outside of team bounds".into());
     }
     let unit = team.units.remove(slot);
     NodeDomain::Match.delete(ctx, &unit);
     m.g += GlobalSettings::get(ctx).match_g.unit_sell;
-    NodeDomain::Match.update(ctx, &m);
+    m.update_team_slots(ctx)?;
+    m.save(ctx);
     Ok(())
 }
 
@@ -77,10 +114,18 @@ fn match_reroll(ctx: &ReducerContext) -> Result<(), String> {
     }
     m.g -= price;
     m.fill_case(ctx)?;
-    NodeDomain::Match.update(ctx, &m);
+    m.save(ctx);
     for node in &m.shop_case {
         NodeDomain::Match.update(ctx, node);
     }
+    Ok(())
+}
+
+#[reducer]
+fn match_reorder(ctx: &ReducerContext, slot: u8, target: u8) -> Result<(), String> {
+    let mut m = Match::get(ctx)?;
+    m.reorder(ctx, slot as usize, target as usize)?;
+    m.save(ctx);
     Ok(())
 }
 
@@ -95,7 +140,7 @@ fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
         }),
         ..default()
     };
-    d.fill_case(ctx);
+    d.fill_case(ctx)?;
     for d in ctx.db.nodes_match().iter() {
         ctx.db.nodes_match().key().delete(d.key);
     }

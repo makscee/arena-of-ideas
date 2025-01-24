@@ -1,4 +1,3 @@
-use itertools::Itertools;
 use proc_macro2::TokenStream;
 use quote::quote;
 use quote::ToTokens;

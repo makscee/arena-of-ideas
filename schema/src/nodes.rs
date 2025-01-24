@@ -44,6 +44,7 @@ struct ShopCaseUnit {
 
 struct Unit {
     pub name: String,
+    pub slot: Option<UnitSlot>,
     pub stats: Option<UnitStats>,
     pub description: Option<UnitDescription>,
     pub representation: Option<Representation>,
@@ -52,6 +53,10 @@ struct Unit {
 struct UnitStats {
     pub pwr: i32,
     pub hp: i32,
+}
+
+struct UnitSlot {
+    pub slot: i32,
 }
 
 struct UnitDescription {

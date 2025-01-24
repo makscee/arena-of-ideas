@@ -16,6 +16,8 @@ struct MatchData {
 impl MatchPlugin {
     pub fn load_match_data(id: u64, world: &mut World) {
         let m = Match::from_table(NodeDomain::Match, id).unwrap();
+        let mut team_units = m.team.unwrap().units;
+        team_units.sort_by_key(|u| u.slot.as_ref().unwrap().slot);
         world.insert_resource(MatchData {
             g: m.g,
             shop_units: m
@@ -34,7 +36,7 @@ impl MatchPlugin {
                     }
                 })
                 .collect(),
-            team_units: m.team.unwrap().units,
+            team_units,
         });
     }
     fn show_slot(
@@ -42,7 +44,7 @@ impl MatchPlugin {
         ui: &mut Ui,
         world: &mut World,
         add_contents: impl FnOnce(&mut Ui),
-    ) {
+    ) -> Response {
         const FRAME: Frame = Frame {
             inner_margin: Margin::ZERO,
             outer_margin: Margin::ZERO,
@@ -61,7 +63,7 @@ impl MatchPlugin {
                 let rect = ui.available_rect_before_wrap();
                 let size = rect.width().at_most(rect.height());
                 let rect = Rect::from_center_size(rect.center(), egui::vec2(size, size));
-                let resp = ui.allocate_rect(rect, Sense::click());
+                let resp = ui.allocate_rect(rect, Sense::click_and_drag());
                 if resp.hovered() {
                     ui.painter().rect_stroke(rect, ROUNDING, STROKE_YELLOW);
                 } else {
@@ -69,7 +71,7 @@ impl MatchPlugin {
                 }
                 if let Some(unit) = unit {
                     let context = Context::default().set_owner_node(unit).take();
-                    if resp.hovered() {
+                    if resp.hovered() && !resp.dragged() {
                         cursor_window_frame(ui.ctx(), FRAME, 350.0, |ui| {
                             unit.show(None, &context, ui);
                         });
@@ -88,8 +90,10 @@ impl MatchPlugin {
                         .log();
                     RepresentationPlugin::paint_rect(rect, &context, &rep.material, ui).log();
                 }
+                resp
             },
-        );
+        )
+        .inner
     }
     pub fn open_shop_window(world: &mut World) {
         if !world.contains_resource::<MatchData>() {
@@ -128,11 +132,25 @@ impl MatchPlugin {
             team_ui.columns(5, |ui| {
                 for (i, unit) in team_units.iter().enumerate() {
                     let ui = &mut ui[i];
-                    Self::show_slot(Some(unit), ui, world, |ui| {
+                    let resp = Self::show_slot(Some(unit), ui, world, |ui| {
                         if ui.button("Sell").clicked() {
                             cn().reducers.match_sell(i as u8).unwrap();
                         }
                     });
+                    if resp.dragged() {
+                        let origin = resp.rect.center();
+                        if let Some(pointer) = ui.ctx().pointer_latest_pos() {
+                            ui.painter().arrow(
+                                origin,
+                                pointer.to_vec2() - origin.to_vec2(),
+                                Stroke::new(3.0, YELLOW),
+                            );
+                        }
+                    }
+                    resp.dnd_set_drag_payload(i);
+                    if let Some(drop_i) = resp.dnd_release_payload::<usize>() {
+                        cn().reducers.match_reorder(*drop_i as u8, i as u8).unwrap();
+                    }
                 }
             });
             world.insert_resource(md);
