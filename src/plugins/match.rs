@@ -10,12 +10,14 @@ impl Plugin for MatchPlugin {
 struct MatchData {
     g: u32,
     shop_units: Vec<Option<Unit>>,
+    team_units: Vec<Unit>,
 }
 
 impl MatchPlugin {
     pub fn load_match_data(id: u64, world: &mut World) {
         let m = Match::from_table(NodeDomain::Match, id).unwrap();
         world.insert_resource(MatchData {
+            g: m.g,
             shop_units: m
                 .shop_case
                 .into_iter()
@@ -32,16 +34,15 @@ impl MatchPlugin {
                     }
                 })
                 .collect(),
-            g: m.g,
+            team_units: m.team.unwrap().units,
         });
     }
-    fn shop_slot_rect(i: usize, max: usize, mut rect: Rect) -> Rect {
-        rect.set_height(rect.height() * 0.5);
-        let w = rect.width() / max as f32;
-        rect.set_width(w.at_most(rect.height()));
-        rect.translate(egui::vec2(w * i as f32, 0.0))
-    }
-    fn show_shop_slot(rect: Rect, slot: usize, ui: &mut Ui) -> (Rect, Response) {
+    fn show_slot(
+        unit: Option<&Unit>,
+        ui: &mut Ui,
+        world: &mut World,
+        add_contents: impl FnOnce(&mut Ui),
+    ) {
         const FRAME: Frame = Frame {
             inner_margin: Margin::ZERO,
             outer_margin: Margin::ZERO,
@@ -53,56 +54,20 @@ impl MatchPlugin {
                 color: VISIBLE_LIGHT,
             },
         };
-        let ui = &mut ui.child_ui(rect, Layout::bottom_up(Align::Center), None);
         ui.with_layout(
             Layout::bottom_up(Align::Center).with_cross_justify(true),
             |ui| {
-                if ui.button("Buy").clicked() {
-                    cn().reducers.match_buy(slot as u8).unwrap();
+                add_contents(ui);
+                let rect = ui.available_rect_before_wrap();
+                let size = rect.width().at_most(rect.height());
+                let rect = Rect::from_center_size(rect.center(), egui::vec2(size, size));
+                let resp = ui.allocate_rect(rect, Sense::click());
+                if resp.hovered() {
+                    ui.painter().rect_stroke(rect, ROUNDING, STROKE_YELLOW);
+                } else {
+                    ui.painter().rect_stroke(rect, ROUNDING, STROKE_DARK);
                 }
-            },
-        );
-        let rect = ui.available_rect_before_wrap();
-        let size = rect.width().at_most(rect.height());
-        let rect = Rect::from_center_size(rect.center(), egui::vec2(size, size));
-        let slot_resp = ui.allocate_rect(rect, Sense::click());
-        if slot_resp.hovered() {
-            ui.painter().rect_stroke(rect, ROUNDING, STROKE_YELLOW);
-        } else {
-            ui.painter().rect_stroke(rect, ROUNDING, STROKE_DARK);
-        }
-        (rect, slot_resp)
-    }
-    pub fn open_shop_window(world: &mut World) {
-        if !world.contains_resource::<MatchData>() {
-            error!("Match not loaded");
-            return;
-        }
-        const FRAME: Frame = Frame {
-            inner_margin: Margin::ZERO,
-            outer_margin: Margin::ZERO,
-            rounding: Rounding::same(13.0),
-            shadow: SHADOW,
-            fill: BG_DARK,
-            stroke: Stroke {
-                width: 1.0,
-                color: VISIBLE_LIGHT,
-            },
-        };
-        Window::new("Match", move |ui, world| {
-            let md = world.remove_resource::<MatchData>().unwrap();
-            md.g.cstr().label(ui);
-            let shop_units = &md.shop_units;
-            let height = ui.available_rect_before_wrap().height();
-            ui.columns(shop_units.len(), |ui| {
-                for (i, su) in shop_units.iter().enumerate() {
-                    let Some(unit) = su else {
-                        continue;
-                    };
-                    let ui = &mut ui[i];
-                    let rect = ui.available_rect_before_wrap();
-                    let rect = rect.with_max_y(rect.min.y + rect.height() * 0.5);
-                    let (rect, resp) = Self::show_shop_slot(rect, i, ui);
+                if let Some(unit) = unit {
                     let context = Context::default().set_owner_node(unit).take();
                     if resp.hovered() {
                         cursor_window_frame(ui.ctx(), FRAME, 350.0, |ui| {
@@ -122,6 +87,44 @@ impl MatchPlugin {
                     RepresentationPlugin::paint_rect(rect, &context, &unit_rep().material, ui)
                         .log();
                     RepresentationPlugin::paint_rect(rect, &context, &rep.material, ui).log();
+                }
+            },
+        );
+    }
+    pub fn open_shop_window(world: &mut World) {
+        if !world.contains_resource::<MatchData>() {
+            error!("Match not loaded");
+            return;
+        }
+        Window::new("Match", move |ui, world| {
+            let md = world.remove_resource::<MatchData>().unwrap();
+            md.g.cstr().label(ui);
+            let shop_units = &md.shop_units;
+            let team_units = &md.team_units;
+            let full_rect = ui.available_rect_before_wrap();
+            let shop_rect = full_rect.with_max_y(full_rect.min.y + full_rect.height() * 0.5);
+            let team_rect = full_rect.with_min_y(shop_rect.max.y);
+            let shop_ui = &mut ui.child_ui(shop_rect, *ui.layout(), None);
+            let team_ui = &mut ui.child_ui(team_rect, *ui.layout(), None);
+            shop_ui.columns(shop_units.len(), |ui| {
+                for (i, unit) in shop_units.iter().enumerate() {
+                    let ui = &mut ui[i];
+                    let unit = unit.as_ref();
+                    Self::show_slot(unit, ui, world, |ui| {
+                        if ui.button("Buy").clicked() {
+                            cn().reducers.match_buy(i as u8).unwrap();
+                        }
+                    });
+                }
+            });
+            team_ui.columns(5, |ui| {
+                for (i, unit) in team_units.iter().enumerate() {
+                    let ui = &mut ui[i];
+                    Self::show_slot(Some(unit), ui, world, |ui| {
+                        if ui.button("Sell").clicked() {
+                            cn().reducers.match_sell(i as u8).unwrap();
+                        }
+                    });
                 }
             });
             world.insert_resource(md);

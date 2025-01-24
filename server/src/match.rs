@@ -19,8 +19,14 @@ fn match_buy(ctx: &ReducerContext, slot: u8) -> Result<(), String> {
     let unit =
         Unit::from_table(ctx, NodeDomain::Alpha, sc.unit_id).to_e_s("Failed to find Alpha unit")?;
     sc.sold = true;
-    NodeDomain::Match.update(ctx, sc);
     m.g -= sc.price;
+    unit.to_table(
+        ctx,
+        NodeDomain::Match,
+        None,
+        m.team.as_ref().unwrap().id.unwrap(),
+    );
+    NodeDomain::Match.update(ctx, sc);
     NodeDomain::Match.update(ctx, &m);
     Ok(())
 }
@@ -34,7 +40,7 @@ fn match_sell(ctx: &ReducerContext, slot: u8) -> Result<(), String> {
         return Err("Slot index outside of team bounds".into());
     }
     team.units.remove(slot);
-    m.to_table(ctx, NodeDomain::Match, 0);
+    m.to_table(ctx, NodeDomain::Match, None, 0);
     Ok(())
 }
 
@@ -55,21 +61,14 @@ fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
         shop_case: [scu.clone(), scu.clone(), scu.clone()].into(),
         team: Some(Team {
             name: "Test Team".into(),
-            units: [Unit {
-                name: "Test Unit".into(),
-                stats: Some(UnitStats {
-                    pwr: 1,
-                    hp: 3,
-                    ..default()
-                }),
-                ..default()
-            }]
-            .into(),
-            id: None,
+            ..default()
         }),
         id: None,
     };
-    d.to_table(ctx, NodeDomain::Match, 0);
+    for d in ctx.db.nodes_match().iter() {
+        ctx.db.nodes_match().key().delete(d.key);
+    }
+    d.to_table(ctx, NodeDomain::Match, None, 0);
     Ok(())
 }
 

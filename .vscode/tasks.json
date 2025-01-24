@@ -256,7 +256,7 @@
       "group": {
         "kind": "build"
       },
-      "command": "spacetime publish -c aoi_dev -p server"
+      "command": "spacetime publish -c aoi_dev -p server -y"
     },
     {
       "label": "STDB: Start",
