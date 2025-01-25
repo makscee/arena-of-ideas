@@ -1,5 +1,7 @@
 use spacetimedb_sdk::Table;
 
+use crate::login;
+
 use super::*;
 
 pub const HOME_DIR: &str = ".aoi";
@@ -56,6 +58,7 @@ impl LoginPlugin {
                 .unwrap()
         });
         LoginOption { player }.save(world);
+        subscribe_game(GameState::proceed_op);
     }
     pub fn login_ui(ui: &mut Ui, world: &mut World) {
         center_window("login", ui.ctx(), |ui| {
@@ -66,6 +69,14 @@ impl LoginPlugin {
                         .cstr_cs(VISIBLE_LIGHT, CstrStyle::Heading2)
                         .label(ui);
                     if Button::new("Login").ui(ui).clicked() {
+                        cn().reducers.on_login_by_identity(|e| {
+                            if !e.check_identity() {
+                                return;
+                            }
+                            e.event.on_success_op(|world| {
+                                LoginPlugin::complete(None, world);
+                            });
+                        });
                         let _ = cn().reducers.login_by_identity();
                     }
                     br(ui);
@@ -78,7 +89,24 @@ impl LoginPlugin {
                         .cstr_cs(VISIBLE_LIGHT, CstrStyle::Heading)
                         .label(ui);
                     if Button::new("New Player").ui(ui).clicked() {
-                        let _ = cn().reducers.register_empty();
+                        cn().reducers.on_register_empty(|e| {
+                            if !e.check_identity() {
+                                return;
+                            }
+                            e.event.on_success_op(|world| {
+                                Notification::new_string("New player created".to_owned())
+                                    .push(world);
+                                let identity = ConnectOption::get(world).identity.clone();
+                                let player = cn()
+                                    .db
+                                    .player()
+                                    .iter()
+                                    .find(|u| u.identities.contains(&identity))
+                                    .expect("Failed to find player after registration");
+                                world.resource_mut::<LoginData>().identity_player = Some(player);
+                            })
+                        });
+                        cn().reducers.register_empty().unwrap();
                     }
                     br(ui);
                     "Login".cstr_cs(VISIBLE_LIGHT, CstrStyle::Heading).label(ui);
@@ -87,6 +115,16 @@ impl LoginPlugin {
                         .password()
                         .ui_string(&mut ld.pass_field, ui);
                     if Button::new("Submit").ui(ui).clicked() {
+                        cn().reducers.on_login(|e, name, _| {
+                            if !e.check_identity() {
+                                return;
+                            }
+                            let name = name.clone();
+                            let player = e.db.player().name().find(&name).unwrap();
+                            e.event.on_success_op(move |world| {
+                                LoginPlugin::complete(Some(player), world);
+                            })
+                        });
                         let _ = crate::login::login(
                             &cn().reducers,
                             ld.name_field.clone(),

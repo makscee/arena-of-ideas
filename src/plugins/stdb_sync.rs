@@ -13,6 +13,14 @@ impl StdbSyncPlugin {
         info!("{}", "Start assets sync".blue());
         let global_settings = global_settings_local().clone();
         let houses = houses().values().map(|h| h.to_strings_root()).collect_vec();
+        cn().reducers.on_sync_assets(|e, _, _| {
+            if !e.check_identity() {
+                return;
+            }
+            e.event.notify_error();
+            info!("{}", "Assets sync done".blue());
+            app_exit_op();
+        });
         cn().reducers.sync_assets(global_settings, houses).unwrap();
     }
 }

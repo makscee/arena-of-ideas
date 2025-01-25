@@ -2,44 +2,34 @@ use spacetimedb_sdk::{DbContext, TableWithPrimaryKey};
 
 use super::*;
 
-fn on_subscription_applied() {
-    if !RunMode::Regular.eq(run_mode()) || true {
-        return;
-    }
-    OperationsPlugin::add(|world| {
-        let mut unit = Unit::from_table(
-            NodeDomain::Alpha,
-            NodeDomain::Alpha.filter_by_kind(NodeKind::Unit)[0].id,
-        )
-        .unwrap();
-        for (var, value) in unit.get_all_vars() {
-            dbg!(var, value);
-        }
-        Window::new("Unit df", move |ui, _| {
-            ui.columns(2, |ui| {
-                unit.show(None, &Context::default().set_owner_node(&unit), &mut ui[0]);
-                unit.show_mut(None, &mut ui[1]);
+pub fn subscribe_login(on_success: impl FnOnce() + Send + Sync + 'static) {
+    let queries = ["select * from player"];
+    cn().subscription_builder()
+        .on_error(|e| e.event.notify_error())
+        .on_applied(move |e| {
+            e.event.on_success(move || {
+                on_success();
             });
         })
-        .push(world);
-    });
+        .subscribe(queries);
 }
-pub fn db_subscriptions() {
+
+pub fn subscribe_game(on_success: impl FnOnce() + Send + Sync + 'static) {
     info!("Apply stdb subscriptions");
     let queries = [
         "select * from nodes_world",
         "select * from nodes_match",
         "select * from nodes_alpha",
-        "select * from battle",
         "select * from nodes_relations",
+        "select * from battle",
     ];
     cn().subscription_builder()
         .on_error(|e| e.event.notify_error())
         .on_applied(move |e| {
-            e.event.on_success(|_| {
+            e.event.on_success(|| {
                 info!("Subscription applied");
+                on_success();
             });
-            on_subscription_applied();
         })
         .subscribe(queries);
 
@@ -94,11 +84,5 @@ pub fn db_subscriptions() {
                 MatchPlugin::load_match_data(row.id, world);
             });
         }
-    });
-
-    cn().reducers.on_sync_assets(|e, _, _| {
-        e.event.notify_error();
-        info!("{}", "Assets sync done".blue());
-        app_exit_op();
     });
 }

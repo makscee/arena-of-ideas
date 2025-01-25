@@ -62,10 +62,11 @@ impl ConnectPlugin {
             save_identity(identity);
             Self::save_credentials(identity.clone(), token.clone())
                 .expect("Failed to save credentials");
-            db_subscriptions();
-            OperationsPlugin::add(move |world| {
-                ConnectOption { identity, token }.save(world);
-                GameState::proceed(world);
+            subscribe_login(move || {
+                OperationsPlugin::add(move |world| {
+                    ConnectOption { identity, token }.save(world);
+                    GameState::proceed(world);
+                });
             });
         });
     }

@@ -17,7 +17,7 @@ pub struct TPlayer {
     last_login: Timestamp,
 }
 
-#[spacetimedb::reducer]
+#[reducer]
 fn register_empty(ctx: &ReducerContext) -> Result<(), String> {
     TPlayer::clear_identity(ctx, &ctx.sender);
     let id = next_id(ctx);
@@ -34,7 +34,7 @@ fn register_empty(ctx: &ReducerContext) -> Result<(), String> {
     Ok(())
 }
 
-#[spacetimedb::reducer]
+#[reducer]
 fn register(ctx: &ReducerContext, name: String, pass: String) -> Result<(), String> {
     let name = TPlayer::validate_name(ctx, name)?;
     let pass_hash = Some(TPlayer::hash_pass(ctx, pass)?);
@@ -51,7 +51,7 @@ fn register(ctx: &ReducerContext, name: String, pass: String) -> Result<(), Stri
     Ok(())
 }
 
-#[spacetimedb::reducer]
+#[reducer]
 fn login(ctx: &ReducerContext, name: String, pass: String) -> Result<(), String> {
     let mut player = ctx
         .db
@@ -79,14 +79,14 @@ fn login(ctx: &ReducerContext, name: String, pass: String) -> Result<(), String>
     }
 }
 
-#[spacetimedb::reducer]
+#[reducer]
 fn login_by_identity(ctx: &ReducerContext) -> Result<(), String> {
     let player = ctx.player()?;
     player.login(ctx);
     Ok(())
 }
 
-#[spacetimedb::reducer]
+#[reducer]
 fn logout(ctx: &ReducerContext) -> Result<(), String> {
     let mut player = ctx.player()?;
     player.logout(ctx);
@@ -95,7 +95,7 @@ fn logout(ctx: &ReducerContext) -> Result<(), String> {
     Ok(())
 }
 
-#[spacetimedb::reducer]
+#[reducer]
 fn set_name(ctx: &ReducerContext, name: String) -> Result<(), String> {
     let name = TPlayer::validate_name(ctx, name)?;
     if let Ok(player) = ctx.player() {
@@ -106,7 +106,7 @@ fn set_name(ctx: &ReducerContext, name: String) -> Result<(), String> {
     }
 }
 
-#[spacetimedb::reducer]
+#[reducer]
 fn set_password(ctx: &ReducerContext, old_pass: String, new_pass: String) -> Result<(), String> {
     if let Ok(player) = ctx.player() {
         if !player.check_pass(old_pass) {
@@ -123,7 +123,7 @@ fn set_password(ctx: &ReducerContext, old_pass: String, new_pass: String) -> Res
     }
 }
 
-#[spacetimedb::reducer(client_disconnected)]
+#[reducer(client_disconnected)]
 fn identity_disconnected(ctx: &ReducerContext) {
     if let Ok(mut player) = ctx.player() {
         player.logout(ctx);
@@ -214,7 +214,7 @@ impl GetPlayer for ReducerContext {
     }
 }
 
-#[spacetimedb::reducer]
+#[reducer]
 fn admin_set_temp_pass(ctx: &ReducerContext, id: u64) -> Result<(), String> {
     ctx.is_admin()?;
     let player = ctx.db.player().id().find(id).to_e_s("Player not found")?;
