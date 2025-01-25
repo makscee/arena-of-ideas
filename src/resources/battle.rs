@@ -209,13 +209,13 @@ impl BattleSimulation {
         let mut left: Vec<Entity> = default();
         let mut right: Vec<Entity> = default();
         let mut log = BattleLog::default();
-        for (_, u) in battle.left.units.iter().enumerate() {
+        for u in battle.left.collect_units() {
             let entity = world.spawn_empty().id();
             u.clone().unpack(entity, &mut world.commands());
             left.push(entity);
             log.add_state(entity, &mut world);
         }
-        for (_, u) in battle.right.units.iter().enumerate() {
+        for u in battle.right.collect_units() {
             let entity = world.spawn_empty().id();
             u.clone().unpack(entity, &mut world.commands());
             right.push(entity);

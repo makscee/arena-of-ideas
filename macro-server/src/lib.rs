@@ -66,8 +66,14 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 impl Node for #struct_ident {
                     #strings_conversions
                     #table_conversions
-                    fn id(&self) -> Option<u64> {
+                    fn id(&self) -> u64 {
+                        self.id.unwrap()
+                    }
+                    fn get_id(&self) -> Option<u64> {
                         self.id
+                    }
+                    fn set_id(&mut self, id: u64) {
+                        self.id = Some(id);
                     }
                     fn clear_ids(&mut self) {
                         self.id = None;

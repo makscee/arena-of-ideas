@@ -53,6 +53,13 @@ pub trait Node: Default + Component + Sized + GetVar + Show + Debug {
         let entity = self.entity().expect("Node not linked to world");
         Self::collect_children_entity(entity, context)
     }
+    fn collect_units_vec<'a>(&'a self, vec: &mut Vec<&'a Unit>);
+    fn collect_units<'a>(&'a self) -> Vec<&'a Unit> {
+        let mut vec: Vec<&Unit> = default();
+        self.collect_units_vec(&mut vec);
+        vec.sort_by_key(|u| u.slot.as_ref().map(|s| s.slot).unwrap_or_default());
+        vec
+    }
     fn ui(&self, depth: usize, context: &Context, ui: &mut Ui);
 }
 

@@ -7,7 +7,9 @@ use strum_macros::{Display, EnumIter};
 macro_schema::nodes!();
 
 pub trait Node: Default + Sized {
-    fn id(&self) -> Option<u64>;
+    fn id(&self) -> u64;
+    fn get_id(&self) -> Option<u64>;
+    fn set_id(&mut self, id: u64);
     fn clear_ids(&mut self);
     fn gather_ids(&self, data: &mut HashSet<u64>);
     fn inject_data(&mut self, data: &str);

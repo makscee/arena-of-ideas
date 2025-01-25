@@ -23,7 +23,7 @@ impl AdminPlugin {
             );
         }
     }
-    fn show_battle(world: &mut World) {
+    fn test_team() -> Team {
         let unit = Unit {
             name: String::new(),
             stats: Some(UnitStats {
@@ -43,11 +43,24 @@ impl AdminPlugin {
             }),
             ..default()
         };
-        let team = Team {
-            name: "TestTeam".into(),
-            units: [unit.clone()].into(),
+        let house = House {
+            name: "TestHouse".into(),
+            abilities: [Ability {
+                name: "TestAbility".into(),
+                units: [unit].into(),
+                ..default()
+            }]
+            .into(),
             ..default()
         };
+        Team {
+            name: "TestTeam".into(),
+            houses: [house].into(),
+            ..default()
+        }
+    }
+    fn show_battle(world: &mut World) {
+        let team = Self::test_team();
         let s = team.to_strings_root();
         dbg!(Team::from_strings(0, &s));
         let b = Battle {
@@ -162,31 +175,8 @@ Abs(Equals(F(51.0),Abs(Equals(F(1.0),Or(Equals(F(1.0),One),Abs(Or(Target,Abs(One
                     };
                 }
                 if "Push Battle".cstr().button(ui).clicked() {
-                    let unit = Unit {
-                        name: String::new(),
-                        stats: Some(UnitStats {
-                            pwr: 1,
-                            hp: 10,
-                            ..default()
-                        }),
-                        description: Some(UnitDescription {
-                            description: "battle start test".into(),
-                            trigger: Some(UnitTrigger {
-                                trigger: Trigger::BattleStart,
-                                target: Expression::Owner,
-                                effect: Effect::ChangeStatus,
-                                ..default()
-                            }),
-                            ..default()
-                        }),
-                        ..default()
-                    };
-                    let team = Team {
-                        name: "TestTeam".into(),
-                        units: [unit.clone(), unit.clone()].into(),
-                        ..default()
-                    }
-                    .to_strings_root();
+                    let team = Self::test_team();
+                    let team = team.to_strings_root();
                     cn().reducers.battle_insert(team.clone(), team).unwrap();
                 }
                 if "Insert Match".cstr().button(ui).clicked() {

@@ -110,6 +110,11 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         .unwrap(),
                 );
             }
+            let insert_unit = if struct_ident.to_string() == "Unit" {
+                quote! {vec.push(self);}
+            } else {
+                default()
+            };
             quote! {
                 #[derive(Component, Clone, Default, Debug)]
                 #input
@@ -331,6 +336,24 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                             }
                         )*
                         commands.entity(entity).insert(self);
+                    }
+                    fn collect_units_vec<'a>(&'a self, vec: &mut Vec<&'a Unit>) {
+                        #insert_unit
+                        #(
+                            if let Some(d) = &self.#option_link_fields {
+                                d.collect_units_vec(vec);
+                            }
+                        )*
+                        #(
+                            for d in &self.#vec_link_fields {
+                                d.collect_units_vec(vec);
+                            }
+                        )*
+                        #(
+                            for d in &self.#vec_box_link_fields {
+                                d.collect_units_vec(vec);
+                            }
+                        )*
                     }
                     fn ui(&self, depth: usize, context: &Context, ui: &mut Ui) {
                         let color = context.get_var(VarName::color)

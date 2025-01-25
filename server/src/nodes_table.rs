@@ -23,57 +23,123 @@ pub struct TNodeRelation {
     pub parent: u64,
 }
 
+pub trait NodeIdExt {
+    fn parent(self, ctx: &ReducerContext) -> Option<u64>;
+    fn all_descendants(self, ctx: &ReducerContext) -> Vec<u64>;
+}
+impl NodeIdExt for u64 {
+    fn parent(self, ctx: &ReducerContext) -> Option<u64> {
+        ctx.db.nodes_relations().id().find(self).map(|n| n.parent)
+    }
+    fn all_descendants(self, ctx: &ReducerContext) -> Vec<u64> {
+        let mut vec: Vec<u64> = default();
+        let mut q = VecDeque::from([self]);
+        while let Some(id) = q.pop_front() {
+            vec.push(id);
+            for r in ctx.db.nodes_relations().parent().filter(id) {
+                q.push_back(r.id);
+            }
+        }
+        vec
+    }
+}
+
 pub trait NodeDomainExt {
-    fn insert(self, ctx: &ReducerContext, id: u64, kind: NodeKind, data: String);
-    fn update(self, ctx: &ReducerContext, node: &(impl Node + GetNodeKind));
-    fn find_by_key(self, ctx: &ReducerContext, key: &String) -> Option<TNode>;
-    fn filter_by_kind(self, ctx: &ReducerContext, kind: NodeKind) -> Vec<TNode>;
-    fn delete(self, ctx: &ReducerContext, node: &impl Node);
+    fn node_insert(self, ctx: &ReducerContext, node: &(impl Node + GetNodeKind));
+    fn node_update(self, ctx: &ReducerContext, node: &(impl Node + GetNodeKind));
+    fn node_delete(self, ctx: &ReducerContext, node: &(impl Node + GetNodeKind));
+    fn node_insert_or_update(self, ctx: &ReducerContext, node: &(impl Node + GetNodeKind));
+    fn tnode_find_by_key(self, ctx: &ReducerContext, key: &String) -> Option<TNode>;
+    fn tnode_filter_by_kind(self, ctx: &ReducerContext, kind: NodeKind) -> Vec<TNode>;
+    fn delete_by_id(self, ctx: &ReducerContext, id: u64);
+    fn tnode_collect_kind(self, ctx: &ReducerContext, kind: NodeKind) -> Vec<TNode>;
+    fn node_collect<T: Node + GetNodeKindSelf>(self, ctx: &ReducerContext) -> Vec<T>;
+    fn node_parent<T: Node + GetNodeKindSelf>(self, ctx: &ReducerContext, id: u64) -> Option<T>;
 }
 impl NodeDomainExt for NodeDomain {
-    fn insert(self, ctx: &ReducerContext, id: u64, kind: NodeKind, data: String) {
+    fn node_insert(self, ctx: &ReducerContext, node: &(impl Node + GetNodeKind)) {
+        let node = node.to_tnode(node.id());
         match self {
-            NodeDomain::World => ctx.db.nodes_world().insert(TNode::new(id, kind, data)),
-            NodeDomain::Match => ctx.db.nodes_match().insert(TNode::new(id, kind, data)),
-            NodeDomain::Alpha => ctx.db.nodes_alpha().insert(TNode::new(id, kind, data)),
+            NodeDomain::World => ctx.db.nodes_world().insert(node),
+            NodeDomain::Match => ctx.db.nodes_match().insert(node),
+            NodeDomain::Alpha => ctx.db.nodes_alpha().insert(node),
         };
     }
-    fn update(self, ctx: &ReducerContext, node: &(impl Node + GetNodeKind)) {
+    fn node_update(self, ctx: &ReducerContext, node: &(impl Node + GetNodeKind)) {
+        let node = node.to_tnode(node.id());
         match self {
-            NodeDomain::World => ctx.db.nodes_world().key().update(TNode::new(
-                node.id().unwrap(),
-                node.kind(),
-                node.get_data(),
-            )),
-            NodeDomain::Match => ctx.db.nodes_match().key().update(TNode::new(
-                node.id().unwrap(),
-                node.kind(),
-                node.get_data(),
-            )),
-            NodeDomain::Alpha => ctx.db.nodes_alpha().key().update(TNode::new(
-                node.id().unwrap(),
-                node.kind(),
-                node.get_data(),
-            )),
+            NodeDomain::World => ctx.db.nodes_world().key().update(node),
+            NodeDomain::Match => ctx.db.nodes_match().key().update(node),
+            NodeDomain::Alpha => ctx.db.nodes_alpha().key().update(node),
         };
     }
-    fn find_by_key(self, ctx: &ReducerContext, key: &String) -> Option<TNode> {
+    fn node_delete(self, ctx: &ReducerContext, node: &(impl Node + GetNodeKind)) {
+        let key = node.kind().key(node.id());
+        match self {
+            NodeDomain::World => ctx.db.nodes_world().key().delete(key),
+            NodeDomain::Match => ctx.db.nodes_match().key().delete(key),
+            NodeDomain::Alpha => ctx.db.nodes_alpha().key().delete(key),
+        };
+    }
+    fn node_insert_or_update(self, ctx: &ReducerContext, node: &(impl Node + GetNodeKind)) {
+        self.node_delete(ctx, node);
+        self.node_insert(ctx, node);
+    }
+    fn tnode_find_by_key(self, ctx: &ReducerContext, key: &String) -> Option<TNode> {
         match self {
             NodeDomain::World => ctx.db.nodes_world().key().find(key),
             NodeDomain::Match => ctx.db.nodes_match().key().find(key),
             NodeDomain::Alpha => ctx.db.nodes_alpha().key().find(key),
         }
     }
-    fn filter_by_kind(self, ctx: &ReducerContext, kind: NodeKind) -> Vec<TNode> {
+    fn tnode_filter_by_kind(self, ctx: &ReducerContext, kind: NodeKind) -> Vec<TNode> {
         match self {
             NodeDomain::World => ctx.db.nodes_world().kind().filter(kind.as_ref()).collect(),
             NodeDomain::Match => ctx.db.nodes_match().kind().filter(kind.as_ref()).collect(),
             NodeDomain::Alpha => ctx.db.nodes_alpha().kind().filter(kind.as_ref()).collect(),
         }
     }
-    fn delete(self, ctx: &ReducerContext, node: &impl Node) {
-        let mut ids = HashSet::new();
-        node.gather_ids(&mut ids);
+    fn node_collect<T: Node + GetNodeKindSelf>(self, ctx: &ReducerContext) -> Vec<T> {
+        self.tnode_collect_kind(ctx, T::kind_s())
+            .into_iter()
+            .map(|d| d.to_node::<T>())
+            .collect()
+    }
+    fn node_parent<T: Node + GetNodeKindSelf>(self, ctx: &ReducerContext, id: u64) -> Option<T> {
+        let kind = T::kind_s();
+        let mut id = id;
+        while let Some(parent) = id.parent(ctx) {
+            id = parent;
+            if let Some(node) = self.tnode_find_by_key(ctx, &kind.key(id)) {
+                return Some(node.to_node());
+            }
+        }
+        None
+    }
+    fn tnode_collect_kind(self, ctx: &ReducerContext, kind: NodeKind) -> Vec<TNode> {
+        match self {
+            NodeDomain::World => ctx
+                .db
+                .nodes_world()
+                .kind()
+                .filter(&kind.to_string())
+                .collect(),
+            NodeDomain::Match => ctx
+                .db
+                .nodes_match()
+                .kind()
+                .filter(&kind.to_string())
+                .collect(),
+            NodeDomain::Alpha => ctx
+                .db
+                .nodes_alpha()
+                .kind()
+                .filter(&kind.to_string())
+                .collect(),
+        }
+    }
+    fn delete_by_id(self, ctx: &ReducerContext, id: u64) {
+        let ids = id.all_descendants(ctx);
         match self {
             NodeDomain::World => {
                 for id in &ids {
@@ -98,6 +164,12 @@ impl NodeDomainExt for NodeDomain {
 }
 
 impl TNode {
+    pub fn to_node<T: Node>(self) -> T {
+        let mut d = T::default();
+        d.inject_data(&self.data);
+        d.set_id(self.id);
+        d
+    }
     pub fn new(id: u64, kind: NodeKind, data: String) -> Self {
         Self {
             key: kind.key(id),

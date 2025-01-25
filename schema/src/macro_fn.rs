@@ -207,7 +207,7 @@ pub fn table_conversions(
 ) -> TokenStream {
     quote! {
         fn from_table(ctx: &ReducerContext, domain: NodeDomain, id: u64) -> Option<Self> {
-            let data = domain.find_by_key(ctx, &Self::kind_s().key(id))?.data;
+            let data = domain.tnode_find_by_key(ctx, &Self::kind_s().key(id))?.data;
             let mut d = Self::default();
             d.inject_data(&data);
             d.id = Some(id);
@@ -237,10 +237,11 @@ pub fn table_conversions(
             Some(d)
         }
         fn to_table(mut self, ctx: &ReducerContext, domain: NodeDomain, parent: u64) {
-            let id = self.id.unwrap_or_else(|| next_id(ctx));
-            let data = self.get_data();
-            let kind = self.kind();
-            domain.insert(ctx, id, kind, data);
+            if self.id.is_none() {
+                self.id = Some(next_id(ctx));
+            }
+            let id = self.id();
+            domain.node_insert(ctx, &self);
             if id != parent {
                 ctx.db
                     .nodes_relations()

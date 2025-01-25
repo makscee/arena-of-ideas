@@ -26,7 +26,7 @@ struct AbilityEffect {
 
 struct Team {
     pub name: String,
-    pub units: Vec<Unit>,
+    pub houses: Vec<House>,
 }
 
 struct Match {

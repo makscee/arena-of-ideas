@@ -16,8 +16,13 @@ struct MatchData {
 impl MatchPlugin {
     pub fn load_match_data(id: u64, world: &mut World) {
         let m = Match::from_table(NodeDomain::Match, id).unwrap();
-        let mut team_units = m.team.unwrap().units;
-        team_units.sort_by_key(|u| u.slot.as_ref().unwrap().slot);
+        let team_units = m
+            .team
+            .unwrap()
+            .collect_units()
+            .into_iter()
+            .cloned()
+            .collect_vec();
         world.insert_resource(MatchData {
             g: m.g,
             shop_units: m

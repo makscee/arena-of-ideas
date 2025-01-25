@@ -1,3 +1,5 @@
+use std::i32;
+
 use rand::seq::SliceRandom;
 
 use super::*;
@@ -5,14 +7,11 @@ use super::*;
 impl Match {
     fn get(ctx: &ReducerContext) -> Result<Match, String> {
         let id = NodeDomain::Match
-            .filter_by_kind(ctx, NodeKind::Match)
+            .tnode_filter_by_kind(ctx, NodeKind::Match)
             .get(0)
             .to_e_s("No matches found")?
             .id;
         let mut m = Match::from_table(ctx, NodeDomain::Match, id).to_e_s("Match not found")?;
-        m.team_mut()?
-            .units
-            .sort_by_key(|u| u.slot.as_ref().unwrap().slot);
         m.last_update = Timestamp::now().into_micros_since_epoch();
         Ok(m)
     }
@@ -22,7 +21,7 @@ impl Match {
             slot.sold = false;
             slot.price = price;
             slot.unit_id = NodeDomain::Alpha
-                .filter_by_kind(ctx, NodeKind::Unit)
+                .tnode_filter_by_kind(ctx, NodeKind::Unit)
                 .choose(&mut ctx.rng())
                 .to_e_s("No Alpha units found")?
                 .id;
@@ -35,46 +34,69 @@ impl Match {
     fn team_mut(&mut self) -> Result<&mut Team, String> {
         self.team.as_mut().to_e_s("Team not set")
     }
-    fn update_team_slots(&mut self, ctx: &ReducerContext) -> Result<(), String> {
-        for (slot, unit) in self.team_mut()?.units.iter_mut().enumerate() {
-            let node = unit.slot.as_mut().unwrap();
-            node.slot = slot as i32;
-            NodeDomain::Match.update(ctx, node);
-        }
-        Ok(())
+    fn find_house<'a>(&'a self, name: &str) -> Option<&'a House> {
+        self.team
+            .as_ref()
+            .unwrap()
+            .houses
+            .iter()
+            .find(|h| h.name == name)
     }
-    fn reorder(&mut self, ctx: &ReducerContext, slot: usize, target: usize) -> Result<(), String> {
-        let team = self.team_mut()?;
-        if slot >= team.units.len() {
-            return Err("Slot outside of team length".into());
+    fn fill_gaps(ctx: &ReducerContext) {
+        let mut units: Vec<Unit> = NodeDomain::Match.node_collect(ctx);
+        units.sort_by_cached_key(|u| {
+            NodeDomain::Match
+                .tnode_find_by_key(ctx, &NodeKind::UnitSlot.key(u.id()))
+                .map(|s| s.to_node::<UnitSlot>().slot)
+                .unwrap_or(i32::MAX)
+        });
+        for (i, u) in units.into_iter().enumerate() {
+            let node = UnitSlot {
+                slot: i as i32,
+                id: Some(u.id()),
+            };
+            NodeDomain::Match.node_insert_or_update(ctx, &node);
         }
-        let target = target.min(team.units.len() - 1);
-        let unit = team.units.remove(slot);
-        team.units.insert(target, unit);
-        self.update_team_slots(ctx)
     }
+    // fn update_team_slots(&mut self, ctx: &ReducerContext) -> Result<(), String> {
+    //     for (slot, unit) in self.team_mut()?.units.iter_mut().enumerate() {
+    //         let node = unit.slot.as_mut().unwrap();
+    //         node.slot = slot as i32;
+    //         NodeDomain::Match.update(ctx, node);
+    //     }
+    //     Ok(())
+    // }
+    // fn reorder(&mut self, ctx: &ReducerContext, slot: usize, target: usize) -> Result<(), String> {
+    //     let team = self.team_mut()?;
+    //     if slot >= team.units.len() {
+    //         return Err("Slot outside of team length".into());
+    //     }
+    //     let target = target.min(team.units.len() - 1);
+    //     let unit = team.units.remove(slot);
+    //     team.units.insert(target, unit);
+    //     self.update_team_slots(ctx)
+    // }
     fn save(&self, ctx: &ReducerContext) {
-        NodeDomain::Match.update(ctx, self);
+        NodeDomain::Match.node_update(ctx, self);
+    }
+}
+
+impl House {
+    fn find_ability<'a>(&'a self, name: &str) -> Option<&'a Ability> {
+        self.abilities.iter().find(|a| a.name == name)
     }
 }
 
 #[reducer]
 fn match_buy(ctx: &ReducerContext, slot: u8) -> Result<(), String> {
     let mut m = Match::get(ctx)?;
-    let team = m.team()?;
-    let unit_slot = team.units.len();
-    if unit_slot >= GlobalSettings::get(ctx).team_slots as usize {
+    let team_id = m.team()?.id();
+    let occupied = NodeDomain::Match.node_collect::<UnitSlot>(ctx);
+    if occupied.len() >= GlobalSettings::get(ctx).team_slots as usize {
         return Err("Team already full".into());
     }
     let slot = slot as usize;
     let sc = &mut m.shop_case[slot];
-    let mut unit =
-        Unit::from_table(ctx, NodeDomain::Alpha, sc.unit_id).to_e_s("Failed to find Alpha unit")?;
-    unit.slot = Some(UnitSlot {
-        slot: unit_slot as i32,
-        ..default()
-    });
-    unit.clear_ids();
     if sc.sold {
         return Err("Unit already sold".into());
     }
@@ -83,24 +105,46 @@ fn match_buy(ctx: &ReducerContext, slot: u8) -> Result<(), String> {
     }
     sc.sold = true;
     m.g -= sc.price;
-    unit.to_table(ctx, NodeDomain::Match, m.team.as_ref().unwrap().id.unwrap());
-    NodeDomain::Match.update(ctx, sc);
+    NodeDomain::Match.node_update(ctx, sc);
+    let mut unit =
+        Unit::from_table(ctx, NodeDomain::Alpha, sc.unit_id).to_e_s("Failed to find Alpha unit")?;
+    unit.slot = Some(UnitSlot {
+        slot: occupied.len() as i32,
+        ..default()
+    });
+    let mut ability: Ability = NodeDomain::Alpha.node_parent(ctx, sc.unit_id).unwrap();
+    let mut house: House = NodeDomain::Alpha.node_parent(ctx, ability.id()).unwrap();
+    unit.clear_ids();
+    ability.clear_ids();
+    house.clear_ids();
+    if let Some(h) = m.find_house(&house.name) {
+        if let Some(a) = h.find_ability(&ability.name) {
+            unit.to_table(ctx, NodeDomain::Match, a.id());
+        } else {
+            ability.units.push(unit);
+            ability.to_table(ctx, NodeDomain::Match, h.id());
+        }
+    } else {
+        ability.units.push(unit);
+        house.abilities.push(ability);
+        house.to_table(ctx, NodeDomain::Match, team_id);
+    }
     m.save(ctx);
     Ok(())
 }
 
 #[reducer]
 fn match_sell(ctx: &ReducerContext, slot: u8) -> Result<(), String> {
+    let slot = slot as i32;
+    let slot = NodeDomain::Match
+        .node_collect::<UnitSlot>(ctx)
+        .into_iter()
+        .find(|s| s.slot == slot)
+        .to_e_s("Unit by slot not found")?;
+    NodeDomain::Match.delete_by_id(ctx, slot.id());
     let mut m = Match::get(ctx)?;
-    let slot = slot as usize;
-    let team = m.team_mut()?;
-    if slot >= team.units.len() {
-        return Err("Slot index outside of team bounds".into());
-    }
-    let unit = team.units.remove(slot);
-    NodeDomain::Match.delete(ctx, &unit);
     m.g += GlobalSettings::get(ctx).match_g.unit_sell;
-    m.update_team_slots(ctx)?;
+    Match::fill_gaps(ctx);
     m.save(ctx);
     Ok(())
 }
@@ -116,7 +160,7 @@ fn match_reroll(ctx: &ReducerContext) -> Result<(), String> {
     m.fill_case(ctx)?;
     m.save(ctx);
     for node in &m.shop_case {
-        NodeDomain::Match.update(ctx, node);
+        NodeDomain::Match.node_update(ctx, node);
     }
     Ok(())
 }
@@ -124,7 +168,7 @@ fn match_reroll(ctx: &ReducerContext) -> Result<(), String> {
 #[reducer]
 fn match_reorder(ctx: &ReducerContext, slot: u8, target: u8) -> Result<(), String> {
     let mut m = Match::get(ctx)?;
-    m.reorder(ctx, slot as usize, target as usize)?;
+    // m.reorder(ctx, slot as usize, target as usize)?;
     m.save(ctx);
     Ok(())
 }
