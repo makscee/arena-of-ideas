@@ -5,6 +5,17 @@ use rand::seq::SliceRandom;
 use super::*;
 
 impl Match {
+    fn register_update(ctx: &ReducerContext) -> Result<(), String> {
+        let mut m: Match = NodeDomain::Match
+            .tnode_filter_by_kind(ctx, NodeKind::Match)
+            .into_iter()
+            .next()
+            .to_e_s("No matches found")?
+            .to_node();
+        m.last_update = Timestamp::now().into_micros_since_epoch();
+        NodeDomain::Match.node_update(ctx, &m);
+        Ok(())
+    }
     fn get(ctx: &ReducerContext) -> Result<Match, String> {
         let id = NodeDomain::Match
             .tnode_filter_by_kind(ctx, NodeKind::Match)
@@ -31,9 +42,6 @@ impl Match {
     fn team(&self) -> Result<&Team, String> {
         self.team.as_ref().to_e_s("Team not set")
     }
-    fn team_mut(&mut self) -> Result<&mut Team, String> {
-        self.team.as_mut().to_e_s("Team not set")
-    }
     fn find_house<'a>(&'a self, name: &str) -> Option<&'a House> {
         self.team
             .as_ref()
@@ -58,24 +66,6 @@ impl Match {
             NodeDomain::Match.node_insert_or_update(ctx, &node);
         }
     }
-    // fn update_team_slots(&mut self, ctx: &ReducerContext) -> Result<(), String> {
-    //     for (slot, unit) in self.team_mut()?.units.iter_mut().enumerate() {
-    //         let node = unit.slot.as_mut().unwrap();
-    //         node.slot = slot as i32;
-    //         NodeDomain::Match.update(ctx, node);
-    //     }
-    //     Ok(())
-    // }
-    // fn reorder(&mut self, ctx: &ReducerContext, slot: usize, target: usize) -> Result<(), String> {
-    //     let team = self.team_mut()?;
-    //     if slot >= team.units.len() {
-    //         return Err("Slot outside of team length".into());
-    //     }
-    //     let target = target.min(team.units.len() - 1);
-    //     let unit = team.units.remove(slot);
-    //     team.units.insert(target, unit);
-    //     self.update_team_slots(ctx)
-    // }
     fn save(&self, ctx: &ReducerContext) {
         NodeDomain::Match.node_update(ctx, self);
     }
@@ -167,10 +157,20 @@ fn match_reroll(ctx: &ReducerContext) -> Result<(), String> {
 
 #[reducer]
 fn match_reorder(ctx: &ReducerContext, slot: u8, target: u8) -> Result<(), String> {
-    let mut m = Match::get(ctx)?;
-    // m.reorder(ctx, slot as usize, target as usize)?;
-    m.save(ctx);
-    Ok(())
+    let slot = slot as usize;
+    let target = target as usize;
+    let mut slots = NodeDomain::Match.node_collect::<UnitSlot>(ctx);
+    if slot >= slots.len() {
+        return Err("Slot outside of team length".into());
+    }
+    let target = target.min(slots.len() - 1);
+    let unit = slots.remove(slot);
+    slots.insert(target, unit);
+    for (i, slot) in slots.iter_mut().enumerate() {
+        slot.slot = i as i32;
+        NodeDomain::Match.node_update(ctx, slot);
+    }
+    Match::register_update(ctx)
 }
 
 #[reducer]

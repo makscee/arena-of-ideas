@@ -45,18 +45,42 @@ impl NodeIdExt for u64 {
 }
 
 pub trait NodeDomainExt {
+    fn node_get<T: Node + GetNodeKindSelf>(self, ctx: &ReducerContext, id: u64) -> Option<T>;
     fn node_insert(self, ctx: &ReducerContext, node: &(impl Node + GetNodeKind));
     fn node_update(self, ctx: &ReducerContext, node: &(impl Node + GetNodeKind));
     fn node_delete(self, ctx: &ReducerContext, node: &(impl Node + GetNodeKind));
     fn node_insert_or_update(self, ctx: &ReducerContext, node: &(impl Node + GetNodeKind));
+    fn node_collect<T: Node + GetNodeKindSelf>(self, ctx: &ReducerContext) -> Vec<T>;
+    fn node_parent<T: Node + GetNodeKindSelf>(self, ctx: &ReducerContext, id: u64) -> Option<T>;
     fn tnode_find_by_key(self, ctx: &ReducerContext, key: &String) -> Option<TNode>;
     fn tnode_filter_by_kind(self, ctx: &ReducerContext, kind: NodeKind) -> Vec<TNode>;
     fn delete_by_id(self, ctx: &ReducerContext, id: u64);
     fn tnode_collect_kind(self, ctx: &ReducerContext, kind: NodeKind) -> Vec<TNode>;
-    fn node_collect<T: Node + GetNodeKindSelf>(self, ctx: &ReducerContext) -> Vec<T>;
-    fn node_parent<T: Node + GetNodeKindSelf>(self, ctx: &ReducerContext, id: u64) -> Option<T>;
 }
 impl NodeDomainExt for NodeDomain {
+    fn node_get<T: Node + GetNodeKindSelf>(self, ctx: &ReducerContext, id: u64) -> Option<T> {
+        let kind = T::kind_s();
+        match self {
+            NodeDomain::World => ctx
+                .db
+                .nodes_world()
+                .key()
+                .find(kind.key(id))
+                .map(|d| d.to_node()),
+            NodeDomain::Match => ctx
+                .db
+                .nodes_match()
+                .key()
+                .find(kind.key(id))
+                .map(|d| d.to_node()),
+            NodeDomain::Alpha => ctx
+                .db
+                .nodes_alpha()
+                .key()
+                .find(kind.key(id))
+                .map(|d| d.to_node()),
+        }
+    }
     fn node_insert(self, ctx: &ReducerContext, node: &(impl Node + GetNodeKind)) {
         let node = node.to_tnode(node.id());
         match self {
