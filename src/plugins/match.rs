@@ -3,7 +3,7 @@ use super::*;
 pub struct MatchPlugin;
 
 impl Plugin for MatchPlugin {
-    fn build(&self, app: &mut App) {}
+    fn build(&self, _: &mut App) {}
 }
 
 #[derive(Resource)]

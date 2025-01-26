@@ -67,6 +67,9 @@ impl<'w, 's> Context<'w, 's> {
         self.layers.push(ContextLayer::Var(var, value));
         self
     }
+    pub fn set_value(&mut self, value: VarValue) -> &mut Self {
+        self.set_var(VarName::value, value)
+    }
     pub fn set_owner_node(&mut self, node: &'w dyn GetVar) -> &mut Self {
         self.layers.push(ContextLayer::OwnerNode(node));
         self
@@ -92,6 +95,9 @@ impl<'w, 's> Context<'w, 's> {
             .rev()
             .find_map(|l| l.get_var(var, &self.sources, self.t))
             .to_e_var(var)
+    }
+    pub fn get_value(&self) -> Result<VarValue, ExpressionError> {
+        self.get_var(VarName::value)
     }
     pub fn get_bool(&self, var: VarName) -> Result<bool, ExpressionError> {
         self.get_var(var)?.get_bool()

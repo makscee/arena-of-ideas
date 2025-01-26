@@ -18,7 +18,7 @@ use super::*;
 )]
 pub enum VarName {
     #[default]
-    none,
+    value,
     position,
     offset,
     hp,

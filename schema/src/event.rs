@@ -5,4 +5,5 @@ pub enum Event {
     #[default]
     BattleStart,
     TurnEnd,
+    UpdateStat(VarName),
 }

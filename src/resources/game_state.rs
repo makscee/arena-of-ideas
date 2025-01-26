@@ -134,7 +134,7 @@ fn on_change(world: &mut World) {
     if let Some(ctx) = egui_context(world) {
         ctx.data_mut(|w| w.clear());
     }
-    let to = cur_state(world);
+    // let to = cur_state(world);
     // TilePlugin::change_state(to, world);
     // CameraPlugin::respawn_camera(world);
 }

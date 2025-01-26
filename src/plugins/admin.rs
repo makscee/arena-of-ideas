@@ -218,13 +218,13 @@ Abs(Equals(F(51.0),Abs(Equals(F(1.0),Or(Equals(F(1.0),One),Abs(Or(Target,Abs(One
         // });
     }
     fn update(world: &mut World) {
-        let egui_context = world
-            .query_filtered::<&mut EguiContext, With<bevy::window::PrimaryWindow>>()
-            .get_single(world);
+        // let egui_context = world
+        //     .query_filtered::<&mut EguiContext, With<bevy::window::PrimaryWindow>>()
+        //     .get_single(world);
 
-        let Ok(egui_context) = egui_context else {
-            return;
-        };
+        // let Ok(egui_context) = egui_context else {
+        //     return;
+        // };
         // let mut egui_context = egui_context.clone();
 
         // egui::Window::new("World Inspector")

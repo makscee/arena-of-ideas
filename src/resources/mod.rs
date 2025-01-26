@@ -1,3 +1,4 @@
+mod action;
 mod anim;
 mod battle;
 mod client_settings;
@@ -10,12 +11,14 @@ mod game_assets;
 mod game_option;
 mod game_state;
 mod painter;
+mod reaction;
 mod section_menu;
 mod show;
 mod tween;
 
 use super::*;
 
+pub use action::*;
 pub use anim::*;
 pub use battle::*;
 pub use client_settings::*;
@@ -28,6 +31,7 @@ pub use game_assets::*;
 pub use game_option::*;
 pub use game_state::*;
 pub use painter::*;
+pub use reaction::*;
 pub use section_menu::*;
 pub use show::*;
 pub use tween::*;

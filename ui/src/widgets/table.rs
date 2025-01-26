@@ -396,7 +396,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
             name,
             TableColumn {
                 value: Box::new(move |d, _| id(d).into()),
-                show: Box::new(|_, id: VarValue, ui: &mut Ui, w: &mut World| {
+                show: Box::new(|_, id: VarValue, ui: &mut Ui, _: &mut World| {
                     let id = id.get_u64().unwrap_or_default();
                     if id == 0 {
                         "...".cstr().label(ui);

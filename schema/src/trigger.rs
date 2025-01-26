@@ -5,4 +5,5 @@ pub enum Trigger {
     #[default]
     BattleStart,
     TurnEnd,
+    ChangeStats(VarName),
 }
