@@ -12,6 +12,7 @@ use spacetimedb_sdk::__codegen::{
 pub struct TNode {
     pub key: String,
     pub id: u64,
+    pub owner: u64,
     pub kind: String,
     pub data: String,
 }

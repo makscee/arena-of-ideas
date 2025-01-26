@@ -16,8 +16,8 @@ pub trait Node: Default + Sized {
     fn get_data(&self) -> String;
     fn from_strings(i: usize, strings: &Vec<String>) -> Option<Self>;
     fn to_strings(&self, parent: usize, field: &str, strings: &mut Vec<String>);
-    fn from_table(ctx: &ReducerContext, domain: NodeDomain, id: u64) -> Option<Self>;
-    fn to_table(self, ctx: &ReducerContext, domain: NodeDomain, parent: u64);
+    fn from_table(c: &Context, domain: NodeDomain, id: u64) -> Option<Self>;
+    fn to_table(self, c: &Context, domain: NodeDomain, parent: u64);
 }
 
 impl Hero {

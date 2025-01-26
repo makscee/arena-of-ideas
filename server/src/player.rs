@@ -132,11 +132,14 @@ fn identity_disconnected(ctx: &ReducerContext) {
 }
 
 impl TPlayer {
-    pub fn check_owner(&self, id: u64) -> Result<(), String> {
-        if self.id != id {
-            Err(format!("Player is not owner of {id}"))
-        } else {
-            Ok(())
+    pub fn empty() -> Self {
+        Self {
+            id: 0,
+            name: String::new(),
+            identities: Vec::new(),
+            pass_hash: None,
+            online: false,
+            last_login: Timestamp::UNIX_EPOCH,
         }
     }
     fn validate_name(ctx: &ReducerContext, name: String) -> Result<String, String> {

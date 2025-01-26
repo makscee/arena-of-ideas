@@ -93,7 +93,7 @@ impl CameraPlugin {
         mut projection: Query<(&mut OrthographicProjection, &Camera)>,
         mut data: ResMut<CameraData>,
     ) {
-        let (projection, camera) = projection.single_mut();
+        let (_, camera) = projection.single_mut();
         let mut width: f32 = 28.0;
         let aspect_ratio = camera
             .logical_target_size()

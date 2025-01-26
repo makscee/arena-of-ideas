@@ -1,4 +1,4 @@
-use bevy::sprite::{Material2dPlugin, Mesh2d};
+use bevy::sprite::Material2dPlugin;
 
 use super::*;
 

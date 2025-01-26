@@ -182,9 +182,6 @@ Abs(Equals(F(51.0),Abs(Equals(F(1.0),Or(Equals(F(1.0),One),Abs(Or(Target,Abs(One
                 if "Insert Match".cstr().button(ui).clicked() {
                     cn().reducers.match_insert().unwrap();
                 }
-                if "Get Match".cstr().button(ui).clicked() {
-                    cn().reducers.match_get(3).unwrap();
-                }
                 if "Open Match".cstr().button(ui).clicked() {
                     if let Some(m) = NodeDomain::Match.filter_by_kind(NodeKind::Match).get(0) {
                         MatchPlugin::load_match_data(m.id, world);

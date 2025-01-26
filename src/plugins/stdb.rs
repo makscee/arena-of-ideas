@@ -16,13 +16,18 @@ pub fn subscribe_login(on_success: impl FnOnce() + Send + Sync + 'static) {
 
 pub fn subscribe_game(on_success: impl FnOnce() + Send + Sync + 'static) {
     info!("Apply stdb subscriptions");
+    let pid = player_id();
     let queries = [
-        "select * from nodes_world",
-        "select * from nodes_match",
-        "select * from nodes_alpha",
-        "select * from nodes_relations",
-        "select * from battle",
-    ];
+        format!("select * from nodes_match where owner = {pid}"),
+        "select * from nodes_world".into(),
+        "select * from nodes_alpha".into(),
+        "select * from nodes_relations".into(),
+        "select * from battle".into(),
+    ]
+    .into_iter()
+    .map(|s| s.into_boxed_str())
+    .collect_vec()
+    .into_boxed_slice();
     cn().subscription_builder()
         .on_error(|e| e.event.notify_error())
         .on_applied(move |e| {

@@ -28,7 +28,6 @@ pub mod login_reducer;
 pub mod logout_reducer;
 pub mod match_buy_reducer;
 pub mod match_g_type;
-pub mod match_get_reducer;
 pub mod match_insert_reducer;
 pub mod match_reorder_reducer;
 pub mod match_reroll_reducer;
@@ -90,7 +89,6 @@ pub use login_reducer::{login, set_flags_for_login, LoginCallbackId};
 pub use logout_reducer::{logout, set_flags_for_logout, LogoutCallbackId};
 pub use match_buy_reducer::{match_buy, set_flags_for_match_buy, MatchBuyCallbackId};
 pub use match_g_type::MatchG;
-pub use match_get_reducer::{match_get, set_flags_for_match_get, MatchGetCallbackId};
 pub use match_insert_reducer::{match_insert, set_flags_for_match_insert, MatchInsertCallbackId};
 pub use match_reorder_reducer::{
     match_reorder, set_flags_for_match_reorder, MatchReorderCallbackId,
@@ -159,9 +157,6 @@ pub enum Reducer {
     MatchBuy {
         slot: u8,
     },
-    MatchGet {
-        id: u64,
-    },
     MatchInsert,
     MatchReorder {
         slot: u8,
@@ -222,7 +217,6 @@ impl __sdk::Reducer for Reducer {
             Reducer::LoginByIdentity => "login_by_identity",
             Reducer::Logout => "logout",
             Reducer::MatchBuy { .. } => "match_buy",
-            Reducer::MatchGet { .. } => "match_get",
             Reducer::MatchInsert => "match_insert",
             Reducer::MatchReorder { .. } => "match_reorder",
             Reducer::MatchReroll => "match_reroll",
@@ -302,13 +296,6 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
             "match_buy" => Ok(
                 __sdk::parse_reducer_args::<match_buy_reducer::MatchBuyArgs>(
                     "match_buy",
-                    &value.args,
-                )?
-                .into(),
-            ),
-            "match_get" => Ok(
-                __sdk::parse_reducer_args::<match_get_reducer::MatchGetArgs>(
-                    "match_get",
                     &value.args,
                 )?
                 .into(),

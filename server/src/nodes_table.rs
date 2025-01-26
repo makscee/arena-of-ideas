@@ -11,6 +11,8 @@ pub struct TNode {
     #[index(btree)]
     pub id: u64,
     #[index(btree)]
+    pub owner: u64,
+    #[index(btree)]
     pub kind: String,
     pub data: String,
 }
@@ -45,144 +47,167 @@ impl NodeIdExt for u64 {
 }
 
 pub trait NodeDomainExt {
-    fn node_get<T: Node + GetNodeKindSelf>(self, ctx: &ReducerContext, id: u64) -> Option<T>;
-    fn node_insert(self, ctx: &ReducerContext, node: &(impl Node + GetNodeKind));
-    fn node_update(self, ctx: &ReducerContext, node: &(impl Node + GetNodeKind));
-    fn node_delete(self, ctx: &ReducerContext, node: &(impl Node + GetNodeKind));
-    fn node_insert_or_update(self, ctx: &ReducerContext, node: &(impl Node + GetNodeKind));
-    fn node_collect<T: Node + GetNodeKindSelf>(self, ctx: &ReducerContext) -> Vec<T>;
-    fn node_parent<T: Node + GetNodeKindSelf>(self, ctx: &ReducerContext, id: u64) -> Option<T>;
-    fn tnode_find_by_key(self, ctx: &ReducerContext, key: &String) -> Option<TNode>;
-    fn tnode_filter_by_kind(self, ctx: &ReducerContext, kind: NodeKind) -> Vec<TNode>;
-    fn delete_by_id(self, ctx: &ReducerContext, id: u64);
-    fn tnode_collect_kind(self, ctx: &ReducerContext, kind: NodeKind) -> Vec<TNode>;
+    fn node_get<T: Node + GetNodeKindSelf>(self, c: &Context, id: u64) -> Option<T>;
+    fn node_insert(self, c: &Context, node: &(impl Node + GetNodeKind));
+    fn node_update(self, c: &Context, node: &(impl Node + GetNodeKind));
+    fn node_delete(self, c: &Context, node: &(impl Node + GetNodeKind));
+    fn node_insert_or_update(self, c: &Context, node: &(impl Node + GetNodeKind));
+    fn node_collect<T: Node + GetNodeKindSelf>(self, c: &Context) -> Vec<T>;
+    fn node_parent<T: Node + GetNodeKindSelf>(self, c: &Context, id: u64) -> Option<T>;
+    fn tnode_find_by_key(self, c: &Context, key: &String) -> Option<TNode>;
+    fn tnode_filter_by_kind(self, c: &Context, kind: NodeKind) -> Vec<TNode>;
+    fn delete_by_id(self, c: &Context, id: u64);
+    fn tnode_collect_kind(self, c: &Context, kind: NodeKind) -> Vec<TNode>;
+    fn tnode_collect_owner(self, c: &Context) -> Vec<TNode>;
 }
 impl NodeDomainExt for NodeDomain {
-    fn node_get<T: Node + GetNodeKindSelf>(self, ctx: &ReducerContext, id: u64) -> Option<T> {
+    fn node_get<T: Node + GetNodeKindSelf>(self, c: &Context, id: u64) -> Option<T> {
         let kind = T::kind_s();
         match self {
-            NodeDomain::World => ctx
-                .db
-                .nodes_world()
-                .key()
-                .find(kind.key(id))
-                .map(|d| d.to_node()),
-            NodeDomain::Match => ctx
-                .db
-                .nodes_match()
-                .key()
-                .find(kind.key(id))
-                .map(|d| d.to_node()),
-            NodeDomain::Alpha => ctx
-                .db
-                .nodes_alpha()
-                .key()
-                .find(kind.key(id))
-                .map(|d| d.to_node()),
+            NodeDomain::World => {
+                c.rc.db
+                    .nodes_world()
+                    .key()
+                    .find(kind.key(id))
+                    .map(|d| d.to_node())
+            }
+            NodeDomain::Match => {
+                c.rc.db
+                    .nodes_match()
+                    .key()
+                    .find(kind.key(id))
+                    .map(|d| d.to_node())
+            }
+            NodeDomain::Alpha => {
+                c.rc.db
+                    .nodes_alpha()
+                    .key()
+                    .find(kind.key(id))
+                    .map(|d| d.to_node())
+            }
         }
     }
-    fn node_insert(self, ctx: &ReducerContext, node: &(impl Node + GetNodeKind)) {
-        let node = node.to_tnode(node.id());
+    fn node_insert(self, c: &Context, node: &(impl Node + GetNodeKind)) {
+        let node = node.to_tnode(node.id(), c.pid());
         match self {
-            NodeDomain::World => ctx.db.nodes_world().insert(node),
-            NodeDomain::Match => ctx.db.nodes_match().insert(node),
-            NodeDomain::Alpha => ctx.db.nodes_alpha().insert(node),
+            NodeDomain::World => c.rc.db.nodes_world().insert(node),
+            NodeDomain::Match => c.rc.db.nodes_match().insert(node),
+            NodeDomain::Alpha => c.rc.db.nodes_alpha().insert(node),
         };
     }
-    fn node_update(self, ctx: &ReducerContext, node: &(impl Node + GetNodeKind)) {
-        let node = node.to_tnode(node.id());
+    fn node_update(self, c: &Context, node: &(impl Node + GetNodeKind)) {
+        let node = node.to_tnode(node.id(), c.pid());
         match self {
-            NodeDomain::World => ctx.db.nodes_world().key().update(node),
-            NodeDomain::Match => ctx.db.nodes_match().key().update(node),
-            NodeDomain::Alpha => ctx.db.nodes_alpha().key().update(node),
+            NodeDomain::World => c.rc.db.nodes_world().key().update(node),
+            NodeDomain::Match => c.rc.db.nodes_match().key().update(node),
+            NodeDomain::Alpha => c.rc.db.nodes_alpha().key().update(node),
         };
     }
-    fn node_delete(self, ctx: &ReducerContext, node: &(impl Node + GetNodeKind)) {
+    fn node_delete(self, c: &Context, node: &(impl Node + GetNodeKind)) {
         let key = node.kind().key(node.id());
         match self {
-            NodeDomain::World => ctx.db.nodes_world().key().delete(key),
-            NodeDomain::Match => ctx.db.nodes_match().key().delete(key),
-            NodeDomain::Alpha => ctx.db.nodes_alpha().key().delete(key),
+            NodeDomain::World => c.rc.db.nodes_world().key().delete(key),
+            NodeDomain::Match => c.rc.db.nodes_match().key().delete(key),
+            NodeDomain::Alpha => c.rc.db.nodes_alpha().key().delete(key),
         };
     }
-    fn node_insert_or_update(self, ctx: &ReducerContext, node: &(impl Node + GetNodeKind)) {
-        self.node_delete(ctx, node);
-        self.node_insert(ctx, node);
+    fn node_insert_or_update(self, c: &Context, node: &(impl Node + GetNodeKind)) {
+        self.node_delete(c, node);
+        self.node_insert(c, node);
     }
-    fn tnode_find_by_key(self, ctx: &ReducerContext, key: &String) -> Option<TNode> {
+    fn tnode_find_by_key(self, c: &Context, key: &String) -> Option<TNode> {
         match self {
-            NodeDomain::World => ctx.db.nodes_world().key().find(key),
-            NodeDomain::Match => ctx.db.nodes_match().key().find(key),
-            NodeDomain::Alpha => ctx.db.nodes_alpha().key().find(key),
+            NodeDomain::World => c.rc.db.nodes_world().key().find(key),
+            NodeDomain::Match => c.rc.db.nodes_match().key().find(key),
+            NodeDomain::Alpha => c.rc.db.nodes_alpha().key().find(key),
         }
     }
-    fn tnode_filter_by_kind(self, ctx: &ReducerContext, kind: NodeKind) -> Vec<TNode> {
+    fn tnode_filter_by_kind(self, c: &Context, kind: NodeKind) -> Vec<TNode> {
         match self {
-            NodeDomain::World => ctx.db.nodes_world().kind().filter(kind.as_ref()).collect(),
-            NodeDomain::Match => ctx.db.nodes_match().kind().filter(kind.as_ref()).collect(),
-            NodeDomain::Alpha => ctx.db.nodes_alpha().kind().filter(kind.as_ref()).collect(),
+            NodeDomain::World => c.rc.db.nodes_world().kind().filter(kind.as_ref()).collect(),
+            NodeDomain::Match => {
+                c.rc.db
+                    .nodes_match()
+                    .kind()
+                    .filter(kind.as_ref())
+                    .filter(|n| n.owner == c.player.id)
+                    .collect()
+            }
+            NodeDomain::Alpha => c.rc.db.nodes_alpha().kind().filter(kind.as_ref()).collect(),
         }
     }
-    fn node_collect<T: Node + GetNodeKindSelf>(self, ctx: &ReducerContext) -> Vec<T> {
-        self.tnode_collect_kind(ctx, T::kind_s())
+    fn node_collect<T: Node + GetNodeKindSelf>(self, c: &Context) -> Vec<T> {
+        self.tnode_collect_kind(c, T::kind_s())
             .into_iter()
             .map(|d| d.to_node::<T>())
             .collect()
     }
-    fn node_parent<T: Node + GetNodeKindSelf>(self, ctx: &ReducerContext, id: u64) -> Option<T> {
+    fn node_parent<T: Node + GetNodeKindSelf>(self, c: &Context, id: u64) -> Option<T> {
         let kind = T::kind_s();
         let mut id = id;
-        while let Some(parent) = id.parent(ctx) {
+        while let Some(parent) = id.parent(c.rc) {
             id = parent;
-            if let Some(node) = self.tnode_find_by_key(ctx, &kind.key(id)) {
+            if let Some(node) = self.tnode_find_by_key(c, &kind.key(id)) {
                 return Some(node.to_node());
             }
         }
         None
     }
-    fn tnode_collect_kind(self, ctx: &ReducerContext, kind: NodeKind) -> Vec<TNode> {
+    fn tnode_collect_kind(self, c: &Context, kind: NodeKind) -> Vec<TNode> {
         match self {
-            NodeDomain::World => ctx
-                .db
-                .nodes_world()
-                .kind()
-                .filter(&kind.to_string())
-                .collect(),
-            NodeDomain::Match => ctx
-                .db
-                .nodes_match()
-                .kind()
-                .filter(&kind.to_string())
-                .collect(),
-            NodeDomain::Alpha => ctx
-                .db
-                .nodes_alpha()
-                .kind()
-                .filter(&kind.to_string())
-                .collect(),
+            NodeDomain::World => {
+                c.rc.db
+                    .nodes_world()
+                    .kind()
+                    .filter(&kind.to_string())
+                    .collect()
+            }
+            NodeDomain::Match => {
+                c.rc.db
+                    .nodes_match()
+                    .kind()
+                    .filter(&kind.to_string())
+                    .filter(|n| n.owner == c.player.id)
+                    .collect()
+            }
+            NodeDomain::Alpha => {
+                c.rc.db
+                    .nodes_alpha()
+                    .kind()
+                    .filter(&kind.to_string())
+                    .collect()
+            }
         }
     }
-    fn delete_by_id(self, ctx: &ReducerContext, id: u64) {
-        let ids = id.all_descendants(ctx);
+    fn tnode_collect_owner(self, c: &Context) -> Vec<TNode> {
+        let owner = c.pid();
+        match self {
+            NodeDomain::World => c.rc.db.nodes_world().owner().filter(owner).collect_vec(),
+            NodeDomain::Match => c.rc.db.nodes_match().owner().filter(owner).collect_vec(),
+            NodeDomain::Alpha => c.rc.db.nodes_alpha().owner().filter(owner).collect_vec(),
+        }
+    }
+    fn delete_by_id(self, c: &Context, id: u64) {
+        let ids = id.all_descendants(c.rc);
         match self {
             NodeDomain::World => {
                 for id in &ids {
-                    ctx.db.nodes_world().id().delete(id);
+                    c.rc.db.nodes_world().id().delete(id);
                 }
             }
             NodeDomain::Match => {
                 for id in &ids {
-                    ctx.db.nodes_match().id().delete(id);
+                    c.rc.db.nodes_match().id().delete(id);
                 }
             }
             NodeDomain::Alpha => {
                 for id in &ids {
-                    ctx.db.nodes_alpha().id().delete(id);
+                    c.rc.db.nodes_alpha().id().delete(id);
                 }
             }
         }
         for id in ids {
-            ctx.db.nodes_relations().id().delete(id);
+            c.rc.db.nodes_relations().id().delete(id);
         }
     }
 }
@@ -194,52 +219,27 @@ impl TNode {
         d.set_id(self.id);
         d
     }
-    pub fn new(id: u64, kind: NodeKind, data: String) -> Self {
+    pub fn new(id: u64, owner: u64, kind: NodeKind, data: String) -> Self {
         Self {
             key: kind.key(id),
             id,
+            owner,
             kind: kind.to_string(),
             data,
         }
     }
-    pub fn gather(ctx: &ReducerContext, id: u64) -> Vec<Self> {
-        let mut result: Vec<TNode> = default();
-        let mut processed: HashSet<u64> = default();
-        let mut queue: VecDeque<u64> = VecDeque::from([id]);
-        while let Some(id) = queue.pop_front() {
-            processed.insert(id);
-            result.extend(ctx.db.nodes_world().id().filter(id));
-            for node in ctx.db.nodes_relations().parent().filter(id) {
-                let id = node.id;
-                if !processed.contains(&id) {
-                    queue.push_back(id);
-                }
-            }
-        }
-        result
-    }
 }
 
 trait NodeExt {
-    fn insert(&self, ctx: &ReducerContext, id: u64);
-    fn update(&self, ctx: &ReducerContext, id: u64);
-    fn to_tnode(&self, id: u64) -> TNode;
+    fn to_tnode(&self, id: u64, owner: u64) -> TNode;
 }
 
 impl<T> NodeExt for T
 where
     T: Node + GetNodeKind,
 {
-    fn insert(&self, ctx: &ReducerContext, id: u64) {
-        ctx.db
-            .nodes_world()
-            .insert(TNode::new(id, self.kind(), self.get_data()));
-    }
-    fn update(&self, ctx: &ReducerContext, id: u64) {
-        ctx.db.nodes_world().key().update(self.to_tnode(id));
-    }
-    fn to_tnode(&self, id: u64) -> TNode {
-        TNode::new(id, self.kind(), self.get_data())
+    fn to_tnode(&self, id: u64, owner: u64) -> TNode {
+        TNode::new(id, owner, self.kind(), self.get_data())
     }
 }
 
@@ -250,26 +250,33 @@ fn node_spawn(
     kinds: Vec<String>,
     datas: Vec<String>,
 ) -> Result<(), String> {
+    let c = Context::new(ctx)?;
     let id = id.unwrap_or_else(|| next_id(ctx));
     for (kind, data) in kinds.into_iter().zip(datas.into_iter()) {
         let kind = NodeKind::from_str(&kind).map_err(|e| e.to_string())?;
-        ctx.db.nodes_world().insert(TNode::new(id, kind, data));
+        ctx.db
+            .nodes_world()
+            .insert(TNode::new(id, c.player.id, kind, data));
     }
     Ok(())
 }
 
 #[reducer]
 fn node_spawn_hero(ctx: &ReducerContext, name: String) -> Result<(), String> {
-    let id = next_id(ctx);
-    let hero = Hero::new(name);
-    let mover = Mover::new();
-    hero.insert(ctx, id);
-    mover.insert(ctx, id);
+    let c = &ctx.wrap()?;
+    let id = c.next_id();
+    let mut hero = Hero::new(name);
+    let mut mover = Mover::new();
+    hero.id = Some(id);
+    mover.id = Some(id);
+    NodeDomain::World.node_insert(c, &hero);
+    NodeDomain::World.node_insert(c, &mover);
     Ok(())
 }
 
 #[reducer]
 fn node_move(ctx: &ReducerContext, id: u64, x: f32, y: f32) -> Result<(), String> {
+    let c = &ctx.wrap()?;
     let key = NodeKind::Mover.key(id);
     let data = ctx
         .db
@@ -283,6 +290,6 @@ fn node_move(ctx: &ReducerContext, id: u64, x: f32, y: f32) -> Result<(), String
     mover.from = mover.pos(GlobalSettings::get(ctx).hero_speed);
     mover.start_ts = now_seconds();
     mover.target = vec2(x, y);
-    mover.update(ctx, id);
+    NodeDomain::World.node_insert_or_update(c, &mover);
     Ok(())
 }

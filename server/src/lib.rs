@@ -15,6 +15,7 @@ mod wallet;
 use std::str::FromStr;
 
 use battle::*;
+use context::*;
 use glam::vec2;
 use global_data::*;
 use global_settings::*;
