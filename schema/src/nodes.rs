@@ -17,11 +17,12 @@ struct Ability {
 }
 
 struct AbilityDescription {
-    pub data: String,
+    pub description: String,
+    pub effect: Option<AbilityEffect>,
 }
 
 struct AbilityEffect {
-    pub data: String,
+    pub actions: Actions,
 }
 
 struct Team {
