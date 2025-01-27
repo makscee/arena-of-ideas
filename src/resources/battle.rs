@@ -249,10 +249,9 @@ impl BattleSimulation {
             name: "Test Status".into(),
             description: Some(StatusDescription {
                 description: "Test status desc".into(),
-                trigger: Some(StatusTrigger {
+                reaction: Some(Reaction {
                     trigger: Trigger::TurnEnd,
-                    target: Expression::RandomUnit(Box::new(Expression::AllUnits)),
-                    effect: Effect::Damage,
+                    action: Action::DealDamage,
                     ..default()
                 }),
                 ..default()
@@ -268,72 +267,38 @@ impl BattleSimulation {
     }
     fn send_event(&mut self, event: Event) {
         let mut actions = Vec::default();
-        fn trigger_fire(
+        fn react(
             entity: Entity,
             actions: &mut Vec<BattleAction>,
             bs: &BattleSimulation,
             event: &Event,
-            trigger: &Trigger,
-            target: &Expression,
-            effect: &Effect,
+            reacton: &Reaction,
         ) {
-            if match event {
-                Event::BattleStart => matches!(trigger, Trigger::BattleStart),
-                Event::TurnEnd => matches!(trigger, Trigger::TurnEnd),
-            } {
-                let mut context = Context::new_battle_simulation(bs).set_owner(entity).take();
-                match target.get_entity(&context) {
-                    Ok(target) => {
-                        context.set_target(target);
-                    }
-                    Err(e) => {
-                        error!("Get target error: {e}")
-                    }
-                }
-                match effect.process(&context) {
-                    Ok(a) => {
-                        actions.extend(a);
-                    }
-                    Err(e) => {
-                        error!("Effect process error: {e}")
-                    }
+            match reacton.react(event, Context::new_battle_simulation(bs).set_owner(entity)) {
+                Ok(a) => actions.extend(a),
+                Err(e) => {
+                    error!("React error: {e}")
                 }
             }
         }
         let mut alive_units: HashSet<Entity> = default();
-        for (entity, ut) in self
+        for (entity, r) in self
             .world
-            .query_filtered::<(Entity, &UnitTrigger), Without<Corpse>>()
+            .query_filtered::<(Entity, &Reaction), Without<Corpse>>()
             .iter(&self.world)
         {
             alive_units.insert(entity);
-            trigger_fire(
-                entity,
-                &mut actions,
-                self,
-                &event,
-                &ut.trigger,
-                &ut.target,
-                &ut.effect,
-            );
+            react(entity, &mut actions, self, &event, r);
         }
-        for (entity, parent, st) in self
+        for (entity, parent, r) in self
             .world
-            .query::<(Entity, &Parent, &StatusTrigger)>()
+            .query::<(Entity, &Parent, &Reaction)>()
             .iter(&self.world)
         {
             if !alive_units.contains(&parent.get()) {
                 continue;
             }
-            trigger_fire(
-                entity,
-                &mut actions,
-                self,
-                &event,
-                &st.trigger,
-                &st.target,
-                &st.effect,
-            );
+            react(entity, &mut actions, self, &event, r);
         }
         self.process_actions(actions.into());
     }

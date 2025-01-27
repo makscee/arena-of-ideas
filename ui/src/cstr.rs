@@ -518,7 +518,7 @@ impl ToCstr for Trigger {
         self.as_ref().to_owned()
     }
 }
-impl ToCstr for Effect {
+impl ToCstr for Action {
     fn cstr(&self) -> Cstr {
         self.as_ref().to_owned()
     }

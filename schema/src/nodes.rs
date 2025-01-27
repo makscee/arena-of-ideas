@@ -27,6 +27,7 @@ struct AbilityEffect {
 struct Team {
     pub name: String,
     pub houses: Vec<House>,
+    pub units: Vec<Unit>,
 }
 
 struct Match {
@@ -61,13 +62,7 @@ struct UnitSlot {
 
 struct UnitDescription {
     pub description: String,
-    pub trigger: Option<UnitTrigger>,
-}
-
-struct UnitTrigger {
-    pub trigger: Trigger,
-    pub target: Expression,
-    pub effect: Effect,
+    pub reaction: Option<Reaction>,
 }
 
 struct Status {
@@ -78,13 +73,12 @@ struct Status {
 
 struct StatusDescription {
     pub description: String,
-    pub trigger: Option<StatusTrigger>,
+    pub reaction: Option<Reaction>,
 }
 
-struct StatusTrigger {
+struct Reaction {
     pub trigger: Trigger,
-    pub target: Expression,
-    pub effect: Effect,
+    pub action: Action,
 }
 
 struct Hero {

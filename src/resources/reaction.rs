@@ -1,13 +1,15 @@
 use super::*;
 
-#[derive(Component)]
-pub struct Reaction {
-    pub trigger: Trigger,
-    pub action: Action,
+pub trait ReactionImpl {
+    fn react(
+        &self,
+        event: &Event,
+        context: &mut Context,
+    ) -> Result<Vec<BattleAction>, ExpressionError>;
 }
 
-impl Reaction {
-    pub fn react(
+impl ReactionImpl for Reaction {
+    fn react(
         &self,
         event: &Event,
         context: &mut Context,

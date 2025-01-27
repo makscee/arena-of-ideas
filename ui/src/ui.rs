@@ -34,7 +34,7 @@ pub const CYAN: Color32 = hex_color_noa!("#00B8D4");
 
 pub const EVENT_COLOR: Color32 = hex_color_noa!("#F7CA55");
 pub const TARGET_COLOR: Color32 = hex_color_noa!("#DC6814");
-pub const EFFECT_COLOR: Color32 = hex_color_noa!("#DE1C1C");
+pub const ACTION_COLOR: Color32 = hex_color_noa!("#DE1C1C");
 
 pub const MISSING_COLOR: Color32 = hex_color_noa!("#FF00FF");
 

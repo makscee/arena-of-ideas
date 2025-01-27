@@ -33,10 +33,9 @@ impl AdminPlugin {
             }),
             description: Some(UnitDescription {
                 description: "battle start test".into(),
-                trigger: Some(UnitTrigger {
+                reaction: Some(Reaction {
                     trigger: Trigger::BattleStart,
-                    target: Expression::Owner,
-                    effect: Effect::ChangeStatus,
+                    action: Action::DealDamage,
                     ..default()
                 }),
                 ..default()
