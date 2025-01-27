@@ -99,24 +99,28 @@ fn match_buy(ctx: &ReducerContext, slot: u8) -> Result<(), String> {
     NodeDomain::Match.node_update(c, sc);
     let mut unit =
         Unit::from_table(c, NodeDomain::Alpha, sc.unit_id).to_e_s("Failed to find Alpha unit")?;
+    let mut ability: Ability = NodeDomain::Alpha.node_parent(c, sc.unit_id).unwrap();
+    let mut house: House = NodeDomain::Alpha.node_parent(c, ability.id()).unwrap();
+
     unit.slot = Some(UnitSlot {
         slot: occupied.len() as i32,
         ..default()
     });
-    let mut ability: Ability = NodeDomain::Alpha.node_parent(c, sc.unit_id).unwrap();
-    let mut house: House = NodeDomain::Alpha.node_parent(c, ability.id()).unwrap();
+    unit.house_link.push(UnitHouseLink {
+        name: house.name.clone(),
+        ..default()
+    });
+
     unit.clear_ids();
     ability.clear_ids();
     house.clear_ids();
+
+    unit.to_table(c, NodeDomain::Match, team_id);
     if let Some(h) = m.find_house(&house.name) {
-        if let Some(a) = h.find_ability(&ability.name) {
-            unit.to_table(c, NodeDomain::Match, a.id());
-        } else {
-            ability.units.push(unit);
+        if h.find_ability(&ability.name).is_none() {
             ability.to_table(c, NodeDomain::Match, h.id());
         }
     } else {
-        ability.units.push(unit);
         house.abilities.push(ability);
         house.to_table(c, NodeDomain::Match, team_id);
     }
