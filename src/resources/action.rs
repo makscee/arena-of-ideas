@@ -1,7 +1,21 @@
 use super::*;
 
+pub trait ActionsImpl {
+    fn process(&self, context: &mut Context) -> Result<Vec<BattleAction>, ExpressionError>;
+}
+
 pub trait ActionImpl {
     fn process(&self, context: &mut Context) -> Result<Vec<BattleAction>, ExpressionError>;
+}
+
+impl ActionsImpl for Actions {
+    fn process(&self, context: &mut Context) -> Result<Vec<BattleAction>, ExpressionError> {
+        let mut actions: Vec<BattleAction> = default();
+        for a in &self.0 {
+            actions.extend(a.process(context)?);
+        }
+        Ok(actions)
+    }
 }
 
 impl ActionImpl for Action {

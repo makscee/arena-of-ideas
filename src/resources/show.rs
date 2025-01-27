@@ -303,6 +303,18 @@ impl Show for Material {
         self.0.show_mut(prefix, ui)
     }
 }
+impl Show for Actions {
+    fn show(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) {
+        let r = prefix.show(ui);
+        for i in &self.0 {
+            i.show(None, context, ui);
+        }
+        r
+    }
+    fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
+        self.0.show_mut(prefix, ui)
+    }
+}
 impl Show for Trigger {
     fn show(&self, prefix: Option<&str>, _: &Context, ui: &mut Ui) {
         prefix.show(ui);

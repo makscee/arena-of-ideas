@@ -251,7 +251,7 @@ impl BattleSimulation {
                 description: "Test status desc".into(),
                 reaction: Some(Reaction {
                     trigger: Trigger::TurnEnd,
-                    action: Action::DealDamage,
+                    actions: vec![Action::DealDamage].into(),
                     ..default()
                 }),
                 ..default()

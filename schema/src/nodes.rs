@@ -83,7 +83,7 @@ struct StatusDescription {
 
 struct Reaction {
     pub trigger: Trigger,
-    pub action: Action,
+    pub actions: Actions,
 }
 
 struct Hero {

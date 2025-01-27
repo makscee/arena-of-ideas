@@ -35,7 +35,7 @@ impl AdminPlugin {
                 description: "battle start test".into(),
                 reaction: Some(Reaction {
                     trigger: Trigger::BattleStart,
-                    action: Action::DealDamage,
+                    actions: vec![Action::DealDamage].into(),
                     ..default()
                 }),
                 ..default()
