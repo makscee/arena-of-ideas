@@ -12,7 +12,8 @@ pub trait GetVar: GetNodeKind + Debug {
 }
 
 pub trait Node: Default + Component + Sized + GetVar + Show + Debug {
-    fn entity(&self) -> Option<Entity>;
+    fn entity(&self) -> Entity;
+    fn get_entity(&self) -> Option<Entity>;
     fn from_dir(path: String, dir: &Dir) -> Option<Self>;
     fn from_strings(i: usize, strings: &Vec<String>) -> Option<Self>;
     fn to_strings(&self, parent: usize, field: &str, strings: &mut Vec<String>);
@@ -36,7 +37,7 @@ pub trait Node: Default + Component + Sized + GetVar + Show + Debug {
         }
     }
     fn find_up<'a, T: Component>(&self, world: &'a World) -> Option<&'a T> {
-        let entity = self.entity().expect("Node not linked to world");
+        let entity = self.get_entity().expect("Node not linked to world");
         Self::find_up_entity::<T>(entity, world)
     }
     fn collect_children_entity<'a, T: Component>(
@@ -50,7 +51,7 @@ pub trait Node: Default + Component + Sized + GetVar + Show + Debug {
             .collect_vec()
     }
     fn collect_children<'a, T: Component>(&self, context: &'a Context) -> Vec<(Entity, &'a T)> {
-        let entity = self.entity().expect("Node not linked to world");
+        let entity = self.get_entity().expect("Node not linked to world");
         Self::collect_children_entity(entity, context)
     }
     fn collect_units_vec<'a>(&'a self, vec: &mut Vec<&'a Unit>);

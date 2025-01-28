@@ -1,8 +1,8 @@
 mod action;
-mod effect;
 mod error;
 mod event;
 mod expression;
+mod fusion;
 mod inject;
 mod macro_fn;
 mod material;
@@ -14,10 +14,10 @@ mod var_name;
 mod var_value;
 
 pub use action::*;
-pub use effect::*;
 pub use error::*;
 pub use event::*;
 pub use expression::*;
+pub use fusion::*;
 pub use inject::*;
 pub use macro_fn::*;
 pub use material::*;

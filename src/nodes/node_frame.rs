@@ -103,7 +103,7 @@ impl NodeFrame {
             ui.reset_style();
             let ui = &mut ui.child_ui(rect, Layout::left_to_right(Align::Center), None);
             if "e".cstr().button(ui).clicked() {
-                set_editing_node(node.entity().unwrap(), kind);
+                set_editing_node(node.entity(), kind);
             }
         });
     }

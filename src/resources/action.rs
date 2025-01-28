@@ -43,8 +43,17 @@ impl ActionImpl for Action {
                     actions.push(BattleAction::Damage(owner, target, value));
                 }
             }
+            Action::UseAbility => {
+                let caster = context.get_caster()?;
+                let ability = context
+                    .find_parent_component::<AbilityEffect>(caster)
+                    .to_e("Ability not found")?
+                    .clone();
+                actions.extend(ability.actions.process(context)?);
+            }
             Action::Repeat(x, vec) => {
                 for _ in 0..x.get_i32(context)? {
+                    let context = &mut context.clone();
                     for a in vec {
                         actions.extend(a.process(context)?);
                     }
@@ -53,6 +62,7 @@ impl ActionImpl for Action {
             Action::MultipleTargets(x, vec) => {
                 for target in x.get_entity_list(context)? {
                     context.set_target(target);
+                    let context = &mut context.clone();
                     for a in vec {
                         actions.extend(a.process(context)?);
                     }

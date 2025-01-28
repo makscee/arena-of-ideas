@@ -273,7 +273,10 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 }
                 impl Node for #struct_ident {
                     #strings_conversions
-                    fn entity(&self) -> Option<Entity> {
+                    fn entity(&self) -> Entity {
+                        self.entity.unwrap()
+                    }
+                    fn get_entity(&self) -> Option<Entity> {
                         self.entity
                     }
                     fn from_dir(path: String, dir: &Dir) -> Option<Self> {

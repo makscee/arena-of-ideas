@@ -18,6 +18,7 @@ pub enum ContextSource<'w, 's> {
 enum ContextLayer<'w> {
     OwnerNode(&'w dyn GetVar),
     Owner(Entity),
+    Caster(Entity),
     Target(Entity),
     Var(VarName, VarValue),
 }
@@ -59,6 +60,10 @@ impl<'w, 's> Context<'w, 's> {
         self.layers.push(ContextLayer::Owner(owner));
         self
     }
+    pub fn set_caster(&mut self, owner: Entity) -> &mut Self {
+        self.layers.push(ContextLayer::Caster(owner));
+        self
+    }
     pub fn set_target(&mut self, target: Entity) -> &mut Self {
         self.layers.push(ContextLayer::Target(target));
         self
@@ -81,6 +86,13 @@ impl<'w, 's> Context<'w, 's> {
             .rev()
             .find_map(|l| l.get_owner())
             .to_e("Owner not found")
+    }
+    pub fn get_caster(&self) -> Result<Entity, ExpressionError> {
+        self.layers
+            .iter()
+            .rev()
+            .find_map(|l| l.get_caster())
+            .to_e("Caster not found")
     }
     pub fn get_target(&self) -> Result<Entity, ExpressionError> {
         self.layers
@@ -139,6 +151,21 @@ impl<'w, 's> Context<'w, 's> {
         }
         None
     }
+    pub fn find_parent_component<T: Component>(&self, mut entity: Entity) -> Option<&T> {
+        while let Ok(parent) = self.get_parent(entity) {
+            if let Some(c) = self.get_component::<T>(parent) {
+                return Some(c);
+            }
+            entity = parent;
+        }
+        None
+    }
+    pub fn collect_children_components<T: Component>(&self, entity: Entity) -> Vec<(Entity, &T)> {
+        self.sources
+            .iter()
+            .flat_map(|s| s.collect_children_components::<T>(entity))
+            .collect()
+    }
 
     pub fn clear(&mut self) {
         self.layers.clear();
@@ -185,12 +212,30 @@ impl ContextSource<'_, '_> {
             _ => None,
         }
     }
+    fn collect_children_components<T: Component>(&self, entity: Entity) -> Vec<(Entity, &T)> {
+        self.get_children(entity)
+            .into_iter()
+            .filter_map(|e| {
+                if let Some(c) = self.get_component(e) {
+                    Some((e, c))
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
 }
 
 impl ContextLayer<'_> {
     fn get_owner(&self) -> Option<Entity> {
         match self {
             ContextLayer::Owner(entity) => Some(*entity),
+            _ => None,
+        }
+    }
+    fn get_caster(&self) -> Option<Entity> {
+        match self {
+            ContextLayer::Caster(entity) => Some(*entity),
             _ => None,
         }
     }
@@ -219,6 +264,7 @@ impl ContextLayer<'_> {
                 }
             }
             ContextLayer::OwnerNode(node) => node.get_var(var),
+            ContextLayer::Caster(..) => None,
             ContextLayer::Target(..) => None,
         }
     }

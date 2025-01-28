@@ -9,8 +9,9 @@ pub enum Action {
     AddValue(Box<Expression>),
     SubtractValue(Box<Expression>),
     SetTarget(Box<Expression>),
-    MultipleTargets(Box<Expression>, Vec<Box<Action>>),
     DealDamage,
+    UseAbility,
+    MultipleTargets(Box<Expression>, Vec<Box<Action>>),
     Repeat(Box<Expression>, Vec<Box<Action>>),
 }
 

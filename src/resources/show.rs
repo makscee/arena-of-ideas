@@ -303,6 +303,15 @@ impl Show for Material {
         self.0.show_mut(prefix, ui)
     }
 }
+impl Show for FusedUnit {
+    fn show(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) {
+        todo!()
+    }
+
+    fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
+        todo!()
+    }
+}
 impl Show for Actions {
     fn show(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) {
         let r = prefix.show(ui);

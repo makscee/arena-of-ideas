@@ -272,12 +272,17 @@ impl BattleSimulation {
             actions: &mut Vec<BattleAction>,
             bs: &BattleSimulation,
             event: &Event,
-            reacton: &Reaction,
+            reaction: &Reaction,
         ) {
-            match reacton.react(event, Context::new_battle_simulation(bs).set_owner(entity)) {
-                Ok(a) => actions.extend(a),
-                Err(e) => {
-                    error!("React error: {e}")
+            if reaction.react(event) {
+                match reaction
+                    .actions
+                    .process(Context::new_battle_simulation(bs).set_owner(entity))
+                {
+                    Ok(a) => actions.extend(a),
+                    Err(e) => {
+                        error!("React error: {e}")
+                    }
                 }
             }
         }
