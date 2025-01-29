@@ -14,6 +14,7 @@ pub struct BattleSimulation {
 impl Battle {
     pub fn open_window(self, world: &mut World) {
         let mut bs = BattleSimulation::new(self).unwrap();
+        bs.send_event(Event::BattleStart);
         Window::new("Battle", move |ui, _| {
             ui.set_min_size(egui::vec2(400.0, 400.0));
             bs.show(ui);
@@ -48,6 +49,16 @@ impl BattleSimulation {
             fusions_left,
             fusions_right,
         })
+    }
+    fn send_event(&mut self, event: Event) {
+        for f in self
+            .world
+            .query_filtered::<&Fusion, Without<Corpse>>()
+            .iter(&self.world)
+        {
+            let mut context = Context::new_world(&self.world).take();
+            f.react(&event, &mut context).unwrap();
+        }
     }
     pub fn show(&mut self, ui: &mut Ui) {
         let rect = ui.available_rect_before_wrap();

@@ -328,15 +328,17 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         )*
                         #(
                             for d in std::mem::take(&mut self.#vec_link_fields) {
-                                debug!("parent: {entity}");
-                                let entity = commands.spawn_empty().set_parent(entity).id();
-                                debug!("entity: {entity}");
+                                let parent = entity;
+                                let entity = commands.spawn_empty().set_parent(parent).id();
+                                debug!("{parent} -> {entity}");
                                 d.unpack(entity, commands);
                             }
                         )*
                         #(
                             for d in std::mem::take(&mut self.#vec_box_link_fields) {
-                                let entity = commands.spawn_empty().set_parent(entity).id();
+                                let parent = entity;
+                                let entity = commands.spawn_empty().set_parent(parent).id();
+                                debug!("{parent} -> {entity}");
                                 d.unpack(entity, commands);
                             }
                         )*
