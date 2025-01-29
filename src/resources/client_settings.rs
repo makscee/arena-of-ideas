@@ -10,6 +10,7 @@ pub struct ClientSettings {
     pub servers: HashMap<&'static str, (&'static str, &'static str)>,
     pub active_server: &'static str,
     pub dev_mode: bool,
+    pub auto_login: bool,
 
     pub window_mode: WindowMode,
     pub resolution: Vec2,
@@ -30,6 +31,7 @@ impl Default for ClientSettings {
             ]),
             active_server: "",
             dev_mode: false,
+            auto_login: false,
             window_mode: default(),
             vsync: false,
             resolution: vec2(1280.0, 720.0),

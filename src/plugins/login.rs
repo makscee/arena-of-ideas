@@ -26,6 +26,7 @@ pub struct LoginData {
     name_field: String,
     pass_field: String,
     pub identity_player: Option<TPlayer>,
+    login_requested: bool,
 }
 
 impl LoginPlugin {
@@ -44,9 +45,8 @@ impl LoginPlugin {
             identity_user = Some(player);
         }
         world.insert_resource(LoginData {
-            name_field: default(),
-            pass_field: default(),
             identity_player: identity_user,
+            ..default()
         });
     }
     pub fn complete(player: Option<TPlayer>, world: &mut World) {
@@ -68,7 +68,10 @@ impl LoginPlugin {
                     format!("Login as {}", player.name)
                         .cstr_cs(VISIBLE_LIGHT, CstrStyle::Heading2)
                         .label(ui);
-                    if Button::new("Login").ui(ui).clicked() {
+                    if !ld.login_requested
+                        && (client_settings().auto_login || Button::new("Login").ui(ui).clicked())
+                    {
+                        ld.login_requested = true;
                         cn().reducers.on_login_by_identity(|e| {
                             if !e.check_identity() {
                                 return;
