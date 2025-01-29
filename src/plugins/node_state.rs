@@ -80,6 +80,11 @@ impl NodeStatePlugin {
 }
 
 impl NodeState {
+    pub fn new_with(var: VarName, value: VarValue) -> Self {
+        let mut state = Self::default();
+        state.insert(0.0, 0.0, var, value, default());
+        state
+    }
     pub fn contains(&self, var: VarName) -> bool {
         self.vars.contains_key(&var)
     }
@@ -101,6 +106,9 @@ impl NodeState {
         } else {
             self.vars.get(&var).cloned()
         }
+    }
+    pub fn init(&mut self, var: VarName, value: VarValue) {
+        self.insert(0.0, 0.0, var, value, default());
     }
     pub fn insert(
         &mut self,

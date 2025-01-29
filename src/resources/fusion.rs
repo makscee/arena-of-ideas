@@ -1,11 +1,28 @@
 use super::*;
 
 impl Fusion {
-    fn units(&self, context: &Context) -> Result<Vec<Entity>, ExpressionError> {
-        let team = context.get_parent(self.entity())?;
+    pub fn init(self, world: &mut World) -> Result<(), ExpressionError> {
+        let entity = self.entity();
+        let units = self.units(&Context::new_world(world))?;
+        let mut hp = 0;
+        let mut pwr = 0;
+        for u in units {
+            let stats = world.get::<UnitStats>(u).to_e("Unit stats not found")?;
+            hp += stats.hp;
+            pwr += stats.pwr;
+        }
+        let mut state = NodeState::from_world_mut(entity, world).to_e("NodeState not found")?;
+        state.init(VarName::hp, hp.into());
+        state.init(VarName::pwr, pwr.into());
+        Ok(())
+    }
+    pub fn units(&self, context: &Context) -> Result<Vec<Entity>, ExpressionError> {
+        let team = context
+            .get_parent(self.entity())
+            .to_e("Fusion parent not found")?;
         let fusion = &self.unit;
         let units = context
-            .collect_children_components::<Unit>(team)
+            .children_components_recursive::<Unit>(team)
             .into_iter()
             .filter_map(|(e, u)| {
                 if fusion.units.contains(&u.name) {
@@ -47,5 +64,20 @@ impl Fusion {
         }
 
         Ok(battle_actions)
+    }
+    pub fn paint(&self, rect: Rect, ui: &mut Ui, world: &World) -> Result<(), ExpressionError> {
+        let entity = self.entity();
+        let units = self.units(&Context::new_world(world))?;
+        for unit in units {
+            let Some(rep) = world.get::<Representation>(unit) else {
+                continue;
+            };
+            let context = Context::new_world(world)
+                .set_owner(unit)
+                .set_owner(entity)
+                .take();
+            RepresentationPlugin::paint_rect(rect, &context, &rep.material, ui)?;
+        }
+        Ok(())
     }
 }

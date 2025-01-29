@@ -2,16 +2,18 @@ use super::*;
 
 const ANIMATION: f32 = 0.2;
 
-pub struct Battle {
+pub struct BattleOld {
     pub left: Team,
     pub right: Team,
 }
 #[derive(Debug)]
-pub struct BattleSimulation {
+pub struct BattleSimulationOld {
     pub t: f32,
     pub world: World,
-    pub left: Vec<Entity>,
-    pub right: Vec<Entity>,
+    pub left_team: Entity,
+    pub right_team: Entity,
+    pub left_units: Vec<Entity>,
+    pub right_units: Vec<Entity>,
     pub log: BattleLog,
     pub slots: usize,
 }
@@ -53,9 +55,9 @@ impl std::fmt::Display for BattleAction {
     }
 }
 
-impl Battle {
+impl BattleOld {
     pub fn open_window(&self, world: &mut World) {
-        let mut bs = BattleSimulation::new(self).start();
+        let mut bs = BattleSimulationOld::new(self).start();
         let mut t = 0.0;
         let mut playing = false;
         Window::new("Battle", move |ui, _| {
@@ -89,7 +91,7 @@ impl Battle {
 }
 
 impl BattleAction {
-    fn apply(&self, battle: &mut BattleSimulation) -> Vec<Self> {
+    fn apply(&self, battle: &mut BattleSimulationOld) -> Vec<Self> {
         let mut add_actions = Vec::default();
         let applied = match self {
             BattleAction::Strike(a, b) => {
@@ -200,33 +202,48 @@ impl BattleLog {
         );
     }
 }
-impl BattleSimulation {
-    pub fn new(battle: &Battle) -> Self {
+impl BattleSimulationOld {
+    pub fn new(battle: &BattleOld) -> Self {
         let mut world = World::new();
         for k in NodeKind::iter() {
             k.register_world(&mut world);
         }
-        let mut left: Vec<Entity> = default();
-        let mut right: Vec<Entity> = default();
+        let mut left_units: Vec<Entity> = default();
+        let mut right_units: Vec<Entity> = default();
         let mut log = BattleLog::default();
-        for u in battle.left.collect_units() {
-            let entity = world.spawn_empty().id();
-            u.clone().unpack(entity, &mut world.commands());
-            left.push(entity);
-            log.add_state(entity, &mut world);
+        let left_team = world.spawn_empty().id();
+        let right_team = world.spawn_empty().id();
+        battle.left.clone().unpack(left_team, &mut world.commands());
+        battle
+            .right
+            .clone()
+            .unpack(right_team, &mut world.commands());
+        for e in Context::new_world(&world)
+            .children_components::<Fusion>(left_team)
+            .into_iter()
+            .map(|(e, _)| e)
+            .collect_vec()
+        {
+            left_units.push(e);
+            log.add_state(e, &mut world);
         }
-        for u in battle.right.collect_units() {
-            let entity = world.spawn_empty().id();
-            u.clone().unpack(entity, &mut world.commands());
-            right.push(entity);
-            log.add_state(entity, &mut world);
+        for e in Context::new_world(&world)
+            .children_components::<Fusion>(right_team)
+            .into_iter()
+            .map(|(e, _)| e)
+            .collect_vec()
+        {
+            right_units.push(e);
+            log.add_state(e, &mut world);
         }
         world.flush();
         Self {
             t: 0.0,
             world,
-            left,
-            right,
+            left_team,
+            right_team,
+            left_units,
+            right_units,
             log,
             slots: 5,
         }
@@ -270,7 +287,7 @@ impl BattleSimulation {
         fn react(
             entity: Entity,
             actions: &mut Vec<BattleAction>,
-            bs: &BattleSimulation,
+            bs: &BattleSimulationOld,
             event: &Event,
             reaction: &Reaction,
         ) {
@@ -309,9 +326,9 @@ impl BattleSimulation {
     }
     pub fn start(mut self) -> Self {
         let spawn_actions = self
-            .left
+            .left_units
             .iter()
-            .zip_longest(self.right.iter())
+            .zip_longest(self.right_units.iter())
             .flat_map(|e| match e {
                 EitherOrBoth::Both(a, b) => {
                     vec![BattleAction::Spawn(*a), BattleAction::Spawn(*b)]
@@ -330,7 +347,7 @@ impl BattleSimulation {
         if self.ended() {
             return;
         }
-        let a = BattleAction::Strike(self.left[0], self.right[0]);
+        let a = BattleAction::Strike(self.left_units[0], self.right_units[0]);
         self.process_actions([a].into());
         let a = self.death_check();
         self.process_actions(a);
@@ -338,7 +355,7 @@ impl BattleSimulation {
         self.send_event(Event::TurnEnd);
     }
     pub fn ended(&self) -> bool {
-        self.left.is_empty() || self.right.is_empty()
+        self.left_units.is_empty() || self.right_units.is_empty()
     }
     fn death_check(&mut self) -> VecDeque<BattleAction> {
         let mut actions: VecDeque<BattleAction> = default();
@@ -356,12 +373,12 @@ impl BattleSimulation {
     fn die(&mut self, entity: Entity) -> Vec<BattleAction> {
         self.world.entity_mut(entity).insert(Corpse);
         let mut died = false;
-        if let Some(p) = self.left.iter().position(|u| *u == entity) {
-            self.left.remove(p);
+        if let Some(p) = self.left_units.iter().position(|u| *u == entity) {
+            self.left_units.remove(p);
             died = true;
         }
-        if let Some(p) = self.right.iter().position(|u| *u == entity) {
-            self.right.remove(p);
+        if let Some(p) = self.right_units.iter().position(|u| *u == entity) {
+            self.right_units.remove(p);
             died = true;
         }
         if died {
@@ -377,11 +394,11 @@ impl BattleSimulation {
     fn slots_sync(&self) -> VecDeque<BattleAction> {
         let mut actions = VecDeque::default();
         for (i, (e, side)) in self
-            .left
+            .left_units
             .iter()
             .map(|e| (e, true))
             .enumerate()
-            .chain(self.right.iter().map(|e| (e, false)).enumerate())
+            .chain(self.right_units.iter().map(|e| (e, false)).enumerate())
         {
             actions.push_back(BattleAction::VarSet(
                 *e,

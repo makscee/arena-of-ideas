@@ -58,7 +58,6 @@ pub trait Node: Default + Component + Sized + GetVar + Show + Debug {
     fn collect_units<'a>(&'a self) -> Vec<&'a Unit> {
         let mut vec: Vec<&Unit> = default();
         self.collect_units_vec(&mut vec);
-        vec.sort_by_key(|u| u.slot.as_ref().map(|s| s.slot).unwrap_or_default());
         vec
     }
     fn ui(&self, depth: usize, context: &Context, ui: &mut Ui);
@@ -114,16 +113,20 @@ trait OnUnpack {
 
 impl OnUnpack for NodeKind {
     fn on_unpack(self, entity: Entity, commands: &mut Commands) {
+        let state = match self {
+            NodeKind::House => NodeState::new_with(VarName::visible, false.into()),
+            _ => NodeState::default(),
+        };
         commands.entity(entity).insert((
             TransformBundle::default(),
             VisibilityBundle::default(),
-            NodeState::default(),
+            state,
         ));
 
         let entity = commands.spawn_empty().set_parent(entity).id();
         match self {
             NodeKind::Hero => hero_rep().clone().unpack(entity, commands),
-            NodeKind::Unit => unit_rep().clone().unpack(entity, commands),
+            NodeKind::Fusion => unit_rep().clone().unpack(entity, commands),
             NodeKind::Status => status_rep().clone().unpack(entity, commands),
             _ => {}
         }

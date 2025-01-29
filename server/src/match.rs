@@ -102,14 +102,14 @@ fn match_buy(ctx: &ReducerContext, slot: u8) -> Result<(), String> {
     let mut ability: Ability = NodeDomain::Alpha.node_parent(c, sc.unit_id).unwrap();
     let mut house: House = NodeDomain::Alpha.node_parent(c, ability.id()).unwrap();
 
-    unit.slot = Some(UnitSlot {
-        slot: occupied.len() as i32,
-        ..default()
-    });
-    unit.house_link.push(UnitHouseLink {
-        name: house.name.clone(),
-        ..default()
-    });
+    // unit.slot = Some(UnitSlot {
+    //     slot: occupied.len() as i32,
+    //     ..default()
+    // });
+    // unit.house_link.push(UnitHouseLink {
+    //     name: house.name.clone(),
+    //     ..default()
+    // });
 
     unit.clear_ids();
     ability.clear_ids();

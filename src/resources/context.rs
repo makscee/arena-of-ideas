@@ -11,7 +11,7 @@ pub struct Context<'w, 's> {
 pub enum ContextSource<'w, 's> {
     Query(&'w StateQuery<'w, 's>),
     World(&'w World),
-    BattleSimulation(&'w BattleSimulation),
+    BattleSimulation(&'w BattleSimulationOld),
 }
 
 #[derive(Debug, Clone)]
@@ -38,7 +38,7 @@ impl<'w, 's> Context<'w, 's> {
             t: None,
         }
     }
-    pub fn new_battle_simulation(bs: &'w BattleSimulation) -> Self {
+    pub fn new_battle_simulation(bs: &'w BattleSimulationOld) -> Self {
         Self {
             layers: default(),
             sources: vec![ContextSource::BattleSimulation(bs)],
@@ -129,12 +129,8 @@ impl<'w, 's> Context<'w, 's> {
         }
         default()
     }
-    pub fn get_parent(&self, entity: Entity) -> Result<Entity, ExpressionError> {
-        self.sources
-            .iter()
-            .rev()
-            .find_map(|s| s.get_parent(entity))
-            .to_e("Parent not found")
+    pub fn get_parent(&self, entity: Entity) -> Option<Entity> {
+        self.sources.iter().rev().find_map(|s| s.get_parent(entity))
     }
     pub fn get_all_units(&self) -> Vec<VarValue> {
         self.sources
@@ -152,7 +148,7 @@ impl<'w, 's> Context<'w, 's> {
         None
     }
     pub fn find_parent_component<T: Component>(&self, mut entity: Entity) -> Option<&T> {
-        while let Ok(parent) = self.get_parent(entity) {
+        while let Some(parent) = self.get_parent(entity) {
             if let Some(c) = self.get_component::<T>(parent) {
                 return Some(c);
             }
@@ -160,10 +156,16 @@ impl<'w, 's> Context<'w, 's> {
         }
         None
     }
-    pub fn collect_children_components<T: Component>(&self, entity: Entity) -> Vec<(Entity, &T)> {
+    pub fn children_components<T: Component>(&self, entity: Entity) -> Vec<(Entity, &T)> {
         self.sources
             .iter()
-            .flat_map(|s| s.collect_children_components::<T>(entity))
+            .flat_map(|s| s.children_components::<T>(entity))
+            .collect()
+    }
+    pub fn children_components_recursive<T: Component>(&self, entity: Entity) -> Vec<(Entity, &T)> {
+        self.sources
+            .iter()
+            .flat_map(|s| s.children_components_recursive::<T>(entity))
             .collect()
     }
 
@@ -190,6 +192,13 @@ impl ContextSource<'_, '_> {
             ContextSource::BattleSimulation(bs) => get_children(entity, &bs.world),
         }
     }
+    pub fn get_children_recursive(&self, entity: Entity) -> Vec<Entity> {
+        match self {
+            ContextSource::World(w) => get_children_recursive(entity, w),
+            ContextSource::BattleSimulation(bs) => get_children_recursive(entity, &bs.world),
+            ContextSource::Query(q) => todo!(),
+        }
+    }
     pub fn get_parent(&self, entity: Entity) -> Option<Entity> {
         match self {
             ContextSource::Query(q) => q.get_parent(entity),
@@ -199,9 +208,12 @@ impl ContextSource<'_, '_> {
     }
     fn get_all_units(&self) -> Vec<Entity> {
         match self {
-            ContextSource::BattleSimulation(bs) => {
-                bs.left.iter().chain(bs.right.iter()).copied().collect()
-            }
+            ContextSource::BattleSimulation(bs) => bs
+                .left_units
+                .iter()
+                .chain(bs.right_units.iter())
+                .copied()
+                .collect(),
             _ => default(),
         }
     }
@@ -212,8 +224,20 @@ impl ContextSource<'_, '_> {
             _ => None,
         }
     }
-    fn collect_children_components<T: Component>(&self, entity: Entity) -> Vec<(Entity, &T)> {
+    pub fn children_components<T: Component>(&self, entity: Entity) -> Vec<(Entity, &T)> {
         self.get_children(entity)
+            .into_iter()
+            .filter_map(|e| {
+                if let Some(c) = self.get_component(e) {
+                    Some((e, c))
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
+    pub fn children_components_recursive<T: Component>(&self, entity: Entity) -> Vec<(Entity, &T)> {
+        self.get_children_recursive(entity)
             .into_iter()
             .filter_map(|e| {
                 if let Some(c) = self.get_component(e) {

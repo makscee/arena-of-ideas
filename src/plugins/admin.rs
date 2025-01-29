@@ -24,37 +24,23 @@ impl AdminPlugin {
         }
     }
     fn test_team() -> Team {
-        let unit = Unit {
-            name: String::new(),
-            stats: Some(UnitStats {
-                pwr: 1,
-                hp: 10,
-                ..default()
+        let houses = houses().values().cloned().collect_vec();
+        let fusion = Fusion {
+            unit: FusedUnit {
+                units: ["priest".into(), "mage".into()].into(),
+                triggers: vec![0],
+                actions: vec![(0, 0), (1, 0)],
+            },
+            entity: None,
+            slot: Some(UnitSlot {
+                slot: 0,
+                entity: None,
             }),
-            description: Some(UnitDescription {
-                description: "battle start test".into(),
-                reaction: Some(Reaction {
-                    trigger: Trigger::BattleStart,
-                    actions: vec![Action::DealDamage].into(),
-                    ..default()
-                }),
-                ..default()
-            }),
-            ..default()
-        };
-        let house = House {
-            name: "TestHouse".into(),
-            abilities: [Ability {
-                name: "TestAbility".into(),
-                units: [unit].into(),
-                ..default()
-            }]
-            .into(),
-            ..default()
         };
         Team {
             name: "TestTeam".into(),
-            houses: [house].into(),
+            houses,
+            units: [fusion].into(),
             ..default()
         }
     }

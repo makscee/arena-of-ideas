@@ -46,15 +46,14 @@ struct ShopCaseUnit {
 
 struct Fusion {
     pub unit: FusedUnit,
+    pub slot: Option<UnitSlot>,
 }
 
 struct Unit {
     pub name: String,
-    pub slot: Option<UnitSlot>,
     pub stats: Option<UnitStats>,
     pub description: Option<UnitDescription>,
     pub representation: Option<Representation>,
-    pub house_link: Vec<UnitHouseLink>,
 }
 
 struct UnitStats {
@@ -64,10 +63,6 @@ struct UnitStats {
 
 struct UnitSlot {
     pub slot: i32,
-}
-
-struct UnitHouseLink {
-    pub name: String,
 }
 
 struct UnitDescription {

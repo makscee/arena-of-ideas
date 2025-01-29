@@ -23,6 +23,9 @@ impl ActionImpl for Action {
         let mut actions = Vec::default();
         match self {
             Action::Noop => {}
+            Action::Debug(x) => {
+                dbg!(x.get_value(context))?;
+            }
             Action::SetValue(x) => {
                 context.set_value(x.get_value(context)?);
             }

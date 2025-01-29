@@ -1,13 +1,13 @@
 (
     [
         Hollow(F(2.0)),
-        Color(C("#EEFF41")),
+        Color(C("#0288D1")),
         Alpha(F(0.6)),
         Repeat(
             I(10),
             List(
                 [
-                    Rectangle(F(0.5)),
+                    Rectangle(F(0.35)),
                     Rotate(Sum(GT, Var(index))),
                     Translate(Mul(F(0.2), Cos(Sum(GT, Var(index))))),
                     Paint,

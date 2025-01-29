@@ -5,6 +5,7 @@ use super::*;
 pub enum Action {
     #[default]
     Noop,
+    Debug(Box<Expression>),
     SetValue(Box<Expression>),
     AddValue(Box<Expression>),
     SubtractValue(Box<Expression>),
