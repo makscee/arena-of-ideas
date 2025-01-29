@@ -84,35 +84,37 @@ impl BattleSimulation {
     pub fn show(&mut self, ui: &mut Ui) {
         let slots = global_settings().team_slots as usize;
         let center_rect = slot_rect(0, true, ui.available_rect_before_wrap(), slots);
-        let up = center_rect.width() * 0.5;
         for (slot, side) in (1..=slots).cartesian_product([true, false]) {
-            self.show_slot(slot, side, slots, ui);
-        }
-        let unit_size = center_rect.width() * UNIT_SIZE;
-
-        return;
-        let rect = Rect::NOTHING;
-        let mut entities: VecDeque<Entity> = self
-            .world
-            .query_filtered::<Entity, Without<Parent>>()
-            .iter(&self.world)
-            .collect();
-        let context = Context::new_world(&self.world).take();
-        while let Some(entity) = entities.pop_front() {
-            let context = context.clone().set_owner(entity).take();
-            if context.get_bool(VarName::visible).unwrap_or(true) {
-                entities.extend(context.get_children(entity));
-                if let Some(rep) = self.world.get::<Representation>(entity) {
-                    match RepresentationPlugin::paint_rect(rect, &context, &rep.material, ui) {
-                        Ok(_) => {}
-                        Err(e) => error!("Rep paint error: {e}"),
+            let resp = self.show_slot(slot, side, slots, ui);
+            let fusions = if side {
+                &self.fusions_left
+            } else {
+                &self.fusions_right
+            };
+            if let Some(entity) = fusions.get(slot - 1) {
+                let rect = resp.rect.shrink(10.0);
+                let fusion = self.world.get::<Fusion>(*entity).unwrap();
+                fusion.paint(rect, ui, &self.world).log();
+                let mut entities: VecDeque<Entity> = [*entity].into();
+                let context = Context::new_world(&self.world).take();
+                while let Some(entity) = entities.pop_front() {
+                    let context = context.clone().set_owner(entity).take();
+                    if context.get_bool(VarName::visible).unwrap_or(true) {
+                        entities.extend(context.get_children(entity));
+                        if let Some(rep) = self.world.get::<Representation>(entity) {
+                            match RepresentationPlugin::paint_rect(
+                                rect,
+                                &context,
+                                &rep.material,
+                                ui,
+                            ) {
+                                Ok(_) => {}
+                                Err(e) => error!("Rep paint error: {e}"),
+                            }
+                        }
                     }
                 }
             }
-        }
-        for fusion in &self.fusions_left {
-            let fusion = self.world.get::<Fusion>(*fusion).unwrap();
-            fusion.paint(rect, ui, &self.world).log();
         }
     }
 }
