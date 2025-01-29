@@ -1,3 +1,5 @@
+use egui::lerp;
+
 use super::*;
 
 pub struct Battle {
@@ -16,7 +18,7 @@ impl Battle {
         let mut bs = BattleSimulation::new(self).unwrap();
         bs.send_event(Event::BattleStart);
         Window::new("Battle", move |ui, _| {
-            ui.set_min_size(egui::vec2(400.0, 400.0));
+            ui.set_min_size(egui::vec2(800.0, 400.0));
             bs.show(ui);
         })
         .push(world);
@@ -60,8 +62,36 @@ impl BattleSimulation {
             f.react(&event, &mut context).unwrap();
         }
     }
+    fn show_slot(&self, i: usize, side: bool, slots: usize, ui: &mut Ui) -> Response {
+        let full_rect = ui.available_rect_before_wrap();
+        let rect = slot_rect(i, side, full_rect, slots);
+        ui.expand_to_include_rect(rect);
+        let mut cui = ui.child_ui(rect, *ui.layout(), None);
+        let r = cui.allocate_rect(rect, Sense::hover());
+        let mut stroke = if r.hovered() {
+            STROKE_YELLOW
+        } else {
+            STROKE_DARK
+        };
+        let t = cui
+            .ctx()
+            .animate_bool(Id::new("slot_hovered").with(i).with(side), r.hovered());
+        let length = lerp(15.0..=20.0, t);
+        stroke.width += t;
+        corners_rounded_rect(r.rect.shrink(3.0), length, stroke, ui);
+        r
+    }
     pub fn show(&mut self, ui: &mut Ui) {
-        let rect = ui.available_rect_before_wrap();
+        let slots = global_settings().team_slots as usize;
+        let center_rect = slot_rect(0, true, ui.available_rect_before_wrap(), slots);
+        let up = center_rect.width() * 0.5;
+        for (slot, side) in (1..=slots).cartesian_product([true, false]) {
+            self.show_slot(slot, side, slots, ui);
+        }
+        let unit_size = center_rect.width() * UNIT_SIZE;
+
+        return;
+        let rect = Rect::NOTHING;
         let mut entities: VecDeque<Entity> = self
             .world
             .query_filtered::<Entity, Without<Parent>>()
@@ -85,4 +115,18 @@ impl BattleSimulation {
             fusion.paint(rect, ui, &self.world).log();
         }
     }
+}
+
+fn slot_rect(i: usize, side: bool, full_rect: Rect, team_slots: usize) -> Rect {
+    let total_slots = team_slots * 2 + 1;
+    let pos_i = if side {
+        (team_slots - i) as i32
+    } else {
+        (team_slots + i) as i32
+    } as f32;
+    let size = (full_rect.width() / total_slots as f32).at_most(full_rect.height());
+    let mut rect = full_rect;
+    rect.set_height(size);
+    rect.set_width(size);
+    rect.translate(egui::vec2(size * pos_i, 0.0))
 }

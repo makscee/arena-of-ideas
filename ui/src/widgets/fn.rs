@@ -1,3 +1,5 @@
+use egui::epaint::CubicBezierShape;
+
 use super::*;
 
 pub fn br(ui: &mut Ui) {
@@ -127,4 +129,54 @@ pub fn cursor_window_frame(
                 content(ui);
             });
         });
+}
+pub fn corners_rounded_rect(rect: Rect, length: f32, stroke: Stroke, ui: &mut Ui) {
+    let line = CubicBezierShape::from_points_stroke(
+        [
+            rect.left_top() + egui::vec2(0.0, length),
+            rect.left_top(),
+            rect.left_top(),
+            rect.left_top() + egui::vec2(length, 0.0),
+        ],
+        false,
+        TRANSPARENT,
+        stroke,
+    );
+    ui.painter().add(line);
+    let line = CubicBezierShape::from_points_stroke(
+        [
+            rect.right_top() + egui::vec2(-length, 0.0),
+            rect.right_top(),
+            rect.right_top(),
+            rect.right_top() + egui::vec2(0.0, length),
+        ],
+        false,
+        TRANSPARENT,
+        stroke,
+    );
+    ui.painter().add(line);
+    let line = CubicBezierShape::from_points_stroke(
+        [
+            rect.right_bottom() + egui::vec2(-length, 0.0),
+            rect.right_bottom(),
+            rect.right_bottom(),
+            rect.right_bottom() + egui::vec2(0.0, -length),
+        ],
+        false,
+        TRANSPARENT,
+        stroke,
+    );
+    ui.painter().add(line);
+    let line = CubicBezierShape::from_points_stroke(
+        [
+            rect.left_bottom() + egui::vec2(length, 0.0),
+            rect.left_bottom(),
+            rect.left_bottom(),
+            rect.left_bottom() + egui::vec2(0.0, -length),
+        ],
+        false,
+        TRANSPARENT,
+        stroke,
+    );
+    ui.painter().add(line);
 }
