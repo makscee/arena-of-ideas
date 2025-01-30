@@ -23,13 +23,13 @@ impl AdminPlugin {
             );
         }
     }
-    fn test_team() -> Team {
+    fn test_team(units: Vec<String>) -> Team {
         let houses = houses().values().cloned().collect_vec();
         let fusion = Fusion {
             unit: FusedUnit {
-                units: ["priest".into(), "mage".into()].into(),
+                units,
                 triggers: vec![0],
-                actions: vec![(0, 0), (1, 0)],
+                actions: vec![(0, 0)],
             },
             slot: Some(UnitSlot {
                 slot: 0,
@@ -45,12 +45,9 @@ impl AdminPlugin {
         }
     }
     fn show_battle(world: &mut World) {
-        let team = Self::test_team();
-        let s = team.to_strings_root();
-        dbg!(Team::from_strings(0, &s));
         let b = Battle {
-            left: team.clone(),
-            right: team,
+            left: Self::test_team(["priest".into(), "mage".into()].into()),
+            right: Self::test_team(["priest".into()].into()),
         };
         b.open_window(world);
     }
@@ -160,7 +157,7 @@ Abs(Equals(F(51.0),Abs(Equals(F(1.0),Or(Equals(F(1.0),One),Abs(Or(Target,Abs(One
                     };
                 }
                 if "Push Battle".cstr().button(ui).clicked() {
-                    let team = Self::test_team();
+                    let team = Self::test_team(vec!["priest".into()]);
                     let team = team.to_strings_root();
                     cn().reducers.battle_insert(team.clone(), team).unwrap();
                 }

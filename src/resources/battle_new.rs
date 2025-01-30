@@ -74,7 +74,7 @@ impl BattleAction {
                 true
             }
             BattleAction::Death(a) => {
-                // add_actions.extend(battle.die(*a));
+                add_actions.extend(battle.die(*a));
                 true
             }
             BattleAction::Damage(_, b, x) => {
@@ -246,8 +246,8 @@ impl BattleSimulation {
         }
         let a = BattleAction::Strike(self.fusions_left[0], self.fusions_right[0]);
         self.process_actions([a].into());
-        // let a = self.death_check();
-        // self.process_actions(a);
+        let a = self.death_check();
+        self.process_actions(a);
         self.process_actions(self.slots_sync());
         self.send_event(Event::TurnEnd);
     }
@@ -275,6 +275,40 @@ impl BattleSimulation {
             for a in a.apply(self) {
                 actions.push_front(a);
             }
+        }
+    }
+    fn death_check(&mut self) -> VecDeque<BattleAction> {
+        let mut actions: VecDeque<BattleAction> = default();
+        for (entity, stats) in self
+            .world
+            .query_filtered::<(Entity, &UnitStats), (Without<Corpse>, With<Fusion>)>()
+            .iter(&self.world)
+        {
+            if stats.hp <= 0 {
+                actions.push_back(BattleAction::Death(entity));
+            }
+        }
+        actions
+    }
+    fn die(&mut self, entity: Entity) -> Vec<BattleAction> {
+        self.world.entity_mut(entity).insert(Corpse);
+        let mut died = false;
+        if let Some(p) = self.fusions_left.iter().position(|u| *u == entity) {
+            self.fusions_left.remove(p);
+            died = true;
+        }
+        if let Some(p) = self.fusions_right.iter().position(|u| *u == entity) {
+            self.fusions_right.remove(p);
+            died = true;
+        }
+        if died {
+            [
+                BattleAction::VarSet(entity, NodeKind::None, VarName::visible, false.into()),
+                BattleAction::Wait(ANIMATION),
+            ]
+            .into()
+        } else {
+            default()
         }
     }
     fn slots_sync(&self) -> VecDeque<BattleAction> {
