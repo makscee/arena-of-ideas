@@ -1,6 +1,8 @@
 use super::*;
 
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, Default, Clone, AsRefStr, EnumIter)]
+#[derive(
+    Debug, PartialEq, Eq, Serialize, Deserialize, Default, Clone, AsRefStr, EnumIter, Display,
+)]
 pub enum Event {
     #[default]
     BattleStart,

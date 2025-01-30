@@ -134,7 +134,7 @@ impl BattleAction {
                 true
             }
             BattleAction::ApplyStatus(entity) => {
-                // battle.apply_status(*entity);
+                battle.apply_status(*entity);
                 true
             }
             BattleAction::Wait(t) => {
@@ -234,10 +234,13 @@ impl BattleSimulation {
                     vec![BattleAction::Spawn(*e)]
                 }
             })
-            .collect();
+            .collect_vec();
         self.process_actions(spawn_actions);
         self.process_actions(self.slots_sync());
         self.send_event(Event::BattleStart);
+        for e in self.fusions_right.clone() {
+            self.apply_status(e);
+        }
         self
     }
     pub fn run(&mut self) {
@@ -245,7 +248,7 @@ impl BattleSimulation {
             return;
         }
         let a = BattleAction::Strike(self.fusions_left[0], self.fusions_right[0]);
-        self.process_actions([a].into());
+        self.process_actions([a]);
         let a = self.death_check();
         self.process_actions(a);
         self.process_actions(self.slots_sync());
@@ -255,14 +258,59 @@ impl BattleSimulation {
         self.fusions_left.is_empty() || self.fusions_right.is_empty()
     }
     fn send_event(&mut self, event: Event) {
+        let mut actions: Vec<BattleAction> = default();
         for f in self
             .world
             .query_filtered::<&Fusion, Without<Corpse>>()
             .iter(&self.world)
         {
             let mut context = Context::new_world(&self.world).take();
-            f.react(&event, &mut context).unwrap();
+            match f.react(&event, &mut context) {
+                Ok(a) => actions.extend(a),
+                Err(e) => error!("Fusion event {event} failed: {e}"),
+            }
         }
+        for (r, s) in self.world.query::<(&Reaction, &Status)>().iter(&self.world) {
+            if r.react(&event) {
+                match r
+                    .actions
+                    .process(Context::new_battle_simulation(self).set_owner(s.entity()))
+                {
+                    Ok(a) => actions.extend(a),
+                    Err(e) => error!("Status {} event {event} failed: {e}", s.name),
+                };
+            }
+        }
+        self.process_actions(actions);
+    }
+    fn apply_status(&mut self, target: Entity) {
+        let status = Status {
+            name: "Test Status".into(),
+            description: Some(StatusDescription {
+                description: "Test status desc".into(),
+                reaction: Some(Reaction {
+                    trigger: Trigger::TurnEnd,
+                    actions: [
+                        Action::SetTarget(Box::new(Expression::RandomUnit(Box::new(
+                            Expression::AllUnits,
+                        )))),
+                        Action::SetValue(Box::new(Expression::I(1))),
+                        Action::DealDamage,
+                    ]
+                    .to_vec()
+                    .into(),
+                    ..default()
+                }),
+                ..default()
+            }),
+            ..default()
+        };
+        let entity = self.world.spawn_empty().set_parent(target).id();
+        status.unpack(entity, &mut self.world.commands());
+        self.world.flush_commands();
+        let mut state = NodeState::from_world_mut(entity, &mut self.world).unwrap();
+        state.insert(0.0, 0.0, VarName::visible, false.into(), default());
+        state.insert(self.t, 0.0, VarName::visible, true.into(), default());
     }
     fn apply_animation(&mut self, context: Context, anim: &Anim) {
         match anim.apply(&mut self.t, context, &mut self.world) {
@@ -270,7 +318,8 @@ impl BattleSimulation {
             Err(e) => error!("Animation error: {e}"),
         }
     }
-    fn process_actions(&mut self, mut actions: VecDeque<BattleAction>) {
+    fn process_actions(&mut self, actions: impl Into<VecDeque<BattleAction>>) {
+        let mut actions = actions.into();
         while let Some(a) = actions.pop_front() {
             for a in a.apply(self) {
                 actions.push_front(a);
@@ -302,6 +351,9 @@ impl BattleSimulation {
             died = true;
         }
         if died {
+            if self.ended() {
+                self.t += 1.0;
+            }
             [
                 BattleAction::VarSet(entity, NodeKind::None, VarName::visible, false.into()),
                 BattleAction::Wait(ANIMATION),
@@ -371,10 +423,9 @@ impl BattleSimulation {
             self.show_slot(slot, side, slots, ui);
         }
         let fusions: HashSet<Entity> = HashSet::from_iter(
-            self.fusions_left
-                .iter()
-                .copied()
-                .chain(self.fusions_right.iter().copied()),
+            self.world
+                .query_filtered::<Entity, With<Fusion>>()
+                .iter(&self.world),
         );
         let mut entities: VecDeque<Entity> = self
             .world

@@ -118,7 +118,7 @@ impl OnUnpack for NodeKind {
             NodeKind::House => {
                 entity_commands.insert(NodeState::new_with(VarName::visible, false.into()));
             }
-            NodeKind::Ability | NodeKind::Fusion | NodeKind::Representation => {
+            NodeKind::Ability | NodeKind::Fusion | NodeKind::Representation | NodeKind::Status => {
                 entity_commands.insert(NodeState::default());
             }
             _ => {}
