@@ -31,11 +31,11 @@ impl AdminPlugin {
                 triggers: vec![0],
                 actions: vec![(0, 0), (1, 0)],
             },
-            entity: None,
             slot: Some(UnitSlot {
                 slot: 0,
                 entity: None,
             }),
+            ..default()
         };
         Team {
             name: "TestTeam".into(),

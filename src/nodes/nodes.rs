@@ -113,21 +113,23 @@ trait OnUnpack {
 
 impl OnUnpack for NodeKind {
     fn on_unpack(self, entity: Entity, commands: &mut Commands) {
-        let state = match self {
-            NodeKind::House => NodeState::new_with(VarName::visible, false.into()),
-            _ => NodeState::default(),
-        };
-        commands.entity(entity).insert((
-            TransformBundle::default(),
-            VisibilityBundle::default(),
-            state,
-        ));
-
-        let entity = commands.spawn_empty().set_parent(entity).id();
+        let mut entity_commands = commands.entity(entity);
         match self {
-            NodeKind::Hero => hero_rep().clone().unpack(entity, commands),
+            NodeKind::House => {
+                entity_commands.insert(NodeState::new_with(VarName::visible, false.into()));
+            }
+            NodeKind::Ability | NodeKind::Fusion | NodeKind::Representation => {
+                entity_commands.insert(NodeState::default());
+            }
+            _ => {}
+        };
+        entity_commands.insert((TransformBundle::default(), VisibilityBundle::default()));
+
+        let mut child = || commands.spawn_empty().set_parent(entity).id();
+        match self {
+            NodeKind::Hero => hero_rep().clone().unpack(child(), commands),
             NodeKind::Fusion => unit_rep().clone().unpack(entity, commands),
-            NodeKind::Status => status_rep().clone().unpack(entity, commands),
+            NodeKind::Status => status_rep().clone().unpack(child(), commands),
             _ => {}
         }
     }

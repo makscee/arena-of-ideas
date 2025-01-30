@@ -1,7 +1,5 @@
 use super::*;
 
-const ANIMATION: f32 = 0.2;
-
 pub struct BattleOld {
     pub left: Team,
     pub right: Team,
@@ -21,38 +19,6 @@ pub struct BattleSimulationOld {
 pub struct BattleLog {
     pub states: HashMap<Entity, NodeState>,
     pub actions: Vec<BattleAction>,
-}
-
-#[derive(Component)]
-pub struct Corpse;
-#[derive(Clone, Debug)]
-pub enum BattleAction {
-    VarSet(Entity, NodeKind, VarName, VarValue),
-    Strike(Entity, Entity),
-    Damage(Entity, Entity, i32),
-    Death(Entity),
-    Spawn(Entity),
-    ApplyStatus(Entity),
-    Wait(f32),
-}
-
-impl ToCstr for BattleAction {
-    fn cstr(&self) -> Cstr {
-        match self {
-            BattleAction::Strike(a, b) => format!("{a}|{b}"),
-            BattleAction::Damage(a, b, x) => format!("{a}>{b}-{x}"),
-            BattleAction::Death(a) => format!("x{a}"),
-            BattleAction::VarSet(a, _, var, value) => format!("{a}>${var}>{value}"),
-            BattleAction::Spawn(a) => format!("*{a}"),
-            BattleAction::ApplyStatus(a) => format!("+{a}"),
-            BattleAction::Wait(t) => format!("~{t}"),
-        }
-    }
-}
-impl std::fmt::Display for BattleAction {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(&self.cstr().to_colored())
-    }
 }
 
 impl BattleOld {
@@ -90,118 +56,6 @@ impl BattleOld {
     }
 }
 
-impl BattleAction {
-    fn apply(&self, battle: &mut BattleSimulationOld) -> Vec<Self> {
-        let mut add_actions = Vec::default();
-        let applied = match self {
-            BattleAction::Strike(a, b) => {
-                let strike_anim = animations().get("strike").unwrap();
-                battle.apply_animation(
-                    Context::default()
-                        .set_owner(*a)
-                        .set_target(*b)
-                        .set_var(VarName::position, vec2(0.0, 0.0).into())
-                        .take(),
-                    strike_anim,
-                );
-                let strike_vfx = animations().get("strike_vfx").unwrap();
-                battle.apply_animation(Context::default(), strike_vfx);
-                let pwr = battle.world.get::<UnitStats>(*a).unwrap().pwr;
-                let action_a = Self::Damage(*a, *b, pwr);
-                let pwr = battle.world.get::<UnitStats>(*b).unwrap().pwr;
-                let action_b = Self::Damage(*b, *a, pwr);
-                add_actions.extend_from_slice(&[action_a, action_b]);
-                add_actions.extend(battle.slots_sync());
-                true
-            }
-            BattleAction::Death(a) => {
-                add_actions.extend(battle.die(*a));
-                true
-            }
-            BattleAction::Damage(_, b, x) => {
-                let pos = Context::new_battle_simulation(&battle)
-                    .set_owner(*b)
-                    .get_var(VarName::position)
-                    .unwrap();
-                let text = animations().get("text").unwrap();
-                battle.apply_animation(
-                    Context::default()
-                        .set_var(VarName::text, (-*x).to_string().into())
-                        .set_var(VarName::color, RED.into())
-                        .set_var(VarName::position, pos.clone())
-                        .take(),
-                    text,
-                );
-                if *x > 0 {
-                    let pain = animations().get("pain_vfx").unwrap();
-                    battle.apply_animation(
-                        Context::default().set_var(VarName::position, pos).take(),
-                        pain,
-                    );
-                    let hp = battle.world.get::<UnitStats>(*b).unwrap().hp - x;
-                    add_actions.push(Self::VarSet(
-                        *b,
-                        NodeKind::UnitStats,
-                        VarName::hp,
-                        hp.into(),
-                    ));
-                }
-                true
-            }
-            BattleAction::VarSet(entity, kind, var, value) => {
-                if battle.world.get_mut::<NodeState>(*entity).unwrap().insert(
-                    battle.t,
-                    0.1,
-                    *var,
-                    value.clone(),
-                    *kind,
-                ) {
-                    kind.set_var(*entity, *var, value.clone(), &mut battle.world);
-                    true
-                } else {
-                    false
-                }
-            }
-            BattleAction::Spawn(entity) => {
-                battle
-                    .world
-                    .run_system_once_with((*entity, battle.t), NodeStatePlugin::inject_entity_vars);
-                battle.log.add_state(*entity, &mut battle.world);
-                add_actions.extend_from_slice(&[BattleAction::VarSet(
-                    *entity,
-                    NodeKind::None,
-                    VarName::visible,
-                    true.into(),
-                )]);
-                true
-            }
-            BattleAction::ApplyStatus(entity) => {
-                battle.apply_status(*entity);
-                true
-            }
-            BattleAction::Wait(t) => {
-                battle.t += *t;
-                false
-            }
-        };
-        if applied {
-            info!("{} {self}", "+".green().dimmed());
-            battle.log.actions.push(self.clone());
-        } else {
-            info!("{} {self}", "-".dimmed());
-        }
-        add_actions
-    }
-}
-
-impl BattleLog {
-    fn add_state(&mut self, entity: Entity, world: &mut World) {
-        self.states.insert(
-            entity,
-            world.run_system_once_with(entity, NodeStatePlugin::collect_full_state),
-        );
-    }
-}
 impl BattleSimulationOld {
     pub fn new(battle: &BattleOld) -> Self {
         let mut world = World::new();
@@ -225,7 +79,6 @@ impl BattleSimulationOld {
             .collect_vec()
         {
             left_units.push(e);
-            log.add_state(e, &mut world);
         }
         for e in Context::new_world(&world)
             .children_components::<Fusion>(right_team)
@@ -234,7 +87,6 @@ impl BattleSimulationOld {
             .collect_vec()
         {
             right_units.push(e);
-            log.add_state(e, &mut world);
         }
         world.flush();
         Self {
@@ -256,9 +108,9 @@ impl BattleSimulationOld {
     }
     fn process_actions(&mut self, mut actions: VecDeque<BattleAction>) {
         while let Some(a) = actions.pop_front() {
-            for a in a.apply(self) {
-                actions.push_front(a);
-            }
+            // for a in a.apply(self) {
+            //     actions.push_front(a);
+            // }
         }
     }
     fn apply_status(&mut self, target: Entity) {
@@ -294,7 +146,7 @@ impl BattleSimulationOld {
             if reaction.react(event) {
                 match reaction
                     .actions
-                    .process(Context::new_battle_simulation(bs).set_owner(entity))
+                    .process(Context::default().set_owner(entity))
                 {
                     Ok(a) => actions.extend(a),
                     Err(e) => {

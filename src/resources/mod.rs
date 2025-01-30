@@ -21,7 +21,6 @@ use super::*;
 
 pub use action::*;
 pub use anim::*;
-pub use battle::*;
 pub use battle_new::*;
 pub use client_settings::*;
 pub use client_state::*;

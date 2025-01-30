@@ -4,16 +4,13 @@ impl Fusion {
     pub fn init(self, world: &mut World) -> Result<(), ExpressionError> {
         let entity = self.entity();
         let units = self.units(&Context::new_world(world))?;
-        let mut hp = 0;
-        let mut pwr = 0;
+        let mut fusion_stats = UnitStats::default();
         for u in units {
             let stats = world.get::<UnitStats>(u).to_e("Unit stats not found")?;
-            hp += stats.hp;
-            pwr += stats.pwr;
+            fusion_stats.hp += stats.hp;
+            fusion_stats.pwr += stats.pwr;
         }
-        let mut state = NodeState::from_world_mut(entity, world).to_e("NodeState not found")?;
-        state.init(VarName::hp, hp.into());
-        state.init(VarName::pwr, pwr.into());
+        world.entity_mut(entity).insert(fusion_stats);
         Ok(())
     }
     pub fn units(&self, context: &Context) -> Result<Vec<Entity>, ExpressionError> {

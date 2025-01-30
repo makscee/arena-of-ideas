@@ -11,7 +11,7 @@ pub struct Context<'w, 's> {
 pub enum ContextSource<'w, 's> {
     Query(&'w StateQuery<'w, 's>),
     World(&'w World),
-    BattleSimulation(&'w BattleSimulationOld),
+    BattleSimulation(&'w BattleSimulation),
 }
 
 #[derive(Debug, Clone)]
@@ -38,7 +38,7 @@ impl<'w, 's> Context<'w, 's> {
             t: None,
         }
     }
-    pub fn new_battle_simulation(bs: &'w BattleSimulationOld) -> Self {
+    pub fn new_battle_simulation(bs: &'w BattleSimulation) -> Self {
         Self {
             layers: default(),
             sources: vec![ContextSource::BattleSimulation(bs)],
@@ -135,7 +135,7 @@ impl<'w, 's> Context<'w, 's> {
     pub fn get_all_units(&self) -> Vec<VarValue> {
         self.sources
             .iter()
-            .flat_map(|s| s.get_all_units())
+            .flat_map(|s| s.get_all_fusions())
             .map(|e| e.to_value())
             .collect()
     }
@@ -196,7 +196,7 @@ impl ContextSource<'_, '_> {
         match self {
             ContextSource::World(w) => get_children_recursive(entity, w),
             ContextSource::BattleSimulation(bs) => get_children_recursive(entity, &bs.world),
-            ContextSource::Query(q) => todo!(),
+            ContextSource::Query(_) => todo!(),
         }
     }
     pub fn get_parent(&self, entity: Entity) -> Option<Entity> {
@@ -206,12 +206,12 @@ impl ContextSource<'_, '_> {
             ContextSource::BattleSimulation(bs) => get_parent(entity, &bs.world),
         }
     }
-    fn get_all_units(&self) -> Vec<Entity> {
+    fn get_all_fusions(&self) -> Vec<Entity> {
         match self {
             ContextSource::BattleSimulation(bs) => bs
-                .left_units
+                .fusions_left
                 .iter()
-                .chain(bs.right_units.iter())
+                .chain(bs.fusions_right.iter())
                 .copied()
                 .collect(),
             _ => default(),

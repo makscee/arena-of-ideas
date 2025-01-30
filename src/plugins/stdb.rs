@@ -77,7 +77,7 @@ pub fn subscribe_game(on_success: impl FnOnce() + Send + Sync + 'static) {
     db.battle().on_insert(|_, row| {
         let left = Team::from_strings(0, &row.team_left).unwrap();
         let right = Team::from_strings(0, &row.team_right).unwrap();
-        let battle = BattleOld { left, right };
+        let battle = Battle { left, right };
         OperationsPlugin::add(move |world| {
             battle.open_window(world);
         });

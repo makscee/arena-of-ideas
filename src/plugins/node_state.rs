@@ -53,7 +53,9 @@ impl NodeStatePlugin {
         if let Ok((gv, mut state)) = nodes.get_mut(entity) {
             for v in gv {
                 let kind = v.kind();
+                dbg!(kind);
                 for (var, value) in v.get_vars() {
+                    debug!("{var} {value}");
                     state.insert(t, 0.0, var, value, kind);
                 }
             }

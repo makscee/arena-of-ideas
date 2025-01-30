@@ -319,7 +319,6 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     }
                     fn unpack(mut self, entity: Entity, commands: &mut Commands) {
                         debug!("Unpack {self} into {entity}");
-                        self.kind().on_unpack(entity, commands);
                         self.entity = Some(entity);
                         #(
                             if let Some(d) = self.#option_link_fields.take() {
@@ -342,7 +341,9 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                                 d.unpack(entity, commands);
                             }
                         )*
+                        let kind = self.kind();
                         commands.entity(entity).insert(self);
+                        kind.on_unpack(entity, commands);
                     }
                     fn collect_units_vec<'a>(&'a self, vec: &mut Vec<&'a Unit>) {
                         #insert_unit
