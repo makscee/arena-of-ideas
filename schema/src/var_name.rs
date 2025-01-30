@@ -18,6 +18,8 @@ use super::*;
 )]
 pub enum VarName {
     #[default]
+    index,
+    max_index,
     value,
     position,
     offset,
@@ -28,7 +30,6 @@ pub enum VarName {
     description,
     color,
     lvl,
-    index,
     visible,
     slot,
     side,

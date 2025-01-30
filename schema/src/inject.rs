@@ -64,6 +64,7 @@ impl Injector<Self> for Expression {
             | Expression::V(..)
             | Expression::S(..)
             | Expression::F(..)
+            | Expression::FSlider(..)
             | Expression::I(..)
             | Expression::B(..)
             | Expression::V2(..)
@@ -78,6 +79,7 @@ impl Injector<Self> for Expression {
             | Expression::UnitVec(x)
             | Expression::Rand(x)
             | Expression::RandomUnit(x)
+            | Expression::ToF(x)
             | Expression::Sqr(x) => [x].into(),
             Expression::Macro(a, b)
             | Expression::V2EE(a, b)
@@ -93,7 +95,7 @@ impl Injector<Self> for Expression {
             | Expression::Equals(a, b)
             | Expression::GreaterThen(a, b)
             | Expression::LessThen(a, b) => [a, b].into(),
-            Expression::If(a, b, c) => [a, b, c].into(),
+            Expression::Oklch(a, b, c) | Expression::If(a, b, c) => [a, b, c].into(),
         }
     }
     fn get_inner(&self) -> Vec<&Box<Self>> {
@@ -111,6 +113,7 @@ impl Injector<Self> for Expression {
             | Expression::V(..)
             | Expression::S(..)
             | Expression::F(..)
+            | Expression::FSlider(..)
             | Expression::I(..)
             | Expression::B(..)
             | Expression::V2(..)
@@ -125,6 +128,7 @@ impl Injector<Self> for Expression {
             | Expression::UnitVec(x)
             | Expression::Rand(x)
             | Expression::RandomUnit(x)
+            | Expression::ToF(x)
             | Expression::Sqr(x) => [x].into(),
             Expression::Macro(a, b)
             | Expression::V2EE(a, b)
@@ -140,7 +144,7 @@ impl Injector<Self> for Expression {
             | Expression::Equals(a, b)
             | Expression::GreaterThen(a, b)
             | Expression::LessThen(a, b) => [a, b].into(),
-            Expression::If(a, b, c) => [a, b, c].into(),
+            Expression::Oklch(a, b, c) | Expression::If(a, b, c) => [a, b, c].into(),
         }
     }
 }

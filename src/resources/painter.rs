@@ -118,8 +118,16 @@ impl Paint for PainterAction {
                 p.tesselator = new_tesselator(x, ui.ctx());
             }
             PainterAction::Repeat(x, action) => {
-                for i in 0..x.get_i32(context)? {
-                    action.paint(context.clone().set_var(VarName::index, i.into()), p, ui)?;
+                let max_index = x.get_i32(context)?;
+                for i in 0..max_index {
+                    action.paint(
+                        context
+                            .clone()
+                            .set_var(VarName::index, i.into())
+                            .set_var(VarName::max_index, max_index.into()),
+                        p,
+                        ui,
+                    )?;
                 }
             }
             PainterAction::Paint => {

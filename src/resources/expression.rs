@@ -34,7 +34,7 @@ impl ExpressionImpl for Expression {
                 }
             }
             Expression::V(v) => Ok(v.clone()),
-            Expression::F(v) => Ok((*v).into()),
+            Expression::F(v) | Expression::FSlider(v) => Ok((*v).into()),
             Expression::I(v) => Ok((*v).into()),
             Expression::B(v) => Ok((*v).into()),
             Expression::V2(x, y) => Ok(vec2(*x, *y).into()),
@@ -65,6 +65,7 @@ impl ExpressionImpl for Expression {
                 let x = vec2(x.cos(), x.sin());
                 Ok(x.into())
             }
+            Expression::ToF(x) => Ok(x.get_f32(context)?.into()),
             Expression::Rand(x) => {
                 let x = x.get_value(context)?;
                 let mut hasher = DefaultHasher::new();
@@ -101,6 +102,13 @@ impl ExpressionImpl for Expression {
                 VarValue::compare(&a.get_value(context)?, &b.get_value(context)?)?,
                 std::cmp::Ordering::Less
             ))),
+            Expression::Oklch(l, c, h) => Ok(Color::lch(
+                l.get_f32(context)? * 1.5,
+                c.get_f32(context)? * 1.5,
+                h.get_f32(context)? * 360.0,
+            )
+            .c32()
+            .into()),
             Expression::If(i, t, el) => {
                 if i.get_bool(context)? {
                     t.get_value(context)

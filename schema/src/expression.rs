@@ -24,6 +24,7 @@ pub enum Expression {
 
     S(String),
     F(f32),
+    FSlider(f32),
     I(i32),
     B(bool),
     V2(f32, f32),
@@ -41,6 +42,8 @@ pub enum Expression {
     Rand(Box<Expression>),
     RandomUnit(Box<Expression>),
 
+    ToF(Box<Expression>),
+
     V2EE(Box<Expression>, Box<Expression>),
     Macro(Box<Expression>, Box<Expression>),
     Sum(Box<Expression>, Box<Expression>),
@@ -57,6 +60,7 @@ pub enum Expression {
     LessThen(Box<Expression>, Box<Expression>),
 
     If(Box<Expression>, Box<Expression>, Box<Expression>),
+    Oklch(Box<Expression>, Box<Expression>, Box<Expression>),
 }
 
 impl std::hash::Hash for Expression {
@@ -76,6 +80,7 @@ impl std::hash::Hash for Expression {
             Expression::V(v) => v.hash(state),
             Expression::S(v) | Expression::C(v) => v.hash(state),
             Expression::F(v) => v.to_bits().hash(state),
+            Expression::FSlider(v) => v.to_bits().hash(state),
             Expression::I(v) => v.hash(state),
             Expression::B(v) => v.hash(state),
             Expression::V2(x, y) => {
@@ -93,6 +98,7 @@ impl std::hash::Hash for Expression {
             | Expression::Abs(e)
             | Expression::Floor(e)
             | Expression::Ceil(e)
+            | Expression::ToF(e)
             | Expression::Fract(e) => e.hash(state),
             Expression::Macro(a, b)
             | Expression::V2EE(a, b)
@@ -111,10 +117,10 @@ impl std::hash::Hash for Expression {
                 a.hash(state);
                 b.hash(state);
             }
-            Expression::If(i, t, e) => {
-                i.hash(state);
-                t.hash(state);
-                e.hash(state);
+            Expression::Oklch(a, b, c) | Expression::If(a, b, c) => {
+                a.hash(state);
+                b.hash(state);
+                c.hash(state);
             }
         }
     }

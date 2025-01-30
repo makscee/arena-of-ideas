@@ -434,7 +434,7 @@ impl ToCstr for Expression {
             Expression::Var(v) => v.cstr(),
             Expression::V(v) => v.cstr(),
             Expression::S(v) => v.to_owned(),
-            Expression::F(v) => v.cstr(),
+            Expression::F(v) | Expression::FSlider(v) => v.cstr(),
             Expression::I(v) => v.cstr(),
             Expression::B(v) => v.cstr(),
             Expression::V2(x, y) => vec2(*x, *y).cstr(),
@@ -452,6 +452,7 @@ impl ToCstr for Expression {
             | Expression::UnitVec(x)
             | Expression::Rand(x)
             | Expression::RandomUnit(x)
+            | Expression::ToF(x)
             | Expression::Sqr(x) => x.cstr(),
             Expression::Macro(a, b)
             | Expression::V2EE(a, b)
@@ -467,7 +468,7 @@ impl ToCstr for Expression {
             | Expression::Equals(a, b)
             | Expression::GreaterThen(a, b)
             | Expression::LessThen(a, b) => format!("{}, {}", a.cstr_expanded(), b.cstr_expanded()),
-            Expression::If(a, b, c) => format!(
+            Expression::Oklch(a, b, c) | Expression::If(a, b, c) => format!(
                 "{}, {}, {}",
                 a.cstr_expanded(),
                 b.cstr_expanded(),

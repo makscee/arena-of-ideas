@@ -404,6 +404,7 @@ impl DataFramed for Expression {
             | Expression::V(_)
             | Expression::S(_)
             | Expression::F(_)
+            | Expression::FSlider(_)
             | Expression::I(_)
             | Expression::B(_)
             | Expression::V2(_, _)
@@ -442,6 +443,8 @@ impl DataFramed for Expression {
             | Expression::Equals(..)
             | Expression::GreaterThen(..)
             | Expression::LessThen(..)
+            | Expression::ToF(..)
+            | Expression::Oklch(..)
             | Expression::If(..) => false,
         }
     }
@@ -489,6 +492,9 @@ impl DataFramed for Expression {
             | Expression::Equals(..)
             | Expression::GreaterThen(..)
             | Expression::LessThen(..)
+            | Expression::FSlider(..)
+            | Expression::ToF(..)
+            | Expression::Oklch(..)
             | Expression::If(..) => true,
         }
     }
@@ -497,7 +503,7 @@ impl DataFramed for Expression {
             Expression::Var(v) => v.show(Some("x:"), &context, ui),
             Expression::V(v) => v.show(Some("x:"), &context, ui),
             Expression::S(v) => v.show(Some("x:"), &context, ui),
-            Expression::F(v) => v.show(Some("x:"), &context, ui),
+            Expression::F(v) | Expression::FSlider(v) => v.show(Some("x:"), &context, ui),
             Expression::I(v) => v.show(Some("x:"), &context, ui),
             Expression::B(v) => v.show(Some("x:"), &context, ui),
             Expression::V2(x, y) => {
@@ -550,6 +556,7 @@ impl DataFramed for Expression {
             | Expression::UnitVec(x)
             | Expression::Rand(x)
             | Expression::RandomUnit(x)
+            | Expression::ToF(x)
             | Expression::Sqr(x) => x.show(Some("x:"), &context, ui),
             Expression::V2EE(a, b)
             | Expression::Macro(a, b)
@@ -567,6 +574,11 @@ impl DataFramed for Expression {
             | Expression::LessThen(a, b) => {
                 a.show(Some("a:"), &context, ui);
                 b.show(Some("b:"), &context, ui);
+            }
+            Expression::Oklch(a, b, c) => {
+                a.show(Some("lightness:"), &context, ui);
+                b.show(Some("chroma:"), &context, ui);
+                c.show(Some("hue:"), &context, ui);
             }
             Expression::If(a, b, c) => {
                 a.show(Some("if:"), &context, ui);
@@ -588,6 +600,7 @@ impl DataFramed for Expression {
             | Expression::UnitVec(x)
             | Expression::Rand(x)
             | Expression::RandomUnit(x)
+            | Expression::ToF(x)
             | Expression::Sqr(x) => x.show_mut(Some("x:"), ui),
             Expression::V2EE(a, b)
             | Expression::Macro(a, b)
@@ -606,11 +619,17 @@ impl DataFramed for Expression {
                 let a = a.show_mut(Some("a:"), ui);
                 b.show_mut(Some("b:"), ui) || a
             }
+            Expression::Oklch(a, b, c) => {
+                let a = a.show_mut(Some("lightness:"), ui);
+                let b = b.show_mut(Some("chroma:"), ui);
+                c.show_mut(Some("hue:"), ui) || a || b
+            }
             Expression::If(a, b, c) => {
                 let a = a.show_mut(Some("if:"), ui);
                 let b = b.show_mut(Some("then:"), ui);
                 c.show_mut(Some("else:"), ui) || a || b
             }
+            Expression::FSlider(x) => Slider::new("x:").full_width().ui(x, 0.0..=1.0, ui),
             _ => false,
         }
     }
