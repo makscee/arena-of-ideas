@@ -16,13 +16,14 @@ pub enum PainterAction {
     ScaleRect(Box<Expression>),
     Color(Box<Expression>),
     Alpha(Box<Expression>),
+    Feathering(Box<Expression>),
     Repeat(Box<Expression>, Box<PainterAction>),
     List(Vec<Box<PainterAction>>),
 }
 
 impl Default for PainterAction {
     fn default() -> Self {
-        Self::Rectangle(Box::new(Expression::V2(1.0, 1.0)))
+        Self::Circle(Box::new(Expression::F(1.0)))
     }
 }
 

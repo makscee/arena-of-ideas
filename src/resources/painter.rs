@@ -17,15 +17,28 @@ impl Painter {
             rect,
             color: VISIBLE_LIGHT,
             mesh: egui::Mesh::default(),
-            tesselator: Tessellator::new(
-                ctx.pixels_per_point(),
-                TessellationOptions::default(),
-                ctx.fonts(|r| r.font_image_size()),
-                default(),
-            ),
+            tesselator: new_tesselator(0.0, ctx),
             hollow: None,
         }
     }
+}
+
+fn new_tesselator(feathering: f32, ctx: &egui::Context) -> Tessellator {
+    let (feathering, feathering_size_in_pixels) = if feathering > 0.0 {
+        (true, feathering)
+    } else {
+        (false, 0.0)
+    };
+    Tessellator::new(
+        ctx.pixels_per_point(),
+        TessellationOptions {
+            feathering,
+            feathering_size_in_pixels,
+            ..default()
+        },
+        ctx.fonts(|r| r.font_image_size()),
+        default(),
+    )
 }
 
 pub trait Paint {
@@ -98,6 +111,11 @@ impl Paint for PainterAction {
             }
             PainterAction::Alpha(x) => {
                 p.color = p.color.gamma_multiply(x.get_f32(context)?.clamp(0.0, 1.0));
+            }
+            PainterAction::Feathering(x) => {
+                Self::Paint.paint(context, p, ui)?;
+                let x = x.get_f32(context)?;
+                p.tesselator = new_tesselator(x, ui.ctx());
             }
             PainterAction::Repeat(x, action) => {
                 for i in 0..x.get_i32(context)? {

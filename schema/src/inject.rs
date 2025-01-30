@@ -159,6 +159,7 @@ impl Injector<Expression> for PainterAction {
             | PainterAction::ScaleRect(x)
             | PainterAction::Color(x)
             | PainterAction::Alpha(x)
+            | PainterAction::Feathering(x)
             | PainterAction::Repeat(x, ..) => [x].into(),
         }
     }
@@ -175,6 +176,7 @@ impl Injector<Expression> for PainterAction {
             | PainterAction::ScaleRect(x)
             | PainterAction::Color(x)
             | PainterAction::Alpha(x)
+            | PainterAction::Feathering(x)
             | PainterAction::Repeat(x, ..) => [x].into(),
         }
     }
@@ -198,6 +200,7 @@ impl Injector<Self> for PainterAction {
             | PainterAction::ScaleMesh(..)
             | PainterAction::ScaleRect(..)
             | PainterAction::Color(..)
+            | PainterAction::Feathering(..)
             | PainterAction::Alpha(..) => default(),
             PainterAction::Repeat(_x, p) => [p].into(),
             PainterAction::List(vec) => vec.into_iter().collect_vec(),
@@ -215,6 +218,7 @@ impl Injector<Self> for PainterAction {
             | PainterAction::ScaleMesh(..)
             | PainterAction::ScaleRect(..)
             | PainterAction::Color(..)
+            | PainterAction::Feathering(..)
             | PainterAction::Alpha(..) => default(),
             PainterAction::Repeat(_x, p) => [p].into(),
             PainterAction::List(vec) => vec.into_iter().collect_vec(),

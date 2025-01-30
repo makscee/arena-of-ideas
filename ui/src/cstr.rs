@@ -497,6 +497,7 @@ impl ToCstr for PainterAction {
             | PainterAction::ScaleMesh(x)
             | PainterAction::ScaleRect(x)
             | PainterAction::Alpha(x)
+            | PainterAction::Feathering(x)
             | PainterAction::Color(x) => x.cstr_expanded(),
             PainterAction::Repeat(x, a) => format!("{}, {}", x.cstr_expanded(), a.cstr_expanded()),
             PainterAction::List(vec) => vec.into_iter().map(|a| a.cstr_expanded()).join(", "),

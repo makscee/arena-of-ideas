@@ -638,6 +638,7 @@ impl DataFramed for PainterAction {
             | PainterAction::ScaleMesh(..)
             | PainterAction::ScaleRect(..)
             | PainterAction::Color(..)
+            | PainterAction::Feathering(..)
             | PainterAction::Alpha(..)
             | PainterAction::Repeat(..)
             | PainterAction::List(..) => true,
@@ -659,6 +660,7 @@ impl DataFramed for PainterAction {
             | PainterAction::ScaleMesh(x)
             | PainterAction::ScaleRect(x)
             | PainterAction::Color(x)
+            | PainterAction::Feathering(x)
             | PainterAction::Alpha(x) => x.show(Some("x:"), context, ui),
             PainterAction::Repeat(x, painter_action) => {
                 x.show(Some("cnt:"), context, ui);
@@ -679,6 +681,7 @@ impl DataFramed for PainterAction {
             | PainterAction::ScaleMesh(x)
             | PainterAction::ScaleRect(x)
             | PainterAction::Color(x)
+            | PainterAction::Feathering(x)
             | PainterAction::Alpha(x) => x.show_mut(Some("x:"), ui),
             PainterAction::Repeat(x, painter_action) => {
                 let x = x.show_mut(Some("cnt:"), ui);
