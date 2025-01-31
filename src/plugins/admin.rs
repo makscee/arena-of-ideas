@@ -26,13 +26,10 @@ impl AdminPlugin {
     fn test_team(units: Vec<String>) -> Team {
         let houses = houses().values().cloned().collect_vec();
         let mut actions: Vec<(u8, u8)> = default();
-        for (i, u) in houses
-            .iter()
-            .flat_map(|h| h.collect_units())
-            .filter(|u| units.contains(&u.name))
-            .enumerate()
-        {
-            for (a, _) in u
+        let house_units = houses.iter().flat_map(|h| h.collect_units()).collect_vec();
+        for (i, unit) in units.iter().enumerate() {
+            let unit = house_units.iter().find(|u| u.name.eq(unit)).unwrap();
+            for (a, _) in unit
                 .description
                 .as_ref()
                 .unwrap()
@@ -68,7 +65,7 @@ impl AdminPlugin {
     }
     fn show_battle(world: &mut World) {
         let b = Battle {
-            left: Self::test_team(["mage".into()].into()),
+            left: Self::test_team(["mage".into(), "priest".into()].into()),
             right: Self::test_team(["priest".into()].into()),
         };
         b.open_window(world);

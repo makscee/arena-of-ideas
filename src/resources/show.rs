@@ -288,16 +288,17 @@ impl Show for Entity {
 
 impl Show for Material {
     fn show(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) {
-        let r = prefix.show(ui);
-        let rect = ui.available_rect_before_wrap();
+        prefix.show(ui);
+        let mut rect = ui.available_rect_before_wrap();
+        rect.set_width(150.0);
+        rect.set_height(150.0);
         let mut p = Painter::new(rect, ui.ctx());
         for i in &self.0 {
-            let _ = i.paint(context, &mut p, ui);
+            i.paint(context, &mut p, ui).log();
         }
         for i in &self.0 {
             i.show(None, context, ui);
         }
-        r
     }
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
         self.0.show_mut(prefix, ui)

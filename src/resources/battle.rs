@@ -395,12 +395,33 @@ impl BattleSimulation {
         actions.push_back(BattleAction::Wait(ANIMATION * 3.0));
         actions
     }
-    fn show_slot(&self, i: usize, side: bool, slots: usize, ui: &mut Ui) -> Response {
+    fn fusion_by_slot<'a>(&'a self, slot: usize, side: bool) -> Option<&'a Fusion> {
+        let entity = if side {
+            &self.fusions_left
+        } else {
+            &self.fusions_right
+        }
+        .get(slot)?;
+        self.world.get::<Fusion>(*entity)
+    }
+    fn pack_units_by_slot(&self, slot: usize, side: bool) -> Vec<Unit> {
+        if let Some(f) = self.fusion_by_slot(slot, side) {
+            if let Ok(units) = f.units(&Context::new_battle_simulation(self)) {
+                return units
+                    .into_iter()
+                    .map(|u| Unit::pack(u, &self.world).unwrap())
+                    .collect_vec();
+            }
+        }
+        default()
+    }
+    fn show_slot(&self, slot: usize, side: bool, slots: usize, ui: &mut Ui) -> Response {
+        let slot = slot + 1;
         let full_rect = ui.available_rect_before_wrap();
-        let rect = slot_rect(i, side, full_rect, slots);
+        let rect = slot_rect(slot, side, full_rect, slots);
         ui.expand_to_include_rect(rect);
         let mut cui = ui.child_ui(rect, *ui.layout(), None);
-        let r = cui.allocate_rect(rect, Sense::hover());
+        let r = cui.allocate_rect(rect, Sense::click());
         let mut stroke = if r.hovered() {
             STROKE_YELLOW
         } else {
@@ -408,19 +429,46 @@ impl BattleSimulation {
         };
         let t = cui
             .ctx()
-            .animate_bool(Id::new("slot_hovered").with(i).with(side), r.hovered());
+            .animate_bool(Id::new("slot_hovered").with(slot).with(side), r.hovered());
         let length = lerp(15.0..=20.0, t);
         stroke.width += t;
         corners_rounded_rect(r.rect.shrink(3.0), length, stroke, ui);
         r
+    }
+    fn show_card_from_units(units: &Vec<Unit>, ui: &mut Ui) {
+        ui.horizontal(|ui| {
+            for unit in units {
+                ui.vertical(|ui| {
+                    unit.show(None, Context::default().set_owner_node(unit), ui);
+                });
+            }
+        });
+    }
+    fn show_card(&self, slot: usize, side: bool, ui: &mut Ui) {
+        cursor_window(ui.ctx(), |ui| {
+            Self::show_card_from_units(&self.pack_units_by_slot(slot, side), ui);
+        });
     }
     pub fn show_at(&mut self, t: f32, ui: &mut Ui) {
         let slots = global_settings().team_slots as usize;
         let center_rect = slot_rect(0, true, ui.available_rect_before_wrap(), slots);
         let unit_size = center_rect.width() * UNIT_SIZE;
         let unit_pixels = center_rect.width() * 0.5;
-        for (slot, side) in (1..=slots).cartesian_product([true, false]) {
-            self.show_slot(slot, side, slots, ui);
+        for (slot, side) in (0..slots).cartesian_product([true, false]) {
+            let resp = self.show_slot(slot, side, slots, ui);
+            if resp.hovered() {
+                self.show_card(slot, side, ui);
+            }
+            if resp.clicked() {
+                let units = self.pack_units_by_slot(slot, side);
+                OperationsPlugin::add(move |world| {
+                    Window::new("Unit Card", move |ui, _| {
+                        Self::show_card_from_units(&units, ui);
+                    })
+                    .order(Order::Foreground)
+                    .push(world);
+                });
+            }
         }
         let fusions: HashSet<Entity> = HashSet::from_iter(
             self.world

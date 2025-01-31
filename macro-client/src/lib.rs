@@ -317,6 +317,27 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         )*
                         Some(d)
                     }
+                    fn pack(entity: Entity, world: &World) -> Option<Self> {
+                        let mut s = world.get::<Self>(entity)?.clone();
+                        #(
+                            s.#option_link_fields = #option_link_types::pack(entity, world);
+                        )*
+                        #(
+                            for child in get_children(entity, world) {
+                                if let Some(d) = #vec_link_types::pack(child, world) {
+                                    s.#vec_link_fields.push(d);
+                                }
+                            }
+                        )*
+                        #(
+                            for child in get_children(entity, world) {
+                                if let Some(d) = #vec_box_link_types::pack(child, world) {
+                                    s.#vec_box_link_fields.push(Box::new(d));
+                                }
+                            }
+                        )*
+                        Some(s)
+                    }
                     fn unpack(mut self, entity: Entity, commands: &mut Commands) {
                         debug!("Unpack {self} into {entity}");
                         self.entity = Some(entity);
