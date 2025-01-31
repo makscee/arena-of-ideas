@@ -1,1 +1,1 @@
-(BattleStart, ([Debug(S("test2"))]))
+(BattleStart, ([SetTarget(RandomUnit(EnemyUnits)), UseAbility]))

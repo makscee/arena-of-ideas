@@ -168,6 +168,20 @@ impl<'w, 's> Context<'w, 's> {
             .flat_map(|s| s.children_components_recursive::<T>(entity))
             .collect()
     }
+    pub fn all_allies(&self, entity: Entity) -> Vec<VarValue> {
+        self.sources
+            .iter()
+            .flat_map(|s| s.collect_allies(entity))
+            .map(|e| e.to_value())
+            .collect()
+    }
+    pub fn all_enemeis(&self, entity: Entity) -> Vec<VarValue> {
+        self.sources
+            .iter()
+            .flat_map(|s| s.collect_enemies(entity))
+            .map(|e| e.to_value())
+            .collect()
+    }
 
     pub fn clear(&mut self) {
         self.layers.clear();
@@ -247,6 +261,34 @@ impl ContextSource<'_, '_> {
                 }
             })
             .collect()
+    }
+    pub fn collect_enemies(&self, entity: Entity) -> Vec<Entity> {
+        match self {
+            ContextSource::Query(..) | ContextSource::World(..) => default(),
+            ContextSource::BattleSimulation(bs) => {
+                if bs.fusions_left.contains(&entity) {
+                    bs.fusions_right.clone()
+                } else if bs.fusions_right.contains(&entity) {
+                    bs.fusions_left.clone()
+                } else {
+                    default()
+                }
+            }
+        }
+    }
+    pub fn collect_allies(&self, entity: Entity) -> Vec<Entity> {
+        match self {
+            ContextSource::Query(..) | ContextSource::World(..) => default(),
+            ContextSource::BattleSimulation(bs) => {
+                if bs.fusions_left.contains(&entity) {
+                    bs.fusions_left.clone()
+                } else if bs.fusions_right.contains(&entity) {
+                    bs.fusions_right.clone()
+                } else {
+                    default()
+                }
+            }
+        }
     }
 }
 

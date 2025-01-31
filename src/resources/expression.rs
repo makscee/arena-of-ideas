@@ -49,6 +49,8 @@ impl ExpressionImpl for Expression {
             Expression::GT => Ok(gt().play_head().into()),
             Expression::UnitSize => Ok(UNIT_SIZE.into()),
             Expression::AllUnits => Ok(context.get_all_units().into()),
+            Expression::AllyUnits => Ok(context.all_allies(context.get_owner()?).into()),
+            Expression::EnemyUnits => Ok(context.all_enemeis(context.get_owner()?).into()),
             Expression::Sin(x) => Ok(x.get_f32(context)?.sin().into()),
             Expression::Cos(x) => Ok(x.get_f32(context)?.cos().into()),
             Expression::Even(x) => Ok((x.get_i32(context)? % 2 == 0).into()),

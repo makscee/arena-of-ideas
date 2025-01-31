@@ -58,6 +58,8 @@ impl Injector<Self> for Expression {
             | Expression::GT
             | Expression::UnitSize
             | Expression::AllUnits
+            | Expression::AllyUnits
+            | Expression::EnemyUnits
             | Expression::Owner
             | Expression::Target
             | Expression::Var(..)
@@ -107,6 +109,8 @@ impl Injector<Self> for Expression {
             | Expression::GT
             | Expression::UnitSize
             | Expression::AllUnits
+            | Expression::AllyUnits
+            | Expression::EnemyUnits
             | Expression::Owner
             | Expression::Target
             | Expression::Var(..)

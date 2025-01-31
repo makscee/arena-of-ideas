@@ -1,7 +1,6 @@
 mod action;
 mod anim;
 mod battle;
-mod battle_new;
 mod client_settings;
 mod client_state;
 mod context;
@@ -21,7 +20,7 @@ use super::*;
 
 pub use action::*;
 pub use anim::*;
-pub use battle_new::*;
+pub use battle::*;
 pub use client_settings::*;
 pub use client_state::*;
 pub use context::*;

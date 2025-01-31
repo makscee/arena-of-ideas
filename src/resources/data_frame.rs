@@ -418,6 +418,8 @@ impl DataFramed for Expression {
             | Expression::Target
             | Expression::UnitSize
             | Expression::AllUnits
+            | Expression::AllyUnits
+            | Expression::EnemyUnits
             | Expression::Sin(..)
             | Expression::Cos(..)
             | Expression::Even(..)
@@ -459,6 +461,8 @@ impl DataFramed for Expression {
             | Expression::Target
             | Expression::UnitSize
             | Expression::AllUnits
+            | Expression::AllyUnits
+            | Expression::EnemyUnits
             | Expression::Var(..)
             | Expression::V(..)
             | Expression::S(..)

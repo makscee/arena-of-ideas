@@ -20,6 +20,7 @@ impl ActionsImpl for Actions {
 
 impl ActionImpl for Action {
     fn process(&self, context: &mut Context) -> Result<Vec<BattleAction>, ExpressionError> {
+        info!("{} {}", "action:".dimmed().purple(), self.cstr());
         let mut actions = Vec::default();
         match self {
             Action::Noop => {}

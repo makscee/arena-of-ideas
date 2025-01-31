@@ -25,11 +25,33 @@ impl AdminPlugin {
     }
     fn test_team(units: Vec<String>) -> Team {
         let houses = houses().values().cloned().collect_vec();
+        let mut actions: Vec<(u8, u8)> = default();
+        for (i, u) in houses
+            .iter()
+            .flat_map(|h| h.collect_units())
+            .filter(|u| units.contains(&u.name))
+            .enumerate()
+        {
+            for (a, _) in u
+                .description
+                .as_ref()
+                .unwrap()
+                .reaction
+                .as_ref()
+                .unwrap()
+                .actions
+                .0
+                .iter()
+                .enumerate()
+            {
+                actions.push((i as u8, a as u8));
+            }
+        }
         let fusion = Fusion {
             unit: FusedUnit {
                 units,
                 triggers: vec![0],
-                actions: vec![(0, 0)],
+                actions,
             },
             slot: Some(UnitSlot {
                 slot: 0,
@@ -46,7 +68,7 @@ impl AdminPlugin {
     }
     fn show_battle(world: &mut World) {
         let b = Battle {
-            left: Self::test_team(["priest".into(), "mage".into()].into()),
+            left: Self::test_team(["mage".into()].into()),
             right: Self::test_team(["priest".into()].into()),
         };
         b.open_window(world);

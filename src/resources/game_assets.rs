@@ -79,6 +79,5 @@ pub fn parse_content_tree() {
             Anim::new(a),
         );
     }
-    dbg!(&animations);
     ANIMATIONS.set(animations).unwrap();
 }
