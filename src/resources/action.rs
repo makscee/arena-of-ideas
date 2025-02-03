@@ -58,7 +58,12 @@ impl ActionImpl for Action {
                     .to_e("Ability not found")?
                     .name
                     .clone();
-                let text = format!("Use ability {name}");
+                let color = context
+                    .find_parent_component::<HouseColor>(ability.entity())
+                    .to_e("House not found")?
+                    .color
+                    .clone();
+                let text = format!("Use ability [{color} [b {name}]]");
                 actions.push(BattleAction::Vfx(
                     HashMap::from_iter([
                         (VarName::text, text.into()),

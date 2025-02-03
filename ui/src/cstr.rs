@@ -33,7 +33,7 @@ pub trait CstrTrait {
     fn info(&self);
     fn debug(&self);
     fn inject_vars(self, f: impl Fn(VarName) -> Option<VarValue>) -> Self;
-    fn galley(self, ui: &mut Ui) -> Arc<Galley>;
+    fn galley(self, alpha: f32, ui: &mut Ui) -> Arc<Galley>;
 }
 
 impl CstrTrait for Cstr {
@@ -122,9 +122,9 @@ impl CstrTrait for Cstr {
         }
         self
     }
-    fn galley(self, ui: &mut Ui) -> Arc<Galley> {
+    fn galley(self, alpha: f32, ui: &mut Ui) -> Arc<Galley> {
         let mut job = LayoutJob::default();
-        cstr_parse_into_job(&self, 1.0, &mut job, ui.style());
+        cstr_parse_into_job(&self, alpha, &mut job, ui.style());
         ui.fonts(|r| r.layout_job(job))
     }
 }

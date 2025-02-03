@@ -5,8 +5,8 @@
             [
                 Color(Var(color)),
                 Alpha(Sub(F(4.0), Mul(Var(t), F(4.0)))),
-                Text(Macro(S("[b %s]"), Var(text))),
-                Translate(V2EE(Zero, Sub(Zero, Mul(Var(t), F(1.0))))),
+                Text(Var(text)),
+                Translate(V2EE(Zero, Sub(Zero, Mul(Var(t), F(4.0))))),
             ],
         ),
     ),

@@ -110,7 +110,10 @@ impl Paint for PainterAction {
                 p.tesselator.tessellate_cubic_bezier(&curve, &mut p.mesh);
             }
             PainterAction::Text(x) => {
-                let text = x.get_string(context)?.cstr_c(p.color).galley(ui);
+                let text = x
+                    .get_string(context)?
+                    .cstr_c(p.color)
+                    .galley(p.color.a() as f32 / 255.0, ui);
                 let mut mesh = egui::Mesh::default();
                 p.tesselator.tessellate_text(
                     &TextShape::new(text.rect.size().to_pos2() * -0.5, text, MISSING_COLOR),
