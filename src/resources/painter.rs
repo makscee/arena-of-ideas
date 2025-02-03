@@ -116,7 +116,14 @@ impl Paint for PainterAction {
                 mesh.transform(TSTransform::from_scaling(up / 40.0));
                 p.mesh.append(mesh);
             }
-            PainterAction::Hollow(x) => p.hollow = Some(x.get_f32(context)?),
+            PainterAction::Hollow(x) => {
+                let x = x.get_f32(context)?;
+                if x > 0.0 {
+                    p.hollow = Some(x);
+                } else {
+                    p.hollow = None;
+                }
+            }
             PainterAction::Translate(x) => {
                 p.mesh.translate(x.get_vec2(context)?.to_evec2() * up);
             }
