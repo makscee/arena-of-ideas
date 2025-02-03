@@ -29,6 +29,7 @@ pub enum BattleAction {
     Death(Entity),
     Spawn(Entity),
     ApplyStatus(Entity),
+    Vfx(HashMap<VarName, VarValue>, String),
     Wait(f32),
 }
 impl ToCstr for BattleAction {
@@ -41,6 +42,7 @@ impl ToCstr for BattleAction {
             BattleAction::Spawn(a) => format!("*{a}"),
             BattleAction::ApplyStatus(a) => format!("+{a}"),
             BattleAction::Wait(t) => format!("~{t}"),
+            BattleAction::Vfx(_, vfx) => format!("vfx({vfx})"),
         }
     }
 }
@@ -154,6 +156,16 @@ impl BattleAction {
             }
             BattleAction::Wait(t) => {
                 battle.t += *t;
+                false
+            }
+            BattleAction::Vfx(vars, vfx) => {
+                if let Some(vfx) = animations().get(vfx) {
+                    let mut context = Context::default();
+                    for (var, value) in vars {
+                        context.set_var(*var, value.clone());
+                    }
+                    battle.apply_animation(context, vfx);
+                }
                 false
             }
         };

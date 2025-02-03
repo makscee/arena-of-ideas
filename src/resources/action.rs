@@ -51,8 +51,22 @@ impl ActionImpl for Action {
                 let caster = context.get_caster()?;
                 let ability = context
                     .find_parent_component::<AbilityEffect>(caster)
-                    .to_e("Ability not found")?
+                    .to_e("AbilityEffect not found")?
                     .clone();
+                let name = context
+                    .get_component::<Ability>(ability.entity())
+                    .to_e("Ability not found")?
+                    .name
+                    .clone();
+                let text = format!("Use ability {name}");
+                actions.push(BattleAction::Vfx(
+                    HashMap::from_iter([
+                        (VarName::text, text.into()),
+                        (VarName::color, VISIBLE_LIGHT.into()),
+                        (VarName::position, context.get_var(VarName::position)?),
+                    ]),
+                    "text".into(),
+                ));
                 actions.extend(ability.actions.process(context)?);
             }
             Action::Repeat(x, vec) => {
