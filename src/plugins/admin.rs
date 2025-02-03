@@ -108,7 +108,11 @@ impl AdminPlugin {
                 }
             });
             let mut query = world.query::<(Entity, &Representation)>();
-            let mut context = Context::new_world(&world).set_t(t).take();
+            let mut context = Context::new_world(&world)
+                .set_t(t)
+                .set_var(VarName::position, default())
+                .set_var(VarName::extra_position, vec2(1.0, 0.0).into())
+                .take();
             for (var, value) in &vars {
                 context.set_var(*var, value.get_value(&context).unwrap_or_default());
             }

@@ -503,7 +503,14 @@ impl ToCstr for PainterAction {
             | PainterAction::Alpha(x)
             | PainterAction::Feathering(x)
             | PainterAction::Color(x) => x.cstr_expanded(),
-            PainterAction::Curve(x, y) => format!("{}, {}", x.cstr_expanded(), y.cstr_expanded()),
+            PainterAction::Curve {
+                thickness,
+                curvature,
+            } => format!(
+                "{}, {}",
+                thickness.cstr_expanded(),
+                curvature.cstr_expanded()
+            ),
             PainterAction::Repeat(x, a) => format!("{}, {}", x.cstr_expanded(), a.cstr_expanded()),
             PainterAction::List(vec) => vec.into_iter().map(|a| a.cstr_expanded()).join(", "),
             PainterAction::Paint => default(),

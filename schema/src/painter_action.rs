@@ -8,7 +8,10 @@ pub enum PainterAction {
     Paint,
     Circle(Box<Expression>),
     Rectangle(Box<Expression>),
-    Curve(Box<Expression>, Box<Expression>),
+    Curve {
+        thickness: Box<Expression>,
+        curvature: Box<Expression>,
+    },
     Text(Box<Expression>),
     Hollow(Box<Expression>),
     Translate(Box<Expression>),

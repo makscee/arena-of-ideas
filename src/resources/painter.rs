@@ -82,7 +82,10 @@ impl Paint for PainterAction {
                 };
                 p.tesselator.tessellate_rect(&shape, &mut p.mesh)
             }
-            PainterAction::Curve(thickness, curvature) => {
+            PainterAction::Curve {
+                thickness,
+                curvature,
+            } => {
                 let start = context.get_var(VarName::position)?.get_vec2()?.to_evec2() * up;
                 let end = context
                     .get_var(VarName::extra_position)?
@@ -92,7 +95,7 @@ impl Paint for PainterAction {
                     - start;
                 let thickness = thickness.get_f32(context)? * up;
                 let curvature = curvature.get_f32(context)? * up;
-                let stroke = Stroke::new(thickness, YELLOW);
+                let stroke = Stroke::new(thickness, p.color);
                 let curve = CubicBezierShape::from_points_stroke(
                     [
                         egui::Pos2::ZERO,

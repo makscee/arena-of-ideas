@@ -658,7 +658,7 @@ impl DataFramed for PainterAction {
             PainterAction::Paint => false,
             PainterAction::Circle(..)
             | PainterAction::Rectangle(..)
-            | PainterAction::Curve(..)
+            | PainterAction::Curve { .. }
             | PainterAction::Text(..)
             | PainterAction::Hollow(..)
             | PainterAction::Translate(..)
@@ -690,9 +690,12 @@ impl DataFramed for PainterAction {
             | PainterAction::Color(x)
             | PainterAction::Feathering(x)
             | PainterAction::Alpha(x) => x.show(Some("x:"), context, ui),
-            PainterAction::Curve(x, y) => {
-                x.show(Some("x:"), context, ui);
-                y.show(Some("y:"), context, ui);
+            PainterAction::Curve {
+                thickness,
+                curvature,
+            } => {
+                thickness.show(Some("thickness:"), context, ui);
+                curvature.show(Some("curvature:"), context, ui);
             }
             PainterAction::Repeat(x, painter_action) => {
                 x.show(Some("cnt:"), context, ui);
@@ -719,9 +722,12 @@ impl DataFramed for PainterAction {
                 let x = x.show_mut(Some("cnt:"), ui);
                 painter_action.show_mut(Some("action:"), ui) || x
             }
-            PainterAction::Curve(x, y) => {
-                let x = x.show_mut(Some("x:"), ui);
-                y.show_mut(Some("y:"), ui) || x
+            PainterAction::Curve {
+                thickness,
+                curvature,
+            } => {
+                let thickness = thickness.show_mut(Some("thickness:"), ui);
+                curvature.show_mut(Some("curvature:"), ui) || thickness
             }
             PainterAction::List(vec) => vec.show_mut(None, ui),
         }

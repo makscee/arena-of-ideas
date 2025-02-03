@@ -86,16 +86,6 @@ impl BattleAction {
                     .set_owner(*b)
                     .get_var(VarName::position)
                     .unwrap();
-                dbg!(&owner_pos, &target_pos);
-                let text = animations().get("text").unwrap();
-                battle.apply_animation(
-                    Context::default()
-                        .set_var(VarName::text, (-*x).to_string().into())
-                        .set_var(VarName::color, RED.into())
-                        .set_var(VarName::position, target_pos.clone())
-                        .take(),
-                    text,
-                );
                 let curve = animations().get("range_dmg_vfx").unwrap();
                 battle.apply_animation(
                     Context::default()
@@ -108,7 +98,7 @@ impl BattleAction {
                     let pain = animations().get("pain_vfx").unwrap();
                     battle.apply_animation(
                         Context::default()
-                            .set_var(VarName::position, target_pos)
+                            .set_var(VarName::position, target_pos.clone())
                             .take(),
                         pain,
                     );
@@ -120,6 +110,16 @@ impl BattleAction {
                         hp.into(),
                     ));
                 }
+                let text = animations().get("text").unwrap();
+                battle.apply_animation(
+                    Context::default()
+                        .set_var(VarName::text, (-*x).to_string().into())
+                        .set_var(VarName::color, RED.into())
+                        .set_var(VarName::position, target_pos)
+                        .take(),
+                    text,
+                );
+                battle.t += ANIMATION;
                 true
             }
             BattleAction::VarSet(entity, kind, var, value) => {

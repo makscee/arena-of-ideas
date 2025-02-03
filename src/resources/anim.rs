@@ -125,6 +125,7 @@ impl AnimAction {
                 }
                 a.targets = vec![entity];
                 end_t = *t + a.duration;
+                *t += a.timeframe;
             }
             AnimAction::Wait(expression) => {
                 *t += expression.get_f32(&a.context)?;
