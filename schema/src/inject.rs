@@ -97,7 +97,8 @@ impl Injector<Self> for Expression {
             | Expression::Or(a, b)
             | Expression::Equals(a, b)
             | Expression::GreaterThen(a, b)
-            | Expression::LessThen(a, b) => [a, b].into(),
+            | Expression::LessThen(a, b)
+            | Expression::Fallback(a, b) => [a, b].into(),
             Expression::Oklch(a, b, c) | Expression::If(a, b, c) => [a, b, c].into(),
         }
     }
@@ -149,7 +150,8 @@ impl Injector<Self> for Expression {
             | Expression::Or(a, b)
             | Expression::Equals(a, b)
             | Expression::GreaterThen(a, b)
-            | Expression::LessThen(a, b) => [a, b].into(),
+            | Expression::LessThen(a, b)
+            | Expression::Fallback(a, b) => [a, b].into(),
             Expression::Oklch(a, b, c) | Expression::If(a, b, c) => [a, b, c].into(),
         }
     }

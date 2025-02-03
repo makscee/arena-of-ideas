@@ -62,6 +62,7 @@ pub enum Expression {
     Equals(Box<Expression>, Box<Expression>),
     GreaterThen(Box<Expression>, Box<Expression>),
     LessThen(Box<Expression>, Box<Expression>),
+    Fallback(Box<Expression>, Box<Expression>),
 
     If(Box<Expression>, Box<Expression>, Box<Expression>),
     Oklch(Box<Expression>, Box<Expression>, Box<Expression>),
@@ -124,7 +125,8 @@ impl std::hash::Hash for Expression {
             | Expression::Or(a, b)
             | Expression::Equals(a, b)
             | Expression::GreaterThen(a, b)
-            | Expression::LessThen(a, b) => {
+            | Expression::LessThen(a, b)
+            | Expression::Fallback(a, b) => {
                 a.hash(state);
                 b.hash(state);
             }

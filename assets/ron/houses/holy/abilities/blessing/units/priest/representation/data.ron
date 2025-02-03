@@ -1,7 +1,7 @@
 (
     [
         Hollow(F(2.0)),
-        Color(C("#EEFF41")),
+        Color(Fallback(Var(color), C("#ECEFF1"))),
         Alpha(F(0.6)),
         Repeat(
             I(10),

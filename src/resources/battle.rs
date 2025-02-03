@@ -230,6 +230,13 @@ impl BattleSimulation {
         for fusion in world.query::<&Fusion>().iter(&world).cloned().collect_vec() {
             fusion.init(&mut world)?;
         }
+        for entity in world
+            .query_filtered::<Entity, With<House>>()
+            .iter(&world)
+            .collect_vec()
+        {
+            world.run_system_once_with((entity, 0.0), NodeStatePlugin::inject_entity_vars);
+        }
         fn entities_by_slot(parent: Entity, world: &World) -> Vec<Entity> {
             Context::new_world(&world)
                 .children_components_recursive::<UnitSlot>(parent)

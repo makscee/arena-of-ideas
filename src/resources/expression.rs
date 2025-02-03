@@ -108,6 +108,13 @@ impl ExpressionImpl for Expression {
                 VarValue::compare(&a.get_value(context)?, &b.get_value(context)?)?,
                 std::cmp::Ordering::Less
             ))),
+            Expression::Fallback(v, fb) => {
+                if let Ok(v) = v.get_value(context) {
+                    Ok(v)
+                } else {
+                    fb.get_value(context)
+                }
+            }
             Expression::Oklch(l, c, h) => Ok(Color::lch(
                 l.get_f32(context)? * 1.5,
                 c.get_f32(context)? * 1.5,

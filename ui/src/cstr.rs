@@ -469,7 +469,8 @@ impl ToCstr for Expression {
             | Expression::Or(a, b)
             | Expression::Equals(a, b)
             | Expression::GreaterThen(a, b)
-            | Expression::LessThen(a, b) => format!("{}, {}", a.cstr_expanded(), b.cstr_expanded()),
+            | Expression::LessThen(a, b)
+            | Expression::Fallback(a, b) => format!("{}, {}", a.cstr_expanded(), b.cstr_expanded()),
             Expression::Oklch(a, b, c) | Expression::If(a, b, c) => format!(
                 "{}, {}, {}",
                 a.cstr_expanded(),

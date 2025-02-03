@@ -448,6 +448,7 @@ impl DataFramed for Expression {
             | Expression::LessThen(..)
             | Expression::ToF(..)
             | Expression::Oklch(..)
+            | Expression::Fallback(..)
             | Expression::If(..) => false,
         }
     }
@@ -501,6 +502,7 @@ impl DataFramed for Expression {
             | Expression::ToF(..)
             | Expression::Oklch(..)
             | Expression::StateVar(..)
+            | Expression::Fallback(..)
             | Expression::If(..) => true,
         }
     }
