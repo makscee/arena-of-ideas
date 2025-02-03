@@ -1,5 +1,7 @@
 use emath::{Rot2, TSTransform};
-use epaint::{CircleShape, RectShape, TessellationOptions, Tessellator, TextShape};
+use epaint::{
+    CircleShape, CubicBezierShape, RectShape, TessellationOptions, Tessellator, TextShape,
+};
 
 use super::*;
 
@@ -79,6 +81,30 @@ impl Paint for PainterAction {
                     RectShape::new(rect, Rounding::ZERO, p.color, Stroke::NONE)
                 };
                 p.tesselator.tessellate_rect(&shape, &mut p.mesh)
+            }
+            PainterAction::Curve(thickness, curvature) => {
+                let start = context.get_var(VarName::position)?.get_vec2()?.to_evec2() * up;
+                let end = context
+                    .get_var(VarName::extra_position)?
+                    .get_vec2()?
+                    .to_pos2()
+                    * up
+                    - start;
+                let thickness = thickness.get_f32(context)? * up;
+                let curvature = curvature.get_f32(context)? * up;
+                let stroke = Stroke::new(thickness, YELLOW);
+                let curve = CubicBezierShape::from_points_stroke(
+                    [
+                        egui::Pos2::ZERO,
+                        egui::pos2(0.0, -curvature),
+                        end - egui::vec2(0.0, curvature),
+                        end,
+                    ],
+                    false,
+                    TRANSPARENT,
+                    stroke,
+                );
+                p.tesselator.tessellate_cubic_bezier(&curve, &mut p.mesh);
             }
             PainterAction::Text(x) => {
                 let text = x.get_string(context)?.cstr_c(p.color).galley(ui);

@@ -108,6 +108,12 @@ impl<'w, 's> Context<'w, 's> {
             .find_map(|l| l.get_var(var, &self.sources, self.t))
             .to_e_var(var)
     }
+    pub fn get_state<'a>(&'a self, entity: Entity) -> Result<&'a NodeState, ExpressionError> {
+        self.sources
+            .iter()
+            .find_map(|s| s.get_state(entity))
+            .to_e("State not found")
+    }
     pub fn get_value(&self) -> Result<VarValue, ExpressionError> {
         self.get_var(VarName::value)
     }

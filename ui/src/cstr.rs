@@ -476,6 +476,7 @@ impl ToCstr for Expression {
                 b.cstr_expanded(),
                 c.cstr_expanded()
             ),
+            Expression::StateVar(x, v) => format!("{}({})", x.cstr_expanded(), v.cstr_expanded()),
         };
         if inner.is_empty() {
             self.cstr()
@@ -502,6 +503,7 @@ impl ToCstr for PainterAction {
             | PainterAction::Alpha(x)
             | PainterAction::Feathering(x)
             | PainterAction::Color(x) => x.cstr_expanded(),
+            PainterAction::Curve(x, y) => format!("{}, {}", x.cstr_expanded(), y.cstr_expanded()),
             PainterAction::Repeat(x, a) => format!("{}, {}", x.cstr_expanded(), a.cstr_expanded()),
             PainterAction::List(vec) => vec.into_iter().map(|a| a.cstr_expanded()).join(", "),
             PainterAction::Paint => default(),

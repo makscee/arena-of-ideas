@@ -79,7 +79,7 @@ pub const ROUNDING: Rounding = Rounding {
     se: 13.0,
 };
 
-pub const UNIT_SIZE: f32 = 0.8;
+pub const UNIT_SIZE: f32 = 1.0;
 
 pub fn empty_response(ctx: egui::Context) -> Response {
     Response {

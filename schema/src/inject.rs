@@ -82,6 +82,7 @@ impl Injector<Self> for Expression {
             | Expression::Rand(x)
             | Expression::RandomUnit(x)
             | Expression::ToF(x)
+            | Expression::StateVar(x, _)
             | Expression::Sqr(x) => [x].into(),
             Expression::Macro(a, b)
             | Expression::V2EE(a, b)
@@ -133,6 +134,7 @@ impl Injector<Self> for Expression {
             | Expression::Rand(x)
             | Expression::RandomUnit(x)
             | Expression::ToF(x)
+            | Expression::StateVar(x, _)
             | Expression::Sqr(x) => [x].into(),
             Expression::Macro(a, b)
             | Expression::V2EE(a, b)
@@ -169,6 +171,7 @@ impl Injector<Expression> for PainterAction {
             | PainterAction::Alpha(x)
             | PainterAction::Feathering(x)
             | PainterAction::Repeat(x, ..) => [x].into(),
+            PainterAction::Curve(x, y) => [x, y].into(),
         }
     }
     fn get_inner(&self) -> Vec<&Box<Expression>> {
@@ -186,6 +189,7 @@ impl Injector<Expression> for PainterAction {
             | PainterAction::Alpha(x)
             | PainterAction::Feathering(x)
             | PainterAction::Repeat(x, ..) => [x].into(),
+            PainterAction::Curve(x, y) => [x, y].into(),
         }
     }
 }
@@ -201,6 +205,7 @@ impl Injector<Self> for PainterAction {
             PainterAction::Paint
             | PainterAction::Circle(..)
             | PainterAction::Rectangle(..)
+            | PainterAction::Curve(..)
             | PainterAction::Text(..)
             | PainterAction::Hollow(..)
             | PainterAction::Translate(..)
@@ -219,6 +224,7 @@ impl Injector<Self> for PainterAction {
             PainterAction::Paint
             | PainterAction::Circle(..)
             | PainterAction::Rectangle(..)
+            | PainterAction::Curve(..)
             | PainterAction::Text(..)
             | PainterAction::Hollow(..)
             | PainterAction::Translate(..)

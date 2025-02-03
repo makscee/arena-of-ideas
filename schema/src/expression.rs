@@ -32,6 +32,8 @@ pub enum Expression {
     V2(f32, f32),
     C(String),
 
+    StateVar(Box<Expression>, VarName),
+
     Sin(Box<Expression>),
     Cos(Box<Expression>),
     Even(Box<Expression>),
@@ -90,6 +92,11 @@ impl std::hash::Hash for Expression {
             Expression::V2(x, y) => {
                 x.to_bits().hash(state);
                 y.to_bits().hash(state);
+            }
+
+            Expression::StateVar(e, v) => {
+                e.hash(state);
+                v.hash(state);
             }
 
             Expression::Sin(e)

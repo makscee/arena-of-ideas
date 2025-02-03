@@ -33,6 +33,10 @@ impl ExpressionImpl for Expression {
                     v
                 }
             }
+            Expression::StateVar(x, var) => context
+                .get_state(x.get_entity(context)?)?
+                .get(*var)
+                .to_e_var(*var),
             Expression::V(v) => Ok(v.clone()),
             Expression::F(v) | Expression::FSlider(v) => Ok((*v).into()),
             Expression::I(v) => Ok((*v).into()),

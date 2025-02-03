@@ -77,24 +77,39 @@ impl BattleAction {
                 add_actions.extend(battle.die(*a));
                 true
             }
-            BattleAction::Damage(_, b, x) => {
-                let pos = Context::new_battle_simulation(battle)
+            BattleAction::Damage(a, b, x) => {
+                let owner_pos = Context::new_battle_simulation(battle)
+                    .set_owner(*a)
+                    .get_var(VarName::position)
+                    .unwrap();
+                let target_pos = Context::new_battle_simulation(battle)
                     .set_owner(*b)
                     .get_var(VarName::position)
                     .unwrap();
+                dbg!(&owner_pos, &target_pos);
                 let text = animations().get("text").unwrap();
                 battle.apply_animation(
                     Context::default()
                         .set_var(VarName::text, (-*x).to_string().into())
                         .set_var(VarName::color, RED.into())
-                        .set_var(VarName::position, pos.clone())
+                        .set_var(VarName::position, target_pos.clone())
                         .take(),
                     text,
+                );
+                let curve = animations().get("range_dmg_vfx").unwrap();
+                battle.apply_animation(
+                    Context::default()
+                        .set_var(VarName::position, owner_pos)
+                        .set_var(VarName::extra_position, target_pos.clone())
+                        .take(),
+                    curve,
                 );
                 if *x > 0 {
                     let pain = animations().get("pain_vfx").unwrap();
                     battle.apply_animation(
-                        Context::default().set_var(VarName::position, pos).take(),
+                        Context::default()
+                            .set_var(VarName::position, target_pos)
+                            .take(),
                         pain,
                     );
                     let hp = battle.world.get::<UnitStats>(*b).unwrap().hp - x;

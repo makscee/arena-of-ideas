@@ -408,6 +408,7 @@ impl DataFramed for Expression {
             | Expression::I(_)
             | Expression::B(_)
             | Expression::V2(_, _)
+            | Expression::StateVar(_, _)
             | Expression::C(_) => true,
             Expression::One
             | Expression::Zero
@@ -499,12 +500,13 @@ impl DataFramed for Expression {
             | Expression::FSlider(..)
             | Expression::ToF(..)
             | Expression::Oklch(..)
+            | Expression::StateVar(..)
             | Expression::If(..) => true,
         }
     }
     fn show_header(&self, context: &Context, ui: &mut Ui) {
         match self {
-            Expression::Var(v) => v.show(Some("x:"), &context, ui),
+            Expression::Var(v) | Expression::StateVar(_, v) => v.show(Some("x:"), &context, ui),
             Expression::V(v) => v.show(Some("x:"), &context, ui),
             Expression::S(v) => v.show(Some("x:"), &context, ui),
             Expression::F(v) | Expression::FSlider(v) => v.show(Some("x:"), &context, ui),
@@ -520,7 +522,7 @@ impl DataFramed for Expression {
     }
     fn show_header_mut(&mut self, ui: &mut Ui) -> bool {
         match self {
-            Expression::Var(v) => v.show_mut(Some("x:"), ui),
+            Expression::Var(v) | Expression::StateVar(_, v) => v.show_mut(Some("x:"), ui),
             Expression::V(v) => v.show_mut(Some("x:"), ui),
             Expression::S(v) => v.show_mut(Some("x:"), ui),
             Expression::F(v) => v.show_mut(Some("x:"), ui),
@@ -561,6 +563,7 @@ impl DataFramed for Expression {
             | Expression::Rand(x)
             | Expression::RandomUnit(x)
             | Expression::ToF(x)
+            | Expression::StateVar(x, _)
             | Expression::Sqr(x) => x.show(Some("x:"), &context, ui),
             Expression::V2EE(a, b)
             | Expression::Macro(a, b)
@@ -605,6 +608,7 @@ impl DataFramed for Expression {
             | Expression::Rand(x)
             | Expression::RandomUnit(x)
             | Expression::ToF(x)
+            | Expression::StateVar(x, _)
             | Expression::Sqr(x) => x.show_mut(Some("x:"), ui),
             Expression::V2EE(a, b)
             | Expression::Macro(a, b)
@@ -654,6 +658,7 @@ impl DataFramed for PainterAction {
             PainterAction::Paint => false,
             PainterAction::Circle(..)
             | PainterAction::Rectangle(..)
+            | PainterAction::Curve(..)
             | PainterAction::Text(..)
             | PainterAction::Hollow(..)
             | PainterAction::Translate(..)
@@ -685,6 +690,10 @@ impl DataFramed for PainterAction {
             | PainterAction::Color(x)
             | PainterAction::Feathering(x)
             | PainterAction::Alpha(x) => x.show(Some("x:"), context, ui),
+            PainterAction::Curve(x, y) => {
+                x.show(Some("x:"), context, ui);
+                y.show(Some("y:"), context, ui);
+            }
             PainterAction::Repeat(x, painter_action) => {
                 x.show(Some("cnt:"), context, ui);
                 painter_action.show(Some("action:"), context, ui);
@@ -709,6 +718,10 @@ impl DataFramed for PainterAction {
             PainterAction::Repeat(x, painter_action) => {
                 let x = x.show_mut(Some("cnt:"), ui);
                 painter_action.show_mut(Some("action:"), ui) || x
+            }
+            PainterAction::Curve(x, y) => {
+                let x = x.show_mut(Some("x:"), ui);
+                y.show_mut(Some("y:"), ui) || x
             }
             PainterAction::List(vec) => vec.show_mut(None, ui),
         }

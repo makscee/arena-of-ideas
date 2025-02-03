@@ -22,6 +22,7 @@ pub enum VarName {
     max_index,
     value,
     position,
+    extra_position,
     offset,
     hp,
     pwr,

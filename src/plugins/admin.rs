@@ -59,7 +59,7 @@ impl AdminPlugin {
         Team {
             name: "TestTeam".into(),
             houses,
-            units: [fusion].into(),
+            units: [fusion.clone(), fusion.clone(), fusion].into(),
             ..default()
         }
     }
@@ -92,13 +92,26 @@ impl AdminPlugin {
         }
         let mut end_t = respawn(&anim, &mut world).unwrap();
         let mut size = 300.0;
+        let mut vars: Vec<(VarName, Expression)> = default();
         Window::new("Anim Editor", move |ui, _| {
             let mut reload = false;
             ui.horizontal(|ui| {
                 DragValue::new(&mut size).prefix("size: ").ui(ui);
             });
+            if "+".cstr().button(ui).clicked() {
+                vars.push(default());
+            }
+            ui.horizontal(|ui| {
+                for (var, value) in &mut vars {
+                    var.show_mut(None, ui);
+                    value.show_mut(None, ui);
+                }
+            });
             let mut query = world.query::<(Entity, &Representation)>();
-            let context = Context::new_world(&world).set_t(t).take();
+            let mut context = Context::new_world(&world).set_t(t).take();
+            for (var, value) in &vars {
+                context.set_var(*var, value.get_value(&context).unwrap_or_default());
+            }
             ui.horizontal_centered(|ui| {
                 let (rect, resp) = ui.allocate_exact_size(egui::Vec2::splat(size), Sense::hover());
                 gt().pause(resp.hovered());
