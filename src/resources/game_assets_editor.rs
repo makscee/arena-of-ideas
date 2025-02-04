@@ -6,6 +6,20 @@ impl GameAssetsEditor {
     pub fn open_houses_window(world: &mut World) {
         let mut houses = houses().clone();
         Window::new("Houses Editor", move |ui, _| {
+            if "Export"
+                .cstr_cs(VISIBLE_BRIGHT, CstrStyle::Bold)
+                .button(ui)
+                .clicked()
+            {
+                let path = "./assets/ron/";
+                for (_, house) in &houses {
+                    let dir = house.to_dir("houses".into());
+                    let dir = dir.as_dir().unwrap();
+                    std::fs::create_dir_all(format!("{path}{}", dir.path().to_str().unwrap()))
+                        .unwrap();
+                    dir.extract(path).unwrap();
+                }
+            }
             for (name, house) in &mut houses {
                 CollapsingHeader::new(name).show(ui, |ui| {
                     house.show_mut(None, ui);

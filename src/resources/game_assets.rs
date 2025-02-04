@@ -58,17 +58,6 @@ pub fn parse_content_tree() {
         //     .unwrap();
         dbg!(dir);
     }
-    // if let Some(dir) = houses
-    //     .get("wizards")
-    //     .unwrap()
-    //     .to_dir("houses".into())
-    //     .as_dir()
-    // {
-    //     dbg!(dir);
-    //     let path = "./assets/ron/extract_test/";
-    //     std::fs::create_dir_all(format!("{path}{}", dir.path().to_str().unwrap())).unwrap();
-    //     dir.extract(PathBuf::from_str(path).unwrap()).unwrap();
-    // }
     HOUSES.set(houses).unwrap();
     UNIT_REP
         .set(Representation::from_dir("unit_rep".to_owned(), &CONTENT_DIR).unwrap())
