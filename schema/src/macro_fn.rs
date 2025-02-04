@@ -10,9 +10,6 @@ pub struct ParsedNodeFields {
     pub vec_link_fields: Vec<Ident>,
     pub vec_link_fields_str: Vec<String>,
     pub vec_link_types: Vec<proc_macro2::TokenStream>,
-    pub vec_box_link_fields: Vec<Ident>,
-    pub vec_box_link_fields_str: Vec<String>,
-    pub vec_box_link_types: Vec<proc_macro2::TokenStream>,
     pub var_fields: Vec<Ident>,
     pub var_types: Vec<Type>,
     pub data_fields: Vec<Ident>,
@@ -30,9 +27,6 @@ pub fn parse_node_fields(fields: &Fields) -> ParsedNodeFields {
     let mut vec_link_fields = Vec::default();
     let mut vec_link_fields_str = Vec::default();
     let mut vec_link_types: Vec<proc_macro2::TokenStream> = Vec::default();
-    let mut vec_box_link_fields = Vec::default();
-    let mut vec_box_link_fields_str = Vec::default();
-    let mut vec_box_link_types: Vec<proc_macro2::TokenStream> = Vec::default();
     let mut var_fields = Vec::default();
     let mut var_types = Vec::default();
     let mut data_fields = Vec::default();
@@ -56,22 +50,10 @@ pub fn parse_node_fields(fields: &Fields) -> ParsedNodeFields {
                 if type_ident == "Vec" {
                     let it = inner_type(type_path);
                     match &it {
-                        Type::Path(type_path) => {
-                            if type_path
-                                .path
-                                .segments
-                                .first()
-                                .is_some_and(|t| t.ident == "Box")
-                            {
-                                let it = inner_type(&type_path);
-                                vec_box_link_fields_str.push(field_ident.to_string());
-                                vec_box_link_fields.push(field_ident);
-                                vec_box_link_types.push(it.to_token_stream());
-                            } else {
-                                vec_link_fields_str.push(field_ident.to_string());
-                                vec_link_fields.push(field_ident);
-                                vec_link_types.push(it.to_token_stream());
-                            }
+                        Type::Path(..) => {
+                            vec_link_fields_str.push(field_ident.to_string());
+                            vec_link_fields.push(field_ident);
+                            vec_link_types.push(it.to_token_stream());
                         }
                         _ => {}
                     }
@@ -111,9 +93,6 @@ pub fn parse_node_fields(fields: &Fields) -> ParsedNodeFields {
         vec_link_fields,
         vec_link_fields_str,
         vec_link_types,
-        vec_box_link_fields,
-        vec_box_link_fields_str,
-        vec_box_link_types,
         var_fields,
         var_types,
         data_fields,
@@ -132,9 +111,6 @@ pub fn strings_conversions(
     vec_link_fields: &Vec<Ident>,
     vec_link_fields_str: &Vec<String>,
     vec_link_types: &Vec<TokenStream>,
-    vec_box_link_fields: &Vec<Ident>,
-    vec_box_link_fields_str: &Vec<String>,
-    vec_box_link_types: &Vec<TokenStream>,
 ) -> TokenStream {
     quote! {
         fn to_strings(&self, parent: usize, field: &str, strings: &mut Vec<String>) {
@@ -149,11 +125,6 @@ pub fn strings_conversions(
             #(
                 for d in &self.#vec_link_fields {
                     d.to_strings(i, #vec_link_fields_str, strings);
-                }
-            )*
-            #(
-                for d in &self.#vec_box_link_fields {
-                    d.to_strings(i, #vec_box_link_fields_str, strings);
                 }
             )*
         }
@@ -182,16 +153,6 @@ pub fn strings_conversions(
                     }
                 }).collect();
             )*
-            #(
-                d.#vec_box_link_fields = strings.iter().enumerate().skip(i).filter_map(|(i, s)| {
-                    let (parent, field, _) = s.splitn(3, ' ').collect_tuple()?;
-                    if i_str.eq(parent) && field.eq(#vec_box_link_fields_str) {
-                        #vec_box_link_types::from_strings(i, strings).map(|v| Box::new(v))
-                    } else {
-                        None
-                    }
-                }).collect();
-            )*
             Some(d)
         }
     }
@@ -202,8 +163,6 @@ pub fn table_conversions(
     option_link_types: &Vec<TokenStream>,
     vec_link_fields: &Vec<Ident>,
     vec_link_types: &Vec<TokenStream>,
-    vec_box_link_fields: &Vec<Ident>,
-    vec_box_link_types: &Vec<TokenStream>,
 ) -> TokenStream {
     quote! {
         fn from_table(c: &Context, domain: NodeDomain, id: u64) -> Option<Self> {
@@ -226,13 +185,6 @@ pub fn table_conversions(
                 d.#vec_link_fields = children
                     .iter()
                     .filter_map(|id| #vec_link_types::from_table(c, domain, *id))
-                    .collect();
-            )*
-            #(
-                d.#vec_box_link_fields = children
-                    .iter()
-                    .filter_map(|id| #vec_box_link_types::from_table(c, domain, *id))
-                    .map(|d| Box::new(d))
                     .collect();
             )*
             Some(d)
@@ -258,11 +210,6 @@ pub fn table_conversions(
             )*
             #(
                 for d in std::mem::take(&mut self.#vec_link_fields) {
-                    d.to_table(c, domain, id);
-                }
-            )*
-            #(
-                for d in std::mem::take(&mut self.#vec_box_link_fields) {
                     d.to_table(c, domain, id);
                 }
             )*

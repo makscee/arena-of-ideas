@@ -63,7 +63,6 @@ pub trait Node: Default + Component + Sized + GetVar + Show + Debug {
         self.collect_units_vec(&mut vec);
         vec
     }
-    fn ui(&self, depth: usize, context: &Context, ui: &mut Ui);
 }
 
 pub trait NodeDomainExt {

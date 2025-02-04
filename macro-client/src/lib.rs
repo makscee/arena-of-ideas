@@ -32,9 +32,6 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 vec_link_fields,
                 vec_link_fields_str,
                 vec_link_types,
-                vec_box_link_fields,
-                vec_box_link_fields_str,
-                vec_box_link_types,
                 var_fields,
                 var_types,
                 data_fields,
@@ -51,13 +48,8 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 &vec_link_fields,
                 &vec_link_fields_str,
                 &vec_link_types,
-                &vec_box_link_fields,
-                &vec_box_link_fields_str,
-                &vec_box_link_types,
             );
-            let no_children = option_link_fields.is_empty()
-                && vec_link_fields.is_empty()
-                && vec_box_link_fields.is_empty();
+            let no_children = option_link_fields.is_empty() && vec_link_fields.is_empty();
             let has_body = if no_children && data_fields.is_empty() {
                 quote! {false}
             } else {
@@ -65,7 +57,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
             };
             let nt = if all_data_fields.contains(&Ident::from_string("name").unwrap()) {
                 NodeType::Name
-            } else if !option_link_fields.is_empty() || !vec_box_link_fields.is_empty() {
+            } else if !option_link_fields.is_empty() {
                 NodeType::Data
             } else {
                 NodeType::OnlyData
@@ -135,13 +127,6 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 NodeType::Name |
                 NodeType::Data => quote! {
                     #(s.#option_link_fields = #option_link_types::from_dir(format!("{path}/{}", #option_link_fields_str), dir);)*
-                    #(s.#vec_box_link_fields = dir
-                        .get_dir(format!("{path}/{}", #vec_box_link_fields_str))
-                        .into_iter()
-                        .flat_map(|d| d.dirs())
-                        .filter_map(|d| #vec_box_link_types::from_dir(d.path().to_string_lossy().to_string(), d))
-                        .map(|d| Box::new(d))
-                        .collect_vec();)*
                     #(s.#vec_link_fields = dir
                         .get_dir(format!("{path}/{}", #vec_link_fields_str))
                         .into_iter()
@@ -225,11 +210,6 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         )*
                         #(
                             for d in &self.#vec_link_fields {
-                                vars.extend(d.get_all_vars());
-                            }
-                        )*
-                        #(
-                            for d in &self.#vec_box_link_fields {
                                 vars.extend(d.get_all_vars());
                             }
                         )*
@@ -379,13 +359,6 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                                 .filter_map(|id| #vec_link_types::from_table(domain, *id))
                                 .collect();
                         )*
-                        #(
-                            d.#vec_box_link_fields = children
-                                .iter()
-                                .filter_map(|id| #vec_box_link_types::from_table(domain, *id))
-                                .map(|d| Box::new(d))
-                                .collect();
-                        )*
                         Some(d)
                     }
                     fn pack(entity: Entity, world: &World) -> Option<Self> {
@@ -397,13 +370,6 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                             for child in get_children(entity, world) {
                                 if let Some(d) = #vec_link_types::pack(child, world) {
                                     s.#vec_link_fields.push(d);
-                                }
-                            }
-                        )*
-                        #(
-                            for child in get_children(entity, world) {
-                                if let Some(d) = #vec_box_link_types::pack(child, world) {
-                                    s.#vec_box_link_fields.push(Box::new(d));
                                 }
                             }
                         )*
@@ -419,14 +385,6 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         )*
                         #(
                             for d in std::mem::take(&mut self.#vec_link_fields) {
-                                let parent = entity;
-                                let entity = commands.spawn_empty().set_parent(parent).id();
-                                debug!("{parent} -> {entity}");
-                                d.unpack(entity, commands);
-                            }
-                        )*
-                        #(
-                            for d in std::mem::take(&mut self.#vec_box_link_fields) {
                                 let parent = entity;
                                 let entity = commands.spawn_empty().set_parent(parent).id();
                                 debug!("{parent} -> {entity}");
@@ -449,53 +407,6 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                                 d.collect_units_vec(vec);
                             }
                         )*
-                        #(
-                            for d in &self.#vec_box_link_fields {
-                                d.collect_units_vec(vec);
-                            }
-                        )*
-                    }
-                    fn ui(&self, depth: usize, context: &Context, ui: &mut Ui) {
-                        let color = context.get_var(VarName::color)
-                            .and_then(|c| c.get_color()).ok();
-                        NodeFrame::show(self, depth, color, ui, |ui| {
-                            self.show(None, context, ui);
-                            #(
-                                if let Some(d) = &self.#option_link_fields {
-                                    d.ui(depth + 1, context, ui);
-                                } else {
-                                    if let Some(c) = context.get_component::<#option_link_types>(self.entity.unwrap()) {
-                                        c.ui(depth + 1, context, ui);
-                                    }
-                                }
-                            )*
-                            #(
-                                let mut children = self.collect_children::<#vec_link_types>(context).into_iter().map(|(_,c)| c).collect_vec();
-                                children.extend(self.#vec_link_fields.iter());
-                                if !children.is_empty() {
-                                    ui.collapsing(#vec_link_fields_str, |ui| {
-                                        for (i, c) in children.into_iter().enumerate() {
-                                            ui.push_id(i, |ui| {
-                                                c.ui(depth + 1, context, ui);
-                                            });
-                                        }
-                                    });
-                                }
-                            )*
-                            #(
-                                let mut children = self.collect_children::<#vec_box_link_types>(context).into_iter().map(|(_,c)| c).collect_vec();
-                                children.extend(self.#vec_box_link_fields.iter().map(Box::as_ref));
-                                if !children.is_empty() {
-                                    ui.collapsing(#vec_box_link_fields_str, |ui| {
-                                        for (i, c) in children.into_iter().enumerate() {
-                                            ui.push_id(i, |ui| {
-                                                c.ui(depth + 1, context, ui);
-                                            });
-                                        }
-                                    });
-                                }
-                            )*
-                        });
                     }
                 }
                 impl From<&str> for #struct_ident {

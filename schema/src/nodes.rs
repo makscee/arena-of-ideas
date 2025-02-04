@@ -114,5 +114,4 @@ impl Mover {
 
 struct Representation {
     pub material: Material,
-    pub children: Vec<Box<Representation>>,
 }

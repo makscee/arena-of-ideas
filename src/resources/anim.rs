@@ -97,7 +97,6 @@ impl AnimAction {
                 let entity = world.spawn_empty().id();
                 Representation {
                     material: *material.clone(),
-                    children: default(),
                     entity: None,
                 }
                 .unpack(entity, &mut world.commands());

@@ -22,9 +22,6 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 vec_link_fields,
                 vec_link_fields_str,
                 vec_link_types,
-                vec_box_link_fields,
-                vec_box_link_fields_str,
-                vec_box_link_types,
                 var_fields: _,
                 var_types: _,
                 data_fields: _,
@@ -41,17 +38,12 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 &vec_link_fields,
                 &vec_link_fields_str,
                 &vec_link_types,
-                &vec_box_link_fields,
-                &vec_box_link_fields_str,
-                &vec_box_link_types,
             );
             let table_conversions = table_conversions(
                 &option_link_fields,
                 &option_link_types,
                 &vec_link_fields,
                 &vec_link_types,
-                &vec_box_link_fields,
-                &vec_box_link_types,
             );
             if let Fields::Named(ref mut fields) = fields {
                 fields.named.push(
@@ -87,11 +79,6 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                                 d.clear_ids();
                             }
                         )*
-                        #(
-                            for d in self.#vec_box_link_fields.iter_mut() {
-                                d.clear_ids();
-                            }
-                        )*
                     }
                     fn gather_ids(&self, data: &mut HashSet<u64>) {
                         data.extend(self.id.iter().copied());
@@ -102,11 +89,6 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         )*
                         #(
                             for d in self.#vec_link_fields.iter() {
-                                d.gather_ids(data);
-                            }
-                        )*
-                        #(
-                            for d in self.#vec_box_link_fields.iter() {
                                 d.gather_ids(data);
                             }
                         )*
