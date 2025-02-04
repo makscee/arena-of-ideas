@@ -208,6 +208,9 @@ Abs(Equals(F(51.0),Abs(Equals(F(1.0),Or(Equals(F(1.0),One),Abs(Or(Target,Abs(One
                         error!("No matches found");
                     }
                 }
+                if "Houses Editor".cstr().button(ui).clicked() {
+                    GameAssetsEditor::open_houses_window(world);
+                }
                 // ui.horizontal(|ui| {
                 //     e.show_mut(Some("Expr"), ui);
                 //     e.show(Some("Prefix"), &Context::default(), ui);

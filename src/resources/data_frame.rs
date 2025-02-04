@@ -334,6 +334,25 @@ fn show_triangle(openness: f32, resp: &Response, ui: &mut Ui) {
     ));
 }
 
+pub trait DataFramed: ToCstr + Clone + Debug + StringData + Inject {
+    fn default_open(&self) -> bool {
+        true
+    }
+    fn has_header(&self) -> bool;
+    fn has_body(&self) -> bool;
+    fn show_header(&self, context: &Context, ui: &mut Ui);
+    fn show_header_mut(&mut self, ui: &mut Ui) -> bool;
+    fn show_body(&self, context: &Context, ui: &mut Ui);
+    fn show_body_mut(&mut self, ui: &mut Ui) -> bool;
+    fn show_name(&self, ui: &mut Ui) {
+        self.cstr_s(CstrStyle::Bold).label(ui);
+    }
+    fn show_name_mut(&mut self, ui: &mut Ui) -> bool {
+        self.show_name(ui);
+        false
+    }
+}
+
 impl<T> Show for T
 where
     T: DataFramed,
@@ -369,25 +388,6 @@ where
             df = df.body(move |d, ui| d.show_body_mut(ui));
         }
         df.ui(ui)
-    }
-}
-
-pub trait DataFramed: ToCstr + Clone + Debug + StringData + Inject {
-    fn default_open(&self) -> bool {
-        true
-    }
-    fn has_header(&self) -> bool;
-    fn has_body(&self) -> bool;
-    fn show_header(&self, context: &Context, ui: &mut Ui);
-    fn show_header_mut(&mut self, ui: &mut Ui) -> bool;
-    fn show_body(&self, context: &Context, ui: &mut Ui);
-    fn show_body_mut(&mut self, ui: &mut Ui) -> bool;
-    fn show_name(&self, ui: &mut Ui) {
-        self.cstr_s(CstrStyle::Bold).label(ui);
-    }
-    fn show_name_mut(&mut self, ui: &mut Ui) -> bool {
-        self.show_name(ui);
-        false
     }
 }
 

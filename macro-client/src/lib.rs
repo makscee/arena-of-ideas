@@ -70,6 +70,10 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
             } else {
                 NodeType::OnlyData
             };
+            let name_quote = match nt {
+                NodeType::Name => quote! {self.name},
+                NodeType::Data | NodeType::OnlyData => quote! {""},
+            };
             let inner_data_to_dir = match nt {
                 NodeType::Name | NodeType::Data => quote! {
                     let mut entries: Vec<DirEntry> = default();
@@ -170,7 +174,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 }
                 impl ToCstr for #struct_ident {
                     fn cstr(&self) -> Cstr {
-                        format!("[vd [s {self}]]")
+                        format!("[vd [s {self} [vb {}]]]", #name_quote)
                     }
                 }
                 impl GetVar for #struct_ident {
@@ -311,6 +315,25 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         #(
                             if let Some(d) = &mut self.#option_link_fields {
                                 changed |= d.show_mut(None, ui);
+                            } else if format!("add [b {}]", #option_link_fields_str).button(ui).clicked() {
+                                self.#option_link_fields = Some(default());
+                            }
+                        )*
+                        #(
+                            let mut delete = None;
+                            for (i, d) in self.#vec_link_fields.iter_mut().enumerate() {
+                                ui.horizontal(|ui| {
+                                    if "-".cstr_cs(RED, CstrStyle::Bold).button(ui).clicked() {
+                                        delete = Some(i);
+                                    }
+                                    changed |= d.show_mut(None, ui);
+                                });
+                            }
+                            if let Some(delete) = delete {
+                                self.#vec_link_fields.remove(delete);
+                            }
+                            if "+".cstr_cs(VISIBLE_BRIGHT, CstrStyle::Bold).button(ui).clicked() {
+                                self.#vec_link_fields.push(default());
                             }
                         )*
                         changed
