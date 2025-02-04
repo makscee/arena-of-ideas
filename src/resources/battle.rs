@@ -65,8 +65,6 @@ impl BattleAction {
                         .take(),
                     strike_anim,
                 );
-                let strike_vfx = animations().get("strike_vfx").unwrap();
-                battle.apply_animation(Context::default(), strike_vfx);
                 let pwr = battle.world.get::<UnitStats>(*a).unwrap().pwr;
                 let action_a = Self::Damage(*a, *b, pwr);
                 let pwr = battle.world.get::<UnitStats>(*b).unwrap().pwr;
@@ -76,7 +74,15 @@ impl BattleAction {
                 true
             }
             BattleAction::Death(a) => {
+                let position = Context::new_battle_simulation(battle)
+                    .set_owner(*a)
+                    .get_var(VarName::position)
+                    .unwrap();
                 add_actions.extend(battle.die(*a));
+                add_actions.push(BattleAction::Vfx(
+                    HashMap::from_iter([(VarName::position, position)]),
+                    "death_vfx".into(),
+                ));
                 true
             }
             BattleAction::Damage(a, b, x) => {

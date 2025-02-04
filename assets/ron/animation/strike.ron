@@ -4,5 +4,4 @@
     Translate(Sum(Var(position), V2EE(Sub(Zero, UnitSize), Zero))),
     SetTarget(Target),
     Translate(Sum(Var(position), V2EE(UnitSize, Zero))),
-    Wait(F(0.5)),
 ]
