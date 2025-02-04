@@ -54,6 +54,20 @@ pub fn parse_content_tree() {
         dbg!(d);
         let name = house.get_var(VarName::name).unwrap().get_string().unwrap();
         houses.insert(name, house);
+        // dir.extract(PathBuf::from_str("./assets/ron/extract_test/").unwrap())
+        //     .unwrap();
+        dbg!(dir);
+    }
+    if let Some(dir) = houses
+        .get("wizards")
+        .unwrap()
+        .to_dir("houses".into())
+        .as_dir()
+    {
+        dbg!(dir);
+        let path = "./assets/ron/extract_test/";
+        std::fs::create_dir_all(format!("{path}{}", dir.path().to_str().unwrap())).unwrap();
+        dir.extract(PathBuf::from_str(path).unwrap()).unwrap();
     }
     HOUSES.set(houses).unwrap();
     UNIT_REP

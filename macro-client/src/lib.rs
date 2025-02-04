@@ -70,6 +70,51 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
             } else {
                 NodeType::OnlyData
             };
+            let inner_data_to_dir = match nt {
+                NodeType::Name | NodeType::Data => quote! {
+                    let mut entries: Vec<DirEntry> = default();
+                    #(
+                        if let Some(d) = &self.#option_link_fields {
+                            let path = format!("{path}/{}", #option_link_fields_str);
+                            entries.push(d.to_dir(path));
+                        }
+                    )*
+                    #(
+                        {
+                            let path = format!("{path}/{}", #vec_link_fields_str);
+                            entries.push(DirEntry::Dir(Dir::new(
+                                path.clone().leak(),
+                                self.#vec_link_fields
+                                    .iter()
+                                    .map(|a| a.to_dir(path.clone()))
+                                    .collect_vec()
+                                    .leak(),
+                            )));
+                        }
+                    )*
+                },
+                NodeType::OnlyData => quote! {},
+            };
+            let data_to_dir = match nt {
+                NodeType::Name => quote! {
+                    let path = format!("{path}/{}", self.name);
+                    #inner_data_to_dir
+                    DirEntry::Dir(Dir::new(path.leak(), entries.leak()))
+                },
+                NodeType::Data => quote! {
+                    let data = self.get_data();
+                    #inner_data_to_dir
+                    entries.push(DirEntry::File(File::new(
+                        format!("{path}/data.ron").leak(),
+                        data.leak().as_bytes(),
+                    )));
+                    DirEntry::Dir(Dir::new(path.leak(), entries.leak()))
+                },
+                NodeType::OnlyData => quote! {
+                    let data = self.get_data();
+                    DirEntry::File(File::new(format!("{path}.ron").leak(), data.leak().as_bytes()))
+                },
+            };
             let data_from_dir = match nt {
                 NodeType::Name => quote! {
                     let data = &format!("\"{}\"", dir.path().file_name()?.to_str()?);
@@ -286,6 +331,9 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         s.inject_data(data);
                         #inner_data_from_dir
                         Some(s)
+                    }
+                    fn to_dir(&self, path: String) -> DirEntry {
+                        #data_to_dir
                     }
                     fn from_table(domain: NodeDomain, id: u64) -> Option<Self> {
                         let data = domain.find_by_key(&Self::kind_s().key(id))?.data;

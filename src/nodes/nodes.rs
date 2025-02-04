@@ -1,3 +1,4 @@
+use include_dir::{DirEntry, File};
 use macro_client::*;
 use std::fmt::Debug;
 
@@ -15,14 +16,15 @@ pub trait Node: Default + Component + Sized + GetVar + Show + Debug {
     fn entity(&self) -> Entity;
     fn get_entity(&self) -> Option<Entity>;
     fn from_dir(path: String, dir: &Dir) -> Option<Self>;
+    fn to_dir(&self, path: String) -> DirEntry;
     fn from_strings(i: usize, strings: &Vec<String>) -> Option<Self>;
-    fn from_table(domain: NodeDomain, id: u64) -> Option<Self>;
     fn to_strings(&self, parent: usize, field: &str, strings: &mut Vec<String>);
     fn to_strings_root(&self) -> Vec<String> {
         let mut strings = Vec::default();
         self.to_strings(0, "_", &mut strings);
         strings
     }
+    fn from_table(domain: NodeDomain, id: u64) -> Option<Self>;
     fn pack(entity: Entity, world: &World) -> Option<Self>;
     fn unpack(self, entity: Entity, commands: &mut Commands);
     fn find_up_entity<T: Component>(entity: Entity, world: &World) -> Option<&T> {
