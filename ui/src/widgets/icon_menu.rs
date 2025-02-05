@@ -32,7 +32,7 @@ impl IconMenu {
                 (i.on_click)(world);
             }
             let rect = resp.rect;
-            let show_indicator = get_ctx_bool_id(ui.ctx(), id);
+            let show_indicator = get_ctx_bool_id(ui.ctx(), id).unwrap_or_default();
             if show_indicator {
                 ui.painter().rect_stroke(
                     rect.expand(blink * 4.0),

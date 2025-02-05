@@ -131,8 +131,8 @@ pub fn screen_to_world_cam(pos: Vec2, cam: &Camera, cam_transform: &GlobalTransf
     cam.viewport_to_world_2d(cam_transform, pos)
         .unwrap_or_default()
 }
-pub fn get_ctx_bool_id(ctx: &egui::Context, id: Id) -> bool {
-    ctx.data(|r| r.get_temp::<bool>(id).unwrap_or_default())
+pub fn get_ctx_bool_id(ctx: &egui::Context, id: Id) -> Option<bool> {
+    ctx.data(|r| r.get_temp::<bool>(id))
 }
 pub fn get_ctx_bool_id_default(ctx: &egui::Context, id: Id, d: bool) -> bool {
     ctx.data(|r| r.get_temp::<bool>(id).unwrap_or(d))
@@ -140,13 +140,16 @@ pub fn get_ctx_bool_id_default(ctx: &egui::Context, id: Id, d: bool) -> bool {
 pub fn set_ctx_bool_id(ctx: &egui::Context, id: Id, value: bool) {
     ctx.data_mut(|w| w.insert_temp(id, value))
 }
-pub fn get_ctx_bool(ctx: &egui::Context, key: &str) -> bool {
+pub fn clear_ctx_bool_id(ctx: &egui::Context, id: Id) {
+    ctx.data_mut(|w| w.remove_temp::<bool>(id));
+}
+pub fn get_ctx_bool(ctx: &egui::Context, key: &str) -> Option<bool> {
     get_ctx_bool_id(ctx, Id::new(key))
 }
 pub fn set_ctx_bool(ctx: &egui::Context, key: &str, value: bool) {
     set_ctx_bool_id(ctx, Id::new(key), value)
 }
-pub fn get_ctx_bool_world(world: &mut World, key: &str) -> bool {
+pub fn get_ctx_bool_world(world: &mut World, key: &str) -> Option<bool> {
     let id = Id::new(key);
     get_ctx_bool_id_world(world, id)
 }
@@ -154,11 +157,11 @@ pub fn set_ctx_bool_world(world: &mut World, key: &str, value: bool) {
     let id = Id::new(key);
     set_ctx_bool_id_world(world, id, value)
 }
-pub fn get_ctx_bool_id_world(world: &mut World, id: Id) -> bool {
+pub fn get_ctx_bool_id_world(world: &mut World, id: Id) -> Option<bool> {
     if let Some(ctx) = &egui_context(world) {
         get_ctx_bool_id(ctx, id)
     } else {
-        default()
+        None
     }
 }
 pub fn set_ctx_bool_id_world(world: &mut World, id: Id, value: bool) {

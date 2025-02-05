@@ -100,7 +100,8 @@ impl SectionMenu {
                                 if ticked {
                                     set_ctx_bool_world(world, name, indicator(world));
                                 }
-                                show_indicator = get_ctx_bool_world(world, name);
+                                show_indicator =
+                                    get_ctx_bool_world(world, name).unwrap_or_default();
                             }
                         }
                         let color = if active {

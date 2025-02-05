@@ -235,10 +235,19 @@ fn compose_ui(
     let mut changed = false;
     let id = ui.next_auto_id();
     let collapsed_id = id.with("collapsed");
+    let collapse_inner_id = id.with("collapse_inner");
+    let collapse_override_id = Id::new("collapse_override");
     let hovered_id = id.with("hovered");
-    let collapsed = get_ctx_bool_id_default(ui.ctx(), collapsed_id, !default_open);
-    let openness = ui.ctx().animate_bool(id, collapsed);
-    let hovered = get_ctx_bool_id(ui.ctx(), hovered_id);
+    let mut collapsed = get_ctx_bool_id_default(ui.ctx(), collapsed_id, !default_open);
+    let collapsed_inner = get_ctx_bool_id_default(ui.ctx(), collapse_inner_id, true);
+    if let Some(collapse_override) = get_ctx_bool_id(ui.ctx(), collapse_override_id) {
+        collapsed = collapse_override;
+        set_ctx_bool_id(ui.ctx(), collapsed_id, collapse_override);
+        set_ctx_bool_id(ui.ctx(), collapse_inner_id, collapse_override);
+    }
+    let openness = ui.ctx().animate_bool(collapsed_id, collapsed);
+    let openness_inner = ui.ctx().animate_bool(collapse_inner_id, collapsed_inner);
+    let hovered = get_ctx_bool_id_default(ui.ctx(), hovered_id, false);
 
     let r = 13.0;
     let header_rounding = Rounding {
@@ -251,12 +260,14 @@ fn compose_ui(
         sw: if body.is_none() || collapsed { r } else { 0.0 },
         se: r,
     };
+    let mut header_rect = Rect::ZERO;
+    let mut triangle_rect = Rect::ZERO;
     let resp = FRAME
         .stroke(if hovered { STROKE_LIGHT } else { STROKE_DARK })
         .show(ui, |ui| {
             ui.vertical(|ui| {
                 ui.horizontal(|ui| {
-                    FRAME
+                    header_rect = FRAME
                         .fill(BG_DARK)
                         .inner_margin(Margin::symmetric(8.0, 4.0))
                         .rounding(header_rounding)
@@ -274,7 +285,7 @@ fn compose_ui(
                                             ui.close_menu();
                                         }
                                     }
-                                    if ui.button("Close").clicked() {
+                                    if "[vd Close]".cstr().button(ui).clicked() {
                                         ui.close_menu();
                                     }
                                 });
@@ -283,12 +294,15 @@ fn compose_ui(
                                 let x = ui.available_height() - 4.0;
                                 let (_, resp) =
                                     ui.allocate_at_least(egui::Vec2::splat(x), Sense::click());
-                                show_triangle(openness, &resp, ui);
+                                show_triangle(openness, resp.rect, resp.hovered(), ui);
+                                triangle_rect = resp.rect;
                                 if resp.clicked() {
                                     set_ctx_bool_id(ui.ctx(), collapsed_id, !collapsed);
                                 }
                             }
-                        });
+                        })
+                        .response
+                        .rect;
                     if !collapsed {
                         if let Some(f) = header {
                             changed |= f(ui);
@@ -298,6 +312,20 @@ fn compose_ui(
                 });
                 if !collapsed {
                     if let Some(f) = body {
+                        let x_shift = header_rect.right() - triangle_rect.min.x + 4.0;
+                        let triangle_rect = triangle_rect.translate(egui::vec2(x_shift, 0.0));
+                        let resp = ui.allocate_rect(
+                            Rect::from_min_size(
+                                header_rect.right_top(),
+                                egui::vec2(header_rect.height(), header_rect.height()),
+                            ),
+                            Sense::click(),
+                        );
+                        show_triangle(openness_inner, triangle_rect, resp.hovered(), ui);
+                        if resp.clicked() {
+                            set_ctx_bool_id(ui.ctx(), collapse_override_id, !collapsed_inner);
+                            set_ctx_bool_id(ui.ctx(), collapse_inner_id, !collapsed_inner);
+                        }
                         Frame::none()
                             .inner_margin(Margin {
                                 left: 8.0,
@@ -306,6 +334,9 @@ fn compose_ui(
                                 bottom: 4.0,
                             })
                             .show(ui, |ui| changed |= f(ui));
+                        if resp.clicked() {
+                            clear_ctx_bool_id(ui.ctx(), collapse_override_id);
+                        }
                     }
                 }
             });
@@ -315,8 +346,7 @@ fn compose_ui(
     changed
 }
 
-fn show_triangle(openness: f32, resp: &Response, ui: &mut Ui) {
-    let rect = resp.rect;
+fn show_triangle(openness: f32, rect: Rect, hovered: bool, ui: &mut Ui) {
     let rect = Rect::from_center_size(rect.center(), egui::vec2(rect.width(), rect.height()) * 0.5);
     let mut points = vec![rect.left_top(), rect.right_top(), rect.center_bottom()];
     let rotation = emath::Rot2::from_angle(remap(1.0 - openness, 0.0..=1.0, -TAU / 4.0..=0.0));
@@ -326,17 +356,13 @@ fn show_triangle(openness: f32, resp: &Response, ui: &mut Ui) {
     ui.painter().add(egui::Shape::convex_polygon(
         points,
         TRANSPARENT,
-        if resp.hovered() {
-            STROKE_YELLOW
-        } else {
-            STROKE_DARK
-        },
+        if hovered { STROKE_YELLOW } else { STROKE_DARK },
     ));
 }
 
 pub trait DataFramed: ToCstr + Clone + Debug + StringData + Inject {
     fn default_open(&self) -> bool {
-        true
+        false
     }
     fn has_header(&self) -> bool;
     fn has_body(&self) -> bool;
@@ -392,9 +418,6 @@ where
 }
 
 impl DataFramed for Expression {
-    fn default_open(&self) -> bool {
-        !self.has_body()
-    }
     fn show_name_mut(&mut self, ui: &mut Ui) -> bool {
         Selector::from_mut(self, ui)
     }
@@ -584,6 +607,10 @@ impl DataFramed for Expression {
                 a.show(Some("a:"), &context, ui);
                 b.show(Some("b:"), &context, ui);
             }
+            Expression::Fallback(v, e) => {
+                v.show(Some("v:"), &context, ui);
+                e.show(Some("on_err:"), &context, ui);
+            }
             Expression::Oklch(a, b, c) => {
                 a.show(Some("lightness:"), &context, ui);
                 b.show(Some("chroma:"), &context, ui);
@@ -629,6 +656,10 @@ impl DataFramed for Expression {
                 let a = a.show_mut(Some("a:"), ui);
                 b.show_mut(Some("b:"), ui) || a
             }
+            Expression::Fallback(v, e) => {
+                let v = v.show_mut(Some("v:"), ui);
+                e.show_mut(Some("on_err:"), ui) || v
+            }
             Expression::Oklch(a, b, c) => {
                 let a = a.show_mut(Some("lightness:"), ui);
                 let b = b.show_mut(Some("chroma:"), ui);
@@ -646,9 +677,6 @@ impl DataFramed for Expression {
 }
 
 impl DataFramed for PainterAction {
-    fn default_open(&self) -> bool {
-        false
-    }
     fn show_name_mut(&mut self, ui: &mut Ui) -> bool {
         Selector::from_mut(self, ui)
     }
