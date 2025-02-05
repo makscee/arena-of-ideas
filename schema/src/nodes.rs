@@ -4,6 +4,7 @@ struct House {
     pub name: String,
     pub color: Option<HouseColor>,
     pub abilities: Vec<Ability>,
+    pub statuses: Vec<Status>,
 }
 
 struct HouseColor {
@@ -23,6 +24,18 @@ struct AbilityDescription {
 
 struct AbilityEffect {
     pub actions: Actions,
+}
+
+struct Status {
+    pub name: String,
+    pub description: Option<StatusDescription>,
+    pub representation: Option<Representation>,
+    pub units: Vec<Unit>,
+}
+
+struct StatusDescription {
+    pub description: String,
+    pub reaction: Option<Reaction>,
 }
 
 struct Team {
@@ -67,17 +80,6 @@ struct UnitSlot {
 }
 
 struct UnitDescription {
-    pub description: String,
-    pub reaction: Option<Reaction>,
-}
-
-struct Status {
-    pub name: String,
-    pub description: Option<StatusDescription>,
-    pub representation: Option<Representation>,
-}
-
-struct StatusDescription {
     pub description: String,
     pub reaction: Option<Reaction>,
 }

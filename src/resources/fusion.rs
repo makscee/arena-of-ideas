@@ -61,7 +61,6 @@ impl Fusion {
             context.set_caster(entity);
             battle_actions.extend(action.process(context)?);
         }
-
         Ok(battle_actions)
     }
     pub fn paint(&self, rect: Rect, ui: &mut Ui, world: &World) -> Result<(), ExpressionError> {

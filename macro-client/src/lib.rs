@@ -300,6 +300,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                             }
                         )*
                         #(
+                            #vec_link_fields_str.cstr_c(VISIBLE_DARK).label(ui);
                             let mut delete = None;
                             for (i, d) in self.#vec_link_fields.iter_mut().enumerate() {
                                 ui.horizontal(|ui| {

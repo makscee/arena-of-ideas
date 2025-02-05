@@ -311,8 +311,32 @@ impl Injector<Expression> for Action {
             | Action::Repeat(x, _) => [x].into(),
         }
     }
-
     fn get_inner(&self) -> Vec<&Box<Expression>> {
-        todo!()
+        match self {
+            Action::Noop | Action::DealDamage | Action::HealDamage | Action::UseAbility => {
+                default()
+            }
+            Action::Debug(x)
+            | Action::SetValue(x)
+            | Action::AddValue(x)
+            | Action::SubtractValue(x)
+            | Action::SetTarget(x)
+            | Action::MultipleTargets(x, _)
+            | Action::Repeat(x, _) => [x].into(),
+        }
+    }
+}
+impl Inject for Trigger {
+    fn move_inner(&mut self, _source: &mut Self) {}
+    fn wrapper() -> Self {
+        Self::default()
+    }
+}
+impl Injector<Self> for Trigger {
+    fn get_inner_mut(&mut self) -> Vec<&mut Box<Self>> {
+        default()
+    }
+    fn get_inner(&self) -> Vec<&Box<Self>> {
+        default()
     }
 }

@@ -57,30 +57,45 @@ impl ActionImpl for Action {
             }
             Action::UseAbility => {
                 let caster = context.get_caster()?;
-                let ability = context
-                    .find_parent_component::<AbilityEffect>(caster)
-                    .to_e("AbilityEffect not found")?
-                    .clone();
-                let name = context
-                    .get_component::<Ability>(ability.entity())
-                    .to_e("Ability not found")?
-                    .name
-                    .clone();
-                let color = context
-                    .find_parent_component::<HouseColor>(ability.entity())
-                    .to_e("House not found")?
-                    .color
-                    .clone();
-                let text = format!("Use ability [{color} [b {name}]]");
-                actions.push(BattleAction::Vfx(
-                    HashMap::from_iter([
-                        (VarName::text, text.into()),
-                        (VarName::color, VISIBLE_LIGHT.into()),
-                        (VarName::position, context.get_var(VarName::position)?),
-                    ]),
-                    "text".into(),
-                ));
-                actions.extend(ability.actions.process(context)?);
+                if let Some(ability) = context.find_parent_component::<Ability>(caster) {
+                    let name = &ability.name;
+                    let ability_actions = context
+                        .get_component::<AbilityEffect>(ability.entity())
+                        .to_e("AbilityEffect not found")?
+                        .actions
+                        .clone();
+                    let color = context
+                        .find_parent_component::<HouseColor>(ability.entity())
+                        .to_e("House not found")?
+                        .color
+                        .clone();
+                    let text = format!("Use ability [{color} [b {name}]]");
+                    actions.push(BattleAction::Vfx(
+                        HashMap::from_iter([
+                            (VarName::text, text.into()),
+                            (VarName::color, VISIBLE_LIGHT.into()),
+                            (VarName::position, context.get_var(VarName::position)?),
+                        ]),
+                        "text".into(),
+                    ));
+                    actions.extend(ability_actions.process(context)?);
+                } else if let Some(status) = context.find_parent_component::<Status>(caster) {
+                    let entity = status.entity();
+                    let mut status = status.clone();
+                    let mut description = context
+                        .get_component::<StatusDescription>(entity)
+                        .to_e("StatusDescription not found")?
+                        .clone();
+                    let reaction = context
+                        .get_component::<Reaction>(entity)
+                        .to_e("Reaction not found")?
+                        .clone();
+                    let representation = context.get_component::<Representation>(entity).cloned();
+                    description.reaction = Some(reaction);
+                    status.description = Some(description);
+                    status.representation = representation;
+                    actions.push(BattleAction::ApplyStatus(context.get_owner()?, status, 1));
+                }
             }
             Action::Repeat(x, vec) => {
                 for _ in 0..x.get_i32(context)? {

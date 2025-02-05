@@ -4,7 +4,11 @@ pub struct GameAssetsEditor;
 
 impl GameAssetsEditor {
     pub fn open_houses_window(world: &mut World) {
-        let mut houses = houses().clone();
+        let mut houses = houses()
+            .clone()
+            .into_iter()
+            .sorted_by_key(|(name, _)| name.clone())
+            .collect_vec();
         Window::new("Houses Editor", move |ui, _| {
             if "Export"
                 .cstr_cs(VISIBLE_BRIGHT, CstrStyle::Bold)
@@ -21,7 +25,7 @@ impl GameAssetsEditor {
                 }
             }
             for (name, house) in &mut houses {
-                CollapsingHeader::new(name).show(ui, |ui| {
+                CollapsingHeader::new(&*name).show(ui, |ui| {
                     house.show_mut(None, ui);
                 });
             }

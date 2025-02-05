@@ -52,30 +52,31 @@ impl NodeStatePlugin {
     ) {
         if let Ok((gv, mut state)) = nodes.get_mut(entity) {
             for v in gv {
-                let kind = v.kind();
+                let source = v.kind();
                 for (var, value) in v.get_vars() {
-                    state.insert(t, 0.0, var, value, kind);
+                    state.insert(t, 0.0, var, value, source);
                 }
             }
         }
     }
-    pub fn collect_full_state(
+    pub fn collect_vars(
         In(entity): In<Entity>,
         nodes: Query<(&dyn GetVar, Option<&Parent>)>,
-    ) -> NodeState {
-        let mut state = NodeState::default();
+    ) -> HashMap<VarName, (VarValue, NodeKind)> {
         let mut entity = Some(entity);
+        let mut result: HashMap<VarName, (VarValue, NodeKind)> = default();
         while let Some((gv, p)) = entity.and_then(|e| nodes.get(e).ok()) {
             for v in gv {
+                let source = v.kind();
                 for (var, value) in v.get_vars() {
-                    if !state.contains(var) {
-                        state.insert(0.0, 0.0, var, value, v.kind());
+                    if !result.contains_key(&var) {
+                        result.insert(var, (value, source));
                     }
                 }
             }
             entity = p.map(|p| p.get());
         }
-        state
+        result
     }
 }
 

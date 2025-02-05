@@ -29,7 +29,7 @@ pub enum BattleAction {
     Heal(Entity, Entity, i32),
     Death(Entity),
     Spawn(Entity),
-    ApplyStatus(Entity),
+    ApplyStatus(Entity, Status, i32),
     SendEvent(Event),
     Vfx(HashMap<VarName, VarValue>, String),
     Wait(f32),
@@ -43,7 +43,7 @@ impl ToCstr for BattleAction {
             BattleAction::Death(a) => format!("x{a}"),
             BattleAction::VarSet(a, _, var, value) => format!("{a}>${var}>{value}"),
             BattleAction::Spawn(a) => format!("*{a}"),
-            BattleAction::ApplyStatus(a) => format!("+{a}"),
+            BattleAction::ApplyStatus(a, status, c) => format!("+{}>{a}({c})", status.name),
             BattleAction::Wait(t) => format!("~{t}"),
             BattleAction::Vfx(_, vfx) => format!("vfx({vfx})"),
             BattleAction::SendEvent(e) => format!("event({e})"),
@@ -205,8 +205,8 @@ impl BattleAction {
                 )]);
                 true
             }
-            BattleAction::ApplyStatus(entity) => {
-                battle.apply_status(*entity);
+            BattleAction::ApplyStatus(target, status, charges) => {
+                battle.apply_status(*target, status.clone(), *charges);
                 true
             }
             BattleAction::Wait(t) => {
@@ -338,16 +338,52 @@ impl BattleSimulation {
         if self.ended() {
             return;
         }
+        for entity in self
+            .world
+            .query_filtered::<Entity, (With<Fusion>, Without<Corpse>)>()
+            .iter(&self.world)
+            .collect_vec()
+        {
+            let vars = self
+                .world
+                .run_system_once_with(entity, NodeStatePlugin::collect_vars);
+            for (var, (value, source)) in vars {
+                let value = self.send_update_event(entity, var, value);
+                NodeState::from_world_mut(entity, &mut self.world)
+                    .unwrap()
+                    .insert(self.t, 0.0, var, value, source);
+            }
+        }
         let a = BattleAction::Strike(self.fusions_left[0], self.fusions_right[0]);
         self.process_actions([a]);
         let a = self.death_check();
         self.process_actions(a);
         self.process_actions(self.slots_sync());
-        let actions = self.send_event(Event::TurnEnd);
-        self.process_actions(actions);
+        let a = self.send_event(Event::TurnEnd);
+        self.process_actions(a);
     }
     pub fn ended(&self) -> bool {
         self.fusions_left.is_empty() || self.fusions_right.is_empty()
+    }
+    fn send_update_event(&mut self, entity: Entity, var: VarName, value: VarValue) -> VarValue {
+        let mut context = Context::new_battle_simulation(self)
+            .set_owner(entity)
+            .set_value(value)
+            .take();
+        let event = &Event::UpdateStat(var);
+        if let Some(fusion) = self.world.get::<Fusion>(entity) {
+            fusion.react(event, &mut context).log();
+        }
+        for child in entity.get_children(&self.world) {
+            if let Some(reaction) = self.world.get::<Reaction>(child) {
+                let mut status_context = context.clone().set_owner(child).take();
+                if reaction.react(event, &status_context).unwrap_or_default() {
+                    reaction.actions.process(&mut status_context).log();
+                }
+                context.set_value(status_context.get_value().unwrap());
+            }
+        }
+        context.get_value().unwrap()
     }
     #[must_use]
     fn send_event(&mut self, event: Event) -> VecDeque<BattleAction> {
@@ -382,34 +418,29 @@ impl BattleSimulation {
         }
         actions
     }
-    fn apply_status(&mut self, target: Entity) {
-        let status = Status {
-            name: "Test Status".into(),
-            description: Some(StatusDescription {
-                description: "Test status desc".into(),
-                reaction: Some(Reaction {
-                    trigger: Trigger::TurnEnd,
-                    actions: [
-                        Action::SetTarget(Box::new(Expression::RandomUnit(Box::new(
-                            Expression::AllUnits,
-                        )))),
-                        Action::SetValue(Box::new(Expression::I(1))),
-                        Action::DealDamage,
-                    ]
-                    .to_vec()
-                    .into(),
-                    ..default()
-                }),
-                ..default()
-            }),
-            ..default()
-        };
+    fn apply_status(&mut self, target: Entity, status: Status, charges: i32) {
+        for child in target.get_children(&self.world) {
+            if let Some(child_status) = self.world.get::<Status>(child) {
+                if child_status.name == status.name {
+                    let mut state = NodeState::from_world_mut(child, &mut self.world).unwrap();
+                    let charges = state
+                        .get(VarName::charges)
+                        .map(|v| v.get_i32().unwrap())
+                        .unwrap()
+                        + charges;
+                    state.insert(self.t, 0.0, VarName::charges, charges.into(), default());
+                    dbg!(charges);
+                    return;
+                }
+            }
+        }
         let entity = self.world.spawn_empty().set_parent(target).id();
         status.unpack(entity, &mut self.world.commands());
         self.world.flush_commands();
         let mut state = NodeState::from_world_mut(entity, &mut self.world).unwrap();
         state.insert(0.0, 0.0, VarName::visible, false.into(), default());
         state.insert(self.t, 0.0, VarName::visible, true.into(), default());
+        state.insert(self.t, 0.0, VarName::charges, charges.into(), default());
     }
     fn apply_animation(&mut self, context: Context, anim: &Anim) {
         match anim.apply(&mut self.t, context, &mut self.world) {

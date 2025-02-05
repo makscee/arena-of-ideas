@@ -280,12 +280,19 @@ impl CtxExt for egui::Context {
 }
 
 pub trait EntityExt {
+    fn get_children(self, world: &World) -> Vec<Entity>;
     fn get_parent(self, world: &World) -> Option<Entity>;
     fn get_parent_query(self, query: &Query<&Parent>) -> Option<Entity>;
     fn to_value(self) -> VarValue;
 }
 
 impl EntityExt for Entity {
+    fn get_children(self, world: &World) -> Vec<Entity> {
+        world
+            .get::<Children>(self)
+            .map(|c| c.to_vec())
+            .unwrap_or_default()
+    }
     fn get_parent(self, world: &World) -> Option<Entity> {
         world.get::<Parent>(self).map(|p| p.get())
     }

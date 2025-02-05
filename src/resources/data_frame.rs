@@ -822,3 +822,33 @@ impl DataFramed for Action {
         }
     }
 }
+impl DataFramed for Trigger {
+    fn show_name_mut(&mut self, ui: &mut Ui) -> bool {
+        Selector::from_mut(self, ui)
+    }
+    fn has_header(&self) -> bool {
+        match self {
+            Trigger::BattleStart | Trigger::TurnEnd | Trigger::BeforeDeath => false,
+            Trigger::ChangeStats(..) => true,
+        }
+    }
+    fn has_body(&self) -> bool {
+        false
+    }
+    fn show_header(&self, context: &Context, ui: &mut Ui) {
+        match self {
+            Trigger::BattleStart | Trigger::TurnEnd | Trigger::BeforeDeath => {}
+            Trigger::ChangeStats(var) => var.show(None, context, ui),
+        }
+    }
+    fn show_header_mut(&mut self, ui: &mut Ui) -> bool {
+        match self {
+            Trigger::BattleStart | Trigger::TurnEnd | Trigger::BeforeDeath => false,
+            Trigger::ChangeStats(var) => var.show_mut(None, ui),
+        }
+    }
+    fn show_body(&self, _context: &Context, _ui: &mut Ui) {}
+    fn show_body_mut(&mut self, _ui: &mut Ui) -> bool {
+        false
+    }
+}
