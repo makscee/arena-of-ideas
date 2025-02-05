@@ -30,6 +30,7 @@ pub enum BattleAction {
     Death(Entity),
     Spawn(Entity),
     ApplyStatus(Entity),
+    SendEvent(Event),
     Vfx(HashMap<VarName, VarValue>, String),
     Wait(f32),
 }
@@ -45,6 +46,7 @@ impl ToCstr for BattleAction {
             BattleAction::ApplyStatus(a) => format!("+{a}"),
             BattleAction::Wait(t) => format!("~{t}"),
             BattleAction::Vfx(_, vfx) => format!("vfx({vfx})"),
+            BattleAction::SendEvent(e) => format!("event({e})"),
         }
     }
 }
@@ -221,6 +223,10 @@ impl BattleAction {
                 }
                 false
             }
+            BattleAction::SendEvent(event) => {
+                add_actions.extend(battle.send_event(*event));
+                true
+            }
         };
         if applied {
             info!("{} {self}", "+".green().dimmed());
@@ -324,7 +330,8 @@ impl BattleSimulation {
             .collect_vec();
         self.process_actions(spawn_actions);
         self.process_actions(self.slots_sync());
-        self.send_event(Event::BattleStart);
+        let actions = self.send_event(Event::BattleStart);
+        self.process_actions(actions);
         self
     }
     pub fn run(&mut self) {
@@ -336,14 +343,16 @@ impl BattleSimulation {
         let a = self.death_check();
         self.process_actions(a);
         self.process_actions(self.slots_sync());
-        self.send_event(Event::TurnEnd);
+        let actions = self.send_event(Event::TurnEnd);
+        self.process_actions(actions);
     }
     pub fn ended(&self) -> bool {
         self.fusions_left.is_empty() || self.fusions_right.is_empty()
     }
-    fn send_event(&mut self, event: Event) {
+    #[must_use]
+    fn send_event(&mut self, event: Event) -> VecDeque<BattleAction> {
         info!("{} {event}", "event:".dimmed().blue());
-        let mut actions: Vec<BattleAction> = default();
+        let mut actions: VecDeque<BattleAction> = default();
         for f in self
             .world
             .query_filtered::<&Fusion, Without<Corpse>>()
@@ -358,7 +367,10 @@ impl BattleSimulation {
             }
         }
         for (r, s) in self.world.query::<(&Reaction, &Status)>().iter(&self.world) {
-            if r.react(&event) {
+            let context = Context::new_battle_simulation(self)
+                .set_owner(s.entity())
+                .take();
+            if r.react(&event, &context).unwrap_or_default() {
                 match r
                     .actions
                     .process(Context::new_battle_simulation(self).set_owner(s.entity()))
@@ -368,7 +380,7 @@ impl BattleSimulation {
                 };
             }
         }
-        self.process_actions(actions);
+        actions
     }
     fn apply_status(&mut self, target: Entity) {
         let status = Status {
@@ -413,6 +425,7 @@ impl BattleSimulation {
             }
         }
     }
+    #[must_use]
     fn death_check(&mut self) -> VecDeque<BattleAction> {
         let mut actions: VecDeque<BattleAction> = default();
         for (entity, stats) in self
@@ -421,11 +434,13 @@ impl BattleSimulation {
             .iter(&self.world)
         {
             if stats.dmg >= stats.hp {
+                actions.push_back(BattleAction::SendEvent(Event::Death(entity.to_bits())));
                 actions.push_back(BattleAction::Death(entity));
             }
         }
         actions
     }
+    #[must_use]
     fn die(&mut self, entity: Entity) -> Vec<BattleAction> {
         self.world.entity_mut(entity).insert(Corpse);
         let mut died = false;
@@ -450,6 +465,7 @@ impl BattleSimulation {
             default()
         }
     }
+    #[must_use]
     fn slots_sync(&self) -> VecDeque<BattleAction> {
         let mut actions = VecDeque::default();
         for (i, (e, side)) in self

@@ -66,7 +66,7 @@ impl AdminPlugin {
     fn show_battle(world: &mut World) {
         let b = Battle {
             left: Self::test_team(["mage".into(), "priest".into()].into()),
-            right: Self::test_team(["nurse".into(), "priest".into()].into()),
+            right: Self::test_team(["chrism".into(), "priest".into()].into()),
         };
         b.open_window(world);
     }

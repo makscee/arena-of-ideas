@@ -429,9 +429,10 @@ impl ToCstr for Expression {
             | Expression::GT
             | Expression::UnitSize
             | Expression::AllUnits
-            | Expression::AllyUnits
-            | Expression::AdjacentUnits
-            | Expression::EnemyUnits
+            | Expression::AllAllyUnits
+            | Expression::AllOtherAllyUnits
+            | Expression::AdjacentAllyUnits
+            | Expression::AllEnemyUnits
             | Expression::Owner
             | Expression::Target => String::default(),
             Expression::Var(v) => v.cstr(),

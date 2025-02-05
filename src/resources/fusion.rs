@@ -46,10 +46,11 @@ impl Fusion {
             .iter()
             .map(|e| context.get_component::<Reaction>(*e).unwrap().clone())
             .collect_vec();
-        let reacted = fusion
-            .triggers
-            .iter()
-            .any(|i| reactions[*i as usize].react(event));
+        let reacted = fusion.triggers.iter().any(|i| {
+            reactions[*i as usize]
+                .react(event, context)
+                .unwrap_or_default()
+        });
         if !reacted {
             return Ok(default());
         }

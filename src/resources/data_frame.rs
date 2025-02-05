@@ -442,9 +442,10 @@ impl DataFramed for Expression {
             | Expression::Target
             | Expression::UnitSize
             | Expression::AllUnits
-            | Expression::AllyUnits
-            | Expression::AdjacentUnits
-            | Expression::EnemyUnits
+            | Expression::AllAllyUnits
+            | Expression::AllOtherAllyUnits
+            | Expression::AdjacentAllyUnits
+            | Expression::AllEnemyUnits
             | Expression::Sin(..)
             | Expression::Cos(..)
             | Expression::Even(..)
@@ -487,9 +488,10 @@ impl DataFramed for Expression {
             | Expression::Target
             | Expression::UnitSize
             | Expression::AllUnits
-            | Expression::AllyUnits
-            | Expression::AdjacentUnits
-            | Expression::EnemyUnits
+            | Expression::AllAllyUnits
+            | Expression::AllOtherAllyUnits
+            | Expression::AdjacentAllyUnits
+            | Expression::AllEnemyUnits
             | Expression::Var(..)
             | Expression::V(..)
             | Expression::S(..)

@@ -6,4 +6,5 @@ pub enum Trigger {
     BattleStart,
     TurnEnd,
     ChangeStats(VarName),
+    BeforeDeath,
 }

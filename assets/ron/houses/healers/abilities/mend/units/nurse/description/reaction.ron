@@ -1,1 +1,1 @@
-(BattleStart, ([MultipleTargets(AdjacentUnits, [UseAbility])]))
+(BattleStart, ([MultipleTargets(AdjacentAllyUnits, [UseAbility])]))
