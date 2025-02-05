@@ -26,6 +26,7 @@ pub enum VarName {
     offset,
     hp,
     pwr,
+    dmg,
     data,
     name,
     description,

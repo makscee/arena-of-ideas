@@ -8,6 +8,7 @@ impl Fusion {
         for u in units {
             let stats = world.get::<UnitStats>(u).to_e("Unit stats not found")?;
             fusion_stats.hp += stats.hp;
+            fusion_stats.dmg += stats.dmg;
             fusion_stats.pwr += stats.pwr;
         }
         world.entity_mut(entity).insert(fusion_stats);

@@ -110,12 +110,12 @@ impl BattleAction {
                             .take(),
                         pain,
                     );
-                    let hp = battle.world.get::<UnitStats>(*b).unwrap().hp - x;
+                    let dmg = battle.world.get::<UnitStats>(*b).unwrap().dmg + x;
                     add_actions.push(Self::VarSet(
                         *b,
                         NodeKind::UnitStats,
-                        VarName::hp,
-                        hp.into(),
+                        VarName::dmg,
+                        dmg.into(),
                     ));
                 }
                 let text = animations().get("text").unwrap();
@@ -373,7 +373,7 @@ impl BattleSimulation {
             .query_filtered::<(Entity, &UnitStats), (Without<Corpse>, With<Fusion>)>()
             .iter(&self.world)
         {
-            if stats.hp <= 0 {
+            if stats.dmg >= stats.hp {
                 actions.push_back(BattleAction::Death(entity));
             }
         }

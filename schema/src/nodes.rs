@@ -59,6 +59,7 @@ struct Unit {
 struct UnitStats {
     pub pwr: i32,
     pub hp: i32,
+    pub dmg: i32,
 }
 
 struct UnitSlot {
