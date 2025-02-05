@@ -11,6 +11,7 @@ pub enum Action {
     SubtractValue(Box<Expression>),
     SetTarget(Box<Expression>),
     DealDamage,
+    HealDamage,
     UseAbility,
     MultipleTargets(Box<Expression>, Vec<Box<Action>>),
     Repeat(Box<Expression>, Vec<Box<Action>>),

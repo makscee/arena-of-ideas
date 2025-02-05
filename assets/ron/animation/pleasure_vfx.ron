@@ -1,0 +1,13 @@
+[
+    Duration(F(2.0)),
+    Spawn(
+        (
+            [
+                Color(C("#00E676")),
+                Alpha(Sub(One, Var(t))),
+                ScaleRect(Sub(F(1.3), Var(t))),
+                Circle(F(1.0)),
+            ],
+        ),
+    ),
+]

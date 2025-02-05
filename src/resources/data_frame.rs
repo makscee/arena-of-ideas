@@ -443,6 +443,7 @@ impl DataFramed for Expression {
             | Expression::UnitSize
             | Expression::AllUnits
             | Expression::AllyUnits
+            | Expression::AdjacentUnits
             | Expression::EnemyUnits
             | Expression::Sin(..)
             | Expression::Cos(..)
@@ -487,6 +488,7 @@ impl DataFramed for Expression {
             | Expression::UnitSize
             | Expression::AllUnits
             | Expression::AllyUnits
+            | Expression::AdjacentUnits
             | Expression::EnemyUnits
             | Expression::Var(..)
             | Expression::V(..)
@@ -531,28 +533,28 @@ impl DataFramed for Expression {
     }
     fn show_header(&self, context: &Context, ui: &mut Ui) {
         match self {
-            Expression::Var(v) | Expression::StateVar(_, v) => v.show(Some("x:"), &context, ui),
-            Expression::V(v) => v.show(Some("x:"), &context, ui),
-            Expression::S(v) => v.show(Some("x:"), &context, ui),
-            Expression::F(v) | Expression::FSlider(v) => v.show(Some("x:"), &context, ui),
-            Expression::I(v) => v.show(Some("x:"), &context, ui),
-            Expression::B(v) => v.show(Some("x:"), &context, ui),
+            Expression::Var(v) | Expression::StateVar(_, v) => v.show(Some("x"), &context, ui),
+            Expression::V(v) => v.show(Some("x"), &context, ui),
+            Expression::S(v) => v.show(Some("x"), &context, ui),
+            Expression::F(v) | Expression::FSlider(v) => v.show(Some("x"), &context, ui),
+            Expression::I(v) => v.show(Some("x"), &context, ui),
+            Expression::B(v) => v.show(Some("x"), &context, ui),
             Expression::V2(x, y) => {
-                x.show(Some("x:"), &context, ui);
-                y.show(Some("y:"), &context, ui);
+                x.show(Some("x"), &context, ui);
+                y.show(Some("y"), &context, ui);
             }
-            Expression::C(v) => v.show(Some("c:"), &context, ui),
+            Expression::C(v) => v.show(Some("c"), &context, ui),
             _ => {}
         }
     }
     fn show_header_mut(&mut self, ui: &mut Ui) -> bool {
         match self {
-            Expression::Var(v) | Expression::StateVar(_, v) => v.show_mut(Some("x:"), ui),
-            Expression::V(v) => v.show_mut(Some("x:"), ui),
-            Expression::S(v) => v.show_mut(Some("x:"), ui),
-            Expression::F(v) => v.show_mut(Some("x:"), ui),
-            Expression::I(v) => v.show_mut(Some("x:"), ui),
-            Expression::B(v) => v.show_mut(Some("x:"), ui),
+            Expression::Var(v) | Expression::StateVar(_, v) => v.show_mut(Some("x"), ui),
+            Expression::V(v) => v.show_mut(Some("x"), ui),
+            Expression::S(v) => v.show_mut(Some("x"), ui),
+            Expression::F(v) => v.show_mut(Some("x"), ui),
+            Expression::I(v) => v.show_mut(Some("x"), ui),
+            Expression::B(v) => v.show_mut(Some("x"), ui),
             Expression::C(v) => match Color32::from_hex(v) {
                 Ok(mut c) => {
                     v.cstr_cs(c, CstrStyle::Bold).label(ui);
@@ -569,8 +571,8 @@ impl DataFramed for Expression {
                 }
             },
             Expression::V2(x, y) => {
-                let x = x.show_mut(Some("x:"), ui);
-                y.show_mut(Some("y:"), ui) || x
+                let x = x.show_mut(Some("x"), ui);
+                y.show_mut(Some("y"), ui) || x
             }
             _ => false,
         }
@@ -589,7 +591,7 @@ impl DataFramed for Expression {
             | Expression::RandomUnit(x)
             | Expression::ToF(x)
             | Expression::StateVar(x, _)
-            | Expression::Sqr(x) => x.show(Some("x:"), &context, ui),
+            | Expression::Sqr(x) => x.show(Some("x"), &context, ui),
             Expression::V2EE(a, b)
             | Expression::Macro(a, b)
             | Expression::Sum(a, b)
@@ -604,22 +606,22 @@ impl DataFramed for Expression {
             | Expression::Equals(a, b)
             | Expression::GreaterThen(a, b)
             | Expression::LessThen(a, b) => {
-                a.show(Some("a:"), &context, ui);
-                b.show(Some("b:"), &context, ui);
+                a.show(Some("a"), &context, ui);
+                b.show(Some("b"), &context, ui);
             }
             Expression::Fallback(v, e) => {
-                v.show(Some("v:"), &context, ui);
-                e.show(Some("on_err:"), &context, ui);
+                v.show(Some("v"), &context, ui);
+                e.show(Some("on_err"), &context, ui);
             }
             Expression::Oklch(a, b, c) => {
-                a.show(Some("lightness:"), &context, ui);
-                b.show(Some("chroma:"), &context, ui);
-                c.show(Some("hue:"), &context, ui);
+                a.show(Some("lightness"), &context, ui);
+                b.show(Some("chroma"), &context, ui);
+                c.show(Some("hue"), &context, ui);
             }
             Expression::If(a, b, c) => {
-                a.show(Some("if:"), &context, ui);
-                b.show(Some("then:"), &context, ui);
-                c.show(Some("else:"), &context, ui);
+                a.show(Some("if"), &context, ui);
+                b.show(Some("then"), &context, ui);
+                c.show(Some("else"), &context, ui);
             }
             _ => {}
         };
@@ -638,7 +640,7 @@ impl DataFramed for Expression {
             | Expression::RandomUnit(x)
             | Expression::ToF(x)
             | Expression::StateVar(x, _)
-            | Expression::Sqr(x) => x.show_mut(Some("x:"), ui),
+            | Expression::Sqr(x) => x.show_mut(Some("x"), ui),
             Expression::V2EE(a, b)
             | Expression::Macro(a, b)
             | Expression::Sum(a, b)
@@ -653,24 +655,24 @@ impl DataFramed for Expression {
             | Expression::Equals(a, b)
             | Expression::GreaterThen(a, b)
             | Expression::LessThen(a, b) => {
-                let a = a.show_mut(Some("a:"), ui);
-                b.show_mut(Some("b:"), ui) || a
+                let a = a.show_mut(Some("a"), ui);
+                b.show_mut(Some("b"), ui) || a
             }
             Expression::Fallback(v, e) => {
-                let v = v.show_mut(Some("v:"), ui);
-                e.show_mut(Some("on_err:"), ui) || v
+                let v = v.show_mut(Some("v"), ui);
+                e.show_mut(Some("on_err"), ui) || v
             }
             Expression::Oklch(a, b, c) => {
-                let a = a.show_mut(Some("lightness:"), ui);
-                let b = b.show_mut(Some("chroma:"), ui);
-                c.show_mut(Some("hue:"), ui) || a || b
+                let a = a.show_mut(Some("lightness"), ui);
+                let b = b.show_mut(Some("chroma"), ui);
+                c.show_mut(Some("hue"), ui) || a || b
             }
             Expression::If(a, b, c) => {
-                let a = a.show_mut(Some("if:"), ui);
-                let b = b.show_mut(Some("then:"), ui);
-                c.show_mut(Some("else:"), ui) || a || b
+                let a = a.show_mut(Some("if"), ui);
+                let b = b.show_mut(Some("then"), ui);
+                c.show_mut(Some("else"), ui) || a || b
             }
-            Expression::FSlider(x) => Slider::new("x:").full_width().ui(x, 0.0..=1.0, ui),
+            Expression::FSlider(x) => Slider::new("x").full_width().ui(x, 0.0..=1.0, ui),
             _ => false,
         }
     }
@@ -719,17 +721,17 @@ impl DataFramed for PainterAction {
             | PainterAction::ScaleRect(x)
             | PainterAction::Color(x)
             | PainterAction::Feathering(x)
-            | PainterAction::Alpha(x) => x.show(Some("x:"), context, ui),
+            | PainterAction::Alpha(x) => x.show(Some("x"), context, ui),
             PainterAction::Curve {
                 thickness,
                 curvature,
             } => {
-                thickness.show(Some("thickness:"), context, ui);
-                curvature.show(Some("curvature:"), context, ui);
+                thickness.show(Some("thickness"), context, ui);
+                curvature.show(Some("curvature"), context, ui);
             }
             PainterAction::Repeat(x, painter_action) => {
-                x.show(Some("cnt:"), context, ui);
-                painter_action.show(Some("action:"), context, ui);
+                x.show(Some("cnt"), context, ui);
+                painter_action.show(Some("action"), context, ui);
             }
             PainterAction::List(vec) => vec.show(None, context, ui),
         }
@@ -747,19 +749,74 @@ impl DataFramed for PainterAction {
             | PainterAction::ScaleRect(x)
             | PainterAction::Color(x)
             | PainterAction::Feathering(x)
-            | PainterAction::Alpha(x) => x.show_mut(Some("x:"), ui),
+            | PainterAction::Alpha(x) => x.show_mut(Some("x"), ui),
             PainterAction::Repeat(x, painter_action) => {
-                let x = x.show_mut(Some("cnt:"), ui);
-                painter_action.show_mut(Some("action:"), ui) || x
+                let x = x.show_mut(Some("cnt"), ui);
+                painter_action.show_mut(Some("action"), ui) || x
             }
             PainterAction::Curve {
                 thickness,
                 curvature,
             } => {
-                let thickness = thickness.show_mut(Some("thickness:"), ui);
-                curvature.show_mut(Some("curvature:"), ui) || thickness
+                let thickness = thickness.show_mut(Some("thickness"), ui);
+                curvature.show_mut(Some("curvature"), ui) || thickness
             }
             PainterAction::List(vec) => vec.show_mut(None, ui),
+        }
+    }
+}
+impl DataFramed for Action {
+    fn show_name_mut(&mut self, ui: &mut Ui) -> bool {
+        Selector::from_mut(self, ui)
+    }
+    fn has_header(&self) -> bool {
+        false
+    }
+    fn has_body(&self) -> bool {
+        match self {
+            Action::Noop | Action::DealDamage | Action::HealDamage | Action::UseAbility => false,
+            Action::Debug(..)
+            | Action::SetValue(..)
+            | Action::AddValue(..)
+            | Action::SubtractValue(..)
+            | Action::SetTarget(..)
+            | Action::MultipleTargets(..)
+            | Action::Repeat(..) => true,
+        }
+    }
+    fn show_header(&self, _context: &Context, _ui: &mut Ui) {}
+    fn show_header_mut(&mut self, _ui: &mut Ui) -> bool {
+        false
+    }
+    fn show_body(&self, context: &Context, ui: &mut Ui) {
+        match self {
+            Action::DealDamage | Action::HealDamage | Action::UseAbility | Action::Noop => {}
+            Action::Debug(x)
+            | Action::SetValue(x)
+            | Action::AddValue(x)
+            | Action::SubtractValue(x)
+            | Action::SetTarget(x) => {
+                x.show(Some("x"), context, ui);
+            }
+            Action::MultipleTargets(x, vec) | Action::Repeat(x, vec) => {
+                x.show(Some("x"), context, ui);
+                vec.show(None, context, ui);
+            }
+        }
+    }
+
+    fn show_body_mut(&mut self, ui: &mut Ui) -> bool {
+        match self {
+            Action::DealDamage | Action::HealDamage | Action::UseAbility | Action::Noop => false,
+            Action::Debug(x)
+            | Action::SetValue(x)
+            | Action::AddValue(x)
+            | Action::SubtractValue(x)
+            | Action::SetTarget(x) => x.show_mut(Some("x"), ui),
+            Action::MultipleTargets(x, vec) | Action::Repeat(x, vec) => {
+                let x = x.show_mut(Some("x"), ui);
+                vec.show_mut(None, ui) || x
+            }
         }
     }
 }

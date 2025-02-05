@@ -430,6 +430,7 @@ impl ToCstr for Expression {
             | Expression::UnitSize
             | Expression::AllUnits
             | Expression::AllyUnits
+            | Expression::AdjacentUnits
             | Expression::EnemyUnits
             | Expression::Owner
             | Expression::Target => String::default(),

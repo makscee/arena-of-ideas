@@ -2,6 +2,7 @@
     Spawn(
         (
             [
+                Color(Fallback(Var(color), C("#ffffff"))),
                 Feathering(Mul(F(50.0), Var(t))),
                 Alpha(Sub(F(1.0), Var(t))),
                 Curve(thickness: F(0.1), curvature: F(2.0)),
@@ -11,6 +12,7 @@
     Spawn(
         (
             [
+                Color(Fallback(Var(color), C("#ffffff"))),
                 Alpha(LessThen(Var(t), F(0.1))),
                 Curve(thickness: F(0.1), curvature: F(2.0)),
             ],

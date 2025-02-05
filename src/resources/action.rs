@@ -47,6 +47,14 @@ impl ActionImpl for Action {
                     actions.push(BattleAction::Damage(owner, target, value));
                 }
             }
+            Action::HealDamage => {
+                let owner = context.get_owner()?;
+                let target = context.get_target()?;
+                let value = context.get_value()?.get_i32()?;
+                if value > 0 {
+                    actions.push(BattleAction::Heal(owner, target, value));
+                }
+            }
             Action::UseAbility => {
                 let caster = context.get_caster()?;
                 let ability = context

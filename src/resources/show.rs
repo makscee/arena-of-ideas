@@ -335,16 +335,6 @@ impl Show for Trigger {
         Selector::new("").ui_enum(self, ui)
     }
 }
-impl Show for Action {
-    fn show(&self, prefix: Option<&str>, _: &Context, ui: &mut Ui) {
-        prefix.show(ui);
-        self.cstr_cs(ACTION_COLOR, CstrStyle::Bold).label(ui);
-    }
-    fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
-        prefix.show(ui);
-        Selector::new("").ui_enum(self, ui)
-    }
-}
 impl Show for Event {
     fn show(&self, prefix: Option<&str>, _: &Context, ui: &mut Ui) {
         prefix.show(ui);

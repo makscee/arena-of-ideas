@@ -26,6 +26,7 @@ pub enum BattleAction {
     VarSet(Entity, NodeKind, VarName, VarValue),
     Strike(Entity, Entity),
     Damage(Entity, Entity, i32),
+    Heal(Entity, Entity, i32),
     Death(Entity),
     Spawn(Entity),
     ApplyStatus(Entity),
@@ -37,6 +38,7 @@ impl ToCstr for BattleAction {
         match self {
             BattleAction::Strike(a, b) => format!("{a}|{b}"),
             BattleAction::Damage(a, b, x) => format!("{a}>{b}-{x}"),
+            BattleAction::Heal(a, b, x) => format!("{a}>{b}+{x}"),
             BattleAction::Death(a) => format!("x{a}"),
             BattleAction::VarSet(a, _, var, value) => format!("{a}>${var}>{value}"),
             BattleAction::Spawn(a) => format!("*{a}"),
@@ -94,7 +96,7 @@ impl BattleAction {
                     .set_owner(*b)
                     .get_var(VarName::position)
                     .unwrap();
-                let curve = animations().get("range_dmg_vfx").unwrap();
+                let curve = animations().get("range_effect_vfx").unwrap();
                 battle.apply_animation(
                     Context::default()
                         .set_var(VarName::position, owner_pos)
@@ -127,6 +129,51 @@ impl BattleAction {
                         .take(),
                     text,
                 );
+                battle.t += ANIMATION;
+                true
+            }
+            BattleAction::Heal(a, b, x) => {
+                let owner_pos = Context::new_battle_simulation(battle)
+                    .set_owner(*a)
+                    .get_var(VarName::position)
+                    .unwrap();
+                let target_pos = Context::new_battle_simulation(battle)
+                    .set_owner(*b)
+                    .get_var(VarName::position)
+                    .unwrap();
+                let curve = animations().get("range_effect_vfx").unwrap();
+                battle.apply_animation(
+                    Context::default()
+                        .set_var(VarName::position, owner_pos)
+                        .set_var(VarName::extra_position, target_pos.clone())
+                        .take(),
+                    curve,
+                );
+                if *x > 0 {
+                    let pain = animations().get("pleasure_vfx").unwrap();
+                    battle.apply_animation(
+                        Context::default()
+                            .set_var(VarName::position, target_pos.clone())
+                            .take(),
+                        pain,
+                    );
+                    let dmg = (battle.world.get::<UnitStats>(*b).unwrap().dmg - x).at_least(0);
+                    add_actions.push(Self::VarSet(
+                        *b,
+                        NodeKind::UnitStats,
+                        VarName::dmg,
+                        dmg.into(),
+                    ));
+                    let text = animations().get("text").unwrap();
+                    battle.apply_animation(
+                        Context::default()
+                            .set_var(VarName::text, format!("+{x}").into())
+                            .set_var(VarName::color, GREEN.into())
+                            .set_var(VarName::position, target_pos)
+                            .take(),
+                        text,
+                    );
+                }
                 battle.t += ANIMATION;
                 true
             }

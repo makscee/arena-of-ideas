@@ -188,6 +188,23 @@ impl<'w, 's> Context<'w, 's> {
             .map(|e| e.to_value())
             .collect()
     }
+    pub fn adjacent_allies(&self, entity: Entity) -> Vec<VarValue> {
+        let entities = self
+            .sources
+            .iter()
+            .flat_map(|s| s.collect_allies(entity))
+            .collect_vec();
+        let mut result: Vec<Entity> = default();
+        if let Some(pos) = entities.iter().position(|e| *e == entity) {
+            if pos > 0 {
+                result.push(entities[pos - 1]);
+            }
+            if pos + 1 < entities.len() {
+                result.push(entities[pos + 1]);
+            }
+        }
+        result.into_iter().map(|e| e.to_value()).collect()
+    }
 
     pub fn clear(&mut self) {
         self.layers.clear();

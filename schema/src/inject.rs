@@ -48,6 +48,16 @@ impl Inject for PainterAction {
     }
 }
 
+impl Inject for Action {
+    fn move_inner(&mut self, source: &mut Self) {
+        <Self as Injector<Self>>::inject_inner(self, source);
+        <Self as Injector<Expression>>::inject_inner(self, source);
+    }
+    fn wrapper() -> Self {
+        Self::Repeat(Box::new(Expression::I(1)), default())
+    }
+}
+
 impl Injector<Self> for Expression {
     fn get_inner_mut(&mut self) -> Vec<&mut Box<Self>> {
         match self {
@@ -59,6 +69,7 @@ impl Injector<Self> for Expression {
             | Expression::UnitSize
             | Expression::AllUnits
             | Expression::AllyUnits
+            | Expression::AdjacentUnits
             | Expression::EnemyUnits
             | Expression::Owner
             | Expression::Target
@@ -112,6 +123,7 @@ impl Injector<Self> for Expression {
             | Expression::UnitSize
             | Expression::AllUnits
             | Expression::AllyUnits
+            | Expression::AdjacentUnits
             | Expression::EnemyUnits
             | Expression::Owner
             | Expression::Target
@@ -245,5 +257,60 @@ impl Injector<Self> for PainterAction {
             PainterAction::Repeat(_x, p) => [p].into(),
             PainterAction::List(vec) => vec.into_iter().collect_vec(),
         }
+    }
+}
+
+impl Injector<Self> for Action {
+    fn get_inner_mut(&mut self) -> Vec<&mut Box<Self>> {
+        match self {
+            Action::Noop
+            | Action::Debug(..)
+            | Action::SetValue(..)
+            | Action::AddValue(..)
+            | Action::SubtractValue(..)
+            | Action::SetTarget(..)
+            | Action::DealDamage
+            | Action::HealDamage
+            | Action::UseAbility => default(),
+            Action::MultipleTargets(_, vec) | Action::Repeat(_, vec) => {
+                vec.into_iter().collect_vec()
+            }
+        }
+    }
+    fn get_inner(&self) -> Vec<&Box<Self>> {
+        match self {
+            Action::Noop
+            | Action::Debug(..)
+            | Action::SetValue(..)
+            | Action::AddValue(..)
+            | Action::SubtractValue(..)
+            | Action::SetTarget(..)
+            | Action::DealDamage
+            | Action::HealDamage
+            | Action::UseAbility => default(),
+            Action::MultipleTargets(_, vec) | Action::Repeat(_, vec) => {
+                vec.into_iter().collect_vec()
+            }
+        }
+    }
+}
+impl Injector<Expression> for Action {
+    fn get_inner_mut(&mut self) -> Vec<&mut Box<Expression>> {
+        match self {
+            Action::Noop | Action::DealDamage | Action::HealDamage | Action::UseAbility => {
+                default()
+            }
+            Action::Debug(x)
+            | Action::SetValue(x)
+            | Action::AddValue(x)
+            | Action::SubtractValue(x)
+            | Action::SetTarget(x)
+            | Action::MultipleTargets(x, _)
+            | Action::Repeat(x, _) => [x].into(),
+        }
+    }
+
+    fn get_inner(&self) -> Vec<&Box<Expression>> {
+        todo!()
     }
 }
