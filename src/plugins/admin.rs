@@ -12,6 +12,24 @@ impl Plugin for AdminPlugin {
 impl AdminPlugin {
     fn on_enter(world: &mut World) {
         world.flush();
+        Window::new("UnitCard", |ui, _| {
+            UnitCard {
+                name: "Apprentice".into(),
+                description: "Battle Start: deal 1 damage to random enemy".into(),
+                house: "wizards".into(),
+                house_color: Color32::from_hex("#039BE5").unwrap(),
+                rarity: Rarity::Rare,
+                vars: HashMap::from_iter([
+                    (VarName::pwr, 1.into()),
+                    (VarName::hp, 3.into()),
+                    (VarName::lvl, 3.into()),
+                    (VarName::tier, 2.into()),
+                ]),
+            }
+            .show(ui)
+        })
+        .center_anchor()
+        .push(world);
         for u in world.query::<&Unit>().iter(world) {
             debug!("Unit {}", u.name);
             debug!(

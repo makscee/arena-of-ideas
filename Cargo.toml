@@ -71,6 +71,7 @@ log = "0.4.19"
 glam = { version = "0.27.0", features = ["serde"] }
 rand = "0.8.5"
 rand_chacha = "0.3.1"
+color-hex = "0.2.0"
 
 [dependencies]
 ui = { path = "ui" }
@@ -104,6 +105,7 @@ rand = { workspace = true }
 rand_chacha = { workspace = true }
 parking_lot = { workspace = true }
 tween = { workspace = true }
+color-hex = { workspace = true }
 
 spacetimedb-sdk = "=1.0.0-rc3"
 spacetimedb-sats = "=1.0.0-rc3"

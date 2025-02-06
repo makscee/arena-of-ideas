@@ -32,6 +32,7 @@ pub enum VarName {
     description,
     color,
     lvl,
+    tier,
     visible,
     slot,
     side,

@@ -13,6 +13,7 @@ mod notification;
 mod selector;
 mod slider;
 mod table;
+mod tag;
 mod tile;
 mod window;
 
@@ -29,5 +30,6 @@ pub use r#fn::*;
 pub use selector::*;
 pub use slider::*;
 pub use table::*;
+pub use tag::*;
 pub use tile::*;
 pub use window::*;

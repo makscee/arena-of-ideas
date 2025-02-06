@@ -19,5 +19,4 @@ strum_macros = { workspace = true }
 itertools = { workspace = true }
 egui_extras = { workspace = true }
 parking_lot = { workspace = true }
-
-color-hex = "0.2.0"
+color-hex = { workspace = true }

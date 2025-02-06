@@ -14,6 +14,7 @@ pub struct Window {
     no_frame: bool,
     transparent: bool,
     expand: bool,
+    center_anchor: bool,
     default_width: f32,
     content: Box<dyn FnMut(&mut Ui, &mut World) + Send + Sync>,
 }
@@ -48,6 +49,7 @@ impl Window {
             no_frame: false,
             transparent: false,
             expand: false,
+            center_anchor: false,
             default_width: 150.0,
         }
     }
@@ -64,6 +66,11 @@ impl Window {
     #[must_use]
     pub fn transparent(mut self) -> Self {
         self.transparent = true;
+        self
+    }
+    #[must_use]
+    pub fn center_anchor(mut self) -> Self {
+        self.center_anchor = true;
         self
     }
     #[must_use]
@@ -94,6 +101,9 @@ impl Window {
         if self.no_frame {}
         if self.expand {
             w = w.fixed_rect(ctx.screen_rect().shrink(13.0));
+        }
+        if self.center_anchor {
+            w = w.anchor(Align2::CENTER_CENTER, egui::Vec2::ZERO);
         }
         w.show(ctx, |ui| {
             ui.expand_to_include_rect(ui.available_rect_before_wrap());
