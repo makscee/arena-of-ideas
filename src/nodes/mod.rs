@@ -1,8 +1,7 @@
-mod node_frame;
 mod nodes;
 
 use super::*;
-pub use node_frame::*;
+
 pub use nodes::*;
 
 #[derive(SystemParam, Debug)]

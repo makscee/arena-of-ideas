@@ -4,6 +4,7 @@ pub mod prelude;
 mod resources;
 mod stdb;
 mod utils;
+mod ui;
 
 use bevy::{
     diagnostic::FrameTimeDiagnosticsPlugin, render::camera::ClearColor, state::app::AppExtStates,
