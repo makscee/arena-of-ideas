@@ -398,15 +398,7 @@ impl ToCstr for Color32 {
 }
 impl ToCstr for VarName {
     fn cstr(&self) -> Cstr {
-        self.as_ref().cstr_cs(
-            match self {
-                VarName::hp => RED,
-                VarName::pwr => YELLOW,
-                VarName::lvl => PURPLE,
-                _ => VISIBLE_DARK,
-            },
-            CstrStyle::Small,
-        )
+        self.as_ref().cstr_cs(self.color(), CstrStyle::Small)
     }
 }
 impl ToCstr for VarValue {
@@ -418,7 +410,7 @@ impl ToCstr for VarValue {
 }
 impl ToCstr for Expression {
     fn cstr(&self) -> Cstr {
-        self.as_ref().cstr_c(YELLOW)
+        self.as_ref().cstr_c(self.color())
     }
     fn cstr_expanded(&self) -> Cstr {
         let inner = match self {
@@ -457,7 +449,7 @@ impl ToCstr for Expression {
             | Expression::Rand(x)
             | Expression::RandomUnit(x)
             | Expression::ToF(x)
-            | Expression::Sqr(x) => x.cstr(),
+            | Expression::Sqr(x) => x.cstr_expanded(),
             Expression::Macro(a, b)
             | Expression::V2EE(a, b)
             | Expression::Sum(a, b)
@@ -484,7 +476,7 @@ impl ToCstr for Expression {
         if inner.is_empty() {
             self.cstr()
         } else {
-            format!("{}({inner})", self.cstr())
+            format!("{}[vd (]{inner}[vd )]", self.cstr())
         }
     }
 }
@@ -531,12 +523,24 @@ impl ToCstr for Material {
 }
 impl ToCstr for Trigger {
     fn cstr(&self) -> Cstr {
-        self.as_ref().to_owned()
+        self.as_ref().to_owned().cstr_c(self.color())
     }
 }
 impl ToCstr for Action {
     fn cstr(&self) -> Cstr {
-        self.as_ref().to_owned()
+        let inner_x = <Self as Injector<Expression>>::get_inner(self);
+        let inner_a = <Self as Injector<Action>>::get_inner(self);
+        let s = self.as_ref().to_owned().cstr_c(self.color());
+        if !inner_x.is_empty() || !inner_a.is_empty() {
+            let inner = inner_x
+                .into_iter()
+                .map(|x| x.cstr_expanded())
+                .chain(inner_a.into_iter().map(|a| a.cstr_expanded()))
+                .join(", ");
+            format!("{s}[vd (]{inner}[vd )]")
+        } else {
+            s
+        }
     }
 }
 impl ToCstr for Event {

@@ -1,11 +1,11 @@
 mod cstr;
-mod rarity;
+mod enum_colors;
 mod ui;
 mod utils;
 mod widgets;
 
 pub use cstr::*;
-pub use rarity::*;
+pub use enum_colors::*;
 pub use ui::*;
 pub use utils::*;
 pub use widgets::*;
@@ -29,7 +29,6 @@ use lerp::Lerp;
 use schema::*;
 use std::{cmp::Ordering, collections::VecDeque, mem, ops::RangeInclusive, sync::Mutex};
 use strum::IntoEnumIterator;
-use strum_macros::{AsRefStr, Display, EnumIter, FromRepr};
 use utils_client::*;
 
 pub trait ToCustomColor {

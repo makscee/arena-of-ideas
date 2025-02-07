@@ -87,18 +87,18 @@ impl Window {
             outer_margin: Margin::ZERO,
             rounding: ROUNDING,
             shadow: SHADOW,
-            fill: BG_DARK,
+            fill: EMPTINESS,
             stroke: STROKE_DARK,
         };
         let mut r = WindowResponse::None;
         let mut w = egui::Window::new(&self.id)
             .default_width(self.default_width)
+            .default_height(0.0)
             .title_bar(false)
-            .frame(FRAME)
+            .frame(if self.no_frame { Frame::none() } else { FRAME })
             .scroll([self.expand, self.expand])
             .movable(!self.expand)
             .order(self.order);
-        if self.no_frame {}
         if self.expand {
             w = w.fixed_rect(ctx.screen_rect().shrink(13.0));
         }
@@ -107,6 +107,10 @@ impl Window {
         }
         w.show(ctx, |ui| {
             ui.expand_to_include_rect(ui.available_rect_before_wrap());
+            if self.no_frame {
+                (self.content)(ui, world);
+                return;
+            }
             let rect = CollapsingHeader::new(&self.id)
                 .default_open(true)
                 .show_unindented(ui, |ui| {

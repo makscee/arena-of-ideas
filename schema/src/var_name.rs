@@ -16,6 +16,7 @@ use super::*;
     EnumString,
     EnumIter,
 )]
+#[repr(u8)]
 pub enum VarName {
     #[default]
     index,
@@ -24,14 +25,15 @@ pub enum VarName {
     position,
     extra_position,
     offset,
-    hp,
     pwr,
+    hp,
     dmg,
     data,
     name,
     description,
     color,
     lvl,
+    xp,
     tier,
     visible,
     slot,

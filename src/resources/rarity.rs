@@ -1,13 +1,14 @@
 use super::*;
 
+#[allow(non_camel_case_types)]
 #[derive(FromRepr, AsRefStr, EnumIter, PartialEq, Clone, Copy, Display, Default, Debug)]
 #[repr(u8)]
 pub enum Rarity {
     #[default]
-    Common,
-    Rare,
-    Epic,
-    Legendary,
+    common,
+    rare,
+    epic,
+    legendary,
 }
 
 const RARITY_COLORS: [Color32; 4] = [
@@ -17,9 +18,9 @@ const RARITY_COLORS: [Color32; 4] = [
     hex_color_noa!("#F57C00"),
 ];
 
-impl Rarity {
-    pub fn color(self) -> Color32 {
-        RARITY_COLORS[self as usize]
+impl EnumColor for Rarity {
+    fn color(&self) -> Color32 {
+        RARITY_COLORS[*self as usize]
     }
 }
 

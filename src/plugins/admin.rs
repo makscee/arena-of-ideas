@@ -15,19 +15,34 @@ impl AdminPlugin {
         Window::new("UnitCard", |ui, _| {
             UnitCard {
                 name: "Apprentice".into(),
-                description: "Battle Start: deal 1 damage to random enemy".into(),
+                description: "[yellow Battle Start]: deal [vb [b 1]] damage to random enemy".into(),
                 house: "wizards".into(),
                 house_color: Color32::from_hex("#039BE5").unwrap(),
-                rarity: Rarity::Rare,
+                rarity: Rarity::legendary,
                 vars: HashMap::from_iter([
                     (VarName::pwr, 1.into()),
                     (VarName::hp, 3.into()),
                     (VarName::lvl, 3.into()),
                     (VarName::tier, 2.into()),
                 ]),
+                expanded: false,
+                reaction: Reaction {
+                    trigger: Trigger::BattleStart,
+                    actions: Actions(
+                        [
+                            Box::new(Action::SetTarget(Box::new(Expression::RandomUnit(
+                                Box::new(Expression::AllEnemyUnits),
+                            )))),
+                            Box::new(Action::UseAbility),
+                        ]
+                        .into(),
+                    ),
+                    ..default()
+                },
             }
             .show(ui)
         })
+        .no_frame()
         .center_anchor()
         .push(world);
         for u in world.query::<&Unit>().iter(world) {

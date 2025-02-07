@@ -25,6 +25,7 @@ pub const VISIBLE_BRIGHT: Color32 = hex_color_noa!("#FFFFFF");
 
 pub const YELLOW: Color32 = hex_color_noa!("#D98F00");
 pub const YELLOW_DARK: Color32 = hex_color_noa!("#996600");
+pub const ORANGE: Color32 = hex_color_noa!("#DC6814");
 pub const RED: Color32 = hex_color_noa!("#DC143C");
 pub const DARK_RED: Color32 = hex_color_noa!("#9D0E2B");
 pub const GREEN: Color32 = hex_color_noa!("#64DD17");
@@ -33,7 +34,6 @@ pub const LIGHT_PURPLE: Color32 = hex_color_noa!("#95408D");
 pub const CYAN: Color32 = hex_color_noa!("#00B8D4");
 
 pub const EVENT_COLOR: Color32 = hex_color_noa!("#F7CA55");
-pub const TARGET_COLOR: Color32 = hex_color_noa!("#DC6814");
 pub const ACTION_COLOR: Color32 = hex_color_noa!("#DE1C1C");
 
 pub const MISSING_COLOR: Color32 = hex_color_noa!("#FF00FF");
