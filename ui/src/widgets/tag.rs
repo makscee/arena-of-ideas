@@ -6,17 +6,36 @@ use super::*;
 pub struct TagWidget {
     text: String,
     color: Color32,
-    galley: Option<Arc<egui::Galley>>,
+    number: Option<Cstr>,
+    text_galley: Option<Arc<egui::Galley>>,
+    number_galley: Option<Arc<egui::Galley>>,
 }
 
 const INNER_MARGIN: Margin = Margin::symmetric(4.0, 1.0);
 const OUTER_MARGIN: Margin = Margin::symmetric(4.0, 4.0);
+const NUMBER_MARGIN: Margin = Margin {
+    left: 8.0,
+    right: 2.0,
+    top: 0.0,
+    bottom: 0.0,
+};
 impl TagWidget {
-    pub fn new(text: impl ToString, color: Color32) -> Self {
+    pub fn new_text(text: impl ToString, color: Color32) -> Self {
         Self {
             text: text.to_string(),
             color,
-            galley: None,
+            text_galley: None,
+            number_galley: None,
+            number: None,
+        }
+    }
+    pub fn new_number(text: impl ToString, color: Color32, number: Cstr) -> Self {
+        Self {
+            text: text.to_string(),
+            color,
+            number: Some(number),
+            text_galley: None,
+            number_galley: None,
         }
     }
     fn text_size(&mut self, ui: &mut Ui) -> egui::Vec2 {
@@ -25,36 +44,67 @@ impl TagWidget {
             .cstr_cs(EMPTINESS, CstrStyle::Bold)
             .galley(1.0, ui);
         let size = galley.size();
-        self.galley = Some(galley);
+        self.text_galley = Some(galley);
+        size
+    }
+    fn number_size(&mut self, ui: &mut Ui) -> egui::Vec2 {
+        let Some(number) = &self.number else {
+            return default();
+        };
+        let galley = number
+            .cstr_cs(VISIBLE_BRIGHT, CstrStyle::Bold)
+            .galley(1.0, ui);
+        let mut size = galley.size();
+        size += NUMBER_MARGIN.sum();
+        size.y = 0.0;
+        self.number_galley = Some(galley);
         size
     }
     fn margin_size() -> egui::Vec2 {
         INNER_MARGIN.sum() + OUTER_MARGIN.sum()
     }
     pub fn size(&mut self, ui: &mut Ui) -> egui::Vec2 {
-        self.text_size(ui) + Self::margin_size()
+        self.text_size(ui) + self.number_size(ui) + Self::margin_size()
     }
     pub fn ui(mut self, ui: &mut Ui) {
-        if self.galley.is_none() {
-            self.text_size(ui);
-        }
         let frame = Frame {
-            inner_margin: INNER_MARGIN,
-            outer_margin: OUTER_MARGIN,
             rounding: Rounding::same(13.0),
             shadow: Shadow::NONE,
             fill: self.color,
-            stroke: Stroke::default(),
+            stroke: Stroke::new(1.0, self.color),
+            ..default()
         };
-        let galley = self.galley.unwrap();
-        let (rect, _) = ui.allocate_exact_size(galley.size() + Self::margin_size(), Sense::hover());
-        ui.painter()
-            .add(frame.paint(rect.shrink2(frame.outer_margin.sum() * 0.5)));
+        let text_size = self.text_size(ui);
+        let number_size = self.number_size(ui);
+        let margin_size = Self::margin_size();
+        let (rect, _) =
+            ui.allocate_exact_size(text_size + number_size + margin_size, Sense::hover());
+        if self.number.is_some() {
+            ui.painter().add(
+                frame
+                    .fill(EMPTINESS)
+                    .paint(rect.shrink2(OUTER_MARGIN.sum() * 0.5)),
+            );
+        }
+        ui.painter().add(
+            frame.paint(
+                rect.with_max_x(rect.max.x - number_size.x)
+                    .shrink2(OUTER_MARGIN.sum() * 0.5),
+            ),
+        );
         ui.painter().galley(
-            rect.shrink2(Self::margin_size() * 0.5).left_top(),
-            galley,
+            rect.shrink2(margin_size * 0.5).left_top(),
+            self.text_galley.unwrap(),
             VISIBLE_BRIGHT,
         );
+        if let Some(number) = self.number_galley {
+            ui.painter().galley(
+                rect.shrink2(margin_size * 0.5).right_top()
+                    - egui::vec2(number_size.x - NUMBER_MARGIN.left, 0.0),
+                number,
+                VISIBLE_BRIGHT,
+            );
+        }
     }
 }
 
@@ -64,13 +114,21 @@ pub struct TagsWidget {
 }
 
 impl TagsWidget {
-    pub fn new(tags: Vec<(String, Color32)>) -> Self {
-        Self {
-            tags: tags
-                .into_iter()
-                .map(|(text, color)| TagWidget::new(text, color))
-                .collect(),
-        }
+    pub fn new() -> Self {
+        Self { tags: default() }
+    }
+    pub fn add_text(&mut self, text: impl ToString, color: Color32) {
+        self.tags.push(TagWidget::new_text(text, color));
+    }
+    pub fn add_number(&mut self, text: impl ToString, color: Color32, number: i32) {
+        self.tags.push(TagWidget::new_number(
+            text,
+            color,
+            number.to_string().cstr_cs(VISIBLE_BRIGHT, CstrStyle::Bold),
+        ));
+    }
+    pub fn add_number_cstr(&mut self, text: impl ToString, color: Color32, number: Cstr) {
+        self.tags.push(TagWidget::new_number(text, color, number));
     }
     pub fn ui(mut self, ui: &mut Ui) {
         let mut size = egui::Vec2::ZERO;
