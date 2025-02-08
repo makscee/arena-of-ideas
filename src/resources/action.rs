@@ -20,7 +20,11 @@ impl ActionsImpl for Actions {
 
 impl ActionImpl for Action {
     fn process(&self, context: &mut Context) -> Result<Vec<BattleAction>, ExpressionError> {
-        info!("{} {}", "action:".dimmed().purple(), self.cstr());
+        info!(
+            "{} {}",
+            "action:".dimmed().purple(),
+            self.cstr().to_colored()
+        );
         let mut actions = Vec::default();
         match self {
             Action::Noop => {}
@@ -59,17 +63,18 @@ impl ActionImpl for Action {
                 let caster = context.get_caster()?;
                 if let Some(ability) = context.find_parent_component::<Ability>(caster) {
                     let name = &ability.name;
+                    let entity = ability.entity();
                     let ability_actions = context
-                        .get_component::<AbilityEffect>(ability.entity())
+                        .get_component::<AbilityEffect>(entity)
                         .to_e("AbilityEffect not found")?
                         .actions
                         .clone();
                     let color = context
-                        .find_parent_component::<HouseColor>(ability.entity())
+                        .find_parent_component::<HouseColor>(entity)
                         .to_e("House not found")?
                         .color
                         .clone();
-                    let text = format!("Use ability [{color} [b {name}]]");
+                    let text = format!("use ability [{color} [b {name}]]");
                     actions.push(BattleAction::Vfx(
                         HashMap::from_iter([
                             (VarName::text, text.into()),
@@ -80,6 +85,7 @@ impl ActionImpl for Action {
                     ));
                     actions.extend(ability_actions.process(context)?);
                 } else if let Some(status) = context.find_parent_component::<Status>(caster) {
+                    let name = &status.name;
                     let entity = status.entity();
                     let mut status = status.clone();
                     let mut description = context
@@ -90,11 +96,30 @@ impl ActionImpl for Action {
                         .get_component::<Reaction>(entity)
                         .to_e("Reaction not found")?
                         .clone();
+                    let color = context
+                        .find_parent_component::<HouseColor>(entity)
+                        .to_e("House not found")?
+                        .color
+                        .clone();
+                    let text = format!("gain status [{color} [b {name}]]");
+                    actions.push(BattleAction::Vfx(
+                        HashMap::from_iter([
+                            (VarName::text, text.into()),
+                            (VarName::color, VISIBLE_LIGHT.into()),
+                            (VarName::position, context.get_var(VarName::position)?),
+                        ]),
+                        "text".into(),
+                    ));
                     let representation = context.get_component::<Representation>(entity).cloned();
                     description.reaction = Some(reaction);
                     status.description = Some(description);
                     status.representation = representation;
-                    actions.push(BattleAction::ApplyStatus(context.get_owner()?, status, 1));
+                    actions.push(BattleAction::ApplyStatus(
+                        context.get_owner()?,
+                        status,
+                        1,
+                        Color32::from_hex(&color).unwrap_or(MISSING_COLOR),
+                    ));
                 }
             }
             Action::Repeat(x, vec) => {

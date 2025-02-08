@@ -29,7 +29,7 @@ pub enum BattleAction {
     Heal(Entity, Entity, i32),
     Death(Entity),
     Spawn(Entity),
-    ApplyStatus(Entity, Status, i32),
+    ApplyStatus(Entity, Status, i32, Color32),
     SendEvent(Event),
     Vfx(HashMap<VarName, VarValue>, String),
     Wait(f32),
@@ -43,7 +43,9 @@ impl ToCstr for BattleAction {
             BattleAction::Death(a) => format!("x{a}"),
             BattleAction::VarSet(a, _, var, value) => format!("{a}>${var}>{value}"),
             BattleAction::Spawn(a) => format!("*{a}"),
-            BattleAction::ApplyStatus(a, status, c) => format!("+{}>{a}({c})", status.name),
+            BattleAction::ApplyStatus(a, status, charges, color) => {
+                format!("+[{} {}]>{a}({charges})", color.to_hex(), status.name)
+            }
             BattleAction::Wait(t) => format!("~{t}"),
             BattleAction::Vfx(_, vfx) => format!("vfx({vfx})"),
             BattleAction::SendEvent(e) => format!("event({e})"),
@@ -205,8 +207,9 @@ impl BattleAction {
                 )]);
                 true
             }
-            BattleAction::ApplyStatus(target, status, charges) => {
-                battle.apply_status(*target, status.clone(), *charges);
+            BattleAction::ApplyStatus(target, status, charges, color) => {
+                battle.apply_status(*target, status.clone(), *charges, *color);
+                battle.t += ANIMATION;
                 true
             }
             BattleAction::Wait(t) => {
@@ -418,7 +421,7 @@ impl BattleSimulation {
         }
         actions
     }
-    fn apply_status(&mut self, target: Entity, status: Status, charges: i32) {
+    fn apply_status(&mut self, target: Entity, status: Status, charges: i32, color: Color32) {
         for child in target.get_children(&self.world) {
             if let Some(child_status) = self.world.get::<Status>(child) {
                 if child_status.name == status.name {
@@ -429,7 +432,6 @@ impl BattleSimulation {
                         .unwrap()
                         + charges;
                     state.insert(self.t, 0.0, VarName::charges, charges.into(), default());
-                    dbg!(charges);
                     return;
                 }
             }
@@ -441,6 +443,7 @@ impl BattleSimulation {
         state.insert(0.0, 0.0, VarName::visible, false.into(), default());
         state.insert(self.t, 0.0, VarName::visible, true.into(), default());
         state.insert(self.t, 0.0, VarName::charges, charges.into(), default());
+        state.insert(self.t, 0.0, VarName::color, color.into(), default());
     }
     fn apply_animation(&mut self, context: Context, anim: &Anim) {
         match anim.apply(&mut self.t, context, &mut self.world) {
