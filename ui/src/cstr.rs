@@ -413,6 +413,9 @@ impl ToCstr for Expression {
         self.as_ref().cstr_c(self.color())
     }
     fn cstr_expanded(&self) -> Cstr {
+        if let Some(description) = Descriptions::get(self) {
+            return description.clone();
+        }
         let inner = match self {
             Expression::One
             | Expression::Zero

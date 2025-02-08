@@ -1,10 +1,12 @@
 mod cstr;
+mod descriptions;
 mod enum_colors;
 mod ui;
 mod utils;
 mod widgets;
 
 pub use cstr::*;
+pub use descriptions::*;
 pub use enum_colors::*;
 pub use ui::*;
 pub use utils::*;

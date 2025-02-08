@@ -25,7 +25,7 @@ impl AdminPlugin {
                     (VarName::lvl, 3.into()),
                     (VarName::tier, 2.into()),
                 ]),
-                expanded: false,
+                expanded: true,
                 reaction: Reaction {
                     trigger: Trigger::BattleStart,
                     actions: Actions(
