@@ -143,12 +143,11 @@ impl NodeDomainExt for NodeDomain {
             .collect()
     }
     fn node_parent<T: Node + GetNodeKindSelf>(self, c: &Context, id: u64) -> Option<T> {
-        let kind = T::kind_s();
         let mut id = id;
         while let Some(parent) = id.parent(c.rc) {
             id = parent;
-            if let Some(node) = self.tnode_find_by_key(c, &kind.key(id)) {
-                return Some(node.to_node());
+            if let Some(node) = T::from_table_no_children(c, self, id) {
+                return Some(node);
             }
         }
         None

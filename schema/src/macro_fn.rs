@@ -165,11 +165,18 @@ pub fn table_conversions(
     vec_link_types: &Vec<TokenStream>,
 ) -> TokenStream {
     quote! {
-        fn from_table(c: &Context, domain: NodeDomain, id: u64) -> Option<Self> {
+        fn from_table_no_children(c: &Context, domain: NodeDomain, id: u64) -> Option<Self> {
             let data = domain.tnode_find_by_key(c, &Self::kind_s().key(id))?.data;
             let mut d = Self::default();
             d.inject_data(&data);
             d.id = Some(id);
+            #(
+                d.#option_link_fields = #option_link_types::from_table(c, domain, id);
+            )*
+            Some(d)
+        }
+        fn from_table(c: &Context, domain: NodeDomain, id: u64) -> Option<Self> {
+            let mut d = Self::from_table_no_children(c, domain, id)?;
             let children = c
                 .rc
                 .db
@@ -178,9 +185,6 @@ pub fn table_conversions(
                 .filter(id)
                 .map(|r| r.id)
                 .collect_vec();
-            #(
-                d.#option_link_fields = #option_link_types::from_table(c, domain, id);
-            )*
             #(
                 d.#vec_link_fields = children
                     .iter()
