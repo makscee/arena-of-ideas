@@ -49,14 +49,31 @@ impl MatchPlugin {
             ui.horizontal(|ui| {
                 ui.vertical(|ui| {
                     for unit in md.team_world.query::<&Unit>().iter(&md.team_world) {
-                        TagWidget::new_text(
-                            &unit.name,
-                            Context::new_world(&md.team_world)
-                                .set_owner(unit.entity())
-                                .get_color(VarName::color)
-                                .unwrap(),
-                        )
-                        .ui(ui);
+                        Frame::none()
+                            .stroke(STROKE_DARK)
+                            .inner_margin(Margin::same(2.0))
+                            .outer_margin(Margin::same(2.0))
+                            .rounding(ROUNDING)
+                            .show(ui, |ui| {
+                                let stats = md.team_world.get::<UnitStats>(unit.entity()).unwrap();
+                                TagWidget::new_number(
+                                    &unit.name,
+                                    Context::new_world(&md.team_world)
+                                        .set_owner(unit.entity())
+                                        .get_color(VarName::color)
+                                        .unwrap(),
+                                    format!(
+                                        "[b {} {}[vd /]{}]",
+                                        stats.pwr.cstr_c(VarName::pwr.color()),
+                                        (stats.hp - stats.dmg).cstr_c(VarName::hp.color()),
+                                        stats.hp.cstr_c(VarName::hp.color())
+                                    ),
+                                )
+                                .ui(ui);
+                                if "sell".cstr_s(CstrStyle::Bold).button(ui).clicked() {
+                                    cn().reducers.match_sell(unit.name.clone()).unwrap();
+                                }
+                            });
                     }
                     ui.expand_to_include_y(full_rect.bottom());
                 });
