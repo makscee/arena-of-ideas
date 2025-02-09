@@ -75,7 +75,7 @@ impl NodeDomainExt for NodeDomain {
         match self {
             NodeDomain::World => cn().db.nodes_world().key().find(key),
             NodeDomain::Match => cn().db.nodes_match().key().find(key),
-            NodeDomain::Alpha => cn().db.nodes_alpha().key().find(key),
+            NodeDomain::Core => cn().db.nodes_core().key().find(key),
         }
     }
     fn filter_by_kind(self, kind: NodeKind) -> Vec<TNode> {
@@ -93,9 +93,9 @@ impl NodeDomainExt for NodeDomain {
                 .iter()
                 .filter(|d| d.kind == kind)
                 .collect(),
-            NodeDomain::Alpha => cn()
+            NodeDomain::Core => cn()
                 .db
-                .nodes_alpha()
+                .nodes_core()
                 .iter()
                 .filter(|d| d.kind == kind)
                 .collect(),

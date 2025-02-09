@@ -1,10 +1,10 @@
-use std::collections::{HashSet, VecDeque};
+use std::collections::VecDeque;
 
 use super::*;
 
 #[table(public, name = nodes_world)]
 #[table(public, name = nodes_match)]
-#[table(public, name = nodes_alpha)]
+#[table(public, name = nodes_core)]
 pub struct TNode {
     #[primary_key]
     pub key: String,
@@ -78,9 +78,9 @@ impl NodeDomainExt for NodeDomain {
                     .find(kind.key(id))
                     .map(|d| d.to_node())
             }
-            NodeDomain::Alpha => {
+            NodeDomain::Core => {
                 c.rc.db
-                    .nodes_alpha()
+                    .nodes_core()
                     .key()
                     .find(kind.key(id))
                     .map(|d| d.to_node())
@@ -92,7 +92,7 @@ impl NodeDomainExt for NodeDomain {
         match self {
             NodeDomain::World => c.rc.db.nodes_world().insert(node),
             NodeDomain::Match => c.rc.db.nodes_match().insert(node),
-            NodeDomain::Alpha => c.rc.db.nodes_alpha().insert(node),
+            NodeDomain::Core => c.rc.db.nodes_core().insert(node),
         };
     }
     fn node_update(self, c: &Context, node: &(impl Node + GetNodeKind)) {
@@ -100,7 +100,7 @@ impl NodeDomainExt for NodeDomain {
         match self {
             NodeDomain::World => c.rc.db.nodes_world().key().update(node),
             NodeDomain::Match => c.rc.db.nodes_match().key().update(node),
-            NodeDomain::Alpha => c.rc.db.nodes_alpha().key().update(node),
+            NodeDomain::Core => c.rc.db.nodes_core().key().update(node),
         };
     }
     fn node_delete(self, c: &Context, node: &(impl Node + GetNodeKind)) {
@@ -108,7 +108,7 @@ impl NodeDomainExt for NodeDomain {
         match self {
             NodeDomain::World => c.rc.db.nodes_world().key().delete(key),
             NodeDomain::Match => c.rc.db.nodes_match().key().delete(key),
-            NodeDomain::Alpha => c.rc.db.nodes_alpha().key().delete(key),
+            NodeDomain::Core => c.rc.db.nodes_core().key().delete(key),
         };
     }
     fn node_insert_or_update(self, c: &Context, node: &(impl Node + GetNodeKind)) {
@@ -119,7 +119,7 @@ impl NodeDomainExt for NodeDomain {
         match self {
             NodeDomain::World => c.rc.db.nodes_world().key().find(key),
             NodeDomain::Match => c.rc.db.nodes_match().key().find(key),
-            NodeDomain::Alpha => c.rc.db.nodes_alpha().key().find(key),
+            NodeDomain::Core => c.rc.db.nodes_core().key().find(key),
         }
     }
     fn tnode_filter_by_kind(self, c: &Context, kind: NodeKind) -> Vec<TNode> {
@@ -133,7 +133,7 @@ impl NodeDomainExt for NodeDomain {
                     .filter(|n| n.owner == c.player.id)
                     .collect()
             }
-            NodeDomain::Alpha => c.rc.db.nodes_alpha().kind().filter(kind.as_ref()).collect(),
+            NodeDomain::Core => c.rc.db.nodes_core().kind().filter(kind.as_ref()).collect(),
         }
     }
     fn node_collect<T: Node + GetNodeKindSelf>(self, c: &Context) -> Vec<T> {
@@ -170,9 +170,9 @@ impl NodeDomainExt for NodeDomain {
                     .filter(|n| n.owner == c.player.id)
                     .collect()
             }
-            NodeDomain::Alpha => {
+            NodeDomain::Core => {
                 c.rc.db
-                    .nodes_alpha()
+                    .nodes_core()
                     .kind()
                     .filter(&kind.to_string())
                     .collect()
@@ -184,7 +184,7 @@ impl NodeDomainExt for NodeDomain {
         match self {
             NodeDomain::World => c.rc.db.nodes_world().owner().filter(owner).collect_vec(),
             NodeDomain::Match => c.rc.db.nodes_match().owner().filter(owner).collect_vec(),
-            NodeDomain::Alpha => c.rc.db.nodes_alpha().owner().filter(owner).collect_vec(),
+            NodeDomain::Core => c.rc.db.nodes_core().owner().filter(owner).collect_vec(),
         }
     }
     fn delete_by_id(self, c: &Context, id: u64) {
@@ -200,9 +200,9 @@ impl NodeDomainExt for NodeDomain {
                     c.rc.db.nodes_match().id().delete(id);
                 }
             }
-            NodeDomain::Alpha => {
+            NodeDomain::Core => {
                 for id in &ids {
-                    c.rc.db.nodes_alpha().id().delete(id);
+                    c.rc.db.nodes_core().id().delete(id);
                 }
             }
         }

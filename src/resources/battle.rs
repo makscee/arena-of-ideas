@@ -555,7 +555,7 @@ impl BattleSimulation {
     fn show_slot(&self, slot: usize, side: bool, slots: usize, ui: &mut Ui) -> Response {
         let slot = slot + 1;
         let full_rect = ui.available_rect_before_wrap();
-        let rect = slot_rect(slot, side, full_rect, slots);
+        let rect = slot_rect_side(slot, side, full_rect, slots);
         ui.expand_to_include_rect(rect);
         let mut cui = ui.child_ui(rect, *ui.layout(), None);
         let r = cui.allocate_rect(rect, Sense::click());
@@ -588,7 +588,7 @@ impl BattleSimulation {
     }
     pub fn show_at(&mut self, t: f32, ui: &mut Ui) {
         let slots = global_settings().team_slots as usize;
-        let center_rect = slot_rect(0, true, ui.available_rect_before_wrap(), slots);
+        let center_rect = slot_rect_side(0, true, ui.available_rect_before_wrap(), slots);
         let unit_size = center_rect.width() * UNIT_SIZE;
         let unit_pixels = center_rect.width() * 0.5;
         for (slot, side) in (0..slots).cartesian_product([true, false]) {
@@ -648,15 +648,14 @@ impl BattleSimulation {
     }
 }
 
-fn slot_rect(i: usize, side: bool, full_rect: Rect, team_slots: usize) -> Rect {
+fn slot_rect_side(i: usize, player_side: bool, full_rect: Rect, team_slots: usize) -> Rect {
+    let full_rect = full_rect.shrink2(egui::vec2(0.0, 10.0));
     let total_slots = team_slots * 2 + 1;
-    let pos_i = if side {
-        (team_slots - i) as i32
-    } else {
-        (team_slots + i) as i32
-    } as f32;
     let size = (full_rect.width() / total_slots as f32).at_most(full_rect.height());
-    let lb = full_rect.left_bottom() + egui::vec2(0.0, -25.0);
-    let rect = Rect::from_two_pos(lb, lb + egui::vec2(size, -size));
-    rect.translate(egui::vec2(size * pos_i, 0.0))
+    let rect = if player_side {
+        full_rect.with_max_x(full_rect.left() + size * (team_slots as f32))
+    } else {
+        full_rect.with_min_x(full_rect.right() - size * (team_slots as f32))
+    };
+    slot_rect(i, team_slots, rect, player_side)
 }

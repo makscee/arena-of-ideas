@@ -31,10 +31,10 @@ impl Match {
         for slot in &mut self.shop_case {
             slot.sold = false;
             slot.price = price;
-            slot.unit_id = NodeDomain::Alpha
+            slot.unit_id = NodeDomain::Core
                 .tnode_filter_by_kind(c, NodeKind::Unit)
                 .choose(&mut c.rc.rng())
-                .to_e_s("No Alpha units found")?
+                .to_e_s("No Core units found")?
                 .id;
         }
         Ok(())
@@ -98,9 +98,9 @@ fn match_buy(ctx: &ReducerContext, slot: u8) -> Result<(), String> {
     m.g -= sc.price;
     NodeDomain::Match.node_update(c, sc);
     let mut unit =
-        Unit::from_table(c, NodeDomain::Alpha, sc.unit_id).to_e_s("Failed to find Alpha unit")?;
-    let mut ability: Ability = NodeDomain::Alpha.node_parent(c, sc.unit_id).unwrap();
-    let mut house: House = NodeDomain::Alpha.node_parent(c, ability.id()).unwrap();
+        Unit::from_table(c, NodeDomain::Core, sc.unit_id).to_e_s("Failed to find Alpha unit")?;
+    let mut ability: Ability = NodeDomain::Core.node_parent(c, sc.unit_id).unwrap();
+    let mut house: House = NodeDomain::Core.node_parent(c, ability.id()).unwrap();
 
     // unit.slot = Some(UnitSlot {
     //     slot: occupied.len() as i32,

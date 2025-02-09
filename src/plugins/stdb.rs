@@ -20,7 +20,7 @@ pub fn subscribe_game(on_success: impl FnOnce() + Send + Sync + 'static) {
     let queries = [
         format!("select * from nodes_match where owner = {pid}"),
         "select * from nodes_world".into(),
-        "select * from nodes_alpha".into(),
+        "select * from nodes_core".into(),
         "select * from nodes_relations".into(),
         "select * from battle".into(),
     ]

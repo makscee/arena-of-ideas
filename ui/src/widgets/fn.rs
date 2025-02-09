@@ -130,6 +130,17 @@ pub fn cursor_window_frame(
             });
         });
 }
+pub fn slot_rect(i: usize, slots: usize, full_rect: Rect, right_to_left: bool) -> Rect {
+    let pos_i = if right_to_left {
+        (slots - i) as i32
+    } else {
+        (i - 1) as i32
+    } as f32;
+    let size = (full_rect.width() / slots as f32).at_most(full_rect.height());
+    let lb = full_rect.left_bottom();
+    let rect = Rect::from_two_pos(lb, lb + egui::vec2(size, -size));
+    rect.translate(egui::vec2(size * pos_i, 0.0))
+}
 pub fn corners_rounded_rect(rect: Rect, length: f32, stroke: Stroke, ui: &mut Ui) {
     let line = CubicBezierShape::from_points_stroke(
         [

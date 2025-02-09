@@ -2,5 +2,5 @@
 pub enum NodeDomain {
     World,
     Match,
-    Alpha,
+    Core,
 }

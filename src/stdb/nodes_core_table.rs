@@ -8,42 +8,42 @@ use spacetimedb_sdk::__codegen::{
     anyhow::{self as __anyhow, Context as _},
 };
 
-/// Table handle for the table `nodes_alpha`.
+/// Table handle for the table `nodes_core`.
 ///
-/// Obtain a handle from the [`NodesAlphaTableAccess::nodes_alpha`] method on [`super::RemoteTables`],
-/// like `ctx.db.nodes_alpha()`.
+/// Obtain a handle from the [`NodesCoreTableAccess::nodes_core`] method on [`super::RemoteTables`],
+/// like `ctx.db.nodes_core()`.
 ///
 /// Users are encouraged not to explicitly reference this type,
 /// but to directly chain method calls,
-/// like `ctx.db.nodes_alpha().on_insert(...)`.
-pub struct NodesAlphaTableHandle<'ctx> {
+/// like `ctx.db.nodes_core().on_insert(...)`.
+pub struct NodesCoreTableHandle<'ctx> {
     imp: __sdk::TableHandle<TNode>,
     ctx: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
 #[allow(non_camel_case_types)]
-/// Extension trait for access to the table `nodes_alpha`.
+/// Extension trait for access to the table `nodes_core`.
 ///
 /// Implemented for [`super::RemoteTables`].
-pub trait NodesAlphaTableAccess {
+pub trait NodesCoreTableAccess {
     #[allow(non_snake_case)]
-    /// Obtain a [`NodesAlphaTableHandle`], which mediates access to the table `nodes_alpha`.
-    fn nodes_alpha(&self) -> NodesAlphaTableHandle<'_>;
+    /// Obtain a [`NodesCoreTableHandle`], which mediates access to the table `nodes_core`.
+    fn nodes_core(&self) -> NodesCoreTableHandle<'_>;
 }
 
-impl NodesAlphaTableAccess for super::RemoteTables {
-    fn nodes_alpha(&self) -> NodesAlphaTableHandle<'_> {
-        NodesAlphaTableHandle {
-            imp: self.imp.get_table::<TNode>("nodes_alpha"),
+impl NodesCoreTableAccess for super::RemoteTables {
+    fn nodes_core(&self) -> NodesCoreTableHandle<'_> {
+        NodesCoreTableHandle {
+            imp: self.imp.get_table::<TNode>("nodes_core"),
             ctx: std::marker::PhantomData,
         }
     }
 }
 
-pub struct NodesAlphaInsertCallbackId(__sdk::CallbackId);
-pub struct NodesAlphaDeleteCallbackId(__sdk::CallbackId);
+pub struct NodesCoreInsertCallbackId(__sdk::CallbackId);
+pub struct NodesCoreDeleteCallbackId(__sdk::CallbackId);
 
-impl<'ctx> __sdk::Table for NodesAlphaTableHandle<'ctx> {
+impl<'ctx> __sdk::Table for NodesCoreTableHandle<'ctx> {
     type Row = TNode;
     type EventContext = super::EventContext;
 
@@ -54,51 +54,51 @@ impl<'ctx> __sdk::Table for NodesAlphaTableHandle<'ctx> {
         self.imp.iter()
     }
 
-    type InsertCallbackId = NodesAlphaInsertCallbackId;
+    type InsertCallbackId = NodesCoreInsertCallbackId;
 
     fn on_insert(
         &self,
         callback: impl FnMut(&Self::EventContext, &Self::Row) + Send + 'static,
-    ) -> NodesAlphaInsertCallbackId {
-        NodesAlphaInsertCallbackId(self.imp.on_insert(Box::new(callback)))
+    ) -> NodesCoreInsertCallbackId {
+        NodesCoreInsertCallbackId(self.imp.on_insert(Box::new(callback)))
     }
 
-    fn remove_on_insert(&self, callback: NodesAlphaInsertCallbackId) {
+    fn remove_on_insert(&self, callback: NodesCoreInsertCallbackId) {
         self.imp.remove_on_insert(callback.0)
     }
 
-    type DeleteCallbackId = NodesAlphaDeleteCallbackId;
+    type DeleteCallbackId = NodesCoreDeleteCallbackId;
 
     fn on_delete(
         &self,
         callback: impl FnMut(&Self::EventContext, &Self::Row) + Send + 'static,
-    ) -> NodesAlphaDeleteCallbackId {
-        NodesAlphaDeleteCallbackId(self.imp.on_delete(Box::new(callback)))
+    ) -> NodesCoreDeleteCallbackId {
+        NodesCoreDeleteCallbackId(self.imp.on_delete(Box::new(callback)))
     }
 
-    fn remove_on_delete(&self, callback: NodesAlphaDeleteCallbackId) {
+    fn remove_on_delete(&self, callback: NodesCoreDeleteCallbackId) {
         self.imp.remove_on_delete(callback.0)
     }
 }
 
 #[doc(hidden)]
 pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
-    let _table = client_cache.get_or_make_table::<TNode>("nodes_alpha");
+    let _table = client_cache.get_or_make_table::<TNode>("nodes_core");
     _table.add_unique_constraint::<String>("key", |row| &row.key);
 }
-pub struct NodesAlphaUpdateCallbackId(__sdk::CallbackId);
+pub struct NodesCoreUpdateCallbackId(__sdk::CallbackId);
 
-impl<'ctx> __sdk::TableWithPrimaryKey for NodesAlphaTableHandle<'ctx> {
-    type UpdateCallbackId = NodesAlphaUpdateCallbackId;
+impl<'ctx> __sdk::TableWithPrimaryKey for NodesCoreTableHandle<'ctx> {
+    type UpdateCallbackId = NodesCoreUpdateCallbackId;
 
     fn on_update(
         &self,
         callback: impl FnMut(&Self::EventContext, &Self::Row, &Self::Row) + Send + 'static,
-    ) -> NodesAlphaUpdateCallbackId {
-        NodesAlphaUpdateCallbackId(self.imp.on_update(Box::new(callback)))
+    ) -> NodesCoreUpdateCallbackId {
+        NodesCoreUpdateCallbackId(self.imp.on_update(Box::new(callback)))
     }
 
-    fn remove_on_update(&self, callback: NodesAlphaUpdateCallbackId) {
+    fn remove_on_update(&self, callback: NodesCoreUpdateCallbackId) {
         self.imp.remove_on_update(callback.0)
     }
 }
@@ -110,32 +110,32 @@ pub(super) fn parse_table_update(
     __sdk::TableUpdate::parse_table_update_with_primary_key::<String>(raw_updates, |row: &TNode| {
         &row.key
     })
-    .context("Failed to parse table update for table \"nodes_alpha\"")
+    .context("Failed to parse table update for table \"nodes_core\"")
 }
 
-/// Access to the `key` unique index on the table `nodes_alpha`,
+/// Access to the `key` unique index on the table `nodes_core`,
 /// which allows point queries on the field of the same name
-/// via the [`NodesAlphaKeyUnique::find`] method.
+/// via the [`NodesCoreKeyUnique::find`] method.
 ///
 /// Users are encouraged not to explicitly reference this type,
 /// but to directly chain method calls,
-/// like `ctx.db.nodes_alpha().key().find(...)`.
-pub struct NodesAlphaKeyUnique<'ctx> {
+/// like `ctx.db.nodes_core().key().find(...)`.
+pub struct NodesCoreKeyUnique<'ctx> {
     imp: __sdk::UniqueConstraintHandle<TNode, String>,
     phantom: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
-impl<'ctx> NodesAlphaTableHandle<'ctx> {
-    /// Get a handle on the `key` unique index on the table `nodes_alpha`.
-    pub fn key(&self) -> NodesAlphaKeyUnique<'ctx> {
-        NodesAlphaKeyUnique {
+impl<'ctx> NodesCoreTableHandle<'ctx> {
+    /// Get a handle on the `key` unique index on the table `nodes_core`.
+    pub fn key(&self) -> NodesCoreKeyUnique<'ctx> {
+        NodesCoreKeyUnique {
             imp: self.imp.get_unique_constraint::<String>("key"),
             phantom: std::marker::PhantomData,
         }
     }
 }
 
-impl<'ctx> NodesAlphaKeyUnique<'ctx> {
+impl<'ctx> NodesCoreKeyUnique<'ctx> {
     /// Find the subscribed row whose `key` column value is equal to `col_val`,
     /// if such a row is present in the client cache.
     pub fn find(&self, col_val: &String) -> Option<TNode> {

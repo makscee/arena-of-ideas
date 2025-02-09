@@ -101,7 +101,7 @@ impl ActionImpl for Action {
                         .to_e("House not found")?
                         .color
                         .clone();
-                    let text = format!("gain status [{color} [b {name}]]");
+                    let text = format!("gain [{color} [b {name}]]");
                     actions.push(BattleAction::Vfx(
                         HashMap::from_iter([
                             (VarName::text, text.into()),

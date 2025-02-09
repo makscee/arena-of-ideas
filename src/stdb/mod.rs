@@ -35,7 +35,7 @@ pub mod match_sell_reducer;
 pub mod node_move_reducer;
 pub mod node_spawn_hero_reducer;
 pub mod node_spawn_reducer;
-pub mod nodes_alpha_table;
+pub mod nodes_core_table;
 pub mod nodes_match_table;
 pub mod nodes_relations_table;
 pub mod nodes_world_table;
@@ -100,7 +100,7 @@ pub use node_spawn_hero_reducer::{
     node_spawn_hero, set_flags_for_node_spawn_hero, NodeSpawnHeroCallbackId,
 };
 pub use node_spawn_reducer::{node_spawn, set_flags_for_node_spawn, NodeSpawnCallbackId};
-pub use nodes_alpha_table::*;
+pub use nodes_core_table::*;
 pub use nodes_match_table::*;
 pub use nodes_relations_table::*;
 pub use nodes_world_table::*;
@@ -387,7 +387,7 @@ pub struct DbUpdate {
     daily_update_timer: __sdk::TableUpdate<DailyUpdateTimer>,
     global_data: __sdk::TableUpdate<GlobalData>,
     global_settings: __sdk::TableUpdate<GlobalSettings>,
-    nodes_alpha: __sdk::TableUpdate<TNode>,
+    nodes_core: __sdk::TableUpdate<TNode>,
     nodes_match: __sdk::TableUpdate<TNode>,
     nodes_relations: __sdk::TableUpdate<TNodeRelation>,
     nodes_world: __sdk::TableUpdate<TNode>,
@@ -414,8 +414,8 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
                     db_update.global_settings =
                         global_settings_table::parse_table_update(table_update)?
                 }
-                "nodes_alpha" => {
-                    db_update.nodes_alpha = nodes_alpha_table::parse_table_update(table_update)?
+                "nodes_core" => {
+                    db_update.nodes_core = nodes_core_table::parse_table_update(table_update)?
                 }
                 "nodes_match" => {
                     db_update.nodes_match = nodes_match_table::parse_table_update(table_update)?
@@ -453,7 +453,7 @@ impl __sdk::DbUpdate for DbUpdate {
         );
         cache.apply_diff_to_table::<GlobalData>("global_data", &self.global_data);
         cache.apply_diff_to_table::<GlobalSettings>("global_settings", &self.global_settings);
-        cache.apply_diff_to_table::<TNode>("nodes_alpha", &self.nodes_alpha);
+        cache.apply_diff_to_table::<TNode>("nodes_core", &self.nodes_core);
         cache.apply_diff_to_table::<TNode>("nodes_match", &self.nodes_match);
         cache.apply_diff_to_table::<TNodeRelation>("nodes_relations", &self.nodes_relations);
         cache.apply_diff_to_table::<TNode>("nodes_world", &self.nodes_world);
@@ -478,7 +478,7 @@ impl __sdk::DbUpdate for DbUpdate {
             &self.global_settings,
             event,
         );
-        callbacks.invoke_table_row_callbacks::<TNode>("nodes_alpha", &self.nodes_alpha, event);
+        callbacks.invoke_table_row_callbacks::<TNode>("nodes_core", &self.nodes_core, event);
         callbacks.invoke_table_row_callbacks::<TNode>("nodes_match", &self.nodes_match, event);
         callbacks.invoke_table_row_callbacks::<TNodeRelation>(
             "nodes_relations",
@@ -816,7 +816,7 @@ impl __sdk::SpacetimeModule for RemoteModule {
         daily_update_timer_table::register_table(client_cache);
         global_data_table::register_table(client_cache);
         global_settings_table::register_table(client_cache);
-        nodes_alpha_table::register_table(client_cache);
+        nodes_core_table::register_table(client_cache);
         nodes_match_table::register_table(client_cache);
         nodes_relations_table::register_table(client_cache);
         nodes_world_table::register_table(client_cache);
