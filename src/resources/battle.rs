@@ -578,7 +578,7 @@ impl BattleSimulation {
     }
     fn show_slot(i: usize, slots: usize, player_side: bool, ui: &mut Ui) -> Response {
         let i = slot_by_side(i, slots, player_side);
-        show_slot(i, slots * 2, true, ui)
+        show_slot(i, slots * 2 + 1, true, ui)
     }
     pub fn show_at(&mut self, t: f32, ui: &mut Ui) {
         let slots = global_settings().team_slots as usize;
@@ -586,7 +586,7 @@ impl BattleSimulation {
         let unit_size = center_rect.width() * UNIT_SIZE;
         let unit_pixels = center_rect.width() * 0.5;
         for (slot, side) in (0..slots).cartesian_product([true, false]) {
-            let resp = Self::show_slot(slot, slots, side, ui);
+            let resp = Self::show_slot(slot + 1, slots, side, ui);
             if resp.hovered() {
                 self.show_card(slot, side, ui);
             }
@@ -644,9 +644,9 @@ impl BattleSimulation {
 
 fn slot_by_side(i: usize, team_slots: usize, player_side: bool) -> usize {
     if player_side {
-        team_slots - i + 1
+        team_slots - i
     } else {
-        team_slots + i - 1
+        team_slots + i
     }
 }
 fn slot_rect_side(i: usize, player_side: bool, full_rect: Rect, team_slots: usize) -> Rect {

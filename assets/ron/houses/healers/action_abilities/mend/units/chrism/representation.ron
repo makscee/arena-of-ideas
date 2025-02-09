@@ -1,0 +1,18 @@
+(
+    [
+        Hollow(F(2.0)),
+        Color(Fallback(Var(color), C("#ECEFF1"))),
+        Alpha(F(0.6)),
+        Repeat(
+            I(10),
+            List(
+                [
+                    Rectangle(F(0.23)),
+                    Rotate(Sum(GT, Var(index))),
+                    Translate(Mul(F(0.21), Cos(Sum(GT, Var(index))))),
+                    Paint,
+                ],
+            ),
+        ),
+    ],
+)
