@@ -11,7 +11,6 @@ impl Plugin for AdminPlugin {
 
 impl AdminPlugin {
     fn on_enter(world: &mut World) {
-        world.flush();
         Window::new("UnitCard", |ui, _| {
             UnitCard {
                 name: "Apprentice".into(),
@@ -85,7 +84,7 @@ impl AdminPlugin {
             },
             slot: Some(UnitSlot {
                 slot: 0,
-                entity: None,
+                ..default()
             }),
             ..default()
         };

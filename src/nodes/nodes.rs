@@ -26,7 +26,7 @@ pub trait Node: Default + Component + Sized + GetVar + Show + Debug {
     }
     fn from_table(domain: NodeDomain, id: u64) -> Option<Self>;
     fn pack(entity: Entity, world: &World) -> Option<Self>;
-    fn unpack(self, entity: Entity, commands: &mut Commands);
+    fn unpack(self, entity: Entity, world: &mut World);
     fn find_up_entity<T: Component>(entity: Entity, world: &World) -> Option<&T> {
         let r = world.get::<T>(entity);
         if r.is_some() {
@@ -62,6 +62,29 @@ pub trait Node: Default + Component + Sized + GetVar + Show + Debug {
         let mut vec: Vec<&Unit> = default();
         self.collect_units_vec(&mut vec);
         vec
+    }
+}
+
+#[derive(Resource, Default)]
+pub struct IdEntityLinks {
+    map: HashMap<u64, Entity>,
+}
+
+pub trait WorldNodeExt {
+    fn add_id_link(&mut self, id: u64, entity: Entity);
+    fn get_id_link(&self, id: u64) -> Option<Entity>;
+}
+
+impl WorldNodeExt for World {
+    fn add_id_link(&mut self, id: u64, entity: Entity) {
+        self.get_resource_or_insert_with::<IdEntityLinks>(|| default())
+            .map
+            .insert(id, entity);
+    }
+    fn get_id_link(&self, id: u64) -> Option<Entity> {
+        self.get_resource::<IdEntityLinks>()
+            .and_then(|r| r.map.get(&id))
+            .copied()
     }
 }
 
@@ -110,28 +133,36 @@ impl ToCstr for NodeKind {
 }
 
 trait OnUnpack {
-    fn on_unpack(self, entity: Entity, commands: &mut Commands);
+    fn on_unpack(self, entity: Entity, world: &mut World);
 }
 
 impl OnUnpack for NodeKind {
-    fn on_unpack(self, entity: Entity, commands: &mut Commands) {
-        let mut entity_commands = commands.entity(entity);
+    fn on_unpack(self, entity: Entity, world: &mut World) {
+        let vars = self.get_vars(entity, world);
+        let mut emut = world.entity_mut(entity);
+        let mut ns = if let Some(ns) = emut.get_mut::<NodeState>() {
+            ns
+        } else {
+            emut.insert(NodeState::default())
+                .get_mut::<NodeState>()
+                .unwrap()
+        };
+        for (var, value) in vars {
+            ns.init(var, value);
+        }
         match self {
             NodeKind::House => {
-                entity_commands.insert(NodeState::new_with(VarName::visible, false.into()));
-            }
-            NodeKind::Ability | NodeKind::Fusion | NodeKind::Representation | NodeKind::Status => {
-                entity_commands.insert(NodeState::default());
+                ns.init(VarName::visible, false.into());
             }
             _ => {}
         };
-        entity_commands.insert((TransformBundle::default(), VisibilityBundle::default()));
+        emut.insert((TransformBundle::default(), VisibilityBundle::default()));
 
-        let mut child = || commands.spawn_empty().set_parent(entity).id();
+        let mut child = || world.spawn_empty().set_parent(entity).id();
         match self {
-            NodeKind::Hero => hero_rep().clone().unpack(child(), commands),
-            NodeKind::Fusion => unit_rep().clone().unpack(entity, commands),
-            NodeKind::Status => status_rep().clone().unpack(child(), commands),
+            NodeKind::Hero => hero_rep().clone().unpack(child(), world),
+            NodeKind::Fusion => unit_rep().clone().unpack(entity, world),
+            NodeKind::StatusAbility => status_rep().clone().unpack(child(), world),
             _ => {}
         }
     }

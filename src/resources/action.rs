@@ -61,7 +61,7 @@ impl ActionImpl for Action {
             }
             Action::UseAbility => {
                 let caster = context.get_caster()?;
-                if let Some(ability) = context.find_parent_component::<Ability>(caster) {
+                if let Some(ability) = context.find_parent_component::<ActionAbility>(caster) {
                     let name = &ability.name;
                     let entity = ability.entity();
                     let ability_actions = context
@@ -84,12 +84,13 @@ impl ActionImpl for Action {
                         "text".into(),
                     ));
                     actions.extend(ability_actions.process(context)?);
-                } else if let Some(status) = context.find_parent_component::<Status>(caster) {
+                } else if let Some(status) = context.find_parent_component::<StatusAbility>(caster)
+                {
                     let name = &status.name;
                     let entity = status.entity();
                     let mut status = status.clone();
                     let mut description = context
-                        .get_component::<StatusDescription>(entity)
+                        .get_component::<StatusAbilityDescription>(entity)
                         .to_e("StatusDescription not found")?
                         .clone();
                     let reaction = context

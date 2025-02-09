@@ -1,5 +1,6 @@
 use std::i32;
 
+use log::info;
 use rand::seq::SliceRandom;
 
 use super::*;
@@ -42,6 +43,15 @@ impl Match {
     fn team(&self) -> Result<&Team, String> {
         self.team.as_ref().to_e_s("Team not set")
     }
+    fn find_unit<'a>(&'a self, name: &str) -> Option<&'a Unit> {
+        self.team.as_ref().unwrap().houses.iter().find_map(|h| {
+            h.action_abilities
+                .iter()
+                .flat_map(|a| a.units.iter())
+                .chain(h.status_abilities.iter().flat_map(|a| a.units.iter()))
+                .find(|u| u.name == name)
+        })
+    }
     fn find_house<'a>(&'a self, name: &str) -> Option<&'a House> {
         self.team
             .as_ref()
@@ -72,8 +82,11 @@ impl Match {
 }
 
 impl House {
-    fn find_ability<'a>(&'a self, name: &str) -> Option<&'a Ability> {
-        self.abilities.iter().find(|a| a.name == name)
+    fn find_action<'a>(&'a self, name: &str) -> Option<&'a ActionAbility> {
+        self.action_abilities.iter().find(|a| a.name == name)
+    }
+    fn find_status<'a>(&'a self, name: &str) -> Option<&'a StatusAbility> {
+        self.status_abilities.iter().find(|a| a.name == name)
     }
 }
 
@@ -81,11 +94,6 @@ impl House {
 fn match_buy(ctx: &ReducerContext, slot: u8) -> Result<(), String> {
     let c = &ctx.wrap()?;
     let mut m = Match::get(c)?;
-    let team_id = m.team()?.id();
-    let occupied = NodeDomain::Match.node_collect::<UnitSlot>(c);
-    if occupied.len() >= c.global_settings().team_slots as usize {
-        return Err("Team already full".into());
-    }
     let slot = slot as usize;
     let sc = &mut m.shop_case[slot];
     if sc.sold {
@@ -98,46 +106,67 @@ fn match_buy(ctx: &ReducerContext, slot: u8) -> Result<(), String> {
     m.g -= sc.price;
     NodeDomain::Match.node_update(c, sc);
     let mut unit =
-        Unit::from_table(c, NodeDomain::Core, sc.unit_id).to_e_s("Failed to find Alpha unit")?;
-    let mut ability: Ability = NodeDomain::Core.node_parent(c, sc.unit_id).unwrap();
-    let mut house: House = NodeDomain::Core.node_parent(c, ability.id()).unwrap();
-
-    // unit.slot = Some(UnitSlot {
-    //     slot: occupied.len() as i32,
-    //     ..default()
-    // });
-    // unit.house_link.push(UnitHouseLink {
-    //     name: house.name.clone(),
-    //     ..default()
-    // });
-
+        Unit::from_table(c, NodeDomain::Core, sc.unit_id).to_e_s("Failed to find Core unit")?;
     unit.clear_ids();
-    ability.clear_ids();
-    house.clear_ids();
-
-    unit.to_table(c, NodeDomain::Match, team_id);
-    if let Some(h) = m.find_house(&house.name) {
-        if h.find_ability(&ability.name).is_none() {
-            ability.to_table(c, NodeDomain::Match, h.id());
+    let mut house: House = NodeDomain::Core.node_parent(c, unit.id()).unwrap();
+    if let Some(mut ability) = NodeDomain::Core.node_parent::<ActionAbility>(c, sc.unit_id) {
+        if let Some(h) = m.find_house(&house.name) {
+            if let Some(ability) = h.find_action(&ability.name) {
+                unit.to_table(c, NodeDomain::Match, ability.id());
+            } else {
+                ability.clear_ids();
+                ability.units.push(unit);
+                ability.to_table(c, NodeDomain::Match, h.id());
+            }
+        } else {
+            ability.clear_ids();
+            house.clear_ids();
+            ability.units.push(unit);
+            house.action_abilities.push(ability);
+            house.to_table(c, NodeDomain::Match, m.id());
+        }
+    } else if let Some(mut ability) = NodeDomain::Core.node_parent::<StatusAbility>(c, sc.unit_id) {
+        if let Some(h) = m.find_house(&house.name) {
+            if let Some(ability) = h.find_status(&ability.name) {
+                unit.to_table(c, NodeDomain::Match, ability.id());
+            } else {
+                ability.clear_ids();
+                ability.units.push(unit);
+                ability.to_table(c, NodeDomain::Match, h.id());
+            }
+        } else {
+            ability.clear_ids();
+            house.clear_ids();
+            ability.units.push(unit);
+            house.status_abilities.push(ability);
+            house.to_table(c, NodeDomain::Match, m.id());
         }
     } else {
-        house.abilities.push(ability);
-        house.to_table(c, NodeDomain::Match, team_id);
+        return Err("Ability not found".into());
     }
     m.save(c);
     Ok(())
 }
 
 #[reducer]
-fn match_sell(ctx: &ReducerContext, slot: u8) -> Result<(), String> {
+fn match_sell(ctx: &ReducerContext, name: String) -> Result<(), String> {
     let c = &ctx.wrap()?;
-    let slot = slot as i32;
-    let slot = NodeDomain::Match
-        .node_collect::<UnitSlot>(c)
+    if NodeDomain::Match
+        .node_collect::<Fusion>(c)
         .into_iter()
-        .find(|s| s.slot == slot)
-        .to_e_s("Unit by slot not found")?;
-    NodeDomain::Match.delete_by_id(c, slot.id());
+        .any(|f| f.unit.units.contains(&name))
+    {
+        return Err("Can't sell fused unit".into());
+    }
+    if let Some(unit) = NodeDomain::Match
+        .node_collect::<Unit>(c)
+        .into_iter()
+        .find(|u| u.name == name)
+    {
+        NodeDomain::Match.delete_by_id(c, unit.id());
+    } else {
+        return Err("Unit not found".into());
+    }
     let mut m = Match::get(c)?;
     m.g += c.global_settings().match_g.unit_sell;
     Match::fill_gaps(c);
@@ -184,9 +213,17 @@ fn match_reorder(ctx: &ReducerContext, slot: u8, target: u8) -> Result<(), Strin
 #[reducer]
 fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
     let c = &ctx.wrap()?;
+    let units = NodeDomain::Core.node_collect::<Unit>(c);
+    let price = c.global_settings().match_g.unit_buy;
     let mut d = Match {
         g: 13,
-        shop_case: (0..3).map(|_| default()).collect_vec(),
+        shop_case: (0..3)
+            .map(|_| ShopCaseUnit {
+                unit_id: units.choose(&mut ctx.rng()).unwrap().id(),
+                price,
+                ..default()
+            })
+            .collect_vec(),
         team: Some(Team {
             name: "Test Team".into(),
             ..default()

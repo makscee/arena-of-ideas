@@ -29,7 +29,7 @@ pub enum BattleAction {
     Heal(Entity, Entity, i32),
     Death(Entity),
     Spawn(Entity),
-    ApplyStatus(Entity, Status, i32, Color32),
+    ApplyStatus(Entity, StatusAbility, i32, Color32),
     SendEvent(Event),
     Vfx(HashMap<VarName, VarValue>, String),
     Wait(f32),
@@ -286,9 +286,9 @@ impl BattleSimulation {
         }
         let team_left = world.spawn_empty().id();
         let team_right = world.spawn_empty().id();
-        battle.left.unpack(team_left, &mut world.commands());
-        battle.right.unpack(team_right, &mut world.commands());
-        world.flush();
+        battle.left.unpack(team_left, &mut world);
+        battle.right.unpack(team_right, &mut world);
+
         for fusion in world.query::<&Fusion>().iter(&world).cloned().collect_vec() {
             fusion.init(&mut world)?;
         }
@@ -405,7 +405,11 @@ impl BattleSimulation {
                 Err(e) => error!("Fusion event {event} failed: {e}"),
             }
         }
-        for (r, s) in self.world.query::<(&Reaction, &Status)>().iter(&self.world) {
+        for (r, s) in self
+            .world
+            .query::<(&Reaction, &StatusAbility)>()
+            .iter(&self.world)
+        {
             let context = Context::new_battle_simulation(self)
                 .set_owner(s.entity())
                 .take();
@@ -415,15 +419,21 @@ impl BattleSimulation {
                     .process(Context::new_battle_simulation(self).set_owner(s.entity()))
                 {
                     Ok(a) => actions.extend(a),
-                    Err(e) => error!("Status {} event {event} failed: {e}", s.name),
+                    Err(e) => error!("StatusAbility {} event {event} failed: {e}", s.name),
                 };
             }
         }
         actions
     }
-    fn apply_status(&mut self, target: Entity, status: Status, charges: i32, color: Color32) {
+    fn apply_status(
+        &mut self,
+        target: Entity,
+        status: StatusAbility,
+        charges: i32,
+        color: Color32,
+    ) {
         for child in target.get_children(&self.world) {
-            if let Some(child_status) = self.world.get::<Status>(child) {
+            if let Some(child_status) = self.world.get::<StatusAbility>(child) {
                 if child_status.name == status.name {
                     let mut state = NodeState::from_world_mut(child, &mut self.world).unwrap();
                     let charges = state
@@ -437,8 +447,8 @@ impl BattleSimulation {
             }
         }
         let entity = self.world.spawn_empty().set_parent(target).id();
-        status.unpack(entity, &mut self.world.commands());
-        self.world.flush_commands();
+        status.unpack(entity, &mut self.world);
+
         let mut state = NodeState::from_world_mut(entity, &mut self.world).unwrap();
         state.insert(0.0, 0.0, VarName::visible, false.into(), default());
         state.insert(self.t, 0.0, VarName::visible, true.into(), default());
@@ -552,26 +562,6 @@ impl BattleSimulation {
         }
         default()
     }
-    fn show_slot(&self, slot: usize, side: bool, slots: usize, ui: &mut Ui) -> Response {
-        let slot = slot + 1;
-        let full_rect = ui.available_rect_before_wrap();
-        let rect = slot_rect_side(slot, side, full_rect, slots);
-        ui.expand_to_include_rect(rect);
-        let mut cui = ui.child_ui(rect, *ui.layout(), None);
-        let r = cui.allocate_rect(rect, Sense::click());
-        let mut stroke = if r.hovered() {
-            STROKE_YELLOW
-        } else {
-            STROKE_DARK
-        };
-        let t = cui
-            .ctx()
-            .animate_bool(Id::new("slot_hovered").with(slot).with(side), r.hovered());
-        let length = lerp(15.0..=20.0, t);
-        stroke.width += t;
-        corners_rounded_rect(r.rect.shrink(3.0), length, stroke, ui);
-        r
-    }
     fn show_card_from_units(units: &Vec<Unit>, ui: &mut Ui) {
         ui.horizontal(|ui| {
             for unit in units {
@@ -586,13 +576,17 @@ impl BattleSimulation {
             Self::show_card_from_units(&self.pack_units_by_slot(slot, side), ui);
         });
     }
+    fn show_slot(i: usize, slots: usize, player_side: bool, ui: &mut Ui) -> Response {
+        let i = slot_by_side(i, slots, player_side);
+        show_slot(i, slots * 2, true, ui)
+    }
     pub fn show_at(&mut self, t: f32, ui: &mut Ui) {
         let slots = global_settings().team_slots as usize;
         let center_rect = slot_rect_side(0, true, ui.available_rect_before_wrap(), slots);
         let unit_size = center_rect.width() * UNIT_SIZE;
         let unit_pixels = center_rect.width() * 0.5;
         for (slot, side) in (0..slots).cartesian_product([true, false]) {
-            let resp = self.show_slot(slot, side, slots, ui);
+            let resp = Self::show_slot(slot, slots, side, ui);
             if resp.hovered() {
                 self.show_card(slot, side, ui);
             }
@@ -648,14 +642,16 @@ impl BattleSimulation {
     }
 }
 
+fn slot_by_side(i: usize, team_slots: usize, player_side: bool) -> usize {
+    if player_side {
+        team_slots - i + 1
+    } else {
+        team_slots + i - 1
+    }
+}
 fn slot_rect_side(i: usize, player_side: bool, full_rect: Rect, team_slots: usize) -> Rect {
     let full_rect = full_rect.shrink2(egui::vec2(0.0, 10.0));
     let total_slots = team_slots * 2 + 1;
-    let size = (full_rect.width() / total_slots as f32).at_most(full_rect.height());
-    let rect = if player_side {
-        full_rect.with_max_x(full_rect.left() + size * (team_slots as f32))
-    } else {
-        full_rect.with_min_x(full_rect.right() - size * (team_slots as f32))
-    };
-    slot_rect(i, team_slots, rect, player_side)
+    let i = slot_by_side(i, team_slots, player_side);
+    slot_rect(i, total_slots, full_rect, true)
 }

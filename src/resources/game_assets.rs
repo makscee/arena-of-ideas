@@ -52,14 +52,8 @@ pub fn parse_content_tree() {
         .dirs()
     {
         let house = House::from_dir(dir.path().to_str().unwrap().to_string(), dir).unwrap();
-        let strings = house.to_strings_root();
-        dbg!(&strings);
-        let d = House::from_strings(0, &strings);
-        dbg!(d);
         let name = house.get_var(VarName::name).unwrap().get_string().unwrap();
         houses.insert(name, house);
-        // dir.extract(PathBuf::from_str("./assets/ron/extract_test/").unwrap())
-        //     .unwrap();
         dbg!(dir);
     }
     HOUSES.set(houses).unwrap();

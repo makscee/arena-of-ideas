@@ -45,14 +45,14 @@ pub fn subscribe_game(on_success: impl FnOnce() + Send + Sync + 'static) {
         info!("Node inserted {kind}");
         let data = row.data.clone();
         OperationsPlugin::add(move |world| {
-            let entity = if let Some(entity) = nid_entity(id) {
+            let entity = if let Some(entity) = world.get_id_link(id) {
                 entity
             } else {
                 let entity = world.spawn_empty().id();
-                entity_nid_link(entity, id);
+                world.add_id_link(id, entity);
                 entity
             };
-            kind.unpack(entity, &data, &mut world.commands());
+            kind.unpack(entity, &data, Some(id), world);
         });
     });
     db.nodes_world().on_update(|_, _before, row| {
@@ -61,7 +61,7 @@ pub fn subscribe_game(on_success: impl FnOnce() + Send + Sync + 'static) {
         info!("Node updated {kind}");
         let data = row.data.clone();
         OperationsPlugin::add(move |world| {
-            let Some(entity) = nid_entity(id) else {
+            let Some(entity) = world.get_id_link(id) else {
                 return;
             };
             match kind {

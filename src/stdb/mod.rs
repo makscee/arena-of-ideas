@@ -164,7 +164,7 @@ pub enum Reducer {
     },
     MatchReroll,
     MatchSell {
-        slot: u8,
+        name: String,
     },
     NodeMove {
         id: u64,

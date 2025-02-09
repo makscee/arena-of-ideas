@@ -16,6 +16,7 @@ pub struct Window {
     expand: bool,
     center_anchor: bool,
     default_width: f32,
+    default_height: f32,
     content: Box<dyn FnMut(&mut Ui, &mut World) + Send + Sync>,
 }
 
@@ -51,6 +52,7 @@ impl Window {
             expand: false,
             center_anchor: false,
             default_width: 150.0,
+            default_height: 100.0,
         }
     }
     #[must_use]
@@ -78,6 +80,11 @@ impl Window {
         self.default_width = value;
         self
     }
+    #[must_use]
+    pub fn default_height(mut self, value: f32) -> Self {
+        self.default_height = value;
+        self
+    }
     pub fn push(self, world: &mut World) {
         rm(world).windows.insert(self.id.clone(), self);
     }
@@ -93,7 +100,7 @@ impl Window {
         let mut r = WindowResponse::None;
         let mut w = egui::Window::new(&self.id)
             .default_width(self.default_width)
-            .default_height(0.0)
+            .default_height(self.default_height)
             .title_bar(false)
             .frame(if self.no_frame { Frame::none() } else { FRAME })
             .scroll([self.expand, self.expand])

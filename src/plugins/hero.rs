@@ -23,7 +23,7 @@ impl HeroPlugin {
         let (cam, cam_transform) = cam.single();
         let speed = global_settings().hero_speed;
         if let Some(pos) = ctx.bg_clicked() {
-            if let Some(id) = entity_nid(entity) {
+            if let Some(id) = mover.id {
                 let pos = screen_to_world_cam(pos.to_bvec2(), cam, cam_transform);
                 cn().reducers.node_move(id, pos.x, pos.y).unwrap();
             }

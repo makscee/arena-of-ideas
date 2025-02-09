@@ -97,10 +97,10 @@ impl AnimAction {
                 let entity = world.spawn_empty().id();
                 Representation {
                     material: *material.clone(),
-                    entity: None,
+                    ..default()
                 }
-                .unpack(entity, &mut world.commands());
-                world.flush_commands();
+                .unpack(entity, world);
+
                 let mut state = NodeState::from_world_mut(entity, world).unwrap();
                 state.insert(0.0, 0.0, VarName::visible, false.into(), NodeKind::None);
                 state.insert(*t, 0.0, VarName::visible, true.into(), NodeKind::None);

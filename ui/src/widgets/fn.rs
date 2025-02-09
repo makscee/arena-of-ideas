@@ -130,15 +130,36 @@ pub fn cursor_window_frame(
             });
         });
 }
-pub fn slot_rect(i: usize, slots: usize, full_rect: Rect, right_to_left: bool) -> Rect {
-    let pos_i = if right_to_left {
-        (slots - i) as i32
+
+pub fn show_slot(i: usize, slots: usize, bottom: bool, ui: &mut Ui) -> Response {
+    let full_rect = ui.available_rect_before_wrap();
+    let rect = slot_rect(i, slots, full_rect, bottom);
+    ui.expand_to_include_rect(rect);
+    let mut cui = ui.child_ui(rect, *ui.layout(), None);
+    let r = cui.allocate_rect(rect, Sense::click());
+    let mut stroke = if r.hovered() {
+        STROKE_YELLOW
     } else {
-        (i - 1) as i32
-    } as f32;
+        STROKE_DARK
+    };
+    let t = cui
+        .ctx()
+        .animate_bool(Id::new("slot_hovered").with(i), r.hovered());
+    let length = egui::emath::lerp(15.0..=20.0, t);
+    stroke.width += t;
+    corners_rounded_rect(r.rect.shrink(3.0), length, stroke, ui);
+    r
+}
+pub fn slot_rect(i: usize, slots: usize, full_rect: Rect, bottom: bool) -> Rect {
+    let pos_i = i as i32 as f32;
     let size = (full_rect.width() / slots as f32).at_most(full_rect.height());
-    let lb = full_rect.left_bottom();
-    let rect = Rect::from_two_pos(lb, lb + egui::vec2(size, -size));
+    let rect = if bottom {
+        let lb = full_rect.left_bottom();
+        Rect::from_two_pos(lb, lb + egui::vec2(size, -size))
+    } else {
+        let lt = full_rect.left_top();
+        Rect::from_two_pos(lt, lt + egui::vec2(size, size))
+    };
     rect.translate(egui::vec2(size * pos_i, 0.0))
 }
 pub fn corners_rounded_rect(rect: Rect, length: f32, stroke: Stroke, ui: &mut Ui) {

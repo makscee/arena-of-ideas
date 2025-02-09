@@ -3,21 +3,21 @@ use super::*;
 struct House {
     pub name: String,
     pub color: Option<HouseColor>,
-    pub abilities: Vec<Ability>,
-    pub statuses: Vec<Status>,
+    pub action_abilities: Vec<ActionAbility>,
+    pub status_abilities: Vec<StatusAbility>,
 }
 
 struct HouseColor {
     pub color: String,
 }
 
-struct Ability {
+struct ActionAbility {
     pub name: String,
-    pub description: Option<AbilityDescription>,
+    pub description: Option<ActionAbilityDescription>,
     pub units: Vec<Unit>,
 }
 
-struct AbilityDescription {
+struct ActionAbilityDescription {
     pub description: String,
     pub effect: Option<AbilityEffect>,
 }
@@ -26,14 +26,14 @@ struct AbilityEffect {
     pub actions: Actions,
 }
 
-struct Status {
+struct StatusAbility {
     pub name: String,
-    pub description: Option<StatusDescription>,
+    pub description: Option<StatusAbilityDescription>,
     pub representation: Option<Representation>,
     pub units: Vec<Unit>,
 }
 
-struct StatusDescription {
+struct StatusAbilityDescription {
     pub description: String,
     pub reaction: Option<Reaction>,
 }

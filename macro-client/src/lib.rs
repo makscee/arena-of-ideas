@@ -143,6 +143,11 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         .parse2(quote! { pub entity: Option<Entity> })
                         .unwrap(),
                 );
+                fields.named.push(
+                    Field::parse_named
+                        .parse2(quote! { pub id: Option<u64> })
+                        .unwrap(),
+                );
             }
             let insert_unit = if struct_ident.to_string() == "Unit" {
                 quote! {vec.push(self);}
@@ -342,6 +347,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     fn from_table(domain: NodeDomain, id: u64) -> Option<Self> {
                         let data = domain.find_by_key(&Self::kind_s().key(id))?.data;
                         let mut d = Self::default();
+                        d.id = Some(id);
                         d.inject_data(&data);
                         let children = cn()
                             .db
@@ -376,25 +382,28 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         )*
                         Some(s)
                     }
-                    fn unpack(mut self, entity: Entity, commands: &mut Commands) {
+                    fn unpack(mut self, entity: Entity, world: &mut World) {
                         debug!("Unpack {self} into {entity}");
                         self.entity = Some(entity);
+                        if let Some(id) = self.id {
+                            world.add_id_link(id, entity);
+                        }
                         #(
                             if let Some(d) = self.#option_link_fields.take() {
-                                d.unpack(entity, commands);
+                                d.unpack(entity, world);
                             }
                         )*
                         #(
                             for d in std::mem::take(&mut self.#vec_link_fields) {
                                 let parent = entity;
-                                let entity = commands.spawn_empty().set_parent(parent).id();
+                                let entity = world.spawn_empty().set_parent(parent).id();
                                 debug!("{parent} -> {entity}");
-                                d.unpack(entity, commands);
+                                d.unpack(entity, world);
                             }
                         )*
                         let kind = self.kind();
-                        commands.entity(entity).insert(self);
-                        kind.on_unpack(entity, commands);
+                        world.entity_mut(entity).insert(self);
+                        kind.on_unpack(entity, world);
                     }
                     fn collect_units_vec<'a>(&'a self, vec: &mut Vec<&'a Unit>) {
                         #insert_unit
@@ -464,6 +473,14 @@ pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
                             })*
                         }
                     }
+                    pub fn get_vars(self, entity: Entity, world: &World) -> Vec<(VarName, VarValue)> {
+                        match self {
+                            Self::None => default(),
+                            #(#struct_ident::#variants => {
+                                world.get::<#variants>(entity).unwrap().get_vars()
+                            })*
+                        }
+                    }
                     pub fn show(self, entity: Entity, ui: &mut Ui, world: &World) {
                         let context = Context::new_world(world).set_owner(entity).take();
                         match self {
@@ -481,13 +498,14 @@ pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
                             })*
                         };
                     }
-                    pub fn unpack(self, entity: Entity, data: &str, commands: &mut Commands) {
+                    pub fn unpack(self, entity: Entity, data: &str, id: Option<u64>, world: &mut World) {
                         match self {
                             Self::None => {}
                             #(#struct_ident::#variants => {
                                 let mut n = #variants::default();
                                 n.inject_data(data);
-                                n.unpack(entity, commands);
+                                n.id = id;
+                                n.unpack(entity, world);
                             })*
                         };
                     }

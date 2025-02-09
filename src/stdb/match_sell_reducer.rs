@@ -10,12 +10,12 @@ use spacetimedb_sdk::__codegen::{
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub(super) struct MatchSellArgs {
-    pub slot: u8,
+    pub name: String,
 }
 
 impl From<MatchSellArgs> for super::Reducer {
     fn from(args: MatchSellArgs) -> Self {
-        Self::MatchSell { slot: args.slot }
+        Self::MatchSell { name: args.name }
     }
 }
 
@@ -35,7 +35,7 @@ pub trait match_sell {
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed by listening for [`Self::on_match_sell`] callbacks.
-    fn match_sell(&self, slot: u8) -> __anyhow::Result<()>;
+    fn match_sell(&self, name: String) -> __anyhow::Result<()>;
     /// Register a callback to run whenever we are notified of an invocation of the reducer `match_sell`.
     ///
     /// The [`super::EventContext`] passed to the `callback`
@@ -48,7 +48,7 @@ pub trait match_sell {
     /// to cancel the callback.
     fn on_match_sell(
         &self,
-        callback: impl FnMut(&super::EventContext, &u8) + Send + 'static,
+        callback: impl FnMut(&super::EventContext, &String) + Send + 'static,
     ) -> MatchSellCallbackId;
     /// Cancel a callback previously registered by [`Self::on_match_sell`],
     /// causing it not to run in the future.
@@ -56,12 +56,12 @@ pub trait match_sell {
 }
 
 impl match_sell for super::RemoteReducers {
-    fn match_sell(&self, slot: u8) -> __anyhow::Result<()> {
-        self.imp.call_reducer("match_sell", MatchSellArgs { slot })
+    fn match_sell(&self, name: String) -> __anyhow::Result<()> {
+        self.imp.call_reducer("match_sell", MatchSellArgs { name })
     }
     fn on_match_sell(
         &self,
-        mut callback: impl FnMut(&super::EventContext, &u8) + Send + 'static,
+        mut callback: impl FnMut(&super::EventContext, &String) + Send + 'static,
     ) -> MatchSellCallbackId {
         MatchSellCallbackId(self.imp.on_reducer(
             "match_sell",
@@ -69,7 +69,7 @@ impl match_sell for super::RemoteReducers {
                 let super::EventContext {
                     event:
                         __sdk::Event::Reducer(__sdk::ReducerEvent {
-                            reducer: super::Reducer::MatchSell { slot },
+                            reducer: super::Reducer::MatchSell { name },
                             ..
                         }),
                     ..
@@ -77,7 +77,7 @@ impl match_sell for super::RemoteReducers {
                 else {
                     unreachable!()
                 };
-                callback(ctx, slot)
+                callback(ctx, name)
             }),
         ))
     }
