@@ -120,6 +120,18 @@ impl<'w, 's> Context<'w, 's> {
     pub fn get_bool(&self, var: VarName) -> Result<bool, ExpressionError> {
         self.get_var(var)?.get_bool()
     }
+    pub fn get_i32(&self, var: VarName) -> Result<i32, ExpressionError> {
+        self.get_var(var)?.get_i32()
+    }
+    pub fn get_f32(&self, var: VarName) -> Result<f32, ExpressionError> {
+        self.get_var(var)?.get_f32()
+    }
+    pub fn get_string(&self, var: VarName) -> Result<String, ExpressionError> {
+        self.get_var(var)?.get_string()
+    }
+    pub fn get_color(&self, var: VarName) -> Result<Color32, ExpressionError> {
+        self.get_var(var)?.get_color()
+    }
     pub fn get_vars(&self) -> HashMap<VarName, VarValue> {
         HashMap::from_iter(self.layers.iter().filter_map(|l| match l {
             ContextLayer::Var(var, value) => Some((*var, value.clone())),

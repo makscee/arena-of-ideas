@@ -344,11 +344,15 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     fn to_dir(&self, path: String) -> DirEntry {
                         #data_to_dir
                     }
-                    fn from_table(domain: NodeDomain, id: u64) -> Option<Self> {
+                    fn from_table_single(domain: NodeDomain, id: u64) -> Option<Self> {
                         let data = domain.find_by_key(&Self::kind_s().key(id))?.data;
                         let mut d = Self::default();
                         d.id = Some(id);
                         d.inject_data(&data);
+                        Some(d)
+                    }
+                    fn from_table(domain: NodeDomain, id: u64) -> Option<Self> {
+                        let mut d = Self::from_table_single(domain, id)?;
                         let children = cn()
                             .db
                             .nodes_relations()

@@ -106,9 +106,9 @@ fn match_buy(ctx: &ReducerContext, slot: u8) -> Result<(), String> {
     m.g -= sc.price;
     NodeDomain::Match.node_update(c, sc);
     let mut unit =
-        Unit::from_table(c, NodeDomain::Core, sc.unit_id).to_e_s("Failed to find Core unit")?;
-    unit.clear_ids();
+    Unit::from_table(c, NodeDomain::Core, sc.unit_id).to_e_s("Failed to find Core unit")?;
     let mut house: House = NodeDomain::Core.node_parent(c, unit.id()).unwrap();
+    unit.clear_ids();
     if let Some(mut ability) = NodeDomain::Core.node_parent::<ActionAbility>(c, sc.unit_id) {
         if let Some(h) = m.find_house(&house.name) {
             if let Some(ability) = h.find_action(&ability.name) {

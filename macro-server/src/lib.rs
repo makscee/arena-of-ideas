@@ -59,7 +59,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     #strings_conversions
                     #table_conversions
                     fn id(&self) -> u64 {
-                        self.id.unwrap()
+                        self.id.expect("Id not set")
                     }
                     fn get_id(&self) -> Option<u64> {
                         self.id

@@ -44,17 +44,63 @@ impl MatchPlugin {
         Window::new("Match", move |ui, world| {
             let mut md = world.remove_resource::<MatchData>().unwrap();
             let shop_slots = md.shop_case.len();
-            let rect = ui.available_rect_before_wrap();
-            for (i, sc) in md.shop_case.iter().enumerate() {
-                let rect = show_slot(i, shop_slots, false, ui).rect;
-                if !sc.sold {
-                    let entity = md.core_world.get_id_link(sc.unit_id).unwrap();
-                    if let Some(rep) = md.core_world.get::<Representation>(entity) {
-                        let context = &Context::new_world(&md.core_world).set_owner(entity).take();
-                        RepresentationPlugin::paint_rect(rect, context, &rep.material, ui).log();
-                    }
+            ui.columns(shop_slots, |ui| {
+                for i in 0..shop_slots {
+                    let ui = &mut ui[i];
+                    ui.with_layout(
+                        Layout::bottom_up(Align::Center).with_cross_justify(true),
+                        |ui| {
+                            let sc = &md.shop_case[i];
+
+                            if "buy"
+                                .cstr_s(CstrStyle::Bold)
+                                .as_button()
+                                .enabled(!sc.sold)
+                                .ui(ui)
+                                .clicked()
+                            {
+                                cn().reducers.match_buy(i as u8).unwrap();
+                            }
+                            let entity = md.core_world.get_id_link(sc.unit_id).unwrap();
+                            let context =
+                                &Context::new_world(&md.core_world).set_owner(entity).take();
+                            let name = context.get_string(VarName::name).unwrap();
+                            let color = context.get_color(VarName::color).unwrap();
+                            TagWidget::new_text(name, color).ui(ui);
+                            let size = ui.available_size();
+                            let size = size.x.at_most(size.y);
+                            let rect = ui
+                                .allocate_ui_at_rect(
+                                    Rect::from_center_size(
+                                        ui.available_rect_before_wrap().center(),
+                                        egui::vec2(size, size),
+                                    ),
+                                    |ui| show_slot(i, 1, false, ui).rect,
+                                )
+                                .inner
+                                .shrink(10.0);
+                            if !sc.sold {
+                                RepresentationPlugin::paint_rect(
+                                    rect,
+                                    context,
+                                    &unit_rep().material,
+                                    ui,
+                                )
+                                .log();
+                                if let Some(rep) = md.core_world.get::<Representation>(entity) {
+                                    RepresentationPlugin::paint_rect(
+                                        rect,
+                                        context,
+                                        &rep.material,
+                                        ui,
+                                    )
+                                    .log();
+                                }
+                            }
+                        },
+                    );
                 }
-            }
+            });
             for (entity, slot) in md
                 .team_world
                 .query::<(Entity, &UnitSlot)>()

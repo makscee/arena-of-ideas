@@ -133,7 +133,7 @@ pub fn cursor_window_frame(
 
 pub fn show_slot(i: usize, slots: usize, bottom: bool, ui: &mut Ui) -> Response {
     let full_rect = ui.available_rect_before_wrap();
-    let rect = slot_rect(i, slots, full_rect, bottom);
+    let rect = slot_rect(i.at_most(slots - 1), slots, full_rect, bottom);
     ui.expand_to_include_rect(rect);
     let mut cui = ui.child_ui(rect, *ui.layout(), None);
     let r = cui.allocate_rect(rect, Sense::click());
