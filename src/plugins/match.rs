@@ -93,6 +93,21 @@ impl MatchPlugin {
             }
         });
     }
+    fn show_unit_tag(md: &MatchData, unit: &Unit, stats: &UnitStats, ui: &mut Ui) {
+        TagWidget::new_number(
+            &unit.name,
+            Context::new_world(&md.team_world)
+                .set_owner(unit.entity())
+                .get_color(VarName::color)
+                .unwrap(),
+            format!(
+                "[b {} {}]",
+                stats.pwr.cstr_c(VarName::pwr.color()),
+                stats.hp.cstr_c(VarName::hp.color())
+            ),
+        )
+        .ui(ui);
+    }
     pub fn open_shop_window(world: &mut World) {
         if !world.contains_resource::<MatchData>() {
             error!("Match not loaded");
@@ -101,29 +116,21 @@ impl MatchPlugin {
         Window::new("Match", move |ui, world| {
             let mut md = world.remove_resource::<MatchData>().unwrap();
             let full_rect = ui.available_rect_before_wrap();
+            let mut edit_requested = false;
             ui.horizontal(|ui| {
                 ui.vertical(|ui| {
-                    for unit in md.team_world.query::<&Unit>().iter(&md.team_world) {
+                    for (unit, stats) in md
+                        .team_world
+                        .query::<(&Unit, &UnitStats)>()
+                        .iter(&md.team_world)
+                    {
                         Frame::none()
                             .stroke(STROKE_DARK)
                             .inner_margin(Margin::same(2.0))
                             .outer_margin(Margin::same(2.0))
                             .rounding(ROUNDING)
                             .show(ui, |ui| {
-                                let stats = md.team_world.get::<UnitStats>(unit.entity()).unwrap();
-                                TagWidget::new_number(
-                                    &unit.name,
-                                    Context::new_world(&md.team_world)
-                                        .set_owner(unit.entity())
-                                        .get_color(VarName::color)
-                                        .unwrap(),
-                                    format!(
-                                        "[b {} {}]",
-                                        stats.pwr.cstr_c(VarName::pwr.color()),
-                                        stats.hp.cstr_c(VarName::hp.color())
-                                    ),
-                                )
-                                .ui(ui);
+                                Self::show_unit_tag(&md, unit, stats, ui);
                                 if format!(
                                     "[b sell [yellow +{}g]]",
                                     global_settings().match_g.unit_sell
@@ -160,6 +167,9 @@ impl MatchPlugin {
                                     cn().reducers.match_reroll().unwrap();
                                 }
                             });
+                            if "edit".cstr_s(CstrStyle::Bold).button(ui).clicked() {
+                                edit_requested = true;
+                            }
                         })
                     },
                 )
@@ -171,11 +181,65 @@ impl MatchPlugin {
             {
                 let slot = slot.slot as usize;
             }
-
             world.insert_resource(md);
+            if edit_requested {
+                Self::open_fusion_edit_window(0, world);
+            }
         })
         .default_width(800.0)
         .default_height(600.0)
+        .push(world);
+    }
+    fn open_fusion_edit_window(slot: usize, world: &mut World) {
+        if !world.contains_resource::<MatchData>() {
+            error!("Match not loaded");
+            return;
+        }
+        let mut md = world.resource_mut::<MatchData>();
+        let mut fusions = md
+            .team_world
+            .query::<(&Fusion, &UnitSlot)>()
+            .iter(&md.team_world)
+            .sort_by_key::<&UnitSlot, _>(|s| s.slot)
+            .map(|(f, _)| f.clone())
+            .collect_vec();
+        if slot >= fusions.len() {
+            fusions.push(default());
+        }
+        let mut units: HashSet<String> = default();
+        Window::new("Fusion Edit", move |ui, world| {
+            let mut md = world.remove_resource::<MatchData>().unwrap();
+            ui.horizontal(|ui| {
+                ui.vertical(|ui| {
+                    "Select Units"
+                        .cstr_cs(VISIBLE_DARK, CstrStyle::Heading2)
+                        .label(ui);
+                    for (unit, stats) in md
+                        .team_world
+                        .query::<(&Unit, &UnitStats)>()
+                        .iter(&md.team_world)
+                    {
+                        let selected = units.contains(&unit.name);
+                        Frame::none()
+                            .stroke(if selected { STROKE_YELLOW } else { STROKE_DARK })
+                            .inner_margin(Margin::same(2.0))
+                            .outer_margin(Margin::same(2.0))
+                            .rounding(ROUNDING)
+                            .show(ui, |ui| {
+                                Self::show_unit_tag(&md, unit, stats, ui);
+                                if "select".cstr_s(CstrStyle::Bold).button(ui).clicked() {
+                                    if selected {
+                                        units.remove(&unit.name);
+                                    } else {
+                                        units.insert(unit.name.clone());
+                                    }
+                                }
+                            });
+                    }
+                });
+            });
+            world.insert_resource(md);
+        })
         .push(world);
     }
 }

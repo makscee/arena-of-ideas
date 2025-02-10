@@ -1,6 +1,5 @@
-use std::i32;
+use std::{collections::HashMap, i32};
 
-use hashbrown::HashMap;
 use log::info;
 use rand::seq::SliceRandom;
 
