@@ -41,7 +41,7 @@ struct StatusAbilityDescription {
 struct Team {
     pub name: String,
     pub houses: Vec<House>,
-    pub units: Vec<Fusion>,
+    pub fusions: Vec<Fusion>,
 }
 
 struct Match {

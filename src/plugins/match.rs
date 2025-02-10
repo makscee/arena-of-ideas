@@ -118,9 +118,8 @@ impl MatchPlugin {
                                         .get_color(VarName::color)
                                         .unwrap(),
                                     format!(
-                                        "[b {} {}[vd /]{}]",
+                                        "[b {} {}]",
                                         stats.pwr.cstr_c(VarName::pwr.color()),
-                                        (stats.hp - stats.dmg).cstr_c(VarName::hp.color()),
                                         stats.hp.cstr_c(VarName::hp.color())
                                     ),
                                 )

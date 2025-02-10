@@ -1,5 +1,6 @@
 use std::i32;
 
+use hashbrown::HashMap;
 use log::info;
 use rand::seq::SliceRandom;
 
@@ -40,25 +41,21 @@ impl Match {
         }
         Ok(())
     }
-    fn team(&self) -> Result<&Team, String> {
-        self.team.as_ref().to_e_s("Team not set")
-    }
-    fn find_unit<'a>(&'a self, name: &str) -> Option<&'a Unit> {
-        self.team.as_ref().unwrap().houses.iter().find_map(|h| {
-            h.action_abilities
-                .iter()
-                .flat_map(|a| a.units.iter())
-                .chain(h.status_abilities.iter().flat_map(|a| a.units.iter()))
-                .find(|u| u.name == name)
-        })
-    }
-    fn find_house<'a>(&'a self, name: &str) -> Option<&'a House> {
-        self.team
-            .as_ref()
-            .unwrap()
+    fn all_units<'a>(&'a self) -> Result<Vec<&'a Unit>, String> {
+        Ok(self
+            .team()
             .houses
             .iter()
-            .find(|h| h.name == name)
+            .flat_map(|h| {
+                h.action_abilities
+                    .iter()
+                    .flat_map(|a| a.units.iter())
+                    .chain(h.status_abilities.iter().flat_map(|a| a.units.iter()))
+            })
+            .collect())
+    }
+    fn find_house<'a>(&'a self, name: &str) -> Option<&'a House> {
+        self.team().houses.iter().find(|h| h.name == name)
     }
     fn fill_gaps(c: &Context) {
         let mut units: Vec<Unit> = NodeDomain::Match.node_collect(c);
@@ -208,6 +205,69 @@ fn match_reorder(ctx: &ReducerContext, slot: u8, target: u8) -> Result<(), Strin
         NodeDomain::Match.node_update(c, slot);
     }
     Match::register_update(c)
+}
+
+#[reducer]
+fn match_edit_fusions(ctx: &ReducerContext, fusions: Vec<String>) -> Result<(), String> {
+    let c = &ctx.wrap()?;
+    let mut m = Match::get(c)?;
+    let fusions = fusions
+        .into_iter()
+        .map(|data| {
+            let mut d = Fusion::default();
+            d.inject_data(&data);
+            d
+        })
+        .collect_vec();
+    if fusions
+        .iter()
+        .any(|f| f.unit.units.is_empty() || f.unit.actions.is_empty())
+    {
+        return Err("Fusion can't be empty".into());
+    }
+    let roster_units: HashMap<String, Unit> = HashMap::from_iter(
+        m.all_units()?
+            .into_iter()
+            .map(|u| (u.name.clone(), u.clone())),
+    );
+    let fusions_units = fusions.iter().flat_map(|f| &f.unit.units).collect_vec();
+    if !fusions_units.iter().all_unique() {
+        return Err("Each unit can be fused only once".into());
+    }
+    for unit in fusions_units {
+        if !roster_units.contains_key(unit) {
+            return Err(format!("Unit {unit} is not in roster"));
+        }
+    }
+    for fusion in &fusions {
+        let actions: HashMap<String, Vec<Box<Action>>> =
+            HashMap::from_iter(fusion.unit.units.iter().map(|u| {
+                let unit = roster_units.get(u).unwrap();
+                (u.clone(), unit.description().reaction().actions.0.clone())
+            }));
+        let max_actions = actions.values().map(|a| a.len()).max().unwrap() + actions.len() - 1;
+        if fusion.unit.actions.len() >= max_actions {
+            return Err("Fusion actions exceed limit".into());
+        }
+        if fusion
+            .unit
+            .triggers
+            .iter()
+            .any(|t| *t as usize >= actions.len())
+        {
+            return Err("Trigger outside of units range".into());
+        }
+        for (unit, action) in &fusion.unit.actions {
+            let unit = &fusion.unit.units[*unit as usize];
+            let actions = actions.get(unit).unwrap();
+            if *action as usize >= actions.len() {
+                return Err("Action outside of range".into());
+            }
+        }
+    }
+    m.team.as_mut().unwrap().fusions = fusions;
+    m.save(c);
+    Ok(())
 }
 
 #[reducer]

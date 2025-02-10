@@ -16,4 +16,5 @@ quote = { workspace = true }
 ron = { workspace = true }
 log = { workspace = true }
 glam = { workspace = true }
+hashbrown = { workspace = true }
 ecolor = { version = "0.28.1", features = ["serde"] }

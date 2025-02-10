@@ -91,7 +91,7 @@ impl AdminPlugin {
         Team {
             name: "TestTeam".into(),
             houses,
-            units: [fusion.clone(), fusion.clone(), fusion].into(),
+            fusions: [fusion.clone(), fusion.clone(), fusion].into(),
             ..default()
         }
     }

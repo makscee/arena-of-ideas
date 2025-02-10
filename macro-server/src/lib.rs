@@ -55,6 +55,13 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
             quote! {
                 #[derive(Default, Debug, Clone)]
                 #input
+                impl #struct_ident {
+                    #(
+                        pub fn #option_link_fields(&self) -> &#option_link_types {
+                            self.#option_link_fields.as_ref().unwrap()
+                        }
+                    )*
+                }
                 impl Node for #struct_ident {
                     #strings_conversions
                     #table_conversions
