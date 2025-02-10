@@ -84,6 +84,9 @@ impl MatchPlugin {
                             Layout::bottom_up(Align::Center).with_cross_justify(true),
                             |ui| {
                                 let sc = &md.shop_case[i];
+                                let Some(entity) = md.core_world.get_id_link(sc.unit_id) else {
+                                    return;
+                                };
 
                                 if "buy"
                                     .cstr_s(CstrStyle::Bold)
@@ -94,7 +97,6 @@ impl MatchPlugin {
                                 {
                                     cn().reducers.match_buy(i as u8).unwrap();
                                 }
-                                let entity = md.core_world.get_id_link(sc.unit_id).unwrap();
                                 let context =
                                     &Context::new_world(&md.core_world).set_owner(entity).take();
                                 let name = context.get_string(VarName::name).unwrap();

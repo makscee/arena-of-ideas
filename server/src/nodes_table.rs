@@ -14,6 +14,7 @@ pub struct TNode {
     pub owner: u64,
     #[index(btree)]
     pub kind: String,
+    #[index(btree)]
     pub data: String,
 }
 
@@ -48,6 +49,7 @@ impl NodeIdExt for u64 {
 
 pub trait NodeDomainExt {
     fn node_get<T: Node + GetNodeKindSelf>(self, c: &Context, id: u64) -> Option<T>;
+    fn node_get_by_data<T: Node + GetNodeKindSelf>(self, c: &Context, data: &str) -> Option<T>;
     fn node_insert(self, c: &Context, node: &(impl Node + GetNodeKind));
     fn node_update(self, c: &Context, node: &(impl Node + GetNodeKind));
     fn node_delete(self, c: &Context, node: &(impl Node + GetNodeKind));
@@ -56,9 +58,9 @@ pub trait NodeDomainExt {
     fn node_parent<T: Node + GetNodeKindSelf>(self, c: &Context, id: u64) -> Option<T>;
     fn tnode_find_by_key(self, c: &Context, key: &String) -> Option<TNode>;
     fn tnode_filter_by_kind(self, c: &Context, kind: NodeKind) -> Vec<TNode>;
-    fn delete_by_id(self, c: &Context, id: u64);
     fn tnode_collect_kind(self, c: &Context, kind: NodeKind) -> Vec<TNode>;
     fn tnode_collect_owner(self, c: &Context) -> Vec<TNode>;
+    fn delete_by_id(self, c: &Context, id: u64);
 }
 impl NodeDomainExt for NodeDomain {
     fn node_get<T: Node + GetNodeKindSelf>(self, c: &Context, id: u64) -> Option<T> {
@@ -84,6 +86,38 @@ impl NodeDomainExt for NodeDomain {
                     .key()
                     .find(kind.key(id))
                     .map(|d| d.to_node())
+            }
+        }
+    }
+    fn node_get_by_data<T: Node + GetNodeKindSelf>(self, c: &Context, data: &str) -> Option<T> {
+        let kind = T::kind_s().to_string();
+        match self {
+            NodeDomain::World => {
+                c.rc.db
+                    .nodes_world()
+                    .data()
+                    .filter(data)
+                    .filter(|n| n.kind == kind)
+                    .map(|n| n.to_node())
+                    .next()
+            }
+            NodeDomain::Match => {
+                c.rc.db
+                    .nodes_match()
+                    .data()
+                    .filter(data)
+                    .filter(|n| n.kind == kind)
+                    .map(|n| n.to_node())
+                    .next()
+            }
+            NodeDomain::Core => {
+                c.rc.db
+                    .nodes_core()
+                    .data()
+                    .filter(data)
+                    .filter(|n| n.kind == kind)
+                    .map(|n| n.to_node())
+                    .next()
             }
         }
     }
