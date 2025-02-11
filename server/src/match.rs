@@ -159,7 +159,7 @@ fn match_sell(ctx: &ReducerContext, name: String) -> Result<(), String> {
         .into_iter()
         .find(|u| u.name == name)
     {
-        NodeDomain::Match.delete_by_id(c, unit.id());
+        NodeDomain::Match.delete_by_id_recursive(c, unit.id());
     } else {
         return Err("Unit not found".into());
     }
@@ -207,16 +207,12 @@ fn match_reorder(ctx: &ReducerContext, slot: u8, target: u8) -> Result<(), Strin
 }
 
 #[reducer]
-fn match_edit_fusions(ctx: &ReducerContext, fusions: Vec<String>) -> Result<(), String> {
+fn match_edit_fusions(ctx: &ReducerContext, fusions: Vec<Vec<String>>) -> Result<(), String> {
     let c = &ctx.wrap()?;
-    let mut m = Match::get(c)?;
+    let m = Match::get(c)?;
     let fusions = fusions
         .into_iter()
-        .map(|data| {
-            let mut d = Fusion::default();
-            d.inject_data(&data);
-            d
-        })
+        .map(|fusion| Fusion::from_strings(0, &fusion).unwrap())
         .collect_vec();
     if fusions
         .iter()
@@ -264,7 +260,13 @@ fn match_edit_fusions(ctx: &ReducerContext, fusions: Vec<String>) -> Result<(), 
             }
         }
     }
-    m.team.as_mut().unwrap().fusions = fusions;
+    info!("{fusions:?}");
+    for fusion in &m.team().fusions {
+        NodeDomain::Match.delete_by_id_recursive(c, fusion.id());
+    }
+    for fusion in fusions {
+        fusion.to_table(c, NodeDomain::Match, m.team().id());
+    }
     m.save(c);
     Ok(())
 }
@@ -291,7 +293,7 @@ fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
     };
     d.fill_case(c)?;
     for d in NodeDomain::Match.tnode_collect_owner(c) {
-        NodeDomain::Match.delete_by_id(c, d.id);
+        NodeDomain::Match.delete_by_id_recursive(c, d.id);
     }
     d.to_table(c, NodeDomain::Match, 0);
     Ok(())

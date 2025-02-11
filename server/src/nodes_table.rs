@@ -60,7 +60,7 @@ pub trait NodeDomainExt {
     fn tnode_filter_by_kind(self, c: &Context, kind: NodeKind) -> Vec<TNode>;
     fn tnode_collect_kind(self, c: &Context, kind: NodeKind) -> Vec<TNode>;
     fn tnode_collect_owner(self, c: &Context) -> Vec<TNode>;
-    fn delete_by_id(self, c: &Context, id: u64);
+    fn delete_by_id_recursive(self, c: &Context, id: u64);
 }
 impl NodeDomainExt for NodeDomain {
     fn node_get<T: Node + GetNodeKindSelf>(self, c: &Context, id: u64) -> Option<T> {
@@ -220,7 +220,7 @@ impl NodeDomainExt for NodeDomain {
             NodeDomain::Core => c.rc.db.nodes_core().owner().filter(owner).collect_vec(),
         }
     }
-    fn delete_by_id(self, c: &Context, id: u64) {
+    fn delete_by_id_recursive(self, c: &Context, id: u64) {
         let ids = id.all_descendants(c.rc);
         match self {
             NodeDomain::World => {

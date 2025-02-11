@@ -768,11 +768,20 @@ impl DataFramed for PainterAction {
     }
 }
 impl DataFramed for Action {
+    fn default_open(&self) -> bool {
+        match self {
+            Action::UseAbility => true,
+            _ => false,
+        }
+    }
     fn show_name_mut(&mut self, ui: &mut Ui) -> bool {
         Selector::from_mut(self, ui)
     }
     fn has_header(&self) -> bool {
-        false
+        match self {
+            Action::UseAbility => true,
+            _ => false,
+        }
     }
     fn has_body(&self) -> bool {
         match self {
@@ -786,7 +795,32 @@ impl DataFramed for Action {
             | Action::Repeat(..) => true,
         }
     }
-    fn show_header(&self, _context: &Context, _ui: &mut Ui) {}
+    fn show_header(&self, context: &Context, ui: &mut Ui) {
+        match self {
+            Action::UseAbility => {
+                let Ok(entity) = context.get_caster().or_else(|_| context.get_owner()) else {
+                    return;
+                };
+                if let Some(color) = context
+                    .find_parent_component::<HouseColor>(entity)
+                    .and_then(|h| Color32::from_hex(&h.color).ok())
+                {
+                    if let Some(name) = context
+                        .find_parent_component::<ActionAbility>(entity)
+                        .map(|a| a.name.clone())
+                        .or_else(|| {
+                            context
+                                .find_parent_component::<StatusAbility>(entity)
+                                .map(|a| a.name.clone())
+                        })
+                    {
+                        name.cstr_cs(color, CstrStyle::Bold).label(ui);
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
     fn show_header_mut(&mut self, _ui: &mut Ui) -> bool {
         false
     }

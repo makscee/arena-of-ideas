@@ -1,3 +1,5 @@
+use bevy::log::debug;
+
 use super::*;
 
 pub struct WindowPlugin;
@@ -30,6 +32,8 @@ enum WindowResponse {
 struct WindowResource {
     windows: HashMap<String, Window>,
 }
+#[derive(Resource)]
+struct CloseCurrentWindow;
 fn rm(world: &mut World) -> Mut<WindowResource> {
     world.resource_mut::<WindowResource>()
 }
@@ -163,6 +167,10 @@ impl WindowPlugin {
                 WindowResponse::Close => close = Some(id.clone()),
                 WindowResponse::Tile(side) => tile = Some((side, id.clone())),
             }
+            if world.remove_resource::<CloseCurrentWindow>().is_some() {
+                debug!("close window");
+                close = Some(id.clone());
+            }
         }
         if let Some(close) = close {
             windows.remove(&close);
@@ -180,5 +188,8 @@ impl WindowPlugin {
     }
     pub fn close(key: &str, world: &mut World) {
         rm(world).windows.remove(key);
+    }
+    pub fn close_current(world: &mut World) {
+        world.insert_resource(CloseCurrentWindow);
     }
 }

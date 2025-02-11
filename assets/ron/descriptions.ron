@@ -1,1 +1,7 @@
-(expressions: [(RandomUnit(AllEnemyUnits), "random enemy")])
+(
+    expressions: [
+        (RandomUnit(AllEnemyUnits), "random enemy"),
+        (RandomUnit(AllEnemyUnits), "random ally"),
+        (RandomUnit(AdjacentAllyUnits), "random adjacent ally"),
+    ],
+)
