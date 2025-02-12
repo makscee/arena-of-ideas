@@ -59,7 +59,7 @@ struct ShopCaseUnit {
 
 struct Fusion {
     pub units: Vec<String>,
-    pub actions: Vec<(UnitTriggerRef, Vec<UnitActionRef>)>,
+    pub triggers: Vec<(UnitTriggerRef, Vec<UnitActionRef>)>,
     pub slot: NodeComponent<UnitSlot>,
 }
 
@@ -86,7 +86,7 @@ struct UnitDescription {
 }
 
 struct Reaction {
-    pub trigger: Vec<(Trigger, Actions)>,
+    pub triggers: Vec<(Trigger, Actions)>,
 }
 
 struct Hero {

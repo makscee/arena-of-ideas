@@ -1,3 +1,5 @@
+use bevy::ecs::world::FromWorld;
+
 use super::*;
 
 pub struct MatchPlugin;
@@ -244,10 +246,51 @@ impl MatchPlugin {
                             });
                     }
                 });
+                let context = &Context::new_world(&md.team_world);
                 ui.vertical(|ui| {
                     "Select Triggers & Actions"
                         .cstr_cs(VISIBLE_DARK, CstrStyle::Heading2)
                         .label(ui);
+                    for (u, unit) in fusion.units.iter().enumerate() {
+                        let triggers = &fusion.get_reaction(u as u8, context).unwrap().triggers;
+                        let context = &context.clone().set_owner_name(unit.clone()).unwrap().take();
+                        for (t, (trigger, actions)) in triggers.iter().enumerate() {
+                            let selected = fusion
+                                .triggers
+                                .iter()
+                                .find_position(|(r, _)| {
+                                    r.trigger as usize == t && r.unit as usize == u
+                                })
+                                .map(|(i, _)| i);
+                            if "select".cstr_s(CstrStyle::Bold).button(ui).clicked() {
+                                if let Some(ind) = selected {
+                                    fusion.triggers.remove(ind);
+                                } else {
+                                    fusion.triggers.push((
+                                        UnitTriggerRef {
+                                            unit: u as u8,
+                                            trigger: t as u8,
+                                        },
+                                        default(),
+                                    ));
+                                }
+                            }
+                            FRAME
+                                .stroke(if selected.is_some() {
+                                    STROKE_YELLOW
+                                } else {
+                                    STROKE_DARK
+                                })
+                                .show(ui, |ui| {
+                                    trigger.show(None, context, ui);
+                                    FRAME.inner_margin(Margin::same(8.0)).show(ui, |ui| {
+                                        for (a, action) in actions.0.iter().enumerate() {
+                                            action.show(None, context, ui);
+                                        }
+                                    });
+                                });
+                        }
+                    }
                 });
             });
             world.insert_resource(md);

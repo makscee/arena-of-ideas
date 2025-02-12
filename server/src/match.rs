@@ -216,7 +216,7 @@ fn match_edit_fusions(ctx: &ReducerContext, fusions: Vec<Vec<String>>) -> Result
         .collect_vec();
     if fusions
         .iter()
-        .any(|f| f.units.is_empty() || f.actions.is_empty())
+        .any(|f| f.units.is_empty() || f.triggers.is_empty())
     {
         return Err("Fusion can't be empty".into());
     }

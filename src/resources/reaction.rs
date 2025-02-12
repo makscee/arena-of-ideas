@@ -6,7 +6,7 @@ pub trait ReactionImpl {
 
 impl ReactionImpl for Reaction {
     fn react(&self, event: &Event, context: &Context) -> Option<&Actions> {
-        for (trigger, actions) in self.trigger.iter() {
+        for (trigger, actions) in self.triggers.iter() {
             if trigger.fire(event, context) {
                 return Some(actions);
             }

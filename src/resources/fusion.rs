@@ -26,7 +26,7 @@ impl Fusion {
         context.entity_by_name(unit)
     }
     pub fn get_reaction<'a>(
-        &'a self,
+        &self,
         unit: u8,
         context: &'a Context,
     ) -> Result<&'a Reaction, ExpressionError> {
@@ -36,23 +36,23 @@ impl Fusion {
             .to_e("Reaction not found")
     }
     pub fn get_trigger<'a>(
-        &'a self,
+        &self,
         unit: u8,
         trigger: u8,
         context: &'a Context,
     ) -> Result<&'a Trigger, ExpressionError> {
         let reaction = self.get_reaction(unit, context)?;
-        Ok(&reaction.trigger[trigger as usize].0)
+        Ok(&reaction.triggers[trigger as usize].0)
     }
     pub fn get_action<'a>(
-        &'a self,
+        &self,
         r: &UnitActionRef,
         context: &'a Context,
     ) -> Result<(Entity, &'a Action), ExpressionError> {
         let reaction = self.get_reaction(r.unit, context)?;
         Ok((
             reaction.entity(),
-            &reaction.trigger[r.trigger as usize].1[r.action as usize],
+            &reaction.triggers[r.trigger as usize].1[r.action as usize],
         ))
     }
     pub fn react(
@@ -61,7 +61,7 @@ impl Fusion {
         context: &mut Context,
     ) -> Result<Vec<BattleAction>, ExpressionError> {
         let mut battle_actions: Vec<BattleAction> = default();
-        for (UnitTriggerRef { unit, trigger }, actions) in &self.actions {
+        for (UnitTriggerRef { unit, trigger }, actions) in &self.triggers {
             if self
                 .get_trigger(*unit, *trigger, context)?
                 .fire(event, context)
