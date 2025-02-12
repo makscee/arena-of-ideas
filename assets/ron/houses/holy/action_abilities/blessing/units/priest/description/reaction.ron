@@ -1,1 +1,0 @@
-(BattleStart, ([SetTarget(RandomUnit(AdjacentAllyUnits)), UseAbility]))

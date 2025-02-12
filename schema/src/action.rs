@@ -26,3 +26,11 @@ impl From<Vec<Action>> for Actions {
         Self(value.into_iter().map(|v| Box::new(v)).collect())
     }
 }
+
+impl std::ops::Index<usize> for Actions {
+    type Output = Action;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.0[index]
+    }
+}

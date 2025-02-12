@@ -2,9 +2,9 @@ use super::*;
 
 struct House {
     pub name: String,
-    pub color: Option<HouseColor>,
-    pub action_abilities: Vec<ActionAbility>,
-    pub status_abilities: Vec<StatusAbility>,
+    pub color: NodeComponent<HouseColor>,
+    pub action_abilities: NodeChildren<ActionAbility>,
+    pub status_abilities: NodeChildren<StatusAbility>,
 }
 
 struct HouseColor {
@@ -13,13 +13,13 @@ struct HouseColor {
 
 struct ActionAbility {
     pub name: String,
-    pub description: Option<ActionAbilityDescription>,
-    pub units: Vec<Unit>,
+    pub description: NodeComponent<ActionAbilityDescription>,
+    pub units: NodeChildren<Unit>,
 }
 
 struct ActionAbilityDescription {
     pub description: String,
-    pub effect: Option<AbilityEffect>,
+    pub effect: NodeComponent<AbilityEffect>,
 }
 
 struct AbilityEffect {
@@ -28,27 +28,27 @@ struct AbilityEffect {
 
 struct StatusAbility {
     pub name: String,
-    pub description: Option<StatusAbilityDescription>,
-    pub representation: Option<Representation>,
-    pub units: Vec<Unit>,
+    pub description: NodeComponent<StatusAbilityDescription>,
+    pub representation: NodeComponent<Representation>,
+    pub units: NodeChildren<Unit>,
 }
 
 struct StatusAbilityDescription {
     pub description: String,
-    pub reaction: Option<Reaction>,
+    pub reaction: NodeComponent<Reaction>,
 }
 
 struct Team {
     pub name: String,
-    pub houses: Vec<House>,
-    pub fusions: Vec<Fusion>,
+    pub houses: NodeChildren<House>,
+    pub fusions: NodeChildren<Fusion>,
 }
 
 struct Match {
     pub g: i32,
     pub last_update: u64,
-    pub shop_case: Vec<ShopCaseUnit>,
-    pub team: Option<Team>,
+    pub shop_case: NodeChildren<ShopCaseUnit>,
+    pub team: NodeComponent<Team>,
 }
 
 struct ShopCaseUnit {
@@ -58,15 +58,15 @@ struct ShopCaseUnit {
 }
 
 struct Fusion {
-    pub unit: FusedUnit,
-    pub slot: Option<UnitSlot>,
+    pub unit: FusionData,
+    pub slot: NodeComponent<UnitSlot>,
 }
 
 struct Unit {
     pub name: String,
-    pub stats: Option<UnitStats>,
-    pub description: Option<UnitDescription>,
-    pub representation: Option<Representation>,
+    pub stats: NodeComponent<UnitStats>,
+    pub description: NodeComponent<UnitDescription>,
+    pub representation: NodeComponent<Representation>,
 }
 
 struct UnitStats {
@@ -81,18 +81,17 @@ struct UnitSlot {
 
 struct UnitDescription {
     pub description: String,
-    pub reaction: Option<Reaction>,
+    pub reaction: NodeComponent<Reaction>,
 }
 
 struct Reaction {
-    pub trigger: Trigger,
-    pub actions: Actions,
+    pub trigger: Vec<(Trigger, Actions)>,
 }
 
 struct Hero {
     pub name: String,
-    pub representation: Option<Representation>,
-    pub mover: Option<Mover>,
+    pub representation: NodeComponent<Representation>,
+    pub mover: NodeComponent<Mover>,
 }
 
 struct Mover {

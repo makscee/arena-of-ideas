@@ -211,7 +211,6 @@ impl MatchPlugin {
             fusions.push(default());
         }
         let mut units: Vec<Entity> = default();
-        let mut actions: Vec<(usize, usize)> = default();
         let window_id = "Fusion Edit";
         Window::new(window_id, move |ui, world| {
             let mut md = world.remove_resource::<MatchData>().unwrap();
@@ -235,7 +234,6 @@ impl MatchPlugin {
                                         let i =
                                             units.iter().position(|u| unit.entity().eq(u)).unwrap();
                                         units.remove(i);
-                                        actions.retain(|(u, _)| *u != i);
                                     } else {
                                         units.push(unit.entity());
                                     }
@@ -243,89 +241,6 @@ impl MatchPlugin {
                             });
                     }
                 });
-                ui.vertical(|ui| {
-                    "Select Actions"
-                        .cstr_cs(VISIBLE_DARK, CstrStyle::Heading2)
-                        .label(ui);
-                    for (unit_i, unit) in units.iter().enumerate() {
-                        let context = &Context::new_world(&md.team_world).set_owner(*unit).take();
-                        let reaction = md.team_world.get::<Reaction>(*unit).unwrap();
-                        FRAME.show(ui, |ui| {
-                            for (i, action) in reaction.actions.0.iter().enumerate() {
-                                let unit_action = (unit_i, i);
-                                let selected = actions.contains(&unit_action);
-                                FRAME
-                                    .stroke(if selected { STROKE_YELLOW } else { STROKE_DARK })
-                                    .show(ui, |ui| {
-                                        action.show(None, context, ui);
-                                        if "select".cstr_s(CstrStyle::Bold).button(ui).clicked() {
-                                            if selected {
-                                                let i = actions
-                                                    .iter()
-                                                    .position(|e| unit_action.eq(e))
-                                                    .unwrap();
-                                                actions.remove(i);
-                                            } else {
-                                                actions.push(unit_action);
-                                            }
-                                        }
-                                    });
-                            }
-                        });
-                    }
-                });
-                ui.vertical(|ui| {
-                    "Result Actions"
-                        .cstr_cs(VISIBLE_DARK, CstrStyle::Heading2)
-                        .label(ui);
-                    let mut swap = None;
-                    for (i, (unit, action)) in actions.iter().enumerate() {
-                        let unit = units[*unit];
-                        let action =
-                            &md.team_world.get::<Reaction>(unit).unwrap().actions.0[*action];
-                        let context = &Context::new_world(&md.team_world).set_owner(unit).take();
-                        let rect = FRAME
-                            .show(ui, |ui| {
-                                ui.horizontal(|ui| {
-                                    if i > 0 && "<".cstr_s(CstrStyle::Bold).button(ui).clicked() {
-                                        swap = Some((i, i - 1));
-                                    }
-                                    if i + 1 < actions.len()
-                                        && ">".cstr_s(CstrStyle::Bold).button(ui).clicked()
-                                    {
-                                        swap = Some((i, i + 1));
-                                    }
-                                    action.show(None, context, ui);
-                                });
-                            })
-                            .response
-                            .rect;
-                        let color = context.get_color(VarName::color).unwrap();
-                        ui.painter().line_segment(
-                            [rect.left_top(), rect.left_bottom()],
-                            Stroke::new(3.0, color),
-                        );
-                    }
-                    if let Some((a, b)) = swap {
-                        actions.swap(a, b);
-                    }
-                });
-                if "save".cstr_s(CstrStyle::Bold).button(ui).clicked() {
-                    let fusion = Fusion::new_full(
-                        FusedUnit {
-                            units: units
-                                .iter()
-                                .map(|u| md.team_world.get::<Unit>(*u).unwrap().name.clone())
-                                .collect(),
-                            triggers: [0].into(),
-                            actions: actions.iter().map(|(a, b)| (*a as u8, *b as u8)).collect(),
-                        },
-                        UnitSlot::new(0),
-                    );
-                    let fusion = fusion.to_strings_root();
-                    cn().reducers.match_edit_fusions([fusion].into()).unwrap();
-                    WindowPlugin::close_current(world);
-                }
             });
             world.insert_resource(md);
         })

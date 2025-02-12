@@ -1,10 +1,12 @@
 use super::*;
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default, AsRefStr, EnumIter, PartialEq, Eq)]
+#[derive(
+    Debug, Clone, Serialize, Deserialize, Default, AsRefStr, EnumIter, PartialEq, Eq, Hash,
+)]
 pub enum Trigger {
     #[default]
     BattleStart,
     TurnEnd,
-    ChangeStats(VarName),
+    ChangeStat(VarName),
     BeforeDeath,
 }

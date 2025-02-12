@@ -380,8 +380,14 @@ impl BattleSimulation {
         for child in entity.get_children(&self.world) {
             if let Some(reaction) = self.world.get::<Reaction>(child) {
                 let mut status_context = context.clone().set_owner(child).take();
-                if reaction.react(event, &status_context).unwrap_or_default() {
-                    reaction.actions.process(&mut status_context).log();
+                if let Some(actions) = reaction.react(event, &status_context) {
+                    match actions.process(&mut status_context) {
+                        Ok(_) => {}
+                        Err(e) => {
+                            error!("Update event {event} failed: {e}");
+                            continue;
+                        }
+                    }
                 }
                 context.set_value(status_context.get_value().unwrap());
             }
@@ -391,7 +397,7 @@ impl BattleSimulation {
     #[must_use]
     fn send_event(&mut self, event: Event) -> VecDeque<BattleAction> {
         info!("{} {event}", "event:".dimmed().blue());
-        let mut actions: VecDeque<BattleAction> = default();
+        let mut battle_actions: VecDeque<BattleAction> = default();
         for f in self
             .world
             .query_filtered::<&Fusion, Without<Corpse>>()
@@ -401,7 +407,7 @@ impl BattleSimulation {
                 .set_owner(f.entity())
                 .take();
             match f.react(&event, &mut context) {
-                Ok(a) => actions.extend(a),
+                Ok(a) => battle_actions.extend(a),
                 Err(e) => error!("Fusion event {event} failed: {e}"),
             }
         }
@@ -413,17 +419,14 @@ impl BattleSimulation {
             let context = Context::new_battle_simulation(self)
                 .set_owner(s.entity())
                 .take();
-            if r.react(&event, &context).unwrap_or_default() {
-                match r
-                    .actions
-                    .process(Context::new_battle_simulation(self).set_owner(s.entity()))
-                {
-                    Ok(a) => actions.extend(a),
+            if let Some(actions) = r.react(&event, &context) {
+                match actions.process(Context::new_battle_simulation(self).set_owner(s.entity())) {
+                    Ok(a) => battle_actions.extend(a),
                     Err(e) => error!("StatusAbility {} event {event} failed: {e}", s.name),
                 };
             }
         }
-        actions
+        battle_actions
     }
     fn apply_status(
         &mut self,

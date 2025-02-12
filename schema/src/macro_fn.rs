@@ -4,12 +4,12 @@ use quote::ToTokens;
 use syn::{Fields, GenericArgument, Ident, PathArguments, Type, TypePath};
 
 pub struct ParsedNodeFields {
-    pub option_link_fields: Vec<Ident>,
-    pub option_link_fields_str: Vec<String>,
-    pub option_link_types: Vec<proc_macro2::TokenStream>,
-    pub vec_link_fields: Vec<Ident>,
-    pub vec_link_fields_str: Vec<String>,
-    pub vec_link_types: Vec<proc_macro2::TokenStream>,
+    pub component_link_fields: Vec<Ident>,
+    pub component_link_fields_str: Vec<String>,
+    pub component_link_types: Vec<proc_macro2::TokenStream>,
+    pub child_link_fields: Vec<Ident>,
+    pub child_link_fields_str: Vec<String>,
+    pub child_link_types: Vec<proc_macro2::TokenStream>,
     pub var_fields: Vec<Ident>,
     pub var_types: Vec<Type>,
     pub data_fields: Vec<Ident>,
@@ -21,12 +21,12 @@ pub struct ParsedNodeFields {
 }
 
 pub fn parse_node_fields(fields: &Fields) -> ParsedNodeFields {
-    let mut option_link_fields = Vec::default();
-    let mut option_link_fields_str = Vec::default();
-    let mut option_link_types: Vec<proc_macro2::TokenStream> = Vec::default();
-    let mut vec_link_fields = Vec::default();
-    let mut vec_link_fields_str = Vec::default();
-    let mut vec_link_types: Vec<proc_macro2::TokenStream> = Vec::default();
+    let mut component_link_fields = Vec::default();
+    let mut component_link_fields_str = Vec::default();
+    let mut component_link_types: Vec<proc_macro2::TokenStream> = Vec::default();
+    let mut child_link_fields = Vec::default();
+    let mut child_link_fields_str = Vec::default();
+    let mut child_link_types: Vec<proc_macro2::TokenStream> = Vec::default();
     let mut var_fields = Vec::default();
     let mut var_types = Vec::default();
     let mut data_fields = Vec::default();
@@ -47,20 +47,20 @@ pub fn parse_node_fields(fields: &Fields) -> ParsedNodeFields {
         match ty {
             syn::Type::Path(type_path) => {
                 let type_ident = &type_path.path.segments.first().unwrap().ident;
-                if type_ident == "Vec" {
+                if type_ident == "NodeChildren" {
                     let it = inner_type(type_path);
                     match &it {
                         Type::Path(..) => {
-                            vec_link_fields_str.push(field_ident.to_string());
-                            vec_link_fields.push(field_ident);
-                            vec_link_types.push(it.to_token_stream());
+                            child_link_fields_str.push(field_ident.to_string());
+                            child_link_fields.push(field_ident);
+                            child_link_types.push(it.to_token_stream());
                         }
                         _ => {}
                     }
-                } else if type_ident == "Option" {
-                    option_link_fields_str.push(field_ident.to_string());
-                    option_link_fields.push(field_ident);
-                    option_link_types.push(inner_type(type_path).to_token_stream());
+                } else if type_ident == "NodeComponent" {
+                    component_link_fields_str.push(field_ident.to_string());
+                    component_link_fields.push(field_ident);
+                    component_link_types.push(inner_type(type_path).to_token_stream());
                 } else if type_ident == "i32"
                     || type_ident == "f32"
                     || type_ident == "String"
@@ -87,12 +87,12 @@ pub fn parse_node_fields(fields: &Fields) -> ParsedNodeFields {
     }
     let data_type_ident = quote! { (#(#all_data_types),*) };
     ParsedNodeFields {
-        option_link_fields,
-        option_link_fields_str,
-        option_link_types,
-        vec_link_fields,
-        vec_link_fields_str,
-        vec_link_types,
+        component_link_fields,
+        component_link_fields_str,
+        component_link_types,
+        child_link_fields,
+        child_link_fields_str,
+        child_link_types,
         var_fields,
         var_types,
         data_fields,
@@ -105,12 +105,12 @@ pub fn parse_node_fields(fields: &Fields) -> ParsedNodeFields {
 }
 
 pub fn strings_conversions(
-    option_link_fields: &Vec<Ident>,
-    option_link_fields_str: &Vec<String>,
-    option_link_types: &Vec<TokenStream>,
-    vec_link_fields: &Vec<Ident>,
-    vec_link_fields_str: &Vec<String>,
-    vec_link_types: &Vec<TokenStream>,
+    component_link_fields: &Vec<Ident>,
+    component_link_fields_str: &Vec<String>,
+    component_link_types: &Vec<TokenStream>,
+    child_link_fields: &Vec<Ident>,
+    child_link_fields_str: &Vec<String>,
+    child_link_types: &Vec<TokenStream>,
 ) -> TokenStream {
     quote! {
         fn to_strings(&self, parent: usize, field: &str, strings: &mut Vec<String>) {
@@ -118,13 +118,13 @@ pub fn strings_conversions(
             let i = strings.len();
             strings.push(entry);
             #(
-                if let Some(d) = &self.#option_link_fields {
-                    d.to_strings(i, #option_link_fields_str, strings);
+                if let Some(d) = &self.#component_link_fields {
+                    d.to_strings(i, #component_link_fields_str, strings);
                 }
             )*
             #(
-                for d in &self.#vec_link_fields {
-                    d.to_strings(i, #vec_link_fields_str, strings);
+                for d in &self.#child_link_fields {
+                    d.to_strings(i, #child_link_fields_str, strings);
                 }
             )*
         }
@@ -134,20 +134,20 @@ pub fn strings_conversions(
             d.inject_data(data);
             let i_str = i.to_string();
             #(
-                d.#option_link_fields = strings.iter().enumerate().skip(i).find_map(|(i, s)| {
+                d.#component_link_fields = strings.iter().enumerate().skip(i).find_map(|(i, s)| {
                     let (parent, field, _) = s.splitn(3, ' ').collect_tuple()?;
-                    if i_str.eq(parent) && field.eq(#option_link_fields_str) {
-                        #option_link_types::from_strings(i, strings)
+                    if i_str.eq(parent) && field.eq(#component_link_fields_str) {
+                        #component_link_types::from_strings(i, strings)
                     } else {
                         None
                     }
                 });
             )*
             #(
-                d.#vec_link_fields = strings.iter().enumerate().skip(i).filter_map(|(i, s)| {
+                d.#child_link_fields = strings.iter().enumerate().skip(i).filter_map(|(i, s)| {
                     let (parent, field, _) = s.splitn(3, ' ').collect_tuple()?;
-                    if i_str.eq(parent) && field.eq(#vec_link_fields_str) {
-                        #vec_link_types::from_strings(i, strings)
+                    if i_str.eq(parent) && field.eq(#child_link_fields_str) {
+                        #child_link_types::from_strings(i, strings)
                     } else {
                         None
                     }
@@ -159,10 +159,10 @@ pub fn strings_conversions(
 }
 
 pub fn table_conversions(
-    option_link_fields: &Vec<Ident>,
-    option_link_types: &Vec<TokenStream>,
-    vec_link_fields: &Vec<Ident>,
-    vec_link_types: &Vec<TokenStream>,
+    component_link_fields: &Vec<Ident>,
+    component_link_types: &Vec<TokenStream>,
+    child_link_fields: &Vec<Ident>,
+    child_link_types: &Vec<TokenStream>,
 ) -> TokenStream {
     quote! {
         fn from_table_no_children(c: &Context, domain: NodeDomain, id: u64) -> Option<Self> {
@@ -171,7 +171,7 @@ pub fn table_conversions(
             d.inject_data(&data);
             d.id = Some(id);
             #(
-                d.#option_link_fields = #option_link_types::from_table(c, domain, id);
+                d.#component_link_fields = #component_link_types::from_table(c, domain, id);
             )*
             Some(d)
         }
@@ -186,9 +186,9 @@ pub fn table_conversions(
                 .map(|r| r.id)
                 .collect_vec();
             #(
-                d.#vec_link_fields = children
+                d.#child_link_fields = children
                     .iter()
-                    .filter_map(|id| #vec_link_types::from_table(c, domain, *id))
+                    .filter_map(|id| #child_link_types::from_table(c, domain, *id))
                     .collect();
             )*
             Some(d)
@@ -207,13 +207,13 @@ pub fn table_conversions(
                     .insert(TNodeRelation { id, parent });
             }
             #(
-                if let Some(mut d) = self.#option_link_fields.take() {
+                if let Some(mut d) = self.#component_link_fields.take() {
                     d.id = Some(id);
                     d.to_table(c, domain, id);
                 }
             )*
             #(
-                for d in std::mem::take(&mut self.#vec_link_fields) {
+                for d in std::mem::take(&mut self.#child_link_fields) {
                     d.to_table(c, domain, id);
                 }
             )*

@@ -304,7 +304,7 @@ impl Show for Material {
         self.0.show_mut(prefix, ui)
     }
 }
-impl Show for FusedUnit {
+impl Show for FusionData {
     fn show(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) {
         todo!()
     }
@@ -333,5 +333,14 @@ impl Show for Event {
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
         prefix.show(ui);
         Selector::new("").ui_enum(self, ui)
+    }
+}
+impl Show for Vec<(Trigger, Actions)> {
+    fn show(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) {
+        todo!()
+    }
+
+    fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
+        todo!()
     }
 }

@@ -26,12 +26,12 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
             semi_token: _,
         }) => {
             let ParsedNodeFields {
-                option_link_fields,
-                option_link_fields_str,
-                option_link_types,
-                vec_link_fields,
-                vec_link_fields_str,
-                vec_link_types,
+                component_link_fields,
+                component_link_fields_str,
+                component_link_types,
+                child_link_fields,
+                child_link_fields_str,
+                child_link_types,
                 var_fields,
                 var_types,
                 data_fields,
@@ -42,14 +42,14 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 all_data_types,
             } = parse_node_fields(fields);
             let strings_conversions = strings_conversions(
-                &option_link_fields,
-                &option_link_fields_str,
-                &option_link_types,
-                &vec_link_fields,
-                &vec_link_fields_str,
-                &vec_link_types,
+                &component_link_fields,
+                &component_link_fields_str,
+                &component_link_types,
+                &child_link_fields,
+                &child_link_fields_str,
+                &child_link_types,
             );
-            let no_children = option_link_fields.is_empty() && vec_link_fields.is_empty();
+            let no_children = component_link_fields.is_empty() && child_link_fields.is_empty();
             let has_body = if no_children && data_fields.is_empty() {
                 quote! {false}
             } else {
@@ -57,10 +57,14 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
             };
             let nt = if all_data_fields.contains(&Ident::from_string("name").unwrap()) {
                 NodeType::Name
-            } else if !option_link_fields.is_empty() {
+            } else if !component_link_fields.is_empty() {
                 NodeType::Data
             } else {
                 NodeType::OnlyData
+            };
+            let name_link = match nt {
+                NodeType::Name => quote! {world.add_name_link(self.name.clone(), entity);},
+                NodeType::Data | NodeType::OnlyData => quote! {},
             };
             let name_quote = match nt {
                 NodeType::Name => quote! {self.name},
@@ -70,17 +74,17 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 NodeType::Name | NodeType::Data => quote! {
                     let mut entries: Vec<DirEntry> = default();
                     #(
-                        if let Some(d) = &self.#option_link_fields {
-                            let path = format!("{path}/{}", #option_link_fields_str);
+                        if let Some(d) = &self.#component_link_fields {
+                            let path = format!("{path}/{}", #component_link_fields_str);
                             entries.push(d.to_dir(path));
                         }
                     )*
                     #(
                         {
-                            let path = format!("{path}/{}", #vec_link_fields_str);
+                            let path = format!("{path}/{}", #child_link_fields_str);
                             entries.push(DirEntry::Dir(Dir::new(
                                 path.clone().leak(),
-                                self.#vec_link_fields
+                                self.#child_link_fields
                                     .iter()
                                     .map(|a| a.to_dir(path.clone()))
                                     .collect_vec()
@@ -126,12 +130,12 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
             let inner_data_from_dir = match nt {
                 NodeType::Name |
                 NodeType::Data => quote! {
-                    #(s.#option_link_fields = #option_link_types::from_dir(format!("{path}/{}", #option_link_fields_str), dir);)*
-                    #(s.#vec_link_fields = dir
-                        .get_dir(format!("{path}/{}", #vec_link_fields_str))
+                    #(s.#component_link_fields = #component_link_types::from_dir(format!("{path}/{}", #component_link_fields_str), dir);)*
+                    #(s.#child_link_fields = dir
+                        .get_dir(format!("{path}/{}", #child_link_fields_str))
                         .into_iter()
                         .flat_map(|d| d.dirs())
-                        .filter_map(|d| #vec_link_types::from_dir(d.path().to_string_lossy().to_string(), d))
+                        .filter_map(|d| #child_link_types::from_dir(d.path().to_string_lossy().to_string(), d))
                         .collect_vec();)*
                 },
                 NodeType::OnlyData => quote! {},
@@ -175,7 +179,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                             #all_data_fields: #all_data_types,
                         )*
                         #(
-                            #option_link_fields: #option_link_types,
+                            #component_link_fields: #component_link_types,
                         )*
                     ) -> Self {
                         Self {
@@ -183,7 +187,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                                 #all_data_fields,
                             )*
                             #(
-                                #option_link_fields: Some(#option_link_fields),
+                                #component_link_fields: Some(#component_link_fields),
                             )*
                             ..default()
                         }
@@ -207,7 +211,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                             )*
                             _ => {
                                 #(
-                                    if let Some(v) = self.#option_link_fields.as_ref().and_then(|l| l.get_var(var)).clone() {
+                                    if let Some(v) = self.#component_link_fields.as_ref().and_then(|l| l.get_var(var)).clone() {
                                         return Some(v);
                                     }
                                 )*
@@ -224,7 +228,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                             )*
                             _ => {
                                 #(
-                                    if let Some(n) = &mut self.#option_link_fields {
+                                    if let Some(n) = &mut self.#component_link_fields {
                                         n.set_var(var, value.clone());
                                     }
                                 )*
@@ -241,12 +245,12 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     fn get_all_vars(&self) -> Vec<(VarName, VarValue)> {
                         let mut vars = self.get_vars();
                         #(
-                            if let Some(d) = &self.#option_link_fields {
+                            if let Some(d) = &self.#component_link_fields {
                                 vars.extend(d.get_all_vars());
                             }
                         )*
                         #(
-                            for d in &self.#vec_link_fields {
+                            for d in &self.#child_link_fields {
                                 vars.extend(d.get_all_vars());
                             }
                         )*
@@ -315,7 +319,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                             self.#data_fields.show(Some(#data_fields_str), context, ui);
                         )*
                         #(
-                            if let Some(d) = &self.#option_link_fields {
+                            if let Some(d) = &self.#component_link_fields {
                                 d.show(None, context, ui);
                             }
                         )*
@@ -330,16 +334,16 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                             changed |= self.#data_fields.show_mut(Some(#data_fields_str), ui);
                         )*
                         #(
-                            if let Some(d) = &mut self.#option_link_fields {
+                            if let Some(d) = &mut self.#component_link_fields {
                                 changed |= d.show_mut(None, ui);
-                            } else if format!("add [b {}]", #option_link_fields_str).button(ui).clicked() {
-                                self.#option_link_fields = Some(default());
+                            } else if format!("add [b {}]", #component_link_fields_str).button(ui).clicked() {
+                                self.#component_link_fields = Some(default());
                             }
                         )*
                         #(
-                            #vec_link_fields_str.cstr_c(VISIBLE_DARK).label(ui);
+                            #child_link_fields_str.cstr_c(VISIBLE_DARK).label(ui);
                             let mut delete = None;
-                            for (i, d) in self.#vec_link_fields.iter_mut().enumerate() {
+                            for (i, d) in self.#child_link_fields.iter_mut().enumerate() {
                                 ui.horizontal(|ui| {
                                     if "-".cstr_cs(RED, CstrStyle::Bold).button(ui).clicked() {
                                         delete = Some(i);
@@ -348,10 +352,10 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                                 });
                             }
                             if let Some(delete) = delete {
-                                self.#vec_link_fields.remove(delete);
+                                self.#child_link_fields.remove(delete);
                             }
                             if "+".cstr_cs(VISIBLE_BRIGHT, CstrStyle::Bold).button(ui).clicked() {
-                                self.#vec_link_fields.push(default());
+                                self.#child_link_fields.push(default());
                             }
                         )*
                         changed
@@ -394,12 +398,12 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                             .sorted()
                             .collect_vec();
                         #(
-                            d.#option_link_fields = #option_link_types::from_table(domain, id);
+                            d.#component_link_fields = #component_link_types::from_table(domain, id);
                         )*
                         #(
-                            d.#vec_link_fields = children
+                            d.#child_link_fields = children
                                 .iter()
-                                .filter_map(|id| #vec_link_types::from_table(domain, *id))
+                                .filter_map(|id| #child_link_types::from_table(domain, *id))
                                 .collect();
                         )*
                         Some(d)
@@ -407,12 +411,12 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     fn pack(entity: Entity, world: &World) -> Option<Self> {
                         let mut s = world.get::<Self>(entity)?.clone();
                         #(
-                            s.#option_link_fields = #option_link_types::pack(entity, world);
+                            s.#component_link_fields = #component_link_types::pack(entity, world);
                         )*
                         #(
                             for child in get_children(entity, world) {
-                                if let Some(d) = #vec_link_types::pack(child, world) {
-                                    s.#vec_link_fields.push(d);
+                                if let Some(d) = #child_link_types::pack(child, world) {
+                                    s.#child_link_fields.push(d);
                                 }
                             }
                         )*
@@ -424,13 +428,14 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         if let Some(id) = self.id {
                             world.add_id_link(id, entity);
                         }
+                        #name_link
                         #(
-                            if let Some(d) = self.#option_link_fields.take() {
+                            if let Some(d) = self.#component_link_fields.take() {
                                 d.unpack(entity, world);
                             }
                         )*
                         #(
-                            for d in std::mem::take(&mut self.#vec_link_fields) {
+                            for d in std::mem::take(&mut self.#child_link_fields) {
                                 let parent = entity;
                                 let entity = world.spawn_empty().set_parent(parent).id();
                                 debug!("{parent} -> {entity}");
@@ -444,12 +449,12 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     fn collect_units_vec<'a>(&'a self, vec: &mut Vec<&'a Unit>) {
                         #insert_unit
                         #(
-                            if let Some(d) = &self.#option_link_fields {
+                            if let Some(d) = &self.#component_link_fields {
                                 d.collect_units_vec(vec);
                             }
                         )*
                         #(
-                            for d in &self.#vec_link_fields {
+                            for d in &self.#child_link_fields {
                                 d.collect_units_vec(vec);
                             }
                         )*

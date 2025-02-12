@@ -15,25 +15,47 @@ impl Fusion {
         Ok(())
     }
     pub fn units(&self, context: &Context) -> Result<Vec<Entity>, ExpressionError> {
-        let team = context
-            .get_parent(self.entity())
-            .to_e("Fusion parent not found")?;
-        let fusion = &self.unit;
-        let units = context
-            .children_components_recursive::<Unit>(team)
-            .into_iter()
-            .filter_map(|(e, u)| {
-                if fusion.units.contains(&u.name) {
-                    Some((u.name.as_str(), e))
-                } else {
-                    None
-                }
-            })
-            .sorted_by_key(|(name, _)| fusion.units.iter().find_position(|n| n.eq(name)).unwrap())
-            .map(|(_, e)| e)
-            .collect();
+        let mut units: Vec<Entity> = default();
+        for unit in &self.unit.units {
+            units.push(context.entity_by_name(unit)?);
+        }
         Ok(units)
     }
+    fn get_unit(&self, unit: u8, context: &Context) -> Result<Entity, ExpressionError> {
+        let unit = &self.unit.units[unit as usize];
+        context.entity_by_name(unit)
+    }
+    fn get_reaction<'a>(
+        &'a self,
+        unit: u8,
+        context: &'a Context,
+    ) -> Result<&'a Reaction, ExpressionError> {
+        let unit = self.get_unit(unit, context)?;
+        context
+            .get_component::<Reaction>(unit)
+            .to_e("Reaction not found")
+    }
+    fn get_trigger<'a>(
+        &'a self,
+        unit: u8,
+        trigger: u8,
+        context: &'a Context,
+    ) -> Result<&'a Trigger, ExpressionError> {
+        let reaction = self.get_reaction(unit, context)?;
+        Ok(&reaction.trigger[trigger as usize].0)
+    }
+    fn get_action<'a>(
+        &'a self,
+        r: &UnitActionRef,
+        context: &'a Context,
+    ) -> Result<(Entity, &'a Action), ExpressionError> {
+        let reaction = self.get_reaction(r.unit, context)?;
+        Ok((
+            reaction.entity(),
+            &reaction.trigger[r.trigger as usize].1[r.action as usize],
+        ))
+    }
+
     pub fn react(
         &self,
         event: &Event,
@@ -41,25 +63,16 @@ impl Fusion {
     ) -> Result<Vec<BattleAction>, ExpressionError> {
         let mut battle_actions: Vec<BattleAction> = default();
         let fusion = &self.unit;
-        let units = self.units(context)?;
-        let reactions = units
-            .iter()
-            .map(|e| context.get_component::<Reaction>(*e).unwrap().clone())
-            .collect_vec();
-        let reacted = fusion.triggers.iter().any(|i| {
-            reactions[*i as usize]
-                .react(event, context)
-                .unwrap_or_default()
-        });
-        if !reacted {
-            return Ok(default());
-        }
-        for (unit, action) in &fusion.actions {
-            let unit = *unit as usize;
-            let entity = units[unit];
-            let action = reactions[unit].actions.0[*action as usize].as_ref();
-            context.set_caster(entity);
-            battle_actions.extend(action.process(context)?);
+        for (UnitTriggerRef { unit, trigger }, actions) in &fusion.actions {
+            if self
+                .get_trigger(*unit, *trigger, context)?
+                .fire(event, context)
+            {
+                for action in actions {
+                    let (entity, action) = self.get_action(action, context)?;
+                    battle_actions.extend(action.process(context.clone().set_caster(entity))?);
+                }
+            }
         }
         Ok(battle_actions)
     }

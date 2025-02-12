@@ -46,3 +46,6 @@ impl<T: Serialize + DeserializeOwned> StringData for T {
         ron::to_string(self).unwrap()
     }
 }
+
+pub type NodeChildren<T> = Vec<T>;
+pub type NodeComponent<T> = Option<T>;

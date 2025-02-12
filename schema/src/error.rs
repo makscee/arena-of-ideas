@@ -18,20 +18,31 @@ pub enum ExpressionError {
     Custom(String),
 }
 
-pub trait ExpressionErrorResultExt {
+pub trait ExpressionErrorResultExt<T> {
     fn log(self);
+    fn ok_log(self) -> Option<T>;
 }
-impl<T> ExpressionErrorResultExt for Result<T, ExpressionError> {
+impl<T> ExpressionErrorResultExt<T> for Result<T, ExpressionError> {
     fn log(self) {
         match self {
             Ok(_) => {}
             Err(e) => log::error!("{e}"),
         }
     }
+    fn ok_log(self) -> Option<T> {
+        match self {
+            Ok(v) => Some(v),
+            Err(e) => {
+                log::error!("{e}");
+                None
+            }
+        }
+    }
 }
 
 pub trait OptionExpressionError<T> {
     fn to_e(self, s: impl Into<String>) -> Result<T, ExpressionError>;
+    fn to_e_fn(self, s: impl FnOnce() -> String) -> Result<T, ExpressionError>;
     fn to_e_s(self, s: impl Into<String>) -> Result<T, String>;
     fn to_e_s_fn(self, s: impl FnOnce() -> String) -> Result<T, String>;
     fn to_e_var(self, var: VarName) -> Result<T, ExpressionError>;
@@ -42,6 +53,12 @@ impl<T> OptionExpressionError<T> for Option<T> {
         match self {
             Some(v) => Ok(v),
             None => Err(ExpressionError::Custom(s.into())),
+        }
+    }
+    fn to_e_fn(self, s: impl FnOnce() -> String) -> Result<T, ExpressionError> {
+        match self {
+            Some(v) => Ok(v),
+            None => Err(ExpressionError::Custom(s())),
         }
     }
     fn to_e_s(self, s: impl Into<String>) -> Result<T, String> {

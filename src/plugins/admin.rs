@@ -25,19 +25,20 @@ impl AdminPlugin {
                     (VarName::tier, 2.into()),
                 ]),
                 expanded: false,
-                reaction: Reaction {
-                    trigger: Trigger::BattleStart,
-                    actions: Actions(
+                reaction: Reaction::new(
+                    [(
+                        Trigger::BattleStart,
                         [
-                            Box::new(Action::SetTarget(Box::new(Expression::RandomUnit(
-                                Box::new(Expression::AllEnemyUnits),
+                            Action::SetTarget(Box::new(Expression::RandomUnit(Box::new(
+                                Expression::AllEnemyUnits,
                             )))),
-                            Box::new(Action::UseAbility),
+                            Action::UseAbility,
                         ]
+                        .to_vec()
                         .into(),
-                    ),
-                    ..default()
-                },
+                    )]
+                    .to_vec(),
+                ),
             }
             .show(ui)
         })
@@ -56,44 +57,7 @@ impl AdminPlugin {
         }
     }
     fn test_team(units: Vec<String>) -> Team {
-        let houses = houses().values().cloned().collect_vec();
-        let mut actions: Vec<(u8, u8)> = default();
-        let house_units = houses.iter().flat_map(|h| h.collect_units()).collect_vec();
-        for (i, unit) in units.iter().enumerate() {
-            let unit = house_units.iter().find(|u| u.name.eq(unit)).unwrap();
-            for (a, _) in unit
-                .description
-                .as_ref()
-                .unwrap()
-                .reaction
-                .as_ref()
-                .unwrap()
-                .actions
-                .0
-                .iter()
-                .enumerate()
-            {
-                actions.push((i as u8, a as u8));
-            }
-        }
-        let fusion = Fusion {
-            unit: FusedUnit {
-                units,
-                triggers: vec![0],
-                actions,
-            },
-            slot: Some(UnitSlot {
-                slot: 0,
-                ..default()
-            }),
-            ..default()
-        };
-        Team {
-            name: "TestTeam".into(),
-            houses,
-            fusions: [fusion.clone(), fusion.clone(), fusion].into(),
-            ..default()
-        }
+        todo!()
     }
     fn show_battle(world: &mut World) {
         let b = Battle {

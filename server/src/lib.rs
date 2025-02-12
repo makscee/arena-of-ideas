@@ -35,7 +35,7 @@ pub fn next_id(ctx: &ReducerContext) -> u64 {
     GlobalData::next_id(ctx)
 }
 
-const ADMIN_IDENTITY_HEX: &str = "c2001163ad8e10b2ded86f06ca44cba4a68680e015b37a7a97783c73876bbded";
+const ADMIN_IDENTITY_HEX: &str = "c20099004bd74cd8a0333d1f53c5ac65ce26604fc424fbd65f6be1c3e8534736";
 pub fn is_admin(identity: &Identity) -> Result<bool, String> {
     Ok(Identity::from_str(ADMIN_IDENTITY_HEX)
         .map_err(|e| e.to_string())?

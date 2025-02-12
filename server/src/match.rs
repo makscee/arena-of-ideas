@@ -225,41 +225,15 @@ fn match_edit_fusions(ctx: &ReducerContext, fusions: Vec<Vec<String>>) -> Result
             .into_iter()
             .map(|u| (u.name.clone(), u.clone())),
     );
-    let fusions_units = fusions.iter().flat_map(|f| &f.unit.units).collect_vec();
-    if !fusions_units.iter().all_unique() {
-        return Err("Each unit can be fused only once".into());
-    }
-    for unit in fusions_units {
-        if !roster_units.contains_key(unit) {
-            return Err(format!("Unit {unit} is not in roster"));
-        }
-    }
-    for fusion in &fusions {
-        let actions: HashMap<String, Vec<Box<Action>>> =
-            HashMap::from_iter(fusion.unit.units.iter().map(|u| {
-                let unit = roster_units.get(u).unwrap();
-                (u.clone(), unit.description().reaction().actions.0.clone())
-            }));
-        let max_actions = actions.values().map(|a| a.len()).max().unwrap() + actions.len() - 1;
-        if fusion.unit.actions.len() >= max_actions {
-            return Err("Fusion actions exceed limit".into());
-        }
-        if fusion
-            .unit
-            .triggers
-            .iter()
-            .any(|t| *t as usize >= actions.len())
-        {
-            return Err("Trigger outside of units range".into());
-        }
-        for (unit, action) in &fusion.unit.actions {
-            let unit = &fusion.unit.units[*unit as usize];
-            let actions = actions.get(unit).unwrap();
-            if *action as usize >= actions.len() {
-                return Err("Action outside of range".into());
-            }
-        }
-    }
+    // let fusions_units = fusions.iter().flat_map(|f| &f.unit).collect_vec();
+    // if !fusions_units.iter().all_unique() {
+    //     return Err("Each unit can be fused only once".into());
+    // }
+    // for unit in fusions_units {
+    //     if !roster_units.contains_key(unit) {
+    //         return Err(format!("Unit {unit} is not in roster"));
+    //     }
+    // }
     info!("{fusions:?}");
     for fusion in &m.team().fusions {
         NodeDomain::Match.delete_by_id_recursive(c, fusion.id());

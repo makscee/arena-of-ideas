@@ -46,20 +46,20 @@ impl UnitCard {
                 if self.expanded {
                     ui.vertical(|ui| {
                         self.show_description(ui);
-                        ui.vertical_centered_justified(|ui| {
-                            self.reaction.trigger.cstr().label(ui);
-                        });
                         ui.vertical(|ui| {
-                            for a in &self.reaction.actions.0 {
-                                let r = a.cstr().label_w(ui);
-                                let rect = r
-                                    .rect
-                                    .translate(egui::vec2(-3.0, 0.0))
-                                    .shrink2(egui::vec2(0.0, 3.0));
-                                ui.painter().line_segment(
-                                    [rect.left_top(), rect.left_bottom()],
-                                    STROKE_YELLOW,
-                                );
+                            for (trigger, actions) in &self.reaction.trigger {
+                                trigger.cstr().label(ui);
+                                for a in actions.0.iter() {
+                                    let r = a.cstr().label_w(ui);
+                                    let rect = r
+                                        .rect
+                                        .translate(egui::vec2(-3.0, 0.0))
+                                        .shrink2(egui::vec2(0.0, 3.0));
+                                    ui.painter().line_segment(
+                                        [rect.left_top(), rect.left_bottom()],
+                                        STROKE_YELLOW,
+                                    );
+                                }
                             }
                         });
                     });

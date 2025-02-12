@@ -863,7 +863,7 @@ impl DataFramed for Trigger {
     fn has_header(&self) -> bool {
         match self {
             Trigger::BattleStart | Trigger::TurnEnd | Trigger::BeforeDeath => false,
-            Trigger::ChangeStats(..) => true,
+            Trigger::ChangeStat(..) => true,
         }
     }
     fn has_body(&self) -> bool {
@@ -872,13 +872,13 @@ impl DataFramed for Trigger {
     fn show_header(&self, context: &Context, ui: &mut Ui) {
         match self {
             Trigger::BattleStart | Trigger::TurnEnd | Trigger::BeforeDeath => {}
-            Trigger::ChangeStats(var) => var.show(None, context, ui),
+            Trigger::ChangeStat(var) => var.show(None, context, ui),
         }
     }
     fn show_header_mut(&mut self, ui: &mut Ui) -> bool {
         match self {
             Trigger::BattleStart | Trigger::TurnEnd | Trigger::BeforeDeath => false,
-            Trigger::ChangeStats(var) => var.show_mut(None, ui),
+            Trigger::ChangeStat(var) => var.show_mut(None, ui),
         }
     }
     fn show_body(&self, _context: &Context, _ui: &mut Ui) {}

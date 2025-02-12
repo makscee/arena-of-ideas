@@ -71,9 +71,16 @@ pub struct IdEntityLinks {
     map: HashMap<u64, Entity>,
 }
 
+#[derive(Resource, Default)]
+pub struct NameEntityLinks {
+    map: HashMap<String, Entity>,
+}
+
 pub trait WorldNodeExt {
     fn add_id_link(&mut self, id: u64, entity: Entity);
     fn get_id_link(&self, id: u64) -> Option<Entity>;
+    fn add_name_link(&mut self, name: String, entity: Entity);
+    fn get_name_link(&self, name: &str) -> Option<Entity>;
 }
 
 impl WorldNodeExt for World {
@@ -85,6 +92,16 @@ impl WorldNodeExt for World {
     fn get_id_link(&self, id: u64) -> Option<Entity> {
         self.get_resource::<IdEntityLinks>()
             .and_then(|r| r.map.get(&id))
+            .copied()
+    }
+    fn add_name_link(&mut self, name: String, entity: Entity) {
+        self.get_resource_or_insert_with::<NameEntityLinks>(|| default())
+            .map
+            .insert(name, entity);
+    }
+    fn get_name_link(&self, name: &str) -> Option<Entity> {
+        self.get_resource::<NameEntityLinks>()
+            .and_then(|r| r.map.get(name))
             .copied()
     }
 }

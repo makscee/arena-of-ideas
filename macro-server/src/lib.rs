@@ -16,12 +16,12 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
             semi_token: _,
         }) => {
             let ParsedNodeFields {
-                option_link_fields,
-                option_link_fields_str,
-                option_link_types,
-                vec_link_fields,
-                vec_link_fields_str,
-                vec_link_types,
+                component_link_fields,
+                component_link_fields_str,
+                component_link_types,
+                child_link_fields,
+                child_link_fields_str,
+                child_link_types,
                 var_fields: _,
                 var_types: _,
                 data_fields: _,
@@ -32,18 +32,18 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 all_data_types: _,
             } = parse_node_fields(fields);
             let strings_conversions = strings_conversions(
-                &option_link_fields,
-                &option_link_fields_str,
-                &option_link_types,
-                &vec_link_fields,
-                &vec_link_fields_str,
-                &vec_link_types,
+                &component_link_fields,
+                &component_link_fields_str,
+                &component_link_types,
+                &child_link_fields,
+                &child_link_fields_str,
+                &child_link_types,
             );
             let table_conversions = table_conversions(
-                &option_link_fields,
-                &option_link_types,
-                &vec_link_fields,
-                &vec_link_types,
+                &component_link_fields,
+                &component_link_types,
+                &child_link_fields,
+                &child_link_types,
             );
             if let Fields::Named(ref mut fields) = fields {
                 fields.named.push(
@@ -57,8 +57,8 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 #input
                 impl #struct_ident {
                     #(
-                        pub fn #option_link_fields(&self) -> &#option_link_types {
-                            self.#option_link_fields.as_ref().unwrap()
+                        pub fn #component_link_fields(&self) -> &#component_link_types {
+                            self.#component_link_fields.as_ref().unwrap()
                         }
                     )*
                 }
@@ -77,12 +77,12 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     fn clear_ids(&mut self) {
                         self.id = None;
                         #(
-                            if let Some(d) = &mut self.#option_link_fields {
+                            if let Some(d) = &mut self.#component_link_fields {
                                 d.clear_ids();
                             }
                         )*
                         #(
-                            for d in self.#vec_link_fields.iter_mut() {
+                            for d in self.#child_link_fields.iter_mut() {
                                 d.clear_ids();
                             }
                         )*
@@ -90,12 +90,12 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     fn gather_ids(&self, data: &mut HashSet<u64>) {
                         data.extend(self.id.iter().copied());
                         #(
-                            if let Some(d) = &self.#option_link_fields {
+                            if let Some(d) = &self.#component_link_fields {
                                 d.gather_ids(data);
                             }
                         )*
                         #(
-                            for d in self.#vec_link_fields.iter() {
+                            for d in self.#child_link_fields.iter() {
                                 d.gather_ids(data);
                             }
                         )*

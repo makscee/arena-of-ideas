@@ -16,6 +16,7 @@ mod reaction;
 mod section_menu;
 mod show;
 mod tier;
+mod trigger;
 mod tween;
 
 use super::*;
@@ -37,4 +38,5 @@ pub use reaction::*;
 pub use section_menu::*;
 pub use show::*;
 pub use tier::*;
+pub use trigger::*;
 pub use tween::*;

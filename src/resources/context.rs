@@ -52,6 +52,9 @@ impl<'w, 's> Context<'w, 's> {
         self.sources.push(ContextSource::World(world));
         self
     }
+    pub fn get_world(&self) -> Option<&World> {
+        self.sources.iter().find_map(|s| s.get_world())
+    }
     pub fn set_t(&mut self, t: f32) -> &mut Self {
         self.t = Some(t);
         self
@@ -59,6 +62,11 @@ impl<'w, 's> Context<'w, 's> {
     pub fn set_owner(&mut self, owner: Entity) -> &mut Self {
         self.layers.push(ContextLayer::Owner(owner));
         self
+    }
+    pub fn set_owner_name(&mut self, owner: String) -> Result<&mut Self, ExpressionError> {
+        let owner = self.entity_by_name(&owner)?;
+        self.layers.push(ContextLayer::Owner(owner));
+        Ok(self)
     }
     pub fn set_caster(&mut self, owner: Entity) -> &mut Self {
         self.layers.push(ContextLayer::Caster(owner));
@@ -150,6 +158,14 @@ impl<'w, 's> Context<'w, 's> {
     pub fn get_parent(&self, entity: Entity) -> Option<Entity> {
         self.sources.iter().rev().find_map(|s| s.get_parent(entity))
     }
+    pub fn entity_by_name(&self, name: &str) -> Result<Entity, ExpressionError> {
+        self.sources
+            .iter()
+            .find_map(|s| s.get_world())
+            .to_e("No world in context sources")?
+            .get_name_link(name)
+            .to_e_fn(|| format!("Name link not found for {name}"))
+    }
     pub fn get_all_units(&self) -> Vec<VarValue> {
         self.sources
             .iter()
@@ -227,6 +243,13 @@ impl<'w, 's> Context<'w, 's> {
 }
 
 impl ContextSource<'_, '_> {
+    pub fn get_world(&self) -> Option<&World> {
+        match self {
+            ContextSource::Query(..) => None,
+            ContextSource::World(world) => Some(*world),
+            ContextSource::BattleSimulation(bs) => Some(&bs.world),
+        }
+    }
     pub fn get_state(&self, entity: Entity) -> Option<&NodeState> {
         match self {
             ContextSource::Query(q) => NodeState::from_query(entity, q),

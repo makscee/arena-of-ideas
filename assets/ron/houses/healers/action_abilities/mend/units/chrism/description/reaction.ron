@@ -1,1 +1,1 @@
-(BeforeDeath, ([MultipleTargets(AllOtherAllyUnits, [UseAbility])]))
+[(BeforeDeath, ([MultipleTargets(AllOtherAllyUnits, [UseAbility])]))]

@@ -38,7 +38,7 @@ impl EnumColor for Trigger {
     fn color(&self) -> Color32 {
         match self {
             Trigger::BattleStart | Trigger::TurnEnd | Trigger::BeforeDeath => YELLOW,
-            Trigger::ChangeStats(var) => var.color(),
+            Trigger::ChangeStat(var) => var.color(),
         }
     }
 }
