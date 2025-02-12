@@ -3,7 +3,7 @@ use super::*;
 impl Fusion {
     pub fn init(self, world: &mut World) -> Result<(), ExpressionError> {
         let entity = self.entity();
-        let units = self.units(&Context::new_world(world))?;
+        let units = self.units_entities(&Context::new_world(world))?;
         let mut fusion_stats = UnitStats::default();
         for u in units {
             let stats = world.get::<UnitStats>(u).to_e("Unit stats not found")?;
@@ -14,18 +14,18 @@ impl Fusion {
         world.entity_mut(entity).insert(fusion_stats);
         Ok(())
     }
-    pub fn units(&self, context: &Context) -> Result<Vec<Entity>, ExpressionError> {
+    pub fn units_entities(&self, context: &Context) -> Result<Vec<Entity>, ExpressionError> {
         let mut units: Vec<Entity> = default();
-        for unit in &self.unit.units {
+        for unit in &self.units {
             units.push(context.entity_by_name(unit)?);
         }
         Ok(units)
     }
-    fn get_unit(&self, unit: u8, context: &Context) -> Result<Entity, ExpressionError> {
-        let unit = &self.unit.units[unit as usize];
+    pub fn get_unit(&self, unit: u8, context: &Context) -> Result<Entity, ExpressionError> {
+        let unit = &self.units[unit as usize];
         context.entity_by_name(unit)
     }
-    fn get_reaction<'a>(
+    pub fn get_reaction<'a>(
         &'a self,
         unit: u8,
         context: &'a Context,
@@ -35,7 +35,7 @@ impl Fusion {
             .get_component::<Reaction>(unit)
             .to_e("Reaction not found")
     }
-    fn get_trigger<'a>(
+    pub fn get_trigger<'a>(
         &'a self,
         unit: u8,
         trigger: u8,
@@ -44,7 +44,7 @@ impl Fusion {
         let reaction = self.get_reaction(unit, context)?;
         Ok(&reaction.trigger[trigger as usize].0)
     }
-    fn get_action<'a>(
+    pub fn get_action<'a>(
         &'a self,
         r: &UnitActionRef,
         context: &'a Context,
@@ -55,15 +55,13 @@ impl Fusion {
             &reaction.trigger[r.trigger as usize].1[r.action as usize],
         ))
     }
-
     pub fn react(
         &self,
         event: &Event,
         context: &mut Context,
     ) -> Result<Vec<BattleAction>, ExpressionError> {
         let mut battle_actions: Vec<BattleAction> = default();
-        let fusion = &self.unit;
-        for (UnitTriggerRef { unit, trigger }, actions) in &fusion.actions {
+        for (UnitTriggerRef { unit, trigger }, actions) in &self.actions {
             if self
                 .get_trigger(*unit, *trigger, context)?
                 .fire(event, context)
@@ -78,7 +76,7 @@ impl Fusion {
     }
     pub fn paint(&self, rect: Rect, ui: &mut Ui, world: &World) -> Result<(), ExpressionError> {
         let entity = self.entity();
-        let units = self.units(&Context::new_world(world))?;
+        let units = self.units_entities(&Context::new_world(world))?;
         for unit in units {
             let Some(rep) = world.get::<Representation>(unit) else {
                 continue;

@@ -210,7 +210,7 @@ impl MatchPlugin {
         if slot >= fusions.len() {
             fusions.push(default());
         }
-        let mut units: Vec<Entity> = default();
+        let mut fusion = Fusion::default();
         let window_id = "Fusion Edit";
         Window::new(window_id, move |ui, world| {
             let mut md = world.remove_resource::<MatchData>().unwrap();
@@ -224,22 +224,30 @@ impl MatchPlugin {
                         .query::<(&Unit, &UnitStats)>()
                         .iter(&md.team_world)
                     {
-                        let selected = units.contains(&unit.entity());
+                        let selected = fusion.units.contains(&unit.name);
                         FRAME
                             .stroke(if selected { STROKE_YELLOW } else { STROKE_DARK })
                             .show(ui, |ui| {
                                 Self::show_unit_tag(&md, unit, stats, ui);
                                 if "select".cstr_s(CstrStyle::Bold).button(ui).clicked() {
                                     if selected {
-                                        let i =
-                                            units.iter().position(|u| unit.entity().eq(u)).unwrap();
-                                        units.remove(i);
+                                        let i = fusion
+                                            .units
+                                            .iter()
+                                            .position(|u| unit.name.eq(u))
+                                            .unwrap();
+                                        fusion.units.remove(i);
                                     } else {
-                                        units.push(unit.entity());
+                                        fusion.units.push(unit.name.clone());
                                     }
                                 }
                             });
                     }
+                });
+                ui.vertical(|ui| {
+                    "Select Triggers & Actions"
+                        .cstr_cs(VISIBLE_DARK, CstrStyle::Heading2)
+                        .label(ui);
                 });
             });
             world.insert_resource(md);

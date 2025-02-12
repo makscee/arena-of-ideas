@@ -58,7 +58,8 @@ struct ShopCaseUnit {
 }
 
 struct Fusion {
-    pub unit: FusionData,
+    pub units: Vec<String>,
+    pub actions: Vec<(UnitTriggerRef, Vec<UnitActionRef>)>,
     pub slot: NodeComponent<UnitSlot>,
 }
 

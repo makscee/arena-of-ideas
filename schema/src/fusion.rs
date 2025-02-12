@@ -1,12 +1,5 @@
 use super::*;
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
-#[serde(deny_unknown_fields)]
-pub struct FusionData {
-    pub units: Vec<String>,
-    pub actions: Vec<(UnitTriggerRef, Vec<UnitActionRef>)>,
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct UnitActionRef {
     pub unit: u8,

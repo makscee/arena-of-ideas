@@ -556,7 +556,7 @@ impl BattleSimulation {
     }
     fn pack_units_by_slot(&self, slot: usize, side: bool) -> Vec<Unit> {
         if let Some(f) = self.fusion_by_slot(slot, side) {
-            if let Ok(units) = f.units(&Context::new_battle_simulation(self)) {
+            if let Ok(units) = f.units_entities(&Context::new_battle_simulation(self)) {
                 return units
                     .into_iter()
                     .map(|u| Unit::pack(u, &self.world).unwrap())
