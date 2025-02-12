@@ -11,6 +11,9 @@ impl Fusion {
             fusion_stats.dmg += stats.dmg;
             fusion_stats.pwr += stats.pwr;
         }
+        NodeState::from_world_mut(entity, world)
+            .unwrap()
+            .init_vars(fusion_stats.get_vars());
         world.entity_mut(entity).insert(fusion_stats);
         Ok(())
     }
@@ -24,6 +27,34 @@ impl Fusion {
     pub fn get_unit(&self, unit: u8, context: &Context) -> Result<Entity, ExpressionError> {
         let unit = &self.units[unit as usize];
         context.entity_by_name(unit)
+    }
+    pub fn remove_unit(&mut self, u: u8) {
+        self.units.remove(u as usize);
+        self.triggers
+            .retain_mut(|(UnitTriggerRef { unit, trigger: _ }, _)| {
+                if *unit == u {
+                    return false;
+                } else if *unit > u {
+                    *unit -= 1;
+                }
+                true
+            });
+        for (_, actions) in self.triggers.iter_mut() {
+            actions.retain_mut(
+                |UnitActionRef {
+                     unit,
+                     trigger: _,
+                     action: _,
+                 }| {
+                    if *unit == u {
+                        return false;
+                    } else if *unit > u {
+                        *unit -= 1;
+                    }
+                    true
+                },
+            );
+        }
     }
     pub fn get_reaction<'a>(
         &self,

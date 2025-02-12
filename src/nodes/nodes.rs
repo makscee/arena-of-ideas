@@ -165,9 +165,7 @@ impl OnUnpack for NodeKind {
                 .get_mut::<NodeState>()
                 .unwrap()
         };
-        for (var, value) in vars {
-            ns.init(var, value);
-        }
+        ns.init_vars(vars);
         match self {
             NodeKind::House => {
                 ns.init(VarName::visible, false.into());

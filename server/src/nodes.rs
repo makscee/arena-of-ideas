@@ -21,14 +21,9 @@ pub trait Node: Default + Sized {
     fn to_table(self, c: &Context, domain: NodeDomain, parent: u64);
 }
 
-impl Hero {
-    pub fn new(name: String) -> Self {
-        Self { name, ..default() }
-    }
-}
 impl Mover {
-    pub fn new() -> Self {
-        Self {
+    pub fn new_empty() -> Self {
+        Mover {
             start_ts: now_seconds(),
             ..default()
         }

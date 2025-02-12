@@ -299,7 +299,7 @@ fn node_spawn_hero(ctx: &ReducerContext, name: String) -> Result<(), String> {
     let c = &ctx.wrap()?;
     let id = c.next_id();
     let mut hero = Hero::new(name);
-    let mut mover = Mover::new();
+    let mut mover = Mover::new_empty();
     hero.id = Some(id);
     mover.id = Some(id);
     NodeDomain::World.node_insert(c, &hero);

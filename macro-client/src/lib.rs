@@ -158,41 +158,17 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
             } else {
                 default()
             };
+            let common = common_node_fns(
+                struct_ident,
+                &all_data_fields,
+                &all_data_types,
+                &component_link_fields,
+                &component_link_types,
+            );
             quote! {
                 #[derive(Component, Clone, Default, Debug)]
                 #input
-                impl #struct_ident {
-                    pub fn new(
-                        #(
-                            #all_data_fields: #all_data_types,
-                        )*
-                    ) -> Self {
-                        Self {
-                            #(
-                                #all_data_fields,
-                            )*
-                            ..default()
-                        }
-                    }
-                    pub fn new_full(
-                        #(
-                            #all_data_fields: #all_data_types,
-                        )*
-                        #(
-                            #component_link_fields: #component_link_types,
-                        )*
-                    ) -> Self {
-                        Self {
-                            #(
-                                #all_data_fields,
-                            )*
-                            #(
-                                #component_link_fields: Some(#component_link_fields),
-                            )*
-                            ..default()
-                        }
-                    }
-                }
+                #common
                 impl std::fmt::Display for #struct_ident {
                     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                         write!(f, "{}", self.kind())

@@ -29,7 +29,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 data_types: _,
                 data_type_ident,
                 all_data_fields,
-                all_data_types: _,
+                all_data_types,
             } = parse_node_fields(fields);
             let strings_conversions = strings_conversions(
                 &component_link_fields,
@@ -52,16 +52,17 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         .unwrap(),
                 );
             }
+            let common = common_node_fns(
+                struct_ident,
+                &all_data_fields,
+                &all_data_types,
+                &component_link_fields,
+                &component_link_types,
+            );
             quote! {
                 #[derive(Default, Debug, Clone)]
                 #input
-                impl #struct_ident {
-                    #(
-                        pub fn #component_link_fields(&self) -> &#component_link_types {
-                            self.#component_link_fields.as_ref().unwrap()
-                        }
-                    )*
-                }
+                #common
                 impl Node for #struct_ident {
                     #strings_conversions
                     #table_conversions

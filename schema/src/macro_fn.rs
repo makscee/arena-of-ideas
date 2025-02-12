@@ -220,3 +220,50 @@ pub fn table_conversions(
         }
     }
 }
+pub fn common_node_fns(
+    struct_ident: &Ident,
+    all_data_fields: &Vec<Ident>,
+    all_data_types: &Vec<Type>,
+    component_link_fields: &Vec<Ident>,
+    component_link_types: &Vec<TokenStream>,
+) -> TokenStream {
+    quote! {
+        impl #struct_ident {
+            pub fn new(
+                #(
+                    #all_data_fields: #all_data_types,
+                )*
+            ) -> Self {
+                Self {
+                    #(
+                        #all_data_fields,
+                    )*
+                    ..default()
+                }
+            }
+            pub fn new_full(
+                #(
+                    #all_data_fields: #all_data_types,
+                )*
+                #(
+                    #component_link_fields: #component_link_types,
+                )*
+            ) -> Self {
+                Self {
+                    #(
+                        #all_data_fields,
+                    )*
+                    #(
+                        #component_link_fields: Some(#component_link_fields),
+                    )*
+                    ..default()
+                }
+            }
+            #(
+                pub fn #component_link_fields(&self) -> &#component_link_types {
+                    self.#component_link_fields.as_ref().unwrap()
+                }
+            )*
+        }
+    }
+}

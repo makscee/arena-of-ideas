@@ -225,20 +225,12 @@ fn match_edit_fusions(ctx: &ReducerContext, fusions: Vec<Vec<String>>) -> Result
             .into_iter()
             .map(|u| (u.name.clone(), u.clone())),
     );
-    // let fusions_units = fusions.iter().flat_map(|f| &f.unit).collect_vec();
-    // if !fusions_units.iter().all_unique() {
-    //     return Err("Each unit can be fused only once".into());
-    // }
-    // for unit in fusions_units {
-    //     if !roster_units.contains_key(unit) {
-    //         return Err(format!("Unit {unit} is not in roster"));
-    //     }
-    // }
     info!("{fusions:?}");
     for fusion in &m.team().fusions {
         NodeDomain::Match.delete_by_id_recursive(c, fusion.id());
     }
-    for fusion in fusions {
+    for (i, mut fusion) in fusions.into_iter().enumerate() {
+        fusion.slot = Some(UnitSlot::new(i as i32));
         fusion.to_table(c, NodeDomain::Match, m.team().id());
     }
     m.save(c);
