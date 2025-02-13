@@ -191,8 +191,7 @@ impl MatchPlugin {
                             let context = &Context::new_world(&md.team_world)
                                 .set_owner(fusion.entity())
                                 .take();
-                            RepresentationPlugin::paint_rect(r.rect, context, &rep.material, ui)
-                                .log();
+                            rep.paint(r.rect, context, ui).log();
                             if r.clicked() {
                                 fusion_edit = Some(slot);
                             }
@@ -237,6 +236,7 @@ impl MatchPlugin {
         let window_id = "Fusion Edit";
         Window::new(window_id, move |ui, world| {
             let mut md = world.remove_resource::<MatchData>().unwrap();
+            let mut init_fusion = false;
             ui.horizontal(|ui| {
                 ui.vertical(|ui| {
                     "Select Units"
@@ -263,6 +263,7 @@ impl MatchPlugin {
                                     } else {
                                         fusion.units.push(unit.name.clone());
                                     }
+                                    init_fusion = true;
                                 }
                             });
                     }
@@ -348,50 +349,69 @@ impl MatchPlugin {
                         }
                     }
                 });
-                ui.vertical(|ui| {
-                    "Result".cstr_s(CstrStyle::Heading2).label(ui);
-                    let mut remove_t = None;
-                    let mut remove_a = None;
-                    for (t_ref, actions) in &fusion.triggers {
-                        let trigger = fusion
-                            .get_trigger(t_ref.unit, t_ref.trigger, context)
-                            .unwrap();
-                        ui.horizontal(|ui| {
-                            if "<".cstr_s(CstrStyle::Bold).button(ui).clicked() {
-                                remove_t = Some(*t_ref);
-                            }
-                            trigger.show(None, context, ui);
-                        });
-                        FRAME.show(ui, |ui| {
-                            for a_ref in actions {
-                                let (entity, action) = fusion.get_action(a_ref, context).unwrap();
-                                ui.horizontal(|ui| {
-                                    if "<".cstr_s(CstrStyle::Bold).button(ui).clicked() {
-                                        remove_a = Some(*a_ref);
-                                    }
-                                    action.show(None, context.clone().set_owner(entity), ui);
-                                });
-                            }
-                        });
-                    }
-                    if let Some(r) = remove_a {
-                        fusion.remove_action(r);
-                    }
-                    if let Some(r) = remove_t {
-                        fusion.remove_trigger(r);
-                    }
-                    if "save"
-                        .cstr_cs(VISIBLE_BRIGHT, CstrStyle::Heading2)
-                        .button(ui)
-                        .clicked()
-                    {
-                        fusions.insert(slot, fusion.clone());
-                        let fusions = fusions.iter().map(|f| f.to_strings_root()).collect_vec();
-                        cn().reducers.match_edit_fusions(fusions).unwrap();
-                        WindowPlugin::close_current(world);
-                    }
+            });
+            FRAME.show(ui, |ui| {
+                ui.horizontal(|ui| {
+                    let context = &Context::new_world(&md.team_world)
+                        .set_owner(fusion.entity())
+                        .take();
+                    ui.vertical(|ui| {
+                        "Result".cstr_s(CstrStyle::Heading2).label(ui);
+                        let mut remove_t = None;
+                        let mut remove_a = None;
+                        for (t_ref, actions) in &fusion.triggers {
+                            let trigger = fusion
+                                .get_trigger(t_ref.unit, t_ref.trigger, context)
+                                .unwrap();
+                            ui.horizontal(|ui| {
+                                if "<".cstr_s(CstrStyle::Bold).button(ui).clicked() {
+                                    remove_t = Some(*t_ref);
+                                }
+                                trigger.show(None, context, ui);
+                            });
+                            FRAME.show(ui, |ui| {
+                                for a_ref in actions {
+                                    let (entity, action) =
+                                        fusion.get_action(a_ref, context).unwrap();
+                                    ui.horizontal(|ui| {
+                                        if "<".cstr_s(CstrStyle::Bold).button(ui).clicked() {
+                                            remove_a = Some(*a_ref);
+                                        }
+                                        action.show(None, context.clone().set_owner(entity), ui);
+                                    });
+                                }
+                            });
+                        }
+                        if let Some(r) = remove_a {
+                            fusion.remove_action(r);
+                        }
+                        if let Some(r) = remove_t {
+                            fusion.remove_trigger(r);
+                        }
+                        if "save"
+                            .cstr_cs(VISIBLE_BRIGHT, CstrStyle::Heading2)
+                            .button(ui)
+                            .clicked()
+                        {
+                            fusions.insert(slot, fusion.clone());
+                            let fusions = fusions.iter().map(|f| f.to_strings_root()).collect_vec();
+                            cn().reducers.match_edit_fusions(fusions).unwrap();
+                            WindowPlugin::close_current(world);
+                        }
+                    });
+
+                    let size = ui.available_size();
+                    let size = size.x.at_most(size.y).at_least(150.0);
+                    let rect = ui
+                        .allocate_exact_size(egui::vec2(size, size), Sense::hover())
+                        .0;
+                    fusion.paint(rect, ui, &md.team_world).log();
+                    unit_rep().paint(rect.shrink(15.0), context, ui).log();
                 });
             });
+            if init_fusion {
+                fusion.clone().init(&mut md.team_world).log();
+            }
             world.insert_resource(md);
         })
         .push(world);

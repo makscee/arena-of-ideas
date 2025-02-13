@@ -129,3 +129,9 @@ impl RepresentationPlugin {
         Ok(())
     }
 }
+
+impl Representation {
+    pub fn paint(&self, rect: Rect, context: &Context, ui: &mut Ui) -> Result<(), ExpressionError> {
+        RepresentationPlugin::paint_rect(rect, context, &self.material, ui)
+    }
+}
