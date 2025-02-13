@@ -359,7 +359,8 @@ impl MatchPlugin {
                         "Result".cstr_s(CstrStyle::Heading2).label(ui);
                         let mut remove_t = None;
                         let mut remove_a = None;
-                        for (t_ref, actions) in &fusion.triggers {
+                        let mut swap = None;
+                        for (t_i, (t_ref, actions)) in fusion.triggers.iter().enumerate() {
                             let trigger = fusion
                                 .get_trigger(t_ref.unit, t_ref.trigger, context)
                                 .unwrap();
@@ -370,17 +371,49 @@ impl MatchPlugin {
                                 trigger.show(None, context, ui);
                             });
                             FRAME.show(ui, |ui| {
-                                for a_ref in actions {
+                                for (a_i, a_ref) in actions.iter().enumerate() {
                                     let (entity, action) =
                                         fusion.get_action(a_ref, context).unwrap();
                                     ui.horizontal(|ui| {
-                                        if "<".cstr_s(CstrStyle::Bold).button(ui).clicked() {
+                                        if "-".cstr_cs(RED, CstrStyle::Bold).button(ui).clicked() {
                                             remove_a = Some(*a_ref);
+                                        }
+                                        if (t_i > 0 || a_i > 0)
+                                            && "^"
+                                                .cstr_cs(VISIBLE_BRIGHT, CstrStyle::Bold)
+                                                .button(ui)
+                                                .clicked()
+                                        {
+                                            if a_i == 0 {
+                                                swap = Some((
+                                                    (t_i, a_i),
+                                                    (t_i - 1, fusion.triggers[t_i - 1].1.len()),
+                                                ));
+                                            } else {
+                                                swap = Some(((t_i, a_i), (t_i, a_i - 1)));
+                                            }
+                                        }
+                                        if (t_i + 1 < fusion.triggers.len()
+                                            || a_i + 1 < actions.len())
+                                            && "v"
+                                                .cstr_cs(VISIBLE_BRIGHT, CstrStyle::Bold)
+                                                .button(ui)
+                                                .clicked()
+                                        {
+                                            if a_i == actions.len() - 1 {
+                                                swap = Some(((t_i, a_i), (t_i + 1, 0)));
+                                            } else {
+                                                swap = Some(((t_i, a_i), (t_i, a_i + 1)));
+                                            }
                                         }
                                         action.show(None, context.clone().set_owner(entity), ui);
                                     });
                                 }
                             });
+                        }
+                        if let Some(((from_t, from_a), (to_t, to_a))) = swap {
+                            let action = fusion.triggers[from_t].1.remove(from_a);
+                            fusion.triggers[to_t].1.insert(to_a, action);
                         }
                         if let Some(r) = remove_a {
                             fusion.remove_action(r);
