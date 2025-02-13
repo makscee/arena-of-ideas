@@ -186,7 +186,7 @@ impl MatchPlugin {
                             let slot = slot.slot as usize;
                             let r =
                                 show_slot(slot, global_settings().team_slots as usize, false, ui);
-                            last_slot = slot as i32;
+                            last_slot = last_slot.at_least(slot as i32);
                             fusion.paint(r.rect, ui, &md.team_world).unwrap();
                             let context = &Context::new_world(&md.team_world)
                                 .set_owner(fusion.entity())
@@ -195,8 +195,24 @@ impl MatchPlugin {
                             if r.clicked() {
                                 fusion_edit = Some(slot);
                             }
+                            if r.drag_started() {
+                                r.dnd_set_drag_payload(slot);
+                            }
+                            if r.dragged() {
+                                ui.painter().arrow(
+                                    r.rect.center(),
+                                    ui.ctx().pointer_latest_pos().unwrap_or_default().to_vec2()
+                                        - r.rect.center().to_vec2(),
+                                    Stroke::new(2.0, YELLOW),
+                                );
+                            }
+                            if let Some(i) = r.dnd_release_payload::<usize>() {
+                                if slot != *i {
+                                    cn().reducers.match_reorder(*i as u8, slot as u8).unwrap();
+                                }
+                            }
                         }
-                        if last_slot < global_settings().team_slots as i32 {
+                        if last_slot + 1 < global_settings().team_slots as i32 {
                             let slot = (last_slot + 1) as usize;
                             let r =
                                 show_slot(slot, global_settings().team_slots as usize, false, ui);

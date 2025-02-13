@@ -65,39 +65,6 @@ impl GIDExt for u64 {
     }
 }
 
-// impl TTeam {
-//     pub fn hover_label(&self, ui: &mut Ui, world: &mut World) {
-//         let resp = self
-//             .cstr()
-//             .as_label(ui)
-//             .sense(Sense::click())
-//             .selectable(false)
-//             .ui(ui);
-//         if resp.hovered() {
-//             cursor_window(ui.ctx(), |ui| {
-//                 Frame {
-//                     inner_margin: Margin::same(8.0),
-//                     rounding: Rounding::same(13.0),
-//                     fill: BG_TRANSPARENT,
-//                     ..default()
-//                 }
-//                 .show(ui, |ui| {
-//                     self.show(1.0, ui, world);
-//                 });
-//             });
-//             if resp.clicked() {
-//                 let packed = PackedTeam::from_id(self.id);
-//                 let s = ron::to_string(&packed).unwrap();
-//                 copy_to_clipboard(&s, world);
-//                 Notification::new(
-//                     format!("Team#{} copied to clipboard", self.id).cstr_c(VISIBLE_LIGHT),
-//                 )
-//                 .push(world);
-//             }
-//         }
-//     }
-// }
-
 impl Default for TPlayer {
     fn default() -> Self {
         Self {

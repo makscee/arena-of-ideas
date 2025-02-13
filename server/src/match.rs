@@ -196,6 +196,7 @@ fn match_reorder(ctx: &ReducerContext, slot: u8, target: u8) -> Result<(), Strin
     if slot >= slots.len() {
         return Err("Slot outside of team length".into());
     }
+    slots.sort_by_key(|s| s.slot);
     let target = target.min(slots.len() - 1);
     let unit = slots.remove(slot);
     slots.insert(target, unit);
