@@ -135,9 +135,18 @@ impl MatchPlugin {
         Window::new("Match", move |ui, world| {
             let mut md = world.remove_resource::<MatchData>().unwrap();
             let full_rect = ui.available_rect_before_wrap();
-            let mut edit_requested = false;
+            let mut fusion_edit = None;
             ui.horizontal(|ui| {
                 ui.vertical(|ui| {
+                    ui.horizontal(|ui| {
+                        format!("[yellow [h2 {}g]]", md.g).label(ui);
+                        if format!("[b reroll [yellow {}g]]", global_settings().match_g.reroll)
+                            .button(ui)
+                            .clicked()
+                        {
+                            cn().reducers.match_reroll().unwrap();
+                        }
+                    });
                     for (unit, stats) in md
                         .team_world
                         .query::<(&Unit, &UnitStats)>()
@@ -168,47 +177,40 @@ impl MatchPlugin {
                 ui.allocate_ui_at_rect(
                     rect.with_min_y(rect.top() + rect.height() * 0.5 + 5.0),
                     |ui| {
-                        ui.vertical(|ui| {
-                            ui.horizontal(|ui| {
-                                format!("[yellow [h2 {}g]]", md.g).label(ui);
-                                if format!(
-                                    "[b reroll [yellow {}g]]",
-                                    global_settings().match_g.reroll
-                                )
-                                .button(ui)
-                                .clicked()
-                                {
-                                    cn().reducers.match_reroll().unwrap();
-                                }
-                            });
-                            if "edit".cstr_s(CstrStyle::Bold).button(ui).clicked() {
-                                edit_requested = true;
-                            }
-                        });
+                        let mut last_slot = -1;
                         for (fusion, slot, rep) in md
                             .team_world
                             .query::<(&Fusion, &UnitSlot, &Representation)>()
                             .iter(&md.team_world)
                         {
-                            let r = show_slot(
-                                slot.slot as usize,
-                                global_settings().team_slots as usize,
-                                false,
-                                ui,
-                            );
+                            let slot = slot.slot as usize;
+                            let r =
+                                show_slot(slot, global_settings().team_slots as usize, false, ui);
+                            last_slot = slot as i32;
                             fusion.paint(r.rect, ui, &md.team_world).unwrap();
                             let context = &Context::new_world(&md.team_world)
                                 .set_owner(fusion.entity())
                                 .take();
                             RepresentationPlugin::paint_rect(r.rect, context, &rep.material, ui)
                                 .log();
+                            if r.clicked() {
+                                fusion_edit = Some(slot);
+                            }
+                        }
+                        if last_slot < global_settings().team_slots as i32 {
+                            let slot = (last_slot + 1) as usize;
+                            let r =
+                                show_slot(slot, global_settings().team_slots as usize, false, ui);
+                            if r.clicked() {
+                                fusion_edit = Some(slot);
+                            }
                         }
                     },
                 )
             });
             world.insert_resource(md);
-            if edit_requested {
-                Self::open_fusion_edit_window(0, world);
+            if let Some(slot) = fusion_edit {
+                Self::open_fusion_edit_window(slot, world);
             }
         })
         .default_width(800.0)
@@ -231,7 +233,7 @@ impl MatchPlugin {
         if slot >= fusions.len() {
             fusions.push(default());
         }
-        let mut fusion = Fusion::default();
+        let mut fusion = fusions.remove(slot);
         let window_id = "Fusion Edit";
         Window::new(window_id, move |ui, world| {
             let mut md = world.remove_resource::<MatchData>().unwrap();
@@ -271,27 +273,19 @@ impl MatchPlugin {
                     for u in 0..fusion.units.len() {
                         let triggers = &fusion.get_reaction(u as u8, context).unwrap().triggers;
                         for (t, (trigger, _)) in triggers.iter().enumerate() {
-                            let trigger_ref = UnitTriggerRef {
+                            let t_ref = UnitTriggerRef {
                                 unit: u as u8,
                                 trigger: t as u8,
                             };
-                            let selected = fusion
-                                .triggers
-                                .iter()
-                                .find_position(|(r, _)| r.eq(&trigger_ref))
-                                .map(|(i, _)| i);
+                            let selected = fusion.triggers.iter().any(|(r, _)| r.eq(&t_ref));
                             FRAME
-                                .stroke(if selected.is_some() {
-                                    STROKE_YELLOW
-                                } else {
-                                    STROKE_DARK
-                                })
+                                .stroke(if selected { STROKE_YELLOW } else { STROKE_DARK })
                                 .show(ui, |ui| {
                                     ui.horizontal(|ui| {
                                         trigger.show(None, context, ui);
                                         if ">".cstr_s(CstrStyle::Bold).button(ui).clicked() {
-                                            if let Some(ind) = selected {
-                                                fusion.triggers.remove(ind);
+                                            if selected {
+                                                fusion.remove_trigger(t_ref);
                                             } else {
                                                 fusion.triggers.push((
                                                     UnitTriggerRef {
@@ -318,7 +312,7 @@ impl MatchPlugin {
                         let entity = reaction.entity();
                         for (t, (_, actions)) in triggers.iter().enumerate() {
                             for (a, action) in actions.0.iter().enumerate() {
-                                let action_ref = UnitActionRef {
+                                let a_ref = UnitActionRef {
                                     unit: u as u8,
                                     trigger: t as u8,
                                     action: a as u8,
@@ -326,7 +320,7 @@ impl MatchPlugin {
                                 let selected = fusion
                                     .triggers
                                     .iter()
-                                    .any(|(_, a)| a.iter().any(|a| action_ref.eq(a)));
+                                    .any(|(_, a)| a.iter().any(|a| a_ref.eq(a)));
                                 FRAME
                                     .stroke(if selected { STROKE_YELLOW } else { STROKE_DARK })
                                     .show(ui, |ui| {
@@ -338,22 +332,14 @@ impl MatchPlugin {
                                             );
                                             if ">".cstr_s(CstrStyle::Bold).button(ui).clicked() {
                                                 if selected {
-                                                    for (_, actions) in &mut fusion.triggers {
-                                                        if let Some((action, _)) = actions
-                                                            .iter()
-                                                            .find_position(|a| action_ref.eq(a))
-                                                        {
-                                                            actions.remove(action);
-                                                            break;
-                                                        }
-                                                    }
+                                                    fusion.remove_action(a_ref);
                                                 } else {
                                                     fusion
                                                         .triggers
                                                         .last_mut()
                                                         .unwrap()
                                                         .1
-                                                        .push(action_ref);
+                                                        .push(a_ref);
                                                 }
                                             }
                                         })
@@ -364,26 +350,44 @@ impl MatchPlugin {
                 });
                 ui.vertical(|ui| {
                     "Result".cstr_s(CstrStyle::Heading2).label(ui);
-                    for (trigger, actions) in &fusion.triggers {
+                    let mut remove_t = None;
+                    let mut remove_a = None;
+                    for (t_ref, actions) in &fusion.triggers {
                         let trigger = fusion
-                            .get_trigger(trigger.unit, trigger.trigger, context)
+                            .get_trigger(t_ref.unit, t_ref.trigger, context)
                             .unwrap();
-                        trigger.show(None, context, ui);
+                        ui.horizontal(|ui| {
+                            if "<".cstr_s(CstrStyle::Bold).button(ui).clicked() {
+                                remove_t = Some(*t_ref);
+                            }
+                            trigger.show(None, context, ui);
+                        });
                         FRAME.show(ui, |ui| {
-                            for action in actions {
-                                let (entity, action) = fusion.get_action(action, context).unwrap();
-                                action.show(None, context.clone().set_owner(entity), ui);
+                            for a_ref in actions {
+                                let (entity, action) = fusion.get_action(a_ref, context).unwrap();
+                                ui.horizontal(|ui| {
+                                    if "<".cstr_s(CstrStyle::Bold).button(ui).clicked() {
+                                        remove_a = Some(*a_ref);
+                                    }
+                                    action.show(None, context.clone().set_owner(entity), ui);
+                                });
                             }
                         });
+                    }
+                    if let Some(r) = remove_a {
+                        fusion.remove_action(r);
+                    }
+                    if let Some(r) = remove_t {
+                        fusion.remove_trigger(r);
                     }
                     if "save"
                         .cstr_cs(VISIBLE_BRIGHT, CstrStyle::Heading2)
                         .button(ui)
                         .clicked()
                     {
-                        cn().reducers
-                            .match_edit_fusions([fusion.to_strings_root()].to_vec())
-                            .unwrap();
+                        fusions.insert(slot, fusion.clone());
+                        let fusions = fusions.iter().map(|f| f.to_strings_root()).collect_vec();
+                        cn().reducers.match_edit_fusions(fusions).unwrap();
                         WindowPlugin::close_current(world);
                     }
                 });

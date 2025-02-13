@@ -56,6 +56,14 @@ impl Fusion {
             );
         }
     }
+    pub fn remove_trigger(&mut self, r: UnitTriggerRef) {
+        self.triggers.retain(|(t, _)| !r.eq(t));
+    }
+    pub fn remove_action(&mut self, r: UnitActionRef) {
+        for (_, a) in self.triggers.iter_mut() {
+            a.retain(|a| !r.eq(a));
+        }
+    }
     pub fn get_reaction<'a>(
         &self,
         unit: u8,
