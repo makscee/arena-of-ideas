@@ -129,6 +129,9 @@ pub fn strings_conversions(
             )*
         }
         fn from_strings(i: usize, strings: &Vec<String>) -> Option<Self> {
+            if i >= strings.len() {
+                return None;
+            }
             let (_, _, data) = strings[i].splitn(3, ' ').collect_tuple()?;
             let mut d = Self::default();
             d.inject_data(data);

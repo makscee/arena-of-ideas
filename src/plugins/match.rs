@@ -1,5 +1,3 @@
-use bevy::ecs::world::FromWorld;
-
 use super::*;
 
 pub struct MatchPlugin;
@@ -112,21 +110,6 @@ impl MatchPlugin {
             }
         });
     }
-    fn show_unit_tag(md: &MatchData, unit: &Unit, stats: &UnitStats, ui: &mut Ui) {
-        TagWidget::new_number(
-            &unit.name,
-            Context::new_world(&md.team_world)
-                .set_owner(unit.entity())
-                .get_color(VarName::color)
-                .unwrap(),
-            format!(
-                "[b {} {}]",
-                stats.pwr.cstr_c(VarName::pwr.color()),
-                stats.hp.cstr_c(VarName::hp.color())
-            ),
-        )
-        .ui(ui);
-    }
     pub fn open_shop_window(world: &mut World) {
         if !world.contains_resource::<MatchData>() {
             error!("Match not loaded");
@@ -153,7 +136,7 @@ impl MatchPlugin {
                         .iter(&md.team_world)
                     {
                         FRAME.show(ui, |ui| {
-                            Self::show_unit_tag(&md, unit, stats, ui);
+                            show_unit_tag(unit, stats, ui, &md.team_world);
                             if format!(
                                 "[b sell [yellow +{}g]]",
                                 global_settings().match_g.unit_sell
@@ -267,7 +250,7 @@ impl MatchPlugin {
                         FRAME
                             .stroke(if selected { STROKE_YELLOW } else { STROKE_DARK })
                             .show(ui, |ui| {
-                                Self::show_unit_tag(&md, unit, stats, ui);
+                                show_unit_tag(unit, stats, ui, &md.team_world);
                                 if "select".cstr_s(CstrStyle::Bold).button(ui).clicked() {
                                     if selected {
                                         let i = fusion

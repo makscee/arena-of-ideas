@@ -114,3 +114,19 @@ impl UnitCard {
             });
     }
 }
+
+pub fn show_unit_tag(unit: &Unit, stats: &UnitStats, ui: &mut Ui, world: &World) {
+    TagWidget::new_number(
+        &unit.name,
+        Context::new_world(world)
+            .set_owner(unit.entity())
+            .get_color(VarName::color)
+            .unwrap(),
+        format!(
+            "[b {} {}]",
+            stats.pwr.cstr_c(VarName::pwr.color()),
+            stats.hp.cstr_c(VarName::hp.color())
+        ),
+    )
+    .ui(ui);
+}
