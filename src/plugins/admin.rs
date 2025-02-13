@@ -29,7 +29,7 @@ impl AdminPlugin {
                     [(
                         Trigger::BattleStart,
                         [
-                            Action::SetTarget(Box::new(Expression::RandomUnit(Box::new(
+                            Action::AddTarget(Box::new(Expression::RandomUnit(Box::new(
                                 Expression::AllEnemyUnits,
                             )))),
                             Action::UseAbility,

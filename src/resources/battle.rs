@@ -66,7 +66,7 @@ impl BattleAction {
                 battle.apply_animation(
                     Context::default()
                         .set_owner(*a)
-                        .set_target(*b)
+                        .add_target(*b)
                         .set_var(VarName::position, vec2(0.0, 0.0).into())
                         .take(),
                     strike_anim,

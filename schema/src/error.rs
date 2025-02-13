@@ -103,3 +103,9 @@ impl Into<String> for ExpressionError {
         self.to_string()
     }
 }
+
+impl From<&str> for ExpressionError {
+    fn from(value: &str) -> Self {
+        Self::Custom(value.into())
+    }
+}

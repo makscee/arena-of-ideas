@@ -28,7 +28,7 @@ impl EnumColor for Action {
             Action::SetValue(..)
             | Action::AddValue(..)
             | Action::SubtractValue(..)
-            | Action::SetTarget(..) => CYAN,
+            | Action::AddTarget(..) => CYAN,
             Action::MultipleTargets(..) | Action::Repeat(..) => PURPLE,
         }
     }

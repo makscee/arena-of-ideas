@@ -270,7 +270,7 @@ impl Injector<Self> for Action {
             | Action::SetValue(..)
             | Action::AddValue(..)
             | Action::SubtractValue(..)
-            | Action::SetTarget(..)
+            | Action::AddTarget(..)
             | Action::DealDamage
             | Action::HealDamage
             | Action::UseAbility => default(),
@@ -286,7 +286,7 @@ impl Injector<Self> for Action {
             | Action::SetValue(..)
             | Action::AddValue(..)
             | Action::SubtractValue(..)
-            | Action::SetTarget(..)
+            | Action::AddTarget(..)
             | Action::DealDamage
             | Action::HealDamage
             | Action::UseAbility => default(),
@@ -306,7 +306,7 @@ impl Injector<Expression> for Action {
             | Action::SetValue(x)
             | Action::AddValue(x)
             | Action::SubtractValue(x)
-            | Action::SetTarget(x)
+            | Action::AddTarget(x)
             | Action::MultipleTargets(x, _)
             | Action::Repeat(x, _) => [x].into(),
         }
@@ -320,7 +320,7 @@ impl Injector<Expression> for Action {
             | Action::SetValue(x)
             | Action::AddValue(x)
             | Action::SubtractValue(x)
-            | Action::SetTarget(x)
+            | Action::AddTarget(x)
             | Action::MultipleTargets(x, _)
             | Action::Repeat(x, _) => [x].into(),
         }

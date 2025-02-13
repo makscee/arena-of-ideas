@@ -1,1 +1,1 @@
-[(BattleStart, ([SetTarget(RandomUnit(AdjacentAllyUnits)), UseAbility]))]
+[(BattleStart, ([AddTarget(RandomUnit(AdjacentAllyUnits)), UseAbility]))]

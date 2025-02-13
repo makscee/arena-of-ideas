@@ -72,7 +72,7 @@ impl<'w, 's> Context<'w, 's> {
         self.layers.push(ContextLayer::Caster(owner));
         self
     }
-    pub fn set_target(&mut self, target: Entity) -> &mut Self {
+    pub fn add_target(&mut self, target: Entity) -> &mut Self {
         self.layers.push(ContextLayer::Target(target));
         self
     }
@@ -108,6 +108,17 @@ impl<'w, 's> Context<'w, 's> {
             .rev()
             .find_map(|l| l.get_target())
             .to_e("Target not found")
+    }
+    pub fn collect_targets(&self) -> Result<Vec<Entity>, ExpressionError> {
+        let targets = self
+            .layers
+            .iter()
+            .filter_map(|l| l.get_target())
+            .collect_vec();
+        match targets.is_empty() {
+            true => Err("No targets found".into()),
+            false => Ok(targets),
+        }
     }
     pub fn get_var(&self, var: VarName) -> Result<VarValue, ExpressionError> {
         self.layers

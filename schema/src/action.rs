@@ -9,7 +9,7 @@ pub enum Action {
     SetValue(Box<Expression>),
     AddValue(Box<Expression>),
     SubtractValue(Box<Expression>),
-    SetTarget(Box<Expression>),
+    AddTarget(Box<Expression>),
     DealDamage,
     HealDamage,
     UseAbility,

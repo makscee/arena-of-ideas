@@ -40,23 +40,25 @@ impl ActionImpl for Action {
             Action::SubtractValue(x) => {
                 context.set_value(context.get_value()?.sub(&x.get_value(context)?)?);
             }
-            Action::SetTarget(x) => {
-                context.set_target(x.get_entity(context)?);
+            Action::AddTarget(x) => {
+                context.add_target(x.get_entity(context)?);
             }
             Action::DealDamage => {
                 let owner = context.get_owner()?;
-                let target = context.get_target()?;
                 let value = context.get_value()?.get_i32()?;
                 if value > 0 {
-                    actions.push(BattleAction::Damage(owner, target, value));
+                    for target in context.collect_targets()? {
+                        actions.push(BattleAction::Damage(owner, target, value));
+                    }
                 }
             }
             Action::HealDamage => {
                 let owner = context.get_owner()?;
-                let target = context.get_target()?;
                 let value = context.get_value()?.get_i32()?;
                 if value > 0 {
-                    actions.push(BattleAction::Heal(owner, target, value));
+                    for target in context.collect_targets()? {
+                        actions.push(BattleAction::Heal(owner, target, value));
+                    }
                 }
             }
             Action::UseAbility => {
@@ -133,7 +135,7 @@ impl ActionImpl for Action {
             }
             Action::MultipleTargets(x, vec) => {
                 for target in x.get_entity_list(context)? {
-                    context.set_target(target);
+                    context.add_target(target);
                     let context = &mut context.clone();
                     for a in vec {
                         actions.extend(a.process(context)?);

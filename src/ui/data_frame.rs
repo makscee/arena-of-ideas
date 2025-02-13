@@ -790,7 +790,7 @@ impl DataFramed for Action {
             | Action::SetValue(..)
             | Action::AddValue(..)
             | Action::SubtractValue(..)
-            | Action::SetTarget(..)
+            | Action::AddTarget(..)
             | Action::MultipleTargets(..)
             | Action::Repeat(..) => true,
         }
@@ -831,7 +831,7 @@ impl DataFramed for Action {
             | Action::SetValue(x)
             | Action::AddValue(x)
             | Action::SubtractValue(x)
-            | Action::SetTarget(x) => {
+            | Action::AddTarget(x) => {
                 x.show(Some("x"), context, ui);
             }
             Action::MultipleTargets(x, vec) | Action::Repeat(x, vec) => {
@@ -848,7 +848,7 @@ impl DataFramed for Action {
             | Action::SetValue(x)
             | Action::AddValue(x)
             | Action::SubtractValue(x)
-            | Action::SetTarget(x) => x.show_mut(Some("x"), ui),
+            | Action::AddTarget(x) => x.show_mut(Some("x"), ui),
             Action::MultipleTargets(x, vec) | Action::Repeat(x, vec) => {
                 let x = x.show_mut(Some("x"), ui);
                 vec.show_mut(None, ui) || x
