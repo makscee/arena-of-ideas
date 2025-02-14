@@ -289,9 +289,6 @@ impl BattleSimulation {
         battle.left.unpack(team_left, &mut world);
         battle.right.unpack(team_right, &mut world);
 
-        for fusion in world.query::<&Fusion>().iter(&world).cloned().collect_vec() {
-            fusion.init(&mut world)?;
-        }
         for entity in world
             .query_filtered::<Entity, With<House>>()
             .iter(&world)

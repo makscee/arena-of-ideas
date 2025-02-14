@@ -1,15 +1,9 @@
 use super::*;
 
 impl Fusion {
-    pub fn init_all(world: &mut World) -> Result<(), ExpressionError> {
-        for fusion in world.query::<&Fusion>().iter(world).cloned().collect_vec() {
-            fusion.init(world)?;
-        }
-        Ok(())
-    }
-    pub fn init(self, world: &mut World) -> Result<(), ExpressionError> {
-        let entity = self.entity();
-        let units = self.units_entities(&Context::new_world(world))?;
+    pub fn init(entity: Entity, world: &mut World) -> Result<(), ExpressionError> {
+        let fusion = world.get::<Fusion>(entity).to_e("Fusion not found")?;
+        let units = fusion.units_entities(&Context::new_world(world))?;
         let mut fusion_stats = UnitStats::default();
         for u in units {
             let stats = world.get::<UnitStats>(u).to_e("Unit stats not found")?;
@@ -134,6 +128,18 @@ impl Fusion {
         }
         Ok(())
     }
+    pub fn find_by_slot(slot: i32, world: &mut World) -> Option<Self> {
+        world
+            .query::<(&UnitSlot, &Fusion)>()
+            .iter(&world)
+            .find_map(|(s, f)| {
+                if s.slot == slot {
+                    Some(f.clone())
+                } else {
+                    None
+                }
+            })
+    }
 
     pub fn open_editor_window(
         entity: Entity,
@@ -151,18 +157,7 @@ impl Fusion {
         let mut team_world = World::new();
         let team_entity = team_world.spawn_empty().id();
         team.unpack(team_entity, &mut team_world);
-        Fusion::init_all(&mut team_world)?;
-        let mut fusion = team_world
-            .query::<(&UnitSlot, &Fusion)>()
-            .iter(&team_world)
-            .find_map(|(s, f)| {
-                if s.slot == slot.slot {
-                    Some(f.clone())
-                } else {
-                    None
-                }
-            })
-            .unwrap();
+        let mut fusion = Self::find_by_slot(slot.slot, &mut team_world).unwrap();
         Window::new("Fusion Editor", move |ui, world| {
             let mut init_fusion = false;
             ui.horizontal(|ui| {
@@ -359,7 +354,10 @@ impl Fusion {
                 });
             });
             if init_fusion {
-                fusion.clone().init(&mut team_world).log();
+                team_world
+                    .entity_mut(fusion.entity())
+                    .insert(fusion.clone());
+                Fusion::init(fusion.entity(), &mut team_world).log();
             }
         })
         .push(world);

@@ -77,7 +77,6 @@ impl AdminPlugin {
                 Some(slot.entity());
         }
         let mut editing_entity = None;
-        Fusion::init_all(&mut battle_world);
         Window::new("Edit Teams", move |ui, world| {
             ui.horizontal(|ui| {
                 if "Save".cstr_s(CstrStyle::Heading2).button(ui).clicked() {
@@ -100,7 +99,6 @@ impl AdminPlugin {
             }
             if let Some(ef) = world.remove_resource::<EditedFusion>() {
                 ef.fusion.unpack(editing_entity.unwrap(), &mut battle_world);
-                Fusion::init_all(&mut battle_world).log();
             }
             for side in [true, false] {
                 for i in 0..slots {
@@ -116,7 +114,6 @@ impl AdminPlugin {
                                 .id();
                             Fusion::new_full(default(), default(), UnitSlot::new(i as i32))
                                 .unpack(entity, &mut battle_world);
-                            Fusion::init_all(&mut battle_world).log();
                             slot_entities[side as usize][i] = Some(entity);
                             entity
                         };

@@ -178,7 +178,10 @@ impl OnUnpack for NodeKind {
         let mut child = || world.spawn_empty().set_parent(entity).id();
         match self {
             NodeKind::Hero => hero_rep().clone().unpack(child(), world),
-            NodeKind::Fusion => unit_rep().clone().unpack(entity, world),
+            NodeKind::Fusion => {
+                unit_rep().clone().unpack(entity, world);
+                Fusion::init(entity, world).log();
+            }
             NodeKind::StatusAbility => status_rep().clone().unpack(child(), world),
             _ => {}
         }
