@@ -71,6 +71,8 @@ impl Injector<Self> for Expression {
             | Expression::AllAllyUnits
             | Expression::AllOtherAllyUnits
             | Expression::AdjacentAllyUnits
+            | Expression::AdjacentBack
+            | Expression::AdjacentFront
             | Expression::AllEnemyUnits
             | Expression::Owner
             | Expression::Target
@@ -126,6 +128,8 @@ impl Injector<Self> for Expression {
             | Expression::AllAllyUnits
             | Expression::AllOtherAllyUnits
             | Expression::AdjacentAllyUnits
+            | Expression::AdjacentBack
+            | Expression::AdjacentFront
             | Expression::AllEnemyUnits
             | Expression::Owner
             | Expression::Target
@@ -274,9 +278,7 @@ impl Injector<Self> for Action {
             | Action::DealDamage
             | Action::HealDamage
             | Action::UseAbility => default(),
-            Action::MultipleTargets(_, vec) | Action::Repeat(_, vec) => {
-                vec.into_iter().collect_vec()
-            }
+            Action::Repeat(_, vec) => vec.into_iter().collect_vec(),
         }
     }
     fn get_inner(&self) -> Vec<&Box<Self>> {
@@ -290,9 +292,7 @@ impl Injector<Self> for Action {
             | Action::DealDamage
             | Action::HealDamage
             | Action::UseAbility => default(),
-            Action::MultipleTargets(_, vec) | Action::Repeat(_, vec) => {
-                vec.into_iter().collect_vec()
-            }
+            Action::Repeat(_, vec) => vec.into_iter().collect_vec(),
         }
     }
 }
@@ -307,7 +307,6 @@ impl Injector<Expression> for Action {
             | Action::AddValue(x)
             | Action::SubtractValue(x)
             | Action::AddTarget(x)
-            | Action::MultipleTargets(x, _)
             | Action::Repeat(x, _) => [x].into(),
         }
     }
@@ -321,7 +320,6 @@ impl Injector<Expression> for Action {
             | Action::AddValue(x)
             | Action::SubtractValue(x)
             | Action::AddTarget(x)
-            | Action::MultipleTargets(x, _)
             | Action::Repeat(x, _) => [x].into(),
         }
     }

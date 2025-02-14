@@ -320,6 +320,7 @@ impl VarValueExt for VarValue {
     fn get_entity_list(&self) -> Result<Vec<Entity>, ExpressionError> {
         match self {
             VarValue::List(v) => Ok(v.into_iter().filter_map(|v| v.get_entity().ok()).collect()),
+            VarValue::Entity(v) => Ok([Entity::from_bits(*v)].to_vec().into()),
             _ => Err(ExpressionError::not_supported_single(
                 "Cast to List of Entities",
                 self.clone(),

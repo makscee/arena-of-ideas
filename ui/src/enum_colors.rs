@@ -29,7 +29,7 @@ impl EnumColor for Action {
             | Action::AddValue(..)
             | Action::SubtractValue(..)
             | Action::AddTarget(..) => CYAN,
-            Action::MultipleTargets(..) | Action::Repeat(..) => PURPLE,
+            Action::Repeat(..) => PURPLE,
         }
     }
 }
@@ -59,6 +59,8 @@ impl EnumColor for Expression {
             | Expression::AllAllyUnits
             | Expression::AllOtherAllyUnits
             | Expression::AdjacentAllyUnits
+            | Expression::AdjacentBack
+            | Expression::AdjacentFront
             | Expression::S(..)
             | Expression::F(..)
             | Expression::FSlider(..)

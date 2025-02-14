@@ -1,1 +1,6 @@
-[(BattleStart, ([MultipleTargets(AdjacentAllyUnits, [UseAbility])]))]
+[
+    (
+        BattleStart,
+        ([AddTarget(AdjacentFront), AddTarget(AdjacentBack), UseAbility]),
+    ),
+]

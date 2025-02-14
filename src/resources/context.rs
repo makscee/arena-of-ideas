@@ -227,22 +227,25 @@ impl<'w, 's> Context<'w, 's> {
             .map(|e| e.to_value())
             .collect()
     }
-    pub fn adjacent_allies(&self, entity: Entity) -> Vec<VarValue> {
+    pub fn offset_unit(&self, entity: Entity, offset: i32) -> Option<VarValue> {
         let entities = self
             .sources
             .iter()
             .flat_map(|s| s.collect_allies(entity))
             .collect_vec();
-        let mut result: Vec<Entity> = default();
         if let Some(pos) = entities.iter().position(|e| *e == entity) {
-            if pos > 0 {
-                result.push(entities[pos - 1]);
-            }
-            if pos + 1 < entities.len() {
-                result.push(entities[pos + 1]);
+            let i = pos as i32 + offset;
+            if i >= 0 && (i as usize) < entities.len() {
+                return Some(entities[i as usize].to_value());
             }
         }
-        result.into_iter().map(|e| e.to_value()).collect()
+        None
+    }
+    pub fn adjacent_allies(&self, entity: Entity) -> Vec<VarValue> {
+        self.offset_unit(entity, 1)
+            .into_iter()
+            .chain(self.offset_unit(entity, -1))
+            .collect()
     }
 
     pub fn clear(&mut self) {

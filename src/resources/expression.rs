@@ -64,6 +64,12 @@ impl ExpressionImpl for Expression {
             Expression::AdjacentAllyUnits => {
                 Ok(context.adjacent_allies(context.get_owner()?).into())
             }
+            Expression::AdjacentFront => context
+                .offset_unit(context.get_owner()?, 1)
+                .to_e("No front unit found"),
+            Expression::AdjacentBack => context
+                .offset_unit(context.get_owner()?, -1)
+                .to_e("No back unit found"),
             Expression::Sin(x) => Ok(x.get_f32(context)?.sin().into()),
             Expression::Cos(x) => Ok(x.get_f32(context)?.cos().into()),
             Expression::Even(x) => Ok((x.get_i32(context)? % 2 == 0).into()),

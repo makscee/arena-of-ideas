@@ -445,6 +445,8 @@ impl DataFramed for Expression {
             | Expression::AllAllyUnits
             | Expression::AllOtherAllyUnits
             | Expression::AdjacentAllyUnits
+            | Expression::AdjacentBack
+            | Expression::AdjacentFront
             | Expression::AllEnemyUnits
             | Expression::Sin(..)
             | Expression::Cos(..)
@@ -491,6 +493,8 @@ impl DataFramed for Expression {
             | Expression::AllAllyUnits
             | Expression::AllOtherAllyUnits
             | Expression::AdjacentAllyUnits
+            | Expression::AdjacentBack
+            | Expression::AdjacentFront
             | Expression::AllEnemyUnits
             | Expression::Var(..)
             | Expression::V(..)
@@ -791,7 +795,6 @@ impl DataFramed for Action {
             | Action::AddValue(..)
             | Action::SubtractValue(..)
             | Action::AddTarget(..)
-            | Action::MultipleTargets(..)
             | Action::Repeat(..) => true,
         }
     }
@@ -834,7 +837,7 @@ impl DataFramed for Action {
             | Action::AddTarget(x) => {
                 x.show(Some("x"), context, ui);
             }
-            Action::MultipleTargets(x, vec) | Action::Repeat(x, vec) => {
+            Action::Repeat(x, vec) => {
                 x.show(Some("x"), context, ui);
                 vec.show(None, context, ui);
             }
@@ -849,7 +852,7 @@ impl DataFramed for Action {
             | Action::AddValue(x)
             | Action::SubtractValue(x)
             | Action::AddTarget(x) => x.show_mut(Some("x"), ui),
-            Action::MultipleTargets(x, vec) | Action::Repeat(x, vec) => {
+            Action::Repeat(x, vec) => {
                 let x = x.show_mut(Some("x"), ui);
                 vec.show_mut(None, ui) || x
             }

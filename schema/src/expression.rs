@@ -22,6 +22,8 @@ pub enum Expression {
     AllAllyUnits,
     AllOtherAllyUnits,
     AdjacentAllyUnits,
+    AdjacentBack,
+    AdjacentFront,
 
     Var(VarName),
     V(VarValue),
@@ -85,6 +87,8 @@ impl std::hash::Hash for Expression {
             | Expression::AllOtherAllyUnits
             | Expression::AllEnemyUnits
             | Expression::AdjacentAllyUnits
+            | Expression::AdjacentBack
+            | Expression::AdjacentFront
             | Expression::Owner
             | Expression::Target => {}
             Expression::Var(v) => v.hash(state),

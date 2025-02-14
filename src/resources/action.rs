@@ -41,7 +41,9 @@ impl ActionImpl for Action {
                 context.set_value(context.get_value()?.sub(&x.get_value(context)?)?);
             }
             Action::AddTarget(x) => {
-                context.add_target(x.get_entity(context)?);
+                for entity in x.get_entity_list(context)? {
+                    context.add_target(entity);
+                }
             }
             Action::DealDamage => {
                 let owner = context.get_owner()?;
@@ -127,15 +129,6 @@ impl ActionImpl for Action {
             }
             Action::Repeat(x, vec) => {
                 for _ in 0..x.get_i32(context)? {
-                    let context = &mut context.clone();
-                    for a in vec {
-                        actions.extend(a.process(context)?);
-                    }
-                }
-            }
-            Action::MultipleTargets(x, vec) => {
-                for target in x.get_entity_list(context)? {
-                    context.add_target(target);
                     let context = &mut context.clone();
                     for a in vec {
                         actions.extend(a.process(context)?);

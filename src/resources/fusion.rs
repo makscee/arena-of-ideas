@@ -107,7 +107,9 @@ impl Fusion {
             {
                 for action in actions {
                     let (entity, action) = self.get_action(action, context)?;
-                    battle_actions.extend(action.process(context.clone().set_caster(entity))?);
+                    let action = action.clone();
+                    context.set_caster(entity);
+                    battle_actions.extend(action.process(context)?);
                 }
             }
         }

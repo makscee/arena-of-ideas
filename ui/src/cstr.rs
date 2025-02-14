@@ -427,6 +427,8 @@ impl ToCstr for Expression {
             | Expression::AllAllyUnits
             | Expression::AllOtherAllyUnits
             | Expression::AdjacentAllyUnits
+            | Expression::AdjacentBack
+            | Expression::AdjacentFront
             | Expression::AllEnemyUnits
             | Expression::Owner
             | Expression::Target => String::default(),
