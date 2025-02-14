@@ -91,3 +91,16 @@ pub fn subscribe_game(on_success: impl FnOnce() + Send + Sync + 'static) {
         }
     });
 }
+
+pub fn subscribe_reducers() {
+    cn().reducers.on_match_edit_fusions(|e, _| {
+        if !e.check_identity() {
+            return;
+        }
+        e.event.notify_error();
+        OperationsPlugin::add(move |world| {
+            let id = NodeDomain::Match.filter_by_kind(NodeKind::Match)[0].id;
+            MatchPlugin::load_match_data(id, world);
+        });
+    });
+}

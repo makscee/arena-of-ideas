@@ -12,6 +12,7 @@ struct MatchData {
     shop_case: Vec<ShopCaseUnit>,
     team_world: World,
     core_world: World,
+    editing_entity: Option<Entity>,
 }
 
 const FRAME: Frame = Frame {
@@ -27,8 +28,6 @@ impl MatchPlugin {
     pub fn load_match_data(id: u64, world: &mut World) {
         let m = Match::from_table(NodeDomain::Match, id).unwrap();
         let mut team_world = World::new();
-        dbg!(&m);
-
         let mut core_world = World::new();
         for house in NodeDomain::Core.filter_by_kind(NodeKind::House) {
             let house = House::from_table(NodeDomain::Core, house.id).unwrap();
@@ -44,6 +43,7 @@ impl MatchPlugin {
             shop_case,
             team_world,
             core_world,
+            editing_entity: None,
         });
     }
     fn show_shop_case(md: &mut MatchData, ui: &mut Ui) {
@@ -115,7 +115,7 @@ impl MatchPlugin {
                 ui.vertical(|ui| {
                     ui.horizontal(|ui| {
                         format!("[yellow [h2 {}g]]", md.g).label(ui);
-                        if format!("[b reroll [yellow {}g]]", global_settings().match_g.reroll)
+                        if format!("[h2 reroll [yellow {}g]]", global_settings().match_g.reroll)
                             .button(ui)
                             .clicked()
                         {
@@ -192,7 +192,7 @@ impl MatchPlugin {
                             }
                         }
                         if last_slot + 1 < global_settings().team_slots as i32 {
-                            let slot = (last_slot + 1);
+                            let slot = last_slot + 1;
                             let r = show_slot(
                                 slot as usize,
                                 global_settings().team_slots as usize,
@@ -220,7 +220,7 @@ impl MatchPlugin {
             error!("Match not loaded");
             return;
         }
-        let mut md = world.resource_mut::<MatchData>();
+        let mut md = world.remove_resource::<MatchData>().unwrap();
         let entity = if let Some(fusion) = Fusion::find_by_slot(slot, &mut md.team_world) {
             fusion.entity()
         } else {
@@ -230,8 +230,24 @@ impl MatchPlugin {
                 .single(&md.team_world)
                 .entity();
             let entity = md.team_world.spawn_empty().set_parent(team).id();
-            Fusion::new_full(default(), default(), UnitSlot::new(slot)).unpack(entity, world);
+            Fusion::new_full(default(), default(), UnitSlot::new(slot))
+                .unpack(entity, &mut md.team_world);
             entity
         };
+        md.editing_entity = Some(entity);
+        Fusion::open_editor_window(entity, world, &md.team_world, |f, world| {
+            let mut md = world.resource_mut::<MatchData>();
+            let entity = md.editing_entity.unwrap();
+            f.unpack(entity, &mut md.team_world);
+            let fusions = md
+                .team_world
+                .query::<&Fusion>()
+                .iter(&md.team_world)
+                .map(|f| f.to_strings_root())
+                .collect_vec();
+            cn().reducers.match_edit_fusions(fusions).unwrap();
+        })
+        .log();
+        world.insert_resource(md);
     }
 }

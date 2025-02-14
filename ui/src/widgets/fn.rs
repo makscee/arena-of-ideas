@@ -142,9 +142,7 @@ pub fn show_slot(i: usize, slots: usize, bottom: bool, ui: &mut Ui) -> Response 
     } else {
         STROKE_DARK
     };
-    let t = cui
-        .ctx()
-        .animate_bool(Id::new("slot_hovered").with(i), r.hovered());
+    let t = cui.ctx().animate_bool(r.id, r.hovered());
     let length = egui::emath::lerp(15.0..=20.0, t);
     stroke.width += t;
     corners_rounded_rect(r.rect.shrink(3.0), length, stroke, ui);

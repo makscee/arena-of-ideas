@@ -58,6 +58,7 @@ impl LoginPlugin {
                 .unwrap()
         });
         LoginOption { player }.save(world);
+        subscribe_reducers();
         subscribe_game(GameState::proceed_op);
     }
     pub fn login_ui(ui: &mut Ui, world: &mut World) {
