@@ -141,15 +141,28 @@ impl Fusion {
         team_world: &World,
         on_save: fn(Fusion, &mut World),
     ) -> Result<(), ExpressionError> {
-        let mut fusion = team_world
-            .get::<Fusion>(entity)
-            .to_e("Fusion not found")?
-            .clone();
-        let team = fusion.find_up::<Team>(team_world).unwrap();
-        let team = Team::pack(team.entity(), team_world).to_e("Failed to pack Team")?;
+        let slot = team_world
+            .get::<UnitSlot>(entity)
+            .to_e("Fusion not found")?;
+
+        let team = slot.find_up::<Team>(team_world).unwrap();
+        let mut team = Team::pack(team.entity(), team_world).to_e("Failed to pack Team")?;
+        team.clear_entities();
         let mut team_world = World::new();
-        team.unpack(team_world.spawn_empty().id(), &mut team_world);
+        let team_entity = team_world.spawn_empty().id();
+        team.unpack(team_entity, &mut team_world);
         Fusion::init_all(&mut team_world)?;
+        let mut fusion = team_world
+            .query::<(&UnitSlot, &Fusion)>()
+            .iter(&team_world)
+            .find_map(|(s, f)| {
+                if s.slot == slot.slot {
+                    Some(f.clone())
+                } else {
+                    None
+                }
+            })
+            .unwrap();
         Window::new("Fusion Editor", move |ui, world| {
             let mut init_fusion = false;
             ui.horizontal(|ui| {

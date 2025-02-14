@@ -15,6 +15,7 @@ pub trait GetVar: GetNodeKind + Debug {
 pub trait Node: Default + Component + Sized + GetVar + Show + Debug {
     fn entity(&self) -> Entity;
     fn get_entity(&self) -> Option<Entity>;
+    fn clear_entities(&mut self);
     fn from_dir(path: String, dir: &Dir) -> Option<Self>;
     fn to_dir(&self, path: String) -> DirEntry;
     fn from_strings(i: usize, strings: &Vec<String>) -> Option<Self>;

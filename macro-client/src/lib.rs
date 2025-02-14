@@ -345,6 +345,19 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     fn get_entity(&self) -> Option<Entity> {
                         self.entity
                     }
+                    fn clear_entities(&mut self) {
+                        self.entity = None;
+                        #(
+                            if let Some(d) = &mut self.#component_link_fields {
+                                d.clear_entities();
+                            }
+                        )*
+                        #(
+                            for d in self.#child_link_fields.iter_mut() {
+                                d.clear_entities();
+                            }
+                        )*
+                    }
                     fn from_dir(path: String, dir: &Dir) -> Option<Self> {
                         dbg!(&path);
                         #data_from_dir

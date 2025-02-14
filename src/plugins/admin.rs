@@ -56,19 +56,43 @@ impl AdminPlugin {
             );
         }
     }
-    fn test_team(units: Vec<String>) -> Team {
-        todo!()
-    }
     fn setup_battle(world: &mut World) {
         let (left, right) = client_state().battle_test_teams.clone();
+        dbg!(&left);
         let mut left = Team::from_strings(0, &left).unwrap_or_default();
         let mut right = Team::from_strings(0, &right).unwrap_or_default();
         let mut battle_world = World::new();
         left.houses = houses().values().cloned().collect_vec();
+        right.houses = houses().values().cloned().collect_vec();
         let entity_left = battle_world.spawn_empty().id();
+        let entity_right = battle_world.spawn_empty().id();
         left.unpack(entity_left, &mut battle_world);
+        right.unpack(entity_right, &mut battle_world);
+        let mut slot_entities: [Vec<Option<Entity>>; 2] = default();
+        slot_entities[0] = (0..global_settings().team_slots).map(|_| None).collect();
+        slot_entities[1] = slot_entities[0].clone();
+        for slot in battle_world.query::<&UnitSlot>().iter(&battle_world) {
+            let team = slot.find_up::<Team>(&battle_world).unwrap();
+            slot_entities[(team.entity() == entity_left) as usize][slot.slot as usize] =
+                Some(slot.entity());
+        }
         let mut editing_entity = None;
+        Fusion::init_all(&mut battle_world);
         Window::new("Edit Teams", move |ui, world| {
+            ui.horizontal(|ui| {
+                if "Save".cstr_s(CstrStyle::Heading2).button(ui).clicked() {
+                    let mut cs = client_state().clone();
+                    cs.battle_test_teams.0 = Team::pack(entity_left, &battle_world)
+                        .unwrap()
+                        .to_strings_root();
+                    cs.battle_test_teams.1 = Team::pack(entity_right, &battle_world)
+                        .unwrap()
+                        .to_strings_root();
+                    cs.save();
+                    WindowPlugin::close_current(world);
+                    return;
+                }
+            });
             let slots = global_settings().team_slots as usize;
             #[derive(Resource)]
             struct EditedFusion {
@@ -78,50 +102,54 @@ impl AdminPlugin {
                 ef.fusion.unpack(editing_entity.unwrap(), &mut battle_world);
                 Fusion::init_all(&mut battle_world).log();
             }
-            let mut slot_fusions: Vec<Option<Fusion>> = (0..5).map(|_| None).collect_vec();
-            for (fusion, slot) in battle_world
-                .query::<(&Fusion, &UnitSlot)>()
-                .iter(&battle_world)
-            {
-                slot_fusions[slot.slot as usize] = Some(fusion.clone());
-            }
-            for i in 0..slots {
-                let r = show_battle_slot(i + 1, slots, true, ui);
-                if r.clicked() {
-                    let entity = if let Some(fusion) = &slot_fusions[i] {
-                        fusion.entity()
-                    } else {
-                        let entity = battle_world.spawn_empty().set_parent(entity_left).id();
-                        Fusion::new_full(default(), default(), UnitSlot::new(i as i32))
-                            .unpack(entity, &mut battle_world);
-                        Fusion::init_all(&mut battle_world).log();
-                        entity
-                    };
-                    editing_entity = Some(entity);
-                    Fusion::open_editor_window(entity, world, &battle_world, |fusion, world| {
-                        world.insert_resource(EditedFusion { fusion });
-                    })
-                    .unwrap();
-                }
-                if let Some(fusion) = &slot_fusions[i] {
-                    let rect = r.rect;
-                    fusion.paint(rect, ui, &battle_world).log();
-                    let context = &Context::new_world(&battle_world)
-                        .set_owner(fusion.entity())
-                        .take();
-                    let rep = battle_world.get::<Representation>(fusion.entity()).unwrap();
-                    rep.paint(rect, context, ui).log();
+            for side in [true, false] {
+                for i in 0..slots {
+                    let entity = slot_entities[side as usize][i];
+                    let r = show_battle_slot(i + 1, slots, side, ui);
+                    if r.clicked() {
+                        let entity = if let Some(entity) = entity {
+                            entity
+                        } else {
+                            let entity = battle_world
+                                .spawn_empty()
+                                .set_parent(if side { entity_left } else { entity_right })
+                                .id();
+                            Fusion::new_full(default(), default(), UnitSlot::new(i as i32))
+                                .unpack(entity, &mut battle_world);
+                            Fusion::init_all(&mut battle_world).log();
+                            slot_entities[side as usize][i] = Some(entity);
+                            entity
+                        };
+                        editing_entity = Some(entity);
+                        Fusion::open_editor_window(
+                            entity,
+                            world,
+                            &battle_world,
+                            |fusion, world| {
+                                world.insert_resource(EditedFusion { fusion });
+                            },
+                        )
+                        .unwrap();
+                    }
+                    if let Some(entity) = entity {
+                        let rect = r.rect;
+                        let fusion = battle_world.get::<Fusion>(entity).unwrap();
+                        fusion.paint(rect, ui, &battle_world).log();
+                        let context = &Context::new_world(&battle_world).set_owner(entity).take();
+                        let rep = battle_world.get::<Representation>(entity).unwrap();
+                        rep.paint(rect, context, ui).log();
+                    }
                 }
             }
         })
-        .default_width(600.0)
+        .default_width(800.0)
+        .default_height(200.0)
         .push(world);
     }
     fn show_battle(world: &mut World) {
-        let b = Battle {
-            left: Self::test_team(["fortifier".into(), "priest".into()].into()),
-            right: Self::test_team(["chrism".into(), "priest".into()].into()),
-        };
+        let left = Team::from_strings(0, &client_state().battle_test_teams.0).unwrap_or_default();
+        let right = Team::from_strings(0, &client_state().battle_test_teams.1).unwrap_or_default();
+        let b = Battle { left, right };
         b.open_window(world);
     }
     fn show_anim_editor(w: &mut World) {
@@ -248,11 +276,6 @@ Abs(Equals(F(51.0),Abs(Equals(F(1.0),Or(Equals(F(1.0),One),Abs(Or(Target,Abs(One
                             error!("{e}")
                         }
                     };
-                }
-                if "Push Battle".cstr().button(ui).clicked() {
-                    let team = Self::test_team(vec!["priest".into()]);
-                    let team = team.to_strings_root();
-                    cn().reducers.battle_insert(team.clone(), team).unwrap();
                 }
                 if "Insert Match".cstr().button(ui).clicked() {
                     cn().reducers.match_insert().unwrap();
