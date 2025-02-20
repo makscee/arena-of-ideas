@@ -118,6 +118,7 @@ fn main() {
             AudioPlugin,
             ConfirmationPlugin,
             AdminPlugin,
+            DockPlugin,
         ))
         .init_state::<GameState>()
         .init_resource::<NotificationsResource>();

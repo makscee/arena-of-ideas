@@ -21,3 +21,4 @@ egui_extras = { workspace = true }
 parking_lot = { workspace = true }
 color-hex = { workspace = true }
 serde = { workspace = true }
+egui_dock = { workspace = true }

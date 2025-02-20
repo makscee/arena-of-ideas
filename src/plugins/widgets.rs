@@ -10,23 +10,23 @@ pub struct WidgetsPlugin;
 
 impl Plugin for WidgetsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, Self::ui);
+        // app.add_systems(Update, Self::ui);
 
-        if cfg!(debug_assertions) {
-            app.add_systems(
-                Update,
-                give_c.run_if(
-                    input_just_pressed(KeyCode::KeyG)
-                        .and_then(in_state(GameState::Title).or_else(in_state(GameState::Meta))),
-                ),
-            )
-            .add_systems(
-                Update,
-                cmd_test.run_if(
-                    input_pressed(KeyCode::SuperLeft).and_then(input_pressed(KeyCode::ShiftLeft)),
-                ),
-            );
-        }
+        // if cfg!(debug_assertions) {
+        //     app.add_systems(
+        //         Update,
+        //         give_c.run_if(
+        //             input_just_pressed(KeyCode::KeyG)
+        //                 .and_then(in_state(GameState::Title).or_else(in_state(GameState::Meta))),
+        //         ),
+        //     )
+        //     .add_systems(
+        //         Update,
+        //         cmd_test.run_if(
+        //             input_pressed(KeyCode::SuperLeft).and_then(input_pressed(KeyCode::ShiftLeft)),
+        //         ),
+        //     );
+        // }
     }
 }
 

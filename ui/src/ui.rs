@@ -17,8 +17,8 @@ macro_rules! hex_color_noa {
     }};
 }
 
-pub const EMPTINESS: Color32 = hex_color_noa!("#080808");
-pub const BG_DARK: Color32 = hex_color_noa!("#191919");
+pub const EMPTINESS: Color32 = hex_color_noa!("#040404");
+pub const BG_DARK: Color32 = hex_color_noa!("#161616");
 pub const BG_LIGHT: Color32 = hex_color_noa!("#252525");
 pub const BG_TRANSPARENT: Color32 = Color32::from_black_alpha(235);
 pub const VISIBLE_DARK: Color32 = hex_color_noa!("#606060");
@@ -50,7 +50,7 @@ pub const STROKE_LIGHT: Stroke = Stroke {
 };
 pub const STROKE_DARK: Stroke = Stroke {
     width: 1.0,
-    color: VISIBLE_DARK,
+    color: BG_LIGHT,
 };
 pub const STROKE_YELLOW: Stroke = Stroke {
     width: 1.0,
@@ -165,26 +165,24 @@ fn setup_ui(mut ctx: Query<&mut EguiContext>) {
             ..Default::default()
         };
         style.wrap_mode = Some(egui::TextWrapMode::Extend);
-        style.spacing.window_margin = Margin::same(13);
+        style.spacing.window_margin = Margin::same(0);
         style.spacing.slider_rail_height = 2.0;
         style.spacing.button_padding = egui::vec2(8.0, 2.0);
+        style.visuals.panel_fill = EMPTINESS;
         style.visuals.striped = false;
         style.visuals.slider_trailing_fill = true;
         style.visuals.faint_bg_color = BG_LIGHT;
         style.visuals.handle_shape = HandleShape::Rect { aspect_ratio: 0.1 };
         style.visuals.selection.bg_fill = YELLOW_DARK;
         style.visuals.resize_corner_size = 0.0;
-        style.visuals.window_stroke = Stroke {
-            width: 1.0,
-            color: VISIBLE_DARK,
-        };
-        style.visuals.window_fill = BG_DARK;
-        style.visuals.extreme_bg_color = EMPTINESS;
+        style.visuals.window_stroke = Stroke::NONE;
+        style.visuals.window_fill = TRANSPARENT;
+        style.visuals.extreme_bg_color = TRANSPARENT;
         style.visuals.widgets = Widgets {
             noninteractive: WidgetVisuals {
                 weak_bg_fill: Color32::TRANSPARENT,
                 bg_fill: Color32::from_gray(27),
-                bg_stroke: Stroke::new(1.0, VISIBLE_DARK), // separators, indentation lines
+                bg_stroke: STROKE_DARK, // separators, indentation lines
                 fg_stroke: Stroke::new(1.0, VISIBLE_DARK), // normal text color
                 corner_radius: CornerRadius::same(13),
                 expansion: 0.0,
@@ -192,7 +190,7 @@ fn setup_ui(mut ctx: Query<&mut EguiContext>) {
             inactive: WidgetVisuals {
                 weak_bg_fill: Color32::TRANSPARENT,
                 bg_fill: BG_LIGHT, // checkbox background
-                bg_stroke: Stroke::new(1.0, BG_LIGHT),
+                bg_stroke: STROKE_DARK,
                 fg_stroke: Stroke::new(1.0, VISIBLE_LIGHT), // button text
                 corner_radius: CornerRadius::same(13),
                 expansion: 0.0,
@@ -200,7 +198,7 @@ fn setup_ui(mut ctx: Query<&mut EguiContext>) {
             hovered: WidgetVisuals {
                 weak_bg_fill: Color32::TRANSPARENT,
                 bg_fill: Color32::from_gray(70),
-                bg_stroke: Stroke::new(1.0, VISIBLE_LIGHT), // e.g. hover over window edge or button
+                bg_stroke: STROKE_DARK, // e.g. hover over window edge or button
                 fg_stroke: Stroke::new(1.5, VISIBLE_BRIGHT),
                 corner_radius: CornerRadius::same(13),
                 expansion: 0.0,
@@ -208,7 +206,7 @@ fn setup_ui(mut ctx: Query<&mut EguiContext>) {
             active: WidgetVisuals {
                 weak_bg_fill: Color32::TRANSPARENT,
                 bg_fill: Color32::from_gray(55),
-                bg_stroke: Stroke::new(1.0, YELLOW),
+                bg_stroke: STROKE_YELLOW,
                 fg_stroke: Stroke::new(2.0, YELLOW),
                 corner_radius: CornerRadius::same(13),
                 expansion: 0.0,
@@ -216,7 +214,7 @@ fn setup_ui(mut ctx: Query<&mut EguiContext>) {
             open: WidgetVisuals {
                 weak_bg_fill: Color32::from_gray(45),
                 bg_fill: Color32::from_gray(27),
-                bg_stroke: Stroke::new(1.0, Color32::from_gray(60)),
+                bg_stroke: STROKE_DARK,
                 fg_stroke: Stroke::new(1.0, Color32::from_gray(210)),
                 corner_radius: CornerRadius::same(13),
                 expansion: 0.0,

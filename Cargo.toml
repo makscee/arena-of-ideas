@@ -59,6 +59,7 @@ chrono = { version = "0.4.38", default-features = false, features = [
     "now",
 ] }
 egui_extras = { version = "0.31.0", features = ["svg"] }
+egui_dock = { version = "0.16.0" }
 humanize-duration = "0.0.6"
 parking_lot = "0.12.3"
 syn = "2.0.89"
@@ -106,6 +107,7 @@ rand_chacha = { workspace = true }
 parking_lot = { workspace = true }
 tween = { workspace = true }
 color-hex = { workspace = true }
+egui_dock = { workspace = true }
 
 spacetimedb-sdk = "=1.0.0-rc3"
 spacetimedb-sats = "=1.0.0-rc3"
