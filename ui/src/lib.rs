@@ -19,11 +19,12 @@ use bevy::{
     prelude::{KeyCode, Mut, Resource, World},
 };
 use bevy_egui::egui;
+use bevy_egui::egui::UiBuilder;
 use colored::CustomColor;
 use egui::{
     emath::Numeric, include_image, pos2, style::HandleShape, Align, Align2, Area, CollapsingHeader,
-    Color32, ComboBox, FontId, Frame, Id, Image, Key, Layout, Margin, NumExt, Order, Rect,
-    Response, Rounding, Sense, Shadow, Stroke, TextEdit, TextStyle, Ui, Widget, WidgetText,
+    Color32, ComboBox, CornerRadius, FontId, Frame, Id, Image, Key, Layout, Margin, NumExt, Order,
+    Rect, Response, Sense, Shadow, Stroke, TextEdit, TextStyle, Ui, Widget, WidgetText,
 };
 use indexmap::IndexMap;
 use itertools::Itertools;

@@ -68,10 +68,10 @@ impl Default for SectionMenu {
 impl SectionMenu {
     pub fn show(self, ctx: &egui::Context, world: &mut World) {
         TopBottomPanel::top("State Menu")
-            .frame(Frame::none().outer_margin(Margin {
-                left: 13.0,
-                top: 3.0,
-                bottom: 3.0,
+            .frame(Frame::new().outer_margin(Margin {
+                left: 13,
+                top: 3,
+                bottom: 3,
                 ..default()
             }))
             .resizable(false)

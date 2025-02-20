@@ -22,7 +22,7 @@ pub struct DataFrame<'a, T> {
 const FRAME: Frame = Frame {
     inner_margin: Margin::ZERO,
     outer_margin: Margin::ZERO,
-    rounding: ROUNDING,
+    corner_radius: ROUNDING,
     shadow: Shadow::NONE,
     fill: EMPTINESS,
     stroke: STROKE_DARK,
@@ -249,16 +249,12 @@ fn compose_ui(
     let openness_inner = ui.ctx().animate_bool(collapse_inner_id, collapsed_inner);
     let hovered = get_ctx_bool_id_default(ui.ctx(), hovered_id, false);
 
-    let r = 13.0;
-    let header_rounding = Rounding {
-        nw: r,
-        ne: if header.is_none() || collapsed {
-            r
-        } else {
-            0.0
-        },
-        sw: if body.is_none() || collapsed { r } else { 0.0 },
-        se: r,
+    const R: u8 = 13;
+    let header_rounding = CornerRadius {
+        nw: R,
+        ne: if header.is_none() || collapsed { R } else { 0 },
+        sw: if body.is_none() || collapsed { R } else { 0 },
+        se: R,
     };
     let mut header_rect = Rect::ZERO;
     let mut triangle_rect = Rect::ZERO;
@@ -269,8 +265,8 @@ fn compose_ui(
                 ui.horizontal(|ui| {
                     header_rect = FRAME
                         .fill(BG_DARK)
-                        .inner_margin(Margin::symmetric(8.0, 4.0))
-                        .rounding(header_rounding)
+                        .inner_margin(Margin::symmetric(8, 4))
+                        .corner_radius(header_rounding)
                         .show(ui, |ui| {
                             if let Some(prefix) = prefix {
                                 format!("[vd [s {prefix}]]").label(ui);
@@ -326,12 +322,12 @@ fn compose_ui(
                             set_ctx_bool_id(ui.ctx(), collapse_override_id, !collapsed_inner);
                             set_ctx_bool_id(ui.ctx(), collapse_inner_id, !collapsed_inner);
                         }
-                        Frame::none()
+                        Frame::new()
                             .inner_margin(Margin {
-                                left: 8.0,
-                                right: 8.0,
-                                top: 0.0,
-                                bottom: 4.0,
+                                left: 8,
+                                right: 8,
+                                top: 0,
+                                bottom: 4,
                             })
                             .show(ui, |ui| changed |= f(ui));
                         if resp.clicked() {

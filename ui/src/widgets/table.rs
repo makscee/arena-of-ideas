@@ -426,7 +426,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                         const FRAME: Frame = Frame {
                             inner_margin: Margin::ZERO,
                             outer_margin: Margin::ZERO,
-                            rounding: Rounding::same(13.0),
+                            corner_radius: CornerRadius::same(13),
                             shadow: SHADOW,
                             fill: BG_DARK,
                             stroke: Stroke {
@@ -495,7 +495,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                 .ctx()
                 .data_mut(|w| w.get_temp::<TableState>(id))
                 .unwrap_or_default();
-            let frame_nr = ui.ctx().frame_nr();
+            let frame_nr = ui.ctx().cumulative_pass_nr();
             if state.frame_nr + 1 != frame_nr {
                 state = default();
             }
@@ -528,98 +528,93 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                 });
             }
 
-            Frame::none()
-                .inner_margin(Margin::same(13.0))
-                .show(ui, |ui| {
-                    ui.push_id(Id::new(self.name), |ui| {
-                        ui.horizontal(|ui| {
-                            format!("total: {}", state.indices.len()).cstr().label(ui);
-                        });
-                        TableBuilder::new(ui)
-                            .columns(
-                                Column::auto(),
-                                self.columns.len() + self.selectable as usize,
-                            )
-                            .auto_shrink([false, true])
-                            .cell_layout(Layout::centered_and_justified(egui::Direction::TopDown))
-                            .header(30.0, |mut row| {
-                                for (i, (name, column)) in self.columns.iter().enumerate() {
-                                    row.col(|ui| {
-                                        let clicked = if column.sortable {
-                                            let mut btn = Button::new(name.to_string());
-                                            btn = if state
-                                                .sorting
-                                                .as_ref()
-                                                .is_some_and(|(i_sort, _)| *i_sort == i)
-                                            {
-                                                btn.bg(ui)
-                                            } else {
-                                                btn
-                                            };
-                                            btn.ui(ui).clicked()
-                                        } else if column.hide_name {
-                                            false
+            Frame::none().inner_margin(Margin::same(13)).show(ui, |ui| {
+                ui.push_id(Id::new(self.name), |ui| {
+                    ui.horizontal(|ui| {
+                        format!("total: {}", state.indices.len()).cstr().label(ui);
+                    });
+                    TableBuilder::new(ui)
+                        .columns(
+                            Column::auto(),
+                            self.columns.len() + self.selectable as usize,
+                        )
+                        .auto_shrink([false, true])
+                        .cell_layout(Layout::centered_and_justified(egui::Direction::TopDown))
+                        .header(30.0, |mut row| {
+                            for (i, (name, column)) in self.columns.iter().enumerate() {
+                                row.col(|ui| {
+                                    let clicked = if column.sortable {
+                                        let mut btn = Button::new(name.to_string());
+                                        btn = if state
+                                            .sorting
+                                            .as_ref()
+                                            .is_some_and(|(i_sort, _)| *i_sort == i)
+                                        {
+                                            btn.bg(ui)
                                         } else {
-                                            Button::new(name.to_string())
-                                                .enabled(false)
-                                                .gray(ui)
-                                                .ui(ui);
-                                            false
+                                            btn
                                         };
-                                        if clicked {
-                                            if state.sorting.is_some_and(|(s_i, s)| s_i == i && !s)
-                                            {
-                                                state.sorting = Some((i, true));
-                                            } else {
-                                                state.sorting = Some((i, false));
-                                            }
-                                            need_sort = true;
+                                        btn.ui(ui).clicked()
+                                    } else if column.hide_name {
+                                        false
+                                    } else {
+                                        Button::new(name.to_string())
+                                            .enabled(false)
+                                            .gray(ui)
+                                            .ui(ui);
+                                        false
+                                    };
+                                    if clicked {
+                                        if state.sorting.is_some_and(|(s_i, s)| s_i == i && !s) {
+                                            state.sorting = Some((i, true));
+                                        } else {
+                                            state.sorting = Some((i, false));
+                                        }
+                                        need_sort = true;
+                                    }
+                                });
+                            }
+                        })
+                        .body(|body| {
+                            body.rows(self.row_height, state.indices.len(), |mut row| {
+                                let mut row_i = row.index();
+                                if let Some(i) = state.indices.get(row_i) {
+                                    row_i = *i;
+                                }
+                                row.set_selected(state.selected_row.is_some_and(|i| i == row_i));
+                                for (col_i, (_, col)) in self.columns.iter().enumerate() {
+                                    let index = (col_i, row_i);
+                                    let cell = state.cells.entry(index).or_default();
+                                    cell.update();
+                                    row.col(|ui| {
+                                        let d = &data[row_i];
+                                        let v: VarValue =
+                                            cell.get_cached(index, d, &col.value, world);
+                                        (col.show)(d, v, ui, world);
+                                        if cell.highlight > 0.0 {
+                                            ui.painter().rect_stroke(
+                                                ui.min_rect(),
+                                                CornerRadius::same(13),
+                                                Stroke::new(
+                                                    1.0,
+                                                    YELLOW.gamma_multiply(cell.highlight),
+                                                ),
+                                                egui::StrokeKind::Middle,
+                                            );
+                                        }
+                                    });
+                                }
+                                if self.selectable {
+                                    row.col(|ui| {
+                                        if "select".cstr_c(VISIBLE_BRIGHT).button(ui).clicked() {
+                                            state.selected_row = Some(row_i);
                                         }
                                     });
                                 }
                             })
-                            .body(|body| {
-                                body.rows(self.row_height, state.indices.len(), |mut row| {
-                                    let mut row_i = row.index();
-                                    if let Some(i) = state.indices.get(row_i) {
-                                        row_i = *i;
-                                    }
-                                    row.set_selected(
-                                        state.selected_row.is_some_and(|i| i == row_i),
-                                    );
-                                    for (col_i, (_, col)) in self.columns.iter().enumerate() {
-                                        let index = (col_i, row_i);
-                                        let cell = state.cells.entry(index).or_default();
-                                        cell.update();
-                                        row.col(|ui| {
-                                            let d = &data[row_i];
-                                            let v: VarValue =
-                                                cell.get_cached(index, d, &col.value, world);
-                                            (col.show)(d, v, ui, world);
-                                            if cell.highlight > 0.0 {
-                                                ui.painter().rect_stroke(
-                                                    ui.min_rect(),
-                                                    Rounding::same(13.0),
-                                                    Stroke::new(
-                                                        1.0,
-                                                        YELLOW.gamma_multiply(cell.highlight),
-                                                    ),
-                                                );
-                                            }
-                                        });
-                                    }
-                                    if self.selectable {
-                                        row.col(|ui| {
-                                            if "select".cstr_c(VISIBLE_BRIGHT).button(ui).clicked()
-                                            {
-                                                state.selected_row = Some(row_i);
-                                            }
-                                        });
-                                    }
-                                })
-                            });
-                    });
+                        });
                 });
+            });
             if need_filter {
                 state.indices = (0..data.len()).collect_vec();
                 state.sorting = None;

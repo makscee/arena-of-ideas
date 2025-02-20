@@ -10,9 +10,9 @@ impl CollapsingSelector {
         content: impl FnOnce(&mut T, &mut Ui) -> bool,
     ) -> bool {
         const FRAME: Frame = Frame {
-            inner_margin: Margin::same(2.0),
-            outer_margin: Margin::same(2.0),
-            rounding: Rounding::same(13.0),
+            inner_margin: Margin::same(2),
+            outer_margin: Margin::same(2),
+            corner_radius: CornerRadius::same(13),
             shadow: Shadow::NONE,
             fill: TRANSPARENT,
             stroke: STROKE_DARK,
@@ -28,7 +28,7 @@ impl CollapsingSelector {
                         *value = new_value;
                     }
                     let cr = CollapsingHeader::new("")
-                        .id_source(ui.next_auto_id())
+                        .id_salt(ui.next_auto_id())
                         .default_open(true)
                         .show_unindented(ui, |ui| content(value, ui));
                     r |= cr.body_returned.unwrap_or_default();

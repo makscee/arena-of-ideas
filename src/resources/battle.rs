@@ -198,7 +198,8 @@ impl BattleAction {
             BattleAction::Spawn(entity) => {
                 battle
                     .world
-                    .run_system_once_with((*entity, battle.t), NodeStatePlugin::inject_entity_vars);
+                    .run_system_once_with((*entity, battle.t), NodeStatePlugin::inject_entity_vars)
+                    .unwrap();
                 add_actions.extend_from_slice(&[BattleAction::VarSet(
                     *entity,
                     NodeKind::None,
@@ -294,7 +295,9 @@ impl BattleSimulation {
             .iter(&world)
             .collect_vec()
         {
-            world.run_system_once_with((entity, 0.0), NodeStatePlugin::inject_entity_vars);
+            world
+                .run_system_once_with((entity, 0.0), NodeStatePlugin::inject_entity_vars)
+                .unwrap();
         }
         fn entities_by_slot(parent: Entity, world: &World) -> Vec<Entity> {
             Context::new_world(&world)
@@ -346,7 +349,8 @@ impl BattleSimulation {
         {
             let vars = self
                 .world
-                .run_system_once_with(entity, NodeStatePlugin::collect_vars);
+                .run_system_once_with(entity, NodeStatePlugin::collect_vars)
+                .unwrap();
             for (var, (value, source)) in vars {
                 let value = self.send_update_event(entity, var, value);
                 NodeState::from_world_mut(entity, &mut self.world)

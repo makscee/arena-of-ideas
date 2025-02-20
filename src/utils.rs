@@ -18,10 +18,10 @@ pub fn cursor_world_pos(world: &mut World) -> Option<Vec2> {
     cursor_pos(world).map(|p| screen_to_world(p, world))
 }
 pub fn delta_time(world: &World) -> f32 {
-    world.resource::<Time>().delta_seconds()
+    world.resource::<Time>().delta_secs()
 }
 pub fn elapsed_seconds(world: &World) -> f32 {
-    world.resource::<Time>().elapsed_seconds()
+    world.resource::<Time>().elapsed_secs()
 }
 pub fn global_settings() -> &'static GlobalSettings {
     if is_connected() {

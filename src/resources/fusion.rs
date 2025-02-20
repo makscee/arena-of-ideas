@@ -368,9 +368,9 @@ impl Fusion {
 }
 
 const FRAME: Frame = Frame {
-    inner_margin: Margin::same(5.0),
-    outer_margin: Margin::same(5.0),
-    rounding: ROUNDING,
+    inner_margin: Margin::same(5),
+    outer_margin: Margin::same(5),
+    corner_radius: ROUNDING,
     shadow: Shadow::NONE,
     fill: TRANSPARENT,
     stroke: STROKE_DARK,

@@ -1,3 +1,5 @@
+use bevy_egui::egui::UiBuilder;
+
 use super::*;
 
 pub struct MatchPlugin;
@@ -16,9 +18,9 @@ struct MatchData {
 }
 
 const FRAME: Frame = Frame {
-    inner_margin: Margin::same(5.0),
-    outer_margin: Margin::same(5.0),
-    rounding: ROUNDING,
+    inner_margin: Margin::same(5),
+    outer_margin: Margin::same(5),
+    corner_radius: ROUNDING,
     shadow: Shadow::NONE,
     fill: TRANSPARENT,
     stroke: STROKE_DARK,
@@ -75,11 +77,11 @@ impl MatchPlugin {
                         let size = ui.available_size();
                         let size = size.x.at_most(size.y);
                         let rect = ui
-                            .allocate_ui_at_rect(
-                                Rect::from_center_size(
+                            .allocate_new_ui(
+                                UiBuilder::new().max_rect(Rect::from_center_size(
                                     ui.available_rect_before_wrap().center(),
                                     egui::vec2(size, size),
-                                ),
+                                )),
                                 |ui| show_slot(i, 1, false, ui).rect,
                             )
                             .inner
@@ -143,14 +145,15 @@ impl MatchPlugin {
                     ui.expand_to_include_y(full_rect.bottom());
                 });
                 let rect = ui.available_rect_before_wrap();
-                ui.allocate_ui_at_rect(
-                    rect.with_max_y(rect.bottom() - rect.height() * 0.5),
+                ui.allocate_new_ui(
+                    UiBuilder::new().max_rect(rect.with_max_y(rect.bottom() - rect.height() * 0.5)),
                     |ui| {
                         Self::show_shop_case(&mut md, ui);
                     },
                 );
-                ui.allocate_ui_at_rect(
-                    rect.with_min_y(rect.top() + rect.height() * 0.5 + 5.0),
+                ui.allocate_new_ui(
+                    UiBuilder::new()
+                        .max_rect(rect.with_min_y(rect.top() + rect.height() * 0.5 + 5.0)),
                     |ui| {
                         let mut last_slot = -1;
                         for (fusion, slot, rep) in md

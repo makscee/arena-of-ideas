@@ -33,7 +33,9 @@ pub const SLOT_SPACING: f32 = 3.0;
 
 impl CameraData {
     pub fn apply(&self, projection: &mut OrthographicProjection) {
-        projection.scaling_mode = ScalingMode::FixedHorizontal(self.cur_scale);
+        projection.scaling_mode = ScalingMode::FixedHorizontal {
+            viewport_width: self.cur_scale,
+        };
     }
 }
 

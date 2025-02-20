@@ -73,12 +73,19 @@ impl Paint for PainterAction {
                 let shape = if let Some(width) = p.hollow {
                     RectShape::new(
                         rect,
-                        Rounding::ZERO,
+                        CornerRadius::ZERO,
                         TRANSPARENT,
                         Stroke::new(width, p.color),
+                        egui::StrokeKind::Middle,
                     )
                 } else {
-                    RectShape::new(rect, Rounding::ZERO, p.color, Stroke::NONE)
+                    RectShape::new(
+                        rect,
+                        CornerRadius::ZERO,
+                        p.color,
+                        Stroke::NONE,
+                        egui::StrokeKind::Middle,
+                    )
                 };
                 p.tesselator.tessellate_rect(&shape, &mut p.mesh)
             }

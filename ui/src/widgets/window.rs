@@ -96,7 +96,7 @@ impl Window {
         const FRAME: Frame = Frame {
             inner_margin: MARGIN,
             outer_margin: Margin::ZERO,
-            rounding: ROUNDING,
+            corner_radius: ROUNDING,
             shadow: SHADOW,
             fill: EMPTINESS,
             stroke: STROKE_DARK,

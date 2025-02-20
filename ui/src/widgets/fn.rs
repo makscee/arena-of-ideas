@@ -60,7 +60,7 @@ pub fn popup(
         .show(ctx, |ui| {
             ui.expand_to_include_rect(rect);
             ui.painter_at(rect)
-                .rect_filled(rect, Rounding::ZERO, Color32::from_black_alpha(200));
+                .rect_filled(rect, CornerRadius::ZERO, Color32::from_black_alpha(200));
         });
     if fullscreen {
         center_window_fullscreen(name, ctx, add_contents);

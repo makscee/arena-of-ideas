@@ -8,7 +8,7 @@ pub use bevy::{app::PreUpdate, prelude::In};
 pub use bevy::{
     app::{prelude::PluginGroup, App, Plugin, Startup, Update},
     asset::{Asset, Assets, Handle},
-    audio::{AudioBundle, AudioSource, PlaybackSettings},
+    audio::{AudioSource, PlaybackSettings},
     color::{Color, LinearRgba, Mix},
     core::Name,
     diagnostic::DiagnosticsStore,
@@ -20,7 +20,7 @@ pub use bevy::{
         system::{Query, Res, ResMut, Resource, SystemParam},
         world::{Mut, World},
     },
-    hierarchy::{BuildWorldChildren, Children, DespawnRecursiveExt, Parent},
+    hierarchy::{Children, DespawnRecursiveExt, Parent},
     input::{keyboard::KeyCode, ButtonInput},
     log::{debug, error, info, *},
     math::{
@@ -34,19 +34,15 @@ pub use bevy::{
         camera::Camera,
         mesh::{Mesh, MeshVertexBufferLayout, MeshVertexBufferLayoutRef, PrimitiveTopology},
         render_resource::{AsBindGroup, PolygonMode, RenderPipelineDescriptor},
-        view::{Visibility, VisibilityBundle},
+        view::Visibility,
     },
-    sprite::{Material2d, MaterialMesh2dBundle, Mesh2dHandle},
+    sprite::Material2d,
     state::{
         condition::{in_state, state_changed},
         state::{NextState, OnEnter, OnExit, State, States},
     },
-    text::{Text, Text2dBundle},
     time::Time,
-    transform::{
-        bundles::TransformBundle,
-        components::{GlobalTransform, Transform},
-    },
+    transform::components::{GlobalTransform, Transform},
     utils::hashbrown::{HashMap, HashSet},
     DefaultPlugins,
 };
@@ -58,8 +54,8 @@ pub use bevy_asset_loader::{
 };
 pub use bevy_common_assets::ron::RonAssetPlugin;
 pub use bevy_egui::egui::{
-    self, epaint::TextShape, Align, CollapsingHeader, Color32, Frame, Layout, Margin, Rect,
-    Rounding, Shadow, Stroke, Ui,
+    self, epaint::TextShape, Align, CollapsingHeader, Color32, CornerRadius, Frame, Layout, Margin,
+    Rect, Shadow, Stroke, Ui,
 };
 pub use bevy_egui::{
     egui::{epaint::PathShape, pos2, Align2, Id, Pos2},

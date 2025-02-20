@@ -1,8 +1,10 @@
+use std::sync::Arc;
+
 use bevy::{app::Startup, prelude::Query};
 use bevy_egui::EguiContext;
 use egui::{
     style::{HandleShape, Spacing, WidgetVisuals, Widgets},
-    FontData, FontDefinitions, FontFamily, LayerId, Margin, Rounding, Shadow, Stroke,
+    CornerRadius, FontData, FontDefinitions, FontFamily, LayerId, Margin, Shadow, Stroke,
 };
 
 use super::*;
@@ -60,50 +62,26 @@ pub const STROKE_YELLOW_DARK: Stroke = Stroke {
 };
 
 pub const SHADOW: Shadow = Shadow {
-    offset: egui::vec2(8.0, 8.0),
-    blur: 15.0,
-    spread: 0.0,
+    offset: [8, 8],
+    blur: 15,
+    spread: 0,
     color: Color32::from_rgba_premultiplied(20, 20, 20, 35),
 };
 pub const MARGIN: Margin = Margin {
-    left: 4.0,
-    right: 4.0,
-    top: 4.0,
-    bottom: 4.0,
+    left: 4,
+    right: 4,
+    top: 4,
+    bottom: 4,
 };
 
-pub const ROUNDING: Rounding = Rounding {
-    nw: 13.0,
-    ne: 13.0,
-    sw: 13.0,
-    se: 13.0,
+pub const ROUNDING: CornerRadius = CornerRadius {
+    nw: 13,
+    ne: 13,
+    sw: 13,
+    se: 13,
 };
 
 pub const UNIT_SIZE: f32 = 1.0;
-
-pub fn empty_response(ctx: egui::Context) -> Response {
-    Response {
-        ctx,
-        layer_id: LayerId::background(),
-        id: Id::new(0),
-        rect: Rect::ZERO,
-        interact_rect: Rect::ZERO,
-        sense: Sense::hover(),
-        enabled: false,
-        contains_pointer: false,
-        hovered: false,
-        highlighted: false,
-        clicked: false,
-        fake_primary_click: false,
-        long_touched: false,
-        drag_started: false,
-        dragged: false,
-        drag_stopped: false,
-        is_pointer_button_down_on: false,
-        interact_pointer_pos: None,
-        changed: false,
-    }
-}
 
 pub struct UiPlugin;
 
@@ -118,17 +96,21 @@ fn setup_ui(mut ctx: Query<&mut EguiContext>) {
     let mut fonts = FontDefinitions::default();
     fonts.font_data.insert(
         "regular".to_owned(),
-        FontData::from_static(include_bytes!(
+        Arc::new(FontData::from_static(include_bytes!(
             "../../assets/fonts/SometypeMono-Regular.ttf"
-        )),
+        ))),
     );
     fonts.font_data.insert(
         "medium".to_owned(),
-        FontData::from_static(include_bytes!("../../assets/fonts/SometypeMono-Medium.ttf")),
+        Arc::new(FontData::from_static(include_bytes!(
+            "../../assets/fonts/SometypeMono-Medium.ttf"
+        ))),
     );
     fonts.font_data.insert(
         "bold".to_owned(),
-        FontData::from_static(include_bytes!("../../assets/fonts/SometypeMono-Bold.ttf")),
+        Arc::new(FontData::from_static(include_bytes!(
+            "../../assets/fonts/SometypeMono-Bold.ttf"
+        ))),
     );
     fonts
         .families
@@ -183,7 +165,7 @@ fn setup_ui(mut ctx: Query<&mut EguiContext>) {
             ..Default::default()
         };
         style.wrap_mode = Some(egui::TextWrapMode::Extend);
-        style.spacing.window_margin = Margin::same(13.0);
+        style.spacing.window_margin = Margin::same(13);
         style.spacing.slider_rail_height = 2.0;
         style.spacing.button_padding = egui::vec2(8.0, 2.0);
         style.visuals.striped = false;
@@ -204,7 +186,7 @@ fn setup_ui(mut ctx: Query<&mut EguiContext>) {
                 bg_fill: Color32::from_gray(27),
                 bg_stroke: Stroke::new(1.0, VISIBLE_DARK), // separators, indentation lines
                 fg_stroke: Stroke::new(1.0, VISIBLE_DARK), // normal text color
-                rounding: Rounding::same(13.0),
+                corner_radius: CornerRadius::same(13),
                 expansion: 0.0,
             },
             inactive: WidgetVisuals {
@@ -212,7 +194,7 @@ fn setup_ui(mut ctx: Query<&mut EguiContext>) {
                 bg_fill: BG_LIGHT, // checkbox background
                 bg_stroke: Stroke::new(1.0, BG_LIGHT),
                 fg_stroke: Stroke::new(1.0, VISIBLE_LIGHT), // button text
-                rounding: Rounding::same(13.0),
+                corner_radius: CornerRadius::same(13),
                 expansion: 0.0,
             },
             hovered: WidgetVisuals {
@@ -220,7 +202,7 @@ fn setup_ui(mut ctx: Query<&mut EguiContext>) {
                 bg_fill: Color32::from_gray(70),
                 bg_stroke: Stroke::new(1.0, VISIBLE_LIGHT), // e.g. hover over window edge or button
                 fg_stroke: Stroke::new(1.5, VISIBLE_BRIGHT),
-                rounding: Rounding::same(13.0),
+                corner_radius: CornerRadius::same(13),
                 expansion: 0.0,
             },
             active: WidgetVisuals {
@@ -228,7 +210,7 @@ fn setup_ui(mut ctx: Query<&mut EguiContext>) {
                 bg_fill: Color32::from_gray(55),
                 bg_stroke: Stroke::new(1.0, YELLOW),
                 fg_stroke: Stroke::new(2.0, YELLOW),
-                rounding: Rounding::same(13.0),
+                corner_radius: CornerRadius::same(13),
                 expansion: 0.0,
             },
             open: WidgetVisuals {
@@ -236,7 +218,7 @@ fn setup_ui(mut ctx: Query<&mut EguiContext>) {
                 bg_fill: Color32::from_gray(27),
                 bg_stroke: Stroke::new(1.0, Color32::from_gray(60)),
                 fg_stroke: Stroke::new(1.0, Color32::from_gray(210)),
-                rounding: Rounding::same(13.0),
+                corner_radius: CornerRadius::same(13),
                 expansion: 0.0,
             },
         };

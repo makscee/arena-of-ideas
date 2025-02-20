@@ -1,4 +1,7 @@
-use bevy::sprite::Material2dPlugin;
+use bevy::{
+    render::mesh::Mesh2d,
+    sprite::{Material2dPlugin, MeshMaterial2d},
+};
 
 use super::*;
 
@@ -17,19 +20,13 @@ impl BackgroundPlugin {
         mut meshes: ResMut<Assets<Mesh>>,
         mut materials: ResMut<Assets<BackgroundMaterial>>,
     ) {
-        commands.spawn((MaterialMesh2dBundle {
-            mesh: meshes
-                .add(Rectangle {
-                    half_size: vec2(1000.0, 1000.0),
-                })
-                .into(),
-            material: materials.add(BackgroundMaterial {}),
-            transform: Transform {
-                translation: vec3(0.0, 0.0, -10.0),
-                ..default()
-            },
-            ..default()
-        },));
+        commands.spawn((
+            Mesh2d(meshes.add(Rectangle {
+                half_size: vec2(1000.0, 1000.0),
+            })),
+            MeshMaterial2d(materials.add(BackgroundMaterial {})),
+            Transform::from_translation(vec3(0.0, 0.0, -10.0)),
+        ));
     }
 }
 

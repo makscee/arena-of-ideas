@@ -3,8 +3,8 @@ mod plugins;
 pub mod prelude;
 mod resources;
 mod stdb;
-mod utils;
 mod ui;
+mod utils;
 
 use bevy::{
     diagnostic::FrameTimeDiagnosticsPlugin, render::camera::ClearColor, state::app::AppExtStates,
@@ -123,9 +123,6 @@ fn main() {
         .init_resource::<NotificationsResource>();
     for n in NodeKind::iter() {
         n.register(&mut app);
-    }
-    if !cfg!(debug_assertions) {
-        app.add_plugins(bevy_panic_handler::PanicHandler::new().build());
     }
     app.run();
 }

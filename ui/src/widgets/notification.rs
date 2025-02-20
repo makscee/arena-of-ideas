@@ -95,9 +95,9 @@ impl Notification {
 }
 
 const FRAME: Frame = Frame {
-    inner_margin: Margin::same(13.0),
-    outer_margin: Margin::symmetric(13.0, 0.0),
-    rounding: Rounding::same(13.0),
+    inner_margin: Margin::same(13),
+    outer_margin: Margin::symmetric(13, 0),
+    corner_radius: CornerRadius::same(13),
     fill: BG_DARK,
     shadow: SHADOW,
     stroke: Stroke {

@@ -11,13 +11,13 @@ pub struct TagWidget {
     number_galley: Option<Arc<egui::Galley>>,
 }
 
-const INNER_MARGIN: Margin = Margin::symmetric(4.0, 1.0);
-const OUTER_MARGIN: Margin = Margin::symmetric(4.0, 4.0);
+const INNER_MARGIN: Margin = Margin::symmetric(4, 1);
+const OUTER_MARGIN: Margin = Margin::symmetric(4, 4);
 const NUMBER_MARGIN: Margin = Margin {
-    left: 8.0,
-    right: 2.0,
-    top: 0.0,
-    bottom: 0.0,
+    left: 8,
+    right: 2,
+    top: 0,
+    bottom: 0,
 };
 impl TagWidget {
     pub fn new_text(text: impl ToString, color: Color32) -> Self {
@@ -68,7 +68,7 @@ impl TagWidget {
     }
     pub fn ui(mut self, ui: &mut Ui) {
         let frame = Frame {
-            rounding: Rounding::same(13.0),
+            corner_radius: CornerRadius::same(13),
             shadow: Shadow::NONE,
             fill: self.color,
             stroke: Stroke::new(1.0, self.color),
@@ -100,7 +100,7 @@ impl TagWidget {
         if let Some(number) = self.number_galley {
             ui.painter().galley(
                 rect.shrink2(margin_size * 0.5).right_top()
-                    - egui::vec2(number_size.x - NUMBER_MARGIN.left, 0.0),
+                    - egui::vec2(number_size.x - NUMBER_MARGIN.left as f32, 0.0),
                 number,
                 VISIBLE_BRIGHT,
             );

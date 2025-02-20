@@ -173,7 +173,7 @@ impl OnUnpack for NodeKind {
             }
             _ => {}
         };
-        emut.insert((TransformBundle::default(), VisibilityBundle::default()));
+        emut.insert((Transform::default(), Visibility::default()));
 
         let mut child = || world.spawn_empty().set_parent(entity).id();
         match self {

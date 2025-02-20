@@ -68,11 +68,11 @@ struct ScreenResource {
     screen_rect: Rect,
 }
 
-const MARGIN: f32 = 7.0;
+const MARGIN: i8 = 7;
 const FRAME: Frame = Frame {
     inner_margin: Margin::same(MARGIN),
     outer_margin: Margin::same(MARGIN),
-    rounding: Rounding::same(13.0),
+    corner_radius: CornerRadius::same(13),
     shadow: SHADOW,
     fill: BG_DARK,
     stroke: Stroke {
@@ -473,7 +473,7 @@ impl Tile {
                 } else {
                     BG_LIGHT
                 };
-                ui.painter().rect_filled(line, Rounding::ZERO, color);
+                ui.painter().rect_filled(line, CornerRadius::ZERO, color);
                 if resp.dragged() {
                     let delta = resp.drag_delta().x;
                     if let Some(cs) = &mut self.content_space_override {

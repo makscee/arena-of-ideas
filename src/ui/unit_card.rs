@@ -15,14 +15,14 @@ pub struct UnitCard {
 impl UnitCard {
     pub fn show(&self, ui: &mut Ui) {
         ui.spacing_mut().item_spacing.y = 1.0;
-        Frame::none()
+        Frame::new()
             .fill(BG_DARK)
             .stroke(Stroke::new(2.0, self.rarity.color()))
-            .rounding(Rounding {
-                nw: 13.0,
-                ne: 13.0,
-                sw: 0.0,
-                se: 0.0,
+            .corner_radius(CornerRadius {
+                nw: 13,
+                ne: 13,
+                sw: 0,
+                se: 0,
             })
             .show(ui, |ui| {
                 ui.vertical_centered_justified(|ui| {
@@ -32,14 +32,14 @@ impl UnitCard {
                     self.show_tags(ui);
                 });
             });
-        Frame::none()
+        Frame::new()
             .fill(EMPTINESS)
-            .inner_margin(Margin::same(4.0))
-            .rounding(Rounding {
-                nw: 0.0,
-                ne: 0.0,
-                sw: 13.0,
-                se: 13.0,
+            .inner_margin(Margin::same(4))
+            .corner_radius(CornerRadius {
+                nw: 0,
+                ne: 0,
+                sw: 13,
+                se: 13,
             })
             .stroke(STROKE_DARK)
             .show(ui, |ui| {
@@ -105,8 +105,8 @@ impl UnitCard {
     fn show_description(&self, ui: &mut Ui) {
         Frame::none()
             .fill(if self.expanded { BG_DARK } else { TRANSPARENT })
-            .inner_margin(Margin::same(6.0))
-            .rounding(Rounding::same(13.0))
+            .inner_margin(Margin::same(6))
+            .corner_radius(CornerRadius::same(13))
             .show(ui, |ui| {
                 ui.vertical_centered_justified(|ui| {
                     self.description.cstr().label_w(ui);

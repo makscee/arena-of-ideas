@@ -36,11 +36,16 @@ impl IconMenu {
             if show_indicator {
                 ui.painter().rect_stroke(
                     rect.expand(blink * 4.0),
-                    Rounding::same(13.0),
+                    CornerRadius::same(13),
                     Stroke::new((1.0 - blink) * 3.0, i.color),
+                    egui::StrokeKind::Middle,
                 );
-                ui.painter()
-                    .rect_stroke(rect, Rounding::same(13.0), Stroke::new(1.0, i.color));
+                ui.painter().rect_stroke(
+                    rect,
+                    CornerRadius::same(13),
+                    Stroke::new(1.0, i.color),
+                    egui::StrokeKind::Middle,
+                );
             }
         }
     }

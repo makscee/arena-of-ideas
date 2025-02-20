@@ -1,4 +1,4 @@
-use bevy::audio::{AudioSink, AudioSinkPlayback, Volume};
+use bevy::audio::{AudioPlayer, AudioSink, AudioSinkPlayback, Volume};
 use rand::seq::SliceRandom;
 
 use super::*;
@@ -79,14 +79,14 @@ impl AudioPlugin {
         FX_QUEUE.lock().push(sfx);
     }
     fn play(source: Handle<AudioSource>, world: &mut World) {
-        world.spawn(AudioBundle {
-            source,
-            settings: PlaybackSettings {
+        world.spawn((
+            AudioPlayer::new(source),
+            PlaybackSettings {
                 mode: bevy::audio::PlaybackMode::Despawn,
                 volume: Volume::new(client_settings().fx_volume()),
                 ..default()
             },
-        });
+        ));
     }
     fn background_sink(world: &mut World) -> Option<(Entity, &AudioSink)> {
         world
@@ -102,13 +102,11 @@ impl AudioPlugin {
         let bg_ind = ar.bg_inds[ar.bg_cur];
         let bg = world.resource::<AudioAssets>().audio_bg[bg_ind].clone();
         world.spawn((
-            AudioBundle {
-                source: bg,
-                settings: PlaybackSettings {
-                    mode: bevy::audio::PlaybackMode::Despawn,
-                    volume: Volume::new(client_settings().music_volume()),
-                    ..default()
-                },
+            AudioPlayer::new(bg),
+            PlaybackSettings {
+                mode: bevy::audio::PlaybackMode::Despawn,
+                volume: Volume::new(client_settings().music_volume()),
+                ..default()
             },
             BackgroundAudioMarker,
         ));

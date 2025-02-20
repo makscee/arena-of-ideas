@@ -200,7 +200,7 @@ impl AdminPlugin {
                 gt().pause(resp.hovered());
                 t += gt().last_delta();
                 ui.painter().add(
-                    Frame::none()
+                    Frame::new()
                         .stroke(if resp.hovered() {
                             STROKE_YELLOW
                         } else {
@@ -246,7 +246,7 @@ impl AdminPlugin {
         .push(w);
     }
     fn setup(mut commands: Commands) {
-        commands.add(|world: &mut World| {
+        commands.queue(|world: &mut World| {
             let mut e = Expression::F(1.0);
             e.inject_data(
                 r#"

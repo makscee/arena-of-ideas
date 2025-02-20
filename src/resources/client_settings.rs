@@ -117,8 +117,12 @@ impl ClientSettings {
         {
             window.mode = match self.window_mode {
                 WindowMode::Windowed => bevy::window::WindowMode::Windowed,
-                WindowMode::FullScreen => bevy::window::WindowMode::Fullscreen,
-                WindowMode::BorderlessFullScreen => bevy::window::WindowMode::BorderlessFullscreen,
+                WindowMode::FullScreen => {
+                    bevy::window::WindowMode::Fullscreen(bevy::window::MonitorSelection::Current)
+                }
+                WindowMode::BorderlessFullScreen => bevy::window::WindowMode::BorderlessFullscreen(
+                    bevy::window::MonitorSelection::Current,
+                ),
             };
             window
                 .resolution
