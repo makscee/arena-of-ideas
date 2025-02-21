@@ -48,8 +48,17 @@ impl LoginPlugin {
             identity_player: identity_user,
             ..default()
         });
+        DockPlugin::push(
+            |dt| {
+                dt.state
+                    .main_surface_mut()
+                    .push_to_first_leaf(TabContent::new("Login", Self::login_ui));
+            },
+            world,
+        );
     }
     pub fn complete(player: Option<TPlayer>, world: &mut World) {
+        DockPlugin::close_by_name("Login", world);
         let player = player.unwrap_or_else(|| {
             world
                 .resource::<LoginData>()
@@ -62,81 +71,78 @@ impl LoginPlugin {
         subscribe_game(GameState::proceed_op);
     }
     pub fn login_ui(ui: &mut Ui, world: &mut World) {
-        center_window("login", ui.ctx(), |ui| {
-            ui.vertical_centered_justified(|ui| {
-                let mut ld = world.resource_mut::<LoginData>();
-                if let Some(player) = ld.identity_player.clone() {
-                    format!("Login as {}", player.name)
-                        .cstr_cs(VISIBLE_LIGHT, CstrStyle::Heading2)
-                        .label(ui);
-                    if !ld.login_requested
-                        && (client_settings().auto_login || Button::new("Login").ui(ui).clicked())
-                    {
-                        ld.login_requested = true;
-                        cn().reducers.on_login_by_identity(|e| {
-                            if !e.check_identity() {
-                                return;
-                            }
-                            e.event.on_success_op(|world| {
-                                LoginPlugin::complete(None, world);
-                            });
+        ui.vertical_centered_justified(|ui| {
+            let mut ld = world.resource_mut::<LoginData>();
+            if let Some(player) = ld.identity_player.clone() {
+                format!("Login as {}", player.name)
+                    .cstr_cs(VISIBLE_LIGHT, CstrStyle::Heading2)
+                    .label(ui);
+                if !ld.login_requested
+                    && (client_settings().auto_login || Button::new("Login").ui(ui).clicked())
+                {
+                    ld.login_requested = true;
+                    cn().reducers.on_login_by_identity(|e| {
+                        if !e.check_identity() {
+                            return;
+                        }
+                        e.event.on_success_op(|world| {
+                            LoginPlugin::complete(None, world);
                         });
-                        let _ = cn().reducers.login_by_identity();
-                    }
-                    br(ui);
-                    if Button::new("Logout").gray(ui).ui(ui).clicked() {
-                        ld.identity_player = None;
-                    }
-                } else {
-                    let mut ld = world.resource_mut::<LoginData>();
-                    "Register"
-                        .cstr_cs(VISIBLE_LIGHT, CstrStyle::Heading)
-                        .label(ui);
-                    if Button::new("New Player").ui(ui).clicked() {
-                        cn().reducers.on_register_empty(|e| {
-                            if !e.check_identity() {
-                                return;
-                            }
-                            e.event.on_success_op(|world| {
-                                Notification::new_string("New player created".to_owned())
-                                    .push(world);
-                                let identity = ConnectOption::get(world).identity.clone();
-                                let player = cn()
-                                    .db
-                                    .player()
-                                    .iter()
-                                    .find(|u| u.identities.contains(&identity))
-                                    .expect("Failed to find player after registration");
-                                world.resource_mut::<LoginData>().identity_player = Some(player);
-                            })
-                        });
-                        cn().reducers.register_empty().unwrap();
-                    }
-                    br(ui);
-                    "Login".cstr_cs(VISIBLE_LIGHT, CstrStyle::Heading).label(ui);
-                    Input::new("name").ui_string(&mut ld.name_field, ui);
-                    Input::new("password")
-                        .password()
-                        .ui_string(&mut ld.pass_field, ui);
-                    if Button::new("Submit").ui(ui).clicked() {
-                        cn().reducers.on_login(|e, name, _| {
-                            if !e.check_identity() {
-                                return;
-                            }
-                            let name = name.clone();
-                            let player = e.db.player().name().find(&name).unwrap();
-                            e.event.on_success_op(move |world| {
-                                LoginPlugin::complete(Some(player), world);
-                            })
-                        });
-                        let _ = crate::login::login(
-                            &cn().reducers,
-                            ld.name_field.clone(),
-                            ld.pass_field.clone(),
-                        );
-                    }
+                    });
+                    let _ = cn().reducers.login_by_identity();
                 }
-            });
+                br(ui);
+                if Button::new("Logout").gray(ui).ui(ui).clicked() {
+                    ld.identity_player = None;
+                }
+            } else {
+                let mut ld = world.resource_mut::<LoginData>();
+                "Register"
+                    .cstr_cs(VISIBLE_LIGHT, CstrStyle::Heading)
+                    .label(ui);
+                if Button::new("New Player").ui(ui).clicked() {
+                    cn().reducers.on_register_empty(|e| {
+                        if !e.check_identity() {
+                            return;
+                        }
+                        e.event.on_success_op(|world| {
+                            Notification::new_string("New player created".to_owned()).push(world);
+                            let identity = ConnectOption::get(world).identity.clone();
+                            let player = cn()
+                                .db
+                                .player()
+                                .iter()
+                                .find(|u| u.identities.contains(&identity))
+                                .expect("Failed to find player after registration");
+                            world.resource_mut::<LoginData>().identity_player = Some(player);
+                        })
+                    });
+                    cn().reducers.register_empty().unwrap();
+                }
+                br(ui);
+                "Login".cstr_cs(VISIBLE_LIGHT, CstrStyle::Heading).label(ui);
+                Input::new("name").ui_string(&mut ld.name_field, ui);
+                Input::new("password")
+                    .password()
+                    .ui_string(&mut ld.pass_field, ui);
+                if Button::new("Submit").ui(ui).clicked() {
+                    cn().reducers.on_login(|e, name, _| {
+                        if !e.check_identity() {
+                            return;
+                        }
+                        let name = name.clone();
+                        let player = e.db.player().name().find(&name).unwrap();
+                        e.event.on_success_op(move |world| {
+                            LoginPlugin::complete(Some(player), world);
+                        })
+                    });
+                    let _ = crate::login::login(
+                        &cn().reducers,
+                        ld.name_field.clone(),
+                        ld.pass_field.clone(),
+                    );
+                }
+            }
         });
     }
 }

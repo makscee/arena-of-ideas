@@ -4,57 +4,37 @@ pub struct AdminPlugin;
 
 impl Plugin for AdminPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::Admin), (Self::setup, Self::on_enter))
+        app.add_systems(OnEnter(GameState::Admin), Self::on_enter)
             .add_systems(Update, Self::update);
     }
 }
 
 impl AdminPlugin {
     fn on_enter(world: &mut World) {
-        Window::new("UnitCard", |ui, _| {
-            UnitCard {
-                name: "Apprentice".into(),
-                description: "[yellow Battle Start]: deal [vb [b 1]] damage to random enemy".into(),
-                house: "wizards".into(),
-                house_color: Color32::from_hex("#039BE5").unwrap(),
-                rarity: Rarity::legendary,
-                vars: HashMap::from_iter([
-                    (VarName::pwr, 1.into()),
-                    (VarName::hp, 3.into()),
-                    (VarName::lvl, 3.into()),
-                    (VarName::tier, 2.into()),
-                ]),
-                expanded: false,
-                reaction: Reaction::new(
-                    [(
-                        Trigger::BattleStart,
-                        [
-                            Action::AddTarget(Box::new(Expression::RandomUnit(Box::new(
-                                Expression::AllEnemyUnits,
-                            )))),
-                            Action::UseAbility,
-                        ]
-                        .to_vec()
-                        .into(),
-                    )]
-                    .to_vec(),
-                ),
-            }
-            .show(ui)
-        })
-        .no_frame()
-        .center_anchor()
-        .push(world);
-        for u in world.query::<&Unit>().iter(world) {
-            debug!("Unit {}", u.name);
-            debug!(
-                "House {}",
-                u.find_up::<House>(world)
-                    .unwrap()
-                    .get_var(VarName::name)
-                    .unwrap()
-            );
-        }
+        DockPlugin::push(
+            |dt| {
+                dt.state
+                    .main_surface_mut()
+                    .push_to_first_leaf(TabContent::new("Admin", Self::show_tab));
+                dt.state.main_surface_mut().split_right(
+                    0.into(),
+                    0.15,
+                    TabContent::new_vec("Main Menu", |ui, world| {
+                        if "Open Match".cstr().button(ui).clicked() {
+                            if let Some(m) =
+                                NodeDomain::Match.filter_by_kind(NodeKind::Match).get(0)
+                            {
+                                MatchPlugin::load_match_data(m.id, world);
+                                MatchPlugin::open_shop_tab(world);
+                            } else {
+                                error!("No matches found");
+                            }
+                        }
+                    }),
+                );
+            },
+            world,
+        );
     }
     fn setup_battle(world: &mut World) {
         let (left, right) = client_state().battle_test_teams.clone();
@@ -245,75 +225,40 @@ impl AdminPlugin {
         })
         .push(w);
     }
-    fn setup(mut commands: Commands) {
-        commands.queue(|world: &mut World| {
-            let mut e = Expression::F(1.0);
-            e.inject_data(
-                r#"
-Abs(Equals(F(51.0),Abs(Equals(F(1.0),Or(Equals(F(1.0),One),Abs(Or(Target,Abs(One))))))))"#,
-            );
-            Tile::new(Side::Left, move |ui, world| {
-                let scale = &mut world.resource_mut::<CameraData>().need_scale;
-                Slider::new("Cam Scale").ui(scale, 1.0..=50.0, ui);
-                if "Open Battle".cstr().button(ui).clicked() {
-                    Self::show_battle(world);
+    pub fn show_tab(ui: &mut Ui, world: &mut World) {
+        if "Open Battle".cstr().button(ui).clicked() {
+            Self::show_battle(world);
+        }
+        if "Setup Battle".cstr().button(ui).clicked() {
+            Self::setup_battle(world);
+        }
+        if "Anim Editor".cstr().button(ui).clicked() {
+            Self::show_anim_editor(world);
+        }
+        if "Spawn Hero".cstr().button(ui).clicked() {
+            match cn().reducers.node_spawn_hero("SpawnedHero".into()) {
+                Ok(_) => {
+                    info!("Hero spawned")
                 }
-                if "Setup Battle".cstr().button(ui).clicked() {
-                    Self::setup_battle(world);
+                Err(e) => {
+                    error!("{e}")
                 }
-                if "Anim Editor".cstr().button(ui).clicked() {
-                    Self::show_anim_editor(world);
-                }
-                if "Spawn Hero".cstr().button(ui).clicked() {
-                    match cn().reducers.node_spawn_hero("SpawnedHero".into()) {
-                        Ok(_) => {
-                            info!("Hero spawned")
-                        }
-                        Err(e) => {
-                            error!("{e}")
-                        }
-                    };
-                }
-                if "Insert Match".cstr().button(ui).clicked() {
-                    cn().reducers.match_insert().unwrap();
-                }
-                if "Open Match".cstr().button(ui).clicked() {
-                    if let Some(m) = NodeDomain::Match.filter_by_kind(NodeKind::Match).get(0) {
-                        MatchPlugin::load_match_data(m.id, world);
-                        MatchPlugin::open_shop_window(world);
-                    } else {
-                        error!("No matches found");
-                    }
-                }
-                if "Houses Editor".cstr().button(ui).clicked() {
-                    GameAssetsEditor::open_houses_window(world);
-                }
-                // ui.horizontal(|ui| {
-                //     e.show_mut(Some("Expr"), ui);
-                //     e.show(Some("Prefix"), &Context::default(), ui);
-                // });
-            })
-            .transparent()
-            .pinned()
-            .push(world);
-        });
-        // let house = houses().get("holy").unwrap().clone();
-        // dbg!(&house);
-        // house.unpack(commands.spawn_empty().id(), &mut commands);
-
-        // commands.add(|world: &mut World| {
-        //     for e in world
-        //         .query_filtered::<Entity, With<House>>()
-        //         .iter(world)
-        //         .collect_vec()
-        //     {
-        //         Window::new("Inspector", move |ui, world| {
-        //             world.get::<House>(e).unwrap().ui(0, ui, world);
-        //         })
-        //         .no_frame()
-        //         .push(world);
-        //     }
-        // });
+            };
+        }
+        if "Insert Match".cstr().button(ui).clicked() {
+            cn().reducers.match_insert().unwrap();
+        }
+        if "Open Match".cstr().button(ui).clicked() {
+            if let Some(m) = NodeDomain::Match.filter_by_kind(NodeKind::Match).get(0) {
+                MatchPlugin::load_match_data(m.id, world);
+                MatchPlugin::open_shop_tab(world);
+            } else {
+                error!("No matches found");
+            }
+        }
+        if "Houses Editor".cstr().button(ui).clicked() {
+            GameAssetsEditor::open_houses_window(world);
+        }
     }
     fn update(world: &mut World) {
         // let egui_context = world

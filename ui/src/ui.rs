@@ -198,7 +198,7 @@ fn setup_ui(mut ctx: Query<&mut EguiContext>) {
             hovered: WidgetVisuals {
                 weak_bg_fill: Color32::TRANSPARENT,
                 bg_fill: Color32::from_gray(70),
-                bg_stroke: STROKE_DARK, // e.g. hover over window edge or button
+                bg_stroke: STROKE_LIGHT, // e.g. hover over window edge or button
                 fg_stroke: Stroke::new(1.5, VISIBLE_BRIGHT),
                 corner_radius: CornerRadius::same(13),
                 expansion: 0.0,

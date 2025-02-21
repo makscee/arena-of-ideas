@@ -1,5 +1,3 @@
-use bevy::utils::HashSet;
-use convert_case::Casing;
 use egui::{CentralPanel, ComboBox, CornerRadius, Frame, Slider, TopBottomPanel, Ui, WidgetText};
 
 use egui_dock::{
@@ -11,12 +9,21 @@ use strum_macros::AsRefStr;
 use super::*;
 
 pub struct DockTree {
-    state: DockState<TabContent>,
+    pub state: DockState<TabContent>,
     context: DockContext,
 }
 
+impl Default for DockTree {
+    fn default() -> Self {
+        Self {
+            state: DockState::new(default()),
+            context: default(),
+        }
+    }
+}
+
 pub struct TabContent {
-    name: String,
+    pub name: String,
     content: Box<dyn FnMut(&mut Ui, &mut World) + Send + Sync>,
 }
 
@@ -26,8 +33,9 @@ pub enum TabType {
     Shop,
 }
 
+#[derive(Default)]
 struct DockContext {
-    pub style: Option<Style>,
+    style: Option<Style>,
     world: Option<World>,
 }
 
@@ -62,6 +70,12 @@ impl TabContent {
             content: Box::new(content),
         }
     }
+    pub fn new_vec(
+        name: impl ToString,
+        content: impl FnMut(&mut Ui, &mut World) + Send + Sync + 'static,
+    ) -> Vec<Self> {
+        [Self::new(name, content)].into()
+    }
 }
 
 impl DockTree {
@@ -76,9 +90,7 @@ impl DockTree {
         Self { context, state }
     }
     pub fn add_tab(&mut self, tab: TabContent) {
-        self.state
-            .main_surface_mut()
-            .split_right(NodeIndex::root(), 0.5, [tab].into());
+        self.state.main_surface_mut().push_to_focused_leaf(tab);
     }
     pub fn ui(&mut self, ctx: &egui::Context, world: World) -> World {
         self.context.world = Some(world);

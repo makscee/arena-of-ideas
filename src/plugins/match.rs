@@ -104,119 +104,124 @@ impl MatchPlugin {
             }
         });
     }
-    pub fn open_shop_window(world: &mut World) {
+    fn show_shop(ui: &mut Ui, world: &mut World) {
+        let mut md = world.remove_resource::<MatchData>().unwrap();
+        let full_rect = ui.available_rect_before_wrap();
+        let mut fusion_edit = None;
+        ui.horizontal(|ui| {
+            ui.vertical(|ui| {
+                ui.horizontal(|ui| {
+                    format!("[yellow [h2 {}g]]", md.g).label(ui);
+                    if format!("[h2 reroll [yellow {}g]]", global_settings().match_g.reroll)
+                        .button(ui)
+                        .clicked()
+                    {
+                        cn().reducers.match_reroll().unwrap();
+                    }
+                });
+                for (unit, stats) in md
+                    .team_world
+                    .query::<(&Unit, &UnitStats)>()
+                    .iter(&md.team_world)
+                {
+                    FRAME.show(ui, |ui| {
+                        show_unit_tag(unit, stats, ui, &md.team_world);
+                        if format!(
+                            "[b sell [yellow +{}g]]",
+                            global_settings().match_g.unit_sell
+                        )
+                        .button(ui)
+                        .clicked()
+                        {
+                            cn().reducers.match_sell(unit.name.clone()).unwrap();
+                        }
+                    });
+                }
+                ui.expand_to_include_y(full_rect.bottom());
+            });
+            let rect = ui.available_rect_before_wrap();
+            ui.allocate_new_ui(
+                UiBuilder::new().max_rect(rect.with_max_y(rect.bottom() - rect.height() * 0.5)),
+                |ui| {
+                    Self::show_shop_case(&mut md, ui);
+                },
+            );
+            ui.allocate_new_ui(
+                UiBuilder::new().max_rect(rect.with_min_y(rect.top() + rect.height() * 0.5 + 5.0)),
+                |ui| {
+                    let mut last_slot = -1;
+                    for (fusion, slot, rep) in md
+                        .team_world
+                        .query::<(&Fusion, &UnitSlot, &Representation)>()
+                        .iter(&md.team_world)
+                    {
+                        let slot = slot.slot;
+                        let r = show_slot(
+                            slot as usize,
+                            global_settings().team_slots as usize,
+                            false,
+                            ui,
+                        );
+                        last_slot = last_slot.at_least(slot);
+                        fusion.paint(r.rect, ui, &md.team_world).unwrap();
+                        let context = &Context::new_world(&md.team_world)
+                            .set_owner(fusion.entity())
+                            .take();
+                        rep.paint(r.rect, context, ui).log();
+                        if r.clicked() {
+                            fusion_edit = Some(slot);
+                        }
+                        if r.drag_started() {
+                            r.dnd_set_drag_payload(slot);
+                        }
+                        if r.dragged() {
+                            ui.painter().arrow(
+                                r.rect.center(),
+                                ui.ctx().pointer_latest_pos().unwrap_or_default().to_vec2()
+                                    - r.rect.center().to_vec2(),
+                                Stroke::new(2.0, YELLOW),
+                            );
+                        }
+                        if let Some(i) = r.dnd_release_payload::<usize>() {
+                            if slot as usize != *i {
+                                cn().reducers.match_reorder(*i as u8, slot as u8).unwrap();
+                            }
+                        }
+                    }
+                    if last_slot + 1 < global_settings().team_slots as i32 {
+                        let slot = last_slot + 1;
+                        let r = show_slot(
+                            slot as usize,
+                            global_settings().team_slots as usize,
+                            false,
+                            ui,
+                        );
+                        if r.clicked() {
+                            fusion_edit = Some(slot);
+                        }
+                    }
+                },
+            )
+        });
+        world.insert_resource(md);
+        if let Some(slot) = fusion_edit {
+            Self::open_fusion_edit_window(slot, world);
+        }
+    }
+    pub fn open_shop_tab(world: &mut World) {
         if !world.contains_resource::<MatchData>() {
             error!("Match not loaded");
             return;
         }
-        Window::new("Match", move |ui, world| {
-            let mut md = world.remove_resource::<MatchData>().unwrap();
-            let full_rect = ui.available_rect_before_wrap();
-            let mut fusion_edit = None;
-            ui.horizontal(|ui| {
-                ui.vertical(|ui| {
-                    ui.horizontal(|ui| {
-                        format!("[yellow [h2 {}g]]", md.g).label(ui);
-                        if format!("[h2 reroll [yellow {}g]]", global_settings().match_g.reroll)
-                            .button(ui)
-                            .clicked()
-                        {
-                            cn().reducers.match_reroll().unwrap();
-                        }
-                    });
-                    for (unit, stats) in md
-                        .team_world
-                        .query::<(&Unit, &UnitStats)>()
-                        .iter(&md.team_world)
-                    {
-                        FRAME.show(ui, |ui| {
-                            show_unit_tag(unit, stats, ui, &md.team_world);
-                            if format!(
-                                "[b sell [yellow +{}g]]",
-                                global_settings().match_g.unit_sell
-                            )
-                            .button(ui)
-                            .clicked()
-                            {
-                                cn().reducers.match_sell(unit.name.clone()).unwrap();
-                            }
-                        });
-                    }
-                    ui.expand_to_include_y(full_rect.bottom());
-                });
-                let rect = ui.available_rect_before_wrap();
-                ui.allocate_new_ui(
-                    UiBuilder::new().max_rect(rect.with_max_y(rect.bottom() - rect.height() * 0.5)),
-                    |ui| {
-                        Self::show_shop_case(&mut md, ui);
-                    },
-                );
-                ui.allocate_new_ui(
-                    UiBuilder::new()
-                        .max_rect(rect.with_min_y(rect.top() + rect.height() * 0.5 + 5.0)),
-                    |ui| {
-                        let mut last_slot = -1;
-                        for (fusion, slot, rep) in md
-                            .team_world
-                            .query::<(&Fusion, &UnitSlot, &Representation)>()
-                            .iter(&md.team_world)
-                        {
-                            let slot = slot.slot;
-                            let r = show_slot(
-                                slot as usize,
-                                global_settings().team_slots as usize,
-                                false,
-                                ui,
-                            );
-                            last_slot = last_slot.at_least(slot);
-                            fusion.paint(r.rect, ui, &md.team_world).unwrap();
-                            let context = &Context::new_world(&md.team_world)
-                                .set_owner(fusion.entity())
-                                .take();
-                            rep.paint(r.rect, context, ui).log();
-                            if r.clicked() {
-                                fusion_edit = Some(slot);
-                            }
-                            if r.drag_started() {
-                                r.dnd_set_drag_payload(slot);
-                            }
-                            if r.dragged() {
-                                ui.painter().arrow(
-                                    r.rect.center(),
-                                    ui.ctx().pointer_latest_pos().unwrap_or_default().to_vec2()
-                                        - r.rect.center().to_vec2(),
-                                    Stroke::new(2.0, YELLOW),
-                                );
-                            }
-                            if let Some(i) = r.dnd_release_payload::<usize>() {
-                                if slot as usize != *i {
-                                    cn().reducers.match_reorder(*i as u8, slot as u8).unwrap();
-                                }
-                            }
-                        }
-                        if last_slot + 1 < global_settings().team_slots as i32 {
-                            let slot = last_slot + 1;
-                            let r = show_slot(
-                                slot as usize,
-                                global_settings().team_slots as usize,
-                                false,
-                                ui,
-                            );
-                            if r.clicked() {
-                                fusion_edit = Some(slot);
-                            }
-                        }
-                    },
-                )
-            });
-            world.insert_resource(md);
-            if let Some(slot) = fusion_edit {
-                Self::open_fusion_edit_window(slot, world);
-            }
-        })
-        .default_width(800.0)
-        .default_height(600.0)
-        .push(world);
+        DockPlugin::push(
+            |dt| {
+                dt.state
+                    .push_to_focused_leaf(TabContent::new("Match", |ui, world| {
+                        Self::show_shop(ui, world);
+                    }));
+            },
+            world,
+        );
     }
     fn open_fusion_edit_window(slot: i32, world: &mut World) {
         if !world.contains_resource::<MatchData>() {
