@@ -33,8 +33,6 @@ pub mod match_insert_reducer;
 pub mod match_reorder_reducer;
 pub mod match_reroll_reducer;
 pub mod match_sell_reducer;
-pub mod node_move_reducer;
-pub mod node_spawn_hero_reducer;
 pub mod node_spawn_reducer;
 pub mod nodes_core_table;
 pub mod nodes_match_table;
@@ -99,10 +97,6 @@ pub use match_reorder_reducer::{
 };
 pub use match_reroll_reducer::{match_reroll, set_flags_for_match_reroll, MatchRerollCallbackId};
 pub use match_sell_reducer::{match_sell, set_flags_for_match_sell, MatchSellCallbackId};
-pub use node_move_reducer::{node_move, set_flags_for_node_move, NodeMoveCallbackId};
-pub use node_spawn_hero_reducer::{
-    node_spawn_hero, set_flags_for_node_spawn_hero, NodeSpawnHeroCallbackId,
-};
 pub use node_spawn_reducer::{node_spawn, set_flags_for_node_spawn, NodeSpawnCallbackId};
 pub use nodes_core_table::*;
 pub use nodes_match_table::*;
@@ -173,18 +167,10 @@ pub enum Reducer {
     MatchSell {
         name: String,
     },
-    NodeMove {
-        id: u64,
-        x: f32,
-        y: f32,
-    },
     NodeSpawn {
         id: Option<u64>,
         kinds: Vec<String>,
         datas: Vec<String>,
-    },
-    NodeSpawnHero {
-        name: String,
     },
     Register {
         name: String,
@@ -229,9 +215,7 @@ impl __sdk::Reducer for Reducer {
             Reducer::MatchReorder { .. } => "match_reorder",
             Reducer::MatchReroll => "match_reroll",
             Reducer::MatchSell { .. } => "match_sell",
-            Reducer::NodeMove { .. } => "node_move",
             Reducer::NodeSpawn { .. } => "node_spawn",
-            Reducer::NodeSpawnHero { .. } => "node_spawn_hero",
             Reducer::Register { .. } => "register",
             Reducer::RegisterEmpty => "register_empty",
             Reducer::SetName { .. } => "set_name",
@@ -337,13 +321,6 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
                 )?
                 .into(),
             ),
-            "node_move" => Ok(
-                __sdk::parse_reducer_args::<node_move_reducer::NodeMoveArgs>(
-                    "node_move",
-                    &value.args,
-                )?
-                .into(),
-            ),
             "node_spawn" => Ok(
                 __sdk::parse_reducer_args::<node_spawn_reducer::NodeSpawnArgs>(
                     "node_spawn",
@@ -351,10 +328,6 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
                 )?
                 .into(),
             ),
-            "node_spawn_hero" => Ok(__sdk::parse_reducer_args::<
-                node_spawn_hero_reducer::NodeSpawnHeroArgs,
-            >("node_spawn_hero", &value.args)?
-            .into()),
             "register" => Ok(__sdk::parse_reducer_args::<register_reducer::RegisterArgs>(
                 "register",
                 &value.args,

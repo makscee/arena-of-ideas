@@ -235,16 +235,6 @@ impl AdminPlugin {
         if "Anim Editor".cstr().button(ui).clicked() {
             Self::show_anim_editor(world);
         }
-        if "Spawn Hero".cstr().button(ui).clicked() {
-            match cn().reducers.node_spawn_hero("SpawnedHero".into()) {
-                Ok(_) => {
-                    info!("Hero spawned")
-                }
-                Err(e) => {
-                    error!("{e}")
-                }
-            };
-        }
         if "Insert Match".cstr().button(ui).clicked() {
             cn().reducers.match_insert().unwrap();
         }

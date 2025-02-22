@@ -105,7 +105,6 @@ fn main() {
             GameTimerPlugin,
             WindowPlugin,
             BackgroundPlugin,
-            HeroPlugin,
             StdbSyncPlugin,
             MatchPlugin,
         ))

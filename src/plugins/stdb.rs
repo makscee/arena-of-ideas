@@ -55,25 +55,6 @@ pub fn subscribe_game(on_success: impl FnOnce() + Send + Sync + 'static) {
             kind.unpack(entity, &data, Some(id), world);
         });
     });
-    db.nodes_world().on_update(|_, _before, row| {
-        let kind = NodeKind::from_str(&row.kind).unwrap();
-        let id = row.id;
-        info!("Node updated {kind}");
-        let data = row.data.clone();
-        OperationsPlugin::add(move |world| {
-            let Some(entity) = world.get_id_link(id) else {
-                return;
-            };
-            match kind {
-                NodeKind::Mover => {
-                    let mut mover = Mover::default();
-                    mover.inject_data(&data);
-                    world.entity_mut(entity).insert(mover);
-                }
-                _ => {}
-            }
-        });
-    });
     db.battle().on_insert(|_, row| {
         let left = Team::from_strings(0, &row.team_left).unwrap();
         let right = Team::from_strings(0, &row.team_right).unwrap();

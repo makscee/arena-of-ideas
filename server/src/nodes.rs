@@ -20,12 +20,3 @@ pub trait Node: Default + Sized {
     fn from_table(c: &Context, domain: NodeDomain, id: u64) -> Option<Self>;
     fn to_table(self, c: &Context, domain: NodeDomain, parent: u64);
 }
-
-impl Mover {
-    pub fn new_empty() -> Self {
-        Mover {
-            start_ts: now_seconds(),
-            ..default()
-        }
-    }
-}

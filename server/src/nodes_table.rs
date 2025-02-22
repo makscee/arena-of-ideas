@@ -293,36 +293,3 @@ fn node_spawn(
     }
     Ok(())
 }
-
-#[reducer]
-fn node_spawn_hero(ctx: &ReducerContext, name: String) -> Result<(), String> {
-    let c = &ctx.wrap()?;
-    let id = c.next_id();
-    let mut hero = Hero::new(name);
-    let mut mover = Mover::new_empty();
-    hero.id = Some(id);
-    mover.id = Some(id);
-    NodeDomain::World.node_insert(c, &hero);
-    NodeDomain::World.node_insert(c, &mover);
-    Ok(())
-}
-
-#[reducer]
-fn node_move(ctx: &ReducerContext, id: u64, x: f32, y: f32) -> Result<(), String> {
-    let c = &ctx.wrap()?;
-    let key = NodeKind::Mover.key(id);
-    let data = ctx
-        .db
-        .nodes_world()
-        .key()
-        .find(&key)
-        .to_e_s("Mover node not found")?
-        .data;
-    let mut mover = Mover::default();
-    mover.inject_data(&data);
-    mover.from = mover.pos(GlobalSettings::get(ctx).hero_speed);
-    mover.start_ts = now_seconds();
-    mover.target = vec2(x, y);
-    NodeDomain::World.node_insert_or_update(c, &mover);
-    Ok(())
-}

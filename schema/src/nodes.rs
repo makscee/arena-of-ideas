@@ -89,32 +89,6 @@ struct Reaction {
     pub triggers: Vec<(Trigger, Actions)>,
 }
 
-struct Hero {
-    pub name: String,
-    pub representation: NodeComponent<Representation>,
-    pub mover: NodeComponent<Mover>,
-}
-
-struct Mover {
-    pub target: Vec2,
-    pub from: Vec2,
-    pub start_ts: f64,
-}
-
-impl Mover {
-    pub fn pos(&self, speed: f32) -> Vec2 {
-        if self.start_ts == 0.0 {
-            return Vec2::ZERO;
-        }
-        self.from.lerp(self.target, self.t(speed))
-    }
-    pub fn t(&self, speed: f32) -> f32 {
-        let elapsed = (now_seconds() - self.start_ts) as f32;
-        let t = (self.target - self.from).length() / speed;
-        (elapsed / t).clamp(0.0, 1.0)
-    }
-}
-
 struct Representation {
     pub material: Material,
 }
