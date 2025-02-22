@@ -53,7 +53,7 @@ fn main() {
         std::env::set_var("RUST_LIB_BACKTRACE", "0");
     }
     let target = match args.mode {
-        RunMode::Regular => GameState::Admin,
+        RunMode::Regular => GameState::Title,
         RunMode::Custom => GameState::CustomBattle,
         RunMode::Shop => GameState::Match,
         RunMode::Editor => GameState::Editor,

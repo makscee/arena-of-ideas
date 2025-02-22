@@ -81,7 +81,6 @@ pub use include_dir::Dir;
 pub use indexmap::IndexMap;
 pub use itertools::EitherOrBoth;
 pub use itertools::Itertools;
-pub use lazy_static::lazy_static;
 pub use macro_client::*;
 pub use once_cell::sync::OnceCell;
 pub use parking_lot::{const_mutex, Mutex};
@@ -94,6 +93,7 @@ pub use ron::{
 pub use schema::*;
 pub use serde::{Deserialize, Serialize};
 pub use spacetimedb_sdk::Table as SdkTable;
+pub use std::cell::LazyCell;
 pub use std::collections::VecDeque;
 pub use std::{
     cell::RefCell,

@@ -9,7 +9,7 @@ use strum_macros::AsRefStr;
 use super::*;
 
 pub struct DockTree {
-    pub state: DockState<TabContent>,
+    pub state: DockState<Tab>,
     context: DockContext,
 }
 
@@ -22,7 +22,7 @@ impl Default for DockTree {
     }
 }
 
-pub struct TabContent {
+pub struct Tab {
     pub name: String,
     content: Box<dyn FnMut(&mut Ui, &mut World) + Send + Sync>,
 }
@@ -40,7 +40,7 @@ struct DockContext {
 }
 
 impl TabViewer for DockContext {
-    type Tab = TabContent;
+    type Tab = Tab;
 
     fn title(&mut self, tab: &mut Self::Tab) -> WidgetText {
         tab.name.as_str().into()
@@ -60,7 +60,7 @@ impl TabViewer for DockContext {
     }
 }
 
-impl TabContent {
+impl Tab {
     pub fn new(
         name: impl ToString,
         content: impl FnMut(&mut Ui, &mut World) + Send + Sync + 'static,
@@ -79,7 +79,7 @@ impl TabContent {
 }
 
 impl DockTree {
-    pub fn new(root: TabContent) -> Self {
+    pub fn new(root: Tab) -> Self {
         let state = DockState::new([root].into());
 
         let context = DockContext {
@@ -89,25 +89,23 @@ impl DockTree {
 
         Self { context, state }
     }
-    pub fn add_tab(&mut self, tab: TabContent) {
+    pub fn add_tab(&mut self, tab: Tab) {
         self.state.main_surface_mut().push_to_focused_leaf(tab);
     }
     pub fn ui(&mut self, ctx: &egui::Context, world: World) -> World {
         self.context.world = Some(world);
         TopBottomPanel::top("egui_dock::MenuBar").show(ctx, |ui| egui::menu::bar(ui, |ui| {}));
         CentralPanel::default()
-            .frame(Frame::central_panel(&ctx.style()).inner_margin(0.))
+            .frame(Frame::central_panel(&ctx.style()).inner_margin(8.))
             .show(ctx, |ui| {
                 let style = self
                     .context
                     .style
                     .get_or_insert_with(|| {
                         let mut style = Style::from_egui(ui.style());
-                        style.dock_area_padding = Some(Margin::same(8));
                         style.separator.color_idle = TRANSPARENT;
                         style.separator.color_hovered = TRANSPARENT;
                         style.separator.width = 8.0;
-                        style.tab.tab_body.bg_fill = BG_DARK;
                         style.tab.tab_body.inner_margin = 13.into();
                         style.tab.tab_body.corner_radius = CornerRadius {
                             nw: 0,
@@ -115,8 +113,9 @@ impl DockTree {
                             sw: 13,
                             se: 13,
                         };
-                        style.tab.active.bg_fill = BG_DARK;
-                        style.tab.focused.bg_fill = BG_DARK;
+                        // style.tab.tab_body.bg_fill = BG_DARK;
+                        // style.tab.active.bg_fill = BG_DARK;
+                        // style.tab.focused.bg_fill = BG_DARK;
                         style.tab_bar.fill_tab_bar = true;
                         style
                     })

@@ -58,16 +58,6 @@ pub fn show_daily_refresh_timer(ui: &mut Ui) {
     .label(ui);
 }
 
-pub trait WorldExt {
-    fn game_clear(&mut self);
-}
-
-impl WorldExt for World {
-    fn game_clear(&mut self) {
-        clear_entity_names();
-    }
-}
-
 // pub trait CstrExt {
 //     fn print(&self);
 //     fn info(&self);

@@ -168,7 +168,7 @@ fn setup_ui(mut ctx: Query<&mut EguiContext>) {
         style.spacing.window_margin = Margin::same(0);
         style.spacing.slider_rail_height = 2.0;
         style.spacing.button_padding = egui::vec2(8.0, 2.0);
-        style.visuals.panel_fill = EMPTINESS;
+        style.visuals.panel_fill = Color32::from_rgb(0, 0, 0);
         style.visuals.striped = false;
         style.visuals.slider_trailing_fill = true;
         style.visuals.faint_bg_color = BG_LIGHT;

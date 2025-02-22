@@ -33,46 +33,50 @@ pub enum GameState {
     Admin,
 }
 
-static TARGET_STATE: Mutex<GameState> = Mutex::new(GameState::Loaded);
-
-lazy_static! {
-    static ref STATE_OPTIONS: HashMap<GameState, Vec<GameOption>> = {
-        let mut m = HashMap::new();
-        m.insert(
-            GameState::Title,
-            [GameOption::Connect, GameOption::Login].into(),
-        );
-        m.insert(
-            GameState::Profile,
-            [GameOption::Connect, GameOption::Login].into(),
-        );
-        m.insert(
-            GameState::Match,
-            [
-                GameOption::Connect,
-                GameOption::ForceLogin,
-                GameOption::ActiveRun,
-            ]
-            .into(),
-        );
-        m.insert(GameState::ServerSync, [GameOption::Connect].into());
-        m.insert(
-            GameState::TestScenariosRun,
-            [GameOption::TestScenariosLoad].into(),
-        );
-        m.insert(GameState::MigrationUpload, [GameOption::Connect].into());
-        m.insert(GameState::MigrationDownload, [GameOption::Connect].into());
-        m.insert(
-            GameState::Admin,
-            [GameOption::Connect, GameOption::Login].into(),
-        );
-        m.insert(
-            GameState::Incubator,
-            [GameOption::Connect, GameOption::ForceLogin].into(),
-        );
-        m
-    };
+impl ToCstr for GameState {
+    fn cstr(&self) -> Cstr {
+        self.to_string().cstr_cs(GREEN, CstrStyle::Bold)
+    }
 }
+
+const STATE_OPTIONS: LazyCell<HashMap<GameState, Vec<GameOption>>> = LazyCell::new(|| {
+    let mut m = HashMap::new();
+    m.insert(
+        GameState::Title,
+        [GameOption::Connect, GameOption::Login].into(),
+    );
+    m.insert(
+        GameState::Profile,
+        [GameOption::Connect, GameOption::Login].into(),
+    );
+    m.insert(
+        GameState::Match,
+        [
+            GameOption::Connect,
+            GameOption::ForceLogin,
+            GameOption::ActiveRun,
+        ]
+        .into(),
+    );
+    m.insert(GameState::ServerSync, [GameOption::Connect].into());
+    m.insert(
+        GameState::TestScenariosRun,
+        [GameOption::TestScenariosLoad].into(),
+    );
+    m.insert(GameState::MigrationUpload, [GameOption::Connect].into());
+    m.insert(GameState::MigrationDownload, [GameOption::Connect].into());
+    m.insert(
+        GameState::Admin,
+        [GameOption::Connect, GameOption::Login].into(),
+    );
+    m.insert(
+        GameState::Incubator,
+        [GameOption::Connect, GameOption::ForceLogin].into(),
+    );
+    m
+});
+
+static TARGET_STATE: Mutex<GameState> = Mutex::new(GameState::Loaded);
 
 impl GameState {
     pub fn get_target() -> Self {
@@ -85,7 +89,7 @@ impl GameState {
         info!(
             "{} {}",
             "Set next state:".dimmed(),
-            self.to_string().bold().green()
+            self.cstr().to_colored()
         );
         world.resource_mut::<NextState<GameState>>().set(self);
     }
@@ -134,28 +138,8 @@ fn on_change(world: &mut World) {
     if let Some(ctx) = egui_context(world) {
         ctx.data_mut(|w| w.clear());
     }
-    // let to = cur_state(world);
+    let to = cur_state(world);
+    DockPlugin::load_state_tree(to, world);
     // TilePlugin::change_state(to, world);
     // CameraPlugin::respawn_camera(world);
-}
-
-lazy_static! {
-    static ref ENTITY_NAMES: Mutex<HashMap<Entity, Cstr>> = Mutex::new(HashMap::new());
-}
-
-pub fn save_entity_name(entity: Entity, name: Cstr) {
-    ENTITY_NAMES.lock().insert(entity, name);
-}
-pub fn entity_name(entity: Entity) -> String {
-    ENTITY_NAMES
-        .lock()
-        .get(&entity)
-        .cloned()
-        .unwrap_or(entity.to_string().cstr())
-}
-pub fn entity_name_with_id(entity: Entity) -> Cstr {
-    entity_name(entity) + &format!("#{entity}")
-}
-pub fn clear_entity_names() {
-    ENTITY_NAMES.lock().clear();
 }

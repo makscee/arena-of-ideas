@@ -71,8 +71,9 @@ impl ConnectPlugin {
         });
     }
     pub fn ui(ui: &mut Ui) {
-        center_window("status", ui.ctx(), |ui| {
-            "Connecting..."
+        ui.vertical_centered_justified(|ui| {
+            ui.add_space(ui.available_height() * 0.5 - 25.0);
+            format!("Connecting{}", (0..(gt().secs() % 4)).map(|_| ".").join(""))
                 .cstr_cs(VISIBLE_BRIGHT, CstrStyle::Heading)
                 .label(ui);
         });

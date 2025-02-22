@@ -1,4 +1,4 @@
-use egui_dock::{NodeIndex, SurfaceIndex};
+use egui_dock::{NodeIndex, SurfaceIndex, Tree};
 
 use super::*;
 
@@ -27,6 +27,41 @@ fn rm(world: &mut World) -> Mut<DockResource> {
 }
 
 impl DockPlugin {
+    pub fn load_state_tree(state: GameState, world: &mut World) {
+        info!("Load state tree for {}", state.cstr().to_colored());
+        let ds = &mut rm(world).dock.state;
+        *ds.main_surface_mut() = default();
+        for i in 1..ds.surfaces_count() {
+            ds.remove_surface(i.into());
+        }
+        match state {
+            GameState::Connect => {
+                let tree = Tree::new(Tab::new_vec("Connect", |ui, _| ConnectPlugin::ui(ui)));
+                *ds.main_surface_mut() = tree;
+            }
+            GameState::Login => {
+                let tree = Tree::new(Tab::new_vec("Login", LoginPlugin::login_ui));
+                *ds.main_surface_mut() = tree;
+            }
+            GameState::Title => {
+                let tree = Tree::new(Tab::new_vec("Main Menu", |ui, world| {
+                    ui.vertical_centered_justified(|ui| {
+                        ui.add_space(ui.available_height() * 0.3);
+                        ui.set_width(350.0.at_most(ui.available_width()));
+                        if "Start Match"
+                            .cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold)
+                            .button(ui)
+                            .clicked()
+                        {
+                            GameState::Match.set_next(world);
+                        }
+                    });
+                }));
+                *ds.main_surface_mut() = tree;
+            }
+            _ => {}
+        }
+    }
     pub fn add_tab(
         name: impl ToString,
         content: impl FnMut(&mut Ui, &mut World) + Send + Sync + 'static,
@@ -36,7 +71,7 @@ impl DockPlugin {
         Self::push(
             |dt| {
                 dt.state
-                    .push_to_focused_leaf(TabContent::new(name, Box::new(content)))
+                    .push_to_focused_leaf(Tab::new(name, Box::new(content)))
             },
             world,
         );

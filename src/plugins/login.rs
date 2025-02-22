@@ -48,17 +48,8 @@ impl LoginPlugin {
             identity_player: identity_user,
             ..default()
         });
-        DockPlugin::push(
-            |dt| {
-                dt.state
-                    .main_surface_mut()
-                    .push_to_first_leaf(TabContent::new("Login", Self::login_ui));
-            },
-            world,
-        );
     }
     pub fn complete(player: Option<TPlayer>, world: &mut World) {
-        DockPlugin::close_by_name("Login", world);
         let player = player.unwrap_or_else(|| {
             world
                 .resource::<LoginData>()
@@ -72,6 +63,8 @@ impl LoginPlugin {
     }
     pub fn login_ui(ui: &mut Ui, world: &mut World) {
         ui.vertical_centered_justified(|ui| {
+            ui.add_space(ui.available_height() * 0.3);
+            ui.set_width(350.0.at_most(ui.available_width()));
             let mut ld = world.resource_mut::<LoginData>();
             if let Some(player) = ld.identity_player.clone() {
                 format!("Login as {}", player.name)

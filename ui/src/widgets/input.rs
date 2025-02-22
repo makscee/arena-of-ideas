@@ -27,8 +27,8 @@ impl Input {
             self.name.label(ui);
             ui.style_mut().visuals.widgets.inactive.bg_stroke = STROKE_DARK;
             let mut te = TextEdit::singleline(value)
-                .password(self.password)
-                .desired_width(100.0);
+                .desired_width(f32::INFINITY)
+                .password(self.password);
             if self.char_limit > 0 {
                 te = te.char_limit(self.char_limit);
             }

@@ -59,6 +59,9 @@ impl GameTimer {
     pub fn play_head(&self) -> f32 {
         self.play_head
     }
+    pub fn secs(&self) -> i32 {
+        self.play_head as i32
+    }
     pub fn play_head_to(&mut self, t: f32) -> &mut Self {
         self.play_head = t;
         self

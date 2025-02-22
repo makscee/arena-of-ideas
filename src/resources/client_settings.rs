@@ -26,8 +26,8 @@ impl Default for ClientSettings {
     fn default() -> Self {
         Self {
             servers: HashMap::from([
-                ("prod", ("http://161.35.88.206:3000", "aoi_prod")),
-                ("dev", ("http://161.35.88.206:3000", "aoi_dev")),
+                ("prod", ("http://89.19.217.60:3000", "aoi_prod")),
+                ("dev", ("http://89.19.217.60:3000", "aoi_dev")),
             ]),
             active_server: "",
             dev_mode: false,

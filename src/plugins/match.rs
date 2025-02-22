@@ -216,7 +216,7 @@ impl MatchPlugin {
         DockPlugin::push(
             |dt| {
                 dt.state
-                    .push_to_focused_leaf(TabContent::new("Match", |ui, world| {
+                    .push_to_focused_leaf(Tab::new("Match", |ui, world| {
                         Self::show_shop(ui, world);
                     }));
             },

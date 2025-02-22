@@ -15,11 +15,11 @@ impl AdminPlugin {
             |dt| {
                 dt.state
                     .main_surface_mut()
-                    .push_to_first_leaf(TabContent::new("Admin", Self::show_tab));
+                    .push_to_first_leaf(Tab::new("Admin", Self::show_tab));
                 dt.state.main_surface_mut().split_right(
                     0.into(),
                     0.15,
-                    TabContent::new_vec("Main Menu", |ui, world| {
+                    Tab::new_vec("Main Menu", |ui, world| {
                         if "Open Match".cstr().button(ui).clicked() {
                             if let Some(m) =
                                 NodeDomain::Match.filter_by_kind(NodeKind::Match).get(0)
