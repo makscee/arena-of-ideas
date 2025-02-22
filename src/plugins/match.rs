@@ -208,21 +208,6 @@ impl MatchPlugin {
             Self::open_fusion_edit_window(slot, world);
         }
     }
-    pub fn open_shop_tab(world: &mut World) {
-        if !world.contains_resource::<MatchData>() {
-            error!("Match not loaded");
-            return;
-        }
-        DockPlugin::push(
-            |dt| {
-                dt.state
-                    .push_to_focused_leaf(Tab::new("Match", |ui, world| {
-                        Self::show_shop(ui, world);
-                    }));
-            },
-            world,
-        );
-    }
     fn open_fusion_edit_window(slot: i32, world: &mut World) {
         if !world.contains_resource::<MatchData>() {
             error!("Match not loaded");

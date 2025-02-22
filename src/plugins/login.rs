@@ -61,7 +61,7 @@ impl LoginPlugin {
         subscribe_reducers();
         subscribe_game(GameState::proceed_op);
     }
-    pub fn login_ui(ui: &mut Ui, world: &mut World) {
+    pub fn tab(ui: &mut Ui, world: &mut World) {
         ui.vertical_centered_justified(|ui| {
             ui.add_space(ui.available_height() * 0.3);
             ui.set_width(350.0.at_most(ui.available_width()));

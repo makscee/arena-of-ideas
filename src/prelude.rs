@@ -76,6 +76,8 @@ pub use egui::{
     Key, Label, NumExt, Order, Response, RichText, ScrollArea, Sense, SidePanel, Style, TextFormat,
     TextStyle, TopBottomPanel, Widget, WidgetText,
 };
+pub use egui_dock::DockState;
+pub use egui_dock::Tree;
 pub use epaint::{CircleShape, RectShape, Tessellator};
 pub use include_dir::Dir;
 pub use indexmap::IndexMap;

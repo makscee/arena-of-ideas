@@ -4,38 +4,11 @@ pub struct AdminPlugin;
 
 impl Plugin for AdminPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::Admin), Self::on_enter)
-            .add_systems(Update, Self::update);
+        app.add_systems(Update, Self::update);
     }
 }
 
 impl AdminPlugin {
-    fn on_enter(world: &mut World) {
-        DockPlugin::push(
-            |dt| {
-                dt.state
-                    .main_surface_mut()
-                    .push_to_first_leaf(Tab::new("Admin", Self::show_tab));
-                dt.state.main_surface_mut().split_right(
-                    0.into(),
-                    0.15,
-                    Tab::new_vec("Main Menu", |ui, world| {
-                        if "Open Match".cstr().button(ui).clicked() {
-                            if let Some(m) =
-                                NodeDomain::Match.filter_by_kind(NodeKind::Match).get(0)
-                            {
-                                MatchPlugin::load_match_data(m.id, world);
-                                MatchPlugin::open_shop_tab(world);
-                            } else {
-                                error!("No matches found");
-                            }
-                        }
-                    }),
-                );
-            },
-            world,
-        );
-    }
     fn setup_battle(world: &mut World) {
         let (left, right) = client_state().battle_test_teams.clone();
         dbg!(&left);
@@ -225,7 +198,7 @@ impl AdminPlugin {
         })
         .push(w);
     }
-    pub fn show_tab(ui: &mut Ui, world: &mut World) {
+    pub fn tab(ui: &mut Ui, world: &mut World) {
         if "Open Battle".cstr().button(ui).clicked() {
             Self::show_battle(world);
         }
@@ -237,14 +210,6 @@ impl AdminPlugin {
         }
         if "Insert Match".cstr().button(ui).clicked() {
             cn().reducers.match_insert().unwrap();
-        }
-        if "Open Match".cstr().button(ui).clicked() {
-            if let Some(m) = NodeDomain::Match.filter_by_kind(NodeKind::Match).get(0) {
-                MatchPlugin::load_match_data(m.id, world);
-                MatchPlugin::open_shop_tab(world);
-            } else {
-                error!("No matches found");
-            }
         }
         if "Houses Editor".cstr().button(ui).clicked() {
             GameAssetsEditor::open_houses_window(world);

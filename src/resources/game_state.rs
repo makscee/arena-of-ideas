@@ -33,6 +33,54 @@ pub enum GameState {
     Admin,
 }
 
+impl GameState {
+    pub fn load_state(self) -> DockState<Tab> {
+        match self {
+            GameState::Connect => DockState::new(Tab::Login.into()),
+            GameState::Login => DockState::new(Tab::Login.into()),
+            GameState::Title => DockState::new([Tab::MainMenu, Tab::Admin].into()),
+            _ => DockState::new(default()),
+        }
+    }
+}
+
+#[derive(PartialEq, Eq, Clone, Copy, Hash, AsRefStr, Serialize, Deserialize, Debug)]
+pub enum Tab {
+    Login,
+    Connect,
+    MainMenu,
+    Shop,
+    Team,
+    Roster,
+    Admin,
+}
+
+impl Tab {
+    pub fn ui(&self, ui: &mut Ui, world: &mut World) {
+        match self {
+            Tab::MainMenu => {
+                ui.vertical_centered_justified(|ui| {
+                    ui.add_space(ui.available_height() * 0.3);
+                    ui.set_width(350.0.at_most(ui.available_width()));
+                    if "Open Match"
+                        .cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold)
+                        .button(ui)
+                        .clicked()
+                    {
+                        GameState::Match.set_next(world);
+                    }
+                });
+            }
+            Tab::Login => LoginPlugin::tab(ui, world),
+            Tab::Connect => ConnectPlugin::tab(ui),
+            Tab::Admin => AdminPlugin::tab(ui, world),
+            Tab::Shop => todo!(),
+            Tab::Team => todo!(),
+            Tab::Roster => todo!(),
+        }
+    }
+}
+
 impl ToCstr for GameState {
     fn cstr(&self) -> Cstr {
         self.to_string().cstr_cs(GREEN, CstrStyle::Bold)
@@ -97,8 +145,8 @@ impl GameState {
         OperationsPlugin::add(move |world| self.set_next(world));
     }
     pub fn proceed(world: &mut World) {
-        let target = *TARGET_STATE.lock();
-        if let Some(options) = STATE_OPTIONS.get(&target) {
+        let to = *TARGET_STATE.lock();
+        if let Some(options) = STATE_OPTIONS.get(&to) {
             for option in options {
                 if !option.is_fulfilled(world) {
                     option.fulfill(world);
@@ -106,7 +154,7 @@ impl GameState {
                 }
             }
         }
-        target.set_next(world);
+        to.set_next(world);
     }
     pub fn proceed_op() {
         OperationsPlugin::add(Self::proceed);
@@ -119,9 +167,7 @@ impl GameState {
         OperationsPlugin::add(move |world| self.proceed_to_target(world))
     }
     pub fn get_name(self) -> &'static str {
-        match self {
-            _ => self.to_string().to_case(Case::Title).leak(),
-        }
+        self.to_string().to_case(Case::Title).leak()
     }
 }
 
@@ -134,12 +180,21 @@ impl Plugin for GameStatePlugin {
     }
 }
 
+static PREVIOUS_STATE: Mutex<GameState> = Mutex::new(GameState::Loading);
 fn on_change(world: &mut World) {
     if let Some(ctx) = egui_context(world) {
         ctx.data_mut(|w| w.clear());
     }
+    let from = *PREVIOUS_STATE.lock();
     let to = cur_state(world);
-    DockPlugin::load_state_tree(to, world);
+    *PREVIOUS_STATE.lock() = to;
+    info!(
+        "State change {} -> {}",
+        from.cstr().to_colored(),
+        to.cstr().to_colored()
+    );
+    DockPlugin::load_state_tree(from, to, world);
+
     // TilePlugin::change_state(to, world);
     // CameraPlugin::respawn_camera(world);
 }

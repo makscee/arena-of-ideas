@@ -85,8 +85,8 @@ impl WidgetsPlugin {
         CentralPanel::default()
             .frame(Frame::new())
             .show(ctx, |ui| match state {
-                GameState::Connect => ConnectPlugin::ui(ui),
-                GameState::Login => LoginPlugin::login_ui(ui, world),
+                GameState::Connect => ConnectPlugin::tab(ui),
+                GameState::Login => LoginPlugin::tab(ui, world),
                 _ => {}
             });
 

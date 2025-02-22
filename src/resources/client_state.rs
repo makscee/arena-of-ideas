@@ -1,3 +1,5 @@
+use egui_dock::Surface;
+
 use super::*;
 
 #[derive(Deserialize, Serialize, Debug, Clone, Default)]
@@ -6,6 +8,7 @@ pub struct ClientState {
     pub last_played_team: Option<u64>,
     pub edit_anim: Option<Anim>,
     pub battle_test_teams: (Vec<String>, Vec<String>),
+    pub dock_states: HashMap<GameState, Vec<Surface<Tab>>>,
 }
 
 static CLIENT_STATE: OnceCell<RwLock<ClientState>> = OnceCell::new();

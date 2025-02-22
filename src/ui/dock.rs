@@ -1,10 +1,5 @@
-use egui::{CentralPanel, ComboBox, CornerRadius, Frame, Slider, TopBottomPanel, Ui, WidgetText};
-
-use egui_dock::{
-    AllowedSplits, DockArea, DockState, NodeIndex, OverlayType, Style, SurfaceIndex,
-    TabInteractionStyle, TabViewer,
-};
-use strum_macros::AsRefStr;
+use egui::{CentralPanel, CornerRadius, Frame, TopBottomPanel, Ui, WidgetText};
+use egui_dock::{DockArea, DockState, Style, TabViewer};
 
 use super::*;
 
@@ -22,17 +17,6 @@ impl Default for DockTree {
     }
 }
 
-pub struct Tab {
-    pub name: String,
-    content: Box<dyn FnMut(&mut Ui, &mut World) + Send + Sync>,
-}
-
-#[derive(PartialEq, Eq, Clone, Copy, Hash, AsRefStr)]
-pub enum TabType {
-    MainMenu,
-    Shop,
-}
-
 #[derive(Default)]
 struct DockContext {
     style: Option<Style>,
@@ -43,12 +27,12 @@ impl TabViewer for DockContext {
     type Tab = Tab;
 
     fn title(&mut self, tab: &mut Self::Tab) -> WidgetText {
-        tab.name.as_str().into()
+        tab.as_ref().to_case(Case::Title).into()
     }
 
     fn ui(&mut self, ui: &mut Ui, tab: &mut Self::Tab) {
         let world = self.world.as_mut().unwrap();
-        (tab.content)(ui, world);
+        tab.ui(ui, world);
     }
 
     fn closeable(&mut self, tab: &mut Self::Tab) -> bool {
@@ -60,21 +44,9 @@ impl TabViewer for DockContext {
     }
 }
 
-impl Tab {
-    pub fn new(
-        name: impl ToString,
-        content: impl FnMut(&mut Ui, &mut World) + Send + Sync + 'static,
-    ) -> Self {
-        Self {
-            name: name.to_string(),
-            content: Box::new(content),
-        }
-    }
-    pub fn new_vec(
-        name: impl ToString,
-        content: impl FnMut(&mut Ui, &mut World) + Send + Sync + 'static,
-    ) -> Vec<Self> {
-        [Self::new(name, content)].into()
+impl Into<Vec<Tab>> for Tab {
+    fn into(self) -> Vec<Tab> {
+        [self].into()
     }
 }
 
@@ -113,9 +85,6 @@ impl DockTree {
                             sw: 13,
                             se: 13,
                         };
-                        // style.tab.tab_body.bg_fill = BG_DARK;
-                        // style.tab.active.bg_fill = BG_DARK;
-                        // style.tab.focused.bg_fill = BG_DARK;
                         style.tab_bar.fill_tab_bar = true;
                         style
                     })

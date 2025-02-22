@@ -1,6 +1,5 @@
 mod cstr;
 mod descriptions;
-mod dock;
 mod enum_colors;
 mod ui;
 mod utils;
@@ -8,7 +7,6 @@ mod widgets;
 
 pub use cstr::*;
 pub use descriptions::*;
-pub use dock::*;
 pub use enum_colors::*;
 pub use ui::*;
 pub use utils::*;

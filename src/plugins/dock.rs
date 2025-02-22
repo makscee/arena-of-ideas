@@ -1,4 +1,4 @@
-use egui_dock::{NodeIndex, SurfaceIndex, Tree};
+use egui_dock::SurfaceIndex;
 
 use super::*;
 
@@ -27,54 +27,30 @@ fn rm(world: &mut World) -> Mut<DockResource> {
 }
 
 impl DockPlugin {
-    pub fn load_state_tree(state: GameState, world: &mut World) {
-        info!("Load state tree for {}", state.cstr().to_colored());
+    pub fn load_state_tree(from: GameState, to: GameState, world: &mut World) {
+        info!("Load state tree for {}", to.cstr().to_colored());
         let ds = &mut rm(world).dock.state;
-        *ds.main_surface_mut() = default();
-        for i in 1..ds.surfaces_count() {
-            ds.remove_surface(i.into());
+        let mut cs = client_state().clone();
+        cs.dock_states
+            .insert(from, ds.iter_surfaces().cloned().collect_vec());
+        if let Some(state) = cs.dock_states.get(&to) {
+            for i in (1..ds.surfaces_count()).rev() {
+                ds.remove_surface(i.into());
+            }
+            for (i, surface) in state.into_iter().enumerate() {
+                match surface {
+                    egui_dock::Surface::Empty => {}
+                    egui_dock::Surface::Main(tree) => *ds.main_surface_mut() = tree.clone(),
+                    egui_dock::Surface::Window(..) => {
+                        ds.add_window(default());
+                        *ds.get_surface_mut(i.into()).unwrap() = surface.clone();
+                    }
+                }
+            }
+        } else {
+            *ds = to.load_state();
         }
-        match state {
-            GameState::Connect => {
-                let tree = Tree::new(Tab::new_vec("Connect", |ui, _| ConnectPlugin::ui(ui)));
-                *ds.main_surface_mut() = tree;
-            }
-            GameState::Login => {
-                let tree = Tree::new(Tab::new_vec("Login", LoginPlugin::login_ui));
-                *ds.main_surface_mut() = tree;
-            }
-            GameState::Title => {
-                let tree = Tree::new(Tab::new_vec("Main Menu", |ui, world| {
-                    ui.vertical_centered_justified(|ui| {
-                        ui.add_space(ui.available_height() * 0.3);
-                        ui.set_width(350.0.at_most(ui.available_width()));
-                        if "Start Match"
-                            .cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold)
-                            .button(ui)
-                            .clicked()
-                        {
-                            GameState::Match.set_next(world);
-                        }
-                    });
-                }));
-                *ds.main_surface_mut() = tree;
-            }
-            _ => {}
-        }
-    }
-    pub fn add_tab(
-        name: impl ToString,
-        content: impl FnMut(&mut Ui, &mut World) + Send + Sync + 'static,
-        world: &mut World,
-    ) {
-        let name = name.to_string();
-        Self::push(
-            |dt| {
-                dt.state
-                    .push_to_focused_leaf(Tab::new(name, Box::new(content)))
-            },
-            world,
-        );
+        cs.save();
     }
     pub fn push(f: impl FnOnce(&mut DockTree) + Send + Sync + 'static, world: &mut World) {
         world
@@ -82,10 +58,9 @@ impl DockPlugin {
             .tabs
             .push(Box::new(f));
     }
-    pub fn close_by_name(name: impl ToString, world: &mut World) {
-        let name = name.to_string();
+    pub fn close(tab: Tab, world: &mut World) {
         let state = &mut rm(world).dock.state;
-        state.retain_tabs(|tab| tab.name != name);
+        state.retain_tabs(|t| tab != *t);
 
         // hack because of broken retain_tabs that leaves an empty surface, leads to panic on closing last tab of a window
         let mut to_remove: Vec<SurfaceIndex> = default();
