@@ -99,7 +99,7 @@ impl MatchPlugin {
                 .query::<(&Unit, &UnitStats)>()
                 .iter(&d.team_world)
             {
-                FRAME.show(ui, |ui| {
+                DARK_FRAME.show(ui, |ui| {
                     show_unit_tag(unit, stats, ui, &d.team_world);
                     if format!(
                         "[b sell [yellow +{}g]]",
@@ -115,8 +115,8 @@ impl MatchPlugin {
         });
     }
     pub fn team_tab(ui: &mut Ui, world: &mut World) {
+        let mut fusion_edit = None;
         world.resource_scope(|_, mut d: Mut<MatchData>| {
-            let mut fusion_edit = None;
             let mut last_slot = -1;
             for (fusion, slot, rep) in d
                 .team_world
@@ -169,6 +169,9 @@ impl MatchPlugin {
                 }
             }
         });
+        if let Some(slot) = fusion_edit {
+            Self::edit_fusion(slot, world);
+        }
     }
 
     fn show_shop_slot(md: &MatchData, i: usize, ui: &mut Ui) {
@@ -311,10 +314,10 @@ impl MatchPlugin {
         });
         world.insert_resource(md);
         if let Some(slot) = fusion_edit {
-            Self::open_fusion_edit_window(slot, world);
+            Self::edit_fusion(slot, world);
         }
     }
-    fn open_fusion_edit_window(slot: i32, world: &mut World) {
+    fn edit_fusion(slot: i32, world: &mut World) {
         if !world.contains_resource::<MatchData>() {
             error!("Match not loaded");
             return;
@@ -334,7 +337,7 @@ impl MatchPlugin {
             entity
         };
         md.editing_entity = Some(entity);
-        Fusion::open_editor_window(entity, world, &md.team_world, |f, world| {
+        FusionEditorPlugin::edit_entity(entity, world, &md.team_world, |f, world| {
             let mut md = world.resource_mut::<MatchData>();
             let entity = md.editing_entity.unwrap();
             f.unpack(entity, &mut md.team_world);
@@ -345,6 +348,7 @@ impl MatchPlugin {
                 .map(|f| f.to_strings_root())
                 .collect_vec();
             cn().reducers.match_edit_fusions(fusions).unwrap();
+            GameState::Match.set_next(world);
         })
         .log();
         world.insert_resource(md);

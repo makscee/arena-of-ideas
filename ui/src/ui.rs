@@ -83,6 +83,15 @@ pub const ROUNDING: CornerRadius = CornerRadius {
 
 pub const UNIT_SIZE: f32 = 1.0;
 
+pub const DARK_FRAME: Frame = Frame {
+    inner_margin: Margin::same(5),
+    outer_margin: Margin::same(5),
+    corner_radius: ROUNDING,
+    shadow: Shadow::NONE,
+    fill: TRANSPARENT,
+    stroke: STROKE_DARK,
+};
+
 pub struct UiPlugin;
 
 impl Plugin for UiPlugin {

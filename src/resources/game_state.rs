@@ -11,6 +11,7 @@ pub enum GameState {
     Connect,
     Login,
     Match,
+    FusionEditor,
     TestScenariosLoad,
     TestScenariosRun,
     ServerSync,
@@ -34,6 +35,16 @@ impl GameState {
                     .split_left(0.into(), 0.15, Tab::Roster.into());
                 ds
             }
+            GameState::FusionEditor => {
+                let mut ds = DockState::new([Tab::Roster].into());
+                ds.main_surface_mut()
+                    .split_right(0.into(), 0.5, Tab::Triggers.into());
+                ds.main_surface_mut()
+                    .split_right(0.into(), 0.5, Tab::Actions.into());
+                ds.main_surface_mut()
+                    .split_below(0.into(), 0.5, Tab::FusionResult.into());
+                ds
+            }
             _ => DockState::new(default()),
         }
     }
@@ -47,6 +58,10 @@ pub enum Tab {
     Shop,
     Team,
     Roster,
+    Triggers,
+    Actions,
+    FusionResult,
+
     Admin,
 }
 
@@ -70,7 +85,14 @@ impl Tab {
             Tab::Connect => ConnectPlugin::tab(ui),
             Tab::Admin => AdminPlugin::tab(ui, world),
             Tab::Shop => MatchPlugin::shop_tab(ui, world),
-            Tab::Roster => MatchPlugin::roster_tab(ui, world),
+            Tab::Roster => match cur_state(world) {
+                GameState::Match => MatchPlugin::roster_tab(ui, world),
+                GameState::FusionEditor => FusionEditorPlugin::roster_tab(ui, world),
+                _ => unreachable!(),
+            },
+            Tab::Triggers => FusionEditorPlugin::triggers_tab(ui, world),
+            Tab::Actions => FusionEditorPlugin::actions_tab(ui, world),
+            Tab::FusionResult => FusionEditorPlugin::fusion_result_tab(ui, world),
             Tab::Team => MatchPlugin::team_tab(ui, world),
         }
     }

@@ -107,6 +107,7 @@ fn main() {
             ConfirmationPlugin,
             AdminPlugin,
             DockPlugin,
+            FusionEditorPlugin,
         ))
         .init_state::<GameState>()
         .init_resource::<NotificationsResource>();
