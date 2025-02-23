@@ -74,8 +74,6 @@ impl WidgetsPlugin {
             return;
         };
 
-        SectionMenu::default().show(ctx, world);
-
         let state = cur_state(world);
 
         TilePlugin::show_all(ctx, world);

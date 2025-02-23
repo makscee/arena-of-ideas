@@ -8,29 +8,16 @@ pub enum GameState {
     Loading,
     Loaded,
     Title,
-    Meta,
-    Inbox,
     Connect,
     Login,
-    CustomBattle,
-    Battle,
     Match,
-    GameStart,
-    GameOver,
     TestScenariosLoad,
     TestScenariosRun,
     ServerSync,
     MigrationDownload,
     MigrationUpload,
-    Profile,
     Error,
-    Editor,
-    Quests,
-    Stats,
-    Incubator,
-    Players,
     Query,
-    Admin,
 }
 
 impl GameState {
@@ -102,10 +89,6 @@ const STATE_OPTIONS: LazyCell<HashMap<GameState, Vec<GameOption>>> = LazyCell::n
         [GameOption::Connect, GameOption::Login].into(),
     );
     m.insert(
-        GameState::Profile,
-        [GameOption::Connect, GameOption::Login].into(),
-    );
-    m.insert(
         GameState::Match,
         [
             GameOption::Connect,
@@ -121,14 +104,6 @@ const STATE_OPTIONS: LazyCell<HashMap<GameState, Vec<GameOption>>> = LazyCell::n
     );
     m.insert(GameState::MigrationUpload, [GameOption::Connect].into());
     m.insert(GameState::MigrationDownload, [GameOption::Connect].into());
-    m.insert(
-        GameState::Admin,
-        [GameOption::Connect, GameOption::Login].into(),
-    );
-    m.insert(
-        GameState::Incubator,
-        [GameOption::Connect, GameOption::ForceLogin].into(),
-    );
     m
 });
 

@@ -13,11 +13,7 @@ pub struct CameraPlugin;
 
 impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
-            Update,
-            Self::adjust_to_fit_units.run_if(in_state(GameState::Battle)),
-        )
-        .add_systems(Update, Self::update);
+        app.add_systems(Update, Self::update);
     }
 }
 
@@ -85,25 +81,5 @@ impl CameraPlugin {
         }
         world.entity_mut(entity).insert(camera);
         world.insert_resource(data);
-    }
-    fn adjust_to_fit_units(
-        visible: Query<(&Transform, &InheritedVisibility)>,
-        mut projection: Query<(&mut OrthographicProjection, &Camera)>,
-        mut data: ResMut<CameraData>,
-    ) {
-        let (_, camera) = projection.single_mut();
-        let mut width: f32 = 28.0;
-        let aspect_ratio = camera
-            .logical_target_size()
-            .map(|v| v.x / v.y)
-            .unwrap_or(1.0);
-        for (t, iv) in visible.iter() {
-            if iv.get() {
-                width = width
-                    .max((t.translation.x.abs() + 1.5) * 2.0)
-                    .max(((t.translation.y.abs() + 2.0) * aspect_ratio) * 2.0);
-            }
-        }
-        data.need_scale = width;
     }
 }

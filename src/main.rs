@@ -32,16 +32,11 @@ pub fn run_mode() -> &'static RunMode {
 pub enum RunMode {
     #[default]
     Regular,
-    Custom,
     Shop,
-    Editor,
     Test,
     Sync,
     MigrationDownload,
     MigrationUpload,
-    Query,
-    Admin,
-    Incubator,
 }
 
 fn main() {
@@ -54,16 +49,11 @@ fn main() {
     }
     let target = match args.mode {
         RunMode::Regular => GameState::Title,
-        RunMode::Custom => GameState::CustomBattle,
         RunMode::Shop => GameState::Match,
-        RunMode::Editor => GameState::Editor,
         RunMode::Test => GameState::TestScenariosRun,
         RunMode::Sync => GameState::ServerSync,
         RunMode::MigrationDownload => GameState::MigrationDownload,
         RunMode::MigrationUpload => GameState::MigrationUpload,
-        RunMode::Query => GameState::Query,
-        RunMode::Admin => GameState::Admin,
-        RunMode::Incubator => GameState::Incubator,
     };
     load_client_settings();
     load_client_state();
@@ -110,7 +100,6 @@ fn main() {
         ))
         .add_plugins((
             OperationsPlugin,
-            ProfilePlugin,
             ConnectPlugin,
             ClientSettingsPlugin,
             TilePlugin,
