@@ -37,13 +37,12 @@ impl DockPlugin {
             for i in (1..ds.surfaces_count()).rev() {
                 ds.remove_surface(i.into());
             }
-            for (i, surface) in state.into_iter().enumerate() {
+            for surface in state.into_iter() {
                 match surface {
-                    egui_dock::Surface::Empty => {}
                     egui_dock::Surface::Main(tree) => *ds.main_surface_mut() = tree.clone(),
-                    egui_dock::Surface::Window(..) => {
-                        ds.add_window(default());
-                        *ds.get_surface_mut(i.into()).unwrap() = surface.clone();
+                    egui_dock::Surface::Window(..) | egui_dock::Surface::Empty => {
+                        let i = ds.add_window(default());
+                        *ds.get_surface_mut(i).unwrap() = surface.clone();
                     }
                 }
             }

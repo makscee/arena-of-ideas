@@ -39,6 +39,7 @@ impl GameState {
             GameState::Connect => DockState::new(Tab::Login.into()),
             GameState::Login => DockState::new(Tab::Login.into()),
             GameState::Title => DockState::new([Tab::MainMenu, Tab::Admin].into()),
+            GameState::Match => DockState::new([Tab::Shop].into()),
             _ => DockState::new(default()),
         }
     }
@@ -74,7 +75,7 @@ impl Tab {
             Tab::Login => LoginPlugin::tab(ui, world),
             Tab::Connect => ConnectPlugin::tab(ui),
             Tab::Admin => AdminPlugin::tab(ui, world),
-            Tab::Shop => todo!(),
+            Tab::Shop => MatchPlugin::shop_tab(ui, world),
             Tab::Team => todo!(),
             Tab::Roster => todo!(),
         }

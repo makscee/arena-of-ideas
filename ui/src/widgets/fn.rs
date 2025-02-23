@@ -59,8 +59,11 @@ pub fn popup(
         .sense(Sense::click())
         .show(ctx, |ui| {
             ui.expand_to_include_rect(rect);
-            ui.painter_at(rect)
-                .rect_filled(rect, CornerRadius::ZERO, Color32::from_black_alpha(200));
+            ui.painter_at(rect).rect_filled(
+                rect,
+                CornerRadius::ZERO,
+                Color32::from_black_alpha(200),
+            );
         });
     if fullscreen {
         center_window_fullscreen(name, ctx, add_contents);
@@ -135,7 +138,7 @@ pub fn show_slot(i: usize, slots: usize, bottom: bool, ui: &mut Ui) -> Response 
     let full_rect = ui.available_rect_before_wrap();
     let rect = slot_rect(i.at_most(slots - 1), slots, full_rect, bottom);
     ui.expand_to_include_rect(rect);
-    let mut cui = ui.child_ui(rect, *ui.layout(), None);
+    let mut cui = ui.new_child(UiBuilder::new().max_rect(rect));
     let r = cui.allocate_rect(rect, Sense::click_and_drag());
     let mut stroke = if r.hovered() {
         STROKE_YELLOW

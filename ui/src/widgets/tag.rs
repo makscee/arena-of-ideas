@@ -139,7 +139,7 @@ impl TagsWidget {
         }
         let right_bottom = ui.cursor().center_top() + egui::vec2(size.x * 0.5, size.y);
         let rect = Rect::from_min_max(right_bottom - size, right_bottom);
-        ui.allocate_ui_at_rect(rect, |ui| {
+        ui.allocate_new_ui(UiBuilder::new().max_rect(rect), |ui| {
             ui.horizontal(|ui| {
                 ui.spacing_mut().item_spacing = egui::Vec2::ZERO;
                 for tag in self.tags {
