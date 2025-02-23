@@ -143,7 +143,7 @@ pub fn show_slot(i: usize, slots: usize, bottom: bool, ui: &mut Ui) -> Response 
     let mut stroke = if r.hovered() {
         STROKE_YELLOW
     } else {
-        STROKE_DARK
+        STROKE_LIGHT
     };
     let t = cui.ctx().animate_bool(r.id, r.hovered());
     let length = egui::emath::lerp(15.0..=20.0, t);

@@ -39,7 +39,14 @@ impl GameState {
             GameState::Connect => DockState::new(Tab::Login.into()),
             GameState::Login => DockState::new(Tab::Login.into()),
             GameState::Title => DockState::new([Tab::MainMenu, Tab::Admin].into()),
-            GameState::Match => DockState::new([Tab::Shop].into()),
+            GameState::Match => {
+                let mut ds = DockState::new([Tab::Shop].into());
+                ds.main_surface_mut()
+                    .split_below(0.into(), 0.5, Tab::Team.into());
+                ds.main_surface_mut()
+                    .split_left(0.into(), 0.15, Tab::Roster.into());
+                ds
+            }
             _ => DockState::new(default()),
         }
     }
@@ -76,8 +83,8 @@ impl Tab {
             Tab::Connect => ConnectPlugin::tab(ui),
             Tab::Admin => AdminPlugin::tab(ui, world),
             Tab::Shop => MatchPlugin::shop_tab(ui, world),
-            Tab::Team => todo!(),
-            Tab::Roster => todo!(),
+            Tab::Roster => MatchPlugin::roster_tab(ui, world),
+            Tab::Team => MatchPlugin::team_tab(ui, world),
         }
     }
 }
