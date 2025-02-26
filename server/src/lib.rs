@@ -1,5 +1,4 @@
 mod battle;
-mod context;
 mod daily_updater;
 mod global_data;
 mod global_settings;
@@ -15,7 +14,6 @@ mod wallet;
 use std::str::FromStr;
 
 use battle::*;
-use context::*;
 use glam::vec2;
 use global_data::*;
 use global_settings::*;

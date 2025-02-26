@@ -168,20 +168,16 @@ pub fn table_conversions(
     child_link_types: &Vec<TokenStream>,
 ) -> TokenStream {
     quote! {
-        fn from_table_no_children(c: &Context, domain: NodeDomain, id: u64) -> Option<Self> {
-            let data = domain.tnode_find_by_key(c, &Self::kind_s().key(id))?.data;
-            let mut d = Self::default();
-            d.inject_data(&data);
-            d.id = Some(id);
+        fn from_table_no_children(ctx: &ReducerContext, id: u64) -> Option<Self> {
+            let mut d = Self::get_by_id(id)?;
             #(
-                d.#component_link_fields = #component_link_types::from_table(c, domain, id);
+                d.#component_link_fields = #component_link_types::from_table_no_children(ctx, id);
             )*
             Some(d)
         }
-        fn from_table(c: &Context, domain: NodeDomain, id: u64) -> Option<Self> {
-            let mut d = Self::from_table_no_children(c, domain, id)?;
-            let children = c
-                .rc
+        fn from_table(ctx: &ReducerContext, id: u64) -> Option<Self> {
+            let mut d = Self::from_table_no_children(ctx, id)?;
+            let children = ctx
                 .db
                 .nodes_relations()
                 .parent()
@@ -191,33 +187,29 @@ pub fn table_conversions(
             #(
                 d.#child_link_fields = children
                     .iter()
-                    .filter_map(|id| #child_link_types::from_table(c, domain, *id))
+                    .filter_map(|id| #child_link_types::from_table(ctx, *id))
                     .collect();
             )*
             Some(d)
         }
-        fn to_table(mut self, c: &Context, domain: NodeDomain, parent: u64) {
+        fn to_table(mut self, ctx: &ReducerContext, parent: u64) {
             if self.id.is_none() {
-                self.id = Some(c.next_id());
+                self.id = Some(next_id(ctx));
             }
             let id = self.id();
-            domain.node_insert(c, &self);
+            self.insert(ctx);
             if id != parent {
-                c
-                    .rc
-                    .db
-                    .nodes_relations()
-                    .insert(TNodeRelation { id, parent });
+                ctx.db.nodes_relations().insert(TNodeRelation { id, parent });
             }
             #(
                 if let Some(mut d) = self.#component_link_fields.take() {
                     d.id = Some(id);
-                    d.to_table(c, domain, id);
+                    d.to_table(ctx, id);
                 }
             )*
             #(
                 for d in std::mem::take(&mut self.#child_link_fields) {
-                    d.to_table(c, domain, id);
+                    d.to_table(ctx, id);
                 }
             )*
         }

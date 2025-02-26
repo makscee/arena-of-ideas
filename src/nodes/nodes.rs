@@ -25,8 +25,8 @@ pub trait Node: Default + Component + Sized + GetVar + Show + Debug {
         self.to_strings(0, "_", &mut strings);
         strings
     }
-    fn from_table_single(domain: NodeDomain, id: u64) -> Option<Self>;
-    fn from_table(domain: NodeDomain, id: u64) -> Option<Self>;
+    fn from_table_single(id: u64) -> Option<Self>;
+    fn from_table(id: u64) -> Option<Self>;
     fn pack(entity: Entity, world: &World) -> Option<Self>;
     fn unpack(self, entity: Entity, world: &mut World);
     fn find_up_entity<T: Component>(entity: Entity, world: &World) -> Option<&T> {

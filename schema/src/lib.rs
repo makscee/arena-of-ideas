@@ -7,7 +7,6 @@ mod inject;
 mod macro_fn;
 #[allow(dead_code)]
 mod nodes;
-mod nodes_domain;
 mod painter_action;
 mod trigger;
 mod var_name;
@@ -20,7 +19,6 @@ pub use expression::*;
 pub use fusion::*;
 pub use inject::*;
 pub use macro_fn::*;
-pub use nodes_domain::*;
 pub use painter_action::*;
 pub use trigger::*;
 pub use var_name::*;
