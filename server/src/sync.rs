@@ -13,7 +13,7 @@ fn sync_assets(
     }
     for house in houses {
         let house = House::from_strings(0, &house).to_e_s("Failed to parse House")?;
-        house.to_table(ctx, 0);
+        // house.to_table(ctx, 0);
     }
     Ok(())
 }

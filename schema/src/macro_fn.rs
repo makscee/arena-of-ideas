@@ -168,31 +168,33 @@ pub fn table_conversions(
     child_link_types: &Vec<TokenStream>,
 ) -> TokenStream {
     quote! {
-        fn from_table_no_children(ctx: &ReducerContext, id: u64) -> Option<Self> {
-            let mut d = Self::get_by_id(id)?;
+        fn with_components(mut self, ctx: &ReducerContext) -> Self {
             #(
-                d.#component_link_fields = #component_link_types::from_table_no_children(ctx, id);
+                self.#component_link_fields = #component_link_types::get(ctx, self.id())
+                    .map(|d| d.with_components(ctx)
+                        .with_children(ctx)
+                    );
             )*
-            Some(d)
+            self
         }
-        fn from_table(ctx: &ReducerContext, id: u64) -> Option<Self> {
-            let mut d = Self::from_table_no_children(ctx, id)?;
+        fn with_children(mut self, ctx: &ReducerContext) -> Self {
             let children = ctx
                 .db
                 .nodes_relations()
                 .parent()
-                .filter(id)
+                .filter(self.id())
                 .map(|r| r.id)
                 .collect_vec();
             #(
-                d.#child_link_fields = children
+                self.#child_link_fields = children
                     .iter()
-                    .filter_map(|id| #child_link_types::from_table(ctx, *id))
+                    .filter_map(|id| #child_link_types::get(ctx, *id).map(|d|
+                        d.with_components(ctx).with_children(ctx)))
                     .collect();
             )*
-            Some(d)
+            self
         }
-        fn to_table(mut self, ctx: &ReducerContext, parent: u64) {
+        fn save(mut self, ctx: &ReducerContext, parent: u64) {
             if self.id.is_none() {
                 self.id = Some(next_id(ctx));
             }
@@ -204,12 +206,12 @@ pub fn table_conversions(
             #(
                 if let Some(mut d) = self.#component_link_fields.take() {
                     d.id = Some(id);
-                    d.to_table(ctx, id);
+                    d.save(ctx, id);
                 }
             )*
             #(
                 for d in std::mem::take(&mut self.#child_link_fields) {
-                    d.to_table(ctx, id);
+                    d.save(ctx, id);
                 }
             )*
         }

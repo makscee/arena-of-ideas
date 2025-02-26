@@ -16,20 +16,20 @@ pub trait Node: Default + Sized {
     fn get_data(&self) -> String;
     fn from_strings(i: usize, strings: &Vec<String>) -> Option<Self>;
     fn to_strings(&self, parent: usize, field: &str, strings: &mut Vec<String>);
-    fn from_table_no_children(ctx: &ReducerContext, id: u64) -> Option<Self>;
-    fn from_table(ctx: &ReducerContext, id: u64) -> Option<Self>;
-    fn to_table(self, ctx: &ReducerContext, parent: u64);
+    fn with_components(self, ctx: &ReducerContext) -> Self;
+    fn with_children(self, ctx: &ReducerContext) -> Self;
+    fn save(self, ctx: &ReducerContext, parent: u64);
 }
 
 pub trait NodeExt: Sized {
     fn to_tnode(&self, id: u64) -> TNode;
-    fn get_by_id(c: &ReducerContext, id: u64) -> Option<Self>;
+    fn get(c: &ReducerContext, id: u64) -> Option<Self>;
     fn get_by_data(c: &ReducerContext, data: &str) -> Option<Self>;
     fn find_parent(c: &ReducerContext, id: u64) -> Option<Self>;
     fn insert(&self, c: &ReducerContext);
     fn update(&self, c: &ReducerContext);
     fn delete(&self, c: &ReducerContext);
-    fn node_insert_or_update(&self, c: &ReducerContext);
+    fn insert_or_update(&self, c: &ReducerContext);
     fn tnode_collect_kind(c: &ReducerContext, kind: NodeKind) -> Vec<TNode>;
     fn collect_kind(c: &ReducerContext) -> Vec<Self>;
 }
@@ -41,7 +41,7 @@ where
     fn to_tnode(&self, id: u64) -> TNode {
         TNode::new(id, self.kind(), self.get_data())
     }
-    fn get_by_id(c: &ReducerContext, id: u64) -> Option<Self> {
+    fn get(c: &ReducerContext, id: u64) -> Option<Self> {
         let kind = Self::kind_s();
         c.db.tnodes().key().find(kind.key(id)).map(|d| d.to_node())
     }
@@ -66,7 +66,7 @@ where
         let key = self.kind().key(self.id());
         c.db.tnodes().key().delete(key);
     }
-    fn node_insert_or_update(&self, c: &ReducerContext) {
+    fn insert_or_update(&self, c: &ReducerContext) {
         self.delete(c);
         self.insert(c);
     }
@@ -83,7 +83,7 @@ where
         let mut id = id;
         while let Some(parent) = id.parent(c) {
             id = parent;
-            if let Some(node) = T::from_table_no_children(c, id) {
+            if let Some(node) = T::get(c, id) {
                 return Some(node);
             }
         }
