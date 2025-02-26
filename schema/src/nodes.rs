@@ -1,10 +1,34 @@
 use super::*;
 
+struct All {
+    pub ts: u64,
+    pub players: NodeChildren<Player>,
+    pub core: NodeChildren<House>,
+}
+
+struct Player {
+    pub name: String,
+    pub player_data: NodeComponent<PlayerData>,
+    pub identity: NodeComponent<PlayerIdentity>,
+    pub active_match: NodeComponent<Match>,
+}
+
+struct PlayerData {
+    pub pass_hash: Option<String>,
+    pub online: bool,
+    pub last_login: u64,
+}
+
+struct PlayerIdentity {
+    pub data: Option<String>,
+}
+
 struct House {
     pub name: String,
     pub color: NodeComponent<HouseColor>,
     pub action_abilities: NodeChildren<ActionAbility>,
     pub status_abilities: NodeChildren<StatusAbility>,
+    pub units: NodeChildren<Unit>,
 }
 
 struct HouseColor {
@@ -14,7 +38,6 @@ struct HouseColor {
 struct ActionAbility {
     pub name: String,
     pub description: NodeComponent<ActionAbilityDescription>,
-    pub units: NodeChildren<Unit>,
 }
 
 struct ActionAbilityDescription {
@@ -30,7 +53,6 @@ struct StatusAbility {
     pub name: String,
     pub description: NodeComponent<StatusAbilityDescription>,
     pub representation: NodeComponent<Representation>,
-    pub units: NodeChildren<Unit>,
 }
 
 struct StatusAbilityDescription {
@@ -52,7 +74,7 @@ struct Match {
 }
 
 struct ShopCaseUnit {
-    pub unit_id: u64,
+    pub unit: String,
     pub price: i32,
     pub sold: bool,
 }
@@ -60,29 +82,25 @@ struct ShopCaseUnit {
 struct Fusion {
     pub units: Vec<String>,
     pub triggers: Vec<(UnitTriggerRef, Vec<UnitActionRef>)>,
-    pub slot: NodeComponent<UnitSlot>,
+    pub slot: u8,
 }
 
 struct Unit {
     pub name: String,
-    pub stats: NodeComponent<UnitStats>,
     pub description: NodeComponent<UnitDescription>,
+}
+
+struct UnitDescription {
+    pub description: String,
     pub representation: NodeComponent<Representation>,
+    pub stats: NodeComponent<UnitStats>,
+    pub reaction: NodeComponent<Reaction>,
 }
 
 struct UnitStats {
     pub pwr: i32,
     pub hp: i32,
     pub dmg: i32,
-}
-
-struct UnitSlot {
-    pub slot: i32,
-}
-
-struct UnitDescription {
-    pub description: String,
-    pub reaction: NodeComponent<Reaction>,
 }
 
 struct Reaction {

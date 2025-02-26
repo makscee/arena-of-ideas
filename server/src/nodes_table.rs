@@ -10,7 +10,7 @@ pub struct TNode {
     pub id: u64,
     #[index(btree)]
     pub kind: String,
-    #[index(btree)]
+    #[unique]
     pub data: String,
 }
 

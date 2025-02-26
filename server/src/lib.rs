@@ -7,9 +7,7 @@ mod r#match;
 mod nodes;
 mod nodes_table;
 mod player;
-mod player_tag;
 mod sync;
-mod wallet;
 
 use std::str::FromStr;
 
@@ -22,12 +20,10 @@ use itertools::Itertools;
 use nodes::*;
 use nodes_table::*;
 use player::*;
-use player_tag::*;
 use r#match::*;
 use rand::{distributions::Alphanumeric, seq::IteratorRandom, Rng};
 use schema::*;
 use spacetimedb::{reducer, table, Identity, ReducerContext, SpacetimeType, Table, Timestamp};
-use wallet::*;
 
 pub fn next_id(ctx: &ReducerContext) -> u64 {
     GlobalData::next_id(ctx)
@@ -57,12 +53,5 @@ impl AdminCheck for &ReducerContext {
 #[reducer(init)]
 fn init(ctx: &ReducerContext) -> Result<(), String> {
     GlobalData::init(ctx);
-    Ok(())
-}
-
-#[reducer]
-fn cleanup(ctx: &ReducerContext) -> Result<(), String> {
-    ctx.is_admin()?;
-    TPlayer::cleanup(ctx);
     Ok(())
 }

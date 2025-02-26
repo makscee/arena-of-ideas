@@ -1,3 +1,5 @@
+use itertools::Itertools;
+use proc_macro2::Span;
 use proc_macro2::TokenStream;
 use quote::quote;
 use quote::ToTokens;
@@ -194,24 +196,22 @@ pub fn table_conversions(
             )*
             self
         }
-        fn save(mut self, ctx: &ReducerContext, parent: u64) {
+        fn save(mut self, ctx: &ReducerContext) {
             if self.id.is_none() {
                 self.id = Some(next_id(ctx));
             }
             let id = self.id();
             self.insert(ctx);
-            if id != parent {
-                ctx.db.nodes_relations().insert(TNodeRelation { id, parent });
-            }
             #(
                 if let Some(mut d) = self.#component_link_fields.take() {
                     d.id = Some(id);
-                    d.save(ctx, id);
+                    d.save(ctx);
                 }
             )*
             #(
                 for d in std::mem::take(&mut self.#child_link_fields) {
-                    d.save(ctx, id);
+                    d.set_parent(ctx, id);
+                    d.save(ctx);
                 }
             )*
         }
@@ -224,6 +224,10 @@ pub fn common_node_fns(
     component_link_fields: &Vec<Ident>,
     component_link_types: &Vec<TokenStream>,
 ) -> TokenStream {
+    let component_link_fields_mut = component_link_fields
+        .iter()
+        .map(|i| Ident::new(&format!("{i}_mut"), Span::call_site()))
+        .collect_vec();
     quote! {
         impl #struct_ident {
             pub fn new(
@@ -259,6 +263,11 @@ pub fn common_node_fns(
             #(
                 pub fn #component_link_fields(&self) -> &#component_link_types {
                     self.#component_link_fields.as_ref().unwrap()
+                }
+            )*
+            #(
+                pub fn #component_link_fields_mut<'a>(&'a mut self) -> &'a mut #component_link_types {
+                    self.#component_link_fields.as_mut().unwrap()
                 }
             )*
         }
