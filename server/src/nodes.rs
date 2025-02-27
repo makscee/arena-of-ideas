@@ -27,12 +27,14 @@ pub trait NodeExt: Sized {
     fn get_by_data(ctx: &ReducerContext, data: &String) -> Option<Self>;
     fn find_parent(ctx: &ReducerContext, id: u64) -> Option<Self>;
     fn set_parent(&self, ctx: &ReducerContext, parent: u64);
-    fn insert(&self, ctx: &ReducerContext);
-    fn update(&self, ctx: &ReducerContext);
-    fn delete(&self, ctx: &ReducerContext);
-    fn insert_or_update(&self, ctx: &ReducerContext);
+    fn insert_self(&self, ctx: &ReducerContext);
+    fn update_self(&self, ctx: &ReducerContext);
+    fn delete_self(&self, ctx: &ReducerContext);
+    fn delete_recursive(&self, ctx: &ReducerContext);
+    fn insert_or_update_self(&self, ctx: &ReducerContext);
     fn tnode_collect_kind(ctx: &ReducerContext, kind: NodeKind) -> Vec<TNode>;
     fn collect_kind(ctx: &ReducerContext) -> Vec<Self>;
+    fn collect_children(ctx: &ReducerContext, parent: u64) -> Vec<Self>;
 }
 
 impl<T> NodeExt for T
@@ -59,21 +61,24 @@ where
             Some(node.to_node())
         }
     }
-    fn insert(&self, ctx: &ReducerContext) {
+    fn insert_self(&self, ctx: &ReducerContext) {
         let node = self.to_tnode(self.id());
         ctx.db.tnodes().insert(node);
     }
-    fn update(&self, ctx: &ReducerContext) {
+    fn update_self(&self, ctx: &ReducerContext) {
         let node = self.to_tnode(self.id());
         ctx.db.tnodes().key().update(node);
     }
-    fn delete(&self, ctx: &ReducerContext) {
+    fn delete_self(&self, ctx: &ReducerContext) {
         let key = self.kind().key(self.id());
         ctx.db.tnodes().key().delete(key);
     }
-    fn insert_or_update(&self, ctx: &ReducerContext) {
-        self.delete(ctx);
-        self.insert(ctx);
+    fn insert_or_update_self(&self, ctx: &ReducerContext) {
+        self.delete_self(ctx);
+        self.insert_self(ctx);
+    }
+    fn delete_recursive(&self, ctx: &ReducerContext) {
+        TNode::delete_by_id_recursive(ctx, self.id());
     }
     fn tnode_collect_kind(ctx: &ReducerContext, kind: NodeKind) -> Vec<TNode> {
         ctx.db.tnodes().kind().filter(&kind.to_string()).collect()
@@ -82,6 +87,13 @@ where
         Self::tnode_collect_kind(ctx, T::kind_s())
             .into_iter()
             .map(|d| d.to_node::<T>())
+            .collect()
+    }
+    fn collect_children(ctx: &ReducerContext, parent: u64) -> Vec<Self> {
+        parent
+            .children(ctx)
+            .into_iter()
+            .filter_map(|id| Self::get(ctx, id))
             .collect()
     }
     fn find_parent(ctx: &ReducerContext, id: u64) -> Option<Self> {

@@ -24,13 +24,22 @@ pub struct TNodeRelation {
 
 pub trait NodeIdExt {
     fn parent(self, ctx: &ReducerContext) -> Option<u64>;
-    fn all_descendants(self, ctx: &ReducerContext) -> Vec<u64>;
+    fn children(self, ctx: &ReducerContext) -> Vec<u64>;
+    fn children_recursive(self, ctx: &ReducerContext) -> Vec<u64>;
 }
 impl NodeIdExt for u64 {
     fn parent(self, ctx: &ReducerContext) -> Option<u64> {
         ctx.db.nodes_relations().id().find(self).map(|n| n.parent)
     }
-    fn all_descendants(self, ctx: &ReducerContext) -> Vec<u64> {
+    fn children(self, ctx: &ReducerContext) -> Vec<u64> {
+        ctx.db
+            .nodes_relations()
+            .parent()
+            .filter(self)
+            .map(|d| d.id)
+            .collect()
+    }
+    fn children_recursive(self, ctx: &ReducerContext) -> Vec<u64> {
         let mut vec: Vec<u64> = default();
         let mut q = VecDeque::from([self]);
         while let Some(id) = q.pop_front() {
@@ -51,7 +60,7 @@ impl TNode {
         ctx.db.tnodes().kind().filter(kind.as_ref()).collect()
     }
     pub fn delete_by_id_recursive(ctx: &ReducerContext, id: u64) {
-        let ids = id.all_descendants(ctx);
+        let ids = id.children_recursive(ctx);
         for id in &ids {
             ctx.db.tnodes().id().delete(id);
         }

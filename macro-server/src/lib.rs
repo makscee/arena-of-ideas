@@ -1,5 +1,7 @@
+use itertools::Itertools;
 use parse::Parser;
 use proc_macro::TokenStream;
+use proc_macro2::Span;
 use schema::*;
 use syn::*;
 #[macro_use]
@@ -59,10 +61,42 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 &component_link_fields,
                 &component_link_types,
             );
+            let component_link_fields_load = component_link_fields
+                .iter()
+                .map(|i| Ident::new(&format!("{i}_load"), Span::call_site()))
+                .collect_vec();
+            let child_link_fields_load = child_link_fields
+                .iter()
+                .map(|i| Ident::new(&format!("{i}_load"), Span::call_site()))
+                .collect_vec();
             quote! {
                 #[derive(Default, Debug, Clone)]
                 #input
                 #common
+                impl #struct_ident {
+                    #(
+                        pub fn #component_link_fields_load<'a>(&'a mut self, ctx: &ReducerContext) -> Result<&'a mut #component_link_types, String> {
+                            let id = self.id();
+                            if self.#component_link_fields.is_none() {
+                                self.#component_link_fields = #component_link_types::get(ctx, id);
+                            }
+                            self.#component_link_fields
+                                .as_mut()
+                                .to_e_s_fn(|| format!("{} not found for {}", #component_link_types::kind_s(), id))
+                        }
+                    )*
+                    #(
+                        pub fn #child_link_fields_load<'a>(&'a mut self, ctx: &ReducerContext) -> Result<&'a mut Vec<#child_link_types>, String> {
+                            if self.#child_link_fields.is_empty() {
+                                self.#child_link_fields = #child_link_types::collect_children(ctx, self.id());
+                            }
+                            if self.#child_link_fields.is_empty() {
+                                return Err(format!("No {} children found for {}", #child_link_types::kind_s(), self.id()));
+                            }
+                            Ok(&mut self.#child_link_fields)
+                        }
+                    )*
+                }
                 impl Node for #struct_ident {
                     #strings_conversions
                     #table_conversions

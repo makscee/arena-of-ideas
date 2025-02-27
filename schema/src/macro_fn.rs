@@ -201,7 +201,7 @@ pub fn table_conversions(
                 self.id = Some(next_id(ctx));
             }
             let id = self.id();
-            self.insert(ctx);
+            self.insert_self(ctx);
             #(
                 if let Some(mut d) = self.#component_link_fields.take() {
                     d.id = Some(id);

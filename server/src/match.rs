@@ -1,4 +1,4 @@
-use std::{collections::HashMap, i32};
+use std::{collections::HashMap, i32, ops::Deref};
 
 use log::info;
 use rand::seq::SliceRandom;
@@ -39,19 +39,6 @@ impl Match {
         //         .id;
         // }
         Ok(())
-    }
-    fn all_units<'a>(&'a self) -> Result<Vec<&'a Unit>, String> {
-        Ok(self
-            .team()
-            .houses
-            .iter()
-            .flat_map(|h| {
-                h.action_abilities
-                    .iter()
-                    .flat_map(|a| a.units.iter())
-                    .chain(h.status_abilities.iter().flat_map(|a| a.units.iter()))
-            })
-            .collect())
     }
     fn find_house<'a>(&'a self, name: &str) -> Option<&'a House> {
         self.team().houses.iter().find(|h| h.name == name)
@@ -240,27 +227,35 @@ fn match_edit_fusions(ctx: &ReducerContext, fusions: Vec<Vec<String>>) -> Result
 
 #[reducer]
 fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
-    // let units = NodeDomain::Core.node_collect::<Unit>(c);
-    // let price = c.global_settings().match_g.unit_buy;
-    // let mut d = Match {
-    //     g: 13,
-    //     shop_case: (0..3)
-    //         .map(|_| ShopCaseUnit {
-    //             unit_id: units.choose(&mut ctx.rng()).unwrap().id(),
-    //             price,
-    //             ..default()
-    //         })
-    //         .collect_vec(),
-    //     team: Some(Team {
-    //         name: "Test Team".into(),
-    //         ..default()
-    //     }),
-    //     ..default()
-    // };
-    // d.fill_case(c)?;
-    // for d in NodeDomain::Match.tnode_collect_owner(c) {
-    //     NodeDomain::Match.delete_by_id_recursive(c, d.id);
-    // }
-    // d.to_table(c, NodeDomain::Match, 0);
+    let mut player = ctx.player()?;
+    player.active_match_load(ctx);
+    if let Some(m) = &player.active_match {
+        m.delete_recursive(ctx);
+    }
+    let mut all = All::get(ctx, 0).unwrap();
+    let units = all
+        .core_load(ctx)?
+        .into_iter()
+        .filter_map(|h| h.units_load(ctx).ok())
+        .flatten()
+        .collect_vec();
+    let gs = ctx.global_settings();
+    let price = gs.match_g.unit_buy;
+    let mut m = Match::new_full(
+        gs.match_g.initial,
+        Timestamp::now().into_micros_since_epoch(),
+        Team::new("Test Team".into()),
+    );
+    m.shop_case = (0..3)
+        .map(|_| {
+            ShopCaseUnit::new(
+                units.choose(&mut ctx.rng()).unwrap().name.clone(),
+                price,
+                false,
+            )
+        })
+        .collect_vec();
+    player.active_match = Some(m);
+    player.save(ctx);
     Ok(())
 }

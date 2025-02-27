@@ -55,3 +55,13 @@ fn init(ctx: &ReducerContext) -> Result<(), String> {
     GlobalData::init(ctx);
     Ok(())
 }
+
+trait CtxExt {
+    fn global_settings(&self) -> GlobalSettings;
+}
+
+impl CtxExt for ReducerContext {
+    fn global_settings(&self) -> GlobalSettings {
+        GlobalSettings::get(self)
+    }
+}
