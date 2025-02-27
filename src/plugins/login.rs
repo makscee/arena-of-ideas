@@ -1,4 +1,5 @@
-use spacetimedb_sdk::Table;
+use spacetimedb_lib::Identity;
+use spacetimedb_sdk::{DbContext, Table};
 
 use crate::login;
 
@@ -25,49 +26,71 @@ impl Plugin for LoginPlugin {
 pub struct LoginData {
     name_field: String,
     pass_field: String,
-    pub identity_player: Option<TPlayer>,
     login_requested: bool,
 }
 
 impl LoginPlugin {
     fn login(world: &mut World) {
         let co = ConnectOption::get(world);
-        let mut identity_user = None;
-        if let Some(player) = cn()
-            .db
-            .player()
-            .iter()
-            .find(|u| u.identities.contains(&co.identity))
-        {
-            if currently_fulfilling() == GameOption::ForceLogin {
-                Self::complete(Some(player.clone()), world);
-            }
-            identity_user = Some(player);
+        if currently_fulfilling() == GameOption::ForceLogin {
+            // if let Some((name, i)) = client_state().last_logged_in {
+            // Self::complete(Some(player.clone()), world);
+            // }
         }
-        world.insert_resource(LoginData {
-            identity_player: identity_user,
-            ..default()
-        });
     }
-    pub fn complete(player: Option<TPlayer>, world: &mut World) {
-        let player = player.unwrap_or_else(|| {
-            world
-                .resource::<LoginData>()
-                .identity_player
-                .clone()
-                .unwrap()
-        });
-        LoginOption { player }.save(world);
+    fn complete() {
+        subscribe_game(Self::on_subscribed);
         subscribe_reducers();
-        subscribe_game(GameState::proceed_op);
     }
-    pub fn tab(ui: &mut Ui, world: &mut World) {
+    fn on_subscribed() {
+        OperationsPlugin::add(|world| {
+            let identity = ConnectOption::get(world).identity;
+            let player = cn()
+                .db
+                .tnodes()
+                .data()
+                .find(&PlayerIdentity::new(Some(identity.to_string())).get_data())
+                .and_then(|d| Player::get(d.id));
+            if let Some(player) = player {
+                LoginOption { player }.save(world);
+            } else {
+                error!("Failed to find Player");
+            }
+            GameState::proceed(world);
+        });
+    }
+    pub fn tab_register(ui: &mut Ui, world: &mut World) {
+        ui.vertical_centered_justified(|ui| {
+            ui.add_space(ui.available_height() * 0.3);
+            ui.set_width(350.0.at_most(ui.available_width()));
+            "New Player"
+                .cstr_cs(VISIBLE_LIGHT, CstrStyle::Heading2)
+                .label(ui);
+            let mut ld = world.resource_mut::<LoginData>();
+            Input::new("name").ui_string(&mut ld.name_field, ui);
+            Input::new("password")
+                .password()
+                .ui_string(&mut ld.pass_field, ui);
+            if Button::new("Submit").ui(ui).clicked() {
+                cn().reducers.on_register(|e, _, _| {
+                    if !e.check_identity() {
+                        return;
+                    }
+                    e.event.on_success(LoginPlugin::complete);
+                });
+                cn().reducers
+                    .register(ld.name_field.clone(), ld.pass_field.clone())
+                    .unwrap();
+            }
+        });
+    }
+    pub fn tab_login(ui: &mut Ui, world: &mut World) {
         ui.vertical_centered_justified(|ui| {
             ui.add_space(ui.available_height() * 0.3);
             ui.set_width(350.0.at_most(ui.available_width()));
             let mut ld = world.resource_mut::<LoginData>();
-            if let Some(player) = ld.identity_player.clone() {
-                format!("Login as {}", player.name)
+            if let Some((name, identity)) = &client_state().last_logged_in {
+                format!("Login as {}", name)
                     .cstr_cs(VISIBLE_LIGHT, CstrStyle::Heading2)
                     .label(ui);
                 if !ld.login_requested
@@ -78,41 +101,16 @@ impl LoginPlugin {
                         if !e.check_identity() {
                             return;
                         }
-                        e.event.on_success_op(|world| {
-                            LoginPlugin::complete(None, world);
-                        });
+                        e.event.on_success(LoginPlugin::complete);
                     });
                     let _ = cn().reducers.login_by_identity();
                 }
                 br(ui);
                 if Button::new("Logout").gray(ui).ui(ui).clicked() {
-                    ld.identity_player = None;
+                    todo!();
                 }
             } else {
                 let mut ld = world.resource_mut::<LoginData>();
-                "Register"
-                    .cstr_cs(VISIBLE_LIGHT, CstrStyle::Heading)
-                    .label(ui);
-                if Button::new("New Player").ui(ui).clicked() {
-                    cn().reducers.on_register_empty(|e| {
-                        if !e.check_identity() {
-                            return;
-                        }
-                        e.event.on_success_op(|world| {
-                            Notification::new_string("New player created".to_owned()).push(world);
-                            let identity = ConnectOption::get(world).identity.clone();
-                            let player = cn()
-                                .db
-                                .player()
-                                .iter()
-                                .find(|u| u.identities.contains(&identity))
-                                .expect("Failed to find player after registration");
-                            world.resource_mut::<LoginData>().identity_player = Some(player);
-                        })
-                    });
-                    cn().reducers.register_empty().unwrap();
-                }
-                br(ui);
                 "Login".cstr_cs(VISIBLE_LIGHT, CstrStyle::Heading).label(ui);
                 Input::new("name").ui_string(&mut ld.name_field, ui);
                 Input::new("password")
@@ -123,17 +121,19 @@ impl LoginPlugin {
                         if !e.check_identity() {
                             return;
                         }
-                        let name = name.clone();
-                        let player = e.db.player().name().find(&name).unwrap();
-                        e.event.on_success_op(move |world| {
-                            LoginPlugin::complete(Some(player), world);
-                        })
+                        e.event.on_success(LoginPlugin::complete);
                     });
-                    let _ = crate::login::login(
-                        &cn().reducers,
-                        ld.name_field.clone(),
-                        ld.pass_field.clone(),
-                    );
+                    cn().reducers
+                        .login(ld.name_field.clone(), ld.pass_field.clone())
+                        .unwrap();
+                }
+                br(ui);
+                if "New Player"
+                    .cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold)
+                    .button(ui)
+                    .clicked()
+                {
+                    GameState::Register.set_next(world);
                 }
             }
         });

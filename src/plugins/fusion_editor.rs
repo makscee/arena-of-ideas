@@ -20,17 +20,15 @@ impl FusionEditorPlugin {
         team_world: &World,
         on_save: impl Fn(Fusion, &mut World) + Send + Sync + 'static,
     ) -> Result<(), ExpressionError> {
-        let slot = team_world
-            .get::<UnitSlot>(entity)
-            .to_e("Fusion not found")?;
+        let fusion = team_world.get::<Fusion>(entity).to_e("Fusion not found")?;
 
-        let team = slot.find_up::<Team>(team_world).unwrap();
+        let team = fusion.find_up::<Team>(team_world).unwrap();
         let mut team = Team::pack(team.entity(), team_world).to_e("Failed to pack Team")?;
         team.clear_entities();
         let mut team_world = World::new();
         let team_entity = team_world.spawn_empty().id();
         team.unpack(team_entity, &mut team_world);
-        let fusion = Fusion::find_by_slot(slot.slot, &mut team_world).unwrap();
+        let fusion = Fusion::find_by_slot(fusion.slot, &mut team_world).unwrap();
         world.insert_resource(FusionEditorData {
             fusion,
             world: team_world,

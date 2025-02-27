@@ -24,10 +24,10 @@ impl AdminPlugin {
         let mut slot_entities: [Vec<Option<Entity>>; 2] = default();
         slot_entities[0] = (0..global_settings().team_slots).map(|_| None).collect();
         slot_entities[1] = slot_entities[0].clone();
-        for slot in battle_world.query::<&UnitSlot>().iter(&battle_world) {
-            let team = slot.find_up::<Team>(&battle_world).unwrap();
-            slot_entities[(team.entity() == entity_left) as usize][slot.slot as usize] =
-                Some(slot.entity());
+        for fusion in battle_world.query::<&Fusion>().iter(&battle_world) {
+            let team = fusion.find_up::<Team>(&battle_world).unwrap();
+            slot_entities[(team.entity() == entity_left) as usize][fusion.slot as usize] =
+                Some(fusion.entity());
         }
         let mut editing_entity = None;
         Window::new("Edit Teams", move |ui, world| {
@@ -65,7 +65,7 @@ impl AdminPlugin {
                                 .spawn_empty()
                                 .set_parent(if side { entity_left } else { entity_right })
                                 .id();
-                            Fusion::new_full(default(), default(), UnitSlot::new(i as i32))
+                            Fusion::new_full(i as i32, default(), default())
                                 .unpack(entity, &mut battle_world);
                             slot_entities[side as usize][i] = Some(entity);
                             entity

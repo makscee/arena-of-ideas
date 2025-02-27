@@ -17,6 +17,7 @@ use global_data::*;
 use global_settings::*;
 use inflating_number::*;
 use itertools::Itertools;
+use log::{debug, error, info};
 use nodes::*;
 use nodes_table::*;
 use player::*;
@@ -53,6 +54,7 @@ impl AdminCheck for &ReducerContext {
 #[reducer(init)]
 fn init(ctx: &ReducerContext) -> Result<(), String> {
     GlobalData::init(ctx);
+    All::new(Timestamp::now().into_micros_since_epoch()).save(ctx);
     Ok(())
 }
 

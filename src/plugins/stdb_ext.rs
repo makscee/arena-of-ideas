@@ -13,7 +13,6 @@ pub trait TableSingletonExt: Table {
 
 impl TableSingletonExt for GlobalDataTableHandle<'static> {}
 impl TableSingletonExt for GlobalSettingsTableHandle<'static> {}
-impl TableSingletonExt for WalletTableHandle<'static> {}
 
 pub trait StdbStatusExt {
     fn on_success(&self, f: impl FnOnce() + Send + Sync + 'static);
@@ -52,53 +51,6 @@ impl<R> StdbStatusExt for Event<R> {
     }
 }
 
-pub trait GIDExt {
-    fn get_player(self) -> TPlayer;
-}
-
-impl GIDExt for u64 {
-    fn get_player(self) -> TPlayer {
-        if self == 0 {
-            return TPlayer::default();
-        }
-        cn().db.player().id().find(&self).unwrap_or_default()
-    }
-}
-
-impl Default for TPlayer {
-    fn default() -> Self {
-        Self {
-            id: 0,
-            name: "...".into(),
-            identities: default(),
-            pass_hash: default(),
-            online: default(),
-            last_login: default(),
-        }
-    }
-}
-impl TPlayer {
-    pub fn get_supporter_level(&self) -> u8 {
-        const SUPPORTER_TAG_NAMES: [&str; 4] = [
-            "SupporterCommon",
-            "SupporterRare",
-            "SupporterEpic",
-            "SupporterLegendary",
-        ];
-        for tag in cn().db.player_tag().iter().filter_map(|t| {
-            if t.owner == self.id {
-                Some(t.tag)
-            } else {
-                None
-            }
-        }) {
-            if let Some(i) = SUPPORTER_TAG_NAMES.iter().position(|n| n == &tag) {
-                return i as u8 + 1;
-            }
-        }
-        0
-    }
-}
 impl EventContext {
     pub fn check_identity(&self) -> bool {
         match &self.event {

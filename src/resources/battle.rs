@@ -301,7 +301,7 @@ impl BattleSimulation {
         }
         fn entities_by_slot(parent: Entity, world: &World) -> Vec<Entity> {
             Context::new_world(&world)
-                .children_components_recursive::<UnitSlot>(parent)
+                .children_components_recursive::<Fusion>(parent)
                 .into_iter()
                 .sorted_by_key(|(_, s)| s.slot)
                 .map(|(e, _)| e)

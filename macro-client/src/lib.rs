@@ -339,6 +339,12 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 }
                 impl Node for #struct_ident {
                     #strings_conversions
+                    fn id(&self) -> u64 {
+                        self.id.unwrap()
+                    }
+                    fn set_id(&mut self, id: u64) {
+                        self.id = Some(id);
+                    }
                     fn entity(&self) -> Entity {
                         self.entity.unwrap()
                     }
@@ -369,15 +375,8 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     fn to_dir(&self, path: String) -> DirEntry {
                         #data_to_dir
                     }
-                    fn from_table_single(domain: NodeDomain, id: u64) -> Option<Self> {
-                        let data = domain.find_by_key(&Self::kind_s().key(id))?.data;
-                        let mut d = Self::default();
-                        d.id = Some(id);
-                        d.inject_data(&data);
-                        Some(d)
-                    }
-                    fn from_table(domain: NodeDomain, id: u64) -> Option<Self> {
-                        let mut d = Self::from_table_single(domain, id)?;
+                    fn load_recursive(id: u64) -> Option<Self> {
+                        let mut d = Self::get(id)?;
                         let children = cn()
                             .db
                             .nodes_relations()
@@ -387,12 +386,12 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                             .sorted()
                             .collect_vec();
                         #(
-                            d.#component_link_fields = #component_link_types::from_table(domain, id);
+                            d.#component_link_fields = #component_link_types::load_recursive(id);
                         )*
                         #(
                             d.#child_link_fields = children
                                 .iter()
-                                .filter_map(|id| #child_link_types::from_table(domain, *id))
+                                .filter_map(|id| #child_link_types::load_recursive(*id))
                                 .collect();
                         )*
                         Some(d)
@@ -434,19 +433,6 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         let kind = self.kind();
                         world.entity_mut(entity).insert(self);
                         kind.on_unpack(entity, world);
-                    }
-                    fn collect_units_vec<'a>(&'a self, vec: &mut Vec<&'a Unit>) {
-                        #insert_unit
-                        #(
-                            if let Some(d) = &self.#component_link_fields {
-                                d.collect_units_vec(vec);
-                            }
-                        )*
-                        #(
-                            for d in &self.#child_link_fields {
-                                d.collect_units_vec(vec);
-                            }
-                        )*
                     }
                 }
                 impl From<&str> for #struct_ident {

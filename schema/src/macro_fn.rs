@@ -201,7 +201,7 @@ pub fn table_conversions(
                 self.id = Some(next_id(ctx));
             }
             let id = self.id();
-            self.insert_self(ctx);
+            self.insert_or_update_self(ctx);
             #(
                 if let Some(mut d) = self.#component_link_fields.take() {
                     d.id = Some(id);
@@ -227,6 +227,10 @@ pub fn common_node_fns(
     let component_link_fields_mut = component_link_fields
         .iter()
         .map(|i| Ident::new(&format!("{i}_mut"), Span::call_site()))
+        .collect_vec();
+    let component_link_fields_err = component_link_fields
+        .iter()
+        .map(|i| format!("Failed to get field {i}").leak())
         .collect_vec();
     quote! {
         impl #struct_ident {
@@ -262,12 +266,12 @@ pub fn common_node_fns(
             }
             #(
                 pub fn #component_link_fields(&self) -> &#component_link_types {
-                    self.#component_link_fields.as_ref().unwrap()
+                    self.#component_link_fields.as_ref().expect(#component_link_fields_err)
                 }
             )*
             #(
                 pub fn #component_link_fields_mut<'a>(&'a mut self) -> &'a mut #component_link_types {
-                    self.#component_link_fields.as_mut().unwrap()
+                    self.#component_link_fields.as_mut().expect(#component_link_fields_err)
                 }
             )*
         }

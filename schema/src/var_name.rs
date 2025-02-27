@@ -44,4 +44,5 @@ pub enum VarName {
     charges,
     g,
     price,
+    unit,
 }

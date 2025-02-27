@@ -13,43 +13,39 @@ fn register(ctx: &ReducerContext, name: String, pass: String) -> Result<(), Stri
     let mut player = Player::new(name);
     player.id = Some(next_id(ctx));
     player.player_data = Some(PlayerData::new(pass_hash, false, 0));
-    player.identity = Some(PlayerIdentity::new(Some(ctx.identity().to_string())));
+    player.identity = Some(PlayerIdentity::new(Some(ctx.sender.to_string())));
     player.set_parent(ctx, 0);
+    player.save(ctx);
     Ok(())
 }
 
 #[reducer]
 fn login(ctx: &ReducerContext, name: String, pass: String) -> Result<(), String> {
-    let mut player = Player::get_by_data(ctx, &format!("\"{name}\""))
-        .to_e_s("Player not found")?
-        .with_components(ctx);
-    if player.player_data().pass_hash.is_none() {
+    let mut player = Player::get_by_data(ctx, &format!("\"{name}\"")).to_e_s("Player not found")?;
+    debug!("{player:?}");
+    if player.player_data_load(ctx)?.pass_hash.is_none() {
         return Err("No password set for player".to_owned());
     }
     if !player.check_pass(pass) {
         Err("Wrong name or password".to_owned())
     } else {
-        if let Ok(player) = ctx.player() {
-            let mut player = player.logout();
-            player.identity_mut().data = None;
-            player.save(ctx);
-        }
-        player.identity_mut().data = Some(ctx.identity().to_string());
-        player.login().save(ctx);
+        Player::clear_identity(ctx, &ctx.sender);
+        player.identity = Some(PlayerIdentity::new(Some(ctx.sender.to_string())));
+        player.login(ctx)?.save(ctx);
         Ok(())
     }
 }
 
 #[reducer]
 fn login_by_identity(ctx: &ReducerContext) -> Result<(), String> {
-    ctx.player()?.login().save(ctx);
+    ctx.player()?.login(ctx)?.save(ctx);
     Ok(())
 }
 
 #[reducer]
 fn logout(ctx: &ReducerContext) -> Result<(), String> {
-    let mut player = ctx.player()?.logout();
-    player.identity_mut().data = None;
+    let mut player = ctx.player()?.logout(ctx)?;
+    player.identity_load(ctx)?.delete_self(ctx);
     player.save(ctx);
     Ok(())
 }
@@ -68,7 +64,7 @@ fn set_password(ctx: &ReducerContext, old_pass: String, new_pass: String) -> Res
 #[reducer(client_disconnected)]
 fn identity_disconnected(ctx: &ReducerContext) {
     if let Ok(player) = ctx.player() {
-        player.logout().save(ctx);
+        player.logout(ctx).unwrap().save(ctx);
     }
 }
 
@@ -106,24 +102,25 @@ impl Player {
             Err(e) => Err(e.to_string()),
         }
     }
-    pub fn find_by_identity(ctx: &ReducerContext, identity: &Identity) -> Option<Player> {
-        let i = PlayerIdentity::get_by_data(ctx, &identity.to_hex().to_string())?;
-        Player::find_parent(ctx, i.id())
+    pub fn find_identity(ctx: &ReducerContext, identity: &Identity) -> Option<PlayerIdentity> {
+        let data = PlayerIdentity::new(Some(identity.to_string())).get_data();
+        PlayerIdentity::get_by_data(ctx, &data)
     }
-    fn login(mut self) -> Self {
-        let data = self.player_data_mut();
+    fn login(mut self, ctx: &ReducerContext) -> Result<Self, String> {
+        let data = self.player_data_load(ctx)?;
+        debug!("{data:?}");
         data.last_login = Timestamp::now().into_micros_since_epoch();
         data.online = true;
-        self
+        Ok(self)
     }
-    fn logout(mut self) -> Self {
-        self.player_data_mut().online = false;
-        self
+    fn logout(mut self, ctx: &ReducerContext) -> Result<Self, String> {
+        self.player_data_load(ctx)?.online = false;
+        Ok(self)
     }
     fn clear_identity(ctx: &ReducerContext, identity: &Identity) {
-        if let Some(mut player) = Self::find_by_identity(ctx, identity) {
-            player.identity = None;
-            player.save(ctx);
+        if let Some(node) = Self::find_identity(ctx, identity) {
+            info!("identity cleared for {node:?}");
+            node.delete_self(ctx);
         }
     }
 }
@@ -134,6 +131,9 @@ pub trait GetPlayer {
 
 impl GetPlayer for ReducerContext {
     fn player(&self) -> Result<Player, String> {
-        Player::find_by_identity(self, &self.sender).to_e_s("Player not found")
+        let id = Player::find_identity(self, &self.sender)
+            .to_e_s("Player not found")?
+            .id();
+        Player::get(self, id).to_e_s("Identity exists but Player does not")
     }
 }

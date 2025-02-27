@@ -10,6 +10,7 @@ pub enum GameState {
     Title,
     Connect,
     Login,
+    Register,
     Match,
     FusionEditor,
     TestScenariosLoad,
@@ -26,6 +27,7 @@ impl GameState {
         match self {
             GameState::Connect => DockState::new(Tab::Login.into()),
             GameState::Login => DockState::new(Tab::Login.into()),
+            GameState::Register => DockState::new(Tab::Register.into()),
             GameState::Title => DockState::new([Tab::MainMenu, Tab::Admin].into()),
             GameState::Match => {
                 let mut ds = DockState::new([Tab::Shop].into());
@@ -52,8 +54,9 @@ impl GameState {
 
 #[derive(PartialEq, Eq, Clone, Copy, Hash, AsRefStr, Serialize, Deserialize, Debug)]
 pub enum Tab {
-    Login,
     Connect,
+    Login,
+    Register,
     MainMenu,
     Shop,
     Team,
@@ -81,7 +84,8 @@ impl Tab {
                     }
                 });
             }
-            Tab::Login => LoginPlugin::tab(ui, world),
+            Tab::Login => LoginPlugin::tab_login(ui, world),
+            Tab::Register => LoginPlugin::tab_register(ui, world),
             Tab::Connect => ConnectPlugin::tab(ui),
             Tab::Admin => AdminPlugin::tab(ui, world),
             Tab::Shop => MatchPlugin::shop_tab(ui, world),
@@ -151,6 +155,7 @@ impl GameState {
     }
     pub fn proceed(world: &mut World) {
         let to = *TARGET_STATE.lock();
+        info!("Proceed to {to}");
         if let Some(options) = STATE_OPTIONS.get(&to) {
             for option in options {
                 if !option.is_fulfilled(world) {

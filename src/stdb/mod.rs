@@ -8,15 +8,11 @@ use spacetimedb_sdk::__codegen::{
 };
 
 pub mod admin_daily_update_reducer;
-pub mod admin_give_tag_reducer;
-pub mod admin_set_temp_pass_reducer;
 pub mod battle_insert_reducer;
 pub mod battle_table;
-pub mod cleanup_reducer;
 pub mod daily_update_reducer_reducer;
 pub mod daily_update_timer_table;
 pub mod daily_update_timer_type;
-pub mod give_credits_reducer;
 pub mod global_data_table;
 pub mod global_data_type;
 pub mod global_settings_table;
@@ -34,45 +30,27 @@ pub mod match_reorder_reducer;
 pub mod match_reroll_reducer;
 pub mod match_sell_reducer;
 pub mod node_spawn_reducer;
-pub mod nodes_core_table;
-pub mod nodes_match_table;
 pub mod nodes_relations_table;
-pub mod nodes_world_table;
-pub mod player_table;
-pub mod player_tag_table;
-pub mod register_empty_reducer;
 pub mod register_reducer;
-pub mod set_name_reducer;
 pub mod set_password_reducer;
 pub mod sync_assets_reducer;
 pub mod t_battle_type;
 pub mod t_node_relation_type;
 pub mod t_node_type;
-pub mod t_player_tag_type;
-pub mod t_player_type;
-pub mod t_wallet_type;
-pub mod wallet_table;
+pub mod tnodes_table;
 
 pub use admin_daily_update_reducer::{
     admin_daily_update, set_flags_for_admin_daily_update, AdminDailyUpdateCallbackId,
-};
-pub use admin_give_tag_reducer::{
-    admin_give_tag, set_flags_for_admin_give_tag, AdminGiveTagCallbackId,
-};
-pub use admin_set_temp_pass_reducer::{
-    admin_set_temp_pass, set_flags_for_admin_set_temp_pass, AdminSetTempPassCallbackId,
 };
 pub use battle_insert_reducer::{
     battle_insert, set_flags_for_battle_insert, BattleInsertCallbackId,
 };
 pub use battle_table::*;
-pub use cleanup_reducer::{cleanup, set_flags_for_cleanup, CleanupCallbackId};
 pub use daily_update_reducer_reducer::{
     daily_update_reducer, set_flags_for_daily_update_reducer, DailyUpdateReducerCallbackId,
 };
 pub use daily_update_timer_table::*;
 pub use daily_update_timer_type::DailyUpdateTimer;
-pub use give_credits_reducer::{give_credits, set_flags_for_give_credits, GiveCreditsCallbackId};
 pub use global_data_table::*;
 pub use global_data_type::GlobalData;
 pub use global_settings_table::*;
@@ -98,26 +76,14 @@ pub use match_reorder_reducer::{
 pub use match_reroll_reducer::{match_reroll, set_flags_for_match_reroll, MatchRerollCallbackId};
 pub use match_sell_reducer::{match_sell, set_flags_for_match_sell, MatchSellCallbackId};
 pub use node_spawn_reducer::{node_spawn, set_flags_for_node_spawn, NodeSpawnCallbackId};
-pub use nodes_core_table::*;
-pub use nodes_match_table::*;
 pub use nodes_relations_table::*;
-pub use nodes_world_table::*;
-pub use player_table::*;
-pub use player_tag_table::*;
-pub use register_empty_reducer::{
-    register_empty, set_flags_for_register_empty, RegisterEmptyCallbackId,
-};
 pub use register_reducer::{register, set_flags_for_register, RegisterCallbackId};
-pub use set_name_reducer::{set_flags_for_set_name, set_name, SetNameCallbackId};
 pub use set_password_reducer::{set_flags_for_set_password, set_password, SetPasswordCallbackId};
 pub use sync_assets_reducer::{set_flags_for_sync_assets, sync_assets, SyncAssetsCallbackId};
 pub use t_battle_type::TBattle;
 pub use t_node_relation_type::TNodeRelation;
 pub use t_node_type::TNode;
-pub use t_player_tag_type::TPlayerTag;
-pub use t_player_type::TPlayer;
-pub use t_wallet_type::TWallet;
-pub use wallet_table::*;
+pub use tnodes_table::*;
 
 #[derive(Clone, PartialEq, Debug)]
 
@@ -130,22 +96,13 @@ pub enum Reducer {
     IdentityDisconnected,
     Init,
     AdminDailyUpdate,
-    AdminGiveTag {
-        owner: u64,
-        tag: String,
-    },
-    AdminSetTempPass {
-        id: u64,
-    },
     BattleInsert {
         team_left: Vec<String>,
         team_right: Vec<String>,
     },
-    Cleanup,
     DailyUpdateReducer {
         timer: DailyUpdateTimer,
     },
-    GiveCredits,
     Login {
         name: String,
         pass: String,
@@ -176,10 +133,6 @@ pub enum Reducer {
         name: String,
         pass: String,
     },
-    RegisterEmpty,
-    SetName {
-        name: String,
-    },
     SetPassword {
         old_pass: String,
         new_pass: String,
@@ -200,12 +153,8 @@ impl __sdk::Reducer for Reducer {
             Reducer::IdentityDisconnected => "__identity_disconnected__",
             Reducer::Init => "__init__",
             Reducer::AdminDailyUpdate => "admin_daily_update",
-            Reducer::AdminGiveTag { .. } => "admin_give_tag",
-            Reducer::AdminSetTempPass { .. } => "admin_set_temp_pass",
             Reducer::BattleInsert { .. } => "battle_insert",
-            Reducer::Cleanup => "cleanup",
             Reducer::DailyUpdateReducer { .. } => "daily_update_reducer",
-            Reducer::GiveCredits => "give_credits",
             Reducer::Login { .. } => "login",
             Reducer::LoginByIdentity => "login_by_identity",
             Reducer::Logout => "logout",
@@ -217,8 +166,6 @@ impl __sdk::Reducer for Reducer {
             Reducer::MatchSell { .. } => "match_sell",
             Reducer::NodeSpawn { .. } => "node_spawn",
             Reducer::Register { .. } => "register",
-            Reducer::RegisterEmpty => "register_empty",
-            Reducer::SetName { .. } => "set_name",
             Reducer::SetPassword { .. } => "set_password",
             Reducer::SyncAssets { .. } => "sync_assets",
         }
@@ -243,34 +190,14 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
                 admin_daily_update_reducer::AdminDailyUpdateArgs,
             >("admin_daily_update", &value.args)?
             .into()),
-            "admin_give_tag" => Ok(__sdk::parse_reducer_args::<
-                admin_give_tag_reducer::AdminGiveTagArgs,
-            >("admin_give_tag", &value.args)?
-            .into()),
-            "admin_set_temp_pass" => Ok(__sdk::parse_reducer_args::<
-                admin_set_temp_pass_reducer::AdminSetTempPassArgs,
-            >("admin_set_temp_pass", &value.args)?
-            .into()),
             "battle_insert" => Ok(__sdk::parse_reducer_args::<
                 battle_insert_reducer::BattleInsertArgs,
             >("battle_insert", &value.args)?
-            .into()),
-            "cleanup" => Ok(__sdk::parse_reducer_args::<cleanup_reducer::CleanupArgs>(
-                "cleanup",
-                &value.args,
-            )?
             .into()),
             "daily_update_reducer" => Ok(__sdk::parse_reducer_args::<
                 daily_update_reducer_reducer::DailyUpdateReducerArgs,
             >("daily_update_reducer", &value.args)?
             .into()),
-            "give_credits" => Ok(
-                __sdk::parse_reducer_args::<give_credits_reducer::GiveCreditsArgs>(
-                    "give_credits",
-                    &value.args,
-                )?
-                .into(),
-            ),
             "login" => Ok(__sdk::parse_reducer_args::<login_reducer::LoginArgs>(
                 "login",
                 &value.args,
@@ -333,15 +260,6 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
                 &value.args,
             )?
             .into()),
-            "register_empty" => Ok(__sdk::parse_reducer_args::<
-                register_empty_reducer::RegisterEmptyArgs,
-            >("register_empty", &value.args)?
-            .into()),
-            "set_name" => Ok(__sdk::parse_reducer_args::<set_name_reducer::SetNameArgs>(
-                "set_name",
-                &value.args,
-            )?
-            .into()),
             "set_password" => Ok(
                 __sdk::parse_reducer_args::<set_password_reducer::SetPasswordArgs>(
                     "set_password",
@@ -372,13 +290,8 @@ pub struct DbUpdate {
     daily_update_timer: __sdk::TableUpdate<DailyUpdateTimer>,
     global_data: __sdk::TableUpdate<GlobalData>,
     global_settings: __sdk::TableUpdate<GlobalSettings>,
-    nodes_core: __sdk::TableUpdate<TNode>,
-    nodes_match: __sdk::TableUpdate<TNode>,
     nodes_relations: __sdk::TableUpdate<TNodeRelation>,
-    nodes_world: __sdk::TableUpdate<TNode>,
-    player: __sdk::TableUpdate<TPlayer>,
-    player_tag: __sdk::TableUpdate<TPlayerTag>,
-    wallet: __sdk::TableUpdate<TWallet>,
+    tnodes: __sdk::TableUpdate<TNode>,
 }
 
 impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
@@ -399,24 +312,11 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
                     db_update.global_settings =
                         global_settings_table::parse_table_update(table_update)?
                 }
-                "nodes_core" => {
-                    db_update.nodes_core = nodes_core_table::parse_table_update(table_update)?
-                }
-                "nodes_match" => {
-                    db_update.nodes_match = nodes_match_table::parse_table_update(table_update)?
-                }
                 "nodes_relations" => {
                     db_update.nodes_relations =
                         nodes_relations_table::parse_table_update(table_update)?
                 }
-                "nodes_world" => {
-                    db_update.nodes_world = nodes_world_table::parse_table_update(table_update)?
-                }
-                "player" => db_update.player = player_table::parse_table_update(table_update)?,
-                "player_tag" => {
-                    db_update.player_tag = player_tag_table::parse_table_update(table_update)?
-                }
-                "wallet" => db_update.wallet = wallet_table::parse_table_update(table_update)?,
+                "tnodes" => db_update.tnodes = tnodes_table::parse_table_update(table_update)?,
 
                 unknown => __anyhow::bail!("Unknown table {unknown:?} in DatabaseUpdate"),
             }
@@ -438,13 +338,8 @@ impl __sdk::DbUpdate for DbUpdate {
         );
         cache.apply_diff_to_table::<GlobalData>("global_data", &self.global_data);
         cache.apply_diff_to_table::<GlobalSettings>("global_settings", &self.global_settings);
-        cache.apply_diff_to_table::<TNode>("nodes_core", &self.nodes_core);
-        cache.apply_diff_to_table::<TNode>("nodes_match", &self.nodes_match);
         cache.apply_diff_to_table::<TNodeRelation>("nodes_relations", &self.nodes_relations);
-        cache.apply_diff_to_table::<TNode>("nodes_world", &self.nodes_world);
-        cache.apply_diff_to_table::<TPlayer>("player", &self.player);
-        cache.apply_diff_to_table::<TPlayerTag>("player_tag", &self.player_tag);
-        cache.apply_diff_to_table::<TWallet>("wallet", &self.wallet);
+        cache.apply_diff_to_table::<TNode>("tnodes", &self.tnodes);
     }
     fn invoke_row_callbacks(
         &self,
@@ -463,17 +358,12 @@ impl __sdk::DbUpdate for DbUpdate {
             &self.global_settings,
             event,
         );
-        callbacks.invoke_table_row_callbacks::<TNode>("nodes_core", &self.nodes_core, event);
-        callbacks.invoke_table_row_callbacks::<TNode>("nodes_match", &self.nodes_match, event);
         callbacks.invoke_table_row_callbacks::<TNodeRelation>(
             "nodes_relations",
             &self.nodes_relations,
             event,
         );
-        callbacks.invoke_table_row_callbacks::<TNode>("nodes_world", &self.nodes_world, event);
-        callbacks.invoke_table_row_callbacks::<TPlayer>("player", &self.player, event);
-        callbacks.invoke_table_row_callbacks::<TPlayerTag>("player_tag", &self.player_tag, event);
-        callbacks.invoke_table_row_callbacks::<TWallet>("wallet", &self.wallet, event);
+        callbacks.invoke_table_row_callbacks::<TNode>("tnodes", &self.tnodes, event);
     }
 }
 
@@ -801,12 +691,7 @@ impl __sdk::SpacetimeModule for RemoteModule {
         daily_update_timer_table::register_table(client_cache);
         global_data_table::register_table(client_cache);
         global_settings_table::register_table(client_cache);
-        nodes_core_table::register_table(client_cache);
-        nodes_match_table::register_table(client_cache);
         nodes_relations_table::register_table(client_cache);
-        nodes_world_table::register_table(client_cache);
-        player_table::register_table(client_cache);
-        player_tag_table::register_table(client_cache);
-        wallet_table::register_table(client_cache);
+        tnodes_table::register_table(client_cache);
     }
 }

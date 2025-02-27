@@ -228,8 +228,7 @@ fn match_edit_fusions(ctx: &ReducerContext, fusions: Vec<Vec<String>>) -> Result
 #[reducer]
 fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
     let mut player = ctx.player()?;
-    player.active_match_load(ctx);
-    if let Some(m) = &player.active_match {
+    if let Ok(m) = player.active_match_load(ctx) {
         m.delete_recursive(ctx);
     }
     let mut all = All::get(ctx, 0).unwrap();

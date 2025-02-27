@@ -59,7 +59,7 @@ impl GameOption {
 
 #[derive(Resource)]
 pub struct LoginOption {
-    pub player: TPlayer,
+    pub player: Player,
 }
 
 #[derive(Resource, Clone)]
@@ -72,6 +72,11 @@ pub trait OptionResource: Resource + Sized {
     fn fulfill(world: &mut World);
     fn save(self, world: &mut World) {
         world.insert_resource(self);
+    }
+    fn save_op(self) {
+        OperationsPlugin::add(|world| {
+            self.save(world);
+        });
     }
     fn get(world: &World) -> &Self {
         world.get_resource::<Self>().unwrap()
@@ -105,7 +110,7 @@ impl OptionResource for LoginOption {
     }
     fn save(self, world: &mut World) {
         *PLAYER_NAME.lock() = self.player.name.clone().leak();
-        *PLAYER_ID.lock() = self.player.id;
+        *PLAYER_ID.lock() = self.player.id();
         world.insert_resource(self);
     }
 }

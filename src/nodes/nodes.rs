@@ -13,6 +13,8 @@ pub trait GetVar: GetNodeKind + Debug {
 }
 
 pub trait Node: Default + Component + Sized + GetVar + Show + Debug {
+    fn id(&self) -> u64;
+    fn set_id(&mut self, id: u64);
     fn entity(&self) -> Entity;
     fn get_entity(&self) -> Option<Entity>;
     fn clear_entities(&mut self);
@@ -25,8 +27,7 @@ pub trait Node: Default + Component + Sized + GetVar + Show + Debug {
         self.to_strings(0, "_", &mut strings);
         strings
     }
-    fn from_table_single(id: u64) -> Option<Self>;
-    fn from_table(id: u64) -> Option<Self>;
+    fn load_recursive(id: u64) -> Option<Self>;
     fn pack(entity: Entity, world: &World) -> Option<Self>;
     fn unpack(self, entity: Entity, world: &mut World);
     fn find_up_entity<T: Component>(entity: Entity, world: &World) -> Option<&T> {
@@ -59,11 +60,31 @@ pub trait Node: Default + Component + Sized + GetVar + Show + Debug {
         let entity = self.get_entity().expect("Node not linked to world");
         Self::collect_children_entity(entity, context)
     }
-    fn collect_units_vec<'a>(&'a self, vec: &mut Vec<&'a Unit>);
-    fn collect_units<'a>(&'a self) -> Vec<&'a Unit> {
-        let mut vec: Vec<&Unit> = default();
-        self.collect_units_vec(&mut vec);
-        vec
+}
+
+pub trait NodeExt: Sized {
+    fn get(id: u64) -> Option<Self>;
+}
+impl<T> NodeExt for T
+where
+    T: Node + GetNodeKind + GetNodeKindSelf,
+{
+    fn get(id: u64) -> Option<Self> {
+        let kind = Self::kind_s();
+        cn().db
+            .tnodes()
+            .key()
+            .find(&kind.key(id))
+            .map(|d| d.to_node())
+    }
+}
+
+impl TNode {
+    pub fn to_node<T: Node>(self) -> T {
+        let mut d = T::default();
+        d.inject_data(&self.data);
+        d.set_id(self.id);
+        d
     }
 }
 
@@ -104,44 +125,6 @@ impl WorldNodeExt for World {
         self.get_resource::<NameEntityLinks>()
             .and_then(|r| r.map.get(name))
             .copied()
-    }
-}
-
-pub trait NodeDomainExt {
-    fn find_by_key(self, key: &String) -> Option<TNode>;
-    fn filter_by_kind(self, kind: NodeKind) -> Vec<TNode>;
-}
-
-impl NodeDomainExt for NodeDomain {
-    fn find_by_key(self, key: &String) -> Option<TNode> {
-        match self {
-            NodeDomain::World => cn().db.nodes_world().key().find(key),
-            NodeDomain::Match => cn().db.nodes_match().key().find(key),
-            NodeDomain::Core => cn().db.nodes_core().key().find(key),
-        }
-    }
-    fn filter_by_kind(self, kind: NodeKind) -> Vec<TNode> {
-        let kind = kind.to_string();
-        match self {
-            NodeDomain::World => cn()
-                .db
-                .nodes_world()
-                .iter()
-                .filter(|d| d.kind == kind)
-                .collect(),
-            NodeDomain::Match => cn()
-                .db
-                .nodes_match()
-                .iter()
-                .filter(|d| d.kind == kind)
-                .collect(),
-            NodeDomain::Core => cn()
-                .db
-                .nodes_core()
-                .iter()
-                .filter(|d| d.kind == kind)
-                .collect(),
-        }
     }
 }
 

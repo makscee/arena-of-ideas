@@ -30,9 +30,6 @@ impl Plugin for WidgetsPlugin {
     }
 }
 
-fn give_c() {
-    cn().reducers.give_credits().unwrap();
-}
 fn cmd_test(world: &mut World) {
     let content = |ui: &mut Ui, _: &mut World| {
         "12345678910 11 12 13 14 15 16 17 18 19 20".cstr().label(ui);
@@ -84,7 +81,7 @@ impl WidgetsPlugin {
             .frame(Frame::new())
             .show(ctx, |ui| match state {
                 GameState::Connect => ConnectPlugin::tab(ui),
-                GameState::Login => LoginPlugin::tab(ui, world),
+                GameState::Login => LoginPlugin::tab_login(ui, world),
                 _ => {}
             });
 

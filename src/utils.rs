@@ -42,9 +42,6 @@ pub fn app_exit_op() {
 pub fn cur_state(world: &World) -> GameState {
     *world.resource::<State<GameState>>().get()
 }
-pub fn can_afford(cost: i64) -> bool {
-    cn().db.wallet().current().amount >= cost
-}
 pub fn rng_seeded(seed: u64) -> ChaCha8Rng {
     ChaCha8Rng::seed_from_u64(seed)
 }

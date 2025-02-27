@@ -171,9 +171,7 @@ impl Show for u64 {
     }
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
         ui.horizontal(|ui| {
-            if let Some(prefix) = prefix {
-                prefix.cstr().label(ui);
-            }
+            prefix.show(ui);
             DragValue::new(self).ui(ui)
         })
         .inner
@@ -187,9 +185,7 @@ impl Show for u32 {
     }
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
         ui.horizontal(|ui| {
-            if let Some(prefix) = prefix {
-                prefix.cstr().label(ui);
-            }
+            prefix.show(ui);
             DragValue::new(self).ui(ui)
         })
         .inner
@@ -236,6 +232,34 @@ impl Show for String {
         Input::new(prefix.unwrap_or_default())
             .ui_string(self, ui)
             .changed()
+    }
+}
+impl Show for Option<String> {
+    fn show(&self, prefix: Option<&str>, _: &Context, ui: &mut Ui) {
+        prefix.show(ui);
+        if let Some(s) = self {
+            s.cstr().label_w(ui);
+        } else {
+            "none".cstr_cs(VISIBLE_DARK, CstrStyle::Small).label_w(ui);
+        }
+    }
+    fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
+        let mut changed = false;
+        let mut checked = self.is_some();
+        if Checkbox::new(&mut checked, "").ui(ui).changed() {
+            changed = true;
+            if checked {
+                *self = Some(default());
+            } else {
+                *self = None;
+            }
+        }
+        if let Some(s) = self {
+            changed |= Input::new(prefix.unwrap_or_default())
+                .ui_string(s, ui)
+                .changed();
+        }
+        changed
     }
 }
 impl Show for Color {

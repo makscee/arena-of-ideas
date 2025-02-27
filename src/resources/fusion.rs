@@ -131,16 +131,13 @@ impl Fusion {
         Ok(())
     }
     pub fn find_by_slot(slot: i32, world: &mut World) -> Option<Self> {
-        world
-            .query::<(&UnitSlot, &Fusion)>()
-            .iter(&world)
-            .find_map(|(s, f)| {
-                if s.slot == slot {
-                    Some(f.clone())
-                } else {
-                    None
-                }
-            })
+        world.query::<&Fusion>().iter(&world).find_map(|(f)| {
+            if f.slot == slot {
+                Some(f.clone())
+            } else {
+                None
+            }
+        })
     }
 
     pub fn open_editor_window(
@@ -149,9 +146,7 @@ impl Fusion {
         team_world: &World,
         on_save: fn(Fusion, &mut World),
     ) -> Result<(), ExpressionError> {
-        let slot = team_world
-            .get::<UnitSlot>(entity)
-            .to_e("Fusion not found")?;
+        let slot = team_world.get::<Fusion>(entity).to_e("Fusion not found")?;
 
         let team = slot.find_up::<Team>(team_world).unwrap();
         let mut team = Team::pack(team.entity(), team_world).to_e("Failed to pack Team")?;

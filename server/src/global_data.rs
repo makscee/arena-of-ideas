@@ -16,7 +16,7 @@ impl GlobalData {
     pub fn init(ctx: &ReducerContext) {
         ctx.db.global_data().insert(Self {
             always_zero: 0,
-            next_id: 1,
+            next_id: 0,
             game_version: VERSION.to_owned(),
             last_sync: Timestamp::UNIX_EPOCH,
         });

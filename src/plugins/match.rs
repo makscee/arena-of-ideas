@@ -30,42 +30,42 @@ const FRAME: Frame = Frame {
 
 impl MatchPlugin {
     fn on_enter(world: &mut World) {
-        let m = NodeDomain::Match
-            .filter_by_kind(NodeKind::Match)
-            .into_iter()
-            .next();
-        if let Some(m) = m {
-            if m.owner != player_id() {
-                "Tried to open match not owned by current player".notify_error(world);
-                GameState::Title.set_next(world);
-                return;
-            }
-            Self::load_match_data(m.id, world);
-        } else {
-            "No active match found".notify_error(world);
-            GameState::Title.set_next(world);
-        }
+        // let m = NodeDomain::Match
+        //     .filter_by_kind(NodeKind::Match)
+        //     .into_iter()
+        //     .next();
+        // if let Some(m) = m {
+        //     if m.owner != player_id() {
+        //         "Tried to open match not owned by current player".notify_error(world);
+        //         GameState::Title.set_next(world);
+        //         return;
+        //     }
+        //     Self::load_match_data(m.id, world);
+        // } else {
+        //     "No active match found".notify_error(world);
+        //     GameState::Title.set_next(world);
+        // }
     }
     pub fn load_match_data(id: u64, world: &mut World) {
-        let m = Match::from_table(NodeDomain::Match, id).unwrap();
-        let mut team_world = World::new();
-        let mut core_world = World::new();
-        for house in NodeDomain::Core.filter_by_kind(NodeKind::House) {
-            let house = House::from_table(NodeDomain::Core, house.id).unwrap();
-            house.unpack(core_world.spawn_empty().id(), &mut core_world);
-        }
-        m.team
-            .unwrap()
-            .unpack(team_world.spawn_empty().id(), &mut team_world);
+        // let m = Match::from_table(NodeDomain::Match, id).unwrap();
+        // let mut team_world = World::new();
+        // let mut core_world = World::new();
+        // for house in NodeDomain::Core.filter_by_kind(NodeKind::House) {
+        //     let house = House::from_table(NodeDomain::Core, house.id).unwrap();
+        //     house.unpack(core_world.spawn_empty().id(), &mut core_world);
+        // }
+        // m.team
+        //     .unwrap()
+        //     .unpack(team_world.spawn_empty().id(), &mut team_world);
 
-        let shop_case = m.shop_case;
-        world.insert_resource(MatchData {
-            g: m.g,
-            shop_case,
-            team_world,
-            core_world,
-            editing_entity: None,
-        });
+        // let shop_case = m.shop_case;
+        // world.insert_resource(MatchData {
+        //     g: m.g,
+        //     shop_case,
+        //     team_world,
+        //     core_world,
+        //     editing_entity: None,
+        // });
     }
     pub fn shop_tab(ui: &mut Ui, world: &mut World) {
         world.resource_scope(|_, d: Mut<MatchData>| {
@@ -118,12 +118,12 @@ impl MatchPlugin {
         let mut fusion_edit = None;
         world.resource_scope(|_, mut d: Mut<MatchData>| {
             let mut last_slot = -1;
-            for (fusion, slot, rep) in d
+            for (fusion, rep) in d
                 .team_world
-                .query::<(&Fusion, &UnitSlot, &Representation)>()
+                .query::<(&Fusion, &Representation)>()
                 .iter(&d.team_world)
             {
-                let slot = slot.slot;
+                let slot = fusion.slot;
                 let r = show_slot(
                     slot as usize,
                     global_settings().team_slots as usize,
@@ -179,7 +179,7 @@ impl MatchPlugin {
             Layout::bottom_up(Align::Center).with_cross_justify(true),
             |ui| {
                 let sc = &md.shop_case[i];
-                let Some(entity) = md.core_world.get_id_link(sc.unit_id) else {
+                let Some(entity) = md.core_world.get_name_link(&sc.unit) else {
                     return;
                 };
 
@@ -259,12 +259,12 @@ impl MatchPlugin {
                 UiBuilder::new().max_rect(rect.with_min_y(rect.top() + rect.height() * 0.5 + 5.0)),
                 |ui| {
                     let mut last_slot = -1;
-                    for (fusion, slot, rep) in md
+                    for (fusion, rep) in md
                         .team_world
-                        .query::<(&Fusion, &UnitSlot, &Representation)>()
+                        .query::<(&Fusion, &Representation)>()
                         .iter(&md.team_world)
                     {
-                        let slot = slot.slot;
+                        let slot = fusion.slot;
                         let r = show_slot(
                             slot as usize,
                             global_settings().team_slots as usize,
@@ -332,8 +332,7 @@ impl MatchPlugin {
                 .single(&md.team_world)
                 .entity();
             let entity = md.team_world.spawn_empty().set_parent(team).id();
-            Fusion::new_full(default(), default(), UnitSlot::new(slot))
-                .unpack(entity, &mut md.team_world);
+            Fusion::new_full(slot, default(), default()).unpack(entity, &mut md.team_world);
             entity
         };
         md.editing_entity = Some(entity);

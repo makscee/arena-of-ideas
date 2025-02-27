@@ -3,6 +3,7 @@ use std::collections::VecDeque;
 use super::*;
 
 #[table(public, name = tnodes)]
+#[derive(Clone, Debug)]
 pub struct TNode {
     #[primary_key]
     pub key: String,

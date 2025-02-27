@@ -55,7 +55,7 @@ where
     fn get_by_data(ctx: &ReducerContext, data: &String) -> Option<T> {
         let kind = T::kind_s().to_string();
         let node = ctx.db.tnodes().data().find(data)?;
-        if node.key != kind {
+        if node.kind != kind {
             None
         } else {
             Some(node.to_node())
@@ -63,7 +63,10 @@ where
     }
     fn insert_self(&self, ctx: &ReducerContext) {
         let node = self.to_tnode(self.id());
-        ctx.db.tnodes().insert(node);
+        match ctx.db.tnodes().try_insert(node.clone()) {
+            Ok(_) => {}
+            Err(e) => error!("Insert of {node:?} failed: {e}"),
+        }
     }
     fn update_self(&self, ctx: &ReducerContext) {
         let node = self.to_tnode(self.id());

@@ -94,6 +94,7 @@ pub use ron::{
 };
 pub use schema::*;
 pub use serde::{Deserialize, Serialize};
+pub use spacetimedb_lib::Identity;
 pub use spacetimedb_sdk::Table as SdkTable;
 pub use std::cell::LazyCell;
 pub use std::collections::VecDeque;
