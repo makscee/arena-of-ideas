@@ -139,7 +139,7 @@ pub enum Reducer {
     },
     SyncAssets {
         global_settings: GlobalSettings,
-        houses: Vec<Vec<String>>,
+        all: Vec<String>,
     },
 }
 

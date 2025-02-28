@@ -12,7 +12,7 @@ impl StdbSyncPlugin {
     fn sync_assets() {
         info!("{}", "Start assets sync".blue());
         let global_settings = global_settings_local().clone();
-        let houses = houses().values().map(|h| h.to_strings_root()).collect_vec();
+        let all = all().to_strings_root();
         cn().reducers.on_sync_assets(|e, _, _| {
             if !e.check_identity() {
                 return;
@@ -21,6 +21,6 @@ impl StdbSyncPlugin {
             info!("{}", "Assets sync done".blue());
             app_exit_op();
         });
-        cn().reducers.sync_assets(global_settings, houses).unwrap();
+        cn().reducers.sync_assets(global_settings, all).unwrap();
     }
 }

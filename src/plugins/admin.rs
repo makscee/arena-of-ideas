@@ -15,8 +15,8 @@ impl AdminPlugin {
         let mut left = Team::from_strings(0, &left).unwrap_or_default();
         let mut right = Team::from_strings(0, &right).unwrap_or_default();
         let mut battle_world = World::new();
-        left.houses = houses().values().cloned().collect_vec();
-        right.houses = houses().values().cloned().collect_vec();
+        left.houses = all().core.clone();
+        right.houses = all().core.clone();
         let entity_left = battle_world.spawn_empty().id();
         let entity_right = battle_world.spawn_empty().id();
         left.unpack(entity_left, &mut battle_world);
@@ -213,6 +213,9 @@ impl AdminPlugin {
         }
         if "Houses Editor".cstr().button(ui).clicked() {
             GameAssetsEditor::open_houses_window(world);
+        }
+        if "Export All".cstr().button(ui).clicked() {
+            dbg!(All::pack(world.get_name_link("all").unwrap(), world));
         }
     }
     fn update(world: &mut World) {

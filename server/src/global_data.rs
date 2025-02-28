@@ -14,6 +14,7 @@ pub struct GlobalData {
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 impl GlobalData {
     pub fn init(ctx: &ReducerContext) {
+        ctx.db.global_data().always_zero().delete(0);
         ctx.db.global_data().insert(Self {
             always_zero: 0,
             next_id: 0,

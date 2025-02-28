@@ -11,7 +11,7 @@ pub struct TNode {
     pub id: u64,
     #[index(btree)]
     pub kind: String,
-    #[unique]
+    #[index(btree)]
     pub data: String,
 }
 

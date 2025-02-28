@@ -153,11 +153,6 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         .unwrap(),
                 );
             }
-            let insert_unit = if struct_ident.to_string() == "Unit" {
-                quote! {vec.push(self);}
-            } else {
-                default()
-            };
             let common = common_node_fns(
                 struct_ident,
                 &all_data_fields,
@@ -365,7 +360,6 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         )*
                     }
                     fn from_dir(path: String, dir: &Dir) -> Option<Self> {
-                        dbg!(&path);
                         #data_from_dir
                         let mut s = Self::default();
                         s.inject_data(data);

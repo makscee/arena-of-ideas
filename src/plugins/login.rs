@@ -71,11 +71,13 @@ impl LoginPlugin {
     fn on_subscribed() {
         OperationsPlugin::add(|world| {
             let identity = ConnectOption::get(world).identity;
+            let kind = NodeKind::PlayerIdentity.to_string();
+            let data = PlayerIdentity::new(Some(identity.to_string())).get_data();
             let player = cn()
                 .db
                 .tnodes()
-                .data()
-                .find(&PlayerIdentity::new(Some(identity.to_string())).get_data())
+                .iter()
+                .find(|n| n.kind == kind && n.data == data)
                 .and_then(|d| Player::get(d.id));
             if let Some(player) = player {
                 let mut cs = client_state().clone();

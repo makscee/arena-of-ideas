@@ -1,7 +1,7 @@
 use super::*;
 
 struct All {
-    pub ts: u64,
+    pub name: String,
     pub players: NodeChildren<Player>,
     pub core: NodeChildren<House>,
 }

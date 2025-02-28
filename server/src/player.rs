@@ -75,7 +75,7 @@ impl Player {
             Err("Names must not be empty".to_string())
         } else if let Some(c) = name.chars().find(|c| !c.is_alphanumeric()) {
             Err(format!("Wrong character: {c}"))
-        } else if ctx.db.tnodes().data().find(&name).is_some() {
+        } else if ctx.db.tnodes().data().filter(&name).next().is_some() {
             Err(format!("Name is taken"))
         } else {
             Ok(name)

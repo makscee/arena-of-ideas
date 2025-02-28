@@ -54,7 +54,6 @@ impl AdminCheck for &ReducerContext {
 #[reducer(init)]
 fn init(ctx: &ReducerContext) -> Result<(), String> {
     GlobalData::init(ctx);
-    All::new(Timestamp::now().into_micros_since_epoch()).save(ctx);
     Ok(())
 }
 

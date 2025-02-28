@@ -85,7 +85,6 @@ impl<'ctx> __sdk::Table for TnodesTableHandle<'ctx> {
 pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
     let _table = client_cache.get_or_make_table::<TNode>("tnodes");
     _table.add_unique_constraint::<String>("key", |row| &row.key);
-    _table.add_unique_constraint::<String>("data", |row| &row.data);
 }
 pub struct TnodesUpdateCallbackId(__sdk::CallbackId);
 
@@ -138,36 +137,6 @@ impl<'ctx> TnodesTableHandle<'ctx> {
 
 impl<'ctx> TnodesKeyUnique<'ctx> {
     /// Find the subscribed row whose `key` column value is equal to `col_val`,
-    /// if such a row is present in the client cache.
-    pub fn find(&self, col_val: &String) -> Option<TNode> {
-        self.imp.find(col_val)
-    }
-}
-
-/// Access to the `data` unique index on the table `tnodes`,
-/// which allows point queries on the field of the same name
-/// via the [`TnodesDataUnique::find`] method.
-///
-/// Users are encouraged not to explicitly reference this type,
-/// but to directly chain method calls,
-/// like `ctx.db.tnodes().data().find(...)`.
-pub struct TnodesDataUnique<'ctx> {
-    imp: __sdk::UniqueConstraintHandle<TNode, String>,
-    phantom: std::marker::PhantomData<&'ctx super::RemoteTables>,
-}
-
-impl<'ctx> TnodesTableHandle<'ctx> {
-    /// Get a handle on the `data` unique index on the table `tnodes`.
-    pub fn data(&self) -> TnodesDataUnique<'ctx> {
-        TnodesDataUnique {
-            imp: self.imp.get_unique_constraint::<String>("data"),
-            phantom: std::marker::PhantomData,
-        }
-    }
-}
-
-impl<'ctx> TnodesDataUnique<'ctx> {
-    /// Find the subscribed row whose `data` column value is equal to `col_val`,
     /// if such a row is present in the client cache.
     pub fn find(&self, col_val: &String) -> Option<TNode> {
         self.imp.find(col_val)

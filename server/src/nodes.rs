@@ -54,12 +54,12 @@ where
     }
     fn get_by_data(ctx: &ReducerContext, data: &String) -> Option<T> {
         let kind = T::kind_s().to_string();
-        let node = ctx.db.tnodes().data().find(data)?;
-        if node.kind != kind {
-            None
-        } else {
-            Some(node.to_node())
-        }
+        ctx.db
+            .tnodes()
+            .data()
+            .filter(data)
+            .find(|d| d.kind == kind)
+            .map(|n| n.to_node())
     }
     fn insert_self(&self, ctx: &ReducerContext) {
         let node = self.to_tnode(self.id());

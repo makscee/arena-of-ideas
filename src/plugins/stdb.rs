@@ -10,10 +10,17 @@ pub fn subscribe_game(on_success: impl FnOnce() + Send + Sync + 'static) {
             e.event.on_success(|| {
                 info!("Subscription applied");
                 on_success();
+                subscribe_table_updates();
+                OperationsPlugin::add(|world| {
+                    All::load_recursive(0)
+                        .unwrap()
+                        .unpack(world.spawn_empty().id(), world);
+                });
             });
         })
         .subscribe(["select * from tnodes", "select * from nodes_relations"]);
-
+}
+fn subscribe_table_updates() {
     let db = cn().db();
     db.tnodes().on_insert(|_, row| {
         let kind = NodeKind::from_str(&row.kind).unwrap();

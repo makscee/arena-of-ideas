@@ -3,9 +3,7 @@ use super::*;
 pub struct RepresentationPlugin;
 
 impl Plugin for RepresentationPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_systems(Update, (Self::update, Self::hover));
-    }
+    fn build(&self, _app: &mut App) {}
 }
 
 impl RepresentationPlugin {
@@ -63,24 +61,6 @@ impl RepresentationPlugin {
             })
             .no_frame()
             .push(world);
-        }
-    }
-    fn update(
-        reps: Query<(Entity, &Representation), With<NodeState>>,
-        state: StateQuery,
-        mut egui_context: Query<&mut EguiContext>,
-        camera: Query<(&Camera, &GlobalTransform)>,
-    ) {
-        let ctx = egui_context.single_mut().into_inner().get_mut();
-        let cam = camera.single();
-        let mut context = Context::new(&state);
-        for (e, r) in &reps {
-            context.set_owner(e);
-            match Self::paint(&r.material, &context, ctx, cam) {
-                Ok(_) => {}
-                Err(e) => error!("Paint error: {e}"),
-            };
-            context.clear();
         }
     }
     fn paint(
