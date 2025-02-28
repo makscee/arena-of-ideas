@@ -26,7 +26,7 @@ pub trait NodeExt: Sized {
     fn get(ctx: &ReducerContext, id: u64) -> Option<Self>;
     fn get_by_data(ctx: &ReducerContext, data: &String) -> Option<Self>;
     fn find_parent(ctx: &ReducerContext, id: u64) -> Option<Self>;
-    fn set_parent(&self, ctx: &ReducerContext, parent: u64);
+    fn set_parent(&mut self, ctx: &ReducerContext, parent: u64);
     fn insert_self(&self, ctx: &ReducerContext);
     fn update_self(&self, ctx: &ReducerContext);
     fn delete_self(&self, ctx: &ReducerContext);
@@ -109,7 +109,10 @@ where
         }
         None
     }
-    fn set_parent(&self, ctx: &ReducerContext, parent: u64) {
+    fn set_parent(&mut self, ctx: &ReducerContext, parent: u64) {
+        if self.get_id().is_none() {
+            self.set_id(next_id(ctx));
+        }
         ctx.db.nodes_relations().insert(TNodeRelation {
             id: self.id(),
             parent,

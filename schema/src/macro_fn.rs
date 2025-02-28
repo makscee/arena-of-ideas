@@ -209,7 +209,7 @@ pub fn table_conversions(
                 }
             )*
             #(
-                for d in std::mem::take(&mut self.#child_link_fields) {
+                for mut d in std::mem::take(&mut self.#child_link_fields) {
                     d.set_parent(ctx, id);
                     d.save(ctx);
                 }

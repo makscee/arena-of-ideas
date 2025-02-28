@@ -17,6 +17,16 @@ impl TableSingletonExt for GlobalSettingsTableHandle<'static> {}
 pub trait StdbStatusExt {
     fn on_success(&self, f: impl FnOnce() + Send + Sync + 'static);
     fn on_success_op(&self, f: impl FnOnce(&mut World) + Send + Sync + 'static);
+    fn on_success_error(
+        &self,
+        f: impl FnOnce() + Send + Sync + 'static,
+        f: impl FnOnce() + Send + Sync + 'static,
+    );
+    fn on_success_error_op(
+        &self,
+        f: impl FnOnce(&mut World) + Send + Sync + 'static,
+        f: impl FnOnce(&mut World) + Send + Sync + 'static,
+    );
     fn notify_error(&self);
 }
 
@@ -30,24 +40,46 @@ impl<R> StdbStatusExt for Event<R> {
             },
             Event::SubscribeApplied | Event::UnsubscribeApplied => f(),
             Event::SubscribeError(e) => e.to_string().notify_error_op(),
-            Event::UnknownTransaction => "Unknown transaction".notify_error_op(),
             _ => panic!(),
         }
     }
     fn on_success_op(&self, f: impl FnOnce(&mut World) + Send + Sync + 'static) {
         self.on_success(move || OperationsPlugin::add(|w| f(w)));
     }
-    fn notify_error(&self) {
+    fn on_success_error(
+        &self,
+        sfn: impl FnOnce() + Send + Sync + 'static,
+        efn: impl FnOnce() + Send + Sync + 'static,
+    ) {
         match self {
             Event::Reducer(r) => match &r.status {
-                spacetimedb_sdk::Status::Committed => {}
-                spacetimedb_sdk::Status::Failed(e) => e.notify_error_op(),
+                spacetimedb_sdk::Status::Committed => sfn(),
+                spacetimedb_sdk::Status::Failed(e) => {
+                    e.notify_error_op();
+                    efn()
+                }
                 _ => panic!(),
             },
-            Event::SubscribeError(e) => e.to_string().notify_error_op(),
-            Event::UnknownTransaction => "Unknown transaction".notify_error_op(),
+            Event::SubscribeApplied | Event::UnsubscribeApplied => sfn(),
+            Event::SubscribeError(e) => {
+                e.to_string().notify_error_op();
+                efn()
+            }
             _ => panic!(),
         }
+    }
+    fn on_success_error_op(
+        &self,
+        s: impl FnOnce(&mut World) + Send + Sync + 'static,
+        e: impl FnOnce(&mut World) + Send + Sync + 'static,
+    ) {
+        self.on_success_error(
+            move || OperationsPlugin::add(|w| s(w)),
+            move || OperationsPlugin::add(|w| e(w)),
+        );
+    }
+    fn notify_error(&self) {
+        self.on_success(|| {});
     }
 }
 

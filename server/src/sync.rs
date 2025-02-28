@@ -12,8 +12,9 @@ fn sync_assets(
         ctx.db.tnodes().delete(n);
     }
     for house in houses {
-        let house = House::from_strings(0, &house).to_e_s("Failed to parse House")?;
-        // house.to_table(ctx, 0);
+        let mut house = House::from_strings(0, &house).to_e_s("Failed to parse House")?;
+        house.set_parent(ctx, 0);
+        house.save(ctx);
     }
     Ok(())
 }

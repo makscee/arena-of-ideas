@@ -42,6 +42,9 @@ pub fn subscribe_game(on_success: impl FnOnce() + Send + Sync + 'static) {
 }
 
 pub fn subscribe_reducers() {
+    cn().reducers.on_match_insert(|e| {
+        e.event.notify_error();
+    });
     cn().reducers.on_match_edit_fusions(|e, _| {
         if !e.check_identity() {
             return;
