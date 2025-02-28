@@ -57,18 +57,18 @@ impl GameOption {
     }
 }
 
-#[derive(Resource)]
+#[derive(Resource, Debug)]
 pub struct LoginOption {
     pub player: Player,
 }
 
-#[derive(Resource, Clone)]
+#[derive(Resource, Clone, Debug)]
 pub struct ConnectOption {
     pub identity: Identity,
     pub token: String,
 }
 
-pub trait OptionResource: Resource + Sized {
+pub trait OptionResource: Resource + Sized + Debug {
     fn fulfill(world: &mut World);
     fn save(self, world: &mut World) {
         world.insert_resource(self);

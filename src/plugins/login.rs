@@ -52,6 +52,9 @@ impl LoginPlugin {
                 .find(&PlayerIdentity::new(Some(identity.to_string())).get_data())
                 .and_then(|d| Player::get(d.id));
             if let Some(player) = player {
+                let mut cs = client_state().clone();
+                cs.last_logged_in = Some((player.name.clone(), identity));
+                cs.save();
                 LoginOption { player }.save(world);
             } else {
                 error!("Failed to find Player");
@@ -86,15 +89,19 @@ impl LoginPlugin {
     }
     pub fn tab_login(ui: &mut Ui, world: &mut World) {
         ui.vertical_centered_justified(|ui| {
+            let mut ld = world.resource_mut::<LoginData>();
             ui.add_space(ui.available_height() * 0.3);
             ui.set_width(350.0.at_most(ui.available_width()));
-            let mut ld = world.resource_mut::<LoginData>();
-            if let Some((name, identity)) = &client_state().last_logged_in {
-                format!("Login as {}", name)
+            let mut cs = client_state().clone();
+            if let Some((name, identity)) = &cs.last_logged_in {
+                format!("Login as {name}")
                     .cstr_cs(VISIBLE_LIGHT, CstrStyle::Heading2)
                     .label(ui);
-                if !ld.login_requested
-                    && (client_settings().auto_login || Button::new("Login").ui(ui).clicked())
+                if (client_settings().auto_login && !ld.login_requested)
+                    || Button::new("Login")
+                        .enabled(!ld.login_requested)
+                        .ui(ui)
+                        .clicked()
                 {
                     ld.login_requested = true;
                     cn().reducers.on_login_by_identity(|e| {
@@ -106,8 +113,15 @@ impl LoginPlugin {
                     let _ = cn().reducers.login_by_identity();
                 }
                 br(ui);
-                if Button::new("Logout").gray(ui).ui(ui).clicked() {
-                    todo!();
+                if Button::new("Logout")
+                    .enabled(!ld.login_requested)
+                    .gray(ui)
+                    .ui(ui)
+                    .clicked()
+                    || ConnectOption::get(world).identity != *identity
+                {
+                    cs.last_logged_in = None;
+                    cs.save_to_cache();
                 }
             } else {
                 let mut ld = world.resource_mut::<LoginData>();
@@ -116,7 +130,12 @@ impl LoginPlugin {
                 Input::new("password")
                     .password()
                     .ui_string(&mut ld.pass_field, ui);
-                if Button::new("Submit").ui(ui).clicked() {
+                if Button::new("Submit")
+                    .enabled(!ld.login_requested)
+                    .ui(ui)
+                    .clicked()
+                {
+                    ld.login_requested = true;
                     cn().reducers.on_login(|e, name, _| {
                         if !e.check_identity() {
                             return;
@@ -127,10 +146,11 @@ impl LoginPlugin {
                         .login(ld.name_field.clone(), ld.pass_field.clone())
                         .unwrap();
                 }
+                space(ui);
                 br(ui);
-                if "New Player"
-                    .cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold)
-                    .button(ui)
+                if Button::new("New Player")
+                    .enabled(!ld.login_requested)
+                    .ui(ui)
                     .clicked()
                 {
                     GameState::Register.set_next(world);

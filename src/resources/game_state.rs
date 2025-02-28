@@ -25,7 +25,7 @@ pub enum GameState {
 impl GameState {
     pub fn load_state(self) -> DockState<Tab> {
         match self {
-            GameState::Connect => DockState::new(Tab::Login.into()),
+            GameState::Connect => DockState::new(Tab::Connect.into()),
             GameState::Login => DockState::new(Tab::Login.into()),
             GameState::Register => DockState::new(Tab::Register.into()),
             GameState::Title => DockState::new([Tab::MainMenu, Tab::Admin].into()),
@@ -110,6 +110,7 @@ impl ToCstr for GameState {
 
 const STATE_OPTIONS: LazyCell<HashMap<GameState, Vec<GameOption>>> = LazyCell::new(|| {
     let mut m = HashMap::new();
+    m.insert(GameState::Login, [GameOption::Connect].into());
     m.insert(
         GameState::Title,
         [GameOption::Connect, GameOption::Login].into(),

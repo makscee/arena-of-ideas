@@ -62,8 +62,10 @@ impl ConnectPlugin {
             save_identity(identity);
             Self::save_credentials(identity.clone(), token.clone())
                 .expect("Failed to save credentials");
-            ConnectOption { identity, token }.save_op();
-            GameState::proceed_op();
+            OperationsPlugin::add(move |world| {
+                ConnectOption { identity, token }.save(world);
+                GameState::proceed(world);
+            });
         });
     }
     pub fn tab(ui: &mut Ui) {
