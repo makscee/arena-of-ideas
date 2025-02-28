@@ -215,7 +215,13 @@ impl AdminPlugin {
             GameAssetsEditor::open_houses_window(world);
         }
         if "Export All".cstr().button(ui).clicked() {
-            dbg!(All::pack(world.get_name_link("all").unwrap(), world));
+            let all = All::pack(world.get_name_link("all").unwrap(), world).unwrap();
+            dbg!(&all);
+            let path = "./assets/";
+            let dir = all.to_dir("ron".into());
+            let dir = dir.as_dir().unwrap();
+            std::fs::create_dir_all(format!("{path}{}", dir.path().to_str().unwrap())).unwrap();
+            dir.extract(path).unwrap();
         }
     }
     fn update(world: &mut World) {
